@@ -496,8 +496,15 @@ int SwishHits( RESULTS_OBJECT *results )
 
 
         
-    
+SWISH *SW_ResultToSW_HANDLE( RESULT *r )
+{
+    return r->db_results->indexf->sw;
+}
 
+SWISH *SW_ResultsToSW_HANDLE( RESULTS_OBJECT *results )
+{
+    return results->sw;
+}
 
 /****************************************************************
 *  Free_Results_Object - Frees all memory associated with search results

@@ -95,6 +95,8 @@ SW_RESULT SwishNextResult( SW_RESULTS );
 
 char *SwishResultPropertyStr(SW_RESULT, char *propertyname);
 unsigned long SwishResultPropertyULong(SW_RESULT, char *propertyname);
+SW_HANDLE SW_ResultToSW_HANDLE( SW_RESULT );
+SW_HANDLE SW_ResultsToSW_HANDLE( SW_RESULTS );
 
 void Free_Search_Object( SW_SEARCH srch );
 void Free_Results_Object( SW_RESULTS results );
