@@ -1083,7 +1083,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                                                getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
                                                        indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
             }
-            while ((s - buffer) != nextposmetaname);
+            while ((unsigned long)(s - buffer) != nextposmetaname);
         }
         efree(buffer);
         if (!p)

@@ -429,7 +429,7 @@ int sz_buffer;
 			else
 				ip->locationarray=(LOCATION **) erealloc(ip->locationarray,(++ip->u1.max_locations)*sizeof(LOCATION *)); 
 			ip->locationarray[ip->u1.max_locations-1]=loc;
-		} while ((s - buffer) !=nextposmetaname);
+		} while ((unsigned long)(s - buffer) !=nextposmetaname);
 		metaID = uncompress2(&s);
 	}
 	return ip;

@@ -148,7 +148,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     else
                         printf(" %d", x);
                 }
-                if ((s - worddata) == nextposmetaname)
+                if ((unsigned long)(s - worddata) == nextposmetaname)
                 {
                     x = uncompress2(&s);
                     metaname = x;

@@ -131,10 +131,10 @@ unsigned long PACKLONG(unsigned long num)
     if(num) 
     { 
         _s=(unsigned char *) &_i; 
-        _s[0]=((num >> 24) & 0xFF); 
-        _s[1]=((num >> 16) & 0xFF); 
-        _s[2]=((num >> 8) & 0xFF); 
-        _s[3]=(num & 0xFF); 
+        _s[0]=(unsigned char)((num >> 24) & 0xFF); 
+        _s[1]=(unsigned char)((num >> 16) & 0xFF); 
+        _s[2]=(unsigned char)((num >> 8) & 0xFF); 
+        _s[3]=(unsigned char)(num & 0xFF); 
         return _i;
     } 
     return num;
@@ -143,10 +143,10 @@ unsigned long PACKLONG(unsigned long num)
 /* Same routine - Packs long in buffer */
 void PACKLONG2(unsigned long num, unsigned char *buffer) 
 {
-   buffer[0]=((num >> 24) & 0xFF); 
-   buffer[1]=((num >> 16) & 0xFF); 
-   buffer[2]=((num >> 8) & 0xFF); 
-   buffer[3]=(num & 0xFF);
+   buffer[0]=(unsigned char)((num >> 24) & 0xFF); 
+   buffer[1]=(unsigned char)((num >> 16) & 0xFF); 
+   buffer[2]=(unsigned char)((num >> 8) & 0xFF); 
+   buffer[3]=(unsigned char)(num & 0xFF);
 }
 
 
