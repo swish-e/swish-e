@@ -46,6 +46,7 @@ $Id$
 #include "metanames.h"
 #include "html.h"
 #include "entities.h"
+#include "fs.h"
 
 /* #### */
 
@@ -87,9 +88,10 @@ char *title;
 {
 	int badfile;
 	struct swline *tmplist;
+	struct MOD_FS *fs = sw->FS;
 	
 	badfile = 0;
-	tmplist = sw->titconlist;
+	tmplist = fs->titconlist;
 	while (tmplist != NULL) {
 		if (matchARegex(title, tmplist->line)) {
 			badfile = 1;

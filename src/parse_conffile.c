@@ -249,10 +249,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
         }
-        else if (strcasecmp(w0, "FollowSymLinks") == 0)
-        {
-            sw->followsymlinks = getYesNoOrAbort(sl, 1, 1);
-        }
         else if (strcasecmp(w0, "IndexName") == 0)
         {
             if (sl->n > 1)
