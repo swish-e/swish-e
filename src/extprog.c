@@ -45,7 +45,7 @@ FILE *open_external_program( SWISH *sw, char *prog )
 
     sprintf( cmd, "%s \'%s\'", prog, "some string");
 
-    fp = popen( cmd, "r");
+    fp = popen( cmd, FILEMODE_READ );
     efree ( cmd );
 
     if ( !fp ) progerr( "Failed to spawn external program" );
@@ -65,6 +65,7 @@ char *real_path;
 long fsize;
 time_t mtime;
 int  index_no_content;
+long truncate_doc_size;
 
     mtime = 0;
     fsize = 0;
@@ -74,6 +75,9 @@ int  index_no_content;
     fp = open_external_program( sw, prog );
 
     ln = emalloc( MAXSTRLEN + 1 );
+
+    truncate_doc_size = sw->truncateDocSize;
+    sw->truncateDocSize = 0;  /* can't truncate -- prog should make sure doc is not too large */
 
     /* loop on headers */
     while (fgets(ln, MAXSTRLEN, fp) != NULL) {
@@ -90,14 +94,27 @@ int  index_no_content;
                 fprop = init_file_properties( sw );
                 fprop->real_path = real_path;
                 fprop->work_path = real_path;
+
+                /* set real_path, doctype, index_no_content, filter, stordesc */
                 init_file_prop_settings( sw, fprop );
 
                 fprop->fp = fp;         /* stream to read from */
                 fprop->fsize = fsize;   /* how much to read */
-                fprop->mtime = mtime;
-                fprop->index_no_content = index_no_content;
+                fprop->mtime = mtime; 
 
-                fprop->filterprog = NULL; /* Filter programs will not work, but not really needed */
+                /* header can force index_no_content */
+                if ( index_no_content ) fprop->index_no_content++;
+
+
+                /*  the quick hack to make filters work is for FilterOpen
+                 *  to see that fprop->fp is set, read it into a buffer
+                 *  write it to a temporary file, then call the filter
+                 *  program as noramlly is done.  But much smarter to
+                 *  simply filter in the prog, after all.  Faster, too.
+                 */
+                 
+                if ( fprop->filterprog )
+                    progerr("Filters currently do not work with 'prog' document source");
 
                 do_index_file( sw, fprop );
 
@@ -105,23 +122,26 @@ int  index_no_content;
                 efree( real_path ); 
                 real_path = NULL;
                 mtime = 0;
+                fsize = 0;
+                index_no_content = 0;
 
             } else {
-                progerr("External program failed to return proper headers");
+                /* now this could be more helpful */
+                progerr("External program failed to return required headers");
             }
 
         } else {
 
 
             if ( strncasecmp( line, "Content-Length", 14 ) == 0) {
-                x = strrchr(line,':');
+                x = strchr(line,':');
                 if ( !x ) progerr("Failed to parse Content-Length header");
                 fsize = strtol( ++x, NULL, 10 );
                 continue;
             }
 
             if ( strncasecmp( line, "Last-Mtime", 10 ) == 0) {
-                x = strrchr(line,':');
+                x = strchr(line,':');
                 if ( !x ) progerr("Failed to parse Last-Mtime header");
                 mtime = strtol( ++x, NULL, 10 );
                 continue;
@@ -134,7 +154,7 @@ int  index_no_content;
             
 
             if ( strncasecmp( line, "Path-Name", 9 ) == 0) {
-                x = strrchr(line,':');
+                x = strchr(line,':');
                 if ( !x ) progerr("Failed to parse Path-Name header");
 
                 x = str_skip_ws(++x);
@@ -151,6 +171,9 @@ int  index_no_content;
     }
 
     efree( ln );
+
+    /* restore the setting */
+    sw->truncateDocSize = truncate_doc_size;
 
     pclose( fp ); /* progerr("Failed to properly close external program"); */
 }

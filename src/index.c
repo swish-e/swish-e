@@ -158,6 +158,12 @@ int      external_program;
         if ( sw->verbose >= 4 )
         printf( "Skipping %s: last_mod date is too old\n", fprop->real_path );
 
+        /* external program must seek past this data (fseek fails) */
+        if ( fprop->fp ) {
+            rd_buffer = read_stream(fprop->fp, fprop->fsize, 0);
+            efree( rd_buffer );
+        }
+
         return;
     }
 
@@ -247,6 +253,9 @@ int      external_program;
 
 	return;
 }
+
+
+
 
 
 
