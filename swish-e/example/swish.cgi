@@ -509,7 +509,7 @@ sub setup_form {
                 } @{$conf->{sorts}}
             ),
             '</select>',
-            '<input value="1" type="checkbox" $checked name="reverse">Reverse Sort';
+            qq[<input value="1" type="checkbox" $check name="reverse">Reverse Sort];
     }
 
     return ( $check, $limits, $sorts );
