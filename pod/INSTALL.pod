@@ -4,12 +4,19 @@ INSTALL - Swish-e Installation Instructions
 
 =head1 OVERVIEW
 
-This document describes how to download, build and install Swish-e.
-Also described is how to build Swish-e with optional, yet recommended libraries that
-extend and enhance Swish-e.
+This document describes how to download, build and install Swish-e from source.
+You will need a development environment (e.g. a C compiler) -- most unix platforms
+will provide the needed tools.
 
 This document also provides instructions on how to get help installing
 and using Swish-e (and the important information you should provide when asking for help).
+Please read before requesting help on the Swish-e discussion list.
+
+Although building from source is recommended, some OS distributions (e.g. Debian)
+provide pre-compiled binaries.  Check with your distribution for available packages.
+
+A Windows binary version is available as a separate download from the Swish-e site
+(http://swish-e.org).
 
 Also, below is a basic overview of using Swish-e to index documents, with pointers to
 other more advanced examples.
@@ -38,9 +45,8 @@ Swish-e has also been used on these platforms:
     IBM RS/6000 43P-150 - Debian 3.0
     gcc version 2.95.4 20011002 (Debian prerelease)
 
-    Apple Dual G4 QuickSilver - MacOS X 10.1.4  
+    Apple Dual G4 QuickSilver - MacOS X 10.1.4 and 10.2.2
     Apple Computer, Inc. version gcc-932.1, based on gcc version 2.95.2 19991024 (release)
-
     Mac OS X 10.1.2 on an iBook.
     
     DEC Alpha - Debian 3.0
@@ -65,11 +71,11 @@ B<libxml2>
 
 http://www.xmlsoft.org/
 
-Swish-e 2.2 can (and probably should) use the libxml2 library for parsing
-HTML and XML files.  Instructions for installing and enabling the library
+Swish-e will use the libxml2 library for parsing HTML and XML files
+if available.  Instructions for installing and enabling the library
 are described below.
 
-Currently, the libxml2 library is not required, but is a much better
+The libxml2 library is not required, but is a much better
 parser than the tired old Swish-e html parser (html.c).  Please see
 the Swish-e FAQ L<SWISH-FAQ|SWISH-FAQ> for more discussion of the use
 of libxml2.
@@ -77,7 +83,7 @@ of libxml2.
 Swish-e's old xml.c paser has been rewritten to use James Clark's Expat
 library (included with the Swish-e distribution), but Swish-e's old
 html.c code is still broken in a number of ways.  Libxml2 is comparable to
-Expat, but offers a much better HTML parser that Swish-e's html.c parser.
+Expat, but offers a much better HTML parser than Swish-e's html.c parser.
 Use libxml2 if possible for parsing HTML and XML.
 
 Currently, setting a content type
@@ -85,6 +91,8 @@ Currently, setting a content type
 of "HTML" uses Swish-e's html.c parser, where a setting of "HTML2" uses libxml2's HTML parser.
 Likewise, a setting of "XML" uses the included Expat library, where "XML2"
 uses libxml2 for parsing XML.  All this may change in future releases.
+You may use HTML* and XML* in your configuration and Swish-e will use libxml2 if available
+otherwise use the built-in HTML and XML parsers.
 
 B<zlib compression>
 
@@ -96,8 +104,8 @@ if you are using L<StoreDescription|SWISH-CONFIG/"item_StoreDescription">.
 A Swish-e program built with zlib will read an index from a version of Swish-e that
 was not built with zlib.  But, if you are searching an index that was compressed with
 zlib then you will need to use a version of Swish-e built with zlib.  Therefore, it's
-recommended to always include zlib support.
-
+recommended to always include zlib support.  The default is to include zlib support
+if zlib is installed on your system.
 
 B<Memory>
 
@@ -122,13 +130,13 @@ or http://search.cpan.org).  The Perl helper script was tested with
 perl 5.005, 5.6.0, and 5.6.1 although it should probably work with any version 5 release.
 Do note that the LWP, HTTP, and HTML modules are updated often for bug
 fixes and such -- do check for upgrades, and don't expect that your system admin
-as been keeping up with bug fixes.
+has been keeping up with bug fixes.
 
 
 =head2 Platform Specific Information
 
 A C<configure> script is used to determine platform specific details
-for building swish.  Please contact the Swish-e discussion list if you
+for building Swish-e.  Please contact the Swish-e discussion list if you
 notice any platform specific problems while building Swish-e.
 
 Specific information for various platforms can be found in subdirectories
@@ -159,6 +167,10 @@ section.
     make test
     su root
     make install
+
+By default, this will install the swish-e binary in F</usr/local/bin>, the Swish-e
+search library in F</urs/local/lib>, the swish-e.h header file in </usr/local/include>,
+and the documentation in F</usr/local/share/swish-e>.
 
 Swish uses a F<configure> script to generate a Makefile for your platform.
 The F<configure> script should detect and use optional libraries if found on
@@ -241,7 +253,7 @@ path where libxml2 was installed.  For example,
 
     ./configure --with-libxml2=$HOME/local
 
-If libxml2 is installed in a non-standard location, Swish-e needs to know
+If libxml2 is installed in a non-standard location Swish-e needs to know
 where that library is at run time.  There seems to be a number of ways
 to do this.  First, you can set the environment variable C<LD_RUN_PATH>
 *before* running make to create Swish-e.  This will add the path directly
@@ -343,6 +355,16 @@ Swish-e-x.x/ top level directory type the following commands
 
 You should build swish as a normal user (i.e. not as "root").
 
+There are a number of possible options for configure.  To list these options run:
+
+    ./configure --help
+
+For example, to install Swish-e in a non-standard location:
+
+    ./cofigure --prefix=$HOME/local
+
+will cause Swish-e to be installed (when "make install" is run) in $HOME/local/bin.
+
 Note: If you wish to use libxml2 or zlib please see the previous section
 for the required configure options.
 
@@ -379,14 +401,19 @@ You may need to superuser privileges:
    make install
    exit
 
-B<IMPORTANT:> Do not run swish-e as the superuser (root).
+B<IMPORTANT:> Do not run swish-e as the superuser (root) -- this is only required
+during the installation step.
 
-The bin directory may be set when first running F<./configure>. For example:
+If you do not have root access you can install Swish-e in a local directory.
 
-   ./configure --bindir=$HOME/bin
+    ./configure --prefix=$HOME/local
 
-sets the installation directory to F<$HOME/bin> and C<make install>
-will install the program in that location.
+Then running "make install" will install the following files:
+
+    $HOME/local/bin/swish-e       -- the Swish-e program
+    $HOME/local/lib/libswish-e.a  -- the Swish-e search library
+    $HOME/local/include           -- header file for the library
+    $HOME/local/share/swish-e     -- documentation
 
 =back
 
@@ -405,34 +432,36 @@ it can be added to the list of sites that use Swish-e!
 Please review L<QUESTIONS AND TROUBLESHOOTING|QUESTIONS AND TROUBLESHOOTING> before posting
 a question to the Swish-e list.
 
-=head2 Installing the Swish-e C Library (optional)
+=head2 The Swish-e C Search Library - libswish-e.a
 
-Swish 2.2 creates the C library F<libswish-e.a> during the build.
-Install this library if you wish to embed Swish-e into another
-application.  For example, the library should be installed
-before using the high level Perl SWISH modules located on
-CPAN. http://search.cpan.org/search?mode=module&query=SWISH
+Swish creates the C library F<libswish-e.a> during the build process.
+Running "make install" installs the library and header file
+in addition to the swish-e program.
 
-This is an *optional* step.  Most users will not need to install the library.
-
-To install the library issue the following commands (again, you may need
-to su root)
-
-   su root
-   make install-lib
-   exit
-
-By default this will install the library in /usr/local/lib, but this
+By default the library in /usr/local/lib, but this
 directory can be set when running ./configure with the --libdir option.
 For example:
 
-   ./configure --bindir=$HOME/bin --libdir=$HOME/lib
+    ./configure --bindir=$HOME/bin --libdir=$HOME/lib
 
-So C<make install> will install the F<swish-e> binary in F<$HOME/bin>
-and C<make install-lib> will install the F<libswish-e.a> library in
-F<$HOME/lib>.
+or by setting a prefix:
 
-Note: You may wish to run C<make realclean> before running ./configure again.
+    ./configure --prefix=$HOME/local  (recommended method)
+
+For more information about the Swish-e C library see L<SWISH-LIBRARY|SWISH-LIBRARY>.
+
+=head2 The SWISH::API Perl Module
+
+The Swish-e distribution includes a module that provides a Perl
+interface to the Swish-e C library.  This module provides a way
+to search a Swish-e index without running the swish-e program.
+Searching an index will me many times faster when running under a
+persistent environment such as Apache/mod_perl with the SWISH::API
+module.
+
+See the F<perl/README> file  for information on installing and
+using the SWISH::API Perl module.
+
 
 =head2 Creating PDF and Postscript documentation (optional)
 

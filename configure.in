@@ -31,6 +31,9 @@ AC_PROG_MAKE_SET
 dnl Check for Perl - used for making the distribution
 AC_PATH_PROG(PERL, perl, /usr/local/bin/perl,$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin)
 
+dnl Check pod2man for creating man pages
+AC_CHECK_PROG(POD2MAN, pod2man, pod2man)
+
 dnl Check for install - used for installing distribution
 AC_PROG_INSTALL
 

@@ -47,8 +47,12 @@ swish-search: swish-e
 test:
 	(cd src; $(MAKE) test)
 
-install: install-docs install-man install-lib 
+# Install binary, library and header
+# try to install HTML docs
+
+install:
 	(cd src; $(MAKE) install)
+	(cd doc; $(MAKE) install-docs-test)
 
 install-lib:
 	(cd src; $(MAKE) install-lib)
