@@ -62,7 +62,7 @@ sub header {
 sub highlight {
 
 
-    my ( $self, $text_ref, $phrase_list, $result_object ) = @_;
+    my ( $self, $text_ref, $phrase_list, $prop_name, $result_object ) = @_;
     # $phrase_list is an array of arrays of phrases (where a phrase might be a single word)
     # and should be sorted by longest to shortest phrase.
 
@@ -89,9 +89,7 @@ sub highlight {
     my $on_flag  = 'sw' . time . 'on';  # used to flag where to turn on highlighting
     my $off_flag = 'sw' . time . 'off'; # can't use $On/$Off because of html escaping needs to be done later
 
-
     my $stemmer_function; 
-
     # Now check for running under SWISH::API and check for stemming
     if ( $result_object && $result_object->FuzzyMode ne 'None' ) {
         # This doesn't work with double-metaphone which might return more than one stem
@@ -117,6 +115,7 @@ sub highlight {
 
     # $word_pos is current pointer into @words/2 (it indexes just the "swish words") -- where to start looking for a phrase match.
     my $word_pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
+    # $$$ There's a bug when the text starts: '; foo'
 
     # These try and cache the last stemmed word.
     my $last_stemmed_word;
