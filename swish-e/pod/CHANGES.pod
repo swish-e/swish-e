@@ -8,6 +8,17 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =head2 Version 2.4.0 - ????????? ??, ????
 
+=head2 Version 2.4.0 (Release Candidate 3)  September 11, 2003
+
+=over 4
+
+=item * Fix parser bug meta=(foo*)
+
+Fixed bug in query parser caused in rc2's (pr2) attempt to catch wildcards
+errors. 
+
+=back
+
 =head2 Version 2.4.0 (Release Candidate 2)  September 10, 2003
 
 =over 4
