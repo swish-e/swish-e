@@ -148,6 +148,7 @@ sub DateRangeForm {
             -values     => \@time_periods,
             -default    => ($params->{default} || $time_periods[0]),
             -linebreak  => (exists $params->{line_break} ? $params->{line_break} : 1),
+            #-columns=>2,
           ) if @time_periods;
 
 
@@ -272,7 +273,11 @@ sub DateRangeParse {
         /^Last Month/ && do {
             @start = Today();
             $start[2] = 1;
-            $start[1] = 1 if --$start[1] == 0;
+            --$start[1];
+            if ( $start[1] == 0 ) {
+                $start[1] = 12;
+                $start[0]--;
+            }
             @end = @start;
             $end[2] = Days_in_Month($end[0],$end[1]);
             last;
