@@ -67,7 +67,7 @@ Document summaries can be returned with each search
 
 =item *
 
-Word stemming and soundex indexing for "fuzzy" searching
+Word stemming, soundex, metaphone, and double-metaphone indexing for "fuzzy" searching
 
 =item *
 

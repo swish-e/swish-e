@@ -71,7 +71,7 @@ PARSER_OBJS         = html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
 #--- Indexing modules ---
 INDEXING_OBJS       = $(INPUT_METHODS_OBJS) $(PARSER_OBJS) \
                       index.o merge.o stemmer.o soundex.o \
-                      filter.o parse_conffile.o swregex.o
+                      filter.o parse_conffile.o swregex.o double_metaphone.o
 
 #--- Logical Groups ---
 

@@ -133,6 +133,8 @@ extern "C" {
 #define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
 #define STEMMINGPARAMNAME "Stemming"
 #define SOUNDEXPARAMNAME "Soundex"
+#define FUZZYMODEPARAMNAME "FuzzyMode"
+
 #define FILECOUNTPARAMNAME "FileCount"
 
 
@@ -180,10 +182,14 @@ extern "C" {
 #define IGNORELASTCHARHEADER_ID (BASEHEADER + 16)
 
 #define STEMMINGHEADER	"# Stemming Applied:"
-#define STEMMINGHEADER_ID (BASEHEADER + 17)
+//#define STEMMINGHEADER_ID (BASEHEADER + 17)
 
 #define SOUNDEXHEADER "# Soundex Applied:"
-#define SOUNDEXHEADER_ID (BASEHEADER + 18)
+//#define SOUNDEXHEADER_ID (BASEHEADER + 18)
+
+#define FUZZYMODE_HEADER "# Fuzzy Indexing Mode:"
+#define FUZZYMODEHEADER_ID (BASEHEADER + 18)
+
 
 #define MERGED_ID (BASEHEADER + 19)
 
@@ -408,6 +414,18 @@ struct swline
     char   *line;
 };
 
+
+/* Define types of word translations for fuzzy indexing */
+
+typedef enum {
+    FUZZY_NONE = 0,
+    FUZZY_STEMMING,
+    FUZZY_SOUNDEX,
+    FUZZY_METAPHONE,
+    FUZZY_DOUBLE_METAPHONE
+} FuzzyIndexType;
+
+
 typedef struct
 {
     /* vars for WordCharacters */
@@ -462,8 +480,7 @@ typedef struct
     int     minwordlimit;
     int     maxwordlimit;
 
-    int     applyStemmingRules; /* added 11/24/98 - MG */
-    int     applySoundexRules;  /* added 09/01/99 - DN */
+    FuzzyIndexType fuzzy_mode;
 
     /* Total files and words in index file */
     int     totalwords;

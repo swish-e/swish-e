@@ -998,11 +998,13 @@ Using the C<-H> option it will return in the headers the current index
 (or indexes) settings for WordCharacters (and others) required to parse
 your source documents as it parses them during indexing, and will return a
 "Parsed Words:" header that will show how it parsed the query internally.
-If you use word stemming then you will also need to stem each word in your
+If you use fuzzy indexing (word stemming, soundex, or metaphone)
+then you will also need to stem each word in your
 document before comparing with the "Parsed Words:" returned by Swish-e.
 The Swish-e stemming code is available either by using the Swish-e
 Perl module or C library (included with the swish-e distribution),
-or by using the SWISH::Stemmer module available on CPAN.
+or by using the SWISH::Stemmer module available on CPAN.  Also on CPAN is
+the module Text::DoubleMetaphone.
 
 =head3 Do filters effect the performance during search?
 

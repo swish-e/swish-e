@@ -117,6 +117,7 @@ $Id$
 #include "docprop.h"
 #include "stemmer.h"
 #include "soundex.h"
+#include "double_metaphone.h"
 #include "error.h"
 #include "file.h"
 #include "compress.h"
@@ -2407,26 +2408,70 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
             if (!isokword(sw, swishword, indexf))
                 continue;
 
-            if (indexf->header.applyStemmingRules)
+            /* Now translate word if fuzzy mode */                    
+
+            switch ( indexf->header.fuzzy_mode )
             {
-                stem_return = Stem(&swishword, &lenswishword);
+                case FUZZY_NONE:
+                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+                    wordcount++;
+                    break;
 
-                /* === 
+                case FUZZY_STEMMING:
+                    stem_return = Stem(&swishword, &lenswishword);
 
-                if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
-                if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
-                if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", swishword );
-                if ( stem_return == STEM_TO_NOTHING ) printf("Stem: stems to nothing '%s'\n", swishword );
+                    /* === 
+                    if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
+                    if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
+                    if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", swishword );
+                    if ( stem_return == STEM_TO_NOTHING ) printf("Stem: stems to nothing '%s'\n", swishword );
+                    === */
 
-                === */
+                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+                    wordcount++;
+                    break;
+
+                    
+                case FUZZY_SOUNDEX:
+                    soundex(swishword);
+                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+                    wordcount++;
+                    break;
+
+                case FUZZY_METAPHONE:
+                case FUZZY_DOUBLE_METAPHONE:
+                    {
+                        char *codes[2];
+                        DoubleMetaphone(swishword, codes);
+                        
+                        if ( !(*codes[0]) )
+                        {
+                            efree( codes[0] );
+                            efree( codes[1] );
+                            addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+                            wordcount++;
+                            break;
+                        }
+                        addword(codes[0], sw, filenum, structure, numMetaNames, metaID, position );
+                        wordcount++;
+
+                        if ( indexf->header.fuzzy_mode == FUZZY_DOUBLE_METAPHONE &&  *(codes[1]) && strcmp(codes[0], codes[1]) )
+                        {
+                            (*position)--; /* at same position as first word */
+                            addword(codes[1], sw, filenum, structure, numMetaNames, metaID, position );
+                            wordcount++;
+                        }
+
+                        efree( codes[0] );
+                        efree( codes[1] );
+                    }
+                    
+                    break;
+                    
+
+                default:
+                   progerr("Invalid FuzzyMode '%d'", (int)indexf->header.fuzzy_mode );
             }
-
-            /* This needs fixing, no?  The soundex could might be longer than the string */
-            if (indexf->header.applySoundexRules)
-                soundex(swishword);
-
-            addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
-            wordcount++;            
         }
     }
 

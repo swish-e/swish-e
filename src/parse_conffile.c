@@ -63,6 +63,25 @@ $Id$
 #endif
 
 
+typedef struct
+{
+    FuzzyIndexType  fuzzy_mode;
+    char            *name;
+}
+FUZZY_OPTS;
+
+static FUZZY_OPTS fuzzy_opts[] = {
+
+    { FUZZY_NONE, "None" },
+    { FUZZY_STEMMING, "Stemming" },
+    { FUZZY_STEMMING, "Stem" },
+    { FUZZY_SOUNDEX, "Soundex" },
+    { FUZZY_METAPHONE, "Metaphone" },
+    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone" }
+};
+
+
+
 
 static int read_integer( char *string,  char *message, int low, int high );
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
@@ -73,6 +92,7 @@ static void readusewordsfile(SWISH *, IndexFILE *, char *);
 static void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 static int parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
+static FuzzyIndexType set_fuzzy_mode( char *param );
 
 
 
@@ -423,9 +443,34 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "UseStemming") == 0)
         {
-            indexf->header.applyStemmingRules = getYesNoOrAbort(sl, 1, 1);
+            if ( getYesNoOrAbort(sl, 1, 1) )
+                indexf->header.fuzzy_mode = set_fuzzy_mode( "Stemming" );
+                    
             continue;
         }
+
+        if (strcasecmp(w0, "UseSoundex") == 0)
+        {
+            if ( getYesNoOrAbort(sl, 1, 1) )
+                indexf->header.fuzzy_mode = set_fuzzy_mode( "Soundex" );
+
+            continue;
+        }
+
+
+        if (strcasecmp(w0, "FuzzyIndexingMode") == 0)
+        {
+            if (sl->n != 2)
+                progerr("%s: requires one value", w0);
+
+            indexf->header.fuzzy_mode = set_fuzzy_mode( sl->word[1] );
+            continue;
+        }
+
+                
+       
+
+        
 
         
         if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking") == 0)
@@ -435,12 +480,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
         
-        if (strcasecmp(w0, "UseSoundex") == 0)
-        {
-            indexf->header.applySoundexRules = getYesNoOrAbort(sl, 1, 1);
-            continue;
-        }
-
 
         if (strcasecmp(w0, "TranslateCharacters") == 0)
         {
@@ -1653,4 +1692,29 @@ void freeSwishConfigOptions( SWISH *sw )
       
         
 }
+
+static FuzzyIndexType set_fuzzy_mode( char *param )
+{
+    int     i;
+    
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
+            return fuzzy_opts[i].fuzzy_mode;
+
+
+    progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
+    return FUZZY_NONE;
+}
+
+char *fuzzy_mode_to_string( FuzzyIndexType mode )
+{
+    int     i;
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( mode == fuzzy_opts[i].fuzzy_mode )
+            return fuzzy_opts[i].name;
+
+    return "Unknown FuzzyIndexingMode";
+}
+
+
 

@@ -12,6 +12,7 @@ int	strtoDocType( char * s );
 void free_Extracted_Path( SWISH *sw );
 void free_regex_list( regex_list **reg_list );
 void freeSwishConfigOptions( SWISH *sw );
+char *fuzzy_mode_to_string( FuzzyIndexType mode );
 
 
 

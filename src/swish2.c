@@ -388,16 +388,20 @@ char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name)
 
 
     else if (!strcasecmp(parameter_name, STEMMINGPARAMNAME)) {
-        if (indexf->header.applyStemmingRules)
+        if (indexf->header.fuzzy_mode == FUZZY_STEMMING )
             return "1";
         else
             return "0";
 
     } else if (!strcasecmp(parameter_name, SOUNDEXPARAMNAME)) {
-        if (indexf->header.applySoundexRules)
+        if (indexf->header.fuzzy_mode == FUZZY_SOUNDEX )
             return "1";
         else
             return "0";
+
+    } else if (!strcasecmp(parameter_name, FUZZYMODEPARAMNAME)) {
+            return fuzzy_mode_to_string( indexf->header.fuzzy_mode );
+            
 
     } else if (!strcasecmp(parameter_name, FILECOUNTPARAMNAME)) {
         sprintf(tmp_header_buffer, "%d", indexf->header.totalfiles);

@@ -120,8 +120,9 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     DB_WriteHeaderData(sw, POINTERHEADER_ID, (unsigned char *)header->indexp, strlen(header->indexp) + 1, DB);
     DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, (unsigned char *)header->indexa, strlen(header->indexa) + 1,DB);
     write_header_int(sw, DOCPROPENHEADER_ID, 1, DB);
-    write_header_int(sw, STEMMINGHEADER_ID, header->applyStemmingRules, DB);
-    write_header_int(sw, SOUNDEXHEADER_ID, header->applySoundexRules, DB);
+
+    write_header_int(sw, FUZZYMODEHEADER_ID, header->fuzzy_mode, DB);
+
     write_header_int(sw, IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, DB);
     DB_WriteHeaderData(sw, WORDCHARSHEADER_ID, (unsigned char *)header->wordchars, strlen(header->wordchars) + 1, DB);
     write_header_int(sw, MINWORDLIMHEADER_ID, header->minwordlimit, DB);
@@ -812,14 +813,23 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             sortstring(header->ignorelastchar);
             makelookuptable(header->ignorelastchar, header->ignorelastcharlookuptable);
             break;
+
+        /* replaced by fuzzy_mode Aug 20, 2002     
         case STEMMINGHEADER_ID:
             parse_int_from_buffer(tmp,buffer);
-            header->applyStemmingRules = tmp;
+            header-> = tmp;
             break;
         case SOUNDEXHEADER_ID:
             parse_int_from_buffer(tmp,buffer);
             header->applySoundexRules = tmp;
             break;
+        */
+
+        case FUZZYMODEHEADER_ID:
+            parse_int_from_buffer(tmp,buffer);
+            header->fuzzy_mode = tmp;
+            break;
+            
         case IGNORETOTALWORDCOUNTWHENRANKING_ID:
             parse_int_from_buffer(tmp,buffer);
             header->ignoreTotalWordCountWhenRanking = tmp;

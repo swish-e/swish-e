@@ -37,6 +37,7 @@ $Id$
 #include "hash.h"
 #include "stemmer.h"
 #include "soundex.h"
+#include "double_metaphone.h"
 #include "error.h"
 #include "metanames.h"
 #include "config.h"         // for _AND_WORD...
@@ -249,19 +250,68 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
             return NULL;
         }
 
-
-        if (header->applyStemmingRules)
-            Stem(&self->word, &self->lenword);
-
-        if (header->applySoundexRules)
-            soundex(self->word);
-
-
-        /* word removed? */
-        if ( !*self->word )
+        if (!*self->word)
             continue;
 
-        swish_words = (struct swline *) addswline( swish_words, self->word );
+        switch ( header->fuzzy_mode )
+        {
+            case FUZZY_NONE:
+                swish_words = (struct swline *) addswline( swish_words, self->word );
+                break;
+
+            case FUZZY_STEMMING:
+                Stem(&self->word, &self->lenword);
+                if ( *self->word ) // should not happen
+                    swish_words = (struct swline *) addswline( swish_words, self->word );
+                break;
+
+                
+            case FUZZY_SOUNDEX:
+                soundex(self->word);
+                if ( *self->word )
+                    swish_words = (struct swline *) addswline( swish_words, self->word );
+                break;
+
+            case FUZZY_METAPHONE:
+            case FUZZY_DOUBLE_METAPHONE:
+                {
+                    char *codes[2];
+                    DoubleMetaphone(self->word, codes);
+
+                    if ( !(*codes[0]) )
+                    {
+                        efree( codes[0] );
+                        efree( codes[1] );
+                        swish_words = (struct swline *) addswline( swish_words, self->word );
+                        break;
+                    }
+
+
+                    /* check if just METAPHONE or only one word returned (e.g. they are the same) */
+                
+                    if ( header->fuzzy_mode == FUZZY_METAPHONE || !(*codes[1]) || !strcmp(codes[0], codes[1]) )
+                    {
+                        swish_words = (struct swline *) addswline( swish_words, codes[0] );
+                    }
+                    else
+                    {
+                        /* yuck! */
+                        swish_words = (struct swline *) addswline( swish_words, "(" );
+                        swish_words = (struct swline *) addswline( swish_words, codes[0] );
+                        swish_words = (struct swline *) addswline( swish_words, "or" );
+                        swish_words = (struct swline *) addswline( swish_words, codes[1] );
+                        swish_words = (struct swline *) addswline( swish_words, ")" );
+                    }
+
+                    efree( codes[0] );
+                    efree( codes[1] );
+                }
+                break;
+                
+
+            default:
+                progerr("Invalid FuzzyMode '%d'", (int)header->fuzzy_mode );
+        }
     }
 
     return swish_words;

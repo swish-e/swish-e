@@ -116,8 +116,6 @@ $Id$
 #include "merge.h"
 #include "hash.h"
 #include "docprop.h"
-#include "stemmer.h"
-#include "soundex.h"
 #include "error.h"
 #include "compress.h"
 /* removed stuff 
