@@ -364,13 +364,18 @@ static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *serv
 
 static char *isolatevalue(char *line, char *keyword, int *plen)
 {
-	/* Find the beginning of the value
-    **/
-    for (line += strlen(keyword); isspace((int)((unsigned char)*line)); line++ ) { /* cast to int 2/22/00 */
+
+    /* Find the beginning of the value  **/
+    for (line += strlen(keyword); *line && isspace((int)((unsigned char)*line)); line++ ) { /* cast to int 2/22/00 */
+    }
+
+    if ( !strlen(line) )
+    {
+        *plen = 0;
+        return line;
     }
 	
-    /* Strip off trailing spaces
-    **/
+    /* Strip off trailing spaces  **/
     for (*plen = strlen(line); isspace((int)((unsigned char)*(line + *plen - 1))); (*plen)--) { /* cast to int 2/22/00 */
     }
 	
