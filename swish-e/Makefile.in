@@ -47,7 +47,7 @@ swish-search: swish-e
 test:
 	(cd src; $(MAKE) test)
 
-install:
+install: install-docs install-man install-lib 
 	(cd src; $(MAKE) install)
 
 install-lib:
@@ -78,6 +78,9 @@ pdf:
 
 install-man:
 	(cd doc; $(MAKE) install-man)
+
+install-docs:
+	(cd doc; $(MAKE) install-docs)
 
 #---- Distribution --------
 

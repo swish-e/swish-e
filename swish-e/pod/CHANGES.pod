@@ -12,9 +12,34 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =item Configure script updates
 
-Running "make install" now installs the swish-e binary, and the
-libswish-e library and swish-e.h header files.   Directories will
+Running "make install" now installs the swish-e binary, the
+libswish-e library, swish-e.h header, and documentation files.   Directories will
 be created if they do not already exist.
+
+=item Version Numbering
+
+SWISH-E versions starting with 2.3.4 use kernel version numbering.  Versions are 
+in the form: Major.Minor.Build.  Odd minor versions are development.  Even minor 
+versions are releases.  2.3.4 would be a development version.  
+2.4.0 would be a release version.  2.3.20 would be the 20th build of 2.3.
+
+=item Added RPM support
+
+RPMs can be built with:
+
+    ./configure
+    make dist
+
+Copy the resulting tarball to RPM's SOURCES directory and then run as a superuser:
+
+    rpmbuild -ba rpm/swish-e.spec
+
+
+You should have swish-e packages in your RPMS/<arch> directory.  [augur]
+
+=item Changed default PERL location
+
+PERL scripts provided with SWISH-E now use /usr/bin/perl by default.
 
 =item New Feature: MetaNamesRank
 
