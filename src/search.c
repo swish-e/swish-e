@@ -1236,8 +1236,9 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
 
         /* Is this the start of a sub-query? */
+        /* Look for a lone "(" */
 
-        if (word[0] == '(')
+        if (word[0] == '(' && '\0' == word[1])
         {
 
             
@@ -1265,7 +1266,10 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
             continue;
 
         }
-        else if (word[0] == ')')
+
+        /* Is this the end of a sub-query? Lone ')' */
+
+        else if (word[0] == ')' && '\0' == word[1] )
         {
             *searchwordlist = (*searchwordlist)->next;
             break;
