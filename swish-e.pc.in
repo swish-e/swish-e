@@ -7,6 +7,6 @@ includedir=@includedir@
 Name: swish-e
 Version: @VERSION@
 Description: SWISH-E - Simple Web Indexing System for Humans - Enhanced
-Requires: libxml-2.0
-Libs: -L${libdir} @PCRE_LIBS@ @Z_LIBS@ @LIBS@
-Cflags: -I${includedir} @PCRE_CFLAGS@ @Z_CFLAGS@ @CFLAGS@
+Requires: 
+Libs: -L${libdir} @Z_LIBS@ @LIBS@
+Cflags: @CFLAGS@ -I${includedir} @Z_CFLAGS@

@@ -67,7 +67,7 @@ while test $# -gt 0; do
 	;;
 
     --cflags)
-       	echo @CFLAGS@ -I${includedir} @PCRE_CFLAGS@ @Z_CFLAGS@ @LIBXML2_CFLAGS@
+       	echo @CFLAGS@ -I${includedir} @Z_CFLAGS@
        	;;
 
     --libtool-libs)
@@ -75,7 +75,7 @@ while test $# -gt 0; do
         ;;
 
     --libs)
-	echo -L${libdir} @PCRE_LIBS@ @LIBXML2_LIB@ @Z_LIBS@ @LIBS@
+	echo -L${libdir} @Z_LIBS@ @LIBS@
        	;;
 
     *)
