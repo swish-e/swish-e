@@ -93,7 +93,7 @@ $Id$
 
 typedef struct {
     char   *buffer;     // text for buffer
-    int     cur;        // pointer to end of buffer
+    int     cur;        // length
     int     max;        // max size of buffer
     int     defaultID;  // default ID for no meta names.
 } CHAR_BUFFER;
@@ -761,6 +761,35 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
         debug_show_parsed_text( parse_data, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
 
+
+
+
+    /* Check if we are waiting for a word boundry, and there is white space in the text */
+    /* If so, write the word, then reset the structure, then write the rest of the text. */
+    
+    if ( parse_data->flush_word  )
+    {
+        /* look for whitespace */
+        char *c = parse_data->ISO_Latin1.buffer;
+        int   i;
+        for ( i=0; i < parse_data->ISO_Latin1.cur; i++ )
+            if ( isspace( (int)c[i] ) )
+            {
+                append_buffer( &parse_data->text_buffer, parse_data->ISO_Latin1.buffer, i );
+                flush_buffer( parse_data, 1 );  // Flush the entire buffer
+
+                parse_data->structure[parse_data->flush_word-1]--;  // now it's ok to turn of the structure bit
+                parse_data->flush_word = 0;
+
+                /* flush the rest */
+                append_buffer( &parse_data->text_buffer, &c[i], parse_data->ISO_Latin1.cur - i );
+
+                return;
+            }
+    }
+
+
+
     /* Buffer the text */
     append_buffer( &parse_data->text_buffer, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
 
@@ -768,9 +797,6 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     // append_buffer( &parse_data->prop_buffer, txt, txtlen );
 
 
-    /* attempt to flush on a word boundry, if possible */
-    if ( parse_data->flush_word )
-        flush_buffer( parse_data, 0 );
 
 }
 
@@ -1148,12 +1174,19 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
          * and </b> would not flush anything.  The PROBLEM is that then will make the next words
          * have a IN_EMPHASIZED structure.  To "fix", I set a flag to flush at next word boundry.
         */
-        flush_buffer( parse_data, 0 );  // flush up to current word
+        flush_buffer( parse_data, 0 );  // flush up to current word (leaving any leading chars in buffer)
 
         if ( start )
-            parse_data->structure[IN_EMPHASIZED_BIT] += bump;
+            parse_data->structure[IN_EMPHASIZED_BIT]++;
         else
-            parse_data->flush_word = IN_EMPHASIZED_BIT + 1;  // + 1 because we might need to use zero some day
+        {
+            /* If there is something in the buffer then delay turning off the flag until whitespace is found */
+            if ( parse_data->text_buffer.cur )
+                /* Flag to flush at next word boundry */
+                parse_data->flush_word = IN_EMPHASIZED_BIT + 1;  // + 1 because we might need to use zero some day
+            else
+                parse_data->structure[IN_EMPHASIZED_BIT]--;
+        }
         
         
     }
@@ -1423,7 +1456,11 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 /*********************************************************************
 *   Flush buffer - adds words to index, and properties
 *
+*   If the clear flag is set then the entire buffer is flushed.
+*   Otherwise, every thing up to the last *partial* word is flushed.
+*   It's partial if there is not white-space at the very end of the buffer.
 *
+*   This prevents some<b>long</b>word from being flushed into part words.
 *
 *********************************************************************/
 static void flush_buffer( PARSE_DATA  *parse_data, int clear )
@@ -1500,16 +1537,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     }
     else
         buf->cur = 0;
-
-
-
-
-    /* This is to allow inline tags to continue to end of word str<b>ON</b>g  */
-    if ( parse_data->flush_word )
-    {
-        parse_data->structure[parse_data->flush_word-1]--;
-        parse_data->flush_word = 0;
-    }
 
 }
 
