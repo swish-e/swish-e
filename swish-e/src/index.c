@@ -614,9 +614,9 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
-        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:%X (", word, position, metaID, structure);
+        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:0x%0X (", word, position, metaID, structure);
         if ( structure & IN_EMPHASIZED ) printf(" EM");
-        if ( structure & IN_HEADER ) printf(" HEADER");
+        if ( structure & IN_HEADER ) printf(" HEADING");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
         if ( structure & IN_META ) printf(" META");
         if ( structure & IN_BODY ) printf(" BODY");

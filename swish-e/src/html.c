@@ -626,8 +626,6 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
-            structure = IN_FILE;
-
             /* Now let us look for a not escaped '>' */
             for (endtag = tag;;)
                 if ((endtag = strchr(endtag, '>')))
