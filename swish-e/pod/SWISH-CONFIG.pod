@@ -35,7 +35,7 @@ shell expansion or metacharacters):
     FileFilter .foo foofilter "'%p'"  <- parameter passed through the shell in single quotes
     FileFilter .foo foofilter '"%p"'  <- windows uses double-quotes
     FileFilter .foo foofilter '\'%p\''<- silly example
-    
+
 
 Backslashes also have special meaning in regular expressions.
 
@@ -567,7 +567,7 @@ Examples:
     ResultExtFormatName  moreinfo   "%c|%r|%t|%p|<author>|<publishyear>\n"
 
 Then when searching you can specify the format string's name
-   
+
     swish-e   ...  -x moreinfo  ...
 
 See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information
@@ -792,7 +792,7 @@ Examples:
 
     ReplaceRules remove "\\.c" # if in quotes you need double-backslash!  
     ReplaceRules remove "\.c"  # ERROR! "\." -> "." and is *any char*
-    
+
 
 =item IndexContents [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file extensions*
 
@@ -1097,7 +1097,7 @@ appear like
 Then the normal rules (C<MetaNames> and C<PropertyNames>) apply to how that text is indexed.
 
 If you use the special tag "as-text" then
-      
+
     <foo>
         <img src="/someimage.png" alt="Alt text here">
     </foo>
@@ -1267,7 +1267,7 @@ two directives C<XMLClassAttributes> and C<UndefinedXMLAttributes>.
     UndefinedMetaTags auto
     UndefinedXMLAttributes auto
     IndexContents XML2 .xml
-    
+
 The source XML file looks like:    
 
     <xml>
@@ -1281,9 +1281,9 @@ Swish-e parses as:
 
     ./swish-e -c 2 -i 1.xml -T parsed_tags  parsed_text  -v 0
     Indexing Data Source: "File-System"
-    
+
     <xml> (MetaName)
-    
+
         <person> (MetaName)
             <person.student> (MetaName)
                 <person.student.phone> (MetaName)
@@ -1294,14 +1294,14 @@ Swish-e parses as:
                 </person.student.age> 
                 John
         </person> 
-    
+
         <person> (MetaName)
             <person.greeting> (MetaName)
                 howdy
             </person.greeting> 
             Bill
         </person> 
-    
+
     </xml> 
     Indexing done!
 
@@ -1974,7 +1974,7 @@ Then Swish-e would not index the following:
     123
     123,456.78
     $123.45
-    
+
 You might be tempted to avoid indexing hex numbers with:
 
     IgnoreNumberChars 0123456789abcdef
@@ -2074,7 +2074,7 @@ This configuration allows this phrase search
 but this phrase search will fail
 
     -w 'person=("shakespeare april")'
-    
+
 
 
 =back
@@ -2176,7 +2176,7 @@ passes that single onto the regular expression compiler.
 
     FileRules filename regex !hello\\there!     # need double for real backslash 
     FileRules filename regex "!hello\\\\there!" # need double-double inside of quotes
-    
+
 
 B<Matching Types>
 
@@ -2187,7 +2187,7 @@ The following types of match strings my be supplied:
     FileRules filename
     FileRules directory
     FileRules title
-    
+
     FileMatch pathname
     FileMatch filename
     FileMatch dirname
@@ -2702,7 +2702,7 @@ For example:
 To specify more than one extension:
 
     FileFilterMatch ./check_title.pl "%p" /\.html$/  /\.htm$/
-    
+
 Or a few ways to do the same thing:
 
     FileFilterMatch ./check_title.pl %p /\.(html|html)$/

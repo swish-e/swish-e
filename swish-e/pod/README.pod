@@ -171,9 +171,8 @@ A list of platforms where Swish-e has been build can be found in the L<INSTALL|I
 Information on building for VMS and Win32 can be found in sub-directories of the C<src> directory.
 Check the Swish-e site for information about binary distributions (such as for Windows).
 
-In addition to the INSTALL page, make sure you read the
-L<SWISH-FAQ|SWISH-FAQ> page if you have any questions, or to get an idea
-of questions that you might someday ask.
+In addition to the INSTALL page, make sure you read the L<SWISH-FAQ|SWISH-FAQ> page if
+you have any questions, or to get an idea of questions that you might someday ask.
 
 Problems or questions about installing Swish-e should be directed to the Swish-e discussion list (see the
 Swish-e web site at http://Swish-e.org).
