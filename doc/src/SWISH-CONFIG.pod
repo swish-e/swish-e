@@ -70,162 +70,159 @@ Likewise, these only apply to the HTTP Access method.
 
 =head2 Alphabetical Listing
 
-I'm not sure why this should be here -- I added it to look for missing directives.
-How do I get pod2html to create Name tags for items below?
-
 =over 4
 
 =item *
 
-BeginCharacters *string of characters*
+L<BeginCharacters|/"item_BeginCharacters"> *string of characters*
 
 =item *
 
-BumpPositionCounterCharacters *string*
+L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> *string*
 
 =item *
 
-DefaultContents [TXT|HTML|XML]  *file extensions*
+L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML]  *file extensions*
 
 =item *
 
-Delay *seconds*
+L<Delay|/"item_Delay"> *seconds*
 
 =item *
 
-EndCharacter *string of characters*
+L<EndCharacter|/"item_EndCharacters"> *string of characters*
 
 =item *
 
-EquivalentServer *server alias*
+L<EquivalentServer|"/item_EquivalentServer"> *server alias*
 
 =item *
 
-FileInfoCompression [yes|no]
+L<FileInfoCompression|/"item_FileInfoCompression"> [yes|no]
 
 =item *
 
-FileRules [contains|is] *regular expression*
+L<FileRules|/"item_FileRules"> [contains|is] *regular expression*
 
 =item *
 
-FollowSymLinks [yes|no]
+L<FollowSymLinks|/"item_FollowSymLinks"> [yes|no]
 
 =item *
 
-IgnoreFirstChar *string of characters*
+L<IgnoreFirstChar|/"item_IgnoreFirstChar"> *string of characters*
 
 =item *
 
-IgnoreLastChar *string of characters*
+L<IgnoreLastChar|/"item_IgnoreLastChar"> *string of characters*
 
 =item *
 
-IgnoreLimit *integer integer*
+L<IgnoreLimit|/"item_IgnoreLimit"> *integer integer*
 
 =item *
 
-IgnoreTotalWordCountWhenRanking [yes|no]
+L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [yes|no]
 
 =item *
 
-IgnoreWords *list of stop words*
+L<IgnoreWords|/"item_IgnoreWords"> *list of stop words*
 
 =item *
 
-IndexAdmin *text*
+L<IndexAdmin|/"item_IndexAdmin"> *text*
 
 =item *
 
-IndexComments [0|1]
+L<IndexComments|/"item_IndexComments"> [0|1]
 
 =item *
 
-IndexDescription *text*
+L<IndexDescription|/"item_IndexDescription"> *text*
 
 =item *
 
-IndexDir [URL|directories or files]
+L<IndexDir|/"item_IndexDir"> [URL|directories or files]
 
 =item *
 
-IndexFile *path*
+L<IndexFile|/"item_IndexFile"> *path*
 
 =item *
 
-IndexName *text*
+L<IndexName|/"item_IndexName"> *text*
 
 =item *
 
-IndexOnly *list of file suffixes*
+L<IndexOnly|/"item_IndexOnly"> *list of file suffixes*
 
 =item *
 
-IndexPointer *text*
+L<IndexPointer|/"item_IndexPointer"> *text*
 
 =item *
 
-IndexReport [0|1|2|3]
+L<IndexReport|/"item_IndexReport"> [0|1|2|3]
 
 =item *
 
-MaxDepth *integer*
+L<MaxDepth|/"item_MaxDepth"> *integer*
 
 =item *
 
-MaxWordLimit *integer*
+L<MaxWordLimit|/"item_MaxWordLimit"> *integer*
 
 =item *
 
-MetaNames *list of names*
+L<MetaNames|/"item_MetaNames"> *list of names*
 
 =item *
 
-MinWordLimit *integer*
+L<MinWordLimit|/"item_MinWordLimit"> *integer*
 
 =item *
 
-NoContents *list of file suffixes*
+L<NoContents|/"item_NoContents"> *list of file suffixes*
 
 =item *
 
-OkNoMeta [yes|no]
+L<OkNoMeta|/"item_OkNoMeta"> [yes|no]
 
 =item *
 
-PropertyNames *list of meta names*
+L<PropertyNames|/"item_PropertyNames"> *list of meta names*
 
 =item *
 
-ReplaceRules [replace|remove|prepend|append]
+L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append]
 
 =item *
 
-ReqMetaName [yes|no]
+L<ReqMetaName|/"item_ReqMetaName"> [yes|no]
 
 =item *
 
-SpiderDirectory *path*
+L<SpiderDirectory|/"item_SpiderDirectory"> *path*
 
 =item *
 
-StoreDescription [XML <tag>|HTML <meta>|TXT size]
+L<StoreDescription|/"item_StoreDescription"> [XML <tag>|HTML <meta>|TXT size]
 
 =item *
 
-TmpDir *path*
+L<TmpDir|/"item_TmpDir"> *path*
 
 =item *
 
-TranslateCharacters *string1 string2*
+L<TranslateCharacters|/"item_TranslateCharacters"> *string1 string2*
 
 =item *
 
-UseStemming [yes|no]
+L<UseStemming|/"item_UseStemming"> [yes|no]
 
 =item *
 
-WordCharacters *string of characters*
+L<WordCharacters|/"item_WordCharacters"> *string of characters*
 
 =back
 
@@ -513,7 +510,7 @@ the entire contents of the tag.
 
     StoreDescription HTML <body> 20
     StoreDescription XML  <desc> 40
- 
+
 =item UseStemming [yes|no]
 
 Put yes to apply word stemming algorithm during indexing,

@@ -10,7 +10,7 @@ $ENV{PERL5LIB} = "$Bin/../";
 
 
 # forward the @ARGV
-system "pod2hpp -f @ARGV $Bin/../swish.conf";
+system "$Bin/pod2hpp -f @ARGV $Bin/../swish.conf";
 unlink "$Bin/../pod2html-dircache";
 unlink "$Bin/../pod2html-itemcache";
 

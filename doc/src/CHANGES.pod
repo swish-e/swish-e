@@ -1,0 +1,20 @@
+=head1 NAME
+
+CHANGES - List of revisions
+
+=head1 Revision History
+
+This document contains list of bug fixes and feature additions to SWISH-E.
+
+=head2 Version 2.1.10-devel6
+
+Release Date: December 21, 2000
+
+=over 4
+
+=item * foo
+
+Fixed bla and bla
+
+=back
+
