@@ -156,8 +156,6 @@ And with any luck you will end up the the the two files in the top-level directo
     swish-e_documentation.pdf
     swish-e_documentation.ps
 
-B<ask Stas for more info on the requirements.>    
-
 =head2 Installing the SWISH-E documentation as man(1) pages
 
 Part of the included SWISH-E documentaiton can be installed as system man(1) pages.  Only the reference

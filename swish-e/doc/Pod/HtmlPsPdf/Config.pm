@@ -86,7 +86,7 @@ sub _init{
     $self->{html2ps_conf} = $c{file}{html2ps_conf}   || cnf_err('$c{file}{html2ps_conf}');
 
     $self->{dir_mode} = $c{mode}{dir}     || cnf_err('$c{mode}{dir}');
-    $self->{html2ps_exec} = `which html2ps`; 
+    $self->{html2ps_exec} = which( 'html2ps' ); 
     chomp $self->{html2ps_exec};
     
     return $self;
@@ -113,6 +113,18 @@ sub get_param{
   return wantarray ? @values : $values[0];
 
 } # end of sub get_param
+
+
+sub which {
+    my $cmd = shift;
+    
+    foreach my $dir (split( ':', $ENV{PATH})) {
+        return "$dir/$cmd" if -x "$dir/$cmd";
+    }
+
+	return;
+}
+
 
 
 1;

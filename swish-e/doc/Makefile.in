@@ -4,50 +4,48 @@
 # $Id$
 #
 # Any suggestions to improve this makefile are welcome -- Bill Moseley swish@hank.org
+#
+# To Do: get a portable way to use "echo -e"
 
 prefix      = @prefix@
 mandir      = @mandir@/man1
 VERSION     = @VERSION@
 
-MANPAGES = src/SWISH-RUN.1 src/SWISH-CONFIG.1 src/SWISH-RUN.1 src/SWISH-FAQ.1 src/SWISH-LIBRARY.1 src/SWISH-PERL.1
-PODPAGES = ../CHANGES.pod  ../README.pod     ../SWISH-CONFIG.pod  ../SWISH-LIBRARY.pod  ../SWISH-RUN.pod \
-           ../INSTALL.pod  ../SWISH-3.0.pod  ../SWISH-FAQ.pod     ../SWISH-PERL.pod     ../SWISH-SEARCH.pod
+SOURCEPODS = ../pod/CHANGES.pod    ../pod/README.pod   ../pod/SWISH-CONFIG.pod  ../pod/SWISH-LIBRARY.pod \
+             ../pod/SWISH-RUN.pod  ../pod/INSTALL.pod  ../pod/SWISH-3.0.pod     ../pod/SWISH-FAQ.pod \
+             ../pod/SWISH-PERL.pod ../pod/SWISH-SEARCH.pod
 
-SOURCEPODS = src/CHANGES.pod  src/SWISH-3.0.pod     src/SWISH-LIBRARY.pod  src/SWISH-SEARCH.pod \
-             src/INSTALL.pod  src/SWISH-CONFIG.pod  src/SWISH-PERL.pod     src/config.pod \
-             src/README.pod   src/SWISH-FAQ.pod     src/SWISH-RUN.pod  \
 
-EXTRAFILES = src/images/dotrule1.gif  src/images/swish2.gif   src/images/swishbanner1.gif \
-             src/images/swish.gif     src/images/swish2b.gif \
-             src/style.css
- 
+# These are used for buiding the HTML pages
+
+EXTRAFILES = ../pod/images/dotrule1.gif        ../pod/images/swish2.gif \
+             ../pod/images/swishbanner1.gif    ../pod/images/swish.gif \
+             ../pod/images/swish2b.gif         ../pod/style.css
+
+
+MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
+
 
 # How portable is .PHONY?
 .PHONY: all html pod readme pdf man install-man clean realclean
 
 .SUFFIXES:          # remove default rules
-.SUFFIXES: .pod .1  # Old way to define the rules on this target for no good reason
 
 
 
-all:	html pod
+all: readme html
 
+#--- convert README.pod to README ---
 
+../README: ../pod/README.pod
+	pod2text ../pod/README.pod > ../README && chmod 644 ../README
 
-#---- Copy the .pod files to top-level directory -----
-
-../%.pod: src/%.pod
-	cp $< $@ && chmod 644 $@
-
-../README: src/README.pod
-	pod2text src/README.pod > ../README && chmod 644 ../README
-
-pod: $(PODPAGES) ../README
+readme: ../README	
 
 
 #--- create/install man pages ----------
 
-.pod.1: $(MANPAGES)
+%.1: ../pod/%.pod
 	pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)' $< > $@
 
 $(MANPAGES): ../configure
@@ -61,25 +59,27 @@ install-man: man
 
 #--- create html pages ------
 
-html: ../html/index.html
 
-
-../html/index.html: $(SOURCEPODS) $(EXTRAFILES) src/Version.pm
+../html/index.html: $(SOURCEPODS) $(EXTRAFILES) ./Version.pm
 	@echo "Building HTML"
 	@bin/build
 #	@rm -f ../html/.htaccess ../html/search.cgi
 
 
-src/Version.pm: ../configure
-	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > src/Version.pm
+./Version.pm: ../configure
+	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
+
+html: ../html/index.html
 
 
 #--- split version (for searchable version of documentation ) ---
 
-split: src/Version.pm
+split: ./Version.pm
 	@echo "Checking for swish binary..."
 	test -x ../src/swish-e
-	bin/build -s
+
+	bin/build -fs
+
 	cp ../src/swish-e ../html/split/swish-e
 	../html/split/swish-e -c split.conf
 	chmod 755 ../html/split/search.cgi
@@ -94,7 +94,7 @@ split: src/Version.pm
 
 #--- create PDF and PostScript ----
 
-pdf: src/Version.pm
+pdf: ./Version.pm
 	bin/build -d
 	cp -f rel_ps/swish-e_documentation.pdf ..
 	cp -f rel_ps/swish-e_documentation.ps ..
@@ -114,18 +114,13 @@ clean:
 	rm -rf ../html/split ../html/.htaccess ../html/search.cgi
 	rm -f ../html/index.html.orig ../html/index_long.html.orig
 
-	rm -f src/*.1
-	rm -f pod2html-dircache pod2html-itemcache
+	rm -f ./*.1
+	-chmod 644 ../pod/*.pod
 	
 realclean: clean
 	rm -f Makefile
+	rm -f ./pod2html-dircache ./pod2html-itemcache
 
 distclean: realclean
-
-# this is to clean all the docs and start from scratch
-ultraclean: realclean
-	rm -rf ../*.pod readme ../html/images
-	rm -f ../html/* 
-
 
 

@@ -39,7 +39,7 @@ sub can_create_ps{
 sub can_create_pdf{
 
     # check whether ps2pdf exists
-  my $ps2pdf_exists = `which ps2pdf` ? 1 : 0;
+  my $ps2pdf_exists = which( 'ps2pdf' );
 
   print(qq{It seems that you do not have ps2pdf installed! You have
 	   to install it if you want to generate the PDF file
@@ -49,6 +49,18 @@ sub can_create_pdf{
   return 1;
 
 }  # end of sub can_create_pdf
+
+sub which {
+    my $cmd = shift;
+    
+    foreach my $dir (split( ':', $ENV{PATH})) {
+        return "$dir/$cmd" if -x "$dir/$cmd";
+    }
+
+	return;
+}
+
+    
 
 
 1;

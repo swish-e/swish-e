@@ -62,7 +62,9 @@ Where do I get SWISH-E?
 
 The SWISH-E Documentation
     Documetation is provided in the SWISH-E distribution package in two
-    forms, POD (Plain Old Documentation), and in html format.
+    forms, POD (Plain Old Documentation), and in html format. The POD
+    documentation is in the pod directory, and the HTML documentation is in
+    the html directory, of course.
 
     The distribution make files can also generate the documentation in these
     formats:
@@ -73,7 +75,7 @@ The SWISH-E Documentation
 
     You may also build a "split" version of the documentation where each
     topic heading is a separate web page. Building the split version also
-    creates a SWISH-E index of the documentation that is makes the
+    creates a SWISH-E index of the documentation that makes the
     documentation searchable via the included Perl CGI program.
 
     Buiding these other forms of documentation require aditional helper
@@ -88,12 +90,19 @@ The SWISH-E Documentation
 
   How do I read the SWISH-E documentation?
 
-    The SWISH-E documentation is in POD format. POD documentation is
-    displayed by the "perldoc" command that is included with every Perl
-    installation. For example, to view the swish-e installation
-    documentation page called "INSTALL", type
+    The SWISH-E documentation is in POD format, and the documentation can be
+    found in the pod directory. POD documentation is displayed by the
+    "perldoc" command that is included with every Perl installation. For
+    example, to view the swish-e installation documentation page called
+    "INSTALL", type
 
+       perldoc pod/INSTALL
+
+    or to make life easier,
+
+       cd pod
        perldoc INSTALL
+       perldoc SWISH-RUN
 
     Complain to your system administrator if the `perldoc' command is not
     available on your machine.
