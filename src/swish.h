@@ -482,7 +482,6 @@ typedef struct RESULT
     int     start;
     int     size;
     /* file position where this document's properties are stored */
-//    char  **Prop;
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
@@ -590,7 +589,13 @@ struct char_lookup_st
 
 typedef enum
 {                               /* Property Datatypes */
-    UNDEFINED = -1, UNKNOWN = 0, STRING, INTEGER, FLOAT, DATE, ULONG
+    UNDEFINED = -1,
+    UNKNOWN = 0,
+    STRING,
+    INTEGER,
+    FLOAT,
+    DATE, 
+    ULONG
 }
 PropType;
 
@@ -608,6 +613,7 @@ typedef struct
 {                               /* Propvalue with type info */
     PropType datatype;
     u_PropValue1 value;
+    int      destroy;           /* flag to destroy (free) any pointer type */
 }
 PropValue;
 

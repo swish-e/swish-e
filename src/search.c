@@ -1531,7 +1531,6 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
     else
         newnode->position = NULL;
     newnode->next = NULL;
-//    newnode->Prop = NULL;
     newnode->PropSort = NULL;
     newnode->iPropSort = NULL;
     newnode->indexf = indexf;
@@ -1700,14 +1699,6 @@ void    freeresult(SWISH * sw, RESULT * rp)
         if (rp->summary)
             efree(rp->summary);
 
-/******** moseley
-        if (sw->Search->numPropertiesToDisplay && rp->Prop)
-        {
-            for (i = 0; i < sw->Search->numPropertiesToDisplay; i++)
-                efree(rp->Prop[i]);
-            efree(rp->Prop);
-        }
-**********/
 
         if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
         {
@@ -1796,11 +1787,6 @@ RESULT *getproperties(RESULT * rp)
         rp->summary = estrdup(fileInfo->fi.summary);
     rp->start = fileInfo->fi.start;
     rp->size = fileInfo->fi.size;
-
-/*********
-    if (sw->Search->numPropertiesToDisplay)
-        rp->Prop = getResultProperties(rp);
-***********/        
 
     return rp;
 }

@@ -1,4 +1,5 @@
 /*
+$Id$
 ** DocProperties.c, DocProperties.h
 **
 ** Functions to manage the index's Document Properties 
@@ -27,6 +28,7 @@
 **                    printSearchResultProperties changed
 ** 2001-03-15 rasc    Outputdelimiter var name changed
 ** 2001-06-08 wsm     Store propValue at end of docPropertyEntry to save memory
+** 2001-06-14 moseley Much of this was rewritten.
 ** 
 */
 
@@ -231,7 +233,7 @@ char *getResultPropAsString(RESULT *result, int ID)
 }
 
 /*******************************************************************
-*   Returns a property as a *propValue, which a union of different
+*   Returns a property as a *propValue, which is a union of different
 *   data types, with a flag to indicate the type
 *
 *   Call with:
@@ -302,8 +304,8 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
                 return pv;
             }
 
-            /******** MEMORY LEAK ***********/
             pv->datatype = STRING;
+            pv->destroy++;       // caller must free this
             pv->value.v_str = bin2string(prop->propValue,prop->propLen);
             return pv;
         }
@@ -322,10 +324,8 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
             unsigned long i;
             i = *(unsigned long *) prop->propValue;  /* read binary */
             i = UNPACKLONG(i);     /* Convert the portable number */
-//          pv->datatype = ULONG;
-//          pv->value.v_ulong = i;
-            pv->datatype = INTEGER;
-            pv->value.v_int = (int)i;
+            pv->datatype = ULONG;
+            pv->value.v_ulong = i;
             return pv;
         }
 
@@ -336,7 +336,7 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
             i = *(unsigned long *) prop->propValue;  /* read binary */
             i = UNPACKLONG(i);     /* Convert the portable number */
             pv->datatype = DATE;
-            pv->value.v_int = (int)i;
+            pv->value.v_date = (time_t)i;
             return pv;
         }
     }
@@ -580,7 +580,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 				dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
 
 				*docProperties = dp;
-				for( i = dp->n ; i <= meta_entry->metaID; i++ )
+				for( i = dp->n; i <= meta_entry->metaID; i++ )
 					dp->propEntry[i] = NULL;
 					
 				dp->n = meta_entry->metaID + 1;
@@ -590,7 +590,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 		docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
 
 	    memcpy(docProp->propValue, propValue, propLen);
-		docProp->propLen=propLen;
+		docProp->propLen = propLen;
 		
 		docProp->next = dp->propEntry[meta_entry->metaID];	
 		dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
