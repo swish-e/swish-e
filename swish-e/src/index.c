@@ -2479,7 +2479,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 case FUZZY_STEMMING_NL:
                 case FUZZY_STEMMING_EN1:
                 case FUZZY_STEMMING_EN2:
-                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.snowball);
+                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.snowball,indexf->header.fuzzy_data.lang_stem);
 #else
                     stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword);
 #endif

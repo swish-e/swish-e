@@ -12,15 +12,8 @@ typedef enum {
 } STEM_RETURNS;
     
 #ifdef SNOWBALL
-int Stem (char **, int *, struct SN_env *);
-int Stem_es (char **, int *, struct SN_env *);
-int Stem_fr (char **, int *, struct SN_env *);
-int Stem_it (char **, int *, struct SN_env *);
-int Stem_pt (char **, int *, struct SN_env *);
-int Stem_de (char **, int *, struct SN_env *);
-int Stem_nl (char **, int *, struct SN_env *);
-int Stem_en1 (char **, int *, struct SN_env *);
-int Stem_en2 (char **, int *, struct SN_env *);
+int Stem (char **, int *, struct SN_env *, int (*lang_stem)(struct SN_env *));
+int Stem_snowball (char **, int *, struct SN_env *, int (*lang_stem)(struct SN_env *));
 #else
 int Stem (char **, int *);
 #endif

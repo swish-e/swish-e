@@ -530,7 +530,7 @@ int     ReplaceEnd(char *word, RuleList *rule)
 **/
 
 #ifdef SNOWBALL
-int     Stem(char **inword, int *lenword, struct SN_env  *snowball)
+int     Stem(char **inword, int *lenword, struct SN_env  *snowball, int (*lang_stem)(struct SN_env *))
 #else
 int     Stem(char **inword, int *lenword)
 #endif
@@ -617,34 +617,36 @@ typedef struct
     FuzzyIndexType  fuzzy_mode;
     char            *name;
 #ifdef SNOWBALL
-    int             (*routine) (char **, int *, struct SN_env  *);
+    int             (*routine) (char **, int *, struct SN_env  *, int (*lang_stem)(struct SN_env *));
     struct SN_env  *(*init) (void);
     void           (*free) (struct SN_env *);
+    int            (*lang_stem)(struct SN_env *);
 #else
     int             (*routine) (char **, int *);
     void           *dummy1;
     void           *dummy2;
+    int            *dummy3;
 #endif
 }
 FUZZY_OPTS;
 
 static FUZZY_OPTS fuzzy_opts[] = {
 
-    { FUZZY_NONE, "None", NULL, NULL, NULL },
-    { FUZZY_STEMMING_EN, "Stemming_en", Stem, NULL, NULL },
-    { FUZZY_STEMMING_EN, "Stem", Stem, NULL, NULL },
-    { FUZZY_SOUNDEX, "Soundex", NULL, NULL, NULL },
-    { FUZZY_METAPHONE, "Metaphone", NULL, NULL, NULL },
-    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone", NULL, NULL, NULL }
+    { FUZZY_NONE, "None", NULL, NULL, NULL, NULL },
+    { FUZZY_STEMMING_EN, "Stemming_en", Stem, NULL, NULL, NULL },
+    { FUZZY_STEMMING_EN, "Stem", Stem, NULL, NULL, NULL },
+    { FUZZY_SOUNDEX, "Soundex", NULL, NULL, NULL, NULL },
+    { FUZZY_METAPHONE, "Metaphone", NULL, NULL, NULL, NULL },
+    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone", NULL, NULL, NULL, NULL }
 #ifdef SNOWBALL
-    ,{ FUZZY_STEMMING_ES, "Stemming_es", Stem_es, spanish_create_env, spanish_close_env },
-    { FUZZY_STEMMING_FR, "Stemming_fr", Stem_fr, french_create_env, french_close_env },
-    { FUZZY_STEMMING_IT, "Stemming_it", Stem_it, italian_create_env, italian_close_env },
-    { FUZZY_STEMMING_PT, "Stemming_pt", Stem_pt, portuguese_create_env, portuguese_close_env },
-    { FUZZY_STEMMING_DE, "Stemming_de", Stem_de, german_create_env, german_close_env },
-    { FUZZY_STEMMING_NL, "Stemming_nl", Stem_nl, dutch_create_env, dutch_close_env },
-    { FUZZY_STEMMING_EN1, "Stemming_en1", Stem_en1, porter_create_env, porter_close_env },
-    { FUZZY_STEMMING_EN2, "Stemming_en2", Stem_en2, english_create_env, english_close_env }
+    ,{ FUZZY_STEMMING_ES, "Stemming_es", Stem_snowball, spanish_create_env, spanish_close_env, spanish_stem },
+    { FUZZY_STEMMING_FR, "Stemming_fr", Stem_snowball, french_create_env, french_close_env, french_stem },
+    { FUZZY_STEMMING_IT, "Stemming_it", Stem_snowball, italian_create_env, italian_close_env, italian_stem },
+    { FUZZY_STEMMING_PT, "Stemming_pt", Stem_snowball, portuguese_create_env, portuguese_close_env, portuguese_stem },
+    { FUZZY_STEMMING_DE, "Stemming_de", Stem_snowball, german_create_env, german_close_env, german_stem },
+    { FUZZY_STEMMING_NL, "Stemming_nl", Stem_snowball, dutch_create_env, dutch_close_env, dutch_stem },
+    { FUZZY_STEMMING_EN1, "Stemming_en1", Stem_snowball, porter_create_env, porter_close_env, porter_stem },
+    { FUZZY_STEMMING_EN2, "Stemming_en2", Stem_snowball, english_create_env, english_close_env, english_stem }
 #endif
 };
 
@@ -658,6 +660,9 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
             fi->fuzzy_routine = fuzzy_opts[i].routine;
 #ifdef SNOWBALL
+            if(fuzzy_opts[i].lang_stem)
+                fi->lang_stem = fuzzy_opts[i].lang_stem;
+
             if(fuzzy_opts[i].init)
                 fi->snowball = fuzzy_opts[i].init();
 #endif
@@ -683,6 +688,9 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
             fi->fuzzy_routine = fuzzy_opts[i].routine;
 #ifdef SNOWBALL
+            if(fuzzy_opts[i].lang_stem)
+                fi->lang_stem = fuzzy_opts[i].lang_stem;
+
             if(fuzzy_opts[i].init)
                 fi->snowball = fuzzy_opts[i].init();
 #endif
@@ -711,6 +719,7 @@ void free_fuzzy_mode( FUZZY_INDEX *fi )
             if(fuzzy_opts[i].free)
                 fuzzy_opts[i].free(fi->snowball);
 
+            fi->lang_stem = NULL;
             fi->snowball = NULL;
 #endif
             return;
@@ -719,6 +728,7 @@ void free_fuzzy_mode( FUZZY_INDEX *fi )
     fi->fuzzy_mode = FUZZY_NONE;
     fi->fuzzy_routine = NULL;
 #ifdef SNOWBALL
+    fi->lang_stem = NULL;
     fi->snowball = NULL;
 #endif
 }
@@ -750,139 +760,13 @@ int stemmer_applied(INDEXDATAHEADER *header)
 }
 
 #ifdef SNOWBALL
-/* 06/2003 Jose Ruiz - Interface to snowball's spanish stemmer */
-int     Stem_es(char **inword, int *lenword, struct SN_env *snowball)
+/* 06/2003 Jose Ruiz - Interface to snowball's stemmer */
+int     Stem_snowball(char **inword, int *lenword, struct SN_env *snowball, int (*lang_stem)(struct SN_env *))
 {
     int new_lenword;
 
     SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    spanish_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's french stemmer */
-int     Stem_fr(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    french_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's italian stemmer */
-int     Stem_it(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    italian_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's portuguese stemmer */
-int     Stem_pt(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    portuguese_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's german stemmer */
-int     Stem_de(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    german_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's dutch stemmer */
-int     Stem_nl(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    dutch_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's english porter(1) stemmer */
-int     Stem_en1(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    porter_stem(snowball);
-
-    if((*lenword) < snowball->l)
-    {
-        efree(*inword);
-        *inword = emalloc(snowball->l + 1);
-        *lenword = snowball->l;
-    }
-    memcpy(*inword, snowball->p, snowball->l);
-    (*inword)[snowball->l] = '\0';
-}
-
-/* 06/2003 Jose Ruiz - Interface to snowball's english porter(2) stemmer */
-int     Stem_en2(char **inword, int *lenword, struct SN_env *snowball)
-{
-    int new_lenword;
-
-    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    english_stem(snowball);
+    lang_stem(snowball);
 
     if((*lenword) < snowball->l)
     {
