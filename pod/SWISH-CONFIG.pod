@@ -282,6 +282,12 @@ L<PropertyNames|/"item_PropertyNames"> *list of meta names*
 
 =item *
 
+L<PropertyNames|/"item_PropertyNamesCompareCase"> *list of meta names*
+=item *
+
+L<PropertyNames|/"item_PropertyNamesIgnoreCase"> *list of meta names*
+=item *
+
 L<PropertyNamesDates|/"item_PropertyNamesDates"> *list of meta names*
 
 =item *
@@ -1099,6 +1105,8 @@ That is, changes to the path used in C<ExtractPath foo> do not effect the path u
 by C<ExtractPath bar>.
 
 =item PropertyNames *list of meta names*
+=item PropertyNamesCompareCase *list of meta names*
+=item PropertyNamesIgnoreCase *list of meta names*
 
 SWISH-E allows you to specify certain META tags that can be used as B<document properties>.
 The contents of any META tag that has been identified as a document property can be returned as
@@ -1113,14 +1121,30 @@ Another feature of properties is that SWISH-E can use the PropertyNames for sort
 
     PropertyNames author subjects
 
-Note that the PropertyNames listed must also be listed in the MetaNames directive.
-Property names are case sensitive in XML documents.
+Two variations are available.  C<PropertyNamesCompareCase> and C<PropertyNamesIgnoreCase>.
+These tell swish to either ignore or compare case when sorting results.  The default for
+C<PropertyNames> is to ignore the case.
 
-Use of PropertyNames will increase the size of your index file, sometimes significantly.
+    PropertyNames subject
+    PropertyNamesIgnoreCase subject    <-- same as previous
+    PropertyNamesCompareCase keyword   <-- sort
 
-Currently, only ONE property can be returned for each property name in search results.
-That is, if you have more than one meta tag in your document of the same tag name, only one
-will be returned with search results.
+The defaults for "internal" properties are:
+
+    swishtitle          --  ignore the case
+    swishdocpath        --  compare case
+    swishdescription    --  compare case
+
+These can be overridden with C<PropertyNamesCompareCase> and C<PropertyNamesIgnoreCase>.
+
+    PropertyNamesCompareCase swishtitle    
+
+Use of PropertyNames will increase the size of your index files, sometimes significantly.
+Properties will be compress if swish is compiled with zlib as described in the
+L<INSTALL|INSTALL> manual page.
+
+If swish finds more than one property of the same name in a document the property's
+contents will be concatinated for strings, and a warning issues for numeric (or date) properties.
 
 
 =item PropertyNamesNumeric
@@ -2020,7 +2044,7 @@ When using variable substitution, use quotes to ensure filename integrity.
 If you don't use this, your system security may be compromised, or filtering
 may not work for these files.
 
-    Windows uses double quotes, so reverse.  e.g.
+Windows uses double quotes, so reverse.  e.g.
 
         '"%f"' --> "file name with spaced.doc"
 
