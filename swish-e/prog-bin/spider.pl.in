@@ -1406,6 +1406,10 @@ sub output_content {
             $fn->(  $server, $content, $uri, $response, $bytecount, $path); 
         };
         die "output_function died for $uri: $@\n" if $@;
+
+        die "$0: Max indexed files Reached\n"
+            if $server->{max_indexed} && $server->{counts}{'Total Docs'} >= $server->{max_indexed};
+
         return;
     }
 
