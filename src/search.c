@@ -1003,9 +1003,6 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
         {
             /* Increase Pointer */
             results->db_results->currentresult = res->next;
-            
-            /* If rank was delayed, compute it now */
-            getrank( res );
         }
     }
 
@@ -1019,9 +1016,6 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
 
         if ((res = db_results_winner->currentresult))
         {
-            /* If rank was delayed, compute it now */
-            getrank( res );
-
             if ( !res->PropSort )
                 res->PropSort = getResultSortProperties(res);
         }
@@ -1033,8 +1027,6 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
             if (!(res2 = db_results->currentresult))
                 continue;
 
-            /* If rank was delayed, compute it now */
-            getrank( res2 );
 
             /* Load the sort properties for this results */
 
@@ -1569,6 +1561,9 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
                     addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, indexf, db_results);
 
+                    /* Calculate rank now -- can't delay as an optimization */
+                    getrank( l_rp->tail );
+
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
                 }
@@ -1712,10 +1707,6 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
             int     newRank = 0;
 
 
-            /* Load ranks if not already done */
-            getrank( r1 );
-            getrank( r2 );
-
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
             
 
@@ -1802,10 +1793,6 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
         {
             int result_size;
             
-            /* Compute rank if not yet computed */
-            getrank( r1 );
-            getrank( r2 );
-
             /* Create a new RESULT - Should be a function to creete this, I'd think */
 
             result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
@@ -2027,10 +2014,6 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
             }
             if (found)
             {
-                /* Compute newrank */
-                getrank( r1 );
-                getrank( r2 );
-
                 newRank = (r1->rank + r2->rank) / 2;
 
                 /*
@@ -2384,10 +2367,8 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
 
                     for(tmp = start, pos_off = 0; tmp!=rp; tmp = tmp->next)
                     {
-                        /* Compute rank if not yet computed */
-                        getrank( tmp );
-
                         newnode->rank += tmp->rank;
+
                         if (tmp->frequency)
                         {
                             CopyPositions(newnode->posdata, pos_off, tmp->posdata, 0, tmp->frequency);
