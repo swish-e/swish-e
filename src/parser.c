@@ -174,8 +174,8 @@ static void error(void *data, const char *msg, ...);
 static void warning(void *data, const char *msg, ...);
 static void process_htmlmeta( PARSE_DATA *parse_data, const char ** attr );
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
-static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append );
-static void end_metaTag( PARSE_DATA *parse_data, char * tag );
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append , int is_html_tag );
+static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  );
 static void free_parse_data( PARSE_DATA *parse_data ); 
@@ -637,8 +637,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
 
     /* Now check if we are in a meta tag */
-    if ( !is_html_tag )
-        start_metaTag( parse_data, tag, tag, &meta_append, &prop_append );
+    start_metaTag( parse_data, tag, tag, &meta_append, &prop_append, is_html_tag );
 
 
     /* Index the content of attributes */
@@ -721,8 +720,7 @@ static void end_hndl(void *data, const char *el)
     }
 
 
-    if ( !is_html_tag )
-        end_metaTag( parse_data, tag );
+    end_metaTag( parse_data, tag, is_html_tag );
 
     /* Look to disable StoreDescription */
     {
@@ -748,7 +746,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
-   
+
     /* Have we been disabled? */
     if ( !parse_data->SAXHandler->characters )
         return;
@@ -896,20 +894,21 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int t
 *       endtag      = tag to look for as the ending tag
 *       meta_append = if zero, tells push that this is a new meta
 *       prop_append   otherwise, says it's a sibling of a previous call
+*       is_html_tag = prevents UndefinedMetaTags from being applied to html tags
 *
 *   <foo class=bar> can start two meta tags "foo" and "foo.bar".  But "bar"
 *   will end both tags.
 *
 *
 *********************************************************************/
-static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append )
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append, int is_html_tag )
 {
     SWISH              *sw = parse_data->sw;
     struct metaEntry   *m = NULL;
 
 
     /* Bump on all meta names, unless overridden */
-    if (!isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
+    if (!is_html_tag && !isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
         parse_data->word_pos++;
 
 
@@ -930,26 +929,30 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
     if ( !(m = getMetaNameByName( parse_data->header, tag)) )
     {
 
-        if ( sw->UndefinedMetaTags == UNDEF_META_AUTO )
+        if ( !is_html_tag )
         {
-            if (sw->verbose)
-                printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
+            if ( sw->UndefinedMetaTags == UNDEF_META_AUTO )
+            {
+                if (sw->verbose)
+                    printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
-            m = addMetaEntry( parse_data->header, tag, META_INDEX, 0);
-        }
+                m = addMetaEntry( parse_data->header, tag, META_INDEX, 0);
+            }
 
         
-        else if ( sw->UndefinedMetaTags == UNDEF_META_IGNORE )  /* Ignore this block of text for metanames only (props ok) */
-        {
-            flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
-            push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
-            parse_data->structure[IN_META_BIT]++;  // so we are in balance with pop_stack
-            /* must fall though to property check */
+            else if ( sw->UndefinedMetaTags == UNDEF_META_IGNORE )  /* Ignore this block of text for metanames only (props ok) */
+            {
+                flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
+                push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
+                parse_data->structure[IN_META_BIT]++;  // so we are in balance with pop_stack
+                /* must fall though to property check */
+            }
         }
     }
 
 
-    if ( m )
+
+    if ( m )     /* Is a meta name */
     {
         if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
             debug_show_tag( tag, parse_data, 1, "(MetaName)" );
@@ -959,15 +962,16 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
         parse_data->structure[IN_META_BIT]++;
     }
 
-    /* If set to "error" on undefined meta tags, then error */
-    else if ( sw->UndefinedMetaTags == UNDEF_META_ERROR )
-            progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
+    else if ( !is_html_tag )
+    {
+        /* If set to "error" on undefined meta tags, then error */
+        if ( sw->UndefinedMetaTags == UNDEF_META_ERROR )
+                progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
 
-    else if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-        debug_show_tag( tag, parse_data, 1, "" );
+        else if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+            debug_show_tag( tag, parse_data, 1, "" );
+    }
             
-
-
 
     /* Check property names, again, limited to <meta> for html */
 
@@ -986,7 +990,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 *   All XML tags are metatags, but for HTML there's special handling.
 *
 *********************************************************************/
-static void end_metaTag( PARSE_DATA *parse_data, char * tag )
+static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
 {
 
     if ( pop_stack_ifMatch( parse_data, &parse_data->meta_stack, tag ) )
@@ -998,11 +1002,14 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 
 
     /* Don't allow matching across tag boundry */
-    if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
-       parse_data->word_pos++;
+    if ( !is_html_tag )
+    {
+        if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
+           parse_data->word_pos++;
 
-    if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-        debug_show_tag( tag, parse_data, 0, "" );
+        if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+            debug_show_tag( tag, parse_data, 0, "" );
+    }
 
 }
 
@@ -1208,7 +1215,7 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
         strtolower( tagbuf );
         
         strcpy( t, (char *)attr[i+1] );         /* create tag.attribute metaname */
-        start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append );
+        start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append, 0 );
         found++;
 
         /* Now, nest attributes */
@@ -1303,9 +1310,9 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
 
         flush_buffer( parse_data, 1 );
-        start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append );
+        start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append, 0 );
         char_hndl( parse_data, content, strlen( content ) );
-        end_metaTag( parse_data, tagbuf );
+        end_metaTag( parse_data, tagbuf, 0 );
     }
 
     sw->UndefinedMetaTags = tmp_undef;
@@ -1341,6 +1348,7 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **attr )
             content = (char *)attr[i+1];
     }
 
+
     if ( metatag && content )
     {
 
@@ -1356,11 +1364,11 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **attr )
         /* Process as a start -> end tag sequence */
         strtolower( metatag );
 
-        flush_buffer( parse_data, 1 );
-        start_metaTag( parse_data, metatag, metatag, &meta_append, &prop_append );
+        flush_buffer( parse_data, 111 );
+        start_metaTag( parse_data, metatag, metatag, &meta_append, &prop_append, 0 );
         char_hndl( parse_data, content, strlen( content ) );
-        end_metaTag( parse_data, metatag );
-        
+        end_metaTag( parse_data, metatag, 0 );
+        flush_buffer( parse_data, 112 );
     }
 
 }
@@ -1719,6 +1727,7 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
 
     if ( ( node->ignore = ignore ) )  /* entering a block to ignore */
         stack->ignore_flag++;
+
         
     strcpy( node->tag, tag );
 
