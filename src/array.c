@@ -1,3 +1,55 @@
+/*
+** This program and library is free software; you can redistribute it and/or
+** modify it under the terms of the GNU (Library) General Public License
+** as published by the Free Software Foundation; either version 2
+** of the License, or any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+** GNU (Library) General Public License for more details.
+**
+** You should have received a copy of the GNU (Library) General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**-----------------------------------------------------------------
+**
+**  Virtual Array Code. 
+**  11/2001 jmruiz - The intention of this routines is storing and reading
+**                   elemnts of arrays of long numbers avoiding the 
+**                   allocation in memory of the total array. In other words,
+**                   if we need to read only 10 elements of the array, we
+**                   will must try to  make the minimal I/O memory and disk
+**                   operations.
+**
+**                   To do that, the data is stored in aligned pages in disk   
+**                   Also, a simple cache system is used to speed I/O file
+**                   operations.
+**
+**                   The virtual array is extensible. In other words, you can
+**                   add elements whenever you want
+**
+**    Main routines:
+**
+**  ARRAY *ARRAY_Create(FILE *fp)   
+**    Creates a virtual array. Returns the handle of the array
+**
+**  ARRAY *ARRAY_Open(FILE *fp, unsigned long root_page) 
+**    Opens an existent Virtual Array. root_page is de value returned by
+**    Array_Close. Returns de handle of the array.
+**
+**  unsigned long ARRAY_Close(ARRAY *arr)
+**    Closes and frees memory. arr is the value returned by ARRAY_Create or
+**    ARRAY_Open. Returns the root page of the array. This value must be
+**
+**  int ARRAY_Put(ARRAY *arr, int index, unsigned long value)
+**    Writes the array element arr[index]=value to the virtual array
+**
+**  unsigned long ARRAY_Get(ARRAY *arr, int index)
+**    Reads the array element index. Returns de value arr[index]
+**
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
