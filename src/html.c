@@ -544,6 +544,7 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
            *convtag;
     int     wordcount = 0;      /* Word count */
 
+
     metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, name);
 
     /* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
@@ -591,7 +592,11 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
 
 
         /* Meta tags get bummped */
-		if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+        /* I'm not clear this works as well as I'd like because it always bumps on a new Meta tag, 
+         * but in order to disable this behavior the name MUST be a meta name.
+         * Probably better to let getHTMLMeta() return the name as a string.
+         */
+		if(!metaNameEntry || (metaNameEntry && !isDontBumpMetaName( sw, metaNameEntry->metaName )) )
 				position[0]++;
 
         wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
