@@ -93,7 +93,7 @@ void progwarnno(char *msgfmt,...)
   fprintf  (stdout, "\nWarning: ");
   vfprintf (stdout, msgfmt, args);
   fprintf  (stdout, "%s", strerror(errno));
-  fprintf  (stdout, "\n.\n");
+  fprintf  (stdout, "\n");
   va_end   (args);
  }
 
