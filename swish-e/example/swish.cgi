@@ -459,9 +459,12 @@ sub show_result {
         $description = $result->{$conf->{description_prop}} || '';
     }
 
+    my $href = $PathPrePend . $result->{save_swishdocpath};
+    $href =~ s/ /%20/g;
+
     return <<EOF;
     <dl>
-        <dt>$result->{swishreccount} <a href="$PathPrePend$result->{save_swishdocpath}">$title</a> <small>-- rank: <b>$result->{swishrank}</b></small></dt>
+        <dt>$result->{swishreccount} <a href="$href">$title</a> <small>-- rank: <b>$result->{swishrank}</b></small></dt>
         <dd>$description
 
         $props

@@ -283,7 +283,7 @@ int match_regex_list( char *str, regex_list *regex )
             : regexec(&regex->re, str, (size_t) 1, pmatch, 0) == 0;
 
         if ( DEBUG_MASK & DEBUG_REGEX )
-            printf("match %s %c~ /%s/ : %s\n", str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
+            printf("match %s %c~ m[%s] : %s\n", str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
 
         if ( matched )
             return 1;
@@ -342,7 +342,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     int     last_offset = 0;
 
     if ( DEBUG_MASK & DEBUG_REGEX )
-        printf("replace %s =~ /%s/%s/: %s\n", str + offset, regex->pattern, regex->replace,
+        printf("replace %s =~ m[%s][%s]: %s\n", str + offset, regex->pattern, regex->replace,
                 regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) ? "No Match" : "Matched" );
     
     /* Run regex - return original string if no match (might be nice to print error msg? */
