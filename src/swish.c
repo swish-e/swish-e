@@ -1594,7 +1594,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
 static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge)
 {
-    int totalfiles = getfilecount(sw->indexlist);
+    int totalfiles = getfilecount(sw->indexlist) - sw->indexlist->header.removedfiles;  /* just for display */
     int stopwords = 0;
     struct swline *cur_line;
 
