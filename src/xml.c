@@ -125,10 +125,11 @@ struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameXML,*metaNameXML2;
 int i;
 IndexFILE *indexf=sw->indexlist;
+struct MOD_Index *idx = sw->Index;
 char *summary=NULL;
 int in_junk=0;
 	dummy=0;
-	sw->Index->filenum++;
+	idx->filenum++;
 
 	if(fprop->stordesc)
 		summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
@@ -150,7 +151,7 @@ int in_junk=0;
 
 				newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-				ftotalwords +=indexstring(sw, newp, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
+				ftotalwords +=indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaName, positionMeta);
 				if(newp!=p) efree(newp);
 			}
 				/* Now let us look for '>' */
@@ -255,7 +256,7 @@ int in_junk=0;
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
-					ftotalwords +=parsecomment(sw,tag,sw->Index->filenum,structure,1,positionMeta);
+					ftotalwords +=parsecomment(sw,tag,idx->filenum,structure,1,positionMeta);
 					p=endtag;
 				}    /* Default: Continue */
 				else {    
@@ -268,7 +269,7 @@ int in_junk=0;
 
 				newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-				ftotalwords +=indexstring(sw, newp, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
+				ftotalwords +=indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaName, positionMeta);
 				if(newp!=p) efree(newp);
 			}
 			p=NULL;
@@ -276,9 +277,9 @@ int in_junk=0;
 	}
 	efree(metaName);
 	efree(positionMeta);
-	addtofwordtotals(indexf, sw->Index->filenum, ftotalwords);
+	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 	if(sw->swap_flag)
-		SwapFileData(sw, indexf->filearray[sw->Index->filenum-1]);
+		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 	return ftotalwords;
 }
 
