@@ -242,6 +242,7 @@ char *w0;
                 }
                 else if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
                                      /* ResultExt...   name  fmtstring */
+                                     /* $$$ this will not work unless swish is reading the config file also for search ... */
 			if(sl->n==3) {
 			   sw->resultextfmtlist = (struct ResultExtFmtStrList *)
 				 addResultExtFormatStr(sw->resultextfmtlist,sl->word[1],sl->word[2]);

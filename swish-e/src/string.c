@@ -846,7 +846,7 @@ static const char iso8859_to_ascii7_lower_map[] = {
   -- 2001-02-11  rasc
 */
 
-char char_ISO_normalize (char c)
+unsigned char char_ISO_normalize (unsigned char c)
 {  
   return iso8859_to_ascii7_lower_map[c];
 }
@@ -865,7 +865,7 @@ char char_ISO_normalize (char c)
 char *str_ISO_normalize (char *s)
 
 {
-  char *p = s;
+  unsigned char *p = s;
 
   while (*p) {
     *p = iso8859_to_ascii7_lower_map[*p++];
