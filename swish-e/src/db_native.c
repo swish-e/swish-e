@@ -23,6 +23,7 @@
 
 #define WRITE_WORDS_RAMDISK 1
 
+#include <time.h>
 #include "swish.h"
 #include "mem.h"
 #include "file.h"
@@ -90,6 +91,9 @@ void initModule_DBNative (SWISH  *sw)
     Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
 
+    Db->DB_WriteProperty = DB_WriteProperty_Native;
+    Db->DB_ReadProperty = DB_ReadProperty_Native;
+
 
     sw->Db = Db;
 
@@ -141,18 +145,25 @@ int configModule_DBNative  (SWISH *sw, StringList *sl)
 /* Does an index file have a readable format?
 */
 
-int DB_OkHeader(FILE * fp)
+static void DB_CheckHeader(struct Handle_DBNative *DB)
 {
     long    swish_magic;
+    long    index, prop;
 
-    fseek(fp, 0, 0);
-    swish_magic = readlong(fp,fread);
+    fseek(DB->fp, 0, 0);
+    swish_magic = readlong( DB->fp, fread );
+
     if (swish_magic != SWISH_MAGIC)
-    {
-        fseek(fp, 0, 0);
-        return 0;
-    }
-    return 1;
+        progerr("File \"%s\" has an unknown format.", DB->cur_index_file);
+
+#ifdef PROPFILE
+    index = readlong( DB->fp, fread );
+    prop  = readlong( DB->prop, fread );
+
+    if ( index != prop )
+        progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file );
+#endif        
+        
 }
 
 struct Handle_DBNative *newNativeDBHandle(char *dbname)
@@ -177,6 +188,13 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
    DB->mode = 1;
    DB->lastsortedindex = 0;
    DB->rd = NULL;
+   DB->tmp_index = 0;  /* flags that the index is opened as create as a temporary file name */
+   DB->tmp_prop  = 0;
+   DB->cur_index_file = NULL;
+   DB->cur_prop_file = NULL;
+   DB->fp = NULL;
+   DB->prop = NULL;
+
 
    if(WRITE_WORDS_RAMDISK)
    {
@@ -210,33 +228,56 @@ void *DB_Create_Native (char *dbname)
    int i;
    long    swish_magic;
    FILE *fp;
+   char *filename;
+   long  unique_ID;  /* just because it's called that doesn't mean it is! */
 
    struct Handle_DBNative *DB;
 
 
-         /* Allocate structure */
+    unique_ID = (long)time(NULL);  /* Ok, so if more than one index is created the second... */
+
+   /* Allocate structure */
    DB= (struct Handle_DBNative  *) newNativeDBHandle(dbname);
 
-          /* Create index File */
-   CreateEmptyFile(dbname);
-   if(!(DB->fp = openIndexFILEForReadAndWrite(dbname)))
-	   progerrno("Couldn't create the index file \"%s\": ", dbname);
+#ifdef USE_TEMPFILE_EXTENSION
+    filename = emalloc( strlen(dbname) + strlen( USE_TEMPFILE_EXTENSION ) + strlen( PROPFILE_EXTENSION ) + 1 );
+    strcpy( filename, dbname );
+    strcat( filename, USE_TEMPFILE_EXTENSION );
+    DB->tmp_index = 1;
+#else
+    filename = emalloc( strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1 );
+    strcpy( filename, dbname );
+#endif    
+   
 
-   fp = DB->fp;
+    /* Create index File */
+
+    CreateEmptyFile( filename );
+    if(!(DB->fp = openIndexFILEForReadAndWrite( filename )))
+	    progerrno("Couldn't create the index file \"%s\": ", filename );
+
+    DB->cur_index_file = estrdup( filename ); 
+    fp = DB->fp;
+
 
 #ifdef PROPFILE
-    {
-        char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
-        strcpy( s, dbname );
-        strcat( s, ".prop" );
+    /* Create property File */
+    strcpy( filename, dbname );
+    strcat( filename, PROPFILE_EXTENSION );
 
-        CreateEmptyFile(s);
-        if( !(DB->prop = openIndexFILEForWrite(s)) )
-            progerrno("Couldn't create the property file \"%s\": ", s);
+#ifdef USE_TEMPFILE_EXTENSION
+    strcat( filename, USE_TEMPFILE_EXTENSION );
+    DB->tmp_prop = 1;
+#endif;
 
-        efree(s);         
-    }
+    CreateEmptyFile(filename);
+    if( !(DB->prop = openIndexFILEForWrite(filename)) )
+        progerrno("Couldn't create the property file \"%s\": ", filename);
+
+    DB->cur_prop_file = estrdup( filename ); 
 #endif
+
+    efree( filename );
 
   
    for(i=0 ; i<MAXCHARS; i++) DB->offsets[i] = 0L;
@@ -245,6 +286,13 @@ void *DB_Create_Native (char *dbname)
 
    swish_magic = SWISH_MAGIC;
    printlong(DB->fp,swish_magic,fwrite);
+
+#ifdef PROPFILE
+   printlong(DB->fp,unique_ID,fwrite);
+   printlong(DB->prop,unique_ID,fwrite);
+#endif   
+   
+
 
          /* Reserve space for offset pointers */
    DB->offsetstart = ftell(fp);
@@ -271,24 +319,24 @@ void *DB_Open_Native (char *dbname)
    if(!(DB->fp = openIndexFILEForRead(dbname)))
       progerrno("Could not open the index file '%s': ", dbname);
 
+    DB->cur_index_file = estrdup( dbname ); 
 
 #ifdef PROPFILE
     {
-        char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
+        char *s = emalloc( strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1 );
         strcpy( s, dbname );
-        strcat( s, ".prop" );
+        strcat( s, PROPFILE_EXTENSION );
 
         if( !(DB->prop = openIndexFILEForRead(s)) )
             progerrno("Couldn't open the property file \"%s\": ", s);
 
-        efree(s);         
+        DB->cur_prop_file = estrdup( s ); 
     }
 #endif
 
 
-   if (!DB_OkHeader(DB->fp)) {
-      progerr("File \"%s\" has an unknown format.", dbname);
-   }
+    /* Validate index files */
+    DB_CheckHeader( DB );
 
    fp = DB->fp;
 
@@ -316,23 +364,63 @@ void *DB_Open_Native (char *dbname)
    return (void *)DB;
 }
 
+/****************************************************************
+* This closes a file, and will rename if flagged as such
+*  Frees the associated current file name
+*
+*****************************************************************/
+
+static void DB_Close_File_Native( FILE **fp, char **filename, int *tempflag )
+{
+    if ( !*fp )
+        progerr("Called close on non-opened file '%s'", *filename );
+
+    if ( fclose( *fp ) )
+        progerrno("Failed to close file '%s': ", *filename );
+
+    *fp = NULL;        
+
+#ifdef USE_TEMPFILE_EXTENSION        
+    if ( *tempflag )
+    {
+        char *newname = estrdup( *filename );
+        newname[ strlen( newname ) - strlen( USE_TEMPFILE_EXTENSION ) ] = '\0';
+
+        if ( rename( *filename, newname ) )
+            progerrno("Failed to rename '%s' to '%s' : ", *filename, newname );
+
+        *tempflag = 0;  /* no longer opened as a temporary file */
+        efree( newname );
+    }
+#endif    
+
+    efree( *filename );
+    *filename = NULL;
+}
+
+
 #ifdef PROPFILE
+/****************************************************************
+*  This routine closes the property file and reopens it as
+*  readonly to improve seek times.
+*  Note: It does not rename the property file.
+*****************************************************************/
+
 void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
+    int no_rename = 0;
+    char *s = estrdup( DB->cur_prop_file );
 
 
-    if ( DB->prop )
-        fclose( DB->prop );
-   
-    strcpy( s, dbname );
-    strcat( s, ".prop" );
+    /* Close property file */
+    DB_Close_File_Native( &DB->prop, &DB->cur_prop_file, &no_rename );
+  
 
     if( !(DB->prop = openIndexFILEForRead(s)) )
         progerrno("Couldn't open the property file \"%s\": ", s);
 
-    efree(s);         
+    DB->cur_prop_file = s; 
 }
 #endif
 
@@ -344,10 +432,9 @@ void DB_Close_Native(void *db)
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
-#ifdef PROPFILE
-    fclose(DB->prop);
-    DB->prop = NULL;
-#endif    
+
+    /* Close (and rename) property file, if it's open */
+    DB_Close_File_Native( &DB->prop, &DB->cur_prop_file, &DB->tmp_prop );
 
    if(DB->mode)  /* If we are indexing update offsets to words and files */
    {
@@ -359,8 +446,11 @@ void DB_Close_Native(void *db)
        for (i = 0; i < SEARCHHASHSIZE; i++)
            printlong(fp,DB->hashoffsets[i],fwrite);
    }
-   fclose(DB->fp);
-   efree(DB->dbname);
+
+    /* Close (and rename) the index file */
+    DB_Close_File_Native( &DB->fp, &DB->cur_index_file, &DB->tmp_index );
+
+
    if(DB->fileoffsetarray) efree(DB->fileoffsetarray);
    efree(DB);
 }
@@ -369,6 +459,9 @@ void DB_Remove_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
+
+    /* this is currently not used */
+    /* $$$ remove the prop file too */
    fclose(DB->fp);
    remove(DB->dbname);
    efree(DB->dbname);
@@ -1146,3 +1239,57 @@ unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FI
 }
 
 
+
+#ifdef PROPFILE
+/*--------------------------------------------*/
+/*--------------------------------------------*/
+/*            Properties                      */
+/*--------------------------------------------*/
+/*--------------------------------------------*/
+
+/****************************************************************************
+*   Writes a property to the property file
+*
+*   Returns:
+*       the seek position of this property
+*
+*****************************************************************************/
+
+long DB_WriteProperty_Native( int filenum, char *buffer, int datalen, int propID, void *db )
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    long    position;
+    int     written_bytes;
+
+    if ( !DB->prop )
+        progerr("Property database file not opened\n");
+
+    if ( (position = ftell( DB->prop )) == -1 )
+        progerrno( "O/S failed to tell me where I am - file number %d metaID %d : ", filenum, propID );
+        
+    if ( (written_bytes = fwrite(buffer, 1, datalen, DB->prop)) != datalen ) /* Write data */
+        progerrno( "Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", filenum, propID, datalen, written_bytes );
+
+    return position;        
+}
+
+/****************************************************************************
+*   Reads a property from the property file
+*
+*   Returns:
+*       void
+*
+*****************************************************************************/
+void DB_ReadProperty_Native( char *buf, long seek_pos, long length, int filenum, void *db )
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    if ( fseek( DB->prop, seek_pos, 0 ) == -1 )
+        progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, filenum );
+
+    if ( fread(buf, 1, length, DB->prop) != length )
+        progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, filenum );
+}
+
+
+#endif

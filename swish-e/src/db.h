@@ -95,6 +95,12 @@ int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
+long    DB_WriteProperty(SWISH *sw, int filenum, char *buffer, int datalen, int propID, void *DB );
+void    DB_ReadProperty(SWISH *sw, char *buf, long seek_pos, long length, int filenum, void *DB );
+
+
+
+
 struct MOD_DB
 {
     char *DB_name; /* short name for data source */
@@ -142,6 +148,10 @@ struct MOD_DB
     int    (*DB_InitReadSortedIndex) (void *DB);
     int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
+
+    long   (*DB_WriteProperty) (int filenum, char *buffer, int datalen, int propID, void *DB );
+    void   (*DB_ReadProperty) (char *buf, long seek_pos, long length, int filenum, void *DB );
+
 };
 
 
