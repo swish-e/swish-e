@@ -56,7 +56,7 @@ Here's a summary of the way swish works for the different versions.
             e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
             All 15 from Index1 plus 15 from Index2 = 40 hits
 
-    2.2.0 - Results are merged and fist N results are returned.
+    2.2.0 - Results are merged and first N results are returned.
             e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
             Results are merged from each index and sorted
             (rank is the default sort) and only the first
