@@ -290,6 +290,8 @@ typedef struct docProperties
 }
 docProperties;
 
+#define RANK_BIAS_RANGE 10 // max/min range ( -10 -> 10, with zero being no bias )
+
 /* This structure is for storing both properties and metanames -- probably should be two lists */
 struct metaEntry
 {
@@ -303,6 +305,7 @@ struct metaEntry
     propEntry  *loPropRange;
     propEntry  *hiPropRange;
     int         alias;              /* if non-zero, this is an alias to the listed metaID */
+    int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
     int        *sorted_data;        /* Sorted data . NULL if not read/done */
                                     /* If 0, files are not sorted by this metaName/property */
 };

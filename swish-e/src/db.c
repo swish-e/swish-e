@@ -330,21 +330,25 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
             sz_buffer,
             len;
     unsigned char *buffer,*s;
+    int     fields;
 
-/* #### Use new metaType schema - see metanames.h */
-    /* Format of metaname is
-       <len><metaName><metaType><Alias>
-       len, metaType, and alias are compressed numbers
-       metaName is the ascii name of the metaname
+    /* Use new metaType schema - see metanames.h */
+    // Format of metaname is
+    //   <len><metaName><metaType><Alias><rank_bias>
+    //   len, metaType, alias, and rank_bias are compressed numbers
+    //   metaName is the ascii name of the metaname
+    //
+    // The list of metanames is delimited by a 0
 
-       The list of metanames is delimited by a 0
-     */
-        /* Compute buffer size */
+    fields = 5;  // len, metaID, metaType, alias, rank_bias
+
+     
+    /* Compute buffer size */
     for (sz_buffer = 0 , i = 0; i < header->metaCounter; i++)
     {
         entry = header->metaEntryArray[i];
         len = strlen(entry->metaName);
-        sz_buffer += len + 5 *4; /* how is this calculated? */
+        sz_buffer += len + fields * 5; /* compress can use 5 bytes in worse case,  */
     }
     
     sz_buffer += 5;  /* Add extra 5 for the number of metanames */
@@ -363,6 +367,7 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
         s = compress3(entry->metaID, s);
         s = compress3(entry->metaType, s);
         s = compress3(entry->alias+1, s);  /* keep zeros away from compress3, I believe */
+        s = compress3(entry->rank_bias+RANK_BIAS_RANGE+1, s);
     }
     DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
     efree(buffer);
@@ -614,6 +619,7 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
     int     metaType,
             i,
             alias,
+            bias,
             metaID;
     char   *word;
     unsigned char   *s = (unsigned char *)buffer;
@@ -637,13 +643,16 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
         metaType = uncompress2(&s);
 
         alias = uncompress2(&s) - 1;
-        
+
+        bias = uncompress2(&s) - RANK_BIAS_RANGE - 1;
+
 
         /* add the meta tag */
         if ( !(m = addNewMetaEntry(header, word, metaType, metaID)))
             progerr("failed to add new meta entry '%s:%d'", word, metaID );
 
         m->alias = alias;
+        m->rank_bias = bias;
 
         efree(word);
     }

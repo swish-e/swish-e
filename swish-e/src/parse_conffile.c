@@ -33,6 +33,8 @@ $Id$
 */
 
 
+#include <limits.h>     // for ULONG_MAX
+
 #include "swish.h"
 #include "string.h"
 #include "mem.h"
@@ -62,6 +64,7 @@ $Id$
 
 
 
+static int read_integer( char *string,  char *message, int low, int high );
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
 static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
 static int     getDocTypeOrAbort(StringList * sl, int n);
@@ -196,9 +199,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n == 2)
             {
                 if (!hasverbose)
-                {
-                    sw->verbose = atoi(sl->word[1]);
-                }
+                    sw->verbose =  read_integer( sl->word[1], w0, 0, 4 );
             }
             else
                 progerr("%s: requires one value", w0);
@@ -208,7 +209,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "ParserWarnLevel") == 0)
         {
             if (sl->n == 2)
-                sw->parser_warn_level = atoi(sl->word[1]);
+                sw->parser_warn_level = read_integer( sl->word[1], w0, 0, 9 );
             else
                 progerr("%s: requires one value", w0);
             continue;
@@ -235,7 +236,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n == 2)
             {
-                indexf->header.minwordlimit = atoi(sl->word[1]);
+                indexf->header.minwordlimit = read_integer( sl->word[1], w0, 0, INT_MAX );
             }
             else
                 progerr("%s: requires one value", w0);
@@ -246,7 +247,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n == 2)
             {
-                indexf->header.maxwordlimit = atoi(sl->word[1]);
+                indexf->header.maxwordlimit = read_integer( sl->word[1], w0, 0, INT_MAX );
             }
             else
                 progerr("%s: requires one value", w0);
@@ -541,6 +542,45 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        /* Allow setting a bias on MetaNames */
+
+        if (strcasecmp(w0, "MetaNamesRank") == 0)
+        {
+            struct metaEntry *meta_entry;
+            int               rank = 0;
+            
+            if (sl->n < 3)
+                progerr("%s: requires only two or more values, a rank (integer) and a list of property names", w0);
+
+
+            rank = read_integer( sl->word[1], w0, -RANK_BIAS_RANGE, RANK_BIAS_RANGE  );  // NOTE: if this is changed db.c must match
+                
+
+            for (i = 2; i < sl->n; i++)
+            {
+                /* already exists? */
+                if ( (meta_entry = getMetaNameByNameNoAlias( &indexf->header, sl->word[i])) )
+                {
+                    if ( meta_entry->alias )
+                        progerr("Can't assign a rank to metaname '%s': it is an alias", meta_entry->metaName );
+
+                    if ( meta_entry->rank_bias )
+                        progwarn("Why are you redefining the rank of metaname '%s'?", meta_entry->metaName );
+                }
+                else
+                    meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_INDEX, 0);
+
+
+                meta_entry->rank_bias = rank;    
+            }
+
+            continue;
+        }
+        
+
+        
+
+
         /* Meta name to extract out <a href> links */
         if (strcasecmp(w0, "HTMLLinksMetaName") == 0)
         {
@@ -566,15 +606,17 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+
+
+
+
         if (strcasecmp(w0, "PropCompressionLevel") == 0)
         {
 
 #ifdef HAVE_ZLIB
             if (sl->n == 2)
             {
-                sw->PropCompressionLevel = atoi(sl->word[1]);
-                if ( sw->PropCompressionLevel < 0 || sw->PropCompressionLevel > 9 )
-                    progerr("%s: requires a number from 0 to 9, with 0=no compression 9=max", w0 );
+                sw->PropCompressionLevel = read_integer( sl->word[1], w0, 0, 9 );
             }
             else
                 progerr("%s: requires one value", w0);
@@ -715,6 +757,56 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
+
+
+        /* This allows setting a limit on a property's string length */
+        // One question would be if this should set the length on the alias, or the real property. */
+        // If on the alias then you could really fine tune:
+        //    PropertyNames description
+        //    PropertyNameAlias description td h1 h2 h3
+        //    PropertyNameMaxLength 5000 description
+        //    PropertyNameMaxLength 100 td
+        //    PropertyNameMaxLength 10 h1 h2 h3
+        // then the total length would be 5000, but each one would be limited, too.  I find that hard to imagine
+        // it would be useful.  So the current design is you can only assign to a non-alias.
+        
+        
+        if (strcasecmp(w0, "PropertyNamesMaxLength") == 0)
+        {
+            struct metaEntry *meta_entry;
+            int               max_length = 0;
+            
+            if (sl->n < 3)
+                progerr("%s: requires only two or more values, a length and a list of property names", w0);
+
+
+            max_length = read_integer( sl->word[1], w0, 0, INT_MAX );
+                
+
+            for (i = 2; i < sl->n; i++)
+            {
+                /* already exists? */
+                if ( (meta_entry = getPropNameByNameNoAlias( &indexf->header, sl->word[i])) )
+                {
+                    if ( meta_entry->alias )
+                        progerr("Can't assign a length to property '%s': it is an alias", meta_entry->metaName );
+
+                    if ( meta_entry->max_len )
+                        progwarn("Why are you redefining the max length of property '%s'?", meta_entry->metaName );
+
+                    if ( !is_meta_string( meta_entry ) )
+                        progerr("%s - name '%s' is not a STRING type of Property", w0, sl->word[i] );
+                }
+                else
+                    meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING, 0);
+
+
+                meta_entry->max_len = max_length;    
+            }
+
+            continue;
+        }
+        
 
 
 
@@ -867,7 +959,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
                 if (i < sl->n && isnumstring(sl->word[i]))
                 {
-                    sd->size = atoi(sl->word[i]);
+                    sd->size = read_integer( sl->word[i], w0, 0, INT_MAX );
                 }
                 if (sl->n == 3 && !sd->field && !sd->size)
                     progerr("%s: second parameter must be <fieldname> or a number", w0);
@@ -1032,6 +1124,39 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
     if (gotindex && !(*hasindex))
         *hasindex = 1;
 }
+
+/*************************************************************************
+*  Fetch a integer
+*
+*************************************************************************/
+
+static int read_integer( char *string,  char *message, int low, int high )
+{
+    char *badchar;
+    long  num;
+    int   result;
+
+    if ( !string )
+        progerr("'%s' requires an integer between %d and %d.", message, low, high );
+
+    num = strtol( string, &badchar, 10 );
+
+    if ( num == LONG_MAX || num == LONG_MIN )
+        progerrno("'%s': Failed to convert '%s' to a number: ", message, string );
+
+    if ( *badchar )
+        progerr("Invalid char '%c' found in argument to '%s %s'", badchar[0], message, string);
+
+    result = (int)num;        
+
+
+    if ( result < low || result > high )
+        progerr("'%s' value of '%d' is not an integer between %d and %d.", message, result, low, high );
+
+
+    return result;
+}
+
 
 
 
