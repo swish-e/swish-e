@@ -146,7 +146,7 @@ C<BumpPositionCounterCharacters> *string*
 
 C<Buzzwords> [*list of buzzwords*|File: path]
 
-=item*
+=item *
 
 C<CompressPositions>  [yes|NO]
 
