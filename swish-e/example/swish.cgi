@@ -38,8 +38,13 @@ use strict;
     my $Title = 'Search Our Website';               # Title of your choice.
     my $Swish_Binary = '/usr/local/bin/swish-e';    # Location of swish-e binary
     my $Swish_Index   = '../index.swish-e';         # Location of your index file
-    my $Page_Size = 20;                             # Number of results per page
+
+    my $Page_Size = 15;                             # Number of results per page
+
+    my $Highlight_On = 1;                           # Set to zero to turn off highlighting (and see how slow highlighting is)   
+
     my $Show_Words = 12;                            # Number of swish words+non-swish words to show around highlighted word
+                                                    # Set to zero to not highlight and only show $Min_Words
     my $Occurrences = 6;                            # Limit number of occurrences  of highlighted words
     my $Min_Words = 100;                            # If no words are found to highlighted then show this many words
     
@@ -516,7 +521,10 @@ sub set_match_regexp {
 
     my $match_string =
         join '|',
-           map { substr( $_, -1, 1 ) eq '*' ? quotemeta( substr( $_, 0, -1) ) . "[$wc]*?" : quotemeta }
+           map { substr( $_, -1, 1 ) eq '*'
+                    ? quotemeta( substr( $_, 0, -1) ) . "[$wc]*?"
+                    : quotemeta
+               }
                 grep { ! /^(and|or|not|["()=])$/oi }
                     split /\s+/, $query;
 
@@ -543,7 +551,7 @@ sub set_match_regexp {
                                             # Must force lower case before testing
     );
 }    
-    
+
     
 #============================================
 # Run swish-e and gathers headers and results
@@ -607,7 +615,12 @@ sub run_swish {
 
                 my %h;
                 @h{@properties} = split /\t/;
+                push @results, \%h;
 
+                if ( ! $Highlight_On ) {
+                    $h{swishdescription} = substr( ($h{swishdescription} || ''), 0, 1000 );
+                    next;
+                }
 
 
                 # This is to prepare for highlighting - only do first time
@@ -629,7 +642,6 @@ sub run_swish {
                 $h{swishdescription} = highlight( \$h{swishdescription}, $stemmer_function, @regexps )
                     if $h{swishdescription};
                 
-                push @results, \%h;
             }
 
             # Might check for "\n." for end of results.
@@ -697,9 +709,9 @@ sub highlight {
     my $occurrences = $Occurrences ;
 
 
-    my $pos = $words[0] ? 1 : 0;  # Start depends on if first word was wordcharacters or not
+    my $pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
 
-    while ( $pos <= $#words ) {
+    while ( $Show_Words && $pos <= $#words ) {
 
         if ( $words[$pos] =~ /$extract_regexp/ ) {
 
@@ -729,6 +741,7 @@ sub highlight {
                 $flags[$_]++ for $start .. $end;
 
 
+                # All done, and mark where to stop looking
                 if ( $occurrences-- <= 0 ) {
                     $last = $end;
                     last;
@@ -740,6 +753,8 @@ sub highlight {
     }
 
 
+    my $dotdotdot = ' <b>...</b>';
+
 
     my @output;
 
@@ -747,25 +762,27 @@ sub highlight {
     my $first = 1;
     my $some_printed;
 
-    for my $i ( 0 ..$#words ) {
+    if ( $Show_Words ) {
+        for my $i ( 0 ..$#words ) {
 
-        if ( $last && $i >= $last && $i < $#words ) {
-            push @output, '...';
-            last;
-        }
+            if ( $last && $i >= $last && $i < $#words ) {
+                push @output, $dotdotdot;
+                last;
+            }
 
-        if ( $flags[$i] || !$Show_Words ) {
+            if ( $flags[$i] ) {
 
-            push @output, '...' if !$printing++ && !$first;
-            push @output, $words[$i];
-            $some_printed++;
+                push @output, $dotdotdot if !$printing++ && !$first;
+                push @output, $words[$i];
+                $some_printed++;
 
-        } else {
-            $printing = 0;
-        }
+            } else {
+                $printing = 0;
+            }
 
-        $first = 0;
+            $first = 0;
         
+        }
     }
 
     if ( !$some_printed ) {
@@ -777,17 +794,12 @@ sub highlight {
         
         
 
-    push @output,'...' if !$printing;
+    push @output, $dotdotdot if !$printing;
 
     return join '', @output;
 
 
 }
-
-
-
-
-
 
 
 __END__
@@ -931,6 +943,8 @@ Example C<swish.conf> file:
 
     # Tell swish how to parse .html and .html documents
     IndexContents HTML .html .htm
+    # And just in case we have files without an extension
+    DefaultContents HTML
 
     # Replace the path name with a URL
     ReplaceRules replace /usr/local/apache/htdocs/ http://www.myserver.name/
@@ -1007,6 +1021,7 @@ You can see that the configuration is not much different than the file system in
     IndexOnly .html .htm
 
     IndexContents HTML .html .htm
+    DefaultContents HTML
     StoreDescription HTML <body> 200000
     MetaNames swishdocpath swishtitle
 
@@ -1031,6 +1046,7 @@ Here's an example configuration file for using the "prog" input method:
     SwishProgParameters default http://www.myserver.name/index.html
 
     IndexContents HTML .html .htm
+    DefaultContents HTML
     StoreDescription HTML <body> 200000
     MetaNames swishdocpath swishtitle
 
@@ -1042,7 +1058,6 @@ Spidering with this method took nine seconds.
 
 
 
-=back
 
 =head1 Stemmed Indexes
 

@@ -1,12 +1,12 @@
 #!/usr/local/bin/perl -w
 use strict;
 
-#    search.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
+#    swish2.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
 #    Example CGI program for searching with SWISH-E
 #
 #    This example program will only run under an OS that supports fork().
 #
-#    Documentation below, or try "perldoc swish.cgi"
+#    Documentation below, or try "perldoc swish2.cgi"
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU General Public License
@@ -28,7 +28,8 @@ use strict;
     use vars qw/
         $Swish_Binary $Swish_Index $Tmpl_Path @PropertyNames
         @MetaNames $Metaname_Default $Page_Size
-        @Sorts %MapNames $Highlight
+        @Sorts %MapNames $Highlight_On
+        $Page_Size $Show_Words $Occurrences $Min_Words
     /;
 
 
@@ -117,13 +118,18 @@ use strict;
     $Metaname_Default = 'ALL';  # set the default radio button, if some are used.
 
 
+    $Page_Size    = 15;  # results per page
+
 
     # This does VERY SIMPLE bolding of search word if <swishdescription> is used.
 
-    $Highlight = 1;  
 
-
-    $Page_Size    = 20;  # results per page
+    $Highlight_On = 1;   # Set to zero to turn off highlighting (and see how slow highlighting is)   
+    $Show_Words = 16;    # Number of swish words+non-swish words to show around highlighted word
+                         # Set to zero just show first $Min_Words
+    $Occurrences = 6;    # Limit number of occurrences  of highlighted words
+    $Min_Words = 100;    # If no words are found to highlighted then show this many words
+    
 
 #---------- End of Configuration ----------------------
 
@@ -134,7 +140,7 @@ use strict;
 
 =head1 NAME
 
-swish.cgi -- Example Perl script for searching with the SWISH-E search engine.
+swish2.cgi -- Example Perl script for searching with the SWISH-E search engine.
 
 =head1 DESCRIPTION
 
@@ -146,6 +152,9 @@ programming techniques such as separation of content from code, and modular code
 
 This script is not meant to be a complete solution to your searching needs.  Rather, an example of a
 working script that can be easily modified to meet your needs.
+
+By default this script will attempt to highlight search words in the source documents.  This works by
+using the C<StoreDescription> feature of swish.  See INDEXING below.
 
 This program uses a number of modules to make work easy: the standard CGI module to handle form data,
 the SWISH (and SWISH::Fork) module to run swish, HTML::Template and HTML::FillInForm to keep the
@@ -277,7 +286,7 @@ in your C<use lib> statement.
 
 =item 2 Set up your web server to run this CGI script
 
-Copy this script (swish.cgi) to your cgi-bin directory where .cgi scripts are automatically
+Copy this script (swish2.cgi) to your cgi-bin directory where .cgi scripts are automatically
 executed as CGI scripts (or create an alias in your web server's configuration setup).
 
 The details of setting up a CGI script depend on the web server you are using.  If you do have problems
@@ -291,7 +300,7 @@ mod_perl setup is described below.
 
 Adjust the global vars in the script to point to the location of the swish-e binary,
 your swish-e index, and the location of the swish.tmpl HTML::Template file.  See the parameter
-setup at the top of this search.cgi script for complete information.
+setup at the top of this swish2.cgi script for complete information.
 
 The use of global vars here just makes it easy as an example script. A better method would be for the
 script to read the settings from a configuration file, or passed in from the environment (or PerlSetVar)
@@ -335,6 +344,48 @@ You can either use the manual method shown above, or use the CPAN.pm module to a
 If you decide to use CPAN.pm, the first time you start it (C<perl -MCPAN -e shell>) it will ask you a number of
 questions -- for most you can just accept the defaults.
 
+=head1 INDEXING
+
+You will need an index file before you can run this script.  You must adjust the C<$Swish_Index>
+variable at the top of the swish2.cgi program to point to the index file you create.
+
+This script assumes that you will use the C<StoreDescription> feature which will store some (or all)
+of the content of the source files in the index file.  Obviously, this will increase the index size
+but will allow highlighted context in the output results.
+
+Here is an example configuration file
+that you might use for indexing.  See perldoc swish.cgi for more detailed instructions.
+
+Example C<swish.conf> file:
+
+    # Define what to index
+    IndexDir /usr/local/apache/htdocs
+    IndexOnly .html .htm
+
+    # Tell swish how to parse .html and .html documents
+    IndexContents HTML .html .htm
+    # And just in case we have files without an extension
+    DefaultContents HTML
+
+    # Replace the path name with a URL
+    ReplaceRules replace /usr/local/apache/htdocs/ http://www.myserver.name/
+
+    # Store the text of the documents within the swish index file
+    StoreDescription HTML <body> 200000
+
+    # Allow limiting search to titles and URLs.
+    MetaNames swishdocpath swishtitle
+
+    # Optionally use stemming for "fuzzy" searches
+    #UseStemming yes
+
+Now to index you simply run:
+
+    swish-e -c swish.conf
+
+The default index file C<index.swish-e> will be placed in the current directory.
+
+
 =head1 MOD_PERL
 
 This script may be run under CGI or Apache::Registry, although it would be trivial to
@@ -346,7 +397,7 @@ more information.
 To set this script up as an Apache::Registry script use something similar to
 the following (perhaps inside a <Directory> block):
 
-    <files swish.cgi>
+    <files swish2.cgi>
         SetHandler perl-script
         PerlHandler Apache::Registry
     </files>
@@ -374,7 +425,7 @@ Please do not contact the author directly.
 
 =head1 LICENSE
 
-search.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
+swish2.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
 Example CGI program for searching with SWISH-E
 
 
@@ -473,6 +524,14 @@ sub run_query {
     # This arrray stores the results returned from swish
     my @results;
 
+
+    # Variables for term highlighting
+    my $regexp_set;  # flag to set the regular expressions only one time.
+    my @regexps;
+    my $stemmer_function;
+
+
+    
     # Create a search object
 
     my $sh = SWISH->connect(
@@ -484,6 +543,7 @@ sub run_query {
        maxhits  => $Page_Size,
        properties => \@PropertyNames,
        timeout  => 10,  # kill script if query takes more than ten secs
+       output_separator => "\t:\t",
 
        # this maps all available properties (internal and user defined) to the tempalte.
 
@@ -502,10 +562,41 @@ sub run_query {
             
             push @results, \%h;
 
-            # not recommended -- just a very poor example.
 
-            fake_highlight( \%h, @_ ) if $Highlight && $h{swishdescription}
-            
+            # Highlight the search results.
+            # This assumes all index files have the same settings
+
+            if ( ! $Highlight_On ) {
+                $h{swishdescription} = substr( ($h{swishdescription} || ''), 0, 1000 );
+                return;
+            }
+
+            if ( $h{swishdescription} ) {
+
+
+                # This is to prepare for highlighting - only do first time
+                unless ( $regexp_set++ ) {
+
+                    my %headers = map { $_ => ($_[0]->get_header($_, $h{swishdbfile}) || '') }
+                        'parsed words','stemming applied', qw/wordcharacters ignorefirstchar ignorelastchar/;
+                
+                    @regexps = set_match_regexp( \%headers );
+
+
+                    if ( $headers{'stemming applied'} =~ /^(?:1|yes)$/i ) {
+                        eval { require SWISH::Stemmer };
+                        if ( $@ ) {
+                            $_[0]->abort_query( 'Stemmed index needs Stemmer.pm to highlight' );
+                        } else {
+                            $stemmer_function = \&SWISH::Stemmer::SwishStem;
+                        }
+                    }
+                }
+
+
+                $h{swishdescription} = highlight( \$h{swishdescription}, $stemmer_function, @regexps );
+            }
+        
        }
                 
                 
@@ -519,7 +610,7 @@ sub run_query {
 
 
 
-    # $SWISH::Fork::DEBUG++;  # generates (a lot of) debugging info to STDERR 
+    #$SWISH::Fork::DEBUG++;  # generates (a lot of) debugging info to STDERR 
 
 
     # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
@@ -704,4 +795,186 @@ sub fake_highlight {
         $h->{swishdescription} =~ s[(\b\Q$_\E\b)][<b>$1</b>]ig;
     }
 }
+
+#============================================
+# Returns compiled regular expressions for matching
+#
+#   Pass:
+#       Reference to headers hash
+#
+#   Returns an array (or undef)
+#       $wordchar_regexp    = used for splitting the text
+#       $extract_regexp     = used to extract a word to match against
+#       $query_regexp       = used for matching words
+#
+
+sub set_match_regexp {
+    my $header = shift;
+
+    my ($query, $wc, $ignoref, $ignorel ) =
+        @{$header}{'parsed words',qw/wordcharacters ignorefirstchar ignorelastchar/};
+
+    return unless $wc && $query;  #  Shouldn't happen
+
+    $wc = quotemeta $wc;
+
+
+    my $match_string =
+        join '|',
+           map { substr( $_, -1, 1 ) eq '*'
+                    ? quotemeta( substr( $_, 0, -1) ) . "[$wc]*?"
+                    : quotemeta
+               }
+                grep { ! /^(and|or|not|["()=])$/oi }
+                    split /\s+/, $query;
+
+
+    return unless $match_string;
+
+    for ( $ignoref, $ignorel ) {
+        if ( $_ ) {
+            $_ = quotemeta;
+            $_ = "([$_]*)";
+        } else {
+            $_ = '()';
+        }
+    }
+
+
+    $wc .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  # Warning: dependent on tolower used while indexing
+
+
+    return (
+        qr/([^$wc]+)/o,                     # regexp for splitting into swish-words
+        qr/^$ignoref([$wc]+?)$ignorel$/io,  # regexp for extracting out the words to compare
+        qr/^$match_string$/,                # regexp for comparing extracted words to query
+                                            # Must force lower case before testing
+    );
+    }    
+
+#==========================================================================
+# This routine highlights words in source text
+# Source text must be plain text.
+#
+# This is a very basic highlighting routine that fails for phrase searches, and
+# Does not know how to deal with metaname searches.
+#
+# The text returned contains highlighted words, plus a few words on either side to give
+# context of the results.
+#
+#   Pass:
+#       the text to highlight, a transformation function (normally a stemmer function)
+#       and pre-compiled regular expressions
+#
+#   Returns:
+#       the highlighted text
+#
+
+    sub highlight {
+    my ( $text_ref, $stemmer_function, $wc_regexp, $extract_regexp, $match_regexp ) = @_;
+
+
+    my $last = 0;
+
+
+    # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
+    my @words = split /$wc_regexp/, $$text_ref;
+
+
+    my @flags;
+    $flags[$#words] = 0;  # Extend array.
+
+    my $occurrences = $Occurrences ;
+
+
+    my $pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
+
+    while ( $Show_Words && $pos <= $#words ) {
+
+        if ( $words[$pos] =~ /$extract_regexp/ ) {
+
+            my ( $begin, $word, $end ) = ( $1, $2, $3 );
+
+            my $test = $stemmer_function
+                       ? $stemmer_function->($word)
+                       : lc $word;
+
+            $test ||= lc $word;                       
+
+            # Not check if word matches
+            if ( $test =~ /$match_regexp/ ) {
+
+                $words[$pos] = "$begin<b>$word</b>$end";
+
+
+                my $start = $pos - $Show_Words + 1;
+                my $end   = $pos + $Show_Words - 1;
+                if ( $start < 0 ) {
+                    $end = $end - $start;
+                    $start = 0;
+                }
+            
+                $end = $#words if $end > $#words;
+
+                $flags[$_]++ for $start .. $end;
+
+
+                # All done, and mark where to stop looking
+                if ( $occurrences-- <= 0 ) {
+                    $last = $end;
+                    last;
+                }
+            }
+        }
+
+       $pos += 2;  # Skip to next wordchar word
+    }
+
+
+
+    my @output;
+
+    my $printing;
+    my $first = 1;
+    my $some_printed;
+
+    if ( $Show_Words ) {
+        for my $i ( 0 ..$#words ) {
+
+            if ( $last && $i >= $last && $i < $#words ) {
+                push @output, '...';
+                last;
+            }
+
+            if ( $flags[$i] ) {
+
+                push @output, '...' if !$printing++ && !$first;
+                push @output, $words[$i];
+                $some_printed++;
+
+            } else {
+                $printing = 0;
+            }
+
+            $first = 0;
+    
+        }
+    }
+
+    if ( !$some_printed ) {
+        for my $i ( 0 .. $Min_Words ) {
+            last if $i >= $#words;
+            push @output, $words[$i];
+        }
+    }
+    
+    
+
+    push @output,'...' if !$printing;
+
+    return join '', @output;
+
+
+    }
+
 
