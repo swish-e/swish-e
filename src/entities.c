@@ -20,12 +20,14 @@ $Id$
 ** HTML entity routines (encoding, etc.):
 **
 ** internally we are working with int/wchar_t to support unicode-16 for future
-** enhancements of swish.
+** enhancements of swish (rasc - Rainer Scherg).
 **
-** 2001-05-05  rasc    
+** 2001-05-05  rasc   
 **
 */
 
+
+..... to be included into the other modules...
 //  Hardhat  area!!!  (rasc) module not active yet
 //   ToDo:  Lookup/Hash missing */
 
@@ -66,18 +68,17 @@ typedef struct {
   -- works like follow: Array of ASCII-7 start "positions" (1. char of entity name)
   -- each entry can have a chain of pointers
   -- e.g.  &quote; --> ['q']->ce(.name .code)
-                            ->next (chains all &q...;)
+  --                        ->next (chains all &q...;)
   -- lots of slots in the array will be empty because only [A-Z] and [a-z]
   -- is needed. But this cost hardly any memory, and is convenient...  (rasc)
  */
 
-typedef struct CEHE_node *CEHE_ptr; 
-typedef struct CEHE_node {
-     CEntity          *ce;
-     CEHE_ptr *next;
-} CE_HashEntry;
+struct CEHE {             /* CharEntityHashEntry*/
+     CEntity     *ce;
+     struct CEHE *next;
+};
 
-static CE_HashEntry *ce_hasharray[128];
+static struct CEHE *ce_hasharray[128];
 
 
 
@@ -406,7 +407,6 @@ void initModule_Entities (SWISH  *sw)
    struct MOD_Entities *md;
 
    
-
       md = (struct MOD_Entities *) emalloc(sizeof(struct MOD_Entities));
       sw->Entities = md;
 
@@ -420,28 +420,24 @@ void initModule_Entities (SWISH  *sw)
       {
        int          i;
        CEntity      *ce_p;
-       CE_HashEntry *hash_p, *tmp_p;
+       struct CEHE  **hash_pp, *tmp_p;
        
-fprintf (stderr,"arr size %d\n",sizeof(ce_hasharray)/sizeof(CE_HashEntry));
-
         /* empty positions */
-        for (i=0; i< sizeof(ce_hasharray)/sizeof(CE_HashEntry); i++)
-            ce_hasharray[i] = (CE_HashEntry *)NULL;
+        for (i=0; i< sizeof(ce_hasharray)/sizeof(ce_hasharray[0]); i++)
+            ce_hasharray[i] = (struct CEHE *)NULL;
 
         /* fill entity table into hash */
         for (i=0; entity_table[i].name; i++) {
                ce_p = &entity_table[i];
-               hash_p = & ce_hasharray[(int)*(ce_p->name)];
+               hash_pp = &ce_hasharray[(int)*(ce_p->name) & 0x7F];
                /* insert entity-ptr at start of ptr sequence in hash */
-               tmp_p = *hash_p;
-		   *hash_p = (CE_HashEntry *)emalloc(sizeof(CE_HashEntry));
-               hash_p->ce = ce_p;
-               hash_p->next = tmp_p;
+               tmp_p = *hash_pp;
+		   *hash_pp = (struct CEHE *)emalloc(sizeof(struct CEHE));
+               (*hash_pp)->ce = ce_p;
+               (*hash_pp)->next = tmp_p;
         }  
 
       } /* end init hash block */
-
-debugModule_Entities ();  //$$$$
 
 }
 
@@ -467,20 +463,20 @@ void freeModule_Entities (SWISH *sw)
       */
       {
        int          i;
-       CE_HashEntry  *hash_p, *tmp_p;
+       struct CEHE  *hash_p, *tmp_p;
        
         /* free ptr "chains" in array */
-        for (i=0; i< sizeof(ce_hasharray)/sizeof(CE_HashEntry); i++) {
-            hash_p = & ce_hasharray[i];
+        for (i=0; i< sizeof(ce_hasharray)/sizeof(ce_hasharray[0]); i++) {
+            hash_p = ce_hasharray[i];
             while (hash_p) {
                  tmp_p = hash_p->next;
                  efree (hash_p);
                  hash_p = tmp_p;
             }
+            ce_hasharray[i] = (struct CEHE *)NULL;
         }
 
       } /* end free hash block */
-
 
 }
 
@@ -599,11 +595,11 @@ int charEntityDecode (unsigned char **buf)
 
 {
   unsigned char *s, *s1,*t;
-  CEntity  *ce_tab;
+  unsigned char s_cmp[MAX_ENTITY_LEN+1];
   int len;
   int code;
 
-  ce_tab = entity_table;
+
   s = *buf;
 
   /*
@@ -622,15 +618,17 @@ int charEntityDecode (unsigned char **buf)
  len = 0;
  t = NULL;
  s1 = s;
- while (*(++s1) && (++len <= MAX_ENTITY_LEN)) {
+ while (*(++s1) && (len < MAX_ENTITY_LEN)) {
+    s_cmp[len] = *s1;
     if (*s1 == ';') {
         t = s1;
         break;
     }
+    len ++;
  }
 
  if (! t) return (int) *s;  /* ';' must be present! */
- len--;
+ s_cmp[len] = '\0';
 
 
  /* ok, seems valid process entity */
@@ -642,7 +640,8 @@ int charEntityDecode (unsigned char **buf)
     switch (*(++s)) {
         case 'x':
         case 'X':
-             code = (int) strtoul (++s,(char **)&s, (int)16);
+             ++s;     /* skip x */
+             code = (int) strtoul (s,(char **)&s,(int)16);
              break;
         default:
              code = (int) strtoul (s,(char **)&s,(int)10); 
@@ -657,16 +656,25 @@ int charEntityDecode (unsigned char **buf)
 
  } else {
 
-   // $$$$$$  we need a hash here! */
-   /* search entity table  casesensitive! */
-   ce_tab = entity_table;
-   while (ce_tab->name) {
-     if (!strncmp (ce_tab->name,s,len)) {
-        *buf = t+1;
-        return ce_tab->code;
-     }
-     ce_tab++;
-   }
+
+      /*
+         -- hash search block
+         -- case sensitiv search
+         -- (& 0x7F to prevent hashtable mem coredumps by illegal chars)
+       */
+      {
+       struct CEHE  *hash_p;
+
+       hash_p = ce_hasharray[*s & 0x7F];
+       while (hash_p) {
+           if (!strcmp (hash_p->ce->name,s_cmp)) {
+               *buf = t+1;
+               return hash_p->ce->code;
+           }
+           hash_p = hash_p->next;
+       }
+
+      } /* end hash search block */
 
  }
 
@@ -676,70 +684,4 @@ int charEntityDecode (unsigned char **buf)
 }
 
 
-
-
-
-
-/*
- TEST
-*/
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <strings.h>
-
-
-int xmain ()
-
-{
- char *s;
- char buf[1024];
- int  i;
-
-
-  while (gets(buf)) {
-     printf ("in: __%s__\n",buf);
-     s = buf;
-
-     i = charEntityDecode ((unsigned char **)&s);
-     printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,s);
-  }
-
-  return 0;
-}
-
-
-
-
-
-int debugModule_Entities ()
-
-{
-
-
-      /* 
-        -- debug local entity hash table 
-      */
-      {
-       int          i;
-       CE_HashEntry  *hash_p;
-       
-        /* free ptr "chains" in array */
-        for (i=0; i< sizeof(ce_hasharray)/sizeof(CE_HashEntry); i++) {
-            hash_p = & ce_hasharray[i];
-            fprintf (stderr,"Hash-Entry: %d ('%c'):\n",i,(char)i);
-            while (hash_p) {
-                 fprintf (stderr,"--> '%s' (%d)\n",hash_p->ce->name,hash_p->ce->code);
-                 hash_p = hash_p->next;
-            }
-        }
-
-      } /* end debug hash block */
-
-
-  xmain();
-  return 0;
-
-}
 
