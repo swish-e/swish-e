@@ -48,7 +48,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             structure,
             index_structfreq,
             filenum;
-    long    nextposmetaname;
+    unsigned long    nextposmetaname;
     struct  file *fi = NULL;
     struct  docPropertyEntry *docProperties = NULL;
     char    ISOTime[20];
@@ -106,7 +106,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             metaname = x;
             if (metaname)
             {
-                UNPACKLONG2(nextposmetaname,s); s += sizeof(long);
+                nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
                 x = uncompress2(&s); /* First file */
             }
             while (x)
@@ -154,7 +154,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     metaname = x;
                     if (metaname)
                     {
-                        UNPACKLONG2(nextposmetaname,s); 
+                        nextposmetaname = UNPACKLONG2(s); 
                         s += sizeof(long);
                         x = uncompress2(&s);
                     }

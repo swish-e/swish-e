@@ -805,8 +805,8 @@ void    SwishFree(SWISH *);
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from index file
 */
-void    printlong(FILE *, long);
-long    readlong(FILE *);
+void    printlong(FILE *, unsigned long);
+unsigned long    readlong(FILE *);
 
 /* strcpy doesn't check for overflow in the 'to' string */
 /* strncpy doesn't guarantee null byte termination */

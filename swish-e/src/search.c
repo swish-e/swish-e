@@ -969,8 +969,8 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     RESULT *rp,
            *rp2,
            *tmp;
-    long    wordID,
-            nextposmetaname;
+    long    wordID;
+    unsigned long  nextposmetaname;
     char   *p;
     int     tfrequency = 0;
     unsigned char   *s, *buffer; 
@@ -1052,7 +1052,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         curmetaID = uncompress2(&s);
         while (curmetaID)
         {
-            UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
+            nextposmetaname = UNPACKLONG2(s);s += sizeof(long);
             if (curmetaID >= metaID)
                 break;
             s = buffer + nextposmetaname;
