@@ -27,6 +27,7 @@ Pre 2.2 some internal data was stored in fixed locations within the index, namel
 file name, file size, and title.  2.2 introduced new internal data such as the last modified date, and
 document summaries.
 This data is considered I<meta data> since it is data about a document.
+
 Instead of adding new data to the internal structure of the index file, it was decided to use the MetaNames
 and PropertyNames feature of swish to store this meta information.
 This allows for new meta data to be added at a later time (e.g. Content-type), and provides an easy and customizable
@@ -36,6 +37,7 @@ In addition, this data can now be sorted by this internal data.
 For example, to sort by the rank and title:
 
     swish-e -w foo -s swishrank desc swishtitle asc
+
 
 =item * The header display has been slightly reorganized.
 
@@ -140,8 +142,9 @@ more info.
 
 =item * New directives: IndexContents and DefaultContents
 
-Previously, swish parsed all documents as HTML documents.  Now swish knows how to parse HTML, TXT, and XML
-documents.  The IndexContents and DefaultContents tells swish how to index files by their extension.
+The IndexContents directive assigns internal Swish document parsers
+to files based on their file type.  The DefaultContents directive assigns
+a parser to be used on file that are not assigned a parser with IndexContents.
 
 =item * New directive: UndefinedMetaTags [error|ignore|index|auto]
 
@@ -194,6 +197,19 @@ In the future we may use separate IgnoreFirst/Last settings for buzzwords since,
 index all C<+> within swish words, but strip C<+> from the start/end of swish words, 
 but not from the buzzword C<C++>.
 
+=item * New directives: PropertyNamesNumeric PropertyNamesDate
+
+Before Swish 2.2 all user-defined document properties were stored in the index
+as strings.  PropertyNamesNumeric and PropertyNamesDate tells swish that
+a property should be stored in binary format.  This allows for correct sorting
+of numeric properties.
+
+Currenly, only integers can be stored, such as a unix timestamp.
+(Swish uses C<strtoul> to convert the number to an unsigned long internally.)
+
+PropertyNamesDate only indicates to swish that a number is a unix timestamp, and
+to display the property as a formatted time when printing results.
+Swish can not currently parse date strings.
 
 
 =back
@@ -232,6 +248,10 @@ Now -d can accept some back-slashed characters to be used as output separators.
 
 Now -P sets the phrase delimiter character in searches.
 
+=item * New command line argument C<-L>
+
+Swish 2.2 contains an B<experimental> feature to limit results by a range
+of property values.  This behavior of this feature may change in the future.
 
 
 =back

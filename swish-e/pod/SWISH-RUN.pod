@@ -379,6 +379,53 @@ sort descending by title, ascending by name
 
     -s title desc name asc
 
+=item -L limit to a range of property values (Limit)
+
+B<This is an experimental feature!>
+
+The -L switch can be used to limit search results to a range of properties
+(properties are defined with the PropertyNames* family of directives).
+Properties must be presorted for this feature to work.
+(Presorted properties is the default swish behavior.)
+This feature will not work with C<swishrank> or C<swishdbfile> properties.
+
+Example:
+
+    swish-e -w foo -L swishtitle a m
+
+finds all documents that contain the word C<foo>, and where the
+document's title is in the range of C<a> to C<m>, inclusive.
+Limiting may be done with user-defined properties, as well.
+
+For example, if you indexed documents that contain a created timestamp in a meta tag:
+
+    <meta name="created_on" content="982648324">
+
+Then you tell Swish that you have a property called C<created_on>, and that
+it's a timestamp.
+
+    PropertyNamesDate created_on
+
+After indexing you will be able to limit documents to a range of timestamps:
+
+    -w foo -L created_on  946684800 949363199
+
+will find documents containing the word foo and that have a created_on
+date from the start of Jan 1, 2000 to the end of Jan 31, 2000.
+
+Note: swish currently does not parse dates; Unix timestamps must be used.
+
+Two special formats can be used:
+
+    -L swishtitle <= m
+    -L swishtitle >= m
+
+Finds titles less than or equal, or grater than or equal to the letter C<m>.
+Case is ignored when comparing strings.
+
+
+This is an experimental feature, and its use and interface are subject to change.
+
 =item -x formatstring (extended output format)
 
 The C<-x> switch defines the output format string.
