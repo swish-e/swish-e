@@ -160,15 +160,15 @@ static int			last;
 
 #endif
 
-static unsigned long MAllocCalls = 0;
-static unsigned long MReallocCalls = 0;
-static unsigned long MFreeCalls = 0;
-static unsigned long MAllocCurrentOverhead = 0;
-static unsigned long MAllocMaximumOverhead = 0;
-static unsigned long MAllocCurrent = 0;
-static unsigned long MAllocMaximum = 0;
-static unsigned long MAllocCurrentEstimated = 0;
-static unsigned long MAllocMaximumEstimated = 0;
+static unsigned int MAllocCalls = 0;
+static unsigned int MReallocCalls = 0;
+static unsigned int MFreeCalls = 0;
+static size_t MAllocCurrentOverhead = 0;
+static size_t MAllocMaximumOverhead = 0;
+static size_t MAllocCurrent = 0;
+static size_t MAllocMaximum = 0;
+static size_t MAllocCurrentEstimated = 0;
+static size_t MAllocMaximumEstimated = 0;
 
 
 #if MEM_DEBUG
@@ -317,7 +317,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
 	Header->Trace = AllocTrace(file, line, MemPtr, Size);
 #endif
 
-//	printf("Alloc: %s line %d: Addr: %08X Size: %ld\n", file, line, MemPtr, Size);
+//	printf("Alloc: %s line %d: Addr: %08X Size: %u\n", file, line, MemPtr, Size);
 
     return (MemPtr);
 }
@@ -402,7 +402,7 @@ void  Mem_Free (void *Address, char *file, int line)
     UserSize = Header->Size;
     MemSize = UserSize + MEM_OVERHEAD_SIZE;
 
-//	printf("Free: %s line %d: Addr: %08X Size: %ld\n", file, line, Address, UserSize);
+//	printf("Free: %s line %d: Addr: %08X Size: %u\n", file, line, Address, UserSize);
 
 #if MEM_TRACE
 	Free = Header->Trace;
@@ -450,7 +450,7 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
 
 	Mem_Free(Address, file, line);
 
-//	printf("Realloc: %s line %d: Addr: %08X Size: %ld to %ld\n", file, line, Address, OldSize, Size);
+//	printf("Realloc: %s line %d: Addr: %08X Size: %u to %u\n", file, line, Address, OldSize, Size);
 
 	return MemPtr;
 }
@@ -463,9 +463,9 @@ void Mem_Summary(char *title, int final)
 
 #if MEM_STATISTICS
 	printf("\nMemory usage summary: %s\n\n", title);
-	printf("Alloc calls: %d, Realloc calls: %ld, Free calls: %ld\n",  MAllocCalls, MReallocCalls, MFreeCalls);
-	printf("Requested: Maximum usage: %ld, Current usage: %ld\n",  MAllocMaximum,  MAllocCurrent);
-	printf("Estimated: Maximum usage: %ld, Current usage: %ld\n",  MAllocMaximumEstimated,  MAllocCurrentEstimated);
+	printf("Alloc calls: %u, Realloc calls: %u, Free calls: %u\n",  MAllocCalls, MReallocCalls, MFreeCalls);
+	printf("Requested: Maximum usage: %u, Current usage: %u\n",  MAllocMaximum,  MAllocCurrent);
+	printf("Estimated: Maximum usage: %u, Current usage: %u\n",  MAllocMaximumEstimated,  MAllocCurrentEstimated);
 
 #endif
 
@@ -540,7 +540,7 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 
 	head->attributes = attributes;
 	head->allocs = 0;
-	head->next = allocChunk(size);
+	head->next = NULL;
 
 	return head;
 }
@@ -564,7 +564,7 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 	   chunk allocate a new buffer just for that!
 	*/
 
-	if (zone->free < size)
+	if (!zone || (zone->free < size))
 	{
 		newzone = allocChunk(size > head->size ? size : head->size);
 		head->next = newzone;
@@ -627,6 +627,6 @@ void Mem_ZoneStatistics(MEM_ZONE *head)
 
 	wasted -= free;
 
-	printf("Zone '%s':\n  Chunks:%d, Allocs:%d, Used:%ld, Free:%ld, Wasted:%ld\n",
+	printf("Zone '%s':\n  Chunks:%d, Allocs:%u, Used:%u, Free:%u, Wasted:%u\n",
 		head->name, chunks, head->allocs, used, free, wasted);
 }
