@@ -4,34 +4,55 @@ use Pod::POM;
 use Pod::POM::View::HTML;
 use base 'Template::Plugin';
 
-use vars '@pod_toc';
-
 my %split_by = map {"head".$_ => 1} 1..4;
 
 my $view_mode = 'Pod::POM::View::HTML';  # The view module
 
 # *Much* of this is based on (or copied from) Stas' DocSet 0.17
+# This takes a pod file and uses Pod::POM to split it into sections, builds a table
+# of contents and generates the HTML.
+#
+# Will also cache the page's OVERVIEW
+# 
 # I'm not sure why spaces need to be removed from links.  Pod::POM doesn't remove them.
+# Escaping of links and hrefs and name tags needs to be checked.  There was just a discussion
+# on the TT list about escaping hrefs.  Then the xhtml validation rejected % and spaces,
+# so no replace all non-word chars with an underscore.
+#
+# Todo:
+#   might be nice to cache links to make sure there's no duplicates
+#   and also need a way to cross validate links (but can use an external link checker)
 
 sub new {
     my ( $class, $context, $content ) = @_;
 
-    # How's this for a hack?
-    return \@pod_toc if $content eq 'toc';
 
     # Grab pod index variable
     my $stash = $context->stash;
-    my $page = $stash->get( ['page', 0, 'id', 0 ] );
+    my $page = $stash->get( 'page.id' );
+    my $template_name = $stash->get( 'template.name' );
 
-    my $parser = Pod::POM->new( warn => 0 );  # Need to fetch template.name for warnings
+    my $warn = sub { warn "[$template_name]: @_\n" };
+    # $warn = 0;  # disable warnings
 
+    my $parser = Pod::POM->new( warn => $warn );    # Make this a coderef to report name
     my $pom = $parser->parse_text( $content );
 
-    combine_verbatim_sections_hack( $pom );
+    combine_verbatim_sections_hack( $pom );     # merge sequential <pre> sections into one
 
-    my @sections = $pom->head1;  # get pod into sections
 
-    my %data = ( pom => $pom );
+    my @sections = $pom->head1;                 # get pod into sections
+
+
+    # Structure for returning info to template
+
+    my %data = (
+        pom         => $pom ,
+        view        => 'My::Pod::View::HTML',
+        sections    => \@sections,
+        podparts    => [ slice_by_head(@sections) ],
+        toc         => fetch_toc( \@sections ),
+    );
 
 
     # Get title of document
@@ -40,27 +61,25 @@ sub new {
         $data{title} =~ s/^\s*|\s*$//sg;  # strip;
     }
 
-    $data{sections} = \@sections;
 
-    $data{podparts} = [ slice_by_head(@sections) ];
+    # Cache this page and overview for creating a table of contents page
+    # the bin/build script passes in the hash reference
 
-    $data{toc} = fetch_toc( \@sections );
-
-
-    # Look for an overview
-
-    push @pod_toc, {
-        page    => $page,
-        title   => $data{title},
-        abstract => fetch_abstract( $data{sections} ),
+    if ( my $cache = $stash->get( 'toc_cache' ) ) {
+        $cache->{ $template_name } = {
+            page    => $page,
+            title   => $data{title},
+            abstract => fetch_abstract( $data{sections} ),
+        };
     };
-
-
-    $data{view} = 'My::Pod::View::HTML';
 
 
     return \%data;
 }
+
+
+
+#-----------------------------------------------------------------------------
 
 sub slice_by_head {
     my @sections = @_;

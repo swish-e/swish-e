@@ -181,7 +181,7 @@
         menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs' ]
         page    = {
             daily       = {
-                name    = 'Swish-Daily'
+                name    = 'swish-daily'
                 tooltip = 'Daily snapshots from CVS'
             }
 
@@ -191,12 +191,12 @@
             }
 
             cvs         = {
-                name        = 'CVS info'
+                name        = 'cvs info'
                 tooltip     = 'How to build Swish-e from CVS'
             }
 
             view_cvs    = {
-                name        = 'View CVS'
+                name        = 'view cvs'
                 external    = 'http://cvs.sourceforge.net/viewcvs.py/swishe/'
                 tooltip     = 'Go to the SourceForge.net Swish-e CVS Repository'
             }
@@ -210,12 +210,12 @@
         menu    = ['old', 'daily' ]
         page    = {
             old     = {
-                name    = 'Archives'
+                name    = 'archives'
                 tooltip = 'Previous versions'
             }
 
             daily = {
-                name    = 'Daily Builds'
+                name    = 'daily builds'
                 tooltip = 'Daily packages from CVS'
                 file    = 'devel/daily.html'
             }

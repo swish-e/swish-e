@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use FindBin '$Bin';
 
+
 #=======================================================================
 # Sat Jan  8 06:56:06 PST 2005 - moseley
 #
@@ -10,12 +11,22 @@ use FindBin '$Bin';
 # script written by Peter Karman.  Peter made it look to simple, so
 # I rewrote it to make it much more complex.
 #
+# The script exits true (zero) if ANY files are processed.
+#
+# Maintains a cache of table of contents from the pod files so that
+# only changes need to be updated (docs/index.html knows when to get generated)
+#
 # This roughly follows the examples in the Badger book, chapter 11.
 #
 # Questions/TODO
 #   Should utime the output files to match timestamp of input
 #   Might be useful is reading from cvs or where someone's machine
 #   might be off in time
+#
+#   Currenly, the download dirs are defined in lib/config/site.
+#   Means can't easily check to see if those pages need to be updated.
+#   Since they don't change often, just do a -all run once a day (to catch
+#   the swish-daily updates).
 #
 #   -src sucks as a name.  Is that the location of the source html files?
 #   No, it's the top-level directory because it expects lib and src
@@ -27,6 +38,10 @@ $ENV{TZ} = 'UTC';  # Show all dates in UTC
 
 # List of pod files relative to INCLUDE_PATH
 # swish.css is needed for stand-alone html docs.
+
+
+use vars '$exit_value';
+$exit_value = 1;  # no files processed yet.
 
 my @pod_files = qw(
     pod/README.pod
@@ -132,8 +147,12 @@ $0 usage:
                       relative to -src unless absolute.
     -ignore         = add regex of files to skip.
 
+
+    Script exits false (1) if no files are actually processed.
+    Exits false even if -all -dryrun is used.
+    Exits true is at least one file was processed.
 EOF
-    exit 1;
+    exit 2;
     };
 
 # This sucks because you cannot override arrays with Getopt::Long
@@ -175,6 +194,11 @@ $SIG{__DIE__} = '';
 
 
 
+
+# Build everything here
+
+
+
 my $generator = DocBuilder->new( $config );
 
 $generator->pods( \@pod_files, 'swishsrc' ) if $config->swishsrc;
@@ -185,7 +209,7 @@ $generator->pods( \@pod_files, 'develsrc' )
 
 
 
-exit;
+exit $exit_value;
 
 
 #==============================================================================
@@ -206,6 +230,7 @@ use File::Basename;
 use File::Copy;
 use Template;
 use Template::Constants qw( :debug );
+use Storable;  # cache
 
 sub new {
     my ( $class, $config ) = @_;
@@ -355,9 +380,11 @@ sub build_accessors {
 #
 # Start off using Peter's existing work.  Much easier that way...
 #------------------------------------------------------------------------
+#
 
 sub pods {
     my ( $self, $pod_files, $key ) = @_;
+
 
     # Add source directory to INCLUDE_PATH
 
@@ -366,22 +393,55 @@ sub pods {
     my $include_path = $self->include_path;
     unshift @$include_path, $src_dir;
 
+
+
+    # Fetch toc cache from disk
+    my $cache_file = File::Spec->catfile( $self->topdir, 'toc_cache.storable' );
+    my $toc_cache;
+
+    eval { $toc_cache = retrieve( $cache_file ) };
+    warn "Cache file [$cache_file] not found\n" if $@;
+    $toc_cache = {} unless ref $toc_cache eq 'HASH';
+
+
+    # Create sub-cache for this source, if doesn't exist
+    # When processing a pod file the POD plugin will update its own cache entry
+    # in the hash.
+
+    my $this_toc_cache = $toc_cache->{$key} ||= {};
+
+
+
+
+
     # set where the docs should be written
     my $out_prefix = $key eq 'swishsrc' ? 'docs' : 'devel/devel_docs';
 
     my $version = $self->get_swish_version( $src_dir );
 
+
+    my $update_index = 0;
+
     for my $in_file ( @$pod_files ) {
 
         my $out_file = basename( $in_file );
 
-        my $doc_type;
 
-        # Change pods to .html -- remove 
+        # Change pods to .html
+
+        my $doc_type = '';
         if ( $out_file =~ /\.(pod|pm|pl|cgi)/ ) {
-            ($out_file) = map { s/\.in$//; s/\.(pod|pm|pl)$//; lc($_).'.html' } ($out_file);
             $doc_type = 'pod';
+            ($out_file) = map { s/\.in$//; s/\.(pod|pm|pl)$//; lc($_).'.html' } ($out_file);
         }
+
+        # Force processing of every pod if there's not cache entry for it.
+        # And force index.html if any pods were processed
+        # Note that '$in_file' ends up as template.name and is key used by POD plugin
+        my $all = $config->all || 0;
+        $config->{all} = 1 if $out_file eq 'index.html' && $update_index;
+        $config->{all} = 1 if $doc_type eq 'pod' && !$this_toc_cache->{$in_file};
+
 
         # Set destination directory
         my $abslinks = $self->config->abslinks;
@@ -392,17 +452,29 @@ sub pods {
         # Now process it as a template
         my $vars = {
             this => {
-                type    => $doc_type,
-                page_id => basename( $out_file ),
-                podfile => 1,
-                abslinks => $abslinks,
+                type        => $doc_type,
+                page_id     => basename( $out_file ),
+                podfile     => 1,
+                abslinks    => $abslinks,
                 swish_version => $version,
             },
-            mode    => 0644,
+            mode        => 0644,
+            toc_cache   => $this_toc_cache,  # processing a pod updates this hash
+            pod_files   => $pod_files,       # this is used to generate the toc
         };
 
-        $self->process_file( $in_file, $out_file, $vars );
+        my $processed = $self->process_file( $in_file, $out_file, $vars );
+
+        $update_index++ if $doc_type eq 'pod' && $processed;  # need to update the index 
+                                                # if any pod files processed
+                                                # might be better for POD plugin to set flag
+
+        $config->{all} = $all;  # reset (guess I need a set method)
     }
+
+    # Write out cache
+    store $toc_cache, $cache_file;
+
 
     shift @$include_path;  # remove source dir.
 }
@@ -460,7 +532,6 @@ sub logfile {
 #=========================================================================
 # generate_website()
 #   Recurses $topsrc/src generating output to $dest
-#   Time stamps are checked unless $config->all
 #   output files match perms on input file
 #
 #   $sub_dir is the directory relative to $self->src_dir
@@ -508,7 +579,7 @@ sub website {
 
     $self->process_file( $_, $_ ) for @files;
 
-    $self->website( $_ ) for @dirs;
+    $self->website( $_ ) for @dirs;  # Recurse
 }
 
 #=========================================================================
@@ -517,6 +588,9 @@ sub website {
 #   $in_file - input file relative to INCLUDE_PATH
 #   $out_file - output file relative to OUTPUT_PATH
 #   $options  - hash ref of options to add to $vars
+#
+# returns:
+#   true if processed the file (didn't skip for some reason)
 #
 # Checks that input file is newer than output file
 #-------------------------------------------------------------------------
@@ -550,6 +624,8 @@ sub process_file {
         $self->logfile('Copy', $in_file, (stat $inpath)[7]);
         return if $self->config->dryrun;
 
+        $main::exit_value = 0;
+
         copy( $inpath, $outpath );
         chmod( ( stat $inpath)[2] , $outpath );
         return;
@@ -581,11 +657,15 @@ sub process_file {
     $self->template->process( $in_file, $vars, $output ) || warn  $self->template->error . "\n";
 
     $self->logfile('Process', $in_file, length $capture || (stat $outpath)[7]);
-    return if $self->config->dryrun;
+    return 1 if $self->config->dryrun;
+
+    $main::exit_value = 0;
 
     my $mode = $options->{mode} || ( stat $inpath)[2];
 
     chmod( $mode , $outpath );
+
+    return 1;  # return true if processed a file
 
 }
 

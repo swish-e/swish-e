@@ -4,7 +4,6 @@
     title   = 'Documentation Table of Contents'
 %]
 
-[% USE toc = POD('toc') %]
 
 <!-- noindex -->
 
@@ -14,7 +13,11 @@ Version [% swish.version %]
 <h2>Table of Contents</h2>
 
 <ul class="toc">
-[% FOREACH item = toc %]
+[% FOREACH pod = pod_files %]
+
+    [% SET item = toc_cache.$pod %]
+    [% NEXT UNLESS item %]
+
     <li class="top-level">
         <a href="[% item.page %]">[% item.title %]</a>
 
