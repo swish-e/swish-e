@@ -126,13 +126,14 @@ int http_already_indexed(SWISH *sw, char *url)
   
   int len;
   unsigned hashval;
+  struct MOD_Index *idx = sw->Index;
   
   /* Hash with via the uri alone.  Depending on the equivalent
   ** servers, we may or may not make the decision of the entire
   ** url or just the uri.
   */
   hashval = bighash(url_uri(url,&len)); /* Search hash for this file. */
-  for ( p = sw->Index->url_hash[hashval]; p != NULL; p = p->next )
+  for ( p = idx->url_hash[hashval]; p != NULL; p = p->next )
     if ( (strcmp(url, p->url ) == 0) ||
 	 (equivalentserver(sw, url, p->url) &&
 	  (strcmp(url_uri(url, &len), url_uri(p->url, &len)) == 0)) )
@@ -146,8 +147,8 @@ int http_already_indexed(SWISH *sw, char *url)
 	/* Not found, make new entry. */
   p = (struct url_info*)emalloc(sizeof(struct url_info));
   p->url = estrdup(url);
-  p->next = sw->Index->url_hash[hashval];
-  sw->Index->url_hash[hashval] = p;
+  p->next = idx->url_hash[hashval];
+  idx->url_hash[hashval] = p;
 	
   return 0;
 }
@@ -209,6 +210,7 @@ int get(SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *
   int code,cmdsize;
   FILE *fp;
   char *command;
+  struct MOD_Index *idx = sw->Index;
 #ifdef _WIN32
   char* spiderprog = "swishspider.pl";
   char commandline[] = "perl.exe %s%s %s/swishspider@%ld \"%s\"";
@@ -235,17 +237,17 @@ int get(SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *
     /* URLs can get quite large so don't depend on a fixed size buffer.  The
     ** +MAXPIDLEN is for the pid identifier and the trailing null.
     **/
-    cmdsize = strlen(sw->Index->spiderdirectory) + strlen(url) + strlen(sw->Index->tmpdir)
+    cmdsize = strlen(idx->spiderdirectory) + strlen(url) + strlen(idx->tmpdir)
             + strlen(commandline) + strlen(spiderprog) + MAXPIDLEN;
     command = (char *)emalloc(cmdsize + 1);
-    sprintf(command, commandline, sw->Index->spiderdirectory, spiderprog, sw->Index->tmpdir, lgetpid(), url);
+    sprintf(command, commandline, idx->spiderdirectory, spiderprog, idx->tmpdir, lgetpid(), url);
     
     if (system(command) == 0) {
-      if((int)(strlen(sw->Index->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
-	lenbuffer=strlen(sw->Index->tmpdir)+MAXPIDLEN+200;
+      if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+	lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+200;
 	buffer=erealloc(buffer,lenbuffer+1);
       }
-      sprintf(buffer, "%s/swishspider@%ld.response", sw->Index->tmpdir, (long) lgetpid());
+      sprintf(buffer, "%s/swishspider@%ld.response", idx->tmpdir, (long) lgetpid());
       fp = fopen(buffer, "r");
       fgets(buffer, lenbuffer, fp);
       code = atoi(buffer);
@@ -377,7 +379,7 @@ char *link;
 char *p;
 FileProp *fprop;
 FILE *fp;
-
+struct MOD_Index *idx = sw->Index;
 
     if(!lenbuffer)buffer=emalloc((lenbuffer=MAXFILELEN)+1);
     if(!lentitle)title=emalloc((lentitle=MAXSTRLEN)+1);
@@ -407,11 +409,11 @@ FILE *fp;
 			/* Patch from Steve van der Burg */
 			/* change from strcmp to strncmp */
 			if (strncmp(contenttype, "text/html",9) == 0) {
-				if((int)(strlen(sw->Index->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
-					lenbuffer=strlen(sw->Index->tmpdir)+MAXPIDLEN+200;
+				if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+					lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+200;
 					buffer=erealloc(buffer,lenbuffer+1);
 				}
-				sprintf(buffer, "%s/swishspider@%ld.contents", sw->Index->tmpdir, (long)lgetpid());
+				sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
 				title=SafeStrCopy(title, (char *) (tmptitle=parsetitle(buffer, item->url)),&lentitle);
 				efree(tmptitle);
 			} else {
@@ -423,11 +425,11 @@ FILE *fp;
 		
 
 
-	  		if((int)(strlen(sw->Index->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
-				lenbuffer=strlen(sw->Index->tmpdir)+MAXPIDLEN+200;
+	  		if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+				lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
-			sprintf(buffer, "%s/swishspider@%ld.contents", sw->Index->tmpdir, (long)lgetpid());
+			sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
 
 
 			/* -- to retrieve last modification date of the
@@ -469,11 +471,11 @@ FILE *fp;
 			
 			/* add new links
 			**/
-			if((int)(strlen(sw->Index->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
-				lenbuffer=strlen(sw->Index->tmpdir)+MAXPIDLEN+200;
+			if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+				lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
-			sprintf (buffer, "%s/swishspider@%ld.links", sw->Index->tmpdir, (long)lgetpid());
+			sprintf (buffer, "%s/swishspider@%ld.links", idx->tmpdir, (long)lgetpid());
 			if ((fp = fopen(buffer, "r")) != NULL) {
 				
 			/* URLs can get quite large so don't depend on a fixed size buffer
@@ -490,9 +492,9 @@ FILE *fp;
 		
 		/* Clean up the files left by swishspider
 		**/
-		cmdf(unlink, "%s/swishspider@%ld.response", sw->Index->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.contents", sw->Index->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.links", sw->Index->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());
     }
 }
 
@@ -511,6 +513,7 @@ int http_parseconfline(SWISH *sw,void *l)
     struct multiswline *list;
     struct swline *slist;
     StringList *sl = (StringList *)l;
+    struct MOD_Index *idx = sw->Index;
 
 	if(strcasecmp(sl->word[0],"maxdepth")==0)
 	{
@@ -533,17 +536,17 @@ int http_parseconfline(SWISH *sw,void *l)
 		if(sl->n==2)
 		{
 			rv=1;
-			sw->Index->spiderdirectory = SafeStrCopy(sw->Index->spiderdirectory,sl->word[1],&sw->Index->lenspiderdirectory);
-			len = strlen(sw->Index->spiderdirectory);
+			idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,sl->word[1],&idx->lenspiderdirectory);
+			len = strlen(idx->spiderdirectory);
 			/* Make sure the directory has a trailing slash */
-			if (len && (sw->Index->spiderdirectory[len - 1] != '/')) 
+			if (len && (idx->spiderdirectory[len - 1] != '/')) 
 			{
-				if(len == sw->Index->lenspiderdirectory) 
-					sw->Index->spiderdirectory=erealloc(sw->Index->spiderdirectory,++sw->Index->lenspiderdirectory+1);
-				strcat(sw->Index->spiderdirectory, "/");
+				if(len == idx->lenspiderdirectory) 
+					idx->spiderdirectory=erealloc(idx->spiderdirectory,++idx->lenspiderdirectory+1);
+				strcat(idx->spiderdirectory, "/");
 			}
-			if(!isdirectory(sw->Index->spiderdirectory)) {
-				progerr("SpiderDirectory. %s is not a directory",sw->Index->spiderdirectory);
+			if(!isdirectory(idx->spiderdirectory)) {
+				progerr("SpiderDirectory. %s is not a directory",idx->spiderdirectory);
 			}
 		} 
 		else progerr("SpiderDirectory requires one value");
