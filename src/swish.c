@@ -875,7 +875,7 @@ void usage()
 	printf("         -D : decodes an index file\n");
 	printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
-	printf("         -d : next param is delimiter.");
+	printf("         -d : next param is delimiter.\n");
 	printf("         -P : next param is Phrase delimiter.\n");
 	printf("         -V : prints the current version\n");
 	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");

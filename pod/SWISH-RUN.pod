@@ -472,11 +472,11 @@ This gives access to the settings used to generate each index file.
 Even when searching a single index file, C<-H n> will provided additional information about the index file,
 how it was indexed, and how swish is interperting the query.
 
-    -H 0 :  print no header information, output only search result entries.
-    -H 1 :  print standard result header (default).
-    -H 2 :  print add. header information for each searched index file.
-    -H 3 :  enhanced header output (e.g. print stopwords).
-    -H 9 :  print add. diagnostic information in the header of the results (changed from: C<-v 4>)
+    -H 0 : print no header information, output only search result entries.
+    -H 1 : print standard result header (default).
+    -H 2 : print additional header information for each searched index file.
+    -H 3 : enhanced header output (e.g. print stopwords).
+    -H 9 : print diagnostic information in the header of the results (changed from: C<-v 4>)
 
 
 =back

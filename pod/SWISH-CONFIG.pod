@@ -102,6 +102,10 @@ L<DontBumpPositionOnMetaTags|/"item_DontBumpPositionOnMetaTags"> *list of names*
 
 =item *
 
+L<EnableAltaVistaSyntax|/"item_EnableAltaVistaSyntax">  [yes|NO]
+
+=item *
+
 L<EndCharacter|/"item_EndCharacters"> *string of characters*
 
 =item *
@@ -134,15 +138,16 @@ L<IgnoreLimit|/"item_IgnoreLimit"> *integer integer*
 
 =item *
 
-L<IgnoreMeta|/"item_IgnoreMeta"> *list of names*
+L<IgnoreMetaTags|/"item_IgnoreMetaTags"> *list of names*
 
 =item *
+
 
 L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [yes|no]
 
 =item *
 
-L<IgnoreWords|/"item_IgnoreWords"> *list of stop words*
+L<IgnoreWords|/"item_IgnoreWords"> [*list of stop words*|File: path]
 
 =item *
 
@@ -210,7 +215,6 @@ L<NoContents|/"item_NoContents"> *list of file suffixes*
 
 =item *
 
-
 L<PropertyNames|/"item_PropertyNames"> *list of meta names*
 
 =item *
@@ -231,11 +235,24 @@ L<StoreDescription|/"item_StoreDescription"> [XML <tag>|HTML <meta>|TXT size]
 
 =item *
 
+L<SwishSearchDefaultRule|/"item_SwishSearchDefaultRule">   [<AND-WORD>|<or-word>]
+
+=item *
+
+L<SwishSearchOperators|/"item_SwishSearchOperators"> <and-word> <or-word> <not-word>
+
+
+=item *
+
 L<TmpDir|/"item_TmpDir"> *path*
 
 =item *
 
-L<TranslateCharacters|/"item_TranslateCharacters"> *string1 string2*
+L<TranslateCharacters|/"item_TranslateCharacters"> [*string1 string2*|:ascii7:]
+
+=item *
+
+L<TruncateDocSize|/"item_TruncateDocSize"> *number of characters*
 
 =item * 
 
@@ -248,6 +265,10 @@ L<UseStemming|/"item_UseStemming"> [yes|no]
 =item *
 
 L<UseSoundex|/"item_UseSoundex"> [yes|no]
+
+=item *
+
+L<UseWords|/"item_UseWords"> [*list of words*|File: path]
 
 =item *
 
@@ -283,6 +304,65 @@ Index file specifies the location of the generated index file.  If not specified
 the file F<index.swish-e> in the current directory.
 
     IndexFile /usr/local/swish/site.index
+
+
+=back
+
+B<The following items are currently not available until Swish can parse a configuration
+file while searching>
+
+=over 4
+
+=item EnableAltaVistaSyntax [yes|NO]
+    
+Allows the usage of a basic Altavista(c) like search syntax.
+This means a search query can contain "+" and "-" as syntax parameter.
+
+Example:
+
+    swish-e -w "+word1 +word2 -word3"
+    "+"  = following word has to be in document
+    "-"  = following word may not be in document
+  
+=item SwishSearchOperators <and-word> <or-word> <not-word>
+
+Using this config directive you can change the boolean search operators of
+swish-e, e.g. to adapt these to your language.
+The default is:    AND  OR  NOT
+
+Example:
+
+    SwishSearchOperators   UND  ODER  NICHT
+
+=item SwishSearchDefaultRule   [<AND-WORD>|<or-word>]
+
+C<SwishSearchDefaultRule> defines the default Boolean operator to use if none is
+specified between words or phrases.  The default is C<AND>.
+
+The word you specify must match one of the available C<SwishSearchOperators>.
+
+Example:
+
+    SwishSearchOperators   UND  ODER  NICHT
+    # Make it act like a web search engine
+    SwishSearchDefaultRule ODER
+
+
+=item ResultExtFormatName name -x format string
+
+The output of swish can be defined by specifying a format string with the C<-x>
+command line argument.  Using C<ResultExtFormatName> you can assign a predefined format
+string to a name.
+
+Examples:
+
+    ResultExtFormatName  moreinfo   "%c|%r|%t|%p|<author>|<publishyear>\n"
+
+Then when searching you can specify the the format string's name
+   
+    swish-e   ...  -x moreinfo  ...
+
+See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information about output formats.
 
 =back
 
@@ -320,21 +400,6 @@ Examples:
     IndexPointer "http://localhost/swish/linux/index.html"
     IndexAdmin "webmaster"
 
-=item ResultExtFormatName name -x format string
-
-The output of swish can be defined by specifying a format string with the C<-x>
-command line argument.  Using C<ResultExtFormatName> you can assign a predefined format
-string to a name.
-
-Examples:
-
-    ResultExtFormatName  moreinfo   "%c|%r|%t|%p|<author>|<publishyear>\n"
-
-Then when searching you can specify the the format string's name
-   
-    swish-e   ...  -x moreinfo  ...
-
-See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information about output formats.
 
 =back
 
@@ -507,10 +572,9 @@ how that information is made available during searching.
 
 =item ConvertHTMLEntities [yes|no]
 
-ASCII I<entities> can be converted automatically while indexing documents of type HTML.
+ASCII I<entities> can be converted automatically while indexing documents of type HTML and XML.
 For performance reasons you may wish to set this to C<no> if your documents contain no HTML entities.
 The default is C<yes>.
-
 
 =item MetaNames *list of names*
 
@@ -623,6 +687,25 @@ the entire contents of the tag.
 
     StoreDescription HTML <body> 20
     StoreDescription XML  <desc> 40
+
+=item TruncateDocSize *number of characters*
+
+TruncateDocSize limits the size of a document while indexing documents and/or using filters.
+This config directive truncates the numbers of read bytes of a document to the specified size.
+This means: if a document is larger, read only the specified numbers of bytes of the document.
+
+Example:
+
+    TruncateDocSize    10000000
+
+The default is zero, which means read all data.
+
+
+Warning: If you use TruncateDocSize, use it with care!
+TruncateDocSize is a safty belt only, to limit e.g.  filteroutput, when
+accessing databases, or to limit "runnaway" filters.
+Truncating doc input may destroy document structures for swish-e (e.g.
+swish may miss closing tags for XML or HTML documents).
 
 =item UseStemming [yes|no]
 
@@ -767,7 +850,7 @@ If indexing any characters that have special meaning to SWISH "*" "=" "(" and ")
 and searched.  For example, "=" may be used in a query but only if backslashed, where "(" and ")" can be indexed
 but not searched (currently).
 
-=item IgnoreWords *list of stop words*
+=item IgnoreWords [*list of stop words*|File: path]
 
 The IgnoreWords option allows you to specify words to ignore.
 Comment out for no stopwords; the word "SwishDefault" will
@@ -782,6 +865,17 @@ Examples:
     IgnoreWords SwishDefault
 
     IgnoreWords File:./stopwords.de
+
+=item UseWords [*list of words*|File: path]
+
+UseWords defines the words that swish will index.  B<Only> the words listed will be indexed.
+
+You can specify a list of words
+following the directive (you may specify more than one C<UseWords> directive in a config file),
+and/or use the C<File:> form to specify a path to a file containing the words:
+
+    UseWords perl python pascal fortran basic cobal php
+    UseWords File: /path/to/my/wordlist
 
 =item IgnoreLimit *integer integer*
 
@@ -799,10 +893,10 @@ and add them to B<IngoreWords> in your configuration file.  To do this, use Igno
 the stop words that are found while indexing.  Add this list to IgnoreWords, and then remove IgnoreLimit
 from the configuration file.
 
-=item IgnoreMetaNames *list of names*
+=item IgnoreMetaTags *list of names*
 
-C<IgnoreMetaNames> defines a list of metanames to ignore while indexing.  This is useful to avoid indexing
-data from a file.  For example:
+C<IgnoreMetaTags> defines a list of metanames to ignore while indexing XML files.
+This is useful to avoid indexing specific data from a file.  For example:
 
     <person>
         <first_name>
@@ -823,9 +917,9 @@ prevent finding this record by searching
 
 This is solved by:    
 
-    IgnoreMetanames updated_date
+    IgnoreMetaTags updated_date
 
-Warning: Any data listed in C<IgnoreMetanames> will not be indexed.  
+Warning: Any data listed in C<IgnoreMetaTags> will not be indexed.  
 
 See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
 
@@ -837,15 +931,22 @@ Default is yes. Set to no if comment indexing is not required.
 
     IndexComments no
 
-=item TranslateCharacters *string1 string2*
+=item TranslateCharacters [*string1 string2*|:ascii7:]
 
 The TranslateCharacters directive maps the characters in string1 to the characters listed in string2.
-This is done after converting HTML entities, splitting the input into words based on B<WordCharacters>.
+This is done after converting HTML entities and splitting the input into words based on B<WordCharacters>.
 
 For example:
 
     # This will index a_b as a-b and ámo as amo
     TranslateCharacters _á -a
+
+C<TranslateCharacters :ascii7:> is a predefined set of characters that will translate eight bit characters to ascii7 characters.
+Using the :ascii7: rule will translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or "celik"
+will all match the same word.
+
+The characters you are converting B<from> and B<to> (even with C<:ascii7:>) must be listed in C<WordCharacters>
+(and C<BeginCharacters>/C<EndCharacters>).
 
 =item BumpPositionCounterCharacters *string*
 
