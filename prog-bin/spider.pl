@@ -42,6 +42,7 @@ sub UNIVERSAL::host_port { '' };
 
 # in case running under windows
 
+
 binmode STDOUT;
 
     
@@ -64,7 +65,9 @@ binmode STDOUT;
     local $SIG{HUP} = sub { $abort++ };
 
     my %visited;  # global -- I suppose would be smarter to localize it per server.
+
     my %validated;
+    my %bad_links;
 
     for my $s ( @servers ) {
         if ( !$s->{base_url} ) {
@@ -74,6 +77,16 @@ binmode STDOUT;
         for (ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} : $s->{base_url} ) {
             $s->{base_url} = $_;
             process_server( $s );
+        }
+    }
+
+
+    if ( %bad_links ) {
+        print STDERR "\nBad Links:\n\n";
+        foreach my $page ( sort keys %bad_links ) {
+            print STDERR "On page: $page\n";
+            printf(STDERR " %-40s  %s\n", $_, $validated{$_} ) for @{$bad_links{$page}};
+            print STDERR "\n";
         }
     }
 
@@ -88,8 +101,6 @@ sub process_server {
 
     $server->{debug} ||= 0;
     $server->{debug} = 0 unless $server->{debug} =~ /^\d+$/;
-
-    $server->{debug} |= DEBUG_FAILED if $server->{validate_links};
 
 
     $server->{max_size} ||= MAX_SIZE;
@@ -281,6 +292,8 @@ sub process_link {
 
     my $response = $ua->simple_request( $request, $callback, 4096 );
 
+    
+
 
     # Log the response
     
@@ -300,13 +313,19 @@ sub process_link {
 
 
 
+
     # If the LWP callback aborts
 
     if ( $response->header('client-aborted') ) {
         $server->{counts}{Skipped}++;
         return;
     }
-    
+
+
+    if ( $server->{validate_links} && !$response->is_success ) {
+        validate_link( $server, $uri, $parent, $response );
+    }
+
 
     # skip excluded by robots.txt
     
@@ -474,7 +493,7 @@ sub extract_links {
 
             if ( $server->{validate_links} && $tag eq 'img' && $attr{src} ) {
                 my $img = URI->new_abs( $attr{src}, $base );
-                validate_link( $img, $base );
+                validate_link( $server, $img, $base );
             }
                      
             next;
@@ -507,7 +526,7 @@ sub extract_links {
                 unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
                     print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
                     $server->{counts}{'Off-site links'}++;
-                    validate_link( $u, $base ) if $server->{validate_links} && $u->scheme eq 'http';
+                    validate_link( $server, $u, $base ) if $server->{validate_links} && $u->scheme eq 'http';
                     next;
                 }
                 
@@ -517,6 +536,13 @@ sub extract_links {
                 if ( $visited{ $u->canonical }++ ) {
                     #$server->{counts}{Skipped}++;
                     $server->{counts}{Duplicates}++;
+
+
+                    # Just so it's reported for all pages 
+                    if ( $server->{validate_links} && $validated{$u->canonical} ) {
+                        push @{$bad_links{ $base->canonical }}, $u->canonical;
+                    }
+                    
                     next;
                 }
 
@@ -543,30 +569,50 @@ sub extract_links {
 }
 
 sub validate_link {
-    my ($uri, $base) = @_;
+    my ($server, $uri, $base, $response ) = @_;
 
-    return if $visited{ $uri->canonical } || $validated{ $uri->canonical }++;
+   # Already checked? 
+    if ( exists $validated{ $uri->canonical } )
+    {
+        # Add it to the list of bad links on that page if it's a bad link.
+        push @{$bad_links{ $base->canonical }}, $uri->canonical
+            if $validated{ $uri->canonical };
 
-    my $ua = LWP::UserAgent->new;
-    my $request = HTTP::Request->new('HEAD', $uri->canonical );
-
-    my $response;
-    eval {
-        $SIG{ALRM} = sub { die "timed out\n" };
-        alarm 5;
-        $response = $ua->simple_request( $request );
-        alarm 0;
-    };
-
-    if ( $@ ) {
-        print STDERR "$@ trying to read $uri on page $base\n";
+        return;            
     }
 
-    print STDERR "$uri - returned '",
-        ( $response->status_line || $response->status || 'unknown status' ),
-        ' From page: ',
-        $base,
-        "\n" unless $response->is_success;
+    $validated{ $uri->canonical } = 0;  # mark as checked and ok.
+
+    unless ( $response ) {
+        my $ua = LWP::UserAgent->new;
+        my $request = HTTP::Request->new('HEAD', $uri->canonical );
+
+        eval {
+            $SIG{ALRM} = sub { die "timed out\n" };
+            alarm 5;
+            $response = $ua->simple_request( $request );
+            alarm 0;
+        };
+
+        if ( $@ ) {
+            $server->{counts}{'Bad Links'}++;
+            my $msg = $@;
+            $msg =~ tr/\n//s;
+            $validated{ $uri->canonical } = $msg;
+            push @{$bad_links{ $base->canonical }}, $uri->canonical;
+            return;
+        }
+    }
+
+    return if $response->is_success;
+
+    my $error = $response->status_line || $response->status || 'unknown status';
+
+    $error .= ' ' . URI->new_abs( $response->header('location'), $response->base )->canonical
+        if $response->is_redirect && $response->header('location');
+
+    $validated{ $uri->canonical } = $error;
+    push @{$bad_links{ $base->canonical }}, $uri->canonical;
 }
     
 
