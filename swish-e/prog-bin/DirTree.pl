@@ -31,6 +31,11 @@ find(
 sub wanted {
     return if -d;
 
+    if ( !-r _ ) {
+        warn "$File::Find::name is not readable\n";
+        return;
+    }
+
     if ( /\.pdf$/ ) {
         print STDERR "Indexing pdf $File::Find::name\n" if DEBUG;
         print ${ pdf2xml( $File::Find::name ) };
@@ -49,7 +54,7 @@ sub get_content {
     my $path = shift;
 
     my ( $size, $mtime )  = (stat $path )[7,9];
-    open FH, $path or warn "$path: $!";
+    open FH, $path or die "Failed to open $path: $!";
 
     my $content =  <<EOF;
 Content-Length: $size
