@@ -20,6 +20,10 @@
 **
 ** Jose Ruiz 18/10/00
 ** Remove static word from end var and make the code thread safe
+**
+** Bill Moseley 20/05/01
+** Rewrote to simplify.  No more need to repeat stem (expandstar gone from search.c)
+** got rid of most of the reallocation of memory.
 */
 
 /* WIDE AREA INFORMATION SERVER SOFTWARE:
@@ -88,38 +92,40 @@
 
 #define IsVowel(c)        ('a'==(c)||'e'==(c)||'i'==(c)||'o'==(c)||'u'==(c))
 
-typedef struct {
-           int id;                 /* returned if rule fired */
-           char *old_end;          /* suffix replaced */
-           char *new_end;          /* suffix replacement */
-           int old_offset;         /* from end of word to start of suffix */
-           int new_offset;         /* from beginning to end of new suffix */
-           int min_root_size;      /* min root word size for replacement */
-           int (*condition)();     /* the replacement test function */
-           } RuleList;
+typedef struct
+{
+    int     id;                 /* returned if rule fired */
+    char   *old_end;            /* suffix replaced */
+    char   *new_end;            /* suffix replacement */
+    int     old_offset;         /* from end of word to start of suffix */
+    int     new_offset;         /* from beginning to end of new suffix */
+    int     min_root_size;      /* min root word size for replacement */
+    int     (*condition) ();    /* the replacement test function */
+}
+RuleList;
 
-#define LAMBDA ""        /* the constant empty string */
+#define LAMBDA ""               /* the constant empty string */
 
 /*****************************************************************************/
 /********************   Private Function Declarations   **********************/
 
 #ifdef __STDC__
 
-int WordSize( char *word );
-int ContainsVowel( char *word, char **end );
-int EndsWithCVC( char *word, char **end );
-int AddAnE( char *word, char **end );
-int RemoveAnE( char *word, char **end );
-int ReplaceEnd( char **word, RuleList *rule ,char **end);
+int     WordSize(char *word);
+int     ContainsVowel(char *word);
+int     EndsWithCVC(char *word);
+int     AddAnE(char *word);
+int     RemoveAnE(char *word);
+int     ReplaceEnd(char *word, RuleList * rule);
 
 #else
 
-int WordSize( /* word */ );
-int ContainsVowel( /* word, end */ );
-int EndsWithCVC( /* word, end */ );
-int AddAnE( /* word, end */ );
-int RemoveAnE( /* word, end */ );
-int ReplaceEnd( /* word, rule, end */ );
+int     WordSize( /* word */ );
+int     ContainsVowel( /* word */ );
+int     EndsWithCVC( /* word */ );
+int     AddAnE( /* word */ );
+int     RemoveAnE( /* word */ );
+int     ReplaceEnd( /* word, rule */ );
 
 #endif
 
@@ -127,123 +133,116 @@ int ReplaceEnd( /* word, rule, end */ );
 /*****************   Initialized Private Data Structures   ********************/
 /* 2/22/00 - added braces around each line */
 
-static RuleList step1a_rules[] =
-           {
-             {101,  "sses",      "ss",    3,  1, -1,  NULL,},
-             {102,  "ies",       "i",     2,  0, -1,  NULL,},
-             {103,  "ss",        "ss",    1,  1, -1,  NULL,},
-             {104,  "s",         LAMBDA,  0, -1, -1,  NULL,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step1a_rules[] = {
+    {101, "sses", "ss", 3, 1, -1, NULL,},
+    {102, "ies", "i", 2, 0, -1, NULL,},
+    {103, "ss", "ss", 1, 1, -1, NULL,},
+    {104, "s", LAMBDA, 0, -1, -1, NULL,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step1b_rules[] =
-           {
-             {105,  "eed",       "ee",    2,  1,  0,  NULL,},
-             {106,  "ed",        LAMBDA,  1, -1, -1,  ContainsVowel,},
-             {107,  "ing",       LAMBDA,  2, -1, -1,  ContainsVowel,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step1b_rules[] = {
+    {105, "eed", "ee", 2, 1, 0, NULL,},
+    {106, "ed", LAMBDA, 1, -1, -1, ContainsVowel,},
+    {107, "ing", LAMBDA, 2, -1, -1, ContainsVowel,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step1b1_rules[] =
-           {
-             {108,  "at",        "ate",   1,  2, -1,  NULL,},
-             {109,  "bl",        "ble",   1,  2, -1,  NULL,},
-             {110,  "iz",        "ize",   1,  2, -1,  NULL,},
-             {111,  "bb",        "b",     1,  0, -1,  NULL,},
-             {112,  "dd",        "d",     1,  0, -1,  NULL,},
-             {113,  "ff",        "f",     1,  0, -1,  NULL,},
-             {114,  "gg",        "g",     1,  0, -1,  NULL,},
-             {115,  "mm",        "m",     1,  0, -1,  NULL,},
-             {116,  "nn",        "n",     1,  0, -1,  NULL,},
-             {117,  "pp",        "p",     1,  0, -1,  NULL,},
-             {118,  "rr",        "r",     1,  0, -1,  NULL,},
-             {119,  "tt",        "t",     1,  0, -1,  NULL,},
-             {120,  "ww",        "w",     1,  0, -1,  NULL,},
-             {121,  "xx",        "x",     1,  0, -1,  NULL,},
-             {122,  LAMBDA,      "e",    -1,  0, -1,  AddAnE,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-             };
+static RuleList step1b1_rules[] = {
+    {108, "at", "ate", 1, 2, -1, NULL,},
+    {109, "bl", "ble", 1, 2, -1, NULL,},
+    {110, "iz", "ize", 1, 2, -1, NULL,},
+    {111, "bb", "b", 1, 0, -1, NULL,},
+    {112, "dd", "d", 1, 0, -1, NULL,},
+    {113, "ff", "f", 1, 0, -1, NULL,},
+    {114, "gg", "g", 1, 0, -1, NULL,},
+    {115, "mm", "m", 1, 0, -1, NULL,},
+    {116, "nn", "n", 1, 0, -1, NULL,},
+    {117, "pp", "p", 1, 0, -1, NULL,},
+    {118, "rr", "r", 1, 0, -1, NULL,},
+    {119, "tt", "t", 1, 0, -1, NULL,},
+    {120, "ww", "w", 1, 0, -1, NULL,},
+    {121, "xx", "x", 1, 0, -1, NULL,},
+    {122, LAMBDA, "e", -1, 0, -1, AddAnE,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step1c_rules[] =
-           {
-             {123,  "y",         "i",      0,  0, -1,  ContainsVowel,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step1c_rules[] = {
+    {123, "y", "i", 0, 0, -1, ContainsVowel,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step2_rules[] =
-           {
-             {203,  "ational",   "ate",   6,  2,  0,  NULL,},
-             {204,  "tional",    "tion",  5,  3,  0,  NULL,},
-             {205,  "enci",      "ence",  3,  3,  0,  NULL,},
-             {206,  "anci",      "ance",  3,  3,  0,  NULL,},
-             {207,  "izer",      "ize",   3,  2,  0,  NULL,},
-             {208,  "abli",      "able",  3,  3,  0,  NULL,},
-             {209,  "alli",      "al",    3,  1,  0,  NULL,},
-             {210,  "entli",     "ent",   4,  2,  0,  NULL,},
-             {211,  "eli",       "e",     2,  0,  0,  NULL,},
-             {213,  "ousli",     "ous",   4,  2,  0,  NULL,},
-             {214,  "ization",   "ize",   6,  2,  0,  NULL,},
-             {215,  "ation",     "ate",   4,  2,  0,  NULL,},
-             {216,  "ator",      "ate",   3,  2,  0,  NULL,},
-             {217,  "alism",     "al",    4,  1,  0,  NULL,},
-             {218,  "iveness",   "ive",   6,  2,  0,  NULL,},
-             {219,  "fulnes",    "ful",   5,  2,  0,  NULL,},
-             {220,  "ousness",   "ous",   6,  2,  0,  NULL,},
-             {221,  "aliti",     "al",    4,  1,  0,  NULL,},
-             {222,  "iviti",     "ive",   4,  2,  0,  NULL,},
-             {223,  "biliti",    "ble",   5,  2,  0,  NULL,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step2_rules[] = {
+    {203, "ational", "ate", 6, 2, 0, NULL,},
+    {204, "tional", "tion", 5, 3, 0, NULL,},
+    {205, "enci", "ence", 3, 3, 0, NULL,},
+    {206, "anci", "ance", 3, 3, 0, NULL,},
+    {207, "izer", "ize", 3, 2, 0, NULL,},
+    {208, "abli", "able", 3, 3, 0, NULL,},
+    {209, "alli", "al", 3, 1, 0, NULL,},
+    {210, "entli", "ent", 4, 2, 0, NULL,},
+    {211, "eli", "e", 2, 0, 0, NULL,},
+    {213, "ousli", "ous", 4, 2, 0, NULL,},
+    {214, "ization", "ize", 6, 2, 0, NULL,},
+    {215, "ation", "ate", 4, 2, 0, NULL,},
+    {216, "ator", "ate", 3, 2, 0, NULL,},
+    {217, "alism", "al", 4, 1, 0, NULL,},
+    {218, "iveness", "ive", 6, 2, 0, NULL,},
+    {219, "fulnes", "ful", 5, 2, 0, NULL,},
+    {220, "ousness", "ous", 6, 2, 0, NULL,},
+    {221, "aliti", "al", 4, 1, 0, NULL,},
+    {222, "iviti", "ive", 4, 2, 0, NULL,},
+    {223, "biliti", "ble", 5, 2, 0, NULL,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step3_rules[] =
-           {
-             {301,  "icate",     "ic",    4,  1,  0,  NULL,},
-             {302,  "ative",     LAMBDA,  4, -1,  0,  NULL,},
-             {303,  "alize",     "al",    4,  1,  0,  NULL,},
-             {304,  "iciti",     "ic",    4,  1,  0,  NULL,},
-             {305,  "ical",      "ic",    3,  1,  0,  NULL,},
-             {308,  "ful",       LAMBDA,  2, -1,  0,  NULL,},
-             {309,  "ness",      LAMBDA,  3, -1,  0,  NULL,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step3_rules[] = {
+    {301, "icate", "ic", 4, 1, 0, NULL,},
+    {302, "ative", LAMBDA, 4, -1, 0, NULL,},
+    {303, "alize", "al", 4, 1, 0, NULL,},
+    {304, "iciti", "ic", 4, 1, 0, NULL,},
+    {305, "ical", "ic", 3, 1, 0, NULL,},
+    {308, "ful", LAMBDA, 2, -1, 0, NULL,},
+    {309, "ness", LAMBDA, 3, -1, 0, NULL,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step4_rules[] =
-           {
-             {401,  "al",        LAMBDA,  1, -1,  1,  NULL,},
-             {402,  "ance",      LAMBDA,  3, -1,  1,  NULL,},
-             {403,  "ence",      LAMBDA,  3, -1,  1,  NULL,},
-             {405,  "er",        LAMBDA,  1, -1,  1,  NULL,},
-             {406,  "ic",        LAMBDA,  1, -1,  1,  NULL,},
-             {407,  "able",      LAMBDA,  3, -1,  1,  NULL,},
-             {408,  "ible",      LAMBDA,  3, -1,  1,  NULL,},
-             {409,  "ant",       LAMBDA,  2, -1,  1,  NULL,},
-             {410,  "ement",     LAMBDA,  4, -1,  1,  NULL,},
-             {411,  "ment",      LAMBDA,  3, -1,  1,  NULL,},
-             {412,  "ent",       LAMBDA,  2, -1,  1,  NULL,},
-             {423,  "sion",      "s",     3,  0,  1,  NULL,},
-             {424,  "tion",      "t",     3,  0,  1,  NULL,},
-             {415,  "ou",        LAMBDA,  1, -1,  1,  NULL,},
-             {416,  "ism",       LAMBDA,  2, -1,  1,  NULL,},
-             {417,  "ate",       LAMBDA,  2, -1,  1,  NULL,},
-             {418,  "iti",       LAMBDA,  2, -1,  1,  NULL,},
-             {419,  "ous",       LAMBDA,  2, -1,  1,  NULL,},
-             {420,  "ive",       LAMBDA,  2, -1,  1,  NULL,},
-             {421,  "ize",       LAMBDA,  2, -1,  1,  NULL,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step4_rules[] = {
+    {401, "al", LAMBDA, 1, -1, 1, NULL,},
+    {402, "ance", LAMBDA, 3, -1, 1, NULL,},
+    {403, "ence", LAMBDA, 3, -1, 1, NULL,},
+    {405, "er", LAMBDA, 1, -1, 1, NULL,},
+    {406, "ic", LAMBDA, 1, -1, 1, NULL,},
+    {407, "able", LAMBDA, 3, -1, 1, NULL,},
+    {408, "ible", LAMBDA, 3, -1, 1, NULL,},
+    {409, "ant", LAMBDA, 2, -1, 1, NULL,},
+    {410, "ement", LAMBDA, 4, -1, 1, NULL,},
+    {411, "ment", LAMBDA, 3, -1, 1, NULL,},
+    {412, "ent", LAMBDA, 2, -1, 1, NULL,},
+    {423, "sion", "s", 3, 0, 1, NULL,},
+    {424, "tion", "t", 3, 0, 1, NULL,},
+    {415, "ou", LAMBDA, 1, -1, 1, NULL,},
+    {416, "ism", LAMBDA, 2, -1, 1, NULL,},
+    {417, "ate", LAMBDA, 2, -1, 1, NULL,},
+    {418, "iti", LAMBDA, 2, -1, 1, NULL,},
+    {419, "ous", LAMBDA, 2, -1, 1, NULL,},
+    {420, "ive", LAMBDA, 2, -1, 1, NULL,},
+    {421, "ize", LAMBDA, 2, -1, 1, NULL,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step5a_rules[] =
-           {
-             {501,  "e",         LAMBDA,  0, -1,  1,  NULL,},
-             {502,  "e",         LAMBDA,  0, -1, -1,  RemoveAnE,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step5a_rules[] = {
+    {501, "e", LAMBDA, 0, -1, 1, NULL,},
+    {502, "e", LAMBDA, 0, -1, -1, RemoveAnE,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
 
-static RuleList step5b_rules[] =
-           {
-             {503,  "ll",        "l",     1,  0,  1,  NULL,},
-             {000,  NULL,        NULL,    0,  0,  0,  NULL,}
-           };
+static RuleList step5b_rules[] = {
+    {503, "ll", "l", 1, 0, 1, NULL,},
+    {000, NULL, NULL, 0, 0, 0, NULL,}
+};
+
+
 
 /*****************************************************************************/
 /********************   Private Function Declarations   **********************/
@@ -278,35 +277,37 @@ static RuleList step5b_rules[] =
             is what we are counting.
 **/
 
-int
-WordSize( word )
-   char *word;   /* in: word having its WordSize taken */
-   {
-   register int result;   /* WordSize of the word */
-   register int state;    /* current state in machine */
+int     WordSize(char *word)
+{
+    register int result;        /* WordSize of the word */
+    register int state;         /* current state in machine */
 
-   result = 0;
-   state = 0;
+    result = 0;
+    state = 0;
 
-                 /* Run a DFA to compute the word size */
-   while ( EOS != *word )
-      {
-      switch ( state )
-         {
-         case 0: state = (IsVowel(*word)) ? 1 : 2;
-                 break;
-         case 1: state = (IsVowel(*word)) ? 1 : 2;
-                 if ( 2 == state ) result++;
-                 break;
-         case 2: state = (IsVowel(*word) || ('y' == *word)) ? 1 : 2;
-                 break;
-         }
-      word++;
-      }
+    /* Run a DFA to compute the word size */
+    while ( *word )
+    {
+        switch (state)
+        {
+        case 0:
+            state = (IsVowel(*word)) ? 1 : 2;
+            break;
+        case 1:
+            state = (IsVowel(*word)) ? 1 : 2;
+            if (2 == state)
+                result++;
+            break;
+        case 2:
+            state = (IsVowel(*word) || ('y' == *word)) ? 1 : 2;
+            break;
+        }
+        word++;
+    }
 
-   return( result );
+    return (result);
 
-   } /* WordSize */
+}                               /* WordSize */
 
 /*FN**************************************************************************
 
@@ -327,19 +328,17 @@ WordSize( word )
    Notes:   None
 **/
 
-int
-ContainsVowel( word, end )
-   char *word;   /* in: buffer with word checked */
-   char **end;   /* pointer to the end of the word */
-   {
+int     ContainsVowel(char *word)
+{
 
-   if ( EOS == *word )
-      return( FALSE );
-   else
-      return( IsVowel(*word) || (NULL != strpbrk(word+1,"aeiouy")) );
+    /* This isn't needed, right? */
+    if ( !*word )
+        return FALSE;
+
+    return (IsVowel(*word) || (NULL != strpbrk(word + 1, "aeiouy")));
 
 
-   } /* ContainsVowel */
+}                               /* ContainsVowel */
 
 /*FN**************************************************************************
 
@@ -357,24 +356,21 @@ ContainsVowel( word, end )
    Notes:   None
 **/
 
-int
-EndsWithCVC( word, end )
-   char *word;   /* in: buffer with the word checked */
-   char **end;   /* pointer to the end of the word */
-   {
-   int length;         /* for finding the last three characters */
+int     EndsWithCVC(char *word)
+{
+    int     length;             /* for finding the last three characters */
 
-   if ( (length = (int)strlen(word)) < 3 ) /* This was < 2 in original - Moseley 10/19/99 */
-      return( FALSE );
-   else
-      {
-      *end = word + length - 1;
-      return(    (NULL == strchr("aeiouwxy",*(*end)--))      /* consonant */
-              && (NULL != strchr("aeiouy",  *(*end)--))        /* vowel */
-              && (NULL == strchr("aeiou",   *(*end)  )) );   /* consonant */
-      }
+    if ((length = (int) strlen(word)) < 3) /* This was < 2 in original - Moseley 10/19/99 */
+        return (FALSE);
 
-   } /* EndsWithCVC */
+
+    return (
+        (NULL == strchr("aeiouwxy", (int)word[--length])) /* consonant */
+        && (NULL != strchr("aeiouy", (int)word[--length])) /* vowel */
+        && (NULL == strchr("aeiou", (int)word[--length]))
+    ); /* consonant */
+
+}                               /* EndsWithCVC */
 
 /*FN**************************************************************************
 
@@ -390,15 +386,12 @@ EndsWithCVC( word, end )
    Notes:   None
 **/
 
-int
-AddAnE( word, end )
-   char *word;
-   char **end;        /* pointer to the end of the word */
-   {
+int     AddAnE(char *word)
+{
 
-   return( (1 == WordSize(word)) && EndsWithCVC(word, end) );
+    return ((1 == WordSize(word)) && EndsWithCVC(word));
 
-   } /* AddAnE */
+}                               /* AddAnE */
 
 /*FN**************************************************************************
 
@@ -414,15 +407,12 @@ AddAnE( word, end )
    Notes:   None
 **/
 
-int
-RemoveAnE( word, end )
-   char *word;
-   char **end;        /* pointer to the end of the word */
-   {
+int     RemoveAnE(char *word)
+{
 
-   return( (1 == WordSize(word)) && !EndsWithCVC(word, end) );
+    return ((1 == WordSize(word)) && !EndsWithCVC(word));
 
-   } /* RemoveAnE */
+}                               /* RemoveAnE */
 
 /*FN**************************************************************************
 
@@ -444,46 +434,44 @@ RemoveAnE( word, end )
             required, then the suffix is replaced, and the function returns.
 **/
 
-int
-ReplaceEnd( word, rule, end )
-   char **word;      /* in/out: buffer with the stemmed word */
-                     /* Jose Ruiz 10/00: pass it as a reference and realloc*/
-                     /* size if neccessary */
-   RuleList *rule;    /* in: data structure with replacement rules */
-   char **end;        /* pointer to the end of the word */
-   {
-   char *ending;   /* set to start of possible stemmed suffix */
-   char tmp_ch;             /* save replaced character when testing */
-   char *newword=NULL;
+int     ReplaceEnd(char *word, RuleList *rule)
+{
+    char   *ending;             /* set to start of possible stemmed suffix */
+    char    tmp_ch;             /* save replaced character when testing */
+    char   *end;                /* pointer to last char of string */
 
-   while ( 0 != rule->id )
-      {
-      ending = *end - rule->old_offset;
-      if ( (*word) <= ending )
-         if ( 0 == strcmp(ending,rule->old_end) )
-            {
-            tmp_ch = *ending;
-            *ending = EOS;
-            if ( rule->min_root_size < WordSize(*word))
-               if ( !rule->condition || (*rule->condition)((*word), end) )
-                  {
-                  newword=emalloc((int)strlen(*word) + (int)strlen(rule->new_end) + 1);
-                  (void)strcpy( newword, *word );
-                  (void)strcat( newword, rule->new_end );
-                  *end = ending + rule->new_offset;
-                  *end = newword + ((*end) - (*word));
-                  efree(*word);
-                  *word = newword;
-                  break;
-                  }
-            *ending = tmp_ch;
-            }
-      rule++;
-      }
+    end = word + strlen( word ) - 1;
 
-   return( rule->id );
+    while ( rule->id )
+    {
+        /* point ending to the start of the test sufix */
+        ending = end - rule->old_offset;
 
-   } /* ReplaceEnd */
+        /* is word long enough to contain suffix, and does it exist? */
+        if ( (word <= ending ) && (0 == strcmp(ending, rule->old_end)) )
+        {
+            tmp_ch = *ending;  /* in case we change our mind */
+            *ending = '\0';
+
+            if ( rule->min_root_size < WordSize(word) )
+                if (!rule->condition || (*rule->condition) ( word ))
+                {
+                    /* replace the ending */
+                    if ( (strlen( word ) + rule->new_offset + 1 ) >= MAXWORDLEN )
+                        return STEM_WORD_TOO_BIG;
+                    strcat( word, rule->new_end );
+
+                    return rule->id;
+                }
+            *ending = tmp_ch;  /* nope, put it back */
+        }
+
+        rule++;
+    }
+
+    return 0;
+
+}                               /* ReplaceEnd */
 
 /*****************************************************************************/
 /*********************   Public Function Declarations   **********************/
@@ -518,84 +506,73 @@ ReplaceEnd( word, rule, end )
             structures with comments.
 **/
 
-/* was Stem(), redefined and called ONLY from below - Moseley 10/17/99 */
-int Stem_it( word )
-   char **word;  /* in/out: the word stemmed */
-   {
-   int rule;    /* which rule is fired in replacing an end */
-   char *end;   /* pointer to the end of the word */
-   char *saveword;
-
-            /* Part 1: Check to ensure the word is all alphabetic */
-   for ( end = (*word); *end != EOS; end++ )
-      if ( !isalpha((int)((unsigned char)*end)) ) return( FALSE ); /* cast to int 2/22/00 */
-      else *end = tolower( (unsigned char)*end );
-   end--;
-
-   /*  Hack to make sure Stem() doesn't stem the word into nonexistence */
-   saveword= (char *)estrdup(*word);
-
-                /*  Part 2: Run through the Porter algorithm */
-   (void)ReplaceEnd( word, step1a_rules, &end );
-   rule = ReplaceEnd( word, step1b_rules, &end );
-   if ( (106 == rule) || (107 == rule) )
-      (void)ReplaceEnd( word, step1b1_rules, &end );
-   (void)ReplaceEnd( word, step1c_rules, &end );
-
-   (void)ReplaceEnd( word, step2_rules, &end );
-
-   (void)ReplaceEnd( word, step3_rules, &end );
-
-   (void)ReplaceEnd( word, step4_rules, &end );
-
-   (void)ReplaceEnd( word, step5a_rules, &end );
-   (void)ReplaceEnd( word, step5b_rules, &end );
-
-   /* Restore to original if stems to nothing - Moseley 10/17/99 */
-   /* if ( !strcmp( word, "" ) ) strcpy( word, saveword ); */
-   /* No. Now if stems to one or less characters. */
-   if ( (int)strlen( *word ) < 2 ) 
-      {
-         efree(*word);
-         *word=saveword;
-      } else efree(saveword);
-
-           /* Part 3: Return an indication of successful stemming */
-   return( TRUE );
-
-   } /* Stem_it */
+int     Stem(char **inword, int *lenword)
+{
+    char   *end;                /* pointer to the end of the word */
+    char    word[MAXWORDLEN+1];
+    int     length;
+    int     rule;
+    
 
 
-/* This was added to continue to stem a word until it will stem no more. */
-int Stem( word, lenword ) /* redefined - Moseley 10/17/99 */
-   char **word;  /* in/out: the word stemmed */
-   int *lenword;  /* in/out: the total length of the buffer of the word to be stemmed */
-		  /* This value can be greater than the length of the word */
-   {
-    int retval;
-    char *previous=NULL;
-    char *savedword=NULL;
+    /* Make sure the word is not too large from the start. */
+    if ( strlen( *inword ) >= MAXWORDLEN )
+        return STEM_WORD_TOO_BIG;
 
-    if ( (int)strlen( *word ) < 3 ) return( TRUE ); /* might stem to null string */
 
-    savedword=estrdup(*word);    /* We will work with a copy of the word */
-    do {
-        if(previous) efree(previous);
-        previous = estrdup(savedword);
-        retval = Stem_it( &savedword );
-    } while ( strcmp( savedword, previous ) );
-    efree(previous);
+    /* make working copy */
+    strcpy( word, *inword );
 
-    /* Return values */
-    if((*lenword)<((int)strlen(savedword)+1))
+    
+
+    /* Part 1: Check to ensure the word is all alphabetic */
+    /* no longer converts to lower case -- word should be lower before calling */
+
+    for ( end = word; *end; end++ )
+        if ( !isalpha( (unsigned int) *end ) )
+            return STEM_NOT_ALPHA;
+
+
+
+    /*  Part 2: Run through the Porter algorithm */
+
+    (void) ReplaceEnd(word, step1a_rules);
+
+    rule = ReplaceEnd(word, step1b_rules);
+
+    
+    if ((106 == rule) || (107 == rule))
+        (void) ReplaceEnd(word, step1b1_rules);
+
+    (void) ReplaceEnd(word, step1c_rules);
+
+    (void) ReplaceEnd(word, step2_rules);
+
+    (void) ReplaceEnd(word, step3_rules);
+
+    (void) ReplaceEnd(word, step4_rules);
+
+    (void) ReplaceEnd(word, step5a_rules);
+
+    (void) ReplaceEnd(word, step5b_rules);
+
+    length = strlen( word );
+
+    /* Stem must be two chars or more in length */
+    if ( length <= 1 )
+        return STEM_TO_NOTHING;
+
+    /* reallocate memory if need more room */
+
+    if ( length >= *lenword )
     {
-       efree(*word);
-       *word=savedword;
-       *lenword=strlen(savedword);
-    } else {
-       strcpy((*word),savedword);
-       efree(savedword);
+        efree( *inword );
+
+        *lenword = length;  /* how much extra to allocate */
+        *inword = emalloc( *lenword + 10 );
     }
-   return(retval); /* no return value prior to 2/22/00 */
-   } /* Stem */
+
+    strcpy( *inword, word );
+    return STEM_OK;
+}        
 
