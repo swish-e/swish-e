@@ -10,10 +10,20 @@ use strict;
 #
 #       perldoc spider.pl
 #
-# Apr 7, 2001 -- added quite a bit of bulk for easier debugging
+#    Copyright (C) 2001-2003 Bill Moseley swishscript@hank.org
 #
-# Nov 19, 2001 -- to do, build a server object so we are not using the passed in hash,
-#                 and so we can warn on invalid config settings.
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License
+#    as published by the Free Software Foundation; either version
+#    2 of the License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    The above lines must remain at the top of this program
+#----------------------------------------------------------------------------------
 
 $HTTP::URI_CLASS = "URI";   # prevent loading default URI::URL
                             # so we don't store long list of base items
@@ -71,6 +81,11 @@ sub UNIVERSAL::host_port { '' };
     } else {
         do $config or die "Failed to read $0 configuration parameters '$config' $! $@";
     }
+
+
+    # Check if can use zlib compression
+    eval { require Compress::Zlib };
+    my $can_uncompress++ unless $@;
 
 
     print STDERR "$0: Reading parameters from '$config'\n" unless $ENV{SPIDER_QUIET};
@@ -244,6 +259,10 @@ sub process_server {
         $ua->delay( 0 );  # handle delay locally.
     }
 
+    # If ignore robots files also ignore meta ignore <meta name="robots">
+    $ua->parse_head( 0 ) if $server->{ignore_robots_file} || $server->{ignore_robots_headers};
+    
+
     # Set the timeout on the server and using Windows.
     $ua->timeout( $server->{max_wait_time} ) if $^O =~ /Win32/i;
 
@@ -386,7 +405,7 @@ sub delay_request {
     
     return if !$server->{delay_sec} || !$server->{last_response_time};    
 
-    return if $server->{keep_alive} && ! delete $server->{connection_closed};
+    return if $server->{keep_alive_connection};
     
     my $wait = $server->{delay_sec} - ( time - $server->{last_response_time} );
     
@@ -415,7 +434,7 @@ sub process_link {
     # make request
     my $ua = $server->{ua};
     my $request = HTTP::Request->new('GET', $uri );
-
+    $request->header('Accept-encoding', 'gzip; deflate') if $can_uncompress;
 
     my $content = '';
 
@@ -440,7 +459,6 @@ sub process_link {
 
         # Reset alarm;
         alarm( $server->{max_wait_time} ) unless $^O =~ /Win32/i;
-
 
         # Cache user/pass
         if ( $server->{cur_realm} && $uri->userinfo ) {
@@ -528,12 +546,24 @@ sub process_link {
     }
 
 
+    print STDERR "\n----HEADERS for $uri ---\n", $response->headers_as_string,"-----END HEADERS----\n\n"
+       if $server->{debug} & DEBUG_HEADERS;
 
+
+
+    # Deal with the client generated responses
 
     # If the LWP callback aborts
 
     if ( $response->header('client-aborted') ) {
-        $server->{counts}{Skipped}++;
+        my $msg = $response->header('X-Died') || 'unknown';
+        delete $server->{keep_alive_connection}; # aborting kills the connection
+
+        if ( $msg !~ /test_response/ ) {
+            $server->{counts}{Skipped}++;
+            print STDERR "Request for '$uri' aborted because: '$msg'\n" if $server->{debug}&DEBUG_SKIPPED;
+        }
+
         return;
     }
 
@@ -551,7 +581,8 @@ sub process_link {
 
     # save the request completion time for delay_min
     $server->{last_response_time} = time;
-    $server->{connection_closed} = ($response->header('Connection') || '') =~ /close/i;
+    $server->{keep_alive_connection} = $server->{keep_alive} && 
+           ($response->header('Connection') || '') !~ /close/i;
 
 
     # Report bad links (excluding those skipped by robots.txt
@@ -564,8 +595,9 @@ sub process_link {
 
     # And check for meta robots tag
     # -- should probably be done in request sub to avoid fetching docs that are not needed
+    # -- also, this will not not work with compression $$$ check this
 
-    unless ( $server->{ignore_robots_file} ) {
+    unless ( $server->{ignore_robots_file}  || $server->{ignore_robots_headers} ) {
         if ( my $directives = $response->header('X-Meta-ROBOTS') ) {
             my %settings = map { lc $_, 1 } split /\s*,\s*/, $directives;
             $server->{no_contents}++ if exists $settings{nocontents};  # an extension for swish
@@ -576,9 +608,6 @@ sub process_link {
 
 
 
-
-    print STDERR "\n----HEADERS for $uri ---\n", $response->headers_as_string,"-----END HEADERS----\n\n"
-       if $server->{debug} & DEBUG_HEADERS;
 
 
     unless ( $response->is_success ) {
@@ -603,8 +632,7 @@ sub process_link {
     # make sure content is unique - probably better to chunk into an MD5 object above
 
     if ( $server->{use_md5} ) {
-        my $digest =  Digest::MD5::md5($content);
-
+        my $digest =  $response->header('Content-MD5') || Digest::MD5::md5($content);
         if ( $visited{ $digest } ) {
 
             print STDERR "-Skipped $uri has same digest as $visited{ $digest }\n"
@@ -615,6 +643,13 @@ sub process_link {
             return;
         }
         $visited{ $digest } = $uri;
+    }
+
+
+    # Uncompress content
+    if ( $can_uncompress && (my $encoding = $response->header('Content-Encoding') )  ) {
+         $content = Compress::Zlib::memGunzip($content) if $encoding =~ /gzip/i;
+         $content = Compress::Zlib::uncompress($content) if $encoding =~ /deflate/i;
     }
 
 
@@ -1066,13 +1101,12 @@ if the file you request contains links as the output from the fetched pages will
 
 might be more friendly.    
 
-If the first parameter passed to the spider is the word "default" (as in the preceeding example)
-then the spider uses the default parameters,
-and the following parameter(s) are expected to be URL(s) to spider.
-Otherwise, the first parameter is considered to be the name of the configuration file (as described
-below).  When using C<-S prog>, the swish-e configuration setting
-C<SwishProgParameters> is used to pass parameters to the program specified
-with C<IndexDir> or the C<-i> switch.
+If the first parameter passed to the spider is the word "default" (as in the preceeding
+example) then the spider uses the default parameters, and the following parameter(s) are
+expected to be URL(s) to spider. Otherwise, the first parameter is considered to be the name
+of the configuration file (as described below).  When using C<-S prog>, the swish-e
+configuration setting C<SwishProgParameters> is used to pass parameters to the program
+specified with C<IndexDir> or the C<-i> switch.
 
 If you do not specify any parameters the program will look for the file
 
@@ -1091,7 +1125,7 @@ a current version of these modules.
 
 =head2 Robots Exclusion Rules and being nice
 
-This script will not spider files blocked by F<robots.txt>.  In addition,
+By default, this script will not spider files blocked by F<robots.txt>.  In addition,
 The script will check for <meta name="robots"..> tags, which allows finer
 control over what files are indexed and/or spidered.
 See http://www.robotstxt.org/wc/exclusion.html for details.
@@ -1107,9 +1141,10 @@ For example:
 says to just index the document's title, but don't index its contents, and don't follow
 any links within the document.  Granted, it's unlikely that this feature will ever be used...
 
-If you are indexing your own site, and know what you are doing, you can disable robot exclusion by
-the C<ignore_robots_file> configuration parameter, described below.  This disables both F<robots.txt>
-and the meta tag parsing.
+If you are indexing your own site, and know what you are doing, you can disable robot
+exclusion by the C<ignore_robots_file> configuration parameter, described below.  This
+disables both F<robots.txt> and the meta tag parsing.  You may disable just the meta tag
+parsing by using C<ignore_robots_headers>.
 
 This script only spiders one file at a time, so load on the web server is not that great.
 And with libwww-perl-5.53_91 HTTP/1.1 keep alive requests can reduce the load on
@@ -1141,7 +1176,19 @@ But the spider happens to find the exact content in this file first:
 
     http://localhost/developement/test/todo/maybeimportant.html
 
-Then only that URL will be indexed.    
+Then only that URL will be indexed.
+
+=head2 Compression
+
+If The Perl module Compress::Zlib is installed the spider will send the
+
+   Accept-Encoding: gzip
+
+header and uncompress the document if the server returns the header
+
+   Content-Encoding: gzip
+
+MD5 checksomes are done on the compressed data.
 
 MD5 may slow down indexing a tiny bit, so test with and without if speed is an
 issue (which it probably isn't since you are spidering in the first place).

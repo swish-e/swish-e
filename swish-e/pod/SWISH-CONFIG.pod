@@ -1340,7 +1340,8 @@ department:
 
 Note that the C<regex> method uses a substitution pattern, so to index
 only a sub-string match the I<entire> document path in the regular
-expression, as shown above.
+expression, as shown above.  Otherwise any part that is not matched will
+end up in the substitution pattern.
 
 See the C<ExtractPathDefault> option for a way to set a value if not
 patterns match.
