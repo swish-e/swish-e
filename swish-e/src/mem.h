@@ -16,20 +16,12 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
-**
-**  2001-02-15   rasc   estrredup, type corrections
 */
 
 
 
 void *emalloc (size_t n);
 void *erealloc (void *ptr, size_t n);
-char *estrdup (char *str);
-char *estrndup (char *str, size_t n);
-char *estrredup (char *s1, char *s2);
 void efree (void *ptr);
-void freeswline (struct swline *ptr);
-void freeindexfile (IndexFILE *ptr);
-void freeentry (ENTRY *ptr);
 
 void checkmem(void);

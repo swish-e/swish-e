@@ -69,7 +69,7 @@ SWISH *SwishNew()
     sw->replacelist = NULL;
     sw->lasterror = RC_OK;
     sw->verbose = VERBOSE;
-    sw->indexComments = 1;
+    sw->indexComments = 0;		/* change default 5/01 wsm */
     sw->nocontentslist = NULL;
     sw->DefaultDocType=NODOCTYPE;
     sw->indexcontents = NULL;

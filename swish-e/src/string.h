@@ -103,3 +103,7 @@ unsigned char *TranslateChars (int trlookup[], unsigned char *s);
 char *str_basename (char *path);
 char *cstr_basename (char *path);
 char *cstr_dirname (char *path);
+
+char *estrdup (char *str);
+char *estrndup (char *str, size_t n);
+char *estrredup (char *s1, char *s2);
