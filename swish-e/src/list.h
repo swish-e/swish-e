@@ -23,3 +23,4 @@ struct swline *dupswline (struct swline *);
 IndexFILE *addindexfile (IndexFILE *, char *);
 void init_header (INDEXDATAHEADER *);
 void free_header (INDEXDATAHEADER *);
+void splitswline(struct swline *, int );

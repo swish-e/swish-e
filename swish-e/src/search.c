@@ -2157,7 +2157,7 @@ struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct 
 
 struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header)
 {
-struct swline *searchwordlist=NULL;
+struct swline *searchwordlist=NULL,*temp=NULL;
 int i,j;
 char word[MAXWORDLEN];
 unsigned char PhraseDelimiter;
@@ -2168,11 +2168,14 @@ unsigned char PhraseDelimiterString[2];
 
 	for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++) 
 	{
-		/* 06/00 Jose ruiz
+		/* 2000/06 Jose ruiz
 		** Following line modified to extract words according
 		** to wordchars as suggested by Bill Moseley
 		*/
-		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || iswordchar(header,words[i]))) /* cast to int, 2/22/00 */
+		/* 2001/04 Jose Ruiz
+		** Added '_' . Quick fix to allow this character be present in metanames
+		*/
+		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || (words[i]=='_') || iswordchar(header,words[i]))) /* cast to int, 2/22/00 */
 		{
 			if (words[i] == '=')
 			{
@@ -2243,5 +2246,16 @@ unsigned char PhraseDelimiterString[2];
 			searchwordlist = (struct swline *) addswline(searchwordlist, word);
 		}
 	}
+    /* The '_' quick fix - To be rewritten in a new parser */
+	/* For those words wich are not metanames it may be splitted */
+	if(!iswordchar(header,'_'))    /* If '_' is a valid char do nothing */
+	{
+		for(temp=searchwordlist;temp;temp=temp->next)
+			if (!isMetaNameOpNext(temp->next))    /* split only searchwords , not metanames */
+				splitswline(temp,'_');
+
+	}
+	/* End '_' fix */
+
 	return searchwordlist;
 }
