@@ -58,33 +58,15 @@
   LicenseData "COPYING.txt"
 
 ; Basic file sections
-!addincludedir nsi
 !include filebase.nsh
 
-Section "SWISH-E ActiveX Control" SecSwishCtl
-SectionIn 1
-SetOutPath "$INSTDIR"
-
-; SWISH-E Control
-File ..\..\..\swishctl\swishctl.dll
-
-; Misc SWISH-E Support Files
-File /r ..\..\..\swishctl\example
-
-; Create shorcuts on the Start Menu
-SetOutPath "$SMPROGRAMS\SWISH-E\"
-CreateShortcut "$SMPROGRAMS\SWISH-E\Search_Documentation.lnk" "$INSTDIR\example\index.htm"
-WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "IndexLocation" "$INSTDIR\example"
-WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "swishdoc" "docs.idx"
-SectionEnd ; end of ActiveX section
-
 Section "-post" ; (post install section, happens last after any optional sections)
-; add any commands that need to happen after any optional sections here
-WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "" "$INSTDIR"
-WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "DisplayName" "SWISH-E (remove only)"
-WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
-
-WriteUninstaller "uninst.exe"
+    ; add any commands that need to happen after any optional sections here
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "" "$INSTDIR"
+    WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "DisplayName" "SWISH-E (remove only)"
+    WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
+    Exec "perl $INSTDIR\fixperl.pl $INSTDIR"
+    WriteUninstaller "uninst.exe"
 SectionEnd ; end of -post section
 
 
