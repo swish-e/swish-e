@@ -160,7 +160,7 @@ is fully supported by swish-e.  See http://www.robotstxt.org/
 You can also modify the F<spider.pl> spider perl program to skip, index content only, or spider only listed web
 pages.
 
-=head2 I'm using the C<spider.pl> program to spider my web site, but some files large files are not indexed.
+=head2 I'm using the spider.pl program to spider my web site, but some files large files are not indexed.
 
 The C<spider.pl> program has a default limit of 5MB file size.  This can be changed with the C<max_size>
 parameter setting.  See C<perldoc spider.pl> for more information.
@@ -297,7 +297,7 @@ to the open.  See C<perldoc -f open> for more information.
 
 See the examples in the F<conf> directory.
 
-=head2 I'm using the C<prog> method to index PDF documents, but the file contents are not indexed.
+=head2 I'm using the prog method to index PDF documents, but the file contents are not indexed.
 
 The examples in the F<prog-bin> directory use a module to convert the PDF files into XML.  So you must
 tell swish that you are indexing XML files for the PDF extension.
@@ -361,7 +361,7 @@ edit the line in your configuration file:
 
     MetaNames DC.subject meta1 meta2
 
-=head2 What are I<document properties>?
+=head2 What are document properties?
 
 A document property is typically data that describes the document.  For example,
 properties might include a document's path name, its last modified date,
@@ -392,7 +392,7 @@ Or for sorting:
 
     swish-e -w foo -s creator
 
-=head2 What's the difference between I<MetaNames> and I<PropertyNames>?
+=head2 What's the difference between MetaNames and PropertyNames?
 
 MetaNames allows keywords searches in your documents.
 That is, you can use MetaNames to restrict searches to just parts of
