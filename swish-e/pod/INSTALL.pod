@@ -217,7 +217,7 @@ F<configure --help> for details.
 
 
    $prefix/bin/swish-e         The swish-e binary program
-   $prefix/share/doc/swish-e   Full Documentation
+   $prefix/share/doc/swish-e   Full documentation and examples
    $prefix/lib/libswish-e      The swish-e C library
    $prefix/include/swish-e.h   The library header file (for developers only)
    $prefix/man/man1/           Documentation as manual pages
@@ -882,7 +882,7 @@ This directory will be needed when setting up the CGI script in the next step.
 
 Finally, verify that the index can be searched:
 
-~/web_index$ swish-e -w installing -m3
+    ~/web_index$ swish-e -w installing -m3
     # SWISH format: 2.4.0
     # Search words: installing
     # Removed stopwords: 
