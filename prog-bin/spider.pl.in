@@ -1,4 +1,4 @@
-#!@@perlbinary@@ -w
+#!@@perlbinary@@ -
 use strict;
 
 # This is set to where Swish-e's "make install" installed the helper modules.
@@ -478,9 +478,10 @@ sub get_basic_credentials {
         system("stty echo");
         print STDERR "\n";  # because we disabled echo
         chomp($password);
-
         alarm( 0 ) unless $^O =~ /Win32/i;
     };
+
+    alarm( 0 ) unless $^O =~ /Win32/i;
 
     return if $@;
 
