@@ -25,7 +25,7 @@ exec_prefix = @exec_prefix@
 libdir      = @libdir@
 
 # Flags for C compiler
-CFLAGS      = @CFLAGS@ -Wall @DEFS@
+CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\"
 
 
 LIBS        = @LIBS@
@@ -55,7 +55,9 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 .SUFFIXES: 
 .SUFFIXES : .o .c
 .c.o :
-	$(CC) -DSWISH_VERSION=\"$(VERSION)\" $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
+
+.SUFFIXES : .a .c
 .c.a :
 	$(CC) $(CFLAGS) -c $<
 	$(AR) $(ARFLAGS) $@ $*.o
