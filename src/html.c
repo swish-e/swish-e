@@ -596,7 +596,7 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
          * but in order to disable this behavior the name MUST be a meta name.
          * Probably better to let getHTMLMeta() return the name as a string.
          */
-		if(!metaNameEntry || (metaNameEntry && !isDontBumpMetaName( sw, metaNameEntry->metaName )) )
+		if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
 				position[0]++;
 
         wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
