@@ -319,11 +319,6 @@ typedef struct {
 	/* vars for IgnoreFirstChar */
     int lenignorefirstchar;
     char *ignorefirstchar;
-	/* vars for TranslateCharacters */
-    int lentranslatechars1;
-    char *translatechars1;
-    int lentranslatechars2;
-    char *translatechars2;
 	/* vars for WordCharacters */
     int lenbumpposchars;
     char *bumpposchars;
@@ -351,12 +346,14 @@ typedef struct {
 	/* var to specify how to ranking while indexing */
     int ignoreTotalWordCountWhenRanking;	/* added 11/24/98 - MG */
 	/* Lookup tables for fast access */
+//$$$ rasc: why are these int and not unsigned char?
     int wordcharslookuptable[256];
     int begincharslookuptable[256];
     int endcharslookuptable[256];
     int ignorefirstcharlookuptable[256];
     int ignorelastcharlookuptable[256];
     int bumpposcharslookuptable[256];
+    int translatecharslookuptable[256];	/* $$$ rasc 2001-02-21 */
     /* int indexcharslookuptable[256];  indexchars stuff removed */
 } INDEXDATAHEADER;
 
@@ -720,8 +717,8 @@ typedef struct {
     /* Save memory */
     int swap_flag;
 
-    /* Flag to apply ascii7 translation (rasc) */
-    int applyAscii7;
+//$$$    /* Flag to apply ascii7 translation (rasc) */
+//$$$    int applyAscii7;
 
     /* Filenames of the swap files */
     char *swap_file_name;   /* File and properties file */

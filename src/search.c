@@ -418,6 +418,7 @@ unsigned char PhraseDelimiterString[2];
 
 		/* make a copy of sw->searchwordlist */
 		tmplist = dupswline(sw->searchwordlist);
+		tmplist = (struct swline *)translatechars_words_in_query(sw,indexlist,tmplist);
 #ifdef IGNORE_STOPWORDS_IN_QUERY
 		tmplist = (struct swline *)ignore_words_in_query(sw,indexlist,tmplist,PhraseDelimiter);
 #endif /* IGNORE_STOPWORDS_IN_QUERY */
@@ -2131,4 +2132,32 @@ char *word;
 	}
 	return searchwordlist;
 }
+
+
+/*
+  -- do TranslateCharacters on SearchWords
+  -- (to match translation of search words to indexed words)
+  -- Words in searchwordlist itself are changed!
+  -- 2001-02-22 rasc
+*/
+
+struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist)
+{
+  struct swline *tmplist;
+  int           *tr_lookup;
+
+
+	tmplist = searchwordlist;
+      tr_lookup = indexf->header.translatecharslookuptable;
+
+	while (tmplist != NULL) {
+		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) {
+                  TranslateChars (tr_lookup, tmplist->line);
+		}
+		tmplist=tmplist->next;
+	}
+	return searchwordlist;
+}
+
+
 
