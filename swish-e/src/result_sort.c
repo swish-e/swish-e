@@ -327,8 +327,6 @@ int     initSortResultProperties(SWISH * sw)
         {
             struct metaEntry *m = getPropNameByName(&indexf->header, sw->ResultSort->propNameToSort[i] );
 
-printf("lookup number: %d id: %d\n", i, (int)sw->ResultSort->propNameToSort[i] );
-
             if ( !m )
                 progerr("Unknown Sort property name \"%s\" in one of the index files", sw->ResultSort->propNameToSort[i]);
 
