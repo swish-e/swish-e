@@ -447,7 +447,7 @@ static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
     SAXHandler->startElement   = (startElementSAXFunc)&start_hndl;
     SAXHandler->endElement     = (endElementSAXFunc)&end_hndl;
     SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
-    SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
+    SAXHandler->cdataBlock     = (charactersSAXFunc)&char_hndl;
     SAXHandler->ignorableWhitespace = (ignorableWhitespaceSAXFunc)&Whitespace;
 
     if( sw->indexComments )
