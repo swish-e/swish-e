@@ -293,6 +293,9 @@ int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, in
         rank = (rank * factor) / 100;
     }
 
+//rank = freq * factor;
+//printf("* Filenum %d freq %d factor %d  rank %d\n", filenum, freq, factor, rank );
+
     return rank;
 }
 
