@@ -1214,8 +1214,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
             num;
     unsigned char *ptmp,
            *ptmp2,
-           *compressed_data,
-           *p;
+           *compressed_data;
     int    *pi = NULL;
     struct  MOD_Index *idx = sw->Index;
 
@@ -1240,18 +1239,14 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
         if (idx->economic_flag)
-            p = compressed_data = (unsigned char *) unSwapLocData(sw, (long) e->locationarray[k]);
-        else
-            p = compressed_data = (unsigned char *)e->locationarray[k];
-        num = uncompress2(&p); /* index to lookuptable */
+            e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+        compressed_data = (unsigned char *)e->locationarray[k];
+        num = uncompress2(&compressed_data); /* index to lookuptable */
+		/* val[0] is metanum */
         pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
-        num = uncompress2(&p); /* filenum */
+        num = uncompress2(&compressed_data); /* filenum */
         pi[1] = num;
         ptmp2 += 2 * sizeof(int);
-
-                          /* Get the best of economic mode !!! */
-        if(idx->economic_flag && (compressed_data != (unsigned char *)e->locationarray[k]))
-              efree(compressed_data);
 
         memcpy((char *) ptmp2, (char *) &e->locationarray[k], sizeof(LOCATION *));
         ptmp2 += sizeof(void *);
@@ -1298,9 +1293,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
             if (!isstopword(&indexf->header, epi->word))
             {
-                /* Sort locationlist by MetaName, Filenum
-                   ** for faster search */
-                sortentry(sw, indexf, epi);
                 /* Write word to index file */
                 write_word(sw, epi, indexf);
             }
@@ -1329,6 +1321,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             epi = ep->elist[i];
             if (epi->u1.fileoffset >= 0L)
             {
+                /* Sort locationlist by MetaName, Filenum
+                   ** for faster search */
+                sortentry(sw, indexf, epi);
                 write_worddata(sw, epi, indexf);
             }
             efree(epi->locationarray);
