@@ -85,7 +85,7 @@
 
 
 [% BLOCK search_form %]
-    [% CGI.start_form( '-action' => CGI.script_name) %]
+    [% CGI.start_form( '-action' => CGI.script_name, '-method' => 'GET' ) %]
         [% CGI.textfield( {
             name    => 'query',
             size    => 40,
