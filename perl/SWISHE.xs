@@ -62,7 +62,7 @@ SwishNext(handle)
      result = (RESULT *)SwishNext(handle);
      if(result)
      {
-        sw = (SWISH *) result->sw;
+        sw = (SWISH *) handle;
 
         numPropertiesToDisplay = sw->Search->numPropertiesToDisplay
            ? sw->Search->numPropertiesToDisplay
