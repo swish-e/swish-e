@@ -1,3 +1,24 @@
+/*
+ * $Id$
+ *
+ * SwishCtl - SWISH-E API ActiveX Control
+ * Copyright (c) 2003 Peoples Resource Centre Wellington NZ
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 // CSwishCtl.cpp : Implementation of CCSwishCtl
 // N.B. can't add swish-e/src to build settings for this project 
 // because the folder contains a string.h which overrides the 
