@@ -60,9 +60,6 @@ SWISH  *SwishNew()
 {
     SWISH  *sw;
 
-    /* Default is to write errors to stdout */
-    set_error_handle(stdout);
-
     sw = emalloc(sizeof(SWISH));
     memset(sw, 0, sizeof(SWISH));
 
