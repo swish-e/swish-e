@@ -413,27 +413,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
 #ifdef LIBXML2
     if (fprop->doctype == HTML2)
-    {
-        title = parse_HTML_title( sw , fprop, buffer );
-
-        if ( title )
-        {
-            free_title++;
-            if (!isoktitle(sw, title))
-            {
-                efree( title );
-                return -2;  /* skipped because of title */
-            }
-        }
-        else
-            title = "";
-    }
-
-
-    if (fprop->doctype == HTML3)
-        return parse_HTML_push( sw, fprop, buffer );
-            
-
+        return parse_HTML( sw, fprop, buffer );
 #endif
 
 
@@ -702,11 +682,14 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fprop->external_program++;
 
 
-if ( fprop->doctype == HTML3 || fprop->doctype == XML3 )
-    rd_buffer = NULL;
-else
+#ifdef LIBXML2
+    if ( fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
+        rd_buffer = NULL;
+    else
+#endif
     /* -- Read  all data  (len = 0 if filtered...) */
     rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
+
 
     /* just for fun */
     sw->indexlist->total_bytes += fprop->fsize;
@@ -743,16 +726,10 @@ else
         countwords = parse_HTML;
         break;
 
-    case XML3:
-        strcpy(strType,"XML3");
-        countwords = parse_XML_push;
+    case TXT2:
+        strcpy(strType,"TXT2");
+        countwords = parse_TXT;
         break;
-
-    case HTML3:
-        strcpy(strType,"HTML3");
-        countwords = parse_HTML_push;
-        break;
-
 #endif
 
     case WML:

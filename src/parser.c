@@ -15,6 +15,15 @@ $Id$
 **
 ** 2001-09-21  new HTML parser using libxml2 (http://www.xmlsoft.org/) Bill Moseley
 **
+** TODO:
+**  - There are two buffers that are created for every file, but these could be done once
+**    and only expanded when needed.  If that would make any difference in indexing, I don' know.
+**
+**  - There is also a read chunk stack variable that's 1024 bytes.  Is stack space an issue?
+**
+**  - Note that these parse_*() functions get passed a "buffer" which is not used
+**    (to be compatible with old swihs-e buffer-based parsers)
+**
 */
 
 #include <stdarg.h>  // for va_list
@@ -99,102 +108,14 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char ** atts );
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
 static void start_metaTag( PARSE_DATA *parse_data, char * tag );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
-static void start_title_tag(void *data, const char *el, const char **attr);
-static void end_title_tag(void *data, const char *el);
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, xmlSAXHandlerPtr SAXHandler );
 static void free_parse_data( PARSE_DATA *parse_data ); 
 static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
+static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry );
+static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 
-
-/*********************************************************************
-*   Entry to index an XML file.
-*
-*   Creates an XML_Parser object and parses buffer
-*
-*   Returns:
-*       Count of words indexed
-*
-*   ToDo:
-*       This is a stream parser, so could avoid loading entire document into RAM before parsing
-*
-*********************************************************************/
-
-int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
-{
-    xmlSAXHandler       SAXHandlerStruct;
-    xmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
-    struct MOD_Index   *idx = sw->Index;
-    PARSE_DATA          parse_data;
-    IndexFILE          *indexf = sw->indexlist;
-    int                 SAXerror;
-
-    init_sax_handler( SAXHandler, sw );
-    init_parse_data( &parse_data, sw, fprop, SAXHandler );
-
-
-    /* Now parse the XML file */
-
-    if ( (SAXerror = xmlSAXUserParseMemory( SAXHandler, &parse_data, buffer, strlen( buffer ))) != 0 )
-        progwarn("xmlSAXUserParseMemory returned '%d' for file '%s'", SAXerror, fprop->real_path );
-
-
-    /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data, 1 );
-
-    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
-
-    free_parse_data( &parse_data );
-    return parse_data.total_words;
-}
-
-
-
-/*********************************************************************
-*   Entry to index an HTML file.
-*
-*   Returns:
-*       Count of words indexed
-*
-*   ToDo:
-*       This is a stream parser, so could avoid loading entire document into RAM before parsing
-*
-*********************************************************************/
-
-int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
-{
-    htmlSAXHandler       SAXHandlerStruct;
-    htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
-    struct MOD_Index   *idx = sw->Index;
-    PARSE_DATA          parse_data;
-    IndexFILE          *indexf = sw->indexlist;
-
-
-    init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
-
-
-    init_parse_data( &parse_data, sw, fprop, (xmlSAXHandlerPtr)SAXHandler );
-
-    parse_data.parsing_html = 1;
-    parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
-    parse_data.structure    = IN_FILE;
-
-
-    /* Now parse the HTML file */
-
-    htmlSAXParseDoc( buffer, NULL, SAXHandler, &parse_data );
-
-    /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data, 2 );
-
-
-    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
-
-    free_parse_data( &parse_data );
-
-    return parse_data.total_words;
-}
 
 /*********************************************************************
 *   XML Push parser
@@ -202,12 +123,10 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 *   Returns:
 *       Count of words indexed
 *
-*   ToDo:
-*       Don't forget to deal with TRUNCATE
 *
 *********************************************************************/
 
-int     parse_XML_push(SWISH * sw, FileProp * fprop, char *buffer)
+int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     xmlSAXHandler       SAXHandlerStruct;
     xmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
@@ -229,16 +148,13 @@ int     parse_XML_push(SWISH * sw, FileProp * fprop, char *buffer)
 *   Returns:
 *       Count of words indexed
 *
-*   ToDo:
-*       Don't forget to deal with TRUNCATE
-*
 *********************************************************************/
 
-int     parse_HTML_push(SWISH * sw, FileProp * fprop, char *buffer)
+int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     htmlSAXHandler       SAXHandlerStruct;
     htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
-    PARSE_DATA          parse_data;
+    PARSE_DATA           parse_data;
 
     init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
     init_parse_data( &parse_data, sw, fprop, (xmlSAXHandlerPtr)SAXHandler );
@@ -253,7 +169,41 @@ int     parse_HTML_push(SWISH * sw, FileProp * fprop, char *buffer)
 }
 
 /*********************************************************************
+*   TXT "Push" parser
+*
+*   Returns:
+*       Count of words indexed
+*
+*********************************************************************/
+
+int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    PARSE_DATA          parse_data;
+    int                 res;
+    char                chars[READ_CHUNK_SIZE];
+    IndexFILE          *indexf = sw->indexlist;
+    struct MOD_Index   *idx = sw->Index;
+
+    init_parse_data( &parse_data, sw, fprop, NULL );
+    parse_data.structure    = IN_FILE;
+
+    
+    while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
+    {
+        append_buffer( &parse_data.text_buffer, chars, res );
+        flush_buffer( &parse_data, 0 );  // flush upto whitespace
+    }
+
+    flush_buffer( &parse_data, 1 );
+    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
+    free_parse_data( &parse_data );
+    return parse_data.total_words;
+}
+
+
+/*********************************************************************
 *   Parse chunks (used for both XML and HTML parsing)
+*   Creates the parsers, reads in chunks as one might expect
 *
 *
 *********************************************************************/
@@ -265,22 +215,13 @@ static int parse_chunks( PARSE_DATA *parse_data )
     FileProp           *fprop = parse_data->fprop;
     xmlSAXHandlerPtr    SAXHandler = parse_data->SAXHandler;
     int                 res;
-    int                 size;
-    FILE               *f = fprop->fp;
     char                chars[READ_CHUNK_SIZE];
     xmlParserCtxtPtr    ctxt;
 
-    /* Read in a few bytes, these are used when creating the parser to determine the doc encoding */
 
-    size = fprop->external_program && ( fprop->fsize < 4 )
-           ? fprop->fsize
-           : 4;
-           
-    res = fread(chars, 1, size, f);  // I wonder if these 4 bytes throw off the file buffering.
+    res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize );
     if (res == 0)
         return 0;
-
-    fprop->bytes_read += res;
 
     /* Create parser */
     if ( parse_data->parsing_html )
@@ -288,46 +229,11 @@ static int parse_chunks( PARSE_DATA *parse_data )
     else
         ctxt = xmlCreatePushParserCtxt(SAXHandler, parse_data, chars, res, fprop->real_path);
 
-    parse_data->ctxt = ctxt;        
+    parse_data->ctxt = ctxt; // save
 
 
-    while ( 1 )
+    while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
-        /* fprop->external_program is set if -S prog and NOT reading from a filter */
-        
-        size = fprop->external_program && (( fprop->fsize - fprop->bytes_read ) < READ_CHUNK_SIZE)
-               ? fprop->fsize - fprop->bytes_read
-               : READ_CHUNK_SIZE;
-
-
-        if ( !(res = fread(chars, 1, size, f)) > 0)
-            break;
-            
-        fprop->bytes_read += res;
-
-
-        /* Have we exceeded the max size to read (Truncate)? */
-
-        if ( sw->truncateDocSize && fprop->bytes_read > sw->truncateDocSize )
-        {
-            res -= fprop->bytes_read - sw->truncateDocSize; // adjust the size down to equal the truncate size
-
-            if ( res > 0 )
-            {
-                if ( parse_data->parsing_html )
-                    htmlParseChunk((htmlParserCtxtPtr)ctxt, chars, res, 0);
-                else
-                    xmlParseChunk(ctxt, chars, res, 0);
-            }
-
-
-            flush_buffer( parse_data, 0 );  // only flush up to last word
-            parse_data->text_buffer.cur = 0;  // empty the buffer
-            break;
-        }
-
-
-        /* Do the normal parsing */
 
         if ( parse_data->parsing_html )
             htmlParseChunk((htmlParserCtxtPtr)ctxt, chars, res, 0);
@@ -335,17 +241,12 @@ static int parse_chunks( PARSE_DATA *parse_data )
             xmlParseChunk(ctxt, chars, res, 0);
 
 
-
-        /* For -S prog, only read in the right amount of data */
-        if ( fprop->external_program && (fprop->bytes_read >= fprop->fsize ))
-            break;
-        
-
         /* Check for abort condition set while parsing (isoktitle, NoContents) */
 
         if ( parse_data->abort )
         {
-            /* Add path name if title was not found */
+            /* For NoContents add path name if title was not found */
+
             if ( fprop->index_no_content && !parse_data->total_words )
             {
                 append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
@@ -369,91 +270,74 @@ static int parse_chunks( PARSE_DATA *parse_data )
     }
 
     /* Flush any text left in the buffer */
+
     if ( !parse_data->abort )
         flush_buffer( parse_data, 3 );
 
     addtofwordtotals(indexf, idx->filenum, parse_data->total_words);
 
 
-
     free_parse_data( parse_data );
 
-// this doesn't work since the file (and maybe some words) already added
+    // $$$ This doesn't work since the file (and maybe some words) already added
+    // $$$ need a way to "remove" the file entry and words already added 
+
     if ( parse_data->abort < 0 )
         return parse_data->abort;
-
-
 
     return parse_data->total_words;
 }
 
-
-
 /*********************************************************************
-*   Grab the title
+*   read_next_chunk - read another chunk from the stream
+*
+*   Call with:
+*       fprop
+*       *buf        - where to save the data
+*       *buf_size   - max size of buffer
+*       *max_size   - limit of *total* bytes read from this stream (for truncate)
 *
 *   Returns:
-*       emalloc title, or NULL
+*       number of bytes read (as returned from fread)
+*
 *
 *********************************************************************/
-
-char *parse_HTML_title(SWISH * sw, FileProp * fprop, char *buffer)
+static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size )
 {
-    PARSE_DATA          parse_data;
-    IndexFILE          *indexf = sw->indexlist;
-    htmlSAXHandler      SAXHandlerStruct;
-    htmlSAXHandlerPtr   SAXHandler = &SAXHandlerStruct;
+    int size;
+    int res;
+
+    if ( fprop->done )
+        return 0;
+
+    /* For -S prog, only read in the right amount of data */
+    if ( fprop->external_program && (fprop->bytes_read >= fprop->fsize ))
+        return 0;
 
 
+    /* fprop->external_program is set if -S prog and NOT reading from a filter */
 
-    /* Set event handlers for libxml2 parser */
-    memset( SAXHandler, 0, sizeof( htmlSAXHandler ) );
+    size = fprop->external_program && (( fprop->fsize - fprop->bytes_read ) < buf_size)
+           ? fprop->fsize - fprop->bytes_read
+           : buf_size;
 
-    SAXHandlerStruct.startElement   = (startElementSAXFunc)&start_title_tag;
-    SAXHandlerStruct.endElement     = (endElementSAXFunc)&end_title_tag;
+               
 
-    
-    /* Set defaults  */
-    memset(&parse_data, 0, sizeof(parse_data));
-
-    parse_data.titleProp = getPropNameByName( &indexf->header, AUTOPROPERTY_TITLE );
-    parse_data.SAXHandler = SAXHandler;
-
-    if ( !parse_data.titleProp )
-        return NULL;
-
-    htmlSAXParseDoc( buffer, NULL, SAXHandler, &parse_data );
-
-    if ( parse_data.text_buffer.buffer )
+    /* Truncate -- safety feature from Rainer.  No attempt is made to backup to a whole word */
+    if ( max_size && fprop->bytes_read + size > max_size )
     {
-        parse_data.text_buffer.cur = '\0';
-        return parse_data.text_buffer.buffer;
+        fprop->done++;  // flag that we are done
+        size = max_size - fprop->bytes_read;
     }
 
-    return NULL;
+
+    res = fread(buf, 1, size, fprop->fp);
+            
+    fprop->bytes_read += res;
+
+    return res;
 }
 
-static void start_title_tag(void *data, const char *el, const char **attr)
-{
-    PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    htmlSAXHandlerPtr   SAXHandler = parse_data->SAXHandler;
-    
-    if ( strcmp( el, "title" ) == 0 )
-        SAXHandler->characters  = (charactersSAXFunc)&char_hndl;
-        
-}
-static void end_title_tag(void *data, const char *el)
-{
-    PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    htmlSAXHandlerPtr   SAXHandler = parse_data->SAXHandler;
-
-    if ( strcmp( el, "title" ) == 0 )
-    {
-        SAXHandler->characters     = (charactersSAXFunc)NULL;
-        SAXHandler->startElement   = (startElementSAXFunc)NULL;
-        SAXHandler->endElement     = (endElementSAXFunc)NULL;
-    }
-}
 
 
 /*********************************************************************
@@ -593,11 +477,19 @@ static void start_hndl(void *data, const char *el, const char **attr)
             return;
         }
 
+
         /* Deal with structure */
         if ( (is_html_tag = check_html_tag( parse_data, tag, 1 )) )
+        {
             /* And if we are in title, flag to save content as a doc property */
             if ( !strcmp( tag, "title" ) && parse_data->titleProp )
                 parse_data->titleProp->in_tag++;
+
+            /* Extract out links - currently only keep <a> links */
+            if ( (strcmp( tag, "a") == 0) && attr && parse_data->sw->links_meta  )
+                extract_html_links( parse_data, attr, parse_data->sw->links_meta );
+        }
+
     }
 
 
@@ -1229,5 +1121,33 @@ static void warning(void *data, const char *msg, ...)
     vsnprintf(str, 1000, msg, args );
     va_end(args);
     xmlParserWarning(parse_data->ctxt, str);
+}
+
+
+/*********************************************************************
+*   Extract out links for indexing
+*
+*   Needs to be expanded, but currently just pulls out <a href> links.
+*   ExtractHTMLlinks <metaname>
+*
+*********************************************************************/
+
+static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry )
+{
+    char *href = NULL;
+    int  i;
+
+
+
+    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+        if ( (strcmp( atts[i], "href" ) == 0 ) && atts[i+1] )
+            href = (char *)atts[i+1];
+
+    if ( !href )
+        return;
+
+    /* Index the text */
+    parse_data->total_words +=
+        indexstring( parse_data->sw, href, parse_data->filenum, parse_data->structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
 }
 

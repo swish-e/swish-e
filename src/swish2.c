@@ -62,7 +62,8 @@ SWISH *SwishNew()
     SWISH *sw;
 
     sw=emalloc(sizeof(SWISH));
-
+    memset( sw, 0, sizeof(SWISH));
+    
     initModule_Filter (sw);
     initModule_ResultOutput (sw);
     initModule_SearchAlt (sw);

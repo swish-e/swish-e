@@ -219,7 +219,7 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 
 /* Document Types */
 enum {
-	BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, HTML3, XML3
+	BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, TXT2
 };
 
 #define NODOCTYPE BASEDOCTYPE
@@ -293,6 +293,7 @@ typedef struct
     char   *real_filename;      /* basename() of real_path  */
     long    fsize;              /* size of the original file (not filtered) */
     long    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
+    int     done;               /* flag to read no more from this stream (truncate) */
     int     external_program;   /* Flag to only read fsize bytes from stream */
     time_t  mtime;              /* Date of last mod of or. file */
     int     doctype;            /* Type of document HTML, TXT, XML, ... */
@@ -330,7 +331,11 @@ typedef struct ENTRY
         int     last_filenum;
     }
     u1;
-    char    word[0];	/* actual word starts here */
+#ifdef __VMS
+    char    word[];     /* actual word starts here */
+#else
+    char    word[0];    /* actual word starts here */
+#endif
 }
 ENTRY;
 
@@ -697,6 +702,9 @@ typedef struct
 
     /* parser error warning level */
     int     parser_warn_level;
+
+    /* for extracting links into a metaEntry */
+    struct metaEntry *links_meta;
 
     /* Error vars */
     int     commonerror;

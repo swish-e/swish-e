@@ -476,6 +476,17 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        /* Meta name to extract out <a href> links */
+        if (strcasecmp(w0, "HTMLLinksMetaName") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires one value", w0);
+
+            if ( !( sw->links_meta = getMetaNameByName( &indexf->header, sl->word[1]) ))
+                sw->links_meta = addMetaEntry(&indexf->header, sl->word[1], META_INDEX, 0);
+
+            continue;
+        }
 
         
         if (strcasecmp(w0, "PropertyNames") == 0)
@@ -1073,8 +1084,7 @@ int     getDocTypeOrAbort(StringList * sl, int n)
         {"WML", WML},
         {"XML2", XML2 },
         {"HTML2", HTML2 },
-        {"HTML3", HTML3 },
-        {"XML3", XML3 },
+        {"TXT2", TXT2 },
         {NULL, NODOCTYPE}
     };
 
