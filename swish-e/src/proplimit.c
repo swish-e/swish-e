@@ -19,10 +19,11 @@ $Id$
 **
 */
 
+#include <limits.h>     // for ULONG_MAX
 #include "swish.h"
 #include "string.h"
 #include "mem.h"
-#include "merge.h"  // why is this needed for docprop.h???
+#include "merge.h"      // why is this needed for docprop.h???
 #include "docprop.h"
 #include "index.h"
 #include "metanames.h"
@@ -30,7 +31,6 @@ $Id$
 #include "error.h"
 #include "db.h"
 #include "result_sort.h"
-#include <limits.h>     // PORTABLE??  for ULONG_MAX
 
 /*==================== These should be in other modules ================*/
 
@@ -251,11 +251,8 @@ static char * EncodeProperty( struct metaEntry *meta_entry, char *string )
         
 
     if ( is_meta_string(meta_entry) )
-    {
-        newstr = emalloc( strlen( string ) + 1 );  // id dup evil?
-        strcpy( newstr, string );
-        return newstr;
-    }
+        return estrdup( string );
+
 
     progwarn("EncodeProperty called but doesn't know the property type :(");
     return NULL;
@@ -393,14 +390,9 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 
     newparam = emalloc( sizeof( PARAMS ) );
     
-    newparam->propname = emalloc( strlen( propertyname ) + 1 );
-    strcpy( newparam->propname, propertyname );
-
-    newparam->lowrange = emalloc( strlen( low ) + 1 );
-    strcpy( newparam->lowrange, low );
-
-    newparam->highrange = emalloc( strlen( hi ) + 1 );
-    strcpy( newparam->highrange, hi );
+    newparam->propname = estrdup( propertyname );
+    newparam->lowrange = estrdup( low );
+    newparam->highrange = estrdup( hi );
 
     params = self->params;
 
@@ -646,23 +638,16 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
 /* These sort the LOOKUP_TABLE */
 int sortbysort(const void *s1, const void *s2)
 {
-    LOOKUP_TABLE *a;
-    LOOKUP_TABLE *b;
-
-    a = s1;
-    b = s2;
+    LOOKUP_TABLE *a = (LOOKUP_TABLE *)s1;
+    LOOKUP_TABLE *b = (LOOKUP_TABLE *)s2;
 
     return a->sort - b->sort;
 }
 
 int sortbyfile(const void *s1, const void *s2)
 {
-    LOOKUP_TABLE *a;
-    LOOKUP_TABLE *b;
-
-    a = s1;
-    b = s2;
-
+    LOOKUP_TABLE *a = (LOOKUP_TABLE *)s1;
+    LOOKUP_TABLE *b = (LOOKUP_TABLE *)s2;
 
     return a->filenum - b->filenum;
 }
