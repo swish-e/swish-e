@@ -69,11 +69,11 @@ SWISH-PERL - Perl Interface to the SWISH-E Library
 
     my $num_results = SwishSearch($handle, $query, 1, $props, $sort);
 
-    unless ( $num_results ) {
-        print "No Results\n";
+    if ( $num_results <= 0 ) {
+        print ($num_results ? SwishErrorString( $num_results ) : 'No Results');
 
         my $error = SwishError( $handle );
-        print "Error number: $error\n" if $error;
+        print "\nError number: $error\n" if $error;
 
         return;  # or next.
     }
@@ -139,7 +139,7 @@ To test it you can run the test.pl script.  Type "./test.pl" at your command pro
 This perl script uses the index file built by the "make test" command used during the build
 of SWISHE as described in the B<INSTALL> document.
 
-B<NOTE>Currently swish will exit the running program on some fatal errors.  In general
+B<NOTE> Currently swish will exit the running program on some fatal errors.  In general
 this should not happen, but it is something to think about if running under mod_perl
 as an error will kill off the web server process.  Apache, for example, should recover
 by starting up a new child process.  But, it's not a very graceful way to handle errors.
