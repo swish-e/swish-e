@@ -75,7 +75,7 @@ Now to build the SWISH::API module:
 
    $ perl Makefile.PL PREFIX=$HOME/local \
      CCFLAGS=-I$HOME/local/include \   
-     LIBS="-lz -L$HOME/local/lib -lswish-e"
+     LIBS="-L$HOME/local/lib -lswish-e"
 
    $ LD_RUN_PATH=$HOME/local/lib make
 
