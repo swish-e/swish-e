@@ -602,7 +602,18 @@ static void print_file_removed(IndexFILE *older, propEntry *op, IndexFILE *newer
     p2 = DecodeDocProperty( newer->path_meta, newer->cur_prop );
     d2 = DecodeDocProperty( newer->modified_meta, np );
     
-    printf("Replaced file '%s %s' with '%s %s'\n", p1, d1, p2, d2);
+    printf("Replaced file '%s %s' with '%s %s'\n",
+         *p1 ? p1 : "(file name not defined)",
+         *d1 ? d1 : "(date not defined)",
+         *p2 ? p2 : "(file name not defined)",
+         *d2 ? d2 : "(date not defined)"
+    );
+
+    efree( p1 );
+    efree( d1 );
+    efree( p2 );
+    efree( d2 );
+
 }
 
 
