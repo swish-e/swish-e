@@ -10,6 +10,16 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Indexing HTML title
+
+Fixed a problem when these were used in combination:
+
+  MetaNames swishtitle
+  MetaNameAlias swishtitle title
+
+That failed to correctly reset the metaname stack and indexed text under
+the wrong metaID.
+
 =item * Single Wildcards
 
 Due to the way the query parser "works" a search of
