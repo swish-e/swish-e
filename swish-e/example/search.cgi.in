@@ -427,13 +427,4 @@ under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<SWISH::API>,  L<Template>, L<HTML::FillInForm>
-
-
-
-
-
-
-
-
-
+SWISH::API,  Template, HTML::FillInForm
