@@ -84,7 +84,7 @@ if test "$withval" = "yes"; then
 elif test "$withval" != "no"; then
     AC_MSG_RESULT([** Enabling libxml2 support at '$withval': good choice! **])
     LIBXML2_OBJS="parser.o"
-    LIBXML2_LIB="-R$withval/lib -L$withval/lib -lxml2"
+    LIBXML2_LIB="-L$withval/lib -lxml2"
     LIBXML2_CFLAGS="-I$withval/include"
     AC_DEFINE(HAVE_LIBXML2)
 else
@@ -117,11 +117,6 @@ if test "$withval" != "no"; then
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"
                 Z_LIBS="-L${Z_DIR}/lib -lz"
-    	    [case ${host} in
-    		*-*-solaris*)
-    		    Z_LIBS="-L${Z_DIR}/lib -R${Z_DIR}/lib -lz"
-    		    ;;
-    	    esac]
             else
                 Z_LIBS="-lz"
             fi]))
