@@ -1240,7 +1240,7 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
 
 
     zlib_status = uncompress(PropBuf, &buf_size, input_buf, buf_len );
-//    if ( zlib_status != Z_OK )
+    if ( zlib_status != Z_OK )
     {
         // $$$ make sure this works ok if returning null $$$
         progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
