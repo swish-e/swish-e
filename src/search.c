@@ -245,6 +245,49 @@ void freeModule_Search (SWISH *sw)
   return;
 }
 
+// #define DUMP_RESULTS 1
+
+
+#ifdef DUMP_RESULTS
+
+void dump_result_lists( SWISH *sw, char *message )    
+    
+{
+    struct DB_RESULTS *db_results = sw->Search->db_results;
+
+    printf("\nDump Results: (%s)\n", message );
+
+    while ( db_results )
+    {
+        RESULT *result;
+        printf("Looking at index\n");
+        if ( !db_results->resultlist )
+        {
+            printf("no resultlist\n");
+            continue;
+        }
+        result = db_results->resultlist->head;
+
+        if ( !result )
+        {
+            printf("resultlist, but head is null\n");
+            continue;
+        }
+        while ( result )
+        {
+            printf("Result: filenum '%d' from index file '%s'\n", result->filenum, result->indexf->line );
+            result = result->next;
+        }
+
+        printf("end of results for index\n");
+
+        db_results = db_results->next;
+    }
+    printf("end of results\n\n");
+}
+#endif
+
+
 
 
 /*
@@ -654,41 +697,10 @@ int     search_2(SWISH * sw, char *words, int structure)
     if ( is_prop_limit_used( sw ) )
         limit_result_list( sw );
 
-
-
 #ifdef DUMP_RESULTS
-    {
-        struct DB_RESULTS *db_results = sw->Search->db_results;
-
-        while ( db_results )
-        {
-            RESULT *result;
-            printf("Looking at index\n");
-            if ( !db_results->resultlist )
-            {
-                printf("no resultlist\n");
-                continue;
-            }
-            result = db_results->resultlist->head;
-
-            if ( !result )
-            {
-                printf("resultlist, but head is null\n");
-                continue;
-            }
-            while ( result )
-            {
-                printf("Result: filenum '%d' from index file '%s'\n", result->filenum, result->indexf->line );
-                result = result->next;
-            }
-
-            printf("end of results for index\n");
-
-            db_results = db_results->next;
-        }
-        printf("end of results\n");
-    }
+    dump_result_lists( sw, "After search" );
 #endif
+
 
     /* 04/00 Jose Ruiz - Sort results by rank or by properties */
 
@@ -2023,21 +2035,25 @@ RESULT *SwishNext(SWISH * sw)
             if(res->rank == -1)
                 res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->indexf, res->filenum );
 
-            res->PropSort = getResultSortProperties(sw, res);
+            if ( !res->PropSort )
+                res->PropSort = getResultSortProperties(sw, res);
         }
 
 
         for (db_results = sw->Search->db_results->next; db_results; db_results = db_results->next)
         {
+            /* Any more results for this index? */
             if (!(res2 = db_results->currentresult))
                 continue;
+
             else
             {
                             /* If rank was delayed, compute it now */
                 if(res2->rank == -1)
                    res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->posdata, res2->indexf, res2->filenum );
 
-                res2->PropSort = getResultSortProperties(sw, res2);
+                if ( !res2->PropSort )
+                    res2->PropSort = getResultSortProperties(sw, res2);
             }
 
             if (!res)
@@ -2101,6 +2117,10 @@ void    freeresultlist(SWISH * sw, struct DB_RESULTS *dbres)
 {
     RESULT *rp;
     RESULT *tmp;
+
+#ifdef DUMP_RESULTS
+    dump_result_lists( sw, "In freeresultlist()" );
+#endif
 
     if(dbres->resultlist)
         rp = dbres->resultlist->head;

@@ -174,6 +174,12 @@ char   *SwishErrorString(int errornumber)
     return (getErrorString(errornumber));
 }
 
+char   *SwishLastError(SWISH *sw )
+{
+    return sw->lasterrorstr;
+}
+
+
 
 char *getErrorString(int number)
 {
@@ -190,7 +196,7 @@ int i;
 void abort_last_error(SWISH *sw)
 {
     if ( sw->lasterror < 0 )
-        progerr( "%s: %s", getErrorString( sw->lasterror ), sw->lasterrorstr );
+        progerr( "%s: %s", getErrorString( SwishError( sw ) ), SwishLastError( sw ) );
 
     progerr("Swish aborted with non-negative lasterror");
 }

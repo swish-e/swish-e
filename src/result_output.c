@@ -303,6 +303,7 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
 /*
   -- Output the resuult entries in the given order
   -- outputformat depends on some cmd opt settings
+  This frees memory as it goes along, so this can't be called from the library.
 */
 
 void    printSortedResults(SWISH * sw)

@@ -561,7 +561,8 @@ typedef struct RESULT_LIST
 {
     struct RESULT *head;
     struct RESULT *tail;
-    struct SWISH  *sw;
+    struct SWISH  *sw;           // ** This is a waste of memory, it's only here because
+                                 // ** qsort only passes two values.  This can be fixed.
 }
 RESULT_LIST;
 
@@ -581,7 +582,7 @@ typedef struct RESULT
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
 
-    RESULT_LIST *reslist;
+    RESULT_LIST *reslist;       //* this is probably not needed, too.
 
     int     posdata[1];
 }

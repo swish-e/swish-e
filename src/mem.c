@@ -119,6 +119,14 @@ typedef struct
 	
 } TraceBlock;
 
+
+// mem break point: helps a little to track down unfreed memory 
+void Mem_bp(int n)
+{
+    if ( n == memory_trace_counter )
+        progwarn("At counter position %d", n );
+}
+
 #endif
 
 
