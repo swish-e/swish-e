@@ -49,7 +49,7 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 	}
 
 	addtofilelist(sw, indexf, fprop->real_path, NULL );
-    addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, 0, fprop->fsize );
+    addCommonProperties( sw, indexf, fprop->mtime, "", summary, 0, fprop->fsize );
 
 
 

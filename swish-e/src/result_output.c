@@ -637,6 +637,12 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 
     pv = getResultPropValue(sw, r, propname, 0);
 
+#ifdef USE_DOCPATH_AS_TITLE
+    if ( strcmp( AUTOPROPERTY_TITLE, propname ) == 0 && strcmp( "", pv->value.v_str ) == 0 )
+        pv = getResultPropValue(sw, r, AUTOPROPERTY_DOCPATH, 0);
+#endif        
+
+
     if (!pv)
     {
         if (f)

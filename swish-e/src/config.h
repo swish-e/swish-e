@@ -39,12 +39,23 @@
 */
 
 #define PROPFILE 1
+
 #define MAX_SORT_STRING_LEN 50
 
 /* MAX_SORT_STRING_LEN defines the max string length to use
 *  for sorting properties.  Should be long enough to sort ALL
 *  file paths or URLs.  Useful if using StoreDescription to store
 *  a large amount of text.
+*/
+
+#define USE_DOCPATH_AS_TITLE 1
+
+/* If USE_DOCPATH_AS_TITLE is defined then documents that do not have
+*  a title defined (xml and txt, and HTML documents without a title)
+*  will display the document path as the title in results.
+*  Documents without a title will sort as a blank title, and not
+*  by the document path regardless of this setting.  This is a change
+*  from versions previous to 2.2.
 */
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1

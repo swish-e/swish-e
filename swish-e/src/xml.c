@@ -137,7 +137,7 @@ int in_junk=0;
         summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
 
 	addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry );
-    addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
+    addCommonProperties( sw, indexf, fprop->mtime, "", summary, start, size );
 
 
         /* Init meta info */
