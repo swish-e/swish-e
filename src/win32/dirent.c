@@ -63,7 +63,7 @@ DIR *opendirx(char *name, char *pattern)
     struct _dircontents *dp; 
     int len;
     int unc;
-    char path[ OFS_MAXPATHNAME ]; 
+    char path[ SW_MAXPATHNAME ]; 
     register char *ip, *op;
 	
     for (ip = name, op = path; ; op++, ip++) {
@@ -72,8 +72,6 @@ DIR *opendirx(char *name, char *pattern)
 			break;
 		}
     }
-
-//	FIX_DIRECTORY_NAME( path );
 
     len = ip - name;
     if (len > 0) {
@@ -266,68 +264,6 @@ static char *getdirent(char *dir)
     } 
 } 
 /* end of getdirent() */ 
-
-/* Convert '\\' to '/' 
- * Strip trailing '/' and '\\' from directory names
- * See Microsoft KB Article: Q137230
- */
-void
-fixDirectoryName( char *name ) {
-
-	int position,length;
-	char newdelimiter, olddelimiter;
-
-	position = 0;
-	length = strlen( name );
-
-	if( DIRDELIMITER == '\\' ){
-		newdelimiter == '\\';
-		olddelimiter == '/';
-	}
-	else {
-		newdelimiter == '/';
-		olddelimiter == '\\';
-	}
-
-	while(name[position]){
-		if( name[position] == olddelimiter )
-			name[position] = newdelimiter;
-		position++;
-	}
-
-	/* Some functions are appending extra delimiters.  */
-	while( (name[ length - 1 ] == '\\') || (name[ length - 1 ] == '/') ){
-		name[ length - 1 ] = '\0';
-		length = strlen( name );
-	}
-
-}
-/* end of fixDirectoryName()  */
-
-
-/* stat() MUST trip trailing '/' and '\\' from directory names
- * See Microsoft KB Article: Q137230
- */
-int
-my_stat(char *name, struct _stat *statb){
-    char path[ OFS_MAXPATHNAME ]; 
-	int retcode, length;
-    register char *ip, *op;
-	
-	/* copy name to a working variable path  */
-    for (ip = name, op = path; ; op++, ip++) {
-		*op = *ip;
-		if (*ip == '\0') {
-			break;
-		}
-    }
-
-	/* FIX our local copy of the variable  */
-	FIX_DIRECTORY_NAME( path );
-
-	/* Pass our correct copy of name to stat  */
-	return _stat( path, statb );
-}
 
 struct passwd * _cdecl
 getpwnam(char *name)
