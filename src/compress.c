@@ -31,6 +31,7 @@
 #include "search.h"
 #include "hash.h"
 
+
 /* 2001-05 jmruiz */
 /* Routines for compressing numbers - Macros converted to routines */
 
@@ -211,15 +212,15 @@ struct MOD_Index *idx = sw->Index;
 
         /* Swap info to file ? */
         /* If IgnoreLimit is set then no swap is done */
-    if(idx->economic_flag && sw->plimit==NO_PLIMIT)
+    if(idx->economic_flag)
     {
         q=(unsigned char *)SwapLocData(sw,++p,i);
     } else {
-        q=(unsigned char *) emalloc(i);
+        q=(unsigned char *)emalloc(i);
         memcpy(q,++p,i);
     }
     efree(l);
-    return q;
+    return (unsigned char *)q;
 }
 
 /* 09/00 Jose Ruiz 
@@ -295,8 +296,9 @@ struct MOD_Index *idx = sw->Index;
         /* Check if we have IgnoreLimit active */
         /* If it is active, we can not swap the location info */
         /* to disk because it can be modified later */
-    if(sw->plimit!=NO_PLIMIT) 
+    if(idx->plimit!=NO_PLIMIT) 
         return (long)buf;  /* do nothing */
+
     if(!idx->fp_loc_write)
     {
         idx->fp_loc_write = fopen(idx->swap_location_name,FILEMODE_WRITE);
@@ -329,8 +331,9 @@ struct MOD_Index *idx = sw->Index;
         /* Check if we have IgnoreLimit active */
         /* If it is active, we can not swap the location info */
         /* to disk because it can be modified later */
-    if(sw->plimit!=NO_PLIMIT) 
+    if(idx->plimit!=NO_PLIMIT) 
         return (unsigned char *)pos;  /* do nothing */
+
     if(!idx->fp_loc_read)
     {
         fclose(idx->fp_loc_write);
