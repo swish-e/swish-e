@@ -582,6 +582,8 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
             newEntry->metaType = metaType;
             newEntry->sorted_data = NULL;
 			newEntry->inPropRange = NULL;
+            newEntry->loPropRange = NULL;
+            newEntry->hiPropRange = NULL;
             metaFileEntry->newMetaID = (*count) + AUTOPROP_ID__DOCPATH;;
             metaEntryArray[(*count)++] = newEntry;
         }
@@ -596,6 +598,8 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
         newEntry->metaType = metaType;
         newEntry->sorted_data = NULL;
 		newEntry->inPropRange = NULL;
+        newEntry->loPropRange = NULL;
+        newEntry->hiPropRange = NULL;
         metaFileEntry->newMetaID = AUTOPROP_ID__DOCPATH;;
         *count = 1;
         metaEntryArray[0] = newEntry;
