@@ -169,4 +169,38 @@ SwishErrorString(number)
      XPUSHs(sv_2mortal(newSVpv(value,0)));
      PUTBACK;
 
+SV *
+SwishHeaders(handle)
+     void *handle;
+     CODE:
+     AV *headers;
+     HV *indexheader;
+     SWISH *sw = (SWISH *)handle;
+     IndexFILE *indexf;
+
+     headers = newAV();
+     indexf = sw->indexlist;
+     while(indexf)
+     {
+        indexheader = newHV();
+        hv_store(indexheader,"IndexName",9,newSVpv(indexf->line,0),0);
+        hv_store(indexheader,"WordCharacters",14,newSVpv(indexf->header.wordchars,0),0);
+        hv_store(indexheader,"BeginCharacters",15,newSVpv(indexf->header.beginchars,0),0);
+        hv_store(indexheader,"EndCharacters",13,newSVpv(indexf->header.endchars,0),0);
+        hv_store(indexheader,"IgnoreLastChar",14,newSVpv(indexf->header.ignorelastchar,0),0);
+        hv_store(indexheader,"IgnoreFirstChar",15,newSVpv(indexf->header.ignorefirstchar,0),0);
+        hv_store(indexheader,"IndexName",9,newSVpv(indexf->header.indexn,0),0);
+        hv_store(indexheader,"IndexDescription",16,newSVpv(indexf->header.indexd,0),0);
+        hv_store(indexheader,"IndexPointer",12,newSVpv(indexf->header.indexp,0),0);
+        hv_store(indexheader,"IndexAdmin",10,newSVpv(indexf->header.indexa,0),0);
+        hv_store(indexheader,"UseStemming",11,newSViv(indexf->header.applyStemmingRules),0);
+        hv_store(indexheader,"UseSoundex",10,newSViv(indexf->header.applySoundexRules),0);
+        hv_store(indexheader,"TotalWords",10,newSViv(indexf->header.totalwords),0);
+        hv_store(indexheader,"TotalFiles",10,newSViv(indexf->header.totalfiles),0);
+        av_push(headers,newRV_noinc((SV *)indexheader));
+        indexf = indexf->next;
+     }
+     RETVAL = newRV_noinc((SV *) headers);
+     OUTPUT:
+     RETVAL
 
