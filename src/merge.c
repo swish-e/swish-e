@@ -45,8 +45,8 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index );
 static IndexFILE *get_next_file_in_order( SWISH *sw_input );
 static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output );
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
-static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map );
-static ENTRY *write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata );
+static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output );
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata );
 
 
 // #define DEBUG_MERGE
@@ -62,9 +62,24 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     IndexFILE   *cur_index;
     FILE        *filenum_map;
     char        *tmpfilename;
-
-
-
+    struct MOD_Index *idx_output = sw_output->Index;
+    ENTRY       *e;
+    int          hash,
+                 sz_worddata,
+                 tmpval,
+                 filenum,
+                 metaID = 0,
+                 frequency,
+                 loc_count = 0,
+                 word_count = 0;
+    long         wordID;
+    unsigned long    nextposmetaID = 0L;
+    unsigned char   *worddata;
+    unsigned char   *s;
+    unsigned char   flag;
+    int          local_posdata[MAX_STACK_POSITIONS];
+    int         *posdata;
+    int          i;
 
     /*******************************************************************************
     * Get ready to merge the indexes.  For each index:
@@ -146,20 +161,144 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     *
     ****************************************************************************/
 
+    /* 08/2002 jmruiz
+    ** First of all, get all the words
+    */
     cur_index = sw_input->indexlist;
     while( cur_index )
     {
-        int *file_num_map = get_map( filenum_map, cur_index );
+        dump_index_words(sw_input, cur_index, sw_output);
+        /* Get filr_num_map for later proccess */
+        cur_index->merge_file_num_map = get_map( filenum_map, cur_index );
+        cur_index = cur_index->next;
+    }
 
-        dump_index(sw_input, cur_index, sw_output, file_num_map );
+    /* At this point we have all the words. Now we have to get worddata
+    * and merge it
+    */
+    word_count = 0;
+    printf("Processing words in index '%s': %6d words\r", sw_output->indexlist->line, word_count);
+    fflush(stdout);
+    /* walk the hash list to merge worddata */
+    for (hash = 0; hash < VERYBIGHASHSIZE; hash++)
+    {
+        if (idx_output->hashentriesdirty[hash])
+        {
+            idx_output->hashentriesdirty[hash] = 0;
+            for (e = idx_output->hashentries[hash]; e; e = e->next)
+            {
+                word_count++;
+                /* Search the word in all index and get worddata */
+                cur_index = sw_input->indexlist;
+                while( cur_index )
+                {
+                    DB_ReadWordHash(sw_input, e->word, &wordID, cur_index->DB);
+                    /* If word exits in the index */
+                    if(wordID)
+                    {
 
+                        DB_ReadWordData(sw_input, wordID, &worddata, &sz_worddata, cur_index->DB);
+
+                        /* Now, parse word's data */
+                        s = worddata;
+                        tmpval = uncompress2(&s);     /* tfrequency */
+                        metaID = uncompress2(&s);     /* metaID */
+
+                        if (metaID)
+                        {
+                            nextposmetaID = UNPACKLONG2(s);
+                            s += sizeof(long);
+                        }
+
+                        filenum = 0;
+
+                        while(1)
+                        {                   /* Read on all items */
+                            uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                            filenum += tmpval;
+                            /* Use stack array when possible to avoid malloc/free overhead */
+                            if(frequency > MAX_STACK_POSITIONS)
+                                posdata = (int *) emalloc(frequency * sizeof(int));
+                            else
+                                posdata = local_posdata;
+                            
+                            /* Read the positions */
+                            uncompress_location_positions(&s,flag,frequency,posdata);
+
+
+                            /* now we have the word data */
+                            for (i = 0; i < frequency; i++, loc_count++)
+                                write_word_pos( sw_input, cur_index, sw_output, cur_index->merge_file_num_map, filenum, e, metaID, posdata[i]);
+
+                            if(e->tfrequency)
+                            {
+                                /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
+                                ** to time to help addentry.
+                                ** If we do not do this, addentry routine will have to run linked lists 
+                                ** of positions with thousands of elements and makes the merge proccess
+                                ** very slow
+                                */
+                                if(!(loc_count % 100))
+                                    CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+                            }
+                        
+
+                            if(posdata != local_posdata)
+                                efree(posdata);
+
+                            if ((s - worddata) == sz_worddata)
+                                break;   /* End of worddata */
+
+                            if ((unsigned long)(s - worddata) == nextposmetaID)
+                            {
+                                filenum = 0;
+                                metaID = uncompress2(&s);
+                                if (metaID)
+                                {
+                                    nextposmetaID = UNPACKLONG2(s); 
+                                    s += sizeof(long);
+                                }
+                                else
+                                    nextposmetaID = 0L;
+                            }
+                        }
+
+                        if(e->tfrequency)
+                            CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+
+                        efree(worddata);
+                    }
+                    cur_index = cur_index->next;
+                }
+                /* Let's coalesce locations for each word to save memory 
+                ** This makes use of the -e feature
+                ** Because we are proccessing one word at a time we can
+                ** coalesce its data just once
+                */
+                coalesce_word_locations(sw_output,sw_output->indexlist,e);
+
+                if(!(word_count % 1000))
+                {
+                    /* Make zone available for reuse and save memory */
+                    Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
+                    sw_output->Index->freeLocMemChain = NULL;
+                    printf("Processing words in index '%s': %6d words\r", sw_output->indexlist->line, word_count);
+                }
+            }
+        }
+    }
+
+    printf("Processing words in index '%s': %6d words\n", sw_output->indexlist->line, word_count);
+    fflush(stdout);
+
+    cur_index = sw_input->indexlist;
+    while( cur_index )
+    {
         /* free the maps */
-        efree( file_num_map );
+        efree( cur_index->merge_file_num_map );
         efree( cur_index->meta_map );
         cur_index->meta_map = NULL;
-
         cur_index = cur_index->next;
-
     }
 
 
@@ -729,25 +868,12 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 }
 
 /****************************************************************************
-*  Reads the index and calls write_word_pos
-*
-*  This should be a common, shared function in swish.  Would also be good
-*  written as an iterator function so it retuns a position structure.
-*  Currently, calls write_word_pos for each position.  Would it be better
-*  to call with a LOCATION structure?
-*
+*  Reads the index to get the all the words
 ****************************************************************************/
    
-static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map )
+static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 {
-    int         i;
     int         j;
-    int         frequency = 0;
-    int         tmpval;
-    int         filenum;
-    int         local_posdata[MAX_STACK_POSITIONS];
-    int        *posdata;
-    int         sz_worddata;
     int         metaname = 0;
     int         word_count = 0;
     int         loc_count = 0;
@@ -755,19 +881,11 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
     char       *resultword;
     long        wordID;
     unsigned long    nextposmetaname = 0L;
-    unsigned char   *worddata;
-    unsigned char   *s;
-    unsigned char   flag;
-    ENTRY      *e, *tmp;
-    int         hash;
-
-    
 
     DB_InitReadWords(sw, indexf->DB);
 
 
-
-    printf("Processing words in index '%s': %3d words\r", indexf->line, word_count);
+    printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
     fflush(stdout);
     
     for(j=0;j<256;j++)
@@ -778,137 +896,19 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 
         while(wordID)
         {
-            e = NULL;
-            loc_count = 0;
-            
-            /* Read Word's data */
-            DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
-
-            /* parse and print word's data */
-            s = worddata;
-
-            tmpval = uncompress2(&s);     /* tfrequency */
-
-            metaname = uncompress2(&s);     /* metaID */
-
-            if (metaname)
-            {
-                nextposmetaname = UNPACKLONG2(s);
-                s += sizeof(long);
-            }
-
-            filenum = 0;
-
-            while(1)
-            {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                filenum += tmpval;
-                if(frequency > MAX_STACK_POSITIONS)
-                    posdata = (int *) emalloc(frequency * sizeof(int));
-                else
-                    posdata = local_posdata;
-
-                uncompress_location_positions(&s,flag,frequency,posdata);
-
-
-                /* now we have the word data */
-                for (i = 0; i < frequency; i++, loc_count++)
-                {
-                    tmp = write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, posdata[i]);
-                    /* get the pointer to entry for later compress */
-                    if(!e)
-                        e = tmp;
-                }
-
-                if(e)
-                {
-                    /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
-                    ** to time to help addentry.
-                    ** If we do not do this, addentry routine will have to run linked lists 
-                    ** of positions with thousands of elements and makes the merge proccess
-                    ** very slow
-                    */
-                    if(!(loc_count % 100))
-                    {
-                        hash = verybighash(e->word);
-                        if(sw_output->Index->hashentriesdirty[hash])
-                        {
-                            /* Reset the hashentriesdirty flag - Not needed by merge */
-                            sw_output->Index->hashentriesdirty[hash] = 0;
-                            CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
-                        }
-                    }
-                }
-
-                if(posdata != local_posdata)
-                    efree(posdata);
-
-                if ((s - worddata) == sz_worddata)
-                    break;   /* End of worddata */
-
-                if ((unsigned long)(s - worddata) == nextposmetaname)
-                {
-                    filenum = 0;
-                    metaname = uncompress2(&s);
-                    if (metaname)
-                    {
-                        nextposmetaname = UNPACKLONG2(s); 
-                        s += sizeof(long);
-                    }
-                    else
-                        nextposmetaname = 0L;
-                }
-            }
-
-            if(e)
-            {
-                /* Reset the hashentriesdirty flag - Not needed by merge */
-                sw_output->Index->hashentriesdirty[verybighash(e->word)] = 0;
-                CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
-                word_count++;
-            }
-
-
-            /* Let's coalesce location from time to time to save memory */
-            /* FIX 08/2002 jmruiz
-            ** Unfortunately, we cannot coalesce because this routine
-            ** need that the worddata is sorted by filenum. In merge,
-            ** this is not true because new filenums are asigned on the
-            ** fly in write_word_pos routine. If done
-            **
-            ** BTW, if we cannot call coalesce_word_locations, -e is useless
-            ** Probably, this need some redesign ...
-            */
-            if(!(word_count % 1000))
-            {
-                printf("Processing words in index '%s': %6d words\r", indexf->line, word_count);
-                fflush(stdout);
-
-                //coalesce_all_word_locations(sw_output, sw_output->indexlist);
-
-                /* Make zone available for reuse */
-                //Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
-                //sw_output->Index->freeLocMemChain = NULL;
-
-            }
-
-            efree(worddata);
+            /* Add resultword to output */
+            getentry(sw_output, resultword);
             efree(resultword);
             DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+            word_count++;
+            if(!word_count % 10000)
+                printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
         }
     }
-    printf("Processing words in index '%s': %6d words\n", indexf->line, word_count);
+    printf("Getting words in index '%s': %6d words\n", indexf->line, word_count);
 
     DB_EndReadWords(sw, indexf->DB);
 
-    /* Coalesce pending work*/
-    /* FIX 08/2002 jmruiz - See above
-    */
-    //coalesce_all_word_locations(sw_output, sw_output->indexlist);
-
-    /* Make zone available for reuse */
-    //Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
-    //sw_output->Index->freeLocMemChain = NULL;
 }
 
 /****************************************************************************
@@ -917,48 +917,47 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 *
 ****************************************************************************/
 
-static ENTRY  *write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata )
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata )
 {
     int         new_file;
     int         new_meta;
 
 #ifdef DEBUG_MERGE
     printf("\nindex %s '%s' Struct: %d Pos: %d",
-    indexf->line, resultword, structure, position );
+    indexf->line, e->word, structure, position );
 
 
     if ( !(new_file = file_num_map[ filenum ]) )
     {
         printf("  file: %d **File deleted!**\n", filenum);
-        return NULL;
+        return;
     }
 
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
     {
         printf("  file: %d **Failed to map meta ID **\n", filenum);
-        return NULL;
+        return;
     }
 
     printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
 
-    return addentry( sw_output, resultword, new_file, structure, metaID, position );
+    addentry( sw_output, e, new_file, structure, metaID, position );
+
+    return;
 
 
-
-    /* Compress the entries ?  */
-    //compress_entries( sw_output );  // maybe after every 1000 words or so?
-    // * but does this make it so addentry can't lookup a word?
 #else
 
 
     if ( !(new_file = file_num_map[ filenum ]) )
-        return NULL;
+        return;
 
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
-        return NULL;
+        return;
 
-    return addentry( sw_output, resultword, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
+    addentry( sw_output, e, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
 
+    return;
 
 #endif
 

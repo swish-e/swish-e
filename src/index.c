@@ -946,38 +946,12 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 }
 
 
-/* Adds a word to the master index tree.
-*/
-
-ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID, int position)
+ENTRY  *getentry(SWISH * sw, char *word)
 {
-    int     found;
-    ENTRY  *en,
-           *efound;
-    LOCATION *tp, *newtp, *prevtp;
-    int     hashval;
     IndexFILE *indexf = sw->indexlist;
     struct MOD_Index *idx = sw->Index;
-
-
-    indexf->total_word_positions++;
-
-    if ( DEBUG_MASK & DEBUG_WORDS )
-    {
-        struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
-
-        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "PROP_UNKNOWN", metaID, word, position, structure);
-        
-        if ( structure & IN_EMPHASIZED ) printf(" EM");
-        if ( structure & IN_HEADER ) printf(" HEADING");
-        if ( structure & IN_COMMENTS ) printf(" COMMENT");
-        if ( structure & IN_META ) printf(" META");
-        if ( structure & IN_BODY ) printf(" BODY");
-        if ( structure & IN_HEAD ) printf(" HEAD");
-        if ( structure & IN_TITLE ) printf(" TITLE");
-        if ( structure & IN_FILE ) printf(" FILE");
-        printf(" )\n");
-    }
+    int     hashval;
+    ENTRY *e;
 
     if (!idx->entryArray)
     {
@@ -990,41 +964,85 @@ ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
 
     /* Look for the word in the hash array */
-    for (efound = idx->hashentries[hashval]; efound; efound = efound->next)
-        if (strcmp(efound->word, word) == 0)
+    for (e = idx->hashentries[hashval]; e; e = e->next)
+        if (strcmp(e->word, word) == 0)
             break;
 
     /* flag hash entry used this file, so that the locations can be "compressed" in do_index_file */
     idx->hashentriesdirty[hashval] = 1;
 
 
+    /* Word found, return it */
+    if (e)
+        return e;
+
     /* Word not found, so create a new word */
 
-    if (!efound)
-    {
-        en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word));
-        strcpy(en->word, word);
-        en->tfrequency = 1;
-        en->u1.last_filenum = filenum;
-        en->next = idx->hashentries[hashval];
-        idx->hashentries[hashval] = en;
+    e = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word));
+    strcpy(e->word, word);
+    e->next = idx->hashentries[hashval];
+    idx->hashentries[hashval] = e;
 
+    /* Init values */
+    e->tfrequency = 0;  
+    e->u1.last_filenum = 0; 
+    e->currentlocation = NULL;
+    e->currentChunkLocationList = NULL;  
+    e->allLocationList = NULL;
+
+    idx->entryArray->numWords++;
+    indexf->header.totalwords++;
+
+    return e;
+}
+
+/* Adds a word to the master index tree.
+*/
+
+void   addentry(SWISH * sw, ENTRY *e, int filenum, int structure, int metaID, int position)
+{
+    int     found;
+    LOCATION *tp, *newtp, *prevtp;
+    IndexFILE *indexf = sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+
+
+    indexf->total_word_positions++;
+
+    if ( DEBUG_MASK & DEBUG_WORDS )
+    {
+        struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
+
+        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "PROP_UNKNOWN", metaID, e->word, position, structure);
+        
+        if ( structure & IN_EMPHASIZED ) printf(" EM");
+        if ( structure & IN_HEADER ) printf(" HEADING");
+        if ( structure & IN_COMMENTS ) printf(" COMMENT");
+        if ( structure & IN_META ) printf(" META");
+        if ( structure & IN_BODY ) printf(" BODY");
+        if ( structure & IN_HEAD ) printf(" HEAD");
+        if ( structure & IN_TITLE ) printf(" TITLE");
+        if ( structure & IN_FILE ) printf(" FILE");
+        printf(" )\n");
+    }
+
+
+    /* Check for first time */
+    if(!e->tfrequency)
+    {
         /* create a location record */
         tp = (LOCATION *) new_location(idx);
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->metaID = metaID;
         tp->posdata[0] = SET_POSDATA(position,structure);
-
         tp->next = NULL;
-        en->currentlocation = NULL;
-        en->currentChunkLocationList = tp;
-        en->allLocationList = NULL;
 
-        idx->entryArray->numWords++;
-        indexf->header.totalwords++;
+        e->currentChunkLocationList = tp;
+        e->tfrequency = 1;
+        e->u1.last_filenum = filenum;
 
-        return en;  /* all done here */
+        return;
     }
 
     /* Word found -- look for same metaID and filename */
@@ -1032,10 +1050,10 @@ ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     /* Note: filename not needed due to compress we are only looking at the current file */
     /* Oct 18, 2001 -- filename is needed since merge adds words in non-filenum order */
 
-    tp = efound->currentChunkLocationList;
+    tp = e->currentChunkLocationList;
     found = 0;
 
-    while (tp != efound->currentlocation)
+    while (tp != e->currentlocation)
     {
         if(tp->metaID == metaID && tp->filenum == filenum  )
         {
@@ -1058,17 +1076,17 @@ ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp->posdata[0] = SET_POSDATA(position,structure);
 
         /* add the new LOCATION onto the array */
-        tp->next = efound->currentChunkLocationList;
-        efound->currentChunkLocationList = tp;
+        tp->next = e->currentChunkLocationList;
+        e->currentChunkLocationList = tp;
 
         /* Count number of different files that this word is used in */
-        if ( efound->u1.last_filenum != filenum )
+        if ( e->u1.last_filenum != filenum )
         {
-            efound->tfrequency++;
-            efound->u1.last_filenum = filenum;
+            e->tfrequency++;
+            e->u1.last_filenum = filenum;
         }
 
-        return efound; /* all done */
+        return; /* all done */
     }
 
 
@@ -1082,10 +1100,10 @@ ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if(newtp != tp)
     {
-        if(efound->currentChunkLocationList == tp)
-            efound->currentChunkLocationList = newtp;
+        if(e->currentChunkLocationList == tp)
+            e->currentChunkLocationList = newtp;
         else
-            for(prevtp = efound->currentChunkLocationList;;prevtp = prevtp->next)
+            for(prevtp = e->currentChunkLocationList;;prevtp = prevtp->next)
             {
                 if(prevtp->next == tp)
                 {
@@ -1098,7 +1116,6 @@ ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     tp->posdata[tp->frequency++] = SET_POSDATA(position,structure);
 
-    return efound;
 }
 
 
@@ -1427,11 +1444,11 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             if(sw->Index->swap_locdata)
             {
                 /* jmruiz - Be careful with this lines!!!! If we have a lot of words,
-			    ** probably this code can be very slow and may be rethought.
+                ** probably this code can be very slow and may be rethought.
                 ** Fortunately, only a few words must usually raise a IgnoreLimit option
                 */
-				last_loc_swap = (verybighash(ep->word) * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
-			    unSwapLocData(sw, last_loc_swap, ep );
+                last_loc_swap = (verybighash(ep->word) * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
+                unSwapLocData(sw, last_loc_swap, ep );
             }
       
             /* Run through location list to get positions */
@@ -1900,46 +1917,46 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     n = lastPercent = last_loc_swap = -1;
     for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
-		/* If we are in economic mode -e restore locations */
-		if(sw->Index->swap_locdata)
-		{
-			if (((i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1)) != last_loc_swap)
-			{
+         /* If we are in economic mode -e restore locations */
+        if(sw->Index->swap_locdata)
+        {
+            if (((i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1)) != last_loc_swap)
+            {
                 /* Free not longer needed memory */
-				Mem_ZoneReset(sw->Index->totalLocZone);
-				last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
-			    unSwapLocData(sw, last_loc_swap, NULL );
-			}
-		}
+                Mem_ZoneReset(sw->Index->totalLocZone);
+                last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
+                unSwapLocData(sw, last_loc_swap, NULL );
+            }
+        }
         if ((epi = sw->Index->hashentries[i]))
         {
             while (epi)
             {
                 /* If we are in economic mode -e we must sort locations by metaID, filenum */
-		        if(sw->Index->swap_locdata)
-				{
+                if(sw->Index->swap_locdata)
+                {
                     sortSwapLocData(sw, epi);
-				}
+                }
                 if ( sw->verbose && totalwords > 10000 )  // just some random guess
-				{
+                {
                     n++;
                     percent = (n * 100)/totalwords;
                     if (percent - lastPercent >= DELTA )
-					{
+                    {
                         printf("\r  Writing word data: %3d%%", percent );
                         fflush(stdout);
                         lastPercent = percent;
-					}
-				}
+                    }
+                }
                 if (epi->u1.wordID > 0)   /* Not a stopword */
-				{
+                {
                     build_worddata(sw, epi, indexf);
                     write_worddata(sw, epi, indexf);
-				}
-	            epi = epi->next;
-			}
-		}
-	}
+                }
+                epi = epi->next;
+            }
+        }
+    }
     if (sw->verbose)
         printf("\r  Writing word data: Complete\n" );
 
@@ -1976,7 +1993,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     totalwords = ep->numWords;
 
 
-	/* Write words */
+    /* Write words */
     DB_InitWriteWords(sw, indexf->DB);
 
     if (sw->verbose)
@@ -2136,7 +2153,7 @@ static void addword( char *word, SWISH * sw, int filenum, int structure, int num
 
     /* Add the word for each nested metaname. */
     for (i = 0; i < numMetaNames; i++)
-        (void) addentry(sw, word, filenum, structure, metaID[i], *word_position);
+        (void) addentry(sw, getentry(sw,word), filenum, structure, metaID[i], *word_position);
 
     (*word_position)++;
 }
@@ -2499,7 +2516,7 @@ void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesc
     {
         tmploc = (LOCATION **)coalesced;
         *tmploc = (LOCATION *)e;   /* Preserve e in buffer */
-                                   /* The cast is for avoiding the warning */		                         
+                                   /* The cast is for avoiding the warning */                                 
         SwapLocData(sw, e, coalesced, sz_coalesced);
         return;
     }

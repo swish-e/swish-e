@@ -574,6 +574,8 @@ typedef struct IndexFILE
     int     filenum;                // current filenumber to use
     
 
+    /* Used by merge.c */
+    int    *merge_file_num_map;
 }
 IndexFILE;
 
