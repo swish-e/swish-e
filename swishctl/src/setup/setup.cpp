@@ -17,14 +17,14 @@ using namespace std;
 const char *AUTORUN = "AutoRun";
 
 // Global Variables:
-enum dllnames { SWISHCTL=0, PCRE=1, ZLIB=2 };
+enum dllnames { SWISHCTL=0, ZLIB=1 };
 
 
 // Names of files to be installed in System directory
 char * installdlls[] = {
-		"SwishCtl.dll", "pcre.dll", "zlib.dll" };
+		"SwishCtl.dll", "zlib.dll" };
 
-const char registrykey[] = "Software\\Kauranga\\ACCIndex\\1.0\\Options";
+const char registrykey[] = "Software\\SWISH-E Team\\SwishCtl\\Options";
 
 static const char uninstallkey[] = 
 	"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" ;
@@ -175,17 +175,17 @@ HRESULT CreateShortcut(  LPCSTR Source,
 	return hresult; 
 }
 
-// Remove the ACCIndex key from the registry
-// should remove the Kauranga key if it is empty
+// Remove the SwishCtl key from the registry
+// should remove the "SWISH-E Team" key if it is empty
 bool UnregisterIndexFile()
 {
 	RegKey key(HKEY_LOCAL_MACHINE);
 
-	if ( ! key.OpenKey( "Software\\Kauranga"  ) ) return false;
-	return key.DeleteKey( "ACCIndex" );
+	if ( ! key.OpenKey( "Software\\SWISH-E Team"  ) ) return false;
+	return key.DeleteKey( "SwishCtl" );
 }
 
-// Create the ACCIndex registry key and add the 
+// Create the SwishCtl registry key and add the 
 // IndexLocation, IndexFiles and DLLVersion keys 
 bool RegisterIndexFile(char *indexdir, char *indexname)
 {
@@ -201,14 +201,14 @@ bool RegisterIndexFile(char *indexdir, char *indexname)
 	return kv;
 }
 
-// Remove reference to ACCIndex from the Uninstall section 
+// Remove reference to SwishCtl from the Uninstall section 
 // of the registry 
 bool UnregisterUninstall()
 {
 	RegKey key(HKEY_LOCAL_MACHINE);
 
 	if ( ! key.OpenKey( uninstallkey ) ) return false;
-	return key.DeleteKey( "ACCIndex" );
+	return key.DeleteKey( "SwishCtl" );
 }
 
 // Register Setup.exe /u in the registry Uninstall section 
@@ -216,7 +216,7 @@ bool RegisterUninstall(const char *uninstallcommand)
 {
 
 	string keyname(uninstallkey);
-	keyname += "ACCIndex";
+	keyname += "SwishCtl";
 
 	RegKey key(HKEY_LOCAL_MACHINE);
 	if ( ! key.CreateKey( keyname.c_str() ) ) return false;
