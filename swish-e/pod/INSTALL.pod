@@ -149,6 +149,8 @@ Installing from source is recommended, but you should also check
 the Swish-e web site for binary distributions for your platform.
 
 Windows binary distributions are available from the Swish-e site.
+If you are using a binary distribution you may skip this INSTALLAION
+section.
 
 =head2 Brief Instructions
 

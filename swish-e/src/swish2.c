@@ -33,6 +33,7 @@
 #include "swish_words.h"
 #include "metanames.h"
 #include "proplimit.h"
+#include "stemmer.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
@@ -109,7 +110,7 @@ static IndexFILE *free_index( IndexFILE *indexf )
     free_header(&indexf->header);
 
 
-    /* free array of words for each letter $$$ eight bit */
+    /* free array of words for each letter (-k) $$$ eight bit */
     for (i = 0; i < 256; i++)
         if ( indexf->keywords[i])
             efree(indexf->keywords[i]);
@@ -149,7 +150,10 @@ void free_swish_memory( SWISH *sw )
 
     if ( sw->temp_string_buffer )
         efree( sw->temp_string_buffer );
-    
+
+
+    if ( sw->stemmed_word )
+        efree( sw->stemmed_word );
 
 }
 
@@ -262,4 +266,54 @@ int     SwishAttach(SWISH * sw)
 }
 
 
+/*********************************************************************************
+* SwishWords -- returns all the words that begin with the specified character
+*
+*
+**********************************************************************************/
+
+const char *SwishWordsByLetter(SWISH * sw, char *filename, char c) 
+{ 
+    IndexFILE *indexf;
+
+    indexf = sw->indexlist;
+    while (indexf) {
+        if (!strcasecmp(indexf->line, filename)) {
+            return getfilewords(sw, c, indexf);
+        }
+        indexf = indexf->next;
+    }
+    /* Not really an "WORD_NOT_FOUND" error */
+    set_progerr(WORD_NOT_FOUND, sw, "Invalid index file '%s' passed to SwishWordsByLetter", filename );
+    return NULL;
+}
+
+/*************************************************************************
+* SwishStemWord -- utility function to stem a word
+*
+* This stores the stemmed word locally so it can be freed
+*
+**************************************************************************/
+
+char *SwishStemWord( SWISH *sw, char *word )
+{
+    int  length = strlen( word ) + 100;
+
+    if ( !word )
+        return NULL;
+
+    if ( length > sw->stemmed_word_len )
+    {
+        sw->stemmed_word_len = length+1;
+        sw->stemmed_word = erealloc( sw->stemmed_word, sw->stemmed_word_len );
+    }
+
+    strcpy( sw->stemmed_word, word );
+
+    /* set return value only if stem returns OK */
+    if ( Stem(&sw->stemmed_word, &sw->stemmed_word_len) == STEM_OK )
+        return sw->stemmed_word;
+
+    return NULL;
+}
 

@@ -2484,7 +2484,7 @@ in httpd.conf to control the script.
 Please post to the swish-e discussion list if you have any questions about running this
 script under mod_perl.
 
-    
+
 =head1 Spidering
 
 There are two ways to spider with swish-e.  One uses the "http" input method that uses code that's
@@ -2632,7 +2632,7 @@ GNU General Public License for more details.
 
 =head1 AUTHOR
 
-Bill Moseley -- search@hank.org
+Bill Moseley
 
 =cut
 

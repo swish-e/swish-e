@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 50;
+my $lastcase = 60;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -39,7 +39,6 @@ my $mem_test = 0;
     }
 
     
-
 
     # A short-cut way to search
 
@@ -187,6 +186,16 @@ my $mem_test = 0;
             }
             $count++;
         }
+    }
+
+    my @words = $swish->WordsByLetter( 't/index.swish-e' , 'f' );
+    check_error('WordsByLetter', $swish);
+    is_ok( "WordsByLetter 'f' [@words]", @words );
+
+
+    for ( qw/running runs library libraries/ ) {
+        my $stemmed = $swish->StemWord( $_ );
+        is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
     }
     
 

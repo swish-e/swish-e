@@ -21,9 +21,10 @@ typedef enum {
     SWISH_STRING,
     SWISH_LIST,
     SWISH_BOOL,
+    SWISH_WORD_HASH,
+    SWISH_OTHER_DATA,
     SWISH_HEADER_ERROR, /* must check error in this case */
 } SWISH_HEADER_TYPE;
-
 
 typedef union
 {
@@ -111,6 +112,10 @@ char *SwishLastErrorMsg( SW_HANDLE );   /* more specific message about the error
 
 void set_error_handle( FILE *where );
 void SwishErrorsToStderr( void );
+
+/* Returns all words that begin with the specified char */
+const char *SwishWordsByLetter(SW_HANDLE, char *filename, char c);
+char *SwishStemWord( SW_HANDLE, char *word );
 
 
 /* For low-level access to a property */

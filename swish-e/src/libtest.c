@@ -87,6 +87,24 @@ int     main(int argc, char **argv)
         Free_Results_Object( results );
     }
 
+
+    /* This may change since it only supports 8-bit chars */
+    {
+        const char *words = SwishWordsByLetter( swish_handle, "index.swish-e", 'f' );
+        char *tmp = (char *)words;
+        printf("Words that begin with 'f': ");
+        for(;tmp && tmp[0]; tmp += strlen(tmp)+1 )
+            printf("%s \n", tmp);
+
+        printf("\n");
+    }
+
+    {
+        char *stemmed = SwishStemWord( swish_handle, "running" );
+        printf("SwishStemWord 'running' => '%s'\n\n", stemmed ? stemmed : "Failed to stem" );
+    }
+    
+
     /* Typical use of the library is to create a search object */
     /* and use the search object to make multiple queries */
 
