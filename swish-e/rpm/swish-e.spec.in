@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 0
+%define release 1
 
 # SWISH::API definitions
 %define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
@@ -99,7 +99,7 @@ grep -v '.bak$' |xargs --no-run-if-empty \
 
 CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" %{__perl} Makefile.PL `%{__perl} -MExtUtils::MakeMaker -e ' print qq|PREFIX=%{buildroot}%{_prefix}| if \$ExtUtils::MakeMaker::VERSION =~ /5\.9[1-6]|6\.0[0-5]/ '` 
 
-%{__make} PREFIX=%{buildroot}%{_prefix} LIB='%{_libdir}' LIBS='-L%{_libdir} -L%{buildroot}/src/.libs -lswish-e -lz' 'LDFLAGS=-L%{_libdir} -L%{_builddir}/%{name}-%{version}/src/.libs' 'CCFLAGS=-I%{_builddir}/%{name}-%{version}/src'
+%{__make} PREFIX=%{buildroot}%{_prefix} LIB='%{_libdir}' LIBS='-L%{_libdir} -L%{buildroot}/src/.libs -lswish-e -lz' 'LDFLAGS=-L%{_libdir} -L%{_builddir}/%{name}-%{version}/src/.libs' 'CCFLAGS=-I%{_builddir}/%{name}-%{version}/src' 'LDDLFLAGS=-shared -L%{_builddir}/%{name}-%{version}/src/.libs/ -lswish-e'
 
 %if %maketest
 %{__make} test
@@ -186,7 +186,9 @@ popd
 %{_libdir}/*.so
 
 %changelog
-* Sat Oct 23 2004 David L Norris <dave@webaugur.com> 2.5.2
+* Sat Nov 06 2004 David L Norris <dave@webaugur.com> 2.5.2-1
+- Fix SWISH::API build so it compiles without libswish-e being installed.
+* Sat Oct 23 2004 David L Norris <dave@webaugur.com> 2.5.2-0
 - Add SWISH::API support. Based roughly on spec from Bernhard Weisshuhn <bkw@weisshuhn.de>.
 * Sun Jul 11 2004 David L Norris <dave@webaugur.com> 2.5.1
 - Made spec a little more generic.
