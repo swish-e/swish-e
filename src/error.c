@@ -37,15 +37,26 @@ $Id$
 */
 
 
+/* Allow overriding swish-e's old behavior of errors to stdout */
+
+FILE *error_handle;
+
+void set_error_handle( FILE *where )
+{
+    error_handle = where;
+}
+
+
 void progerr(char *msgfmt,...)
 {
   va_list args;
 
   va_start (args,msgfmt);
-  fprintf  (stdout, "err: ");
-  vfprintf (stdout, msgfmt, args);
-  fprintf  (stdout, "\n.\n");
+  fprintf  (error_handle, "err: ");
+  vfprintf (error_handle, msgfmt, args);
+  fprintf  (error_handle, "\n.\n");
   va_end   (args);
+
   exit(1);
  }
 
@@ -61,10 +72,10 @@ void progerrno(char *msgfmt,...)
   va_list args;
 
   va_start (args,msgfmt);
-  fprintf  (stdout, "err: ");
-  vfprintf (stdout, msgfmt, args);
-  fprintf  (stdout, "%s", strerror(errno));
-  fprintf  (stdout, "\n.\n");
+  fprintf  (error_handle, "err: ");
+  vfprintf (error_handle, msgfmt, args);
+  fprintf  (error_handle, "%s", strerror(errno));
+  fprintf  (error_handle, "\n.\n");
   va_end   (args);
   exit(1);
  }
@@ -99,20 +110,20 @@ void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...)
  
 
 
-/* only print a warning (also to stdout) and return */
+/* only print a warning (also to error_handle) and return */
 /* might want to have an enum level WARN_INFO, WARN_ERROR, WARN_CRIT, WARN_DEBUG */
 void progwarn(char *msgfmt,...)
 {
   va_list args;
 
   va_start (args,msgfmt);
-  fprintf  (stdout, "\nWarning: ");
-  vfprintf (stdout, msgfmt, args);
-  fprintf  (stdout, "\n");
+  fprintf  (error_handle, "\nWarning: ");
+  vfprintf (error_handle, msgfmt, args);
+  fprintf  (error_handle, "\n");
   va_end   (args);
  }
 
-/* only print a warning (also to stdout) and return */
+/* only print a warning (also to error_handle) and return */
 /* might want to have an enum level WARN_INFO, WARN_ERROR, WARN_CRIT, WARN_DEBUG */
 /* includes text of errno at end of message */ 
 void progwarnno(char *msgfmt,...)
@@ -120,10 +131,10 @@ void progwarnno(char *msgfmt,...)
   va_list args;
 
   va_start (args,msgfmt);
-  fprintf  (stdout, "\nWarning: ");
-  vfprintf (stdout, msgfmt, args);
-  fprintf  (stdout, "%s", strerror(errno));
-  fprintf  (stdout, "\n");
+  fprintf  (error_handle, "\nWarning: ");
+  vfprintf (error_handle, msgfmt, args);
+  fprintf  (error_handle, "%s", strerror(errno));
+  fprintf  (error_handle, "\n");
   va_end   (args);
  }
 
@@ -146,17 +157,41 @@ static char *swishErrors[]={
 "Invalid swish handle",                                     /* INVALID_SWISH_HANDLE */
 "Search word exceeded maxwordlimit setting",                /* SEARCH_WORD_TOO_BIG */
 "Syntax error in query (missing end quote or unbalanced parenthesis?)",	/* QUERY_SYNTAX_ERROR */
+"Failed to setup limit by property",                        /* PROP_LIMIT_ERROR */
 NULL};
 
+
+
+int     SwishError(SWISH * sw)
+{
+    if (!sw)
+        return INVALID_SWISH_HANDLE;
+    return (sw->lasterror);
+}
+
+char   *SwishErrorString(int errornumber)
+{
+    return (getErrorString(errornumber));
+}
 
 
 char *getErrorString(int number)
 {
 int i;
 	number=abs(number);
+
 	/* To avoid buffer overruns lets count the strings */
 	for(i=0;swishErrors[i];i++);
-	if ( number>=i ) return( "Unknown Error Number" );
+    	if ( number>=i ) return( "Unknown Error Number" );
 
 	return(swishErrors[number]);
 }
+
+void abort_last_error(SWISH *sw)
+{
+    if ( sw->lasterror < 0 )
+        progerr( "%s: %s", getErrorString( sw->lasterror ), sw->lasterrorstr );
+
+    progerr("Swish aborted with non-negative lasterror");
+}
+

@@ -474,7 +474,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     /* This returns false when no files found within the limit */
     if ( !Prepare_PropLookup( sw ) )
-        return sw->lasterror;  /* normally RC_OK (no results) */
+        return sw->lasterror;  /* normally RC_OK (no results), but could be an error */
 
     while (indexlist != NULL)
     {

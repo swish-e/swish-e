@@ -287,6 +287,7 @@ static void    usage()
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
     printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
     printf("         -k : Print words starting with a given char.\n");
+    printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("\n");
     printf("version: %s  docs: http://swish-e.org\n", SWISH_VERSION);
     exit(1);
@@ -620,7 +621,9 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             if ( !( is_another_param( argv ) && is_another_param( argv + 1  ) && is_another_param( argv + 2 )) )
                 progerr("-L requires three parameters <propname> <lorange> <highrange>");
 
-            SetLimitParameter(sw, argv[1], argv[2], argv[3]);
+            if ( !SetLimitParameter(sw, argv[1], argv[2], argv[3]) )
+                abort_last_error( sw );
+
             argv += 3;
 
             continue;
@@ -817,6 +820,28 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             continue;
         }
 
+
+
+        /* Set where errors go */
+        
+        if (c == 'E')
+        {
+            if ( !is_another_param( argv ) )
+                set_error_handle( stderr );  // -E alone goes to stderr
+
+            else
+            {
+                FILE *f;
+                w = next_param( &argv );
+                f = fopen( w, "a" );
+                if ( !f )
+                    progerrno("Failed to open Error file '%s' for appending: ", w );
+
+                set_error_handle( f );
+            }
+
+            continue;
+        }
 
 
        
@@ -1238,9 +1263,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
     rc = search(sw, params->wordlist, params->structure);
 
     if ( rc < 0 )
-        progerr( "%s %s", getErrorString( rc ), sw->lasterrorstr );
-        
-    
+        abort_last_error( sw );
 
     resultHeaderOut(sw, 2, "#\n");
 

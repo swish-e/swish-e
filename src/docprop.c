@@ -540,7 +540,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         
         if ( num == ULONG_MAX )
         {
-            progwarnno("Attempted to convert '%s' to a number", string );
+            progwarnno("EncodeProperty - Attempted to convert '%s' to a number", string );
             efree(string);
             (*error_flag)++;
             return 0;
@@ -548,7 +548,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
         if ( *badchar ) // I think this is how it works...
         {
-            progwarn("Invalid char '%c' found in string '%s'", badchar[0], string);
+            progwarn("EncodeProperty - Invalid char '%c' found in string '%s'", badchar[0], string);
             efree(string);
             (*error_flag)++;
             return 0;

@@ -178,7 +178,7 @@ void freeModule_PropLimit (SWISH *sw)
 *       Three strings, first must be metaname.
 *
 *   Returns:
-*       ** no, it now returns void **
+*       returns false (0) on failure
 *       pointer to a PARAMS
 *       errors do not return (doesn't do many checks)
 *
@@ -186,7 +186,7 @@ void freeModule_PropLimit (SWISH *sw)
 *       Error checking, and maybe pass in a StringList
 *
 ********************************************************************/
-void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
+int SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 {
     PARAMS *newparam;
     PARAMS *params;
@@ -196,7 +196,10 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
     /* Currently, can only limit by one property -- so check that one hasn't already been used */
     for ( params = self->params; params && (strcmp( (char *)params->propname, propertyname ) != 0); params = (PARAMS *)params->next);
     if ( params )
-        progerr("Only one limit per property '%s'", propertyname );
+    {
+        set_progerr( PROP_LIMIT_ERROR, sw, "Property '%s' is already limited", propertyname );
+        return 0;
+    }
         
 
 
@@ -211,6 +214,8 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
     /* put at head of list */
     self->params = newparam;
     newparam->next = (struct PARAMS *)params;
+
+    return 1;
 
 }
 
@@ -573,10 +578,11 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
 *
 *   Returns:
 *       True if a range was found, otherwise false.
+*       sets sw->lasterror on failure
 *
 *
 ********************************************************************/
-static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
+static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, PARAMS *param )
 {
     int error_flag;
     unsigned char *lowrange  = param->lowrange;
@@ -606,12 +612,18 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 
 
         if ( !(meta_entry->loPropRange && meta_entry->hiPropRange) )
-            progerr("Failed to set range for property '%s' values '%s' and '%s'", meta_entry->metaName, lowrange, highrange );
+        {
+            set_progerr(PROP_LIMIT_ERROR, sw, "Failed to set range for property '%s' values '%s' and '%s'", meta_entry->metaName, lowrange, highrange );
+            return 0;
+        }
 
         /* Validate range */
     
         if ( Compare_Properties( meta_entry, meta_entry->loPropRange, meta_entry->hiPropRange ) > 0 )
-            progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, lowrange, highrange );
+        {
+            set_progerr(PROP_LIMIT_ERROR, sw, "Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, lowrange, highrange );
+            return 0;
+        }
     }
 
 
@@ -631,6 +643,7 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 *       false if any arrays are all zero
 *       no point in even searching.
 *       (meaning that no possible matches exist)
+*       but also return false on errors, caller must check sw->lasterror
 *
 *   ToDo:
 *       This ONLY works if the limits are absolute -- that is
@@ -652,14 +665,20 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
         found = 0;
 
         if ( !(meta_entry = getPropNameByName( &indexf->header, (char *)curp->propname )))
-            progerr("Specified limit name '%s' is not a PropertyName", curp->propname );
+        {
+            set_progerr( PROP_LIMIT_ERROR, sw, "Specified limit name '%s' is not a PropertyName", curp->propname );
+            return 0;
+        }
 
 
         /* This, of course, is not the truth -- but the only slightly useful would be filenum */
         /* indexfile can be specified on the command line, rank and reccount is not really known */
        
         if ( is_meta_internal( meta_entry ) )
-            progerr("Cannot limit by swish result property '%s'", curp->propname );
+        {
+            set_progerr( PROP_LIMIT_ERROR, sw, "Cannot limit by swish result property '%s'", curp->propname );
+            return 0;
+        }
 
 
         /* see if array has already been allocated (cached) */
@@ -668,10 +687,14 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 
 
         /* Encode the parameters into properties for comparing, and store in the metaEntry */
-        /* $$$ what happens if it fails -- should this progerr? */
 
-        if ( !params_to_props( meta_entry, curp ) )
+        if ( !params_to_props( sw, meta_entry, curp ) )
+        {
+            if ( sw->lasterror )  // check for failure
+                return 0;
+                
             continue;  /* This means that it failed to set a range */
+        }
             
 
         /* load the sorted_data array, if not already done */
@@ -733,7 +756,12 @@ int Prepare_PropLookup(SWISH *sw )
         total_indexes++;
         
         if ( !load_index( sw, indexf, self->params ) )
+        {
+            if ( sw->lasterror )    // check for error
+                return 0;
+                
             total_no_docs++;
+        }
     }
 
     /* if all indexes are all no docs within limits, then return false */
