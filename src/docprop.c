@@ -807,6 +807,7 @@ static int insidecompare = 0;
 int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
 {
 
+
 #ifdef DEBUGPROP
     if ( !insidecompare++ )
     {
@@ -821,16 +822,19 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
     if ( !p1 && p2 )
         return -1;
 
+
     if ( !p1 && !p2 )
         return 0;
 
     if ( p1 && !p2 )
         return +1;
-        
+
 
     if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
         return memcmp( (const void *)p1->propValue, (const void *)p2->propValue, p1->propLen );
 
+printf("compare length 1 = %d\n", p1->propLen );
+printf("compare length 2 = %d\n", p2->propLen );
 
     if ( is_meta_string(meta_entry) )
     {
