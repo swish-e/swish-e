@@ -1432,6 +1432,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     ENTRYARRAY *ep;
     ENTRY  *epi;
     int     totalwords;
+    int     percent, lastPercent, n;
+
+#define DELTA 10
 
 
     ep = sw->Index->entryArray;
@@ -1443,10 +1446,25 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
 		if (sw->verbose)
-			printf("  Writing word text...\n");
+			printf("  Writing word text: ...");
+
+        n = lastPercent = 0;
+			
 
         for (i = 0; i < totalwords; i++)
         {
+            if ( sw->verbose && totalwords > 10000 )  // just some random guess
+            {
+    			n++;
+    			percent = (n * 100)/totalwords;
+    			if (percent - lastPercent >= DELTA )
+    			{
+    	    		printf("\r  Writing word text: %3d%%", percent );
+    				fflush(stdout);
+    				lastPercent = percent;
+    			}
+            }
+
             epi = ep->elist[i];
 
             if (!isstopword(&indexf->header, epi->word))
@@ -1457,13 +1475,28 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             else
                 epi->u1.fileoffset = -1L;
         }    
-        
-        
 		if (sw->verbose)
-			printf("  Writing word hash...\n");
+    		printf("\r  Writing word text: Complete\n" );
+
+
+
+        n = lastPercent = 0;
 
         for (i = 0; i < SEARCHHASHSIZE; i++)
         {
+            if ( sw->verbose )
+            {
+    			n++;
+    			percent = (n * 100)/SEARCHHASHSIZE;
+    			if (percent - lastPercent >= DELTA )
+    			{
+    	    		printf("\r  Writing word hash: %3d%%", percent );
+    				fflush(stdout);
+    				lastPercent = percent;
+    			}
+            }
+
+
             if ((epi = sw->Index->hashentries[i]))
             {
                 while (epi)
@@ -1475,13 +1508,30 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 }
             }
         }
+		if (sw->verbose)
+    		printf("\r  Writing word hash: Complete\n" );
 
+
+        n = lastPercent = 0;
 
 		if (sw->verbose)
-			printf("  Writing word data...\n");
+			printf("  Writing word data: ...");
 
         for (i = 0; i < totalwords; i++)
         {
+            if ( sw->verbose && totalwords > 10000 )  // just some random guess
+            {
+    			n++;
+    			percent = (n * 100)/totalwords;
+    			if (percent - lastPercent >= DELTA )
+    			{
+    	    		printf("\r  Writing word data: %3d%%", percent );
+    				fflush(stdout);
+    				lastPercent = percent;
+    			}
+            }
+
+
             epi = ep->elist[i];
             if (epi->u1.fileoffset >= 0L)
             {
@@ -1492,7 +1542,12 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             }
             efree(epi->locationarray);
         }
-        
+
+
+		if (sw->verbose)
+    		printf("\r  Writing word data: Complete\n" );
+
+
         DB_EndWriteWords(sw, indexf->DB);
 
 		/* free all ENTRY structs at once */
@@ -1707,8 +1762,6 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
     DB_Reopen_PropertiesForRead_Native( indexf->DB, indexf->line );
 #endif    
 
-    if (sw->verbose)
-        printf("Sorting Properties...\n");
     sortFileProperties(sw,indexf);
 
 
