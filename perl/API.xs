@@ -73,63 +73,6 @@ SwishHeaderNames(self)
 
 
 void
-SwishXHeaderValue(self, index_file, header_name)
-    SW_HANDLE self
-    char * index_file
-    char * header_name
-
-    PREINIT:
-        SWISH_HEADER_TYPE  header_type;
-        SWISH_HEADER_VALUE head_value;
-        const char **string_list;
-
-    PPCODE:
-        head_value = SwishHeaderValue( self, index_file, header_name, &header_type );
-
-        switch ( header_type )
-        {
-            case SWISH_STRING:
-                if ( head_value.string )
-                    PUSHs(sv_2mortal(newSVpv( head_value.string,0 )));
-                else
-                    XSRETURN_UNDEF;
-                break;
-
-            case SWISH_NUMBER:
-                PUSHs(sv_2mortal(newSViv( head_value.number )));
-                break;
-
-            case SWISH_BOOL:
-                // how about pushing &PL_sv_yes and &PL_sv_no or using boolSV()?
-                PUSHs(sv_2mortal(newSViv( head_value.boolean ? 1 : 0 )));
-                break;
-
-            case SWISH_LIST:
-                string_list = head_value.string_list;
-
-                if ( !string_list ) /* Don't think this can happen */
-                    XSRETURN_UNDEF;
-
-            
-                while ( *string_list )
-                {
-                    XPUSHs(sv_2mortal(newSVpv( *string_list ,0 )));
-                    string_list++;
-                }
-                break;
-
-            case SWISH_HEADER_ERROR:
-                SwishAbortLastError( self );
-                break;
-
-            default:
-                croak(" Unknown header type '%d'\n", (int)header_type );
-        }
-
-
-# test
-
-void
 SwishHeaderValue(swish_handle, index_file, header_name)
     SW_HANDLE swish_handle
     char * index_file
@@ -169,10 +112,10 @@ void decode_header_value( swish_handle, header_value, header_type )
         switch ( *(SWISH_HEADER_TYPE *)header_type )
         {
             case SWISH_STRING:
-                if ( head_value->string )
+                if ( head_value->string &&  head_value->string[0] )
                     XPUSHs(sv_2mortal(newSVpv( head_value->string,0 )));
                 else
-                    XSRETURN_UNDEF;
+                    ST(0) = &PL_sv_undef;
                 break;
 
             case SWISH_NUMBER:
@@ -205,9 +148,6 @@ void decode_header_value( swish_handle, header_value, header_type )
             default:
                 croak(" Unknown header type '%d'\n", header_type );
         }
-
-
-
 
 
 
@@ -413,6 +353,65 @@ SwishNextResult(results)
 
     PREINIT:
         char * CLASS = "SWISH::API::Result";
+
+
+
+void
+SwishRemovedStopwords(results, index_name)
+    SW_RESULTS results
+    char * index_name
+
+
+    PREINIT:
+        SW_HANDLE swish_handle;
+        SWISH_HEADER_TYPE  header_type;
+        SWISH_HEADER_VALUE head_value;
+        int i;
+
+    PPCODE:
+        swish_handle = SW_ResultsToSW_HANDLE( results );
+        header_type = SWISH_LIST;
+        head_value = SwishRemovedStopwords( results, index_name );
+
+        PUSHMARK(SP);
+        XPUSHs((SV *)swish_handle);
+        XPUSHs((SV *)&head_value);
+        XPUSHs((SV *)&header_type);
+        PUTBACK;
+        i = call_pv( "SWISH::API::decode_header_value", G_ARRAY );
+        SPAGAIN;
+#        PUTBACK;
+
+
+void
+SwishParsedWords(results, index_name)
+    SW_RESULTS results
+    char * index_name
+
+
+    PREINIT:
+        SW_HANDLE swish_handle;
+        SWISH_HEADER_TYPE  header_type;
+        SWISH_HEADER_VALUE head_value;
+        int i;
+
+    PPCODE:
+        swish_handle = SW_ResultsToSW_HANDLE( results );
+        header_type = SWISH_LIST;
+        head_value = SwishParsedWords( results, index_name );
+
+        PUSHMARK(SP);
+        XPUSHs((SV *)swish_handle);
+        XPUSHs((SV *)&head_value);
+        XPUSHs((SV *)&header_type);
+        PUTBACK;
+        i = call_pv( "SWISH::API::decode_header_value", G_ARRAY );
+        SPAGAIN;
+#        PUTBACK;
+
+
+
+        
     
 
 # **************************************************************
@@ -465,10 +464,13 @@ SwishProperty(result, property)
         }
 
         freeResultPropValue(pv);
+
+
+char *
+SwishResultPropertyStr( result, pname)
+    SW_RESULT result
+    char * pname
         
-
-
-
 
 
 void
@@ -476,52 +478,26 @@ SwishResultIndexValue(self, header_name)
     SW_RESULT self
     char * header_name
 
+
     PREINIT:
+        SW_HANDLE swish_handle;
         SWISH_HEADER_TYPE  header_type;
         SWISH_HEADER_VALUE head_value;
-        const char **string_list;
+        int i;
 
     PPCODE:
+        swish_handle = SW_ResultToSW_HANDLE( self );
         head_value = SwishResultIndexValue( self, header_name, &header_type );
-        
-        switch ( header_type )
-        {
-            case SWISH_STRING:
-                if ( head_value.string )
-                    PUSHs(sv_2mortal(newSVpv( head_value.string,0 )));
-                else
-                    XSRETURN_UNDEF;
-                break;
 
-            case SWISH_NUMBER:
-                PUSHs(sv_2mortal(newSViv( head_value.number )));
-                break;
+        PUSHMARK(SP);
+        XPUSHs((SV *)swish_handle);
+        XPUSHs((SV *)&head_value);
+        XPUSHs((SV *)&header_type);
+        PUTBACK;
+        i = call_pv( "SWISH::API::decode_header_value", G_ARRAY );
+        SPAGAIN;
+#        PUTBACK;
 
-            case SWISH_BOOL:
-                // how about pushing &PL_sv_yes and &PL_sv_no or using boolSV()?
-                PUSHs(sv_2mortal(newSViv( head_value.boolean ? 1 : 0 )));
-                break;
 
-            case SWISH_LIST:
-                string_list = head_value.string_list;
-
-                if ( !string_list ) /* Don't think this can happen */
-                    XSRETURN_UNDEF;
-
-            
-                while ( *string_list )
-                {
-                    XPUSHs(sv_2mortal(newSVpv( *string_list ,0 )));
-                    string_list++;
-                }
-                break;
-
-            case SWISH_HEADER_ERROR:
-                SwishAbortLastError( self );
-                break;
-
-            default:
-                croak(" Unknown header type '%d'\n", (int)header_type );
-        }
 
 
