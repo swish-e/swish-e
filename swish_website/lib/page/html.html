@@ -18,6 +18,10 @@
 
     <link rel="stylesheet" type="text/css" href="[% site.url.css %]" media="screen" title="swish css" />
 
+    [% FOREACH key = navigation.keys %]
+        <link rel="[% key %]" href="[% navigation.$key.url %]" />
+    [% END %]
+
     <title>Swish-e :: [% page.title | html %]</title>
   </head>
 

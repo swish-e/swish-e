@@ -178,7 +178,7 @@
         tooltip = 'CVS, daily builds and development documentation'
 
         #sum menu
-        menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs' ]
+        menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs', 'another' ]
         page    = {
             daily       = {
                 name    = 'swish-daily'
@@ -199,6 +199,12 @@
                 name        = 'view cvs'
                 external    = 'http://cvs.sourceforge.net/viewcvs.py/swishe/'
                 tooltip     = 'Go to the SourceForge.net Swish-e CVS Repository'
+            }
+
+
+            another = {
+                name = 'deeper'
+                menu = ['one', 'two']
             }
         }
     }
@@ -259,6 +265,9 @@
     # create expanded data map
     PROCESS config/expand;
 
-    # USE Dumper;
-    # Dumper.dump ( map ) | stderr;
+
+    # Now build navigation links
+
+    #USE Dumper;
+    #Dumper.dump ( map ) | stderr;
 -%]

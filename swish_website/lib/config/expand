@@ -1,13 +1,12 @@
 [%  # From chapter 11 of Badger book.
 
-
 # page.trail tracks path to the current page.
 DEFAULT page.trail = [ ];
+DEFAULT navigation = {};
 
 # List of menu items we're constructing.
 map.items = [ ];
 
-USE Dumper;
 
 # Walk through item names in map.menu.
 FOREACH id IN map.menu;
@@ -17,6 +16,8 @@ FOREACH id IN map.menu;
     SET map.page.$id = { name = id } UNLESS map.page.$id;
     SET map.page.$id.name = id UNLESS map.page.$id.name;
     item = map.page.$id;
+
+
 
     # Add location data.
     item.id   = id;
@@ -51,7 +52,7 @@ FOREACH id IN map.menu;
             SET page.file = "docs/$page.file" UNLESS page.file.match('^docs/');
 
         ELSE;
-            item.hidden = 1 IF this.abslinks;  # This removes the non-doc items from the menu
+            SET item.hidden = 1 IF this.abslinks;  # This removes the non-doc items from the menu
             item.url = "$site.url.root/$item.file";
 
         END;
@@ -73,30 +74,54 @@ FOREACH id IN map.menu;
     END;
 
 
-    # Set next/last if this is the actual page.
-    # These don't work if there are "hidden" menu items.
-    # To fix need to set a previous item to look at next time through loop.
-    IF item.here;
-        page.prev = map.page.${loop.last};
-        page.next = map.page.${loop.next};
+    # Now build navigation and add this item to its parent's list of items
+    # How navigation works depends on how you define next/prev and things like that
+    # Here we just take'em as them come
+    # Some of this would be easier if the list was flat.
+
+    UNLESS item.hidden;
+
+
+        # Very first link ("Top" for Mozilla)
+        SET navigation.Start = item UNLESS navigation.Start;
+
+        # Should these be limited to the current level  Currently: yes
+        # Happens because recursion is locallizing last_item.
+
+        SET navigation.Prev  = last_item IF last_item && item.here;
+        SET navigation.Next  = item IF last_item && last_item.here;
+        SET last_item = item;  # save for next time
+
+        SET navigation.Up    = page.trail.last IF page.trail.last && item.here;
+
+        page.trail.push( item ) IF item.hot;
+
+        # First and Last are a bit more complex
+        SET this_level = item IF item.here;
+        SET first_item = item UNLESS first_item;
+
+
+        # Add this item to it's parent's list (recursive menu)
+        map.items.push(item);
     END;
 
-    # Add item to map items list.
-    map.items.push(item) UNLESS item.hidden;
 
-    # Also to the trail if the page is hot.
-    page.trail.push(item) IF item.hot;
-
-    # Expand any submenu for this item.
-    # Note, used to only expand IF item.subs, but then would not expand 
-    # all items (i.e. set the page has for each one)  Need to exapnd all so can
-    # use the link_to_page() MACRO.
+    # Recursively process any sub menus
 
     IF item.menu;
         INCLUDE config/expand
             map  = item
             path = item.path;
     END;
+
+
+END;  # Foreach
+
+IF this_level && !( navigation.First || navigation.Last );
+    SET navigation.First = first_item IF first_item && !first_item.here;
+    SET navigation.Last  = last_item UNLESS last_item.here;
 END;
+
+
 
 -%]
