@@ -41,8 +41,14 @@ IndexFILE *indexf;
 			indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
 			if (indexf->propIDToSort[i] == 1)
 			{
-				progerr ("Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
-				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
+				/* Check fot RANK Autoproperty */
+				if(strcasecmp(sw->propNameToSort[i],AUTOPROPERTY_RESULT_RANK)==0)
+				{
+					indexf->propIDToSort[i] = AUTOPROP_ID__RESULT_RANK;
+				} else {
+					progerr ("Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
+					return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
+				}
 			}
 		}
 	}

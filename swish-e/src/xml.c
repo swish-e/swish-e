@@ -108,9 +108,10 @@ int ftotalwords;
 int *metaName;
 int metaNamelen;
 int *positionMeta;    /* Position of word in file */
+int *doNotBumpPosition;    /* DoNotBumpMetaflag */
 int tmpposition=1;    /* Position of word in file */
 int currentmetanames;
-unsigned char *newp,*p,*tag, *endtag=NULL,*endproptag=NULL,*tempprop;
+unsigned char *newp,*p,*endjunktag, *endjunktag2, *tag, *endtag=NULL,*endproptag=NULL,*tempprop;
 int structure,dummy;
 struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameXML,*metaNameXML2;
@@ -126,10 +127,11 @@ char *summary=NULL;
 	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, start, size, &thisFileEntry);
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
-	positionMeta =(int *)emalloc(metaNamelen*sizeof(int));
+	positionMeta = (int *)emalloc(metaNamelen*sizeof(int));
+	doNotBumpPosition = (int *)emalloc(metaNamelen*sizeof(int));
 	currentmetanames=ftotalwords=0;
 	structure=IN_FILE;
-	metaName[0]=1; positionMeta[0]=1;
+	metaName[0]=1; positionMeta[0]=1; doNotBumpPosition[0]=1;
 	
 	for(p=buffer;p && *p;) {
 		if((tag=strchr(p,'<'))) {   /* Look for '<' */
@@ -146,54 +148,94 @@ char *summary=NULL;
 				/* Now let us look for '>' */
 			if((endtag=strchr(tag,'>'))) {  
 				*endtag++='\0';
-				if ((tag[0]!='!') && (tag[0]!='/') && ((metaNameXML=getXMLField(indexf, tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) 
+				if ((tag[0]!='!') && (tag[0]!='/'))
 				{
-					/* If the data must be indexed add the metaName to the currentlist of metaNames */
-					if(is_meta_index(metaNameXML))
+					if((metaNameXML=getXMLField(indexf, tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))
 					{
-						/* realloc memory if needed */
-						if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-						/* add netaname to array of current metanames */
-						metaName[currentmetanames]=metaNameXML->metaID;
-						/* Preserve position counter */
-						if(!currentmetanames) tmpposition=positionMeta[0];
-						/* Init word counter for the metaname */
-						positionMeta[currentmetanames++] = 1;
-						/* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
-						
-					}
-					p=endtag;
-					/* If it is also a property doc store it
-					** Only store until a < is found */
-					if(is_meta_property(metaNameXML)) {
-						/* Look for the end of the data */
-					     while((endtag=strstr(endtag,"</")))
-					     {
-						if(!(endproptag=strchr(endtag+2,'>')))
+					/* If the data must be indexed add the metaName to the currentlist of metaNames */
+						if(is_meta_index(metaNameXML))
 						{
-						   endtag=NULL;
-						   break;
-						} else *endproptag='\0';
-					        if((metaNameXML2=getXMLField(indexf, endtag+1,&dummy,sw->verbose,1))) 
-					        {
-					           if(metaNameXML2->metaID==metaNameXML->metaID)
-						   {
-						      *endtag='\0';
-						      *endproptag='>';
-						      break;
-						   } 
-					        } 
-						*endproptag='>';
-						endtag=endproptag+1;
-					     }
+							/* realloc memory if needed */
+							if(currentmetanames==metaNamelen) {
+								metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));
+								positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));
+								doNotBumpPosition=(int *) erealloc(doNotBumpPosition,metaNamelen*sizeof(int));
+							}
+							/* add netaname to array of current metanames */
+							metaName[currentmetanames]=metaNameXML->metaID;
+							/* Preserve position counter */
+							if(!currentmetanames) tmpposition=positionMeta[0];
+							
+							/* Bump position for all metanames except for the included in dontbumppositionOnmetatags */
+							for(i=0;i<currentmetanames;i++)
+								if(!doNotBumpPosition[i])
+									positionMeta[i]++;
+							doNotBumpPosition[currentmetanames]=isDontBumpMetaName(sw,tag);
+							/* Init word counter for the metaname */
+							positionMeta[currentmetanames++] = 1;
+							/* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
+						
+						}
+						p=endtag;
+						/* If it is also a property doc store it
+						** Only store until a < is found */
+						if(is_meta_property(metaNameXML)) {
+							/* Look for the end of the data */
+							while((endtag=strstr(endtag,"</")))
+							{
+								if(!(endproptag=strchr(endtag+2,'>')))
+								{
+									endtag=NULL;
+									break;
+								} else *endproptag='\0';
+								if((metaNameXML2=getXMLField(indexf, endtag+1,&dummy,sw->verbose,1))) 
+						        {
+									if(metaNameXML2->metaID==metaNameXML->metaID)
+									{
+										*endtag='\0';
+										*endproptag='>';
+										break;
+									} 
+								} 
+								*endproptag='>';
+								endtag=endproptag+1;
+							}
 					     /* Remove tags and convert entities */
-					     tempprop=estrdup(p);
-					     remove_newlines(tempprop);
-					     remove_tags(tempprop);
-					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,tempprop,strlen(tempprop));
-					     efree(tempprop);
-					     if(endtag) *endtag='<';
-					} 
+							tempprop=estrdup(p);
+							remove_newlines(tempprop);
+							remove_tags(tempprop);
+							addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,tempprop,strlen(tempprop));
+							efree(tempprop);
+							if(endtag) *endtag='<';
+						} 
+					} else {
+						/* Check for junk metaname */
+						if(isJunkMetaName(sw,tag))
+						{
+							/* look for the end and ignore the content */
+							for(endjunktag=endtag+1;endjunktag && *endjunktag;)
+							{
+								if((endjunktag=strstr(endjunktag,"</")))
+								{
+									if((endjunktag2=strchr(endjunktag,'>')))
+									{
+										*endjunktag2++='\0';
+										if(strcasecmp(endjunktag+2,tag)==0)
+										{   /* found */
+											p=endjunktag2;
+											break;
+										}
+									} else {
+										endjunktag+=2;
+									}
+								} else {
+									p=NULL;
+								}
+
+							}
+								
+						}
+					}
 				}  /* Check for end of a XML field */
 				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) {
 					/* search for the metaname in the
@@ -270,3 +312,43 @@ int len;
 	return summary;
 }
 
+int isDontBumpMetaName(SWISH *sw,char *tag)
+{
+struct swline *tmplist=sw->dontbumptagslist;
+char *tmptag;
+	if(!tmplist) return 0;
+	tmptag=estrdup(tag);
+	tmptag=strtolower(tmptag);
+	while(tmplist)
+	{
+		if(strcmp(tmptag,tmplist->line)==0)
+		{
+			efree(tmptag);
+			return 1;
+		}
+		tmplist=tmplist->next;
+	}
+	efree(tmptag);
+	return 0;
+
+}
+
+int isJunkMetaName(SWISH *sw,char *tag)
+{
+struct swline *tmplist=sw->ignoremetalist;
+char *tmptag;
+	if(!tmplist) return 0;
+	tmptag=estrdup(tag);
+	tmptag=strtolower(tmptag);
+	while(tmplist)
+	{
+		if(strcmp(tmptag,tmplist->line)==0)
+		{
+			efree(tmptag);
+			return 1;
+		}
+		tmplist=tmplist->next;
+	}
+	efree(tmptag);
+	return 0;
+}

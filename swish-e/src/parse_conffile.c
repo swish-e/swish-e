@@ -100,7 +100,7 @@ char *w0;
 					gotdir=1;
 					grabCmdOptions(sl,1, &sw->dirlist);
 				}
-			} else progerr("IndexDir requires one value");
+			} else progerr("IndexDir requires at least one value");
 		}
 		else if (strcasecmp(w0, "IncludeConfigFile")==0) {
 			if(sl->n==2) {
@@ -110,7 +110,7 @@ char *w0;
 		else if (strcasecmp(w0,"NoContents")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->nocontentslist);
-			} else progerr("NoContents requires one value");
+			} else progerr("NoContents requires at least one value");
 		}
 		else if (strcasecmp(w0, "IndexFile")==0) {
 			if(sl->n==2) {
@@ -445,6 +445,16 @@ char *w0;
 		}
 		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
 			indexf->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
+		}
+		else if (strcasecmp(w0,"IgnoreMeta")==0) {
+			if(sl->n>1) {
+				grabCmdOptions(sl,1,&sw->ignoremetalist);
+			} else progerr("IgnoreMeta requires at least one value");
+		}
+		else if (strcasecmp(w0,"DontBumpPositionOnMetaTags")==0) {
+			if(sl->n>1) {
+				grabCmdOptions(sl,1,&sw->dontbumptagslist);
+			} else progerr("DontBumpPositionOnMetaTags requires at least one value");
 		}
 		else if (strcasecmp(w0, "ConvertHTMLEntities")==0)	{
 			sw->ConvertHTMLEntities = getYesNoOrAbort (sl, 1,1);
