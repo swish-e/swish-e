@@ -675,7 +675,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 {
     int     newlen;
     int     add_a_space = 0;
-    char   *str;
+    char   *str = NULL;
     int     error_flag = 0;
 
     length = EncodeProperty( meta_entry, &str, txt, &error_flag );
@@ -687,8 +687,15 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
     if ( !isspace( (int)*str ) && !isspace( (int)p->propValue[p->propLen-1] ) )
         add_a_space++;
 
+
+    /* Any room to add the property? */
     if ( meta_entry->max_len &&  p->propLen + add_a_space >=  meta_entry->max_len )
-        return p;  // no room to add
+    {
+        if ( str )
+            efree( str );
+            
+        return p;
+    }
 
 
     newlen = p->propLen + length + add_a_space;
@@ -709,6 +716,9 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 
     memcpy( (void *)&(p->propValue[p->propLen]), str, length );
     p->propLen = newlen;
+
+    if (str)
+        efree(str);
 
     return p;
 }
