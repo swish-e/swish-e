@@ -670,17 +670,6 @@ sub test_ignore { shift->test_array( shift, 'ignore' ) };
 sub test_copy { shift->test_array( shift, 'copy' ) };
 
 
-# Override a few things in Pod::Simple::HTML;
-#
-package My::Pod::Simple::HTML;
-use strict;
-use warnings;
-use base qw(Pod::Simple::HTML);
-
-sub do_beginning { 1 };
-sub do_end{ 1 };
-sub version_tag_comment{ '' };
-
 
 
 
