@@ -106,9 +106,9 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 
 
 #define BASEHEADER 1
-#define INDEXHEADER "# SWISH format: " ## SWISH_VERSION
+#define INDEXHEADER "# SWISH format: " SWISH_VERSION
 #define INDEXHEADER_ID BASEHEADER + 1
-#define INDEXVERSION "# Swish-e format: " ## SWISH_VERSION
+#define INDEXVERSION "# Swish-e format: " SWISH_VERSION
 #define INDEXVERSION_ID (BASEHEADER + 2)
 
 
