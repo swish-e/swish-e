@@ -202,7 +202,14 @@ SWISH::Filters::ID3toHTML - ID3 tag to HTML filter module
 
 =head1 DESCRIPTION
 
-SWISH::Filters::ID3toHTML translates ID3 tags into HTML metadata for use by the SWISH::Filter module and SWISH-E.
+SWISH::Filters::ID3toHTML translates ID3 tags into HTML
+metadata for use by the SWISH::Filter module and SWISH-E.
+
+Depends on two perl modules:
+
+    MP3::Tag;
+    HTML::Entities;
+
 
 =head1 SUPPORT
 

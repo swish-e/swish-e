@@ -106,3 +106,27 @@ EOF
     
     return $ReturnValue;
 }
+
+__END__
+
+=head1 NAME
+
+SWISH::Filters::XLtoHTML - MS Excel to HTML filter module
+
+=head1 DESCRIPTION
+
+SWISH::Filters::XLtoHTML extracts data from MS Excel spreadsheets for indexing.
+
+Depends on two perl modules:
+
+    Spreadsheet::ParseExcel
+    HTML::Entities;
+
+
+=head1 SUPPORT
+
+Please contact the Swish-e discussion list.  
+http://swish-e.org/
+
+=cut
+

@@ -44,7 +44,15 @@ to text for indexing by Swish-e.  "catdoc" can be downloaded from:
 
     http://www.ice.ru/~vitus/catdoc/ver-0.9.html
 
-The program "catdoc" must be installed and your PATH before running Swish-e.    
+The program "catdoc" must be installed and your PATH before running Swish-e.
+
+=head1 BUGS
+
+This filter does not specify input or output character encodings.  This will change in the
+future to all use of the user_data to set the encoding.
+
+A minor optimization during spidering (i.e. when docs are in memory instead of on disk)
+would be to use open2() call to let catdoc read from stdin instead of from a file.
 
 =head1 AUTHOR
 
