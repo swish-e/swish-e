@@ -8,6 +8,8 @@ This site is maintained in CVS.  Pages should not be modified directly.
 Check out the site from cvs, and modify the pages locally.  Rebuild locally
 to review and then check in.
 
+
+
 Site layout
 -----------
 
@@ -26,6 +28,19 @@ Site layout
 
 Building the site
 -----------------
+
+    Check out the "swish_website" project from CVS.  Once checked out you need to
+    initialize a few directories, and then build the site.
+
+        $ cd swish_website
+        $ mkdir -p public_html dirs_public/download/old dirs_public/swish-daily
+        $ bin/build -swishsrc=$HOME/swish-e -develsrc=$HOME/swish-e
+
+    You need Template Toolkit, Pod::POM (from CPAN) and anything else it
+    complains about.
+
+    Those output directoreis can be overridden.  see bin/build --help  for
+    help.  "dirs_public" can be set in lib/conifg/site.
 
     From the top-level directory* (where this README file is located)
     run:
