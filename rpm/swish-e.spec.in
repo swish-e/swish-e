@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 1
+%define release 3
 
 # SWISH::API definitions
 %define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
@@ -42,7 +42,7 @@ in a relational database.
 Summary:     doc
 Group:          Networking/Other
 Provides:      %{name}-doc
-Requires:     %{name} = %{version}  
+Requires:     %{name} = %{version}-%{release}
 
 %description doc
 SWISH-E documentation and examples
@@ -52,7 +52,7 @@ SWISH-E documentation and examples
 Summary:        SWISH-E - PERL Scripts and Modules
 Group:          Networking/Other
 Provides:       %{name}-perl
-Requires:       %{name} = %{version}, perl >= 5.8.0
+Requires:       %{name} = %{version}-%{release}, perl >= 5.8.0
 
 %description    perl
 PERL SWISH-E language bindings and scripts.
@@ -64,7 +64,7 @@ License:	Artistic
 Group:		Applications/CPAN
 Provides:	%{name}-perl-api
 Provides:	perl-SWISH-API = 0.01
-Requires:	%{name} = %{version}
+Requires:	%{name} = %{version}-%{release}
 
 %description	perl-api
 SWISH::API provides a Perl interface to the Swish-e search engine.
@@ -78,7 +78,7 @@ Summary:	SWISH-E - Static libraries and header files.
 Group:		Networking/Other
 Obsoletes:	swish-devel
 Provides:       %{name}-devel
-Requires:	%{name} = %{version}, libxml2-devel, pcre-devel, zlib-devel
+Requires:	%{name} = %{version}-%{release}, libxml2-devel, pcre-devel, zlib-devel
 
 %description	devel
 Libraries and header files required for compiling applications based on the SWISH-E API.
@@ -138,13 +138,54 @@ find %{buildroot}%{_prefix}             \
     -type d -depth                      \
     -exec rmdir {} \; 2>/dev/null
 
-# misc docs
-echo "%doc  perl/Changes perl/README" > %{filelist}
-# perl modules
-find `%{__perl} -MConfig -le 'print "%{buildroot}".$Config{sitelib};'` -type f | cut -c `echo %{buildroot} | wc -c`- >> %{filelist}
-# perl man3 pages
-find `%{__perl} -MConfig -le 'print "%{buildroot}".$Config{installman3dir};'` -type f -name '*.3pm*' | cut -c `echo %{buildroot} | wc -c`- >> %{filelist}
+# build list of installed SWISH::API files
+%{__perl} -le '
+use strict;
+use File::Find;
+use File::Spec;
+use Config qw(%Config);
 
+my $filelist = "%{filelist}";
+my $buildroot = "%{buildroot}";
+my $sitearch = File::Spec->catdir( $buildroot , $Config{installsitearch} );
+my $mandir = File::Spec->catdir( $buildroot , $Config{installman3dir} );
+
+my @sitearch;
+my @manpp;
+
+sub manpp
+{
+     return if m/^\./;
+     return unless $File::Find::name =~ m/SWISH/;
+     $File::Find::name =~ s|^\Q$buildroot\E||;
+     push(@manpp,$File::Find::name) if m/\.3pm/;
+}
+
+sub sitearch
+{
+     return if m/^\./;
+     return unless $File::Find::name =~ m/SWISH/;
+     $File::Find::name =~ s|^\Q$buildroot\E||;
+     push(@sitearch,$File::Find::name);
+}
+
+find( \&sitearch, $sitearch );
+find( \&manpp, $mandir );
+
+
+open(LIST, "> $filelist") or die "cannot write $filelist: $!\n";
+
+select(LIST);   # comment out to print to stdout
+
+$" = "\n";
+print <<EOF;
+%doc perl/Changes perl/README
+@sitearch
+@manpp
+EOF
+
+close(LIST) or die "cannot close $filelist: $!\n";
+'
 
 [ -z %filelist ] && {
     echo "ERROR: empty %files listing"
@@ -186,6 +227,10 @@ popd
 %{_libdir}/*.so
 
 %changelog
+* Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-3
+- Fix dependencies so SWISH::API requires the correct version of SWISH-E.
+* Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-2
+- Incorporate File::Find script written by Peter Karman <karman@cray.com>
 * Sat Nov 06 2004 David L Norris <dave@webaugur.com> 2.5.2-1
 - Fix SWISH::API build so it compiles without libswish-e being installed.
 * Sat Oct 23 2004 David L Norris <dave@webaugur.com> 2.5.2-0
