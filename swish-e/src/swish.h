@@ -315,15 +315,17 @@ struct metaEntry
 
 
 
+/* These are used to build the table of seek pointers in the main index. */ 
 typedef struct
 {
     long    length;
     long    seek;
 } PROP_LOCATION;
 
-typedef struct
+
+typedef struct   // there used to be more in this structure ;)
 {
-    PROP_LOCATION   prop_position[1];  // there used to be more in there.
+    PROP_LOCATION   prop_position[1];  // one for each property in the index.
 } PROP_INDEX;
 
 
