@@ -1,6 +1,8 @@
 Name "SWISH-E"
 OutFile "swishsetup.exe"
 
+!define VERSION "2.4.0-pr3"
+
 ; Some default compiler settings (uncomment and change at will):
 SetCompress auto ; (can be off or force)
 SetDatablockOptimize on ; (can be off)
@@ -13,7 +15,7 @@ LicenseText "You may redistribute SWISH-E under the following terms:"
 LicenseData "COPYING.txt"
 
 InstallDir "$PROGRAMFILES\SWISH-E"
-InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
+InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" ""
 DirShow show ; (make this hide to not let the user change it)
 DirText "Select location where to install SWISH-E:"
 

@@ -73,19 +73,20 @@ Section "ActiveX Control" SecSwishCtl
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
     WriteINIStr "$SMPROGRAMS\SWISH-E\Search_Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR\search\index.htm"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "DLLVersion" "1007"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "IndexLocation" "$INSTDIR\search"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "swishdocs" "docs.idx"
 SectionEnd ; end of ActiveX section
 
 SubSection "Document Filters" SubSecFilters
     Section "Word Doc Filter" SecDocFilter
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "catdoc" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "catdoc" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         File ..\..\..\catdoc\win32\catdoc.exe
         File /r ..\..\..\catdoc\charsets
     SectionEnd
     Section "PDF Filter" SecPDFFilter
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "xpdf" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "xpdf" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         File ..\..\..\xpdf\pdfinfo.*
         File ..\..\..\xpdf\pdftotext.*
@@ -96,9 +97,8 @@ SubSectionEnd
     
 SubSection "PERL Support" SubSecPerlSupport
     Section /o "PERL API" SecPerlApi
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlApi" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlApi" "1"
         
         ; SWISH::API Scripts
         SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
@@ -113,9 +113,8 @@ SubSection "PERL Support" SubSecPerlSupport
     SectionEnd
     
     Section /o "PERL Filters" SecPerlFilter
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlFilters" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlFilters" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         ; Filter Scripts
         File ..\..\filter-bin\swish_filter.pl.in
@@ -129,9 +128,8 @@ SubSection "PERL Support" SubSecPerlSupport
     SectionEnd
     
     Section /o "PERL -S prog Methods" SecPerlMethod
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlMethods" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlMethods" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         ; CGI Scripts
         File ..\..\prog-bin\*.pl
@@ -142,9 +140,8 @@ SubSection "PERL Support" SubSecPerlSupport
     SectionEnd
     
     Section /o "PERL CGI" SecPerlCgi
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlCgi" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlCgi" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         ; CGI Scripts
         File ..\..\example\swish.cgi.in
@@ -169,7 +166,17 @@ SectionEnd ; end of section 'Examples'
 
 Section "-post" ; (post install section, happens last after any optional sections)
     ; add any commands that need to happen after any optional sections here
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "" "$INSTDIR"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "" "$INSTDIR"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "CurrentVersion" "${VERSION}"
+    
+    ; fixperl needs these values:  installdir libexecdir perlmoduledir pkgdatadir swishbinary
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "installdir" "$INSTDIR"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "libexecdir" "$INSTDIR\lib\swish-e"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "pkgdatadir" "$INSTDIR\lib\swish-e"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "swishbinary" "$INSTDIR\swish-e.exe"
+    
+    ; Uninstaller information
     WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "DisplayName" "SWISH-E (remove only)"
     WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
     
@@ -199,7 +206,8 @@ Section Uninstall
     ; add delete commands to delete whatever files/registry keys/etc you installed here.
     ; UninstallText "This will remove SWISH-E from your system"
     Delete "$INSTDIR\uninst.exe"
-    DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E"
+    DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}"
+    DeleteRegValue HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "CurrentVersion"
     DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E"
     DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe"
     
@@ -321,7 +329,7 @@ FunctionEnd
  Function IsSwishPerlInstalled
   Push $R0
   ClearErrors
-  ReadRegStr $R0 HKEY_LOCAL_MACHINE "Software\SWISH-E Team\SWISH-E\Options" "Perl"
+  ReadRegStr $R0 HKEY_LOCAL_MACHINE "Software\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl"
   IfErrors lbl_na
     StrCpy $R0 1
   Goto lbl_end
