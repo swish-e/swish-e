@@ -237,7 +237,6 @@ static void    usage()
     printf("    swish -k (char|*) [-f file1 file2 ...]\n");
     printf("    swish -M index1 index2 ... outputfile\n");
     printf("    swish -N /path/to/compare/file\n");
-    printf("    swish -D [-v 4] -f indexfile\n");
     printf("    swish -V\n");
     putchar('\n');
     printf("options: defaults are in brackets\n");
@@ -269,10 +268,9 @@ static void    usage()
     printf("         -i : create an index from the specified files\n");
     printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -t : tags to search in - specify as a string\n");
-    printf("              \"HBthec\" - in head, body, title, header,\n");
-    printf("              emphasized, comments\n");
-    printf("         -f : index file to create or search from [%s]\n", INDEXFILE);
-    printf("         -c : configuration file to use for indexing\n");
+    printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
+    printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
+    printf("         -c : configuration file(s) to use for indexing\n");
     printf("         -v : verbosity level (0 to 3) [-v %d]\n", VERBOSE);
     printf("         -l : follow symbolic links when indexing\n");
     printf("         -b : begin results at this number\n");
@@ -287,15 +285,16 @@ static void    usage()
     printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
     printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
-    printf("         -k : Print words starting with a given char.\n\n");
-    printf("version: %s\n", SWISH_VERSION);
-    printf("   docs: http://sunsite.berkeley.edu/SWISH-E/\n");
+    printf("         -k : Print words starting with a given char.\n");
+    printf("         -T : Trace options\n\n");
+    printf("\nversion: %s\n", SWISH_VERSION);
+    printf("   docs: http://swish-e.org/\n");
     exit(1);
 }
 
 static void    printversion()
 {
-    printf("SWISH-E %s\n", SWISH_VERSION);
+    printf("SWISH-E %s\n", SWISH_VERSION );
     exit(0);
 }
 
