@@ -124,12 +124,25 @@ SwishWords(handle, filename, c)
      char c
      PREINIT:
      char *Words,*tmp;
+     int c2;
      PPCODE:
-     Words=(char *)SwishWords(handle,filename,c);
      PUSHMARK(SP);
-     for(tmp=Words;tmp && tmp[0];tmp+=strlen(tmp)+1)
+     if(c=='*')
      {
-        XPUSHs(sv_2mortal(newSVpv(tmp,0)));
+        for(c2=1;c2<256;c2++)
+        {
+           Words=(char *)SwishWords(handle,filename,(unsigned char)c2);
+           for(tmp=Words;tmp && tmp[0];tmp+=strlen(tmp)+1)
+           {
+              XPUSHs(sv_2mortal(newSVpv(tmp,0)));
+           }
+        }
+     } else {
+        Words=(char *)SwishWords(handle,filename,c);
+        for(tmp=Words;tmp && tmp[0];tmp+=strlen(tmp)+1)
+        {
+           XPUSHs(sv_2mortal(newSVpv(tmp,0)));
+        }
      }
      PUTBACK;
 

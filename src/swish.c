@@ -88,6 +88,7 @@ char *tmp;
 int swap_mode=0; /* No swap */
 int extended_flag=0; /* No extended */
 char keychar=0;
+int keychar2;
 char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
 
@@ -166,9 +167,9 @@ IndexFILE *tmpindexlist=NULL;
 			else {
 				argv++;
 				if(!argv || !argv[0])
-					progerr("Specify the starting char.");
+					progerr("Specify the starting char or '*' for all words\n.\n");
 				else if(strlen(argv[0])>1)
-					progerr("Specify one starting char.");
+					progerr("Specify the starting char or '*' for all words\n.\n");
 				keychar = argv[0][0];
 				argc--;
 			}
@@ -659,10 +660,18 @@ IndexFILE *tmpindexlist=NULL;
 			/* print out "original" search words */
 		for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
 		{
-			keywords=getfilewords(sw,keychar,tmpindexlist);
 			printf("%s:",tmpindexlist->line);
-			for(;keywords && keywords[0];keywords+=strlen(keywords)+1)
-				printf(" %s",keywords);
+			if(keychar=='*')
+			{
+				for(keychar2=1;keychar2<256;keychar2++)
+				{
+					keywords=getfilewords(sw,(unsigned char )keychar2,tmpindexlist);
+					for(;keywords && keywords[0];keywords+=strlen(keywords)+1) printf(" %s",keywords);
+				}
+			} else {
+				keywords=getfilewords(sw,keychar,tmpindexlist);
+				for(;keywords && keywords[0];keywords+=strlen(keywords)+1) printf(" %s",keywords);
+			}
 			printf("\n");
 		}
 		SwishClose(sw);
