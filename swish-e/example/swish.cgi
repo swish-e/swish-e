@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl -w
 use strict;
 
-#    search.cgi $Version$ Copyright (C) 2001 Bill Moseley search@hank.org
+#    search.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
 #    Example CGI program for searching with SWISH-E
 #
 #    This example program will only run under an OS that supports fork().
@@ -150,7 +150,7 @@ Please use at your own risk, of course.
 
 =head1 LICENSE
 
-search.cgi $Version$ Copyright (C) 2001 Bill Moseley search@hank.org
+search.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
 Example CGI program for searching with SWISH-E
 
 
