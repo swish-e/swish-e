@@ -42,8 +42,9 @@ $Id$
 
 #include <ctype.h>
 #include "swish.h"
-#include "swish_qsort.h"
 #include "mem.h"
+#include "index.h"
+#include "swish_qsort.h"
 #include "string.h"
 #include "error.h"
 
@@ -177,7 +178,7 @@ char   *getconfvalue(line, var)
             tmpvalue[i++] = *c;
         }
         tmpvalue[i] = '\0';
-        /* Do not wastw memory !! Resize word */
+        /* Do not waste memory !! Resize word */
         p = tmpvalue;
         tmpvalue = estrdup(p);
         efree(p);
@@ -750,9 +751,9 @@ unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
 #define TAG_CLOSE 1
 #define TAG_FOUND 2
 
-/* Gets the content between "<Bparsetag>" and "</parsetag>" from buffer
+/* Gets the content between "<parsetag>" and "</parsetag>" from buffer
 limiting the scan to the first max_lines lines (0 means all lines) */
-char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive)
+char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, int case_sensitive)
 {
     register int c,
             d;
@@ -770,6 +771,7 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
             curlencontent;
     char   *begintag;
     char   *endtag;
+    char   *newbuf;
     char   *(*f_strstr) ();
 
 
@@ -780,15 +782,15 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
         f_strstr = lstrstr;
 
     lencontent = strlen(parsetag);
-    begintag = emalloc(lencontent + 3);
-    endtag = emalloc(lencontent + 4);
+    begintag = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, lencontent + 3);
+    endtag = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, lencontent + 4);
     sprintf(begintag, "<%s>", parsetag);
     sprintf(endtag, "</%s>", parsetag);
 
-    tag = (char *) emalloc(1);
+    tag = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, 1);
     tag[0] = '\0';
 
-    content = (char *) emalloc((lencontent = MAXSTRLEN) + 1);
+    content = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, (lencontent = MAXSTRLEN) + 1);
     lines = 0;
     status = NO_TAG;
     p = content;
@@ -805,18 +807,12 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
                 break;
         }
         if (!c)
-        {
-            efree(tag);
-            efree(content);
-            efree(endtag);
-            efree(begintag);
             return NULL;
-        }
 
         switch (c)
         {
         case '<':
-            tag = (char *) erealloc(tag, (tagbuflen = MAXSTRLEN) + 1);
+            tag = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, (tagbuflen = MAXSTRLEN) + 1);
             totaltaglen = 0;
             tag[totaltaglen++] = '<';
 
@@ -825,17 +821,13 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
             {
                 d = *r++;
                 if (!d)
-                {
-                    efree(tag);
-                    efree(content);
-                    efree(endtag);
-                    efree(begintag);
                     return NULL;
-                }
                 if (totaltaglen == tagbuflen)
                 {
+                    newbuf = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, tagbuflen + 200 + 1);
+		            memcpy(newbuf,tag,tagbuflen + 1);
+                    tag = newbuf;
                     tagbuflen += 200;
-                    tag = erealloc(tag, tagbuflen + 1);
                 }
                 tag[totaltaglen++] = d;
                 if (d == '>')
@@ -876,17 +868,10 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
                     if (content[j] == '\"')
                         content[j] = '\'';
 
-                efree(tag);
-                efree(endtag);
-                efree(begintag);
-
                 if (*content)
                     return (content);
                 else
-                {
-                    efree(content);
                     return NULL;
-                }
             }
             else if (f_strstr(tag, begintag))
             {
@@ -899,8 +884,10 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
                 curlencontent = p - content;
                 if (curlencontent == lencontent)
                 {
-                    lencontent += 200;
-                    content = (char *) erealloc(content, lencontent + 1);
+                    newbuf = Mem_ZoneAlloc(sw->Index->perDocTmpZone,(lencontent * 2) + 1);
+                    memcpy(newbuf,content,lencontent + 1);
+                    lencontent *= 2;
+                    content = newbuf;
                     p = content + curlencontent;
                 }
                 *p = c;
@@ -908,10 +895,6 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
             }
         }
     }
-    efree(tag);
-    efree(content);
-    efree(endtag);
-    efree(begintag);
     return NULL;
 }
 

@@ -64,8 +64,8 @@ static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
-static void add_meta( PARSE_DATA *parse_data, struct metaEntry *m );
-static void add_prop( PARSE_DATA *parse_data, struct metaEntry *m );
+static void add_meta(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m );
+static void add_prop(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m );
 static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len);
 static void write_summary( PARSE_DATA *parse_data );
 
@@ -116,8 +116,8 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 
     /* allocate some space */
     parse_data.propsize = parse_data.metasize = parse_data.header->metaCounter + 100;
-    parse_data.props  = (int *) emalloc( sizeof( int *) * parse_data.propsize );
-    parse_data.metas  = (int *) emalloc( sizeof( int *) * parse_data.metasize );
+    parse_data.props  = (int *) Mem_ZoneAlloc(idx->perDocTmpZone, sizeof( int *) * parse_data.propsize );
+    parse_data.metas  = (int *) Mem_ZoneAlloc(idx->perDocTmpZone, sizeof( int *) * parse_data.metasize );
 
 
     /* Set event handlers */
@@ -150,6 +150,8 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 *   To Do:
 *       deal with attributes!
 *
+*   2001-08 jmruiz - Minor change in tag handling to avoid memory 
+*                    fragmentation
 *********************************************************************/
 
 
@@ -158,8 +160,18 @@ static void start_hndl(void *data, const char *el, const char **attr)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     struct metaEntry *m;
     SWISH *sw = parse_data->sw;
-    char  *tag = estrdup( (char *)el );
+    char  tmp[MAXSTRLEN + 1];
+    char  *tag;
     struct StoreDescription *stordesc = parse_data->fprop->stordesc;
+
+    /* Use a static array whenever possible (99.9999 %) to avoid memory fragmentation */
+    if(strlen(el) <= MAXSTRLEN)
+    {
+        tag = tmp;
+		strcpy(tmp,(char *)el);
+    }
+    else
+        tag = (char *)estrdup((char *) el);
 
     strtolower( tag );
 
@@ -172,7 +184,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
                              ? stordesc->size
                              : RD_BUFFER_SIZE;
 
-        parse_data->buffer = (char *) emalloc( parse_data->buffmax + 1 );
+        parse_data->buffer = (char *) Mem_ZoneAlloc( parse_data->sw->Index->perDocTmpZone, parse_data->buffmax + 1 );
         parse_data->buffend = 0;
     }
 
@@ -199,7 +211,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
     /* Check for metaNames */
 
     if ( (m  = getMetaNameByName( parse_data->header, tag)) )
-        add_meta( parse_data, m );
+        add_meta( sw, parse_data, m );
 
     else
     {
@@ -208,7 +220,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
             if (sw->verbose)
                 printf("Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
-            add_meta( parse_data, addMetaEntry( parse_data->header, tag, META_INDEX, 0));
+            add_meta( sw, parse_data, addMetaEntry( parse_data->header, tag, META_INDEX, 0));
         }
 
 
@@ -221,32 +233,40 @@ static void start_hndl(void *data, const char *el, const char **attr)
     /* Check property names */
 
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
-        add_prop( parse_data, m );
+        add_prop( sw, parse_data, m );
 
 
     /* Check for store description */
     
-
-    efree( tag );
+    if(tag != tmp)
+        efree( tag );
 }
 
 /* kind of ugly duplication */
-static void add_meta( PARSE_DATA *parse_data, struct metaEntry *m )
+static void add_meta( SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m )
 {
+    int *tmp;
+
     if ( parse_data->meta_cnt >=  parse_data->metasize )
     {
+        tmp = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(int *) * (parse_data->metasize + 100) );
+		memcpy(tmp,parse_data->metas, sizeof(int *) * parse_data->metasize );
         parse_data->metasize += 100;
-        parse_data->metas = (int *) erealloc( parse_data->metas, sizeof(int *) * parse_data->metasize);
+        parse_data->metas = tmp;
     }
     parse_data->metas[ parse_data->meta_cnt++ ] = m->metaID;
 }
 
-static void add_prop( PARSE_DATA *parse_data, struct metaEntry *m )
+static void add_prop(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m )
 {
+    int *tmp;
+
     if ( parse_data->prop_cnt >= parse_data->propsize )
     {
+        tmp = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(int *) * (parse_data->propsize + 100) );
+		memcpy(tmp,parse_data->props, sizeof(int *) * parse_data->propsize );
         parse_data->propsize += 100;
-        parse_data->props = (int *) erealloc( parse_data->props, sizeof(int *) * parse_data->propsize);
+        parse_data->props = tmp;
     }
     parse_data->props[ parse_data->prop_cnt++ ] = m->metaID;
 }
@@ -259,13 +279,25 @@ static void add_prop( PARSE_DATA *parse_data, struct metaEntry *m )
 *   This routine will pop the meta/property tag off the stack
 *
 *
+*   2001-08 jmruiz - Minor change in tag handling to avoid memory 
+*                    fragmentation
 *********************************************************************/
 
 
 static void end_hndl(void *data, const char *el)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    char  *tag = estrdup( (char *)el );
+    char   tmp[MAXSTRLEN + 1];
+    char  *tag;
+
+    /* Use a static array whenever possible (99.9999 %) to avoid memory fragmentation */
+    if(strlen(el) <= MAXSTRLEN)
+    {
+        tag = tmp;
+        strcpy(tmp,(char *)el);
+    }
+    else
+        tag = (char *)estrdup((char *) el);
 
 
     strtolower( tag );
@@ -301,6 +333,8 @@ static void end_hndl(void *data, const char *el)
     if ( parse_data->prop_cnt &&  getPropNameByName( parse_data->header, tag) )
         parse_data->prop_cnt--;
 
+    if(tag != tmp)
+        efree(tag);
 }
 
 /*********************************************************************
@@ -317,7 +351,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
     SWISH              *sw = parse_data->sw;
     int                 i;
-    char *buf = (char *)emalloc( txtlen + 1 );
+    char *buf = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, txtlen + 1 );
 
     strncpy( buf, txt, txtlen );
     buf[txtlen] = '\0';
@@ -341,7 +375,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     {
         struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
         if ( m )
-            add_meta( parse_data, m );
+            add_meta( sw, parse_data, m );
     }
 
 
@@ -370,8 +404,6 @@ static void char_hndl(void *data, const char *txt, int txtlen)
             progwarn("property '%s' not added for document '%s'\n", m->metaName, parse_data->fprop->real_path);
     }
 
-    efree( buf );
-
 }
 
 /*********************************************************************
@@ -386,7 +418,9 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
 {
     int j;
-    
+    char *newbuf = NULL;
+	int newsize = 0;
+		
     /* trim trailing space */
     while ( isspace( buf[len-1] && len > 0 ))
         len--;
@@ -423,19 +457,19 @@ static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
         /* reallocate if needed */
         if ( parse_data->buffend >= parse_data->buffmax )
         {
-            parse_data->buffmax = parse_data->buffend + RD_BUFFER_SIZE;
-            if ( parse_data->buffmax > parse_data->fprop->stordesc->size )
-                parse_data->buffmax = parse_data->fprop->stordesc->size;
+            newsize = parse_data->buffend + RD_BUFFER_SIZE;
+            if ( newsize > parse_data->fprop->stordesc->size )
+                newsize = parse_data->fprop->stordesc->size;
 
-            parse_data->buffer = erealloc( parse_data->buffer, parse_data->buffmax+1);
+            newbuf = (char *)Mem_ZoneAlloc(parse_data->sw->Index->perDocTmpZone, newsize + 1);
+            memcpy(newbuf, parse_data->buffer, parse_data->buffend + 1);
+
+            parse_data->buffer = newbuf;
+            parse_data->buffmax = newsize;
         }
-
-               
-            
 
         parse_data->buffer[parse_data->buffend++] = buf[j++];
     }
-
         
     parse_data->buffer[parse_data->buffend] = '\0';
 }
@@ -452,10 +486,7 @@ static void write_summary( PARSE_DATA *parse_data )
         )
             progwarn("property '%s' not added for document '%s'\n", parse_data->summeta->metaName, parse_data->fprop->real_path);
 
-
-    efree( parse_data->buffer );
     parse_data->buffer = NULL;
-    
 }    
 
 
@@ -482,7 +513,7 @@ static void comment_hndl(void *data, const char *txt)
         struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
         if ( m )
         {
-            add_meta( parse_data, m );
+            add_meta( sw, parse_data, m );
             added++;
         }
     }

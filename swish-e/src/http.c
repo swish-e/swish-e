@@ -591,8 +591,7 @@ void    http_indexpath(SWISH * sw, char *url)
                     buffer = erealloc(buffer, lenbuffer + 1);
                 }
                 sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long) lgetpid());
-                title = SafeStrCopy(title, (char *) (tmptitle = parseHTMLtitle(buffer)), &lentitle);
-                efree(tmptitle);
+                title = SafeStrCopy(title, (char *) (tmptitle = parseHTMLtitle(sw , buffer)), &lentitle);
             }
             else
             {

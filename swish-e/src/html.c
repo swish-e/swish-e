@@ -55,16 +55,15 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyaut
                                      char **parsed_tag, char *filename)
 {
     char   *temp;
-    static int lenword = 0;
-    static char *word = NULL;
+    int lenword = 0;
+    char *word = NULL;
+    char buffer[MAXSTRLEN + 1];
     int     i;
     struct metaEntry *e = NULL;
 
 
-
-    /*** $$$ NOTE: memory for "word" is never freed... ***/
-    if (!lenword)
-        word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
+	word = buffer;
+	lenword = sizeof(buffer) - 1;
 
     if (!name)
     {
@@ -111,7 +110,13 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyaut
         if (i == lenword)
         {
             lenword *= 2;
-            word = (char *) erealloc(word, lenword + 1);
+            if(word == buffer)
+            {
+                word = (char *) emalloc(lenword + 1);
+                memcpy(word,buffer,sizeof(buffer));
+            }
+            else
+                word = (char *) erealloc(word, lenword + 1);
         }
         word[i] = *temp++;
         i++;
@@ -142,6 +147,9 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyaut
     /* If it is ok not to have the name listed, just index as no-name */
     if (!OkNoMeta)
         progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", word, filename);
+
+    if(word != buffer)
+        efree(word);
 
     return NULL;
 
@@ -223,11 +231,6 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
             if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag), 0))
                 progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename);
 
-
-
-        if (convtag != start)
-            efree(convtag);
-
         if (temp)
             *temp = '\"';       /* restore string */
     }
@@ -240,18 +243,21 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
 ** Otherwise, only the file name without its path is returned.
 */
 
-char   *parseHTMLtitle(char *buffer)
+char   *parseHTMLtitle(SWISH *sw, char *buffer)
 {
     char   *title;
+    char   *empty_title;
 
+    empty_title = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone,1);
+    *empty_title = '\0';
 
     if (!buffer)
-        return estrdup("");
+        return empty_title;
 
-    if ((title = parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
+    if ((title = parsetag(sw, "title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
         return title;
 
-    return estrdup("");
+    return empty_title;
 }
 
 
@@ -390,15 +396,16 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         }
         else
             q = p;
-        tmp = estrdup(p);
-        remove_newlines(tmp);
+        summary = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,strlen(p)+1);
+        strcpy(summary,p);
+        remove_newlines(summary);
 //$$$$ Todo: remove tag and content of scripts, css, java, embeddedobjects, comments, etc  
-        remove_tags(tmp);
+        remove_tags(summary);
 
         /* use only the required memory -save those not used */
         /* 2001-03-13 rasc  copy only <size> bytes of string */
-        summary = estrndup(tmp, size);
-        efree(tmp);
+        if((int) strlen(summary) > size)
+            summary[size]='\0';
         return summary;
     }
 
@@ -502,7 +509,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     if (found && beginsum && endsum && endsum > beginsum)
     {
         lensummary = endsum - beginsum;
-        summary = emalloc(lensummary + 1);
+        summary = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, lensummary + 1);
         memcpy(summary, beginsum, lensummary);
         summary[lensummary] = '\0';
     }
@@ -510,7 +517,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     /* for something like <field>bla bla </field> */
     if (!summary && field)
     {
-        summary = parsetag(field, buffer, 0, CASE_SENSITIVE_OFF);
+        summary = parsetag(sw, field, buffer, 0, CASE_SENSITIVE_OFF);
     }
     /* Finally check for something after title (if exists) and */
     /* after <body> (if exists) */
@@ -533,7 +540,8 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         else
             q = p;
 
-        summary = estrdup(q);
+        summary = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone,strlen(q) + 1);
+        strcpy(summary,q);
     }
 
     if (summary)
@@ -583,13 +591,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     char   *Content = NULL,
            *Name = NULL,
            *summary = NULL;
-    char   *title = parseHTMLtitle(buffer);
+    char   *title = parseHTMLtitle(sw, buffer);
 
     if (!isoktitle(sw, title))
-    {
-        efree(title);
         return -2;
-    }
+
     idx->filenum++;
 
 
@@ -600,7 +606,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     addCommonProperties(sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize);
 
     /* Init meta info */
-    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
+    metaID = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,(metaIDlen = 16) * sizeof(int));
 
     currentmetanames = ftotalwords = 0;
     structure = IN_FILE;
@@ -620,8 +626,6 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
-            if (newp != p)
-                efree(newp);
             structure = IN_FILE;
 
             /* Now let us look for a not escaped '>' */
@@ -655,7 +659,12 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                         {
                             /* realloc memory if needed */
                             if (currentmetanames == metaIDlen)
-                                metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
+                            {
+                                int *newbuf = (int *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, metaIDlen * 2 * sizeof(int));
+                                memcpy((char *)newbuf,(char *)metaID,metaIDlen * sizeof(int));
+                                metaID = newbuf;
+                                metaIDlen *= 2;
+                            }
 
                             /* add metaname to array of current metanames */
                             metaID[currentmetanames] = metaNameEntry->metaID;
@@ -737,18 +746,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
-            if (newp != p)
-                efree(newp);
             p = NULL;
         }
     }
 
-    efree(metaID);
-
     addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
-    efree(title);
-    if (summary)
-        efree(summary);
     return ftotalwords;
 }

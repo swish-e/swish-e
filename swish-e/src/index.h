@@ -90,7 +90,7 @@ struct MOD_Index
     /* Index in blocks of chunk_size files */
     int chunk_size;
 
-    MEM_ZONE	*uncompressedChunkLocZone;
+    MEM_ZONE	*perDocTmpZone;
     MEM_ZONE	*currentChunkLocZone;
     MEM_ZONE    *totalLocZone;
     MEM_ZONE	*entryZone;
