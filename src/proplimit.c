@@ -582,10 +582,7 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
     for (i = 0; i < size; i++)
     {
         sort_array[i].filenum = i+1;
-        /* $$$ fix for USE_BTREE - 
         sort_array[i].sort = DB_ReadSortedData( meta_entry->sorted_data, i );
-        */
-        sort_array[i].sort = meta_entry->sorted_data[i];
     }
 
 

@@ -90,10 +90,7 @@ static int compare_results_single_index(const void *s1, const void *s2)
 
         if ( (presorted = sort_data->property->sorted_data) )
         {
-            /* $$$ - fix for USE_BTREE
-            if ( (rc = DB_ReadSortedData( presorted, r1->filenum - 1) -  DB_ReadSortedData( presorted, r2->filenum - 1))
-            */
-            if((rc = presorted[ r1->filenum - 1] - presorted[ r2->filenum - 1] ))
+            if ( (rc = DB_ReadSortedData( presorted, r1->filenum - 1) -  DB_ReadSortedData( presorted, r2->filenum - 1)) )
                 return ( rc * sort_data->direction );  /* is the multiplication slow? */
         }
 
@@ -221,10 +218,6 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 {
     unsigned char *buffer;
     int     sz_buffer;
-#ifndef USE_BTREE
-    unsigned char *s;
-    int     j;
-#endif
 
     if ( m->sorted_loaded )
         return m->sorted_data;
@@ -238,28 +231,33 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
     /* Convert to a property index */
     DB_ReadSortedIndex(indexf->sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
-#ifndef USE_BTREE
-    /* Table doesn't exist */
-    if (!sz_buffer)
+#ifdef USE_PRESORT_ARRAY
+    m->sorted_data = (int *)buffer;
+    DB_EndReadSortedIndex(indexf->sw, indexf->DB);
+    return m->sorted_data;
+
+#endif
+
+
+    /* If a table was found, then uncompress */
+    /* FIX $$$ This should be in db_native.c */
+
+    if (sz_buffer)
     {
-        DB_EndReadSortedIndex(indexf->sw, indexf->DB);
-        return NULL;
+        unsigned char *s = buffer;
+        int j;
+
+        m->sorted_data = (int *) emalloc(indexf->header.totalfiles * sizeof(int));
+
+        /* Unpack / decompress the numbers */
+        for (j = 0; j < indexf->header.totalfiles; j++)
+            m->sorted_data[j] = uncompress2(&s);
+
+        efree(buffer);
     }
 
 
-    s = buffer;
-    m->sorted_data = (int *) emalloc(indexf->header.totalfiles * sizeof(int));
-
-    /* Unpack / decompress the numbers */
-    for (j = 0; j < indexf->header.totalfiles; j++)
-        m->sorted_data[j] = uncompress2(&s);
-
-    efree(buffer);
-#else
-    m->sorted_data = (int *)buffer;
-#endif
     DB_EndReadSortedIndex(indexf->sw, indexf->DB);
-
     return m->sorted_data;
 }
 

@@ -470,10 +470,12 @@ int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_
    return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
 }
 
+/* ******* This is now a macro and accessies the native data by default
 int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB)
 {
    return sw->Db->DB_ReadSortedData(data,index,value,DB);
 }
+*******/
 
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 {

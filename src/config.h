@@ -354,7 +354,13 @@
 
 /* 2001/10 jmruiz -- Added BTREE schema to store words */
 
-//#define USE_BTREE
+//#define USE_BTREE  /* use --enable-incremental at configure time */
+
+/* If USE_BTREE then enable the ARRAY code for the pre-sorted indexes */
+
+#ifdef USE_BTREE
+#define USE_PRESORT_ARRAY  /* comment out to use old integer arrays */
+#endif
 
 #define sw_fopen fopen
 #define sw_fclose fclose
