@@ -1232,6 +1232,9 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
 {
     struct metaEntry *q;
 
+    if ( !filename )  // used for merge, really -- this adding of the pathname here is outdated
+        return;
+
     /* Check if filename is internal swish metadata -- should be! */
 
     if ((q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))

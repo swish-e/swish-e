@@ -63,7 +63,6 @@ void freeProperty( propEntry *prop )
 	{
 		propEntry *nextOne = prop->next;
 		efree(prop);
-
 		prop = nextOne;
 	}
 }	
@@ -598,7 +597,6 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
             
         propValue = tmp;
     }
-
 
     /* Now create the property */
     docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
@@ -1387,6 +1385,7 @@ void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEnt
 	}
 
 	/* Reasign new values */
+	freeDocProperties(*docProperties);
 	*docProperties = tmpDocProperties;
 
 }

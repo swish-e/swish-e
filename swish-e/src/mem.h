@@ -58,6 +58,10 @@ typedef struct _mem_zone {
 
 
 /* The following are the basic malloc/realloc/free replacements */
+#if MEM_TRACE
+extern size_t memory_trace_counter;
+#endif
+
 #if MEM_DEBUG | MEM_TRACE | MEM_STATISTICS
 
 #define emalloc(size) Mem_Alloc(size, __FILE__, __LINE__)
