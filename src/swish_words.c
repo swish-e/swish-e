@@ -398,7 +398,7 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
 
 static int checkbuzzword(INDEXDATAHEADER *header, char *word )
 {
-    if ( !header->buzzwords_used_flag )
+    if ( !header->hashbuzzwordlist.count )
         return 0;
 
         
@@ -410,7 +410,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
         return 0;
 
 
-    return isbuzzword( header, word);
+    return is_word_in_hash_table( header->hashbuzzwordlist, word );
 }
 
 /* I hope this doesn't live too long */
@@ -774,7 +774,7 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
             
             if ( in_phrase )
             {
-                if (isstopword(&indexf->header, cur_token->line))
+                if ( is_word_in_hash_table( indexf->header.hashstoplist, cur_token->line ) )
                 {
                     db_results->removed_stopwords = addswline( db_results->removed_stopwords, cur_token->line );
                     stop_word_removed++;
@@ -838,7 +838,7 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
 
             /* Finally, is it a stop word? */
 
-            if ( isstopword(&indexf->header, cur_token->line) )
+            if ( is_word_in_hash_table( indexf->header.hashstoplist, cur_token->line ) )
             {
                 db_results->removed_stopwords = addswline( db_results->removed_stopwords, cur_token->line );
                 stop_word_removed++;

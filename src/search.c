@@ -488,6 +488,10 @@ int SwishHits( RESULTS_OBJECT *results )
 }
 
 
+        
+    
+
+
 /****************************************************************
 *  Free_Results_Object - Frees all memory associated with search results
 *

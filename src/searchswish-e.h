@@ -11,34 +11,33 @@ typedef void * SW_RESULTS;
 typedef void * SW_RESULT;
 
 
-#ifdef DISPLAY_HEADERS
 
+/* These must match headers.h */
 
 typedef enum {
-    SWISH_LONG,
+    SWISH_NUMBER,
     SWISH_STRING,
     SWISH_LIST,
-    SWISH_BOOL
+    SWISH_BOOL,
+    SWISH_HEADER_ERROR, /* must check error in this case */
 } SWISH_HEADER_TYPE;
 
-union
+
+typedef union
 {
     const char           *string;
     const char          **string_list;
-    const unsigned long   number;
-    const int             boolean;
-} s_SWISH_HEADER_VALUE;
-
-typedef s_SWISH_HEADER_VALUE SWISH_HEADER_VALUE;
-
-const char **SwishHeaderNames(void);  /* fetch the list of available header names */
-const char **SwishIndexNames( SW_HANDLE );
-
-SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const *char name, int *type );
-SWISH_HEADER_VLLUE SwishHeaderValue( const char *index_name, const  char *cur_header, int *type );
+          unsigned long   number;
+          int             boolean;
+} SWISH_HEADER_VALUE;
 
 
-#endif
+const char **SwishHeaderNames( SW_HANDLE );  /* fetch the list of available header names */
+const char **SwishIndexNames( SW_HANDLE );  /* fetch list of index files names associated */
+SWISH_HEADER_VALUE SwishHeaderValue( SW_HANDLE, const char *index_name, const  char *cur_header, SWISH_HEADER_TYPE *type );
+SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEADER_TYPE *type );
+
+
 
 
 
@@ -81,7 +80,12 @@ void SwishResetSearchLimit( SW_SEARCH srch );
 
 SW_RESULTS SwishExecute( SW_SEARCH, char *optional_query );
 
+/* Headers specific to results */
 int SwishHits( SW_RESULTS );
+SWISH_HEADER_VALUE SwishParsedWords( SW_RESULTS, const char *index_name );
+SWISH_HEADER_VALUE SwishRemovedStopwords( SW_RESULTS, const char *index_name );
+
+
 
 int SwishSeekResult( SW_RESULTS, int position );
 SW_RESULT SwishNextResult( SW_RESULTS );

@@ -244,7 +244,7 @@ extern "C" {
 #define MAXENTLEN 10
 
 // #define HASHSIZE 101
-// #define BIGHASHSIZE 1009
+// #define BIGSIZE 1009
 // #define VERYBIGHASHSIZE 10001
 
 // Change as suggested by Jean-François PIÉRONNE <jfp@altavista.net>
@@ -437,7 +437,13 @@ typedef enum {
 } FuzzyIndexType;
 
 
+/* For word hash tables */
 
+
+typedef struct {
+    struct swline  **hash_array;
+    int              count;
+}  WORD_HASH_TABLE;
 
 
 typedef struct
@@ -518,10 +524,15 @@ typedef struct
     int     numbercharslookuptable[256];    /* Dec 12, 2001 - moseley -- mostly for ignoring numbers */
 
     /* values for handling stopwords */
-    struct swline *hashstoplist[HASHSIZE];
-    char  **stopList;
-    int     stopMaxSize;
-    int     stopPos;
+    WORD_HASH_TABLE hashstoplist;
+
+
+    /* Buzzwords hash */
+    WORD_HASH_TABLE hashbuzzwordlist;
+    
+    /* values for handling "use" words - > Unused in the search proccess */
+    WORD_HASH_TABLE hashuselist;
+
 
     /* This is an array of properties that are used */
     /* These should not be in the header, rather in indexf as they are not written to disk */
@@ -531,17 +542,10 @@ typedef struct
 
 
 
-    /* Buzzwords hash */
-    int    buzzwords_used_flag; /* flag to indicate that buzzwords are being used */
-    struct swline *hashbuzzwordlist[HASHSIZE];
-    
-    /* values for handling "use" words - > Unused in the search proccess */
-    int     is_use_words_flag;
-    struct swline *hashuselist[HASHSIZE];
-
-	    /* Values for fields (metanames) */
+    /* Values for fields (metanames) */
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
+
 
 }
 INDEXDATAHEADER;
@@ -896,8 +900,17 @@ typedef struct SWISH
     /* <foo class="bar"> => generates a metaname foo.bar */
     struct swline *XMLClassAttributes;
 
-}
-SWISH;
+
+    const char **header_names;  /* list of available header names */
+    const char **index_names;   /* list of current in-use header names */
+
+    /* Temporary place to store return string lists */
+    const char **temp_string_buffer;
+    int        temp_string_buffer_len;
+
+
+
+} SWISH;
 
 
 /* 06/00 Jose Ruiz
@@ -968,17 +981,10 @@ void    SwishFree(SWISH *);
 
 
 /* C library prototypes */
-SWISH  *SwishOpen(char *);  // depreciated
 SWISH  *SwishInit(char *);
 void    SwishClose(SWISH *);
 void    SwishResetSearch(SWISH *);
-// char   *SwishResultPropertyStr(RESULT *result, char *pname);
-// unsigned long SwishResultPropertyULong(RESULT *result, char *pname);
-
-char  **SwishStopWords(SWISH * sw, char *filename, int *numstops);
-char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name);
-char   *SwishWords(SWISH * sw, char *filename, char c);
-
+void free_swish_memory( SWISH *sw );  /* in swish2.c */
 
 
 

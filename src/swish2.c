@@ -37,6 +37,8 @@
 #include <zlib.h>
 #endif
 
+static IndexFILE *free_index( IndexFILE *indexf );
+
 
 
 /* Moved here so it's in the library */
@@ -86,63 +88,92 @@ SWISH  *SwishNew()
 }
 
 
-void    SwishClose(SWISH * sw)
+
+static IndexFILE *free_index( IndexFILE *indexf )
 {
-    IndexFILE *tmpindexlist;
-    int     i;
-
-    if ( !sw )
-        return;
-
+    IndexFILE  *next = indexf->next;
+    SWISH      *sw = indexf->sw;
+    int         i;
+    
     /* Close any pending DB */
-    tmpindexlist = sw->indexlist;
-    while (tmpindexlist) {
-        if (tmpindexlist->DB)
-            DB_Close(sw, tmpindexlist->DB);
-        tmpindexlist = tmpindexlist->next;
-    }
+    if ( indexf->DB )
+        DB_Close(sw, indexf->DB);
 
+
+    /* free the meteEntry array */
+    if ( indexf->header.metaCounter)
+        freeMetaEntries(&indexf->header);
+
+
+    /* free data loaded into header */
+    free_header(&indexf->header);
+
+
+    /* free array of words for each letter $$$ eight bit */
+    for (i = 0; i < 256; i++)
+        if ( indexf->keywords[i])
+            efree(indexf->keywords[i]);
+
+    return next;
+}
+
+void free_swish_memory( SWISH *sw )
+{
+    IndexFILE *cur_indexf;
+
+
+    /* Free up associated index file */
+    cur_indexf = sw->indexlist;
+
+    while (cur_indexf)
+        cur_indexf = free_index( cur_indexf );
+
+
+    /* Common to searching and indexing */
     freeModule_Swish_Words(sw);
     freeModule_DB(sw);
 
 
-
-    /* Free MetaNames and close files */
-    tmpindexlist = sw->indexlist;
-
-
-    while (tmpindexlist)
-    {
-        /* free the meteEntry array */
-        if (tmpindexlist->header.metaCounter)
-            freeMetaEntries(&tmpindexlist->header);
-
-        /* Free stopwords structures */
-        freestophash(&tmpindexlist->header);
-        freeStopList(&tmpindexlist->header);
-
-        freebuzzwordhash(&tmpindexlist->header);
-
-        free_header(&tmpindexlist->header);
-
-        for (i = 0; i < 256; i++)
-            if (tmpindexlist->keywords[i])
-                efree(tmpindexlist->keywords[i]);
-
-
-        tmpindexlist = tmpindexlist->next;
-    }
-
-    freeindexfile(sw->indexlist);
+    /* Free temporary buffers -- mostly used for the library API to pass data to users */
 
     if (sw->Prop_IO_Buf) {
         efree(sw->Prop_IO_Buf);
         sw->Prop_IO_Buf = NULL;
     }
 
-    /* Free SWISH struct */
+    if ( sw->header_names )
+        efree( sw->header_names );
+
+    if ( sw->index_names )
+        efree( sw->index_names );
+
+    if ( sw->temp_string_buffer )
+        efree( sw->temp_string_buffer );
+    
+
+}
+
+/*************************************************************************
+* SwishClose -- frees up the swish handle
+*
+*
+**************************************************************************/
+
+
+
+void    SwishClose(SWISH * sw)
+{
+
+    if ( !sw )
+        return;
+
+
+    free_swish_memory( sw );
+
     efree(sw);
 }
+
+
 
 
 /*************************************************************************
@@ -229,88 +260,6 @@ int     SwishAttach(SWISH * sw)
 
     return ( sw->lasterror == 0 ); 
 }
-
-
-
-char    tmp_header_buffer[50];  /*  Not thread safe $$$ */
-
-/** Argh!  This is as ugly as the config parsing code **/ 
-
-char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name)
-{
-    if (!strcasecmp(parameter_name, WORDCHARSPARAMNAME))
-        return indexf->header.wordchars;
-
-    else if (!strcasecmp(parameter_name, BEGINCHARSPARAMNAME))
-        return indexf->header.beginchars;
-
-    else if (!strcasecmp(parameter_name, ENDCHARSPARAMNAME))
-        return indexf->header.endchars;
-
-    else if (!strcasecmp(parameter_name, IGNOREFIRSTCHARPARAMNAME))
-        return indexf->header.ignorefirstchar;
-
-    else if (!strcasecmp(parameter_name, IGNORELASTCHARPARAMNAME))
-        return indexf->header.ignorelastchar;
-
-
-
-    else if (!strcasecmp(parameter_name, NAMEHEADERPARAMNAME))
-        return indexf->header.indexn;
-
-    else if (!strcasecmp(parameter_name, DESCRIPTIONPARAMNAME))
-        return indexf->header.indexd;
-
-    else if (!strcasecmp(parameter_name, POINTERPARAMNAME))
-        return indexf->header.indexp;
-
-    else if (!strcasecmp(parameter_name, MAINTAINEDBYPARAMNAME))
-        return indexf->header.indexa;
-
-    else if (!strcasecmp(parameter_name, INDEXEDONPARAMNAME))
-        return indexf->header.indexedon;
-
-
-
-    else if (!strcasecmp(parameter_name, STEMMINGPARAMNAME)) {
-        if (indexf->header.fuzzy_mode == FUZZY_STEMMING )
-            return "1";
-        else
-            return "0";
-
-    } else if (!strcasecmp(parameter_name, SOUNDEXPARAMNAME)) {
-        if (indexf->header.fuzzy_mode == FUZZY_SOUNDEX )
-            return "1";
-        else
-            return "0";
-
-    } else if (!strcasecmp(parameter_name, FUZZYMODEPARAMNAME)) {
-            return fuzzy_mode_to_string( indexf->header.fuzzy_mode );
-            
-
-    } else if (!strcasecmp(parameter_name, FILECOUNTPARAMNAME)) {
-        sprintf(tmp_header_buffer, "%d", indexf->header.totalfiles);
-        return tmp_header_buffer;
-
-    } else
-        return "";
-}
-
-char  **SwishStopWords(SWISH * sw, char *filename, int *numstops)
-{
-    IndexFILE *indexf;
-
-    indexf = sw->indexlist;
-    while (indexf) {
-        if (!strcasecmp(indexf->line, filename)) {
-            *numstops = indexf->header.stopPos;
-            return indexf->header.stopList;
-        }
-    }
-    *numstops = 0;
-    return NULL;
-}
-
 
 
 

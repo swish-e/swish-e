@@ -87,9 +87,16 @@ int configModule_DB  (SWISH *sw, StringList *sl)
 
 
 
+
+static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer);
+
+
 /* 04/2002 jmruiz
 ** Function to read all word's data from the index DB
 */
+
+
+
 
 
 long read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
@@ -238,14 +245,17 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case TRANSLATECHARTABLE_ID:
             parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), (char *)buffer);
             break;
+
         case STOPWORDS_ID:
-            parse_stopwords_from_buffer(header, (char *)buffer);
+            load_word_hash_from_buffer(&header->hashstoplist, (char *)buffer);
             break;
+
         case METANAMES_ID:
             parse_MetaNames_from_buffer(header, (char *)buffer);
             break;
+
         case BUZZWORDS_ID:
-            parse_buzzwords_from_buffer(header, (char *)buffer);
+            load_word_hash_from_buffer(&header->hashbuzzwordlist, (char *)buffer);
             break;
 
 #ifndef USE_BTREE
@@ -317,10 +327,8 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
     }
 }
 
-/* Reads the stopwords in the index file.
-*/
 
-void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
+static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
 {
     int     len;
     int        num_words;
@@ -337,34 +345,12 @@ void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
         word = emalloc(len+1);
         memcpy(word,s,len); s += len;
         word[len] = '\0';
-        addStopList(header, word);
-        addstophash(header, word);
+
+        add_word_to_hash_table( table_ptr, word );
         efree(word);
     }
 }
 
-/* read the buzzwords from the index file */
-
-void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
-{
-    int     len;
-    int     num_words;
-    int     i;
-    char   *word = NULL;
-
-    unsigned char   *s = (unsigned char *)buffer;
-
-    num_words = uncompress2(&s);
-    for (i=0; i < num_words ; i++)
-    {
-        len = uncompress2(&s);
-        word = emalloc(len+1);
-    memcpy(word,s,len); s += len;
-        word[len] = '\0';
-        addbuzzwordhash(header, word);
-    efree(word);
-    }
-}
 
 
 

@@ -69,12 +69,11 @@ static int read_integer( char *string,  char *message, int low, int high );
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
 static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
 static int     getDocTypeOrAbort(StringList * sl, int n);
-static void readstopwordsfile(SWISH *, IndexFILE *, char *);
-static void readusewordsfile(SWISH *, IndexFILE *, char *);
-static void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 static int parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
 
+static void readwordsfile(SWISH * sw, WORD_HASH_TABLE *table_ptr, char *stopw_file);
+static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_ptr );
 
 
 
@@ -863,94 +862,28 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
 
 
+        /* Hashed word lists */
 
-
-        if (strcasecmp(w0, "IgnoreWords") == 0)
+        if ( !strcasecmp(w0, "IgnoreWords") || !strcasecmp(w0, "StopWords"))
         {
-            if (sl->n > 1)
-            {
-                if (lstrstr(sl->word[1], "SwishDefault"))
-                {
-                    progwarn("SwishDefault is obsolete. See the CHANGES file.");
-                }
-                else if (lstrstr(sl->word[1], "File:"))
-                {               /* 2000-06-15 rasc */
-                    if (sl->n == 3)
-                    {
-                        normalize_path( sl->word[2] );
-                        readstopwordsfile(sw, indexf, sl->word[2]);
-                    }
-                    else
-                        progerr("IgnoreWords File: requires path");
-                }
-                else
-                    for (i = 1; i < sl->n; i++)
-                    {
-                        addstophash(&indexf->header, sl->word[i]);
-                    }
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-
+            word_hash_config( sw, sl, &indexf->header.hashstoplist );
             continue;
         }
-
 
         if (strcasecmp(w0, "BuzzWords") == 0)  /* 2001-04-24 moseley */
         {
-            if (sl->n > 1)
-            {
-                if (lstrstr(sl->word[1], "File:"))
-                {
-                    if (sl->n == 3)
-                    {
-                        normalize_path( sl->word[2] );
-                        readbuzzwordsfile(sw, indexf, sl->word[2]);
-                    }
-                    else
-                        progerr("BuzzWords File: requires path");
-                }
-                else
-                    for (i = 1; i < sl->n; i++)
-                    {
-                        addbuzzwordhash(&indexf->header, sl->word[i]);
-                    }
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-
+            word_hash_config( sw, sl, &indexf->header.hashbuzzwordlist );
             continue;
         }
-        
 
         if (strcasecmp(w0, "UseWords") == 0)
-        {                       /* 11/00 Jmruiz */
-            indexf->header.is_use_words_flag = 1;
-            if (sl->n > 1)
-            {
-                if (lstrstr(sl->word[1], "File:"))
-                {               /* 2000-06-15 rasc */
-                    if (sl->n == 3)
-                    {
-                        normalize_path( sl->word[2] );
-                        readusewordsfile(sw, indexf, sl->word[2]);
-                    }
-                    else
-                        progerr("UseWords File: requires path");
-                }
-                else
-                    for (i = 1; i < sl->n; i++)
-                    {
-                        addusehash(&indexf->header, sl->word[i]);
-                    }
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-
+        {
+            word_hash_config( sw, sl, &indexf->header.hashuselist );
             continue;
         }
-
         
+
+
         /* IndexVerbose is supported for backwards compatibility */
         if (strcasecmp(w0, "IndexVerbose") == 0)
         {
@@ -1463,7 +1396,39 @@ void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
 
 */
 
-static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
+
+static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_ptr )
+{
+    int i;
+    
+    if (sl->n < 2)
+        progerr("%s: requires at least one value", sl->word[0]);
+
+        
+    if (lstrstr(sl->word[1], "SwishDefault"))
+        progwarn("SwishDefault is obsolete. See the CHANGES file.");
+
+        
+    if (lstrstr(sl->word[1], "File:"))
+    {
+        if (sl->n == 3)
+        {
+            normalize_path( sl->word[2] );
+            readwordsfile(sw, table_ptr, sl->word[2]);
+            return;
+        }
+        else
+            progerr("IgnoreWords File: requires path");
+    }
+
+
+    for (i = 1; i < sl->n; i++)
+        add_word_to_hash_table( table_ptr, sl->word[i]);
+}
+
+
+
+static void    readwordsfile(SWISH * sw, WORD_HASH_TABLE *table_ptr, char *stopw_file)
 {
     char    line[MAXSTRLEN];
     FILE   *fp;
@@ -1474,9 +1439,7 @@ static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
     /* Not this reports "Sucess" on trying to open a directory. to lazy to fix now */
 
     if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
-    {
-        progerrno("Couldn't open the stopword file '%s': ", stopw_file);
-    }
+        progerrno("Couldn't open the word file '%s': ", stopw_file);
 
 
     /* read all lines and store each word as stopword */
@@ -1490,9 +1453,8 @@ static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
         if (sl && sl->n)
         {
             for (i = 0; i < sl->n; i++)
-            {
-                addstophash(&indexf->header, sl->word[i]);
-            }
+                add_word_to_hash_table( table_ptr, sl->word[i]);
+
             freeStringList(sl);
         }
     }
@@ -1501,45 +1463,6 @@ static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
     return;
 }
 
-/* Read in buzzwords from file -- based on Rainer's readstopwordsfile, of course. */
-/* Might be nice to combine all these routines that do the same thing */
-
-
-static void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
-{
-    char    line[MAXSTRLEN];
-    FILE   *fp;
-    StringList *sl;
-    int     i;
-
-
-    if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
-    {
-        progerrno("Couldn't open the buzzword file '%s': ", stopw_file);
-    }
-
-
-    /* read all lines and store each word as stopword */
-
-    while (fgets(line, MAXSTRLEN, fp) != NULL)
-    {
-        if (line[0] == '#' || line[0] == '\n')
-            continue;
-
-        sl = parse_line(line);
-        if (sl && sl->n)
-        {
-            for (i = 0; i < sl->n; i++)
-            {
-                addbuzzwordhash(&indexf->header, sl->word[i]);
-            }
-            freeStringList(sl);
-        }
-    }
-
-    fclose(fp);
-    return;
-}
 
 
 static int     parseconfline(SWISH * sw, StringList * sl)
@@ -1549,50 +1472,6 @@ static int     parseconfline(SWISH * sw, StringList * sl)
 }
 
 
-/*
-  read "use" words from file
-  lines beginning with # are comments
-  2000-11 jmruiz
-  
-  Based on readstopwordsfile (from rasc) 
-
-*/
-
-static void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
-{
-    char    line[MAXSTRLEN];
-    FILE   *fp;
-    StringList *sl;
-    int     i;
-
-
-    if ((fp = fopen(usew_file, F_READ_TEXT)) == NULL || !isfile(usew_file))
-    {
-        progerrno("Couldn't open the useword file '%s': ", usew_file);
-    }
-
-
-    /* read all lines and store each word as useword */
-
-    while (fgets(line, MAXSTRLEN, fp) != NULL)
-    {
-        if (line[0] == '#' || line[0] == '\n')
-            continue;
-
-        sl = parse_line(line);
-        if (sl && sl->n)
-        {
-            for (i = 0; i < sl->n; i++)
-            {
-                addusehash(&indexf->header, sl->word[i]);
-            }
-            freeStringList(sl);
-        }
-    }
-
-    fclose(fp);
-    return;
-}
 
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting )
 {

@@ -1,6 +1,6 @@
 /*
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
-** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
+**
+** $Id$
 **
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
@@ -23,14 +23,9 @@ unsigned numhash (int);
 unsigned bighash (char *);
 unsigned bignumhash (int);
 unsigned verybighash (char *);
-void addstophash (INDEXDATAHEADER *, char *);
-void addusehash (INDEXDATAHEADER *, char *);
-int isstopword (INDEXDATAHEADER *, char *);
-int isuseword (INDEXDATAHEADER *, char *);
-void addStopList (INDEXDATAHEADER *, char *);
-void freestophash (INDEXDATAHEADER *);
-void freeStopList (INDEXDATAHEADER *);
-void addbuzzwordhash (INDEXDATAHEADER *, char *);
-void freebuzzwordhash (INDEXDATAHEADER *);
-int isbuzzword (INDEXDATAHEADER *, char *);
+
+void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word);
+int is_word_in_hash_table( WORD_HASH_TABLE table, char *word);
+void free_word_hash_table( WORD_HASH_TABLE *table_ptr);
+
 

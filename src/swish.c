@@ -51,7 +51,8 @@ $Id$
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
-
+#include "no_better_place_module.h"  /* $$$ move */
+#include "headers.h"
 
 /*
 ** This array has pointers to all the indexing data source
@@ -160,7 +161,6 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static void display_result_headers( RESULTS_OBJECT *results );
-static void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl );
 
 static SWISH  *swish_new();
@@ -396,88 +396,45 @@ static SWISH  *swish_new()
 **************************************************************************/
 
 
-
 static void    swish_close(SWISH * sw)
 {
-    IndexFILE *tmpindexlist;
-    int     i;
 
-    if (sw) {
-        /* Close any pending DB */
-        tmpindexlist = sw->indexlist;
-        while (tmpindexlist) {
-            if (tmpindexlist->DB)
-                DB_Close(sw, tmpindexlist->DB);
-            tmpindexlist = tmpindexlist->next;
-        }
+    if (!sw)
+        return;
 
-        freeModule_Swish_Words(sw);
-        freeModule_Filter(sw);
-        freeModule_Entities(sw);
-        freeModule_DB(sw);
-        freeModule_Index(sw);
-        freeModule_ResultSort(sw);
-        freeModule_FS(sw);
-        freeModule_HTTP(sw);
-        freeModule_Prog(sw);
+    free_swish_memory(sw);
 
 
+    /* Free specific data related to indexing */
 
-        /* Free ReplaceRules regular expressions */
-        free_regex_list(&sw->replaceRegexps);
-
-        /* Free ExtractPath list */
-        free_Extracted_Path(sw);
-
-        /* FileRules?? */
-
-        /* meta name for ALT tags */
-        if ( sw->IndexAltTagMeta )
-        {
-            efree( sw->IndexAltTagMeta );
-            sw->IndexAltTagMeta = NULL;
-        }
+    freeModule_Filter(sw);
+    freeModule_Entities(sw);
+    freeModule_Index(sw);
+    freeModule_ResultSort(sw);
+    freeModule_FS(sw);
+    freeModule_HTTP(sw);
+    freeModule_Prog(sw);
 
 
-        /* Free MetaNames and close files */
-        tmpindexlist = sw->indexlist;
+    /* Free ReplaceRules regular expressions */
+    free_regex_list(&sw->replaceRegexps);
 
+    /* Free ExtractPath list */
+    free_Extracted_Path(sw);
 
-        while (tmpindexlist)
-        {
-            /* free the meteEntry array */
-            if (tmpindexlist->header.metaCounter)
-                freeMetaEntries(&tmpindexlist->header);
+    /* FileRules?? $$$ */
 
-            /* Free stopwords structures */
-            freestophash(&tmpindexlist->header);
-            freeStopList(&tmpindexlist->header);
-
-            freebuzzwordhash(&tmpindexlist->header);
-
-            free_header(&tmpindexlist->header);
-
-            for (i = 0; i < 256; i++)
-                if (tmpindexlist->keywords[i])
-                    efree(tmpindexlist->keywords[i]);
-
-
-            tmpindexlist = tmpindexlist->next;
-        }
-
-        freeindexfile(sw->indexlist);
-
-        if (sw->Prop_IO_Buf) {
-            efree(sw->Prop_IO_Buf);
-            sw->Prop_IO_Buf = NULL;
-        }
-
-        /* Free SWISH struct */
-
-
-        freeSwishConfigOptions( sw );  // should be freeConfigOptions( sw->config )
-        efree(sw);
+    /* meta name for ALT tags */
+    if ( sw->IndexAltTagMeta )
+    {
+        efree( sw->IndexAltTagMeta );
+        sw->IndexAltTagMeta = NULL;
     }
+
+
+    freeSwishConfigOptions( sw );  // should be freeConfigOptions( sw->config )
+
+    efree(sw);
 }
 
 
@@ -1580,6 +1537,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 {
     int totalfiles = getfilecount(sw->indexlist);
     int stopwords = 0;
+    struct swline *cur_line;
 
 	/* Coalesce all remaining locations */
     coalesce_all_word_locations(sw, sw->indexlist);
@@ -1597,8 +1555,6 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
         {
             if (stopwords)
             {
-                int pos;
-        
                 /* 05/00 Jose Ruiz  Adjust totalwords for IgnoreLimit ONLY  */
                 /* 2002-07 jmruiz
                 **This is already done in getPositionsFromIgnoreLimitWords
@@ -1609,12 +1565,14 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
                     sw->indexlist->header.totalwords = 0;
 
                 /* Same as "stopwords" */
-                printf("%d words removed by IgnoreLimit:\n", sw->indexlist->header.stopPos);
+                printf("%d words removed by IgnoreLimit:\n", stopwords);
 
-                for (pos = 0; pos < sw->indexlist->header.stopPos; pos++)
-                    printf("%s, ", sw->indexlist->header.stopList[pos]);
+                for (cur_line = sw->Index->IgnoreLimitWords; cur_line; cur_line = cur_line->next )
+                    printf("%s, ", cur_line->line);
 
                 printf("\n");
+
+                freeswline( sw->Index->IgnoreLimitWords );
             }
             else
                 printf("no words removed.\n");
@@ -1722,40 +1680,24 @@ static void display_result_headers( RESULTS_OBJECT *results )
         resultHeaderOut(sw, 2, "#\n# Index File: %s\n", indexf->line);
 
 
-        /* Print all the index headers $$$ should this be the path or the savedasheader??? */
+        /* Print all the headers */
+        print_index_headers( indexf );
+
+
+        /* $$$ move to headers.c and fix as it's corrupting memory */
+       // translatecharHeaderOut(sw, 2, &indexf->header);
         
-        resultPrintHeader(sw, 2, &indexf->header, indexf->header.savedasheader, 0);
-
-
-       
-
-
-        /* List of stopwords in index */
-        {
-            int k;
-            resultHeaderOut(sw, 3, "# StopWords:");
-
-            for (k = 0; k < indexf->header.stopPos; k++)
-                resultHeaderOut(sw, 3, " %s", indexf->header.stopList[k]);
-
-            resultHeaderOut(sw, 3, "\n");
-        }
-
-
-
-        printheaderbuzzwords(sw,indexf);
-
-
-        /* Duplicate header */
-        resultHeaderOut(sw, 2, "# Search Words: %s\n", results->query);
 
 
         /* Show parsed words */
+        resultHeaderOut(sw, 2, "# Search words: %s\n", results->query);
         swline_header_out( sw, 2, "# Parsed Words: ", db_results->parsed_words );
         swline_header_out( sw, 1, "# Removed stopwords: ", db_results->removed_stopwords );
 
         db_results = db_results->next;
     }
+
+    resultHeaderOut(sw, 2, "#\n");
 }
 
 
@@ -1773,25 +1715,5 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
     resultHeaderOut(sw, v, "\n");
 }
 
-
-/* Print the buzzwords */
-static void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
-{
-    int     hashval;
-    struct swline *sp = NULL;
-
-    resultHeaderOut(sw, 3, "# BuzzWords:");
-
-    for (hashval = 0; hashval < HASHSIZE; hashval++)
-    {
-        sp = indexf->header.hashbuzzwordlist[hashval];
-        while (sp != NULL)
-        {
-            resultHeaderOut(sw, 3, " %s", sp->line);
-            sp = sp->next;
-        }
-    }
-    resultHeaderOut(sw, 3, "\n");
-}
 
 

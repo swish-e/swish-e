@@ -43,10 +43,8 @@ $Id$
 static void display_results( SW_HANDLE, SW_RESULTS );
 static void print_error_or_abort( SW_HANDLE swish_handle );
 
-#ifdef DISPLAY_HEADERS
 static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results );
-static void print_header_value( const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type )
-#endif
+static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type );
 
 
 
@@ -120,7 +118,7 @@ int     main(int argc, char **argv)
     // use SwishResetLimit() if wish to change the parameters on a active search object        
 
     *****/
-    
+
 
     /* Now we are ready to search  */
 
@@ -174,6 +172,11 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         return;
 
 
+
+    /* Display the set of headers for the index(es) */
+    print_index_headers( swish_handle, results );
+
+
     hits = SwishHits( results );
 
     if ( 0 == hits )
@@ -182,8 +185,10 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         return;
     }
 
+
     printf("# Total Results: %d\n", hits );
 
+    
        
 
     if ( SwishSeekResult(results, 0 ) < 0 )  // how to seek to a page of results
@@ -192,10 +197,7 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         return;
     }
 
-#ifdef DISPLAY_HEADERS
-    print_index_headers( swish_handle, results );
-#endif
-    
+   
 
     while ( (result = SwishNextResult( results )) )
     {
@@ -218,18 +220,16 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         );
 
 
-#ifdef DISPLAY_HEADERS
 
         /* Generally not useful, but also can lookup Index header data via the current result */
         {
-            SWISH_HEADER_VALUE header_value = NULL;
+            SWISH_HEADER_VALUE header_value;
             SWISH_HEADER_TYPE  header_type;
-            const char example = "WordCharacters";
+            const char *example = "WordCharacters";
             
-            header_value = SwishResultIndexValue( result, example, cur_header, &header_type );
-            print_header_value( example, header_value, header_type );
+            header_value = SwishResultIndexValue( result, example, &header_type );
+            print_header_value( swish_handle, example, header_value, header_type );
         }
-#endif
             
     }
 
@@ -237,17 +237,14 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 }
 
 
-#ifdef DISPLAY_HEADERS
 
 /**********************************************************************
 * print_index_headers
 *
 *   This displays the standard headers associated with an index
-*   plus headers related to a specific search
 *
 *   Pass in:
 *       swish_handle -- for standard headers
-*       results      -- for results-specific headers
 *
 *   Note:
 *       The SWISH_HEADER value, and the data it points to, is only
@@ -258,9 +255,9 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 
 static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results )
 {
-    const char **header_names = SwishHeaderNames();  /* fetch the list of available header names */
+    const char **header_names = SwishHeaderNames(swish_handle);  /* fetch the list of available header names */
     const char **index_name = SwishIndexNames( swish_handle );
-    SWISH_HEADER_VALUE header_value = NULL;
+    SWISH_HEADER_VALUE header_value;
     SWISH_HEADER_TYPE  header_type;
 
     /* display for each index */
@@ -269,11 +266,11 @@ static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results )
     {
         const char **cur_header = header_names;
 
-        /* First print the standard headers */
         while ( *cur_header )
         {
-            header_value = SwishHeaderValue( index_name, cur_header, &header_type );
-            print_header_value( cur_header, header_value, header_type );
+            header_value = SwishHeaderValue( swish_handle, *index_name, *cur_header, &header_type );
+            print_header_value( swish_handle, *cur_header, header_value, header_type );
+
 
             cur_header++;  /* move to next header name */
         }
@@ -281,41 +278,39 @@ static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results )
 
         /* Now print out results-specific data */
 
-        header_value = SwishParsedWords( results );
-        print_header_value( "Parsed Words", header_value, SWISH_LIST );
+        header_value = SwishParsedWords( results, *index_name );
+        print_header_value( swish_handle, "Parsed Words", header_value, SWISH_LIST );
 
-        header_value = SwishRemovedStopwords( results );
-        print_header_value( "Removed Words", header_value, SWISH_LIST );
-        
-        index_names++;  /* move to next index file */
+        header_value = SwishRemovedStopwords( results, *index_name );
+        print_header_value( swish_handle, "Removed Stopwords", header_value, SWISH_LIST );
+
+
+        index_name++;  /* move to next index file */
     }
 }
 
-static void print_header_value( const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type )
+static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type )
 {
     const char **string_list;
     
-    if ( !head_value )  /* print blank headers? */
-        return;
-
     printf("# %s:", name );
 
     switch ( head_type )
     {
         case SWISH_STRING:
-            printf(" %s\n", head_value->string );
+            printf(" %s\n", head_value.string ? head_value.string : "" );
             return;
 
         case SWISH_NUMBER:
-            printf(" %lu\n", head_value->number );
+            printf(" %lu\n", head_value.number );
             return;
 
-        case SWISH_BOOLEAN:
-            printf(" %s\n", head_value->boolean ? "Yes" : "No" );
+        case SWISH_BOOL:
+            printf(" %s\n", head_value.boolean ? "Yes" : "No" );
             return;
 
         case SWISH_LIST:
-            string_list = head_value->string_list;
+            string_list = head_value.string_list;
             
             while ( *string_list )
             {
@@ -325,13 +320,16 @@ static void print_header_value( const char *name, SWISH_HEADER_VALUE head_value,
             printf("\n");
             return;
 
+        case SWISH_HEADER_ERROR:
+            print_error_or_abort( swish_handle );
+            return;
+
         default:
             printf(" Unknown header type '%d'\n", (int)head_type );
             return;
     }
 }
 
-#endif
 
 
 

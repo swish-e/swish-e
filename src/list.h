@@ -25,10 +25,8 @@ struct swline *addswline (struct swline *rp, char *line);
 struct swline *dupswline (struct swline *rp);
 void addindexfile(struct SWISH *sw, char *line);
 void freeswline (struct swline *ptr);
-void freeindexfile (IndexFILE *ptr);
 void init_header (INDEXDATAHEADER *header);
 void free_header (INDEXDATAHEADER *header);
-void splitswline (struct swline *rp, int c);
 
 #ifdef __cplusplus
 }
