@@ -326,7 +326,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
         if ( !fprop->fp )
         {
-            progwarn("Failed to open: '%s': %s", fprop->work_path, strerror( errno ) );
+            progwarnno("Failed to open: '%s': ", fprop->work_path);
             return;
         }
     }

@@ -25,15 +25,14 @@ $Id$
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "error.h"
 
 
 
 /*
-  -- print programm error message  (like printf)
+  -- print program error message  (like printf)
   -- exit (1)
-  -- 2001-02-12 rasc   rewritten to use va_args,
-  --                     get rid of BuildErrorString
 */
 
 
@@ -49,6 +48,27 @@ void progerr(char *msgfmt,...)
   exit(1);
  }
 
+
+/*
+  -- print program error message  (like printf)
+  -- includes text of errno at end of message
+  -- exit (1)
+*/
+
+void progerrno(char *msgfmt,...)
+{
+  va_list args;
+
+  va_start (args,msgfmt);
+  fprintf  (stdout, "err: ");
+  vfprintf (stdout, msgfmt, args);
+  fprintf  (stdout, "%s", strerror(errno));
+  fprintf  (stdout, "\n.\n");
+  va_end   (args);
+  exit(1);
+ }
+
+
 /* only print a warning (also to stdout) and return */
 /* might want to have an enum level WARN_INFO, WARN_ERROR, WARN_CRIT, WARN_DEBUG */
 void progwarn(char *msgfmt,...)
@@ -62,6 +82,20 @@ void progwarn(char *msgfmt,...)
   va_end   (args);
  }
 
+/* only print a warning (also to stdout) and return */
+/* might want to have an enum level WARN_INFO, WARN_ERROR, WARN_CRIT, WARN_DEBUG */
+/* includes text of errno at end of message */ 
+void progwarnno(char *msgfmt,...)
+{
+  va_list args;
+
+  va_start (args,msgfmt);
+  fprintf  (stdout, "\nWarning: ");
+  vfprintf (stdout, msgfmt, args);
+  fprintf  (stdout, "%s", strerror(errno));
+  fprintf  (stdout, "\n.\n");
+  va_end   (args);
+ }
 
 
 

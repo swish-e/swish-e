@@ -79,7 +79,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
     if ((fp = fopen(conffile, FILEMODE_READ)) == NULL || !isfile(conffile))
     {
-        progerr("Couldn't open the configuration file '%s': %s.", conffile, strerror( errno ));
+        progerrno("Couldn't open the configuration file '%s': ", conffile);
     }
 
     /* Init default index file */

@@ -59,7 +59,7 @@ void OutputKeyChar (SWISH *sw, int keychar)
 	switch(rc) {
 		case INDEX_FILE_NOT_FOUND:
 			resultHeaderOut(sw,1, "# Name: unknown index\n");
-			progerr("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
+			progerrno("could not open index file %s: ",sw->indexlist->line);
 			break;
 		case UNKNOWN_INDEX_FILE_FORMAT:
 			progerr("the index file format is unknown");
