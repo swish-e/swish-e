@@ -35,6 +35,7 @@
 #include "dump.h"
 #include "error.h"
 
+
 typedef struct
 {
     char   *metaName;
@@ -511,19 +512,6 @@ int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 )
 }
 
 
-static IndexFILE *indexf_by_name( SWISH *sw, const char *index_name )
-{
-    IndexFILE *indexf = sw->indexlist;
-
-    while ( indexf )
-    {
-        if (strcmp( index_name, indexf->line ) == 0 )
-            return indexf;
-
-        indexf = indexf->next;
-    }
-    return NULL;
-}
 
 static struct metaEntry **meta_entries_for_index( IndexFILE *indexf, int want_props )
 {

@@ -504,23 +504,6 @@ karman - Wed Oct 27 10:51:03 CDT 2004
 *********************************************************************************/
 
 
-/* copied indexf_by_name from metanames.c -- shouldn't this kind of function be
-available globally? I see it defined in headers.c as well... */
-
-static IndexFILE *indexf_by_name( SWISH *sw, const char *index_name )
-{
-    IndexFILE *indexf = sw->indexlist;
-
-    while ( indexf )
-    {
-        if (strcmp( index_name, indexf->line ) == 0 )
-            return indexf;
-
-        indexf = indexf->next;
-    }
-    return NULL;
-}
-
 FUZZY_WORD *SwishFuzzy( SWISH *sw, const char *index_name, char *word )
 {
     
