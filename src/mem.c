@@ -494,12 +494,20 @@ void Mem_Summary(char *title, int final)
 #define ROUND_PAGE(n) (((n) + pageSize - 1) & (~(pageSize - 1)))
 
 
-/* allocate a chunk of memory from the OS */
-static MEM_ZONE *allocChunk(size_t size)
-{
-	MEM_ZONE	*zone;
+typedef struct _zone {
+	struct _zone	*next;
+	size_t			free;
+	void			*alloc;
+	unsigned char	*ptr;
+} ZONE;
 
-	zone = emalloc(sizeof(MEM_ZONE));
+
+/* allocate a chunk of memory from the OS */
+static ZONE *allocChunk(size_t size)
+{
+	ZONE	*zone;
+
+	zone = emalloc(sizeof(ZONE));
 	zone->alloc = emalloc(size);
 	zone->ptr = zone->alloc;
 	zone->free = size;
@@ -509,11 +517,11 @@ static MEM_ZONE *allocChunk(size_t size)
 }
 
 /* create a memory zone */
-MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size)
+MEM_ZONE *Mem_ZoneCreate(size_t size)
 {
-	MEM_ZONE_HEAD	*head;
+	MEM_ZONE	*head;
 
-	head = emalloc(sizeof(MEM_ZONE_HEAD));
+	head = emalloc(sizeof(MEM_ZONE));
 	head->size = ROUND_PAGE(size);
 	head->next = allocChunk(size);
 
@@ -521,10 +529,10 @@ MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size)
 }
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
-void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size)
+void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 {
-	MEM_ZONE	*zone;
-	MEM_ZONE	*newzone;
+	ZONE		*zone;
+	ZONE		*newzone;
 	unsigned char *ptr;
 
 	size = ROUND_LONG(size);
@@ -553,10 +561,10 @@ void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size)
 }
 
 
-void Mem_ZoneFree(MEM_ZONE_HEAD **head)
+void Mem_ZoneFree(MEM_ZONE **head)
 {
-	MEM_ZONE *next;
-	MEM_ZONE *tmp;
+	ZONE *next;
+	ZONE *tmp;
 
 	if (!*head)
 		return;

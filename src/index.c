@@ -106,10 +106,10 @@ $Id$
 */
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "index.h"
 #include "hash.h"
-#include "mem.h"
 #include "check.h"
 #include "search.h"
 #include "merge.h"

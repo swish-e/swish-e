@@ -21,13 +21,13 @@ $Id$
 */
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "search.h"
 #include "index.h"
 #include "file.h"
 #include "list.h"
 #include "hash.h"
-#include "mem.h"
 #include "stemmer.h"
 #include "soundex.h"
 #include "error.h"

@@ -26,9 +26,9 @@
 #endif
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "index.h"
-#include "mem.h"
 #include "file.h"
 #include "error.h"
 #include "parse_conffile.h"
