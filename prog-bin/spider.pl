@@ -11,6 +11,9 @@ use strict;
 #       perldoc spider.pl
 #
 # Apr 7, 2001 -- added quite a bit of bulk for easier debugging
+#
+# Nov 19, 2001 -- to do, build a server object so we are not using the passed in hash,
+#                 and so we can warn on invalid config settings.
 
 $HTTP::URI_CLASS = "URI";   # prevent loading default URI::URL
                             # so we don't store long list of base items
@@ -113,21 +116,7 @@ sub process_server {
     die "max_depth parameter '$server->{max_depth}' must be a number\n" if defined $server->{max_depth} && $server->{max_depth} !~ /^\d+/;
 
 
-    if ( $server->{keep_alive} ) {
-
-        eval 'require LWP::Protocol::http11;';
-        if ( $@ ) {
-            warn "Cannot use keep alives -- $@\n";
-        } else {
-            LWP::Protocol::implementor('http', 'LWP::Protocol::http11');
-        }
-    } else {
-        require LWP::Protocol::http;
-        LWP::Protocol::implementor('http', 'LWP::Protocol::http');
-    }
-
-
-    for ( qw/ test_url test_response filter_content / ) {
+    for ( qw/ test_url test_response filter_content/ ) {
         next unless $server->{$_};
         $server->{$_} = [ $server->{$_} ] unless ref $server->{$_} eq 'ARRAY';
         my $n;
@@ -177,10 +166,11 @@ sub process_server {
 
 
     # get a user agent object
-    
+
+
     my $ua;
     if ( $server->{ignore_robots_file} ) {
-        $ua = LWP::UserAgent->new();
+        $ua = LWP::UserAgent->new( );
         return unless $ua;
         $ua->agent( $server->{agent} );
         $ua->from( $server->{email} );
@@ -190,11 +180,23 @@ sub process_server {
         return unless $ua;
         $ua->delay( $server->{delay_min} || 0.1 );
     }
+
         
     $server->{ua} = $ua;  # save it for fun.
     # $ua->parse_head(0);   # Don't parse the content
 
     $ua->cookie_jar( HTTP::Cookies->new ) if $server->{use_cookies};
+
+    if ( $server->{keep_alive} ) {
+
+        if ( $ua->can( 'conn_cache' ) ) {
+            my $keep_alive = $server->{keep_alive} =~ /^\d+$/ ? $server->{keep_alive} : 1;
+            $ua->conn_cache( { total_capacity => $keep_alive } );
+
+        } else {
+            warn "Can't use keep-alive: conn_cache method not available\n";
+        }
+    }
 
 
     # uri, parent, depth
@@ -259,9 +261,6 @@ sub process_link {
         if $server->{max_time} && $server->{max_time} < time;
 
 
-    return unless check_user_function( 'test_url', $uri, $server );
-
-    
 
     # make request
     my $ua = $server->{ua};
@@ -532,6 +531,8 @@ sub extract_links {
                 
                 $u->authority( $server->{authority} );  # Force all the same host name
 
+                next unless check_user_function( 'test_url', $u, $server );
+
                 # Don't add the link if already seen  - these are so common that we don't report
                 if ( $visited{ $u->canonical }++ ) {
                     #$server->{counts}{Skipped}++;
@@ -545,6 +546,8 @@ sub extract_links {
                     
                     next;
                 }
+
+
 
                 push @links, $u;
                 print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
@@ -668,11 +671,13 @@ sub default_urls {
 
     return map {
         {
+            #debug => DEBUG_HEADERS,
+            #debug => DEBUG_URL|DEBUG_SKIPPED|DEBUG_INFO,
             base_url        => \@ARGV,
             email           => 'swish@domain.invalid',
             delay_min       => .0001,
             link_tags       => [qw/ a frame /],
-            test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|.png)$/i },
+            txest_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|.png)$/i },
 
             test_response   => sub {
                 my $content_type = $_[2]->content_type;
@@ -1171,7 +1176,7 @@ to be ignored.  Therefore, it would be smart to use a C<filter_contents> callbac
 replace the contents with single character (you cannot use the empty string at this time).
 
 A similar flag may be set to prevent indexing a document at all, but still allow spidering.
-In general, if you want completely skip spidering a file you return false from one of the three
+In general, if you want completely skip spidering a file you return false from one of the four
 callback routines (C<test_url>, C<test_response>, or C<filter_content>).  Returning false from any of those
 three callbacks will stop processing of that file, and the file will B<not> be spidered.
 
@@ -1206,7 +1211,7 @@ callback funtions.
 
 =item test_url
 
-Test URL is called before a request is made to the server for this URL.
+This callback function is called for every link that is extracted while spidering.
 Your callback function is passed two parameters, a URI object and a reference
 to the server parameter hash.  If this function returns true the URL will be
 requested from the web server.  Returning false will cause the spider to skip this
@@ -1214,13 +1219,22 @@ URL.
 
 This callback function allows you to filter out URLs before taking the time to
 request the resource (document, image, whatever) from the web server.  This might
-be a good place, for example, to filter out requests for images.
+be a good place, for example, to filter out requests for images based on file name.
 
 For example:
 
     $server{test_url} = sub {
         my ( $uri, $server ) = @_;
         return $uri->path !~ /\.(gif|jpeg|jpg|png)$/;
+    }
+
+This method is called right before adding the URL to the list of URLs to spider.  This
+means you can modify the URL. For example, to remove query strings:
+
+    $server{test_url} = sub {
+        $uri = shift;
+        $uri->query(undef);
+        return 1;
     }
 
 =item test_response
