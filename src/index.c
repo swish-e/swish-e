@@ -2501,7 +2501,6 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                        }
                        else
                        {
-printf("-");
                            add_word_to_hash_table( &indexf->hashstemcache, swishword, VERYBIGHASHSIZE);
                            sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword);
                            sp_stem->other.data=NULL;

@@ -477,6 +477,7 @@ typedef struct {
     struct swline  **hash_array;
     int              hash_size;
     int              count;
+    void            *mem_zone;
 }  WORD_HASH_TABLE;
 
 

@@ -104,15 +104,16 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
     struct swline **hash_array = table_ptr->hash_array;
     unsigned hashval;
     struct swline *sp;
-
-    hashval = string_hash(word,hash_size);
+    int len;
 
     /* Create the array if it doesn't exist */
     if ( !hash_array )
     {
         int ttl_bytes = sizeof(struct swline *) * (hash_size = (hash_size ? hash_size : HASHSIZE));
-        
-        hash_array = (struct swline  **)emalloc( ttl_bytes );
+       
+        table_ptr->mem_zone = (void *) Mem_ZoneCreate("Word Hash Zone", 0, 0); 
+        //hash_array = (struct swline  **)emalloc( ttl_bytes );
+        hash_array = (struct swline  **) Mem_ZoneAlloc( (MEM_ZONE *)table_ptr->mem_zone, ttl_bytes );
         memset( hash_array, 0, ttl_bytes );
         table_ptr->hash_array = hash_array;
         table_ptr->hash_size = hash_size;
@@ -122,10 +123,14 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
         if ( is_word_in_hash_table( *table_ptr, word ) )
             return;
 
-    /* Create a new entry */            
-    sp = (struct swline *) emalloc(sizeof(struct swline));
+    hashval = string_hash(word,hash_size);
 
-    sp->line = (char *) estrdup(word);
+    /* Create a new entry */            
+    sp = (struct swline *) Mem_ZoneAlloc((MEM_ZONE *)table_ptr->mem_zone, sizeof(struct swline));
+
+    len = strlen(word) + 1;
+    sp->line = (char *) Mem_ZoneAlloc((MEM_ZONE *)table_ptr->mem_zone, len);
+    memcpy(sp->line,word,len);
 
     /* Add word to head of list */
     
@@ -188,22 +193,7 @@ void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
     if ( !hash_array )
         return;
 
-    for (i = 0; i < hash_size; i++)
-    {
-        if ( !hash_array[i])
-            continue;
-            
-        sp = hash_array[i];
-        while (sp)
-        {
-            tmp = sp->next;
-            efree(sp->line);
-            efree(sp);
-            sp = tmp;
-        }
-    }
-    efree( hash_array );
-    
+    Mem_ZoneFree((MEM_ZONE **)&table_ptr->mem_zone);
     table_ptr->hash_array = NULL;
     table_ptr->hash_size = 0;
     table_ptr->count = 0;
