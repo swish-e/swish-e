@@ -18,17 +18,19 @@ all:	swish-e swish-search
 	echo 'now make test'
 swish-e:	
 	echo 'making swish-e'
-	(cd src;./configure --quiet --prefix=$(prefix) --libdir=$(libdir) ;make;cd ..)
+	(cd src; ./configure --quiet --prefix=$(prefix) --libdir=$(libdir); make)
 	echo 'swish-e done'
+
 swish-search: swish-e
 	echo 'making swish-search'
-	(cd src;cp -f swish-e swish-search;cd ..)
+	cp -f src/swish-e src/swish-search
 	echo 'swish-search done'
 
 #
 clean:
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
-	tests/test.index src/testlib src/Makefile Makefile 
+	tests/test.index src/testlib 
+	(cd doc; make clean)
 
 realclean: 
 	rm -f config.cache config.log config.status
@@ -36,6 +38,7 @@ realclean:
 		 src/config.status
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
 	tests/test.index src/testlib src/Makefile Makefile
+	(cd doc; make realclean)
 
 test:
 	(cd ./tests;\
@@ -57,3 +60,5 @@ install:
 install-lib:
 	cp src/libswish-e.a $(libdir)/libswish-e.a
 
+pdf:
+	(cd doc; make pdf)

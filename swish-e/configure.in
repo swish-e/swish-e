@@ -10,4 +10,6 @@ AC_PROG_MAKE_SET
 dnl Check for Perl
 AC_PATH_PROG(PERL, perl, /usr/local/bin/perl,$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin)
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile doc/Makefile)
+
+
