@@ -351,7 +351,7 @@ struct MOD_Index *idx = sw->Index;
         progerr("Could not create temp file %s",idx->swap_file_name);
     }
         
-    buffer=buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
+    buffer=buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path,&sz_buffer);
     tmp=sz_buffer+1;
     compress1(tmp,idx->fp_file_write);   /* Write len */
     fwrite(buffer,sz_buffer,1,idx->fp_file_write);
@@ -393,8 +393,8 @@ struct MOD_Index *idx = sw->Index;
     memcpy(buf1,p,len1);   /* Read filename */
     p+=len1;
 
-    fi->fi.lookup_path=lookup_path;
-    fi->fi.filename = buf1;
+    fi->lookup_path=lookup_path;
+    fi->filename = buf1;
 
     fi->docProperties = fetchDocProperties(p);
     /* Read internal swish properties */

@@ -253,7 +253,7 @@ int is_first1, is_first2;
 
 	for (i = 1; i <= indexfilenum1; i++) {
 		fi = readFileEntry(sw1, indexf1,i);
-		addindexfilelist(sw, i, fi->fi.filename,  fi->docProperties, &totalfiles,indexf1->header.filetotalwordsarray[i-1], metaFile1);
+		addindexfilelist(sw, i, fi->filename,  fi->docProperties, &totalfiles,indexf1->header.filetotalwordsarray[i-1], metaFile1);
 	}
 
 
@@ -262,7 +262,7 @@ int is_first1, is_first2;
 
 	for (i = 1; i <= indexfilenum2; i++) {
 		fi = readFileEntry(sw2, indexf2,i);
-		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->docProperties, &totalfiles,indexf2->header.filetotalwordsarray[i-1], metaFile2);
+		addindexfilelist(sw, i + indexfilenum1, fi->filename, fi->docProperties, &totalfiles,indexf2->header.filetotalwordsarray[i-1], metaFile2);
 	}
 	
 	if (verbose) printf("\nCreating output file ... ");

@@ -43,7 +43,7 @@ void dump_memory_file_list( SWISH *sw, IndexFILE *indexf )
         fi = indexf->filearray[ i ];
 
         fflush(stdout);
-        printf("%d: %s\n", i+1, fi->fi.filename);
+        printf("%d: %s\n", i+1, fi->filename);
 
 
         dump_file_properties( indexf, fi );
@@ -67,7 +67,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         fi = readFileEntry(sw, indexf, i + 1);
 
         fflush(stdout);
-        printf("%d: %s\n", i+1, fi->fi.filename);
+        printf("%d: %s\n", i+1, fi->filename);
 
 
         dump_file_properties( indexf, fi );
@@ -226,7 +226,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
                         printf("\n Meta:%d", metaname);
                         fileInfo = readFileEntry(sw, indexf, filenum);
-                        printf(" %s", fileInfo->fi.filename);
+                        printf(" %s", fileInfo->filename);
                         printf(" Struct:%x", structure);
                         printf(" Freq:%d", frequency);
                         printf(" Pos:");
