@@ -83,11 +83,23 @@
 
 
 [% BLOCK show_result %]
+    [%
+        SET doc_path    = item.Property('swishdocpath');
+        SET is_list     = doc_path.match('/archive/');
+        SET is_devel    = doc_path.match('/devel_docs/');
+        SET is_docs     = doc_path.match('/docs/');
+    %]
 
     <div class="search-title">
-        [% IF item.Property('swishdocpath').match('archive') %]
-            List Archive:
+
+        [% IF is_list %]
+            <small>[List Archive]</small>
+        [% ELSIF is_devel %]
+            <small>[Development Docs]</small>
+        [% ELSIF is_docs %]
+            <small>[Docs]</small>
         [% END %]
+
         <a href="[% item.Property('swishdocpath') %]">
             [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]</a>
 
@@ -100,11 +112,16 @@
 
     <div class="search-metadata">
         Path: <a href="[% item.Property('swishdocpath') %]">
-            [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a>
-            - [% item.Property('swishdocsize') %] bytes<br>
+            [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a><br>
+        Size: [% item.Property('swishdocsize') %] bytes<br>
         Date: [% result_date.format( item.Property('swishlastmodified')) %]<br>
 
-        [% IF  item.Property('swishdocpath').match('devel_docs') %]
+        [% IF is_list %]
+            Poster's Name: [% item.Property('name') %]<br>
+            Poster's Email: [% item.Property('email') %]
+        [% END %]
+
+        [% IF is_devel %]
             Warning: <b>** Development Documentation **</b>
         [% END %]
     </div>

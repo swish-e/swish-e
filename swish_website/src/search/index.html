@@ -38,6 +38,7 @@ use Template;               # Template-Toolkit: http://tt2.org or see http://sea
 
 
 
+
 #-------------------- Defaults/Parameters --------------------------
 # Default config settings
 #
@@ -64,8 +65,10 @@ use vars qw/ %config %highlight_settings %site_cache /;
         PRE_PROCESS     => 'config/main',
         WRAPPER         => 'page/wrapper.tt',
         RECURSION       => 1,
+#        DEBUG           => Template::Constants::DEBUG_PROVIDER,
     },
     index        => '[% swish.index_file %]',
+    archive      => '[% swish.archive_index %]',
     page_size    => 10,                          # numbe of results/page
     title        => 'Swish Example Search Page',
     template     => 'page/search.html',
@@ -218,10 +221,7 @@ sub run_query {
 
     if ( ! $swish ) {
         my $index = $config->{index};
-
-        # Hack in search for archive index.
-        my $archive_index = '../../../search/index.swish-e';
-        $index = "$index $archive_index" if -f $archive_index;
+        $index .= " $config->{archive}" if $config->{archive};
 
         $swish = SWISH::API->new( $index );
         die "Failed to create SWISH::API object" unless $swish;

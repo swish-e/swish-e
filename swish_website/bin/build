@@ -124,6 +124,8 @@ $0 usage:
 
     -develsrc=<src> = Directory of development.
 
+    -archive=<file> = Path to list archive index.
+
     -- options you don't need --
     -copy           = add regex to files that are just copies
     -include        = add directories to the include path
@@ -153,6 +155,7 @@ my @options = qw(
         websitesrc=s
         abslinks
         develsrc=s
+        archive=s
 );
 
 
@@ -283,6 +286,14 @@ sub new {
         die "Failed to find devel pod dir [$develsrc/pod]\n" unless -d "$develsrc/pod";
         warn "Swish-e devel source directory set to [$develsrc]\n" if $config->verbose;
         $config->{develsrc} = $develsrc;
+    }
+
+
+    # Test the list archive directory
+    if ( $config->archive ) {
+        my $index = File::Spec->rel2abs( $config->archive );
+        die "List archive index [$index] not a normal file\n" unless -f $index;
+        $config->{archive} = $index;
     }
 
 

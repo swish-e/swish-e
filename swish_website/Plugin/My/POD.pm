@@ -207,7 +207,7 @@ sub view_verbatim {
 
 sub view_seq_link_transform_path {
     my ( $self, $link ) = @_;
-    return lc($link) . '.html';
+    return $self->escape_uri( lc $link ) . '.html';
 }
 
 # Returns $text as uri-escaped string

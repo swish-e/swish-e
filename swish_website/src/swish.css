@@ -320,6 +320,12 @@ ul.toc li {
   line-height: 0;
 }
 
+/* For the main TOC (with the OVERVIEW summary) add space at the end */
+ul.toc li.top-level {
+  margin-bottom: 3em;
+}
+
+
 /* must be a better way to do leading than line-height
 (thus necessitating turning it off and on) */
 

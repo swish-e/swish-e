@@ -15,7 +15,7 @@ Version [% swish.version %]
 
 <ul class="toc">
 [% FOREACH item = toc %]
-    <li>
+    <li class="top-level">
         <a href="[% item.page %]">[% item.title %]</a>
 
         [% IF item.abstract %]
@@ -25,6 +25,7 @@ Version [% swish.version %]
         [% END %]
     </li>
 [% END %]
+</ul>
 <!-- index -->
 
 

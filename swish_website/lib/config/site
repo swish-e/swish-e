@@ -33,9 +33,9 @@
     swish = {
         current_version     = this.swish_current_version || '2.4.3'
         index_file          = 'index.swish-e'
+        archive_index       = self.config.archive
         version             = this.swish_version
     };
-
 
 
 
