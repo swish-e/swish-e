@@ -44,7 +44,24 @@ If you are parsing output headers in a program then you may need to adjust your 
 =item * Results are now combined when searching more than one index
 
 Swish now merges (and sorts) the results from multiple indexes when using C<-f> to specify
-more than one index.
+more than one index.  This change effects the way maxhits (C<-m>) works.
+Here's a summary of the way swish works for the different versions.
+
+
+    1.3.2 - MaxHits returns first N results starting from the first index.
+            e.g. maxhits=20; 15 hits Index1, 40 hits Index2
+            All 15 from Index1 plus first five from Index2 = 20 hits.
+
+    2.0.0 - MaxHits returns first N results from each index.
+            e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
+            All 15 from Index1 plus 15 from Index2 = 40 hits
+
+    2.2.0 - Results are merged and fist N results are returned.
+            e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
+            Results are merged from each index and sorted
+            (rank is the default sort) and only the first
+            20 are returned.
+
 
 =item * Indexing and searching speed improvements
 
