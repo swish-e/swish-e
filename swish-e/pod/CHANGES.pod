@@ -10,11 +10,22 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fix incremental indexing when adding back a file
+
+Jose fixed a problem with incremental indexing where a file could not be
+added back to the index once removed.
+
+Patch initially provided by Dobrica Pavlinusic:
+
+    http://swish-e.org/Discussion/archive/2004-12/8694.html
+
+
+
 =item Documentation correction
 
-A change in the default way the index was compressed was not documented
+A change in the default way the index is compressed was not documented
 in 2.4.3.  The change resulted in larger indexes.  See CompressPositions
-below.
+below and in SWISH-CONFIG.
 
 =item libxml2 UTF-8 conversion failures
 
