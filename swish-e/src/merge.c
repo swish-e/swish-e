@@ -39,6 +39,7 @@
 #include "result_output.h"
 #include "parse_conffile.h"
 #include "stemmer.h"
+#include "headers.h"
 
 static void dup_header( SWISH *sw_input, SWISH *sw_output );
 static void check_header_match( IndexFILE *in_index, SWISH *sw_output );
@@ -101,14 +102,14 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
             /* Duplicate the first index's header into the output index */
             dup_header( sw_input, sw_output );
         else
-            check_header_match( cur_index, sw_output );  // errors if headers don't match - don't really need to check first one since it was the one that was dupped 
+            check_header_match( cur_index, sw_output );  // errors if headers don't match - don't really need to check first one since it was the one that was dupped
 
 
         make_meta_map( cur_index, sw_output);        // add metas to new index, and create map
 
         load_filename_sort( sw_input, cur_index );   // so can read in filename order
 
-        cur_index->current_file = 0;  
+        cur_index->current_file = 0;
         cur_index->cur_prop = NULL;
 
 #ifdef DEBUG_MERGE
@@ -121,8 +122,9 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
 
 #ifdef DEBUG_MERGE
-    printf("----- Output Header ----------\n");
-    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
+    printf("----- Output Header (requires -H9) ----------\n");
+    print_index_headers( sw_output->indexlist );
+    printf("\n\n");
 #endif
 
 
@@ -225,7 +227,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                                 posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                             else
                                 posdata = local_posdata;
-                            
+
                             /* Read the positions */
                             uncompress_location_positions(&s,flag,frequency,posdata);
 
@@ -238,14 +240,14 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                             {
                                 /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
                                 ** to time to help addentry.
-                                ** If we do not do this, addentry routine will have to run linked lists 
+                                ** If we do not do this, addentry routine will have to run linked lists
                                 ** of positions with thousands of elements and makes the merge proccess
                                 ** very slow
                                 */
                                 if(!(loc_count % 100))
                                     CompressCurrentLocEntry(sw_output, e);
                             }
-                        
+
 
                             if(posdata != local_posdata)
                                 efree(posdata);
@@ -259,7 +261,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                             {
                                 filenum = 0;
                                 metaID = uncompress2(&s);
-                                metadata_length = uncompress2(&s); 
+                                metadata_length = uncompress2(&s);
                                 start = s;
                             }
                         }
@@ -271,7 +273,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                     }
                     cur_index = cur_index->next;
                 }
-                /* Let's coalesce locations for each word to save memory 
+                /* Let's coalesce locations for each word to save memory
                 ** This makes use of the -e feature
                 ** Because we are proccessing one word at a time we can
                 ** coalesce its data just once
@@ -304,8 +306,8 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
 
 #ifdef DEBUG_MERGE
-    printf("----- Final Output Header ----------\n");
-    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
+    printf("----- Final Output Header (requires -H9) ----------\n");
+    print_index_headers( sw_output->indexlist );
 #endif
 
     remove( tmpfilename );
@@ -355,7 +357,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 *  rereads the header from the data base, and clears out some values
 *
 *****************************************************************************/
-       
+
 static void dup_header( SWISH *sw_input, SWISH *sw_output )
 {
     INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
@@ -378,7 +380,7 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
         out_header->lenindexedon = 0;
     }
 }
-    
+
 /****************************************************************************
 *  check_header_match -- makes sure that the imporant settings match
 *
@@ -400,18 +402,18 @@ static void compare_header( char *index, char *name, void *in, void *out )
     if ( in_item->len != out_item->len )
         progerr("Header %s in index %s doesn't match length in length with output header", name, index );
 
-    if ( strcmp( (const char *)in_item->str, (const char *)out_item->str )) 
+    if ( strcmp( (const char *)in_item->str, (const char *)out_item->str ))
         progerr("Header %s in index %s doesn't match output header", name, index );
-    
+
     //if ( memcmp( (const void *)in_item->str, (const void *)out_item->str, in_item->len ) )
     //    progerr("Header %s in index %s doesn't match output header", name, index );
-        
 
-        
+
+
 
 }
 
-   
+
 static void check_header_match( IndexFILE *in_index, SWISH *sw_output )
 {
     INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
@@ -460,7 +462,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
     struct metaEntry *in_meta;
     struct metaEntry *out_meta;
     int             *meta_map;
-    
+
 
     meta_map = emalloc( sizeof( int ) * (in_header->metaCounter + 1) );
     memset( meta_map, 0, sizeof( int ) * (in_header->metaCounter + 1) );
@@ -484,7 +486,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 
 
         /* Now, save the mapping */
-        meta_map[ in_meta->metaID ] = out_meta->metaID;                
+        meta_map[ in_meta->metaID ] = out_meta->metaID;
 
 
         /* now here's a pain, and lots of room for screw up. */
@@ -499,7 +501,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
             struct metaEntry *out_alias;
 
             /* Grab alias meta entry so we can look it up in the out_header */
-            
+
             in_alias = is_meta_index( in_meta )
                    ? getMetaNameByID( in_header, in_meta->alias )
                    : getPropNameByID( in_header, in_meta->alias );
@@ -537,7 +539,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
     for ( i=0; i<in_header->metaCounter + 1;i++)
         printf("%4d  ->  %3d\n", i, meta_map[i] );
 #endif
-        
+
 }
 
 /****************************************************************************
@@ -556,7 +558,7 @@ static int     compnums(const void *s1, const void *s2)
     int         v2 = sorted_data[ b-1 ];
 
     // return v1 <=> v2;
-    
+
     if ( v1 < v2 )
         return -1;
     if ( v1 > v2 )
@@ -587,7 +589,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
-        
+
     if ( !LoadSortedProps( cur_index, path_meta ) )
     {
         FileRec fi;
@@ -632,17 +634,19 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 
 static void print_file_removed(IndexFILE *older, propEntry *op, IndexFILE *newer, propEntry *np )
 {
-    
+
     char *p1, *d1, *p2, *d2;
     p1 = DecodeDocProperty( older->path_meta, older->cur_prop );
     d1 = DecodeDocProperty( older->modified_meta, op );
-    
+
     p2 = DecodeDocProperty( newer->path_meta, newer->cur_prop );
     d2 = DecodeDocProperty( newer->modified_meta, np );
-    
-    printf("Replaced file '%s %s' with '%s %s'\n",
+
+    printf("Replaced file '%s:%s %s' with '%s:%s %s'\n",
+         older->line,
          *p1 ? p1 : "(file name not defined)",
          *d1 ? d1 : "(date not defined)",
+         newer->line,
          *p2 ? p2 : "(file name not defined)",
          *d2 ? d2 : "(date not defined)"
     );
@@ -693,7 +697,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
 
         ret = Compare_Properties( cur_index->path_meta, cur_index->cur_prop, winner->cur_prop );
 
-        if ( ret != 0 )  
+        if ( ret != 0 )
         {
             if ( ret < 0 )  /* take cur_index if it's smaller */
                 winner = cur_index;
@@ -756,11 +760,11 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
     if ( !winner )
         return NULL;
 
-        
+
     winner->filenum = winner->path_order[winner->current_file++];
 
 #ifdef DEBUG_MERGE
-printf("   Files in order: index %s file# %d winner\n", winner->line, winner->filenum );            
+printf("   Files in order: index %s file# %d winner\n", winner->line, winner->filenum );
 #endif
 
     /* free prop, as it's not needed anymore */
@@ -772,7 +776,7 @@ printf("   Files in order: index %s file# %d winner\n", winner->line, winner->fi
     return winner;
 }
 
-        
+
 /****************************************************************************
 *  add_file
 *
@@ -814,7 +818,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     fi.docProperties = d;
     dump_file_properties( cur_index, &fi );
 #endif
-    
+
 
 
     /* all this off-by-one things are a mess */
@@ -834,7 +838,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     printf("\n");
 #endif
 
-   
+
     /* Now bump the file counter  */
     idx->filenum++;
     indexf->header.totalfiles++;
@@ -849,7 +853,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
         freeDocProperties( d );
     }
 
-    
+
 
 
     /* now write out the data to be used for mapping file for a given index. */
@@ -892,7 +896,7 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
     int         filenum;
     int         new_filenum = 0;
 
-    
+
 
     memset( array, 0, (cur_index->header.totalfiles+1) * sizeof( int ) );
 
@@ -906,8 +910,8 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 
         if (!fread( &filenum, sizeof(int), 1, filenum_map))
             break;
-        
-        
+
+
         if(!fread( &idf, sizeof(IndexFILE *), 1, filenum_map))
             break;
 
@@ -922,7 +926,7 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 /****************************************************************************
 *  Reads the index to get the all the words
 ****************************************************************************/
-   
+
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 {
     int         j;
@@ -936,10 +940,10 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 
     printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
     fflush(stdout);
-    
+
     for(j=0;j<256;j++)
     {
-        
+
         word[0] = (unsigned char) j; word[1] = '\0';
         DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
@@ -973,7 +977,7 @@ static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_m
 
 #ifdef DEBUG_MERGE
     printf("\nindex %s '%s' Struct: %d Pos: %d",
-    indexf->line, e->word, structure, position );
+    indexf->line, e->word, GET_STRUCTURE(posdata), GET_POSITION(posdata) );
 
 
     if ( !(new_file = file_num_map[ filenum ]) )
@@ -990,7 +994,7 @@ static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_m
 
     printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
 
-    addentry( sw_output, e, new_file, structure, metaID, position );
+    addentry( sw_output, e, new_file, GET_STRUCTURE(posdata), new_meta, GET_POSITION(posdata) );
 
     return;
 
@@ -1004,7 +1008,7 @@ static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_m
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
         return;
 
-    addentry( sw_output, e, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
+    addentry( sw_output, e, new_file, GET_STRUCTURE(posdata), new_meta, GET_POSITION(posdata) );
 
     return;
 
