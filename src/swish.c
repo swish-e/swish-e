@@ -55,6 +55,33 @@
 #include "result_output.h"
 #include <sys/time.h>
 
+#ifdef HAVE_BSDGETTIMEOFDAY
+#define gettimeofday BSDgettimeofday
+#endif
+
+
+#ifdef NO_GETTOD
+
+double TimeHiRes(void)  /* How about GetLocalTime() for WIN32 */
+{
+
+    return (double)clock() / CLOCKS_PER_SEC;
+}
+#else
+double TimeHiRes(void)
+{
+struct timeval t;
+int i;
+
+    i = gettimeofday( &t, NULL );
+    if ( i ) return 0;
+
+    return (double)( t.tv_sec + t.tv_usec / 1000000.0 );
+}
+#endif
+
+
+
 
 
 /*
@@ -98,12 +125,9 @@ int keychar2;
 char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
-clock_t search_starttime, run_starttime;
-struct timeval run_tv, search_tv, end_tv;
-struct timeval Tp;
+double search_starttime, run_starttime, endtime;
 
-    gettimeofday( &run_tv, NULL );
-    run_starttime = clock();
+    run_starttime = TimeHiRes();
 
 	starttime=0L;
 
@@ -776,8 +800,7 @@ struct timeval Tp;
 			/* print out "original" search words */
 		printf("# Search words: %s\n#\n",wordlist);
 
-        search_starttime = clock();
-        gettimeofday( &search_tv, NULL );
+        search_starttime = TimeHiRes();
 
 		rc=search(sw,wordlist, structure);
 
@@ -804,26 +827,16 @@ struct timeval Tp;
 				break;
 		}
 		if(rc>0) {
-                	printf("# Number of hits: %d\n",rc);
+            printf("# Number of hits: %d\n",rc);
 
-                	printf("# Search time: %0.3f seconds\n",
-                	     (double)(clock()-search_starttime)/CLOCKS_PER_SEC );
-                	printf("# Run time: %0.3f seconds\n",
-                	     (double)(clock()-run_starttime)/CLOCKS_PER_SEC );
+            endtime = TimeHiRes();
 
-                    gettimeofday (&end_tv, NULL);
-                    printf("# Test run time: %0.3f\n",
-                        (double)(( end_tv.tv_sec + end_tv.tv_usec / 1000000.0 ) -
-                        ( run_tv.tv_sec + run_tv.tv_usec / 1000000.0 )) );
+            printf("# Search time: %0.3f seconds\n", endtime - search_starttime );
+            printf("# Run time: %0.3f seconds\n", endtime - run_starttime );
 
-                    printf("# Test search time: %0.3f\n",
-                        (double)(( end_tv.tv_sec + end_tv.tv_usec / 1000000.0 ) -
-                        ( search_tv.tv_sec + search_tv.tv_usec / 1000000.0 )) );
-        
-                	     
+            printSortedResults(sw);
+            printf(".\n");
 
-                	printSortedResults(sw);
-			printf(".\n");
 		} else if(!rc) {
 			printf("err: no results\n.\n");
 		}
