@@ -22,9 +22,10 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
-** 2001-01   rasc   getResultPropertyByName rewritten, datatypes for properties.
-** 2001-02   rasc   isAutoProperty
-**                  printSearchResultProperties changed
+** 2001-01    rasc    getResultPropertyByName rewritten, datatypes for properties.
+** 2001-02    rasc    isAutoProperty
+**                    printSearchResultProperties changed
+** 2001-03-15 rasc    Outputdelimiter var name changed
 ** 
 */
 
@@ -229,7 +230,7 @@ IndexFILE *indexf;
 
 /*
   -- print properties specified with "-p" on cmd line
-  -- obsolete: new method "-x fmt"
+  -- $$$$ routine obsolete: new method "-x fmt"   $$$$
   -- 2001-02-09 rasc    output on file descriptor
 */
 
@@ -244,8 +245,8 @@ int i;
 		char* propValue;
 		propValue = prop[i];
 		
-		if (sw->useCustomOutputDelimiter)
-			fprintf(f, "%s", sw->customOutputDelimiter);
+		if (sw->opt.stdResultFieldDelimiter)
+			fprintf(f, "%s", sw->opt.stdResultFieldDelimiter);
 		else
 			fprintf(f, " \"");	/* default is to quote the string, with leading space */
 
@@ -263,10 +264,12 @@ int i;
 		}
 		fprintf(f,"%s", propValue);
 
-		if (!sw->useCustomOutputDelimiter)
+		if (!sw->opt.stdResultFieldDelimiter)
 			fprintf(f,"\"");	/* default is to quote the string */
 	}
 }
+
+
 
 char **getResultProperties(RESULT *r)
 {

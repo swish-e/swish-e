@@ -462,21 +462,21 @@ B<Examples of -x format strings:>
     -x "xml_out: \<title\><swishtitle>\>\</title\>\n"
     -x "xml_out: <swishtitle fmt='<title>%s</title>'>\n"
 
-=item -X[0|1|2|3|<n>]  (extended header output)
+=item -H [0|1|2|3|<n>]  (header output verbosity)
 
-The C<-Xn> switch generates extened I<header> output.  This is most useful when searching more than one
+The C<-H n> switch generates extened I<header> output.  This is most useful when searching more than one
 index file at a time, either by specifying more than one index file with the C<-f> switch, or when searching
-a merged index file.  In these cases, -X will generate a combined set of headers followed by a set of
-headers specific to each index file.  This gives access to the settings used to generate each index file.
+a merged index file.  In these cases, C<-H 2> will generate a set of headers specific to each index file.
+This gives access to the settings used to generate each index file.
 
-Even when searching a single index file, C<-Xn> will provided additional information about the index file,
+Even when searching a single index file, C<-H n> will provided additional information about the index file,
 how it was indexed, and how swish is interperting the query.
 
-    -X0 :  print no header information, output only search result entries.
-    -X1 :  print standard result header (default).
-    -X2 :  print add. header information for each searched index file.
-    -X3 :  enhance header output.
-    -X9 :  print add. diagnostic information in the header of the results (changed from: C<-v 4>)
+    -H 0 :  print no header information, output only search result entries.
+    -H 1 :  print standard result header (default).
+    -H 2 :  print add. header information for each searched index file.
+    -H 3 :  enhanced header output (e.g. print stopwords).
+    -H 9 :  print add. diagnostic information in the header of the results (changed from: C<-v 4>)
 
 
 =back

@@ -287,6 +287,7 @@ typedef int pid_t;		/* process ID */
 /* Default Delimiter of phrase search */
 #define PHRASE_DELIMITER_CHAR '"'
 
+
 /*
  * Binary files must be open with the "b" option under Win32, so all
  * fopen() calls to index files have to go through these routines to
