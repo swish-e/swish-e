@@ -204,7 +204,7 @@
 typedef struct docPropertyEntry {
 	int metaName;		/* meta field identifier; from getMetaName() */
 	unsigned char *propValue;  /* buffer from META's CONTENTS attribute */
-	char propLen;	/* Length of buffer */
+	unsigned int propLen;	/* Length of buffer */
 
 	struct docPropertyEntry *next;
 } docPropertyEntry;
