@@ -14,6 +14,26 @@
 #   define call_pv(i,j) perl_call_pv(i,j)
 #endif
 
+/* 
+ * Create a typedef for managing the metanames objects. This allows storing
+ * both the SV and the pointer to the parent object so its refcount can be
+ * adjusted on DESTROY.  The other way is to provide a way to get to the
+ * parent's SV in the swish-e library.  That means modifying the swish-e
+ * library.  This is already done for most other objects -- the SV of the perl
+ * swish handle is stored in the C SW_HANDLE struct -- see SwishSetRefPtr and
+ * Swish*Parent functions.  It's actually much easier to provide a way to get
+ * the SV via the C library since don't need to malloc and free an extra
+ * structre.  But, done for the meta descriptions as an exercise.
+ */
+
+typedef struct {
+    SV          *handle_sv;     /* Parent SV for DESTROY */
+    SW_META     meta;           /* meta description C pointer */
+} META_OBJ;
+
+
+
+
 
 
 MODULE = SWISH::API        PACKAGE = SWISH::API    PREFIX = Swish
@@ -244,38 +264,22 @@ SwishMetaList( swish_handle, index_name )
     char *index_name
 
     PREINIT:
-        char * CLASS = "SWISH::API::MetaName";
         SWISH_META_LIST meta_list;
 
     PPCODE:
         /* Grab the list of pointers */
         meta_list = SwishMetaList( swish_handle, index_name );
 
-        /* Check for an error -- typically this would be an invalid index name */
-        /* Fix: calling with an invalid swish_handle will call progerr */
-        if ( SwishError( swish_handle ) )
-            croak("%s %s", SwishErrorString( swish_handle ), SwishLastErrorMsg( swish_handle ) );
+        PUSHMARK(SP) ;      /* always need to PUSHMARK, even w/o params */
+        XPUSHs( (SV *)swish_handle );
+        XPUSHs( (SV *)meta_list );
+        XPUSHs( (SV *)"SWISH::API::MetaName");
+        PUTBACK ;           /* lets perl know how many parameters are here */
 
-        /* Make sure a list is returned and it's not empty */
-        if ( !meta_list || !*meta_list )
-            XSRETURN_EMPTY;
+        call_pv("SWISH::API::push_meta_list", G_ARRAY );
+        SPAGAIN;
 
-
-        while ( *meta_list )
-        {
-            /* Create a new object */
-            SV *meta = sv_newmortal();
-            sv_setref_pv( meta, CLASS, (void *)*meta_list );
-
-            /* and push onto list */
-            XPUSHs( meta );
-            meta_list++;
-
-            /* $$$ Need to bump the handle ref count here */
-        }
-
-
-# Returns an array of SWISH::API::PropertyName objects
+# Returns an array of SWISH::API::MetaName objects
 
 void
 SwishPropertyList( swish_handle, index_name )
@@ -283,12 +287,39 @@ SwishPropertyList( swish_handle, index_name )
     char *index_name
 
     PREINIT:
-        char * CLASS = "SWISH::API::PropertyName";
         SWISH_META_LIST meta_list;
 
     PPCODE:
         /* Grab the list of pointers */
         meta_list = SwishPropertyList( swish_handle, index_name );
+        PUSHMARK(SP) ;
+        XPUSHs( (SV *)swish_handle );
+        XPUSHs( (SV *)meta_list );
+        XPUSHs( (SV *)"SWISH::API::PropertyName");
+        PUTBACK ;
+
+        call_pv("SWISH::API::push_meta_list", G_ARRAY );
+        SPAGAIN;
+
+
+
+
+
+void
+push_meta_list( s_handle, m_list, m_class )
+    SV *s_handle
+    SV *m_list
+    SV *m_class
+
+    PREINIT:
+        SW_HANDLE swish_handle;
+        SWISH_META_LIST meta_list;
+        char *class;
+
+    PPCODE:
+        class = (char *)m_class;
+        swish_handle = (SW_HANDLE)s_handle;
+        meta_list = (SWISH_META_LIST)m_list;
 
         /* Check for an error -- typically this would be an invalid index name */
         /* Fix: calling with an invalid swish_handle will call progerr */
@@ -302,15 +333,24 @@ SwishPropertyList( swish_handle, index_name )
 
         while ( *meta_list )
         {
-            /* Create a new object */
-            SV *meta = sv_newmortal();
-            sv_setref_pv( meta, CLASS, (void *)*meta_list );
+            /* Create a new structure for storing the meta description and the parent SV */
+            META_OBJ *object = (META_OBJ *)safemalloc(sizeof(META_OBJ));
+
+            /* Store the meta entry */
+            object->meta = *meta_list;
+
+            /* Store the and bump the swish_handle SV */
+            object->handle_sv = (SV *)SwishGetRefPtr( swish_handle );
+            SvREFCNT_inc( object->handle_sv );
+
+            /* And create the Perl object and assign the object to it */
+            SV *o = sv_newmortal();
+            sv_setref_pv( o, class, (void *)object );
 
             /* and push onto list */
-            XPUSHs( meta );
-            meta_list++;
+            XPUSHs( o );
 
-            /* $$$ Need to bump the handle ref count here */
+            meta_list++;
         }
 
 
@@ -694,59 +734,42 @@ SwishResultMetaList(result)
     SW_RESULT result
 
     PREINIT:
-        char * CLASS = "SWISH::API::MetaName";
         SWISH_META_LIST meta_list;
+        SW_HANDLE swish_handle;
 
     PPCODE:
         meta_list = SwishResultMetaList( result );
+        swish_handle = SW_ResultToSW_HANDLE( result );
 
-        /* Make sure a list is returned and it's not empty */
-        if ( !meta_list || !*meta_list )
-            XSRETURN_EMPTY;
+        PUSHMARK(SP) ;
+        XPUSHs( (SV *)swish_handle );
+        XPUSHs( (SV *)meta_list );
+        XPUSHs( (SV *)"SWISH::API::MetaName");
+        PUTBACK ;
 
-
-        while ( *meta_list )
-        {
-            /* Create a new object */
-            SV *meta = sv_newmortal();
-            sv_setref_pv( meta, CLASS, (void *)*meta_list );
-
-            /* and push onto list */
-            XPUSHs( meta );
-            meta_list++;
-
-            /* $$$ Need to bump the handle ref count here */
-        }
+        call_pv("SWISH::API::push_meta_list", G_ARRAY );
+        SPAGAIN;
 
 void
 SwishResultPropertyList(result)
     SW_RESULT result
 
     PREINIT:
-         char * CLASS = "SWISH::API::MetaName";
-         SWISH_META_LIST meta_list;
+        SWISH_META_LIST meta_list;
+        SW_HANDLE swish_handle;
 
     PPCODE:
         meta_list = SwishResultPropertyList( result );
+        swish_handle = SW_ResultToSW_HANDLE( result );
 
-        /* Make sure a list is returned and it's not empty */
-        if ( !meta_list || !*meta_list )
-            XSRETURN_EMPTY;
+        PUSHMARK(SP) ;
+        XPUSHs( (SV *)swish_handle );
+        XPUSHs( (SV *)meta_list );
+        XPUSHs( (SV *)"SWISH::API::PropertyName");
+        PUTBACK ;
 
-
-        while ( *meta_list )
-        {
-            /* Create a new object */
-            SV *meta = sv_newmortal();
-            sv_setref_pv( meta, CLASS, (void *)*meta_list );
-
-            /* and push onto list */
-            XPUSHs( meta );
-            meta_list++;
-
-            /* $$$ Need to bump the handle ref count here */
-        }
-
+        call_pv("SWISH::API::push_meta_list", G_ARRAY );
+        SPAGAIN;
 
 
 
@@ -814,7 +837,12 @@ SwishFuzzyWordList( fw )
 
 MODULE = SWISH::API       PACKAGE = SWISH::API::MetaName  PREFIX = SwishMeta
 
-# Need a DESTROY method to reduce the swish_hande ref count.
+void
+DESTROY ( self )
+    META_OBJ *self
+    CODE:
+        SvREFCNT_dec( self->handle_sv );
+        safefree( self );
 
 
 const char *
@@ -842,7 +870,13 @@ SwishMetaID( meta )
 
 MODULE = SWISH::API       PACKAGE = SWISH::API::PropertyName  PREFIX = SwishMeta
 
-# Need a DESTROY method to reduce the swish_hande ref count.
+void
+DESTROY ( self )
+    META_OBJ *self
+    CODE:
+        SvREFCNT_dec( self->handle_sv );
+        safefree( self );
+
 
 
 const char *
