@@ -32,6 +32,8 @@ $Id$
 #include "soundex.h"
 #include "error.h"
 #include "metanames.h"
+#include "config.h"         // for _AND_WORD...
+#include "search_alt.h"     // for AND_WORD... humm maybe needs better organization
 
 struct MOD_Swish_Words
 {
@@ -66,6 +68,7 @@ void freeModule_Swish_Words (SWISH *sw)
 
   return;
 }
+
 
 
 
@@ -358,7 +361,22 @@ static void fudge_wildcard( struct swline **original, struct swline *entry )
 
     
     
-    
+/******************** Public Functions *********************************/
+
+const char *isBooleanOperatorWord( char * word )
+{
+    /* don't need strcasecmp here, since word should alrady be lowercase -- need to check alt-search first */
+    if (!strcasecmp( word, _AND_WORD))
+        return AND_WORD;
+
+    if (!strcasecmp( word, _OR_WORD))
+        return OR_WORD;
+
+    if (!strcasecmp( word, _NOT_WORD))
+        return NOT_WORD;
+
+    return NULL;
+}
 
 
 
@@ -385,6 +403,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
 
     while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, max_size ) )
         tokens = (struct swline *) addswline( tokens, self->word );
+
 
 
     /* no search words found */
@@ -419,6 +438,14 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
 
         /* this might be an option if case sensitive searches are used */
         strtolower( temp->line );
+
+
+        /* check Boolean operators -- currently doesn't change (search.c) does */
+        if ( isBooleanOperatorWord( temp->line ) )
+        {
+            temp = temp->next;
+            continue;
+        }
     
 
         /* buzzwords */
