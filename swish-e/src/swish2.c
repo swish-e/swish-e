@@ -124,7 +124,7 @@ void SwishResetSearch(SWISH *sw)
 {
 
                 /* Free sort stuff */
-    freeModule_ResultSort (sw);;
+    resetModule_ResultSort (sw);
 }
 
 void SwishClose(SWISH *sw)
@@ -151,11 +151,7 @@ void SwishClose(SWISH *sw)
         freeModule_Entities (sw);
         freeModule_DB (sw);
         freeModule_Index (sw);
-
-        /* Since it is possible to invoke SwishSearch several times
-                ** with the same SWISH handle, the freeModule_ResultSort stuff
-                ** must be in SwishResetSearch */
-        /* freeModule_ResultSort (sw); */
+        freeModule_ResultSort (sw);
 
                         /* Free file structures */
         freefileoffsets(sw);
