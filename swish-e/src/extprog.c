@@ -408,6 +408,9 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             if (strncasecmp(line, "Update-Mode", 11) == 0)
             {
+#ifndef USE_BTREE
+                progerr("Cannot use Update-Mode header with this version of Swish-e.  Rebuild with --enable-incremental.");
+#endif
                 char *x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Update-Mode '%s'", line);
@@ -416,19 +419,27 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 if (!*x)
                     progerr("Failed to parse Update-Mode header '%s'", line);
 
-               /* should we dump error here? It seem to work without update mode! - dpavlin */
+               /* should we dump error here? It seem to work without update mode! - dpavlin
+                * I say just let it run. Without -u or -r the index is recreated, though
+                * that may be more of an issue.
+                * In fact, maybe with USE_BTREE need a way to explicitly say to 
+                * clear the index.  Forget using -u or -r can be a big mistake. - moseley
+                * 
                if (sw->Index->update_mode != MODE_UPDATE && sw->Index->update_mode != MODE_REMOVE)
                        progwarn("Update-Mode header is supported only if swish-e is invoked in update (-u) mode");
+                */
+
+
 
                if ( strncasecmp(x, "Update", 6) == 0 ) {
                        sw->Index->update_mode = MODE_UPDATE;
-                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_UPDATE)\n", x );
+                       if ( sw->verbose >= 4 ) printf( "Input file selected: %s (MODE_UPDATE)\n", x );
                } else if ( strncasecmp(x, "Remove", 6) == 0 ) {
                        sw->Index->update_mode = MODE_REMOVE;
-                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_REMOVE)\n", x );
+                       if ( sw->verbose >= 4 ) printf( "Input file selected: %s (MODE_REMOVE)\n", x );
                } else if ( strncasecmp(x, "Index", 5) == 0 ) {
                        sw->Index->update_mode = MODE_UPDATE;
-                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_UPDATE)\n", x );
+                       if ( sw->verbose >= 4 ) printf( "Input file selecte: %s (MODE_UPDATE)\n", x );
                } else {
                        progerr("Unknown Update-Mode: %s", x);
                }
