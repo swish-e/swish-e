@@ -166,6 +166,9 @@ static SWISH  *swish_new();
 static void    swish_close(SWISH * sw);
 static void set_path( void );
 
+
+struct _indexing_data_source_def *IndexingDataSource;
+
 /************* TOC ***************************************/
 
 

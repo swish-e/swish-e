@@ -962,16 +962,7 @@ struct _indexing_data_source_def
 };
 
 
-#define GLOBAL_VARS
-
-#ifndef GLOBAL_VARS
-#define VAR extern
-#else
-#define VAR
-#endif
-
-
-VAR struct _indexing_data_source_def *IndexingDataSource;
+extern struct _indexing_data_source_def *IndexingDataSource;
 
 
 
