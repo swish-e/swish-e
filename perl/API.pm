@@ -7,7 +7,7 @@ require DynaLoader;
 use vars qw/  @ISA $VERSION /;
 @ISA = 'DynaLoader';
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 bootstrap SWISH::API;
 #bootstrap SWISH::API $VERSION;

@@ -26,6 +26,8 @@ my $mem_test = 0;
 
 
     my @index_names = $swish->IndexNames;
+    
+    $swish->RankScheme( 1 );	# default is 0 -- just testing the method
 
     for my $index ( @index_names ) {
         is_ok( "index name '$index'", $index);

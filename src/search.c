@@ -154,6 +154,22 @@ static void freeresult(RESULT *);
 static void make_db_res_and_free(RESULT_LIST *l_res);
 
 
+/**********************************************************************
+* SwishRankScheme -- set the ranking scheme to use when sorting
+* karman - Wed Sep  1 11:55:46 CDT 2004
+*
+***********************************************************************/
+
+void SwishRankScheme(SWISH *sw, int scheme)
+{
+	
+    sw->RankScheme = scheme ? scheme : 0;
+    
+}
+
+
+
+
 /****************************************************************
 *  New_Search_Object - Create a new search object
 *

@@ -185,6 +185,8 @@ struct s_RESULTS_OBJECT
 
 };
 
+void SwishRankScheme( SWISH *sw, int scheme );	/* set ranking scheme */
+
 SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query );
 void SwishSetStructure( SEARCH_OBJECT *srch, int structure );
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter );
