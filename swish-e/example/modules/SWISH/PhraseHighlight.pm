@@ -3,109 +3,64 @@
 #
 #    $Id$
 #=======================================================================
-package PhraseHighlight;
+package SWISH::PhraseHighlight;
 use strict;
 
 use constant DEBUG_HIGHLIGHT => 0;
 
 sub new {
-    my ( $class, $results, $metaname ) = @_;
+    my ( $class, $settings, $headers ) = @_;
+
 
 
     my $self = bless {
-        results => $results,  # just in case we need a method
-        settings=> $results->config('highlight'),
-        metaname=> $metaname,
+        settings => $settings,
+        headers  => $headers,
     }, $class;
 
-    # parse out the query into words
-    my $query = $results->extract_query_match;
 
 
-    # Do words exist for this layer (all text at this time) and metaname?
-    # This is a reference to an array of phrases and words
-
-    $self->{description_prop} = $results->config('description_prop') || '';
-
-
-
-    if ( $results->header('stemming applied') =~ /^(?:1|yes)$/i ) {
+    if ( $self->header('stemming applied') =~ /^(?:1|yes)$/i ) {
         eval { require SWISH::Stemmer };
         if ( $@ ) {
-            $results->errstr('Stemmed index needs Stemmer.pm to highlight: ' . $@);
+            warn('Stemmed index needs Stemmer.pm to highlight: ' . $@);
         } else {
             $self->{stemmer_function} = \&SWISH::Stemmer::SwishStem;
         }
     }
 
 
-
-    my %stopwords =  map { $_, 1 } split /\s+/, $results->header('stopwords');
-    $self->{stopwords} = \%stopwords;
+    $self->{stopwords} = { map { $_, 1 } split /\s+/, $self->header('stopwords') };
 
 
-    if ( $query && exists $query->{text}{$metaname} ) {
-        $self->{query} = $query->{text}{$metaname};
+    $self->set_match_regexp;
 
-        $self->set_match_regexp;
-    }
 
     return $self;
 }
 
-sub highlight {
-    my ( $self, $properties ) = @_;
 
-
-    return unless $self->{query};
-
-    my $phrase_array = $self->{query};
-
-    my $settings = $self->{settings};
-    my $metaname = $self->{metaname};
-
-    # Do we care about this meta?
-    return unless exists $settings->{meta_to_prop_map}{$metaname};
-
-    # Get the related properties
-    my @props = @{ $settings->{meta_to_prop_map}{$metaname} };
-
-    my %checked;
-
-    for ( @props ) {
-        if ( $properties->{$_} ) {
-            $checked{$_}++;
-            $self->highlight_text( \$properties->{$_}, $phrase_array );
-        }
-    }
-
-
-    # Truncate the description, if not processed.
-    my $description = $self->{description_prop};
-    if ( $description && !$checked{ $description } && $properties->{$description} ) {
-        my $max_words = $settings->{max_words} || 100;
-        my @words = split /\s+/, $properties->{$description};
-        if ( @words > $max_words ) {
-            $properties->{$description} = join ' ', @words[0..$max_words], '<b>...</b>';
-        }
-    }
-
+sub header {
+    my $self = shift;
+    return '' unless ref $self->{headers} eq 'HASH';
+    return $self->{headers}{$_[0]} || '';
 }
 
 
+#=========================================================================
+# Highlight a single property -- returns true if any words highlighted
 
-#==========================================================================
-#
+sub highlight {
 
-sub highlight_text {
+    my ( $self, $text_ref, $phrase_list ) = @_;
 
-    my ( $self, $text_ref, $phrase_array ) = @_;
-    
     my $wc_regexp = $self->{wc_regexp};
     my $extract_regexp = $self->{extract_regexp};
 
 
     my $last = 0;
+
+    my $found_phrase = 0;
 
     my $settings = $self->{settings};
 
@@ -126,21 +81,21 @@ sub highlight_text {
 
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
 
-    # Split into words.  For speed, should work on a stream method.
+
+
+    # Split into "swish" words.  For speed, should work on a stream method.
     my @words = split /$wc_regexp/, $$text_ref;
-
-
-    return 'No Content saved: Check StoreDescription setting' unless @words;
+    return unless @words;
 
     my @flags;  # This marks where to start and stop display.
     $flags[$#words] = 0;  # Extend array.
 
-    my $occurrences = $Occurrences ;
+    my $occurrences = $Occurrences;
 
 
     my $word_pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
 
-    my @phrases = @{ $self->{query} };
+
 
     # Remember, that the swish words are every other in @words.
 
@@ -148,18 +103,18 @@ sub highlight_text {
     while ( $Show_Words && $word_pos * 2 < @words ) {
 
         PHRASE:
-        foreach my $phrase ( @phrases ) {
+        foreach my $phrase ( @$phrase_list ) {
 
             print STDERR "  Search phrase '@$phrase'\n" if DEBUG_HIGHLIGHT;
             next PHRASE if ($word_pos + @$phrase -1) * 2 > @words;  # phrase is longer than what's left
-            
+
 
             my $end_pos = 0;  # end offset of the current phrase
 
             # now compare all the words in the phrase
 
             my ( $begin, $word, $end );
-            
+
             for my $match_word ( @$phrase ) {
 
                 my $cur_word = $words[ ($word_pos + $end_pos) * 2 ];
@@ -169,9 +124,8 @@ sub highlight_text {
                     my ( $s, $e ) = ( $idx - 10, $idx + 10 );
                     $s = 0 if $s < 0;
                     $e = @words-1 if $e >= @words;
-                   
-                
-                    warn  "Failed to parse IgnoreFirst/Last from word '"
+
+                    warn  "Failed to  IgnoreFirst/Last from word '"
                     . (defined $cur_word ? $cur_word : '*undef')
                     . "' (index: $idx) word_pos:$word_pos end_pos:$end_pos total:"
                     . scalar @words
@@ -209,7 +163,7 @@ sub highlight_text {
 
 
                 print STDERR "     comparing source # (word:$word_pos offset:$end_pos) '$check_word' == '$match_word'\n" if DEBUG_HIGHLIGHT;
-    
+
                 if ( substr( $match_word, -1 ) eq '*' ) {
                     next PHRASE if index( $check_word, substr($match_word, 0, length( $match_word ) - 1) ) != 0;
 
@@ -219,10 +173,12 @@ sub highlight_text {
 
 
                 print STDERR "      *** Word Matched '$check_word' *** \n" if DEBUG_HIGHLIGHT;
-                $end_pos++;  
+                $end_pos++;
             }
 
             print STDERR "      *** PHRASE MATCHED (word:$word_pos offset:$end_pos) *** \n" if DEBUG_HIGHLIGHT;
+
+	    $found_phrase++;
 
 
             # We are currently at the end word, so it's easy to set that highlight
@@ -249,14 +205,14 @@ sub highlight_text {
                 $stop = $stop - $start;
                 $start = 0;
             }
-            
+
             $stop = $#words if $stop > $#words;
 
             $flags[$_]++ for $start .. $stop;
 
 
             # All done, and mark where to stop looking
-            if ( $occurrences-- <= 0 ) {
+            if ( --$occurrences <= 0 ) {
                 $last = $stop;
                 last WORD;
             }
@@ -301,9 +257,9 @@ sub highlight_text {
                 $printing = 0;
             }
 
-        $first = 0;
+	    $first = 0;
 
-        
+
         }
     }
 
@@ -316,8 +272,8 @@ sub highlight_text {
             push @output, $words[$i];
         }
     }
-        
-        
+
+
 
     push @output, $dotdotdot if !$printing;
 
@@ -332,16 +288,16 @@ sub highlight_text {
         $on_flag => $On,
         $off_flag => $Off,
     );
-        
 
-    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;
+
+    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;  # " fix emacs
 
     $$text_ref =~ s/($on_flag|$off_flag)/$highlight{$1}/ge;
 
+    return $found_phrase;
 
-
-    
     # $$text_ref = join '', @words;  # interesting that this seems reasonably faster
+
 
 
 }
@@ -354,12 +310,11 @@ sub highlight_text {
 sub set_match_regexp {
     my $self = shift;
 
-    my $results = $self->{results};
 
 
-    my $wc = $results->header('wordcharacters');
-    my $ignoref = $results->header('ignorefirstchar');
-    my $ignorel = $results->header('ignorelastchar');
+    my $wc = $self->header('wordcharacters');
+    my $ignoref = $self->header('ignorefirstchar');
+    my $ignorel = $self->header('ignorelastchar');
 
 
     $wc = quotemeta $wc;
@@ -391,7 +346,7 @@ sub set_match_regexp {
         $self->{wc_regexp}      = qr/([^$wc]+)/o;                    # regexp for splitting into swish-words
         $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/oi;  # regexp for extracting out the words to compare
      }
-}    
+}
 
 1;
 

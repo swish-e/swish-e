@@ -1,86 +1,42 @@
 #=======================================================================
 #  Default Highlighting Code
 #
+#  Context highlighting & deals with stemming, but not phrases or stopwords
+#
 #    $Id$
 #=======================================================================
-package DefaultHighlight;
+package SWISH::DefaultHighlight;
 use strict;
 
 sub new {
-    my ( $class, $results, $metaname ) = @_;
+    my ( $class, $settings, $headers ) = @_;
 
 
     my $self = bless {
-        results => $results,  # just in case we need a method
-        settings=> $results->config('highlight'),
-        metaname=> $metaname,
+        settings=> $settings,
+        headers => $headers,
     }, $class;
 
-    # parse out the query into words
-    my $query = $results->extract_query_match;
 
-
-    # Do words exist for this layer (all text at this time) and metaname?
-    # This is a reference to an array of phrases and words
-
-    $self->{description_prop} = $results->config('description_prop') || '';
-
-    if ( $results->header('stemming applied') =~ /^(?:1|yes)$/i ) {
+    if ( $self->header('stemming applied') =~ /^(?:1|yes)$/i ) {
         eval { require SWISH::Stemmer };
         if ( $@ ) {
-            $results->errstr('Stemmed index needs Stemmer.pm to highlight: ' . $@);
+            warn('Stemmed index needs Stemmer.pm to highlight: ' . $@);
         } else {
             $self->{stemmer_function} = \&SWISH::Stemmer::SwishStem;
         }
     }
 
+    $self->set_match_regexp;
 
-    if ( $query && exists $query->{text}{$metaname} ) {
-        $self->{query} = $query->{text}{$metaname};
-
-        $self->set_match_regexp;
-    }
 
     return $self;
 }
 
-sub highlight {
-    my ( $self, $properties ) = @_;
-
-
-    return unless $self->{query};
-
-    my $phrase_array = $self->{query};
-
-    my $settings = $self->{settings};
-    my $metaname = $self->{metaname};
-
-    # Do we care about this meta?
-    return unless exists $settings->{meta_to_prop_map}{$metaname};
-
-    # Get the related properties
-    my @props = @{ $settings->{meta_to_prop_map}{$metaname} };
-
-    my %checked;
-
-    for ( @props ) {
-        if ( $properties->{$_} ) {
-            $checked{$_}++;
-            $self->highlight_text( \$properties->{$_}, $phrase_array );
-        }
-    }
-
-
-    # Truncate the description, if not processed.
-    my $description = $self->{description_prop};
-    if ( $description && !$checked{ $description } && $properties->{$description} ) {
-        my $max_words = $settings->{max_words} || 100;
-        my @words = split /\s+/, $properties->{$description};
-        if ( @words > $max_words ) {
-            $properties->{$description} = join ' ', @words[0..$max_words], '<b>...</b>';
-        }
-    }
-
+sub header {
+    my $self = shift;
+    return '' unless ref $self->{headers} eq 'HASH';
+    return $self->{headers}{$_[0]} || '';
 }
 
 
@@ -88,13 +44,13 @@ sub highlight {
 #==========================================================================
 #
 
-sub highlight_text {
+sub highlight {
 
-    my ( $self, $text_ref, $phrase_array ) = @_;
-    
+    my ( $self, $text_ref, $phrase_array, $prop_name ) = @_;
+
     my $wc_regexp = $self->{wc_regexp};
     my $extract_regexp = $self->{extract_regexp};
-    my $match_regexp = $self->{match_regexp};
+    my $match_regexp = $self->match_string( $phrase_array, $prop_name );
 
 
     my $last = 0;
@@ -113,9 +69,8 @@ sub highlight_text {
 
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
     my @words = split /$wc_regexp/, $$text_ref;
+    return unless @words;
 
-
-    return 'No Content saved: Check StoreDescription setting' unless @words;
 
     my @flags;
     $flags[$#words] = 0;  # Extend array.
@@ -137,7 +92,7 @@ sub highlight_text {
                        ? $stemmer_function->($word)
                        : lc $word;
 
-            $test ||= lc $word;                       
+            $test ||= lc $word;
 
             # Not check if word matches
             if ( $test =~ /$match_regexp/ ) {
@@ -151,7 +106,7 @@ sub highlight_text {
                     $end = $end - $start;
                     $start = 0;
                 }
-                
+
                 $end = $#words if $end > $#words;
 
                 $flags[$_]++ for $start .. $end;
@@ -199,7 +154,7 @@ sub highlight_text {
 
         $first = 0;
 
-        
+
         }
     }
 
@@ -212,8 +167,8 @@ sub highlight_text {
             push @output, $words[$i];
         }
     }
-        
-        
+
+
 
     push @output, $dotdotdot if !$printing;
 
@@ -226,22 +181,23 @@ sub highlight_text {
 # Returns compiled regular expressions for matching
 #
 
-sub set_match_regexp {
-    my $self = shift;
+sub match_string {
+    my ($self, $phrases, $prop_name ) = @_;
 
-    my $results = $self->{results};
+    # Already cached?
+    return $self->{cache}{$prop_name}
+	if $self->{cache}{$prop_name};
 
+    my $wc = quotemeta $self->header('wordcharacters');
+    # Yuck!
+    $wc .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  # Warning: dependent on tolower used while indexing
 
-    my $wc = $results->header('wordcharacters');
-    my $ignoref = $results->header('ignorefirstchar');
-    my $ignorel = $results->header('ignorelastchar');
+    # Get all the unique words;
 
-
-
-    my $query = join ' ', map { join ' ', @$_} @{$self->{query}};  # join everything together!
-
-
-    $wc = quotemeta $wc;
+    my %words;
+    for my $phrase ( @$phrases ) {
+       $words{$_}++ for @$phrase;
+    }
 
 
     my $match_string =
@@ -249,13 +205,25 @@ sub set_match_regexp {
            map { substr( $_, -1, 1 ) eq '*'
                     ? quotemeta( substr( $_, 0, -1) ) . "[$wc]*?"
                     : quotemeta
-               }
-                grep { ! /^(and|or|not|["()=])$/oi }  # left over code
-                    split /\s+/, $query;
+               } keys %words;
 
+    my $re = $ENV{MOD_PERL} ? qr/^(?:$match_string)$/ : qr/^(?:$match_string)$/o;
 
+    $self->{cache}{$prop_name} = $re;
 
-    return unless $match_string;
+    return $re;
+}
+
+#============================================
+# Returns compiled regular expressions for splitting the source text into "swish words"
+#
+#
+
+sub set_match_regexp {
+    my $self = shift;
+
+    my $ignoref = $self->header('ignorefirstchar');
+    my $ignorel = $self->header('ignorelastchar');
 
     for ( $ignoref, $ignorel ) {
         if ( $_ ) {
@@ -267,25 +235,23 @@ sub set_match_regexp {
     }
 
 
-    # Yuck!
+    my $wc = quotemeta $self->header('wordcharacters');
     $wc .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  # Warning: dependent on tolower used while indexing
 
 
     # Now, wait a minute.  Look at this more, as I'd hope that making a
     # qr// go out of scope would release the compiled pattern.
+    # doesn't really matter, as $wc probably never changes
 
     if ( $ENV{MOD_PERL} ) {
         $self->{wc_regexp}      = qr/([^$wc]+)/;                     # regexp for splitting into swish-words
         $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/i;  # regexp for extracting out the words to compare
-        $self->{match_regexp}   = qr/^(?:$match_string)$/;           # regexp for comparing extracted words to query
 
      } else {
         $self->{wc_regexp}      = qr/([^$wc]+)/o;                    # regexp for splitting into swish-words
         $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/oi;  # regexp for extracting out the words to compare
-        $self->{match_regexp}   = qr/^(?:$match_string)$/o;          # regexp for comparing extracted words to query
      }
-}    
-
+}
 
 1;
 

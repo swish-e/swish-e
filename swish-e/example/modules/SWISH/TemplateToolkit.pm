@@ -3,7 +3,7 @@
 #    $Id$
 #
 #=======================================================================
-package TemplateToolkit;
+package SWISH::TemplateToolkit;
 use strict;
 
 use Template;

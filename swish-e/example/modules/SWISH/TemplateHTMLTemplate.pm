@@ -7,7 +7,7 @@
 #  the TemplateToolkit.pm module for examples.
 #
 #=======================================================================
-package TemplateHTMLTemplate;
+package SWISH::TemplateHTMLTemplate;
 use strict;
 
 use HTML::Template;
@@ -16,7 +16,7 @@ use CGI ();
 
 use vars '$Template';
 
-use TemplateDefault;  # ugly hack
+use SWISH::TemplateDefault;  # ugly hack
 
 
 sub show_template {

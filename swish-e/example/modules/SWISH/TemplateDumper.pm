@@ -5,7 +5,7 @@
 #    $Id$
 #
 #===============================================================================
-package TemplateDumper;
+package SWISH::TemplateDumper;
 use strict;
 
 use Data::Dumper;
