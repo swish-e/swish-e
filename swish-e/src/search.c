@@ -94,7 +94,8 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
-** 20001-02-xx rasc  search call changed, tolower changed...
+** 2001-02-xx rasc  search call changed, tolower changed...
+** 2001-03-03 rasc  altavista search, translatechar in headers
 **
 */
 
@@ -115,6 +116,7 @@
 #include "deflate.h"
 #include "metanames.h"
 #include "result_sort.h"
+#include "altavista.h"
 
 
 /* 01/2001 Jose Ruiz */
@@ -290,7 +292,37 @@ IndexFILE *tmplist;
 }
 
 
+/*
+  -- Search Swish 
+  -- Check if AltaVista like search string has to be converted
+  -- and call swish search...
+  -- 2001-03-02 rasc
+*/
+
 int search(SWISH *sw, char *words, int structure)
+{
+  char *sw_srch_str;
+  int  ret;
+
+// $$$ DEBUG
+sw->enableAVSearchSyntax = 1;
+fprintf (stderr, "Search: _%s_\n",words);
+// $$$
+
+   if (sw->enableAVSearchSyntax) {	/* AltaVista like search enabled? */
+	sw_srch_str = convAltaVista2SwishStr (words);
+fprintf (stderr, "SwishStr: _%s_\n",sw_srch_str);
+	ret = search_2 (sw, sw_srch_str, structure);
+	efree (sw_srch_str);
+   } else {
+	ret = search_2 (sw, words, structure);
+   }
+   return ret;  
+}
+
+
+
+int search_2 (SWISH *sw, char *words, int structure)
 {
 int i, j, k, metaID, indexYes, totalResults;
 char word[MAXWORDLEN];
@@ -652,8 +684,9 @@ int inphrase;
 ** Also reads the information in the header (wordchars, beginchars, etc)
 */
 
-#define ReadHeaderStr(buffer,bufferlen,len,fp)  uncompress1(len,fp); if(bufferlen<len) buffer=erealloc(buffer,(bufferlen=len+200)+1);  fread(buffer,len,1,fp);
+// $$$ to be rewritten as function = smaller code (rasc)
 
+#define ReadHeaderStr(buffer,bufferlen,len,fp)  uncompress1(len,fp); if(bufferlen<len) buffer=erealloc(buffer,(bufferlen=len+200)+1);  fread(buffer,len,1,fp);
 #define ReadHeaderInt(itmp,fp) uncompress1(itmp,fp); itmp--;
 
 void readheader(IndexFILE *indexf)
@@ -755,6 +788,11 @@ FILE *fp=indexf->fp;
 				ReadHeaderInt(itmp,fp);
 				indexf->header.applyFileInfoCompression = itmp;
 				break;
+
+			case TRANSLATECHARTABLE_ID:
+				ReadHeaderLookupTable (indexf->header.translatecharslookuptable, sizeof(indexf->header.translatecharslookuptable)/sizeof(int),fp);
+				break;
+
 			default:
 				progerr("Severe index error in header");
 				break;
@@ -763,6 +801,24 @@ FILE *fp=indexf->fp;
 	}
 	efree(buffer);
 }
+
+
+/*
+  -- some support functions reading header data
+*/
+
+
+void ReadHeaderLookupTable (int table[], int table_size, FILE *fp)
+{
+ int i,x;
+
+ for (i=0; i<table_size; i++) {
+   uncompress1 (x,fp);
+   table[i]=x-1;
+ }
+}
+
+
 
 /* Reads the offsets in the index file so word lookup is faster.
 The file pointer is set by readheader */

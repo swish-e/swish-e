@@ -164,7 +164,7 @@
 #define MAXSTRLEN 2000
 #define MAXWORDLEN 1000
 #define MAXTITLELEN 300
-#define MAXSUFFIXLEN 10
+#define MAXSUFFIXLEN 256
 #define MAXENTLEN 10
 #define HASHSIZE 101
 #define BIGHASHSIZE 1009
@@ -656,6 +656,7 @@ typedef struct {
 	/* Filter vars */
     struct filter *filterlist;                  /* 1998-08-07 rasc */
     char *filterdir;                  /* 1998-08-07 rasc */
+    int  enableAVSearchSyntax;	/* Altavista Search strings 0/1 */
 
                 /* 06/00 Jose Ruiz */
     int applyautomaticmetanames;

@@ -75,6 +75,7 @@ int i;
 	sw->filterdir = NULL;
 	sw->filterlist = NULL;
 	sw->resultextfmtlist=NULL;
+	sw->enableAVSearchSyntax = 0;	/* default: enable only Swish syntax */	
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	

@@ -21,19 +21,18 @@
 ** G. Hill 3/18/97 ghill@library.berkeley.edu
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
 int SwishAttach(SWISH *, int);
-int search (SWISH *, char *, int);
+int search (SWISH *sw, char *str, int structure);
+int search_2 (SWISH *sw, char *words, int structure);
 RESULT *SwishNext(SWISH *);
 struct swline *fixnot(struct swline *);
 
 struct swline *expandphrase(struct swline *, char);
 
 void readheader(IndexFILE *);
+void ReadHeaderLookupTable (int table[], int table_size, FILE *fp);
+
 void readoffsets(IndexFILE *);
 void readhashoffsets(IndexFILE *);
 void readstopwords(IndexFILE *);
@@ -80,5 +79,6 @@ struct swline *ignore_words_in_query(SWISH *,IndexFILE *, struct swline *,unsign
 struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
+
 
 

@@ -56,7 +56,7 @@ void makeallstringlookuptables (SWISH *);
 /* #define isindexchar(header,c) header.indexcharslookuptable[c] indexchars stuff removed */
 
 /* Functions for comparing integers for qsort */
-int icomp2 _AP ((const void *,const void *));
+int icomp2 (const void *,const void *);
 
 /* 06/00 Jose Ruiz 
 ** Function to parse a line into a StringList

@@ -96,6 +96,9 @@
 ** obsolete routine ishtml removed
 ** isoktitle moved to html.c
 **
+** 2001-03-02 rasc   Header: write translatecharacters
+**
+**
 */
 
 
@@ -821,18 +824,19 @@ int emphasized;
 	return tmprank;
 }
 
+
+
+
+
+
 /* Prints the index information at the head of index files.
 ** 06/00 - If fp==stdout ptints the header to screen
 */
 
 
-#define PrintHeaderStr(ID,TXT,fp) id=ID;compress1(id,fp);len=strlen(TXT)+1; compress1(len,fp);fwrite(TXT,len,1,fp);
-#define PrintHeaderInt(ID,INT,fp) id=ID;compress1(id,fp);itmp=INT+1; compress1(itmp,fp);
-
 void printheader(INDEXDATAHEADER *header, FILE *fp, char *filename, int totalwords, int totalfiles, int merged)
 {
 char *c,*tmp;
-int id,len;
 long itmp;
 	
 	c = (char *) strrchr(filename, '/');
@@ -867,7 +871,8 @@ long itmp;
 		PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
 		PrintHeaderInt(FILEINFOCOMPRESSION_ID,header->applyFileInfoCompression,fp);
 		/* Jose Ruiz 06/00 Added this line to delimite the header */
-//$$$ todo: write translatecharstable  (table or string?)
+		PrintHeaderLookupTable (TRANSLATECHARTABLE_ID, header->translatecharslookuptable,
+			sizeof(header->translatecharslookuptable)/sizeof(int),fp);
 		fputc(0,fp);    
 	} else {
 		fprintf(fp, "%s\n", INDEXVERSION);
@@ -895,6 +900,44 @@ long itmp;
 
 	}
 }
+
+
+/*
+ -- some support functions for printing the header information
+ -- 2001-03-02  rasc   were former macros
+*/
+
+void PrintHeaderStr(int id, char *s, FILE *fp)
+{
+ int len;
+
+ compress1(id,fp);
+ len=strlen(s)+1;
+ compress1(len,fp);
+ fwrite(s,len,sizeof(char),fp);
+}
+
+void PrintHeaderInt(int id, int i, FILE *fp)
+{
+ long itmp;
+
+ compress1(id,fp);
+ itmp=i+1;
+ compress1(itmp,fp);
+}
+
+
+void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp)
+{
+ int id,i;
+
+ id=ID;
+ compress1(id,fp);
+ for (i=0; i<table_size; i++) {
+   compress1 ((table[i]+1),fp);
+ }
+}
+
 
 
 /* Sort entry by MetaName, FileNum */
