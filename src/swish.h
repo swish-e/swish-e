@@ -266,7 +266,6 @@ extern "C" {
 #define IN_META		(1<<IN_META_BIT)
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED|IN_META)
 
-#define MAXLONGLEN 4
 
 /* Document Types */
 enum {

@@ -1798,7 +1798,7 @@ int     DB_EndReadSortedIndex_Native(void *db)
 void    printlong(FILE * fp, unsigned long num, size_t(*f_write) (const void *, size_t, size_t, FILE *))
 {
     num = PACKLONG(num);        /* Make the number portable */
-    f_write(&num, MAXLONGLEN, 1, fp);
+    f_write(&num, sizeof(long), 1, fp);
 }
 
 /* 
@@ -1809,7 +1809,7 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
 {
     unsigned long num;
 
-    f_read(&num, MAXLONGLEN, 1, fp);
+    f_read(&num, sizeof(long), 1, fp);
     return UNPACKLONG(num);     /* Make the number readable */
 }
 
@@ -1934,8 +1934,11 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 
 
 #ifdef DEBUG_PROP
-    printf("Write Prop: file %d  PropIDX %d  (meta %d) at file offset %ld (data at %ld) <uncompressed_len> %ld bytes <prop> %Zu bytes\n",
-            fi->filenum, propIDX, propID, prop_loc->seek, prop_start_pos, prop_start_pos - prop_loc->seek, written_bytes);
+    printf("Write Prop: file %d  PropIDX %d  (meta %d) seek: %ld ",
+                fi->filenum, propIDX, propID, prop_loc->seek );
+
+    printf("data=[uncompressed_len: %d (%ld bytes), prop_data: (%ld bytes)]\n",
+            uncompressed_len, prop_start_pos - prop_loc->seek, (long)written_bytes);
 #endif
 }
 
@@ -1975,6 +1978,9 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     int             count = header->property_count;
     int             index_size;
     int             i;
+#ifdef DEBUG_PROP
+    long            start_seek;
+#endif
 #ifdef USE_BTREE
     long            seek_pos;
 #endif
@@ -2008,14 +2014,18 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #ifndef USE_BTREE
 
 #ifdef DEBUG_PROP
-        printf("  PropIDX: %d  length: %ld, seek: %ld  main index location: %ld\n",
-                 i, prop_loc->length, prop_loc->seek, ftell( DB->fp ) );
+        start_seek = ftell( DB->fp );
 #endif
         
         /* Write in portable format */
         printlong( DB->fp, prop_loc->length, fwrite );
         printlong( DB->fp, prop_loc->seek, fwrite );
-       
+
+#ifdef DEBUG_PROP
+        printf("  PropIDX: %d  data=[length: %ld, seek: %ld]  main index location: %ld for %ld bytes (two print long)\n",
+                 i, prop_loc->length, prop_loc->seek, start_seek, ftell( DB->fp ) - start_seek );
+#endif
+
 
 #else
         ARRAY_Put( DB->props_array,seek_pos++, prop_loc->length);
@@ -2058,7 +2068,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     /* now calculate seek_pos */
     // seek_pos = ((fi->filenum - 1) * index_size)  + DB->offsets[FILELISTPOS];
     // printlong currently always writes 4 bytes, so 8 bytes for length and seek
-    seek_pos = ((fi->filenum - 1) * 8 * count)  + DB->offsets[FILELISTPOS];
+    seek_pos = ((fi->filenum - 1) * 2 * sizeof(long) * count)  + DB->offsets[FILELISTPOS];
 
 
     /* and seek to table */
@@ -2067,7 +2077,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 
 #ifdef DEBUG_PROP
-        printf("Fetching seek positions for file %d\n", fi->filenum );
+        printf("\nFetching seek positions for file %d\n", fi->filenum );
         printf(" property index table at %ld, this file at %ld\n", DB->offsets[FILELISTPOS], seek_pos );
 #endif
 
@@ -2075,6 +2085,10 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     /* Read in the prop indexes */
     for ( i=0; i < count; i++ )
     {
+#ifdef DEBUG_PROP
+        long    seek_start = ftell( DB->fp );
+#endif
+        
         /* make an alias */
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
 
@@ -2082,7 +2096,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         prop_loc->seek = readlong( DB->fp, fread );
 
 #ifdef DEBUG_PROP
-        printf("   PropIDX: %d  Length: %ld  Seek: %ld\n", i, prop_loc->length, prop_loc->seek );
+        printf("   PropIDX: %d  data[Length: %ld  Seek: %ld] at seek %ld read %ld bytes (two readlong)\n", i, prop_loc->length, prop_loc->seek, seek_start, ftell( DB->fp ) - seek_start  );
 #endif
 
 
