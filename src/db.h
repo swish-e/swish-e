@@ -40,7 +40,7 @@ void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
 #ifdef USE_BTREE
 void    update_wordID(SWISH *, ENTRY *, IndexFILE *);
-void    delete_worddata(SWISH *, long, IndexFILE *);
+void    delete_worddata(SWISH *, sw_off_t, IndexFILE *);
 #endif
 void    build_worddata(SWISH *, ENTRY *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);

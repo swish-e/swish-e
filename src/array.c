@@ -66,7 +66,7 @@
 #define SizeInt32 4
 
 /* Round to ARRAY_PageSize */
-#define ARRAY_RoundPageSize(n) (((n) + ARRAY_PageSize - 1) & (~(ARRAY_PageSize - 1)))
+#define ARRAY_RoundPageSize(n) (((sw_off_t)(n) + (sw_off_t)(ARRAY_PageSize - 1)) & (sw_off_t)(~(ARRAY_PageSize - 1)))
 
 #define ARRAY_PageHeaderSize (1 * SizeInt32) 
 
@@ -81,8 +81,8 @@
 int ARRAY_WritePageToDisk(FILE *fp, ARRAY_Page *pg)
 {
     ARRAY_SetNextPage(pg,pg->next);
-    fseek(fp,pg->page_number * ARRAY_PageSize,SEEK_SET);
-    return fwrite(pg->data,ARRAY_PageSize,1,fp);
+    sw_fseek(fp,(sw_off_t)((sw_off_t)pg->page_number * (sw_off_t)ARRAY_PageSize),SEEK_SET);
+    return sw_fwrite(pg->data,ARRAY_PageSize,1,fp);
 }
 
 int ARRAY_WritePage(ARRAY *b, ARRAY_Page *pg)
@@ -164,8 +164,8 @@ ARRAY_Page *ARRAY_ReadPageFromDisk(FILE *fp, unsigned long page_number)
 {
 ARRAY_Page *pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + ARRAY_PageSize);
 
-    fseek(fp,page_number * ARRAY_PageSize,SEEK_SET);
-    fread(pg->data,ARRAY_PageSize, 1, fp);
+    sw_fseek(fp,(sw_off_t)((sw_off_t)page_number * (sw_off_t)ARRAY_PageSize),SEEK_SET);
+    sw_fread(pg->data,ARRAY_PageSize, 1, fp);
 
     ARRAY_GetNextPage(pg,pg->next);
 
@@ -201,33 +201,33 @@ ARRAY_Page *tmp;
 ARRAY_Page *ARRAY_NewPage(ARRAY *b)
 {
 ARRAY_Page *pg;
-long offset;
+sw_off_t offset;
 FILE *fp = b->fp;
 int hash;
 int size = ARRAY_PageSize;
 
     /* Get file pointer */
-    if(fseek(fp,0,SEEK_END) !=0)
+    if(sw_fseek(fp,(sw_off_t)0,SEEK_END) !=0)
         progerrno("Failed to seek to eof: ");
 
-    offset = ftell(fp);
+    offset = sw_ftell(fp);
     /* Round up file pointer */
     offset = ARRAY_RoundPageSize(offset);
 
     /* Set new file pointer - data will be aligned */
-    if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
+    if(sw_fseek(fp,offset, SEEK_SET)!=0 || offset != sw_ftell(fp))
         progerrno("Failed during seek: ");
 
 
     pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + size);
     memset(pg,0,sizeof(ARRAY_Page) + size);
     /* Reserve space in file */
-    if(fwrite(pg->data,1,size,fp)!=size || ((long)size + offset) != ftell(fp))
+    if(sw_fwrite(pg->data,1,size,fp)!=size || ((sw_off_t)size + offset) != sw_ftell(fp))
         progerrno("Failed to write ARRAY_page: ");
 
     pg->next = 0;
 
-    pg->page_number = offset/ARRAY_PageSize;
+    pg->page_number = (unsigned long)(offset/(sw_off_t)ARRAY_PageSize);
 
     /* add to cache */
     pg->modified = 1;
@@ -433,11 +433,11 @@ unsigned long root_page;
 
 
 
-    fp = fopen("kkkkk",F_WRITE_BINARY);
-    fclose(fp);
-    fp = fopen("kkkkk",F_READWRITE_BINARY);
+    fp = sw_fopen("kkkkk",F_WRITE_BINARY);
+    sw_fclose(fp);
+    fp = sw_fopen("kkkkk",F_READWRITE_BINARY);
 
-    fwrite("aaa",1,3,fp);
+    sw_fwrite("aaa",1,3,fp);
 
 printf("\n\nIndexing\n\n");
 
@@ -457,12 +457,12 @@ printf("\n\nIndexing\n\n");
     }
 
     root_page = ARRAY_Close(bt);
-    fclose(fp);
+    sw_fclose(fp);
 
 printf("\n\nUnfreed %d\n\n",num);
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",F_READ_BINARY);
+    fp = sw_fopen("kkkkk",F_READ_BINARY);
     bt = ARRAY_Open(fp, root_page);
 
     for(i=0;i<N_TEST;i++)
@@ -475,7 +475,7 @@ printf("\n\nSearching\n\n");
 
     root_page = ARRAY_Close(bt);
 
-    fclose(fp);
+    sw_fclose(fp);
 printf("\n\nUnfreed %d\n\n",num);
 
 }
