@@ -415,6 +415,8 @@ char *w0;
 		}
 		else if (strcasecmp(w0, "EnableAltaVistaSyntax")==0)	{
 			sw->enableAVSearchSyntax = getYesNoOrAbort (sl, 1,1);
+                                    /* $$$ this will not work unless swish is reading the config file also for search ... */
+
 		}
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s", linenumber, line );
