@@ -20,23 +20,14 @@ $Id$
 **
 */
 
-#include ...
-#include "module_example_xxxx.h"
+#include <string.h>
+...
+#include "module_example.h"
 
 
 /* private module prototypes */
 
-.... int my_module_local_routine (...);
-
-
-
-/*
-** ----------------------------------------------
-** 
-**  Module management code starts here
-**
-** ----------------------------------------------
-*/
+....
 
 
 
@@ -52,8 +43,7 @@ void initModule_#modulename# (SWISH  *sw)
       md = (struct MOD_#modulename# *) emalloc(sizeof(struct MOD_#modulename#));
       sw->#modulename# = md;
 
-      md->myparameter = ...     ...(md = module data)
-
+      md->myparameter = ...
       ...
 
 }
@@ -69,41 +59,14 @@ void freeModule_#modulename# (SWISH *sw)
 {
    struct MOD_#modulename# *md = sw->#modulename#;
 
-      md->....;  (md = moduledata)
+      md->....
       ...
 
 
-
-      /*  Free Module Data Structure */
       efree (sw->#modulename#);
       sw->#modulename# = NULL;
 }
 
-
-/* 
-  -- reset structures for #modulename#
-  -- reset module data 
-*/
-
-void resetModule_#modulename# (SWISH *sw)
-
-{
-   struct MOD_#modulename# *md = sw->#modulename#;
-
-      md->....;  (md = moduledata)
-      ...
-      ... e.g. for new search operations, etc.
-
-}
-
-
-/*
-** ----------------------------------------------
-** 
-**  Module config code starts here
-**
-** ----------------------------------------------
-*/
 
 
 
@@ -124,16 +87,16 @@ int configModule_#modulename# (SWISH *sw, StringList *sl)
   w0 = sl->word[0];
   retval = 1;
 
-  if (!strcasecmp(w0, "ExampleConfigDirective1")) {
+  if (strcasecmp(w0, "....xxxx....")==0) {
       if (sl->n==2) {
-             md->mydata1 = ...
+          ... example
              progerr("%s: errormessage ",w0);
           }
       } else progerr("%s: requires one value",w0);
   }
-  else if (!strcasecmp(w0, "ExampleConfigDirective2")) {
+  else if (strcasecmp(w0, ".......xyyyyy...")==0) {
       if (sl->n==3 || sl->n==4) {
-        md->mydata2 = ....
+        ... example
       } else progerr("%s: requires .....",w0);
   }
   ....... more config directives
@@ -153,23 +116,13 @@ int configModule_#modulename# (SWISH *sw, StringList *sl)
  -- Set param from cmdline for this Module
 */
 
-int cmdlineModule_#modulename# (SWISH *sw, ..... to be defined ...)
+int cmdlineModule_#modulename# (SWISH *sw, .....)
 
 {
 .......
 
 }
 
-
-
-
-/*
-** ----------------------------------------------
-** 
-**  Module code starts here
-**
-** ----------------------------------------------
-*/
 
 
 

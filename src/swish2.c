@@ -1,5 +1,4 @@
 /*
-$Id$
 **
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
@@ -25,9 +24,9 @@ $Id$
 
 #include "error.h"
 #include "list.h"
+#include "string.h"
 #include "search.h"
 #include "index.h"
-#include "string.h"
 #include "file.h"
 #include "http.h"
 #include "merge.h"
@@ -38,7 +37,9 @@ $Id$
 #include "filter.h"
 #include "result_output.h"
 #include "search_alt.h"
+#include "result_output.h"
 #include "result_sort.h"
+#include "db.h"
 
 /* 
   -- init swish structure 
@@ -52,9 +53,12 @@ int i;
 
 	initModule_Filter (sw);
 	initModule_ResultOutput (sw);
-      initModule_SearchAlt (sw);
+	initModule_SearchAlt (sw);
 	initModule_ResultSort (sw);
 	initModule_Entities (sw);
+    initModule_DB (sw);
+    initModule_Search (sw);
+
 
 	sw->followsymlinks = 0;
 	sw->TotalWords = 0;
@@ -64,8 +68,6 @@ int i;
 	sw->dirlist = NULL;
 	sw->indexlist = NULL;
 	sw->replacelist = NULL;
-	sw->maxhits = -1;
-	sw->beginhits = 0;
 	sw->lasterror = RC_OK;
 	sw->verbose = VERBOSE;
 	sw->indexComments = 1;
@@ -78,23 +80,16 @@ int i;
 	sw->dontbumptagslist = NULL;
 	sw->mtime_limit = 0;
 
-	sw->db_results=NULL;
-
 	sw->applyautomaticmetanames = 0;
 	sw->len_compression_buffer = MAXSTRLEN;  /* For example */
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
 
 	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
 
-      sw->truncateDocSize = 0;      /* default: no truncation of docs    */
+    sw->truncateDocSize = 0;      /* default: no truncation of docs    */
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	
-		/* Properties */
-	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=0;
-	sw->propNameToDisplay=NULL;
-
-
 		/* File system parameters */
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->inode_hash[i]=NULL;
@@ -155,24 +150,9 @@ void SwishDefaults(SWISH *sw)
 /* Free memory for search results and parameters (properties ...) */
 void SwishResetSearch(SWISH *sw)
 {
-struct DB_RESULTS *tmp,*tmp2;
 
-		/* Default variables for search */
-	sw->maxhits = -1;
-	sw->beginhits = 0;
-		/* Free results from previous search if they exists */
-	for(tmp=sw->db_results;tmp;)
-	{
-		freeresultlist(sw,tmp);
-		tmp2=tmp->next;
-		efree(tmp);
-		tmp=tmp2;
-	}
-	sw->db_results=NULL;
-		/* Free dsiplay props arrays */
-	FreeOutputPropertiesVars(sw);
                 /* Free sort stuff */
-	freeModule_ResultSort (sw);
+	freeModule_ResultSort (sw);;
 }
 
 void SwishClose(SWISH *sw)
@@ -188,6 +168,7 @@ if(sw) {
 		freeModule_ResultOutput (sw);
 		freeModule_SearchAlt (sw);
 		freeModule_Entities (sw);
+        freeModule_DB (sw);
 
 		/* Since it is possible to invoke SwishSearch several times
                 ** with the same SWISH handle, the freeModule_ResultSort stuff
@@ -204,64 +185,67 @@ if(sw) {
 		tmpindexlist=sw->indexlist;
 		while(tmpindexlist)
 		{
-			if(tmpindexlist->metaCounter)
+			if(tmpindexlist->header.metaCounter)
 			{
-				for(i=0;i<tmpindexlist->metaCounter;i++)
+				for(i=0;i<tmpindexlist->header.metaCounter;i++)
 				{
-                			efree(tmpindexlist->metaEntryArray[i]->metaName);
-							if(tmpindexlist->metaEntryArray[i]->sorted_data)
-									efree(tmpindexlist->metaEntryArray[i]->sorted_data);
-                			efree(tmpindexlist->metaEntryArray[i]);
+                			efree(tmpindexlist->header.metaEntryArray[i]->metaName);
+							if(tmpindexlist->header.metaEntryArray[i]->sorted_data)
+									efree(tmpindexlist->header.metaEntryArray[i]->sorted_data);
+                			efree(tmpindexlist->header.metaEntryArray[i]);
 				}
-                		efree(tmpindexlist->metaEntryArray);
+                efree(tmpindexlist->header.metaEntryArray);
 			}
-			if (tmpindexlist->DB) 
-				fclose((FILE *)tmpindexlist->DB);
                         /* Free stopwords structures */
-			freestophash(tmpindexlist);
-			freeStopList(tmpindexlist);
+			freestophash(&tmpindexlist->header);
+			freeStopList(&tmpindexlist->header);
 
-     		freebuzzwordhash(tmpindexlist);
+     		freebuzzwordhash(&tmpindexlist->header);
 
 			free_header(&tmpindexlist->header);
 			/* Free compression lookup tables */
-			if(tmpindexlist->locationlookup)
+			if(tmpindexlist->header.locationlookup)
 			{
-				for(i=0;i<tmpindexlist->locationlookup->n_entries;i++)
-					efree(tmpindexlist->locationlookup->all_entries[i]);
-				efree(tmpindexlist->locationlookup);
+				for(i=0;i<tmpindexlist->header.locationlookup->n_entries;i++)
+					efree(tmpindexlist->header.locationlookup->all_entries[i]);
+				efree(tmpindexlist->header.locationlookup);
 			}	
-			if(tmpindexlist->structurelookup)
+			if(tmpindexlist->header.structurelookup)
 			{
-				for(i=0;i<tmpindexlist->structurelookup->n_entries;i++)
-					efree(tmpindexlist->structurelookup->all_entries[i]);
-				efree(tmpindexlist->structurelookup);
+				for(i=0;i<tmpindexlist->header.structurelookup->n_entries;i++)
+					efree(tmpindexlist->header.structurelookup->all_entries[i]);
+				efree(tmpindexlist->header.structurelookup);
 			}	
-			if(tmpindexlist->structfreqlookup)
+			if(tmpindexlist->header.structfreqlookup)
 			{
-				for(i=0;i<tmpindexlist->structfreqlookup->n_entries;i++)
-					efree(tmpindexlist->structfreqlookup->all_entries[i]);
-				efree(tmpindexlist->structfreqlookup);
+				for(i=0;i<tmpindexlist->header.structfreqlookup->n_entries;i++)
+					efree(tmpindexlist->header.structfreqlookup->all_entries[i]);
+				efree(tmpindexlist->header.structfreqlookup);
 			}
-			if(tmpindexlist->pathlookup)
+			if(tmpindexlist->header.pathlookup)
 			{
-				for(i=0;i<tmpindexlist->pathlookup->n_entries;i++)
+				for(i=0;i<tmpindexlist->header.pathlookup->n_entries;i++)
 				{
-					efree(tmpindexlist->pathlookup->all_entries[i]->val);
-					efree(tmpindexlist->pathlookup->all_entries[i]);
+					efree(tmpindexlist->header.pathlookup->all_entries[i]->val);
+					efree(tmpindexlist->header.pathlookup->all_entries[i]);
 				}
-				efree(tmpindexlist->pathlookup);
+				efree(tmpindexlist->header.pathlookup);
 			}	
+/* Removed due to patents 
 			if(tmpindexlist->header.applyFileInfoCompression && tmpindexlist->n_dict_entries)
 			{
 				for(i=0;i<tmpindexlist->n_dict_entries;i++)
 					efree(tmpindexlist->dict[i]);
 			}
+*/
 			for(i=0;i<256;i++)
 				if(tmpindexlist->keywords[i])
 					efree(tmpindexlist->keywords[i]);
+
+			if(tmpindexlist->DB)
+				DB_Close(sw, tmpindexlist->DB);
 			tmpindexlist=tmpindexlist->next;
-                }
+        }
 		freeindexfile(sw->indexlist);
 		
 		/* Free fs parameters */
@@ -348,15 +332,15 @@ int SwishSeek(SWISH *sw,int pos)
 int i;
 RESULT *sp=NULL;
 	if(!sw) return INVALID_SWISH_HANDLE;
-	if(!sw->db_results) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+	if(!sw->Search->db_results) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
 		/* Check if only one index file -> Faster SwishSeek */
-	if(!sw->db_results->next)
+	if(!sw->Search->db_results->next)
 	{      
-		for (i=0,sp=sw->db_results->sortresultlist;sp && i<pos;i++)
+		for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
 		{
 			sp = sp->nextsort;
 		}
-		sw->db_results->currentresult=sp;
+		sw->Search->db_results->currentresult=sp;
 	}
 	else
 	{
@@ -423,8 +407,8 @@ IndexFILE *indexf;
 	{
 		if (!strcasecmp(indexf->line,filename))
 		{
-			*numstops=indexf->stopPos;
-			return indexf->stopList;
+			*numstops=indexf->header.stopPos;
+			return indexf->header.stopList;
 		}
 	}
 	*numstops=0;

@@ -45,8 +45,11 @@ $Id$
 #include "search.h"
 #include "search_alt.h"
 #include "parse_conffile.h"
+/* removed stuff 
 #include "deflate.h"
+*/
 #include "result_sort.h"
+#include "db.h"
 
 
 /* Reads the configuration file and puts all the right options
@@ -309,7 +312,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 for (i = 1; i < sl->n; i++)
-                    addMetaEntry(indexf, sl->word[i], META_INDEX, 0, 0, &sw->applyautomaticmetanames);
+                    addMetaEntry(&indexf->header, sl->word[i], META_INDEX, 0, NULL, &sw->applyautomaticmetanames);
             }
             else
                 progerr("%s: requires at least one value", w0);
@@ -329,7 +332,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 for (i = 1; i < sl->n; i++)
-                    addMetaEntry(indexf, sl->word[i], META_PROP, 0, 0, &sw->applyautomaticmetanames);
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP, 0, NULL, &sw->applyautomaticmetanames);
             }
             else
                 progerr("%s: requires at least one value", w0);
@@ -340,7 +343,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             {
                 if (lstrstr(sl->word[1], "SwishDefault"))
                 {
-                    readdefaultstopwords(indexf);
+                    readdefaultstopwords(&indexf->header);
                 }
                 else if (lstrstr(sl->word[1], "File:"))
                 {               /* 2000-06-15 rasc */
@@ -352,7 +355,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else
                     for (i = 1; i < sl->n; i++)
                     {
-                        addstophash(indexf, sl->word[i]);
+                        addstophash(&indexf->header, sl->word[i]);
                     }
             }
             else
@@ -372,7 +375,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else
                     for (i = 1; i < sl->n; i++)
                     {
-                        addbuzzwordhash(indexf, sl->word[i]);
+                        addbuzzwordhash(&indexf->header, sl->word[i]);
                     }
             }
             else
@@ -380,7 +383,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
         else if (strcasecmp(w0, "UseWords") == 0)
         {                       /* 11/00 Jmruiz */
-            indexf->is_use_words_flag = 1;
+            indexf->header.is_use_words_flag = 1;
             if (sl->n > 1)
             {
                 if (lstrstr(sl->word[1], "File:"))
@@ -393,7 +396,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else
                     for (i = 1; i < sl->n; i++)
                     {
-                        addusehash(indexf, sl->word[i]);
+                        addusehash(&indexf->header, sl->word[i]);
                     }
             }
             else
@@ -599,8 +602,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
         else if (configModule_SearchAlt(sw, sl)); /* rasc */
-        else if (configModule_Deflate(sw, sl)); /* jmruiz */
-        else if (configModule_ResultSort(sw, sl)); /* jmruiz */
+		/* Removed , patents ...
+        else if (configModule_Deflate(sw, sl));*/ /* jmruiz */
+		else if (configModule_ResultSort(sw, sl)); /* jmruiz */
+		else if (configModule_DB(sw, sl)); /* jmruiz */
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);
@@ -764,7 +769,7 @@ void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
         {
             for (i = 0; i < sl->n; i++)
             {
-                addstophash(indexf, sl->word[i]);
+                addstophash(&indexf->header, sl->word[i]);
             }
             freeStringList(sl);
         }
@@ -804,7 +809,7 @@ void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
         {
             for (i = 0; i < sl->n; i++)
             {
-                addbuzzwordhash(indexf, sl->word[i]);
+                addbuzzwordhash(&indexf->header, sl->word[i]);
             }
             freeStringList(sl);
         }
@@ -857,7 +862,7 @@ void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
         {
             for (i = 0; i < sl->n; i++)
             {
-                addusehash(indexf, sl->word[i]);
+                addusehash(&indexf->header, sl->word[i]);
             }
             freeStringList(sl);
         }

@@ -62,7 +62,7 @@ struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
 
 void readmerge (char *, char *, char *, int);
 void addfilenums (ENTRY *, int);
-ENTRY *readindexline (IndexFILE *, struct metaMergeEntry *);
+ENTRY *readindexline (SWISH *, IndexFILE *, struct metaMergeEntry *, int, int *);
 void addindexfilelist (SWISH *, int , char *, time_t, char *, char *, int, int, struct docPropertyEntry *, int *, int, struct metaMergeEntry *);
 struct mergeindexfileinfo *lookupindexfilenum (int ,struct docPropertyEntry**);
 ENTRY *mergeindexentries (ENTRY *,ENTRY *, int);

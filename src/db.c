@@ -39,6 +39,7 @@
 void initModule_DB (SWISH  *sw)
 {
           /* Allocate structure */
+   initModule_DBNative(sw);
   return;
 }
 
@@ -66,7 +67,7 @@ void freeModule_DB (SWISH *sw)
 
 int configModule_DB  (SWISH *sw, StringList *sl)
 {
- // struct MOD_DBNative *md = sw->DBNative;
+ //struct MOD_DB *DB = sw->Db;
  // char *w0    = sl->word[0];
  int  retval = 1;
 
@@ -81,11 +82,11 @@ int configModule_DB  (SWISH *sw, StringList *sl)
 
 /* Header routines */
 
-#define write_header_int(id,num,DB) {long itmp = (num); PACKLONG(itmp); DB_WriteHeaderData((id), (unsigned char *)&itmp, sizeof(long), (DB));}
-#define write_header_int2(id,num1,num2,DB) {long itmp[2]; itmp[0] = (num1); itmp[1] = (num2); PACKLONG(itmp[0]); PACKLONG(itmp[1]); DB_WriteHeaderData((id), (unsigned char *)itmp, sizeof(long) * 2, (DB));}
+#define write_header_int(sw,id,num,DB) {long itmp = (num); PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(long), (DB));}
+#define write_header_int2(sw,id,num1,num2,DB) {long itmp[2]; itmp[0] = (num1); itmp[1] = (num2); PACKLONG(itmp[0]); PACKLONG(itmp[1]); DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB));}
 
 
-void    write_header(INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int merged)
+void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int merged)
 {
     char   *c,
            *tmp;
@@ -96,57 +97,59 @@ void    write_header(INDEXDATAHEADER * header, void * DB, char *filename, int to
     else
         c += 1;
 
-    DB_InitWriteHeader(DB);
+    DB_InitWriteHeader(sw, DB);
 
-    DB_WriteHeaderData(INDEXHEADER_ID, INDEXHEADER, strlen(INDEXHEADER) +1, DB);
-    DB_WriteHeaderData(INDEXVERSION_ID, INDEXVERSION, strlen(INDEXVERSION) + 1, DB);
-    write_header_int(MERGED_ID, merged, DB);
-    DB_WriteHeaderData(NAMEHEADER_ID, header->indexn, strlen(header->indexn) + 1, DB);
-    DB_WriteHeaderData(SAVEDASHEADER_ID, c, strlen(c) + 1, DB);
-    write_header_int2(COUNTSHEADER_ID, totalwords, totalfiles, DB);
-    tmp = getTheDateISO(); DB_WriteHeaderData(INDEXEDONHEADER_ID, tmp, strlen(tmp) + 1,DB); efree(tmp);
-    DB_WriteHeaderData(DESCRIPTIONHEADER_ID, header->indexd, strlen(header->indexd) + 1, DB);
-    DB_WriteHeaderData(POINTERHEADER_ID, header->indexp, strlen(header->indexp) + 1, DB);
-    DB_WriteHeaderData(MAINTAINEDBYHEADER_ID, header->indexa, strlen(header->indexa) + 1,DB);
-    write_header_int(DOCPROPENHEADER_ID, 1, DB);
-    write_header_int(STEMMINGHEADER_ID, header->applyStemmingRules, DB);
-    write_header_int(SOUNDEXHEADER_ID, header->applySoundexRules, DB);
-    write_header_int(IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, DB);
-    DB_WriteHeaderData(WORDCHARSHEADER_ID, header->wordchars, strlen(header->wordchars) + 1, DB);
-    write_header_int(MINWORDLIMHEADER_ID, header->minwordlimit, DB);
-    write_header_int(MAXWORDLIMHEADER_ID, header->maxwordlimit, DB);
-    DB_WriteHeaderData(BEGINCHARSHEADER_ID, header->beginchars, strlen(header->beginchars) + 1, DB);
-    DB_WriteHeaderData(ENDCHARSHEADER_ID, header->endchars, strlen(header->endchars) + 1, DB);
-    DB_WriteHeaderData(IGNOREFIRSTCHARHEADER_ID, header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
-    DB_WriteHeaderData(IGNORELASTCHARHEADER_ID, header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
+    DB_WriteHeaderData(sw, INDEXHEADER_ID, INDEXHEADER, strlen(INDEXHEADER) +1, DB);
+    DB_WriteHeaderData(sw, INDEXVERSION_ID, INDEXVERSION, strlen(INDEXVERSION) + 1, DB);
+    write_header_int(sw, MERGED_ID, merged, DB);
+    DB_WriteHeaderData(sw, NAMEHEADER_ID, header->indexn, strlen(header->indexn) + 1, DB);
+    DB_WriteHeaderData(sw, SAVEDASHEADER_ID, c, strlen(c) + 1, DB);
+    write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
+    tmp = getTheDateISO(); 
+	DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, tmp, strlen(tmp) + 1,DB); 
+	efree(tmp);
+    DB_WriteHeaderData(sw, DESCRIPTIONHEADER_ID, header->indexd, strlen(header->indexd) + 1, DB);
+    DB_WriteHeaderData(sw, POINTERHEADER_ID, header->indexp, strlen(header->indexp) + 1, DB);
+    DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, header->indexa, strlen(header->indexa) + 1,DB);
+    write_header_int(sw, DOCPROPENHEADER_ID, 1, DB);
+    write_header_int(sw, STEMMINGHEADER_ID, header->applyStemmingRules, DB);
+    write_header_int(sw, SOUNDEXHEADER_ID, header->applySoundexRules, DB);
+    write_header_int(sw, IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, DB);
+    DB_WriteHeaderData(sw, WORDCHARSHEADER_ID, header->wordchars, strlen(header->wordchars) + 1, DB);
+    write_header_int(sw, MINWORDLIMHEADER_ID, header->minwordlimit, DB);
+    write_header_int(sw, MAXWORDLIMHEADER_ID, header->maxwordlimit, DB);
+    DB_WriteHeaderData(sw, BEGINCHARSHEADER_ID, header->beginchars, strlen(header->beginchars) + 1, DB);
+    DB_WriteHeaderData(sw, ENDCHARSHEADER_ID, header->endchars, strlen(header->endchars) + 1, DB);
+    DB_WriteHeaderData(sw, IGNOREFIRSTCHARHEADER_ID, header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
+    DB_WriteHeaderData(sw, IGNORELASTCHARHEADER_ID, header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
 	/* Removed - Patents 
     write_header_int(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, DB);
 	*/
 
     /* Jose Ruiz 06/00 Added this line to delimite the header */
-    write_integer_table_to_header(TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), DB);
+    write_integer_table_to_header(sw, TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), DB);
 	
 	/* Other header stuff */
 		/* StopWords */
-    write_words_to_header(STOPWORDS_ID, header->hashstoplist, DB);
+    write_words_to_header(sw, STOPWORDS_ID, header->hashstoplist, DB);
 		/* Metanames */
-    write_MetaNames(METANAMES_ID, header, DB);
+    write_MetaNames(sw, METANAMES_ID, header, DB);
 
 		/* lookup tables */
-    write_locationlookuptables_to_header(LOCATIONLOOKUPTABLE_ID, header, DB);
+    write_locationlookuptables_to_header(sw, LOCATIONLOOKUPTABLE_ID, header, DB);
     if (!header->pathlookup)
     {
-        DB_Remove(DB);   /* Remove file: It is useless */
+        DB_Remove(sw, DB);   /* Remove file: It is useless */
         progerr("No valid documents have been found. Check your files, directories and/or urls. Index file removed");
     }
-    write_pathlookuptable_to_header(PATHLOOKUPTABLE_ID, header, DB);
+    write_pathlookuptable_to_header(sw, PATHLOOKUPTABLE_ID, header, DB);
 
 		/* BuzzWords */
-    write_words_to_header(BUZZWORDS_ID, header->hashbuzzwordlist, DB);	
+    write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);	
 		/* Write array containing the number of words per doc */
-    write_integer_table_to_header(WORDSPERDOC_ID, header->filetotalwordsarray , header->totalfiles , DB);
+    write_integer_table_to_header(sw, WORDSPERDOC_ID, header->filetotalwordsarray , header->totalfiles , DB);
 
-    DB_EndWriteHeader(DB);
+    DB_EndWriteHeader(sw, DB);
 }
 
 /* Jose Ruiz 11/00
@@ -156,8 +159,8 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
     long    wordID;
 
-    wordID = DB_GetWordID(indexf->DB);
-    DB_WriteWord(ep->word,wordID,indexf->DB);
+    wordID = DB_GetWordID(sw, indexf->DB);
+    DB_WriteWord(sw, ep->word,wordID,indexf->DB);
 	    /* Store word offset for futher hash computing */
     ep->u1.fileoffset = wordID;
 
@@ -281,14 +284,14 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
         /* Write trailing '\0' */
     *q++ = '\0';
 
-    DB_WriteWordData(ep->u1.fileoffset,buffer,q-buffer,indexf->DB);
+    DB_WriteWordData(sw, ep->u1.fileoffset,buffer,q-buffer,indexf->DB);
 }
 
 
 /* Writes the list of metaNames into the DB index
 */
 
-void    write_MetaNames(int id, INDEXDATAHEADER * header, void *DB)
+void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
 {
     struct metaEntry *entry = NULL;
     int     i,
@@ -328,7 +331,7 @@ void    write_MetaNames(int id, INDEXDATAHEADER * header, void *DB)
         compress3(entry->metaID, s);
         compress3(entry->metaType, s);
     }
-    DB_WriteHeaderData(id,buffer,s-buffer,DB);
+    DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
     efree(buffer);
 }
 
@@ -337,7 +340,7 @@ void    write_MetaNames(int id, INDEXDATAHEADER * header, void *DB)
 /* Write a the hashlist of words into the index header file (used by stopwords and buzzwords
 */
 
-int    write_words_to_header(int header_ID, struct swline **hash, void *DB)
+int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, void *DB)
 {
     int     hashval,
             len,
@@ -379,7 +382,7 @@ int    write_words_to_header(int header_ID, struct swline **hash, void *DB)
                 sp = sp->next;
             }
         }
-        DB_WriteHeaderData(header_ID, buffer, s - buffer, DB);
+        DB_WriteHeaderData(sw, header_ID, buffer, s - buffer, DB);
         efree(buffer);
 }
 return 0;
@@ -388,7 +391,7 @@ return 0;
 
 /* Print the info lookuptable of structures and frequency */
 /* These lookuptables make the file index small and decreases I/O op */
-void    write_locationlookuptables_to_header(int id, INDEXDATAHEADER *header, void *DB)
+void    write_locationlookuptables_to_header(SWISH *sw, int id, INDEXDATAHEADER *header, void *DB)
 {
     int     i,
             n,
@@ -404,7 +407,7 @@ void    write_locationlookuptables_to_header(int id, INDEXDATAHEADER *header, vo
             /* No words in DB */
         empty_buffer[0]='\0';    /* Write 2 empty numbers */
         empty_buffer[1]='\0';
-        DB_WriteHeaderData(id,empty_buffer,2,DB);
+        DB_WriteHeaderData(sw, id,empty_buffer,2,DB);
         return;
     }
 	
@@ -436,14 +439,14 @@ void    write_locationlookuptables_to_header(int id, INDEXDATAHEADER *header, vo
         compress3(tmp, s);
     }
 
-    DB_WriteHeaderData(id,buffer,s-buffer,DB);
+    DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
 
     efree(buffer);
 }
 
 /* Print the info lookuptable of paths/urls */
 /* This lookuptable make the file index small and decreases I/O op */
-void    write_pathlookuptable_to_header(int id, INDEXDATAHEADER *header, void *DB)
+void    write_pathlookuptable_to_header(SWISH *sw, int id, INDEXDATAHEADER *header, void *DB)
 {
     int     n,
             i,
@@ -474,13 +477,13 @@ void    write_pathlookuptable_to_header(int id, INDEXDATAHEADER *header, void *D
         memcpy(s,tmp,len); s += len;
     }
 
-    DB_WriteHeaderData(id,buffer,s-buffer,DB);
+    DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
 
     efree(buffer);
 }
 
 
-int write_integer_table_to_header(int id, int table[], int table_size, void *DB)
+int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size, void *DB)
 {
     int     i,
             tmp;
@@ -496,7 +499,7 @@ int write_integer_table_to_header(int id, int table[], int table_size, void *DB)
         compress3(tmp, s); /* Put all the elements */
     }
 
-    DB_WriteHeaderData(id, buffer, s-buffer, DB);
+    DB_WriteHeaderData(sw, id, buffer, s-buffer, DB);
 
     efree(buffer);
     return 0;
@@ -524,16 +527,16 @@ int write_integer_table_to_header(int id, int table[], int table_size, void *DB)
 #define parse_int2_from_buffer(num1,num2,s) UNPACKLONG2((num1),(s));UNPACKLONG2((num2),(s+sizeof(long)))
 
 
-void    read_header(INDEXDATAHEADER *header, void *DB)
+void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 {
     int     id,
             len,
             tmp, tmp1, tmp2;
     char   *buffer;
 
-    DB_InitReadHeader(DB);
+    DB_InitReadHeader(sw, DB);
 
-    DB_ReadHeaderData(&id,&buffer,&len,DB);
+    DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
 
     while (id)
     {
@@ -645,9 +648,9 @@ void    read_header(INDEXDATAHEADER *header, void *DB)
             break;
         }
         efree(buffer);
-        DB_ReadHeaderData(&id,&buffer,&len,DB);
+        DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
     }
-    DB_EndReadHeader(DB);
+    DB_EndReadHeader(sw, DB);
 }
 
 /* Reads the metaNames from the index
@@ -839,16 +842,16 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     if (indexf->keywords[j])
         return (indexf->keywords[j]);
 
-    DB_InitReadWords(indexf->DB);
+    DB_InitReadWords(sw, indexf->DB);
 
     word[0]=(unsigned char)c;
     word[1]='\0';
 
-    DB_ReadFirstWordInvertedIndex(word, &resultword, &wordID, indexf->DB);
+    DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
     i = (int) ((unsigned char) c);
     if (!wordID)
     {
-        DB_EndReadWords(indexf->DB);
+        DB_EndReadWords(sw, indexf->DB);
         sw->lasterror = WORD_NOT_FOUND;
         return "";
     }
@@ -873,7 +876,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     bufferpos += wordlen + 1;
 
     /* Look for occurrences */
-    DB_ReadNextWordInvertedIndex(word, &resultword, &wordID, indexf->DB);
+    DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
     while (wordID)
     {
         wordlen = strlen(resultword);
@@ -891,7 +894,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
         }
         buffer[bufferpos + wordlen] = '\0';
         bufferpos += wordlen + 1;
-        DB_ReadNextWordInvertedIndex(word, &resultword, &wordID, indexf->DB);
+        DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
     }
     buffer[bufferpos] = '\0';
     indexf->keywords[j] = buffer;
@@ -903,181 +906,182 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
 /*------------------------------------------------------*/
 /*---------- General entry point of DB module ----------*/
 
-void   *DB_Create (char *dbname)
+void   *DB_Create (SWISH *sw, char *dbname)
 {
-   return DB_Create_Native(dbname);
+   return sw->Db->DB_Create(dbname);
 }
 
-void   *DB_Open (char *dbname)
+void   *DB_Open (SWISH *sw, char *dbname)
 {
-   return DB_Open_Native(dbname);
+   return sw->Db->DB_Open(dbname);
 }
 
-void    DB_Close(void *DB)
+void    DB_Close(SWISH *sw, void *DB)
 {
-   DB_Close_Native((struct Handle_DBNative  *)DB);
-}
-
-
-void    DB_Remove(void *DB)
-{
-   DB_Remove_Native((struct Handle_DBNative  *)DB);
-}
-
-int     DB_InitWriteHeader(void *DB)
-{
-   return DB_InitWriteHeader_Native((struct Handle_DBNative  *)DB);
-}
-
-int     DB_EndWriteHeader(void *DB)
-{
-   return DB_EndWriteHeader_Native((struct Handle_DBNative  *)DB);
-}
-
-int     DB_WriteHeaderData(int id, char *s, int len, void *DB)
-{
-   return DB_WriteHeaderData_Native(id, s,len,(struct Handle_DBNative  *)DB);
+   sw->Db->DB_Close(DB);
 }
 
 
-int     DB_InitReadHeader(void *DB)
+void    DB_Remove(SWISH *sw, void *DB)
 {
-   return DB_InitReadHeader_Native((struct Handle_DBNative  *)DB);
+   sw->Db->DB_Remove(DB);
 }
 
-int     DB_ReadHeaderData(int *id, char **s, int *len, void *DB)
+int     DB_InitWriteHeader(SWISH *sw, void *DB)
 {
-   return DB_ReadHeaderData_Native(id, s, len, (struct Handle_DBNative  *)DB);
+   return sw->Db->DB_InitWriteHeader(DB);
 }
 
-int     DB_EndReadHeader(void *DB)
+int     DB_WriteHeaderData(SWISH *sw, int id, char *s, int len, void *DB)
 {
-   return DB_EndReadHeader_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_WriteHeaderData(id, s,len,DB);
 }
 
-
-int     DB_InitWriteWords(void *DB)
+int     DB_EndWriteHeader(SWISH *sw, void *DB)
 {
-   return DB_InitWriteWords_Native((struct Handle_DBNative  *)DB);
-}
-
-long    DB_GetWordID(void *DB)
-{
-   return DB_GetWordID_Native((struct Handle_DBNative  *)DB);
-}
-
-int     DB_WriteWord(char *word, long wordID, void *DB)
-{
-   return DB_WriteWord_Native(word, wordID, (struct Handle_DBNative  *)DB);
-}
-
-int     DB_WriteWordHash(char *word, long wordID, void *DB)
-{
-   return DB_WriteWordHash_Native(word, wordID, (struct Handle_DBNative  *)DB);
-}
-
-long    DB_WriteWordData(long wordID, char *worddata, int lendata, void *DB)
-{
-   return DB_WriteWordData_Native(wordID, worddata, lendata, (struct Handle_DBNative  *)DB);
-}
-
-int     DB_EndWriteWords(void *DB)
-{
-   return DB_EndWriteWords_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_EndWriteHeader(DB);
 }
 
 
-int     DB_InitReadWords(void *DB)
+int     DB_InitReadHeader(SWISH *sw, void *DB)
 {
-   return DB_InitReadWords_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_InitReadHeader(DB);
 }
 
-int     DB_ReadWordHash(char *word, long *wordID, void *DB)
+int     DB_ReadHeaderData(SWISH *sw, int *id, char **s, int *len, void *DB)
 {
-   return DB_ReadWordHash_Native(word, wordID, (struct Handle_DBNative  *)DB);
+   return sw->Db->DB_ReadHeaderData(id, s, len, DB);
 }
 
-int     DB_ReadFirstWordInvertedIndex(char *word, char **resultword, long *wordID, void *DB)
+int     DB_EndReadHeader(SWISH *sw, void *DB)
 {
-   return DB_ReadFirstWordInvertedIndex_Native(word, resultword, wordID, (struct Handle_DBNative  *)DB);
-}
-
-int     DB_ReadNextWordInvertedIndex(char *word, char **resultword, long *wordID, void *DB)
-{
-   return DB_ReadNextWordInvertedIndex_Native(word, resultword, wordID, (struct Handle_DBNative  *)DB);
-}
-
-long    DB_ReadWordData(long wordID, char **worddata, int *lendata, void *DB)
-{
-   return DB_ReadWordData_Native(wordID, worddata, lendata, (struct Handle_DBNative  *)DB);
-}
-
-int     DB_EndReadWords(void *DB)
-{
-   return DB_EndReadWords_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_EndReadHeader(DB);
 }
 
 
-
-int     DB_InitWriteFiles(void *DB)
+int     DB_InitWriteWords(SWISH *sw, void *DB)
 {
-   return DB_InitWriteFiles_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_InitWriteWords(DB);
 }
 
-int     DB_EndWriteFiles(void *DB)
+long    DB_GetWordID(SWISH *sw, void *DB)
 {
-   return DB_EndWriteFiles_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_GetWordID(DB);
 }
 
-int     DB_WriteFile(int filenum, char *filedata,int sz_filedata, void *DB)
+int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB)
 {
-   return DB_WriteFile_Native(filenum, filedata, sz_filedata, (struct Handle_DBNative  *)DB);
+   return sw->Db->DB_WriteWord(word, wordID, DB);
 }
 
-int     DB_InitReadFiles(void *DB)
+int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)
 {
-   return DB_InitReadFiles_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_WriteWordHash(word, wordID, DB);
 }
 
-int     DB_ReadFile(int filenum, char **filedata,int *sz_filedata, void *DB)
+long    DB_WriteWordData(SWISH *sw, long wordID, char *worddata, int lendata, void *DB)
 {
-   return DB_ReadFile_Native(filenum, filedata,sz_filedata, (struct Handle_DBNative  *)DB);
+   return sw->Db->DB_WriteWordData(wordID, worddata, lendata, DB);
 }
 
-int     DB_EndReadFiles(void *DB)
+int     DB_EndWriteWords(SWISH *sw, void *DB)
 {
-   return DB_EndReadFiles_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_EndWriteWords(DB);
 }
 
 
-int     DB_InitWriteSortedIndex(void *DB)
+int     DB_InitReadWords(SWISH *sw, void *DB)
 {
-   return DB_InitWriteSortedIndex_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_InitReadWords(DB);
 }
 
-int     DB_WriteSortedIndex(int propID, char *data, int sz_data,void *DB)
+int     DB_ReadWordHash(SWISH *sw, char *word, long *wordID, void *DB)
 {
-   return DB_WriteSortedIndex_Native(propID, data, sz_data,(struct Handle_DBNative  *)DB);
+   return sw->Db->DB_ReadWordHash(word, wordID, DB);
 }
 
-int     DB_EndWriteSortedIndex(void *DB)
+int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB)
 {
-   return DB_EndWriteSortedIndex_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_ReadFirstWordInvertedIndex(word, resultword, wordID, DB);
+}
+
+int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB)
+{
+   return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
+}
+
+long    DB_ReadWordData(SWISH *sw, long wordID, char **worddata, int *lendata, void *DB)
+{
+   return sw->Db->DB_ReadWordData(wordID, worddata, lendata, DB);
+}
+
+int     DB_EndReadWords(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_EndReadWords(DB);
+}
+
+
+
+int     DB_InitWriteFiles(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_InitWriteFiles(DB);
+}
+
+int     DB_WriteFile(SWISH *sw, int filenum, char *filedata,int sz_filedata, void *DB)
+{
+   return sw->Db->DB_WriteFile(filenum, filedata, sz_filedata, DB);
+}
+
+int     DB_EndWriteFiles(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_EndWriteFiles(DB);
+}
+
+
+int     DB_InitReadFiles(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_InitReadFiles(DB);
+}
+
+int     DB_ReadFile(SWISH *sw, int filenum, char **filedata,int *sz_filedata, void *DB)
+{
+   return sw->Db->DB_ReadFile(filenum, filedata,sz_filedata, DB);
+}
+
+int     DB_EndReadFiles(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_EndReadFiles(DB);
+}
+
+
+int     DB_InitWriteSortedIndex(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_InitWriteSortedIndex(DB);
+}
+
+int     DB_WriteSortedIndex(SWISH *sw, int propID, char *data, int sz_data,void *DB)
+{
+   return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
+}
+
+int     DB_EndWriteSortedIndex(SWISH *sw, void *DB)
+{
+   return sw->Db->DB_EndWriteSortedIndex(DB);
 }
 
  
-int     DB_InitReadSortedIndex(void *DB)
+int     DB_InitReadSortedIndex(SWISH *sw, void *DB)
 {
-   return DB_InitReadSortedIndex_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_InitReadSortedIndex(DB);
 }
 
-int     DB_ReadSortedIndex(int propID, char **data, int *sz_data,void *DB)
+int     DB_ReadSortedIndex(SWISH *sw, int propID, char **data, int *sz_data,void *DB)
 {
-   return DB_ReadSortedIndex_Native(propID, data, sz_data,(struct Handle_DBNative  *)DB);
+   return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
 }
 
-int     DB_EndReadSortedIndex(void *DB)
+int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 {
-   return DB_EndReadSortedIndex_Native((struct Handle_DBNative  *)DB);
+   return sw->Db->DB_EndReadSortedIndex(DB);
 }
 

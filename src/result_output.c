@@ -74,6 +74,7 @@ $Id$
 #include "merge.h"
 #include "docprop.h"
 #include "error.h"
+#include "search.h"
 #include "result_output.h"
 
 
@@ -323,8 +324,8 @@ FILE   *f_out;
 
 
   f_out = stdout;
-  resultmaxhits = sw->maxhits;
-  resultbeginhits = (sw->beginhits > 0) ? sw->beginhits - 1 : 0;
+  resultmaxhits = sw->Search->maxhits;
+  resultbeginhits = (sw->Search->beginhits > 0) ? sw->Search->beginhits - 1 : 0;
   delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
   counter = resultbeginhits;
 
@@ -771,7 +772,9 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
 	resultHeaderOut (sw,v, "%s %s\n", ENDCHARSHEADER, h->endchars);
 	resultHeaderOut (sw,v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
 	resultHeaderOut (sw,v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
+/*
 	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
+*/
     	translatecharHeaderOut (sw, v, h );
 
 	

@@ -34,7 +34,6 @@
 #include "xml.h"
 #include "txt.h"
 #include "parse_conffile.h"
-#include <unistd.h>
 
 FILE   *open_external_program(SWISH * sw, char *prog)
 {

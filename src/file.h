@@ -34,7 +34,7 @@ void checkListRegex(struct swline *list);
 FILE* openIndexFILEForWrite(char *);
 FILE* openIndexFILEForRead(char *);
 FILE* openIndexFILEForReadAndWrite(char *);
-void CreateEmptyFile(SWISH *, char *);
+void CreateEmptyFile(char *);
 
 void indexpath(SWISH *, char *);
 

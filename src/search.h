@@ -22,6 +22,37 @@
 */
 
 
+#ifndef __HasSeenModule_Search
+#define __HasSeenModule_Search       1
+
+
+/*
+   -- module data
+*/
+
+struct MOD_Search
+{
+        /* start of hits */
+    int     beginhits;
+        /* max. number of hits */
+    int     maxhits;
+
+        /* Properties vars */
+    int     numPropertiesToDisplay;
+    int     currentMaxPropertiesToDisplay;
+    char  **propNameToDisplay;
+
+
+    /* All Results per index file */
+    struct DB_RESULTS *db_results;
+
+};
+
+void initModule_Search (SWISH *);
+void freeModule_Search (SWISH *);
+int  configModule_Search (SWISH *, StringList *);
+
+
 int SwishAttach(SWISH *, int);
 int search (SWISH *sw, char *str, int structure);
 int search_2 (SWISH *sw, char *words, int structure);
@@ -30,24 +61,14 @@ struct swline *fixnot(struct swline *);
 
 struct swline *expandphrase(struct swline *, char);
 
-void readheader(IndexFILE *);
 void ReadHeaderLookupTable (int table[], int table_size, FILE *fp);
 
-void readoffsets(IndexFILE *);
-void readhashoffsets(IndexFILE *);
-void readstopwords(IndexFILE *);
-void readbuzzwords(IndexFILE *);
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
-void readfileoffsets(IndexFILE *);
-void readMetaNames(IndexFILE *);
-void readlocationlookuptables(IndexFILE *);
-void readpathlookuptable(IndexFILE *);
 
 int countResults(RESULT *);
 RESULT *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
 RESULT *operate(SWISH *, RESULT *, int, char *, FILE *, int, int, IndexFILE *);
 RESULT *getfileinfo(SWISH *, char *, IndexFILE *, int);
-char *getfilewords(SWISH *sw, char, IndexFILE *);
 
 int isrule(char *);
 int isnotrule(char *);
@@ -73,7 +94,6 @@ RESULT *getproperties(RESULT *);
 RESULT *sortresultsbyfilenum(RESULT *);
 
 void getrawindexline(FILE *);
-int isokindexheader(FILE *);
 int wasStemmingAppliedToIndex(FILE *);
 int wasSoundexAppliedToIndex(FILE *);
 
@@ -86,3 +106,6 @@ struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
 struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header);
+
+#endif
+

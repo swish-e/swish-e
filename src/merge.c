@@ -35,20 +35,19 @@
 
 #include <assert.h> /* for bug hunting */
 #include "swish.h"
+#include "string.h"	
 #include "merge.h"
 #include "error.h"
 #include "search.h"
 #include "index.h"
-#include "string.h"	
 #include "hash.h"
 #include "mem.h"
 #include "file.h"
 #include "docprop.h"
 #include "list.h"
 #include "compress.h"
-/* #### Added metanames.h */
 #include "metanames.h"
-/* #### */
+#include "db.h"
 
 /* The main merge functions - it accepts three file names.
 ** This is a bit hairy. It basically acts as a zipper,
@@ -57,8 +56,7 @@
 
 void readmerge(char *file1, char *file2, char *outfile, int verbose)
 {
-int i, indexfilenum1, indexfilenum2, wordsfilenum1, wordsfilenum2, result, totalfiles, totalwords, skipwords, skipfiles;
-long fileinfo1, fileinfo2, offsetstart, hashstart;
+int i, j, indexfilenum1, indexfilenum2, wordsfilenum1, wordsfilenum2, result, totalfiles, totalwords, skipwords, skipfiles;
 ENTRY *ip1, *ip2, *ip3;
 int endip1,endip2;
 ENTRY *buffer1, *buffer2;
@@ -67,7 +65,7 @@ int firstTime = 1;
 SWISH *sw1, *sw2, *sw;
 IndexFILE *indexf1, *indexf2, *indexf;
 struct file *fi;
-FILE *fp,*fp1,*fp2;
+int is_first1, is_first2;
 
 	if (verbose) printf("Opening and reading file 1 header...\n");
 
@@ -82,19 +80,15 @@ FILE *fp,*fp1,*fp2;
 	}
 	
 	indexf1=sw1->indexlist;
-	fp1=(FILE *)indexf1->DB;
 	indexf2=sw2->indexlist;
-	fp2=(FILE *)indexf2->DB;
 		/* Output data */
 	sw = SwishNew();
 	indexf = sw->indexlist= addindexfile(sw->indexlist, outfile);
 
 		/* Create and empty outfile */
-	CreateEmptyFile(sw,outfile);
 		/* and open it for read/write */
-	if ((fp = openIndexFILEForReadAndWrite(outfile)) == NULL) {
-		progerr("Couldn't write the merged index file \"%s\".", outfile);
-	}
+	sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+
 		/* Force the economic mode to save memory */
 	sw->swap_flag=1;
 
@@ -158,11 +152,10 @@ FILE *fp,*fp1,*fp2;
 	if(indexf1->header.maxwordlimit<indexf2->header.maxwordlimit) indexf->header.maxwordlimit=indexf1->header.maxwordlimit;
 	else indexf->header.maxwordlimit=indexf2->header.maxwordlimit;
 
+	/* removed - Patents ...
 	indexf->header.applyFileInfoCompression=indexf1->header.applyFileInfoCompression && indexf2->header.applyFileInfoCompression;
+	*/
 
-	ip1 = ip2 = ip3 = NULL;
-	endip1 = endip2 = 0;
-	buffer1 = buffer2 = NULL;
 
 	if (verbose) printf("Counting files... ");
 
@@ -175,98 +168,115 @@ FILE *fp,*fp1,*fp2;
 
 	if (verbose) printf("%d files.\n", indexfilenum1 + indexfilenum2);
 
-	fileinfo1 = indexf1->offsets[FILELISTPOS];
-	metaFile1 = readMergeMeta(sw1,indexf1->metaCounter,indexf1->metaEntryArray);
+	DB_InitReadFiles(sw1, indexf1->DB);
+	DB_InitReadFiles(sw2, indexf2->DB);
+
+	metaFile1 = readMergeMeta(sw1,indexf1->header.metaCounter,indexf1->header.metaEntryArray);
 	
-	fileinfo2 = indexf2->offsets[FILELISTPOS];
-	metaFile2 = readMergeMeta(sw2,indexf2->metaCounter,indexf2->metaEntryArray);
+	metaFile2 = readMergeMeta(sw2,indexf2->header.metaCounter,indexf2->header.metaEntryArray);
 	
 	/* Create the merged list and modify the
 	   individual ones with the new meta index
 	*/
-	indexf->metaEntryArray = createMetaMerge(metaFile1, metaFile2,&indexf->metaCounter);
+	indexf->header.metaEntryArray = createMetaMerge(metaFile1, metaFile2,&indexf->header.metaCounter);
 	
 	if (verbose) printf("\nReading file 1 info ...");
 	fflush(stdout);
 
-	fseek(fp1, fileinfo1, 0);
 	for (i = 1; i <= indexfilenum1; i++) {
-		fi = readFileEntry(indexf1,i);
-		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->filetotalwordsarray[i-1], metaFile1);
+		fi = readFileEntry(sw1, indexf1,i);
+		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->header.filetotalwordsarray[i-1], metaFile1);
 	}
 	if (verbose) printf("\nReading file 2 info ...");
 
-	fseek(fp2, fileinfo2, 0);
 	for (i = 1; i <= indexfilenum2; i++) {
-		fi = readFileEntry(indexf2,i);
-		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->filetotalwordsarray[i-1], metaFile2);
+		fi = readFileEntry(sw2, indexf2,i);
+		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->header.filetotalwordsarray[i-1], metaFile2);
 	}
 	
 	if (verbose) printf("\nCreating output file ... ");
 	
 	if (verbose) printf("\nMerging words... "); 
-	
+
+	DB_InitReadWords(sw1, indexf1->DB);
+	DB_InitReadWords(sw2, indexf2->DB);
+
 		/* Adjust file pointer to start of word info */
-	fseek(fp1,indexf1->wordpos,0);
-	fseek(fp2,indexf2->wordpos,0);
-	
-	for (i = 0; i < MAXCHARS; i++)
-		indexf->offsets[i] = 0;
-	for (i = 0; i < SEARCHHASHSIZE; i++)
-		indexf->hashoffsets[i] = 0;
 	skipwords = 0;
-	while (1) {
-		if (buffer1 == NULL) {
-			if(endip1)
-				ip1 = NULL;
-			else ip1 = (ENTRY *) 
-				readindexline(indexf1, metaFile1);
-			if (ip1 == NULL) {
-				endip1 = 1;
-				if (ip2 == NULL && !firstTime) {
-					break;
+		/* Read on all chars */
+	for (j = 0 ; j < 256 ; j++) 
+	{
+		is_first1 = is_first2 = 1;
+		ip1 = ip2 = ip3 = NULL;
+		endip1 = endip2 = 0;
+		buffer1 = buffer2 = NULL;
+
+		while(1)
+		{
+			if (buffer1 == NULL) 
+			{
+				if(endip1)
+					ip1 = NULL;
+				else ip1 = (ENTRY *) 
+					readindexline(sw1, indexf1, metaFile1, j, &is_first1);
+				if (ip1 == NULL) 
+				{
+					endip1 = 1;
+					if (ip2 == NULL && !firstTime) 
+					{
+						break;
+					}
 				}
+				buffer1 = ip1;
 			}
-			buffer1 = ip1;
-		}
-		firstTime =0;
-		if (buffer2 == NULL) {
-			if(endip2)
-				ip2 = NULL;
-			else ip2 = (ENTRY *) 
-				readindexline(indexf2, metaFile2);
-			if (ip2 == NULL) {
-				endip2=1;
-				if (ip1 == NULL) {
-					break;
+			firstTime =0;
+			if (buffer2 == NULL) 
+			{
+				if(endip2)
+					ip2 = NULL;
+				else ip2 = (ENTRY *) 
+					readindexline(sw2, indexf2, metaFile2, j, &is_first2);
+				if (ip2 == NULL) 
+				{
+					endip2=1;
+					if (ip1 == NULL) 
+					{
+						break;
+					}
 				}
+				else
+					addfilenums(ip2, indexfilenum1);
+				buffer2 = ip2;
 			}
+			if (ip1 == NULL)
+				result = 1;
+			else if (ip2 == NULL)
+				result = -1;
 			else
-				addfilenums(ip2, indexfilenum1);
-			buffer2 = ip2;
+				result = strcmp(ip1->word, ip2->word);
+			if (!result) 
+			{
+				ip3 = (ENTRY *) mergeindexentries(ip1, ip2, indexfilenum1);
+				/* ip1 and ip2 are freeded in mergeindexentries */
+				buffer1 = buffer2 = NULL;
+				skipwords++;
+			}
+			else if (result < 0) 
+			{
+				ip3 = ip1;
+				buffer1 = NULL;
+			}
+			else 
+			{
+				ip3 = ip2;
+				buffer2 = NULL;
+			}
+			addentryMerge(sw,ip3);
 		}
-		if (ip1 == NULL)
-			result = 1;
-		else if (ip2 == NULL)
-			result = -1;
-		else
-			result = strcmp(ip1->word, ip2->word);
-		if (!result) {
-			ip3 = (ENTRY *) mergeindexentries(ip1, ip2, indexfilenum1);
-			/* ip1 and ip2 are freeded in mergeindexentries */
-			buffer1 = buffer2 = NULL;
-			skipwords++;
-		}
-		else if (result < 0) {
-			ip3 = ip1;
-			buffer1 = NULL;
-		}
-		else {
-			ip3 = ip2;
-			buffer2 = NULL;
-		}
-		addentryMerge(sw,ip3);
 	}
+	DB_EndReadWords(sw1, indexf1->DB);
+	DB_EndReadWords(sw2, indexf2->DB);
+
 
 	if (verbose) {
 		if (skipwords)
@@ -276,37 +286,25 @@ FILE *fp,*fp1,*fp2;
 			printf("no redundant words.\n");
 	}
 
+	if (verbose) printf("\nSorting words ... ");
+
+	sort_words(sw,indexf);
+
 	if (verbose) printf("\nPrinting header... ");
 
-	printheader(&indexf->header,fp, outfile, (totalwords-skipwords), totalfiles,1);
+	write_header(sw, &indexf->header, indexf->DB, outfile, (totalwords-skipwords), totalfiles,1);
 
-	offsetstart = ftell(fp);
-	for (i = 0; i < MAXCHARS; i++)
-		printlong(fp,(long) 0);
-	
-	hashstart = ftell(fp);
-	for (i = 0; i < SEARCHHASHSIZE; i++)
-		printlong(fp,(long) 0);
-	
 	if(verbose) printf("\nPrinting words... \n");
 
 	if(verbose) printf("Writing index entries ...\n");
 
-	printindex(sw,indexf);
+	write_index(sw,indexf);
 
-	if(verbose) printf("Writing stopwords ...\n");
-
-	printstopwords(indexf);
-
-	if(verbose) printf("Writing buzzwords ...\n");
-
-	printbuzzwords(indexf);
-	
-	
 	if (verbose) printf("\nMerging file info... ");
 	
-	indexf->offsets[FILELISTPOS] = ftell(fp);
-	printfilelist(sw,indexf);
+	write_file_list(sw,indexf);
+
+	write_sorted_index(sw,indexf);
 	
 	skipfiles = (indexfilenum1 + indexfilenum2) - totalfiles;
 
@@ -318,29 +316,6 @@ FILE *fp,*fp1,*fp2;
 			printf("no redundant files.\n");
 	}
 
-	if(verbose) printf("Writing file offsets ...\n");
-
-	printfileoffsets(indexf);
-
-	if(verbose) printf("Writing MetaNames ...\n");
-	printMetaNames(indexf);
-
-	if(verbose) printf("Writing Location lookup tables ...\n");
-	printlocationlookuptables(indexf);
-	printpathlookuptable(indexf);
-
-	fclose(fp);
-
-	fp = openIndexFILEForReadAndWrite(outfile);
-	fseek(fp, offsetstart, 0);
-	for (i = 0; i < MAXCHARS; i++)
-		printlong(fp,indexf->offsets[i]);
-
-	fseek(fp, hashstart, 0);
-	for (i = 0; i < SEARCHHASHSIZE; i++)
-		printlong(fp,indexf->hashoffsets[i]);
-	fclose(fp);
-	
 	SwishClose(sw1);
 	SwishClose(sw2);
 
@@ -374,67 +349,69 @@ int i;
 ** in a result structure.
 */
 
-ENTRY *readindexline(IndexFILE *indexf, struct metaMergeEntry *metaFile)
+ENTRY *readindexline(SWISH *sw, IndexFILE *indexf, struct metaMergeEntry *metaFile, int c, int *is_first)
 {
-int i, j, x, tfrequency, filenum, structure,metaID, metaID2, frequency, *position, index_structure,index_structfreq;
-static int filewordlen=0;
-static char *fileword=NULL;
+int j, x, tfrequency, filenum, structure,metaID, metaID2, frequency, *position, index_structure,index_structfreq;
 LOCATION *loc;
 ENTRY *ip;
 struct metaMergeEntry* tmp=NULL;
 long nextposmetaname;
-long nextword,worddata;
-FILE *fp = (FILE *) indexf->DB;
+unsigned char word[2];
+char *resultword;
+long wordID;
+char *buffer, *s;
+int sz_buffer;
+
+	word[0] = (unsigned char) c;
+	word[1] = '\0';
 	
 	j=tfrequency=filenum=structure=metaID=frequency=0;
 	position=NULL;
 	nextposmetaname=0L;
-	if(!filewordlen) fileword = (char *) emalloc((filewordlen=MAXWORDLEN) + 1);
 
 	loc = NULL;
-	
-	   /* Read Word len */
-	uncompress1(i,fp);
-	if (!i)   /* No more words */
+
+	if ( *is_first )
+	{
+		DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+		*is_first = 0;
+	} 
+	else
+		DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+
+	if(!wordID)   /* No more words */
 		return NULL;
-	if(i > filewordlen) {
-		filewordlen = i + 100;
-		fileword = (char *) erealloc(fileword,filewordlen + 1);
-	}
-	fread(fileword,1,i,fp);
-	fileword[i]='\0';
 
 	ip = (ENTRY *) emalloc(sizeof(ENTRY));
-	ip->word = (char *) estrdup(fileword);
-        ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
+	ip->word = resultword;
+    ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
 	ip->u1.max_locations=0;
 	ip->currentlocation=0;
-	/* Jump hash offset */
-	readlong(fp);
-	worddata=readlong(fp);
-	nextword=ftell(fp);
 
-	fseek(fp,worddata,SEEK_SET);
-	
-	uncompress1(tfrequency,fp);
+		/* read Word data */
+	DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
+	s = buffer;
+
+		/* parse word data to add it to the structure */
+	uncompress2(tfrequency,s);
 	ip->tfrequency = tfrequency;
 
-	uncompress1(metaID,fp);
+	uncompress2(metaID,s);
 	while(metaID) {
-		nextposmetaname=readlong(fp);
+		UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
 		do {
-			uncompress1(filenum,fp);
-			uncompress1(index_structfreq,fp);
-			frequency=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[0];
-			index_structure=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[1];
-			structure=indexf->structurelookup->all_entries[index_structure-1]->val[0];
+			uncompress2(filenum,s);
+			uncompress2(index_structfreq,s);
+			frequency=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[0];
+			index_structure=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[1];
+			structure=indexf->header.structurelookup->all_entries[index_structure-1]->val[0];
 
 			loc=(LOCATION *)emalloc(sizeof(LOCATION)+(frequency-1)*sizeof(int));
 			loc->filenum=filenum;
 			loc->structure=structure;
 			loc->frequency=frequency;
 			for(j=0;j<frequency;j++){
-				uncompress1(x,fp);
+				uncompress2(x,s);
 				loc->position[j] = x;
 			}
 			/*Need to modify metaID with new list*/
@@ -458,11 +435,9 @@ FILE *fp = (FILE *) indexf->DB;
 			else
 				ip->locationarray=(LOCATION **) erealloc(ip->locationarray,(++ip->u1.max_locations)*sizeof(LOCATION *)); 
 			ip->locationarray[ip->u1.max_locations-1]=loc;
-		} while (ftell(fp)!=nextposmetaname);
-		uncompress1(metaID,fp);
+		} while ((s - buffer) !=nextposmetaname);
+		uncompress2(metaID,s);
 	}
-		/* restore offset to next word */
-	fseek(fp,nextword,SEEK_SET);
 	return ip;
 }
 

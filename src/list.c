@@ -75,37 +75,12 @@ IndexFILE *newnode;
 int i;
 	newnode = (IndexFILE *) emalloc(sizeof(IndexFILE));
 	newnode->line = (char *) estrdup(line);
-	for (i=0; i<MAXCHARS; i++) newnode->offsets[i] = 0L;
-	for (i=0; i<SEARCHHASHSIZE; i++) newnode->hashoffsets[i] = 0L;
 	newnode->filearray = NULL;
 	newnode->filearray_cursize=newnode->filearray_maxsize=0;
-	newnode->fileoffsetarray = NULL;
-	newnode->fileoffsetarray_cursize=newnode->fileoffsetarray_maxsize=0;
 	newnode->DB=NULL;
-	newnode->metaEntryArray=NULL;
-	newnode->metaCounter=0;
 
-	newnode->wordpos=0;
-	newnode->stopPos = 0;
-	newnode->stopMaxSize = 0;
-	newnode->stopList = NULL;
-	for (i=0; i<HASHSIZE; i++)
-	{
-	    newnode->hashstoplist[i] = NULL;
-        newnode->hashbuzzwordlist[i] = NULL;
-        newnode->hashuselist[i] = NULL;
-    }
-
-	newnode->is_use_words_flag = 0;
-	newnode->buzzwords_used_flag = 0;
 
 	for (i=0; i<256; i++) newnode->keywords[i] = NULL;
-
-	newnode->locationlookup=NULL;
-	newnode->structurelookup=NULL;
-	newnode->structfreqlookup=NULL;
-	newnode->pathlookup=NULL;
-
 
 		/* Props IDs when searching */
 	newnode->propIDToDisplay=NULL;
@@ -134,6 +109,8 @@ int i;
 
 void init_header(INDEXDATAHEADER *header)
 {
+	int i;
+
 	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
 
 	header->wordchars = (char *)emalloc(header->lenwordchars + 1);
@@ -175,17 +152,38 @@ void init_header(INDEXDATAHEADER *header)
 	header->totalfiles=header->totalwords=0;
 	header->applyStemmingRules = 0;                 /* added 11/24/98 */
 	header->applySoundexRules = 0;                  /* added DN 09/01/99 */
-	header->applyFileInfoCompression = 0;			/* added 2000/01/01 jmruiz */
+/* removed - Patents ..
+	header->applyFileInfoCompression = 0;
+	*/
 	header->ignoreTotalWordCountWhenRanking = 0;    /* added 11/24/98 */
 	header->minwordlimit = MINWORDLIMIT;
 	header->maxwordlimit = MAXWORDLIMIT;
 	makelookuptable("",header->bumpposcharslookuptable); 
 
-		/* Init indexchars lookuptable */
-	/* makelookuptable(indexchars,header->indexcharslookuptable); indexchars stuff removed */
+	header->metaEntryArray=NULL;
+	header->metaCounter=0;
 
+	header->stopPos = 0;
+	header->stopMaxSize = 0;
+	header->stopList = NULL;
+	for (i=0; i<HASHSIZE; i++)
+	{
+	    header->hashstoplist[i] = NULL;
+        header->hashbuzzwordlist[i] = NULL;
+        header->hashuselist[i] = NULL;
+    }
 
-      BuildTranslateChars(header->translatecharslookuptable,"",""); 
+	header->is_use_words_flag = 0;
+	header->buzzwords_used_flag = 0;
+
+	header->locationlookup=NULL;
+	header->structurelookup=NULL;
+	header->structfreqlookup=NULL;
+	header->pathlookup=NULL;
+
+	header->filetotalwordsarray=NULL;
+
+    BuildTranslateChars(header->translatecharslookuptable,"",""); 
 }
 
 

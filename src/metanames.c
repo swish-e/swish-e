@@ -64,7 +64,7 @@ void    add_default_metanames(IndexFILE * indexf)
         metaName = estrdup(SwishDefaultMetaNames[i].metaName);
         metaType = SwishDefaultMetaNames[i].metaType;
         metaID = SwishDefaultMetaNames[i].metaID;
-        addMetaEntry(indexf, metaName, metaType, metaID, 0, &dummy);
+        addMetaEntry(&indexf->header, metaName, metaType, metaID, NULL, &dummy);
         efree(metaName);
     }
 }
@@ -73,27 +73,27 @@ void    add_default_metanames(IndexFILE * indexf)
 /* Returns the structure associated with the metaName if it exists
 */
 
-struct metaEntry *getMetaNameData(IndexFILE * indexf, char *word)
+struct metaEntry *getMetaNameData(INDEXDATAHEADER * header, char *word)
 {
     int     i;
 
-    for (i = 0; i < indexf->metaCounter; i++)
-        if (!strcmp(indexf->metaEntryArray[i]->metaName, word))
-            return indexf->metaEntryArray[i];
+    for (i = 0; i < header->metaCounter; i++)
+        if (!strcmp(header->metaEntryArray[i]->metaName, word))
+            return header->metaEntryArray[i];
     return NULL;
 }
 
 /* Returns the structure associated with the metaName ID if it exists
 */
 
-struct metaEntry *getMetaIDData(IndexFILE * indexf, int number)
+struct metaEntry *getMetaIDData(INDEXDATAHEADER *header, int number)
 {
     int     i;
 
-    for (i = 0; i < indexf->metaCounter; i++)
+    for (i = 0; i < header->metaCounter; i++)
     {
-        if (number == indexf->metaEntryArray[i]->metaID)
-            return indexf->metaEntryArray[i];
+        if (number == header->metaEntryArray[i]->metaID)
+            return header->metaEntryArray[i];
     }
     return NULL;
 }
@@ -104,7 +104,7 @@ struct metaEntry *getMetaIDData(IndexFILE * indexf, int number)
 ** appropriate index
 */
 /* #### Changed the name isDocProp by metaType */
-void    addMetaEntry(IndexFILE * indexf, char *metaWord, int metaType, int metaID, long sort_offset, int *applyautomaticmetanames)
+void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID, int *sort_array, int *applyautomaticmetanames)
 {
     struct metaEntry *tmpEntry;
     struct metaEntry *newEntry;
@@ -137,7 +137,7 @@ void    addMetaEntry(IndexFILE * indexf, char *metaWord, int metaType, int metaI
         if ( metaWord[0] == '=' )
         {
             metaWord++;
-            metaID = indexf->metaEntryArray[indexf->metaCounter - 1]->metaID;
+            metaID = header->metaEntryArray[header->metaCounter - 1]->metaID;
         }
     }
             
@@ -145,7 +145,7 @@ void    addMetaEntry(IndexFILE * indexf, char *metaWord, int metaType, int metaI
 
     /* #### Jose Ruiz - New Stuff. Use metaType */
     /* See if there is a previous metaname with the same name */
-    tmpEntry = getMetaNameData(indexf, metaWord);
+    tmpEntry = getMetaNameData(header, metaWord);
 
     if (!tmpEntry)              /* metaName not found - Create a new one */
     {
@@ -158,43 +158,43 @@ void    addMetaEntry(IndexFILE * indexf, char *metaWord, int metaType, int metaI
         if (metaID)
             newEntry->metaID = metaID;
         else
-            newEntry->metaID = indexf->metaCounter + AUTOPROP_ID__DOCPATH; /* DOCPATH is the first metaname */
+            newEntry->metaID = header->metaCounter + AUTOPROP_ID__DOCPATH; /* DOCPATH is the first metaname */
 
          /* what, no sw->verbose available?
-         printf("Added '%s' into metaEntryArray[%d] with metaID = %d\n", metaWord,  indexf->metaCounter, newEntry->metaID );
+         printf("Added '%s' into metaEntryArray[%d] with metaID = %d\n", metaWord,  header->metaCounter, newEntry->metaID );
          */
 
         /* Add at the end of the list of metanames */
-        if (indexf->metaCounter)
-            indexf->metaEntryArray = (struct metaEntry **) erealloc(indexf->metaEntryArray, (indexf->metaCounter + 1) * sizeof(struct metaEntry *));
+        if (header->metaCounter)
+            header->metaEntryArray = (struct metaEntry **) erealloc(header->metaEntryArray, (header->metaCounter + 1) * sizeof(struct metaEntry *));
 
         else
-            indexf->metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
+            header->metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
 
-        indexf->metaEntryArray[indexf->metaCounter++] = newEntry;
+        header->metaEntryArray[header->metaCounter++] = newEntry;
         tmpEntry = newEntry;
     }
 
 
-    /* Offset to sorted table of filenums - Default vaule 0L means no yet sorted */
-    tmpEntry->sort_offset = sort_offset;
+    /* Array table of filenums - Default value NULL means no yet sorted */
+    tmpEntry->sorted_data = sort_array;
     /* Add metaType info */
     tmpEntry->metaType |= metaType;
 
 
     /* Asign internal metanames if found */
     if (strcmp(metaWord, AUTOPROPERTY_DOCPATH) == 0)
-        indexf->filenameProp = tmpEntry;
+        header->filenameProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_TITLE) == 0)
-        indexf->titleProp = tmpEntry;
+        header->titleProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_LASTMODIFIED) == 0)
-        indexf->filedateProp = tmpEntry;
+        header->filedateProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_STARTPOS) == 0)
-        indexf->startProp = tmpEntry;
+        header->startProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_DOCSIZE) == 0)
-        indexf->sizeProp = tmpEntry;
+        header->sizeProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_SUMMARY) == 0)
-        indexf->summaryProp = tmpEntry;
+        header->summaryProp = tmpEntry;
 
     /* #### */
 }
@@ -209,8 +209,8 @@ int     getMetaNameID(indexf, word)
 {
     int     i;
 
-    for (i = 0; i < indexf->metaCounter; i++)
-        if (strcmp(indexf->metaEntryArray[i]->metaName, word) == 0)
-            return (indexf->metaEntryArray[i]->metaID);
+    for (i = 0; i < indexf->header.metaCounter; i++)
+        if (strcmp(indexf->header.metaEntryArray[i]->metaName, word) == 0)
+            return (indexf->header.metaEntryArray[i]->metaID);
     return 1;
 }
