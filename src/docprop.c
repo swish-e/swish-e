@@ -55,16 +55,15 @@ $Id$
 #ifdef PROPFILE
 #include "db.h"
 #endif
+#ifdef HAVE_ZLIB
+#include "zlib.h"
+#endif
 
 /* Delete a property entry (and any linked properties) */
 void freeProperty( propEntry *prop )
 {
-	while (prop)
-	{
-		propEntry *nextOne = prop->next;
-		efree(prop);
-		prop = nextOne;
-	}
+    if ( prop )
+        efree(prop);
 }	
 
 
@@ -598,9 +597,8 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
         propValue = tmp;
     }
 
-    /* Now create the property */
+    /* Now create the property $$ could be -1 */
     docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
-    docProp->next = NULL;
 
     memcpy(docProp->propValue, propValue, propLen);
     docProp->propLen = propLen;
@@ -756,7 +754,8 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 	}
 
 	/* Un-encoded STRINGS get appended to existing properties */
-	if ( dp->propEntry[meta_entry->metaID] && !preEncoded )
+	/* Others generate a warning */
+	if ( dp->propEntry[meta_entry->metaID] )
 	{
 	    if ( is_meta_string(meta_entry) )
 	    {
@@ -777,8 +776,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
     if ( !(docProp = CreateProperty( meta_entry, propValue, propLen, preEncoded, &error_flag )) )
         return error_flag ? 0 : 1;
     
-	docProp->next = dp->propEntry[meta_entry->metaID];	
-	dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
+	dp->propEntry[meta_entry->metaID] = docProp;
 
     return 1;	    
 }
@@ -850,17 +848,143 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 #ifdef PROPFILE
 
 /*******************************************************************
+*   Allocate or reallocate the property buffer
+*
+*   This compresses all properties -- might be good to only compress if
+*   they are longer than some size.
+*
+*
+*********************************************************************/
+
+static PropIOBufPtr allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
+{
+    unsigned long total_size;
+
+
+    total_size = sizeof(PropIOBufType) + buf_needed - 1;
+
+    if ( !sw->Prop_IO_Buf ||  total_size > sw->PropIO_allocated )
+    {
+        if ( sw->Prop_IO_Buf )
+            efree( sw->Prop_IO_Buf );
+
+        total_size = total_size > sw->PropIO_allocated + RD_BUFFER_SIZE
+                    ? total_size
+                    : sw->PropIO_allocated + RD_BUFFER_SIZE;
+            
+        sw->Prop_IO_Buf = emalloc( total_size );
+        sw->PropIO_allocated = total_size;  /* keep track of structure size */
+    }
+    return sw->Prop_IO_Buf;
+}
+    
+ 
+
+/*******************************************************************
+*   Compress a Property
+*
+*   This compresses all properties -- might be good to only compress if
+*   they are longer than some size.
+*
+*
+*********************************************************************/
+
+static unsigned long compress_property( propEntry *prop, int propID, SWISH *sw )
+{
+    PropIOBufPtr    PropBuf = sw->Prop_IO_Buf;     /* For compressing and uncompressing */
+    unsigned long   dest_size = prop->propLen;
+
+#ifdef HAVE_ZLIB
+
+    /* Should maybe only compress if string, and over some length? */
+    dest_size = prop->propLen + ( prop->propLen / 100 ) + 1000;  // way more than should be needed
+
+#endif
+
+    /* Get an output buffer */
+    PropBuf = allocatePropIOBuffer( sw, dest_size );
+    PropBuf->propLen    = prop->propLen;  /* original size */
+
+
+#ifdef HAVE_ZLIB
+
+
+    if ( prop->propLen < MIN_PROP_COMPRESS_SIZE )
+    {
+        memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
+        PropBuf->propLen    = 0;  /* Flag that it's not compressed */
+        return sizeof(PropIOBufType) + prop->propLen - 1;
+    }
+    else
+        if ( compress2( (Bytef *)&PropBuf->buffer, &dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel) != Z_OK)
+            progerr("Property Compression Error");
+
+
+    /* Make sure it's compressed enough */
+    if ( dest_size >= prop->propLen )
+    {
+        dest_size = prop->propLen;
+        memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
+        PropBuf->propLen    = 0;  /* Flag that it's not compressed */
+    }
+
+    return sizeof(PropIOBufType) + dest_size - 1;
+
+
+#else
+
+    memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
+    PropBuf->propLen    = 0;  /* Flag that it's not compressed */
+    return sizeof(PropIOBufType) + dest_size - 1;
+
+#endif
+
+}
+
+/*******************************************************************
+*   Uncompress a Property
+*
+*
+*********************************************************************/
+
+static unsigned char *uncompress_property( SWISH *sw, PropIOBufPtr input_buf, unsigned long read_size )
+{
+#ifdef HAVE_ZLIB
+    /* make sure buffer is big enough for the uncompressed data */
+    PropIOBufPtr  PropBuf;
+    unsigned long compressed_len = read_size - sizeof( PropIOBufType ) + 1;
+
+    if ( input_buf->propLen == 0 ) /* wasn't compressed */
+    {
+        input_buf->propLen = read_size;
+        return input_buf->buffer;
+printf("NOT COMPRESSED\n");        
+    }
+        
+
+    PropBuf = allocatePropIOBuffer( sw, input_buf->propLen );
+
+    if ( uncompress(PropBuf->buffer, &input_buf->propLen, input_buf->buffer, compressed_len ) != Z_OK )
+    {
+        progwarn("Failed to uncompress Property\n");
+        return NULL;
+    }
+
+    return PropBuf->buffer;
+
+#else
+
+    return input_buf->buffer;
+
+#endif
+
+}
+
+
+
+
+/*******************************************************************
 *   Write Properties to disk, and save seek pointers
-*
-*   The format is:
-*	    <PropID:int><PropValueLen:int><PropValue:not-null-terminated>
-*	    ...
-*	    <PropID:int><PropValueLen:int><PropValue:not-null-terminated>
-*	    <EndofList:null char>
-*
-* All ints are compressed to save space. Jose Ruiz 04/00
-*
-* The list is terminated with a PropID with a value of zero
 *
 * 2001-09 - jmruiz - Added filenum for use in merge.c
 *
@@ -871,18 +995,15 @@ void     WritePropertiesToDisk( SWISH *sw , int filenum)
     struct file *fi = indexf->filearray[ filenum - 1 ];
     docProperties *docProperties;
     int propID;
-    int len;
-    char *buffer,*p,*q;
-    int lenbuffer;
     propEntry *prop;
-    int datalen;
-    int total_len;
+    unsigned long total_len;
+    unsigned long compress_len;
+
 
     /* $$$ This should be done when a file entry is created (and created in one place) */
     fi->propLocations = NULL;
     fi->propSize      = NULL;
     fi->propTotalLen  = 0;
-
 
     /* any props exist? */
     if ( !fi->docProperties )
@@ -893,63 +1014,23 @@ void     WritePropertiesToDisk( SWISH *sw , int filenum)
 
     total_len = 0;  
 
-    /* maybe this should be sw->Index->propbuffer so it's not allocated for every file */
-	buffer = emalloc( (lenbuffer = MAXSTRLEN) );
-
 
     for( propID = 0; propID < docProperties->n; propID++ )
     {
         if ( !(prop = docProperties->propEntry[propID]))
             continue;
-		
-        datalen = 0;  /* length of data packed away */
 
+        compress_len = compress_property( prop, propID, sw );
 
-        /* now write a property (or properties if more than one) */
-        /* I wonder if it would be smarter to buffer ALL the props and then write */
-        /* which would mean I'd have to calculate the offsets, which shouldn't be hard */
+        DB_WriteProperty( sw, fi, propID, (unsigned char *)sw->Prop_IO_Buf, compress_len, indexf->DB );
 
-        while (prop)
-        {
-            /* the length of the property value */
-            len = prop->propLen;
-
-            /* Realloc buffer size if needed */
-            if ( lenbuffer < (datalen+len+8*2) )
-            {
-                lenbuffer +=(datalen)+len+8*2+500;  // could we learn from the last allocation?
-                buffer = erealloc( buffer, lenbuffer );
-            }
-
-            /* set start of this entry */
-            p = q = buffer + datalen;
-
-            /* Do not store 0!! - compress does not like it */
-            p = compress3(propID+1,p);
-
-            /* including the length will make retrieval faster */
-            p = compress3(len,p);
-
-            memcpy(p,prop->propValue, len);
-            
-
-            datalen += (p-q) + len;
-            prop = prop->next;
-        }
-
-        /* Now write this property out to disk */
-
-        DB_WriteProperty( sw, fi, propID, buffer, datalen, indexf->DB );
-
-        total_len += datalen;
+        /* Keep total so can read all back from disk if needed */
+        total_len += compress_len;
     }
 
 
 
     fi->propTotalLen = total_len;
-
-    efree( buffer );
-
 
     /* Now free the doc properties */
     freeDocProperties( fi->docProperties );
@@ -970,16 +1051,16 @@ void     WritePropertiesToDisk( SWISH *sw , int filenum)
 
 docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
 {
-    struct file *fi;
-    docProperties *docProperties=NULL;
-    char   *tempPropValue=NULL;
-    int     tempPropLen=0;
-    int     tempPropID;
-    struct  metaEntry meta_entry;
-    char   *buf;
-    char   *propbuf;
-    long    seek_pos = -1;
-    int     i;
+    struct          file *fi;
+    docProperties  *docProperties=NULL;
+    struct          metaEntry meta_entry;
+    char           *propbuf;
+    long            seek_pos = -1;
+    int             metaID;
+    PropIOBufPtr    buffer;
+    unsigned long   read_size;
+
+
 
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
@@ -990,41 +1071,38 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         return fi->docProperties;
         
 
+    /* any props assigned to this file? */
     if ( !fi->propTotalLen )
         return NULL;
 
-    for ( i = 0; i < fi->propLocationsCount; i++ )
+
+
+    for ( metaID = 0; metaID < fi->propLocationsCount; metaID++ )
     {
-        if ( fi->propSize[i] )
+        if ( fi->propSize[metaID] )
         {
-            seek_pos = fi->propLocations[ i ];
+            /* Get the seek position -- why? */
+            seek_pos = fi->propLocations[ metaID ];
             if ( seek_pos < 0 )
                 progerr("failed to find seek postion for first property in file %d", filenum );
 
-            propbuf = buf = DB_ReadProperty( sw, fi, i, indexf->DB );
+            if ( !(buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, metaID, indexf->DB )))
+                continue;
+
+            read_size = fi->propSize[ metaID ];
+
+            /* Get a pointer to the uncompressed data */
+	        propbuf = uncompress_property( sw, buffer, read_size  );
 
             meta_entry.metaName = "(default)";
-
-            tempPropID = uncompress2((unsigned char **)&buf);
-
-            /* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
-            tempPropID--;
-
-            /* Get the data length */
-            tempPropLen = uncompress2((unsigned char **)&buf);
-
-            /* BTW, len must no be 0 */
-            tempPropValue = buf;
-            buf += tempPropLen;
+            meta_entry.metaID = metaID;
 
             /* add the entry to the list of properties */
             /* Flag as encoded, so won't encode again */
-            meta_entry.metaID = tempPropID;
 
-            addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
+            addDocProperty(&docProperties, &meta_entry, propbuf, buffer->propLen, 1 );
 
-            tempPropID = uncompress2((unsigned char **)&buf);
-            efree(propbuf);
+            efree(buffer);
         }
     }
 
@@ -1037,7 +1115,6 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
 
 /*******************************************************************
 *   Reads a single doc property - this is used for sorting
-*   ONLY RETURNS THE FIRST PROPERTY (if more than one exist)
 *
 *   Caller needs to destroy returned property
 *
@@ -1045,14 +1122,18 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
 *********************************************************************/
 propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum, int metaID, int max_size )
 {
-    struct file *fi;
-    char   *buffer;
-    char   *propbuf;
-    struct  metaEntry meta_entry;
-    int     propLen;
-    char   *propValue;
-    propEntry *docProp;
-    int     error_flag;
+    struct          file *fi;
+    int             propLen;
+    int             error_flag;
+    struct          metaEntry meta_entry;
+    PropIOBufPtr    buffer;
+    propEntry      *docProp;
+    unsigned char  *propbuf;
+    unsigned long   read_size;
+
+
+    meta_entry.metaName = "(default)";  /* for error message, I think */
+    meta_entry.metaID   = metaID;
 
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
@@ -1077,56 +1158,42 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
         if ( !(docProp = fi->docProperties->propEntry[ metaID ]) )
             return NULL;
 
+
+        /* Duplicate the property */
         propLen = docProp->propLen;
+
+        /* Limit size,if possible - should really check if it's a string */
         if ( max_size && (max_size >= 8) && (max_size < propLen ))
             propLen = max_size;
 
         /* Duplicate the property */
-        meta_entry.metaName = "(default)";
-        meta_entry.metaID = metaID;
         return CreateProperty( &meta_entry, docProp->propValue, propLen, 1, &error_flag );
     }               
 
 
 
-    if ( !(buffer = DB_ReadProperty( sw, fi, metaID, indexf->DB )))
-        return NULL;
 
-	propbuf = buffer;  // save for efree().
-
-       
-
-
-    meta_entry.metaName = "(default)";
-
-    if ( !(meta_entry.metaID = uncompress2( (unsigned char **) &buffer )) )
-    {
-        efree( propbuf );
-        return NULL;
-    }
+    /* Otherwise read from the disk */
     
-    /* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
-    meta_entry.metaID--;
+    if ( !(buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, metaID, indexf->DB )))
+        return NULL;
 
-    /* Get the data length */
-    propLen = uncompress2((unsigned char **)&buffer);
+    /* Get a pointer to the uncompressed data */
+    read_size = fi->propSize[ metaID ];
 
-    /* and limit it's size */
-    /* $$$ don't know type, so just limit at 8, but should probably lookup its type */
+	propbuf = uncompress_property( sw, buffer, read_size );
+	propLen = buffer->propLen;
 
+    /* Limit size,if possible - should really check if it's a string */
     if ( max_size && (max_size >= 8) && (max_size < propLen ))
         propLen = max_size;
 
+    docProp = CreateProperty( &meta_entry, (char *)propbuf, propLen, 1, &error_flag );
 
-
-    propValue = buffer;  /* just to be obvious */
-
-    docProp = CreateProperty( &meta_entry, propValue, propLen, 1, &error_flag );
-
-    efree( propbuf );
-
-    return docProp;
+	efree( buffer );
+	return docProp;
 }
+	
 
 /*******************************************************************
 *   Packs the file ENTRY's data related to properties into a buffer,
@@ -1227,30 +1294,28 @@ unsigned char *storeDocProperties(docProperties *docProperties, int *datalen)
 
 	for( propID = 0; propID < docProperties->n; propID++ )
 	{
-		prop = docProperties->propEntry[propID];
-		while (prop)
+		if ( (prop = docProperties->propEntry[propID] ))
 		{
-			/* the length of the property value */
-			len = prop->propLen;
+    		/* the length of the property value */
+    		len = prop->propLen;
 
-			/* Realloc buffer size if needed */
-			if(lenbuffer<(*datalen+len+8*2))
-			{
-				lenbuffer +=(*datalen)+len+8*2+500;
-				buffer=erealloc(buffer,lenbuffer);
-			}
-			p= q = buffer + *datalen;
+    		/* Realloc buffer size if needed */
+    		if(lenbuffer<(*datalen+len+8*2))
+    		{
+    			lenbuffer +=(*datalen)+len+8*2+500;
+    			buffer=erealloc(buffer,lenbuffer);
+    		}
+    		p= q = buffer + *datalen;
 
-			/* Do not store 0!! - compress does not like it */
-			p = compress3(propID+1,p);
+    		/* Do not store 0!! - compress does not like it */
+    		p = compress3(propID+1,p);
 
-			/* including the length will make retrieval faster */
-			p = compress3(len,p);
+    		/* including the length will make retrieval faster */
+    		p = compress3(len,p);
 
-			memcpy(p,prop->propValue, len);
+    		memcpy(p,prop->propValue, len);
 
-			*datalen += (p-q)+len;
-			prop = prop->next;
+    		*datalen += (p-q)+len;
 		}
 	}
 	return buffer;
@@ -1300,16 +1365,6 @@ struct metaEntry meta_entry;
 #endif
 
 
-/* #### Added propLen support */
-/* removed lookupDocPropertyValue. Not used */
-/* #### */
-
-int getnumPropertiesToDisplay(SWISH *sw)
-{
-	if(sw)
-		return sw->Search->numPropertiesToDisplay;
-	return 0;
-}
 
 void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
@@ -1350,10 +1405,9 @@ void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEnt
 	for ( metaID = 0 ; metaID < (*docProperties)->n ;metaID++ )
 	{
 		prop = (*docProperties)->propEntry[metaID];
-		while (prop)
+		if (prop)
 		{
 			struct metaMergeEntry* metaFileTemp;
-			propEntry *nextOne = prop->next;
 
 
 			/* scan the metaFile list to get the new metaName value */
@@ -1373,14 +1427,12 @@ void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEnt
 					tmpprop = emalloc(sizeof(propEntry) + prop->propLen);
 					memcpy(tmpprop->propValue,prop->propValue,prop->propLen);
 					tmpprop->propLen = prop->propLen;
-					tmpprop->next = tmpDocProperties->propEntry[metaFileTemp->newMetaID];
 					tmpDocProperties->propEntry[metaFileTemp->newMetaID] = tmpprop;
 					break;
 				}
+			    metaFileTemp = metaFileTemp->next;
 
-				metaFileTemp = metaFileTemp->next;
 			}
-			prop = nextOne;
 		}
 	}
 
@@ -1448,12 +1500,9 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
     if ( !prop )
         printf(" propEntry=NULL");
 
-    for ( ;prop; prop = prop->next )
-    {
-        propstr = DecodeDocProperty( meta_entry, prop );
-        printf(" \"%s\"", propstr );
-        efree( propstr );
-    }
+    propstr = DecodeDocProperty( meta_entry, prop );
+    printf(" \"%s\"", propstr );
+    efree( propstr );
 
     printf( "\n" );
 }

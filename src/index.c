@@ -498,7 +498,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     }
 
 
-#ifdef LIBXML2
+#ifdef HAVE_LIBXML2
     if (fprop->doctype == HTML2)
         return parse_HTML( sw, fprop, buffer );
 #endif
@@ -778,7 +778,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         
 
 
-#ifdef LIBXML2
+#ifdef HAVE_LIBXML2
     if ( fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
         rd_buffer = NULL;
     else
@@ -811,7 +811,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = countwords_XML;
         break;
 
-#ifdef LIBXML2
+#ifdef HAVE_LIBXML2
     case XML2:
         strcpy(strType,"XML2");
         countwords = parse_XML;

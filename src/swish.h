@@ -234,14 +234,26 @@ enum {
 
 #define NODOCTYPE BASEDOCTYPE
 
+// This is used to build the property to read/write to disk
+// It's here so the buffer can live between writes
+
+typedef struct
+{
+    unsigned long   propLen;        // uncompressed length.
+    unsigned  char  buffer[1];      // compressed or uncompressed data
+}
+PropIOBufType, *PropIOBufPtr;
+
+
+
 typedef struct propEntry
 {
-    struct propEntry *next;     /* It is possible to have more than 1 */
-								/* property for the same metaID */
     unsigned int propLen;       /* Length of buffer */
     unsigned char propValue[1]; /* Actual property value starts here */
 }
 propEntry;
+
+
 
 typedef struct docProperties
 {
@@ -310,6 +322,8 @@ typedef struct
     struct FilterList *hasfilter;       /* NULL if no filter for this file */
 }
 FileProp;
+
+
 
 typedef struct LOCATION
 {
@@ -672,8 +686,11 @@ typedef struct
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
     struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
     struct MOD_Prog          *Prog;           /* For extprog.c */
-    struct MOD_PropLimit     *PropLimit;      /* For extprog.c */
+    struct MOD_PropLimit     *PropLimit;      /* For proplimit.c */
 
+    unsigned long             PropIO_allocated;// total size of the structure
+    PropIOBufPtr              Prop_IO_Buf;     /* For compressing and uncompressing */
+    int                       PropCompressionLevel;
 
     /* 08/00 Jose Ruiz Values for document type support */
     int     DefaultDocType;
@@ -833,7 +850,6 @@ void    SwishResetSearch(SWISH *);
 RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
-int     getnumPropertiesToDisplay(SWISH *);
 
 
 /* These are only checked in dump.c */

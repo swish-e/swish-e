@@ -56,7 +56,7 @@ void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
 /* Compress a number and writes it to a buffer */
 /* buffer must be previously allocated */
 /* returns the decreased buffer pointer after storing the compressed number in it */
-unsigned char *compress2(int num, unsigned char *buffer)
+unsigned char *SW_compress2(int num, unsigned char *buffer)
 {
     int     _i = num;
 

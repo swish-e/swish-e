@@ -18,7 +18,7 @@
 */
 
 void compress1(int num, FILE *fp, int (*f_putc)(int , FILE *));
-unsigned char *compress2(int num, unsigned char *buffer);
+// unsigned char *compress2(int num, unsigned char *buffer);
 unsigned char *compress3(int num, unsigned char *buffer);
 
 int uncompress1(FILE *fp, int (*f_getc)(FILE *fp));

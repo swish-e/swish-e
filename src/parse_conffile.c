@@ -54,6 +54,11 @@ $Id$
 #include "result_sort.h"
 #include "db.h"
 #include "extprog.h"
+#ifdef HAVE_ZLIB
+#include "zlib.h"
+#endif
+
+
 
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
 static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
@@ -524,6 +529,19 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+        if (strcasecmp(w0, "PropCompressionLevel") == 0)
+        {
+            if (sl->n == 2)
+            {
+                sw->PropCompressionLevel = atoi(sl->word[1]);
+                if ( sw->PropCompressionLevel < 0 || sw->PropCompressionLevel > 9 )
+                    progerr("%s: requires a number from 0 to 9, with 0=no compression 9=max", w0 );
+            }
+            else
+                progerr("%s: requires one value", w0);
+            continue;
+        }
+        
 
         if (strcasecmp(w0, "PropertyNames") == 0)
         {
@@ -1119,11 +1137,13 @@ int	strtoDocType( char * s )
     {
         {"TXT", TXT},
         {"HTML", HTML},
-        {"XML", XML},
-        {"WML", WML},
+#ifdef HAVE_LIBXML2        
         {"XML2", XML2 },
         {"HTML2", HTML2 },
         {"TXT2", TXT2 },
+#endif
+        {"XML", XML},
+        {"WML", WML}
     };
     int i;
 

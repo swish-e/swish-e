@@ -46,6 +46,9 @@
 #include "metanames.h"
 #include "proplimit.h"
 #include "parse_conffile.h"
+#ifdef HAVE_ZLIB
+#include "zlib.h"
+#endif
 
 
 /* Moved here so it's in the library */
@@ -98,6 +101,9 @@ SWISH *SwishNew()
     sw->dontbumpendtagslist = NULL;
     sw->mtime_limit = 0;
 
+#ifdef HAVE_ZLIB
+    sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
+#endif
 
     sw->truncateDocSize = 0;      /* default: no truncation of docs    */
     
@@ -198,6 +204,12 @@ void SwishClose(SWISH *sw)
         }
 
         freeindexfile(sw->indexlist);
+
+        if ( sw->Prop_IO_Buf )
+        {
+            efree( sw->Prop_IO_Buf );
+            sw->Prop_IO_Buf = NULL;
+        }
         
         /* Free SWISH struct */
         efree(sw);
