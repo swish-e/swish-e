@@ -222,6 +222,7 @@ src/result_output.c
 src/result_output.h
 src/result_sort.c
 src/result_sort.h
+src/searchswish-e.h
 src/search.c
 src/search.h
 src/search_alt.c
