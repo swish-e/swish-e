@@ -642,12 +642,15 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, 
 
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 {
-    int         *array = emalloc( cur_index->header.totalfiles * sizeof( int ) );
+    int         *array = emalloc( (cur_index->header.totalfiles+1) * sizeof( int ) );
     IndexFILE   *idf;
     int         filenum;
     int         new_filenum = 0;
 
+    
+
     memset( array, 0, (cur_index->header.totalfiles+1) * sizeof( int ) );
+
 
     clearerr( filenum_map );
     fseek( filenum_map, 0, 0 );  /* start at beginning */
@@ -663,13 +666,9 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
         if(!fread( &idf, sizeof(IndexFILE *), 1, filenum_map))
             break;
 
-
-
         if ( idf == cur_index )
             array[filenum] = new_filenum;
 
-        if ( feof( filenum_map ) )
-            break;
     }
 
     return array;
@@ -817,7 +816,6 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
         return;
 
     addentry( sw_output, resultword, new_file, structure, metaID, position );
-
 
 
     /* Compress the entries ?  */
