@@ -370,7 +370,7 @@ struct MOD_Index *idx = sw->Index;
 void SwapFileData(SWISH *sw, struct file *filep)
 {
 unsigned char *buffer;
-int sz_buffer,tmp;
+int sz_buffer;
 struct MOD_Index *idx = sw->Index;
 
     if (!idx->fp_file_write)
@@ -381,11 +381,12 @@ struct MOD_Index *idx = sw->Index;
         progerr("Could not create temp file %s",idx->swap_file_name);
     }
         
-    buffer=buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path,&sz_buffer);
-    tmp=sz_buffer+1;
-    compress1(tmp,idx->fp_file_write,fputc);   /* Write len */
+    buffer=buildFileEntry(filep,&sz_buffer);
+
+    compress1(sz_buffer,idx->fp_file_write,fputc);   /* Write len */
     fwrite(buffer,sz_buffer,1,idx->fp_file_write);
-    fputc(0,idx->fp_file_write);    /* Important delimiter -> No more props */
+
+
     efree(buffer);
     freefileinfo(filep);
 }
@@ -403,7 +404,13 @@ unsigned char *buffer,*p;
 char *buf1;
 struct MOD_Index *idx = sw->Index;
 
+
+    /* should use a central location to create this! */
     fi=(struct file *)emalloc(sizeof(struct file));
+
+    fi->docProperties   = NULL;
+    fi->currentSortProp = NULL;
+
     if (!idx->fp_file_read)
     {
         fclose(idx->fp_file_write);
@@ -415,8 +422,11 @@ struct MOD_Index *idx = sw->Index;
         }
     }
     len = uncompress1(idx->fp_file_read,fgetc);
+
     p=buffer=emalloc(len);
     fread(buffer,len,1,idx->fp_file_read);   /* Read all data */
+
+   
     lookup_path = uncompress2(&p);
     lookup_path--;
     len1 = uncompress2(&p);   /* Read length of filename */
@@ -427,22 +437,13 @@ struct MOD_Index *idx = sw->Index;
     fi->lookup_path=lookup_path;
     fi->filename = buf1;
 
+
+#ifdef PROPFILE
+    p = UnPackPropLocations( fi, p );
+#else    
+    /* read the document properties section  */
     p = fetchDocProperties(fi, p);
-    /* Read internal swish properties */
-    /* first init them */
-
-//    fi->fi.mtime= (unsigned long)0L;
-//    fi->fi.title = NULL;
-//    fi->fi.summary = NULL;
-//    fi->fi.start = 0;
-//    fi->fi.size = 0;
-
-    /* Read values */
-//    getSwishInternalProperties(fi, sw->indexlist);
-
-    /* Add empty strings if NULL */
-//    if(!fi->fi.title) fi->fi.title=estrdup("");
-//    if(!fi->fi.summary) fi->fi.summary=estrdup("");
+#endif    
 
     efree(buffer);
     return fi;
