@@ -171,10 +171,15 @@ struct stat stat_buf;
 		else if (c == 'w') 
 		{
 
-			while (*(argv + 1) && *(argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
+			while (*(argv + 1) && *(argv + 1)[0] != '-') 
 			{
 				word = SafeStrCopy(word, (++argv)[0],&lenword);
 				argc--;
+
+                /* don't add blank words */
+				if ( word[0] == '\0' )
+                    continue;
+
 				if((int)(strlen(wordlist) +  strlen(" ") + strlen(word)) >= lenwordlist) {
 					lenwordlist =strlen(wordlist) +  strlen(" ") + strlen(word) + 200;
 					wordlist = (char *) erealloc(wordlist,lenwordlist + 1);

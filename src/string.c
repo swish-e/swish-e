@@ -357,7 +357,7 @@ int *initialsize;
 int len,oldlen;
         len=strlen(orig);
         oldlen=*initialsize;
-        if(len > oldlen) {
+        if(len > oldlen || !oldlen ) {
                 *initialsize=len + 200;   /* 200 extra chars!!! */
                 if(oldlen)
                         efree(dest);
