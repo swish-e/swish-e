@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 3), zlib1g-dev, perl, libxml2-dev (>= 2.4.19)
 
 Package: swish-e
 Architecture: any
-Depends: ${shlibs:Depends} ${misc:Depends}
+Depends: libc6 (>= 2.3.1-1), libxml2 (>= 2.5.0-1), zlib1g (>= 1:1.1.4)
 Recommends: libmime-types-perl, libhtml-parser-perl, libwww-perl
 Description: Simple Web Indexing System for Humans
  SWISH-Enhanced is a fast, powerful, flexible, and easy to use system
