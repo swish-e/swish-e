@@ -6,8 +6,8 @@ Section "Required Components" SecProgram
     SetOutPath "$SYSDIR"
     ; Expat, LibXML2, and ZLib
     File ..\..\..\iconv\lib\*.dll
-    File ..\..\..\libxml2\lib\*.dll
-    File ..\..\..\zlib\lib\*.dll
+    File ..\..\..\libxml2\bin\*.dll
+    File ..\..\..\zlib\bin\*.dll
     File ..\..\..\pcre\bin\*.dll
     File ..\expat\bin\*.dll
     
@@ -120,37 +120,37 @@ SubSection "PERL Support" SubSecPerlSupport
 
         ; swish.cgi scripts
         SetOutPath "$INSTDIR\lib\swish-e"
-        File ../../examples/swish.cgi.in
-        File ../../examples/search.cgi.in
+        File ..\..\example\swish.cgi.in
+        File ..\..\example\search.cgi.in
 
         ; swish.cgi other stuff
         SetOutPath "$INSTDIR\share\swish-e"
-        File ../../examples/swish.tt
-        File ../../examples/swish.tmpl
-        File ../../examples/swish.gif
-        File ../../examples/README
+        File ..\..\example\swish.tt
+        File ..\..\example\swish.tmpl
+        File ..\..\example\swish.gif
+        File ..\..\example\README
 
         ; swish.cgi templates
         SetOutPath "$INSTDIR\share\swish-e\templates"
-        File ../../examples/templates/search.tt
-        File ../../examples/templates/page_layout
-        File ../../examples/templates/common_header
-        File ../../examples/templates/common_footer
-        File ../../examples/templates/style.css
-        File ../../examples/templates/markup.css
+        File ..\..\example\templates\search.tt
+        File ..\..\example\templates\page_layout
+        File ..\..\example\templates\common_header
+        File ..\..\example\templates\common_footer
+        File ..\..\example\templates\style.css
+        File ..\..\example\templates\markup.css
 
         ; swish.cgi Modules
         SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
-        File ../../examples/modules/SWISH/DateRanges.pm
-        File ../../examples/modules/SWISH/DefaultHighlight.pm
-        File ../../examples/modules/SWISH/PhraseHighlight.pm
-        File ../../examples/modules/SWISH/SimpleHighlight.pm
-        File ../../examples/modules/SWISH/TemplateDefault.pm
-        File ../../examples/modules/SWISH/TemplateDumper.pm
-        File ../../examples/modules/SWISH/TemplateFrame.pm
-        File ../../examples/modules/SWISH/TemplateHTMLTemplate.pm
-        File ../../examples/modules/SWISH/TemplateToolkit.pm
-        File ../../examples/modules/SWISH/ParseQuery.pm
+        File ..\..\example\modules\SWISH\DateRanges.pm
+        File ..\..\example\modules\SWISH\DefaultHighlight.pm
+        File ..\..\example\modules\SWISH\PhraseHighlight.pm
+        File ..\..\example\modules\SWISH\SimpleHighlight.pm
+        File ..\..\example\modules\SWISH\TemplateDefault.pm
+        File ..\..\example\modules\SWISH\TemplateDumper.pm
+        File ..\..\example\modules\SWISH\TemplateFrame.pm
+        File ..\..\example\modules\SWISH\TemplateHTMLTemplate.pm
+        File ..\..\example\modules\SWISH\TemplateToolkit.pm
+        File ..\..\example\modules\SWISH\ParseQuery.pm
     SectionEnd
     
     Section /o "PERL Filters" SecPerlFilter
