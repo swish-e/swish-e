@@ -39,6 +39,7 @@ File src\Win32\*.dll
 File src\expat\bin\*.dll
 File ..\libxml2\win32\dsp\libxml2\*.dll
 File ..\zlib\zlib.dll
+File ..\pcre\bin\pcre.dll
 
 ; Misc SWISH-E Support Files
 File src\swishspider
