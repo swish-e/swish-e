@@ -6,6 +6,8 @@
 #
 #	Wed Sep 15 12:07:55 CDT 2004 -- karman@cray.com
 #
+#	0.01	-- initial public release
+#	0.02	-- --srcdir works; IRIX fixes; --quiet fixes
 #
 ##########################################################
 $| = 1;
@@ -18,7 +20,7 @@ use Config qw( %Config );
 use File::Path qw( mkpath );
 use FindBin qw($Bin);
 
-my $Version 	= '0.01';
+my $Version 	= '0.02';
 
 # there must be a better way to dynamically retrieve the latest version
 # of a sw package, other than hardcoding urls. help?
@@ -32,7 +34,7 @@ my %URLs	= (
 );
 
 my $swish_cvs 	= ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/swishe';
-my $cvs_cmd 	= "cvs -d$swish_cvs co swish-e";
+my $cvs_cmd 	= "cvs -q -d$swish_cvs co swish-e";
 
 my $defdir 	= '/usr/local/swish-e/latest';
 my $deftmp 	= $ENV{TMPDIR} || $ENV{TMP} || '/tmp';
@@ -43,7 +45,7 @@ my $allopts = {
         
 	'quiet'		=> "run non-interactively",
 	'cvs'		=> "use latest CVS version of SWISH-E",
-	'swishe=s'	=> "use <X> as swish-e source -- either URL, tar.gz or directory",
+	'swish=s'	=> "use <X> as swish-e source -- either URL, tar.gz or directory",
 	'libxml2=s'	=> "use <X> as libxml2 source -- either URL, tar.gz or directory",
 	'zlib=s'	=> "use <X> as zlib source -- either URL, tar.gz or directory",
 	'prevzlib=s'	=> "use already-installed zlib in directory <X>",
@@ -55,6 +57,7 @@ my $allopts = {
 	'help'		=> "print usage statement",
 	'opts'		=> "print options and description",
 	'force'		=> "install zlib and libxml2 no matter what",
+	'debug'		=> "lots of on-screen verbage"
 	
 };
 
@@ -78,7 +81,7 @@ if ($opts->{opts}) {
 use vars qw( $os $arch $cc $installdir $nogcc $min_gcc $tmpdir
 		$outlog $errlog $output $ld_opts $Cout $Cin
 		$zlib_test $libxml2_test $ld_test $gcc_test
-		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2
+		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
 		
 		);
 
@@ -96,6 +99,8 @@ $tmpdir 	= $opts->{tmpdir} || $deftmp;
 $outlog 	= $tmpdir . '/buildswishe.log';
 $errlog		= $tmpdir . '/buildswishe.err.log';
 $output 	= $opts->{verbose} ? '' : " 1>>$outlog 2>>$errlog ";
+
+$cmdout		= $opts->{quiet} ? ' 1>/dev/null 2>/dev/null ' : '';
 
 $ld_opts 	= '';	# define these based on OS platform
 
@@ -173,12 +178,12 @@ my %routines = (
 
 	libxml2		=> \&libxml2,
 	zlib		=> \&zlib,
-	swishe		=> \&swishe,
+	swish		=> \&swishe,
 	'swish::api'	=> \&swish_api
 	
 	);
 	
-for ( qw( zlib libxml2 swishe swish::api ) ) {
+for ( qw( zlib libxml2 swish swish::api ) ) {
 
 	print '=' x 40 . "\n";
 	print "building $_ ...\n";
@@ -194,7 +199,9 @@ exit;
 
 END
 { 
+  unless ($opts->{debug}) {
    system("rm -f $tmpdir/$$.c $tmpdir/test") if $tmpdir;
+  }
 }
 
 ##########################################################
@@ -209,7 +216,7 @@ sub printopts
 		
 		my $space = ' ' x ( $buf - length($o) );
 		
-		print "\t--$o $space $allopts->{$_}\n" ;
+		print "  --$o $space $allopts->{$_}\n" ;
 	}
 	print "\n\n";
 	exit;
@@ -241,10 +248,12 @@ sub checkenv
 	$cc 	= $Config{cc};	# for SWISH::API should use same compiler as perl
 				# was compiled with, and that SHOULD be gcc.
 
+    if ($opts->{debug}) {
 	print "os... $os\n";
 	print "arch... $arch\n";
 	print "cc... $cc\n";
-
+    }
+    
 	system("rm -f $outlog $errlog");	# so we start afresh
 	
 	ld_opts();
@@ -318,7 +327,7 @@ sub test_c_prog
 	
 	#print "compile cmd: $cmd\n";
 	
-	return 1 if system($cmd);	# don't bother if we can't even compile	
+	return 1 if system("$cmd $cmdout");	# don't bother if we can't even compile	
 	
 	if ($test) {
 	
@@ -335,7 +344,10 @@ sub test_c_prog
 	}
 	
  # run it
-	return system($Cout);
+ 
+ 	warn "run: $Cout $cmdout\n" if $opts->{debug};
+ 
+	return system("$Cout $cmdout");
 
 }
 
@@ -503,11 +515,11 @@ sub ld_opts
 # might go anywhere at all. and while some OSes use LD_RUN_PATH, some do not.
 # we try and cover all the bases here.
 
-	my @path = ( "$installdir/lib", $installdir );
+	my @path = ( "$installdir/lib", $installdir, $libxml2dir, $zlibdir );
 	
 	$ENV{LD_RUN_PATH} ||= '.';
 	
-	$ENV{LD_RUN_PATH} = join(':', @path, $ENV{LD_RUN_PATH});
+	$ENV{LD_RUN_PATH} = join(':', grep { /./ } @path, $ENV{LD_RUN_PATH});
 	
 	
 # Darwin (Mac OS X) requirements
@@ -524,7 +536,8 @@ sub ld_opts
 	
 		$ld_opts = 	"-Wl,-L" . 
 				join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
-				
+		
+		$ENV{LD_LIBRARYN32_PATH} = $ENV{LD_RUN_PATH};
 		
 		
 # solaris 
@@ -570,37 +583,44 @@ sub get_ld_path
 	
 	my @s = `$cmd $file`;
 	
-	#print '-' x 40 . "\n";
-	#print "ld test for $lib\n";
 	
-	#print "libraries that ld linked to in $file:\n";
-	#print "$_" for @s;
+   if ($opts->{debug}) {
+	warn '-' x 40 . "\n";
+	warn "ld test for $lib\n";
 	
-	#print "looking for '/lib/$lib' in array\n";
+	warn "libraries that ld linked to in $file:\n";
+	warn "$_" for @s;
 	
-	my @where = grep { m!/lib/$lib! } @s;
+	warn "looking for '/lib/$lib' in array\n";
+
+   }
+   
+   # \d* is for irix which often uses lib32, etc.
+   
+	my @where = grep { m!/lib[\d]*/$lib! } @s;
 	my $path = shift @where;	# should only be one path
 	chomp($path);
-	#print "found path: $path\n";
+	
+	warn "found path: $path\n" if $opts->{debug};
 	
 	$path =~ s,^[^/]*,,g;
 	
-	#print "no space: $path\n";
+	warn "no space: $path\n" if $opts->{debug};
 	
 	my @c = split(m!/!, $path);
 	
 	my @g;
 	for (@c) {
 		next if ! $_;
-		last if $_ eq 'lib';
-		#print "adding $_ to \@g\n";
+		last if $_ =~ m/^lib\d*$/;
+		warn "adding $_ to \@g\n" if $opts->{debug};
 		push @g, $_;
 
 	}
 	
 	$path = '/' . join('/',@g);
 	
-	#print "PATH is $path\n";
+	warn "PATH is $path\n" if $opts->{debug};
 	
 	$$dir = $path;
 	
@@ -637,7 +657,7 @@ sub get_src
 
 	chdir( $Bin );
 	
-	my $src = $opts->{$sw} || $URLs{$sw};
+	my $src = $opts->{$sw} || $opts->{srcdir} || $URLs{$sw};
 	
 	my ($bare) = ( $src =~ m/^.*\/(.*)/ );
 	
@@ -699,13 +719,17 @@ sub get_src
 	} elsif ( -d $src ) {
 	# find a tar.gz or subdir in $src and reset
 	
+		my $dir = $src;
+		
+		print "looking in $dir for $sw|latest.*tar.gz\n";
+		
 		my $found = 0;
-		opendir(DIR, $src) || die "can't open dir $src: $!\n";
+		opendir(DIR, $dir) || die "can't open dir $dir: $!\n";
 		while(my $f = readdir(DIR)) {
 		
-			if ($f =~ m/($sw|latest).*tar.gz/) {
+			if ($f =~ m/($sw|latest).*tar\.gz/) {
 			
-				$src .= "/$f";
+				$dir .= "/$f";
 				$found++;
 			}
 			
@@ -713,9 +737,10 @@ sub get_src
 		closedir(DIR);
 		
 		if ($found) {
-			print "Found $src\n";
+			print "Found $dir\n";
 			print "Shall I use that? [y] ";
 			nice_exit() if ! confirm();
+			$src = $dir;
 		}
 	
 	}
@@ -728,15 +753,15 @@ sub get_src
 	
 	return $dir;
 
-
-
 }
 
 sub nice_exit
 {
+	warn '=' x 40 . "\n";
 	warn "err num: $?\n";
 	warn "last err: $!\n";
-	warn "also check $errlog for other output\n";
+	warn "check $errlog for more errors\n";
+	warn '=' x 40 . "\n";
 	die "sorry it didn't work out\n";
 	
 }
@@ -756,8 +781,8 @@ sub configure
 {
 
 	make_clean();
-	print "I'm in ";
-	system("pwd");
+	#print "I'm in ";
+	#system("pwd");
 	my $arg = join(' ',@_) || '';
 	my $conf = "./configure --prefix=$installdir $arg $output";
 	print "configuring with:\n$conf\n";
@@ -836,7 +861,11 @@ sub decompress
 sub zlib
 {
 	
+   print "you indicated $zlibdir\nwe'll trust you.\n" if $zlibdir;
+	
    return if ( $zlibdir || test_for_prior_zlib() );	
+
+   print "looks like we'll install zlib.\n" unless $opts->{quiet};
 
    my $dir = get_src( 'zlib' );
    chdir($dir) || die "can't chdir to $dir: $!\n";
@@ -855,7 +884,12 @@ sub zlib
 
 sub libxml2
 {
+
+	print "you indicated $libxml2dir\nwe'll trust you.\n" if $libxml2dir;
+
 	return if ( $libxml2dir || test_for_prior_libxml2() );
+	
+	print "looks like we'll install libxml2.\n" unless $opts->{quiet};
 	
 	my $dir = get_src( 'libxml2' );
 	chdir($dir) || die "can't chdir to $dir: $!\n";
@@ -898,6 +932,13 @@ sub swishe
 	my $dir = get_src( 'swishe' );
 	$swishdir = $dir;
 	chdir($dir) || die "can't chdir to $dir: $!\n";
+	
+	if ($opts->{debug}) {
+	
+		print "building in ";
+		system('pwd');
+		
+	}
 	
 	$zlibdir ||= $swishdir;
 	$libxml2dir ||= $swishdir;
