@@ -618,9 +618,9 @@ static void    printfile(SWISH * sw, char *filename)
 
         do_index_file(sw, fprop);
 
-
         free_file_properties(fprop);
-        efree(filename);
+
+        efree(filename);  //$$ that's ugly.  this routine doesn't really own filename
     }
 }
 

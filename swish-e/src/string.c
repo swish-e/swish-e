@@ -309,7 +309,7 @@ char *process_regex_list( char *str, regex_list *regex, int *matched )
 *
 *   Returns:
 *       a string.  Either the original, or a replacement string
-*       Frees passed in string is return is different.
+*       Frees passed in string if return is different.
 *
 *
 **********************************************************************/
@@ -332,7 +332,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
         return str;
 
 
-    /* Flat that a pattern matched */
+    /* Flag that a pattern matched */
     (*matched)++;        
 
 

@@ -43,6 +43,12 @@ $Id$
 **
 **  - FileRules title (and all abort_parsing calls - define some constants)
 **
+**  - There's a lot of mixing of xmlChar and char, which will generate warnings.
+**
+**  - Add a fprop->orig_path (before ReplaceRules) and a directive BaseURI to be used
+**    to fixup relative urls (if no <BASE>).
+**    This would save space in the property file, but probably not enough to worry about.
+**
 **
 **  - UndefinedMetaTags ignore might throw things like structure off since
 **    processing continues (unlike IgnoreMetaTags).
@@ -71,6 +77,7 @@ $Id$
 /* libxml2 */
 #include <libxml/HTMLparser.h>
 #include <libxml/xmlerror.h>
+#include <libxml/uri.h>
 
 /* Should be in config.h */
 
@@ -119,10 +126,11 @@ typedef struct {
     int                 parsing_html;
     struct metaEntry   *titleProp;
     int                 flush_word;         // flag to flush buffer next time there's a white space.
-    xmlSAXHandlerPtr    SAXHandler;  // for title only 
+    xmlSAXHandlerPtr    SAXHandler;         // for aborting, I guess.
     xmlParserCtxtPtr    ctxt;
     CHAR_BUFFER         ISO_Latin1;         // buffer to hold UTF-8 -> ISO Latin-1 converted text
     int                 abort;              // flag to stop parsing
+    char               *baseURL;            // for fixing up relative links
 } PARSE_DATA;
 
 
@@ -146,7 +154,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 static void free_parse_data( PARSE_DATA *parse_data ); 
 static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
-static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry );
+static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry, char *tag );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
 static int get_structure( PARSE_DATA *parse_data );
@@ -479,6 +487,9 @@ static void free_parse_data( PARSE_DATA *parse_data )
     if ( parse_data->ignore_meta_tag )
         efree( parse_data->ignore_meta_tag );
 
+    if ( parse_data->baseURL )
+        efree( parse_data->baseURL );
+
 
     /* Restore the size in the StoreDescription property */
     if ( parse_data->summary.save_size )
@@ -502,7 +513,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
-    int         is_html_tag = parse_data->parsing_html;
+    int         is_html_tag = 0;   // to allow <foo> type of meta tags in HTML
 
 
     /* return if within an ignore block since we only are looking for the ending tag */
@@ -537,15 +548,23 @@ static void start_hndl(void *data, const char *el, const char **attr)
         /* Deal with structure */
         if ( (is_html_tag = check_html_tag( parse_data, tag, 1 )) )
         {
-            /* And if we are in title, flag to save content as a doc property */
-            if ( !strcmp( tag, "title" ) && parse_data->titleProp )
-                parse_data->titleProp->in_tag++;
+            /** Special handling for <A>, <IMG>, and <BASE> tags **/
 
             /* Extract out links - currently only keep <a> links */
-            if ( (strcmp( tag, "a") == 0) && attr && parse_data->sw->links_meta  )
-                extract_html_links( parse_data, attr, parse_data->sw->links_meta );
-        }
+            if ( strcmp( tag, "a") == 0 )
+                extract_html_links( parse_data, attr, parse_data->sw->links_meta, "href" );
 
+
+            /* Extract out links from images */
+            else if ( strcmp( tag, "img") == 0 )
+                extract_html_links( parse_data, attr, parse_data->sw->images_meta, "src" );
+
+
+            /* Extract out the BASE URL for fixups */
+            else if ( strcmp( tag, "base") == 0 )
+                parse_data->baseURL = estrdup( extract_html_links( parse_data, attr, NULL, "href" ) );
+        }
+        
     }
 
 
@@ -581,10 +600,7 @@ static void end_hndl(void *data, const char *el)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
-    int         is_html_tag = parse_data->parsing_html;
-
-
-
+    int         is_html_tag = 0;  // to allow <foo> type of metatags in html.
 
     if(strlen(el) > MAXSTRLEN)
     {
@@ -594,7 +610,6 @@ static void end_hndl(void *data, const char *el)
 
     strcpy(tag,(char *)el);
     strtolower( tag );
-
 
     
 
@@ -609,12 +624,10 @@ static void end_hndl(void *data, const char *el)
 
 
         /* Deal with structure */
-        if ( (is_html_tag = check_html_tag( parse_data, tag, 0 )) )
-            if ( !strcmp( tag, "title" ) && parse_data->titleProp )
-                parse_data->titleProp->in_tag = 0;
-
+        is_html_tag = check_html_tag( parse_data, tag, 0 );
     }
-    
+
+
     if ( !is_html_tag )
         end_metaTag( parse_data, tag );
 
@@ -728,7 +741,7 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
 
     buf->cur = buf->max;
 
-    return UTF8Toisolat1( buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
+    return UTF8Toisolat1( (unsigned char *)buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
 }
 
 
@@ -878,6 +891,9 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
     /* Check for structure bits */
 
+
+    /** HEAD **/
+
     if ( strcmp( tag, "head" ) == 0 )
     {
         flush_buffer( parse_data, 10 );
@@ -891,8 +907,13 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     }
 
 
+
+    /** TITLE **/
+    
     else if ( strcmp( tag, "title" ) == 0 )
     {
+        /* Can't flush buffer until we have looked at the title */
+        
         if ( !start )
         {
             struct MOD_FS *fs = parse_data->sw->FS;
@@ -908,11 +929,24 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             if ( parse_data->fprop->index_no_content )
                 abort_parsing( parse_data, 1 );
         }
-    
+        
+        /* Now it's ok to flush */
+        
         flush_buffer( parse_data, 11 );
+
+
+        /* If title is a property, turn on the property flag */
+        if ( parse_data->titleProp )
+            parse_data->titleProp->in_tag = start ? 1 : 0;
+
+
         parse_data->word_pos++;
         parse_data->structure[IN_TITLE_BIT] += bump;
     }
+
+
+
+    /** BODY **/
 
     else if ( strcmp( tag, "body" ) == 0 )
     {
@@ -922,12 +956,19 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     }
 
 
+
+    /** H1 HEADINGS **/
+    
     /* This should be split so know different level for ranking */
     else if ( tag[0] == 'h' && isdigit((int) tag[1]))
     {
         flush_buffer( parse_data, 13 );
         parse_data->structure[IN_HEADER_BIT] += bump;
     }
+
+
+
+    /** EMPHASIZED **/
 
     /* These should not be hard coded */
     else if ( !strcmp( tag, "em" ) || !strcmp( tag, "b" ) || !strcmp( tag, "strong" ) || !strcmp( tag, "i" ) )
@@ -948,6 +989,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     }
 
 
+
+
     /* Now, look for reasons to add whitespace
      * img is not really, as someone might use an image to make up a word, but
      * commonly an image would split up text.
@@ -958,7 +1001,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
     else
     {
-        const htmlElemDesc *element = htmlTagLookup( tag );
+        const htmlElemDesc *element = htmlTagLookup( (const xmlChar *)tag );
 
         if ( !element )
             is_html_tag = 0;   // flag that this might be a meta name
@@ -966,6 +1009,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         else if ( !element->isinline )
             append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
     }
+
+
 
 
     return is_html_tag;
@@ -1244,32 +1289,62 @@ static void warning(void *data, const char *msg, ...)
 /*********************************************************************
 *   Extract out links for indexing
 *
-*   Needs to be expanded, but currently just pulls out <a href> links.
-*   ExtractHTMLlinks <metaname>
+*   Pass in a metaname, and a tag
 *
 *********************************************************************/
 
-static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry )
+static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry, char *tag )
 {
     char *href = NULL;
     int  i;
     int         structure = get_structure( parse_data );
+    char       *absoluteURL;
+    SWISH      *sw = parse_data->sw;
 
 
+    if ( !atts )
+        return NULL;
 
     for ( i = 0; atts[i] && atts[i+1]; i+=2 )
-        if ( (strcmp( atts[i], "href" ) == 0 ) && atts[i+1] )
+        if ( (strcmp( atts[i], tag ) == 0 ) && atts[i+1] )
             href = (char *)atts[i+1];
 
     if ( !href )
-        return;
+        return NULL;
+
+    if ( !meta_entry ) /* The case for <BASE> */
+        return href;
+
+
+    /* Now, fixup the URL, if possible */
+
+    if ( sw->AbsoluteLinks ) // ?? || parse_data->baseURL??? always fix up if a <BASE> tag?
+    {
+        char *base = parse_data->baseURL
+                     ? parse_data->baseURL
+                     : parse_data->fprop->real_path;
+
+        absoluteURL = (char *)xmlBuildURI( (xmlChar *)href, (xmlChar *)base );
+    }
+    else
+        absoluteURL = NULL;
+
+        
 
     /* Index the text */
     parse_data->total_words +=
-        indexstring( parse_data->sw, href, parse_data->filenum, structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
+        indexstring( sw, absoluteURL ? absoluteURL : href, parse_data->filenum, structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
+
+    if ( absoluteURL )
+        xmlFree( absoluteURL );
+
+    return href;   
 }
 
+
+
 /* This doesn't look like the best method */
+
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
 {
     parse_data->abort = abort_code;  /* Flag that the we are all done */
@@ -1282,6 +1357,8 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
     // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
 }
 
+
+/* This sets the current structure context (IN_HEAD, IN_BODY, etc) */
 
 static int get_structure( PARSE_DATA *parse_data )
 {

@@ -341,7 +341,7 @@ static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop)
 static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fprop)
 
 {
-  static char *nul = "_NULL_";
+  static char *nul = "_NULL_";  // $$$ wouldn't "" be better?  Be easier to check for in the filter
   char        *x;
 
 
@@ -370,7 +370,7 @@ static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fprop)
            break;
 
       case 'd':              /* Dirname TMP/Work Path */
-           x = (fprop->real_path) ? cstr_dirname (fprop->work_path) : nul;   
+           x = (fprop->work_path) ? cstr_dirname (fprop->work_path) : nul;   
            strcpy (str,x);
            efree (x);
            break;

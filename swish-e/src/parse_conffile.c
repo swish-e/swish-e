@@ -214,6 +214,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        if (strcasecmp(w0, "AbsoluteLinks") == 0)
+        {
+            sw->AbsoluteLinks = getYesNoOrAbort(sl, 1, 1);
+            continue;
+        }
+
+
+
+
         if (strcasecmp(w0, "MinWordLimit") == 0)
         {
             if (sl->n == 2)
@@ -502,6 +511,19 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
         
+        /* Meta name to extract out <img src> links */
+        if (strcasecmp(w0, "ImageLinksMetaName") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires one value", w0);
+
+            if ( !( sw->images_meta = getMetaNameByName( &indexf->header, sl->word[1]) ))
+                sw->images_meta = addMetaEntry(&indexf->header, sl->word[1], META_INDEX, 0);
+
+            continue;
+        }
+
+
         if (strcasecmp(w0, "PropertyNames") == 0)
         {
             if (sl->n <= 1)
