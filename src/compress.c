@@ -34,6 +34,14 @@
 #include "swish_qsort.h"
 #include "file.h"
 
+/* Surfing the web I found this:
+** it is a very simple macro that can be used in *PACKLONG* routines to 
+** detect if we need to spend some cycles for [un]packing the number in a
+** portable format
+*/
+static const int swish_endian_test_value = 1;
+#define LITTLE_ENDIAN (*(const unsigned char *)&swish_endian_test_value)
+
 
 /* 2001-05 jmruiz */
 /* Routines for compressing numbers - Macros converted to routines */
@@ -165,7 +173,7 @@ unsigned long PACKLONG(unsigned long num)
     unsigned char *s;
     int sz_long = sizeof(unsigned long);  
 
-    if (num)
+    if (num && LITTLE_ENDIAN)
     {
         s = (unsigned char *) &tmp;
         while(sz_long)
@@ -181,8 +189,15 @@ void    PACKLONG2(unsigned long num, unsigned char *s)
 {
     int sz_long = sizeof(unsigned long);
 
-    while(sz_long)
-        *s++ = (unsigned char) ((num >> ((--sz_long)<<3)) & 0xFF);
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_long)
+            *s++ = (unsigned char) ((num >> ((--sz_long)<<3)) & 0xFF);
+    }
+    else
+    {
+        memcpy(s,(unsigned char *)&num,sz_long);
+    }
 }
 
 
@@ -192,10 +207,13 @@ unsigned long UNPACKLONG(unsigned long num)
 	unsigned long tmp = 0;
     unsigned char *s = (unsigned char *) &num;
 
-    while(sz_long)
-        tmp += *s++ << ((--sz_long)<<3);
-
-    return tmp;
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_long)
+            tmp += *s++ << ((--sz_long)<<3);
+        return tmp;
+    }
+    return num;
 }
 
 /* Same macro - UnPacks long from buffer */
@@ -204,8 +222,15 @@ unsigned long UNPACKLONG2(unsigned char *s)
     int sz_long = sizeof(unsigned long);
 	unsigned long tmp = 0;
 
-    while(sz_long)
-        tmp += *s++ << ((--sz_long)<<3);
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_long)
+            tmp += *s++ << ((--sz_long)<<3);
+    }
+    else
+    {
+        memcpy((unsigned char *)&tmp,s,sz_long);
+    }
     return tmp;
 }
 
