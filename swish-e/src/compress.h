@@ -46,6 +46,30 @@ void unSwapLocData(SWISH *,int, ENTRY *);
 void sortSwapLocData(SWISH * , ENTRY *);
 void unSwapLocDataEntry_old(SWISH *,ENTRY *);
 
-
-#define MAXINTCOMPSIZE 5
+/* Here is the worst case size for a compressed number 
+** MAXINTCOMPSIZE stands for MAXimum INTeger COMPressed SIZE
+**
+** There are many places in the code in which we allocate
+** space for a compressed number. In the worst case this size is 5
+** for 32 bit number, 10 for a 64 bit number.
+**
+** The way this compression works is reserving the first bit 
+** in each byte to store a flag. The flag is set in all bytes
+** except for the last one.
+** This only gives 7 bits per byte to store the number.
+**
+** For example, to store 1000 (binary 1111101000) we will get:
+** 
+** 1st byte    2th byte
+** 10000111    01101000
+** ^           ^
+** |           |
+** |           Flag to indicate that this is tha last byte
+** |
+** Flag set to indicate that more bytes follow this one
+**
+** So, to compress a 32 bit number we need 5 bytes and for
+** a 64 bit number we will use 10 bytes for the worst case
+*/
+#define MAXINTCOMPSIZE (((sizeof(int) * 8) / 7) + (((sizeof(int) * 8) % 7) ? 1 : 0))
 
