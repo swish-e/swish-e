@@ -27,6 +27,7 @@ $Id$
    -- 2001-02-09 rasc    make propertynames always lowercase!  (may change) 
 				 this is get same handling as metanames...
    -- 2001-02-28 rasc    -b and counter corrected...
+   -- 2001-03-13 rasc    result header output routine
 
 */
 
@@ -35,6 +36,8 @@ $Id$
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdarg.h>
+
 #include "swish.h"
 #include "mem.h"
 #include "string.h"
@@ -65,7 +68,7 @@ $Id$
    --       on each entry step thru this action output list
    --       seems to be simple, but has to be done.
    -- but for now: get this stuff running on the easy way. 
-   -- (rasc)
+   -- (rasc 2000-12)
    $$$ 
 */
 
@@ -462,6 +465,35 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
   }
   efree (pv); 
 
+}
+
+
+/*
+  -------------------------------------------
+*/
+
+/*
+  -- print a line for the result output header
+  -- the verbose level is checked for output
+  -- <min_verbose> has to be >= sw->...X_headerOut
+  -- outherwise nothing is outputted
+  -- return: 0/1  (not printed/printed)
+  -- 2001-03-13  rasc
+*/
+
+int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
+
+{
+  va_list args;
+
+  /* min_verbose to low, no output */
+  if (sw->opt.X_HeaderOut > min_verbose) return 0;
+
+  /* print header info... */
+  va_start (args,prtfmt);
+  vfprintf (stdout, printfmt, args);
+  va_end   (args);
+  return 1;
 }
 
 

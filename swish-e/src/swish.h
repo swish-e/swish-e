@@ -581,8 +581,8 @@ typedef struct {		/* 2001-03-12 rasc */
 */
 
 typedef struct {
-    char *extendedformat;		/* -x "fmt", holds fmt or NULL */
-    int   extendedheader;      /* -X print extended header info */
+    char *extendedformat;      /* -x "fmt", holds fmt or NULL */
+    int   X_headerOut;         /* -X? print extended header info */
 } CMDPARAM;
 
 
