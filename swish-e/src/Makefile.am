@@ -89,7 +89,8 @@ libswishindex_la_SOURCES = \
 	parse_conffile.c parse_conffile.h \
 	swregex.c swregex.h \
 	db_write.c  \
-	docprop_write.c
+	docprop_write.c \
+        getruntime.c getruntime.h
 
 
 

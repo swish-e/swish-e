@@ -93,6 +93,7 @@ dnl AC_HEADER_STDC
 
 dnl Check for some headers
 AC_CHECK_HEADERS(unistd.h stdlib.h string.h sys/timeb.h windows.h)
+AC_CHECK_HEADERS(sys/resource.h sys/param.h)
 
 AC_HEADER_SYS_WAIT
 
@@ -108,6 +109,7 @@ AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_FUNC_FORK
 AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat setenv access)
+AC_CHECK_FUNCS(clock times getrusage)
 AC_CHECK_LIB(m,log)
 
 AC_REPLACE_FUNCS(vsnprintf mkstemp)
