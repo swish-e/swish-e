@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Fixed Document-Type bug
+
+Document-Type was not being reset after set input from a -S prog program causing
+the wrong parser to be used. [moseley]
+
 =item * New Directive: PropertyNamesNoStripChars
 
 Swish replaces all series of low ASCII chars with a single space
