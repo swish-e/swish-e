@@ -459,7 +459,6 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
            *s;
     int     sz_buffer;
     int     j;
-    int     propIDX;
     INDEXDATAHEADER *header = &indexf->header;
 
 
@@ -468,7 +467,6 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
     /* Get the sorted index of the property */
 
     /* Convert to a property index */
-    propIDX = header->metaID_to_PropIDX[m->metaID];
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
     /* Table doesn't exist */
