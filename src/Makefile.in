@@ -24,6 +24,8 @@ bindir      = $(prefix)/bin
 exec_prefix = @exec_prefix@
 libdir      = @libdir@
 cflags      = @CFLAGS@
+ldflags     = @LDFLAGS@
+
 
 # libxml2 -- uncomment to enable
 #LIBXML2_OBJS = parser.o
@@ -65,7 +67,7 @@ XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
  
 # Flags for C compiler
 CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) $(LIBXML2_CFLAGS) $(cflags)
-
+LDFLAGS     = $(ldflags)
 
 
 OBJS=	$(LIBXML2_OBJS) check.o file.o index.o search.o error.o methods.o\
@@ -88,7 +90,7 @@ OBJS=	$(LIBXML2_OBJS) check.o file.o index.o search.o error.o methods.o\
 all:	$(NAME)
 
 $(NAME): libswish-e.a swish.o
-	$(CC) -o $@ $(CFLAGS) swish.o libswish-e.a $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) swish.o libswish-e.a $(LIBS)
 	chmod 755 $@
 
 libswish-e.a: $(OBJS)
