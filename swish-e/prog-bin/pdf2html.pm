@@ -67,21 +67,43 @@ require Exporter;
 @ISA    = qw(Exporter);
 @EXPORT = qw(pdf2html);
 
-my @InfoTags = qw/Title Subject Author CreationDate Creator Producer ModDate Keywords/;
+if ( $0 eq 'pdf2html.pm' ) {
+    my $file = shift || die "Usage: perl pdf2html.pm file.pdf [title tag]\n";
+    my $title = shift;
+    print ${pdf2html( $file, $title )};
+}
 
 
 sub pdf2html {
     my $file_or_content = shift;
     my $title_tag = shift;
 
-
     my $file = ref $file_or_content
     ? create_temp_file( $file_or_content )
     : $file_or_content;
 
-    my $headers = get_pdf_headers( $file, $title_tag ) || '';
+    my $metadata = get_pdf_headers( $file );
 
-    my $content_ref = get_pdf_content_ref( $file );
+    my $headers = format_metadata( $metadata );
+
+    if ( $title_tag && exists $metadata->{ $title_tag } ) {
+        my $title = escapeXML( $metadata->{ $title_tag } );
+
+        $headers = "<title>$title</title>\n" . $headers
+    }
+    
+
+    # Check for encrypted content
+
+    my $content_ref;
+
+    # patch provided by Martial Chartoire
+    if ( $metadata->{encrypted} && $metadata->{encrypted} =~ /yes\.*\scopy:no\s\.*/i ) {
+        $content_ref = \'';
+
+    } else {
+        $content_ref = get_pdf_content_ref( $file );
+    }
 
     my $txt = <<EOF;
 <html>    
@@ -122,9 +144,6 @@ $ret .= $txt;
 sub get_pdf_headers {
 
     my $file = shift;
-    my $title_tag = shift;
-
-    
     my $sym = gensym;
 
     open $sym, "pdfinfo $file |" || die "$0: Failed to open $file $!";
@@ -133,21 +152,26 @@ sub get_pdf_headers {
 
     while (<$sym>) {
         if ( /^\s*([^:]+):\s+(.+)$/ ) {
-            my ( $metaname, $value ) = ( lc( $1 ), escapeXML( $2 ) );
+            my ( $metaname, $value ) = ( lc( $1 ), $2 );
             $metaname =~ tr/ /_/;
             $metadata{$metaname} = $value;
         }
     }
     close $sym or warn "$0: Failed close on pipe to pdfinfo for $file: $?";
 
-    my $metas = join "\n", map { qq[<meta name="$_" content="$metadata{$_}">] } sort keys %metadata;
+    return \%metadata;
+}
 
-    if ( $title_tag && exists $metadata{ $title_tag } ) {
-        $metas = "<title>$metadata{ $title_tag }</title>\n$metas";
-    }
+sub format_metadata {
+
+    my $metadata = shift;
+
+    my $metas = join "\n", map {
+        qq[<meta name="$_" content="] . escapeXML( $metadata->{$_} ) . '">';
+    } sort keys %$metadata;
+
 
     return $metas;
-
 }
 
 sub get_pdf_content_ref {
