@@ -55,21 +55,20 @@ directory of the Swish-e distribution.
 
 Some command line arguments can override directives specified in the
 configuration file.  Please see also the L<SWISH-RUN|SWISH-RUN> for
-instructions on running Swish-e, and the L<SWISH-SEARCH|SWISH-SEARCH>
-page for information and examples on how to search your index.
+instructions on running Swish-e, and the L<SWISH-SEARCH|SWISH-SEARCH> page for
+information and examples on how to search your index.
 
-The configuration file is specified to Swish-e by the C<-c> switch.
-For example,
+The configuration file is specified to Swish-e by the C<-c> switch.  For
+example,
 
     swish-e -c myconfig.conf
 
-You may also split your directives up into different configuration files.
-This allows you to have a master configuration file used for many
-different indexes, and smaller configuration files for each separate
-index.  You can specify the different configuration files when running
-from the command line with the C<-c> switch (see L<SWISH-RUN|SWISH-RUN>),
-or you may include other Configuration file with the B<IncludeConfigFile>
-directive below.
+You may also split your directives up into different configuration files.  This
+allows you to have a master configuration file used for many different indexes,
+and smaller configuration files for each separate index.  You can specify the
+different configuration files when running from the command line with the C<-c>
+switch (see L<SWISH-RUN|SWISH-RUN>), or you may include other Configuration
+file with the B<IncludeConfigFile> directive below.
 
 Typically, in a configuration file the directives are grouped together in
 some logical order -- that is, directives that control the source of the
@@ -83,40 +82,38 @@ The configuration file directives are listed below in these groups:
 
 =item *
 
-L<Administrative Headers Directives|/"Administrative Headers Directives">
--- You may add administrative information to the header of the index file.
+L<"Administrative Headers Directives"> -- You may add administrative
+information to the header of the index file.
 
 =item *
 
-L<Document Source Directives|/"Document Source Directives"> -- Directives
-for selecting the source documents and the location of the index file.
+L<"Document Source Directives"> -- Directives for selecting the source
+documents and the location of the index file.
 
 =item *
 
-L<Document Contents Directives|/"Document Contents Directives"> --
-Directives that control how a document content is indexed.
+L<"Document Contents Directives"> -- Directives that control how a document
+content is indexed.
 
 =item *
 
-L<Directives for the File Access method only|/"Directives for the File
-Access method only"> -- These directives are only applicable to the File
-Access indexing method.
+L<"Directives for the File Access method only"> -- These directives are only
+applicable to the File Access indexing method.
 
 =item *
 
-L<Directives for the HTTP Access Method Only|/"Directives for the HTTP
-Access Method Only"> -- Likewise, these only apply to the HTTP Access
-method.
+L<"Directives for the HTTP Access Method Only"> -- Likewise, these only apply
+to the HTTP Access method.
 
 =item *
 
-L<Directives for the prog Access Method Only|/"Directives for the prog
-Access Method Only"> -- These only apply to the prog Access method.
+L<"Directives for the prog Access Method Only"> -- These only apply to the prog
+Access method.
 
 =item *
 
-L<Document Filter Directives|/"Document Filter Directives"> -- This is
-a special section that describes using document filters with Swish-e.
+L<"Document Filter Directives"> -- This is a special section that describes
+using document filters with Swish-e.
 
 =back
 
@@ -126,313 +123,313 @@ a special section that describes using document filters with Swish-e.
 
 =item *
 
-L<AbsoluteLinks|/"item_AbsoluteLinks"> [yes|NO]
+C<AbsoluteLinks> [yes|NO]
 
 =item *
 
-L<BeginCharacters|/"item_BeginCharacters"> *string of characters*
+C<BeginCharacters> *string of characters*
 
 =item *
 
-L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> *string*
+C<BumpPositionCounterCharacters> *string*
 
 =item *
 
-L<Buzzwords|/"item_Buzzwords"> [*list of buzzwords*|File: path]
+C<Buzzwords> [*list of buzzwords*|File: path]
 
 
 =item *
 
-L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [YES|no]
+C<ConvertHTMLEntities> [YES|no]
 
 =item *
 
-L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
+C<DefaultContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
 
 =item *
 
-L<Delay|/"item_Delay"> *seconds*
+C<Delay> *seconds*
 
 =item *
 
-L<DontBumpPositionOnEndTags|/"item_DontBumpPositionOnEndTags"> *list of names*
+C<DontBumpPositionOnEndTags> *list of names*
 
 =item *
 
-L<DontBumpPositionOnStartTags|/"item_DontBumpPositionOnStartTags"> *list of names*
+C<DontBumpPositionOnStartTags> *list of names*
 
 =item *
 
-L<EnableAltSearchSyntax|/"item_EnableAltSearchSyntax">  [yes|NO]
+C<EnableAltSearchSyntax>  [yes|NO]
 
 =item *
 
-L<EndCharacter|/"item_EndCharacters"> *string of characters*
+C<EndCharacters> *string of characters*
 
 =item *
 
-L<EquivalentServer|/"item_EquivalentServer"> *server alias*
+C<EquivalentServer> *server alias*
 
 =item *
 
-L<ExtractPath|/"item_ExtractPath"> *metaname* [replace|remove|prepend|append|regex]
+C<ExtractPath> *metaname* [replace|remove|prepend|append|regex]
 
 =item *
 
-L<FileFilter|/"item_FileFilter"> *suffix* *program* [options]
+C<FileFilter> *suffix* *program* [options]
 
 =item *
 
-L<FileFilterMatch|/"item_FileFilterMatch"> *program* *options* *regex* [*regex* ...]
+C<FileFilterMatch> *program* *options* *regex* [*regex* ...]
 
 =item *
 
-L<FileInfoCompression|/"item_FileInfoCompression"> [yes|NO]
+C<FileInfoCompression> [yes|NO]
 
 =item *
 
-L<FileMatch|/"item_FileMatch"> [contains|is|regex] *regular expression*
+C<FileMatch> [contains|is|regex] *regular expression*
 
 =item *
 
-L<FileRules|/"item_FileRules"> [contains|is|regex] *regular expression*
+C<FileRules> [contains|is|regex] *regular expression*
 
 =item *
 
-L<FuzzyIndexingMode|/"item_FuzzyIndexingMode"> [NONE|Stemming|Soundex|Metaphone|DoubleMetaphone]
+C<FuzzyIndexingMode> [NONE|Stemming|Soundex|Metaphone|DoubleMetaphone]
 
 =item *
 
-L<FollowSymLinks|/"item_FollowSymLinks"> [yes|NO]
+C<FollowSymLinks> [yes|NO]
 
 =item *
 
-L<HTMLLinksMetaName|/"item_HTMLLinksMetaName"> *metaname*
+C<HTMLLinksMetaName> *metaname*
 
 =item *
 
-L<IgnoreFirstChar|/"item_IgnoreFirstChar"> *string of characters*
+C<IgnoreFirstChar> *string of characters*
 
 =item *
 
-L<IgnoreLastChar|/"item_IgnoreLastChar"> *string of characters*
+C<IgnoreLastChar> *string of characters*
 
 =item *
 
-L<IgnoreLimit|/"item_IgnoreLimit"> *integer integer*
+C<IgnoreLimit> *integer integer*
 
 =item *
 
-L<IgnoreMetaTags|/"item_IgnoreMetaTags"> *list of names*
+C<IgnoreMetaTags> *list of names*
 
 =item *
 
-L<IgnoreNumberChars|/"item_IgnoreNumberChars"> *list of characters*
+C<IgnoreNumberChars> *list of characters*
 
 =item *
 
-L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [YES|no]
+C<IgnoreTotalWordCountWhenRanking> [YES|no]
 
 =item *
 
-L<IgnoreWords|/"item_IgnoreWords"> [*list of stop words*|File: path]
+C<IgnoreWords> [*list of stop words*|File: path]
 
 =item *
 
-L<ImageLinksMetaName|/"item_ImageLinksMetaName"> *metaname*
+C<ImageLinksMetaName> *metaname*
 
 =item *
 
-L<IncludeConfigFile|/"item_IncludeConfigFile">
+C<IncludeConfigFile>
 
 =item *
 
-L<IndexAdmin|/"item_IndexAdmin"> *text*
+C<IndexAdmin> *text*
 
 =item *
 
-L<IndexAltTagMetaName|/"item_IndexAltTagMetaName"> *tagname*|as-text
+C<IndexAltTagMetaName> *tagname*|as-text
 
 =item *
 
-L<IndexComments|/"item_IndexComments"> [yes|NO]
+C<IndexComments> [yes|NO]
 
 =item *
 
-L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file extensions*
+C<IndexContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file
+extensions*
 
 =item *
 
-L<IndexDescription|/"item_IndexDescription"> *text*
+C<IndexDescription> *text*
 
 =item *
 
-L<IndexDir|/"item_IndexDir"> [URL|directories or files]
+C<IndexDir> [URL|directories or files]
 
 =item *
 
-L<IndexFile|/"item_IndexFile"> *path*
+C<IndexFile> *path*
 
 =item *
 
-L<IndexName|/"item_IndexName"> *text*
+C<IndexName> *text*
 
 =item *
 
-L<IndexOnly|/"item_IndexOnly"> *list of file suffixes*
+C<IndexOnly> *list of file suffixes*
 
 =item *
 
-L<IndexPointer|/"item_IndexPointer"> *text*
+C<IndexPointer> *text*
 
 =item *
 
-L<IndexReport|/"item_IndexReport"> [0|1|2|3]
+C<IndexReport> [0|1|2|3]
 
 =item *
 
-L<MaxDepth|/"item_MaxDepth"> *integer*
+C<MaxDepth> *integer*
 
 =item *
 
-L<MaxWordLimit|/"item_MaxWordLimit"> *integer*
+C<MaxWordLimit> *integer*
 
 =item *
 
-L<MetaNameAlias|/"item_MetaNameAlias"> *meta name* *list of aliases*
+C<MetaNameAlias> *meta name* *list of aliases*
 
 =item *
 
-L<MetaNames|/"item_MetaNames"> *list of names*
+C<MetaNames> *list of names*
 
 =item *
 
-L<MinWordLimit|/"item_MinWordLimit"> *integer*
+C<MinWordLimit> *integer*
 
 =item *
 
-L<NoContents|/"item_NoContents"> *list of file suffixes*
+C<NoContents> *list of file suffixes*
 
 =item *
 
-L<obeyRobotsNoIndex|/"item_obeyRobotsNoIndex"> [yes|NO]
+C<obeyRobotsNoIndex> [yes|NO]
 
 =item *
 
-L<ParserWarnLevel|/"item_ParserWarnLevel"> [0|1|2|3]
+C<ParserWarnLevel> [0|1|2|3]
 
 =item *
 
-L<PreSortedIndex|/"item_PreSortedIndex"> *list of property names*
+C<PreSortedIndex> *list of property names*
 
 =item *
 
-L<PropCompressionLevel|/"item_PropCompressionLevel"> [0-9]
+C<PropCompressionLevel> [0-9]
 
 =item *
 
-L<PropertyNameAlias|/"item_PropertyNameAlias"> *property name* *list of aliases*
+C<PropertyNameAlias> *property name* *list of aliases*
 
 =item *
 
-L<PropertyNames|/"item_PropertyNames"> *list of meta names*
+C<PropertyNames> *list of meta names*
 
 =item *
 
-L<PropertyNamesCompareCase|/"item_PropertyNamesCompareCase"> *list of meta names*
+C<PropertyNamesCompareCase> *list of meta names*
 
 =item *
 
-L<PropertyNamesIgnoreCase|/"item_PropertyNamesIgnoreCase"> *list of meta names*
+C<PropertyNamesIgnoreCase> *list of meta names*
 
 =item *
 
-L<PropertyNamesNoStripChars|/"item_PropertyNoStripChars"> *list of meta names*
+C<PropertyNamesNoStripChars> *list of meta names*
 
 =item *
 
-L<PropertyNamesDate|/"item_PropertyNamesDate"> *list of meta names*
+C<PropertyNamesDate> *list of meta names*
 
 =item *
 
-L<PropertyNamesNumeric|/"item_PropertyNamesNumeric"> *list of meta names*
+C<PropertyNamesNumeric> *list of meta names*
 
 =item *
 
-L<PropertyNamesMaxLength|/"item_PropertyNamesMaxLength"> integer *list of meta names*
+C<PropertyNamesMaxLength> integer *list of meta names*
 
 =item *
 
-L<PropertyNamesSortKeyLength|/"item_PropertyNamesSortKeyLength"> integer *list of meta names*
+C<PropertyNamesSortKeyLength> integer *list of meta names*
 
 =item *
 
-L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append|regex]
+C<ReplaceRules> [replace|remove|prepend|append|regex]
 
 =item *
 
-L<ResultExtFormatName|/"item_ResultExtFormatName">  name -x format string
+C<ResultExtFormatName>  name -x format string
 
 =item *
 
-L<SpiderDirectory|/"item_SpiderDirectory"> *path*
+C<SpiderDirectory> *path*
 
 =item *
 
-L<StoreDescription|/"item_StoreDescription"> [XML <tag>|HTML <meta>|TXT size]
+C<StoreDescription> [XML <tag>|HTML <meta>|TXT size]
 
 =item *
 
-L<SwishProgParameters|/"item_SwishProgParameters> *list of parameters*
+C<"SwishProgParameters> *list of parameters*
 
 =item *
 
-L<SwishSearchDefaultRule|/"item_SwishSearchDefaultRule">   [<AND-WORD>|<or-word>]
+C<SwishSearchDefaultRule>   [<AND-WORD>|<or-word>]
 
 =item *
 
-L<SwishSearchOperators|/"item_SwishSearchOperators"> <and-word> <or-word> <not-word>
+C<SwishSearchOperators> <and-word> <or-word> <not-word>
 
 =item *
 
-L<TmpDir|/"item_TmpDir"> *path*
+C<TmpDir> *path*
 
 =item *
 
-L<TranslateCharacters|/"item_TranslateCharacters"> [*string1 string2*|:ascii7:]
+C<TranslateCharacters> [*string1 string2*|:ascii7:]
 
 =item *
 
-L<TruncateDocSize|/"item_TruncateDocSize">
-*number of characters*
+C<TruncateDocSize> *number of characters*
 
 =item * 
 
-L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|INDEX|auto]
+C<UndefinedMetaTags> [error|ignore|INDEX|auto]
 
 =item *
 
-L<UndefinedXMLAttributes|/"item_UndefinedXMLAttributes"> [DISABLE|error|ignore|index|auto]
+C<UndefinedXMLAttributes> [DISABLE|error|ignore|index|auto]
 
 =item *
 
-L<UseStemming|/"item_UseStemming"> [yes|NO]
+C<UseStemming> [yes|NO]
 
 =item *
 
-L<UseSoundex|/"item_UseSoundex"> [yes|NO]
+C<UseSoundex> [yes|NO]
 
 =item *
 
-L<UseWords|/"item_UseWords"> [*list of words*|File: path]
+C<UseWords> [*list of words*|File: path]
 
 =item *
 
-L<WordCharacters|/"item_WordCharacters"> *string of characters*
+C<WordCharacters> *string of characters*
 
 =item *
 
-L<XMLClassAttributes|/"item_XMLClassAttributes"> *list of XML attribute names*
+C<XMLClassAttributes> *list of XML attribute names*
 
 =back
 
@@ -546,11 +543,10 @@ Example (german):
 
 B<NOTE>: This following item is currently not available.
 
-C<SwishSearchDefaultRule> defines the default Boolean operator to use
-if none is specified between words or phrases.  The default is C<AND>.
+C<SwishSearchDefaultRule> defines the default Boolean operator to use if none
+is specified between words or phrases.  The default is C<AND>.
 
-The word you specify must match one of the available
-C<SwishSearchOperators>.
+The word you specify must match one of the available C<SwishSearchOperators>.
 
 Example:
 
@@ -562,9 +558,9 @@ Example:
 
 B<NOTE>: This following item is currently not available.
 
-The output of Swish-e can be defined by specifying a format string with
-the C<-x> command line argument.  Using C<ResultExtFormatName> you can
-assign a predefined format string to a name.
+The output of Swish-e can be defined by specifying a format string with the
+C<-x> command line argument.  Using C<ResultExtFormatName> you can assign a
+predefined format string to a name.
 
 Examples:
 
@@ -574,8 +570,8 @@ Then when searching you can specify the format string's name
 
     swish-e   ...  -x moreinfo  ...
 
-See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information
-about output formats.
+See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information about
+output formats.
 
 =back
 
@@ -619,11 +615,11 @@ Examples:
 
 =head2 Document Source Directives
 
-These directives control I<what> documents are indexed and I<how>
-they are accessed.  See also L<Directives for the File Access method
-only|/"Directives for the File Access method only"> and L<Directives for
-the HTTP Access Method Only|/"Directives for the HTTP Access Method Only">
-for directives that are specific to those access methods.
+These directives control I<what> documents are indexed and I<how> they are
+accessed.  See also L<Directives for the File Access method only|/"Directives
+for the File Access method only"> and L<Directives for the HTTP Access Method
+Only|/"Directives for the HTTP Access Method Only"> for directives that are
+specific to those access methods.
 
 
 =over 4
@@ -655,10 +651,9 @@ You may specify more than one B<IndexDir> directive.
 
 Any sub-directories of any listed directory will also be indexed.
 
-Note: While I<processing> directories, Swish-e will ignore any files
-or directories that begin with a dot (".").  You may index files
-or directories that begin with a dot by specifying their name with
-C<IndexDir> or C<-i>.
+Note: While I<processing> directories, Swish-e will ignore any files or
+directories that begin with a dot (".").  You may index files or directories
+that begin with a dot by specifying their name with C<IndexDir> or C<-i>.
 
 Examples:
 
@@ -681,17 +676,17 @@ Example:
     IndexDir http://www.my-site.com/index.html
     IndexDir http://localhost/index.html
 
-Obviously, using the B<HTTP> method to index is B<much> slower than
-indexing local files.  Be well aware that some sites do not appreciate
-spidering and may block your IP address.  You may wish to contact the
-remote site before spidering their web site.  More information about
-spidering can be found in L<Directives for the HTTP Access Method
-Only|/"Directives for the HTTP Access Method Only"> below.
+Obviously, using the B<HTTP> method to index is B<much> slower than indexing
+local files.  Be well aware that some sites do not appreciate spidering and may
+block your IP address.  You may wish to contact the remote site before
+spidering their web site.  More information about spidering can be found in
+L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access
+Method Only"> below.
 
-For the L<prog|SWISH-RUN/"item_prog"> method of access B<IndexDir>
-specifies the path to the program(s) to execute.  The external program
-must correctly format the documents being passed back to Swish-e.
-Examples of external programs are provided in the F<prog-bin> directory.
+For the L<prog|SWISH-RUN/"item_prog"> method of access B<IndexDir> specifies
+the path to the program(s) to execute.  The external program must correctly
+format the documents being passed back to Swish-e.  Examples of external
+programs are provided in the F<prog-bin> directory.
 
     IndexDir ./myprogram.pl
 
@@ -706,15 +701,15 @@ Files with these suffixes will B<not> have their contents indexed,
 but will have their path name (file name) indexed instead.
 
 If the file's type is HTML or HTML2 (as set by C<IndexContents> or
-C<DefaultContents>) then the file will be parsed for a HTML title and
-that title will be indexed.  Note that you must set the file's type with
-C<IndexContents> or C<DefaultContents>:
-C<.html> and C<.htm> are NOT type HTML by default.  For example:
+C<DefaultContents>) then the file will be parsed for a HTML title and that
+title will be indexed.  Note that you must set the file's type with
+C<IndexContents> or C<DefaultContents>: C<.html> and C<.htm> are NOT type HTML
+by default.  For example:
 
    IndexContents HTML* .htm .html
 
-If a title is found, it will still be checked for C<FileRules title>, and the file will be
-skipped if a match is found.  See C<FileRules>.
+If a title is found, it will still be checked for C<FileRules title>, and the
+file will be skipped if a match is found.  See C<FileRules>.
 
 If the file's type is not HTML, or it is HTML and no title is found,
 then the file's path will be indexed.
@@ -723,10 +718,10 @@ For example, this will allow searching by image file name.
 
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
 
-Note: Using this directive will B<not> cause files with those suffixes
-to be indexed.  That is, if you use C<IndexOnly> to limit the types of
-files that are indexed, then you must specify in C<IndexOnly> the same
-suffixes listed in C<NoContents>.
+Note: Using this directive will B<not> cause files with those suffixes to be
+indexed.  That is, if you use C<IndexOnly> to limit the types of files that are
+indexed, then you must specify in C<IndexOnly> the same suffixes listed in
+C<NoContents>.
 
 This does B<not> work:
 
@@ -734,10 +729,9 @@ This does B<not> work:
     IndexOnly .htm .html
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
 
-A C<-S prog> program may set the C<No-Contents:> header
-to enable this feature for a specific document (although it would be
-smarter for the C<-S prog> program to simply only send the pathname or
-title to be indexed.
+A C<-S prog> program may set the C<No-Contents:> header to enable this feature
+for a specific document (although it would be smarter for the C<-S prog>
+program to simply only send the pathname or title to be indexed.
 
 =item ReplaceRules [replace|remove|prepend|append|regex]
 
@@ -809,9 +803,9 @@ Examples:
 
 =item IndexContents [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file extensions*
 
-The C<IndexContents> directive assigns one of Swish-e's document parsers
-to a document, based on the its extension.  Swish-e currently knows how
-to parse TXT, HTML, and XML documents.
+The C<IndexContents> directive assigns one of Swish-e's document parsers to a
+document, based on the its extension.  Swish-e currently knows how to parse
+TXT, HTML, and XML documents.
 
 The XML2, HTML2, and TXT2 parsers are currently only available when
 Swish-e is configured to use libxml2.
@@ -821,10 +815,10 @@ If libxml2 is installed then it will be used to parse the content.  Otherwise,
 Swish-e's internal parsers will be used.
 
 Documents that are not assigned a parser with C<IndexContents> will, by
-default, use the HTML2 parser if libxml2 is installed, otherwise will
-use Swish-e's internal HTML parser.  The C<DefaultContents> directive may be
-used to assign a parser to documents that do not match a file extension
-defined with the C<IndexContents> directive.
+default, use the HTML2 parser if libxml2 is installed, otherwise will use
+Swish-e's internal HTML parser.  The C<DefaultContents> directive may be used
+to assign a parser to documents that do not match a file extension defined with
+the C<IndexContents> directive.
 
 Example:
 
@@ -832,24 +826,23 @@ Example:
     IndexContents TXT*  .txt .log .text
     IndexContents XML*  .xml
 
-HTML* is the default type for all files, unless otherwise specified
-(and this default can be changed by the B<DefaultContents> directive.
-Swish-e parses titles from HTML files, if available, and keeps track
-of the context of the text for context searching (see C<-t> in
-L<SWISH-RUN|SWISH-RUN>).
+HTML* is the default type for all files, unless otherwise specified (and this
+default can be changed by the B<DefaultContents> directive.  Swish-e parses
+titles from HTML files, if available, and keeps track of the context of the
+text for context searching (see C<-t> in L<SWISH-RUN|SWISH-RUN>).
 
-If using filters (with the C<FileFilter> directive)
-to convert documents you should include those extensions,
-too.  For example, if using a filter to convert .pdf to .html, you need
-to tell Swish-e that .pdf should be indexed by the internal HTML parser:
+If using filters (with the C<FileFilter> directive) to convert documents you
+should include those extensions, too.  For example, if using a filter to
+convert .pdf to .html, you need to tell Swish-e that .pdf should be indexed by
+the internal HTML parser:
 
     FileFilter  .pdf   pdf2html
     IndexContent  HTML  .pdf
 
 See also L<Document Filter Directives|/"Document Filter Directives">.
 
-B<Note:> Some of this may be changed in the future to use content-types
-instead of file extensions.  See L<SWISH-3.0|SWISH-3.0>
+B<Note:> Some of this may be changed in the future to use content-types instead
+of file extensions.  See L<SWISH-3.0|SWISH-3.0>
 
 =item DefaultContents [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
 
@@ -868,21 +861,20 @@ Example:
 
     DefaultContents HTML
 
-The C<DefaultContents> directive I<should> be used when spidering,
-as HTML files may be returned without a file extension (such as when
-requesting a directory and the default index.html is returned).
+The C<DefaultContents> directive I<should> be used when spidering, as HTML
+files may be returned without a file extension (such as when requesting a
+directory and the default index.html is returned).
 
 
 =item FileInfoCompression [yes|NO]
 
 ** This directive is currently not supported **
 
-Setting B<FileInfoCompression> to C<yes> will compress the index file to
-save disk space.  This may result in longer indexing times.  The default
-is C<no>.
+Setting B<FileInfoCompression> to C<yes> will compress the index file to save
+disk space.  This may result in longer indexing times.  The default is C<no>.
 
-Also see the C<-e> switch in L<SWISH-RUN|SWISH-RUN> for saving RAM
-during indexing.
+Also see the C<-e> switch in L<SWISH-RUN|SWISH-RUN> for saving RAM during
+indexing.
 
 
 =back
@@ -896,38 +888,37 @@ documents, and how that information is made available during searching.
 
 =item ConvertHTMLEntities [YES|no]
 
-ASCII I<entities> can be converted automatically while indexing documents
-of type HTML (not for HTML2).
-For performance reasons you may wish to set this to C<no>
-if your documents do not contain HTML entities.  The default is C<yes>.
+ASCII I<entities> can be converted automatically while indexing documents of
+type HTML (not for HTML2).  For performance reasons you may wish to set this to
+C<no> if your documents do not contain HTML entities.  The default is C<yes>.
 
-If C<ConvertHTMLEntities> is set C<no> the entities will be indexed
-without conversion.
+If C<ConvertHTMLEntities> is set C<no> the entities will be indexed without
+conversion.
 
 B<NOTE:> Entities within XML files and files parsed with libxml2 (HTML2) are
 converted regardless of this setting.
 
 =item MetaNames *list of names*
 
-META names are a way to define "fields" in your XML and HTML documents.
-You can use the META names in your queries to limit the search to just
-the words contained in that META name of your document.  For example,
-you might have a META tagged field in your documents called C<subjects>
-and then you can search your documents for the word "foo" but only return
-documents where "foo" is within the C<subjects> META tag.
+META names are a way to define "fields" in your XML and HTML documents.  You
+can use the META names in your queries to limit the search to just the words
+contained in that META name of your document.  For example, you might have a
+META tagged field in your documents called C<subjects> and then you can search
+your documents for the word "foo" but only return documents where "foo" is
+within the C<subjects> META tag.
 
     swish-e -w subjects=foo
 
-(See also the C<-t> switch in L<SWISH-RUN|SWISH-RUN> for information
-about I<context> searching in HTML documents.)
+(See also the C<-t> switch in L<SWISH-RUN|SWISH-RUN> for information about
+I<context> searching in HTML documents.)
 
 The B<MetaNames> directive is a space separated list.  For example:
 
     MetaNames meta1 meta2 keywords subjects
 
-You may also use L<UndefinedMetaTags|/"item_UndefinedMetaTags"> to specify
-automatic extraction of meta names from your HTML and XML documents,
-and also to ignore indexing content of meta tags.
+You may also use C<UndefinedMetaTags> to specify automatic extraction of meta
+names from your HTML and XML documents, and also to ignore indexing content of
+meta tags.
 
 META tags can have two formats in your B<HTML> source documents:
 
@@ -967,8 +958,8 @@ Then you can search in both tag2 and tag2 with:
 
     swish-e -w 'keywords=(query words)'
 
-Swish-e indexes all text as some metaname.  The default is
-C<swishdefault>, so these two queries are the same:
+Swish-e indexes all text as some metaname.  The default is C<swishdefault>, so
+these two queries are the same:
 
     swish-e -w foo
     swish-e -w swishdefault=foo
@@ -981,10 +972,9 @@ HTML title.  Swish also, by default, indexes content of meta tags.  So:
 
 will find "foo" in the body, the title, or any meta tags.
 
-Currently, there's no way to prevent Swish-e from indexing
-the title contents along with the body contents, but see
-L<UndefinedMetaTags|/"item_UndefinedMetaTags"> for how to control the
-indexing of meta tags.
+Currently, there's no way to prevent Swish-e from indexing the title contents
+along with the body contents, but see C<UndefinedMetaTags> for how to control
+the indexing of meta tags.
 
 If you would like to search just the title text, you may use:
 
@@ -1005,7 +995,7 @@ Then to search for "foo" but also limit searches to documents that include
 
    swish-e -w foo swishdocpath=(manual or tutorial)
 
-See also L<ExtractPath|/"item_ExtractPath">.
+See also C<ExtractPath>.
 
 
 =item MetaNameAlias *meta name* *list of aliases*
@@ -1107,7 +1097,8 @@ appear like
         <bar>Alt text here</bar>
     </foo>
 
-Then the normal rules (C<MetaNames> and C<PropertyNames>) apply to how that text is indexed.
+Then the normal rules (C<MetaNames> and C<PropertyNames>) apply to how that
+text is indexed.
 
 If you use the special tag "as-text" then
 
@@ -1128,27 +1119,26 @@ This feature is only available when using the libxml2 parser (HTML2 and XML2).
 
 If this is set true then Swish-e will attempt to convert relative URIs
 extracted from HTML documents for use with C<HTMLLinksMetaName> and
-C<ImageLinksMetaName> into absolute URIs.  Swish-e will use any <BASE>
-tag found in the document, otherwise it will use the file's pathname.
-The pathname used will be the pathname *after* C<ReplaceRules> has been
-applied to the document's pathname.
+C<ImageLinksMetaName> into absolute URIs.  Swish-e will use any <BASE> tag
+found in the document, otherwise it will use the file's pathname.  The pathname
+used will be the pathname *after* C<ReplaceRules> has been applied to the
+document's pathname.
 
 For example, say you wish to index image links under the metaname
 "images".
 
     ImageLinksMetaName images
 
-If an image is located in http://localhost/vacations/france/index.html
-and C<AbsoluteLinks> is set to no, then a image within that document:
+If an image is located in http://localhost/vacations/france/index.html and
+C<AbsoluteLinks> is set to no, then a image within that document:
 
      <img src="beach.jpeg">
 
 will only index "beach.jpeg".
 
-But, if you want more detail when searching, you can enable
-C<AbsoluteLinks> and Swish-e will index
-"http://localhost/vacations/france/beach.jpeg".  You can then look for
-images of beaches, but only in France:
+But, if you want more detail when searching, you can enable C<AbsoluteLinks>
+and Swish-e will index "http://localhost/vacations/france/beach.jpeg".  You can
+then look for images of beaches, but only in France:
 
     -w images=(beach and france)
 
@@ -1167,23 +1157,23 @@ four choices:
 
 =over 2
 
-=item error
+=item UndefinedMetaTags error
 
 If a meta name is found that is not listed in B<MetaNames>
 then indexing will be halted and an error reported.
 
-=item ignore
+=item UndefinedMetaTags ignore
 
-The contents of the meta tag are ignored and B<not> indexed
-unless a metaname has been defined with the C<MetaNames> directive.
+The contents of the meta tag are ignored and B<not> indexed unless a metaname
+has been defined with the C<MetaNames> directive.
 
-=item index
+=item UndefinedMetaTags index
 
 The contents of the meta tag are indexed, but placed in the
 main index unless there's an enclosing metatag already in force. This
 is the default.
 
-=item auto
+=item UndefinedMetaTags auto
 
 This method create meta tags automatically for HTML meta names
 and XML elements.  Using this is the same as specifying all the meta
@@ -1193,9 +1183,10 @@ names explicitly in a B<MetaNames> directive.
 
 =item UndefinedXMLAttributes [DISABLE|error|ignore|index|auto]
 
-This is similar to C<UndefinedMetaTags>, but only applies to XML documents (parsed with libxml2).
-This allows indexing of attribute content, and provides a way to index the content under a
-metaname.  For example, C<UndefinedXMLAttributes> can make
+This is similar to C<UndefinedMetaTags>, but only applies to XML documents
+(parsed with libxml2).  This allows indexing of attribute content, and provides
+a way to index the content under a metaname.  For example,
+C<UndefinedXMLAttributes> can make
 
     <person age="23">
           John Doe
@@ -1210,7 +1201,8 @@ look like the following to swish:
         John Doe
     </person>
 
-What happens to the text "23" will depend on the setting of C<UndefinedXMLAttributes>:    
+What happens to the text "23" will depend on the setting of
+C<UndefinedXMLAttributes>:    
 
 =over 2
 
@@ -1225,8 +1217,8 @@ B<MetaNames> then indexing will be halted and an error reported.
 
 =item ignore
 
-The contents of the meta tag are ignored and B<not> indexed unless a
-metaname has been defined with the C<MetaNames> directive.
+The contents of the meta tag are ignored and B<not> indexed unless a metaname
+has been defined with the C<MetaNames> directive.
 
 =item index
 
@@ -1273,8 +1265,8 @@ Will appear to Swish-e as:
 
 How the data is indexed depends on C<MetaNames> and C<UndefinedMetaTags>.
 
-Here's an example using the following configuration which combines the
-two directives C<XMLClassAttributes> and C<UndefinedXMLAttributes>.
+Here's an example using the following configuration which combines the two
+directives C<XMLClassAttributes> and C<UndefinedXMLAttributes>.
 
     XMLClassAttributes class
     UndefinedMetaTags auto
@@ -1283,12 +1275,8 @@ two directives C<XMLClassAttributes> and C<UndefinedXMLAttributes>.
 
 The source XML file looks like:    
 
-    <xml>
-    <person class="student" phone="555-1212" age="102">
-       John
-    </person>
-    <person greeting="howdy">Bill</person>
-    </xml>
+    <xml> <person class="student" phone="555-1212" age="102"> John </person>
+    <person greeting="howdy">Bill</person> </xml>
 
 Swish-e parses as:
 
@@ -1345,26 +1333,24 @@ And you wanted a way to limit searches to just documents under "sales".
 
     ExtractPath department regex !^/web/([^/]+)/.*$!$1!
 
-Which says, extract out the department name (as substring $1) and index
-it as meta name C<department>.  Then to limit a search to the sales
-department:
+Which says, extract out the department name (as substring $1) and index it as
+meta name C<department>.  Then to limit a search to the sales department:
 
     swish-e -w foo AND department=sales
 
-Note that the C<regex> method uses a substitution pattern, so to index
-only a sub-string match the I<entire> document path in the regular
-expression, as shown above.  Otherwise any part that is not matched will
-end up in the substitution pattern.
+Note that the C<regex> method uses a substitution pattern, so to index only a
+sub-string match the I<entire> document path in the regular expression, as
+shown above.  Otherwise any part that is not matched will end up in the
+substitution pattern.
 
-See the C<ExtractPathDefault> option for a way to set a value if not
-patterns match.
+See the C<ExtractPathDefault> option for a way to set a value if not patterns
+match.
 
-Although unlikely, you may use more than one C<ExtractPath> directive.
-More than one directive of the I<same> meta name will operate successively
-(in order listed in the configuration file) on the path.  This allows
-you to use regular expressions on the results of the previous pattern
-substitution (as if piping the output from one expression to the patter
-of the next).
+Although unlikely, you may use more than one C<ExtractPath> directive.  More
+than one directive of the I<same> meta name will operate successively (in order
+listed in the configuration file) on the path.  This allows you to use regular
+expressions on the results of the previous pattern substitution (as if piping
+the output from one expression to the patter of the next).
 
     ExtractPath foo regex !^(...).+$!$1!
     ExtractPath foo regex !^.+(.)$!$1!
@@ -1374,22 +1360,22 @@ So, the third letter is indexed as meta name "foo" if both patterns match.
     ExtractPath foo regex !^X(...).+$!$1!
     ExtractPath foo regex !^.+(.)$!$1!
 
-Now (not the "X"), if the first pattern doesn't match, the last character
-of the path name is indexed.  You must be clear on this behavior if you
-are using more than one C<ExtractPath> directive with the same metaname.
+Now (not the "X"), if the first pattern doesn't match, the last character of
+the path name is indexed.  You must be clear on this behavior if you are using
+more than one C<ExtractPath> directive with the same metaname.
 
-The document path operated on is the real path swish used to access
-the document.  That is, the C<ReplaceRules> directive has no effect on
-the path used with C<ExtractPath>.
+The document path operated on is the real path swish used to access the
+document.  That is, the C<ReplaceRules> directive has no effect on the path
+used with C<ExtractPath>.
 
 The full path is used for each meta name if more than one C<ExtractPath>
-directive is used.  That is, changes to the path used in C<ExtractPath
-foo> do not affect the path used by C<ExtractPath bar>.
+directive is used.  That is, changes to the path used in C<ExtractPath foo> do
+not affect the path used by C<ExtractPath bar>.
 
 =item ExtractPathDefault *metaname* default_value
 
-This can be used with C<ExtractPath> to set a default string to index
-under the given metaname if none of the C<ExtractPath> patterns match.
+This can be used with C<ExtractPath> to set a default string to index under the
+given metaname if none of the C<ExtractPath> patterns match.
 
 For example, say your want to index each document with a metaname
 "department" based on the following path examples:
@@ -1423,11 +1409,11 @@ but you don't need to keep track of what was extracted.
 
 =item PropertyNamesIgnoreCase *list of meta names*
 
-Swish-e allows you to specify certain META tags that can be used as
-B<document properties>.  The contents of any META tag that has been
-identified as a document property can be returned as part of the search
-results along with the rank, file name, title, and document size (see
-the C<-p> and C<-x> switches in L<SWISH-RUN|SWISH-RUN>).
+Swish-e allows you to specify certain META tags that can be used as B<document
+properties>.  The contents of any META tag that has been identified as a
+document property can be returned as part of the search results along with the
+rank, file name, title, and document size (see the C<-p> and C<-x> switches in
+L<SWISH-RUN|SWISH-RUN>).
 
 Properties are useful for returning additional data from documents in
 search results -- this saves the effort of reading and parsing the source
@@ -1435,15 +1421,15 @@ files while reading Swish-e search results, and is especially useful
 when the source documents are no longer available or slow to access
 (e.g. over http).
 
-Another feature of properties is that Swish-e can use the PropertyNames
-for sorting the search results (see the C<-s> switch).
+Another feature of properties is that Swish-e can use the PropertyNames for
+sorting the search results (see the C<-s> switch).
 
     PropertyNames author subjects
 
 Two variations are available.  C<PropertyNamesCompareCase> and
-C<PropertyNamesIgnoreCase>.  These tell Swish-e to either ignore or
-compare case when sorting results.  The default for C<PropertyNames>
-is to ignore the case.
+C<PropertyNamesIgnoreCase>.  These tell Swish-e to either ignore or compare
+case when sorting results.  The default for C<PropertyNames> is to ignore the
+case.
 
     PropertyNamesIgnoreCase subject
     PropertyNamesCompareCase keyword
@@ -1459,9 +1445,9 @@ C<PropertyNamesIgnoreCase>.
 
     PropertyNamesCompareCase swishtitle    
 
-Use of PropertyNames will increase the size of your index files,
-sometimes significantly.  Properties will be compressed if Swish-e is
-compiled with zlib as described in the L<INSTALL|INSTALL> manual page.
+Use of PropertyNames will increase the size of your index files, sometimes
+significantly.  Properties will be compressed if Swish-e is compiled with zlib
+as described in the L<INSTALL|INSTALL> manual page.
 
 If Swish-e finds more than one property of the same name in a document
 the property's contents will be concatinated for strings, and a warning
@@ -1480,13 +1466,13 @@ fetch properties without newlines replaced.
 
 =item PropertyNamesNumeric
 
-This directive is similar to C<PropertyNames>, but it flags the property
-as being a string of digits (integer value) that will be stored as binary data instead
-of a string.  This allows sorting with C<-s> and limiting with C<-L>
-to sort and limit the property correctly.
+This directive is similar to C<PropertyNames>, but it flags the property as
+being a string of digits (integer value) that will be stored as binary data
+instead of a string.  This allows sorting with C<-s> and limiting with C<-L> to
+sort and limit the property correctly.
 
-Swish-e uses C<strtoul(3)> to convert the string into an unsigned long
-integer.  Therefore, only positive integers can be stored.
+Swish-e uses C<strtoul(3)> to convert the string into an unsigned long integer.
+Therefore, only positive integers can be stored.
 
 Future versions of Swish-e may be able to store different property types
 (such as negative integers and real numbers).  This directive may change
@@ -1494,10 +1480,9 @@ in future releases of Swish.
 
 =item PropertyNamesDate
 
-This directive is exactly like C<PropertyNamesNumeric>, but it also
-flags the number as a machine timestamp (seconds since Epoch), and
-will print a formatted date when returning this property.  See C<-x>
-in L<SWISH-RUN|SWISH-RUN>.
+This directive is exactly like C<PropertyNamesNumeric>, but it also flags the
+number as a machine timestamp (seconds since Epoch), and will print a formatted
+date when returning this property.  See C<-x> in L<SWISH-RUN|SWISH-RUN>.
 
 Swish-e will not parse dates when indexing; you must use a timestamp.
 
@@ -1564,13 +1549,12 @@ On large document collections this presorting may add to the indexing
 time, and also adds to the total size of the index.  This directive can
 be used to customize exactly which properties will be presorted.
 
-If C<PreSortedIndex> it is I<not> present in the config file (default
-action), all the properties will be presorted at indexing time.  If it
-is present without any parameter, no properties will be presorted.
-Otherwise, only the property names specified will be presorted.
+If C<PreSortedIndex> it is I<not> present in the config file (default action),
+all the properties will be presorted at indexing time.  If it is present
+without any parameter, no properties will be presorted.  Otherwise, only the
+property names specified will be presorted.
 
-For example, if you only wish to sort results by a property called
-C<title>:
+For example, if you only wish to sort results by a property called C<title>:
 
     PropertyNames title age time
     PreSortedIndex  title
@@ -1578,15 +1562,16 @@ C<title>:
 
 =item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
 
-B<StoreDescription> allows you to store a document description in the
-index file.  This description can be returned in your search results
-when the C<-x> switch is used to include the I<swishdescription> for
-extended results, or by using C<-p swishdescription>.
+B<StoreDescription> allows you to store a document description in the index
+file.  This description can be returned in your search results when the C<-x>
+switch is used to include the I<swishdescription> for extended results, or by
+using C<-p swishdescription>.
 
-The document type (XML, HTML and TXT) must match the document type currently being indexed
-as set by C<IndexContents> or C<DefaultContents>.  See those directives for possible values.
-A common problem is using C<StoreDescription> yet not setting the document's type with
-C<IndexContents> or C<DefaultContents>.  Another problem is different types:
+The document type (XML, HTML and TXT) must match the document type currently
+being indexed as set by C<IndexContents> or C<DefaultContents>.  See those
+directives for possible values.  A common problem is using C<StoreDescription>
+yet not setting the document's type with C<IndexContents> or
+C<DefaultContents>.  Another problem is different types:
 
     IndexContents HTML2 .html
     StoreDescription HTML <body>
@@ -1608,11 +1593,11 @@ specified will capture the entire contents of the tag.
     StoreDescription HTML <body> 20000
     StoreDescription XML  <desc> 40
 
-Again, note that documents must be assigned a document type with C<IndexContents>
-or C<DefaultContents> to use this feature.
+Again, note that documents must be assigned a document type with
+C<IndexContents> or C<DefaultContents> to use this feature.
 
-Swish-e will compress the descriptions (or any other large property)
-if compiled to use zlib (see L<INSTALL|INSTALL>).  This is recommended when using
+Swish-e will compress the descriptions (or any other large property) if
+compiled to use zlib (see L<INSTALL|INSTALL>).  This is recommended when using
 StoreDescription and a large number of documents.  Compression of 30% to 50% is
 not uncommon with HTML files.
 
@@ -1625,9 +1610,8 @@ the most compression.
 The default depends on the default setting compiled with zlib, but is
 typically six.
 
-This option is useful when using C<StoreDescription> to store a large
-amount text in properties (or if using C<PropertyNames> with large
-property sizes).
+This option is useful when using C<StoreDescription> to store a large amount
+text in properties (or if using C<PropertyNames> with large property sizes).
 
 Properties must be over a value defined in F<config.h> (100 is the
 default) before compression will be attempted.  Swish-e will never store
@@ -1657,8 +1641,7 @@ databases, or to limit "runnaway" filters.  Truncating doc input may
 destroy document structures for Swish-e (e.g.  swish may miss closing
 tags for XML or HTML documents).
 
-TruncateDocSize does not currently work with the C<prog> input source
-method.
+TruncateDocSize does not currently work with the C<prog> input source method.
 
 =item FuzzyIndexingMode NONE|Stemming|Soundex|Metaphone|DoubleMetaphone
 
@@ -1752,8 +1735,9 @@ From: http://aspell.sourceforge.net/metaphone/
     Lawrence Philips' Metaphone Algorithm is an algorithm which returns
     the rough approximation of how an English word sounds.
 
-The C<DoubleMetaphone> mode will sometimes generate two different metaphones for the same word.
-This is supposed to be useful when a word may be pronounced more than one way.
+The C<DoubleMetaphone> mode will sometimes generate two different metaphones
+for the same word.  This is supposed to be useful when a word may be pronounced
+more than one way.
 
 A metaphone index should give results somewhere in between Soundex and Stemming.    
 
@@ -1766,15 +1750,15 @@ Put yes to apply word stemming algorithm during indexing, else no.
     UseStemming no
     UseStemming yes
 
-When UseStemming is set to C<yes> every word is stemmed before placing
-it in to the index.
+When UseStemming is set to C<yes> every word is stemmed before placing it in to
+the index.
 
 This option is deprecated.  It has been superceded by C<FuzzyIndexingMode>.
 
 =item UseSoundex [yes|NO]
 
-When UseSoundex is set to C<yes> every word is converted to a Soundex
-code before placing it in to the index.
+When UseSoundex is set to C<yes> every word is converted to a Soundex code
+before placing it in to the index.
 
 This option is deprecated.  It has been superceded by C<FuzzyIndexingMode>.
 
@@ -1810,7 +1794,7 @@ be indexed.  The Default is 40 (as defined in F<src/config.h>).
 
 =item BeginCharacters *string of characters*
 
-=item EndCharacter *string of characters*
+=item EndCharacters *string of characters*
 
 
 These settings define what a word consists of to the Swish-e indexing engine.
@@ -1843,10 +1827,10 @@ and EndCharacters will all be the same.
 
 Note that the same process applies to the query while searching.
 
-Getting these settings correct will take careful consideration and
-practice.  It's helpful to create an index of a single test file, and
-then look at the words that are placed in the index (see the C<-v 4>,
-C<-D> and C<-k> searching switches).
+Getting these settings correct will take careful consideration and practice.
+It's helpful to create an index of a single test file, and then look at the
+words that are placed in the index (see the C<-v 4>, C<-D> and C<-k> searching
+switches).
 
 Currently there is only support for eight-bit characters.
 
@@ -1872,14 +1856,13 @@ will be indexed as the following words:
     to
     file.html
 
-Which means that you can search for C<www.example.com> as a single word,
-but searching for just C<example> will not find the document.
+Which means that you can search for C<www.example.com> as a single word, but
+searching for just C<example> will not find the document.
 
 Note: when indexing HTML documents HTML entities are converted to their
-character equivalents before being processed with these directives.
-This is a change from previous versions of Swish-e where you were
-required to include the characters C<0123456789&#;> to index entities.
-See also L<ConvertHTMLEntities|/"item_ConvertHTMLEntities">
+character equivalents before being processed with these directives.  This is a
+change from previous versions of Swish-e where you were required to include the
+characters C<0123456789&#;> to index entities.  See also C<ConvertHTMLEntities>
 
 =item Buzzwords [*list of buzzwords*|File: path]
 
@@ -1889,9 +1872,9 @@ soundex and many of the other checks done on words while indexing.
 
 Buzzwords are case insensitive.
 
-Buzzwords should be separated by spaces and may span multiple directives.
-If the special format C<File:filename> is used then the Buzzwords will
-be read from an external file during indexing.
+Buzzwords should be separated by spaces and may span multiple directives.  If
+the special format C<File:filename> is used then the Buzzwords will be read
+from an external file during indexing.
 
 Examples:
 
@@ -1907,13 +1890,13 @@ when searching.  For example:
     ./swish-e -w 'web\=http'
 
 Buzzwords are found by splitting the text on whitespace, removing
-C<IgnoreFirstChar> and C<IgnoreLastChar> characters from the word,
-and then comparing with the list of C<Buzzwords>.  Therefore, if
-adding C<Buzzwords> to an index you will probably want to define
-C<IgnoreFirstChar> and C<IgnoreLastChar> settings.
+C<IgnoreFirstChar> and C<IgnoreLastChar> characters from the word, and then
+comparing with the list of C<Buzzwords>.  Therefore, if adding C<Buzzwords> to
+an index you will probably want to define C<IgnoreFirstChar> and
+C<IgnoreLastChar> settings.
 
-Note: Buzzwords specific settings for C<IgnoreFirstChar> and
-C<IgnoreLastChar> may be used in the future.
+Note: Buzzwords specific settings for C<IgnoreFirstChar> and C<IgnoreLastChar>
+may be used in the future.
 
 
 =item IgnoreWords [*list of stop words*|File: path]
@@ -1921,9 +1904,9 @@ C<IgnoreLastChar> may be used in the future.
 The IgnoreWords option allows you to specify words to ignore, called
 I<stopwords>.  The default is to not use any stopwords.
 
-Words should be separated by spaces and may span multiple directives.
-If the special format C<File:filename> is used then the stop words will
-be read from an external file during indexing.
+Words should be separated by spaces and may span multiple directives.  If the
+special format C<File:filename> is used then the stop words will be read from
+an external file during indexing.
 
 In previous versions of Swish-e you could use the directive
 
@@ -1943,9 +1926,9 @@ Examples:
 UseWords defines the words that Swish-e will index.  B<Only> the words
 listed will be indexed.
 
-You can specify a list of words following the directive (you may specify
-more than one C<UseWords> directive in a config file), and/or use the
-C<File:> form to specify a path to a file containing the words:
+You can specify a list of words following the directive (you may specify more
+than one C<UseWords> directive in a config file), and/or use the C<File:> form
+to specify a path to a file containing the words:
 
     UseWords perl python pascal fortran basic cobal php
     UseWords File: /path/to/my/wordlist
@@ -1971,11 +1954,11 @@ IgnoreWords, and then remove IgnoreLimit from the configuration file.
 
 =item IgnoreMetaTags *list of names*
 
-C<IgnoreMetaTags> defines a list of metatags to ignore while indexing
-XML files (and HTML files if using libxml2 for parsing HTML).  All text
-within the tags will be ignored -- both for indexing (C<MetaNames>)
-and properties (C<PropertyNames>).  To still parse properties, yet do
-not index the text, see L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
+C<IgnoreMetaTags> defines a list of metatags to ignore while indexing XML files
+(and HTML files if using libxml2 for parsing HTML).  All text within the tags
+will be ignored -- both for indexing (C<MetaNames>) and properties
+(C<PropertyNames>).  To still parse properties, yet do not index the text, see
+C<UndefinedMetaTags>.
 
 This option is useful to avoid indexing specific data from a file.
 For example:
@@ -2000,17 +1983,17 @@ This is solved by:
     IgnoreMetaTags updated_date
 
 
-See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
+See also C<UndefinedMetaTags>.
 
 =item IgnoreNumberChars *list of characters*
 
 Experimental Feature
 
-This experimental feature can be used to define a set of characters
-that describe a number.  If a word is found to contain only those
-characters it will not be indexed.  The characters listed must be part
-of C<WordCharacters> settings.  In other words, the "word" checked is
-a word that Swish-e would otherwise index.
+This experimental feature can be used to define a set of characters that
+describe a number.  If a word is found to contain only those characters it will
+not be indexed.  The characters listed must be part of C<WordCharacters>
+settings.  In other words, the "word" checked is a word that Swish-e would
+otherwise index.
 
 For example,
 
@@ -2051,10 +2034,10 @@ For example:
     # This will index a_b as a-b and ámo as amo
     TranslateCharacters _á -a
 
-C<TranslateCharacters :ascii7:> is a predefined set of characters that
-will translate eight bit characters to ascii7 characters.  Using the
-:ascii7: rule will translate "Ääç" to "aac". This means: searching
-"Çelik", "çelik" or "celik" will all match the same word.
+C<TranslateCharacters :ascii7:> is a predefined set of characters that will
+translate eight bit characters to ascii7 characters.  Using the :ascii7: rule
+will translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or
+"celik" will all match the same word.
 
 TranslateCharacters is done early in the indexing process, after
 converting HTML entities but before splitting the input text into words
@@ -2088,12 +2071,11 @@ There is no default, and you may list a string of characters.
 
 =item DontBumpPositionOnStartTags *list of names*
 
-Since metatags are typically separate data fields, the word position
-counter is automatically bumped between metatags (actually, bumped when a
-start tag is found and when an end tag is found).  This prevents matching
-a phrase that spans more than one metaname.  C<DontBumpPositionOnEndTags>
-and C<DontBumpPositionOnStartTags> disables this feature for the listed
-metanames.
+Since metatags are typically separate data fields, the word position counter is
+automatically bumped between metatags (actually, bumped when a start tag is
+found and when an end tag is found).  This prevents matching a phrase that
+spans more than one metaname.  C<DontBumpPositionOnEndTags> and
+C<DontBumpPositionOnStartTags> disables this feature for the listed metanames.
 
 For example,
 
@@ -2143,9 +2125,9 @@ indexing.  The default is to index all files specified in B<IndexDir>.
     # Only index .html .htm and .q files
     IndexOnly .html .htm .q
 
-C<IndexOnly> checks that the file end in the characters listed.  It does
-not check "extensions".  C<IndexOnly> is tested right before C<FileRules>
-is processed.
+C<IndexOnly> checks that the file end in the characters listed.  It does not
+check "extensions".  C<IndexOnly> is tested right before C<FileRules> is
+processed.
 
 =item FollowSymLinks [yes|NO]
 
@@ -2154,9 +2136,9 @@ Put "yes" to follow symbolic links in indexing, else "no".  Default is no.
     FollowSymLinks no
     FollowSymLinks yes
 
-Note that when set to C<no> extra stat(2) system calls must be made for
-each file.  For large number of files you may see a small reduction in
-indexing time by setting this to C<yes>.
+Note that when set to C<no> extra stat(2) system calls must be made for each
+file.  For large number of files you may see a small reduction in indexing time
+by setting this to C<yes>.
 
 See also the C<-l> switch in L<SWISH-RUN|SWISH-RUN>.
 
@@ -2164,18 +2146,18 @@ See also the C<-l> switch in L<SWISH-RUN|SWISH-RUN>.
 
 =item FileMatch [type] [contains|is|regex] *regular expression*
 
-FileRules and FileMatch are used to, respectively, exclude and include
-files and directories to index.  Since, by default, Swish-e indexes all
-files and recurses all directories (but see also C<FollowSymLinks>) you
-will typically only use C<FileRules> to exclude files or directories.
-C<FileMatch> is useful in a few cases, for example, to override the
-behavior of C<IndexOnly>.  Some examples are included below.
+FileRules and FileMatch are used to, respectively, exclude and include files
+and directories to index.  Since, by default, Swish-e indexes all files and
+recurses all directories (but see also C<FollowSymLinks>) you will typically
+only use C<FileRules> to exclude files or directories.  C<FileMatch> is useful
+in a few cases, for example, to override the behavior of C<IndexOnly>.  Some
+examples are included below.
 
-Except for C<FileRules title ...>, this feature is only available for
-file access method (-S fs), which is the default indexing mode.  Also,
-any pathname modification with C<ReplaceRules> happens after the check
-for C<FileRules>.  (It's unlikely that you would exclude files with
-C<FileRules> based on text you added with C<ReplaceRules>!)
+Except for C<FileRules title ...>, this feature is only available for file
+access method (-S fs), which is the default indexing mode.  Also, any pathname
+modification with C<ReplaceRules> happens after the check for C<FileRules>.
+(It's unlikely that you would exclude files with C<FileRules> based on text you
+added with C<ReplaceRules>!)
 
 The regular expression is a C regex.h extended regular expression.
 You may supply more than one regular expression per line, or use
@@ -2184,19 +2166,18 @@ separate directives.  Preceding the regular expression with the word
 
 The regular expression is compared against B<[type]> as described below.
 
-For historical reasons, you can specify C<contains> or C<is>.  C<is>
-simply forces the regular expression to match at the start and end
-of the string (by internally prepending "^" and appending "$" to the
-regular expression).
+For historical reasons, you can specify C<contains> or C<is>.  C<is> simply
+forces the regular expression to match at the start and end of the string (by
+internally prepending "^" and appending "$" to the regular expression).
 
 The C<regex> option requires delimiter characters:
 
     FileRules title regex /^private/i
 
-The only advantage of C<regex> is if you want to do case insensitive
-matches, or simply like your regular expressions to look like perl
-regular expressions.  You must use matching delimiters; (), {}, and [],
-are not currently supported for no good reason other than laziness.
+The only advantage of C<regex> is if you want to do case insensitive matches,
+or simply like your regular expressions to look like perl regular expressions.
+You must use matching delimiters; (), {}, and [], are not currently supported
+for no good reason other than laziness.
 
 Use quotes (" or ') around a pattern if it contains any white space.
 Note that the backslash character becomes the escape character within
@@ -2240,9 +2221,9 @@ The following types of match strings my be supplied:
     FileMatch dirname
     FileMatch directory
 
-B<pathname> matches the regular expression against the current pathname.
-The pathname may or may not be absolute depending on what you supplied
-to C<IndexDir>.
+B<pathname> matches the regular expression against the current pathname.  The
+pathname may or may not be absolute depending on what you supplied to
+C<IndexDir>.
 
 Example:
 
@@ -2286,9 +2267,9 @@ Example:
     FileMatch filename contains ^\d+$
 
 Swish-e checks these settings in the order of C<pathname>, C<dirname>, and
-C<filename>, and C<FileMatch> patterns are checked before C<FileRules>,
-in general.  This allows you to exclude most files with C<FileRules>,
-yet allow in a few special cases with C<FileMatch>. For example:
+C<filename>, and C<FileMatch> patterns are checked before C<FileRules>, in
+general.  This allows you to exclude most files with C<FileRules>, yet allow in
+a few special cases with C<FileMatch>. For example:
 
     # Exclude all files of .exe, .bin, and .bat
     FileRules filename contains \.(exe|bin|bat)$
@@ -2299,16 +2280,16 @@ yet allow in a few special cases with C<FileMatch>. For example:
     FileMatch filename is (baseball\.bat|incoming_mail\.bin)
 
 The C<directory> type is somewhat unique. When Swish-e recurses into a
-directory it will compare all the I<files> in the directory with the
-pattern and then decide if that entire directory should or should not
-be indexed (or recursed).  Note that you are matching against file names
-in a directory -- and some of those names may be directory names.
+directory it will compare all the I<files> in the directory with the pattern
+and then decide if that entire directory should or should not be indexed (or
+recursed).  Note that you are matching against file names in a directory -- and
+some of those names may be directory names.
 
 A C<FileRules directory> match will cause Swish-e to ignore all files and
 sub-directories in the current directory.
 
-Warning: A match with C<FileMatch directory> says to index B<everything>
-in the *current* directory and B<ignore> any FileRules for this directory.
+Warning: A match with C<FileMatch directory> says to index B<everything> in the
+*current* directory and B<ignore> any FileRules for this directory.
 
 
 Example:
@@ -2320,10 +2301,9 @@ Example:
     # Don't index directories that contain a .htaccess file.
     FileRules directory contains ^\.htaccess
 
-Note: While I<processing> directories, Swish-e will ignore any files
-or directories that begin with a dot (".").  You may index files
-or directories that begin with a dot by specifying their name with
-C<IndexDir> or C<-i>.
+Note: While I<processing> directories, Swish-e will ignore any files or
+directories that begin with a dot (".").  You may index files or directories
+that begin with a dot by specifying their name with C<IndexDir> or C<-i>.
 
 C<title> checks for a pattern match in an HTML title.
 
@@ -2334,8 +2314,8 @@ Example:
     # This example says to ignore case
     FileRules title regex "/^Internal document/i"
 
-Note: C<FileRules title> works for any input method (fs, prog, or http)
-that is parsed as HTML, and where a title was found in the document.
+Note: C<FileRules title> works for any input method (fs, prog, or http) that is
+parsed as HTML, and where a title was found in the document.
 
 In case all this seems a bit confusing, processing a directory happens
 in the following order.
@@ -2351,8 +2331,8 @@ name of a sub-directory) is checked:
     FileMatch directory - accept entire dir if *any* files match
 
 Then, unless C<FileMatch directory> matched, each file is tested with
-FileMatch.  A match says to index the file without further testing
-(i.e. overrides FileRules and IndexOnly):
+FileMatch.  A match says to index the file without further testing (i.e.
+overrides FileRules and IndexOnly):
 
     FileMatch pathname  \
     FileMatch dirname   - file is accepted if any match
@@ -2368,8 +2348,8 @@ otherwise
 
 finally, the file is indexed.
 
-Files (not directories) listed with C<IndexDir> or C<-i> are processed
-in a similar way:
+Files (not directories) listed with C<IndexDir> or C<-i> are processed in a
+similar way:
 
     FileMatch pathname  \
     FileMatch dirname   - file is accepted if any match
@@ -2384,9 +2364,9 @@ or a FileRules matches.
     FileRules dirname   - file is rejected if any match
     FileRules filename  /
 
-Note:  If things are not indexing as you expect, create a directory
-with some test files and use the C<-T regex> trace option to see how
-file names are checked.  Start with very simple tests!
+Note:  If things are not indexing as you expect, create a directory with some
+test files and use the C<-T regex> trace option to see how file names are
+checked.  Start with very simple tests!
 
 
 =back    
@@ -2430,18 +2410,18 @@ Note: The default was changed from 60 to 5 seconds in release 2.4.0
 
 =item TmpDir *path*
 
-The location of a writable temp directory on your system.  The HTTP
-access method tells the Perl helper to place its files in this location,
-and the C<-e> switch causes Swish-e to use this directory while indexing.
-There is no default.
+The location of a writable temp directory on your system.  The HTTP access
+method tells the Perl helper to place its files in this location, and the C<-e>
+switch causes Swish-e to use this directory while indexing.  There is no
+default.
 
     TmpDir /tmp/swish
 
 If this directory does not exist or is not writable Swish-e will fail
 with an error during indexing.
 
-Note, the environment variables of C<TMPDIR>, C<TMP>, and C<TEMP>
-(in that order) will B<override> this setting.
+Note, the environment variables of C<TMPDIR>, C<TMP>, and C<TEMP> (in that
+order) will B<override> this setting.
 
 =item SpiderDirectory *path*
 
@@ -2474,8 +2454,8 @@ This section details the directives that are only available for the
 an external program that "feeds" documents to Swish-e.  This allows indexing
 and filtering of documents from any source.
 
-See L<prog - general purpose access method|SWISH-RUN/"item_prog"> in
-the SWISH-RUN man page for more information.
+See L<prog - general purpose access method|SWISH-RUN/"item_prog"> in the
+SWISH-RUN man page for more information.
 
 
 A number of example programs for use with the "prog" access method are
@@ -2496,20 +2476,20 @@ Then running:
 
     swish-e -c config -S prog
 
-Swish-e will execute C</path/to/program.pl> and pass C</path/to/config
-hello there> as three command line arguments to the program.  This
-directive makes it easy to pass settings from the Swish-e configuration
-file to the external program.
+Swish-e will execute C</path/to/program.pl> and pass C</path/to/config hello
+there> as three command line arguments to the program.  This directive makes it
+easy to pass settings from the Swish-e configuration file to the external
+program.
 
-For example, the C<spider.pl> program (included in the C<prog-bin>
-directory) uses the C<SwishProgParameters> to specify what file to read
-for configuration information.
+For example, the C<spider.pl> program (included in the C<prog-bin> directory)
+uses the C<SwishProgParameters> to specify what file to read for configuration
+information.
 
     SwishProgParameters spider.config
     IndexDir ./spider.pl
 
-The C<spider.pl> program also has a default action so you can avoid
-using a configuration file:
+The C<spider.pl> program also has a default action so you can avoid using a
+configuration file:
 
     SwishProgParameters default http://www.swishe.org/ http://some.other.site/
     IndexDir ./spider.pl
@@ -2525,10 +2505,10 @@ with parameters is:
 
 B<Notes when using MS Windows>
 
-You should use unix style path separators to specify your external
-program.  Swish will convert forward slashes to backslashes before
-calling the external program.  This is only true for the program name
-specified with C<IndexDir> or the C<-i> command line option.
+You should use unix style path separators to specify your external program.
+Swish will convert forward slashes to backslashes before calling the external
+program.  This is only true for the program name specified with C<IndexDir> or
+the C<-i> command line option.
 
 In addition, Swish-e will make sure the program specified actually exists,
 which means you need to use the full name of the program.
@@ -2543,18 +2523,17 @@ and run indexing with the command:
 
     swish-e -c swish.cfg -S prog -v 9
 
-The C<IndexDir> command tells Swish-e the name of the program to run.
-Under unix you can just specify the name of the script, since unix will
-figure out the program from the first line of the script.
+The C<IndexDir> command tells Swish-e the name of the program to run.  Under
+unix you can just specify the name of the script, since unix will figure out
+the program from the first line of the script.
 
-The C<SwishProgParameters> are the parameters passed to the program
-specified by C<IndexDir> (perl.exe in this case).  The first parameter
-is the perl script to run (F<prog-bin/spider.pl>).  Perl passes the rest
-of the parameters directly to the perl script.  The second parameter
-F<default> tells the F<spider.pl> program to use default settings for
-spidering (or you could specify a spider config file -- see C<perldoc
-spider.pl> for details), and lastly, the URL is passed into the spider
-program.
+The C<SwishProgParameters> are the parameters passed to the program specified
+by C<IndexDir> (perl.exe in this case).  The first parameter is the perl script
+to run (F<prog-bin/spider.pl>).  Perl passes the rest of the parameters
+directly to the perl script.  The second parameter F<default> tells the
+F<spider.pl> program to use default settings for spidering (or you could
+specify a spider config file -- see C<perldoc spider.pl> for details), and
+lastly, the URL is passed into the spider program.
 
 
 =head2 Document Filter Directives
@@ -2564,8 +2543,8 @@ With "filters" you can index other types of documents.  For example,
 if all your web pages are in gzip format a filter can uncompress these
 on the fly for indexing.
 
-You may wish to read the Swish-e FAQ question on filtering before continuing here.
-L<How Do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
+You may wish to read the Swish-e FAQ question on filtering before continuing
+here.  L<How Do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
 
 There are two suggested methods for filtering.
 
@@ -2580,10 +2559,10 @@ the Swish-e distribution; they must be downloaded and installed separately.
 
 The advantage of this method is that new filtering methods can be installed easily.
 
-This system is designed to work with the -S http and -prog methods, but may also be used
-with the C<FileFilter> feature and -S fs indexing method.  See 
-F<$prefix/share/doc/swish-e/examples/filter-bin/swish_filter.pl> for
-an example.
+This system is designed to work with the -S http and -prog methods, but may
+also be used with the C<FileFilter> feature and -S fs indexing method.  See
+F<$prefix/share/doc/swish-e/examples/filter-bin/swish_filter.pl> for an
+example.
 
 See the F<filters/README> file for more information.
 
@@ -2718,24 +2697,23 @@ perl script:
     FileFilter .pdf       pdf2html.sh
     FileFilter .ps        ghostscript-filter.pl
 
-Using a scripting language (or any language that has a large startup
-cost) can B<greatly increase the indexing time>.  For small indexing
-jobs, this may not be an issue, but for large collections of files that
-require processing by a scripting language, you may be better off using
-the C<-S prog> access method where the script will only be compiled once,
-instead of for each document.
+Using a scripting language (or any language that has a large startup cost) can
+B<greatly increase the indexing time>.  For small indexing jobs, this may not
+be an issue, but for large collections of files that require processing by a
+scripting language, you may be better off using the C<-S prog> access method
+where the script will only be compiled once, instead of for each document.
 
 Filters are probably easier to write than a C<-S prog> program.  Which you
-decide to use depends on your requirements.  Examples of filter scripts
-can be found in the F<filter-bin> directory, and examples of C<-S prog>
-programs can be found in the F<prog-bin> directory.
+decide to use depends on your requirements.  Examples of filter scripts can be
+found in the F<filter-bin> directory, and examples of C<-S prog> programs can
+be found in the F<prog-bin> directory.
 
 =item FileFilterMatch   *filter-prog*   *filter-options*  *regex* [*regex* ...]
 
-This is similar to C<FileMatch> except uses regular expressions to
-match against the file name.  *filter-prog* is the path to the program.
-Unlike C<FileFilter> this does B<not> use the C<FilterDir> option.
-Also unlike C<FileFilter> you B<must> specify the *filter-options*.
+This is similar to C<FileMatch> except uses regular expressions to match
+against the file name.  *filter-prog* is the path to the program.  Unlike
+C<FileFilter> this does B<not> use the C<FilterDir> option.  Also unlike
+C<FileFilter> you B<must> specify the *filter-options*.
 
 Examples:
 

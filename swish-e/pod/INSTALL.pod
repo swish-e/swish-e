@@ -155,8 +155,9 @@ Note that installing C<Bundle::LWP> with the CPAN module
 
 will install many of the above modules.
 
-If you wish to use C>HTML-Template> with swish.cgi to generate output,
+If you wish to use C<HTML-Template> with swish.cgi to generate output,
 install:
+
 
     HTML::Template
     HTML::FillInForm
@@ -586,6 +587,7 @@ or make a test document available via some other source.
 If you are having trouble building Swish-e,
 please copy-and-paste the output from make
 (or from C<./configure>, if that's where the problem is).
+
 
 =back
 
@@ -1212,7 +1214,7 @@ Now, run Swish-e to create the index:
     Indexing done!
 
 The above output is actually a mix of output from both Swish-e
-and C<spider.pl".
+and C<spider.pl>.
 C<spider.pl> reports the
 "Summary for: http://localhost/apache_docs/index.html".
 
@@ -1394,7 +1396,7 @@ as different programs need to communicate with each other.
 
 You may wish to read the Swish-e FAQ question on filtering,
 before continuing here.
-L<How Do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
+L<How do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
 
 =head2 Filtering Overview
 
@@ -1470,10 +1472,10 @@ and to parse the resulting output (from F<pdftotext>)
 with the text ("TXT") parser.
 
 The other way to filter documents
-is to use a C<-S prog> program
+is to use a C<-S prog> prograam
 and convert the documents before passing them onto Swish-e.
 
-For example, C<spider.pl> makes use of the C<SWISH::Filter" Perl module,
+For example, C<spider.pl> makes use of the C<SWISH::Filter"> Perl module,
 included with the Swish-e distribution.
 C<SWISH::Filter> is passed a document and the document's content type;
 it looks for modules and utilities to convert the document
