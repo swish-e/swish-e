@@ -15,6 +15,13 @@ as HP-UX or AIX) you may see more warnings during the build process.
 Any problems should be sent to the swish-e discussion list after searching the
 list archives.
 
+Swish-e 2.2 can (and probably should) use the libxml2 library for parsing HTML and XML files.
+This library can be found at http://www.xmlsoft.org/.  Instructions for installing and
+enabling the library are described below.  Currently, this library is not required, but
+is a much better parser than the tired old swish-e parsers html.c and xml.c  xml.c has been
+replaced with James Clark's Expat library, but the html.c code is still broken in a number of ways.
+Libxml2 is compatible with Expat, and offers a much better HTML parser.  Use it if possible.
+
 Swish needs quite a bit of memory while indexing.  How much depends on what you are indexing.
 The index is portable between platforms, so you can index on a machine that has lots of
 memory available and move the index file(s) to another machine for searching.
@@ -38,10 +45,68 @@ for building under VMS can be found in C<src/vms>.
 
 =head1 INSTALLATION
 
-If you are reading this INSTALL document, then you probably already have
-downloaded and unpacked the distribution.  But just in case...
+=head2 Using libxml2 parser library
+
+Daniel Veillard's libxml2 is a well supported library for working with HTML and XML documents.
+Swish-e can now use libxml2 to parse HTML and XML documents.
+
+Installing the library is not required at this time, but is recommended, espeically
+if you are running Linux or similar OS (e.g. Solaris) since installation is so easy.
+If you are running Linux it may already be installed (look for libxml2.so.2.4.5 or higher).
+
+The library can be downloaded from http://www.xmlsoft.org/.  Installation directions
+are included in the INSTALL file in the libxml2 package.  Uncompressing, building, and
+installation is very similar to the way Swish-e is built.
+
+If it complains that it can not find zlib then you may need to specify the location of
+libz.  This happens (on Solaris) when the ./configure script finds the zlib header files,
+but the compiler and linker do not know to look in /usr/local/lib for the library.
+You may see an error like:
+
+    ld: fatal: library -lz: not found
+    ld: fatal: File processing errors. No output written to .libs/libxml2.so.2.4.5
+    *** Error code 1
+    
+In this case, try specifying where zlib can be found.
+
+    ./configure --with-zlib=/usr/local
+
+This would be used if libz was located in /usr/local/lib.
+
+If you do not have root access, then you will need to set environment
+variables to point to libxml2's library and header files *before* running
+I<swihs-e's> configure script.  For example, say you want to link against
+the library in its build directory:
+
+    ~/swish-e > export CFLAGS="-I$HOME/libxml2-2.4.5/include -g -O2"
+    ~/swish-e > export LDFLAGS="-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
+    ~/swish-e > ./configure
+
+Under other shells (tcsh) you might use setenv:
+
+    ~/swish-e > setenv CFLAGS "-I$HOME/libxml2-2.4.5/include -g -O2"
+    ~/swish-e > setenv LDFLAGS "-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
+    ~/swish-e > ./configure
+
+Then before running make you must edit the Makefile in the F<src> directory
+and uncomment these three lines:
+
+    LIBXML2_OBJS = parser.o
+    LIBXML2_LIB  = -lxml2   
+    LIBXML2_CFLAGS = -DLIBXML2
+
+Now, you run make as described in the next section.    
+
+
+Note that libxml2 will be linked as a
+shared library, so once you compile Swish-e to use the library, the library
+must not be deleted or moved.
+
 
 =head2 Downloading and unpacking and building
+
+If you are reading this INSTALL document, then you probably already have
+downloaded and unpacked the distribution.  But just in case...
 
 Make sure you are using the current
 stable release from http://swish-e.org.  How you download is up to you:
@@ -50,6 +115,8 @@ lynx, lwp-download, wget are all common methods.
 =over 3
 
 =item 1 Uncompress the distribution file
+
+
 
    gzip -dc swish-e.x.x.tar.gz | tar xof -
 
@@ -62,15 +129,16 @@ Uncompressing should create the following directories:
    swish-e-x.x/            configure script and top-level Makefile
    swish-e-x.x/pod/        swish-e documentation
    swish-e-x.x/src/        source code
-   swish-e-x.x/win32/      win32 binary and buid files
-   swish-e-x.x/vms/        files required for building under VMS
+   swish-e-x.x/src/expat/  James Clark's Expat XML parser
+   swish-e-x.x/src/win32/  win32 binary and buid files
+   swish-e-x.x/src/vms/    files required for building under VMS
    swish-e-x.x/conf/       example configuration files and stopword files
    swish-e-x.x/tests/      tests used for running "make test"
    swish-e-x.x/perl/       perl interface to the SWISH-E library
    swish-e-x.x/html/       HTML version of the documentation
    swish-e-x.x/doc/        directory used or building the documentation
    swish-e-x.x/filter-bin/ filter samples
-   swish-e-x.x/prog-bin/   a web spider and other examples
+   swish-e-x.x/prog-bin/   -S prog a web spider and other examples
 
 
 =item 2 Make any needed changes in F<src/config.h>
