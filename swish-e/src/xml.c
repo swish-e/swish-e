@@ -346,13 +346,16 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
 
     /* Index the text */
+    /* 2001-08 jmruiz Change structure from IN_FILE | IN_META to IN_FILE */
+    /* Since structure does not have much sense in XML, if we use only IN_FILE 
+    ** we will save memory and disk space (one byte per location) */
     if ( parse_data->meta_cnt )
         parse_data->total_words +=
             indexstring(
                 sw,
                 buf,
                 parse_data->filenum,
-                IN_FILE | IN_META,
+                IN_FILE,
                 parse_data->meta_cnt,
                 parse_data->metas,
                 &(parse_data->word_pos)
