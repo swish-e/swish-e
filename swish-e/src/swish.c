@@ -53,7 +53,7 @@
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"
-#include <sys/time.h>
+
 
 #ifdef HAVE_BSDGETTIMEOFDAY
 #define gettimeofday BSDgettimeofday
@@ -61,13 +61,18 @@
 
 
 #ifdef NO_GETTOD
+#define CLOCK_DIVIDE 1
 
 double TimeHiRes(void)  /* How about GetLocalTime() for WIN32 */
 {
 
-    return (double)clock() / CLOCKS_PER_SEC;
+    return (double)clock();
 }
+    
 #else
+#define CLOCK_DIVIDE 0
+#include <sys/time.h>
+
 double TimeHiRes(void)
 {
 struct timeval t;
@@ -830,9 +835,8 @@ double search_starttime, run_starttime, endtime;
             printf("# Number of hits: %d\n",rc);
 
             endtime = TimeHiRes();
-
-            printf("# Search time: %0.3f seconds\n", endtime - search_starttime );
-            printf("# Run time: %0.3f seconds\n", endtime - run_starttime );
+            printf("# Search time: %0.3f seconds\n", CLOCK_DIVIDE ? (endtime - search_starttime) / CLOCKS_PER_SEC : endtime - search_starttime );
+            printf("# Run time: %0.3f seconds\n", CLOCK_DIVIDE ? (endtime - run_starttime) / CLOCKS_PER_SEC : endtime - run_starttime );
 
             printSortedResults(sw);
             printf(".\n");
