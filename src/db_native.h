@@ -61,6 +61,7 @@ struct Handle_DBNative
       int index;
       struct numhash *next;
    } *hash[BIGHASHSIZE];
+   MEM_ZONE *hashzone;
 
    int worddata_counter;
    long *worddata_wordID;

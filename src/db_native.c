@@ -561,7 +561,6 @@ int DB_EndWriteWords_Native(void *db)
    FILE *fp = (FILE *) DB->fp;
    int i, wordlen;
    long wordID,f_offset,word_pos;
-   struct numhash *numhash;
 
          /* Now update word's data offset into the list of words */
          /* Simple check  words and worddata must match */
@@ -569,18 +568,6 @@ int DB_EndWriteWords_Native(void *db)
    if(DB->num_words != DB->wordhash_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter: ");
 
-      /* Free numhash array */
-   for(i=0;i<BIGHASHSIZE;i++)
-   {
-       for(numhash = DB->hash[i]; numhash; )
-       {
-           struct numhash *tmp = numhash->next;
-           efree(numhash);
-           numhash = tmp;
-       }
-       DB->hash[i]=NULL;
-   }
-           
       /* Sort wordhashdata to be writte to allow sequential writes */
    swish_qsort(DB->wordhashdata,DB->num_words,2*sizeof(long), cmp_wordhashdata);
 
@@ -737,6 +724,9 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
            fseek((FILE *)DB->fp,ramdisk_size,SEEK_END);
        }
 
+           /* Free hash zone */
+       Mem_ZoneFree(&DB->hashzone);
+
        DB->worddata_wordID = emalloc(DB->num_words * sizeof(long));
        DB->worddata_offset = emalloc(DB->num_words * sizeof(long));
     }
@@ -767,7 +757,8 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
     {
         /* Init hash array */
         for(i=0;i<BIGHASHSIZE;i++)
-            DB->hash[i] = NULL; 
+            DB->hash[i] = NULL;
+        DB->hashzone = Mem_ZoneCreate("WriteWordHash", DB->num_words*sizeof(struct numhash), 0);
 
 		/* If we are here we have finished WriteWord_Native */
 		/* If using ramdisk - Reserve space upto the size of the ramdisk */
@@ -791,9 +782,8 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
     DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
 
 
-         /* Should be a mem_zone -- > Todo */
          /* Add to the hash */
-    numhash = (struct numhash *) emalloc(sizeof(struct numhash));
+    numhash = (struct numhash *) Mem_ZoneAlloc(DB->hashzone, sizeof(struct numhash));
     numhashval = bignumhash(wordID);
     numhash->index = DB->wordhash_counter;
     numhash->next = DB->hash[numhashval];
