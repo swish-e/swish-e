@@ -62,6 +62,7 @@ static void readstopwordsfile(SWISH *, IndexFILE *, char *);
 static void readusewordsfile(SWISH *, IndexFILE *, char *);
 static void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 static int parseconfline(SWISH *, StringList *);
+static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
 
 
 
@@ -803,37 +804,20 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         /* #### Added UndefinedMetaTags as defined by Bill Moseley */
         if (strcasecmp(w0, "UndefinedMetaTags") == 0)
         {
-            if (sl->n == 2)
-            {
-                if (strcasecmp(sl->word[1], "error") == 0)
-                {
-                    sw->OkNoMeta = 0; /* Error if meta name is found
-                                         that's not listed in MetaNames */
-                }
-                else if (strcasecmp(sl->word[1], "ignore") == 0)
-                {
-                    sw->OkNoMeta = 1; /* Do not error */
-                    sw->ReqMetaName = 1; /* but do not index */
-                }
-                else if (strcasecmp(sl->word[1], "index") == 0)
-                {
-                    sw->OkNoMeta = 1; /* Do not error */
-                    sw->ReqMetaName = 0; /* place in main index, no meta name associated */
-                }
-                else if (strcasecmp(sl->word[1], "auto") == 0)
-                {
-                    sw->OkNoMeta = 1; /* Do not error */
-                    sw->ReqMetaName = 0; /* do not ignore */
-                    sw->applyautomaticmetanames = 1; /* act as if all meta tags are listed in Metanames */
-                }
-                else
-                    progerr("%s: possible values are error, ignore, index or auto", w0);
-            }
-            else
-                progerr("%s: requires one value", w0);
+            get_undefined_meta_flags( w0, sl, &sw->UndefinedMetaTags );
+            if ( !sw->UndefinedMetaTags )
+                progerr("%s: possible values are error, ignore, index or auto", w0);
 
             continue;
         }
+
+
+        if (strcasecmp(w0, "UndefinedXMLAttributes") == 0)
+        {
+            get_undefined_meta_flags( w0, sl, &sw->UndefinedXMLAttributes );
+            continue;
+        }
+
 
         
         if (strcasecmp(w0, "IgnoreMetaTags") == 0)
@@ -851,7 +835,23 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
+        if (strcasecmp(w0, "XMLClassAttributes") == 0)
+        {
+            if (sl->n > 1)
+            {
+                grabCmdOptions(sl, 1, &sw->XMLClassAttributes);
+                /* Go lowercase */
+                for (tmplist = sw->XMLClassAttributes; tmplist; tmplist = tmplist->next)
+                    tmplist->line = strtolower(tmplist->line);
+            }
+            else
+                progerr("%s: requires at least one value", w0);
+
+            continue;
+        }
+
+
         if (strcasecmp(w0, "DontBumpPositionOnStartTags") == 0)
         {
             if (sl->n > 1)
@@ -1310,3 +1310,27 @@ static void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
     fclose(fp);
     return;
 }
+
+static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting )
+{
+    if (sl->n != 2)
+        progerr("%s: requires one value", w0);
+        
+    if (strcasecmp(sl->word[1], "error") == 0)
+        *setting = UNDEF_META_ERROR;
+        
+    else if (strcasecmp(sl->word[1], "ignore") == 0)
+        *setting = UNDEF_META_IGNORE;
+
+    else if (strcasecmp(sl->word[1], "disable") == 0)  // default for xml attributes
+        *setting = UNDEF_META_DISABLE;
+
+    else if (strcasecmp(sl->word[1], "auto") == 0)
+        *setting = UNDEF_META_AUTO;
+
+    else if (strcasecmp(sl->word[1], "index") == 0)
+        *setting = UNDEF_META_INDEX;
+    else
+        progerr("%s: possible values are error, ignore, index or auto", w0);
+}
+

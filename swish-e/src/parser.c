@@ -63,6 +63,7 @@ $Id$
 **
 */
 
+
 #include <stdarg.h>  // for va_list
 #include "swish.h"
 #include "fs.h"  // for the title check
@@ -94,6 +95,7 @@ typedef struct {
 } CHAR_BUFFER;
 
 
+
 // I think that the property system can deal with StoreDescription in a cleaner way.
 // This code shouldn't need to know about that StoreDescription.
 
@@ -104,6 +106,26 @@ typedef struct {
     int                 active;      /* inside summary */
 } SUMMARY_INFO;
 
+#define STACK_SIZE 255  // stack size, but can grow.
+
+typedef struct MetaStackElement {
+    struct MetaStackElement *next;      // pointer to sibling, if more one
+    struct metaEntry        *meta;      // pointer to meta that's inuse
+    int                      ignore;    // flag that this meta turned on ignore
+    char                     tag[1];    // tag to look for
+} MetaStackElement, *MetaStackElementPtr;
+
+typedef struct {
+    int                 pointer;        // next empty slot in stack
+    int                 maxsize;        // size of stack
+    int                 ignore_flag;    // count of ignores
+    MetaStackElementPtr *stack;         // pointer to an array of stack data
+} MetaStack;
+
+        
+
+
+
 
 /* This struct is returned in all call-back functions as user data */
 
@@ -111,10 +133,8 @@ typedef struct {
     CHAR_BUFFER         text_buffer;    // buffer for collecting text
  // CHAR_BUFFER         prop_buffer;    // someday, may want a separate property buffer if want to collect tags within props
     SUMMARY_INFO        summary;        // argh.
-    char               *ignore_tag;     // tag that triggered ignore (currently used for both)
-    int                 ignore_cnt;
-    char               *ignore_meta_tag;
-    int                 ignore_meta_cnt;
+    MetaStack           meta_stack;     // stacks for tracking the nested metas
+    MetaStack           prop_stack;
     int                 total_words;
     int                 word_pos;
     int                 filenum;
@@ -147,7 +167,7 @@ static void error(void *data, const char *msg, ...);
 static void warning(void *data, const char *msg, ...);
 static void process_htmlmeta( PARSE_DATA *parse_data, const char ** atts );
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
-static void start_metaTag( PARSE_DATA *parse_data, char * tag );
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, xmlSAXHandlerPtr SAXHandler );
@@ -158,6 +178,12 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, stru
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
 static int get_structure( PARSE_DATA *parse_data );
+static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore );
+static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag );
+static int pop_stack( MetaStack *stack );
+static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **atts );
+static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append );
+static char *isXMLClassAttribute(SWISH * sw, char *tag);
 
 
 /*********************************************************************
@@ -227,6 +253,8 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
     IndexFILE          *indexf = sw->indexlist;
     struct MOD_Index   *idx = sw->Index;
 
+
+    /* This does stuff that's not needed for txt */
     init_parse_data( &parse_data, sw, fprop, NULL );
 
 
@@ -270,6 +298,10 @@ static int parse_chunks( PARSE_DATA *parse_data )
     int                 res;
     char                chars[READ_CHUNK_SIZE];
     xmlParserCtxtPtr    ctxt;
+
+
+
+    /* Now start pulling into the libxml2 parser */
 
     res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize );
     if (res == 0)
@@ -330,6 +362,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
 
 
     free_parse_data( parse_data );
+
 
     // $$$ This doesn't work since the file (and maybe some words) already added
     // $$$ need a way to "remove" the file entry and words already added 
@@ -458,6 +491,21 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
     }
 
 
+    /* Initialize the meta and property stacks */
+    /* Not needed for TXT processing, of course */
+    {
+        MetaStack   *s;
+
+        s = &parse_data->meta_stack;
+        s->maxsize = STACK_SIZE;
+        s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
+
+        s = &parse_data->prop_stack;
+        s->maxsize = STACK_SIZE;
+        s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
+    }
+
+
 
     /* I have no idea why addtofilelist doesn't do this! */
     idx->filenum++;
@@ -466,7 +514,6 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 
     addtofilelist(sw, indexf, fprop->real_path, &(parse_data->thisFileEntry) );
     addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
-
 
 }    
 
@@ -484,11 +531,21 @@ static void free_parse_data( PARSE_DATA *parse_data )
     if ( parse_data->text_buffer.buffer )
         efree( parse_data->text_buffer.buffer );
 
-    if ( parse_data->ignore_meta_tag )
-        efree( parse_data->ignore_meta_tag );
-
     if ( parse_data->baseURL )
         efree( parse_data->baseURL );
+
+
+    /* Pop the stacks */
+    while( pop_stack( &parse_data->meta_stack ) );
+    while( pop_stack( &parse_data->prop_stack ) );
+
+    /* Free the stacks */
+    if ( parse_data->meta_stack.stack )
+        efree( parse_data->meta_stack.stack );
+
+    if ( parse_data->prop_stack.stack )
+        efree( parse_data->prop_stack.stack );
+
 
 
     /* Restore the size in the StoreDescription property */
@@ -514,17 +571,14 @@ static void start_hndl(void *data, const char *el, const char **attr)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
     int         is_html_tag = 0;   // to allow <foo> type of meta tags in HTML
+    int         meta_append = 0;   // used allow siblings metanames
+    int         prop_append = 0;
 
 
-    /* return if within an ignore block since we only are looking for the ending tag */
-    if ( parse_data->ignore_tag )
-        return;
-
-        
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -570,7 +624,28 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     /* Now check if we are in a meta tag */
     if ( !is_html_tag )
-        start_metaTag( parse_data, tag );
+        start_metaTag( parse_data, tag, tag, &meta_append, &prop_append );
+
+
+    /* Index the content of attributes */
+    if ( !parse_data->parsing_html && attr )
+    {
+        /* Allow <foo class="bar"> to look like <foo.bar> */
+        if ( parse_data->sw->XMLClassAttributes )
+            start_XML_ClassAttributes( parse_data, tag, attr, &meta_append, &prop_append );
+            
+        
+
+        /* Index XML attributes */
+        if ( parse_data->sw->UndefinedXMLAttributes != UNDEF_META_DISABLE )
+            index_XML_attributes( parse_data, tag, attr );
+    }
+
+
+
+            
+
+
 
 
     /* Look to enable StoreDescription - allow any tag */
@@ -604,7 +679,7 @@ static void end_hndl(void *data, const char *el)
 
     if(strlen(el) > MAXSTRLEN)
     {
-        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -664,7 +739,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
 
     /* If currently in an ignore block, then return */
-    if ( parse_data->ignore_tag )
+    if ( parse_data->meta_stack.ignore_flag && parse_data->prop_stack.ignore_flag )
         return;
 
     /* $$$ this was added to limit the buffer size */
@@ -751,12 +826,22 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
 *   Start of a MetaTag
 *   All XML tags are metatags, but for HTML there's special handling.
 *
+*   Call with:
+*       parse_data
+*       tag         = tag to look for as a metaname/property
+*       endtag      = tag to look for as the ending tag
+*       meta_append = if zero, tells push that this is a new meta
+*       prop_append   otherwise, says it's a sibling of a previous call
+*
+*   <foo class=bar> can start two meta tags "foo" and "foo.bar".  But "bar"
+*   will end both tags.
+*
+*
 *********************************************************************/
-static void start_metaTag( PARSE_DATA *parse_data, char * tag )
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append )
 {
-    SWISH *sw = parse_data->sw;
-    struct metaEntry *m = NULL;
-
+    SWISH              *sw = parse_data->sw;
+    struct metaEntry   *m = NULL;
 
 
     /* Bump on all meta names, unless overridden */
@@ -766,56 +851,59 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     /* check for ignore tag (should propably remove char handler for speed) */
     
-    if ( (parse_data->ignore_tag = isIgnoreMetaName( sw, tag )))
+    if ( isIgnoreMetaName( sw, tag ) )
     {
-        parse_data->ignore_cnt++;
+        /* shouldn't need to flush buffer since it's just blocking out a section and should be balanced */
+        push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
+        push_stack( &parse_data->prop_stack, endtag, NULL, prop_append, 1 );
+        parse_data->structure[IN_META_BIT]++;  // so we are in balance with pop_stack
         return;
     }
 
 
     /* Check for metaNames */
 
-    if ( (m = getMetaNameByName( parse_data->header, tag)) )
+    if ( !(m = getMetaNameByName( parse_data->header, tag)) )
     {
-        flush_buffer( parse_data, 5 );  // flush since it's a new meta tag
+
+        if ( sw->UndefinedMetaTags == UNDEF_META_AUTO )
+        {
+            if (sw->verbose)
+                printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
+
+            m = addMetaEntry( parse_data->header, tag, META_INDEX, 0);
+        }
+
         
-        m->in_tag++;
+        else if ( sw->UndefinedMetaTags == UNDEF_META_IGNORE )  /* Ignore this block of text for metanames only (props ok) */
+        {
+            flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
+            push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
+            parse_data->structure[IN_META_BIT]++;  // so we are in balance with pop_stack
+            /* must fall though to property check */
+        }
+    }
+
+    if ( m )
+    {
+        flush_buffer( parse_data, 6 );  /* new meta tag, so must flush */
+        push_stack( &parse_data->meta_stack, endtag, m, meta_append, 0 );
         parse_data->structure[IN_META_BIT]++;
     }
-
-
-    else if ( sw->applyautomaticmetanames )
-    {
-        if (sw->verbose)
-            printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
-
-        flush_buffer( parse_data, 6 );  // flush since it's a new meta tag
-        addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
-        parse_data->structure[IN_META_BIT]++;
-    }
-
-    else if ( sw->ReqMetaName )
-    {
-        flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
-        parse_data->ignore_meta_tag = estrdup( tag );
-        parse_data->ignore_meta_cnt++;
-    }
-
-
-
 
     /* If set to "error" on undefined meta tags, then error */
-    if (!sw->OkNoMeta)
+    else if ( sw->UndefinedMetaTags == UNDEF_META_ERROR )
         progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
 
 
 
     /* Check property names, again, limited to <meta> for html */
 
+
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
     {
         flush_buffer( parse_data, 7 );  // flush since it's a new meta tag
-        m->in_tag++;
+        push_stack( &parse_data->prop_stack, endtag, m, prop_append, 0 );
     }
 
 }    
@@ -828,46 +916,13 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 *********************************************************************/
 static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 {
-    struct metaEntry *m = NULL;
 
-    /* End an IgnoreMetaTags block? */
-    
-    if ( parse_data->ignore_tag && !strcmp( parse_data->ignore_tag, tag ) )
-    {
-        if  ( --parse_data->ignore_cnt == 0 )
-            parse_data->ignore_tag = NULL;  // don't free since it's a pointer to the config setting
-        return;
-    }
+    if ( pop_stack_ifMatch( parse_data, &parse_data->meta_stack, tag ) )
+        parse_data->structure[IN_META_BIT]--;
 
 
-    /* Flag that we are not in tag anymore - tags must be balanced, of course. */
-    if ( ( m = getMetaNameByName( parse_data->header, tag) ) )
-    {
-        if ( m->in_tag )
-        {
-            flush_buffer( parse_data, 8 );
-            m->in_tag--;
-            parse_data->structure[IN_META_BIT]--;
-        }
-    }
-
-    else if ( parse_data->ignore_meta_tag && !strcmp( parse_data->ignore_meta_tag, tag) )
-    {
-        if ( --parse_data->ignore_meta_cnt == 0 )
-        {
-            flush_buffer( parse_data, 66 );  // flush since it's a new meta tag
-            efree( parse_data->ignore_meta_tag );
-            parse_data->ignore_meta_tag = NULL;
-        }
-    }
-
-
-    if ( ( m = getPropNameByName( parse_data->header, tag) ) )
-        if ( m->in_tag )
-        {
-            flush_buffer( parse_data, 9 );
-            m->in_tag--;
-        }
+    /* Out of a property? */
+    pop_stack_ifMatch( parse_data, &parse_data->prop_stack, tag );
 
 
     /* Don't allow matching across tag boundry */
@@ -1016,6 +1071,120 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     return is_html_tag;
 }
 
+/*********************************************************************
+*   Allow <foo class="bar"> to start "foo.bar" meta tag
+*
+*********************************************************************/
+static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **atts, int *meta_append, int *prop_append )
+{
+    char tagbuf[256];  /* we have our limits */
+    char *t;
+    int   i;
+    int  taglen = strlen( tag );
+    SWISH *sw = parse_data->sw;
+    
+    strcpy( tagbuf, tag );
+    t = tagbuf + taglen;
+    *t = '.';  /* hard coded! */
+    t++;
+
+    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+    {
+        if ( !isXMLClassAttribute( sw, (char *)atts[i]) )
+            continue;
+            
+        if ( strlen( (char *)atts[i+1] ) + taglen + 2 > 256 )
+        {
+            warning("ClassAttribute on tag '%s' too long\n", tag );
+            continue;
+        }
+        
+        strcpy( t, (char *)atts[i+1] );         /* create tag.attribute metaname */
+        start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append );
+    }
+
+}
+
+/*********************************************************************
+*   check if a tag is an XMLClassAttributes
+*
+*   Note: this returns a pointer to the config set tag, so don't free it!
+*   Duplicate code!
+*
+*
+*********************************************************************/
+
+static char *isXMLClassAttribute(SWISH * sw, char *tag)
+{
+    struct swline *tmplist = sw->XMLClassAttributes;
+
+    if (!tmplist)
+        return 0;
+        
+    while (tmplist)
+    {
+        if (strcmp(tag, tmplist->line) == 0)
+            return tmplist->line;
+
+        tmplist = tmplist->next;
+    }
+
+    return NULL;
+}
+
+
+
+/*********************************************************************
+*   This extracts out the attributes and contents and indexes them
+*
+*********************************************************************/
+static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **atts )
+{
+    char tagbuf[256];  /* we have our limits */
+    char *content;
+    char *t;
+    int   i;
+    int  meta_append;
+    int  prop_append;
+    int  taglen = strlen( tag );
+    SWISH *sw = parse_data->sw;
+    UndefMetaFlag  tmp_undef = sw->UndefinedMetaTags;  // save
+
+    sw->UndefinedMetaTags = sw->UndefinedXMLAttributes;
+    
+
+    strcpy( tagbuf, tag );
+    t = tagbuf + taglen;
+    *t = '.';  /* hard coded! */
+    t++;
+
+    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+    {
+        meta_append = 0;
+        prop_append = 0;
+
+        if ( strlen( (char *)atts[i] ) + taglen + 2 > 256 )
+        {
+            warning("Attribute on tag '%s' too long\n", tag );
+            continue;
+        }
+        
+        strcpy( t, (char *)atts[i] );         /* create tag.attribute metaname */
+        content = (char *)atts[i+1];
+
+        if ( !*content )
+            continue;
+
+        flush_buffer( parse_data, 1 );
+        start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append );
+        char_hndl( parse_data, content, strlen( content ) );
+        end_metaTag( parse_data, tagbuf );
+    }
+
+    sw->UndefinedMetaTags = tmp_undef;
+}
+    
+   
 
 /*********************************************************************
 *   Deal with html's <meta name="foo" content="bar">
@@ -1027,6 +1196,8 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
 {
     char *metatag = NULL;
     char *content = NULL;
+    int  meta_append = 0;
+    int  prop_append = 0;
 
     int  i;
 
@@ -1056,8 +1227,8 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
         }
 
         /* Process as a start -> end tag sequence */
-        flush_buffer( parse_data, 1 );  // because metatags could be strung together
-        start_metaTag( parse_data, metatag );
+        flush_buffer( parse_data, 1 );
+        start_metaTag( parse_data, metatag, metatag, &meta_append, &prop_append );
         char_hndl( parse_data, content, strlen( content ) );
         end_metaTag( parse_data, metatag );
         
@@ -1122,7 +1293,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     if ( !buf->cur )
         return;
 
-
     /* look back for word boundry */
 
     if ( !clear && !isspace( (int)buf->buffer[buf->cur-1] ) )  // flush up to current word
@@ -1135,7 +1305,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
             buf->cur = orig_end;
             if ( buf->cur < BUFFER_CHUNK_SIZE )  // should reall look at indexf->header.maxwordlimit 
                 return;                          // but just trying to keep the buffer from growing too large
-printf("Warning: File %s has a really long word found\n", parse_data->fprop->real_path );
         }
 
         save_char =  buf->buffer[buf->cur];
@@ -1157,10 +1326,10 @@ printf("Warning: File %s has a really long word found\n", parse_data->fprop->rea
     if ( *c )
     {
         /* Index the text */
-        if ( !parse_data->ignore_meta_tag )
+        if ( !parse_data->meta_stack.ignore_flag )
+        
             parse_data->total_words +=
                 indexstring( sw, c, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
-
 
         /* Add the properties */
         addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
@@ -1375,4 +1544,140 @@ static int get_structure( PARSE_DATA *parse_data )
     return structure;
 }
 
+/*********************************************************************
+*   Push a meta entry onto the stack
+*
+*   Call With:
+*       stack   = which stack to use
+*       tag     = Element (tag name) to be used to match end tag
+*       met     = metaEntry to save
+*       append  = append to current if one (will be incremented)
+*       ignore  = if true, then flag as an ignore block and bump ignore counter
+*
+*   Returns:
+*       void
+*
+*   ToDo:
+*       move to Mem_Zone?
+*
+*
+*********************************************************************/
+
+static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore )
+{
+    MetaStackElementPtr    node;
+
+    /* Create a new node ( MetaStackElement already has one byte allocated for string ) */
+    node = (MetaStackElementPtr) emalloc( sizeof( MetaStackElement ) + strlen( tag ) );
+    node->next = NULL;
+
+    /* Turn on the meta */
+    if ( (node->meta = meta) )
+        meta->in_tag++;
+
+    if ( ( node->ignore = ignore ) )  /* entering a block to ignore */
+        stack->ignore_flag++;
+        
+    strcpy( node->tag, tag );
+
+
+
+    
+    if ( !(*append)++ )
+    {
+        /* reallocate stack buffer if needed */
+        if ( stack->pointer >= stack->maxsize )
+        {
+            progwarn("swish parser adding more stack space for tag %s. from %d to %d", tag, stack->maxsize, stack->maxsize+STACK_SIZE );
+            
+            stack->maxsize += STACK_SIZE;
+            stack->stack = (MetaStackElementPtr *)erealloc( stack->stack, sizeof( MetaStackElementPtr ) * stack->maxsize );
+        }
+
+        stack->stack[stack->pointer++] = node;
+    }
+    else // prepend to the list
+    {
+        if ( !stack->pointer )
+            progerr("Tried to append tag %s to stack, but stack is empty", tag );
+
+        node->next = stack->stack[stack->pointer - 1];
+        stack->stack[stack->pointer - 1] = node;
+    }
+}
+
+/*********************************************************************
+*   Pop the stack if the tag matches the last entry
+*   Will turn off all metas associated with this tag level
+*
+*   Call With:
+*       parse_data = to automatically flush
+*       stack   = which stack to use
+*       tag     = Element (tag name) to be used for removal
+*
+*   Returns:
+*       true if tag matched
+*
+*********************************************************************/
+
+static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag )
+{
+
+    /* return if stack is empty */
+    if ( !stack->pointer )
+        return 0;
+
+        
+    /* return if doesn't match stack */
+    if ( strcmp( stack->stack[stack->pointer - 1]->tag, tag ) != 0 )
+        return 0;
+
+    flush_buffer( parse_data, 1 );
+    pop_stack( stack );
+
+    return 1;
+}
+
+/*********************************************************************
+*   Pop the stack
+*   Will turn off all metas associated with this tag level
+*
+*   Call With:
+*       stack   = which stack to use
+*
+*   Returns:
+*       the stack pointer
+*
+*********************************************************************/
+
+static int pop_stack( MetaStack *stack )
+{
+    MetaStackElementPtr    node, this;
+
+
+    /* return if stack is empty */
+    if ( !stack->pointer )
+        return 0;
+
+    node =  stack->stack[--stack->pointer];
+
+    while ( node )
+    {
+        this = node;
+
+        if ( node->meta )
+            node->meta->in_tag--;
+
+        if ( node->ignore )
+            stack->ignore_flag--;
+            
+        node = node->next;
+        efree( this );
+    }
+
+    return stack->pointer;
+}
+
+        
+        
 

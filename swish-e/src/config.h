@@ -235,21 +235,6 @@
 ** If none just leave the empty list "". Do not erase the line.
 */
 
-#define OKNOMETA 1
-/* Switch that define if it is ok to fail in case the META name is not listed 
-** in the METANAMES variable. Value of 1 will cause the word to be listed as a
-** regular words with no metaName attached
-** 2000/12 Jose Ruiz: do not change it here. Use OkNoMeta yes/no in config file
-*/
-
-#define REQMETANAME 0
-/* Set to 1 to not index any Meta tag contents unless the tag name is
-** listed in the MetaNames parameter. Set to 0 and with OKNOMETA set 1
-** Swish will place META contents in index with no metaName attached.
-** 10/11/99 Bill Moseley
-** 2000/12 Jose Ruiz: do not change it here. Use ReqMetaName yes/no in config file
-*/
-
 #define IGNORE_STOPWORDS_IN_QUERY 1
  
 /* Added JM 1/10/98.  Setting this to 0 (default) causes a stopword in
