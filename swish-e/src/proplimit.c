@@ -194,7 +194,7 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 
 
     /* Currently, can only limit by one property -- so check that one hasn't already been used */
-    for ( params = self->params; params && (strcmp( params->propname, propertyname ) != 0); params = (PARAMS *)params->next);
+    for ( params = self->params; params && (strcmp( (char *)params->propname, propertyname ) != 0); params = (PARAMS *)params->next);
     if ( params )
         progerr("Only one limit per property '%s'", propertyname );
         
@@ -587,13 +587,13 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 
     /* Allow <= and >= in limits.  A NULL property means very low/very high */
 
-    if ( (strcmp( "<=", lowrange ) == 0)   )
+    if ( (strcmp( "<=", (char *)lowrange ) == 0)   )
     {
         meta_entry->loPropRange = NULL; /* indicates very small */
         meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
     }
 
-    else if ( (strcmp( ">=", lowrange ) == 0)   )
+    else if ( (strcmp( ">=", (char *)lowrange ) == 0)   )
     {
         meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
         meta_entry->hiPropRange = NULL; /* indicates very big */
