@@ -379,6 +379,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     int     found,
             lensummary;
 
+printf("HERE!\n");
     /* Get the summary if no metaname/field is given */
     if (!field && size)
     {
@@ -401,6 +402,9 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         remove_newlines(summary);
 //$$$$ Todo: remove tag and content of scripts, css, java, embeddedobjects, comments, etc  
         remove_tags(summary);
+
+        summary = sw_ConvHTMLEntities2ISO(sw, summary);
+
 
         /* use only the required memory -save those not used */
         /* 2001-03-13 rasc  copy only <size> bytes of string */
@@ -550,6 +554,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     {
         remove_newlines(summary);
         remove_tags(summary);
+        summary = sw_ConvHTMLEntities2ISO(sw, summary);
     }
 
     if (summary && size && ((int) strlen(summary)) > size)
