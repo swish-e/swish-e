@@ -54,66 +54,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/*
-#define STANDALONE
-#define DEBUG
-*/
-
-#ifdef STANDALONE
-
-/* Rourtines to make long integers portable */
-unsigned long PACKLONG(unsigned long num)
-{
-    unsigned long _i = 0L;
-    unsigned char *_s;
-
-    if (num)
-    {
-        _s = (unsigned char *) &_i;
-        _s[0] = (unsigned char) ((num >> 24) & 0xFF);
-        _s[1] = (unsigned char) ((num >> 16) & 0xFF);
-        _s[2] = (unsigned char) ((num >> 8) & 0xFF);
-        _s[3] = (unsigned char) (num & 0xFF);
-        return _i;
-    }
-    return num;
-}
-
-
-unsigned long UNPACKLONG(unsigned long num)
-{
-    unsigned char *_s = (unsigned char *) &num;
-
-    return (_s[0] << 24) + (_s[1] << 16) + (_s[2] << 8) + _s[3];
-}
-
-
-static int num = 0;
-char *emalloc(unsigned int size)
-{
-num++;
-return malloc(size);
-}
-
-void efree(void *p)
-{
-num--;
-free(p);
-}
-
-
-#else
-
+#include "swish.h"
 #include "mem.h"
-
-unsigned long PACKLONG(unsigned long num);
-unsigned long UNPACKLONG(unsigned long num);
-unsigned char *compress3(int num, unsigned char *buffer);
-int uncompress2(unsigned char **buffer);
-
-#endif  /* STANDALONE */
-
-
+#include "compress.h"
 #include "array.h"
 
 
