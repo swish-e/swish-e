@@ -49,7 +49,7 @@ $Id$
 
 /* Prototypes */
 
-static int is_EOE (int c);
+static int is_EOE (int c);            /* is_EndOfEntity */
 
 
 
