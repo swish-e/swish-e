@@ -250,7 +250,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
                     structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
 
-                    // if (sw->verbose >= 4)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
                         struct file *fileInfo;
@@ -278,7 +277,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                         x = uncompress2(&s);
 
                         if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS_FULL))
-                        //if (sw->verbose >= 4)
                         {
                             if (i)
                                 printf(",%d", x);
