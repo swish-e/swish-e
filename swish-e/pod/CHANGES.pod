@@ -159,6 +159,10 @@ switches.
 
 =over 4
 
+=itme * New command line argument C<-H>
+
+Controls the level (verbosity) of header information printed with search results.
+
 =item * New command line argument C<-x>
 
 Provides additional header output and allows for a I<format string> to describe what data to print.
@@ -169,8 +173,8 @@ Prints words stored in the swish index.
 
 =item * New command line argument C<-N>
 
-Provides a way to do incremental indexing.  You pass C<-N> a path to a file
-and only files newer than the last modified date of that file will be indexed.
+Provides a way to do incremental indexing by comparing last modification dates.
+You pass C<-N> a path to a file and only files newer than the last modified date of that file will be indexed.
 
 =item * Enhanced command line argument C<-D>
 
