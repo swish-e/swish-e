@@ -33,9 +33,6 @@ int countwords_TXT (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
     char   *title = "";
 
 
-	/* external filters can output control chars. So remove them */
-	remove_controls(buffer);
-
 	if(fprop->stordesc && fprop->stordesc->size)    /* Let us take the summary */
 	{
 		/* No fields in a TXT doc. So it is easy to get summary */
