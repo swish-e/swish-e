@@ -100,7 +100,7 @@ test:	$(NAME)
 	@(cd ../tests; ../src/swish-e -f ./test.index -w meta3=metatest3 | egrep  '^[0-9]')
 	
 	@echo -e "\ntest 5 (Phrase search) ..."
-	@(cd ../tests; ../src/swish-e -f ./test.index -w 'meta3="three little pigs"' | egrep  '^[0-9]')
+	@(cd ../tests; ../src/swish-e -f ./test.index -w '"three little pigs"' | egrep  '^[0-9]')
 
 	@echo -e "\n ** All tests completed! **\n"
 
