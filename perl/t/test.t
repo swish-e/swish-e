@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 115;
+my $lastcase = 125;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -36,8 +36,23 @@ my $mem_test = 0;
             my $value = @value ? join( ':', @value) : '*undefined*';
             is_ok( "Header '$header' = '$value'", defined $value );
         }
-    }
-    
+
+        my @metas = $swish->MetaList( $index );
+        for my $meta ( @metas ) {
+            my $name = $meta->Name;
+            my $type = $meta->Type;
+            my $id   = $meta->ID;
+            is_ok("Meta: $name  type=$type  id=$id", $name );
+        }
+        my @props = $swish->PropertyList( $index );
+        for my $meta ( @props ) {
+            my $name = $meta->Name;
+            my $type = $meta->Type;
+            my $id   = $meta->ID;
+            is_ok("Prop: $name  type=$type  id=$id", $name );
+        }
+   }
+
 
     # A short-cut way to search
 
@@ -80,7 +95,7 @@ my $mem_test = 0;
     check_error('Call $swish->New_Search_Object', $swish);
 
     $search->SetSort("swishfilenum");
-   
+
 
 
     # then in a loop
@@ -95,13 +110,13 @@ my $mem_test = 0;
     my @removed_stopwords = $results->RemovedStopwords( 't/index.swish-e' );
     is_ok("RemovedStopwords [" . join( ', ', @removed_stopwords). "]", scalar @removed_stopwords  );
 
-    
+
     # Display a list of results
 
 
     my $hits = $results->Hits;
     is_ok( "returned $hits results", $hits );
-    
+
 
     # Seek to a given page - should check for errors
     #$results->SeekResult( ($page-1) * $page_size );
@@ -188,7 +203,7 @@ my $mem_test = 0;
     $results = $search->Execute('foo');
     $hits = $results->Hits;
     is_ok("foo in <h> tags $hits hits", $hits == 1 );
-    
+
     $search->SetStructure( 1 );
 
     $results = $search->Execute('foo');
@@ -197,7 +212,7 @@ my $mem_test = 0;
 
     $search->SetSearchLimit("age", 30, 40 );
     check_error('SetSearchLimit', $swish);
-    
+
     $results = $search->Execute('not dkdkd');
     check_error('1st Execute', $swish);
     $hits = $results->Hits;
@@ -208,16 +223,16 @@ my $mem_test = 0;
     $search->ResetSearchLimit;
     $search->SetSearchLimit("age", 40, 40 );
     check_error('2nd SetSearchLimit', $swish);
-    
+
     $results = $search->Execute('not dkdkd');
     check_error('2nd Execute', $swish);
 
     $hits = $results->Hits;
     is_ok("2nd Limit Search range $hits hits", $hits == 1 );
-    
 
 
-    
+
+
     if ( $mem_test ) {
         require Time::HiRes;
         my $t0 = [Time::HiRes::gettimeofday()];
@@ -236,8 +251,8 @@ my $mem_test = 0;
                 my $elapsed = Time::HiRes::tv_interval ( $t0, [Time::HiRes::gettimeofday()]);
 
                 my $ps = $count % 10000 ? '': `/bin/ps $flags -p $$`;
-                
-                printf("$count - Results: $hits - Total Results: $ttl %d req/s\n$ps", $count/$elapsed ); 
+
+                printf("$count - Results: $hits - Total Results: $ttl %d req/s\n$ps", $count/$elapsed );
                 $flags = 'hv';
             }
             $count++;
@@ -253,10 +268,10 @@ my $mem_test = 0;
         my $stemmed = $swish->StemWord( $_ );
         is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
     }
-    
+
 
     # cough, hack, cough....
-    
+
     print "ok $_ (noop)\n" for $test_num..$lastcase
 }
 
@@ -271,14 +286,14 @@ sub check_error {
         print "ok $num $str\n";
         return;
     }
-    
+
 
     my $msg = $swish->ErrorString . ' (' . $swish->LastErrorMsg . ')';
-    
+
     print "not ok $num $str - $msg\n";
 
     die "Found critical error" if $swish->CriticalError;
-   
+
 }
 
 sub is_ok {
@@ -301,6 +316,6 @@ sub stem_it {
     my @words = $fw->WordList;
     is_ok(" [$word] -> [@words]", scalar @words );
 }
-    
 
-    
+
+

@@ -40,13 +40,25 @@ const char **SwishIndexNames( SW_HANDLE );  /* fetch list of index files names a
 SWISH_HEADER_VALUE SwishHeaderValue( SW_HANDLE, const char *index_name, const  char *cur_header, SWISH_HEADER_TYPE *type );
 SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEADER_TYPE *type );
 
+typedef const void * SW_META;
+typedef SW_META * SWISH_META_LIST;
 
+/* Meta and Property Values */
 
+#define SW_META_TYPE_UNDEF 0
+#define SW_META_TYPE_STRING 4
+#define SW_META_TYPE_ULONG 8
+#define SW_META_TYPE_DATE 16
 
-
+SWISH_META_LIST SwishMetaList( SW_HANDLE, const char *index_name );
+SWISH_META_LIST SwishPropertyList( SW_HANDLE, const char *index_name );
+SWISH_META_LIST SwishResultMetaList( SW_RESULT );
+SWISH_META_LIST SwishResultPropertyList( SW_RESULT );
+const char *SwishMetaName( SW_META );
+int SwishMetaType( SW_META );
+int SwishMetaID( SW_META );
 
 /* Limit searches by structure */
-
 
 #define IN_FILE_BIT     0
 #define IN_TITLE_BIT    1
@@ -77,6 +89,8 @@ SW_RESULTS SwishQuery(SW_HANDLE, char *words );
 SW_SEARCH New_Search_Object( SW_HANDLE, char *query );
 
 void SwishSetRefPtr( SW_HANDLE sw, void *address );
+void *SwishGetRefPtr( SW_HANDLE sw );
+
 void *SwishSearch_parent( SW_SEARCH srch );
 void *SwishResults_parent( SW_RESULTS results );
 void *SwishResult_parent( SW_RESULT result );

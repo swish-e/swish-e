@@ -31,14 +31,14 @@ SWISH::API - Perl interface to the Swish-e C Library
 
 
     # A short-cut way to search
-    
+
     my $results = $swish->Query( "foo OR bar" );
 
 
     # Or more typically
     my $search = $swish->New_Search_Object;
 
-    # then in a loop 
+    # then in a loop
     my $results = $search->Execute( $query );
 
     # always check for errors (but aborting is not always necessary)
@@ -73,6 +73,20 @@ SWISH::API - Perl interface to the Swish-e C Library
             $result->Property( "swishreccount" ),
             $result->Property( "swishfilenum" )
         );
+    }
+
+    # display properties and metanames
+
+    for my $index_name ( $swish->IndexNames ) {
+        my @metas = $swish->MetaList( $index_name );
+        my @props = $swish->PropertyList( $index_name );
+
+        for my $m ( @metas ) {
+            my $name = $m->Name;
+            my $id = $m->ID;
+            my $type = $m->Type;
+        }
+        # (repeat above for @props)
     }
 
 
@@ -140,7 +154,7 @@ header values.  See C<SwishHeaderValue> method below.
 =item @values = $swish->HeaderValue( $index_file, $header_name );
 
 A swish-e index has data associated with it stored in the index header.  This method
-provides access to that data.    
+provides access to that data.
 
 Returns the header value for the header and index file specified.  Most headers
 are a single item, but some headers (e.g. "Stopwords") return a list.
@@ -261,7 +275,7 @@ of an HTML document, such as the title or in H tags.  The possible bits are:
     IN_HEAD         = 4      In <head> tag
     IN_BODY         = 8      In <body>
     IN_COMMENTS     = 16     In html comments
-    IN_HEADER       = 32     In <h*> 
+    IN_HEADER       = 32     In <h*>
     IN_EMPHASIZED   = 64     In <em>, <b>, <strong>, <i>
     IN_META         = 128    In a meta tag (e.g. not swishdefault)
 
@@ -269,7 +283,7 @@ So if you wish to limit your searches to words in heading tags (e.g. E<lt>H1E<gt
 or in the E<lt>titleE<gt> tag use:
 
     $search->SetStructure( IN_HEAD | IN_TITLE );
-    
+
 
 =item $search->PhraseDelimiter( $char );
 
@@ -289,7 +303,7 @@ For example to limit searches to documents modified in the last 48 hours:
     my $start = time - 48 * 60 * 60;
     $search->SetSearchLimit( 'swishlastmodified', $start, time() );
 
-An error will be set if the property 
+An error will be set if the property
 has already been specified or if $high > $low.
 
 Other errors may not be reported until running the query, such as
@@ -426,6 +440,52 @@ $swish->HeaderValue(), but the index file is not specified
 
 =over 4
 
+=item @metas = $swish->MetaList( $index_name );
+
+Swish-e has "MetaNames" which allow searching by fields in the index.
+This method returns information about the Metanames.
+
+Pass in the name of an open index file name and returns a 
+list of SWISH::API::MetaName objects.  Three methods are currently 
+defined on these objects:
+
+    $meta->Name;
+    $meta->ID;
+    $meta->Type;
+
+Name returns the name of the meta as defined in the MetaNames
+config option when the index was created.
+
+The ID is the internal ID number used to represent the meta name.
+
+Type is the type of metaname.  Currently only one type exists and its
+value is zero.
+
+=item @props = $swish->PropertyList( $index_name );
+
+Swish-e can store content or "properties" in the index and return this data
+when running a query.
+A document's path, URL, title, size, date or summary are examples
+of properites.  Each property is accessed via its PropertyName.
+This method returns information about the PropertNames stored in the index.
+
+Pass in the name of an open index file name and returns a 
+list of SWISH::API::MetaName objects.  Three methods are currently 
+defined on these objects:
+
+    $prop->Name;
+    $prop->ID;
+    $prop->Type;
+
+Name returns the name of the meta as defined in the MetaNames
+config option when the index was created.
+
+The ID is the internal ID number used to represent the meta name.
+
+Type is the type of metaname.  Currently only one type exists and its
+value is zero.
+
+
 =item $stemmed_word = $swish->StemWord( $word );
 
 *Deprecated*
@@ -450,7 +510,7 @@ to access the converted words and other data as shown below.
 =item $count = $fuzzy_word->WordCount;
 
 Returns the number of output words.  Normally this is the value one, but may
-be more depending on the stemmer used.  DoubleMetaphone can return two strings 
+be more depending on the stemmer used.  DoubleMetaphone can return two strings
 for a single input string.
 
 =item $status = $fuzzy_word->WordError;
@@ -483,7 +543,7 @@ Perl's garbage collection makes it easy to write code for searching with Swish-e
 but care must be taken not to keep objects around too long which can use up memory.
 
 Here's an example of a potential problem.  Say you have a very large number
-of documents indexed and you want to find the first hit for a number of 
+of documents indexed and you want to find the first hit for a number of
 popular keywords (error checking omitted in this bad example):
 
     sub first_hit {
@@ -520,7 +580,7 @@ properties you need:
       return $first_hit->Property('swishdocpath');
    }
 
-Then when first_hit() sub ends the result list will be freed, and the 
+Then when first_hit() sub ends the result list will be freed, and the
 index file closed, thanks to Perl's reference count tracking.
 
 Note: the other problem with the above code is that the same index file is

@@ -392,6 +392,60 @@ related index file.
 
 =back
 
+=head2 Accessing Property Meta Data
+
+In addition to the pre-defined standard properties, you have the option
+of adding additional "meta" properties to be indexed and/or added to the
+list of properties returned with each result.  Consult the sections on the
+MetaNames and PropteryNames directives in the CONFIGURATION FILE for an
+explanation of how to do this.
+
+These functions provide access to the meta data stored in an index.  You can
+use them to determine what meta/property information is available for an index
+including all the pre-defined standard properties.  See libtest.c for an example.
+
+=over 4
+
+=item SWISH_META_LIST SwishMetaList( SW_HANDLE, const char *index_name );
+
+Returns the list of meta entries for the given index file  as a null-terminated 
+array of SW_META objects.  Use the functions below to extract specific fields
+from the SW_META structure.  Meta's are distinct from properties.
+
+=item SWISH_META_LIST SwishPropertyList( SW_HANDLE, const char *index_name );
+
+This function is the same as SwishMetaList() but it returns an array of properties
+as opposed to meta objects.  Property attributes can be extracted in the same
+was as meta objects using the functions below.
+
+=item SWISH_META_LIST SwishResultMetaList( SW_RESULT );
+
+This is like SwishMetaList() above but determines the index to use from a result
+object.
+
+=item SWISH_META_LIST SwishResultPropertyList( SW_RESULT );
+
+This is like SwishPropertyList() above but like SwishResultMetaList() uses a
+result object instead of an index name.
+
+=item const char *SwishMetaName( SW_META );
+
+Given a SW_META object returned by one of the above, this function
+will return the meta/property's name.  You can use this name to access a
+property's value for a given as described above.
+
+=item int SwishMetaType( SW_META );
+
+Get the data type for the given meta/property. Known types are listed in 
+swish-e.h
+
+=item SwishMetaID( SW_META );
+
+Get the internal ID number for the given meta/property.  These id's are
+unique per index file but are not unique per results.
+
+=back
+
 =head2 Checking for Errors
 
 You should check for errors after all calls.  The last error is stored in the

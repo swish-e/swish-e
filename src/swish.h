@@ -264,7 +264,6 @@ extern "C" {
 #define MAXSTRLEN 2000
 #define MAXWORDLEN 1000
 #define MAXTITLELEN 300
-#define MAXENTLEN 10
 
 // #define HASHSIZE 101
 // #define BIGSIZE 1009
@@ -609,6 +608,10 @@ typedef struct IndexFILE
 
     /* Cache for stemming */
     WORD_HASH_TABLE hashstemcache;
+
+    /* Cached meta and property lists */
+    struct metaEntry **meta_list;
+    struct metaEntry **prop_list;
 }
 IndexFILE;
 

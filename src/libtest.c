@@ -49,6 +49,7 @@ static void display_results( SW_HANDLE, SW_RESULTS );
 static void print_error_or_abort( SW_HANDLE swish_handle );
 
 static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results );
+static void print_index_metadata( SW_HANDLE swish_handle );
 static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type );
 static void demo_stemming( SW_RESULTS results );
 static void stem_it( SW_RESULT r, char *word );
@@ -214,6 +215,9 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
     print_index_headers( swish_handle, results );
 
 
+    /* Try to get metadata from the index */
+    print_index_metadata( swish_handle );
+
     hits = SwishHits( results );
 
     if ( 0 == hits )
@@ -280,7 +284,6 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 
     
 }
-
 
 
 /**********************************************************************
@@ -376,6 +379,48 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
 }
 
 
+/**********************************************************************
+* print_index_metadata
+*
+*   This displays the metanames and property names in each index.
+*
+*   Pass in:
+*       swish_handle -- for standard headers
+*
+*   Note:
+*       The SWISH_HEADER value, and the data it points to, is only
+*       valid during the current call.
+*
+*
+***********************************************************************/
+
+static void print_index_metadata( SW_HANDLE swish_handle )
+{
+    const char **index_name = SwishIndexNames( swish_handle );
+    
+    while ( *index_name ) {
+      SWISH_META_LIST meta_list = SwishMetaList( swish_handle, *index_name );
+      SWISH_META_LIST prop_list = SwishPropertyList( swish_handle, *index_name );
+
+      while ( *meta_list ) {
+	printf("# Meta: " );
+	printf( "%s ", SwishMetaName(*meta_list));
+	printf( "type=%d ", SwishMetaType(*meta_list));
+	printf( "id=%d ", SwishMetaID(*meta_list));
+	printf("\n");
+	meta_list++;
+      }      
+      while ( *prop_list ) {
+	printf("# Property: " );
+	printf( "%s ", SwishMetaName(*prop_list));
+	printf( "type=%d ", SwishMetaType(*prop_list));
+	printf( "id=%d ", SwishMetaID(*prop_list));
+	printf("\n");
+	prop_list++;
+      }      
+      index_name++;
+    }
+}
 
 
 /*************************************************************

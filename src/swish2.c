@@ -106,6 +106,13 @@ static IndexFILE *free_index( IndexFILE *indexf )
     if ( indexf->header.metaCounter)
         freeMetaEntries(&indexf->header);
 
+    /* free the in-use cached meta list */
+    if ( indexf->meta_list )
+      efree(indexf->meta_list);
+
+    /* free the in-use cached property list */
+    if ( indexf->prop_list )
+      efree(indexf->prop_list);
 
     /* free data loaded into header */
     free_header(&indexf->header);
@@ -287,6 +294,16 @@ void SwishSetRefPtr( SWISH *sw, void *address )
         progerr("SwishSetRefPtr - passed null address");
 
     sw->ref_count_ptr = address;
+}
+
+/********************************************************************************
+* SwishGetRefPtr - for use the SWISH::API to get the SV* of the swish handle
+*
+********************************************************************************/
+
+void *SwishGetRefPtr( SWISH *sw )
+{
+    return sw->ref_count_ptr;
 }
 
 
