@@ -383,6 +383,7 @@ getrank( RESULT *r )
     total_files = indexf->header.totalfiles;
     tfreq	= r->tfrequency;
     idf		= (int) log( total_files / tfreq );
+    idf++;
 
 #ifdef DEBUG_RANK
         fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d\n", total_files, tfreq, idf );
