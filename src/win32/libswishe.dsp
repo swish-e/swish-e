@@ -85,6 +85,14 @@ LIB32=link.exe -lib
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
+SOURCE=..\_datatypes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\_module_example.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\check.c
 # End Source File
 # Begin Source File
@@ -97,7 +105,19 @@ SOURCE=..\date_time.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\deflate.c
+SOURCE=..\db.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_berkeley_db.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_gdbm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_native.c
 # End Source File
 # Begin Source File
 
@@ -106,6 +126,14 @@ SOURCE=.\dirent.c
 # Begin Source File
 
 SOURCE=..\docprop.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\dump.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\entities.c
 # End Source File
 # Begin Source File
 
@@ -157,10 +185,6 @@ SOURCE=..\list.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\lst.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\mem.c
 # End Source File
 # Begin Source File
@@ -177,7 +201,23 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\modules.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\no_better_place_module.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\parse_conffile.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\proplimit.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\ramdisk.c
 # End Source File
 # Begin Source File
 
@@ -213,7 +253,23 @@ SOURCE=..\string.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\swish.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\swish2.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\swish_qsort.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\swish_words.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\testlong.c
 # End Source File
 # Begin Source File
 
@@ -227,6 +283,18 @@ SOURCE=..\xml.c
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=..\_datatypes.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\_module_example.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\acconfig.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\check.h
@@ -249,6 +317,22 @@ SOURCE=..\date_time.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\db.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_berkeley_db.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_gdbm.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_native.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\deflate.h
 # End Source File
 # Begin Source File
@@ -258,6 +342,14 @@ SOURCE=.\dirent.h
 # Begin Source File
 
 SOURCE=..\docprop.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\dump.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\entities.h
 # End Source File
 # Begin Source File
 
@@ -309,10 +401,6 @@ SOURCE=..\list.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\lst.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\mem.h
 # End Source File
 # Begin Source File
@@ -325,7 +413,23 @@ SOURCE=..\metanames.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\modules.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\no_better_place_module.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\parse_conffile.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\proplimit.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\ramdisk.h
 # End Source File
 # Begin Source File
 
@@ -365,11 +469,23 @@ SOURCE=..\swish.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\swish_qsort.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\swish_words.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\txt.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\xml.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\expat\xmlparse\xmlparse.h
 # End Source File
 # End Group
 # End Target
