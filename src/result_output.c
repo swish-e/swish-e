@@ -337,9 +337,11 @@ void    printSortedResults(SWISH * sw)
     delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
     counter = resultbeginhits;
 
+
     /* jmruiz 02/2001 SwishSeek is faster because it does not read the
     ** unused data */
     SwishSeek(sw, resultbeginhits);
+
 
     /* -- resultmaxhits: >0 or -1 (all hits) */
     while ((r = SwishNext(sw)) && (resultmaxhits != 0))

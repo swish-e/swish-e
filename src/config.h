@@ -38,7 +38,7 @@
 **
 */
 
-//#define PROPFILE 1
+#define PROPFILE 1
 #define MAX_SORT_STRING_LEN 50
 
 /* MAX_SORT_STRING_LEN defines the max string length to use
