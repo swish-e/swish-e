@@ -15,7 +15,7 @@ ShowInstDetails hide ; (can be show to have them shown, or nevershow to disable)
 SetDateSave on ; (can be on to have files restored to their orginal date)
 
 LicenseText "You may redistribute SWISH-E under the following terms:"
-LicenseData "COPYING.txt"
+LicenseData "src\win32\COPYING.txt"
 
 InstallDir "$PROGRAMFILES\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
@@ -28,7 +28,7 @@ ComponentText "Which components do you require?"
 
 Section "Program" ; (default, required section)
 SetOutPath "$INSTDIR"
-File COPYING.txt
+File src\win32\COPYING.txt
 
 ; SWISH-E executable
 File src\swish-e.exe
