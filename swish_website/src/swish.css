@@ -26,13 +26,14 @@
 
 body {
   font-family: verdana, helvetica, arial, sans-serif;
-  font-size: 73%;  /* Enables font size scaling in MSIE */
+  /* font-size: 73%;  *//* Enables font size scaling in MSIE */
+  /* karman: but IE is a dinosaur and this makes all other browsers too small ... */
   margin: 0;
   padding: 0;
 }
 
 html > body {
-  font-size: 9pt;
+  /* font-size: 9pt; */
 }
 
 acronym, .titleTip {
