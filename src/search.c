@@ -299,8 +299,14 @@ RESULT *tmpresultlist,*tmpresultlist2;
 struct swline *tmplist, *tmplist2;
 IndexFILE *indexlist;
 int rc=0;
+int PhraseDelimiter;
+unsigned char PhraseDelimiterString[2];
 
-	indexlist=sw->indexlist;	
+	PhraseDelimiter = sw->PhraseDelimiter;
+	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
+	PhraseDelimiterString[1] = '\0';
+
+	indexlist=sw->indexlist;
 	sw->sortresultlist=NULL;
 	j=0;
 	sw->searchwordlist = NULL;
@@ -319,7 +325,7 @@ int rc=0;
 		** Following line modified to extract words according
 		** to wordchars as suggested by Bill Moseley
 		*/
-		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || words[i] == '=' || words[i] == PHRASE_DELIMITER_CHAR || !(words[i]=='*' || iswordchar(sw->mergedheader,words[i]))) /* cast to int, 2/22/00 */
+		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || words[i] == '=' || words[i] == PhraseDelimiter || !(words[i]=='*' || iswordchar(sw->mergedheader,words[i]))) /* cast to int, 2/22/00 */
 		{
 			if (words[i] == '=')
 			{
@@ -367,9 +373,9 @@ int rc=0;
 				{
 					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, ")");
 				}
-				if (words[i] == PHRASE_DELIMITER_CHAR) 
+				if (words[i] == PhraseDelimiter) 
 				{
-					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, PHRASE_DELIMITER_STRING);
+					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, PhraseDelimiterString);
 				}
 			}
 		}
@@ -438,7 +444,7 @@ int rc=0;
 		if(tmplist)
 		{	
 			/* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
-			tmplist = (struct swline *) expandphrase(tmplist,PHRASE_DELIMITER_CHAR);
+			tmplist = (struct swline *) expandphrase(tmplist,PhraseDelimiter);
 			tmplist = (struct swline *) fixnot(tmplist); 
 			tmplist2=tmplist;
 		
@@ -1880,14 +1886,14 @@ int resultmaxhits;
 				if (sw->useCustomOutputDelimiter)
 				{
 					if(extended_info)
-						printf("%d%s%s%s%s%s%s%s%s%s%s%d%s%d", sp->rank, sw->customOutputDelimiter, sp->indexf->line, sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sw->customOutputDelimiter,sp->summary, sw->customOutputDelimiter, sp->start, sw->customOutputDelimiter, sp->size);
+						printf("%d%s%s%s%s%s%s%s%s%s%s%s%s%d%s%d", sp->rank, sw->customOutputDelimiter, sp->indexf->line, sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->ISOTime, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sw->customOutputDelimiter,sp->summary, sw->customOutputDelimiter, sp->start, sw->customOutputDelimiter, sp->size);
 					else
 						printf("%d%s%s%s%s%s%d", sp->rank,  sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sp->size);
 				}
 				else
 				{
 					if(extended_info)
-						printf("%d %s %s \"%s\" \"%s\" %d %d", sp->rank, sp->indexf->line, sp->filename,sp->title,sp->summary,sp->start,sp->size);
+						printf("%d %s %s \"%s\" \"%s\" \"%s\" %d %d", sp->rank, sp->indexf->line, sp->filename,sp->ISOTime, sp->title,sp->summary,sp->start,sp->size);
 					else
 						printf("%d %s \"%s\" %d", sp->rank, sp->filename,sp->title,sp->size);
 				}
@@ -2108,6 +2114,9 @@ struct file *fileInfo;
 		else
 			fileInfo = readFileEntry(indexf, tmp->filenum, 0);
 		tmp->filename=estrdup(fileInfo->fi.filename);
+
+  		strftime(tmp->ISOTime,sizeof(tmp->ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fileInfo->fi.mtime));
+
 			/* Just to save some little memory */
 		if(fileInfo->fi.filename==fileInfo->fi.title)
 			tmp->title=tmp->filename;

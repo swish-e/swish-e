@@ -34,7 +34,7 @@ char *summary=NULL;
 		summary=estrndup(buffer,fprop->stordesc->size);
 	}
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
 		/* Init meta info */
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */

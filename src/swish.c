@@ -134,6 +134,7 @@ IndexFILE *tmpindexlist=NULL;
 		if ((*argv)[0] != '-')
 			usage();
 		c = (*argv)[1];
+		
 		if ((*argv)[2] != '\0' && isalpha((int)((unsigned char)(*argv)[2]))) /* cast to int, 2/22/00 */
 			usage();
 		if (c == 'i') 
@@ -327,6 +328,15 @@ IndexFILE *tmpindexlist=NULL;
 				argc--;
 			}
 		}
+		else if (c == 'P')
+		{
+			/* Custom Phrase Delimiter - Jose Ruiz 01/00 */
+			if (((argv + 1)[0] != '\0') && (*(argv + 1)[0] != '-'))
+			{
+				sw->PhraseDelimiter = (int) (++argv)[0][0];
+				argc--;
+			}
+		}
 		else if (c == 'd')
 		{
 			/* added 11/24/98 MG */
@@ -336,6 +346,17 @@ IndexFILE *tmpindexlist=NULL;
 				sw->customOutputDelimiter=SafeStrCopy(sw->customOutputDelimiter, (++argv)[0],&sw->lencustomOutputDelimiter);
 				if (strcmp(sw->customOutputDelimiter, "dq") == 0)
 					{ sw->customOutputDelimiter=SafeStrCopy(sw->customOutputDelimiter, "\"",&sw->lencustomOutputDelimiter); } /* double quote is cool */
+				if (sw->customOutputDelimiter[0]=='\\')
+				{
+					switch(sw->customOutputDelimiter[1])
+					{
+						case 'f': sw->customOutputDelimiter[0]='\f'; break;
+						case 'n': sw->customOutputDelimiter[0]='\n'; break;
+						case 'r': sw->customOutputDelimiter[0]='\r'; break;
+						case 't': sw->customOutputDelimiter[0]='\t'; break;
+					}
+					sw->customOutputDelimiter[1]='\0';
+				}
 				argc--;
 			}
 		}
@@ -783,7 +804,7 @@ void usage()
 	const char* defaultIndexingSystem = "";
 
 	printf("  usage: swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
-	printf("         swish [-x] -w word1 word2 ... [-f file1 file2 ...] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] [-m num] [-t str] [-d delim]\n");
+	printf("         swish [-P phrase_delimiter] [-x] -w word1 word2 ... [-f file1 file2 ...] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] [-m num] [-t str] [-d delim]\n");
 	printf("         swish -k char [-f file1 file2 ...]\n");
 	printf("         swish -M index1 index2 ... outputfile\n");
 	printf("         swish -D file\n");
@@ -816,12 +837,13 @@ void usage()
 	printf("         -v : verbosity level (0 to 3) [%d]\n", VERBOSE);
 	printf("         -l : follow symbolic links when indexing\n");
 	printf("         -b : begin results at this number\n");
-	printf("         -m : the maximum number of results to return [%d]\n", MAXHITS);
+	printf("         -m : the maximum number of results to return [defaults to all results]\n");
 	printf("         -M : merges index files\n");
 	printf("         -D : decodes an index file\n");
 	printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -d : next param is delimiter. use \"-d dq\" to use a double quote\n");
+	printf("         -P : next param is Phrase delimiter.\n");
 	printf("         -V : prints the current version\n\n");
 	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n\n");
 	printf("         -x : \"Extended Search Hedare\": The search proccess gives more info.\n\n");

@@ -10,7 +10,6 @@
 
 #define MemCopy memcpy
 #define MemChar memchr
-#define Min(a,b) (a<b?a:b);
 #define MAX_DICT_ENTRIES 0x8000
 
 struct buffer_pool *new_buffer_pool(int max_size, int min_match, int max_match)

@@ -34,6 +34,7 @@
 #include "string.h"
 #include "index.h"
 #include "html.h"
+#include "xml.h"
 
 /* The well known html entities */
 
@@ -160,8 +161,9 @@ char *title;
 ** and could be made faster.
 */
 
-char *convertentities(s)
+char *convertentities(s,asciientities)
 char *s;
+int asciientities;
 {
 int lens, skip;
 char *ent;
@@ -178,6 +180,10 @@ char *p,*q;
 	memcpy(q,s,p-s);
 	q +=(p-s);
 
+	/* $$ Jose Ruiz -> Check this piece of code */
+	/* I think that it is just for adding a ';' */
+	/* Even worse!! at the end calls convertoascii looking for entities
+	once again */
 	for (s=p; *s != '\0'; ) {
 		if (*s == '&') {
 			ent = getent(s, &skip);
@@ -196,9 +202,9 @@ char *p,*q;
 			*q++=*s++;
 	}
 	*q='\0';
-	if (ASCIIENTITIES) { 
+	if (asciientities) { 
 			/* Jose Ruiz 06/00 Do not call to converttonamed
-			** here. convertoascii do all the work 
+			** here. convertoascii does all the work 
 			*/
 		newword = (char *) converttoascii(newword);
 	} else {
@@ -215,14 +221,16 @@ char *s;
 int *skip;
 {
 int i;
-int lenent;
+int lenent,lens,lene;
 char *ent;
-int lentestent;
-char *testent=NULL;
 
 	ent = (char *)emalloc((lenent=MAXENTLEN) +1);
 
 	*skip = 0;
+	lens=strlen(s);
+	i=Min(lenent,lens);
+	memcpy(ent,s,i);
+	ent[i]='\0';
 	ent = SafeStrCopy(ent,s,&lenent);
 	if (ent[1] == '#') {
 		if (isdigit((int)ent[5])) {
@@ -231,28 +239,31 @@ char *testent=NULL;
 		}
 		for (i = 2; ent[i] != '\0' && isdigit((int)ent[i]); i++);
 
-		while (ent[i] != '\0' && !isdigit((int)ent[i])) ent[i++] = '\0';
-
-		*skip = strlen(ent);
+		if(i==2)   /* There is not any digit (0-9)  */
+			ent[0]='\0';
+		else
+		{
+			ent[i]='\0';
+			*skip=i;
+		}
 		return ent;
 	}
 	else {
-		testent = (char *)emalloc((lentestent=MAXENTLEN) +1);
 		for (i = 0; entities[i] != NULL; i += 3) {
-			testent = SafeStrCopy(testent, entities[i],&lentestent);
-			if (testent[0] != '\0') {
-				if (!strncmp(testent, ent, strlen(testent))) {
-					ent = SafeStrCopy(ent, testent,&lenent);
+			if (entities[0] != '\0') {
+				lene=strlen(entities[i]);
+				if(lene>lenent)
+					progerr("err: Internal error while indexing. There is a HTML entity longer than the MAXENTLEN\n.\n");
+				if (lene<=lens && !strncmp(entities[i], ent, lene)) {
+					ent = SafeStrCopy(ent,entities[i],&lenent);
 					*skip = strlen(ent);
-					efree(testent);
 					return ent;
 				}
 			}
 		}
-		efree(testent);
 	}
 	
-	ent = SafeStrCopy(ent,"\0",&lenent);
+	ent[0]='\0';
 	return ent;
 }
 
@@ -399,7 +410,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 	sw->filenum++;
 	
 	if (fprop->index_no_content) {
-		addtofilelist(sw,indexf, fprop->real_path, title, summary, 0, fprop->fsize, NULL);
+		addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
 		addtofwordtotals(indexf, sw->filenum, 100);
 		if(sw->swap_flag)
 			SwapFileData(sw, indexf->filearray[sw->filenum-1]);
@@ -411,10 +422,10 @@ char *title=parsetitle(buffer,fprop->real_path);
 
 	if(fprop->stordesc)
 	{
-			summary=parseHtmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
+			summary=parseHtmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size,sw->AsciiEntities);
 	}
 
-	addtofilelist(sw,indexf, fprop->real_path, title, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
 
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
@@ -427,7 +438,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 		if((tag=strchr(p,'<')) && ((tag==p) || (*(tag-1)!='\\'))) {   /* Look for non escaped '<' */
 				/* Index up to the tag */
 			*tag++='\0';
-			newp=convertentities(p);
+			newp=convertentities(p,sw->AsciiEntities);
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 				/* Now let us look for a not escaped '>' */
@@ -519,7 +530,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 				}
 			} else p=tag;    /* tag not closed: continue */
 		} else {    /* No more '<' */
-			newp=convertentities(p);
+			newp=convertentities(p,sw->AsciiEntities);
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			p=NULL;
@@ -788,13 +799,13 @@ int wordcount=0; /* Word count */
 			*temp = '\0';	/* terminate CONTENT, temporarily */
 			if(docPropName)
 				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart);
-			convtag = (char *)convertentities(tag + jstart);
+			convtag = (char *)convertentities(tag + jstart, sw->AsciiEntities);
 			
 			wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
 			if(convtag!=(tag + jstart)) efree(convtag);
 			*temp = '\"';	/* restore string */
 		} else {
-			convtag = (char *)convertentities(tag + jstart);
+			convtag = (char *)convertentities(tag + jstart, sw->AsciiEntities);
 			wordcount=indexstring(sw, convtag, filenum, structure, 1, &metaName, &position);
 			if(convtag!=(tag + jstart)) efree(convtag);
 		}
@@ -802,7 +813,7 @@ int wordcount=0; /* Word count */
 	return wordcount;
 }
 
-char *parseHtmlSummary(char *buffer,char *field,int size)
+char *parseHtmlSummary(char *buffer,char *field,int size,int asciientities)
 {
 char *p,*q,*tag,*endtag,c;
 char *summary,*convsummary,*beginsum,*endsum,*tmp,*tmp2,*tmp3;
@@ -823,7 +834,7 @@ int found,lensummary;
 		tmp=estrdup(p);
 		remove_newlines(tmp);
 		remove_tags(tmp);
-		convsummary=convertentities(tmp);
+		convsummary=convertentities(tmp, asciientities);
 		if(convsummary!=tmp) efree(tmp); 
 		tmp=convsummary;
 
@@ -944,7 +955,7 @@ int found,lensummary;
 	{
 		remove_newlines(summary);
 		remove_tags(summary);
-		convsummary=convertentities(summary);
+		convsummary=convertentities(summary,asciientities);
 		if(convsummary!=summary) efree(summary);
 		summary=convsummary;
         }

@@ -36,6 +36,8 @@
 **
 ** 2000-11-15 Rainer Scherg (rasc)  FileProp type and routines
 **
+** 2001-01-01 Jose Ruiz Added ISOTime 
+**
 */
 
 #include <stdio.h>
@@ -220,6 +222,7 @@ struct metaEntry {
 typedef struct {
 	int lookup_path;
 	char *filename;
+	unsigned long mtime;
 	char *title;
 	char *summary;
 	int start;
@@ -253,7 +256,7 @@ typedef struct  {
 	char   *real_path;	/* org. path/URL to indexed file */
 	char   *work_path;	/* path to file to index (may be tmpfile or real_path) */
 	long   fsize;		/* size of the original file (not filtered) */
-	time_t mtime;           /* size of last mod of or. file */
+	time_t mtime;           /* Date of last mod of or. file */
 	int    doctype;		/* Type of document HTML, TXT, XML, ... */
 	int    index_no_content;/* Flag, index "filename/real_path" only! */
 	struct StoreDescription *stordesc;  
@@ -412,6 +415,7 @@ typedef struct RESULT {
 	struct RESULT *head;
 	struct RESULT *nextsort;   /* Used while sorting results */
 	char *filename;
+	char ISOTime[20];
 	char *title;
 	char *summary;
 	int start;
@@ -615,6 +619,8 @@ typedef struct {
 	/* MetaName indexing options */
 	int ReqMetaName;
 	int OkNoMeta;
+        /* Flag to specify if AsciiEntities are indexing */
+	int AsciiEntities;
 
     /* file system specific configuration parameters */
     struct swline *pathconlist;
@@ -629,6 +635,9 @@ typedef struct {
     int delay;
     struct multiswline *equivalentservers;
     struct url_info *url_hash[BIGHASHSIZE];
+
+    /* Phrase delimiter char */
+    int PhraseDelimiter;
 
     /* If true. Swap part of the info to disk while indexing */
     /* Save memory */
@@ -758,6 +767,10 @@ long readlong _AP ((FILE *));
 */
 #define CopyPositions(dest,posdest,orig,posorig,num)  memcpy((char *)((int *)dest+posdest),(char *)((int *)orig+posorig),num*sizeof(int))
 
+
+/* Min macro */
+#define Min(a,b) (a<b?a:b)
+
 /* Definitions of word commands and, or, not, ... */
 /* Change them here */
 #define _AND_WORD "and"
@@ -768,11 +781,6 @@ long readlong _AP ((FILE *));
 #define NOT_WORD "<not>"
 #define PHRASE_WORD "<precd>"
 #define AND_NOT_WORD "<andnot>"
-
-/* Delimiter of phrase search */
-/* Change it if  you prefer a different one */
-#define PHRASE_DELIMITER_CHAR '"'
-#define PHRASE_DELIMITER_STRING "\""
 
 /* C library prototypes */
 SWISH * SwishOpen _AP ((char *));

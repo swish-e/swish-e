@@ -175,7 +175,7 @@ int  lchecksuffix;
 
    while (fl != NULL) {
         if (lstrstr(fl->suffix, checksuffix)
-            && strlen(fl->suffix) == lchecksuffix) {
+            && ((int)strlen(fl->suffix)) == lchecksuffix) {
 		efree(checksuffix);
 		return fl->prog;
 	}
@@ -206,7 +206,7 @@ struct swline *swl;
 		for(swl=ic->patt;swl;swl=swl->next)
 		{
 			if (lstrstr(swl->line, checksuffix)
-			   && strlen(swl->line) == lchecksuffix) {
+			   && ((int)strlen(swl->line)) == lchecksuffix) {
 				efree(checksuffix);
 				return ic->DocType;
 			}

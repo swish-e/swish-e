@@ -71,11 +71,6 @@
 ** silent operation; 4 is very verbose.
 */
 
-#define MAXHITS 500
-
-/* MAXHITS is the maximum number of results to return from a search.
-*/
-
 #define DEFAULT_RULE AND_RULE
 
 /* If a list of search words is specified without booleans,
@@ -101,12 +96,14 @@
 
 /* This is the minimum length of a word. Anything shorter will not
 ** be indexed.
+** Do not change it here. Use MinWordLimit in config file
 */
 
 #define MAXWORDLIMIT 40
 
 /* This is the maximum length of a word. Anything longer will not
 ** be indexed.
+** Do not change it here. Use MaxWordLimit in config file
 */
 
 #define ASCIIENTITIES 1
@@ -117,6 +114,8 @@
 ** "resum&#233;" and it will be indexed as the word "resume".
 ** If defined as 0, only numerical entities will be converted
 ** to named entities, if they exist.
+** 2001-01 Do not change it here. Use AsciiEntities Yes/No in 
+** config file
 */
 
 #define IGNOREALLV 0
@@ -275,6 +274,9 @@ typedef int pid_t;		/* process ID */
 #else
 #define DIRDELIMITER '/'
 #endif
+
+/* Default Delimiter of phrase search */
+#define PHRASE_DELIMITER_CHAR '"'
 
 /*
  * Binary files must be open with the "b" option under Win32, so all
