@@ -630,14 +630,15 @@ char *p;
 
 void remove_controls(char *s)
 {
-char *p,*q;
-	if(!s || !*s) return;
-	for(p=s,q=s;*p;) 
-		if(!iscntrl((int)(*(unsigned char *)p)))
-			*q++=*p++;
-		else
-			p++;
-	*q='\0';
+unsigned char *p,*q;
+
+	if (s && *s) {
+	   for(p=s,q=s; *p; p++) {
+		if(!iscntrl((int)(*p)))
+			*q++=*p;
+	   }
+	   *q='\0';
+	}
 }
 
 void remove_tags(char *s)
@@ -809,7 +810,7 @@ char *strtolower (char *s)
 */
 
 
-static const char iso8859_to_ascii7_lower_map[] = {
+static const unsigned char iso8859_to_ascii7_lower_map[] = {
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /*  0 */
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /*  8 */
 	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /* 16 */
@@ -872,10 +873,12 @@ unsigned char char_ISO_normalize (unsigned char c)
 char *str_ISO_normalize (char *s)
 
 {
-  unsigned char *p = s;
+  unsigned char *p;
 
+  p = (unsigned char *)s;
   while (*p) {
-    *p = iso8859_to_ascii7_lower_map[*p++];
+    *p = iso8859_to_ascii7_lower_map[*p];
+    p++;
   }
   return s;
 }

@@ -304,14 +304,9 @@ int search(SWISH *sw, char *words, int structure)
   char *sw_srch_str;
   int  ret;
 
-// $$$ DEBUG
-sw->enableAVSearchSyntax = 1;
-fprintf (stderr, "Search: _%s_\n",words);
-// $$$
 
    if (sw->enableAVSearchSyntax) {	/* AltaVista like search enabled? */
 	sw_srch_str = convAltaVista2SwishStr (words);
-fprintf (stderr, "SwishStr: _%s_\n",sw_srch_str);
 	ret = search_2 (sw, sw_srch_str, structure);
 	efree (sw_srch_str);
    } else {
