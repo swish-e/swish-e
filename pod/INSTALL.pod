@@ -421,7 +421,7 @@ Do not contact developers directly for help -- always post your question to the 
 
 Before posting use tools available to narrow down the problem.
 
-SWISH-E has the -D, -v, and -k switches that may help resolve issues.
+SWISH-E has the -T, -v, and -k switches that may help resolve issues.
 If possible find a single document that shows the problem, then index with -v 9 and watch
 the exact words that are indexed.  Use -H 9 when searching and look at C<Parsed Words:> to make
 sure you are searching the correct words.
