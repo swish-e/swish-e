@@ -3,8 +3,13 @@ use strict;
 use Pod::POM;
 use Pod::POM::View::HTML;
 use base 'Template::Plugin';
+use vars qw( $stash );  # for debugging links
 
-my %split_by = map {"head".$_ => 1} 1..4;
+if ( my $ file = shift ) {
+    warn "Testing links\n";
+    My::pod::test();
+}
+
 
 my $view_mode = 'Pod::POM::View::HTML';  # The view module
 
@@ -26,40 +31,35 @@ my $view_mode = 'Pod::POM::View::HTML';  # The view module
 sub new {
     my ( $class, $context, $content ) = @_;
 
+    $stash = $context->stash;
 
-    # Grab pod index variable
-    my $stash = $context->stash;
-    my $page = $stash->get( 'page.id' );
     my $template_name = $stash->get( 'template.name' );
 
+    # Enable output of debugging messages from Pod::POM
     my $warn = sub { warn "[$template_name]: @_\n" }
         if $stash->get( 'self.config.verbose' );
 
-    my $parser = Pod::POM->new( warn => $warn );    # Make this a coderef to report name
+    my $parser = Pod::POM->new( warn => $warn );
+
+
+    # Parse the pod into a Pod::POM tree
     my $pom = $parser->parse_text( $content );
 
-    combine_verbatim_sections_hack( $pom );     # merge sequential <pre> sections into one
+
+    # Merge sequential verbatim (<pre>) sections into one
+    combine_verbatim_sections_hack( $pom );
 
 
-    my @sections = $pom->head1;                 # get pod into sections
+    my @sections = $pom->head1; # get pod into sections
 
+    # Get title of document and shift off first NAME section
 
-    # Structure for returning info to template
-
-    my %data = (
-        pom         => $pom ,
-        view        => 'My::Pod::View::HTML',
-        sections    => \@sections,
-        podparts    => [ slice_by_head(@sections) ],
-        toc         => fetch_toc( \@sections ),
-    );
-
-
-    # Get title of document
+    my $doc_title;
     if ( @sections && $sections[0]->title =~ /NAME/ ) {
-        $data{title} = ( shift @sections )->content;
-        $data{title} =~ s/^\s*|\s*$//sg;  # strip;
+        $doc_title = ( shift @sections )->content;
+        $doc_title =~ s/^\s*|\s*$//sg;  # strip;
     }
+
 
 
     # Cache this page and overview for creating a table of contents page
@@ -67,11 +67,27 @@ sub new {
 
     if ( my $cache = $stash->get( 'toc_cache' ) ) {
         $cache->{ $template_name } = {
-            page    => $page,
-            title   => $data{title},
-            abstract => fetch_abstract( $data{sections} ),
+            page    => $stash->get( 'page.id' ),
+            title   => $doc_title,
+            abstract => fetch_abstract( \@sections ),
         };
     };
+
+
+    # Structure for returning info to template
+    # the "toc" is the table of contents for the top of the page
+    # the "podparts" is the document broken into sequential parts by
+    # =head*  This allows the template to wrap each section in a <div> and
+    # therefore makes indexing each section with swish-e easy -- allows targeted searches
+
+    my %data = (
+        pom         => $pom,
+        view        => 'My::Pod::View::HTML',
+        toc         => fetch_toc( @sections ),
+        podparts    => [ slice_by_head(@sections) ], # Must be lasts because modifies tree
+        title       => $doc_title,
+    );
+
 
 
     return \%data;
@@ -80,26 +96,53 @@ sub new {
 
 
 #-----------------------------------------------------------------------------
+# This function is modified from Stas' DocSet
+# It flattens the recursive structure of the tree into a list of sections by =head
+#
+# Pass in:
+#   @sections = list of head1 sections
+#
+# Returns:
+#   flat list of sections for each headX section
+#
+# Note:
+#   This MODIFIES the original tree!  Should probably clone and build a new tree.
+#
+# This is useful for printing and wrapping each headX section in, say, <div>
 
 sub slice_by_head {
-    my @sections = @_;
+    my @sections = @_;  # these are the sections at the current level.
     my @body = ();
+
     for my $node (@sections) {
         my @next = ();
         # assumption, after the first 'headX' section, there can only
         # be other 'headX' sections
-        my $count = scalar $node->content;
+
+        # Look for first =headX seciton and chop of the content there
+        # then process that new =headX section again
+
         my $id = -1;
         for ($node->content) {
             $id++;
-            next unless exists $split_by{ $_->type };
+            # Keep content until a =head section is found.  Then end current content
+            # section at that point.
+
+            next unless $_->type =~ /^head\d$/;
+
+            # Modify original content to just include the nodes up to the first =head
             @next = splice @{$node->content}, $id;
             last;
         }
+
+        # combine all =head nodes (flatten)
         push @body, $node, slice_by_head(@next);
     }
     return @body;
 }
+
+#---------------------------------------------------------------------------
+# Merge verbatim sequential <pre> sections together
 
 sub combine_verbatim_sections_hack {
     my $tree = shift;
@@ -123,6 +166,11 @@ sub combine_verbatim_sections_hack {
 }
 
 
+
+#----------------------------------------------------------------------------
+# Grabs the first paragraph from either DESCRIPTION or OVERVIEW -- whichever comes first
+
+
 sub fetch_abstract {
     my ( $sections ) = @_;
     for ( 0 .. 2 ) {
@@ -135,12 +183,15 @@ sub fetch_abstract {
 }
 
 
+#---------------------------------------------------------------------------------
+# Walk tree building up a TOC
+
 sub fetch_toc {
-    my ( $sections ) = @_;
+    my ( @sections ) = @_;
 
     my @toc = ();
     my $level = 1;
-    for my $node (@$sections) {
+    for my $node (@sections) {
         push @toc, render_toc_level($node, $level);
     }
     return \@toc;
@@ -150,11 +201,11 @@ sub fetch_toc {
 
 sub render_toc_level {
     my( $node, $level) = @_;
-    my $title = $node->title;
+    my $title = $node->title->present($view_mode);
     my $anchor = My::Pod::View::HTML->escape_name( $title );
 
     my %toc_entry = (
-        title    => $title->present($view_mode), # run the formatting if any
+        title    => $title,
         link     => "#$anchor",
     );
 
@@ -172,100 +223,159 @@ sub render_toc_level {
     return \%toc_entry;
 }
 
+
+
+#---------------- Package to override Pod::POM::View::HTML ----------------
+
 package My::Pod::View::HTML;
 use strict;
 use warnings;
 use base 'Pod::POM::View::HTML';
+use HTML::Entities;
+use Template::Filters;
+use File::Basename;
 
-sub view_head1 {
-    my ($self, $head1) = @_;
-    return "<h1>" . $self->anchor($head1->title) . "</h1>\n\n" .
-        $head1->content->present($self);
+use vars qw( %targets @links );
+
+
+#-------------- For checking that all pod links work ----------------
+sub save_link {
+    my ($self, $href) = @_;
+
+
+    my $out_file = basename( $My::POD::stash->get( 'this.out_file' ) );  # for debugging links
+
+
+    push @links, {
+        href => $href,
+        on_page => $out_file,
+    };
 }
 
-sub view_head2 {
-    my ($self, $head2) = @_;
-    return "<h2>" . $self->anchor($head2->title) . "</h2>\n\n" .
-        $head2->content->present($self);
+sub save_target {
+    my ($self, $target) = @_;
+    my $out_file = basename( $My::POD::stash->get( 'this.out_file' ) );
+    $targets{$out_file}{$target}++;
 }
 
-sub view_head3 {
-    my ($self, $head3) = @_;
-    return "<h3>" . $self->anchor($head3->title) . "</h3>\n\n" .
-        $head3->content->present($self);
-}
+sub validate_links {
+    my $all_files_processed = $My::POD::stash->get( 'self.config.all');
 
-sub view_head4 {
-    my ($self, $head4) = @_;
-    return "<h4>" . $self->anchor($head4->title) . "</h4>\n\n" .
-        $head4->content->present($self);
-}
+    for my $link ( @links ) {
+        my ($name, $fragment) = split /#/, $link->{href}, 2;
 
-sub anchor {
-    my($self, $title) = @_;
-    my $text = $title->present($self);
-    $text = $self->escape_name( $text );
-    return qq[<a name="$text"></a>$title];
-}
+        # If processing all files then can check for page links
+        if ( $all_files_processed ) {
+            if ( $name && !$targets{$name} ) {
+                warn "Link to page [$name] from $link->{on_page} could not be resolved\n";
+                next;
+            }
+        } else {
+            next if $name && $name ne $link->{on_page};  # can't check (unless links are cached in the future
+        }
 
-# This just adds a class attribute
-sub view_verbatim {
-    my ($self, $text) = @_;
-    return '' unless $text;
-    for ($text) {
-        s/&/&amp;/g;
-        s/</&lt;/g;
-        s/>/&gt;/g;
+        $name ||= $link->{on_page};  # default to current page;
+
+        # Check page link
+        unless ( $targets{ $name } ) {
+            warn "Link on page $link->{on_page} to page $name is unresolved\n";
+            next;
+        }
+        next unless $fragment;
+
+        # And check frag if one
+        unless ( $targets{ $name}{ $fragment } ) {
+            warn "Link [$link->{href}] on page $link->{on_page} could not be resolved\n";
+        } else {
+            warn "Link $link->{href} on page $link->{on_page} has multiple targets\n"
+                if $targets{$name}{$fragment} > 1;
+        }
+
+
     }
 
-    return qq{<pre class="pre-section">$text</pre>\n};
+    @links = ();
+    %targets = ();
 }
 
+
+#---------------- Override Pod::POM ---------------------------------
+
+sub view_head1 { shift->show_head( @_ ) };
+sub view_head2 { shift->show_head( @_ ) };
+sub view_head3 { shift->show_head( @_ ) };
+sub view_head4 { shift->show_head( @_ ) };
+
+sub show_head {  # all all child nodes
+    my ($self, $head) = @_;
+    my $level = substr( $head->type, -1 );
+    return "\n<h$level>" . $self->anchor($head->title) . "</h$level>\n\n" .
+        $head->content->present($self);
+}
+
+
+#----------------- <a name="foo"></a>foo ---------------------
+sub anchor {
+    my($self, $title) = @_;
+    my $text = $self->escape_name( $title->present($self) );
+    my $t = Template::Filters::html_filter( $title );
+    $self->save_target( $text );
+    return qq[<a name="$text"></a>$t];
+}
+
+#----------------- prepare text for name="" --------------------
+# This first unescapes any entities, and then removes all non-word chars
+# and finally returns all lower case;
+
+
+sub escape_name {
+    my ($self, $text) = @_;
+
+    # Comes in already HTML escaped -- well, kind of, quotes are not escaped.
+    my $plain = decode_entities( $text );
+
+    # Not much is allowed in the name="" attribute, so just hack away:
+    $plain =~ s/\W+/_/g;
+    return lc $plain;
+}
+
+
+#----------------- Fixup L<> links in pod -------------------------------
 
 # Thes first two fixup L<> links.
 # Pod::POM doesn't provide a way to get at the fragment for escaping,
-# so do it the hard way here.
+# so let Pod::POM deal with it and then then update
 
 sub view_seq_link {
     my $self = shift;
     my $url = $self->SUPER::view_seq_link( @_ );
     return unless $url;
-    $url = $1 . $self->escape_name($2) . $3 if $url =~ /^([^#]+#)([^"]+)(.+)$/;
-    $url =~ s/#item_/#/;
+
+    return unless $url =~ /href="(.+)(?=">)/;
+    my ( $href, $fragment ) = split /#/, $1, 2;
+
+    $href = '' unless defined $href;
+    $href .= '#'. $self->escape_name( $fragment ) if defined $fragment;
+
+    $self->save_link( $href );  # for checking that they all go some place.
+
+    # Now replace the href into the original string
+
+    $url =~ s/href=".+(?=">)/href="$href/;
+
     return $url;
 }
 
-# This needs work -- Pod::POM doesn't uri escape the href, for one thing.
-# This converts the file name part.  Can't call esacpe_name(), so do uri
-# escape -- but that will not validate with xhtml in some cases.  So this i
-# not really correct.
+
+# This allows fixing up links to *other* pages.  In our case, they are mostly to
+# other pod pages, which are now lower case and end in .html.
+
 
 sub view_seq_link_transform_path {
     my ( $self, $link ) = @_;
-    return $self->escape_uri( lc $link ) . '.html';
+    return lc $link . '.html';
 }
 
-# Returns $text as uri-escaped string
-sub escape_uri {
-    my ($self, $text) = @_;
-    $text =~ s/\n/ /g;
-    return Template::Filters::uri_filter( $text );
-}
-
-sub escape_name {
-    my ($self, $text) = @_;
-    $text =~ s/\W+/_/g;
-    return lc $text;
-}
-
-
-# Pod::POM::View::HTML:
-# view_seq_link is broken in many ways
-# L<Foo Bar> ends up as a section due to spaces
-# L</foo> or L<|/foo> don't work, but L<foo|foo> does work
-#
-#
-#
 
 # Modified version of item display that removes the item_ prefix and only takes the first
 # word
@@ -275,6 +385,7 @@ sub escape_name {
 # =item * UndefinedMetaTags [error|ignore|INDEX|auto]
 #
 # so we take only the first word.  But that breaks if linking to multi-word item.
+#
 
 sub view_item {
     my ($self, $item) = @_;
@@ -290,6 +401,8 @@ sub view_item {
             my $anchor = $title;
             $anchor =~ s/\s+.*$//;  # strip all trailing stuff from first space on
             $anchor = $self->escape_name( $anchor );
+
+            $self->save_target( $anchor );
             $title = qq{<a name="$anchor"></a><b>$title</b>};
         }
     }
@@ -298,6 +411,101 @@ sub view_item {
         . "$title\n"
         . $item->content->present($self)
         . "</li>\n";
+}
+
+
+package My::pod;
+use strict;
+use warnings;
+
+sub test {
+
+    # From perldoc perlpod:
+    #
+    my @l_tests = (
+        { 
+            in  => ['L<name>'],
+            out => '<a href="name.html">name</a>',
+        },
+
+        {
+            in  => [ 'L<name/"section here">', 'L<name/section here>', ],
+            out => '<a href="name.html#section_here">section here</a>',
+        },
+
+        {
+            in  => ['L</"section here">', 'L</section here>', 'L<"section here">', ],
+            out => '<a href="#section_here">section here</a>',
+        },
+
+
+
+        {   in  => ['L<text here|name>'],
+            out => '<a href="name.html">text here</a>',
+        },
+
+        {
+            in  => ['L<text|name/"sec here">', 'L<text|name/sec here>'],
+            out => '<a href="name.html#sec_here">text</a>',
+        },
+
+        {
+            in  => ['L<text|/"sec">',  'L<text|/sec>', 'L<text|"sec">'],
+            out => '<a href="#sec">text</a>',
+        },
+
+        {
+            in  => ['L<http://host.name/some/path.html#fragment>'],
+            out => '<a href="http://host.name/some/path.html#fragment">http://host.name/some/path.html#fragment</a>',
+        },
+
+        {
+            in => ['L<Link to $foo-E<gt> with & "quotes" and %funny !!? chars>'],
+            out => '<a href="#link_to_foo_with_quotes_and_funny_chars">Link to $foo-&gt; with &amp; "quotes" and %funny !!? chars</a>',
+        },
+        {
+            in => ['L<Some & text|/Link to $foo-E<gt> with & "quotes" and %funny !!? chars>'],
+            out => '<a href="#link_to_foo_with_quotes_and_funny_chars">Some &amp; text</a>',
+        },
+        {
+            in => ['L<SWISH-RUN|SWISH-RUN>'],
+            out => '<a href="swish-run.html">SWISH-RUN</a>',
+        }
+    );
+
+
+    for my $test ( @l_tests ) {
+        for my $input ( @{$test->{in}} ) {
+
+            my $pod = Pod::POM->new( warn => 1 )->parse_text( "=head1 Title\n\n$input" );
+            my $out = My::Pod::Test::HTML->print( $pod );
+
+            warn "input  [$input]\n",
+                 "output [$out]\n",
+                 "test   [$test->{out}]\n\n"
+                        if $out ne $test->{out} || $ENV{VERBOSE};
+        }
+    }
+}
+
+package My::Pod::Test::HTML;
+use strict;
+use warnings;
+use base 'My::Pod::View::HTML';
+
+sub view_textblock {
+    my ($self, $text) = @_;
+    return $text;
+}
+
+sub view_pod {
+    my ($self, $pod) = @_;
+    return $pod->content->present($self);
+}
+
+sub view_head1 {
+    my ($self, $pod) = @_;
+    return $pod->content->present($self);
 }
 
 

@@ -406,9 +406,9 @@ sub pods {
 
     # Create sub-cache for this source, if doesn't exist
     # When processing a pod file the POD plugin will update its own cache entry
-    # in the hash.
+    # in the hash.  Cache by source directory
 
-    my $this_toc_cache = $toc_cache->{$key} ||= {};
+    my $this_toc_cache = $toc_cache->{$src_dir} ||= {};
 
 
 
@@ -457,6 +457,7 @@ sub pods {
                 podfile     => 1,
                 abslinks    => $abslinks,
                 swish_version => $version,
+                out_file    => $out_file,
             },
             mode        => 0644,
             toc_cache   => $this_toc_cache,  # processing a pod updates this hash
@@ -477,6 +478,10 @@ sub pods {
 
 
     shift @$include_path;  # remove source dir.
+
+    # Check all the L<> links
+    My::Pod::View::HTML::validate_links()
+        if $update_index and $config->verbose;
 }
 
 #=======================================================================
