@@ -1120,7 +1120,7 @@ int metaID;
 int andLevel;
 IndexFILE *indexf;
 {
-int i, found;
+/* int i, found; indexchars stuff removed */
 RESULT *newrp, *returnrp;
 char *word;
 int lenword;
@@ -1137,6 +1137,7 @@ int lenword;
 			sw->commonerror = 1;
 	}
 
+/*
         i=(int)((unsigned char)word[0]);
         found=isindexchar(indexf->header,i);
 	
@@ -1147,6 +1148,7 @@ int lenword;
 		else if (rulenum == OR_RULE)
 			return rp;
 	}
+indexchars stuff removed */
 	
 	if (rulenum == AND_RULE) {
 		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);

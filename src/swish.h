@@ -350,7 +350,7 @@ typedef struct {
     int ignorefirstcharlookuptable[256];
     int ignorelastcharlookuptable[256];
     int bumpposcharslookuptable[256];
-    int indexcharslookuptable[256];
+    /* int indexcharslookuptable[256];  indexchars stuff removed */
 } INDEXDATAHEADER;
 
 typedef struct IndexFILE {
@@ -730,7 +730,7 @@ struct _indexing_data_source_def
 #ifdef GLOBAL_VARS
 
 VAR struct _indexing_data_source_def *IndexingDataSource;
-VAR char *indexchars ="abcdefghijklmnopqrstuvwxyzÃÈ®«™Úœ½Îõ£¥Í¶ğÔÕØÛšƒÜÄêâ§›óú“ÑÌ¤‰‚„€…‡Š‹ˆŒıÊµÿ—üûºòù”¢ñ¹÷ŸËÖ†Ğ&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}";
+/* VAR char *indexchars ="abcdefghijklmnopqrstuvwxyzÃÈ®«™Úœ½Îõ£¥Í¶ğÔÕØÛšƒÜÄêâ§›óú“ÑÌ¤‰‚„€…‡Š‹ˆŒıÊµÿ—üûºòù”¢ñ¹÷ŸËÖ†Ğ&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}"; indexchars stuff removed */
 
 VAR char *defaultstopwords[] = {
 "a", "above", "according", "across", "actually", "adj", "after", 
@@ -779,7 +779,7 @@ VAR char *defaultstopwords[] = {
 
 #else
 VAR struct _indexing_data_source_def *IndexingDataSource;
-VAR char *indexchars;
+/* VAR char *indexchars; indexchars stuff removed */
 VAR char *defaultstopwords[];
 #endif
 
