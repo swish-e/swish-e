@@ -109,45 +109,58 @@ struct swline *tmplist;
 int ilen1,ilen2;
 	
 	sortfilelist = sortdirlist = NULL;
-	
-	if (islink(dir) && !sw->followsymlinks)
+
+	if ( !sw->followsymlinks && islink(dir) )
 		return;
-	
+
 	if ( fs_already_indexed(sw, dir) )
 		return;
 
 	if (dir[strlen(dir) - 1] == '/')
 		dir[strlen(dir) - 1] = '\0';
 	
-	if ((dfd = opendir(dir)) == NULL)
-		return;
-	
-	while ((dp = readdir(dfd)) != NULL && sw->dirconlist != NULL) {
-		badfile = 0;
-		tmplist = sw->dirconlist;
-		while (tmplist != NULL) {
-			if (matchARegex(dp->d_name, tmplist->line)) {
-				badfile = 1;
-				break;
+
+    /* Handle "FileRules directory contains" directive */
+
+    if ( sw->dirconlist != NULL ) {
+        if ((dfd = opendir(dir)) == NULL)
+		    return;
+
+        badfile = 0;
+
+        while ((dp = readdir(dfd)) != NULL) {
+		    tmplist = sw->dirconlist;
+		    while (tmplist != NULL) {
+			    if (matchARegex(dp->d_name, tmplist->line)) {
+				    badfile = 1;
+				    break;
+			    }
+			    tmplist = tmplist->next;
+		    }
+		    if (badfile) {
+		        closedir(dfd);
+			    return;
 			}
-			tmplist = tmplist->next;
-		}
-		if (badfile) 
-			return;
+        }
+    	closedir(dfd);
 	}
-	closedir(dfd);
 
 	s=(char *)emalloc((lens=MAXFILELEN) + 1);
 
-	dfd = opendir(dir);
+	if ((dfd = opendir(dir)) == NULL)
+		return;
 	
 	while ((dp = readdir(dfd)) != NULL) {
 		
 		if ((dp->d_name)[0] == '.')
 			continue;
-		if (islink(dp->d_name) && !sw->followsymlinks)
-			continue;
-		
+
+        /* This is stating the file name not the path, and is checked later on.
+		* if ( !sw->followsymlinks && islink(dp->d_name) )
+		*	continue;
+		*/	
+
+        /* Handle "FileRules filename is" */
 		badfile = 0;
 		tmplist = sw->fileislist;
 		while (tmplist != NULL) {
@@ -159,7 +172,8 @@ int ilen1,ilen2;
 		}
 		if (badfile)
 			continue;
-		
+
+		/* Handle "FileRules filename contains" */
 		badfile = 0;
 		tmplist = sw->fileconlist;
 		while (tmplist != NULL) {
@@ -171,6 +185,9 @@ int ilen1,ilen2;
 		}
 		if (badfile)
 			continue;
+
+		/* Build full path to file */	
+
 		ilen1=strlen(dir);
 		ilen2=strlen(dp->d_name);
 		if((ilen1 + 1 + ilen2)>=lens) {
@@ -181,9 +198,13 @@ int ilen1,ilen2;
 		if(dir[ilen1 - 1] != '/') s[ilen1++]='/';
 		memcpy(s+ilen1,dp->d_name,ilen2);
 		s[ilen1+ilen2]='\0';
-		if (islink(s) && !sw->followsymlinks)
+
+        /* Check if the path is a symlink */
+		if ( !sw->followsymlinks && islink(s) )
 			continue;
-		
+
+
+		/* FileRules pathname contains */
 		badfile = 0;
 		tmplist = sw->pathconlist;
 		while (tmplist != NULL) {
@@ -195,7 +216,7 @@ int ilen1,ilen2;
 		}
 		if (badfile)
 			continue;
-		
+
 		if (!isdirectory(s)) {
 			if ( fs_already_indexed(sw, s) )
 				continue;
@@ -229,7 +250,7 @@ int badfile;
 char *filename;
 struct swline *tmplist;
 	
-	if (islink(path) && !sw->followsymlinks)
+	if (!sw->followsymlinks && islink(path) )
 		return;
 	
 	if ( fs_already_indexed(sw, path) )

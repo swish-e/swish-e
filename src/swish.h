@@ -727,6 +727,9 @@ typedef struct {
     long plimit;
     long flimit;
 
+    /* Limit indexing by a file date */
+    time_t mtime_limit;
+
 	/* All Results per index file */
 	struct DB_RESULTS *db_results;
 
