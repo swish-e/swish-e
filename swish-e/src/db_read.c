@@ -183,7 +183,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 
         case FUZZYMODEHEADER_ID:
             parse_int_from_buffer(tmp,buffer);
-            get_fuzzy_mode(&header->fuzzy_data, tmp);
+            header->fuzzy_data = get_fuzzy_mode(header->fuzzy_data, tmp);
             break;
             
         case IGNORETOTALWORDCOUNTWHENRANKING_ID:

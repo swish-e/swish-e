@@ -50,8 +50,8 @@ static void print_error_or_abort( SW_HANDLE swish_handle );
 
 static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results );
 static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type );
-
-
+static void demo_stemming( SW_RESULTS results );
+static void stem_it( SW_RESULT r, char *word );
 
 
 int     main(int argc, char **argv)
@@ -59,7 +59,7 @@ int     main(int argc, char **argv)
     SW_HANDLE   swish_handle = NULL;    /* Database handle */
     SW_SEARCH   search = NULL;          /* search handle -- holds search parameters */
     SW_RESULTS  results = NULL;         /* results handle -- holds list of results */
-    
+
     char    input_buf[200];
     char   *index_file_list;
 
@@ -70,20 +70,20 @@ int     main(int argc, char **argv)
     /* Connect to the indexes specified */
 
     index_file_list = argv[1] && *(argv[1]) ? argv[1] : "index.swish-e";
-   
+
     swish_handle = SwishInit( index_file_list );
 
 
     /* Check for errors after every call */
-    
+
     if ( SwishError( swish_handle ) )
         print_error_or_abort( swish_handle );  /* print an error or abort -- see below */
-        
+
 
     /* Here's a short-cut to searching that creates a search object and searches at the same time */
 
     results = SwishQuery( swish_handle, "foo OR bar" );
-    
+
     if ( SwishError( swish_handle ) )
         print_error_or_abort( swish_handle );  /* print an error or abort -- see below */
     else
@@ -92,10 +92,11 @@ int     main(int argc, char **argv)
 
         printf( "Testing SW_ResultsToSW_HANDLE() = '%s'\n",
             SW_ResultsToSW_HANDLE( results ) == swish_handle ? "OK" : "Not OK" );
-        
+
+        demo_stemming( results );
+
         Free_Results_Object( results );
     }
-
 
     /* This may change since it only supports 8-bit chars */
     {
@@ -108,21 +109,26 @@ int     main(int argc, char **argv)
         printf("\n");
     }
 
+    /* 
+     * Stem a word -- this method is somewhat depreciated.
+     * It stores the stemmed word in a single location in the SW_OBJECT
+     */
+
     {
         char *stemmed = SwishStemWord( swish_handle, "running" );
         printf("SwishStemWord 'running' => '%s'\n\n", stemmed ? stemmed : "Failed to stem" );
     }
-    
+
 
     /* Typical use of the library is to create a search object */
     /* and use the search object to make multiple queries */
 
     /* Create a search object for searching - the query string is optional */
     /* Remember to free the search object when done */
-    
+
     search = New_Search_Object( swish_handle, "foo" );
 
-    
+
 
 
     /* Adjust some of the search parameters if different than the defaults */
@@ -133,7 +139,7 @@ int     main(int argc, char **argv)
     /* Set Limit parameters like */
 
     /*****
-    
+
     SwishSetSearchLimit( search, "swishtitle", "a", "z" );
     SwishSetSearchLimit( search, "age", "18", "65" );
 
@@ -170,8 +176,6 @@ int     main(int argc, char **argv)
         }
 
         display_results( swish_handle, results );
-printf("seek to start\n");
-        display_results( swish_handle, results );
         Free_Results_Object( results );
 
 #ifdef MEM_TEST
@@ -183,7 +187,7 @@ printf("seek to start\n");
 
     Free_Search_Object( search );
     SwishClose( swish_handle );
-        
+
 
     /* Look for memory leaks -- configure swish-e with --enable-memtrace to use */
 #ifdef MEM_TEST
@@ -221,8 +225,8 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 
     printf("# Total Results: %d\n", hits );
 
-    
-       
+
+
 
     if ( SwishSeekResult(results, 0 ) < 0 )  // how to seek to a page of results
     {
@@ -406,7 +410,72 @@ static void print_error_or_abort( SW_HANDLE swish_handle )
     );
 }
 
-     
-    
+/*
+ * This shows how to use the stemmer based on a result.
+ * It's done this way because a result is related to a
+ * specific index (where a result list may contain results
+ * from many indexes).
+ * Typically, the stemmer is used at search time to highlight words
+ * so it would be based on a given result.
+ */
 
+static void demo_stemming( SW_RESULTS results )
+{
+    SW_RESULT r;
+
+    printf("\n-- Stemmer Test --\n");
+
+
+    if ( !SwishHits( results ) )
+    {
+        printf("Couldn't test stemming because search returned no results\n");
+        return;
+    }
+
+    if (SwishSeekResult( results, 0) )
+    {
+        printf("Failed to seek to result 0\n");
+        return;
+    }
+    r = SwishNextResult( results );
+
+    if ( !r )
+    {
+        printf("Failed to get first result\n");
+        return;
+    }
+
+    printf("Fuzzy Mode: %s\n", SwishFuzzyMode( r ) );
+
+    stem_it( r, "running" );
+    stem_it( r, "runs" );
+    stem_it( r, "12345" );
+    stem_it( r, "abc3def" );
+    stem_it( r, "");
+    stem_it( r, "sugar" );  /* produces two metaphones */
+}
+
+static void stem_it( SW_RESULT r, char *word )
+{
+    const char **word_list;
+    SW_FUZZYWORD fw;
+
+    printf(" [%s] : ", word );
+    
+    fw = SwishFuzzyWord( r, word );
+    printf(" Status: %d", SwishFuzzyWordError(fw) );
+    printf(" Word Count: %d\n", SwishFuzzyWordCount(fw) );
+
+    printf("   words:");
+    word_list = SwishFuzzyWordList( fw );
+    while ( *word_list )
+    {
+        printf(" %s", *word_list );
+        word_list++;
+    }
+    
+    printf("\n");
+
+    SwishFuzzyWordFree( fw );
+}
 

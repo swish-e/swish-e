@@ -69,9 +69,9 @@ static HEADER_MAP header_map[] = {
     {  "IgnoreLastChar",    SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, ignorelastchar ) },
     {  "StopWords",         SWISH_WORD_HASH, 3,  offsetof( INDEXDATAHEADER, hashstoplist ) },
     {  "BuzzWords",         SWISH_WORD_HASH, 3,  offsetof( INDEXDATAHEADER, hashbuzzwordlist ) },
-    {  "Stemming Applied", SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
-    {  "Soundex Applied",   SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
-    {  "Fuzzy Mode",        SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
+    {  "Stemming Applied", SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data ) },
+    {  "Soundex Applied",   SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data ) },
+    {  "Fuzzy Mode",        SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data ) },
     {  "IgnoreTotalWordCountWhenRanking", SWISH_BOOL, 2, offsetof( INDEXDATAHEADER, ignoreTotalWordCountWhenRanking ) }
 };
 
@@ -177,7 +177,7 @@ const char **SwishIndexNames(SWISH *sw)
     if ( !index_count ) /* should not happen */
         progerr("Swish Handle does not have any associated index files!?!?");
 
-    sw->index_names = (const char **)emalloc( sizeof(char *) + (1+index_count) );
+    sw->index_names = (const char **)emalloc( sizeof(char *) * (1+index_count) );
 
     for ( index_count = 0, indexf = sw->indexlist; indexf; indexf = indexf->next )
         sw->index_names[index_count++] = (const char *)indexf->line;
@@ -283,21 +283,21 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
             return value;
         }
 
-            
+
 
 
         case SWISH_OTHER_DATA:
             if ( strcasecmp( "Fuzzy Mode", header_map->description ) == 0 )
             {
-                value.string = (const char *)fuzzy_mode_to_string( header->fuzzy_data.fuzzy_mode );
+                value.string = fuzzy_string( header->fuzzy_data );
                 *data_type = SWISH_STRING;
                 return value;
-                
+
             }
 
             else if ( strcasecmp( "Stemming Applied", header_map->description ) == 0 )
             {
-                value.number = stemmer_applied( header );
+                value.number = stemmer_applied( header->fuzzy_data );
 
                 *data_type = SWISH_BOOL;
                 return value;
@@ -305,7 +305,7 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
             else if ( strcasecmp( "Soundex Applied", header_map->description ) == 0 )
             {
-                value.number = FUZZY_SOUNDEX == header->fuzzy_data.fuzzy_mode ? 1 : 0;
+                value.number = FUZZY_SOUNDEX == fuzzy_mode_value( header->fuzzy_data ) ? 1 : 0;
                 *data_type = SWISH_BOOL;
                 return value;
             }

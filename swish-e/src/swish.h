@@ -80,6 +80,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <setjmp.h>
+#include "stemmer.h"  /* for fuzzy_object */
 
 #ifdef HAVE_CONFIG_H
 #include "acconfig.h"           /* These are defines created by autoconf */
@@ -447,32 +448,6 @@ struct swline
 };
 
 
-/* Define types of word translations for fuzzy indexing */
-
-typedef enum {
-    FUZZY_NONE = 0,
-    FUZZY_STEMMING_EN,
-    FUZZY_SOUNDEX,
-    FUZZY_METAPHONE,
-    FUZZY_DOUBLE_METAPHONE
-#ifdef SNOWBALL
-    ,FUZZY_STEMMING_ES,
-    FUZZY_STEMMING_FR,
-    FUZZY_STEMMING_IT,
-    FUZZY_STEMMING_PT,
-    FUZZY_STEMMING_DE,
-    FUZZY_STEMMING_NL,
-    FUZZY_STEMMING_EN1,
-    FUZZY_STEMMING_EN2,
-    FUZZY_STEMMING_NO,
-    FUZZY_STEMMING_SE,
-    FUZZY_STEMMING_DK,
-    FUZZY_STEMMING_RU,
-    FUZZY_STEMMING_FI
-#endif
-} FuzzyIndexType;
-
-
 /* For word hash tables */
 
 
@@ -484,11 +459,6 @@ typedef struct {
 }  WORD_HASH_TABLE;
 
 
-typedef struct {
-    FuzzyIndexType fuzzy_mode;
-    void    *fuzzy_args;  /* Used to hide Snowball's data */
-    int     (*fuzzy_routine) (char **, int *, void *);
-} FUZZY_INDEX; 
 
 typedef struct
 {
@@ -544,7 +514,7 @@ typedef struct
     int     minwordlimit;
     int     maxwordlimit;
 
-    FUZZY_INDEX fuzzy_data;
+    FUZZY_OBJECT *fuzzy_data;
 
     /* Total files and words in index file */
     int     totalwords;

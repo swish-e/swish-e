@@ -97,7 +97,7 @@ The common objects (e.g. structures) used are:
     SW_SEARCH  - search "object" that holds search parameters
     SW_RESULTS - results "object" that holds a result set
     SW_RESULT  - a single result used for accessing the result's properties
-    
+    SW_FUZZYWORD - used for fuzzy (stemming) word conversion    
 
 =head2 Searching
 
@@ -420,9 +420,74 @@ Returns NULL if the name of the index file is invalid.
 
 This fuction may change in the future since only 8-bit chars can currently be used.
 
-=item char * SwsishStemWord( SW_HANDLE, char *in_word );
+=item char * SwsishStemWord( SW_HANDLE sw, char *in_word );
 
-This can be used to convert a word to its stem.
+Depreciated
+
+This can be used to convert a word to its stem.  It uses only the 
+original Porter Stemmer.
+
+=item SW_FUZZYWORD SwishFuzzyWord( SW_RESULT r, char *word );
+
+Stems "word" based on the fuzzy mode selected during indexing.
+
+The fuzzy mode used during indexing is stored in the index file.
+Since each result is linked to a given index file this method allows
+stemming a word based on it's index file.
+
+One possible use for this is to highlight search terms in a document 
+summary, which would be based on a given result.
+
+The methods below can be used to access the data returned.  The 
+SW_FUZZYWORD object must be freed when done to avoid a memory leak.
+
+=item const char **SwishFuzzyWordList( SW_FUZZYWORD fw );
+
+Returns a null terminated list of strings returned by the stemmer.  In most
+cases this will be a single string.
+
+Here's an example:
+
+    SW_FYZZYWORD fuzzy_word = SwishFuzzyWord( result );
+    const char **word_list = SwishFuzzyWordList( fuzzy_word );
+    while ( *word_list )
+    {
+        printf("%s\n", *word_list );
+        word_list++;
+    }
+    SwishFuzzyWordFree( fuzzy_word );
+
+If the stemmer does not convert the string (for example attempting to 
+stem numeric data) the word_list will contain the original word.
+To tell if the stemmer actually stemmed the word check the return value with 
+SwishFuzzyWordError().
+
+=item int SwishFuzzyWordError( SW_FUZZYWORD fw );
+
+This returns zero if the stemming operation was sucessfull, otherwise it
+returns a value indicating the reason the word was not stemmed.  The return
+values are defined in the swish-e src/stemmer.h file.
+
+Not all stemmers set this value correctly.  But since SwishFuzzyWordList() 
+will return a valid string regardless of the return value, you can often 
+just ignore this setting.  That's what I do.
+
+=item int SwishFuzzyWordCount( SW_FUZZYWORD fw );
+
+Returns the count of string in the word list available by calling 
+SwishFuzzyWordList().
+
+This is normally just one, but in the case of DoubleMetaphone it can be one 
+or two (i.e. DoubleMetaphone can return one or two strings).
+
+=item const char *SwishFuzzyMode( SW_RESULT r );
+
+Returns the name of the stemmer used for the given result (which is related 
+to an index).
+
+=item void SwishFuzzyWordFree( SW_FUZZYWORD fw );
+
+Frees the memory used by  the SW_FUZZYWORD.
 
 =back
 

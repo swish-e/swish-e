@@ -36,7 +36,6 @@ $Id$
 #include "list.h"
 #include "hash.h"
 #include "stemmer.h"
-#include "soundex.h"
 #include "double_metaphone.h"
 #include "error.h"
 #include "metanames.h"
@@ -302,78 +301,25 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         if (!*self->word)
             continue;
 
-        switch ( header->fuzzy_data.fuzzy_mode )
+
+        /* Now stem word, if set to setm */
         {
-            case FUZZY_NONE:
-                swish_words = (struct swline *) addswline( swish_words, self->word );
-                break;
+            FUZZY_WORD *fw = fuzzy_convert( header->fuzzy_data, self->word );
+            if ( fw->list_size != 2 )
+            {
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[0] );
+            }
+            else
+            {
+                /* yuck! */
+                swish_words = (struct swline *) addswline( swish_words, "(" );
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[0] );
+                swish_words = (struct swline *) addswline( swish_words, "or" );
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[1] );
+                swish_words = (struct swline *) addswline( swish_words, ")" );
+            }
 
-            case FUZZY_STEMMING_EN:
-#ifdef SNOWBALL
-            case FUZZY_STEMMING_ES:
-            case FUZZY_STEMMING_FR:
-            case FUZZY_STEMMING_IT:
-            case FUZZY_STEMMING_PT:
-            case FUZZY_STEMMING_DE:
-            case FUZZY_STEMMING_NL:
-            case FUZZY_STEMMING_EN1:
-            case FUZZY_STEMMING_EN2:
-            case FUZZY_STEMMING_NO:
-            case FUZZY_STEMMING_SE:
-            case FUZZY_STEMMING_DK:
-            case FUZZY_STEMMING_RU:
-            case FUZZY_STEMMING_FI:
-#endif
-                header->fuzzy_data.fuzzy_routine(&self->word, &self->lenword,header->fuzzy_data.fuzzy_args);
-                if ( *self->word ) // should not happen
-                    swish_words = (struct swline *) addswline( swish_words, self->word );
-                break;
-
-                
-            case FUZZY_SOUNDEX:
-                soundex(self->word);
-                if ( *self->word )
-                    swish_words = (struct swline *) addswline( swish_words, self->word );
-                break;
-
-            case FUZZY_METAPHONE:
-            case FUZZY_DOUBLE_METAPHONE:
-                {
-                    char *codes[2];
-                    DoubleMetaphone(self->word, codes);
-
-                    if ( !(*codes[0]) )
-                    {
-                        efree( codes[0] );
-                        efree( codes[1] );
-                        swish_words = (struct swline *) addswline( swish_words, self->word );
-                        break;
-                    }
-
-
-                    /* check if just METAPHONE or only one word returned (e.g. they are the same) */
-                
-                    if ( header->fuzzy_data.fuzzy_mode == FUZZY_METAPHONE || !(*codes[1]) || !strcmp(codes[0], codes[1]) )
-                    {
-                        swish_words = (struct swline *) addswline( swish_words, codes[0] );
-                    }
-                    else
-                    {
-                        /* yuck! */
-                        swish_words = (struct swline *) addswline( swish_words, "(" );
-                        swish_words = (struct swline *) addswline( swish_words, codes[0] );
-                        swish_words = (struct swline *) addswline( swish_words, "or" );
-                        swish_words = (struct swline *) addswline( swish_words, codes[1] );
-                        swish_words = (struct swline *) addswline( swish_words, ")" );
-                    }
-
-                    efree( codes[0] );
-                    efree( codes[1] );
-                }
-                break;
-
-            default:
-                progerr("Invalid FuzzyMode '%d'", (int)header->fuzzy_data.fuzzy_mode );
+            fuzzy_free_word( fw );
         }
     }
 

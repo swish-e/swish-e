@@ -19,35 +19,62 @@ and L<perl modules|/"Perl Modules"> exist to for interfacing with Swish-e.
 
 =head1 Searching Syntax and Operations
 
-The C<-w> command line argument (switch) is used specify the search
-query to Swish-e.  When running Swish-e from a shell prompt, be careful
-to protect your query from shell metacharacters and shell expansions.
-This often means placing single or double quotes around your query.
-See L<Searching with Perl> if you plan to use Perl as a front end
-to Swish-e.
+The C<-w> command line argument is used specify the search query to Swish-e.
+
+    swish-e -w airplane
+
+will find all documents that contain the word B<airplane>.
+
+When running Swish-e from a shell prompt, be careful to protect your query from
+shell metacharacters and shell expansions. This often means placing single or
+double quotes around your query. See L<Searching with Perl> if you plan to use
+Perl as a front end to Swish-e.  In the examples below single quotes are used
+to protect the search from the shell.
 
 The following section describes various aspects of searching with Swish-e.
 
 =head2 Boolean Operators
 
-You can use the Boolean operators B<and>, B<or>, or B<not> in searching.
-Without these Boolean operators, Swish-e will assume you're B<and>ing
-the words together.  The operators are not case sensitive.
+You can use the Boolean operators B<and>, B<or> or B<not> in searching.
+Without these Boolean operators Swish-e will assume you're B<and>'ing
+the words together.  The operators are not case sensitive.  These three
+searches are the same:
+
+    swish-e -w foo bar
+    swish-e -w bar foo
+    swish-e -w foo AND bar
 
 [Note: you can change the default to B<or>ing by changing the variable
 DEFAULT_RULE in the config.h file and recompiling Swish-e.]
 
-Evaluation takes place from B<left to right> only, although you can use
-parentheses to force the order of evaluation.
+The B<not> operator inverts the results of a search.
 
-Examples:
+   swish-e -w not foo
 
-     swish-e -w "smilla or snow" -f myIndex
+finds all the documents that do not contain the word foo.
+
+Parentheses can be used to group searches.
+
+   swish-e -w 'not (foo and bar)'
+
+The result is all documents that have none or one term, but not both.
+
+To search for the words B<and>, B<or>, or B<not>, place them in a double quotes.
+Remember to protect the quotes from the shell:
+
+    swish-e -w '"not"'
+    swish-e -w \"not\"
+
+will search for the word "not".
+
+Other examples:
+
+     swish-e -w smilla or snow
 
 Retrieves files containing either the words "smilla" or "snow".
 
-     swish-e -w "smilla and snow not sense" -f myIndex 
-     swish-e -w "(smilla and snow) and not sense" -f myIndex (same thing)
+     swish-e -w smilla snow not sense 
+     swish-e -w '(smilla and snow) and not sense'  (same thing)
 
 retrieves first the files that contain both the words "smilla" and
 "snow"; then among those the ones that do not contain the word "sense".
@@ -56,16 +83,16 @@ retrieves first the files that contain both the words "smilla" and
 =head2 Truncation
 
 The wildcard (*) is available, however it can only be used at the end
-of a word: otherwise is is considerd a normal character (i.e. can be
+of a word: otherwise is is considered a normal character (i.e. can be
 searched for if included in the WordCharacters directive).
 
-     swish-e -w "librarian" -f myIndex
+     swish-e -w librarian
 
 this query only retrieves files which contain the given word.
 
 On the other hand:
 
-     swish-e -w "librarian*" -f myIndex
+     swish-e -w 'librarian*'
 
 retrieves "librarians", "librarianship", etc. along with "librarian".
 
@@ -80,18 +107,51 @@ and thus C<runn*> will not find C<run>.
 
 =head2 Order of Evaluation
 
-Expressions are always evaluated left to right: 
+In general, the order of evaluation is not important.  Internally swish-e
+processes the search terms from left to right.  Parenthesis can be used
+to group searches together, effectively changing the order of evaluation.
+For example these three are the same:
 
-    swish -w "juliet not ophelia and pac" -f myIndex 
+    swish-e -w foo not bar baz
+    swish-e -w not bar foo baz
+    swish-e -w baz foo not bar
 
-retrieves files which contain "juliet" and "pac" but not "ophelia" 
+but these two are B<not> the same:
+
+    swish-e -w foo not bar baz
+    swish-e -w foo not (bar baz)
+
+The first finds all documents that contain both foo and baz, but do not
+contain bar.  The second finds all that contain foo, and contain either bar or
+baz, but not both.
+
+It is often helpful in understanding searches to use the boolean terms and
+parenthesis. So the above two become:
+
+    swish-e -w foo AND (not bar) AND baz
+    swish-e -w foo AND (not (bar AND baz))
+
+These four examples are all the same search (assuming that AND is the default
+search type):
+
+    swish-e -w 'juliet not ophelia and pac'
+    swish-e -w '(juliet) AND (NOT ophelia) AND (pac)'
+    swish-e -w 'juliet not ophelia pac'
+    swish-e -w 'pac and juliet and not ophelia'
+
+Looking at the the first three searches, first Swish-e finds all the documents
+with "juliet".  Then it finds all documents that do not contain "ophelia".
+Those two lists are then combined with the boolean AND operator resulting with
+a list of documents that include "juliet" but not "ophelia".  Finally, that
+list is ANDed with the list of documents that contain "pac" resulting.
 
 However it is always possible to force the order of evaluation by using
 parenthesis.  For example:
 
-    swish-e -w "juliet not (ophelia and pac)" -f myIndex 
+    swish-e -w 'juliet not (ophelia and pac)'
 
-retrieves files with "juliet" and containing neither "ophelia" nor "pac".
+retrieves files with "juliet" that do not contain both words "ophelia" and
+"pac".
 
 =head2 Meta Tags
 
@@ -106,19 +166,19 @@ with the name of the meta tag, followed by the equal sign:
 
     metaname = word
     metaname = (this or that)
-    metatname = ( (this or that) or "this phrase" )
+    metaname = ( (this or that) or "this phrase" )
 
 It is not necessary to have spaces at either side of the "=", consequently
 the following are equivalent:
 
     swish-e -w "metaName=word"
-    swish-e -w "metaName = word" 
-    swish-e -w "metaName= word" 
+    swish-e -w "metaName = word"
+    swish-e -w "metaName= word"
 
 To search on a word that contains a "=", precede the "=" with a "\"
 (backslash).
 
-    swish-e -w "test\=3 = x\=4 or y\=5" -f <index.file> 
+    swish-e -w "test\=3 = x\=4 or y\=5"
 
 this query returns the files where the word "x=4" is associated with
 the metaName "test=3" or that contains the word "y=5" not associated
@@ -127,7 +187,7 @@ with any metaName.
 Queries can be also constructed using any of the usual search features,
 moreover metaName and plain search can be mixed in a single query.
 
-     swish-e -w "metaName1 = (a1 or a4) not (a3 and a7)" -f index.swish-e
+     swish-e -w "metaName1 = (a1 or a4) not (a3 and a7)"
 
 This query will retrieve all the files in which "a1" or "a2" are found
 in the META tag "metaName1" and that do not contain the words "a3" and
@@ -142,22 +202,37 @@ You must protect the quotes from the shell.
 
 For example, under Unix:
 
-    swish-e -w '"this is a pharase" or (this and that)'
-    swish-e -w 'meta1=("this is a pharase") or (this and that)'
+    swish-e -w '"this is a phrase" or (this and that)'
+    swish-e -w 'meta1=("this is a phrase") or (this and that)'
 
 Or under Windows:
 
-    swish-e -w \"this is a pharase\" or (this and that)
+    swish-e -w \"this is a phrase\" or (this and that)
+
+You can not use boolean search terms inside a phrase.  That is:
+
+    swish-e -w 'this and that'
+
+finds documents with both words "this" and "that", but:
+
+    swish-e -w '"this and that"'
+
+finds documents that have the phrase "that and that".  A phrase can consist of
+a single word, so this is how to search for the words used as boolean
+operators:
+
+   swish-e -w 'this "and" that'
+
+finds documents that contain all three words, but in any order.
 
 You can use the C<-P> switch to set the phrase delimiter character.
 See L<SWISH-RUN|SWISH-RUN> for examples.
 
-  
 =head2 Context
 
 At times you might not want to search for a word in every part of
 your files since you know that the word(s) are present in a particular
-tag. The ability to seach according to context greatly increases the
+tag. The ability to search according to context greatly increases the
 chances that your hits will be relevant, and Swish-e provides a mechanism
 to do just that.
 
@@ -167,21 +242,21 @@ you specify in the argument to this option represents a different tag
 in which the word is searched; that is you can use any combinations of
 the following characters:
 
-    H means all<HEAD> tags 
-    B stands for <BODY> tags 
-    t is all <TITLE> tags 
-    h is <H1> to <H6> (header) tags 
-    e is emphasized tags (this may be <B>, <I>, <EM>, or <STRONG>) 
+    H means all<HEAD> tags
+    B stands for <BODY> tags
+    t is all <TITLE> tags
+    h is <H1> to <H6> (header) tags
+    e is emphasized tags (this may be <B>, <I>, <EM>, or <STRONG>)
     c is HTML comment tags (<!-- ... -->)
 
     # This search will look for files with these two words in their titles only.
-    swish-e -w "apples oranges" -t t -f myIndex
+    swish-e -w "apples oranges" -t t
 
     # This search will look for files with these words in comments only.
-    swish-e -w "keywords draft release" -t c -f myIndex
+    swish-e -w "keywords draft release" -t c
 
     This search will look for words in titles, headers, and emphasized tags.
-    swish-e -w "world wide web" -t the -f myIndex
+    swish-e -w "world wide web" -t the
 
 =head1 Searching with Perl
 
@@ -244,19 +319,19 @@ does all the hard work for you.
 =head2 Perl Modules
 
 The Swish-e distribution includes a Perl module called SWISH::API.
-SWISH::API provides access to the Swish-e C Library.  
+SWISH::API provides access to the Swish-e C Library.
 
 The SWISH::API module is I<not> installed by default.
 
 The SWISH::API module will I<embed> Swish-e into your perl program so that searching does
 not require running an external program.  Embedding the Swish-e program into your perl
-program results in faster Swish-e searches, especially when running under a 
+program results in faster Swish-e searches, especially when running under a
 persistent environment like mod_perl since it avoids the cost of opening the
 index file for every request (mod_perl is much also much faster than CGI because it
 avoids the need to compile Perl code for every request).
 
-See the README file in the F<perl> directory of the Swish-e distribution for installation 
-instructions.  Documentation for the SWISH::API module is available at 
+See the README file in the F<perl> directory of the Swish-e distribution for installation
+instructions.  Documentation for the SWISH::API module is available at
 http://swish-e.org and is installed along with other HTML documentation on your computer.
 
 =head1 Document Info
