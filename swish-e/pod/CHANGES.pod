@@ -163,7 +163,11 @@ properties.
 A more general purpose pattern replacement syntax.
 
 
-=item * New XML Parser
+=item * New Parsers
+
+Swish can now use Daniel Veillard's libxml2 library for parsing HTML and XML.
+This requires installation of the library before building swish-e.  See the INSTALL
+document for information.
 
 Swish now uses James Clark's expat XML parser library.
 
@@ -263,6 +267,11 @@ multiple names to the same MetaName.
 
 Creates aliases for a PropertyName.
 
+=item * New directive: HTMLLinksMetaName
+
+Defines a metaname to use for indexing href links in HTML documents.
+Available only with libxml2 parser.
+
 =item * New directive: ExtractPath
 
 Allows you to use a regular expression to extract out part of the path of each file
@@ -277,6 +286,10 @@ files and directoires, FileMatch is used to I<include> files.
 =item * New directive: PreSortedIndex
 
 Controls which properties are pre-sorted while indexing.  All properties are sorted by default.
+
+=item * New directive: ParserWarnLevel
+
+Sets the level of warning printed when using libxml2.
 
 =back
 
