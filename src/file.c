@@ -330,6 +330,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
     /* Dup these, since the real_path may be reallocated by FileRules */
     fprop->real_path = estrdup( real_path );
     fprop->work_path = estrdup( work_file ? work_file : real_path );
+    fprop->orig_path = estrdup( real_path );
 
 
     /* Stat the file */
@@ -367,5 +368,6 @@ void    free_file_properties(FileProp * fprop)
 {
     efree( fprop->real_path );
     efree( fprop->work_path );
+    efree( fprop->orig_path );
     efree(fprop);
 }

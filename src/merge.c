@@ -872,7 +872,8 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
     time_t  mtime;
     struct docProperties *docProperties = *dProps;
     char    *filename;
-    int     prev_filenum;    
+    int     prev_filenum;
+    FileProp fprop;     // This isn't perfect, as addtofilelist can add words to index (ExtractPath)
 
 
     /* Lookup the properties */
@@ -880,6 +881,8 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
     start    = get_numeric_prop(docProperties, metas->start );
     size     = get_numeric_prop(docProperties, metas->size );
     mtime    = get_numeric_prop(docProperties, metas->mtime );
+
+    fprop.real_path = fprop.orig_path = filename;
 
 
     /* Do a hash lookup to find the file */
@@ -960,7 +963,7 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         ip->next = indexfilehashlist[hashval];
         indexfilehashlist[hashval] = ip;
 
-        addtofilelist(sw, sw->indexlist, filename, &thisFileEntry);
+        addtofilelist(sw, sw->indexlist, &fprop, &thisFileEntry);
 
         /* don't need to addCommonProperties since they will be copied with the "real" properties */
         // addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
