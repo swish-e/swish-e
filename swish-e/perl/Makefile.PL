@@ -13,17 +13,36 @@ WriteMakefile(
     'XSPROTOARG'    => '-noprototypes',
 );
 
+sub get_version
+{
+
+      my $e = shift;
+      my $version = `$e -V`;
+      $version =~ tr/[0-9].//cd;
+      return $version;
+}
 
 sub set_swish_version {
     $|=1;
 
+   my $swish = '';
+   my $version = '';
+
+   my @BIN = grep { m/^BIN=.*/ } @ARGV;
+
+   if (@BIN) {
+       $swish = shift @BIN;
+       $swish =~ s,BIN=,,;
+       $version = get_version($swish);
+       grep { s/^BIN=.*// } @ARGV;
+
+   } else {
 
     print "\n\nFor testing we will need the path to your SWISH-E binary.\n",
           qq[** Enter "skip" (without quotes) to skip testing - you will not be able to run "make test"\n\n];
           
 
 
-    my $swish = '';
     for ( split /:/, $ENV{PATH} ) {
         if ( -x "$_/swish-e" && !-d _ ) {
             $swish = "$_/swish-e";
@@ -31,11 +50,8 @@ sub set_swish_version {
         }
     }
 
-    
 
-    my $version;
-
-    while ( 1 ) {
+    while ( ! $version ) {
         my $enter = $swish;
 
         print "Enter the location of the swish-e executable[$enter]: ";
@@ -57,8 +73,8 @@ sub set_swish_version {
             print "File '$enter' missing or not exectuable\n";
 
         } else {
-            $version = `$enter -V`;
-            $version =~ tr/[0-9].//cd;
+            $version = get_version($swish);
+       
             
             if ( $version ) {
                 print "Your SWISH-E version: $version\n";
