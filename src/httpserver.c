@@ -265,6 +265,9 @@ static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *serv
 
     while ( (buffer = next_line( &next_start, bufend ) ) )
     {
+        if ( strchr( buffer, '#' ) )
+            *(strchr( buffer, '#' )) = '\0';
+
 		if ((*buffer == '#') || (*buffer == '\0'))
 			continue;
 
