@@ -724,7 +724,7 @@ struct _indexing_data_source_def
   const char* IndexingDataSourceName;           /* long name for data source */
   const char* IndexingDataSourceId;             /* short name for data source */
   void (*indexpath_fn)(SWISH *sw, char *path);             /* routine to index a "path" */
-  int (*parseconfline_fn)(SWISH *sw, char *line);          /* parse config file lines */
+  int (*parseconfline_fn)(SWISH *sw, void *line);          /* parse config file lines */
 };
 
 #ifdef GLOBAL_VARS
