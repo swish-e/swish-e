@@ -25,7 +25,6 @@ extern "C" {
 
 
 
-char *isBooleanOperatorWord( char * word );
 struct swline *parse_swish_query( DB_RESULTS *db_results );
 
 void initModule_Swish_Words (SWISH *sw);
