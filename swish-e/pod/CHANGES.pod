@@ -10,6 +10,28 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Documentation changes
+
+Removed all the target documentation (html, pdf, ps) from cvs.  There's now a separate
+cvs module "swish_website" that is used to generate both the website and the html
+docs.  If building swish-e from cvs please see the README.cvs file for instructions.
+
+=item Fixed bug in pre-sorted indexes with USE_BTREE
+
+Gunnar Mätzler reported a problem with reading the pre-sorted property index
+tables when running with USE_BTREE (--enable-enremental).  Not all entries were
+being written to disk.  There was/is a question if the "array" code used for
+pre-sorted indexes with USE_BTREE would be slower.  So, added a separate 
+define USE_PRESORT_ARRAY to enable that code when USE_BTREE is set.  This allows
+using the old integer arrays with USE_BTREE.  Gunnar reported that this is working,
+but more testing is needed.  Need to compare speed of the array code vs. the non-array
+code, and to verify the workings of USE_PRESORT_ARRAY code.
+
+=item Add strcoll() usage for sorting properties
+
+Andreas Seltenreich provided a patch to use strcoll when sorting properties.
+strcoll is locale dependent.
+
 =item Fix incremental indexing when adding back a file
 
 Jose fixed a problem with incremental indexing where a file could not be

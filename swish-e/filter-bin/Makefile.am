@@ -8,6 +8,11 @@ example_DATA = \
 
 CLEANFILES = swish_filter.pl
 
+
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
 swish_filter.pl: swish_filter.pl.in
 	@rm -f swish_filter.pl
 	@sed \

@@ -135,6 +135,9 @@ exit 0;
 # Checkout in the "build" subdirectory of the day_dir
 # This has to be done from the day_dir because cvs requires relative path
 # for some reason I'm not clear on...
+#
+# Should any options be added here?  Like checkout -P?  Or should that be
+# left to the user's .cvsrc?
 
 sub cvs_checkout {
     my $c = shift;
