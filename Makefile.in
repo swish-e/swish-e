@@ -288,7 +288,7 @@ subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
-CONFIG_CLEAN_FILES = doc/Makefile perl/Makefile.PL rpm/swish-e.spec
+CONFIG_CLEAN_FILES = doc/Makefile rpm/swish-e.spec
 DIST_SOURCES =
 DATA = $(doc_DATA)
 
@@ -324,8 +324,6 @@ $(srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(srcdir)/configure.in $(ACLOCAL_M4)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ configure.in 
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
 doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 rpm/swish-e.spec: $(top_builddir)/config.status $(top_srcdir)/rpm/swish-e.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
