@@ -26,7 +26,6 @@
 
 /* Macros which rewrite values  */
 #define SWISH_VERSION "2.1-dev-25"	/* Should we find a better way to handle this */
-#define DIRDELIMITER '\\'		/* Does this work right?  Might explain dir problems which have reported */
 
 /* Internal SWISH-E File Access Modes */
 #define FILEMODE_READ		"rb"	/* Read only */
@@ -37,6 +36,10 @@
 #define O_RDWR _O_RDWR
 #define O_CREAT _O_CREAT
 #define O_EXCL _O_EXCL
+
+/* Win32 filename lengths  */
+#define SW_MAXPATHNAME 4096
+#define SW_MAXFILENAME 256
 
 /* Type definitions */
 typedef int pid_t;			/* process ID */
@@ -51,6 +54,6 @@ typedef int mode_t;         /* file permission mode ID */
 #define getpid		_getpid
 #define umask       _umask
 #define vsnprintf   _vsnprintf
-#define stat(x,y)	my_stat(x,y)
+#define stat	    _stat
 
 #endif

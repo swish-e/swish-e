@@ -257,6 +257,10 @@ SOURCE=..\swish_words.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\swregex.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\txt.c
 # End Source File
 # Begin Source File
@@ -466,6 +470,10 @@ SOURCE=..\swish_qsort.h
 # Begin Source File
 
 SOURCE=..\swish_words.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\swregex.h
 # End Source File
 # Begin Source File
 
