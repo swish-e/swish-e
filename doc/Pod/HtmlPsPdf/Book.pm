@@ -80,9 +80,10 @@ sub get_param{
 ###################
 
 # These are used to check last modified times and determine when an action is required
+# Where these still fail is in checking for modified template files
 
 sub pod_newer {
-    my ( $file, $dir_root ) = @_;
+    my ( $file, $dir_root, $tmpl ) = @_;
 
     my $src  = $config->get_param('src_root') . "/$file.pod";
     my $dest = $config->get_param( $dir_root ) . "/$file.html";
@@ -90,6 +91,14 @@ sub pod_newer {
     return "F:$dest" if $Pod::HtmlPsPdf::RunTime::options{rebuild_all};
     return "C:$dest" unless -e $dest;
     return "U:$dest" if -M $src < -M $dest;
+
+    # Check for template dependency
+    my $template = $config->get_param( $tmpl );
+    if ( -M $template < -M $src ) {
+        my $time = time;
+        utime $time, $time, $src;
+        return "T:$dest";
+    }
 
     return;
     
@@ -108,6 +117,15 @@ sub pod_newer_split {
     # Hack -- assumes index.html is same date as everything else
     return "C:$dest" unless -e "$dest/index.html";
     return "U:$dest" if -M $src < -M "$dest/index.html";
+
+    # Check for template dependency
+    my $template = $config->get_param( 'tmpl_page_split_html' );
+    if ( -M $template < -M $src ) {
+        my $time = time;
+        utime $time, $time, $src;
+        return "T:$dest";
+    }
+
 
     return;
     
@@ -133,7 +151,12 @@ sub index_out_of_date {
     return 'Version changed: Updating' if -M $version_file < -M "$rel_root/index.html";
     return 'Version changed: Updating' if $type ne 'ps' && -M $version_file < -M "$rel_root/index_long.html";
 
-    return;
+
+    # Check for template dependency
+    my $template = $config->get_param( $type eq 'ps' ? 'tmpl_index_ps' : 'tmpl_index_html' );
+    return 'Template changed: Updating' if -M $template < -M "$rel_root/index.html";
+    return 'Template changed: Updating' if $type ne 'ps' && -M $template < -M "$rel_root/index_long.html";
+
 }
 
 
@@ -158,8 +181,8 @@ sub create_html_version {
         my $src_file = "$src_root/$file";
 
 
-        my $generate_ps    = pod_newer( $basenames[$i], 'ps_root' ) if $Pod::HtmlPsPdf::RunTime::options{generate_ps};
-        my $generate_html  = pod_newer( $basenames[$i], 'rel_root' );
+        my $generate_ps    = pod_newer( $basenames[$i], 'ps_root',  'tmpl_ps_html' ) if $Pod::HtmlPsPdf::RunTime::options{generate_ps};
+        my $generate_html  = pod_newer( $basenames[$i], 'rel_root', 'tmpl_page_html' );
 
         my $generate_split = pod_newer_split( $basenames[$i] ) if $Pod::HtmlPsPdf::RunTime::options{split_html};
 
