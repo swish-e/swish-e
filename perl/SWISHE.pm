@@ -22,7 +22,7 @@ require DynaLoader;
     SetLimitParameter
 );
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 bootstrap SWISHE $VERSION;
 
@@ -32,6 +32,7 @@ bootstrap SWISHE $VERSION;
 
 1;
 __END__
+
 =head1 NAME
 
 SWISH-PERL - Perl Interface to the SWISH-E Library
