@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 2
+%define release 0
 
 Summary:        SWISH-E - Simple Web Indexing System for Humans - Enhanced
 Name:           %{name}
@@ -13,7 +13,7 @@ URL:            http://swish-e.org/
 BuildRoot:      %{_tmppath}/%name-root
 Packager:       David L Norris <dave@webaugur.com>
 Icon:           swish-e.xpm
-Vendor:         SWISH-E Team
+Vendor:         SWISH-E Team <http://swish-e.org/>
 Provides:       %{name}
 Obsoletes:	swish
 Requires:       libxml2, pcre, zlib
@@ -31,6 +31,24 @@ configurable, and can be seamlessly integrated with existing web sites
 to maintain a consistent design. Swish-e can index web pages, but can
 just as easily index text files, mailing list archives, or data stored
 in a relational database.
+
+%package doc
+Summary:     doc
+Group:          Networking/Other
+Provides:      %{name}-doc
+Requires:     %{name} = %{version}  
+
+%description doc
+SWISH-E documentation and examples
+
+%package        perl
+Summary:        SWISH-E - PERL Scripts and Modules
+Group:          Networking/Other
+Provides:       %{name}-perl
+Requires:       %{name} = %{version}, perl >= 5.8.0
+
+%description    perl
+PERL SWISH-E language bindings and scripts.
 
 %package	devel
 Summary:	SWISH-E - Static libraries and header files.
@@ -60,20 +78,46 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 
 %files
 %defattr(-, root, root)
-%{_libdir}/swish-e/swish.cgi
-%{_libdir}/swish-e/perl/SWISH/DateRanges.pm
-%{_libdir}/swish-e/perl/SWISH/DefaultHighlight.pm
-%{_libdir}/swish-e/perl/SWISH/PhraseHighlight.pm
-%{_libdir}/swish-e/perl/SWISH/SimpleHighlight.pm
-%{_libdir}/swish-e/perl/SWISH/TemplateDefault.pm
-%{_libdir}/swish-e/perl/SWISH/TemplateDumper.pm
-%{_libdir}/swish-e/perl/SWISH/TemplateHTMLTemplate.pm
-%{_libdir}/swish-e/perl/SWISH/TemplateToolkit.pm
-%{_libdir}/swish-e/perl/SWISH/ParseQuery.pm
-%{_libdir}/swish-e/swishspider
-%{_libdir}/swish-e/spider.pl
+%{_bindir}/swish-e
 %{_libdir}/libswish-e.so.2.0.0
 %{_libdir}/libswish-e.so.2
+%{_libdir}/swish-e/swishspider
+%{_datadir}/man/man1/swish-e.1.gz
+%{_datadir}/man/man1/SWISH-CONFIG.1.gz
+%{_datadir}/man/man1/SWISH-FAQ.1.gz
+%{_datadir}/man/man1/SWISH-LIBRARY.1.gz
+%{_datadir}/man/man1/SWISH-RUN.1.gz
+
+%files doc
+%{_datadir}/doc/swish-e/examples/filters/README
+%{_datadir}/doc/swish-e/examples/prog-bin/README
+%{_datadir}/doc/swish-e/examples/prog-bin/file.pl
+%{_datadir}/doc/swish-e/examples/prog-bin/DirTree.pl
+%{_datadir}/doc/swish-e/examples/prog-bin/SwishSpiderConfig.pl
+%{_datadir}/doc/swish-e/examples/prog-bin/MySQL.pl
+%{_datadir}/doc/swish-e/examples/prog-bin/index_hypermail.pl
+%{_datadir}/doc/swish-e/examples/prog-bin/pdf2xml.pm
+%{_datadir}/doc/swish-e/examples/prog-bin/pdf2html.pm
+%{_datadir}/doc/swish-e/examples/prog-bin/doc2txt.pm
+%{_datadir}/doc/swish-e/examples/conf/stopwords/dutch.txt
+%{_datadir}/doc/swish-e/examples/conf/stopwords/english.txt
+%{_datadir}/doc/swish-e/examples/conf/stopwords/german.txt
+%{_datadir}/doc/swish-e/examples/conf/stopwords/spanish.txt
+%{_datadir}/doc/swish-e/examples/conf/README
+%{_datadir}/doc/swish-e/examples/conf/example1.config
+%{_datadir}/doc/swish-e/examples/conf/example2.config
+%{_datadir}/doc/swish-e/examples/conf/example3.config
+%{_datadir}/doc/swish-e/examples/conf/example4.config
+%{_datadir}/doc/swish-e/examples/conf/example5.config
+%{_datadir}/doc/swish-e/examples/conf/example6.config
+%{_datadir}/doc/swish-e/examples/conf/example7.config
+%{_datadir}/doc/swish-e/examples/conf/example8.config
+%{_datadir}/doc/swish-e/examples/conf/example9.config
+%{_datadir}/doc/swish-e/examples/conf/example9.pl
+%{_datadir}/doc/swish-e/examples/filter-bin/README
+%{_datadir}/doc/swish-e/examples/filter-bin/swish_filter.pl
+%{_datadir}/doc/swish-e/examples/filter-bin/_binfilter.sh
+%{_datadir}/doc/swish-e/examples/filter-bin/_pdf2html.pl
 %{_datadir}/doc/swish-e/html/CHANGES.html
 %{_datadir}/doc/swish-e/html/INSTALL.html
 %{_datadir}/doc/swish-e/html/README.html
@@ -88,9 +132,14 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/spider.html
 %{_datadir}/doc/swish-e/html/swish.html
 %{_datadir}/doc/swish-e/html/Filter.html
+%{_datadir}/doc/swish-e/html/style.css
 %{_datadir}/doc/swish-e/html/index.html
 %{_datadir}/doc/swish-e/html/index_long.html
-%{_datadir}/doc/swish-e/html/style.css
+%{_datadir}/doc/swish-e/html/.htaccess
+%{_datadir}/doc/swish-e/html/search.html
+%{_datadir}/doc/swish-e/html/.swishcgi.conf
+%{_datadir}/doc/swish-e/html/swish.conf
+%{_datadir}/doc/swish-e/html/split.pl
 %{_datadir}/doc/swish-e/html/images/dotrule1.gif
 %{_datadir}/doc/swish-e/html/images/swish2b.gif
 %{_datadir}/doc/swish-e/html/images/swish2.gif
@@ -98,24 +147,51 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/images/swish.gif
 %{_datadir}/doc/swish-e/INSTALL
 %{_datadir}/doc/swish-e/README
-%{_mandir}/man1/SWISH-CONFIG.1.gz
-%{_mandir}/man1/SWISH-FAQ.1.gz
-%{_mandir}/man1/SWISH-LIBRARY.1.gz
-%{_mandir}/man1/SWISH-RUN.1.gz
-%{_bindir}/swish-e
+%{_datadir}/doc/swish-e/README.cvs
+
+%files perl
+%defattr(-, root, root)
+%{_libdir}/swish-e/perl/SWISH/Filters/Doc2txt.pm
+%{_libdir}/swish-e/perl/SWISH/Filters/Pdf2HTML.pm
+%{_libdir}/swish-e/perl/SWISH/Filters/ID3toHTML.pm
+%{_libdir}/swish-e/perl/SWISH/Filters/XLtoHTML.pm
+%{_libdir}/swish-e/perl/SWISH/Filter.pm
+%{_libdir}/swish-e/perl/SWISH/DateRanges.pm
+%{_libdir}/swish-e/perl/SWISH/DefaultHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/PhraseHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/SimpleHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateDefault.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateDumper.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateFrame.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateHTMLTemplate.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateToolkit.pm
+%{_libdir}/swish-e/perl/SWISH/ParseQuery.pm
+%{_libdir}/swish-e/perl/doc2txt.pm
+%{_libdir}/swish-e/perl/pdf2html.pm
+%{_libdir}/swish-e/perl/pdf2xml.pm
+%{_libdir}/swish-e/spider.pl
+%{_libdir}/swish-e/swish.cgi
+%{_bindir}/swish-filter-test
+%{_datadir}/swish-e/search.tt
+%{_datadir}/swish-e/swish.tmpl
 
 %files devel
 %defattr(-, root, root)
-%{_libdir}/libswish-e.so
 %{_includedir}/swish-e.h
 %{_libdir}/libswish-e.la
 %{_libdir}/libswish-e.a
+%{_libdir}/libswish-e.so
 
 %changelog
+* Fri Oct 24 2003 David L Norris <dave@webaugur.com> 2.4.0-pr4-0
+- Added new files and moved extra documentation and examples to a separate package.
+* Mon Jun 30 2003 David L Norris <dave@webaugur.com> 2.4.0-pr1-1cefha
+- Modified spec file to minimize dependences on CEFHA.org server.
+* Thu Jun 19 2003 David L Norris <dave@webaugur.com> 2.4.0-pr1
+- Updated RPM spec to provide recently added files
 * Sun Apr 20 2003 David L Norris <dave@webaugur.com> 2.3.5
 - Updated RPM to provide the SWISH-E helper scripts.
 * Fri Mar 28 2003 David L Norris <dave@webaugur.com> 2.3.5
 - Updated RPM for the new libtool-based 2.3.5 build system.
 * Wed Dec 04 2002 David L Norris <dave@webaugur.com> 2.3-dev04
 - Created RPM spec file
-
