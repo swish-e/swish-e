@@ -69,7 +69,7 @@ void freeProperty( propEntry *prop )
 {
     if ( prop )
         efree(prop);
-}	
+}
 
 
 
@@ -82,17 +82,17 @@ void freeProperty( propEntry *prop )
 
 void freeDocProperties(docProperties *docProperties)
 {
-	int i;
+    int i;
 
-	for( i = 0; i < docProperties->n; i++ )
-	{
-	    freeProperty( docProperties->propEntry[i] );
-	    docProperties->propEntry[i] = NULL;
-	}
+    for( i = 0; i < docProperties->n; i++ )
+    {
+        freeProperty( docProperties->propEntry[i] );
+        docProperties->propEntry[i] = NULL;
+    }
 
-	efree(docProperties);
-	docProperties = NULL;
-	
+    efree(docProperties);
+    docProperties = NULL;
+
 }
 
 
@@ -143,27 +143,27 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 
     if ( !meta_entry )
         progerr("DecodeDocProperty passed NULL meta_entry");
-        
+
 
     if ( !prop )
         return estrdup("");
-        
-    
+
+
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
         return (char *)bin2string(prop->propValue,prop->propLen);
 
 
     if ( is_meta_date(meta_entry) )
     {
-        s=emalloc(20);
+        s=emalloc(30);
         i = *(unsigned long *) prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+        strftime(s,30, DATE_FORMAT_STRING, (struct tm *)localtime((time_t *)&i));
         return s;
     }
 
 
-    
+
     if ( is_meta_number(meta_entry) )
     {
         s=emalloc(14);
@@ -262,11 +262,11 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 
-            
+
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_INDEXFILE ) )
             return CreateProperty( *meta_entry, (unsigned char *)result->db_results->indexf->line, strlen( result->db_results->indexf->line ), 0, &error_flag );
     }
-                   
+
 
     return ReadSingleDocPropertiesFromDisk(indexf, &result->fi, metaID, max_size );
 }
@@ -285,7 +285,8 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 *
 *   Bugs:
 *       Only returns first property in list (which is the last property)
-*
+*       This function is called by dump.c and by result_output.c to
+*       display the old -p style property listings.
 *
 ********************************************************************/
 
@@ -295,9 +296,9 @@ char *getResultPropAsString(RESULT *result, int ID)
     propEntry *prop;
     struct metaEntry *meta_entry = NULL;
 
-    
-	if( !result )
-	    return estrdup("");  // when would this happen?
+
+    if( !result )
+        return estrdup("");  // when would this happen?
 
 
 
@@ -314,7 +315,7 @@ char *getResultPropAsString(RESULT *result, int ID)
 
 /*******************************************************************
 *   SwishResultPropertyStr - Returns a string for the property *name* supplied
-*   Numbers are zero filled
+*   Numbers are zero filled  (why??)
 *
 *   ** Library interface call **
 *
@@ -336,9 +337,9 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
     struct metaEntry    *meta_entry = NULL;
     IndexFILE           *indexf;
     DB_RESULTS          *db_results;
-    
-	if( !result )
-	    return "";  // when would this happen?
+
+        if( !result )
+            progerr("SwishResultPropertyStr was called with a NULL result");
 
 
     db_results = result->db_results;
@@ -353,11 +354,14 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
         return "(null)";
     }
 
+    /* reset error level */
+    result->db_results->indexf->sw->lasterror = 0;
+
 
 
 
     /* Does this results have this property? */
-    
+
     if ( !(prop = getDocProperty(result, &meta_entry, 0, 0 )) )
         return "";
 
@@ -370,14 +374,11 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
         efree( s );
         return "";
     }
-
-    /* create a place to store the strings */
-
-	if ( ! db_results->prop_string_cache )
-	{
-	    db_results->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
-	    memset( db_results->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
-	}
+        if ( ! db_results->prop_string_cache )
+        {
+            db_results->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
+            memset( db_results->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
+        }
 
     /* Free previous, if needed  -- note the metaIDs start at one */
 
@@ -387,6 +388,8 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
     db_results->prop_string_cache[ meta_entry->metaID-1 ] = s;
     return s;
 }
+
+
 
 
 /*******************************************************************
@@ -407,42 +410,26 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
 unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
 {
-    struct metaEntry    *meta_entry = NULL;
-    IndexFILE           *indexf;
     PropValue           *pv;
-    unsigned long       value;
-    
-	if( !result )
-	{
-	    result->db_results->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
-            return ULONG_MAX;
-	}
+    unsigned long       value = ULONG_MAX;
 
 
-    indexf = result->db_results->indexf;
-
-
-    /* Ok property name? */
-
-    if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
-    {
-        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->db_results->indexf->sw, "Invalid property name '%s'", pname );
-        return ULONG_MAX;
-    }
-
-
-    /* make sure it's a numeric prop */
-    if ( !is_meta_number(meta_entry) &&  !is_meta_date(meta_entry)  )
-    {
-        set_progerr(INVALID_PROPERTY_TYPE, result->db_results->indexf->sw, "Property '%s' is not numeric", pname );
-        return ULONG_MAX;
-    }
-    
+    /* Fetch the property */
     pv = getResultPropValue (result, pname, 0 );
 
-    value = pv->value.v_ulong;
+    if ( !pv )
+        return ULONG_MAX;  /* bad property name */
 
-    efree( pv );
+    /* Make sure it's of the correct type */
+    if ( (PROP_ULONG != pv->datatype) && (PROP_DATE != pv->datatype) )
+    {
+        if ( PROP_UNDEFINED != pv->datatype )
+            set_progerr(INVALID_PROPERTY_TYPE, result->db_results->indexf->sw, 
+                    "Property '%s' is not numeric", pname );
+        value = ULONG_MAX;
+    } 
+
+    freeResultPropValue( pv );
 
     return value;
 }
@@ -459,9 +446,16 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
 *       *metaName -- String name of meta entry
 *       metaID    -- OR - meta ID number
 *
+*       Note that the ID is not really used anyplace, but 
+*       could be used to save the prop->id lookup.
+*
 *   Returns:
 *       pointer to a propValue structure if found -- caller MUST free
 *       Returns NULL if propertyName doesn't exist.
+*       Jan 14, 2004:
+*       Returns a PropValue PROP_UNDEFINED if result has not property
+*       If returning NULL (i.e. bad property name) sets a swish-e error.
+*       Caller is responsible for checking.
 *
 *   Note:
 *       Feb 13, 2002 - now defined properties that just don't exist
@@ -479,11 +473,21 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
     struct metaEntry *meta_entry = NULL;
     propEntry *prop;
 
+    /* Die on null result */
+    if( !r )
+        progerr("Called getResultPropValue with NULL result");
 
     /* Lookup by property name, if supplied */
     if ( pname )
         if ( !(meta_entry = getPropNameByName( &r->db_results->indexf->header, pname )) )
+        {
+            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, r->db_results->indexf->sw, 
+                    "Invalid property name '%s'", pname );
             return NULL;
+        }
+
+    /* reset error level */
+    r->db_results->indexf->sw->lasterror = 0;
 
 
     /* create a propvalue to return to caller */
@@ -493,15 +497,11 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
 
 
-    /* This may return false */
+    /* This will return false if the result does not have a value for this property */
     prop = getDocProperty( r, &meta_entry, ID, 0 );
 
     if ( !prop )
-    {
-        pv->datatype = PROP_STRING;
-        pv->value.v_str = "";
-        return pv;
-    }
+        return pv;  /* returning PROP_UNDEFINED */
 
 
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
@@ -512,19 +512,6 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
         freeProperty( prop );
         return pv;
     }
-
-
-    /* dates and numbers should return null to tell apart from zero */
-    /* This is a slight problem with display, as blank properties show "(NULL)" */
-    /* but is needed since other parts of swish (like sorting) need to see NULL. */
-
-    /****************
-    if ( !prop )
-    {
-        efree( pv );
-        return NULL;
-    }
-    ****************/
 
 
     if ( is_meta_number(meta_entry) )
@@ -538,7 +525,7 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
         return pv;
     }
 
-   
+
     if ( is_meta_date(meta_entry) )
     {
         unsigned long i;
@@ -550,16 +537,12 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
         return pv;
     }
 
-    freeProperty( prop );
 
 
- 
-	if (pv->datatype == PROP_UNDEFINED) {	/* nothing found */
-	    efree (pv);
-	    pv = NULL;
-	}
+    /* If here, then it's an unknown property type and abort! */
+    progerr("Swish-e database error.  Unknown property type '%d'", meta_entry->metaType );
+    return NULL;  /* make compier happy */
 
-	return pv;
 }
 
 /*******************************************************************
@@ -570,10 +553,10 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 void    freeResultPropValue(PropValue *pv)
 {
     if ( !pv ) return;
-    
+
     if ( pv->datatype == PROP_STRING && pv->destroy )
         efree( pv->value.v_str );
-        
+
     efree(pv);
 }
 

@@ -18,7 +18,7 @@ metastring;
 
 
 void
-DoubleMetaphone(char *str,
+DoubleMetaphone(const char *str,
                 char **codes);
 
 #ifdef __cplusplus

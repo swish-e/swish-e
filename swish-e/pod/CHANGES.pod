@@ -10,6 +10,43 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Time zone in ResultPropertyStr()
+
+Format string for generating date did not include the time zone in location.
+Add strftime format string to config.h
+
+=item * Undefined and Blank Properties and (NULL)
+
+Fixed a few problems with printing properties:
+
+1) Using -p and -x showed different results if a bad property value was given:
+
+    $ swish-e -w not dkdk -p badname -H0
+    err: Unknown Display property name "badname"
+    .
+    $ swish-e -w not dkdk -x '<badname>\n' -H0
+    (NULL)
+
+Now both return an error.
+
+2) Fixed bug where using a "fmt" string with -x output generated (bad) output
+if the result did not have the specified property.
+
+    $ swish-e -w not dkdk -x '<somedate>\n' -H0  # undefined value
+
+    $ swish-e -w not dkdk -x '<somedate fmt="%Y %B %d">\n' -H0
+    %Y %B 1075353525
+
+Now nothing is printed if the property does not exist.
+
+3) Updated SWISH::API to croak() on invalid property names, and to return
+undefined values for missing properties.
+
+4) Updated swish.cgi and search.cgi to not generate warnings on undefined values
+return as properties.  Note that swish.cgi will now die on undefined properties.
+Previously would just display (NULL).
+
+
 =item * Fixed segfault when generating warnings while parsing
 
 Parser.c was incorrectly calling warning() incorrectly.

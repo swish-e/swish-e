@@ -69,7 +69,7 @@ SWISH::API - Perl interface to the Swish-e C Library
             $result->Property( "swishdocsize" ),
             $result->Property( "swishtitle" ),
             $result->Property( "swishdbfile" ),
-            $result->Property( "swishlastmodified" ),
+            $result->ResultPropertyStr( "swishlastmodified" ),
             $result->Property( "swishreccount" ),
             $result->Property( "swishfilenum" )
         );
@@ -395,9 +395,24 @@ The follow methods provide access to data related to an individual result.
 
 =over 4
 
-=item $prop = $result->property( $prop_name );
+=item $prop = $result->Property( $prop_name );
 
 Fetches the property specified for the current result.
+An invalid property name will cause an exception (which can be caught
+by wrapping the call in an eval block).
+
+Can return undefined.
+
+Date properties are returned as a timestamp.  Use something like Date::Format to
+format the strings (or just call scalar localtime( $prop ) ).
+
+=item $prop = $result->ResultPropertyStr( $prop_name );
+
+Fetches and formats the property.  Unlike above, invalid property names return the
+string "(null)" -- this will likely change to match the above (i.e. throw an exception).
+
+Undefined values are returned at the null string ("").
+
 
 =item $value = $result->ResultIndexValue( $header_name );
 

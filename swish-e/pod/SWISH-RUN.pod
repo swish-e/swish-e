@@ -599,9 +599,10 @@ search only in header (<H*>) tags
 
 =item -d *string* (delimiter)
 
-Set the delimiter used when printing results.  By default, Swish-e separates the output fields by a
-space, and places double-quotes around the document title.  This output may be hard to parse, so it
-is recommended to use C<-d> to specify a character or string used as a separator between fields.
+Set the delimiter used when printing results.  By default, Swish-e separates
+the output fields by a space, and places double-quotes around the document
+title.  This output may be hard to parse, so it is recommended to use C<-d> to
+specify a character or string used as a separator between fields.
 
 The string C<dq> means "double-quotes".
 
@@ -612,6 +613,9 @@ The string C<dq> means "double-quotes".
     swish-e -w word -d dq   # double quotes
 
 The following control characters may also be specified: C<\t \r \n \f>.
+
+Warning: This string is passed directly to sprintf() and therefore exposes a securty
+hole.  Do not allow user data to set -d format strings directly.
 
 =item -P *character*
 
@@ -737,12 +741,15 @@ This is an experimental feature, and its use and interface are subject to change
 
 =item -x formatstring (extended output format)
 
-The C<-x> switch defines the output format string.
-The format string can contain plain text and property names (including swish-defined internal property names)
-and is used to generate the output for every result.
-In addition, the output format of the property name can be controlled with C-like printf format strings.
-This feature overrides the cmdline switches C<-d> and C<-p>,
-and a warning will be generated if C<-d> or C<-p> are used with C<-x>.
+The C<-x> switch defines the output format string.  The format string can
+contain plain text and property names (including swish-defined internal
+property names) and is used to generate the output for every result.  In
+addition, the output format of the property name can be controlled with C-like
+printf format strings.  This feature overrides the cmdline switches C<-d> and
+C<-p>, and a warning will be generated if C<-d> or C<-p> are used with C<-x>.
+
+Warning: The format string (fmt) is passed directly to sprintf() and therefore exposes a securty
+hole.  Do not allow user data to set -x format strings directly.
 
 For example, to return just the title, one per line, in the search results:
 

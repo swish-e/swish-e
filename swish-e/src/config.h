@@ -129,6 +129,10 @@
 /* DEFAULT_HTTP_DELAY is the default delay when using swishspider -S http */
 
 
+#define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"
+/* default format string for dates */
+
+
 #define INDEXPERMS 0644
 
 /* After SWISH generates an index file, it changes the permissions
