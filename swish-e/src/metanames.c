@@ -33,7 +33,7 @@ int metaID;     /* see metanames.h for values */
 /* Change them if you like but do not remove them       */
 /********************************************************/
 static defaultMetaNames SwishDefaultMetaNames[]={
-    {AUTOPROPERTY_DOCPATH, META_PROP | META_INDEX, AUTOPROP_ID__DOCPATH}, /* DocPath indexed (META_INDEX is set) */
+    {AUTOPROPERTY_DOCPATH, META_PROP , AUTOPROP_ID__DOCPATH}, /* DocPath not indexed by default (META_INDEX is not set) */
 				/* If you want filename indexed and searchable*/
 				/* just add META_INDEX to it */
     {AUTOPROPERTY_TITLE, META_PROP, AUTOPROP_ID__TITLE}, /* Title No index (META_INDEX is not set) */
@@ -41,7 +41,7 @@ static defaultMetaNames SwishDefaultMetaNames[]={
 				/* just add META_INDEX to it */
 	{AUTOPROPERTY_DOCSIZE, META_PROP | META_NUMBER, AUTOPROP_ID__DOCSIZE},     /* File size */
     {AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE, AUTOPROP_ID__LASTMODIFIED},     /* File date */
-    {AUTOPROPERTY_SUMMARY, META_PROP | META_INDEX , AUTOPROP_ID__SUMMARY}, /* Summary indexed (META_INDEX is set) */
+    {AUTOPROPERTY_SUMMARY, META_PROP , AUTOPROP_ID__SUMMARY}, /* Summary not indexed by default (META_INDEX is not set) */
 				/* If you want summary indexed and searchable */
 				/* just add META_INDEX to it */
     {AUTOPROPERTY_STARTPOS, META_PROP | META_NUMBER, AUTOPROP_ID__STARTPOS},     /* File start */
