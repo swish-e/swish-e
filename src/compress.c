@@ -212,7 +212,7 @@ struct MOD_Index *idx = sw->Index;
         progerr("Internal error in compress_location routine");
 
         /* Swap location info to file */
-	if(RAM_DISK) {
+	if(idx->swap_locdata) {
 		q=(unsigned char *)SwapLocData(sw,++p,i);
 	}
 	else {
@@ -284,35 +284,19 @@ struct MOD_Index *idx = sw->Index;
     if(idx->plimit!=NO_PLIMIT)
         return (long)buf;  /* do nothing */
 
-    if(idx->swap_locdata)
+    if(!idx->fp_loc_write)
     {
-        if(!idx->fp_loc_write)
-        {
-            if(!(idx->fp_loc_write = fopen(idx->swap_location_name,FILEMODE_WRITE)))
-                progerr("Could not create temp file %s",idx->swap_location_name);
-            idx->swap_tell = ftell;
-            idx->swap_write = fwrite;
-            idx->swap_close = fclose;
-            idx->swap_seek = fseek;
-            idx->swap_read = fread;
-            idx->swap_getc = fgetc;
-            idx->swap_putc = fputc;
-        }
+        if(!(idx->fp_loc_write = fopen(idx->swap_location_name,FILEMODE_WRITE)))
+            progerr("Could not create temp file %s",idx->swap_location_name);
+        idx->swap_tell = ftell;
+        idx->swap_write = fwrite;
+        idx->swap_close = fclose;
+        idx->swap_seek = fseek;
+        idx->swap_read = fread;
+        idx->swap_getc = fgetc;
+        idx->swap_putc = fputc;
     }
-    else
-    {
-        if(!idx->fp_loc_write)
-        {
-            idx->fp_loc_write = (FILE *)ramdisk_create(200000);
-            idx->swap_tell = ramdisk_tell_write;
-            idx->swap_write = ramdisk_write;
-            idx->swap_close = ramdisk_close;
-            idx->swap_seek = ramdisk_seek_read;
-            idx->swap_read = ramdisk_read;
-            idx->swap_getc = ramdisk_getc;
-            idx->swap_putc = ramdisk_putc;
-        }
-    }
+
     pos=idx->swap_tell(idx->fp_loc_write);
     compress1(lenbuf,idx->fp_loc_write,idx->swap_putc);
     if(idx->swap_write(buf,1,lenbuf,idx->fp_loc_write)!=(unsigned int)lenbuf)
@@ -323,7 +307,7 @@ struct MOD_Index *idx = sw->Index;
 }
 
 /* 09/00 Jose Ruiz
-** Gets the location data from the swap file or ramdisk
+** Gets the location data from the swap file
 ** Returns a memory compressed location data
 */
 unsigned char *unSwapLocData(SWISH *sw,long pos)
@@ -338,24 +322,14 @@ struct MOD_Index *idx = sw->Index;
     if(idx->plimit!=NO_PLIMIT)
         return (unsigned char *)pos;  /* do nothing */
 
-    if(idx->swap_locdata)
+    if(!idx->fp_loc_read)
     {
-        if(!idx->fp_loc_read)
-        {
-            idx->swap_close(idx->fp_loc_write);
-            idx->fp_loc_write = NULL;
-            if(!(idx->fp_loc_read=fopen(idx->swap_location_name,FILEMODE_READ)))
-                progerr("Could not open temp file %s",idx->swap_location_name);
-        }
+        idx->swap_close(idx->fp_loc_write);
+        idx->fp_loc_write = NULL;
+        if(!(idx->fp_loc_read=fopen(idx->swap_location_name,FILEMODE_READ)))
+            progerr("Could not open temp file %s",idx->swap_location_name);
     }
-    else
-    {
-        if(!idx->fp_loc_read)
-        {
-            idx->fp_loc_read = idx->fp_loc_write;
-            idx->fp_loc_write = NULL;
-        }
-    }
+
     idx->swap_seek(idx->fp_loc_read,pos,SEEK_SET);
     lenbuf = uncompress1(idx->fp_loc_read,idx->swap_getc);
     buf=(unsigned char *)emalloc(lenbuf);
