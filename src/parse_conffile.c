@@ -46,6 +46,7 @@ $Id$
 #include "search_alt.h"
 #include "parse_conffile.h"
 #include "deflate.h"
+#include "result_sort.h"
 
 
 /* Reads the configuration file and puts all the right options
@@ -599,6 +600,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
         else if (configModule_SearchAlt(sw, sl)); /* rasc */
         else if (configModule_Deflate(sw, sl)); /* jmruiz */
+        else if (configModule_ResultSort(sw, sl)); /* jmruiz */
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);
