@@ -422,7 +422,7 @@ Returns the stemmed version of the passed in word.
 Splits up the input string into tokens of swish words and operators.
 
 
-=head2 NOTES
+=head1 NOTES
 
 Perl's garbage collection makes it easy to write code for searching with Swish-e,
 but care must be taken not to keep objects around too long which can use up memory.
