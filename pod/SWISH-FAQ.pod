@@ -209,6 +209,12 @@ Perl will try to avoid running the command through the shell if meta characters 
 to the open.  See C<perldoc -f open> for more information.
 
 
+=head2 Do filters effect the performance during search?
+
+No. Filters (FileFilter or via "prog" method) is only used for building the searchindex 
+database. During search requests there will be no filter calls.
+
+
 =head2 Can I index 8-bit text? 
 
 Yes, you can. Just remember that swish-e retains capitalization for all characters other than [a-z A-Z], so the word "Çelik" is not retrieved by
