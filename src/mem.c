@@ -517,12 +517,19 @@ static ZONE *allocChunk(size_t size)
 }
 
 /* create a memory zone */
-MEM_ZONE *Mem_ZoneCreate(size_t size)
+MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 {
 	MEM_ZONE	*head;
 
 	head = emalloc(sizeof(MEM_ZONE));
-	head->size = ROUND_PAGE(size);
+	head->name = name;
+
+	size = ROUND_PAGE(size);
+	if (size == 0)
+		size = pageSize*64;
+	head->size = size;
+
+	head->attributes = attributes;
 	head->next = allocChunk(size);
 
 	return head;
