@@ -149,7 +149,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     }
 
 
-    fp = popen(cmd, FILEMODE_READ);
+    fp = popen(cmd, F_READ_TEXT);
 
     if (!fp)
         progerrno("Failed to spawn external program '%s': ", cmd);
@@ -176,7 +176,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
 
     /* Save content to a temporary file */
     efree( fprop->work_path );
-    out = create_tempfile(sw, "fltr", &fprop->work_path, 0 );
+    out = create_tempfile(sw, F_WRITE_TEXT, "fltr", &fprop->work_path, 0 );
 
     bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
 

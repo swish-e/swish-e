@@ -721,8 +721,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     else if ( !fprop->fp )
     {
-        /* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
-        fprop->fp = fopen(fprop->work_path, FILEMODE_READ);
+        fprop->fp = fopen(fprop->work_path, F_READ_TEXT );
 
         if ( !fprop->fp )
         {

@@ -474,19 +474,13 @@ int i, hash, page_reads, page_index;
 
 #define N_TEST 50000000
 
-#ifdef _WIN32
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#elif defined(__VMS)
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#else
-#define FILEMODE_READ           "r"
-#define FILEMODE_WRITE          "w"
-#define FILEMODE_READWRITE      "r+"
-#endif
+#define F_READ_BINARY           "rb"
+#define F_WRITE_BINARY          "wb"
+#define F_READWRITE_BINARY      "rb+"
+
+#define F_READ_TEXT             "r"
+#define F_WRITE_TEXT            "w"
+#define F_READWRITE_TEXT        "r+"
 
 int main()
 {
@@ -499,9 +493,9 @@ unsigned long root_page;
 
 
 
-    fp = fopen("kkkkk",FILEMODE_WRITE);
+    fp = fopen("kkkkk",F_WRITE_BINARY);
     fclose(fp);
-    fp = fopen("kkkkk",FILEMODE_READWRITE);
+    fp = fopen("kkkkk",F_READWRITE_BINARY);
 
     fwrite("aaa",1,3,fp);
 
@@ -528,7 +522,7 @@ printf("\n\nIndexing\n\n");
 printf("\n\nUnfreed %d\n\n",num);
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",FILEMODE_READ);
+    fp = fopen("kkkkk",F_READ_BINARY);
     bt = ARRAY_Open(fp, root_page);
 
     for(i=0;i<N_TEST;i++)
