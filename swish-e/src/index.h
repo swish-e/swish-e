@@ -130,8 +130,7 @@ void do_index_file (SWISH *sw, FileProp *fprop);
 
 void addentry (SWISH *, char*, int, int, int, int );
 
-void addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size );
-void addtofilelist(SWISH * sw, IndexFILE * indexf, FileProp *fprop,  struct file **newFileEntry);
+void addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *title, char *summary, int start );
 
 
 int getfilecount (IndexFILE *);
@@ -139,10 +138,6 @@ int getfilecount (IndexFILE *);
 int getNumberOfIgnoreLimitWords (SWISH *);
 void getPositionsFromIgnoreLimitWords(SWISH * sw);
 
-int getrank(SWISH *, int, int, int, int, int);
-void write_file_list(SWISH *, IndexFILE *);
-void write_sorted_index(SWISH *, IndexFILE *);
-void decompress(SWISH *, IndexFILE *);
 char *ruleparse(SWISH *, char *);
 void stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
 void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
@@ -151,8 +146,6 @@ void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry( struct file *, int *);
-struct file *readFileEntry(SWISH *, IndexFILE *,int);
 
 void computehashentry(ENTRY **,ENTRY *);
 
@@ -161,7 +154,6 @@ void sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
 
 int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position);
 
-void addtofwordtotals(IndexFILE *, int, int);
 void addsummarytofile(IndexFILE *, int, char *);
 
 void BuildSortedArrayOfWords(SWISH *,IndexFILE *);

@@ -312,6 +312,10 @@ void freeModule_Index (SWISH *sw)
       Mem_ZoneFree(&idx->perDocTmpZone);
 
 
+  if ( idx->entryArray )
+    efree( idx->entryArray);
+
+
   efree( idx->metaIDtable.array );
 
        /* free module data */
@@ -401,27 +405,12 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
 
     /* Decrease filenum */
     idx->filenum--;
-
-    indexf->filearray_cursize--;
-
     indexf->header.totalfiles--;
 
     /* Should be removed */
-    if(idx->filenum < 0 || indexf->filearray_cursize < 0 || indexf->header.totalfiles < 0) 
+    if(idx->filenum < 0 || indexf->header.totalfiles < 0) 
         progerr("Internal error in remove_last_file_from_list");
 
-    /* Free file data and properties */
-    /* Bill, take a look at this - This should be in addtofilelist */
-    /* I have to add this two lines to avoif freefileinfo crash */
-#ifdef PROPFILE
-    indexf->filearray[indexf->filearray_cursize]->propLocations = NULL;
-    indexf->filearray[indexf->filearray_cursize]->propSize = NULL;
-#endif        
-
-    freefileinfo(indexf->filearray[indexf->filearray_cursize]);
-    indexf->filearray[indexf->filearray_cursize] = NULL;
-
-    indexf->header.filetotalwordsarray[indexf->filearray_cursize] = 0;
 
     /* walk the hash list to remove words */
     for (i = 0; i < SEARCHHASHSIZE; i++)
@@ -474,17 +463,15 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
 
 /**************************************************************************
 *  Index just the file name (or the title) for NoContents files
-*
+*  $$$ this can be removed if libxml2 is used full time
 **************************************************************************/
-static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
+static int index_no_content(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
-    IndexFILE          *indexf = sw->indexlist;
     struct MOD_Index   *idx = sw->Index;
     char               *title = "";
     int                 n;
     int                 position = 1;       /* Position of word */
     int                 metaID = 1;         /* THIS ASSUMES that that's the default ID number */
-    int                 free_title = 0;
 
 
     /* Look for title if HTML document */
@@ -500,20 +487,18 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
 #ifdef HAVE_LIBXML2
     if (fprop->doctype == HTML2)
-        return parse_HTML( sw, fprop, buffer );
+        return parse_HTML( sw, fprop, fi, buffer );
 #endif
 
 
-    idx->filenum++;
-    addtofilelist(sw, indexf, fprop, NULL );
+    addCommonProperties( sw, fprop, fi, title, NULL, 0 );
 
-    addCommonProperties( sw, indexf, fprop->mtime, title, NULL, 0, fprop->fsize );
 
     n = indexstring( sw, *title == '\0' ? fprop->real_path : title , idx->filenum, IN_FILE, 1, &metaID, &position);
 
-    addtofwordtotals(indexf, idx->filenum, n);
 
-    if ( free_title )
+    /** ??? $$$ doesn't look right -- check this ***/
+    if ( *title != '\0' )
         efree( title );
  
     return n;
@@ -707,18 +692,21 @@ LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency
 
 void    do_index_file(SWISH * sw, FileProp * fprop)
 {
-    int     wordcount;
-    char   *rd_buffer = NULL;   /* complete file read into buffer */
-                               /* pointer to parsing routine */
-    int     (*countwords)(SWISH *,FileProp *,char *);
-    IndexFILE *indexf = sw->indexlist;
+    int     (*countwords)(SWISH *sw,FileProp *fprop, FileRec *fi, char *buffer);
+    IndexFILE   *indexf = sw->indexlist;
+    int         wordcount;
+    char        *rd_buffer = NULL;   /* complete file read into buffer */
     struct MOD_Index *idx = sw->Index;
-    char    strType[30];
-    ENTRY  *ep;
-    int     i;
+    char        strType[30];
+    int         i;
+    FileRec     fi;  /* place to hold doc properties */
+
+    memset( &fi, 0, sizeof( FileRec ) );
 
 
     wordcount = -1;
+
+
 
     /* skip file is the last_mod date is newer than the check date */
 
@@ -769,7 +757,10 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fprop->external_program++;
 
 
-    /* Replace the path for ReplaceRules */
+
+
+    /** Replace the path for ReplaceRules **/
+
     if ( sw->replaceRegexps )
     {
         int     matched = 0;
@@ -778,6 +769,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         
 
 
+    /** Read the buffer, if not a stream parser **/
 #ifdef HAVE_LIBXML2
     if ( fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
         rd_buffer = NULL;
@@ -787,7 +779,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
 
-    /* just for fun */
+    /* just for fun so we can show total bytes shown */
     sw->indexlist->total_bytes += fprop->fsize;
 
 
@@ -854,7 +846,19 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Make sure all meta flags are cleared (incase a parser aborts) */
     ClearInMetaFlags( &indexf->header );
 
-    wordcount = countwords(sw, fprop, rd_buffer);
+
+
+
+    /* Now bump the file counter  */
+    idx->filenum++;
+    indexf->header.totalfiles++; /* why ??? is this needed */
+    fi.filenum = idx->filenum;
+
+    /** PARSE **/
+    wordcount = countwords(sw, fprop, &fi, rd_buffer);
+
+
+
 
 
     if (!fprop->external_program)  /* external_program is not set if a filter is in use */
@@ -906,50 +910,45 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
     if ( DEBUG_MASK & DEBUG_PROPERTIES )
+        dump_file_properties( indexf, &fi );
+
+
+    // ??? $$$ !!!don't forget to save wordcount either as a property or maybe in the prop index -- see where we need it first
+    /* write properties to disk, and release docprop array (and the prop index array) */
+    WritePropertiesToDisk( sw , &fi );
+
+
+    /* Compress the entries */
     {
-        IndexFILE *indexf = sw->indexlist;
-        struct file *fi = indexf->filearray[ indexf->filearray_cursize -1 ];
+        ENTRY       *ep;
 
-        printf("\nProperties for file '%s':\n", fprop->real_path );
-        dump_file_properties( indexf, fi );
-    }
-
-#ifdef PROPFILE
-    /* write properties to disk, and release memory */
-    WritePropertiesToDisk( sw , indexf->filearray_cursize );
-#endif
-
-
-    /* Swap file info if it set */
-    if(idx->swap_filedata)
-        SwapFileData(sw, indexf->filearray[idx->filenum-1]);
-
-
-    /* walk the hash list, and compress entries */
-    for (i = 0; i < SEARCHHASHSIZE; i++)
-    {
-        if (idx->hashentriesdirty[i])
+        /* walk the hash list, and compress entries */
+        for (i = 0; i < SEARCHHASHSIZE; i++)
         {
-            idx->hashentriesdirty[i] = 0;
-            for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                CompressCurrentLocEntry(sw, indexf, ep);
+            if (idx->hashentriesdirty[i])
+            {
+                idx->hashentriesdirty[i] = 0;
+                for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                    CompressCurrentLocEntry(sw, indexf, ep);
+            }
+        }
+
+        /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
+        if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
+        {
+            for (i = 0; i < SEARCHHASHSIZE; i++)
+                for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                    coalesce_word_locations(sw, indexf, ep);
+            /* Make zone available for reuse */
+            Mem_ZoneReset(idx->currentChunkLocZone);
+            idx->freeLocMemChain = NULL;
+
         }
     }
 
-    /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
-    if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
-    {
-        for (i = 0; i < SEARCHHASHSIZE; i++)
-            for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                coalesce_word_locations(sw, indexf, ep);
-        /* Make zone available for reuse */
-        Mem_ZoneReset(idx->currentChunkLocZone);
-        idx->freeLocMemChain = NULL;
 
-    }
-
-     /* Make zone available for reuse */
-     Mem_ZoneReset(idx->perDocTmpZone);
+    /* Make zone available for reuse */
+    Mem_ZoneReset(idx->perDocTmpZone);
 
 
     return;
@@ -1117,10 +1116,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 *
 *   Call with:
 *       *SWISH      - need for indexing words
-*       *IndexFILE  - to get at the cached common metaEntries
-*
-*       mtime       - last modified date
-*       *title      - title of document
+*       *fprop
+*       *fi
 *       *summary    - document summary (why here?)
 *       start       - start position of a sub-document
 *       size        - size in bytes of document
@@ -1134,49 +1131,75 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 *
 ********************************************************************/
 
-void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size )
+void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *title, char *summary, int start )
 {
     struct metaEntry *q;
-    docProperties   **properties;
+    docProperties   **properties = &fi->docProperties;
     unsigned long   tmp;
     int             metaID;
+    INDEXDATAHEADER *header = &sw->indexlist->header;
+    char            *filename = fprop->real_path;  /* should always have a path */
+    int             filenum = fi->filenum;
+    
 
 
-    properties = &indexf->filearray[indexf->filearray_cursize -1 ]->docProperties;
+    /* Check if filename is internal swish metadata -- should be! */
+
+    if ((q = getPropNameByName(header, AUTOPROPERTY_DOCPATH)))
+        addDocProperty( properties, q, filename, strlen(filename),0);
+
+
+    /* Perhaps we want it to be indexed ... */
+    if ((q = getMetaNameByName(header, AUTOPROPERTY_DOCPATH)))
+    {
+        int     metaID,
+                positionMeta;
+
+        metaID = q->metaID;
+        positionMeta = 1;
+        indexstring(sw, filename, filenum, IN_FILE, 1, &metaID, &positionMeta);
+    }
+
+
+    /* This allows extracting out parts of a path and indexing as a separate meta name */
+    if ( sw->pathExtractList )
+        index_path_parts( sw, fprop->orig_path, sw->pathExtractList );
+        
+
 
     /* Check if title is internal swish metadata */
     if ( title )
     {
-        if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_TITLE)))
+        if ( (q = getPropNameByName(header, AUTOPROPERTY_TITLE)))
             addDocProperty(properties, q, title, strlen(title),0);
 
 
          /* Perhaps we want it to be indexed ... */
-        if ( (q = getMetaNameByName(&indexf->header, AUTOPROPERTY_TITLE)))
+        if ( (q = getMetaNameByName(header, AUTOPROPERTY_TITLE)))
         {
             int     positionMeta;
 
             metaID = q->metaID;
             positionMeta = 1;
-            indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+            indexstring(sw, title, filenum, IN_FILE, 1, &metaID, &positionMeta);
         }
     }
 
 
     if ( summary )
     {
-        if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+        if ( (q = getPropNameByName(header, AUTOPROPERTY_SUMMARY)))
             addDocProperty(properties, q, summary, strlen(summary),0);
 
         
-        if ( (q = getMetaNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+        if ( (q = getMetaNameByName(header, AUTOPROPERTY_SUMMARY)))
         {
             int     metaID,
                     positionMeta;
 
             metaID = q->metaID;
             positionMeta = 1;
-            indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+            indexstring(sw, summary, filenum, IN_FILE, 1, &metaID, &positionMeta);
         }
     }
 
@@ -1184,22 +1207,22 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
 
     /* Currently don't allow indexing by date or size or position */
 
-    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_LASTMODIFIED)))
+    if ( (q = getPropNameByName(header, AUTOPROPERTY_LASTMODIFIED)))
     {
-        tmp = (unsigned long) mtime;
+        tmp = (unsigned long) fprop->mtime;
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
     }
 
-    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCSIZE)))
+    if ( (q = getPropNameByName(header, AUTOPROPERTY_DOCSIZE)))
     {
-        tmp = (unsigned long) size;
+        tmp = (unsigned long) fprop->fsize;
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
     }
 
 
-    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_STARTPOS)))
+    if ( (q = getPropNameByName(header, AUTOPROPERTY_STARTPOS)))
     {
         tmp = (unsigned long) start;
         tmp = PACKLONG(tmp);      /* make it portable */
@@ -1208,53 +1231,7 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
 
 }
 
-/*******************************************************************
-*   Adds a file name to a struct file entry, and also
-*   optionally adds it to the index and/or as a real property
-*
-*   File name is converted with ReplaceRules
-*
-*   Call with:
-*       *SWISH - for ReplaceRules
-*       *struct file
-*       *filename
-*
-*   Returns:
-*       void
-*
-*   ToDo:
-*       still saves hash value and file name, which is not currently used
-*       and a waste of space
-*
-********************************************************************/
 
-static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, char *filename )        
-{
-    struct metaEntry *q;
-
-    if ( !filename )  // used for merge, really -- this adding of the pathname here is outdated
-        return;
-
-    /* Check if filename is internal swish metadata -- should be! */
-
-    if ((q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
-        addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
-
-
-    /* Perhaps we want it to be indexed ... */
-    if ((q = getMetaNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
-    {
-        int     metaID,
-                positionMeta;
-
-        metaID = q->metaID;
-        positionMeta = 1;
-        indexstring(sw, filename, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-    }
-
-
-
-}
 /*******************************************************************
 *   extracts out parts from a path name and indexes that part
 *
@@ -1278,82 +1255,6 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
         list = list->next;
     }
 }
-
-
-/*******************************************************************
-*   Adds a file to the file list
-*   Creates or expands file list, as needed
-*
-*   File name is converted with ReplaceRules
-*
-*   Call with:
-*       *SWISH
-*       *IndexFILE
-*       *filename
-*       **struct file - to return the new file entry created
-*
-*   Returns:
-*       void
-*
-*
-********************************************************************/
-
-void    addtofilelist(SWISH * sw, IndexFILE * indexf, FileProp *fprop,  struct file **newFileEntry)
-{
-    struct file *newnode;
-    char        *filename = fprop->real_path;
-
-    /* Create the file array */
-
-    if (!indexf->filearray || !indexf->filearray_maxsize)
-    {
-        indexf->filearray = (struct file **) emalloc((indexf->filearray_maxsize = BIGHASHSIZE) * sizeof(struct file *));
-        indexf->header.filetotalwordsarray = (int *) emalloc(indexf->filearray_maxsize * sizeof(int));
-        indexf->filearray_cursize = 0;
-
-    }
-
-    /* Extend the file array, if needed */
-
-    if (indexf->filearray_maxsize == indexf->filearray_cursize)
-    {
-        indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
-        indexf->header.filetotalwordsarray = (int *) erealloc(indexf->header.filetotalwordsarray, indexf->filearray_maxsize * sizeof(long));
-    }
-
-
-    /* Create a new file entry */
-
-    newnode = (struct file *) emalloc(sizeof(struct file));
-
-    if (newFileEntry != NULL)
-        *newFileEntry = newnode; /* pass object pointer up to caller */
-
-
-    /* Init structure elements */
-    newnode->docProperties   = NULL;
-    newnode->currentSortProp = NULL;
-    newnode->filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
-
-
-    /* And save it in the file array */
-
-    indexf->filearray[indexf->filearray_cursize++] = newnode;
-    indexf->header.totalfiles++;
-
-    /* path name is special and is always required.  Save it. */
-
-    save_pathname( sw, indexf, newnode, filename );
-
-
-    /* This allows extracting out parts of a path and indexing as a separate meta name */
-    if ( sw->pathExtractList )
-        index_path_parts( sw, fprop->orig_path, sw->pathExtractList );
-        
-
-}
-
-
 
 
 /* Just goes through the master list of files and
@@ -1698,20 +1599,6 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
 }
 
 
-typedef struct {
-    long    mask;
-    double    rank;
-} RankFactor;
-
-static RankFactor ranks[] = {
-    {IN_TITLE,        RANK_TITLE},
-    {IN_HEADER,        RANK_HEADER},
-    {IN_META,        RANK_META},
-    {IN_COMMENTS,    RANK_COMMENTS},
-    {IN_EMPHASIZED,    RANK_EMPHASIZED}
-};
-
-#define numRanks (sizeof(ranks)/sizeof(ranks[0]))
 
 /*
 ** This is an all new ranking algorithm. I can't say it is based on anything,
@@ -1738,37 +1625,6 @@ static RankFactor ranks[] = {
 **        Ignore total word count when ranking (config file parameter)
 */
 
-int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCount)
-{
-    double    factor;
-    double  rank;
-    double    reduction;
-    int        i;
-
-    factor = 1.0;
-
-    /* add up the multiplier factor based on where the word occurs */
-    for (i = 0; i < numRanks; i++)
-        if (ranks[i].mask & structure)
-            factor += ranks[i].rank;
-
-    rank = log((double)freq) + 10.0;
-
-    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
-    if (!ignoreTotalWordCount)
-    {
-        if (words < 10) words = 10;
-        reduction = log10((double)words);
-        if (reduction > 5.0) reduction = 5.0;
-        rank /= reduction;
-    }
-
-    /* multiply by the weighting factor, and scale to be sure we don't loose
-       precision when converted to an integer. The rank will be normalized later */
-    rank = rank * factor * 100.0 + 0.5;
-
-    return (int)rank;
-}
 
 
 int     entrystructcmp(const void *e1, const void *e2)
@@ -2042,197 +1898,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 }
 
 
-/* Oct 1, 2001 - removed filename and lookup_path from index, now use properties only */
-/* It's assume that there will ALWAYS be at least one property for a file. */
-
-
-unsigned char *buildFileEntry(struct file *filep, int *sz_buffer)
-{
-    unsigned char  *buf;
-#ifndef PROPFILE    
-    int             len;
-    docProperties **docProperties = &filep->docProperties;
-
-    buf = storeDocProperties(*docProperties, &len );
-    buf = erealloc( buf, len + 1);
-    buf[len] = '\0';
-    *sz_buffer = len+1;
-    return( buf );
-
-#else
-
-    buf = PackPropLocations( filep, sz_buffer );
-    return ( buf );
-
-#endif
-
-}
-
-struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
-{
-    int             total_len;
-    unsigned char   *buffer,
-                    *p;
-    struct file     *fi;
-
-    fi = indexf->filearray[filenum - 1];
-    if (fi)
-        return fi;              /* Read it previously */
-
-    fi = (struct file *) emalloc(sizeof(struct file));
-
-    fi->docProperties = NULL;
-
-    indexf->filearray[filenum - 1] = fi;
-
-
-
-    /* Removed due to problems with patents
-    if (indexf->header.applyFileInfoCompression)
-    {
-        buffer = p = zfread(indexf->dict, &total_len, fp);
-    }
-    else
-    {
-    */
-        DB_ReadFile(sw, filenum, &buffer, &total_len, indexf->DB);
-        p = buffer;
-    /* } */
-
-
-
-    fi->filenum = filenum - 1;
-
-
-#ifdef PROPFILE
-    p = UnPackPropLocations( fi, p );
-#else
-    /* read the document properties section  */
-    p = fetchDocProperties(fi, p);
-#endif
-
-
-
-    efree(buffer);
-    return fi;
-}
-
-/* Writes the list of files, titles, and sizes into the DB index
-Also sorts properties
-*/
-
-
-
-void    write_file_list(SWISH * sw, IndexFILE * indexf)
-{
-    int     i;
-    struct file *filep;
-    unsigned char *buffer;
-    int     sz_buffer;
-    struct  MOD_Index *idx = sw->Index;
-
-    /* Deflate studd removed ...
-    struct buffer_pool *bp = NULL;
-    */
-
-    DB_InitWriteFiles(sw, indexf->DB);
-
-    for (i = 0; i < indexf->filearray_cursize; i++)
-    {
-        if (idx->swap_filedata)
-        {
-            filep = unSwapFileData(sw);
-            filep->filenum = i + 1;
-            indexf->filearray[i] = filep;
-        }
-        else
-            filep = indexf->filearray[i];
-
-        buffer = buildFileEntry(filep, &sz_buffer);
-
-
-        /* Deflate stuff removed due to patents 
-        if (indexf->header.applyFileInfoCompression)
-        {
-            bp = zfwrite(bp, buffer, sz_buffer, &indexf->fileoffsetarray[i], fp);
-        }
-        else
-        {
-        */
-            DB_WriteFile(sw, i, buffer, sz_buffer, indexf->DB);
-        /* } */
-        efree(buffer);
-    }
-
-
-    /* Deflate stuff removed due to patents 
-
-    if (indexf->header.applyFileInfoCompression)
-    {
-        zfflush(bp, fp);
-        printdeflatedictionary(bp, indexf);
-    } */
-
-
-
-    /* Sort properties -> Better search performance */
-
-#ifdef PROPFILE
-    /* First reopen the property file in read only mode for seek speed */
-    DB_Reopen_PropertiesForRead( sw, indexf->DB  );
-#endif    
-
-    sortFileProperties(sw,indexf);
-
-
-    /* Free memory */
-    for (i = 0; i < indexf->filearray_cursize; i++)
-    {
-        freefileinfo(indexf->filearray[i]);
-        indexf->filearray[i] = NULL;
-    }
-
-    DB_EndWriteFiles(sw, indexf->DB);
-}
-
-
-/* Writes the sorted indexes to DB index */
-void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
-{
-    int i,j,val;
-    struct metaEntry *m;
-    unsigned char  *CompressedSortFileProps , *s;
-    
-    CompressedSortFileProps = (unsigned char *)emalloc(5 * indexf->filearray_cursize);
-
-    DB_InitWriteSortedIndex(sw, indexf->DB);
-
-    /* Execute for each property */
-
-    for ( j = 0; j < indexf->header.metaCounter; j++)
-    {
-        m = getPropNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
-
-        if (m && m->sorted_data)
-        {
-            s = CompressedSortFileProps;
-            for(i=0;i<indexf->filearray_cursize;i++)
-            {
-                val = m->sorted_data[i];
-                s = compress3(val,s);
-            }
-
-            if (sw->verbose)
-                printf("Writing sorted index for '%s'\n", m->metaName );
-
-
-            DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
-        }
-    }
-
-    efree(CompressedSortFileProps);
-    DB_EndWriteSortedIndex(sw, indexf->DB);
-}
 
 
 
@@ -2591,15 +2256,6 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     return wordcount;
 }
 
-
-
-void    addtofwordtotals(IndexFILE * indexf, int filenum, int ftotalwords)
-{
-    if (filenum > indexf->filearray_cursize)
-        progerr("Internal error in addtofwordtotals");
-    else
-        indexf->header.filetotalwordsarray[filenum - 1] = ftotalwords;
-}
 
 /* Coalesce word current word location into the linked list */
 void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesced, int metaID)

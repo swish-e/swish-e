@@ -30,6 +30,7 @@
 struct swline *addswline(struct swline *rp, char *line)
 {
 struct swline *newnode;
+
 	newnode = (struct swline *) emalloc(sizeof(struct swline));
 	newnode->line = (char *) estrdup(line);
 	newnode->next = NULL;
@@ -67,22 +68,12 @@ struct swline *newnode;
 IndexFILE *addindexfile(IndexFILE *rp, char *line)
 {
     IndexFILE *newnode;
-    int i;
 
 	newnode = (IndexFILE *) emalloc(sizeof(IndexFILE));
+	memset( newnode, 0, sizeof(IndexFILE) );
+
 	newnode->line = (char *) estrdup(line);
-	newnode->filearray = NULL;
-	newnode->filearray_cursize = 0;
-        newnode->filearray_maxsize = 0;
-        newnode->total_bytes = 0;
-	newnode->DB=NULL;
 
-
-	for (i=0; i<256; i++) newnode->keywords[i] = NULL;
-
-		/* Props IDs when searching */
-	newnode->propIDToDisplay=NULL;
-	newnode->propIDToSort=NULL;
 
 	init_header(&newnode->header);
 
@@ -131,8 +122,6 @@ IndexFILE *tmplist2;
 
 void init_header(INDEXDATAHEADER *header)
 {
-	/* start everything at 0 or NULL and set what we want */
-	memset(header, 0, sizeof(INDEXDATAHEADER));
 
 	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
 
@@ -197,6 +186,15 @@ void free_header(INDEXDATAHEADER *header)
 	if(header->lenindexedon) efree(header->indexedon);		
 	if(header->lensavedasheader) efree(header->savedasheader);	
 	if(header->lenbumpposchars) efree(header->bumpposchars);
+
+
+    /* ??? temporary until metas and props are seperated */
+    if ( header->propIDX_to_metaID )
+        efree( header->propIDX_to_metaID );
+
+    if ( header->metaID_to_PropIDX )
+        efree( header->metaID_to_PropIDX );
+
 }
 
 

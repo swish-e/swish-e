@@ -987,7 +987,7 @@ typedef union
 } PropKEY;
 
 
-void    DB_WriteProperty_db( struct file *fi, int propID, char *buffer, int datalen, void *db )
+void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen, void *db )
 {
     DB     *dbp;
     struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -1040,7 +1040,7 @@ void    DB_WriteProperty_db( struct file *fi, int propID, char *buffer, int data
 }
 
 
-char  * DB_ReadProperty_db( struct file *fi, int propID, void *db )
+char  * DB_ReadProperty_db( FileRec *fi, int propID, void *db )
 {
     DB     *dbp;
     struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;

@@ -134,7 +134,8 @@ $Id$
 #include "proplimit.h"
 
 
-
+/*** ??? $$$ fix this ****/
+#define TOTAL_WORDS_FIX 1;
 /* 
   -- init structures for this module
 */
@@ -288,7 +289,6 @@ int     SwishAttach(SWISH * sw, int printflag)
 /* 06/00 Jose Ruiz
 ** Added to handle several index file headers */
     IndexFILE *tmplist;
-    int i;
  
     indexlist = sw->indexlist;
     sw->TotalWords = 0;
@@ -307,16 +307,6 @@ int     SwishAttach(SWISH * sw, int printflag)
 
         read_header(sw, &tmplist->header, tmplist->DB);
 
-        tmplist->filearray_cursize = tmplist->header.totalfiles;
-        tmplist->filearray_maxsize = tmplist->header.totalfiles;
-        tmplist->filearray = emalloc(tmplist->header.totalfiles * sizeof(struct file *));
-        for(i = 0; i < tmplist->header.totalfiles; i++)
-            tmplist->filearray[i] = NULL;
-
-        /* removed deflate stuff
-        if (tmplist->header.applyFileInfoCompression)
-            readdeflatepatterns(tmplist);
-            */
 
         sw->TotalWords += tmplist->header.totalwords;
         sw->TotalFiles += tmplist->header.totalfiles;
@@ -384,6 +374,8 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     indexlist = sw->indexlist;
     sw->Search->db_results = NULL;
+
+    
     j = 0;
     searchwordlist = NULL;
     metaID = 1;
@@ -399,12 +391,14 @@ int     search_2(SWISH * sw, char *words, int structure)
     if ((rc = initSortResultProperties(sw)))
         return rc;
 
+
     /* This returns false when no files found within the limit */
     if ( !Prepare_PropLookup( sw ) )
         return 0;
 
     while (indexlist != NULL)
     {
+
         tmpwords = estrdup(words); /* copy of the string  (2001-03-13 rasc) */
 
         if (searchwordlist)
@@ -484,11 +478,8 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         /* Allocate memory for the result list structure */
         db_results = (struct DB_RESULTS *) emalloc(sizeof(struct DB_RESULTS));
+        memset( db_results, 0, sizeof(struct DB_RESULTS));
 
-        db_results->currentresult = NULL;
-        db_results->sortresultlist = NULL;
-        db_results->resultlist = NULL;
-        db_results->next = NULL;
 
         if (searchwordlist)
         {
@@ -496,8 +487,9 @@ int     search_2(SWISH * sw, char *words, int structure)
             db_results->resultlist = (RESULT *) parseterm(sw, 0, metaID, indexlist, &tmplist2);
         }
 
+
         /* add db_results to the list of results */
-        if (!sw->Search->db_results)
+        if ( !sw->Search->db_results)
             sw->Search->db_results = db_results;
         else
         {
@@ -1004,6 +996,56 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, in
     return returnrp;
 }
 
+
+typedef struct {
+    long    mask;
+    double    rank;
+} RankFactor;
+
+static RankFactor ranks[] = {
+    {IN_TITLE,        RANK_TITLE},
+    {IN_HEADER,        RANK_HEADER},
+    {IN_META,        RANK_META},
+    {IN_COMMENTS,    RANK_COMMENTS},
+    {IN_EMPHASIZED,    RANK_EMPHASIZED}
+};
+
+#define numRanks (sizeof(ranks)/sizeof(ranks[0]))
+
+
+static int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCount)
+{
+    double    factor;
+    double  rank;
+    double    reduction;
+    int        i;
+
+    factor = 1.0;
+
+    /* add up the multiplier factor based on where the word occurs */
+    for (i = 0; i < numRanks; i++)
+        if (ranks[i].mask & structure)
+            factor += ranks[i].rank;
+
+    rank = log((double)freq) + 10.0;
+
+    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
+    if (!ignoreTotalWordCount)
+    {
+        if (words < 10) words = 10;
+        reduction = log10((double)words);
+        if (reduction > 5.0) reduction = 5.0;
+        rank /= reduction;
+    }
+
+    /* multiply by the weighting factor, and scale to be sure we don't loose
+       precision when converted to an integer. The rank will be normalized later */
+    rank = rank * factor * 100.0 + 0.5;
+
+    return (int)rank;
+}
+
+
 /* Finds a word and returns its corresponding file and rank information list.
 ** If not found, NULL is returned.
 */
@@ -1136,10 +1178,17 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                 position = (int *) emalloc(frequency * sizeof(int));
                 uncompress_location_positions(&s,flag,frequency,position);
 
-                rp =
-                    (RESULT *) addtoresultlist(rp, filenum,
-                                               getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
-                                                       indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
+                rp = (RESULT *) addtoresultlist(
+                    rp, filenum,
+                    getrank(
+                        sw,
+                        frequency,
+                        tfrequency,
+                        1, // ??? Don't forget to deal with totalwords
+                        structure,
+                        indexf->header.ignoreTotalWordCountWhenRanking
+                    ),
+                    structure, frequency, position, indexf, sw);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1645,25 +1694,22 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
 {
     RESULT *newnode;
 
+//$$$??? THIS IS THE WRONG PLACE because it's not the final results list -- it's just a word hit.
+//$$$??? and and or and not will change the list.
 
     if ( LimitByProperty( sw, indexf, filenum ) )
         return rp;
 
     newnode = (RESULT *) emalloc(sizeof(RESULT));
-    newnode->filenum = filenum;
+    memset( newnode, 0, sizeof(RESULT));
+    newnode->fi.filenum = newnode->filenum = filenum;
 
     newnode->rank = rank;
     newnode->structure = structure;
     newnode->frequency = frequency;
     if (frequency && position)
         newnode->position = position;
-    else
-        newnode->position = NULL;
-    newnode->next = NULL;
-    newnode->PropSort = NULL;
-    newnode->iPropSort = NULL;
     newnode->indexf = indexf;
-    newnode->read = 0;
     newnode->sw = (struct SWISH *) sw;
 
     if (rp == NULL)
@@ -1720,19 +1766,18 @@ RESULT *SwishNext(SWISH * sw)
             /* 02/2001 jmruiz - Read file data here */
             /* Doing it here we get better performance if maxhits specified
                and not all the results data (only read maxhits) */
-            res = getproperties(res);
+            //res = getproperties(res);
         }
     }
     else
     {
-        /* We have more than one index file */
+        /* We have more than one index file - can't use pre-sorted index */
         /* Get the lower value */
         db_results_winner = sw->Search->db_results;
         if ((res = db_results_winner->currentresult))
         {
-            res = getproperties(res);
-            if (!res->PropSort)
-                res->PropSort = getResultSortProperties(res);
+            //res = getproperties(res);
+            res->PropSort = getResultSortProperties(res);
         }
 
         for (db_results = sw->Search->db_results->next; db_results; db_results = db_results->next)
@@ -1741,9 +1786,8 @@ RESULT *SwishNext(SWISH * sw)
                 continue;
             else
             {
-                res2 = getproperties(res2);
-                if (!res2->PropSort)
-                    res2->PropSort = getResultSortProperties(res2);
+                //res2 = getproperties(res2);
+                res2->PropSort = getResultSortProperties(res2);
             }
             if (!res)
             {
@@ -1884,20 +1928,6 @@ RESULT *sortresultsbyfilenum(RESULT * rp)
     return rp;
 }
 
-RESULT *getproperties(RESULT * rp)
-{
-    IndexFILE *indexf = rp->indexf;
-    SWISH  *sw = (SWISH *) rp->sw;
-    struct file *fileInfo;
-
-    if (rp->read)
-        return rp;              /* Read it before */
-
-    fileInfo = readFileEntry(sw, indexf, rp->filenum);
-    rp->read = 1;
-
-    return rp;
-}
 
 /* 06/00 Jose Ruiz
 ** returns all results in r1 that not contains r2 */
@@ -1972,51 +2002,7 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     return newnode;
 }
 
-void    freefileoffsets(SWISH * sw)
-{
-    int     i;
-    IndexFILE *tmp = sw->indexlist;
 
-
-    while (tmp)
-    {
-        if (tmp->filearray)
-        {
-            for (i = 0; i < tmp->filearray_cursize; i++)
-            {
-                if (tmp->filearray[i])
-                    freefileinfo(tmp->filearray[i]);
-            }
-            efree(tmp->filearray);
-            tmp->filearray = NULL;
-            tmp->filearray_maxsize = tmp->filearray_cursize = 0;
-        }
-        if (tmp->header.filetotalwordsarray)
-        {
-            efree(tmp->header.filetotalwordsarray);
-            tmp->header.filetotalwordsarray = NULL;
-        }
-        tmp = tmp->next;
-    }
-}
-
-void    freefileinfo(struct file *f)
-{
-    if ( !f )
-        return;
-
-    if (f->docProperties)
-        freeDocProperties(f->docProperties);
-        
-#ifdef PROPFILE
-    if (f->propLocations)
-        efree( f->propLocations );
-
-    if (f->propSize)
-        efree( f->propSize );
-#endif        
-    efree(f);
-}
 
 /* 02/2001 Jose Ruiz */
 /* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */

@@ -48,6 +48,8 @@ $Id$
 #include "search.h"
 #include "search_alt.h"
 #include "parse_conffile.h"
+#include "merge.h"   /* Argh, needed for docprop.h */
+#include "docprop.h"
 /* removed stuff 
 #include "deflate.h"
 */
@@ -775,6 +777,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     sd->field = estrdup(sl->word[i] + 1);
                     i++;
                 }
+
                 if (i < sl->n && isnumstring(sl->word[i]))
                 {
                     sd->size = atoi(sl->word[i]);
@@ -787,7 +790,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     sd->next = sw->storedescription;
                 else
                     sd->next = NULL;
+
                 sw->storedescription = sd;
+
+                /* Make sure there's a property name */
+                if ( !getPropNameByName( &indexf->header, AUTOPROPERTY_SUMMARY) )
+                    addMetaEntry(&indexf->header, AUTOPROPERTY_SUMMARY, META_PROP, 0);
             }
             else
                 progerr("%s: requires two or three values", w0);

@@ -157,7 +157,7 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, SWISH *sw, c
 
 
 /* Parses the Meta tag */
-static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry,
+static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, FileRec *thisFileEntry,
                          int *position, char *filename)
 {
     int     metaName;
@@ -572,7 +572,7 @@ int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int meta
 ** to the appropriate structures.
 */
 
-int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
+int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 {
     int     ftotalwords;
     int    *metaID;
@@ -584,7 +584,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
            *tag,
            *endtag;
     int     structure;
-    struct file *thisFileEntry = NULL;
+    FileRec *thisFileEntry = fi;
     struct metaEntry *metaNameEntry;
     IndexFILE *indexf = sw->indexlist;
     struct MOD_Index *idx = sw->Index;
@@ -596,14 +596,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     if (!isoktitle(sw, title))
         return -2;
 
-    idx->filenum++;
-
 
     if (fprop->stordesc)
         summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
 
-    addtofilelist(sw, indexf, fprop, &thisFileEntry);
-    addCommonProperties(sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize);
+    addCommonProperties( sw, fprop, fi, title, summary, 0 );
 
     /* Init meta info */
     metaID = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,(metaIDlen = 16) * sizeof(int));
@@ -753,8 +750,5 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
             p = NULL;
         }
     }
-
-    addtofwordtotals(indexf, idx->filenum, ftotalwords);
-
     return ftotalwords;
 }

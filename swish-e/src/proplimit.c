@@ -58,21 +58,13 @@ $Id$
 static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
 {
     propEntry *d;
-    struct file *fi;
-
-#ifdef PROPFILE    
-    return  ReadSingleDocPropertiesFromDisk(sw, indexf, filenum, metaID, MAX_SORT_STRING_LEN );
-#endif    
-
-    /* this will read all doc data from the index file or from cache */
-
-    if ( !(fi = readFileEntry(sw, indexf, filenum)) )
-        progerr("Failed to read file entry for file '%d'", filenum );
+    FileRec fi;
+    memset(&fi, 0, sizeof( FileRec ));
+    fi.filenum = filenum;
     
-	if(metaID < fi->docProperties->n)
-		d = fi->docProperties->propEntry[metaID];
-	else
-		d = NULL;
+
+    d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, metaID, MAX_SORT_STRING_LEN );
+    freefileinfo(&fi);
 
     return d;
 }
@@ -100,9 +92,7 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID
     else
         printf("File %d does not have a property for metaID %d", filenum, metaID );
 
-#ifdef PROPFILE
     freeProperty( d );
-#endif    
 }
 #endif
     
@@ -275,9 +265,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 
 
     cmp_value = Compare_Properties( meta_entry, key, fileprop  );
-#ifdef PROPFILE    
     freeProperty( fileprop );
-#endif
     return cmp_value;
     
 }
@@ -514,17 +502,17 @@ int sortbyfile(const void *s1, const void *s2)
 *
 ********************************************************************/
 
-static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *meta_entry )
+static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry )
 {
     LOOKUP_TABLE *sort_array;
     int      i;
-    int     size = indexf->filearray_cursize;
+    int     size = indexf->header.totalfiles;
     int     some_found;
 
     /* Now do the work of creating the lookup table */
 
     /* Create memory  -- probably could do this once and use it over and over */
-    sort_array = (LOOKUP_TABLE *) emalloc( indexf->filearray_cursize * sizeof(LOOKUP_TABLE) );
+    sort_array = (LOOKUP_TABLE *) emalloc( size * sizeof(LOOKUP_TABLE) );
 
     /* copy in the data to the sort array */
     for (i = 0; i < size; i++)
@@ -801,9 +789,7 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
                )
                 limit = 1;
 
-#ifdef PROPFILE    
             freeProperty( prop );
-#endif
             /* If limit by this property, then return to limit right away */
             if ( limit )
                 return 1;

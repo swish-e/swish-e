@@ -190,10 +190,6 @@ int     main(int argc, char **argv)
 
     free_command_line_params( params );
 
-
-    if (sw->dirlist)
-        freeswline(sw->dirlist);
-
     SwishClose(sw);
 
     Mem_Summary("At end of program", 1);
@@ -1012,6 +1008,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     int     totalfiles = 0;
     double  elapsedStart = TimeElapsed();
     double  cpuStart = TimeCPU();
+    struct swline *tmpswline;
 
     if ( params->index_read_only )
         progerr("Sorry, this program is in readonly mode");
@@ -1045,34 +1042,29 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     sw->Index->swap_filedata = params->swap_mode;
 
 
-#ifdef PROPFILE
     /* Create an empty File - before indexing to make sure can write to the index */
     sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
-#endif
 
 
 
     /* This should be printed by the module that's reading the source */
     printf("Indexing Data Source: \"%s\"\n", IndexingDataSource->IndexingDataSourceName);
 
-    while (sw->dirlist != NULL)
+    tmpswline = sw->dirlist;
+    while (tmpswline != NULL)
     {
         if (sw->verbose)
         {
             printf("Indexing \"%s\"\n", sw->dirlist->line);
             fflush(stdout);
         }
-        indexpath(sw, sw->dirlist->line);
-        sw->dirlist = sw->dirlist->next;
+        indexpath(sw, tmpswline->line);
+        tmpswline = tmpswline->next;
     }
 
 
     Mem_Summary("After indexing", 0);
 
-#ifndef PROPFILE
-    /* Create an empty File */
-    sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
-#endif
 
     if (sw->verbose > 1)
         putchar('\n');
@@ -1150,14 +1142,16 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
         if (sw->verbose)
-        {
             printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
-            printf("Writing file list ...\n");
-        }
 
-        write_file_list(sw, sw->indexlist);
 
-        write_sorted_index(sw, sw->indexlist);
+        /* Sort properties -> Better search performance */
+
+        /* First reopen the property file in read only mode for seek speed */
+        DB_Reopen_PropertiesForRead( sw, sw->indexlist->DB  );
+
+        /* This does it all */
+        sortFileProperties(sw,sw->indexlist);
     }
 
 

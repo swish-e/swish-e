@@ -76,6 +76,15 @@ long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *l
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
+int     DB_InitWriteSortedIndex(SWISH *sw, void *DB );
+int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB);
+int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
+ 
+int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
+int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
+int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
+
+
 int     DB_InitWriteFiles(SWISH *sw, void *DB);
 int     DB_WriteFile(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
 int     DB_EndWriteFiles(SWISH *sw, void *DB);
@@ -84,20 +93,11 @@ int     DB_InitReadFiles(SWISH *sw, void *DB);
 int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
 int     DB_EndReadFiles(SWISH *sw, void *DB);
 
-
-int     DB_InitWriteSortedIndex(SWISH *sw, void *DB);
-int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB);
-int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
- 
-int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
-int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
-int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
-
-#ifdef PROPFILE
-void    DB_WriteProperty(SWISH *sw, struct file *fi, int propID, char *buffer, int datalen, void *DB );
-char   *DB_ReadProperty(SWISH *sw, struct file *fi, int propID, void *DB );
-void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB );
-#endif
+void    DB_WriteProperty( SWISH *sw, FileRec *fi, int propIDX, char *buffer, int datalen, void *db);
+void    DB_WritePropPositions(SWISH *sw, FileRec *fi, void *db);
+void    DB_ReadPropPositions(SWISH *sw, FileRec *fi, void *db);
+char   *DB_ReadProperty(SWISH *sw, FileRec *fi, int propID, void *db);
+void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB);
 
 
 
@@ -149,11 +149,11 @@ struct MOD_DB
     int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 
-#if PROPFILE
-    void   (*DB_WriteProperty) (struct file *fi, int propID, char *buffer, int datalen, void *DB );
-    char * (*DB_ReadProperty)  (struct file *fi, int propID, void *DB );
-    void   (*DB_Reopen_PropertiesForRead) (void *DB);
-#endif    
+    void   (*DB_WriteProperty)( SWISH *sw, FileRec *fi, int propID, char *buffer, int datalen, void *db);
+    void   (*DB_WritePropPositions)(SWISH *sw, FileRec *fi, void *db);
+    void   (*DB_ReadPropPositions)(SWISH *sw, FileRec *fi, void *db);
+    char  *(*DB_ReadProperty)(SWISH *sw, FileRec *fi, int propID, void *db);
+    void   (*DB_Reopen_PropertiesForRead)(void *DB);
 
 };
 

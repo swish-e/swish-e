@@ -45,12 +45,11 @@ struct Handle_DBNative
        /* File Offsets to words */
    long offsets[MAXCHARS];
    long hashoffsets[SEARCHHASHSIZE];
-   long   *fileoffsetarray;
-   int     fileoffsetarray_maxsize;
 
    int lasthashval[SEARCHHASHSIZE];
    long nextwordoffset;
    long lastsortedindex;
+   long next_sortedindex;
    
    int wordhash_counter;
    int worddata_counter;
@@ -65,7 +64,6 @@ struct Handle_DBNative
    MEM_ZONE *hashzone;
 
    int num_words;
-   int num_docs;
 
    int mode;  /* 1 - Create  0 - Open */
 
@@ -141,7 +139,7 @@ int     DB_EndReadFiles_Native(void *db);
 
 
 
-int     DB_InitWriteSortedIndex_Native(void *db);
+int     DB_InitWriteSortedIndex_Native(void *db );
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
 int     DB_EndWriteSortedIndex_Native(void *db);
  
@@ -149,11 +147,11 @@ int     DB_InitReadSortedIndex_Native(void *db);
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
 
-#ifdef PROPFILE
-void    DB_WriteProperty_Native( struct file *fi, int propID, char *buffer, int datalen, void *db );
-char  * DB_ReadProperty_Native( struct file *fi, int propID, void *db );
+void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffer, int datalen, void *db);
+void    DB_WritePropPositions_Native(SWISH *sw, FileRec *fi, void *db);
+void    DB_ReadPropPositions_Native(SWISH *sw, FileRec *fi, void *db);
+char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, void *db);
 void    DB_Reopen_PropertiesForRead_Native(void *db);
-#endif
 
 
 

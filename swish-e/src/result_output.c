@@ -300,19 +300,6 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
 /* ------------------------------------------------------------ */
 
 
-/*
-  -- Output search result 
-  -- do sorting according to cmd opt  ($todo...)
-  -- print header informations  ($$todo, move from search.c )
-*/
-
-void    printResultOutput(SWISH * sw)
-{
-
-    printSortedResults(sw);
-}
-
-
 
 
 /*
@@ -323,7 +310,8 @@ void    printResultOutput(SWISH * sw)
 void    printSortedResults(SWISH * sw)
 {
     struct MOD_ResultOutput *md = sw->ResultOutput;
-    RESULT *r;
+    RESULT *r = NULL;
+    FileRec *fi;
     int     resultmaxhits;
     int     resultbeginhits;
     int     counter;
@@ -346,6 +334,8 @@ void    printSortedResults(SWISH * sw)
     /* -- resultmaxhits: >0 or -1 (all hits) */
     while ((r = SwishNext(sw)) && (resultmaxhits != 0))
     {
+        fi = &r->fi;  /* get address of FileRec to store properties and pointers */
+        
         r->count = ++counter;   /* set rec. counter for output */
 
 
@@ -377,8 +367,7 @@ void    printSortedResults(SWISH * sw)
 
 
         /* might as well free the memory as we go */
-        freefileinfo( r->indexf->filearray[r->filenum - 1] );
-        r->indexf->filearray[r->filenum - 1] = NULL;
+        freefileinfo( fi );
 
         if (resultmaxhits > 0)
             resultmaxhits--;
