@@ -50,7 +50,7 @@ sub set_swish_version {
         }
     }
 
-
+  }
     while ( ! $version ) {
         my $enter = $swish;
 
