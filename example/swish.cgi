@@ -120,9 +120,11 @@ executed as CGI scripts.
 Finally, adjust the global vars in the script to point to the location of the swish-e binary,
 your swish-e index, and the location of the swish.tmpl HTML::Template file.
 
-Don't forget to check the web server's error log for details if you have any problems.
+The HTML::Template files should be easy to understand (if not then: perldoc HTML::Template),
+and should be easy enough to customize to your look.  You may need to fixup the link to the
+documents returned by swish (or use swish's ReplaceRules configuration directive during indexing).
 
-   
+Don't forget to check the web server's error log for details if you have any problems.
 
 =head1 MOD_PERL
 
@@ -182,11 +184,14 @@ use Time::HiRes qw(gettimeofday tv_interval);
 
 #------------ Configuration ----------------------
 
-    use vars qw/$swish_binary $swish_index $tmpl_path @properties $page_size/;
+    # Set these to as needed for your system and your index file
 
-    
+    use vars qw/
+        $Swish_Binary $Swish_Index $Tmpl_Path @PropertyNames
+        @MetaNames $Metaname_Default $All_Meta $Page_Size
+    /;
 
-    $swish_binary = '/usr/local/bin/swish-e';
+    $Swish_Binary = '/usr/local/bin/swish-e';
 
     # these are normally outside of webspace
 
@@ -198,17 +203,33 @@ use Time::HiRes qw(gettimeofday tv_interval);
     # and that you want returned with your search results
     # make an empty list "()" if not used.
 
-    @properties   = qw/last_name first_name category/;
+    @PropertyNames   = qw/last_name first_name city phone/;
 
-    $page_size    = 20;  # results per page
+    # if you defined MetaNames in your document (to search by field)
+    # A radio group will be added to all selection of the metaname.
+    # specify their names here.  These will be used when generating the query.
+    # make an empty list "()" if not used.
+    
+    @MetaNames = qw/name discription/;
+
+    $Metaname_Default = 'discription';  # set the default radio button
+
+    # if $All_Meta is set true, and @MetaNames is not the empty list, then
+    # all queries must be a metaname search.
+    # if $All_Meta is set false, the an additional radio button will be added
+    # to allow searching without a metaname prepended to the query.
+    $All_Meta = 1;
+
+    $Page_Size    = 20;  # results per page
 
 #--------------------------------------------------
 
-
-# This is all you get...
 {
     my $q = CGI->new;
-    show_template( $tmpl_path , run_query( $q ), $q );
+
+    $q->param('metaname', $Metaname_Default ) if $Metaname_Default && !$q->param('metaname');
+    
+    show_template( $Tmpl_Path , run_query( $q ), $q );
 }
 
 #---------------------------------------------------
@@ -222,6 +243,8 @@ sub run_query {
 
     my $q = shift;
 
+
+    # set up the query string to pass to swish.
     my $query = $q->param('query') || '';
 
     for ( $query ) {
@@ -234,6 +257,10 @@ sub run_query {
             ? { MESSAGE => 'Please enter a query string' }
             : {};
     }
+
+    # prepend metaname to search, if set.
+    $query = $q->param('metaname') . "=($query)" if $q->param('metaname');
+    
 
     my $t0 = [gettimeofday];
     
@@ -250,12 +277,12 @@ sub run_query {
     # Create a search object
 
     my $sh = SWISH->connect('Fork',
-       prog     => $swish_binary,
+       prog     => $Swish_Binary,
        version  => 2.2,  # see perldoc SWISH
-       indexes  => $swish_index,
+       indexes  => $Swish_Index,
        startnum => $start + 1,  
-       maxhits  => $page_size,
-       properties => \@properties,
+       maxhits  => $Page_Size,
+       properties => \@PropertyNames,
        timeout  => 10,  # kill script if query takes more than ten secs
 
        # Here's a way to make *every* field available to the template
@@ -277,7 +304,7 @@ sub run_query {
                         PROP_NAME  => $_,
                         PROP_VALUE => $_[1]->$_(),
                     }
-                  } @properties ] if @properties;
+                  } @PropertyNames ] if @PropertyNames;
 
             push @results, \%result;
         },
@@ -293,9 +320,9 @@ sub run_query {
     # $SWISH::Fork::DEBUG++;  # generates debugging info to STDERR
 
 
-    # Now set sort option - if a valid option submitted
+    # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
     
-    my %props = map { $_, 1 } @properties;
+    my %props = map { $_, 1 } @PropertyNames;
     $props{swishrank}++;  # also can sort by rank
     if ( $q->param('sort') && $props{ $q->param('sort') } ) {
 
@@ -364,7 +391,10 @@ sub show_template {
     $params->{MY_URL} = $q->script_name;
 
     # Allow for sort selection in a <select>
-    $params->{SORTS} = [ map { { SORT_BY => $_ } } @properties ] if @properties;
+    $params->{SORTS} = [ map { { SORT_BY => $_ } } @PropertyNames ] if @PropertyNames;
+
+    $params->{METANAMES} = [ map { { METANAME => $_ } } @MetaNames ] if @MetaNames;
+    $params->{ALL_META} = $All_Meta;
 
     $template->param( $params );
     my $page = $template->output;
@@ -390,7 +420,7 @@ sub set_page {
     my $start = $results->{FROM} - 1;   # Current starting record
     
         
-    my $prev = $start - $page_size;
+    my $prev = $start - $Page_Size;
     $prev = 0 if $prev < 0;
 
     if ( $prev < $start ) {
@@ -402,20 +432,20 @@ sub set_page {
     my $last = $results->{HITS} - 1;
 
     
-    my $next = $start + $page_size;
+    my $next = $start + $Page_Size;
     $next = $last if $next > $last;
     my $cur_end   = $start + scalar @{$results->{FILES}} - 1;
     if ( $next > $cur_end ) {
         $results->{NEXT} = $next;
-        $results->{NEXT_COUNT} = $next + $page_size > $last
+        $results->{NEXT_COUNT} = $next + $Page_Size > $last
                                 ? $last - $next + 1
-                                : $page_size;
+                                : $Page_Size;
     }
 
 
     # Calculate pages  ( is this -1 correct here? )
     
-    my $pages = int (($results->{HITS} -1) / $page_size);
+    my $pages = int (($results->{HITS} -1) / $Page_Size);
     if ( $pages ) {
 
         my @pages = 0..$pages;
@@ -423,7 +453,7 @@ sub set_page {
         my $max_pages = 10;
 
         if ( @pages > $max_pages ) {
-            my $current_page = int ( $start / $page_size - $max_pages/2) ;
+            my $current_page = int ( $start / $Page_Size - $max_pages/2) ;
             $current_page = 0 if $current_page < 0;
             if ( $current_page + $max_pages - 1 > $pages ) {
                 $current_page = $pages - $max_pages;
@@ -437,7 +467,7 @@ sub set_page {
     
         $results->{PAGES} =
             join ' ', map {
-                my $page_start = $_ * $page_size;
+                my $page_start = $_ * $Page_Size;
                 my $url = $q->script_name;
                 my $page = $_ + 1;
                 $page_start == $start
