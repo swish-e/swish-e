@@ -115,7 +115,15 @@ sub get_pdf_headers {
     my $file = shift;
     my $sym = gensym;
 
-    open $sym, "pdfinfo $file |" || die "$0: Failed to open $file $!";
+    # This doesn't work
+    my $path = $file;
+    for ( $path ) {
+        s/"/\\"/g;
+        $path = qq["$path"];
+    }
+
+
+    open $sym, "pdfinfo $path |" || die "$0: Failed to open $file $!";
 
     my %metadata;
 
@@ -135,8 +143,16 @@ sub get_pdf_headers {
 sub get_pdf_content_ref {
     my $file = shift;
 
+    # This doesn't work
+    my $path = $file;
+    for ( $path ) {
+        s/"/\\"/g;
+        $path = qq["$path"];
+    }
+
+
     my $sym = gensym;
-    open $sym, "pdftotext $file - |" or die "$0: failed to run pdftotext: $!";
+    open $sym, "pdftotext $path - |" or die "$0: failed to run pdftotext: $!";
 
     local $/ = undef;
     my $content = escapeXML(<$sym>);

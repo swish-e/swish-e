@@ -76,8 +76,14 @@ sub doc2txt {
     ? create_temp_file( $file_or_content )
     : $file_or_content;
 
+    # This doesn't work
+    my $path = $file;
+    for ( $path ) {
+        s/"/\\"/g;
+        $path = qq["$path"];
+    }
 
-    my $content = `$catdoc $file`;
+    my $content = `$catdoc $path`;
 
     return \$content if ref $file_or_content;
 

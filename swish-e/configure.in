@@ -201,39 +201,38 @@ dnl Checks for zlib library. -- from libxml2 configure.in
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
 
-AC_ARG_WITH(zlib,AC_HELP_STRING([--with-zlib=DIR], [use zlib in DIR (YES if found)]),,withval=maybe)
-
-dnl if withval not no or and not yes
-if test "$withval" != "no" -a "$withval" != "yes"; then
+dnl AC_ARG_WITH(zlib,AC_HELP_STRING([--with-zlib=DIR], [use zlib in DIR (YES if found)]),,withval=maybe)
+  
+AC_ARG_WITH(zlib,
+[  --with-zlib[[=DIR]]       use libz in DIR],[
+  if test "$withval" != "no" -a "$withval" != "yes"; then
     Z_DIR=$withval
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
-fi
-
-dnl if withval is maybe
-if test "$withval" = "maybe"; then
-    withval="yes"
-    Z_DIR=""
-    CPPFLAGS="${CPPFLAGS}"
-    LDFLAGS="${LDFLAGS}"
-fi
-
-dnl if withval not no then try to enable zlib support
-if test "$withval" != "no"; then
+  fi
+])
+if test "$with_zlib" = "no"; then
+    echo "Disabling compression support"
+else
     AC_CHECK_HEADERS(zlib.h,
-        AC_CHECK_LIB(z, gzread,[
-    	AC_DEFINE(HAVE_ZLIB,[],[Do we have zlib])
+        AC_CHECK_LIB(z, gzread,[  
+            AC_DEFINE(HAVE_ZLIB,[],[Do we have zlib])
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"
                 Z_LIBS="-L${Z_DIR}/lib -lz"
+                [case ${host} in
+                    *-*-solaris*)
+                        Z_LIBS="-L${Z_DIR}/lib -R${Z_DIR}/lib -lz"
+                        ;;
+                esac]
             else
                 Z_LIBS="-lz"
             fi]))
-    AC_SUBST(Z_CFLAGS)
-    AC_SUBST(Z_LIBS)
-else
-    AC_MSG_RESULT([Not building with zlib for property compression - use --with-zlib to enable])
 fi
+                
+AC_SUBST(Z_CFLAGS)
+AC_SUBST(Z_LIBS)
+
 
 CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
