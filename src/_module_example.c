@@ -52,7 +52,8 @@ void initModule_#modulename# (SWISH  *sw)
       md = (struct MOD_#modulename# *) emalloc(sizeof(struct MOD_#modulename#));
       sw->#modulename# = md;
 
-      md->myparameter = ...
+      md->myparameter = ...     ...(md = module data)
+
       ...
 
 }
@@ -68,10 +69,12 @@ void freeModule_#modulename# (SWISH *sw)
 {
    struct MOD_#modulename# *md = sw->#modulename#;
 
-      md->....
+      md->....;  (md = moduledata)
       ...
 
 
+
+      /*  Free Module Data Structure */
       efree (sw->#modulename#);
       sw->#modulename# = NULL;
 }

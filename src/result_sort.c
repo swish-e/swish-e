@@ -43,6 +43,17 @@ $Id$
 
 
 
+
+/*
+** ----------------------------------------------
+** 
+**  Module management code starts here
+**
+** ----------------------------------------------
+*/
+
+
+
 /*
   -- init structures for this module
 */
@@ -50,17 +61,20 @@ $Id$
 void initModule_ResultSort (SWISH  *sw)
 
 {
+   struct MOD_ResultSort *md;
+
           /* Allocate structure */
-    sw->ResultSort= 
-         (struct MOD_ResultSort *) emalloc(sizeof(struct MOD_ResultSort));
+    md =(struct MOD_ResultSort *) emalloc(sizeof(struct MOD_ResultSort));
+    sw->ResultSort = md;
+
           /* Init translation sortorder tables */
-    initStrCmpTranslationTable(sw->ResultSort->iSortTranslationTable);
-    initStrCaseCmpTranslationTable(sw->ResultSort->iSortCaseTranslationTable);
+    initStrCmpTranslationTable(md->iSortTranslationTable);
+    initStrCaseCmpTranslationTable(md->iSortCaseTranslationTable);
           /* Init data for -s command option */
-    sw->ResultSort->numPropertiesToSort=0;
-    sw->ResultSort->currentMaxPropertiesToSort=0;
-    sw->ResultSort->propNameToSort=NULL;
-    sw->ResultSort->propModeToSort=NULL;
+    md->numPropertiesToSort=0;
+    md->currentMaxPropertiesToSort=0;
+    md->propNameToSort=NULL;
+    md->propModeToSort=NULL;
 }
 
 
@@ -73,21 +87,24 @@ void initModule_ResultSort (SWISH  *sw)
 void freeModule_ResultSort (SWISH *sw)
 
 {
-int i;
-IndexFILE *tmpindexlist;
+  struct MOD_ResultSort *md = sw->ResultSort;
+  int i;
+  IndexFILE *tmpindexlist;
+
+
                 /* First the common part to all the index files */
-        if (sw->ResultSort->propNameToSort)
+        if (md->propNameToSort)
         {
-                for(i=0;i<sw->ResultSort->numPropertiesToSort;i++)
-                        efree(sw->ResultSort->propNameToSort[i]);
-                efree(sw->ResultSort->propNameToSort);
+                for(i=0;i<md->numPropertiesToSort;i++)
+                        efree(md->propNameToSort[i]);
+                efree(md->propNameToSort);
         }
-        if (sw->ResultSort->propModeToSort)
-                efree(sw->ResultSort->propModeToSort);
-        sw->ResultSort->propNameToSort=NULL;
-        sw->ResultSort->propModeToSort=NULL;
-        sw->ResultSort->numPropertiesToSort=0;
-        sw->ResultSort->currentMaxPropertiesToSort=0;
+        if (md->propModeToSort)
+                efree(md->propModeToSort);
+        md->propNameToSort=NULL;
+        md->propModeToSort=NULL;
+        md->numPropertiesToSort=0;
+        md->currentMaxPropertiesToSort=0;
                 /* Now free memory for the IDs of each index file */
         for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
         {
@@ -95,13 +112,23 @@ IndexFILE *tmpindexlist;
                         efree(tmpindexlist->propIDToSort);
                 tmpindexlist->propIDToSort=NULL;
         }
+
+      /* Free Module Data Structure */
+      efree (sw->ResultSort);
+      sw->ResultSort = NULL;
+
   return;
 }
 
 
 
-/* ---------------------------------------------- */
-
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
 
 
 /*
@@ -113,7 +140,7 @@ IndexFILE *tmpindexlist;
 int configModule_ResultSort  (SWISH *sw, StringList *sl)
 
 {
- // struct MOD_ResultSort *md = sw->ResultSort;
+  struct MOD_ResultSort *md = sw->ResultSort;
   char *w0    = sl->word[0];
   int  retval = 1;
 
@@ -126,6 +153,10 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
   //    could work like follows:   v = value[*s];  loop i rest: value[*(s+i)] = v+i;     
 
 
+  // md->mydata = ...
+  // best practice: copy from _mod_example.c
+
+
   retval = 0; // tmp due to empty routine
 
   return retval;
@@ -133,7 +164,14 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
 
 
 
-/* ---------------------------------------------- */
+
+/*
+** ----------------------------------------------
+** 
+**  Module code starts here
+**
+** ----------------------------------------------
+*/
 
 
 /* Routine to add the properties specified in -s to the internal structure */
