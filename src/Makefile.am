@@ -3,7 +3,7 @@ SUBDIRS = expat replace
 
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
-swish_e_LDADD = libswish-e.la libswishindex.la 
+swish_e_LDADD = libswishindex.la libswish-e.la
 
 EXTRA_PROGRAMS = libtest
 libtest_SOURCES = libtest.c 
@@ -18,6 +18,9 @@ lib_LTLIBRARIES = libswish-e.la
 libswish_e_la_LDFLAGS = -version-info 2:0:0 $(Z_LIBS) $(PCRE_LIBS)
 libswish_e_la_CPPFLAGS = $(Z_CFLAGS) $(PCRE_CFLAGS) -Ireplace
 libswish_e_la_LIBADD = $(BTREE_OBJS) replace/libreplace.la
+
+libswish_e_la_DEPENDENCIES = $(libswish_e_la_LIBADD)
+
 
 
 libswish_e_la_SOURCES =  \

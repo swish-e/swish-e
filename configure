@@ -11205,7 +11205,7 @@ fi;
 if test x$btree = xyes; then
     { echo "$as_me:$LINENO: WARNING: ** Buidling with developer only incremental indexing code **" >&5
 echo "$as_me: WARNING: ** Buidling with developer only incremental indexing code **" >&2;}
-    BTREE_OBJS="btree.lo array.lo worddata.lo fhash.lo"
+    BTREE_OBJS="libswish_e_la-btree.lo libswish_e_la-array.lo libswish_e_la-worddata.lo libswish_e_la-fhash.lo"
 
 
 cat >>confdefs.h <<\_ACEOF
