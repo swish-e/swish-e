@@ -361,6 +361,10 @@ Defines a metaname to use for indexing src links in <img> tags.
 Allow you to search image pathnames within HTML pages.  Available only
 with libxml2 parser.
 
+=item * New directive: IndexAltTagMetaName
+
+Allows indexing of image ALT tags.  Only available when using the libxml2 parser.
+
 =item * New directive: AbsoluteLinks
 
 Attempts to convert relative links indexed with HTMLLinksMetaName and

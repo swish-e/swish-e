@@ -247,6 +247,10 @@ L<IndexAdmin|/"item_IndexAdmin"> *text*
 
 =item *
 
+L<IndexAltTagMetaName/"item_IndexAltTagMetaName"> *tagname*|as-text
+
+=item *
+
 L<IndexComments|/"item_IndexComments"> [YES|no]
 
 =item *
@@ -1021,7 +1025,47 @@ To make Swish-e index links as normal text, you may use:
 
     ImageLinksMetaName swishdefault
 
-This feature is only available with the libxml2 HTML parser.    
+This feature is only available with the libxml2 HTML parser.
+
+
+=item IndexAltTagMetaName *tagname*|as-text
+
+Allows indexing of images <IMG> ALT tag text.  Specify either a tag name which will be
+used as a metaname, or the special text "as-text" which says to index the ALT text as
+if it were plain text at the current location.
+
+For example, by specifying a tag name:
+
+   IndexAltTagMetaName bar
+
+would make this markup:   
+
+    <foo>
+        <img src="/someimage.png" alt="Alt text here">
+    </foo>
+
+appear like
+
+    <foo>
+        <bar>Alt text here</bar>
+    </foo>
+
+Then the normal rules (C<MetaNames> and C<PropertyNames>) apply to how that text is indexed.
+
+If you use the special tag "as-text" then
+      
+    <foo>
+        <img src="/someimage.png" alt="Alt text here">
+    </foo>
+
+simply becomes
+
+    <foo>
+        Alt text here
+    </foo>
+
+This feature is only available when using the libxml2 parser (HTML2 and XML2).    
+
 
 =item AbsoluteLinks [yes|NO]
 

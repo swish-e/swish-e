@@ -595,6 +595,37 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+
+        /* What to do with IMG ATL tags? */
+        if (strcasecmp(w0, "IndexAltTagMetaName") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires one value", w0);
+
+            if ( strcasecmp( sl->word[1], "as-text" ) == 0)
+            {
+                sw->IndexAltTag = 1;
+                if ( sw->IndexAltTagMeta )
+                {
+                    efree( sw->IndexAltTagMeta );
+                    sw->IndexAltTagMeta = NULL;
+                }
+            }
+            else
+            {
+                sw->IndexAltTag = 1;
+                if ( sw->IndexAltTagMeta )
+                {
+                    efree( sw->IndexAltTagMeta );
+                    sw->IndexAltTagMeta = NULL;
+                }
+                sw->IndexAltTagMeta = estrdup( sl->word[1] );
+            }
+            continue;
+        }
+
+                
+
         
         /* Meta name to extract out <img src> links */
         if (strcasecmp(w0, "ImageLinksMetaName") == 0)
