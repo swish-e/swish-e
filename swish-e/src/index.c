@@ -206,9 +206,9 @@ void initModule_Index (SWISH  *sw)
 	if (RAM_DISK)
 		idx->locZone = NULL;
 	else
-		idx->locZone = Mem_ZoneCreate(4096*64);
+		idx->locZone = Mem_ZoneCreate("Locators", 0, 0);
 
-	idx->entryZone = Mem_ZoneCreate(4096*64);
+	idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
 
     return;
 }

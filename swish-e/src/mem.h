@@ -50,7 +50,9 @@ $Id$
 
 typedef struct _mem_zone {
 	struct _zone	*next;
+	char			*name;
 	size_t			size;
+	int				attributes;
 } MEM_ZONE;
 
 
@@ -79,7 +81,7 @@ void Mem_Summary(char *title, int final);
 /* Memory zone routines */
 
 /* create a zone -- size should be some reasonable number */
-MEM_ZONE *Mem_ZoneCreate(size_t size);
+MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes);
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
 void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size);
