@@ -3,6 +3,11 @@
 
 #include "api.h"
 
+/* use SWISHE emalloc/efree schema */
+#define calloc(n,s) emalloc((n)*(s))
+#define malloc(s) emalloc(s)
+#define free(p) efree(p)
+
 #define MAXINT INT_MAX
 #define MININT INT_MIN
 
