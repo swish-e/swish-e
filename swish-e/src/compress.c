@@ -187,9 +187,10 @@ unsigned long UNPACKLONG2(unsigned char *buffer)
 * 
 ************************************************************************************/
 
-#define STRUCTURE_EQ_1       0x80  /* Binary 10000000 */
-#define FREQ_AND_POS_EQ_1    0x40  /* Binary 01000000 */
-#define POS_4_BIT            0x20  /* Binary 00100000 */
+#define IS_FLAG              0x80  /* Binary 10000000 */   /* Always set */
+#define STRUCTURE_EQ_1       0x40  /* Binary 01000000 */
+#define FREQ_AND_POS_EQ_1    0x20  /* Binary 00100000 */
+#define POS_4_BIT            0x10  /* Binary 00010000 */
 
 void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int structure,int frequency, int position0)
 {
@@ -201,7 +202,7 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     *flagp = p;
     p++;
 
-    *flag = 0;
+    *flag = IS_FLAG;
 
     /* Add file number */
     p = compress3(filenum, p);
@@ -219,8 +220,8 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     }
     else
     {
-        if(frequency <32)
-             (*flag) |= frequency;
+        if(frequency < 16)
+             (*flag) |= frequency; /* Store in flag - last 4 bit 0000xxxx */
         else
              p = compress3(frequency, p);
     }
@@ -341,7 +342,7 @@ void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *fi
         *frequency = 1;
     }
     else
-        (*frequency) |= (*flag) & 0x1F;   /* Binary 00011111 */
+        (*frequency) |= (*flag) & 15;   /* Binary 00001111 */
 
     *filenum = uncompress2(&p);
 
