@@ -330,7 +330,7 @@ unsigned char *newdata;
 int sz_newdata;
 int tfreq1, tfreq2;
 unsigned char *p1, *p2, *p;
-int curmetaID_1,curmetaID_2;
+int curmetaID_1,curmetaID_2,metadata_length_1;
 unsigned long nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
 int last_filenum, filenum, tmpval, frequency, *posdata;
 #define POSDATA_STACK 2000
@@ -369,16 +369,16 @@ unsigned char *q;
     /* Now look for MetaIDs */
     curmetaID_1 = uncompress2(&p1);
     curmetaID_2 = uncompress2(&p2);
-    nextposmetaname_1 = UNPACKLONG2(p1); 
-    p1 += sizeof(long);
+   
+    /* Old data is compressed in a different schema */ 
+    metadata_length_1 = uncompress2(&p1); 
+    nextposmetaname_1 = p1 - olddata + metadata_length_1;
     
     curmetanamepos_1 = p1 - olddata;
     nextposmetaname_2 = UNPACKLONG2(p2); 
     p2 += sizeof(long);
 
     curmetanamepos_2 = p2 - newdata;
-
-
 
     while(curmetaID_1 && curmetaID_2)
     {            
@@ -430,8 +430,8 @@ unsigned char *q;
             if(curmetaID_1)
             {
                 curmetaID_1 = uncompress2(&p1);  /* Next metaID */
-                nextposmetaname_1 = UNPACKLONG2(p1); 
-                p1 += sizeof(long);
+                metadata_length_1 = uncompress2(&p1); 
+                nextposmetaname_1 = p1 - olddata + metadata_length_1;
                 curmetanamepos_1 = p1 - olddata;
             }
 
@@ -484,8 +484,8 @@ unsigned char *q;
             else
             {
                 curmetaID_1 = uncompress2(&p1);  /* Next metaID */
-                nextposmetaname_1 = UNPACKLONG2(p1); 
-                p1 += sizeof(long);
+                metadata_length_1 = uncompress2(&p1); 
+                nextposmetaname_1 = p1 - olddata + metadata_length_1;
                 curmetanamepos_1 = p1 - olddata;
             }
         }
@@ -532,8 +532,8 @@ unsigned char *q;
         else
         {
             curmetaID_1 = uncompress2(&p1);  /* Next metaID */
-            nextposmetaname_1 = UNPACKLONG2(p1); 
-            p1 += sizeof(long);
+            metadata_length_1 = uncompress2(&p1); 
+            nextposmetaname_1 = p1 - olddata + metadata_length_1;
             curmetanamepos_1 = p1 - olddata;
         }
         PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
