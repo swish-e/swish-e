@@ -310,9 +310,9 @@ RESULT *tmpresultlist,*tmpresultlist2;
 struct swline *tmplist, *tmplist2;
 IndexFILE *indexlist;
 int rc=0;
-int PhraseDelimiter;
+unsigned char PhraseDelimiter;
 unsigned char PhraseDelimiterString[2];
-	PhraseDelimiter = sw->PhraseDelimiter;
+	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
 	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
 	PhraseDelimiterString[1] = '\0';
 
@@ -431,7 +431,7 @@ unsigned char PhraseDelimiterString[2];
 		/* make a copy of sw->searchwordlist */
 		tmplist = dupswline(sw->searchwordlist);
 #ifdef IGNORE_STOPWORDS_IN_QUERY
-		tmplist = ignore_words_in_query(sw,indexlist,tmplist);
+		tmplist = (struct swline *)ignore_words_in_query(sw,indexlist,tmplist,PhraseDelimiter);
 #endif /* IGNORE_STOPWORDS_IN_QUERY */
 		if(indexlist->header.applyStemmingRules)
 			tmplist = stem_words_in_query(sw,indexlist,tmplist);
@@ -1122,7 +1122,6 @@ IndexFILE *indexf;
 {
 int i, found;
 RESULT *newrp, *returnrp;
-char *tmp;
 char *word;
 int lenword;
 	word=estrdup(wordin);
@@ -1392,7 +1391,7 @@ SWISH *sw;
 IndexFILE *indexf;
 char c;
 {
-int i,j,found;
+int i,j;
 int wordlen;
 char *buffer;
 int bufferpos,bufferlen;
@@ -1451,10 +1450,28 @@ char *word;
 		return 0;
 }
 
+int _isrule(word)
+char *word;
+{
+	if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
+		return 1;
+	else
+		return 0;
+}
+
 int isnotrule(word)
 char *word;
 {
 	if (!strcmp(word,NOT_WORD) )
+		return 1;
+	else
+		return 0;
+}
+
+int _isnotrule(word)
+char *word;
+{
+	if (!strcmp(word,_NOT_WORD) )
 		return 1;
 	else
 		return 0;
@@ -2111,12 +2128,16 @@ void freefileinfo(struct file *f)
 	efree(f);
 }
 
-struct swline *ignore_words_in_query(sw,indexf,searchwordlist)
+/* 02/2001 Jose Ruiz */
+/* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */
+struct swline *ignore_words_in_query(sw,indexf,searchwordlist,phrase_delimiter)
 SWISH *sw;
 IndexFILE *indexf;
 struct swline *searchwordlist;
+unsigned char phrase_delimiter;
 {
 struct swline *pointer1, *pointer2, *pointer3;
+int inphrase=0,ignore=0;
 	/* Added JM 1/10/98. */
 	/* completely re-written 2/25/00 - SRE - "ted and steve" --> "and steve" if "ted" is stopword --> no matches! */
 
@@ -2130,8 +2151,9 @@ struct swline *pointer1, *pointer2, *pointer3;
 		pointer2 = pointer1->next;
 			/* 05/00 Jose Ruiz
 			** NOT rule is legal at begininig */
-		if(isnotrule(pointer1->line) || isMetaName(pointer2)) break;
-		if(!isstopword(indexf,pointer1->line) && !isrule(pointer1->line)) break;
+		if(pointer1->line[0]==phrase_delimiter) break;
+		if(_isnotrule(pointer1->line) || isMetaName(pointer2)) break;
+		if(!isstopword(indexf,pointer1->line) && !_isrule(pointer1->line)) break;
 		searchwordlist = pointer2; /* move the head of the list */
 		printf("# Removed stopword: %s\n",pointer1->line);
 			 /* Free line also !! Jose Ruiz 04/00 */
@@ -2148,27 +2170,38 @@ struct swline *pointer1, *pointer2, *pointer3;
 	/* loop on REMAINING words: ditch stopwords but keep rules (unless two rules in a row?) */
 	pointer2 = pointer1->next;
 	while (pointer2 != NULL) {
-		/* Added Patch from Adrian Mugnolo */
-		if((isstopword(indexf,pointer2->line) && !isrule(pointer2->line) && !isMetaName(pointer2->next))    /* non-rule stopwords */
-		|| (    isrule(pointer1->line) &&  isrule(pointer2->line))) { /* two rules together */
-			printf("# Removed stopword: %s\n",pointer2->line);    /* keep 1st of 2 rule */
-			pointer1->next = pointer2->next;
-			pointer3 = pointer2->next;
-				/* Jose Ruiz 04/00
-				** Fix memory problem
-				*/
-			efree(pointer2->line);
-			efree(pointer2);
-			pointer2 = pointer3;
-		} else {
+		if(pointer1->line[0]==phrase_delimiter)
+		{
+			if(inphrase) inphrase=0;
+			else inphrase=1;
 			pointer1 = pointer1->next;
 			pointer2 = pointer2->next;
+		} else {
+			ignore=0;
+printf("%s %d \n",pointer2->line,inphrase);
+			if(!inphrase)
+			{
+				if((isstopword(indexf,pointer2->line) && !_isrule(pointer2->line) && !isMetaName(pointer2->next))    /* non-rule stopwords */
+				|| (_isrule(pointer1->line) &&  _isrule(pointer2->line))) /* two rules together */
+					ignore=1;
+			} else {
+				if(isstopword(indexf,pointer2->line)) 
+					ignore=1;
+printf("%s\n",pointer2->line);
+			}
+			if(ignore)
+			{
+				printf("# Removed stopword: %s\n",pointer2->line);    /* keep 1st of 2 rule */
+				pointer1->next = pointer2->next;
+				pointer3 = pointer2->next;
+				efree(pointer2->line);
+				efree(pointer2);
+				pointer2 = pointer3;
+			} else {
+				pointer1 = pointer1->next;
+				pointer2 = pointer2->next;
+			}
 		}
-		/* Jose Ruiz 04/00
-		** Removed!! If pointer2 was previously freed 
-		** we must not reassign it contents here
-		** pointer2 = pointer2->next;
-		*/
 	}
 	return searchwordlist;
 }
@@ -2218,7 +2251,7 @@ struct swline *searchwordlist;
 {
 struct swline *tmplist;
 int len,lenword;
-char *word,*tmp;
+char *word;
 
 	tmplist = searchwordlist;
 	while (tmplist != NULL) {
