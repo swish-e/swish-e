@@ -168,10 +168,12 @@ FILE   *f_out;
   f_out = stdout;
   delimiter = (sw->useCustomOutputDelimiter) ? sw->customOutputDelimiter : " ";
 
+       /* jmruiz 02/2001 SwishSeek is faster because it does not read the
+       ** unused data */
+  SwishSeek(sw,resultbeginhits);
   while ((r=SwishNext(sw))) {
      r->count = ++counter;		/* set rec. counter for output */
 
-     if (!resultbeginhits) {
 	if (resultmaxhits) {
 	   if (sw->opt.extendedformat)
 	      printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
@@ -186,9 +188,7 @@ FILE   *f_out;
 				
 	   if (resultmaxhits > 0) resultmaxhits--; /* Modified DN 08/29/99  */
 	}
-     }
 
-     if(resultbeginhits) resultbeginhits--;
      r = r->nextsort;
   }
 
