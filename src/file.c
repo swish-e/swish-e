@@ -193,7 +193,7 @@ void    CreateEmptyFile(char *filename)
 
     if (!(fp = openIndexFILEForWrite(filename)))
     {
-        progerr("Couldn't write the file \"%s\".", filename);
+        progerrno("Couldn't write the file \"%s\": ", filename);
     }
     fclose(fp);
 }

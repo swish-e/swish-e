@@ -40,6 +40,13 @@
 
 #define PROPFILE 1
 
+/* PROPFILE is a development testing option */
+
+#define PROPFILE_EXTENSION ".prop"
+
+/* Defines the file extension to use on the property file.
+*/
+
 #define MAX_SORT_STRING_LEN 50
 
 /* MAX_SORT_STRING_LEN defines the max string length to use
@@ -56,6 +63,16 @@
 *  Documents without a title will sort as a blank title, and not
 *  by the document path regardless of this setting.  This is a change
 *  from versions previous to 2.2.
+*/
+
+#define USE_TEMPFILE_EXTENSION ".temp"
+
+/* If USE_TMPFILE_EXTENSION is defined then swish will append the supplied
+*  extension onto the index files during indexing, and when indexing is
+*  complete will remove the extension by renaming the files.
+*  This has two important uses when an index file already exists (and is in use):
+*    1) the old index can be used while indexing is running
+*    2) a failure during indexing will not destroy the existing index
 */
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1

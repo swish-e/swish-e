@@ -50,7 +50,7 @@ $Id$
 #include "result_sort.h"
 #include "entities.h"
 #ifdef PROPFILE
-#include "db_native.h"
+#include "db.h"
 #endif
 
 /* Delete a property entry (and any linked properties) */
@@ -704,6 +704,11 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
     return 1;	    
 }
 
+// #define DEBUGPROP 1
+#ifdef DEBUGPROP
+static int insidecompare = 0;
+#endif
+
 /*******************************************************************
 *   Compares two properties for sorting
 *
@@ -721,6 +726,18 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 ********************************************************************/
 int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
 {
+
+#ifdef DEBUGPROP
+    if ( !insidecompare++ )
+    {
+        printf("comparing properties for meta %s: returning: %d\n", meta_entry->metaName, Compare_Properties( meta_entry, p1, p2) );
+        dump_single_property( p1, meta_entry );
+        dump_single_property( p2, meta_entry );
+        insidecompare = 0;
+    }
+#endif
+    
+    
     if ( !p1 && p2 )
         return -1;
 
@@ -845,23 +862,9 @@ void     WritePropertiesToDisk( SWISH *sw )
         }
 
         /* Now write this property out to disk */
-        // $$$ fi->propLocations[ propID ] = DB_WriteProperty( buffer, datalen );
 
-        /* $$$ move this to the db modules */
-        {
-            struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
-
-            if ( !DB->prop )
-                progerr("Property database file not opened\n");
-
-            if ( (fi->propLocations[ propID ] = ftell( DB->prop )) == -1 )
-                progerrno( "O/S failed to tell me where I am - file number %d metaID %d : ", indexf->filearray_cursize, propID );
-                
-            fi->propSize[ propID ] = datalen;
-
-            if ( (fi->propSize[ propID ] = fwrite(buffer, 1, datalen, DB->prop)) != datalen ) /* Write data */
-                progerrno( "Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", indexf->filearray_cursize, propID, datalen, fi->propSize[ propID ] );
-        }
+        fi->propLocations[ propID ] = DB_WriteProperty( sw, indexf->filearray_cursize, buffer, datalen, propID, indexf->DB );
+        fi->propSize[ propID ] = datalen;
         total_len += datalen;
     }
 
@@ -924,19 +927,10 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         progerr("failed to find seek postion for first property in file %d", filenum );
 
 
-    propbuf = buf = ( char * ) emalloc( fi->propTotalLen+1 );
+    propbuf = buf = ( char * ) emalloc( fi->propTotalLen + 1 );
 
+    DB_ReadProperty( sw, buf, seek_pos, fi->propTotalLen, filenum, indexf->DB );
 
-    /* $$$ move this to the db modules */
-    {
-        struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
-
-        if ( fseek( DB->prop, seek_pos, 0 ) == -1 )
-            progerrno("Failed to seek to properties located at %ld for file number %d : ", fi->propLocations, filenum );
-
-        if ( fread(buf, 1, fi->propTotalLen, DB->prop) != fi->propTotalLen )
-            progerrno("Failed to read properties located at %ld for file number %d : ", fi->propLocations, filenum );
-    }
 
 
     *(buf + fi->propTotalLen) = '\0'; /* flag end of buffer */
@@ -1041,17 +1035,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
     /* allocate a read buffer */
 	propbuf = buffer = emalloc( fi->propSize[ metaID ] + 1 );
 
-
-    /* $$$ move this to the db modules */
-    {
-        struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
-
-        if ( fseek( DB->prop, fi->propLocations[ metaID ], 0 ) == -1 )
-            progerrno("Failed to seek to properties located at %ld for file number %d", fi->propLocations, filenum );
-
-        if ( fread( buffer, 1, fi->propSize[ metaID ] , DB->prop) != fi->propSize[ metaID ]  )
-            progerrno("Failed to read property located at %ld for file number %d meta id %d", fi->propLocations, filenum, metaID );
-    }
+    DB_ReadProperty( sw, buffer, fi->propLocations[ metaID ], fi->propSize[ metaID ], filenum, indexf->DB );
 
 
     *(buffer + fi->propSize[ metaID ]) = '\0'; /* flag end of buffer - but not currently used! */
@@ -1451,6 +1435,9 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
         proptype = 'N';
 
     printf("  %20s (%2d) %c:", meta_entry->metaName, meta_entry->metaID, proptype );
+
+    if ( !prop )
+        printf(" propEntry=NULL");
 
     for ( ;prop; prop = prop->next )
     {

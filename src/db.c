@@ -1085,3 +1085,14 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
    return sw->Db->DB_EndReadSortedIndex(DB);
 }
 
+
+long DB_WriteProperty(SWISH *sw, int filenum, char *buffer, int datalen, int propID, void *DB )
+{
+    return sw->Db->DB_WriteProperty( filenum, buffer, datalen, propID, DB );
+}
+
+void DB_ReadProperty(SWISH *sw, char *buf, long seek_pos, long length, int filenum, void *DB )
+{
+    sw->Db->DB_ReadProperty( buf, seek_pos, length, filenum, DB );
+}
+
