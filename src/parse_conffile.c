@@ -27,6 +27,7 @@ $Id$
 **                    code optimize: getYesNoOrAbort 
 ** 2001-03-13 rasc    SwishSearchOperators, SwishSearchDefaultRule
 ** 2001-03-16 rasc    TruncateDocSize nbytes
+** 2001-04-09 rasc    Filters: options (opt.)
 **
 */
 
@@ -222,20 +223,6 @@ char *w0;
 		else if (strcasecmp(w0, "UseSoundex")==0)	{
 			indexf->header.applySoundexRules = getYesNoOrAbort (sl, 1,1);
 		}
-                else if (strcasecmp(w0, "FilterDir")==0)    {      /* 1999-05-05 rasc */
-			if(sl->n==2) {
-				sw->filterdir = estrredup(sw->filterdir,sl->word[1]);
-				if(!isdirectory(sw->filterdir)) {
-					progerr("%s: %s is not a directory",w0,sw->filterdir);
-				}
-			} else progerr("%s: requires one value",w0);
-		}
-                else if (strcasecmp(w0, "FileFilter")==0) {  /* 1999-05-05 rasc */
-                                     /* FileFilter fileextension  filerprog */
-			if(sl->n==3) {
-				sw->filterlist = (struct filter *) addfilter(sw->filterlist,sl->word[1],sl->word[2],sw->filterdir);
-			} else progerr("%s: requires two values",w0);
-                }
                 else if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
                                      /* ResultExt...   name  fmtstring */
                                      /* $$$ this will not work unless swish is reading the config file also for search ... */
@@ -454,6 +441,7 @@ char *w0;
 				grabCmdOptions(sl,1,&sw->progparameterslist);
 			} else progerr("%s: requires at least one value",w0);
 		}
+		else if ( configModule_Filter  (sw, sl) ) ;
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s\n", linenumber, line );
 			baddirective = 1;

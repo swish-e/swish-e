@@ -99,3 +99,7 @@ unsigned char *StringListToString(StringList *sl,int n);
 
 int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to);
 unsigned char *TranslateChars (int trlookup[], unsigned char *s);
+
+char *str_basename (char *path);
+char *cstr_basename (char *path);
+char *cstr_dirname (char *path);

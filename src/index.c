@@ -179,7 +179,7 @@ int      external_program;
             external_program++;
 
         } else {
-            if (fprop->filterprog) {
+            if (fprop->hasfilter) {
                 fprop->fp = FilterOpen(fprop);
             } else {
             		/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
@@ -192,7 +192,7 @@ int      external_program;
 
 		    /* -- Read  all data  (len = 0 if filtered...) */
 		    rd_buffer = read_stream(fprop->fp,
-				(fprop->filterprog) ?0 :fprop->fsize, sw->truncateDocSize); 
+				(fprop->hasfilter) ?0 :fprop->fsize, sw->truncateDocSize); 
 
 		    switch(fprop->doctype) {
 
@@ -228,7 +228,7 @@ int      external_program;
 		    }
 
             if ( !external_program ) {
-    		    if (fprop->filterprog) {
+    		    if (fprop->hasfilter) {
                     FilterClose(fprop->fp); /* close filter pipe */
                 } else {
                     fclose (fprop->fp);  /* close file */
