@@ -2364,17 +2364,21 @@ These directives below are available when using the HTTP Access Method of indexi
 
 MaxDepth defines how many links the spider should follow before stopping.
 A value of 0 configures the spider to traverse all links.  The default
-is MaxDepth 5.
+is MaxDepth 0.
 
     MaxDepth 5
+
+Note: The default was changed from 5 to 0 in release 2.4.0
 
 =item Delay *seconds*
 
 The number of seconds to wait between issuing requests to a server.
 This setting allows for more friendly spidering of remote sites.
-The default is 60 seconds.
+The default is 5 seconds.
 
     Delay 1
+
+Note: The default was changed from 60 to 5 seconds in release 2.4.0
 
 =item TmpDir *path*
 
