@@ -784,3 +784,11 @@ RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
 int     getnumPropertiesToDisplay(SWISH *);
+
+
+
+#define DEBUG_INDEX 1<<0
+#define DEBUG_INDEX_FULL 1<<2
+#define DEBUG_WORDS 1<<3
+#define DEBUG_PARSED_WORDS 1<<4
+extern unsigned int DEBUG_MASK;

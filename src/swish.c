@@ -70,6 +70,55 @@ $Id$
 */
 extern struct _indexing_data_source_def *data_sources[];
 
+
+
+/* vvvvvvvvvv example only vvvvvvvvvvvvv*/
+
+unsigned int DEBUG_MASK = 0;
+
+typedef struct
+{
+    char   *name;
+    unsigned int bit;
+    char   *description;
+} DEBUG_MAP;
+
+static DEBUG_MAP debug_map[] = {
+    { "INDEX", DEBUG_INDEX, "Dump data from index file" },
+    { "INDEX_FULL", DEBUG_INDEX_FULL, "Dump data from index file - verbose" },
+    { "INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed" },
+    { "PARSED_WORDS", DEBUG_PARSED_WORDS, "Display words as they are parsed from source" },
+    
+};
+
+unsigned int isDebugWord( char *word )
+{
+    int i,help;
+
+    help = strcasecmp( word, "help" ) == 0;
+
+    if ( help )
+        printf("\nAvailable debugging options for swish-e:\n");
+    
+    for (i = 0; i < sizeof(debug_map)/sizeof(debug_map[0]); i++)
+        if ( help )
+            printf("  %20s => %s\n", debug_map[i].name, debug_map[i].description );
+        else
+            if ( strcasecmp( debug_map[i].name, word ) == 0 )
+                return debug_map[i].bit;
+
+    if ( help )
+        exit(1);
+
+    return 0;
+}
+
+
+
+/* ^^^^^^^^^^ example only ^^^^^^^^^^^^^*/
+
+
+
 int main(int argc, char **argv)
 {
 char c;
@@ -346,8 +395,25 @@ struct stat stat_buf;
 				argc--;
 			}
 		}
+
+		/* for demo only */
+		else if (c == 'T') { 
+			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-')
+			{
+			    unsigned int bit;
+
+			    if ( (bit = isDebugWord( (++argv)[0] )) )
+			    {
+			        DEBUG_MASK |= bit;
+      				argc--;
+                }
+			    else
+			        progerr("Invalid debugging option '%s'.  Use '-T help' for help.", *argv );
+
+			}
+		}
 		else if (c == 'D') {
-			decode = 1;
+
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
 				sw->indexlist = (IndexFILE *)
 					addindexfile(sw->indexlist, (++argv)[0]);
@@ -430,10 +496,12 @@ struct stat stat_buf;
 	
 	if (index && merge)
 		index = 0;
-	
+
 
 	/* -D => give a dump of the contents of index files */
-	if (decode) {
+	// if ( decode )
+	if ( DEBUG_MASK & DEBUG_INDEX || DEBUG_MASK & DEBUG_INDEX_FULL )
+	{
 		if (!hasindex)
 			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
 		
