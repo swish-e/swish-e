@@ -122,7 +122,7 @@ $Id$
 #include "metanames.h"
 #include "result_sort.h"
 #include "result_output.h"
-#include "altavista.h"
+#include "search_alt.h"
 
 
 /* 01/2001 Jose Ruiz */
@@ -196,7 +196,7 @@ IndexFILE *tmplist;
 
 /*
   -- Search Swish 
-  -- Check if AltaVista like search string has to be converted
+  -- Check if AltaVista/Lycos/Web.de like search string has to be converted
   -- and call swish search...
   -- 2001-03-02 rasc
 */
@@ -207,8 +207,8 @@ int search(SWISH *sw, char *words, int structure)
   int  ret;
 
 
-   if (sw->enableAVSearchSyntax) {	/* AltaVista like search enabled? */
-	sw_srch_str = convAltaVista2SwishStr (words);
+   if (sw->enableAltSearchSyntax) {	/* AltaVista like search enabled? */
+	sw_srch_str = convAltSearch2SwishStr (words);
 	ret = search_2 (sw, sw_srch_str, structure);
 	efree (sw_srch_str);
    } else {

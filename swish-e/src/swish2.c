@@ -35,7 +35,8 @@ $Id$
 #include "mem.h"
 #include "hash.h"
 #include "filter.h"
-
+#include "result_output.h"
+#include "search_alt.h"
 
 /* 
   -- init swish structure 
@@ -46,6 +47,12 @@ SWISH *SwishNew()
 SWISH *sw;
 int i;
 	sw=emalloc(sizeof(SWISH));
+
+	initModule_Filter (sw);
+	initModule_ResultOutput (sw);
+      initModule_SearchAlt (sw);
+
+
 	sw->followsymlinks = 0;
 	sw->TotalWords = 0;
 	sw->TotalFiles = 0;
@@ -75,9 +82,7 @@ int i;
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
 
 	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
-	initModule_Filter (sw);
-	sw->resultextfmtlist=NULL;
-	sw->enableAVSearchSyntax = 0;	/* default: enable only Swish syntax */	
+
       sw->truncateDocSize = 0;      /* default: no truncation of docs    */
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
@@ -87,13 +92,6 @@ int i;
 	sw->propNameToDisplay=NULL;
 	sw->propNameToSort=NULL;
 	sw->propModeToSort=NULL;
-
-
-		/* cmd options */
-
-	sw->opt.extendedformat = NULL;
-	sw->opt.headerOutVerbose  = 1;		/* default = standard header */
-      sw->opt.stdResultFieldDelimiter = NULL;	/* old 1.1.x result output delimiter */
 
 
 		/* File system parameters */
@@ -151,11 +149,6 @@ void SwishDefaults(SWISH *sw)
 	sw->maxdepth=5;
 	sw->delay=60;
 
-	/* init default logical operator words (2001-03-12 rasc) */
-	sw->srch_op.and = estrdup (_AND_WORD);
-	sw->srch_op.or  = estrdup (_OR_WORD);
-	sw->srch_op.not = estrdup (_NOT_WORD);
-	sw->srch_op.defaultrule = AND_RULE;
 }
 
 /* Free memory for search results and parameters (properties ...) */
@@ -188,10 +181,13 @@ if(sw) {
 		/* Free search results and imput parameters */
 		SwishResetSearch(sw);
 
+		freeModule_Filter (sw);
+		freeModule_ResultOutput (sw);
+		freeModule_SearchAlt (sw);
+
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
-		freeModule_Filter (sw);
-		efree(sw->opt.stdResultFieldDelimiter);	
+
 
                         /* Free file structures */
 		freefileoffsets(sw);
@@ -267,10 +263,7 @@ if(sw) {
 		/* Free compression buffer */	
 		efree(sw->compression_buffer);
 		
-		/* free logical operator words   (2001-03-12 rasc) */
-		efree (sw->srch_op.and);
-		efree (sw->srch_op.or);
-		efree (sw->srch_op.not);
+
 
 		/* Free SWISH struct */
 		efree(sw);

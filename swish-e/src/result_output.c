@@ -28,23 +28,9 @@ $Id$
 				 this is get same handling as metanames...
    -- 2001-02-28 rasc    -b and counter corrected...
    -- 2001-03-13 rasc    result header output routine  -H <n>
+   -- 2001-04-12 rasc    Module init rewritten
 
 */
-
-
-#include <ctype.h>
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdarg.h>
-
-#include "swish.h"
-#include "mem.h"
-#include "string.h"
-#include "merge.h"
-#include "docprop.h"
-#include "error.h"
-#include "result_output.h"
 
 
 
@@ -71,6 +57,154 @@ $Id$
    -- (rasc 2000-12)
    $$$ 
 */
+
+
+
+
+
+#include <ctype.h>
+#include <string.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdarg.h>
+
+#include "swish.h"
+#include "mem.h"
+#include "string.h"
+#include "merge.h"
+#include "docprop.h"
+#include "error.h"
+#include "result_output.h"
+
+
+
+/* private module prototypes */
+
+static void printExtResultEntry (SWISH *sw, FILE *f, char *fmt, RESULT *r);
+static char *printResultControlChar (FILE *f, char *s);
+static char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r);
+static char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt);
+static void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
+				 char *subfmt, RESULT *r);
+
+static struct ResultExtFmtStrList *addResultExtFormatStr (
+             struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
+
+
+
+/* 
+  -- init structures for this module
+*/
+
+void initModule_ResultOutput (SWISH  *sw)
+
+{
+
+   sw->resultextfmtlist=NULL;
+
+   /* cmd options */
+
+   sw->opt.extendedformat = NULL;               /* -x :cmd param  */
+   sw->opt.headerOutVerbose  = 1;               /* default = standard header */
+   sw->opt.stdResultFieldDelimiter = NULL;      /* -d :old 1.x result output delimiter */
+
+   return;
+}
+
+
+/* 
+  -- release all wired memory for this module
+  -- 2001-04-11 rasc
+*/
+
+void freeModule_ResultOutput (SWISH *sw)
+
+{
+ struct ResultExtFmtStrList *l, *ln;
+
+
+   efree (sw->opt.stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
+  /* was not emalloc!# efree (sw->opt.extendedformat);              /* -x stuff */
+
+
+   l = sw->resultextfmtlist;	                  /* free ResultExtFormatName */
+   if (! l) return;
+
+   while (l) {
+      efree (l->name);
+      efree (l->fmtstr);
+      ln = l->next;
+      efree (l);
+      l = ln;
+   }
+   sw->resultextfmtlist = NULL;
+
+
+  return;
+}
+
+
+
+
+
+
+/* ---------------------------------------------- */
+
+
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_ResultOutput  (SWISH *sw, StringList *sl)
+
+{
+  char *w0    = sl->word[0];
+  int  retval = 1;
+
+
+
+             /* $$$ this will not work unless swish is reading the config file also for search ... */
+
+  if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
+                                 /* ResultExt...   name  fmtstring */
+      if(sl->n==3) {
+         sw->resultextfmtlist = (struct ResultExtFmtStrList *)
+               addResultExtFormatStr(sw->resultextfmtlist,sl->word[1],sl->word[2]);
+      } else progerr("%s: requires \"name\" \"fmtstr\"",w0);
+  }
+  else {
+      retval = 0;	            /* not a module directive */
+  }
+
+  return retval;
+}
+
+
+
+/*
+  -- cmdline settings
+  -- return:  # of args read
+*/
+
+int cmdlineModule_ResultOutput_d (SWISH *sw, char opt, char **args)
+
+{
+
+ //$$$ still to do...
+ //$$$ move code from swish.c
+
+
+}
+
+
+
+/* ---------------------------------------------- */
+
+
 
 
 
@@ -208,7 +342,7 @@ FILE   *f_out;
    2001-01-01   rasc
 */
 
-void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
+static void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 
 {
   FILE   *f;
@@ -262,7 +396,7 @@ void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
     -- return: string ptr to char after control sequence.
 */
 
-char *printResultControlChar (FILE *f, char *s) 
+static char *printResultControlChar (FILE *f, char *s) 
 
 {
   char c, *se;
@@ -285,7 +419,7 @@ char *printResultControlChar (FILE *f, char *s)
     -- return: string ptr to char after control sequence.
 */
 
-char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r) 
+static char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r) 
 
 {
   char *t;
@@ -329,7 +463,7 @@ char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r)
     --         **subfmt = NULL or subformat
 */
 
-char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
+static char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
 
 {
   char *s1;
@@ -403,7 +537,7 @@ char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
 */
 
 
-void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
+static void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 				 char *subfmt, RESULT *r)
 
 {
@@ -490,7 +624,7 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
    -- add name and string to list 
 */
 
-struct ResultExtFmtStrList *addResultExtFormatStr (
+static struct ResultExtFmtStrList *addResultExtFormatStr (
               struct ResultExtFmtStrList *rp, char *name, char *fmtstr)
 
 
