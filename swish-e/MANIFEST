@@ -215,6 +215,8 @@ src/merge.h
 src/metanames.c
 src/metanames.h
 src/methods.c
+src/mkstemp.c
+src/mkstemp.h
 src/no_better_place_module.c
 src/no_better_place_module.h
 src/parser.c
@@ -248,6 +250,7 @@ src/swish_qsort.h
 src/swish_words.c
 src/swish_words.h
 src/swish.h
+src/swish-e.h
 src/swish2.c
 src/swishspider
 src/swregex.c
@@ -276,11 +279,12 @@ src/vms/sprintf_2_2/test.c
 src/win32/config.h
 src/win32/dirent.c
 src/win32/dirent.h
-src/win32/mkstemp.c
-src/win32/mkstemp.h
 src/win32/libswishe.dsp
 src/win32/swishe.dsp
 src/win32/swishe.dsw
+src/win32/installer.nsi
+src/win32/build.sh
+src/win32/dist.sh
 win32.nsi
 win32src.nsi
 src/xml.c
