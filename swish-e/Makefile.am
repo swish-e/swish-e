@@ -182,7 +182,6 @@ win32_dir = \
     src/worddata.h
 
 rpm_dir = \
-    rpm/swish-e-fhs.patch \
     rpm/swish-e.spec.in \
     rpm/swish-e.xpm
 

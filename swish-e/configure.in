@@ -21,6 +21,13 @@ dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
 AM_CONFIG_HEADER(src/acconfig.h)
 
 
+dnl prevent automake from generating rules to auto-rebuild tools
+dnl see http://sources.redhat.com/automake/automake.html#maintainer-mode
+dnl developers: either run configure with --enable-maintainer-mode 
+dnl or simply rerun ./bootstrap && ./configure when needed
+
+AM_MAINTAINER_MODE
+
 dnl Check for gettimeofday()
 AC_CHECK_FUNC(BSDgettimeofday, 
               [AC_DEFINE(HAVE_BSDGETTIMEOFDAY,[],[Get time of day])],
