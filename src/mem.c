@@ -24,8 +24,9 @@ $Id$
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-#include "error.h"
 #include "swish.h"
+#include "error.h"
+#include "string.h"
 
 #include "mem.h"
 
@@ -34,6 +35,14 @@ $Id$
 #undef malloc
 #undef realloc
 #undef free
+
+
+/* size of a longword */
+#define longSize (sizeof(long))
+
+/* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
+#define pageSize (1<<12)
+
 
 /* simple cases first ... */
 
@@ -46,7 +55,7 @@ void *emalloc(size_t size)
 	void *p;
 
 	if ((p = malloc(size)) == NULL)
-		progerr("Ran out of memory (could not allocate enough)!");
+		progerr("Ran out of memory (could not allocate %lu more bytes)!", size);
 
 	return p;
 }
@@ -58,7 +67,7 @@ void *erealloc(void *ptr, size_t size)
 	void *p;
 	
 	if ((p = realloc(ptr, size)) == NULL)
-		progerr("Ran out of memory (could not reallocate enough)!");
+		progerr("Ran out of memory (could not reallocate %lu more bytes)!", size);
 
 	return p;
 }
@@ -230,7 +239,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
  *
  * SIDE EFFECTS:
  *
- *	Severe error is signaled if can't allocate memory
+ *	Fatal error and exit if can't allocate memory
  */
 
     {
@@ -255,7 +264,10 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     MemPtr = (unsigned char *)malloc(MemSize);
 
 	if (MemPtr == NULL)
-		progerr("Ran out of memory (could not allocate enough)!");
+	{
+		printf("At file %s line %d:\n", file, line);
+		progerr("Ran out of memory (could not allocate %lu more bytes)!", MemSize);
+	}
 
 
     /*
@@ -305,7 +317,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
 	Header->Trace = AllocTrace(file, line, MemPtr, Size);
 #endif
 
-//	printf("Alloc: %s line %d: Addr: %08X Size: %d\n", file, line, MemPtr, Size);
+//	printf("Alloc: %s line %d: Addr: %08X Size: %ld\n", file, line, MemPtr, Size);
 
     return (MemPtr);
 }
@@ -357,11 +369,11 @@ void  Mem_Free (void *Address, char *file, int line)
     {
     MemTail *Tail;
 
-	if (Address == (void *)0xAAAAAAAA)
-		MEM_ERROR(("Address %08X is uninitialized memory\n", Address));
+	if ( (long)Address & (~(longSize-1)) != 0 )
+		MEM_ERROR(("Address %08X not longword aligned\n", Address));
 
     if (Address != Header->Start)
-		MEM_ERROR(("Already free: %0X\n", Address)); 
+		MEM_ERROR(("Already free: %08X\n", Address)); 
 		// Err_Signal (PWRK$_BUGMEMFREE, 1, Address);
 
     if (Header->Guard1 != GUARD)
@@ -390,7 +402,7 @@ void  Mem_Free (void *Address, char *file, int line)
     UserSize = Header->Size;
     MemSize = UserSize + MEM_OVERHEAD_SIZE;
 
-//	printf("Free: %s line %d: Addr: %08X Size: %d\n", file, line, Address, UserSize);
+//	printf("Free: %s line %d: Addr: %08X Size: %ld\n", file, line, Address, UserSize);
 
 #if MEM_TRACE
 	Free = Header->Trace;
@@ -438,7 +450,7 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
 
 	Mem_Free(Address, file, line);
 
-//	printf("Realloc: %s line %d: Addr: %08X Size: %d to %d\n", file, line, Address, OldSize, Size);
+//	printf("Realloc: %s line %d: Addr: %08X Size: %ld to %ld\n", file, line, Address, OldSize, Size);
 
 	return MemPtr;
 }
@@ -451,9 +463,9 @@ void Mem_Summary(char *title, int final)
 
 #if MEM_STATISTICS
 	printf("\nMemory usage summary: %s\n\n", title);
-	printf("Alloc calls: %d, Realloc calls: %d, Free calls: %d\n",  MAllocCalls, MReallocCalls, MFreeCalls);
-	printf("Requested: Maximum usage: %d, Current usage: %d\n",  MAllocMaximum,  MAllocCurrent);
-	printf("Estimated: Maximum usage: %d, Current usage: %d\n",  MAllocMaximumEstimated,  MAllocCurrentEstimated);
+	printf("Alloc calls: %d, Realloc calls: %ld, Free calls: %ld\n",  MAllocCalls, MReallocCalls, MFreeCalls);
+	printf("Requested: Maximum usage: %ld, Current usage: %ld\n",  MAllocMaximum,  MAllocCurrent);
+	printf("Estimated: Maximum usage: %ld, Current usage: %ld\n",  MAllocMaximumEstimated,  MAllocCurrentEstimated);
 
 #endif
 
@@ -482,11 +494,6 @@ void Mem_Summary(char *title, int final)
 **
 */
 
-#define longSize (sizeof(long))
-
-/* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
-#define pageSize (1<<12)
-
 /* round up to a long word */
 #define ROUND_LONG(n) (((n) + longSize - 1) & (~(longSize - 1)))
 
@@ -495,10 +502,11 @@ void Mem_Summary(char *title, int final)
 
 
 typedef struct _zone {
-	struct _zone	*next;
-	size_t			free;
-	void			*alloc;
-	unsigned char	*ptr;
+	struct _zone	*next;		/* link to next chunk */
+	size_t			free;		/* bytes free in this chunk */
+	unsigned char	*ptr;		/* start of free space in this chunk */
+	void			*alloc;		/* ptr to malloced memory (for free) */
+	size_t			size;		/* size of allocation (for statistics) */
 } ZONE;
 
 
@@ -509,6 +517,7 @@ static ZONE *allocChunk(size_t size)
 
 	zone = emalloc(sizeof(ZONE));
 	zone->alloc = emalloc(size);
+	zone->size = size;
 	zone->ptr = zone->alloc;
 	zone->free = size;
 	zone->next = NULL;
@@ -522,7 +531,7 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 	MEM_ZONE	*head;
 
 	head = emalloc(sizeof(MEM_ZONE));
-	head->name = name;
+	head->name = estrdup(name);
 
 	size = ROUND_PAGE(size);
 	if (size == 0)
@@ -530,6 +539,7 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 	head->size = size;
 
 	head->attributes = attributes;
+	head->allocs = 0;
 	head->next = allocChunk(size);
 
 	return head;
@@ -541,6 +551,9 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 	ZONE		*zone;
 	ZONE		*newzone;
 	unsigned char *ptr;
+
+	/* statistics */
+	head->allocs++;
 
 	size = ROUND_LONG(size);
 
@@ -576,6 +589,10 @@ void Mem_ZoneFree(MEM_ZONE **head)
 	if (!*head)
 		return;
 
+#if MEM_STATISTICS
+	Mem_ZoneStatistics(*head);
+#endif
+
 	next = (*head)->next;
 	while (next)
 	{
@@ -585,7 +602,31 @@ void Mem_ZoneFree(MEM_ZONE **head)
 		next = tmp;
 	}
 
+	efree((*head)->name);
 	efree(*head);
 	*head = NULL;
 }
 
+void Mem_ZoneStatistics(MEM_ZONE *head)
+{
+	int		chunks = 0;
+	size_t	used = 0;
+	size_t	free = 0;
+	size_t	wasted = 0;
+	ZONE	*zone;
+
+	for (zone = head->next; zone; zone = zone->next)
+	{
+		if (zone == head->next)
+			free = zone->free;
+
+		chunks++;
+		used += zone->size - zone->free;
+		wasted += zone->free;
+	}
+
+	wasted -= free;
+
+	printf("Zone '%s':\n  Chunks:%d, Allocs:%d, Used:%ld, Free:%ld, Wasted:%ld\n",
+		head->name, chunks, head->allocs, used, free, wasted);
+}
