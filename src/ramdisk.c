@@ -23,10 +23,10 @@
 **                   Routines and its equivalents:
 **                   
 **                         ramdisk_create                         fopen
-**                         ramdisk_tell_write, ramdisk_tell_read  ftell
+**                         ramdisk_tell                           ftell
 **                         ramdisk_write                          fwrite
 **                         ramdisk_read                           fwrite
-**                         ramdisk_seek_read                      fseek
+**                         ramdisk_seek                           fseek
 **                         ramdisk_close                          fclose
 **
 **
@@ -47,8 +47,8 @@ ve
 
 struct ramdisk
 {
-   unsigned long cur_write_pos;
-   unsigned long cur_read_pos;
+   unsigned long cur_pos;
+   unsigned long end_pos;
    unsigned int n_buffers;
    unsigned int buf_size;
    unsigned char **buffer;
@@ -60,8 +60,8 @@ struct ramdisk *ramdisk_create(int buf_size)
 {
 struct ramdisk *rd;
         rd = (struct ramdisk *) emalloc(sizeof(struct ramdisk));
-        rd->cur_write_pos = 0;
-        rd->cur_read_pos = 0;
+        rd->cur_pos = 0;
+		rd->end_pos =0;
         rd->n_buffers = 1;
         rd->buf_size = buf_size;
         rd->buffer = (unsigned char **)emalloc(sizeof(unsigned char *));
@@ -87,18 +87,12 @@ void add_buffer_ramdisk(struct ramdisk *rd)
 }
 
 /* Equivalent to ftell to get the position while writing to the ramdisk */
-long ramdisk_tell_write(FILE *fp)
+long ramdisk_tell(FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
-    return rd->cur_write_pos;
+    return rd->cur_pos;
 }
 
-/* Equivalent to ftell to get the position while reading from the ramdisk */
-long ramdisk_tell_read(FILE *fp)
-{
-struct ramdisk *rd = (struct ramdisk *)fp;
-    return rd->cur_read_pos;
-}
 
 /* Writes to the ramdisk - The parameters are identical to those in fwrite */
 size_t ramdisk_write(const void *buffer,size_t sz1, size_t sz2, FILE *fp)
@@ -109,8 +103,8 @@ unsigned char *buf = (unsigned char *)buffer;
 unsigned int num_buffer,start_pos,tmplenbuf = lenbuf;
 unsigned int avail;
 
-    num_buffer = rd->cur_write_pos / rd->buf_size;
-    start_pos = rd->cur_write_pos % rd->buf_size;
+    num_buffer = rd->cur_pos / rd->buf_size;
+    start_pos = rd->cur_pos % rd->buf_size;
 
     avail = rd->buf_size - start_pos;
     while(avail<=(unsigned int)lenbuf)
@@ -118,8 +112,8 @@ unsigned int avail;
         if(avail)
             memcpy(rd->buffer[num_buffer]+start_pos,buf,avail);
         lenbuf -= avail;
-        rd->cur_write_pos += avail;
-		buf += avail;
+        rd->cur_pos += avail;
+        buf += avail;
         add_buffer_ramdisk(rd);
         avail = rd->buf_size;
         start_pos = 0;
@@ -128,18 +122,41 @@ unsigned int avail;
     if(lenbuf)
     {
         memcpy(rd->buffer[num_buffer]+start_pos,buf,lenbuf);
-        rd->cur_write_pos += lenbuf;
+        rd->cur_pos += lenbuf;
     }
+    if(rd->cur_pos > rd->end_pos)
+        rd->end_pos = rd->cur_pos;
     return (int) tmplenbuf;
 }
 
-/* Equivalent to fseek while reading */
-int ramdisk_seek_read(FILE *fp,long pos, int set)
+/* Equivalent to fseek */
+int ramdisk_seek(FILE *fp,long pos, int set)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
-    rd->cur_read_pos = pos;
-    return pos;
+
+    switch(set)
+    {
+    case SEEK_CUR:
+    	pos += rd->cur_pos;
+    	break;
+    case SEEK_END:
+    	pos += rd->end_pos;
+    	break;
+    }
+    if( pos > rd->end_pos )
+    {
+        while(rd->end_pos < pos)
+        {
+            ramdisk_putc(0, (FILE *)rd);
+        }
+    } 
+    else
+    {
+        rd->cur_pos = pos;
+    }
+    return 0;
 }
+
 
 /* Reads from the ramdisk - The parameters are identical to those in fread */
 size_t ramdisk_read(void *buf, size_t sz1, size_t sz2, FILE *fp)
@@ -149,8 +166,14 @@ unsigned int len = (unsigned int) (sz1 *sz2);
 unsigned char *buffer = (unsigned char *)buf;
 unsigned int avail, num_buffer, start_pos, buffer_offset;
 
-    num_buffer = rd->cur_read_pos / rd->buf_size;
-    start_pos = rd->cur_read_pos % rd->buf_size;
+    if(rd->cur_pos >= rd->end_pos)
+    return 0;
+    if((rd->cur_pos + len) > rd->end_pos)
+    {
+        len = rd->end_pos - rd->cur_pos;
+    }
+    num_buffer = rd->cur_pos / rd->buf_size;
+    start_pos = rd->cur_pos % rd->buf_size;
 
     buffer_offset = 0;
 
@@ -159,16 +182,16 @@ unsigned int avail, num_buffer, start_pos, buffer_offset;
     {
         memcpy(buffer+buffer_offset,rd->buffer[num_buffer]+start_pos,avail);
         buffer_offset += avail;
-        rd->cur_read_pos += avail;
+        rd->cur_pos += avail;
         len -= avail;
         num_buffer++;
         start_pos=0;
-		avail = rd->buf_size;
+        avail = rd->buf_size;
         if(num_buffer == rd->n_buffers)
             return buffer_offset;
     }
     memcpy(buffer+buffer_offset,rd->buffer[num_buffer]+start_pos,len);
-    rd->cur_read_pos += len;
+    rd->cur_pos += len;
     buffer_offset += len;
     return buffer_offset;
 }

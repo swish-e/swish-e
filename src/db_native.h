@@ -65,7 +65,20 @@ struct Handle_DBNative
    int mode;  /* 1 - Create  0 - Open */
 
    char *dbname;
+
+       /* ramdisk to store words */
+   struct ramdisk *rd;
        /* Index FILE handle as returned from fopen */
+
+       /* Pointers to words write/read functions */ 
+   long    (*w_tell)(FILE *);
+   size_t  (*w_write)(const void *, size_t, size_t, FILE *);
+   int     (*w_seek)(FILE *, long, int);
+   size_t  (*w_read)(void *, size_t, size_t, FILE *);
+   int     (*w_close)(FILE *);
+   int     (*w_putc)(int , FILE *);
+   int     (*w_getc)(FILE *);
+
    FILE *fp;
    FILE *prop;
 };
@@ -129,7 +142,8 @@ int     DB_EndReadSortedIndex_Native(void *db);
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from a file
 */
-void    printlong(FILE *, unsigned long);
-unsigned long    readlong(FILE *);
+void    printlong(FILE * fp, unsigned long num, size_t (*f_write)(const void *, size_t, size_t, FILE *));
+unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *));
+
 
 #endif
