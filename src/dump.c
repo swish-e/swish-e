@@ -83,7 +83,29 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     fieldnum = 0;
 
-    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL)  )
+
+    if (DEBUG_MASK & DEBUG_INDEX_WORDS_ONLY)
+    {
+        DB_InitReadWords(sw, indexf->DB);
+
+        for( j = 0; j < 256; j++ )
+        {
+            word[0] = (unsigned char) j;
+            word[1] = '\0';
+            DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+
+            while(wordID)
+            {
+                printf("%s\n",resultword);
+
+                
+                efree(resultword);
+                DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+
+            }
+        }
+    }
+    else if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL)  )
     {
         printf("\n-----> WORD INFO <-----\n");
 
@@ -98,10 +120,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             {
                 printf("%s:",resultword);
 
-                    /* Read Word's data */
+                /* Read Word's data */
                 DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
 
-                    /* parse and print word's data */
+                /* parse and print word's data */
                 s = worddata;
 
                 x = uncompress2(&s);     /* tfrequency */

@@ -795,6 +795,8 @@ int     getnumPropertiesToDisplay(SWISH *);
 #define DEBUG_INDEX_FILES 1<<4
 #define DEBUG_INDEX_METANAMES 1<<5
 #define DEBUG_INDEX_ALL 1<<6
+#define DEBUG_INDEX_WORDS_ONLY 1<<7
+#define DEBUG_INDEX_WORDS_META 1<<8
 
 /* These are only checked while indexing */
 #define DEBUG_WORDS 1<<0
