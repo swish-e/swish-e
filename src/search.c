@@ -1699,12 +1699,14 @@ void    freeresult(SWISH * sw, RESULT * rp)
             efree(rp->filename);
         if (rp->summary)
             efree(rp->summary);
+
         if (sw->Search->numPropertiesToDisplay && rp->Prop)
         {
             for (i = 0; i < sw->Search->numPropertiesToDisplay; i++)
                 efree(rp->Prop[i]);
             efree(rp->Prop);
         }
+
         if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
         {
             for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
@@ -1792,6 +1794,7 @@ RESULT *getproperties(RESULT * rp)
         rp->summary = estrdup(fileInfo->fi.summary);
     rp->start = fileInfo->fi.start;
     rp->size = fileInfo->fi.size;
+
     if (sw->Search->numPropertiesToDisplay)
         rp->Prop = getResultProperties(rp);
 

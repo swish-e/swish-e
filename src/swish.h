@@ -590,7 +590,7 @@ struct char_lookup_st
 
 typedef enum
 {                               /* Property Datatypes */
-    UNDEFINED = -1, UNKNOWN = 0, STRING, INTEGER, FLOAT, DATE
+    UNDEFINED = -1, UNKNOWN = 0, STRING, INTEGER, FLOAT, DATE, ULONG
 }
 PropType;
 
@@ -600,6 +600,7 @@ typedef union
     int     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
+    unsigned long v_ulong;      /* Unsigned long */
 }
 u_PropValue1;
 

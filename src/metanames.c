@@ -80,6 +80,7 @@ struct metaEntry *getMetaNameData(INDEXDATAHEADER * header, char *word)
     for (i = 0; i < header->metaCounter; i++)
         if (!strcmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i];
+
     return NULL;
 }
 
