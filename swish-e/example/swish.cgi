@@ -729,7 +729,7 @@ Content-Type: text/html
 
 <html>
 <head><title>Software Error</title></head>
-<body><h2>Software Error<h2><p>Please check error log</p></body>
+<body><h2>Software Error</h2><p>Please check error log</p></body>
 </html>
 EOF
 
