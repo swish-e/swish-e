@@ -21,10 +21,13 @@ Documentation is now included in the source distribution as .pod (perldoc) files
 In addition, the distribution can now generate PDF, postscript, and unix man pages from the source
 .pod files.  See L<README|README> for more information.
 
-=item * Indexing speed
+=item * Indexing and searching speed
 
 The indexing process has been imporoved.  Depending on a number of factors, you may see
-a significant improvement in indexing speed.
+a significant improvement in indexing speed, especially if upgrading from version 1.x.
+
+Searching speed has also been improved.  Properties are not loaded until results are displayed,
+and properties are pre-sorted during indexing to speed up sorting results by properties.
 
 =item * Properties are written to a sepearte file
 
@@ -72,7 +75,7 @@ Here's a summary of the way swish works for the different versions.
 
     2.0.0 - MaxHits returns first N results from each index.
             e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
-            All 15 from Index1 plus 15 from Index2 = 40 hits
+            All 15 from Index1 plus 15 from Index2.
 
     2.2.0 - Results are merged and first N results are returned.
             e.g. Maxhits=20; 15 hits Index1, 40 hits Index2
@@ -81,15 +84,10 @@ Here's a summary of the way swish works for the different versions.
             20 are returned.
 
 
-=item * Indexing and searching speed improvements
-
-A number of improvements in indexing and searching speed were made, especially for searching
-very large indexes and sorting by properties.
-
 =item * New B<prog> document source indexing method
 
 You can now use -S prog to use an external program to supply documents
-to swish.  This program can be used to spider web servers, index databases,
+to swish.  This external program can be used to spider web servers, index databases,
 or to convert any type of document into html, xml, or text, so it can be
 indexed by swish.  Examples are given in the C<prog-bin> directory.
 
@@ -106,14 +104,13 @@ not listed in WordCharacters.
 Previously, stopwords were checked after stemming and
 soundex conversions, as well as most of the other word checks (WordCharacters, min/max length
 and so on).  This meant that the stopword list probably didn't work as expected when using stemming.
-This has been corrected.
 
 =item * The search parser was rewritten to be more logical
 
-The search parser was rewritten to correct a number of logic errors.  Previously, swish
+The search parser was rewritten to correct a number of logic errors.  Swish
 did not differentiate between meta names, swish operators and search words when parsing
 the query.  This meant, for example, that metanames might be broken up by the WordCharacters
-setting, and that it could be stemmed.  This has been fixed.
+setting, and that they could be stemmed.
 
 Swish operator characters C<"*()=> can now be searched by escaping with a backslash.
 For example:
@@ -184,7 +181,7 @@ The word position is now bumped when a new metatag is found -- this
 is to prevent phrases from matching across meta tags.  This directive will
 disable this behavior for the listed tags.
 
-This currently works only with XML parsing.
+This directive works for HTML and XML documents.
 
 =item * Changed directive: IndexComments
 
@@ -192,9 +189,14 @@ This has been changed such that comments are not indexed by default.
 
 =item * Changed directive: IgnoreWords
 
-The builtin list of stop words has been removed. Use of the SwishDefault word
-will generate a warning. A sample file C<stopwords.txt> has been included if
-you wish to use these default words using C<IgnoreWords File: stopwords.txt>
+The builtin list of stopwords has been removed. Use of the SwishDefault word
+will generate a warning, and no stop words will be used.  You must now specify
+a list of stopwords, or specify a file of stopwords.
+
+A sample file C<stopwords.txt> has been included in the F<conf/stopwords> directory
+of the distribution, and can be used by the directive:
+
+    IgnoreWords File: /path/to/stopwords.txt
 
 =item * Change of the default for IgnoreTotalWordCountWhenRanking
 
@@ -224,15 +226,16 @@ Currenly, only integers can be stored, such as a unix timestamp.
 
 PropertyNamesDate only indicates to swish that a number is a unix timestamp, and
 to display the property as a formatted time when printing results.
-Swish can not currently parse date strings.
+Swish does not currently parse date strings; you must provide a unix timestamp.
 
 =item * New directive: MetaNameAlias
 
-You may now supply alias names for MetaNames.  
+You may now create alias names for MetaNames.  This allow you to map or group
+multiple names to the same MetaName.
 
 =item * New directive: PropertyNameAlias
 
-Just like above, this creates aliases for a property name.
+Creates aliases for a PropertyName.
 
 =back
 
@@ -258,13 +261,17 @@ Prints words stored in the swish index.
 Provides a way to do incremental indexing by comparing last modification dates.
 You pass C<-N> a path to a file and only files newer than the last modified date of that file will be indexed.
 
-=item * Enhanced command line argument C<-D>
+=item * Removed command line argument C<-D>
 
-When C<-D> is used with C<-v 4> additional debugging data is printed.
+C<-D> no longer dumps the index file data.  Use C<-T> instead.
+
+=item * New command line argument C<-T>
+
+C<-T> is used for debugging indexing and searching.
 
 =item * Enhanced command line argument C<-d>
 
-Now -d can accept some back-slashed characters to be used as output separators.
+Now C<-d> can accept some back-slashed characters to be used as output separators.
 
 =item * Enhanced command line argument C<-P>
 
