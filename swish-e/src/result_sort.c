@@ -55,7 +55,10 @@ typedef struct
 {
     PROP_INDEX  *prop_index;  /* cache of index pointers for this file */
     propEntry   *SortProp;    /* current property for this file */
-char *file_name;
+
+#ifdef DEBUGSORT
+    char *file_name;
+#endif
 } PROP_LOOKUP;
 
 static struct metaEntry *CurrentPreSortMetaEntry;
@@ -697,9 +700,12 @@ static int     compFileProps(const void *s1, const void *s2)
     int         a = (int)r1; 
     int         b = (int)r2;
 
-printf("\n-------------\ncomparing file %d [%s] with %d [%s]\n", a, PropLookup[a].file_name, b, PropLookup[b].file_name );   
+#ifdef DEBUGSORT
+    printf("\n-------------\ncomparing file %d [%s] (len %d) <=> %d [%s] (len %d)\n", a, PropLookup[a].file_name, PropLookup[a].SortProp->propLen, b, PropLookup[b].file_name, PropLookup[b].SortProp->propLen );
+#endif
 
     return Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
+
 }
 
 
@@ -809,31 +815,29 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
             PropLookup = emalloc( total_files * sizeof( PROP_LOOKUP ));
             memset( PropLookup, 0, total_files * sizeof( PROP_LOOKUP ) );
-{
-    propEntry *d;
-    FileRec fi;
-    struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
-    char *s;
 
+#ifdef DEBUGSORT
+            {
+                propEntry *d;
+                FileRec fi;
+                struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
+                char *s;
 
-printf("Reading metaID %d\n\n", me->metaID );    
+                for (i = 0; i < total_files; i++)
+                {
+                    memset(&fi, 0, sizeof( FileRec ));
+                    fi.filenum = i+1;
 
-    for (i = 0; i < total_files; i++)
-    {
-        memset(&fi, 0, sizeof( FileRec ));
-        fi.filenum = i+1;
+                    d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
 
-        d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
-
-printf("length for %d = %d\n", i, d->propLen );        
-
-        s = emalloc( d->propLen + 1 );
-        memcpy( s, d->propValue, d->propLen );
-        s[d->propLen] = '\0';
+                    s = emalloc( d->propLen + 1 );
+                    memcpy( s, d->propValue, d->propLen );
+                    s[d->propLen] = '\0';
         
-        PropLookup[i].file_name = s;
-    }
-}
+                    PropLookup[i].file_name = s;
+                }
+            }
+#endif
 
             
         }
@@ -865,7 +869,6 @@ printf("length for %d = %d\n", i, d->propLen );
         swish_qsort( sort_array, total_files, sizeof( int ), &compFileProps);
 
 
-
         /* Build the sorted table */
 
         for (i = 0, k = 1; i < total_files; i++)
@@ -879,17 +882,20 @@ printf("length for %d = %d\n", i, d->propLen );
             }
 
             out_array[ sort_array[i] ] = k;
-
-
-            /* Free the property */
-            freeProperty( PropLookup[i].SortProp );
         }
 
         /* Now compress */
         cur = out_buffer;
 
         for (i = 0; i < total_files; i++)
+        {
             cur = compress3( out_array[i], cur );
+            
+            /* Free the property */
+            if ( PropLookup[i].SortProp )
+                freeProperty( PropLookup[i].SortProp );
+        }
+
 
         DB_WriteSortedIndex(sw, metaID, out_buffer, cur - out_buffer, indexf->DB);
 
