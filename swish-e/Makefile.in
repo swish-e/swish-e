@@ -14,11 +14,11 @@ mandir      = $(prefix)/man/man1
 perl		= @PERL@
 libdir		= @libdir@
 
-all:	swish-e swish-search
+all:	swish-e swish-search perllib
 	echo 'now make test'
 swish-e:	
 	echo 'making swish-e'
-	(cd src; ./configure --quiet --prefix=$(prefix) --libdir=$(libdir); make)
+	(cd src; make)
 	echo 'swish-e done'
 
 swish-search: swish-e
@@ -26,10 +26,16 @@ swish-search: swish-e
 	cp -f src/swish-e src/swish-search
 	echo 'swish-search done'
 
+
+perllib:
+	echo 'making Perl library for Swish-E'
+	(cd perl;$(perl) Makefile.PL PREFIX=$(libdir);make) 
+
 #
 clean:
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
 	tests/test.index src/testlib 
+	(cd perl; make clean)
 	(cd doc; make clean)
 
 realclean: 
@@ -38,6 +44,7 @@ realclean:
 		 src/config.status
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
 	tests/test.index src/testlib src/Makefile Makefile
+	(cd perl; make realclean)
 	(cd doc; make realclean)
 
 test:

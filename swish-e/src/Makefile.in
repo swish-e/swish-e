@@ -28,7 +28,9 @@ CFLAGS = @CFLAGS@
 
 LIBS=@LIBS@
 
+# Library related 
 AR = ar
+ARFLAGS = cr
 RANLIB = @RANLIB@
 
 #
@@ -50,6 +52,9 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 .SUFFIXES : .o .c
 .c.o :
 	$(CC) $(CFLAGS) -c $<
+.c.a :
+	$(CC) $(CFLAGS) -c $<
+	$(AR) $(ARFLAGS) $@ $*.o
 
 all:	$(NAME) swish-search testlib
 
@@ -62,7 +67,7 @@ testlib: testlib.o libswish-e.a swish.o
 	chmod 755 $@
 
 libswish-e.a: $(OBJS)
-	$(AR) cr libswish-e.a $(OBJS)
+	$(AR) $(ARFLAGS) libswish-e.a $(OBJS)
 	$(RANLIB) libswish-e.a
 
 swish-search: $(NAME)
