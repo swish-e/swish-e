@@ -31,8 +31,9 @@ $Id$
 /*
 ** httpserver.c
 */
-
+#ifdef HAVE_CONFIG_H
 #include "acconfig.h"
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
