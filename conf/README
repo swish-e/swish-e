@@ -59,6 +59,9 @@ Examples:
 
     example8.conf   - using "filters" to convert PDF files.
 
+    example9.conf   - using the "prog" method for filtering
+    example9.pl
+
 
 
 
