@@ -153,47 +153,31 @@
 
 /* IGNORESAME is the maximum times a character can repeat in a word.
 */
-#define WORDCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
+
+#define WORDCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
 
 /* WORDCHARS is a string of characters which SWISH permits to
-** be in words. Any strings which do not include these characters
-** will not be indexed. You can choose from any character in
-** the following string:
-**
-** abcdefghijklmnopqrstuvwxyz0123456789_\|/-+=?!@$%^'\"`~,.[]{}()
-**
-** Note that if you omit "0123456789&#;" you will not be able to
-** index HTML entities. DO NOT use the asterisk (*), lesser than
-** and greater than signs (<), (>), or colon (:).
-**
-** Including any of these four characters may cause funny things to happen.
-** If you have a pressing need to index 8-bit characters, please contact
-** me for possible user testing in the future.
+** be in words.  Words are defined by these characters.
 **
 ** Also note that if you specify the backslash character (\) or
 ** double quote (") you need to type a backslash before them to
 ** make the compiler understand them.
 */
 
-#define BEGINCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹íÀ&0123456789(\"'"
+#define BEGINCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
 
 /* Of the characters that you decide can go into words, this is
 ** a list of characters that words can begin with. It should be
 ** a subset of (or equal to) WORDCHARS.
 */
 
-#define ENDCHARS "abcdefghijklmnopqrstuvwxyz\\ÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹íÀ.0123456789,'\")"
+#define ENDCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
 
 /* This is the same as BEGINCHARS, except you're testing for
 ** valid characters at the ends of words.
 */
 
-/* Note that if you really want to edit the default stopwords, (words
-** that are deemed too common to be indexed) then you can do so in the
-** file "swish.h". They don't have to be in alphabetical order.
-*/
-
-#define IGNORELASTCHAR ";.,')\""
+#define IGNORELASTCHAR ";"
 
 /* Array that contains the char that, if considered valid in the middle of 
 ** a word need to be disreguarded when at the end. It is important to also
@@ -202,7 +186,7 @@
 ** If none just leave the empty list "". Do not erase the line
 */
 
-#define IGNOREFIRSTCHAR "('\""
+#define IGNOREFIRSTCHAR ""
  
 /* Array that contains the char that, if considered valid in the middle of
 ** a word need to be disreguarded when at the beginning. This was to solve
