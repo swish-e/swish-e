@@ -25,7 +25,7 @@ if test "$PHP_SWISHE" != "no"; then
     AC_MSG_RESULT([not found])
     AC_MSG_ERROR([Please reinstall the swish-e distribution or fix path in --with-swishe])
   else
-    if test -z "$SWISHE_DIR/src/swish.h"; then
+    if test -z "$SWISHE_DIR/include/swish.h"; then
       AC_MSG_RESULT([swish.h not found])
       AC_MSG_ERROR([Please install the swish-e distribution or give a proper path])
     else
@@ -37,7 +37,7 @@ if test "$PHP_SWISHE" != "no"; then
   fi
 
   dnl # --with-swishe -> add include path
-  PHP_ADD_INCLUDE($SWISHE_DIR/src)
+  PHP_ADD_INCLUDE($SWISHE_DIR/include)
 
   dnl # --with-swishe -> chech for lib 
 

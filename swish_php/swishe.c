@@ -729,7 +729,7 @@ int rc;
         return;
 
     FETCH_SEARCH();
-    SwishStructure(search->swishe_search_handle, structure);
+    SwishSetStructure(search->swishe_search_handle, structure);
 }
 /* }}} */
 
@@ -802,7 +802,7 @@ php_swishe_search *search;
     }
 
     FETCH_SEARCH();
-    SwishReSetSearchLimit(search->swishe_search_handle);
+    SwishResetSearchLimit(search->swishe_search_handle);
 }
 /* }}} */
 
