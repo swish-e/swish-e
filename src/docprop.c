@@ -473,7 +473,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     *error_flag = 0;
 
     /* skip leading white space */
-    while ( isspace( (int)*string) )
+    while ( isspace( (int)*string ))
         string++;
 
     if ( !string || !*string )
@@ -544,7 +544,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         int i;
         /* replace all non-printing chars with a space -- this is questionable */
         for ( i = 0; i < len; i++ )
-            if ( !isprint( string[i] ) )
+            if ( !isprint( (int)((unsigned char)string[i]) ) )
                 string[i] = ' ';
             
         *encodedStr = string;
@@ -639,7 +639,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
         return p;
 
     /* When appending, we separate by a space -- could be a config setting */
-    if ( !isspace( *str ) && !isspace( p->propValue[p->propLen-1] ) )
+    if ( !isspace( (int)*str ) && !isspace( (int)p->propValue[p->propLen-1] ) )
         add_a_space++;
 
     if ( meta_entry->max_len &&  p->propLen + add_a_space >=  meta_entry->max_len )

@@ -32,7 +32,7 @@ $Id$
 #include <libxml/HTMLparser.h>
 #include <libxml/xmlerror.h>
 
-#define BUFFER_CHUNK_SIZE 20000
+#define BUFFER_CHUNK_SIZE 10000
 
 /* to buffer text until an end tag is found */
 
@@ -634,7 +634,6 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
     if ( !Convert_to_latin1( parse_data, txt, txtlen ) )
     {
-printf("failed to append\n");    
         append_buffer( &parse_data->text_buffer, txt, txtlen );
         return;
     }
@@ -674,7 +673,7 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
         buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < txtlen )
                     ? buf->max + txtlen+1
                     : buf->max + BUFFER_CHUNK_SIZE+1;
-                    
+
         buf->buffer = erealloc( buf->buffer, buf->max );
     }
 
@@ -927,7 +926,7 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
         buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < buf->cur + txtlen )
                     ? buf->cur + txtlen+1
                     : buf->max + BUFFER_CHUNK_SIZE+1;
-                    
+
         buf->buffer = erealloc( buf->buffer, buf->max );
     }
 
@@ -956,11 +955,14 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     if ( !buf->cur )
         return;
 
+
+
+
     /* look back for word boundry */
 
-    if ( !clear && !isspace( buf->buffer[buf->cur-1] ) )  // flush up to current word
+    if ( !clear && !isspace( (int)buf->buffer[buf->cur-1] ) )  // flush up to current word
     {
-        while ( buf->cur > 0 && !isspace( buf->buffer[buf->cur-1] ) )
+        while ( buf->cur > 0 && !isspace( (int)buf->buffer[buf->cur-1] ) )
             buf->cur--;
 
         if ( !buf->cur )  // then there's only a single word in the buffer
@@ -976,7 +978,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     /* Mark the end of the buffer - should switch over to using a length to avoid strlen */
 
     buf->buffer[buf->cur] = '\0';
-
 
 
     /* Index the text */
@@ -1007,6 +1008,10 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     else
         buf->cur = 0;
 
+
+
+
+    /* This is to allow inline tags to continue to end of word str<b>ON</b>g  */
     if ( parse_data->flush_word )
     {
         parse_data->structure &= ~parse_data->flush_word;
