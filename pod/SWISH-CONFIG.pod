@@ -18,6 +18,15 @@ Comments are any line that begin with a "#".
 
     # This is a comment
 
+As of 2.4.3 lines may be continued by placing a backslas as the last character
+on the line:
+
+    IgnoreWords \
+        am \
+        the \
+        foo
+
+
 Directives may take more than one parameter.  Enclose single parameters
 that include whitespace in quotes (single or double).  Inside of quotes
 the backslash escapes the next character.
