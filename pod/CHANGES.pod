@@ -269,6 +269,11 @@ Allows you to use a regular expression to extract out part of the path of each f
 and index it with a meta name.
 For example, this allows searches to be limited to parts of your file tree.
 
+=item * New directive: FileMatch
+
+FileMatch is similar to FileRules.  Where FileRules is used to exclude
+files and directoires, FileMatch is used to I<include> files.
+
 =back
 
 Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for documentation on these
