@@ -167,7 +167,9 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
 
     {
         long    index,
+#ifdef USE_BTREE
                 worddata,
+#endif
                 prop;
 
         index = readlong(DB->fp, fread);
