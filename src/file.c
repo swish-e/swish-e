@@ -111,59 +111,6 @@ char *path;
 	return stbuf.st_size;
 }
 
-/* Add an entry to the metaEntryList with the given value and the
-** appropriate index
-*/
-/* #### Changed the name isDocProp by metaType */
-void addMetaEntry(IndexFILE *indexf, char *metaWord, int metaType, int *applyautomaticmetanames)
-/* #### */
-{
-int i;
-struct metaEntry* tmpEntry;
-struct metaEntry* newEntry;
-	
-	if(metaWord == NULL || metaWord[0]=='\0') return;
-	for( i=0; metaWord[i]; i++)
-		metaWord[i] =  tolower(metaWord[i]);
-	
-	/* 06/00 Jose Ruiz - Check for automatic metanames
-	*/
-	if(((int)strlen(metaWord)==9) && memcmp(metaWord,"automatic",9)==0) {
-		*applyautomaticmetanames =1;
-		return;
-	}
-	if (indexf->Metacounter <2)
-		indexf->Metacounter = 2;
-
-/* #### Jose Ruiz - New Stuff. Use metaType */
-	/* See if there is a previous metaname */
-	for (tmpEntry=indexf->metaEntryList;tmpEntry;tmpEntry=tmpEntry->next)   
-		if (strcmp(tmpEntry->metaName,metaWord)==0) break; /* found */
-
-	if(!tmpEntry)      /* metaName not found - Create a new one */
-	{
-		newEntry=(struct metaEntry*) emalloc(sizeof(struct metaEntry));
-		newEntry->metaType = 0;
-		newEntry->metaName = (char*)estrdup(metaWord);
-		newEntry->index = indexf->Metacounter++;
-		newEntry->next = NULL;
-			/* Add at the end of the list of metanames */
-		if (indexf->metaEntryList)
-		{
-			for(tmpEntry=indexf->metaEntryList;tmpEntry->next!=NULL;tmpEntry=tmpEntry->next)
-			;
-			tmpEntry->next = newEntry;
-		}
-		else
-			indexf->metaEntryList = newEntry;
-		tmpEntry = newEntry;
-	}
-	/* Add metaType info */
-	tmpEntry->metaType |= metaType;
-
-	/* #### End of changes */
-	return;
-}
 
 /*
  * Some handy routines for parsing the Configuration File

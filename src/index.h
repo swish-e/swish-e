@@ -49,8 +49,8 @@ int stripIgnoreLastChars _AP ((INDEXDATAHEADER, char *));
 #define isIgnoreLastChar(header,c) header.ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) header.bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry _AP ((char *,time_t ,char *,char * ,int, int, FILE *, struct docPropertyEntry **, int, int *));
-struct file *readFileEntry _AP ((IndexFILE *,int, int));
+unsigned char *buildFileEntry _AP ((char *, FILE *, struct docPropertyEntry **, int, int *));
+struct file *readFileEntry _AP ((IndexFILE *,int));
 
 void computehashentry _AP ((ENTRY **,ENTRY *));
 void TranslateChars _AP ((INDEXDATAHEADER, char *));

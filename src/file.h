@@ -31,7 +31,6 @@ int isfile _AP ((char *));
 int islink _AP ((char *));
 int getsize _AP ((char *));
 void getdefaults _AP ((SWISH *, char *, int *, int *, int));
-void addMetaEntry _AP ((IndexFILE *, char *, int, int *));
 void checkReplaceList _AP ((SWISH *));
 void checkListRegex _AP ((struct swline *list));
 

@@ -13,10 +13,9 @@
 #include "metanames.h"
 /* #### */
 
-int getXMLField(indexf, tag, docPropName, applyautomaticmetanames, verbose, OkNoMeta)
+struct metaEntry *getXMLField(indexf, tag, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
 char* tag;
-int* docPropName;
 int *applyautomaticmetanames;
 int verbose;
 int OkNoMeta;
@@ -26,26 +25,21 @@ static int lenword=0;
 static char *word=NULL;
 int i;
 struct metaEntry* list;
-	
+
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
-	if (docPropName != NULL)
-	{
-		*docPropName = 0;
-	}
-	
 	temp = tag;
 	
 	/* Get to the beginning of the word disreguarding blanks */
-	while (temp != NULL && *temp) {
+	while (temp && *temp) {
 		if (*temp == ' ')
 			temp++;
 		else
 			break;
 	}
-	
+
 	/* Copy the word and convert to lowercase */
-	for (i=0;temp !=NULL && *temp && *temp != ' '; ) {
+	for (i=0;temp && *temp && *temp != ' '; ) {
 		if (i==lenword) {
 			lenword *=2;
 			word= (char *) erealloc(word,lenword+1);
@@ -66,20 +60,10 @@ struct metaEntry* list;
 			if (!strcmp(list->metaName, word) )
 			{
 /* #### Use metaType */
-				if ((docPropName != NULL) && is_meta_property(list))
-				{
-					*docPropName = list->index;
-				}
-				if ((!is_meta_index(list)) && is_meta_property(list))
-				{
-					if (*applyautomaticmetanames) 
-						list->metaType |=META_INDEX;
-					else 
-				/* property is not for indexing, so return generic metaName value */
-						return 1;
-				}
+				if ((!is_meta_index(list)) && (*applyautomaticmetanames))
+					list->metaType |=META_INDEX;
 /* #### */
-				return list->index;
+				return list;
 			}
 		}
 		/* 06/00 Jose Ruiz
@@ -95,7 +79,7 @@ struct metaEntry* list;
 	/* If it is ok not to have the name listed, just index as no-name */
 	if (OkNoMeta) {
 		/*    printf ("\nwarning: metaName %s does not exiest in the user config file", word); */
-		return 1;
+		return NULL;
 	}
 	else {
 		printf ("\nerr: INDEXING FAILURE\n");
@@ -122,8 +106,8 @@ int currentmetanames;
 char *p, *tag, *endtag=NULL;
 int structure;
 struct file *thisFileEntry = NULL;
-int metaNameXML;
-int i, docPropName;
+struct metaEntry *metaNameXML;
+int i;
 IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
 	
@@ -141,37 +125,41 @@ char *summary=NULL;
 	metaName[0]=1; positionMeta[0]=1;
 	
 	for(p=buffer;p && *p;) {
-		if((tag=strchr(p,'<')) && ((tag==p) )) {   /* Look for '<' */
+		if((tag=strchr(p,'<'))) {   /* Look for '<' */
 				/* Index up to the tag */
 			*tag++='\0';
 			ftotalwords +=indexstring(sw, p, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 				/* Now let us look for '>' */
 			if((endtag=strchr(tag,'>'))) {  
 				*endtag++='\0';
-				if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf, tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) 
+				if ((tag[0]!='!') && (tag[0]!='/') && ((metaNameXML=getXMLField(indexf, tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) 
 				{
-					/* realloc memory if needed */
-					if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-					/* add netaname to array of current metanames */
-					metaName[currentmetanames]=metaNameXML;
-					/* Preserve position counter */
-					if(!currentmetanames) tmpposition=positionMeta[0];
-					/* Init word counter for the metaname */
-					positionMeta[currentmetanames++] = 1;
+					/* If must be indexed add the metaName to the currentlist of metaNames */
+					if(is_meta_index(metaNameXML))
+					{
+						/* realloc memory if needed */
+						if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
+						/* add netaname to array of current metanames */
+						metaName[currentmetanames]=metaNameXML->index;
+						/* Preserve position counter */
+						if(!currentmetanames) tmpposition=positionMeta[0];
+						/* Init word counter for the metaname */
+						positionMeta[currentmetanames++] = 1;
+					}
 					p=endtag;
 					/* If it is also a property doc store it
 					** Only store until a < is found */
-					if(docPropName) {
+					if(is_meta_property(metaNameXML)) {
 					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
+					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->index,p,strlen(p));
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag+1,&docPropName, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
+				else if((tag[0]!='!') && (tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag+1, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) {
 					/* search for the metaname in the
 				        ** list of currentmetanames */
 					if(currentmetanames) {
-			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML) break;
+			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML->index) break;
 						if(i>=0) currentmetanames=i;
 						if(!currentmetanames) {
 						    metaName[0] = 1;

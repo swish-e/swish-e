@@ -162,232 +162,6 @@ char *title;
 }
 
 
-/* This converts HTML numbered entities (such as &#169;)
-** to strings (like &copy;). Much is this function is
-** simply adding semicolons in the right places.
-** This and the functions it calls are not very fast
-** and could be made faster.
-*/
-
-char *convertentities_old(s,asciientities)
-char *s;
-int asciientities;
-{
-int lens, skip;
-char *ent;
-char *newword;
-char *p,*q;
-
-	if (!(p=strchr(s, '&'))) return s;
-	lens = (int)strlen(s);
-
-		/* Allocate enough memory */
-	newword = (char *) emalloc(lens*2+1);
-
-	q=newword;
-	memcpy(q,s,p-s);
-	q +=(p-s);
-
-	/* $$ Jose Ruiz -> Check this piece of code */
-	/* I think that it is just for adding a ';' */
-	/* Even worse!! at the end calls convertoascii looking for entities
-	once again */
-	for (s=p; *s != '\0'; ) {
-		if (*s == '&') {
-			ent = getent(s, &skip);
-			if (ent[0] == '\0') {
-				*q++=*s++;			
-			} else {
-				s += skip;
-				if (*s == ';') s++;
-				memcpy(q,ent,skip);
-				q+=skip;
-				*q++=';';
-			}
-			efree(ent);
-		}
-		else
-			*q++=*s++;
-	}
-	*q='\0';
-	if (asciientities) { 
-			/* Jose Ruiz 06/00 Do not call to converttonamed
-			** here. convertoascii does all the work 
-			*/
-		newword = (char *) converttoascii(newword);
-	} else {
-		newword = (char *) converttonamed(newword);
-	}
-	return newword;
-}
-
-/* Returns a matching entity that matches the beginning of a string, if any.
-*/
-
-char *getent(s, skip)
-char *s;
-int *skip;
-{
-int i;
-int lenent,lens,lene;
-char *ent;
-
-	ent = (char *)emalloc((lenent=MAXENTLEN) +1);
-
-	*skip = 0;
-	lens=strlen(s);
-	i=Min(lenent,lens);
-	memcpy(ent,s,i);
-	ent[i]='\0';
-	ent = SafeStrCopy(ent,s,&lenent);
-	if (ent[1] == '#') {
-		if (isdigit((int)ent[5])) {
-			ent[0]='\0';
-			return ent;
-		}
-		for (i = 2; ent[i] != '\0' && isdigit((int)ent[i]); i++);
-
-		if(i==2)   /* There is not any digit (0-9)  */
-			ent[0]='\0';
-		else
-		{
-			ent[i]='\0';
-			*skip=i;
-		}
-		return ent;
-	}
-	else {
-		for (i = 0; entities[i] != NULL; i += 3) {
-			if (entities[0] != '\0') {
-				lene=strlen(entities[i]);
-				if(lene>lenent)
-					progerr("err: Internal error while indexing. There is a HTML entity longer than the MAXENTLEN\n.\n");
-				if (lene<=lens && !strncmp(entities[i], ent, lene)) {
-					ent = SafeStrCopy(ent,entities[i],&lenent);
-					*skip = strlen(ent);
-					return ent;
-				}
-			}
-		}
-	}
-	
-	ent[0]='\0';
-	return ent;
-}
-
-/* This is the real function called by convertentities() that
-** changes numbered to named entities.
-*/
-
-char *converttonamed(str)
-char *str;
-{
-int i, hasnumbered, ilen;
-int lentestent;
-char *testent;
-int lennewent;
-char *newent;
-char *newword;
-	
-	newword = (char *) estrdup(str);
-	efree(str);
-	testent = (char *) emalloc((lentestent=MAXENTLEN) + 1);
-	newent = (char *) emalloc((lennewent=MAXENTLEN) + 1);
-	
-	do {
-	   for (i = 0, hasnumbered = 0; entities[i] != NULL; i += 3) {
-		ilen=strlen(entities[i+1]);
-		if((ilen+1)>=lentestent) {
-			lentestent=ilen+1+100;
-			testent=erealloc(testent,lentestent+1);
-		}
-		memcpy(testent, entities[i + 1],ilen);
-		testent[ilen]=';';
-		testent[ilen+1]='\0';
-		if (strstr(newword, testent) != NULL &&
-			(entities[i])[0] != '\0') {
-			hasnumbered=1;
-			ilen=strlen(entities[i]);
-			if((ilen+1)>=lennewent) {
-				lennewent=ilen+1+100;
-				newent=erealloc(newent,lennewent+1);
-			}
-			memcpy(newent,entities[i],ilen);
-			newent[ilen]=';';
-			newent[ilen+1]='\0';
-			newword = (char *) replace(newword, testent, newent);
-		}
-	   }
-	} while (hasnumbered);
-	efree(testent);
-	efree(newent);
-	return newword;
-}
-
-/* This function converts all convertable named and numbered
-** entities to their ASCII equivalents, if they exist.
-*/
-
-char *converttoascii(str)
-char *str;
-{
-int i, hasnonascii,ilen;
-char *c, *d;
-int lenwrdent;
-char *wrdent;
-int lennument;
-char *nument;
-char *newword;
-
-	newword = (char *) estrdup(str);
-	efree(str);
-	wrdent = (char *) emalloc((lenwrdent=MAXENTLEN) + 1);
-	nument = (char *) emalloc((lennument=MAXENTLEN) + 1);
-	
-	do {
-	   for (i = 0, hasnonascii = 0; entities[i] != NULL; i += 3) {
-		ilen=strlen(entities[i]);
-		if((ilen+1)>=lenwrdent) {
-			lenwrdent=ilen+1+200;
-			wrdent=erealloc(wrdent,lenwrdent+1);
-		}
-		memcpy(wrdent,entities[i],ilen);
-		wrdent[ilen]=';';
-		wrdent[ilen+1]='\0';
-		ilen=strlen(entities[i+1]);
-		if((ilen+1)>=lennument) {
-			lennument=ilen+1+200;
-			nument=erealloc(nument,lennument+1);
-		}
-		memcpy(nument,entities[i+1],ilen);
-		nument[ilen]=';';
-		nument[ilen+1]='\0';
-		
-		c = d = NULL;
-		if ((entities[i])[0] != '\0')
-			c = (char *) strstr(newword, wrdent);
-		if ((entities[i + 1])[0] != '\0')
-			d = (char *) strstr(newword, nument);
-		if ((entities[i + 2])[0] != '\0' && (c!=NULL || d!=NULL)) {
-			hasnonascii=1;
-			if (c != NULL && d==NULL) { 
-				newword = (char *) replace(newword, wrdent, entities[i + 2]); 
-			} else if (d != NULL && c==NULL) { 
-				newword = (char *) replace(newword, nument, entities[i + 2]); 
-			} else {
-				newword = (char *) replace(newword, wrdent, entities[i + 2]); 
-				newword = (char *) replace(newword, nument, entities[i + 2]); 
-			}
-		}
-	   }
-	} while (hasnonascii);
-	efree(wrdent);
-	efree(nument);
-	return newword;
-}
-
-
-
 /* Indexes all the words in a html file and adds the appropriate information
 ** to the appropriate structures.
 */
@@ -404,8 +178,8 @@ int n;
 char *p, *newp, *tag, *endtag;
 int structure;
 struct file *thisFileEntry = NULL;
-int metaNameOld;
-int i, docPropName;
+struct metaEntry *metaNameEntry;
+int i;
 IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
 char *title=parsetitle(buffer,fprop->real_path);
@@ -463,20 +237,23 @@ char *title=parsetitle(buffer,fprop->real_path);
 				structure = getstructure(tag,structure);
 				if((tag[0]=='!') && lstrstr(tag,"META") && (lstrstr(tag,"START") || lstrstr(tag,"END"))) {    /* Check for META TAG TYPE 1 */
 					if(lstrstr(tag,"START")) {
-						if((metaNameOld=getMeta(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1) {
-							/* realloc memory if needed */
-							if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen*=2)*sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-							/* add netaname to array of current metanames */
-							metaName[currentmetanames]=metaNameOld;
-							/* Preserve position */
-							if(!currentmetanames) tmpposition=positionMeta[0];
-							/* Init word counter for the metaname */
-							positionMeta[currentmetanames++] = 1;
+						if((metaNameEntry=getHTMLMeta(indexf,tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))) {
+							/* If must be indexed add the metaName to the currentlist of metaNames */
+							if(is_meta_index(metaNameEntry)) {
+								/* realloc memory if needed */
+								if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen*=2)*sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
+								/* add netaname to array of current metanames */
+								metaName[currentmetanames]=metaNameEntry->index;
+								/* Preserve position */
+								if(!currentmetanames) tmpposition=positionMeta[0];
+								/* Init word counter for the metaname */
+								positionMeta[currentmetanames++] = 1;
+							}
 							p=endtag;
 							/* If it is also a property store it until a < is found */
-							if(docPropName) {
+							if(is_meta_property(metaNameEntry)) {
 					     			if((endtag=strchr(p,'<'))) *endtag='\0';
-					    			 addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
+					    			 addDocProperty(&thisFileEntry->docProperties,metaNameEntry->index,p,strlen(p));
 					     			if(endtag) *endtag='<';
 							} 
 						}
@@ -614,10 +391,9 @@ int structure;
 
 */
 
-int getMeta(indexf, tag, docPropName, applyautomaticmetanames, verbose, OkNoMeta)
+struct metaEntry *getHTMLMeta(indexf, tag, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
 char* tag;
-int* docPropName;
 int *applyautomaticmetanames;
 int verbose;
 int OkNoMeta;
@@ -630,14 +406,9 @@ struct metaEntry* list=NULL;
 	
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
-	if (docPropName != NULL)
-	{
-		*docPropName = 0;
-	}
-	
 	temp = (char*) lstrstr((char*)tag,(char*) "NAME");
 	if (temp == NULL)
-		return 1;
+		return NULL;
 	
 	temp += strlen("NAME");
 	
@@ -689,21 +460,12 @@ struct metaEntry* list=NULL;
 		{
 			if (!strcmp(list->metaName, word) )
 			{
-				if ((docPropName != NULL) && is_meta_property(list))
-				{
-					*docPropName = list->index;
-				}
 /* #### Use metaType */
-				if (!is_meta_index(list) && is_meta_property(list))
-				{
-					if (*applyautomaticmetanames) 
-						list->metaType |= META_INDEX;
-					else 
-					/* property is not for indexing, so return generic metaName value */
-						return 1;
-				}
+					/* If automatic metanames apply it */
+				if ((!is_meta_index(list)) && (*applyautomaticmetanames))
+					list->metaType |= META_INDEX;
 /* #### */
-				return list->index;
+				return list;
 			}
 		}
 		/* 06/00 Jose Ruiz
@@ -718,8 +480,8 @@ struct metaEntry* list=NULL;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */
 	if (OkNoMeta) {
-		/*    printf ("\nwarning: metaName %s does not exiest in the user config file", word); */
-		return 1;
+		/*    printf ("\nwarning: metaName %s does not exist in the user config file", word); */
+		return NULL;
 	}
 	else {
 		printf ("\nerr: INDEXING FAILURE\n");
@@ -738,16 +500,24 @@ int filenum;
 int structure;
 struct file* thisFileEntry;
 {
-int metaName, jstart;
-char *temp, *convtag;
-int docPropName = 0;
+int metaName;
+struct metaEntry *metaNameEntry;
+char *temp, *start, *convtag;
 int position=1; /* position of word */
 int wordcount=0; /* Word count */
 	temp = NULL;
-	metaName= getMeta(indexf, tag, &docPropName, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta);
+	metaNameEntry= getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta);
 
 	/* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
-	if ( sw->ReqMetaName && metaName == 1 ) return 0;
+	if ( sw->ReqMetaName && !metaNameEntry )
+	{
+		return 0;
+	}
+
+	if(!metaNameEntry)
+		metaName=1;
+	else
+		metaName=metaNameEntry->index;
 
 	temp = (char*) lstrstr((char*) tag,(char*) "CONTENT");
 	
@@ -759,7 +529,7 @@ int wordcount=0; /* Word count */
 		temp += strlen("CONTENT");
 		
 		/* Get to the " sign disreguarding other characters */
-		while (temp != NULL && *temp) {
+		while (*temp) {
 			if (*temp != '"')
 				temp++;
 			else {
@@ -768,34 +538,38 @@ int wordcount=0; /* Word count */
 			}
 		}
 		
-		jstart = strlen(tag) - strlen(temp);
 		
 		structure |= IN_COMMENTS;
 
-		/* Locate the end of MetaTag */
-		temp = strchr(tag + jstart, '\"'); /* first quote after start of CONTENT */
+		start=temp;
+
 		/* Jump escaped \" */
-		while(temp && *temp) 
+		temp=strchr(temp,'\"');
+		while(temp && *temp)
+		{ 
 			if(*(temp-1)=='\\') temp=strchr(temp+1,'\"');
 			else break;
-		if (temp != NULL) {
-			*temp = '\0';	/* terminate CONTENT, temporarily */
-			if(docPropName)
-				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart, strlen(tag+jstart));
-			if(sw->ConvertHTMLEntities)
-				convtag = (char *)convertentities(tag + jstart, sw);
-			else convtag = tag + jstart;
-			
-			wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
-			if(convtag!=(tag + jstart)) efree(convtag);
-			*temp = '\"';	/* restore string */
-		} else {
-			if(sw->ConvertHTMLEntities)
-				convtag = (char *)convertentities(tag + jstart, sw);
-			else convtag = tag + jstart;
-			wordcount=indexstring(sw, convtag, filenum, structure, 1, &metaName, &position);
-			if(convtag!=(tag + jstart)) efree(convtag);
 		}
+
+		if (temp) 
+			*temp = '\0';	/* terminate CONTENT, temporarily */
+		
+		if(sw->ConvertHTMLEntities)
+			convtag = (char *)convertentities(start, sw);
+		else convtag = start;
+
+			/* If it is a property store it */
+		if(metaNameEntry && is_meta_property(metaNameEntry))
+			addDocProperty(&thisFileEntry->docProperties, metaName, convtag, strlen(convtag));
+
+			/* Do not index as a metaName */
+		if(metaNameEntry && !is_meta_index(metaNameEntry)) 
+			metaName=1;
+
+		wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
+		if(convtag!=start) efree(convtag);
+		if (temp)
+			*temp = '\"';	/* restore string */
 	}
 	return wordcount;
 }
@@ -998,6 +772,14 @@ unsigned char *e;
 	}
 	return t;
 }
+
+/* This converts HTML numbered entities (such as &#169;)
+** to strings (like &copy;). Much is this function is
+** simply adding semicolons in the right places.
+** This and the functions it calls are not very fast
+** and could be made faster.
+*/
+
 
 unsigned char *convertentities(unsigned char *s,SWISH *sw)
 {

@@ -210,7 +210,7 @@ int sz_buffer,tmp;
 		progerr(sw->errorstr);
 	}
 		
-	buffer=buildFileEntry(filep->fi.filename, filep->fi.mtime, filep->fi.title, filep->fi.summary, filep->fi.start, filep->fi.size, sw->fp_file_write, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
+	buffer=buildFileEntry(filep->fi.filename, sw->fp_file_write, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
 	tmp=sz_buffer+1;
 	compress1(tmp,sw->fp_file_write);   /* Write len */
 	fwrite(buffer,sz_buffer,1,sw->fp_file_write);
@@ -250,35 +250,11 @@ char *buf1,*buf2,*buf3;
         buf1 = emalloc(len1);
         memcpy(buf1,p,len1);   /* Read filename */
 	p+=len1;
-        uncompress2(mtime,p);   /* Read mtime */
-        uncompress2(len2,p);   /* Read length of title */
-	if(!len2)     /* filename == title */
-		buf2=buf1;
-	else {
-        	buf2 = emalloc(len2);
-        	memcpy(buf2,p,len2);     /* Read title */
-		p+=len2;
-	}
-        uncompress2(len3,p);   /* Read length of summary */
-	if(!len3)     /* No summary */
-		buf3=NULL;
-	else {
-        	buf3 = emalloc(len3);
-        	memcpy(buf3,p,len3);     /* Read summary */
-		p+=len3;
-	}
-        uncompress2(begin,p);           /* Read start */
-        begin--;
-        uncompress2(bytes,p);           /* Read size */
-        bytes--;
 
 	fi->fi.lookup_path=lookup_path;
         fi->fi.filename = buf1;
-	fi->fi.mtime=mtime;
-        fi->fi.title = buf2;
-        fi->fi.summary = buf3;
-        fi->fi.start = begin;
-        fi->fi.size = bytes;
+        fi->fi.title = NULL;
+        fi->fi.summary = NULL;
 
 	fi->docProperties = fetchDocProperties(p);
 
