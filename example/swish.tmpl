@@ -1,7 +1,7 @@
 <html>
     <head>
        <title>
-          <TMPL_IF FILES>Results for: <TMPL_VAR QUERY><TMPL_ELSE>Search Page</TMPL_IF>
+          <TMPL_IF FILES>Results for: <TMPL_VAR QUERY_SIMPLE><TMPL_ELSE>Search Page</TMPL_IF>
        </title>
     </head>
     <body>
@@ -17,11 +17,8 @@
             <TMPL_IF METANAMES>
                 Limit search to:
                 <TMPL_LOOP METANAMES>
-                    <input type="radio" name="metaname" value="<TMPL_VAR METANAME>"><TMPL_VAR METANAME>
+                    <input type="radio" name="metaname" value="<TMPL_VAR NAME>"><TMPL_VAR LABEL>
                 </TMPL_LOOP>
-                <TMPL_UNLESS ALL_META>
-                    <input type="radio" name="metaname" value=0>Do not limit
-                </TMPL_UNLESS>
                 <br>
             </TMPL_IF>
 
@@ -31,7 +28,7 @@
                 Sort by:
                 <select name="sort">
                     <TMPL_LOOP SORTS>
-                        <option  value="<TMPL_VAR SORT_BY>" ><TMPL_VAR SORT_BY_DESC></option>
+                        <option  value="<TMPL_VAR NAME>" ><TMPL_VAR LABEL></option>
                     </TMPL_LOOP>
                 </select>
                 <input type="checkbox" name="reverse" value=1>Reverse Sort
@@ -45,7 +42,7 @@
                 <tr>
                     <td height=20 bgcolor="#FF9999">
                         <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">
-                        &nbsp;Results for <b><TMPL_VAR QUERY></b>
+                        &nbsp;Results for <b><TMPL_VAR QUERY_SIMPLE></b>
                         &nbsp; <TMPL_VAR FROM> to <TMPL_VAR TO> of <TMPL_VAR HITS> results.
                         </font>
                     </td>
