@@ -8,7 +8,7 @@ require DynaLoader;
 # names by default without a very good reason. Use EXPORT_OK instead.
 # Do not simply export all your public functions/methods/constants.
 @EXPORT = qw(
-SwishOpen SwishSearch SwishClose SwishNext SwishSeek SwishError SwishHeaderParameter SwishStopWords SwishWords SwishStem
+SwishOpen SwishSearch SwishClose SwishNext SwishSeek SwishError SwishHeaderParameter SwishStopWords SwishWords SwishStem SwishErrorString
 );
 $VERSION = '0.01';
 

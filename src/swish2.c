@@ -330,6 +330,11 @@ int SwishError(SWISH *sw)
 	return(sw->lasterror);
 }
 	
+char *SwishErrorString(int errornumber)
+{
+	return(getErrorString(errornumber));
+}
+
 char *SwishHeaderParameter(IndexFILE *indexf,char *parameter_name)
 {
 	if(!strcasecmp(parameter_name,WORDCHARSPARAMNAME)) 
