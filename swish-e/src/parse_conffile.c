@@ -384,9 +384,6 @@ char *w0;
 					progerr("%s: possible values are error, ignore, index or auto",w0);
 			} else progerr("%s: requires one value",w0);
 		}
-		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
-			indexf->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
-		}
 		else if (strcasecmp(w0,"IgnoreMetaTags")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->ignoremetalist);
@@ -416,6 +413,7 @@ char *w0;
 		else if ( configModule_Filter            (sw, sl) ) ;   /* rasc */
 		else if ( configModule_ResultOutput      (sw, sl) ) ;   /* rasc */
 		else if ( configModule_SearchAlt         (sw, sl) ) ;   /* rasc */
+		else if ( configModule_Deflate           (sw, sl) ) ;   /* jmruiz */
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s\n", linenumber, line );
 			baddirective = 1;

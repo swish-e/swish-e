@@ -116,7 +116,8 @@ int ftotalwords;
 int *metaName;
 int metaNamelen;
 int *positionMeta;    /* Position of word in file */
-int tmpposition=1;    /* Position of word in file */
+int position_no_meta=1;    /* Counter for words in file (excluding metanames) */
+int position_meta=1;   /* Counter for words in metanames */
 int currentmetanames;
 unsigned char *newp,*p, *tag, *endtag=NULL,*endproptag=NULL,*tempprop;
 int structure,dummy;
@@ -170,14 +171,20 @@ int in_junk=0;
 							/* add netaname to array of current metanames */
 							metaName[currentmetanames]=metaNameXML->metaID;
 							/* Preserve position counter */
-							if(!currentmetanames) tmpposition=positionMeta[0];
+							if(!currentmetanames) position_no_meta=positionMeta[0];
 							
 							/* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
 							if(!isDontBumpMetaName(sw,tag))
 								for(i=0;i<currentmetanames;i++)
 									positionMeta[i]++;
+		
 							/* Init word counter for the metaname */
-							positionMeta[currentmetanames++] = 1;
+							if(currentmetanames)
+								positionMeta[currentmetanames] = positionMeta[0];
+							else
+								positionMeta[currentmetanames] = position_meta;
+
+							currentmetanames++;
 							/* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
 						
 						}
@@ -235,8 +242,9 @@ int in_junk=0;
 							if(i>=0) currentmetanames=i;
 							if(!currentmetanames) {
 								metaName[0] = 1;
+								position_meta = positionMeta[0];
 								/* Restore position counter */
-								positionMeta[0] = tmpposition;
+								positionMeta[0] = position_no_meta;
 							}
 						}
 					}

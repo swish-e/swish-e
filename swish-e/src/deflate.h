@@ -70,3 +70,4 @@ void zfflush (struct buffer_pool *, FILE *);
 unsigned char *zfread (unsigned char **dict,int *,FILE *);
 void printdeflatedictionary (struct buffer_pool *,IndexFILE *);
 void readdeflatepatterns (IndexFILE *);
+int configModule_Deflate  (SWISH *sw, StringList *sl);

@@ -171,7 +171,8 @@ int ftotalwords;
 int *metaName;
 int metaNamelen;
 int *positionMeta;    /* Position of word in file */
-int tmpposition=1;    /* Position of word in file */
+int position_no_meta=1;    /* Counter for words in doc (excluding metanames) */
+int position_meta=1;  /* Counter for words in doc (only for metanames) */
 int currentmetanames;
 int n;
 char *p, *newp, *tag, *endtag;
@@ -244,9 +245,14 @@ char *title=parsetitle(buffer,fprop->real_filename);
 								/* add netaname to array of current metanames */
 								metaName[currentmetanames]=metaNameEntry->metaID;
 								/* Preserve position */
-								if(!currentmetanames) tmpposition=positionMeta[0];
+								if(!currentmetanames) position_no_meta=positionMeta[0];
 								/* Init word counter for the metaname */
-								positionMeta[currentmetanames++] = 1;
+								if(currentmetanames)
+									positionMeta[currentmetanames] = positionMeta[0];
+								else
+									positionMeta[currentmetanames] = position_meta;
+
+								currentmetanames++;
 							}
 							p=endtag;
 							/* If it is also a property store it until a < is found */
@@ -264,15 +270,16 @@ char *title=parsetitle(buffer,fprop->real_filename);
 							currentmetanames--;
 							if(!currentmetanames) {
 						    		metaName[0] = 1;
+								position_meta = positionMeta[0];
 								/* Restore position counter */
-						    		positionMeta[0] = tmpposition;
+						    		positionMeta[0] = position_no_meta;
 							}
 						}	
 						p=endtag;
 					}
 				} /* Check for META TAG TYPE 2 */
 				else if((tag[0]!='!') && lstrstr(tag,"META") && (Name=lstrstr(tag,"NAME")) && (Content=lstrstr(tag,"CONTENT"))) { 
-					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,Name,Content,thisFileEntry);
+					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,Name,Content,thisFileEntry,&position_meta);
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
@@ -489,20 +496,11 @@ struct metaEntry *e=NULL;
 }
 
 /* Parses the Meta tag */
-int parseMetaData(sw, indexf, tag, filenum, structure, name, content, thisFileEntry)
-SWISH *sw;
-IndexFILE *indexf;
-char* tag;
-int filenum;
-int structure;
-char *name;
-char *content;
-struct file* thisFileEntry;
+int parseMetaData(SWISH *sw, IndexFILE *indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry, int *position)
 {
 int metaName;
 struct metaEntry *metaNameEntry;
 char *temp, *start, *convtag;
-int position=1; /* position of word */
 int wordcount=0; /* Word count */
 	metaNameEntry= getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta,name);
 
@@ -549,7 +547,7 @@ int wordcount=0; /* Word count */
 			convtag = (char *)convertentities(start, sw);
 		else convtag = start;
 
-		wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
+		wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, position);
 		if(convtag!=start) efree(convtag);
 		if (temp)
 			*temp = '\"';	/* restore string */
@@ -809,3 +807,5 @@ struct hashEntity *h;
 	}
 	return s;
 }
+
+
