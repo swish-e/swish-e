@@ -47,8 +47,8 @@
 
 SWISH *SwishNew()
 {
-SWISH *sw;
-int i;
+    SWISH *sw;
+
     sw=emalloc(sizeof(SWISH));
 
     initModule_Filter (sw);
@@ -91,7 +91,6 @@ int i;
     sw->progparameterslist =  NULL;
 
     sw->equivalentservers=NULL;
-    for(i=0;i<BIGHASHSIZE;i++) sw->url_hash[i]=NULL;
 
         /* Swap flag and temp files*/
     sw->swap_flag=SWAP_DEFAULT;

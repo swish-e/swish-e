@@ -183,6 +183,7 @@ void initModule_Index (SWISH  *sw)
     }
 
     for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
+    for(i=0;i<BIGHASHSIZE;i++) idx->url_hash[i]=NULL;
 
     return;
 }

@@ -132,7 +132,7 @@ int http_already_indexed(SWISH *sw, char *url)
   ** url or just the uri.
   */
   hashval = bighash(url_uri(url,&len)); /* Search hash for this file. */
-  for ( p = sw->url_hash[hashval]; p != NULL; p = p->next )
+  for ( p = sw->Index->url_hash[hashval]; p != NULL; p = p->next )
     if ( (strcmp(url, p->url ) == 0) ||
 	 (equivalentserver(sw, url, p->url) &&
 	  (strcmp(url_uri(url, &len), url_uri(p->url, &len)) == 0)) )
@@ -146,8 +146,8 @@ int http_already_indexed(SWISH *sw, char *url)
 	/* Not found, make new entry. */
   p = (struct url_info*)emalloc(sizeof(struct url_info));
   p->url = estrdup(url);
-  p->next = sw->url_hash[hashval];
-  sw->url_hash[hashval] = p;
+  p->next = sw->Index->url_hash[hashval];
+  sw->Index->url_hash[hashval] = p;
 	
   return 0;
 }
