@@ -28,6 +28,7 @@
 
 
 void progerr (char *msgfmt, ...);
+void progwarn (char *msgfmt, ...);
 char *getErrorString(int);
 
 #define RC_OK 0

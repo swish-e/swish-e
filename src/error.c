@@ -49,6 +49,20 @@ void progerr(char *msgfmt,...)
   exit(1);
  }
 
+/* only print a warning (also to stdout) and return */
+/* might want to have an enum level WARN_INFO, WARN_ERROR, WARN_CRIT, WARN_DEBUG */
+void progwarn(char *msgfmt,...)
+{
+  va_list args;
+
+  va_start (args,msgfmt);
+  fprintf  (stdout, "\nWarning: ");
+  vfprintf (stdout, msgfmt, args);
+  fprintf  (stdout, "\n.\n");
+  va_end   (args);
+ }
+
+
 
 
 /* See errors.h to the correspondant numerical value */

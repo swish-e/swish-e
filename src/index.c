@@ -159,7 +159,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     if (sw->mtime_limit && fprop->mtime < sw->mtime_limit)
     {
         if (sw->verbose >= 4)
-            printf("Skipping %s: last_mod date is too old\n", fprop->real_path);
+            progwarn("Skipping %s: last_mod date is too old\n", fprop->real_path);
 
         /* external program must seek past this data (fseek fails) */
         if (fprop->fp)
@@ -199,7 +199,10 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fprop->fp = fopen(fprop->work_path, FILEMODE_READ);
 
         if ( !fprop->fp )
-            progerr("Failed to open: '%s': %s", fprop->work_path, strerror( errno ) );
+        {
+            progwarn("Failed to open: '%s': %s", fprop->work_path, strerror( errno ) );
+            return;
+        }
     }
 
 
