@@ -112,8 +112,14 @@ sub highlight_text {
     my $Show_Words = $settings->{show_words} || 10;
     my $Occurrences = $settings->{occurrences} || 5;
     my $Max_Words = $settings->{max_words} || 100;
+
+
+
     my $On = $settings->{highlight_on} || '<b>';
     my $Off = $settings->{highlight_off} || '</b>';
+
+    my $on_flag  = 'sw' . time . 'on';
+    my $off_flag = 'sw' . time . 'off';
 
 
     my $stemmer_function = $self->{stemmer_function};
@@ -157,13 +163,27 @@ sub highlight_text {
             for my $match_word ( @$phrase ) {
 
                 my $cur_word = $words[ ($word_pos + $end_pos) * 2 ];
-                $cur_word =~ /$extract_regexp/ or
-                    die "Why didn't '" . (defined $cur_word ? $cur_word : '*undef') . "' =~ /$extract_regexp/? word_pos:$word_pos end_pos:$end_pos total:" . scalar @words
-                    . "\n-pharse words-\n"
+                unless ( $cur_word =~ /$extract_regexp/ ) {
+
+                    my $idx = ($word_pos + $end_pos) * 2;
+                    my ( $s, $e ) = ( $idx - 10, $idx + 10 );
+                    $s = 0 if $s < 0;
+                    $e = @words-1 if $e >= @words;
+                   
+                
+                    warn  "Failed to parse IgnoreFirst/Last from word '"
+                    . (defined $cur_word ? $cur_word : '*undef')
+                    . "' (index: $idx) word_pos:$word_pos end_pos:$end_pos total:"
+                    . scalar @words
+                    . "\n-search pharse words-\n"
                     . join( "\n", map { "$_ '$phrase->[$_]'" } 0..@$phrase -1 )
                     . "\n-Words-\n"
-                    . join( "\n", map { "$_ '$words[$_]'" } 0..$#words )
+                    . join( "\n", map { "$_ '$words[$_]'" . ($_ == $idx ? ' <<< this word' : '') } $s..$e )
                     . "\n";
+
+                    next PHRASE;
+                }
+
 
 
 
@@ -210,15 +230,15 @@ sub highlight_text {
             $end_pos--;
 
             if ( !$end_pos ) { # only one word
-                $words[$word_pos * 2] = "$begin$On$word$Off$end";
+                $words[$word_pos * 2] = "$begin$on_flag$word$off_flag$end";
             } else {
-                $words[($word_pos + $end_pos) * 2 ] = "$begin$word$Off$end";
+                $words[($word_pos + $end_pos) * 2 ] = "$begin$word$off_flag$end";
 
                 #Now, reload first word of match
                 $words[$word_pos * 2] =~ /$extract_regexp/ or die "2 Why didn't '$words[$word_pos]' =~ /$extract_regexp/?";
                 # Strip ignorefirst and ignorelast
                 ( $begin, $word, $end ) = ( $1, $2, $3 );  # probably should cache this!
-                $words[$word_pos * 2] = "$begin$On$word$end";
+                $words[$word_pos * 2] = "$begin$on_flag$word$end";
             }
 
 
@@ -253,7 +273,7 @@ sub highlight_text {
 
 
 
-    my $dotdotdot = ' <b>...</b> ';
+    my $dotdotdot = ' ... ';
 
 
     my @output;
@@ -302,6 +322,25 @@ sub highlight_text {
     push @output, $dotdotdot if !$printing;
 
     $$text_ref = join '', @output;
+    my %entities = (
+        '&' => '&amp;',
+        '>' => '&gt;',
+        '<' => '&lt;',
+        '"' => '&quot;',
+    );
+    my %highlight = (
+        $on_flag => $On,
+        $off_flag => $Off,
+    );
+        
+
+    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;
+
+    $$text_ref =~ s/($on_flag|$off_flag)/$highlight{$1}/ge;
+
+
+
+    
     # $$text_ref = join '', @words;  # interesting that this seems reasonably faster
 
 
