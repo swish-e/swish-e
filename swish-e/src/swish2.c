@@ -71,9 +71,9 @@ int i;
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
 	init_header(&sw->mergedheader);
 
-	sw->lenfilterdir=sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
-	sw->filterdir = (char *)emalloc(sw->lenfilterdir + 1);sw->filterdir[0]='\0';
-	sw->filterlist=NULL;
+	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
+	sw->filterdir = NULL;
+	sw->filterlist = NULL;
 	sw->resultextfmtlist=NULL;
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
@@ -170,7 +170,7 @@ if(sw) {
                 if(sw->lencustomOutputDelimiter)efree(sw->customOutputDelimiter);
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
-		if(sw->lenfilterdir) efree(sw->filterdir);		
+		efree(sw->filterdir);		
 
                         /* Free file structures */
 		freefileoffsets(sw);

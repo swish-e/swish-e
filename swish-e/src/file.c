@@ -52,9 +52,9 @@
 #include "hash.h"
 #include "check.h"
 #include "index.h"
-/* #### Added metanames.h */
+#include "filter.h"
 #include "metanames.h"
-/* #### */
+
 
 /* Is a file a directory?
 */

@@ -126,39 +126,6 @@ int i;
 }
 
 
-/*
- -- Check, if a filter is needed to retrieve information from a file
- -- Returns NULL or path to filter prog according conf file.
- -- 1999-08-07 rasc
-*/
-
-char *hasfilter (char *filename, struct filter *filterlist)
-{
-struct filter *fl;
-char *c, *checksuffix;
-int  lchecksuffix;
-
-   fl = filterlist;
-
-   if (! fl) return (char *)NULL;;
-   if (! (c = (char *)strrchr(filename, '.')) ) return (char *) NULL;
-   
-   lchecksuffix = strlen(c);
-   checksuffix=(char *) emalloc(lchecksuffix + 1);
-   strcpy(checksuffix, c);
-
-   while (fl != NULL) {
-        if (lstrstr(fl->suffix, checksuffix)
-            && ((int)strlen(fl->suffix)) == lchecksuffix) {
-		efree(checksuffix);
-		return fl->prog;
-	}
-        fl = fl->next;
-   }
-
-   efree(checksuffix);
-   return (char *)NULL;
-}
 
 
 int getdoctype(char *filename, struct IndexContents *indexcontents)

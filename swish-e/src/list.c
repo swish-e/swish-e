@@ -120,39 +120,8 @@ int i;
 	return rp;
 }
 
-struct filter *addfilter(rp, suffix,prog,filterdir)
-struct filter *rp;
-char *suffix, *prog;
-char *filterdir;
-{
-struct filter *newnode;
-char *buf;
-int ilen1,ilen2;
 
-        newnode = (struct filter *) emalloc(sizeof(struct filter));
-        newnode->suffix= (char *) estrdup(suffix);
-	ilen1=strlen(filterdir);
-	ilen2=strlen(prog);
-	buf = (char *)emalloc(ilen1+ilen2+2);
-	memcpy(buf,filterdir,ilen1);
-		/* If filterdir exists and not ends in DIRDELIMITER 
-		** (/ in Unix or \\ in WIN32) add it
-		*/
-	if(ilen1 && buf[ilen1-1]!=DIRDELIMITER) buf[ilen1++]=DIRDELIMITER;
-	memcpy(buf+ilen1,prog,ilen2);
-	buf[ilen1+ilen2]='\0';
-        newnode->prog= buf;
-        newnode->next = NULL;
 
-        if (rp == NULL)
-                rp = newnode;
-        else
-                rp->nodep->next = newnode;
-
-        rp->nodep = newnode;
-
-        return rp;
-}
 
 void init_header(INDEXDATAHEADER *header)
 {

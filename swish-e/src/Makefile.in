@@ -49,6 +49,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
 	soundex.o docprop.o compress.o deflate.o xml.o txt.o html.o\
 	metanames.o result_output.o parse_conffile.o result_sort.o\
+	filter.o\
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS)
 
 .SUFFIXES: 

@@ -92,6 +92,8 @@ src/error.c
 src/error.h
 src/file.c
 src/file.h
+src/filter.c
+src/filter.h
 src/fs.c
 src/fs.h
 src/hash.c

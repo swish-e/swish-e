@@ -34,6 +34,7 @@
 #include "metanames.h"
 #include "hash.h"
 #include "error.h"
+#include "filter.h"
 #include "parse_conffile.h"
 
 
@@ -228,7 +229,7 @@ char *w0;
 		}
                 else if (strcasecmp(w0, "FilterDir")==0)    {      /* 1999-05-05 rasc */
 			if(sl->n==2) {
-				sw->filterdir = SafeStrCopy(sw->filterdir,sl->word[1],&sw->lenfilterdir);
+				sw->filterdir = estrredup(sw->filterdir,sl->word[1]);
 				if(!isdirectory(sw->filterdir)) {
 					progerr("FilterDir. %s is not a directory",sw->filterdir);
 				}

@@ -17,13 +17,8 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
-int isokword _AP ((SWISH *,char *,IndexFILE *));
-int hasokchars _AP ((IndexFILE *, char *));
-char *hasfilter _AP((char *filename, struct filter *filterlist));
-int getdoctype _AP((char *filename, struct IndexContents *indexcontents));
-struct StoreDescription *hasdescription _AP ((int, struct StoreDescription *));
+int isokword (SWISH *,char *,IndexFILE *);
+int hasokchars (IndexFILE *, char *);
+int getdoctype (char *filename, struct IndexContents *indexcontents);
+struct StoreDescription *hasdescription (int, struct StoreDescription *);
