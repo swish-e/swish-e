@@ -90,6 +90,7 @@ pod/search.cgi
 pod/style.css
 src/Makefile.in
 src/acconfig.h.in
+src/acconfig.h_vms
 src/altavista.c
 src/altavista.h
 src/check.c
@@ -102,6 +103,7 @@ src/date_time.c
 src/date_time.h
 src/deflate.c
 src/deflate.h
+src/descrip.mms
 src/docprop.c
 src/docprop.h
 src/error.c
@@ -159,6 +161,19 @@ src/testlib.c
 src/testlong.c
 src/txt.c
 src/txt.h
+src/vms/config.h
+src/vms/fetch_http.c
+src/vms/regex.c
+src/vms/regex.h
+src/vms/snprintf_2_2/install
+src/vms/snprintf_2_2/license.txt
+src/vms/snprintf_2_2/makefile
+src/vms/snprintf_2_2/readme
+src/vms/snprintf_2_2/readme.html
+src/vms/snprintf_2_2/snprintf.c
+src/vms/snprintf_2_2/snprintf.c_orig
+src/vms/snprintf_2_2/snprintf.h
+src/vms/snprintf_2_2/test.c
 src/win32/dirent.c
 src/win32/dirent.h
 src/win32/regex.c
