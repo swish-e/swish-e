@@ -28,16 +28,20 @@ struct dev_ino
 
 struct IgnoreLimitPositions
 {
-        int     n;              /* Number of entries per file */
-        int    *pos;            /* Store metaID1,position1, metaID2,position2 ..... */
+    int     n;                  /* Number of entries per file */
+    int    *pos;                /* Store metaID1,position1, metaID2,position2 ..... */
 };
 
-typedef struct {
-    int     *array;      /* list of metaIDs that need to be indexed */
-    int     max;         /* max size of table */
-    int     num;         /* number in list */
-    int     defaultID;   /* default metaID (should always be one, I suppose) */
-} METAIDTABLE;
+/* This is used to build a list of the metaIDs that are currently in scope when indexing words */
+
+typedef struct
+{
+    int    *array;              /* list of metaIDs that need to be indexed */
+    int     max;                /* max size of table */
+    int     num;                /* number in list */
+    int     defaultID;          /* default metaID (should always be one, I suppose) */
+}
+METAIDTABLE;
 
 
 /*
@@ -46,24 +50,23 @@ typedef struct {
 
 struct MOD_Index
 {
-	    /* entry vars */
-	METAIDTABLE metaIDtable;
+    /* entry vars */
+    METAIDTABLE metaIDtable;
     ENTRYARRAY *entryArray;
     ENTRY  *hashentries[SEARCHHASHSIZE];
-	char	hashentriesdirty[SEARCHHASHSIZE];	/* just a 0/1 flag */
+    char    hashentriesdirty[SEARCHHASHSIZE]; /* just a 0/1 flag */
 
-    /* Compression Work buffer while compression locations in index
-       ** proccess */
+    /* Compression Work buffer while compression locations in index ** proccess */
     unsigned char *compression_buffer;
     int     len_compression_buffer;
 
     unsigned char *worddata_buffer;
-    long  len_worddata_buffer;
+    long    len_worddata_buffer;
 
-	    /* File counter */
+    /* File counter */
     int     filenum;
 
-    /* index tmp (both FS and HTTP methods)*/
+    /* index tmp (both FS and HTTP methods) */
     char   *tmpdir;
 
     /* Filenames of the swap files */
@@ -76,89 +79,89 @@ struct MOD_Index
     struct dev_ino *inode_hash[BIGHASHSIZE];
 
     /* Buffers used by indexstring */
-    int		lenswishword;
-    char	*swishword;
-    int		lenword;
-    char	*word;
+    int     lenswishword;
+    char   *swishword;
+    int     lenword;
+    char   *word;
 
     /* Economic mode (-e) */
-    int         swap_locdata;		/* swap location data */
+    int     swap_locdata;       /* swap location data */
 
-	/* Pointer to swap functions */ 
-    long    (*swap_tell)(FILE *);
-    size_t  (*swap_write)(const void *, size_t, size_t, FILE *);
-    int  (*swap_seek)(FILE *, long, int);
-    size_t  (*swap_read)(void *, size_t, size_t, FILE *);
-    int     (*swap_close)(FILE *);
-    int     (*swap_putc)(int , FILE *);
-    int     (*swap_getc)(FILE *);
+    /* Pointer to swap functions */
+    long    (*swap_tell) (FILE *);
+            size_t(*swap_write) (const void *, size_t, size_t, FILE *);
+    int     (*swap_seek) (FILE *, long, int);
+            size_t(*swap_read) (void *, size_t, size_t, FILE *);
+    int     (*swap_close) (FILE *);
+    int     (*swap_putc) (int, FILE *);
+    int     (*swap_getc) (FILE *);
 
     /* IgnoreLimit option values */
-    int		plimit;
-    int		flimit;
+    int     plimit;
+    int     flimit;
     /* Number of words from IgnoreLimit */
     int     nIgnoreLimitWords;
     /* Positions from stopwords from IgnoreLimit */
-    struct  IgnoreLimitPositions **IgnoreLimitPositionsArray;
+    struct IgnoreLimitPositions **IgnoreLimitPositionsArray;
 
     /* Index in blocks of chunk_size files */
-    int chunk_size;
+    int     chunk_size;
 
-	/* Variable to control the size of the zone used for store locations during chunk proccesing */
-	int optimalChunkLocZoneSize;
+    /* Variable to control the size of the zone used for store locations during chunk proccesing */
+    int     optimalChunkLocZoneSize;
 
     /* variable to handle free memory space for locations inside currentChunkLocZone */
 
-    LOCATION    *freeLocMemChain;
+    LOCATION *freeLocMemChain;
 
-    MEM_ZONE	*perDocTmpZone;
-    MEM_ZONE	*currentChunkLocZone;
-    MEM_ZONE    *totalLocZone;
-    MEM_ZONE	*entryZone;
+    MEM_ZONE *perDocTmpZone;
+    MEM_ZONE *currentChunkLocZone;
+    MEM_ZONE *totalLocZone;
+    MEM_ZONE *entryZone;
 };
 
-void initModule_Index (SWISH *);
-void freeModule_Index (SWISH *);
-int  configModule_Index (SWISH *, StringList *);
+void    initModule_Index(SWISH *);
+void    freeModule_Index(SWISH *);
+int     configModule_Index(SWISH *, StringList *);
 
 
-void do_index_file (SWISH *sw, FileProp *fprop);
+void    do_index_file(SWISH * sw, FileProp * fprop);
 
-void addentry (SWISH *, char*, int, int, int, int );
+void    addentry(SWISH *, char *, int, int, int, int);
 
-void addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *title, char *summary, int start );
+void    addCommonProperties(SWISH * sw, FileProp * fprop, FileRec * fi, char *title, char *summary, int start);
 
 
-int getfilecount (IndexFILE *);
+int     getfilecount(IndexFILE *);
 
-int getNumberOfIgnoreLimitWords (SWISH *);
-void getPositionsFromIgnoreLimitWords(SWISH * sw);
+int     getNumberOfIgnoreLimitWords(SWISH *);
+void    getPositionsFromIgnoreLimitWords(SWISH * sw);
 
-char *ruleparse(SWISH *, char *);
-void stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
-void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
+char   *ruleparse(SWISH *, char *);
+void    stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
+void    stripIgnoreLastChars(INDEXDATAHEADER *, char *);
 
 #define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
 
 
-void computehashentry(ENTRY **,ENTRY *);
+void    computehashentry(ENTRY **, ENTRY *);
 
-void sort_words(SWISH *, IndexFILE *);
-void sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
+void    sort_words(SWISH *, IndexFILE *);
+void    sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
 
 int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position);
 
-void addsummarytofile(IndexFILE *, int, char *);
+void    addsummarytofile(IndexFILE *, int, char *);
 
-void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
+void    BuildSortedArrayOfWords(SWISH *, IndexFILE *);
 
 
 
-void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
-void coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e);
+void    PrintHeaderLookupTable(int ID, int table[], int table_size, FILE * fp);
+void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY * e);
 
-void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp);
+void    adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp);
 
 #endif

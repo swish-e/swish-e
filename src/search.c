@@ -582,6 +582,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     if (!totalResults && sw->commonerror)
         return (sw->lasterror = WORDS_TOO_COMMON);
+
     if (!totalResults && !indexYes)
         return (sw->lasterror = INDEX_FILE_IS_EMPTY);
 
@@ -1805,39 +1806,35 @@ RESULT *SwishNext(SWISH * sw)
         {
             /* Increase Pointer */
             sw->Search->db_results->currentresult = res->nextsort;
-
-            /* 02/2001 jmruiz - Read file data here */
-            /* Doing it here we get better performance if maxhits specified
-               and not all the results data (only read maxhits) */
-            //res = getproperties(res);
         }
     }
-    else
+
+
+    else    /* tape merge to find the next one from all the index files */
+    
     {
         /* We have more than one index file - can't use pre-sorted index */
         /* Get the lower value */
         db_results_winner = sw->Search->db_results;
+
         if ((res = db_results_winner->currentresult))
-        {
-            //res = getproperties(res);
             res->PropSort = getResultSortProperties(res);
-        }
+
 
         for (db_results = sw->Search->db_results->next; db_results; db_results = db_results->next)
         {
             if (!(res2 = db_results->currentresult))
                 continue;
             else
-            {
-                //res2 = getproperties(res2);
                 res2->PropSort = getResultSortProperties(res2);
-            }
+
             if (!res)
             {
                 res = res2;
                 db_results_winner = db_results;
                 continue;
             }
+
             rc = (int) compResultsByNonSortedProps(&res, &res2);
             if (rc < 0)
             {
@@ -1845,9 +1842,13 @@ RESULT *SwishNext(SWISH * sw)
                 db_results_winner = db_results;
             }
         }
+
         if ((res = db_results_winner->currentresult))
             db_results_winner->currentresult = res->nextsort;
     }
+
+
+
     /* Normalize rank */
     if (res)
     {

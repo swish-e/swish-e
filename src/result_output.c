@@ -267,14 +267,11 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
         case '<':
             /* -- Property - Control: read Property Tag  <name> */
             /* -- Save User PropertyNames for result handling   */
+            // Oct 16, 2001 - moseley: Seem like this should lookup the property
+            // and error if not found, plus, it should cache the propID to avoid lookups
+            // when returning results.  Would parse the -x format for each index.
             fmt = parsePropertyResultControl(fmt, &propname, &subfmt);
 
-            /**** Not sure what this is for
-            if (!isAutoProperty(propname))
-            {
-                addSearchResultDisplayProperty(sw, propname);
-            }
-            ****/
             efree(subfmt);
             efree(propname);
             break;
@@ -340,6 +337,7 @@ void    printSortedResults(SWISH * sw)
 
 
         /* This may or may not be an optimization */
+        // not really any more -- used to be able to read all the props, now this just reads them using ReadSingle... 
         // ReadAllDocPropertiesFromDisk( sw, r->indexf, r->filenum);
         
 
