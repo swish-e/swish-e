@@ -72,6 +72,10 @@ Limit searches to parts of documents such as certain HTML tags
 
 =item *
 
+SWISH-E is fast.
+
+=item *
+
 It's open source and FREE!  You can customize SWISH-E and you
 can contribute your fancy new features to the project.
 
@@ -88,6 +92,13 @@ Please make sure you use a current version of swish-e.
 
 Information about Windows binary distributions can also be
 found at this site.
+
+=head1 How Do I Install Swish?
+
+Read the L<INSTALL|INSTALL> page.  Information on specific ports
+(VMS and Win32) can be found in sub-directories of the C<src> directory.
+
+The Windows binary can be found in the C<src/win32> directory.
 
 
 =head1 The SWISH-E Documentation
@@ -252,11 +263,15 @@ Before posting any questions please read
 L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING"> in the L<INSTALL|INSTALL>
 documentation page.
 
+=head1 Speling mistakes
+
+Please contact the SWISH-E list with corrections to this documentation.  Any help
+in cleaning up the docs will be appreciated!
+
 =head1 SWISH-E Development
 
 SWISH-E is currently being developed as an open source project on SourceForge
 http://sourceforge.net.
-This documentation is updated frequently from CVS at http://swishe.sourceforge.net/
 
 See http://sourceforge.net/projects/swishe/ for more information.
 

@@ -900,7 +900,7 @@ Note that the same process applies to the query while searching.
 
 Getting these setting correct will take careful consideration and practice.  It's helpful to create
 an index of a single test file, and then look at the words that are placed in the index
-(see the C<-D> and C<-k> searching switches).
+(see the C<-v 4>, C<-D> and C<-k> searching switches).
 
 Currently there is only support for eight-bit characters.
 
@@ -1021,7 +1021,6 @@ Default is yes. Set to no if comment indexing is not required.
 =item TranslateCharacters [*string1 string2*|:ascii7:]
 
 The TranslateCharacters directive maps the characters in string1 to the characters listed in string2.
-This is done after converting HTML entities and splitting the input into words based on B<WordCharacters>.
 
 For example:
 
@@ -1032,8 +1031,10 @@ C<TranslateCharacters :ascii7:> is a predefined set of characters that will tran
 Using the :ascii7: rule will translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or "celik"
 will all match the same word.
 
-The characters you are converting B<from> and B<to> (even with C<:ascii7:>) must be listed in C<WordCharacters>
-(and C<BeginCharacters>/C<EndCharacters>).
+TranslateCharacters is done early in the indexing process, after converting HTML entities but
+before splitting the input text into words based on B<WordCharacters>.  So
+characterters you are translating I<from> do not need to be listed in word characters.
+
 
 =item BumpPositionCounterCharacters *string*
 

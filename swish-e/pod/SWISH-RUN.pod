@@ -72,12 +72,18 @@ This is typically specified in the L<configuration file|SWISH-CONFIG> with the B
 instead of on the command line.  Use of this switch overrides the configuration file settings.
 
 
-=item -S [fs|http|prog] (indexing mode)
+=item -S [fs|http|prog] (document Source mode)
 
 This specifies the method to use for indexing. Can be either C<fs> for local indexing (the default),
 C<http> for spidering, or C<prog> for reading documents from an external program.
 
-The C<prog> method is new to SWISH-E version 2.2.  It's meant as a general
+The C<fs> method simply reads files from a local (or networked) drive.  This is the most common
+way to index documents with Swish.
+
+The C<http> method is used to spider web servers.  It uses an included helper
+program called C<swishspider> located in the C<src> directory.
+
+The C<prog> method is new to SWISH-E version 2.2.  It's designed as a general
 purpose method to feed documents to swish from an external program.
 For example, the program can read a database (e.g. MySQL), spider a web
 server, or convert documents from one format to another (e.g. pdf to html).
@@ -93,9 +99,8 @@ program can filter documents before passing the document onto swish.  In
 other words, when using the C<prog> method, only send the documents to swish
 that you want indexed.
 
-The C<http> method may be removed in the future since the C<prog> method
-can supply this functionality
-(an example web spider is provided in the prog-bin directory).
+Located in the C<conf> directory are example configuration files that demonstrate
+indexing with the different document source methods.
 
 
 =item -f *indexfile* (index file)
@@ -449,7 +454,7 @@ These are available for output when using the C<-x> format.
     swishdbfile        String   Path of swish database indexfile
 
 The Auto properties can also be specified using shortcuts:    
-        
+
     %c     = <swishreccount>        (c-ount)
     %d     = <swishdescription>
     %D     = <swishlastmodified>    (D-ate)
