@@ -154,7 +154,7 @@
 /* IGNORESAME is the maximum times a character can repeat in a word.
 */
 
-#define WORDCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
+#define WORDCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
 
 /* WORDCHARS is a string of characters which SWISH permits to
 ** be in words.  Words are defined by these characters.
@@ -164,36 +164,35 @@
 ** make the compiler understand them.
 */
 
-#define BEGINCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
+#define BEGINCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
 
 /* Of the characters that you decide can go into words, this is
 ** a list of characters that words can begin with. It should be
 ** a subset of (or equal to) WORDCHARS.
 */
 
-#define ENDCHARS  "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘¹;íÀ&0123456789#"
+#define ENDCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
 
 /* This is the same as BEGINCHARS, except you're testing for
 ** valid characters at the ends of words.
 */
 
-#define IGNORELASTCHAR ";"
+#define IGNORELASTCHAR ""
 
 /* Array that contains the char that, if considered valid in the middle of 
 ** a word need to be disreguarded when at the end. It is important to also
 ** set the given char's in the ENDCHARS array, otherwise the word will not
 ** be indexed because considered invalid.
-** If none just leave the empty list "". Do not erase the line
+** If none just leave the empty list "". Do not erase the line.
 */
 
 #define IGNOREFIRSTCHAR ""
  
-/* Array that contains the char that, if considered valid in the middle of
-** a word need to be disreguarded when at the beginning. This was to solve
-** the problem of parenthesis when there is no space between ( and the
-** beginning of the word.
-** Remember to add the char's to the BEGINCHARS list also.
-** If none just leave the empty list "". Do not erase the line
+/* Array that contains the char that, if considered valid in the middle of 
+** a word need to be disreguarded when at the beginning. It is important to also
+** set the given char's in the BEGINCHARS array, otherwise the word will not
+** be indexed because considered invalid.
+** If none just leave the empty list "". Do not erase the line.
 */
 
 #define OKNOMETA 1
