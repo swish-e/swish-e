@@ -243,6 +243,7 @@ urldepth *add_url(SWISH * sw, urldepth * list, char *url, int depth, char *baseu
     }
     else if (!http_already_indexed(sw, url))
     {
+printf("Adding URL '%s'\n", url );        
         item = (urldepth *) emalloc(sizeof(urldepth));
         item->url = estrdup(url);
         item->depth = depth;
@@ -710,7 +711,11 @@ void    http_indexpath(SWISH * sw, char *url)
         }
         else if ((code / 100) == 3)
         {
-            urllist = add_url(sw, urllist, contenttype, item->depth, url);
+            if ( *contenttype )
+                urllist = add_url(sw, urllist, contenttype, item->depth, url);
+            else
+                if (sw->verbose >= 3)
+                    printf("URL '%s' returned redirect code %d without a Location.\n", url, code);
         }
 
 

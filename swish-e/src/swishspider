@@ -39,8 +39,9 @@ print RESP $response->code() . "\n";
 
 if( $response->code() == RC_OK ) {
     print RESP $response->header( "content-type" ) . "\n";
-} elsif( $response->is_redirect() && $response->header( "location" ) ) {
-    print RESP $response->header( "location" ) . "\n";
+
+} elsif( $response->is_redirect() ) {
+    print RESP ($response->header( "location" ) ||'') . "\n";
 }
 
 print RESP ($response->last_modified || 0), "\n";
