@@ -1,0 +1,14 @@
+This is the Python language binding for the Swish-e Search Engine.
+
+This package was built using SWIG by David L Norris <dave@webaugur.com>
+
+Swish-e Home Page: http://swish-e.org/
+
+Python-Swish-e is Copyright (C) 2005 David L Norris <dave@webaugur.com>
+Swish is Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
+Swish is originally by Kevin Hughes, kev@kevcom.com, 3/11/94
+Swish-e is Copyright (C) 1997-2005 The SWISH-E Team <http://swish-e.org/>
+
+Swish-e is distributed with no warranty under the terms of the
+GNU Public License.  See /usr/share/common-licenses/GPL.
+

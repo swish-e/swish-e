@@ -1,0 +1,8 @@
+
+2005-02-19 - DLN - The following functions are not fully implemented:
+  SWISH_HEADER_VALUE SwishParsedWords( SW_RESULTS, const char *index_name );
+  SWISH_HEADER_VALUE SwishRemovedStopwords( SW_RESULTS, const char *index_name );
+  SWISH_HEADER_VALUE SwishHeaderValue( SW_HANDLE, const char *index_name, const char *cur_header, SWISH_HEADER_TYPE *type );
+  SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEADER_TYPE *type );
+  SW_FUZZYWORD SwishFuzzyWord( SW_RESULT r, char *word );
+  
