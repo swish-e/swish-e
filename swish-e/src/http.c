@@ -474,6 +474,8 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
             fgets(contenttype_or_redirect, MAXSTRLEN, fp);  /* more yuck */
             *(contenttype_or_redirect + strlen(contenttype_or_redirect) - 1) = '\0';
         }
+
+
         if (code == 200)
         {
             /* read last-mod time */
@@ -672,6 +674,13 @@ void    http_indexpath(SWISH * sw, char *url)
             /* Now index the file */
 
             /* What to do with non text files?? */
+            /* This never worked correctly.  Used to set fprop->index_no_content if it wasn't a text type of file. */
+            /* That forced indexing of only the path name for say a PDF file.  But although that also allowed files */
+            /* to be processed by FileFilter filters, the index_no_content still forced indexing of only file names, */
+            /* thus making the filters worthless.  But without the index_no_contents it would index all files, includeing binary files. */
+            /* Two solutions: 1: set a flag that only should index the file if a filters is setup for it, or */
+            /*                2: do filtering in swishspider.  That's a better option. */
+
             if ( strncmp(contenttype, "text/", 5) == 0 )
             {
                 fprop = file_properties(item->url, file_prefix, sw);
@@ -679,7 +688,8 @@ void    http_indexpath(SWISH * sw, char *url)
 
                 /* only index contents of text docs */
                 // this would just index the path name
-                //fprop->index_no_content = strncmp(contenttype, "text/", 5);
+                // but also tossed away output from filters.
+                // fprop->index_no_content = strncmp(contenttype, "text/", 5);
 
                 do_index_file(sw, fprop);
                 free_file_properties(fprop);
