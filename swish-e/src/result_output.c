@@ -27,6 +27,7 @@
 
    -- 2001-02-09 rasc    make propertynames always lowercase!  (may change) 
 				 this is get same handling as metanames...
+   -- 2001-02-28 rasc    -b and counter corrected...
 
 */
 
@@ -162,37 +163,33 @@ char   *delimiter;
 FILE   *f_out;
 
 
-  resultmaxhits = sw->maxhits;
-  resultbeginhits = sw->beginhits;
-  counter = 0;
   f_out = stdout;
+  resultmaxhits = sw->maxhits;
+  resultbeginhits = (sw->beginhits > 0) ? sw->beginhits - 1 : 0;
   delimiter = (sw->useCustomOutputDelimiter) ? sw->customOutputDelimiter : " ";
+  counter = resultbeginhits;
 
        /* jmruiz 02/2001 SwishSeek is faster because it does not read the
        ** unused data */
   SwishSeek(sw,resultbeginhits);
-  while ((r=SwishNext(sw))) {
-     r->count = ++counter;		/* set rec. counter for output */
 
-	if (resultmaxhits) {
-	   if (sw->opt.extendedformat)
-	      printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
-	   else {
-					 /* old style std output  (compat) */
-	      fprintf(f_out,"%d%s%s%s%s%s%d",
+  /* -- resultmaxhits: >0 or -1 (all hits) */
+  while ((r=SwishNext(sw)) && (resultmaxhits!=0)) {
+	r->count = ++counter;		/* set rec. counter for output */
+
+	if (sw->opt.extendedformat)
+	   printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
+	else {
+					 /* old style v 1.x std output  (compat) */
+	   fprintf(f_out,"%d%s%s%s%s%s%d",
 			r->rank,  delimiter, r->filename,
 			delimiter, r->title, delimiter, r->size);
-	      printSearchResultProperties(sw, f_out, r->Prop);
-	      fprintf(f_out, "\n");
-	   }
-				
-	   if (resultmaxhits > 0) {
-		resultmaxhits--; /* Modified DN 08/29/99  */
-		if(!resultmaxhits) break;
-	   }
+	   printSearchResultProperties(sw, f_out, r->Prop);
+	   fprintf(f_out, "\n");
 	}
-
-     r = r->nextsort;
+				
+	if (resultmaxhits > 0) resultmaxhits--;
+	r = r->nextsort;
   }
 
 }
