@@ -15,7 +15,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "gennmtab"="..\expat\gennmtab\gennmtab.dsp" - Package Owner=<4>
+Project: "gennmtab"="..\..\..\expat\gennmtab\gennmtab.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -75,7 +75,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "xmlparse"="..\expat\xmlparse\xmlparse.dsp" - Package Owner=<4>
+Project: "xmlparse"="..\..\..\expat\xmlparse\xmlparse.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -90,7 +90,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "xmltok"="..\expat\xmltok\xmltok.dsp" - Package Owner=<4>
+Project: "xmltok"="..\..\..\expat\xmltok\xmltok.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{
