@@ -330,7 +330,7 @@ Note that if the same variables occur in both files, older values may be written
 For large sites indexing may require more RAM than is available.  The C<-e> switch tells swish to use
 disk space to store data structures while indexing, saving memory.  This option is recommended if
 swish uses so much RAM that the computer begins to swap excessively, and you cannot increase available
-memory.  The trade-off is longer indexing times, and a busy disk drive.
+memory.  The trade-off is slightly longer indexing times, and a busy disk drive.  
 
 =item -l (symbolic links)
 
@@ -793,8 +793,8 @@ B<Examples of -x format strings:>
 =item -H [0|1|2|3|<n>]  (header output verbosity)
 
 The C<-H n> switch generates extened I<header> output.  This is most useful when searching more than one
-index file at a time, either by specifying more than one index file with the C<-f> switch, or when searching
-a merged index file.  In these cases, C<-H 2> will generate a set of headers specific to each index file.
+index file at a time by specifying more than one index file with the C<-f> switch.
+C<-H 2> will generate a set of headers specific to each index file.
 This gives access to the settings used to generate each index file.
 
 Even when searching a single index file, C<-H n> will provided additional information about the index file,
@@ -840,32 +840,30 @@ Running C<-T help> will print out a list of available *options*
 
 =head1 Merging Index Files
 
-At times it can be useful to merge different index files into one file for searching.
+In previous versions of Swish-e indexing would require a very large amount of memory and the indexing
+process could be very slow.  Merging provided a way to index in chunks and then combine the indexes together
+into a single index.
+
+Indexing is much faster now and uses much less memory, and with the C<-e> switch very little memory is
+needed to index a large site.
+
+Still, at times it can be useful to merge different index files into one file for searching.
 This could be because you want to keep separate site indexes and a common one for a global search, or
-because your site is very large and Swish-e runs out of memory if you try to index it directly.
-
-You can only merge only indexes that were indexed with common settings
-(e.g. don't mix stemming and non-stemming indexes, or indexes with different WordCharacter settings, etc.).
-
-  usage: swish-e [-v (num)] [-c file] -M index1 index2 ... outputfile
-
-Due to the structure of the swish-e index, merging may or may not require less memory than indexing
-all files at one time.
-
+you have separate collections of documents that you wish to search all at one time, but manage separately.
 
 =over 4
 
-=item -M *file file ...* (merge)
+=item -M *index1 index2 ... indexN out_index
 
-This allows you to merge two or more index files - the last file you specify on the
-list will be the output file.
+Merges the indexes specified on the command line -- the last file name entered is the output file.
+The output index must not exist (otherwise merge will not proceed).
 
-Merging removes all redundant file and word data. To estimate how much memory the operation will need,
-sum up the sizes of the files to be merged and divide by two.
-That's about the maximum amount of memory that will be used.
+Only indexes that were indexed with common settings may be merged.
+(e.g. don't mix stemming and non-stemming indexes, or indexes with different WordCharacter settings, etc.).
 
-You can use the C<-v> option to produce feedback while merging and the C<-c> option with a
-configuration file to include new administrative information in the new index file.
+Use the C<-e> switch while merging to reduce memory usage.
+
+Merge generates progress messages regardless of the setting of C<-v>.
 
 =item -c *configuration file*
 

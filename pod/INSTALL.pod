@@ -18,9 +18,32 @@ For those in a hurry, see L<"Quick Start for the Impatient">.
 
 =head1 SYSTEM REQUIREMENTS
 
-Swish-e 2.x is written in C, and, up to this time, it has been tested on
-Solaris 2.6, AIX 4.3.2, OpenVMS 7.2-1 AXP, RedHat Linux 6.2 (and other
-Linux distributions) and Win32 platforms.
+Swish-e is written in C, and, up to this time, it has been tested on
+a number of platforms.
+Any current Linux distribution should have no problem building Swish-e.
+Swish-e has also been used on these platforms:
+
+    Intel - FreeBSD 4.6-STABLE
+    gcc version 2.95.4 20020320 [FreeBSD]
+
+    UltraSPARC - Solaris 8
+    gcc version 2.95.3 20010315 (release)
+
+    Sun Enterprise 3500 - Solaris 2.6
+    gcc version 2.95.1 19990816 (release)
+
+    IBM RS/6000 43P-150 - Debian 3.0
+    gcc version 2.95.4 20011002 (Debian prerelease)
+
+    Apple Dual G4 QuickSilver - MacOS X 10.1.4
+    Apple Computer, Inc. version gcc-932.1, based on gcc version 2.95.2 19991024 (release)
+    
+    DEC Alpha - Debian 3.0
+    gcc version 2.95.4 20011002 (Debian prerelease)
+
+    OpenVMS 7.2-1 AXP
+
+    Win32 platforms
 
 Unless you are using the Win32 binary distribution, a C compiler is needed.
 Pretty much any standard compiler should do, although you will probably

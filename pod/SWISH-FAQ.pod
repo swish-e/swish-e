@@ -665,10 +665,9 @@ or more will display warnings when UTF-8 to 8859-1 conversion fails.
 =head3 Can I add/remove files from an index?
 
 Not really.  Swish-e currently has no way to add or remove items from
-its index.
-
-About the only way to delete items from the index is to stat(2) all the
-results to make sure that all the files still exist.
+its index.  But, Swish-e indexes so quickly that it's often possible to
+reindex the entire document set when a file needs to be added, modified or removed.
+If you are spidering a remote site then consider caching documents locally compressed.
 
 Incremental additions can be handled in a couple of ways, depending on
 your situation.  It's probably easiest to create one main index every
@@ -678,10 +677,6 @@ to Swish-e while searching.
 
 You can merge the indexes into one index (instead of using -f), but it's
 not clear that this has any advantage over searching multiple indexes.
-Using C<-f> gives access to the individual headers of both indexes,
-while C<-M> merges the headers, and merging indexes with different
-indexing settings (Stemming, WordCharacters) may produce odd results.
-This is a question for the Swish-e discussion list.
 
 How does one create the incremental index?
 
@@ -743,7 +738,7 @@ This is I<with> C<-e>, and used about 26M or memory:
     Elapsed time: 00:06:43 CPU time: 00:04:12
 
 You can also build a number of smaller indexes and then merge together
-with C<-M>.  This will use more memory.  Merging is not a great option.
+with C<-M>.  Using C<-e> while merging will save memory.
 
 Finally, if you do build a number of smaller indexes, you can specify more
 than one index when searching by using the C<-f> switch.  Sorting large
@@ -775,6 +770,22 @@ time, and that often times many pages of the same query will be requested,
 you may be smart to request all the documents on the first request, and
 then cache the results to a temporary file.  The perl module File::Cache
 makes this very simple to accomplish.
+
+=head3 Why do I get an error about COALESCE_BUFFER_MAX_SIZE?
+
+If you are indexing a document with a huge number of words (or perhaps a binary file)
+you may see this message:
+
+    err: Buffer too short in coalesce_word_locations.
+    Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.
+
+Check to make sure you not indexing a binary file.  If you are truly indexing
+a text document with a huge number of words consider breaking up the document into
+smaller chunks -- this will make search results more helpful.
+
+Otherwise, you can follow the suggestion above to increase the
+COALESCE_BUFFER_MAX_SIZE setting.
+
 
 =head2 Spidering
 
