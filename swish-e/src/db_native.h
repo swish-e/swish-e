@@ -26,6 +26,10 @@
 #define __HasSeenModule_DBNative	1
 
 
+#ifdef USE_BTREE
+#include "btree.h"
+#endif
+
 #define MAXCHARS 266            /* 255 for chars plus ten more for other data */
 
 #define FILELISTPOS (MAXCHARS - 1)
@@ -89,6 +93,13 @@ struct Handle_DBNative
    int      tmp_prop;
    char    *cur_index_file;
    char    *cur_prop_file;
+
+#ifdef USE_BTREE
+   BTREE   *bt;
+   FILE    *worddata;
+   int      tmp_worddata;
+   char    *cur_worddata_file;
+#endif
 };
 
 

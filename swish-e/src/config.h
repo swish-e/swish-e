@@ -41,8 +41,10 @@
 
 #ifdef __VMS
 #define PROPFILE_EXTENSION "_prop"
+#define WORDDATA_EXTENSION "_wdat"
 #else
 #define PROPFILE_EXTENSION ".prop"
+#define WORDDATA_EXTENSION ".wdat"
 #endif
 
 /* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 
@@ -319,6 +321,11 @@
 /* 2001/08 jmruiz -- File System sort flag - 0 means that filenames
 ** will not be indexed - 1 means that filenames will be indexed */
 #define SORT_FILENAMES 0
+
+/* 2001/10 jmruiz -- Added BTREE schema to store words */
+/*
+#define USE_BTREE
+*/
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess
