@@ -76,9 +76,9 @@ $Id$
 #include "metanames.h"
 
 /* libxml2 */
-#include <libxml2/libxml/HTMLparser.h>
-#include <libxml2/libxml/xmlerror.h>
-#include <libxml2/libxml/uri.h>
+#include <libxml/HTMLparser.h>
+#include <libxml/xmlerror.h>
+#include <libxml/uri.h>
 
 /* Should be in config.h */
 
