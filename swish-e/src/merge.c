@@ -587,12 +587,6 @@ static int     compnums(const void *s1, const void *s2)
     int         b = *(int *)s2;
     int         v1 = sorted_data[ a-1 ];
     int         v2 = sorted_data[ b-1 ];
-    /* $$$ to work with BTREE would need something like:
-     * but that won't work if the pre-sorted array does not exist
-     * in the index already.  CreatePropSortArray creates an actual integer array!
-    int         v1 = DB_ReadSortedData( sorted_data, a-1 );
-    int         v2 = DB_ReadSortedData( sorted_data, b-1 );
-    ***/
 
     // return v1 <=> v2;
 
@@ -634,7 +628,21 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
 
+    /*
+     * Since USE_PRESORT_ARRAY has a different internal format that what is generated
+     * by CreatePropeSortArray() we must ALWAYS create an actual integer
+     * array total_files long.
+     * 
+     * $$$ The problem is that with USE_PRESORT_ARRAY the format is different
+     *     before and after saving the array to disk
+     */
+
+#ifdef USE_PRESORT_ARRAY
+    if ( 1 )
+#else
     if ( !LoadSortedProps( cur_index, path_meta ) )
+#endif
+
     {
         FileRec fi;
         memset( &fi, 0, sizeof( FileRec ));

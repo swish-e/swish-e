@@ -71,7 +71,7 @@ static PROP_LOOKUP *PropLookup = NULL;
 
 /*
 ** ----------------------------------------------
-** 
+**
 **  Module management code starts here
 **
 ** ----------------------------------------------
@@ -125,7 +125,7 @@ void    freeModule_ResultSort(SWISH * sw)
 
 /*
 ** ----------------------------------------------
-** 
+**
 **  Module config code starts here
 **
 ** ----------------------------------------------
@@ -219,7 +219,7 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
 
 /*
 ** ----------------------------------------------
-** 
+**
 **  Module code starts here
 **
 ** ----------------------------------------------
@@ -252,7 +252,7 @@ static int     compFileProps(const void *s1, const void *s2)
             !ret ? "*same*" : ret < 0 ? PropLookup[a].file_name : PropLookup[b].file_name );
 
     return ret;
-           
+
 #else
     return Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
 #endif
@@ -288,7 +288,7 @@ int     is_presorted_prop(SWISH * sw, char *name)
 
 
 /***********************************************************************
-* Pre sort a single property 
+* Pre sort a single property
 *
 ************************************************************************/
 int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache )
@@ -298,7 +298,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
     int             total_files = indexf->header.totalfiles;
     int             i,
                     k;
-    
+
 
     sort_array = emalloc( total_files * sizeof( long ) );
     out_array  = emalloc( total_files * sizeof( long ) );
@@ -313,7 +313,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
 
     /* This is need to know how to compare the properties */
     CurrentPreSortMetaEntry = m;
-    
+
 
 #ifdef DEBUGSORT
     {
@@ -338,7 +338,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
     }
 #endif
 
-    
+
 
     /* Populate the arrays */
 
@@ -348,7 +348,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
         fi->filenum = i + 1;
 
         /* Used cached seek pointers for this file, if not the first time */
-        if ( PropLookup[i].prop_index ) 
+        if ( PropLookup[i].prop_index )
             fi->prop_index = PropLookup[i].prop_index;
         else
             fi->prop_index = NULL;
@@ -391,7 +391,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
         PropLookup = NULL;
     }
 
-    
+
     return out_array;
 }
 
@@ -408,7 +408,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
     int             i;
     int             *out_array = NULL;     /* array that gets sorted */
-#ifndef USE_BTREE
+#ifndef USE_PRESORT_ARRAY
     unsigned char   *out_buffer  = NULL;
     unsigned char   *cur;
 #endif
@@ -420,8 +420,8 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
     int             propIDX;
 
     memset( &fi, 0, sizeof( FileRec ) );
-    
-#ifdef USE_BTREE
+
+#ifdef USE_PRESORT_ARRAY
     DB_InitWriteSortedIndex(sw, indexf->DB ,header->property_count);
 #else
     DB_InitWriteSortedIndex(sw, indexf->DB );
@@ -443,7 +443,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         if ( !(m = getPropNameByID(&indexf->header, metaID )))
             progerr("Failed to lookup propIDX %d (metaID %d)", propIDX, metaID );
-            
+
 
         /* Check if this property must be in a presorted index */
         if (!is_presorted_prop(sw, m->metaName))
@@ -469,23 +469,24 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         out_array = CreatePropSortArray( indexf, m, &fi, 0 );
 
 
-#ifdef USE_BTREE
-        DB_WriteSortedIndex(sw, metaID, (unsigned char *)out_array, total_files, indexf->DB);
+#ifdef USE_PRESORT_ARRAY
+        DB_WriteSortedIndex(sw, metaID, out_array, total_files, indexf->DB);
 
         for (i = 0; i < total_files; i++)
             if ( PropLookup[i].SortProp )
                 freeProperty( PropLookup[i].SortProp );
 #else
-        out_buffer = emalloc( total_files * MAXINTCOMPSIZE ); 
+        out_buffer = emalloc( total_files * MAXINTCOMPSIZE );
 
 
         /* Now compress */
+        /* $$$ this should be in db_natvie.c */
         cur = out_buffer;
 
         for (i = 0; i < total_files; i++)
         {
             cur = compress3( out_array[i], cur );
-            
+
             /* Free the property */
             if ( PropLookup[i].SortProp )
                 freeProperty( PropLookup[i].SortProp );
@@ -529,6 +530,10 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
 /* Routines to get the proper sortorder of chars to be called when sorting */
 /* sw_strcasecmp sw_strcmp */
+
+/*** $$$!!!$$$ I do not think any of these routines are used any more
+ *  Better to use locale settings, IMO. - moseley 2/2005
+ */
 
 
 /* Exceptions to the standard translation table for sorting strings */
@@ -636,7 +641,7 @@ void    initStrCmpTranslationTable(int *iCaseTranslationTable)
             iTranslationTableExceptions[i].order * 256 + iTranslationTableExceptions[i].offset;
 }
 
-/* Comparison string routine function. 
+/* Comparison string routine function.
 ** Similar to strcasecmp but using our own translation table
 */
 int     sw_strcasecmp(unsigned char *s1, unsigned char *s2, int *iTranslationTable)
@@ -649,7 +654,7 @@ int     sw_strcasecmp(unsigned char *s1, unsigned char *s2, int *iTranslationTab
     return iTranslationTable[*s1] - iTranslationTable[*s2];
 }
 
-/* Comparison string routine function. 
+/* Comparison string routine function.
 ** Similar to strcmp but using our own translation table
 */
 int     sw_strcmp(unsigned char *s1, unsigned char *s2, int *iTranslationTable)

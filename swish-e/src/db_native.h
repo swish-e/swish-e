@@ -209,19 +209,25 @@ int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata,int sz_filed
 int     DB_CheckFileNum_Native(int filenum, void *db);
 int     DB_RemoveFileNum_Native(int filenum, void *db);
 
-#ifdef USE_BTREE
+/** Pre-sorted array access **/
+
+#ifdef USE_PRESORT_ARRAY
 int     DB_InitWriteSortedIndex_Native(void *db , int n_props);
-int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
+int     DB_WriteSortedIndex_Native(int propID, int *data, int num_elements,void *db);
 #else
 int     DB_InitWriteSortedIndex_Native(void *db );
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
 #endif
 int     DB_EndWriteSortedIndex_Native(void *db);
- 
+
 int     DB_InitReadSortedIndex_Native(void *db);
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
+/* Note that a macro is not provided for reading the data */
 int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
+
+
+
 
 int     DB_InitWriteProperties_Native(void *db);
 void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
@@ -231,10 +237,10 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 void    DB_Reopen_PropertiesForRead_Native(void *db);
 
 #ifdef USE_BTREE
-int	   DB_InitWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
+int        DB_InitWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
 int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void *DB);
 int    DB_EndWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
-int	   DB_InitReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
+int        DB_InitReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
 int    DB_ReadTotalWordsPerFile_Native(SWISH *sw, int idx, int *wordcount, void *DB);
 int    DB_EndReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
 #endif

@@ -108,7 +108,19 @@ int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
  
 int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
+
+/* this is defined in db_native.h now 
 int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB);
+*/
+#ifdef USE_PRESORT_ARRAY
+#define  DB_ReadSortedData(data, index) (ARRAY_Get((ARRAY *)data,index))
+#else
+#define  DB_ReadSortedData(data, index) (data[index])
+#endif
+
+
+
+
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 

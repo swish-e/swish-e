@@ -157,7 +157,7 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
 
 
 
-    {   
+    {
 #ifdef USE_BTREE
         long btree, worddata, hashfile, array, presorted;
 #endif
@@ -253,17 +253,17 @@ static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
 /* Open files */
 
 
-static FILE   *openIndexFILEForRead(char *filename) 
+static FILE   *openIndexFILEForRead(char *filename)
 {
     return sw_fopen(filename, F_READ_BINARY);
 }
 
 static FILE   *openIndexFILEForReadAndWrite(char *filename)
-{  
+{
     return sw_fopen(filename, F_READWRITE_BINARY);
 }
 
-  
+
 static FILE   *openIndexFILEForWrite(char *filename)
 {
     return sw_fopen(filename, F_WRITE_BINARY);
@@ -272,7 +272,7 @@ static FILE   *openIndexFILEForWrite(char *filename)
 static void    CreateEmptyFile(char *filename)
 {
     FILE   *fp;
-    
+
     if (!(fp = openIndexFILEForWrite(filename)))
     {
         progerrno("Couldn't write the file \"%s\": ", filename);
@@ -523,7 +523,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     DB->cur_prop_file = s;
 
 #ifdef USE_BTREE
-    
+
     s = emalloc(strlen(dbname) + strlen(BTREE_EXTENSION) + 1);
 
     strcpy(s, dbname);
@@ -534,10 +534,10 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the btree file \"%s\": ", s);
         return (void *) DB;
     }
-        
 
 
-    DB->fp_btree = fp_tmp;      
+
+    DB->fp_btree = fp_tmp;
     DB->cur_btree_file = s;
 
     s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
@@ -550,12 +550,12 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the presorted index file \"%s\": ", s);
         return (void *) DB;
     }
-        
+
 
     DB->cur_presorted_file = s;
-    
 
-    
+
+
     s = emalloc(strlen(dbname) + strlen(WORDDATA_EXTENSION) + 1);
 
     strcpy(s, dbname);
@@ -566,7 +566,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the worddata file \"%s\": ", s);
         return (void *) DB;
     }
-        
+
 
     DB->fp_worddata = fp_tmp;
     DB->cur_worddata_file = s;
@@ -582,7 +582,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the hashfile file \"%s\": ", s);
         return (void *) DB;
     }
-        
+
 
     DB->fp_hashfile = fp_tmp;
     DB->cur_hashfile_file = s;
@@ -598,7 +598,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the array file \"%s\": ", s);
         return (void *) DB;
     }
-          
+
     DB->fp_array = fp_tmp;
     DB->cur_array_file = s;
 
@@ -626,7 +626,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     DB->totwords_array = ARRAY_Open(DB->fp_array,DB->offsets[TOTALWORDSPERFILEPOS]);
     DB->props_array = ARRAY_Open(DB->fp_array,DB->offsets[FILEOFFSETPOS]);
 
-    /* Put the file pointer of props file at the end of the file 
+    /* Put the file pointer of props file at the end of the file
     ** This is very important because if we are in update mode
     ** we must avoid the properties to be overwritten
     */
@@ -645,7 +645,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
 {
 #ifdef _WIN32
-	struct stat stbuf;
+        struct stat stbuf;
 #endif
     if (!*fp)
         return;
@@ -663,8 +663,8 @@ static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
         newname[strlen(newname) - strlen(USE_TEMPFILE_EXTENSION)] = '\0';
 
 #ifdef _WIN32
-	if(!stat(newname, &stbuf) && ((stbuf.st_mode & S_IFMT) == S_IFREG))
-	/* if(isfile(newname)) FIXME: file.c shouldn't rely on indexing structures */
+        if(!stat(newname, &stbuf) && ((stbuf.st_mode & S_IFMT) == S_IFREG))
+        /* if(isfile(newname)) FIXME: file.c shouldn't rely on indexing structures */
             if (remove(newname))
                 progerrno("Failed to unlink '%s' before renaming. : ", newname);
 #endif
@@ -815,9 +815,9 @@ int     DB_InitWriteHeader_Native(void *db)
 
     if(DB->offsets[HEADERPOS])
     {
-        /* If DB->offsets[HEADERPOS] is not 0 we are in update mode 
+        /* If DB->offsets[HEADERPOS] is not 0 we are in update mode
         ** So, put the pointer file in the header start position to overwrite
-        ** the header 
+        ** the header
         */
         sw_fseek(DB->fp,DB->offsets[HEADERPOS],SEEK_SET);
     }
@@ -1577,7 +1577,7 @@ long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *d
     /* Get saved_bytes and adjust data_size */
     *saved_bytes = uncompress2(&buf);
     *data_size -= (buf - (*worddata));
-    /* Remove saved_bytes from buffer 
+    /* Remove saved_bytes from buffer
     ** We need to use memmove because data overlaps */
     memmove(*worddata,buf, *data_size);
 
@@ -1588,8 +1588,8 @@ long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *d
 
 
 /*--------------------------------------------
-** 2002/12 Jose Ruiz 
-**     FilePath,FileNum  pairs              
+** 2002/12 Jose Ruiz
+**     FilePath,FileNum  pairs
 **     Auxiliar hash index
 */
 
@@ -1660,17 +1660,17 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-#ifdef USE_BTREE
+#ifdef USE_PRESORT_ARRAY
 
 /*******************************************************************************
-*  USE_BTREE Sorted data tables (presorted indexes)
+*  Sorted data tables (presorted indexes)
 *
 *  DB->offsets[SORTEDINDEX]     Points to start of presorted index tables
 *  DB->n_presorted_array        Number of props in index
 *  DB->presorted_array          Points to array[ # props ] of pointers to ARRAY
 *                               ARRAY is defined in array.h
 *  DB->presorted_root_node      Points to array[ # props ] of unsigned longs
-*                               holds the seek pointer to the root node for 
+*                               holds the seek pointer to the root node for
 *                               each of the sorted props.
 *  DB->next_sortedindex         Counter - index into structure below.
 *                               incremented after each write of an array.
@@ -1700,7 +1700,7 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 *
 *  Also, since the above is total number of props long, why not just
 *  have it indexed by propIDX (not propID)?  Then don't need to search
-*  for a given propID -- just do 
+*  for a given propID -- just do
 *
 *           sorted_props_index = read_sorted_props_table_from_disk();
 *           root_array_seek_pointer = sorted_props_index[ propIDX ];
@@ -1710,6 +1710,14 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 *
 *  Maybe the DB->presorted_(propid|root_node|array) could all be part of
 *  one structure (i.e. DB->presorted[n].array ).
+*
+*  These functions return an int, but never seems to be used.
+*
+*  Another problem with using this code is that the format of the array is
+*  different before and after writing to disk.  That is, with the old code
+*  pre_sort.c: CreatePropertySortArray() created an integer array total_files long.
+*  And when reading the the array back from disk you get that same array.
+*  This problem shows up in merge.c: load_filename_sort().  See notes there.
 *
 *
 *
@@ -1763,35 +1771,28 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 *
 * Questions:
 *   Why does DB->presorted_root_node[] array needed to be populated during the write
-*   operation? 
+*   operation?
 *
 *
 *
 ************************************************************************************/
 
 
-int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data, void *db)
+int     DB_WriteSortedIndex_Native(int propID, int *data, int num_elements, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp_presorted;
    ARRAY *arr;
    int i;
-   int *num = (int *)data;          /* Cast data back to a pointer to int */
-   int n = sz_data/sizeof(int);     /* This looks wrong to me. */
 
    arr = ARRAY_Create(fp);          /* Initialize the ARRAY storage */
 
-   for(i = 0 ; i < n ; i++)
-   {
-       ARRAY_Put(arr,i,num[i]);
-/*
-       if(!(i%10000))
-       {
-            ARRAY_FlushCache(arr);
-            printf("%d %d            \r",propID,i);
-       }
-*/
-   }
+
+   /* Add all elemnts of array to the array */
+   for(i = 0 ; i < num_elements ; i++)
+       ARRAY_Put(arr,i,data[i]);
+
+
 
    /* ARRAY_Close() returns the offset of the root node for this array */
    DB->presorted_root_node[DB->next_sortedindex] = ARRAY_Close(arr);
@@ -1808,6 +1809,7 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
 
    return 0;
 }
+
 
 int     DB_EndWriteSortedIndex_Native(void *db)
 {
@@ -1873,6 +1875,8 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
 
    if(!DB->cur_presorted_array || DB->cur_presorted_propid != (unsigned long)propID)
    {
+       DB->cur_presorted_array = NULL;  /* Added to fix bug mentioned above - moseley */
+
        for(i = 0; i < DB->n_presorted_array ; i++)
        {
            if((unsigned long)propID == DB->presorted_propid[i])
@@ -1898,7 +1902,6 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
 
    return 0;
 }
-
 
 int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
 {
@@ -2089,8 +2092,6 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    return 0;
 }
 
-/* Why doesn't this just return the value? */
-
 int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
 {
     *value = data[index];
@@ -2108,7 +2109,7 @@ int     DB_EndReadSortedIndex_Native(void *db)
 
 
 
-/* 
+/*
 ** Jose Ruiz 04/00
 ** Store a portable long in a portable format
 */
@@ -2121,7 +2122,7 @@ void    printlong(FILE * fp, unsigned long num, size_t(*f_write) (const void *, 
         progerrno("Error writing %d of %d bytes: ", sizeof(long), written );
 }
 
-/* 
+/*
 ** Jose Ruiz 04/00
 ** Read a portable long from a portable format
 */
@@ -2133,8 +2134,8 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
     return UNPACKLONG(num);     /* Make the number readable */
 }
 
-/* 
-** 2003/10 Jose Ruiz 
+/*
+** 2003/10 Jose Ruiz
 ** Store a file offset in a portable format
 */
 void    printfileoffset(FILE * fp, sw_off_t num, size_t(*f_write) (const void *, size_t, size_t, FILE *))
@@ -2146,8 +2147,8 @@ void    printfileoffset(FILE * fp, sw_off_t num, size_t(*f_write) (const void *,
         progerrno("Error writing %d of %d bytes: ", sizeof(num), written );
 }
 
-/* 
-** 2003/10Jose Ruiz 
+/*
+** 2003/10Jose Ruiz
 ** Read a file offset from a portable format
 */
 sw_off_t readfileoffset(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE *))
@@ -2166,7 +2167,7 @@ sw_off_t readfileoffset(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE
 *   Properties are written sequentially to the .prop file.
 *   Fixed length records of the seek position into the
 *   property file are written sequentially to the main index (which is why
-*   there's a separate .prop file).  
+*   there's a separate .prop file).
 *
 *   DB_InitWriteProperties is called first time a property is written
 *   to save the offset of the property index table in the main index.
@@ -2245,7 +2246,7 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 
     if ( count <= 0 )
         return;
-    
+
 
     if (!DB->prop)
         progerr("Property database file not opened\n");
@@ -2284,7 +2285,7 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 
     /* Second write the number of saved bytes */
     if( !uncompressed_len )   /* No compression */
-        saved_bytes = 0;    
+        saved_bytes = 0;
     else
         saved_bytes = uncompressed_len - buf_len;
     /* Write them */
@@ -2293,7 +2294,7 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 #ifdef DEBUG_PROP
     prop_start_pos = sw_ftell(DB->prop);
 #endif
-    
+
 
 
     if ( (int)(written_bytes = sw_fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
@@ -2374,7 +2375,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #ifdef DEBUG_PROP
         start_seek = sw_ftell( DB->fp );
 #endif
-        
+
         /* Write in portable format */
         printfileoffset( DB->fp, prop_loc->seek, sw_fwrite );
 
@@ -2410,7 +2411,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
     if ( count <= 0 )
         return;
-    
+
 
     /* create a place to store them */
 
@@ -2422,7 +2423,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 #ifndef USE_BTREE
     /* now calculate seek_pos */
-    /* printlong currently always writes sizeof(long) bytes (usually 4 bytes 
+    /* printlong currently always writes sizeof(long) bytes (usually 4 bytes
     ** for 32 bit architectures and 8 bytes for 64bit ones, so 4 or 8 bytes
     ** bytes are need for seek
     */
@@ -2446,7 +2447,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #ifdef DEBUG_PROP
         sw_off_t    seek_start = sw_ftell( DB->fp );
 #endif
-        
+
         /* make an alias */
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
 
@@ -2473,7 +2474,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #endif
 }
 
-    
+
 
 /****************************************************************************
 *   Reads a property from the property file
@@ -2519,7 +2520,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     prop_loc = &pindex->prop_position[ propIDX ];
 
     seek_pos = pindex->prop_position[propIDX].seek;
-    
+
     /* Any for this metaID? */
     if (!seek_pos )
     {
