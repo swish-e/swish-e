@@ -34,7 +34,7 @@ $Id$
 #include "swish_qsort.h"
 #include "proplimit.h"
 
-#define DEBUGLIMIT
+// #define DEBUGLIMIT
 
 /*==================== These should be in other modules ================*/
 
@@ -536,7 +536,6 @@ static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *m
     /* now sort by it's sort value */
     swish_qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbysort);
 
-
     /* This marks in the new array which ones are in range */
     some_found = find_prop( sw, indexf, sort_array, size, meta_entry );
 
@@ -608,7 +607,7 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
     else if ( (strcmp( ">=", lowrange ) == 0)   )
     {
         meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
-        meta_entry->hiPropRange = NULL; /* indicates very bit */
+        meta_entry->hiPropRange = NULL; /* indicates very big */
     }
 
     else
@@ -700,8 +699,9 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 
         if ( !create_lookup_array( sw, indexf, meta_entry ) )
             return 0;
+printf("created lookup array\n");
     }
-
+printf("ok\n");
     return 1;  // ** flag that it's ok to continue the search.
         
 }
@@ -793,13 +793,11 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
             int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
 
-
-
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */
             if (
                 (Compare_Properties( meta_entry, prop, meta_entry->loPropRange ) < 0 ) ||
-                (Compare_Properties( meta_entry, prop, meta_entry->hiPropRange ) > 0 )
+                (meta_entry->hiPropRange && (Compare_Properties( meta_entry, prop, meta_entry->hiPropRange ) > 0 ))
                )
                 limit = 1;
 
