@@ -148,6 +148,14 @@ int     main(int argc, char **argv)
     sw = SwishNew();            /* Get swish handle */
 
 
+
+    /* By default we are set up to use the first data source in the list */
+    /* I don't like this.   modules.c would fix this */
+    IndexingDataSource = data_sources[0];
+
+    
+
+
     params = new_swish_params();
     get_command_line_params(sw, argv, params );
 
@@ -977,10 +985,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     if ( params->index_read_only )
         progerr("Sorry, this program is in readonly mode");
-
-
-    /* By default we are set up to use the first data source in the list */
-    IndexingDataSource = data_sources[0];
 
 
     /* Read configuration files */
