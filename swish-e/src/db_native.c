@@ -336,6 +336,11 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 #endif
     struct Handle_DBNative *DB;
 
+
+    if ( isdirectory( dbname ) )
+        progerr( "Index file '%s' is a directory", dbname );
+
+
     swish_magic = SWISH_MAGIC;
    /* Allocate structure */
     DB = (struct Handle_DBNative *) newNativeDBHandle(sw, dbname);
@@ -671,10 +676,22 @@ static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
         if (rename(*filename, newname))
             progerrno("Failed to rename '%s' to '%s' : ", *filename, newname);
 
+
+#ifdef INDEXPERMS
+        chmod(newname, INDEXPERMS);
+#endif
+
         *tempflag = 0;          /* no longer opened as a temporary file */
         efree(newname);
     }
+
+#else
+
+#ifdef INDEXPERMS
+    chmod(*filename, INDEXPERMS);
 #endif
+
+#endif /* USE_TEMPFILE_EXTENTION */
 
     efree(*filename);
     *filename = NULL;
