@@ -1488,6 +1488,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
 {
     char *propstr;
     char proptype = '?';
+    int  i;
 
     if  ( is_meta_string(meta_entry) )
         proptype = 'S';
@@ -1498,16 +1499,36 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
     else if ( is_meta_number(meta_entry) )
         proptype = 'N';
 
-    printf("  %20s (%2d) %c:", meta_entry->metaName, meta_entry->metaID, proptype );
+    printf("  %20s:%2d (%3d) %c:", meta_entry->metaName, meta_entry->metaID, prop->propLen, proptype );
 
     if ( !prop )
         printf(" propEntry=NULL");
 
     propstr = DecodeDocProperty( meta_entry, prop );
-    printf(" \"%s\"", propstr );
-    efree( propstr );
+    i = 0;
+    printf(" \"");
 
-    printf( "\n" );
+    while ( i < strlen( propstr ) )
+    {
+        if ( isprint( (int)propstr[i] ))
+            printf("%c", propstr[i] );
+            
+        else if ( propstr[i] == '\n' )
+            printf("\n");
+
+        else
+            printf("..");
+
+        i++;
+        if ( i > 300 )
+        {
+            printf(" ...");
+            break;
+        }
+    }
+    printf("\"\n");
+            
+    efree( propstr );
 }
 
 

@@ -531,6 +531,8 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
         if (strcasecmp(w0, "PropCompressionLevel") == 0)
         {
+
+#ifdef HAVE_ZLIB
             if (sl->n == 2)
             {
                 sw->PropCompressionLevel = atoi(sl->word[1]);
@@ -539,6 +541,9 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+#else
+            progwarn("%s: Swish not built with zlib support -- cannot compress", w0);
+#endif
             continue;
         }
         

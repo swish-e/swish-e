@@ -172,7 +172,7 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, xmlSAXHandlerPtr SAXHandler );
 static void free_parse_data( PARSE_DATA *parse_data ); 
-static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen );
+static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
 static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
@@ -742,8 +742,6 @@ static void end_hndl(void *data, const char *el)
 static void char_hndl(void *data, const char *txt, int txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
-    int ret;
-
 
    
     /* Have we been disabled? */
@@ -759,19 +757,10 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     if ( parse_data->text_buffer.cur + txtlen >= BUFFER_CHUNK_SIZE )
         flush_buffer( parse_data, 0 );  // flush upto last word - somewhat expensive
 
+        
 
+    Convert_to_latin1( parse_data, (unsigned char *)txt, txtlen );
 
-    if ( (ret = Convert_to_latin1( parse_data, txt, txtlen )) != 0 )
-    {
-        if ( parse_data->sw->parser_warn_level >= 1 )
-            xmlParserWarning(parse_data->ctxt, "Failed to convert internal UTF-8 to Latin-1.\nIndexing w/o conversion.\n");
-
-        if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
-            debug_show_parsed_text( parse_data, (char *)txt, txtlen );
-
-        append_buffer( &parse_data->text_buffer, txt, txtlen );
-        return;
-    }
 
     if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
         debug_show_parsed_text( parse_data, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
@@ -811,14 +800,17 @@ static void ignorableWhitespace(void *data, const char *txt, int txtlen)
 *   Convert UTF-8 to Latin-1
 *
 *   Buffer is extended/created if needed
-*   Returns true if failed.
 *
 *********************************************************************/
 
-static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen )
+static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int txtlen )
 {
-    CHAR_BUFFER *buf = &parse_data->ISO_Latin1;
-    int     inlen = txtlen;
+    CHAR_BUFFER     *buf = &parse_data->ISO_Latin1;
+    int             inlen = txtlen;
+    int             ret;
+    unsigned char  *start_buf;
+    unsigned char  *end_buf = txt + txtlen - 1;
+    int             used;
     
 
     /* (re)allocate buf if needed */
@@ -832,10 +824,55 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
         buf->buffer = erealloc( buf->buffer, buf->max );
     }
 
-    buf->cur = buf->max;
+    buf->cur = 0;  /* start at the beginning of the buffer */
 
-    return UTF8Toisolat1( (unsigned char *)buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
+    while( 1 )
+    {
+        used = buf->max - buf->cur;             /* size available in buffer */
+        start_buf = &buf->buffer[buf->cur];     /* offset into buffer */
+        
+        /* Returns 0 for OK */
+        ret = UTF8Toisolat1( start_buf, &used, txt, &inlen );
+
+        if ( used > 0 )         // tally up total bytes consumed
+            buf->cur += used;
+
+        if ( ret == 0 )         // all done
+            return;
+
+        if ( ret == -2 )        // encoding failed
+        {
+            if ( parse_data->sw->parser_warn_level >= 1 )
+                xmlParserWarning(parse_data->ctxt, "Failed to convert internal UTF-8 to Latin-1.\nReplacing non ISO-8859-1 char with char '%c'\n", ENCODE_ERROR_CHAR);
+
+
+            buf->buffer[buf->cur++] = ENCODE_ERROR_CHAR;
+
+
+            /* Skip one UTF-8 character -- returns null if not pointing to a UTF-8 char */
+            if (  !(txt = xmlUTF8Strpos(&txt[inlen], 1) ))
+                return;
+
+            /* Calculate the remaining length of the input string */
+            inlen = (unsigned long)end_buf - (unsigned long)txt + 1;
+
+            if ( inlen <= 0 )
+                return;
+
+            start_buf += buf->cur-1;                
+        }
+        else
+        {
+            xmlParserWarning(parse_data->ctxt, "Error '%d' converting internal UTF-8 to Latin-1.\n", ret );
+            return;
+        }
+    }
 }
+                
+
+                
+
+
 
 
 
