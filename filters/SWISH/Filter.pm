@@ -1,4 +1,4 @@
-package SWISH::Filter;
+cd /data/_a/internetindexpackage SWISH::Filter;
 
 use 5.005;
 use strict;
@@ -270,6 +270,9 @@ sub filter {
     my $self = shift;
     my %attr = ref $_[0] ? %{$_[0]} : @_ if @_;
 
+    # Any filters?
+    return unless $self->{filters};
+
     delete $self->{doc_ref};
     delete $self->{doc_type};  # html|txt|xml
     $self->{content_type} = '';
@@ -481,12 +484,14 @@ sub find_binary {
 
     unless ( @path_segments ) {
         my $path_sep = $Config{path_sep} || ':';
-        
+
         @path_segments = split /\Q$path_sep/, $ENV{PATH};
     }
     
     for ( @path_segments ) {
         my $path = "$_/$prog";
+        $path .= '.exe' if $^O =~ /Win32/ && $path !~ /\.exe$/;
+
         warn "Looking at [$path]\n" if $testing;
         return $path if -x $path;
     }
