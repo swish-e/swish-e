@@ -470,7 +470,8 @@ typedef struct {
 typedef struct {
     FuzzyIndexType fuzzy_mode;
 #ifdef SNOWBALL
-    int     (*fuzzy_routine) (char **, int *, void *);
+    int     (*fuzzy_routine) (char **, int *, void *, int (*lang_stem) (void *));
+    int     (*lang_stem) (void *);
     struct SN_env *snowball;
 #else
     int     (*fuzzy_routine) (char **, int *);
