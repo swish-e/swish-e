@@ -438,9 +438,9 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 
 	case DATE:
 		fmt = (subfmt) ? subfmt: "%Y-%m-%d %H:%M:%S";
-		if (!strcmp (fmt,"%d")) {
+		if (!strcmp (fmt,"%ld")) {
 			/* special: Print date as serial int (for Bill) */
-		   if (f) fprintf (f,fmt, (int) pv->value.v_date);
+		   if (f) fprintf (f,fmt, (long) pv->value.v_date);
 		} else {
 			/* fmt is strftime format control! */
 		   s = (char *) emalloc(MAXWORDLEN + 1);

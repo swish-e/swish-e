@@ -389,7 +389,7 @@ format strings in the swish configuration file.
 
 B<Format of "formatstring":>
 
-    "text<propertyname>text<propertyname fmt=subfmt>text..."
+    "text<propertyname>text<propertyname fmt=propfmtstr>text..."
 
 
 Where B<propertyname> is:
@@ -447,7 +447,7 @@ These are available for output when using the C<-x> format.
     swishdbfile        String   Path of swish database indexfile
 
 The Auto properties can also be specified using shortcuts:    
-
+        
     %c     = <swishreccount>        (c-ount)
     %d     = <swishdescription>
     %D     = <swishlastmodified>    (D-ate)
@@ -460,20 +460,20 @@ The Auto properties can also be specified using shortcuts:
     %%     = %
 
 
-B<Sub-formats of properties:>
+B<Formatstrings of properties:>
 
 Properties listed in an C<-x> format string can include format control strings.
-These "sub-formats" are used to control how the contents of the associated property are printed.
-Sub-formats are used like C-language printf formats.
-The sub-format is specified by including the attribute "fmt" within the property tag.
+These "propertyformats" are used to control how the contents of the associated property are printed.
+Property formats are used like C-language printf formats.
+The property format is specified by including the attribute "fmt" within the property tag.
 
 General syntax:
 
-    -x '<propertyname fmt="subfmt">'
+    -x '<propertyname fmt="propfmtstr">'
 
 where C<subfmt> controls the output format of C<propertyname>.    
 
-Examples of sub-format strings:
+Examples of property format strings:
 
         date type:    ...fmt='%d.%m.%Y'
         string type:  ...fmt='%-40.20s'
@@ -484,7 +484,7 @@ format strings.
 
 B<Rainer -- are strftime and sprintf formats fully implemented?>
 
-The first character of a subfmt string defines the delimiter for the sub-format string.
+The first character of a property format string defines the delimiter for this format string.
 For example,
 
     swish -x  "<author  fmt=\"%20s\"> ...\n"
@@ -498,13 +498,16 @@ If you ommit the sub-format, the following formats are used:
 
     String type:       "%s"  (like printf char *)
     Integer type:      "%d"  (like printf int)
-    Date type:         "%Y-%m-%d %H:%M:%S" (like strftime)
     Float type:        "%f"  (like printf double) 
+    Date type:         "%Y-%m-%d %H:%M:%S" (like strftime)
+                        special: fixed format string "%ld" = print seconds since epoch
+                                   
 
 
-B<Text in "formatstring" or "subfmt":>
 
-Text will be output as-is in format strings (and sub-format strings).
+B<Text in "formatstring" or "propfmtstr":>
+
+Text will be output as-is in format strings (and property format strings).
 Special characters can be escaped with a backslash.
 To get a new line for each result hit, you have to include
 the Newline-Character "\n" at the end of "fmtstr".
@@ -513,6 +516,7 @@ the Newline-Character "\n" at the end of "fmtstr".
     -x "Count=<swishreccount>, Rank=<swishrank>\n"
     -x "\<p\>Title=\<b\><swishtitle>\<p\>"
     -x 'Date: <swishlastmodified fmt="%m/%d/%Y">\n'
+    -x 'Date in seconds: <swishlastmodified fmt=/%ld/>\n'
 
 B<Control/Escape charcters:>
 
