@@ -682,8 +682,12 @@ double elapsedEnd;
 			printTime(TimeElapsed() - elapsedStart);
 			printf(" CPU time: ");
 			printTime(TimeCPU() - cpuStart);
-			printf("\nIndexing done!\n");
+                        printf("\n");
 		}
+
+		printf("Indexing done!\n");
+
+
 #ifdef INDEXPERMS
 		chmod(sw->indexlist->line, INDEXPERMS);
 #endif
@@ -997,7 +1001,6 @@ void usage()
 	printf("         -m : the maximum number of results to return [defaults to all results]\n");
 	printf("         -M : merges index files\n");
 	printf("         -N : index only files with a modification date newer than path supplied\n");
-	printf("         -D : decodes an index file\n");
 	printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -d : next param is delimiter.\n");
