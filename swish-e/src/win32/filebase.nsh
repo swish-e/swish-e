@@ -75,11 +75,18 @@ Section "ActiveX Control" SecSwishCtl
 SectionEnd ; end of ActiveX section
 
 SubSection "Document Filters" SubSecFilters
-    Section "Word Doc Filter" SecDocFilter
+    Section "Word Doc Filters" SecDocFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "catdoc" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
+
+        ; catdoc
         File ..\..\..\catdoc\win32\catdoc.exe
         File /r ..\..\..\catdoc\charsets
+
+	; This needs to be rebuilt against SWISH-E libraries.  I can't really include the binary from GnuWin32.
+	; wvware        
+        ;WriteRedStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "wvware" "1"
+        ;File ..\..\..\wvware\bin\wvware.exe
     SectionEnd
     Section "PDF Filter" SecPDFFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "xpdf" "1"
