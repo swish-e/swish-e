@@ -52,20 +52,23 @@ struct ramdisk
    unsigned int n_buffers;
    unsigned int buf_size;
    unsigned char **buffer;
+   MEM_ZONE *zone;
 };
 
 
 /* Create a new ramdisk - The size of the internal buffers is buf_size */
-struct ramdisk *ramdisk_create(int buf_size)
+struct ramdisk *ramdisk_create(char *name, int buf_size)
 {
 struct ramdisk *rd;
+
         rd = (struct ramdisk *) emalloc(sizeof(struct ramdisk));
+		rd->zone = Mem_ZoneCreate(name, buf_size, 0);
         rd->cur_pos = 0;
 		rd->end_pos =0;
         rd->n_buffers = 1;
         rd->buf_size = buf_size;
         rd->buffer = (unsigned char **)emalloc(sizeof(unsigned char *));
-        rd->buffer[0] = (unsigned char *)emalloc(buf_size);
+        rd->buffer[0] = (unsigned char *)Mem_ZoneAlloc(rd->zone, buf_size);
         return rd;
 }
 
@@ -73,9 +76,8 @@ struct ramdisk *rd;
 int ramdisk_close(FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
-unsigned int i;
-    for(i=0;i<rd->n_buffers;i++)
-        efree(rd->buffer[i]);
+
+	Mem_ZoneFree(&rd->zone);
     efree(rd);
 	return 0;
 }
@@ -83,13 +85,14 @@ unsigned int i;
 void add_buffer_ramdisk(struct ramdisk *rd)
 {
         rd->buffer = (unsigned char **)erealloc(rd->buffer,(rd->n_buffers + 1) * sizeof(unsigned char *));
-        rd->buffer[rd->n_buffers++] = (unsigned char *)emalloc(rd->buf_size);
+        rd->buffer[rd->n_buffers++] = (unsigned char *)Mem_ZoneAlloc(rd->zone, rd->buf_size);
 }
 
 /* Equivalent to ftell to get the position while writing to the ramdisk */
 long ramdisk_tell(FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
+
     return rd->cur_pos;
 }
 
@@ -199,6 +202,7 @@ unsigned int avail, num_buffer, start_pos, buffer_offset;
 int ramdisk_getc(FILE *fp)
 {
 unsigned char c;
+
     ramdisk_read((void *)&c, 1, 1, fp);
     return (int) ((unsigned char)c);
 }
@@ -206,6 +210,7 @@ unsigned char c;
 int ramdisk_putc(int c, FILE *fp)
 {
 unsigned char tmp = (unsigned char)c;
+
     ramdisk_write((const void *)&tmp,1, 1, fp);
     return 1;
 }

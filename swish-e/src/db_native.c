@@ -576,7 +576,7 @@ long DB_GetWordID_Native(void *db)
       if(!DB->rd)
       {
          /* ramdisk size as suggested by Bill Meier */
-         DB->rd = ramdisk_create(32 * 4096);
+         DB->rd = ramdisk_create("RAM Disk: write words", 32 * 4096);
       }
       pos = DB->offsets[WORDPOS];
       fp = (FILE *) DB->rd;

@@ -49,10 +49,11 @@ $Id$
 
 
 typedef struct _mem_zone {
-	struct _zone	*next;
-	char			*name;
-	size_t			size;
-	int				attributes;
+	struct _zone	*next;		/* link to free chunk */
+	char			*name;		/* name of zone */
+	size_t			size;		/* size to grow zone by */
+	int				attributes;	/* attributes of zone (not used yet) */
+	int				allocs;		/* count of allocations (for statistics) */
 } MEM_ZONE;
 
 
@@ -88,6 +89,10 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size);
 
 /* free all memory in a zone */
 void Mem_ZoneFree(MEM_ZONE **head); 
+
+/* memory zone statistics */
+void Mem_ZoneStatistics(MEM_ZONE *head); 
+
 
 
 /* Don't let people use the regular C calls */

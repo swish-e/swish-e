@@ -1,6 +1,6 @@
 /* */
 
-struct ramdisk *ramdisk_create(int);
+struct ramdisk *ramdisk_create(char *, int);
 
 int ramdisk_close(FILE *);
 
