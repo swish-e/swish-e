@@ -66,31 +66,37 @@ SwishNext(handle)
 
         PUSHMARK(SP);
 
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__RESULT_RANK)) )
+        if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_RESULT_RANK, 0)) )
             XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
         else
             XPUSHs(&PL_sv_undef);
 
+
+        /*
         if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__INDEXFILE)) )
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
         else
             XPUSHs(&PL_sv_undef);
+        */
 
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__DOCPATH)) )
+        if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_DOCPATH, 0)) )
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
         else
             XPUSHs(&PL_sv_undef);
 
+        /*
         if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__LASTMODIFIED)) )
             XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
         else
             XPUSHs(&PL_sv_undef);
+        */
 
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__TITLE)) )
+        if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_TITLE, 0)) )
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
         else
             XPUSHs(&PL_sv_undef);
 
+        /*
         if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__SUMMARY)) )
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
         else
@@ -101,7 +107,8 @@ SwishNext(handle)
         else
             XPUSHs(&PL_sv_undef);
 
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__DOCSIZE)) )
+        */
+        if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_DOCSIZE, 0)) )
             XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
         else
             XPUSHs(&PL_sv_undef);
@@ -133,6 +140,7 @@ SwishNext(handle)
                         efree( pv->value.v_str );
                     break;
 
+                /* Let perl format the data, if needed */
                 case DATE:
                     XPUSHs(sv_2mortal(newSViv(pv->value.v_date)));
                     break;

@@ -104,7 +104,7 @@
         {
             title   => 'Limit to title',
             query   => 'test or meta1=m* or meta2=m* or meta3=m*',
-            props   => 'meta1 meta2 meta3',
+            props   => 'meta1 meta2 meta3 swishrank swishdocpath swishlastmodified',
             sort    => '',
             context => 1,   # Search the entire file
             limit   => [ 'swishtitle', '<=', 'If you are seeing this, the test' ],
@@ -125,11 +125,7 @@
     my @labels = qw/
         rank
         file_name
-        index_file_name
-        last_modified_date
         title
-        document_summary
-        document_offset
         content_length
     /;
 
@@ -143,6 +139,7 @@
             print "limiting to @{$search->{limit}}\n\n";
             SetLimitParameter( $handle, ,@{$search->{limit}});
         }
+
         
         my $num_results = SwishSearch( $handle, @{$search}{ @settings } );
 
@@ -158,15 +155,16 @@
         }
 
         my %result;
-        my @properties;
+        my @properties = split /\s+/, $search->{props};
+        my %props;
 
-        while ( ( @result{ @labels }, @properties ) = SwishNext( $handle )) {
+        while ( ( @result{ @labels }, @props{@properties} ) = SwishNext( $handle )) {
 
             for ( @labels ) {
                 printf("  %20s -> '%s'\n", $_ ,$result{$_});
             }
             for ( @properties ) {
-                printf("  %20s -> '%s'\n", 'Propertiy', $_ );
+                printf("  %20s:(%-20s) -> '%s'\n", 'Property', $_, $props{$_} || '<blank>' );
             }
             print "-----------\n";
         }

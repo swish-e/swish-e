@@ -226,9 +226,11 @@ for you.
 
 =head2 Perl Modules
 
-There are a couple of Perl modules for accessing SWISH-E.  Hopefully, they make using
-SWISH-E easier.  One of the modules requires the use of the SWISH-E C library, and the other option just
-requires that your operating system knows how to fork.
+There are a couple of Perl modules for accessing SWISH-E.  One of the modules is
+included with the distribution, and the other module (or set of modules) is located
+on CPAN.  The included module provides a way to embed swish into your perl program, while
+the modules on CPAN provide an abstracted interface to swish.  Hopefully, they make using
+SWISH-E easier.
 
 B<The Included SWISH Perl Module>
 
@@ -237,13 +239,16 @@ When compiling SWISH-E from source the build process creates a C library
 The SWISH-E distribution includes a F<perl> directory with files required to create
 the F<SWISHE.pm> module.  This module will I<embed> SWISH-E into your perl program so that searching
 does not require running an external program.  Embedding the SWISH-E program into your perl program
-results in faster SWISH-E searches since it avoids the cost of forking and exec'ing a separate program.
+results in faster SWISH-E searches since it avoids the cost of forking and exec'ing a separate program
+and opening the index file for each request.
+
+You will probably B<not> want to embed swish into perl if running under mod_perl as you
+will end up with very large Apache processes.
 
 Building and usage instructions for the F<SWISHE.pm> module can be found in the
 L<SWISH-PERL|SWISH-PERL> man page.
 
 Here's an edited snip from that man page:
-
 
     my $handle = SwishOpen( $indexfiles )
         or die "Failed to open '$indexfiles'";
@@ -282,10 +287,14 @@ has written just what you need.
 
 On CPAN are also modules for searching with SWISH-E.  They can be found at
 http://search.cpan.org/search?mode=module&query=SWISH  The main SWISH module (different from the
-SWISHB<E> module included with the SWISH-E distribution) provides a high-level Object Oriented
+SWISHE<E> module included with the SWISH-E distribution) provides a high-level Object Oriented
 interface to SWISH-E,
-and the same can interface can be used to used to either fork and exec the swish-e binary,
+and the same interface can be used to used to either fork and exec the swish-e binary,
 or use the SWISH-E C Library if installed by just changing one line of code.
+A server interface will be written when a swish-e server is written.
+
+The main idea is that you can write a program to search with swish, but not have to change
+your code (much) when you wish to change to a new way of accessing swish.
 
 Here's an example of SWISH module usage from the synopsis:
 
@@ -299,6 +308,8 @@ Here's an example of SWISH module usage from the synopsis:
 
     $hits = $sh->query('metaname=(foo or bar)');
 
+This takes care of running swish in a secure way, parsing the output from swish, and
+providing OO methods of accessing swish data.
 
 =head1 Document Info
 
