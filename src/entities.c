@@ -27,11 +27,6 @@ $Id$
 */
 
 
-// ..... to be included into the other modules...
-//  Hardhat  area!!!  (rasc) module not active yet
-//   ToDo:  Lookup/Hash missing */
-
-
 
 
 #include <stdlib.h>
@@ -51,11 +46,21 @@ $Id$
 */
 
 
-#define  MAX_ENTITY_LEN  16   /* max chars after where we have to see the ';' */
+#define  MAX_ENTITY_LEN  16           /* max chars after where we have to see the ';' */
 
 /*
   -- Entity encoding/decoding structure 
+  --- the macro IS_EOE (is_End_of_Entity) check for the end of an entity sequence.
+  --- normally this is ';', but we may also allow whitespaces (and punctation)...
 */
+
+
+//$$$  gcc warnings are intended! will be corrected later
+/* #define  IS_EOE(a)  ((a)==';')                           /* W3C compliant */
+/* #define  IS_EOE(a)  ((a)==';'||isspace((int)(a)))        /* tolerant behavior */
+#define  IS_EOE(a)  (ispunct((int)(a))||isspace((int)(a)))  /* oh god, accept everything */
+
+
 
 typedef struct {
 	char  *name;
@@ -71,6 +76,13 @@ typedef struct {
   --                        ->next (chains all &q...;)
   -- lots of slots in the array will be empty because only [A-Z] and [a-z]
   -- is needed. But this cost hardly any memory, and is convenient...  (rasc)
+  -- Warning: don't change the ce_hasharray size, unless you know how this works!
+  --
+  -- $$$ TODO: Future optimize:
+  -- $$$   Hash can be futher optimized by a sorted insert of entity names.
+  -- $$$   and proper checking if entity name is gt cmp_name,
+  -- $$$   or do a hard reorg of the table (e.g. Uuml at the beginning of table...)
+  -- $$$   or a dynamic rechaining of found entities... (YES!....)
  */
 
 struct CEHE {             /* CharEntityHashEntry*/
@@ -385,7 +397,6 @@ static CEntity  entity_table[] = {
     {   "hearts",  0x2665 },  /* black heart suit = valentine, U+2665 ISOpub */
     {    "diams",  0x2666 },  /* black diamond suit, U+2666 ISOpub */
 
-    {       NULL,  0      }   /* EOT */
 };
 
 
@@ -418,16 +429,21 @@ void initModule_Entities (SWISH  *sw)
         -- this is module local only
       */
       {
-       int          i;
+       int          i, tab_len;
        CEntity      *ce_p;
        struct CEHE  **hash_pp, *tmp_p;
        
         /* empty positions */
         for (i=0; i< sizeof(ce_hasharray)/sizeof(ce_hasharray[0]); i++)
             ce_hasharray[i] = (struct CEHE *)NULL;
-
-        /* fill entity table into hash */
-        for (i=0; entity_table[i].name; i++) {
+        /* 
+           -- fill entity table into hash
+           --  process from end to start of entity_table, because most used
+           --  entities are at the beginning (iso)
+           --  this is due to "insert in hash sequence" behavior in hashtab (performance!)
+         */
+        tab_len = sizeof(entity_table)/sizeof(entity_table[0]);
+        for (i=tab_len-1; i>=0; i--) {
                ce_p = &entity_table[i];
                hash_pp = &ce_hasharray[(int)*(ce_p->name) & 0x7F];
                /* insert entity-ptr at start of ptr sequence in hash */
@@ -438,6 +454,7 @@ void initModule_Entities (SWISH  *sw)
         }  
 
       } /* end init hash block */
+
 
 }
 
@@ -568,7 +585,7 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
 
      /* if not entity start, next */
      if (*s != '&') {
-        s++; d++;
+        *d++ = *s++;
         continue;
      }
 
@@ -577,6 +594,7 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
      code = charEntityDecode (&s);
      if (code && (code < 256)) *d++ = (unsigned char)code;
   }
+  *d = '\0';
 
   return buf;
 }
@@ -609,79 +627,144 @@ int charEntityDecode (unsigned char **buf)
   if (*s) (*buf)++;
   if (*s != '&') return (int) *s;
 
- /* 
-   -- ok, seems to be an entity, find terminating ';' char 
-   -- t = NULL ot *t = ';', if found...
-   -- if no ';' found: return '&' (illigal entity) 
-  */
+
+
+  /* ok, seems valid entity starting char */
+  code = 0;
+
+  if (*(s+1) == '#') {   /* numeric entity  "&#" */
+
+      s+=2;               /* after "&#" */
+      switch (*s) {
+         case 'x':
+         case 'X':
+              ++s;     /* skip x */
+              code = (int) strtoul (s,(char **)&s,(int)16);
+              break;
+         default:
+              code = (int) strtoul (s,(char **)&s,(int)10); 
+              break;
+      }
+      t = s;
+
+  } else {
+
+      /* 
+        -- ok, seems to be a named entity, find terminating char 
+        -- t = NULL if  not found...
+        -- if no char found: return '&' (illegal entity) 
+       */
   
- len = 0;
- t = NULL;
- s1 = s;
- while (*(++s1) && (len < MAX_ENTITY_LEN)) {
-    s_cmp[len] = *s1;
-    if (*s1 == ';') {
-        t = s1;
-        break;
-    }
-    len ++;
- }
-
- if (! t) return (int) *s;  /* ';' must be present! */
- s_cmp[len] = '\0';
-
-
- /* ok, seems valid process entity */
- s = *buf;    /* after '&' */
- code = 0;
-
- if (*s == '#') {   /* numeric entity */
-
-    switch (*(++s)) {
-        case 'x':
-        case 'X':
-             ++s;     /* skip x */
-             code = (int) strtoul (s,(char **)&s,(int)16);
+      len = 0;
+      t = NULL;
+      s1 = s;
+      while (*(++s1) && (len < MAX_ENTITY_LEN)) {
+         s_cmp[len] = *s1;
+         if (IS_EOE(*s1)) {
+             t = s1;
              break;
-        default:
-             code = (int) strtoul (s,(char **)&s,(int)10); 
-             break;
-    }
-    if (*s != ';') {   /* something illegal, not at ';' */
-       code = '&';
-    } else {
-       (*buf)  = t+1;  /* ok, valid, pos at behind ';' */
-    }
-    return code;
-
- } else {
-
+         }
+         len ++;
+      }
+      s_cmp[len] = '\0';
 
       /*
          -- hash search block
-         -- case sensitiv search
+         -- case sensitiv search  (hashvalue = 1 entity name char)
          -- (& 0x7F to prevent hashtable mem coredumps by illegal chars)
        */
+
+      if (t) {
+         struct CEHE  *hash_p;
+
+         hash_p = ce_hasharray[*(s+1) & 0x7F];
+         while (hash_p) {
+fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug
+             if (!strcmp (hash_p->ce->name,s_cmp)) {
+                 code = hash_p->ce->code;
+                 break;
+             }
+             hash_p = hash_p->next;
+         }
+
+      } else {
+         t = s;
+      }
+  } /* end if */
+
+
+  if (! IS_EOE(*t) || !code) {   /* something illegal or not at EOE */
+     code = '&';
+  } else {
+     if (*t == ';') t++;    /* W3C closing char, pos at behind EOE */
+     (*buf)  = t;
+  }
+
+  return code;
+}
+
+
+
+
+/*
+$$$
+ --- debug routine
+ --- display entity hash
+*/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+
+void debugModule_Entities (void)
+
+{
+
+      /* 
+        -- debug local entity hash table 
+      */
       {
+       int          i;
        struct CEHE  *hash_p;
+       
+        /* free ptr "chains" in array */
+        for (i=0; i< sizeof(ce_hasharray)/sizeof(ce_hasharray[0]); i++) {
+            hash_p =  ce_hasharray[i];
+            fprintf (stderr,"Hash-Entry: %d ('%c'):\n",i,(char)i);
+            while (hash_p) {
+                 fprintf (stderr,"--> '%s' (%d)\n",hash_p->ce->name,hash_p->ce->code);
+                 hash_p = hash_p->next;
+            }
+        }
 
-       hash_p = ce_hasharray[*s & 0x7F];
-       while (hash_p) {
-           if (!strcmp (hash_p->ce->name,s_cmp)) {
-               *buf = t+1;
-               return hash_p->ce->code;
-           }
-           hash_p = hash_p->next;
-       }
+      } /* end debug hash block */
 
-      } /* end hash search block */
+
+//----- $$$ manual test routine...
+
+{
+ char *s;
+ char buf[1024];
+ int  i;
+
+ 
+  while (gets(buf)) {
+     printf ("in: __%s__\n",buf);
+     s = buf;
+
+     i = charEntityDecode ((unsigned char **)&s);
+     printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,s);
+  }
 
  }
+ 
+//--------
 
- /* not found, just return char after '&', no valid entity... */
-
- return (int) '&';
+  return;
 }
+ 
+
 
 
 

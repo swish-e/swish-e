@@ -29,6 +29,10 @@ $Id$
 **
 ** 2001-03-17  rasc  save real_filename as title (instead full real_path)
 **                   was: compatibility issue to v 1.x.x
+**
+** 2001-05-09  rasc  entities completly rewritten  (new module)
+**                   small fix in parseHTMLsummary
+**
 ** 
 */
 
@@ -36,77 +40,16 @@ $Id$
 #include "mem.h"
 #include "string.h"
 #include "index.h"
-#include "html.h"
-#include "hash.h"
 #include "compress.h"
 #include "merge.h"
 #include "docprop.h"
 #include "metanames.h"
+#include "html.h"
+#include "entities.h"
+
 /* #### */
 
-/* The well known html entities */
 
-/* Entities as they are in 1.3.2 */
-static unsigned char *entities[] =
- { "", "&#32", " ", "", "&#33", "!", "&quot",
-"&#34", "\"", "", "&#35", "#", "", "&#36", "$", "", "&#37", "%",
-"&amp", "&#38", "&", "", "&#39", "'", "", "&#43", "+", "", "&#44",
-",", "", "&#45", "-", "", "&#46", ".", "", "&#47", "/", "", "&#48",
-"0", "", "&#49", "1", "", "&#50", "2", "", "&#51", "3", "", "&#52",
-"4", "", "&#53", "5", "", "&#54", "6", "", "&#55", "7", "", "&#56",
-"8", "", "&#57", "9", "", "&#58", "", "", "&#59", ";", "&lt", "&#60",
-"<", "", "&#61", "=", "&gt", "&#62", ">", "", "&#63", "?", "", "&#64",
-"@", "", "&#65", "A", "", "&#66", "B", "", "&#67", "C", "", "&#68",
-"D", "", "&#69", "E", "", "&#70", "F", "", "&#71", "G", "", "&#72",
-"H", "", "&#73", "I", "", "&#74", "J", "", "&#75", "K", "", "&#76",
-"L", "", "&#77", "M", "", "&#78", "N", "", "&#79", "O", "", "&#80",
-"P", "", "&#81", "Q", "", "&#82", "R", "", "&#83", "S", "", "&#84",
-"T", "", "&#85", "U", "", "&#86", "V", "", "&#87", "W", "", "&#88",
-"X", "", "&#89", "Y", "", "&#90", "Z", "", "&#91", "[", "", "&#92",
-"\\", "", "&#93", "]", "", "&#94", "^", "", "&#95", "-", "", "&#96",
-"`", "", "&#97", "a", "", "&#98", "b", "", "&#99", "c", "", "&#100",
-"d", "", "&#101", "e", "", "&#102", "f", "", "&#103", "g", "",
-"&#104", "h", "", "&#105", "i", "", "&#106", "j", "", "&#107", "k",
-"", "&#108", "l", "", "&#109", "m", "", "&#110", "n", "", "&#111",
-"o", "", "&#112", "p", "", "&#113", "q", "", "&#114", "r", "",
-"&#115", "s", "", "&#116", "t", "", "&#117", "u", "", "&#118", "v",
-"", "&#119", "w", "", "&#120", "x", "", "&#121", "y", "", "&#122",
-"z", "", "&#123", "{", "", "&#124", "|", "", "&#125", "}", "",
-"&#126", "~", "&nbsp", "&#160", " ", "&iexcl", "&#161", "¡", "&cent",
-"&#162", "¢", "&pound", "&#163", "£", "&curren", "&#164", "¤", "&yen",
-"&#165", "¥", "&brvbar", "&#166", "¦", "&sect", "&#167", "§", "&die",
-"&#168", "¨", "&copy", "&#169", "©", "&ordf", "&#170", "ª", "&laquo",
-"&#171", "«", "&not", "&#172", "¬", "&shy", "&#173", "­", "&reg",
-"&#174", "®", "&macron", "&#175", "¯", "&degree", "&#176", "°",
-"&plusmn", "&#177", "±", "&sup2", "&#178", "²", "&sup3", "&#179", "³",
-"&acute", "&#180", "´", "&micro", "&#181", "µ", "&mu", "&#182", "¶",
-"&middot", "&#183", "·", "&Cedilla", "&#184", "¸", "&sup1", "&#185", "¹",
-"&ordm", "&#186", "º", "&raquo", "&#187", "»", "&frac14", "&#188", "¼",
-"&frac12", "&#189", "½", "&frac34", "&#190", "¾", "&iquest", "&#191",
-"¿", "&Agrave", "&#192", "À", "&Aacute", "&#193", "Á", "&Acirc",
-"&#194", "Â", "&Atilde", "&#195", "Ã", "&Auml", "&#196", "Ä",
-"&Aring", "&#197", "Å", "&AElig", "&#198", "Æ", "&Ccedil", "&#199",
-"Ç", "&Egrave", "&#200", "È", "&Eacute", "&#201", "É", "&Ecirc",
-"&#202", "Ê", "&Euml", "&#203", "Ë", "&Igrave", "&#204", "Ì",
-"&Iacute", "&#205", "Í", "&Icirc", "&#206", "Î", "&Iuml", "&#207",
-"Ï", "&ETH", "&#208", "Ð", "&Ntilde", "&#209", "Ñ", "&Ograve", "&#210",
-"Ò", "&Oacute", "&#211", "Ó", "&Ocirc", "&#212", "Ô", "&Otilde",
-"&#213", "Õ", "&Ouml", "&#214", "Ö", "&times", "&#215", "×", "&Oslash",
-"&#216", "Ø", "&Ugrave", "&#217", "Ù", "&Uacute", "&#218", "Ú",
-"&Ucirc", "&#219", "Û", "&Uuml", "&#220", "Ü", "&Yacute", "&#221",
-"Ý", "&THORN", "&#222", "Þ", "&szlig", "&#223", "ß", "&agrave", "&#224",
-"à", "&aacute", "&#225", "á", "&acirc", "&#226", "â", "&atilde",
-"&#227", "ã", "&auml", "&#228", "ä", "&aring", "&#229", "å", "&aelig",
-"&#230", "æ", "&ccedil", "&#231", "ç", "&egrave", "&#232", "è",
-"&eacute", "&#233", "é", "&ecirc", "&#234", "ê", "&euml", "&#235",
-"ë", "&igrave", "&#236", "ì", "&iacute", "&#237", "í", "&icirc",
-"&#238", "î", "&iuml", "&#239", "ï", "&eth", "&#240", "ð", "&ntilde",
-"&#241", "ñ", "&ograve", "&#242", "ò", "&oacute", "&#243", "ó",
-"&ocirc", "&#244", "ô", "&otilde", "&#245", "õ", "&ouml", "&#246",
-"ö", "&divide", "&#247", "÷", "&oslash", "&#248", "ø", "&ugrave",
-"&#249", "ù", "&uacute", "&#250", "ú", "&ucirc", "&#251", "û",
-"&uuml", "&#252", "ü", "&yacute", "&#253", "ý", "&thorn", "&#254", "þ",
-"&yuml", "&#255", "ÿ", NULL };
  
 
 /* Extracts anything in <title> tags from an HTML file and returns it.
@@ -219,9 +162,9 @@ char *title=parsetitle(buffer,fprop->real_filename);
 		if((tag=strchr(p,'<')) && ((tag==p) || (*(tag-1)!='\\'))) {   /* Look for non escaped '<' */
 				/* Index up to the tag */
 			*tag++='\0';
-			if(sw->ConvertHTMLEntities)
-				newp=convertentities(p,sw);
-			else newp=p;
+
+			newp = sw_ConvHTMLEntities2ISO(sw, p);
+
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			structure=IN_FILE;
@@ -292,9 +235,9 @@ char *title=parsetitle(buffer,fprop->real_filename);
 				}
 			} else p=tag;    /* tag not closed: continue */
 		} else {    /* No more '<' */
-			if(sw->ConvertHTMLEntities)
-				newp=convertentities(p,sw);
-			else newp=p;
+
+			newp = sw_ConvHTMLEntities2ISO(sw, p);
+
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			p=NULL;
@@ -543,9 +486,7 @@ int wordcount=0; /* Word count */
 		if(metaNameEntry && !is_meta_index(metaNameEntry)) 
 			metaName=1;
 
-		if(sw->ConvertHTMLEntities)
-			convtag = (char *)convertentities(start, sw);
-		else convtag = start;
+		convtag = sw_ConvHTMLEntities2ISO(sw, start);
 
 		wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, position);
 		if(convtag!=start) efree(convtag);
@@ -569,12 +510,13 @@ int found,lensummary;
 			p+=8;
 		} else p=buffer;
 		/* Let us try to find <body> */
-		if((q=lstrstr(p,"<body>")))
+		if((q=lstrstr(p,"<body")))
 		{
-			q+=6;
+	 		q = strchr (q,'>');
 		} else q=p;
 		tmp=estrdup(p);
 		remove_newlines(tmp);
+//$$$$ Todo: remove tag and content of scripts, css, java, embeddedobjects, comments, etc  
 		remove_tags(tmp);
 
 		/* use only the required memory -save those not used */
@@ -686,9 +628,9 @@ int found,lensummary;
 			p+=8;
 		} else p=buffer;
 		/* Let us try to find <body> */
-		if((q=lstrstr(p,"<body>")))
+		if((q=lstrstr(p,"<body")))
 		{
-			q+=6;
+			q =strchr (q,'>');
 		} else q=p;
 		summary=estrdup(q);
 	}
@@ -701,111 +643,4 @@ int found,lensummary;
                 summary[size]='\0';
 	return summary;
 }
-
-
-/* #### C structures for handling conversion of entities using hashing */
-struct hashEntity
-{
-	unsigned char *entityName;    /* Entity Name */
-	unsigned char c;              /* Translated char */
-	struct hashEntity *next;      /* Next entity with this hash value */
-};
-
-struct EntitiesHashTable
-{
-	int minSize;     /* minSize of entities */
-	int maxSize;     /* maxSize of entities */
-	struct hashEntity *hEnt[HASHSIZE];   /* hash table */
-};
-
-
-struct EntitiesHashTable *buildEntitiesHashTable()
-{
-int i,j,hashval,l;
-struct EntitiesHashTable *t;
-struct hashEntity *h;
-unsigned char *e;
-	t=(struct EntitiesHashTable *)emalloc(sizeof(struct EntitiesHashTable));
-	t->minSize=999;t->maxSize=0;
-	for(i=0;i<HASHSIZE;i++) t->hEnt[i]=NULL;
-	for(i=0;entities[i];i+=3)
-	{
-		for(j=i;j<(i+2);j++)
-		{
-			e=entities[j];
-			if(*e)
-			{
-				l=strlen(e);
-				if(l<t->minSize)t->minSize=l;
-				if(l>t->maxSize)t->maxSize=l;
-				hashval=hash(e);
-				h=(struct hashEntity *)emalloc(sizeof(struct hashEntity));
-				h->entityName=(unsigned char *)estrdup(e);
-				h->c=(unsigned char)*entities[i+2];		
-				h->next=t->hEnt[hashval];
-				t->hEnt[hashval]=h;
-			}
-		}
-	}
-	return t;
-}
-
-/* This converts HTML numbered entities (such as &#169;)
-** to strings (like &copy;). Much is this function is
-** simply adding semicolons in the right places.
-** This and the functions it calls are not very fast
-** and could be made faster.
-*/
-
-
-unsigned char *convertentities(unsigned char *s,SWISH *sw)
-{
-int i,check,hashval;
-unsigned char *p,*q;
-unsigned char tmp='\0';
-struct EntitiesHashTable *t;
-struct hashEntity *h;
-
-	if(!sw->EntitiesHashTable)
-		sw->EntitiesHashTable=(void *)buildEntitiesHashTable();
-	t=(struct EntitiesHashTable *)sw->EntitiesHashTable;
-
-	for(p=s; (p=strchr(p,'&')) ;)
-	{
-			/* Search for the end of entity */
-		for(check=0,q=p+t->minSize,i=t->minSize;i<=t->maxSize;q++,i++)
-			if(*q==';' || isspace((int)((unsigned char) *q)) || ispunct((int)((unsigned char) *q))) 
-			{
-				check=1;
-				tmp=*q;  /* Preserve char */
-				*q='\0';
-				break;
-			}
-		/* Now search in the lookuptable for the entitie */
-		if(check)
-		{
-			hashval=hash(p);
-			for(h=t->hEnt[hashval];h;h=h->next)
-			{
-				if(strcmp(p,h->entityName)==0)
-					break;
-			}
-			if(h)    /* Found an entity that matches */
-			{
-				*q=tmp;      /* Restore value */ 
-				*p++=h->c;   /* Change value */
-				if(tmp==';') q++;  /* Skip ';' */
-				strcpy(p,q);  /* Copy remaining content */
-			}
-			else   
-			{			
-				*q=tmp;      /* Restore value */ 
-				p++;
-			}
-		} else p++;  /* Do nothing */
-
-	}
-	return s;
-}
-
 
