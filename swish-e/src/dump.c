@@ -147,14 +147,14 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             c,
             fieldnum,
             frequency,
-            metaname,
+            metaID,
             tmpval,
             filenum,
            *posdata;
-    unsigned long    nextposmetaname;
+    int     metadata_length;
     char    word[2];
     char   *resultword;
-    unsigned char   *worddata, *s, flag;
+    unsigned char   *worddata, *s, *start, flag;
     int     sz_worddata;
     long    wordID;
 
@@ -162,9 +162,9 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     
     indexf->DB = DB_Open(sw, indexf->line,DB_READ);
 
-    metaname = 0;
+    metaID = 0;
 
-    nextposmetaname = 0L;
+    metadata_length = 0;
 
     c = 0;
 
@@ -247,14 +247,11 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 s = worddata;
 
                 tmpval = uncompress2(&s);     /* tfrequency */
-                metaname = uncompress2(&s);     /* metaname */
-                if (metaname)
-                {
-                    nextposmetaname = UNPACKLONG2(s);
-                    s += sizeof(long);
-                }
+                metaID = uncompress2(&s);     /* metaID */
+                metadata_length = uncompress2(&s);
 
                 filenum = 0;
+                start = s;
                 while(1)
                 {                   /* Read on all items */
                     uncompress_location_values(&s,&flag,&tmpval,&frequency);
@@ -268,7 +265,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     {
                         struct metaEntry    *m;
                         
-                        printf("\n Meta:%d", metaname);
+                        printf("\n Meta:%d", metaID);
 
                         
                         /* Get path from property list */
@@ -300,10 +297,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         printf(" Pos/Struct:");
                     }
                     else if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
-                        meta_used[ metaname ]++;
+                        meta_used[ metaID ]++;
                     else
                     {
-                        printf(" [%d", metaname);
+                        printf(" [%d", metaID);
                         printf(" %d", filenum);
                         printf(" %d (", frequency);
                     }
@@ -333,20 +330,17 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
                         printf(")]");
 
+                    /* Check for enf of worddata */
                     if ((s - worddata) == sz_worddata)
                         break;   /* End of worddata */
 
-                    if ((unsigned long)(s - worddata) == nextposmetaname)
+                    /* Check for end of current metaID data */
+                    if ( metadata_length == (s - start))
                     {
                         filenum = 0;
-                        metaname = uncompress2(&s);
-                        if (metaname)
-                        {
-                            nextposmetaname = UNPACKLONG2(s); 
-                            s += sizeof(long);
-                        }
-                        else
-                            nextposmetaname = 0L;
+                        metaID = uncompress2(&s);
+                        metadata_length = uncompress2(&s);
+                        start = s;
                     }
                 }
 
