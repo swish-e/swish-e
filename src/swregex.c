@@ -193,7 +193,7 @@ void  add_replace_expression( char *name, regex_list **reg_list, char *expressio
 *   
 *
 **********************************************************************/
-int match_regex_list( char *str, regex_list *regex )
+int match_regex_list( char *str, regex_list *regex, char *comment )
 {
     regmatch_t pmatch[1];
     int        matched;
@@ -205,7 +205,7 @@ int match_regex_list( char *str, regex_list *regex )
             : regexec(&regex->re, str, (size_t) 1, pmatch, 0) == 0;
 
         if ( DEBUG_MASK & DEBUG_REGEX )
-            printf("match %s %c~ m[%s] : %s\n", str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
+            printf("%s match %s %c~ m[%s] : %s\n", comment, str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
 
         if ( matched )
             return 1;

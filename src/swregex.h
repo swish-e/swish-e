@@ -4,7 +4,7 @@
 void add_regex_patterns( char *name, regex_list **reg_list, char **params, int regex_pattern );
 void  add_replace_expression( char *name, regex_list **reg_list, char *expression );
 
-int match_regex_list( char *str, regex_list *regex );
+int match_regex_list( char *str, regex_list *regex, char *comment );
 char *process_regex_list( char *str, regex_list *regex, int *matched );
 
 void free_regex_list( regex_list **reg_list );

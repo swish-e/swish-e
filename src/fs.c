@@ -324,7 +324,7 @@ static void    indexadir(SWISH * sw, char *dir)
     /* but using a FileRules pathname allows recursion into the directory */
 
     /* Reject entire directory due to FileRules dirname */
-    if ( *dir && match_regex_list( dir, fs->filerules.dirname ) )
+    if ( *dir && match_regex_list( dir, fs->filerules.dirname, "FileRules dirname" ) )
         return;
 
 
@@ -345,13 +345,13 @@ static void    indexadir(SWISH * sw, char *dir)
 
         while ((dp = readdir(dfd)) != NULL)
         {
-            if ( match_regex_list( dp->d_name, fs->filerules.dircontains ) )
+            if ( match_regex_list( dp->d_name, fs->filerules.dircontains,"FileRules dircontains" ) )
             {
                 closedir( dfd );
                 return;  /* doesn't recurse */
             }
 
-            if ( match_regex_list( dp->d_name, fs->filematch.dircontains ) )
+            if ( match_regex_list( dp->d_name, fs->filematch.dircontains, "FileMatch dircontains" ) )
             {
                 allgoodfiles++;
                 break;
@@ -494,7 +494,7 @@ static int check_FileTests( char *path, PATH_LIST *test )
     char *file;
 
 
-    if ( match_regex_list( path, test->pathname  ) )
+    if ( match_regex_list( path, test->pathname, "File[Rules|Match] pathname"  ) )
         return 1;
 
     if ( !( test->dirname || test->filename ) )
@@ -502,14 +502,14 @@ static int check_FileTests( char *path, PATH_LIST *test )
 
     split_path( path, &dir, &file );
 
-    if ( *dir && match_regex_list( dir, test->dirname ) )
+    if ( *dir && match_regex_list( dir, test->dirname, "File[Rules|Match] dirname" ) )
     {
         efree( dir );
         efree( file );
         return 1;
     }
     
-    if ( *file && match_regex_list( file, test->filename ) )
+    if ( *file && match_regex_list( file, test->filename, "File[Rules|Match] filename" ) )
     {
         efree( dir );
         efree( file );

@@ -1116,7 +1116,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             struct MOD_FS *fs = parse_data->sw->FS;
 
             /* Check isoktitle - before NoContents? */
-            if ( match_regex_list( parse_data->text_buffer.buffer, fs->filerules.title) )
+            if ( match_regex_list( parse_data->text_buffer.buffer, fs->filerules.title, "FileRules title") )
             {
                 abort_parsing( parse_data, -2 );
                 return 1;

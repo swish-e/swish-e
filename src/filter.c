@@ -269,7 +269,7 @@ FilterList *hasfilter(SWISH * sw, char *filename)
         /* added regex check - moseley */
         if ( fl->regex )
         {
-            if ( match_regex_list( filename, fl->regex ) )
+            if ( match_regex_list( filename, fl->regex, "Filter match" ) )
                 return fl;
         }
         else
