@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "tmp/libswishe_Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /D "_LIB" /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -85,14 +85,6 @@ LIB32=link.exe -lib
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=..\_datatypes.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\_module_example.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\check.c
 # End Source File
 # Begin Source File
@@ -106,14 +98,6 @@ SOURCE=..\date_time.c
 # Begin Source File
 
 SOURCE=..\db.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\db_berkeley_db.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\db_gdbm.c
 # End Source File
 # Begin Source File
 
@@ -201,7 +185,7 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\modules.c
+SOURCE=.\mkstemp.c
 # End Source File
 # Begin Source File
 
@@ -253,10 +237,6 @@ SOURCE=..\string.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\swish.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\swish2.c
 # End Source File
 # Begin Source File
@@ -266,10 +246,6 @@ SOURCE=..\swish_qsort.c
 # Begin Source File
 
 SOURCE=..\swish_words.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\testlong.c
 # End Source File
 # Begin Source File
 
@@ -302,10 +278,6 @@ SOURCE=..\check.h
 # Begin Source File
 
 SOURCE=..\compress.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\config.h
 # End Source File
 # Begin Source File
 
@@ -410,6 +382,10 @@ SOURCE=..\merge.h
 # Begin Source File
 
 SOURCE=..\metanames.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\mkstemp.h
 # End Source File
 # Begin Source File
 
