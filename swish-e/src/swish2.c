@@ -163,6 +163,15 @@ int i;
 if(sw) {
 		/* Free search results and imput parameters */
 		SwishResetSearch(sw);
+          
+		/* Close any pending DB */
+                tmpindexlist = sw->indexlist;
+                while(tmpindexlist)
+                {
+                        if(tmpindexlist->DB)
+                                DB_Close(sw, tmpindexlist->DB);
+                        tmpindexlist=tmpindexlist->next;
+                }
 
 		freeModule_Filter (sw);
 		freeModule_ResultOutput (sw);
@@ -242,8 +251,6 @@ if(sw) {
 				if(tmpindexlist->keywords[i])
 					efree(tmpindexlist->keywords[i]);
 
-			if(tmpindexlist->DB)
-				DB_Close(sw, tmpindexlist->DB);
 			tmpindexlist=tmpindexlist->next;
         }
 		freeindexfile(sw->indexlist);
