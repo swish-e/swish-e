@@ -222,7 +222,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             {
                 printf("\n%s",resultword);
 
-
                 /* Read Word's data */
                 DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
 
@@ -236,7 +235,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
                 }
                 filenum = 0;
-		while(1)
+                while(1)
                 {                   /* Read on all items */
                     uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
                     filenum += tmpval;
@@ -248,7 +247,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
                         struct file *fileInfo;
-
                         printf("\n Meta:%d", metaname);
                         fileInfo = readFileEntry(sw, indexf, filenum);
                         printf(" %s", fileInfo->filename);
@@ -296,6 +294,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
                     if ((unsigned long)(s - worddata) == nextposmetaname)
                     {
+                        filenum = 0;
                         metaname = uncompress2(&s);
                         if (metaname)
                         {
