@@ -105,6 +105,9 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     struct  stat stbuf;
     struct swline *progparameterslist = sw->Prog->progparameterslist;
 
+    if ( ! strcmp( prog, "stdin") )
+        return stdin;
+
 
     /* get total length of configuration parameters */
 
