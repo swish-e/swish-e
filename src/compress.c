@@ -210,12 +210,11 @@ struct MOD_Index *idx = sw->Index;
     if(p < idx->compression_buffer)
         progerr("Internal error in compress_location routine");
 
-        /* Swap info to file ? */
-        /* If IgnoreLimit is set then no swap is done */
-    if(idx->economic_flag)
-    {
+        /* Swap location info to file */
+    if(idx->swap_locdata) {
         q=(unsigned char *)SwapLocData(sw,++p,i);
-    } else {
+    }
+	else {
         q=(unsigned char *)emalloc(i);
         memcpy(q,++p,i);
     }

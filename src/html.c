@@ -636,10 +636,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     	addtofilelist(sw, indexf, fprop->real_path, NULL );
         addCommonProperties( sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize );
 
-
         addtofwordtotals(indexf, idx->filenum, 100);
-        if (idx->economic_flag)
+
+        if (idx->swap_filedata)
             SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
+
         n = countwordstr(sw, title, idx->filenum);
         efree(title);
         return n;
@@ -817,7 +818,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
     addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
-    if (idx->economic_flag)
+    if (idx->swap_filedata)
         SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
 
     efree(title);

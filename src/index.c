@@ -174,7 +174,8 @@ void initModule_Index (SWISH  *sw)
     idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
 
         /* Economic flag and temp files*/
-    idx->economic_flag=SWAP_DEFAULT;
+    idx->swap_locdata = SWAP_LOC_DEFAULT;
+	idx->swap_filedata = SWAP_FILE_DEFAULT;
 
     if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
     {
@@ -1292,17 +1293,41 @@ int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignor
 }
 
 
+int     entrystructcmp(const void *e1, const void *e2)
+{
+    const ENTRY *ep1 = *(ENTRY * const *) e1;
+    const ENTRY *ep2 = *(ENTRY * const *) e2;
+
+    return (strcmp(ep1->word, ep2->word));
+}
 
 
-/* -------------------------------------------- */
-/* -------------------------------------------- */
-/* Sorts the words and compress the last entry data
-*/
-
+/* Sorts the words */
 void    sort_words(SWISH * sw, IndexFILE * indexf)
 {
-	/* Removed unneeded stuff */
-    BuildSortedArrayOfWords(sw, indexf);
+    int     i,
+            j;
+    ENTRY  *e;
+
+    if (sw->verbose)
+    {
+        printf("Sorting Words alphabetically\n");
+        fflush(stdout);
+    }
+
+    if (!sw->Index->entryArray || !sw->Index->entryArray->numWords)
+        return;
+
+    /* Build the array with the pointers to the entries */
+    sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
+
+    /* Fill the array with all the entries */
+    for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
+        for (e = sw->Index->hashentries[i]; e; e = e->next)
+            sw->Index->entryArray->elist[j++] = e;
+
+    /* Sort them */
+    swish_qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
 }
 
 
@@ -1340,8 +1365,10 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     for (k = 0, ptmp2 = ptmp; k < i; k++)
     {
         pi = (int *) ptmp2;
-        if (idx->economic_flag)
+
+        if (idx->swap_locdata)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+
         compressed_data = (unsigned char *)e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */
 		/* val[0] is metanum */
@@ -1389,6 +1416,10 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
         DB_InitWriteWords(sw, indexf->DB);
 
+
+		if (sw->verbose)
+			printf("  Writing word text...\n");
+
         for (i = 0; i < totalwords; i++)
         {
             epi = ep->elist[i];
@@ -1403,6 +1434,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         }    
         
         
+		if (sw->verbose)
+			printf("  Writing word hash...\n");
+
         for (i = 0; i < SEARCHHASHSIZE; i++)
         {
             if ((epi = sw->Index->hashentries[i]))
@@ -1417,6 +1451,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             }
         }
 
+
+		if (sw->verbose)
+			printf("  Writing word data...\n");
 
         for (i = 0; i < totalwords; i++)
         {
@@ -1567,7 +1604,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
     for (i = 0; i < indexf->filearray_cursize; i++)
     {
-        if (idx->economic_flag)
+        if (idx->swap_filedata)
         {
             filep = unSwapFileData(sw);
             filep->filenum = i + 1;
@@ -1842,44 +1879,6 @@ void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
     }
 }
 
-
-
-int     entrystructcmp(const void *e1, const void *e2)
-{
-    const ENTRY *ep1 = *(ENTRY * const *) e1;
-    const ENTRY *ep2 = *(ENTRY * const *) e2;
-
-    return (strcmp(ep1->word, ep2->word));
-}
-
-
-/* Builds a sorted array with all of the words */
-void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
-{
-    int     i,
-            j;
-    ENTRY  *e;
-
-    if (sw->verbose)
-    {
-        printf("Sorting Words alphabetically\n");
-        fflush(stdout);
-    }
-
-    if (!sw->Index->entryArray || !sw->Index->entryArray->numWords)
-        return;
-
-    /* Build the array with the pointers to the entries */
-    sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
-
-    /* Fill the array with all the entries */
-    for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
-        for (e = sw->Index->hashentries[i]; e; e = e->next)
-            sw->Index->entryArray->elist[j++] = e;
-
-    /* Sort them */
-    swish_qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
-}
 
 
 void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *position)

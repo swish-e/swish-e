@@ -917,8 +917,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
 
     thisFileEntry->docProperties = docProperties;
 
-
-    if (sw->Index->economic_flag)
+    if (sw->Index->swap_filedata)
         SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum - 1]);
 
 }
@@ -981,17 +980,14 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
 
     /* Force the economic mode to save memory */
-    sw->Index->economic_flag = 1;
+    sw->Index->swap_locdata = 1;
+	sw->Index->swap_filedata = 1;
 
     initindexfilehashlist();
 
     merge_index_headers( indexf, indexf1, indexf2 );
 
-
-
     initmapentrylist();
-
-
 
     if (verbose)
         printf("Counting files... ");
