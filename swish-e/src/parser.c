@@ -73,10 +73,11 @@ typedef struct {
     struct file *thisFileEntry;
     int         structure;
     int         in_html_meta;       // flag that we are in a <meta name=...> tag
-    int         in_meta;            // just flag that we are in a meta
+    int         in_meta;            // counter of nested metas, so structure will work
     int         parsing_html;
     struct metaEntry *titleProp;
     int         flush_word;         // flag to flush buffer next time there's a white space.
+    htmlSAXHandlerPtr   SAXHandler;
     
 } PARSE_DATA;
 
@@ -93,9 +94,11 @@ static void warning(void *data, const char *msg, ...);
 static void error(void *data, const char *msg, ...);
 static void fatalError(void *data, const char *msg, ...);
 static void process_htmlmeta( PARSE_DATA *parse_data, const char ** atts );
-static int set_structure( PARSE_DATA *parse_data, char * tag, int start );
+static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
 static void start_metaTag( PARSE_DATA *parse_data, char * tag );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
+static void start_title_tag(void *data, const char *el, const char **attr);
+static void end_title_tag(void *data, const char *el);
 
 
 /*********************************************************************
@@ -288,6 +291,73 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
     return parse_data.total_words;
 }
+
+/*********************************************************************
+*   Grab the title
+*
+*   Returns:
+*       emalloc title, or NULL
+*
+*********************************************************************/
+
+char *parse_HTML_title(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    PARSE_DATA          parse_data;
+    IndexFILE          *indexf = sw->indexlist;
+    htmlSAXHandler      SAXHandlerStruct;
+    htmlSAXHandlerPtr   SAXHandler = &SAXHandlerStruct;
+
+
+
+    /* Set event handlers for libxml2 parser */
+    memset( SAXHandler, 0, sizeof( htmlSAXHandler ) );
+
+    SAXHandlerStruct.startElement   = (startElementSAXFunc)&start_title_tag;
+    SAXHandlerStruct.endElement     = (endElementSAXFunc)&end_title_tag;
+
+    
+    /* Set defaults  */
+    memset(&parse_data, 0, sizeof(parse_data));
+
+    parse_data.titleProp = getPropNameByName( &indexf->header, AUTOPROPERTY_TITLE );
+    parse_data.SAXHandler = SAXHandler;
+
+    if ( !parse_data.titleProp )
+        return NULL;
+
+    htmlSAXParseDoc( buffer, NULL, SAXHandler, &parse_data );
+
+    if ( parse_data.text_buffer.buffer )
+    {
+        parse_data.text_buffer.cur = '\0';
+        return parse_data.text_buffer.buffer;
+    }
+
+    return NULL;
+}
+
+static void start_title_tag(void *data, const char *el, const char **attr)
+{
+    PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    htmlSAXHandlerPtr   SAXHandler = parse_data->SAXHandler;
+    
+    if ( strcmp( el, "title" ) == 0 )
+        SAXHandler->characters  = (charactersSAXFunc)&char_hndl;
+        
+}
+static void end_title_tag(void *data, const char *el)
+{
+    PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    htmlSAXHandlerPtr   SAXHandler = parse_data->SAXHandler;
+
+    if ( strcmp( el, "title" ) == 0 )
+    {
+        SAXHandler->characters     = (charactersSAXFunc)NULL;
+        SAXHandler->startElement   = (startElementSAXFunc)NULL;
+        SAXHandler->endElement     = (endElementSAXFunc)NULL;
+    }
+}
+
     
 /*********************************************************************
 *   Start Tag Event Handler
@@ -304,7 +374,8 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 static void start_hndl(void *data, const char *el, const char **attr)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    char  tag[MAXSTRLEN + 1];
+    char        tag[MAXSTRLEN + 1];
+    int         is_html_tag = parse_data->parsing_html;
 
 
     /* return if within an ignore block */
@@ -333,7 +404,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
         }
 
         /* Deal with structure */
-        if ( set_structure( parse_data, tag, 1 ) )
+        if ( (is_html_tag = check_html_tag( parse_data, tag, 1 )) )
             /* And if we are in title, flag to save content as a doc property */
             if ( !strcmp( tag, "title" ) && parse_data->titleProp )
                 parse_data->titleProp->in_tag++;
@@ -341,7 +412,8 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
 
     /* Now check if we are in a meta tag */
-    start_metaTag( parse_data, tag );
+    if ( !is_html_tag )
+        start_metaTag( parse_data, tag );
 
 }
 
@@ -360,7 +432,9 @@ static void start_hndl(void *data, const char *el, const char **attr)
 static void end_hndl(void *data, const char *el)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    char  tag[MAXSTRLEN + 1];
+    char        tag[MAXSTRLEN + 1];
+    int         is_html_tag = parse_data->parsing_html;
+
 
     if(strlen(el) > MAXSTRLEN)
     {
@@ -392,13 +466,14 @@ static void end_hndl(void *data, const char *el)
 
 
         /* Deal with structure */
-        if ( set_structure( parse_data, tag, 0 ) )
+        if ( (is_html_tag = check_html_tag( parse_data, tag, 0 )) )
             if ( !strcmp( tag, "title" ) && parse_data->titleProp )
                 parse_data->titleProp->in_tag = 0;
 
     }
     
-    end_metaTag( parse_data, tag );
+    if ( !is_html_tag )
+        end_metaTag( parse_data, tag );
 }    
 
 
@@ -448,11 +523,8 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
     /* Bump on all meta names, unless overridden */
     /* Done before the ignore tag check since still need to bump */
 
-    /* Done for XML, or if in a <meta>, or that tag's a MetaName */
-
-    if ( !parse_data->parsing_html || parse_data->in_html_meta || (m  = getMetaNameByName( parse_data->header, tag)))
-        if (!isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
-            parse_data->word_pos++;
+    if (!isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
+        parse_data->word_pos++;
 
 
     /* check for ignore tag (should propably remove char handler for speed) */
@@ -463,44 +535,41 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     /* Check for metaNames */
 
-    if ( m || (m  = getMetaNameByName( parse_data->header, tag)) )
+    if ( (m = getMetaNameByName( parse_data->header, tag)) )
     {
         flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        
         m->in_tag++;
         parse_data->in_meta++;
         parse_data->structure |= IN_META;
     }
 
 
-    else if ( parse_data->in_html_meta || !parse_data->parsing_html )
+    else if ( sw->applyautomaticmetanames)
     {
-        if ( sw->applyautomaticmetanames)
-        {
-            if (sw->verbose)
-                printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
+        if (sw->verbose)
+            printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
-            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
-            addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
-            parse_data->in_meta++;
-            parse_data->structure |= IN_META;
-        }
-
-
-        /* If set to "error" on undefined meta tags, then error */
-        if (!sw->OkNoMeta)
-            progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
+        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
+        parse_data->in_meta++;
+        parse_data->structure |= IN_META;
     }
+
+
+    /* If set to "error" on undefined meta tags, then error */
+    if (!sw->OkNoMeta)
+        progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
 
 
 
     /* Check property names, again, limited to <meta> for html */
 
-    if ( parse_data->in_html_meta || !parse_data->parsing_html )
-        if ( (m  = getPropNameByName( parse_data->header, tag)) )
-        {
-            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
-            m->in_tag++;
-        }
+    if ( (m  = getPropNameByName( parse_data->header, tag)) )
+    {
+        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        m->in_tag++;
+    }
 
 
     /* Look to enable StoreDescription - allow any tag */
@@ -526,28 +595,30 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 
 
     /* Don't allow matching across tag boundry */
-    if ( !parse_data->parsing_html || parse_data->in_html_meta || (m  = getMetaNameByName( parse_data->header, tag)))
-        if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
-           parse_data->word_pos++;
-    
+    if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
+       parse_data->word_pos++;
+
 
 
     /* Flag that we are not in tag anymore - tags must be balanced, of course. */
 
-    if (  m || ( m = getMetaNameByName( parse_data->header, tag) ) )
+    if ( ( m = getMetaNameByName( parse_data->header, tag) ) )
+    if ( m->in_tag )
+    {
+        flush_buffer( parse_data, 1 );
+        m->in_tag--;
+        parse_data->in_meta--;
+        if ( !parse_data->in_meta )
+            parse_data->structure &= ~IN_META;
+    }
+
+
+    if ( ( m = getPropNameByName( parse_data->header, tag) ) )
         if ( m->in_tag )
         {
+            flush_buffer( parse_data, 1 );
             m->in_tag--;
-            parse_data->in_meta--;
-            if ( !parse_data->in_meta )
-                parse_data->structure &= ~IN_META;
         }
-
-
-    if ( parse_data->in_html_meta || !parse_data->parsing_html )
-        if ( ( m = getPropNameByName( parse_data->header, tag) ) )
-            if ( m->in_tag )
-                m->in_tag--;
 
 
     /* Look to disable StoreDescription */
@@ -561,13 +632,16 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 
 
 /*********************************************************************
-*   Sets structure for HTML elements
+*   Checks the HTML tag, and sets the "structure"
+*
+*   returns false if not a valid HTML tag (which might be a metaname)
 *
 *********************************************************************/
 
-static int set_structure( PARSE_DATA *parse_data, char * tag, int start )
+static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 {
     int     structure = 0;
+    int     is_html_tag = 1;
 
     /* Check for structure bits */
 
@@ -617,7 +691,11 @@ static int set_structure( PARSE_DATA *parse_data, char * tag, int start )
     /* Now, look for reasons to add whitespace */
     {
         const htmlElemDesc *element = htmlTagLookup( tag );
-        if ( !element || !element->isinline )
+
+        if ( !element )
+            is_html_tag = 0;   // flag that this might be a meta name
+
+        else if ( !element->isinline )
             append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
     }
 
@@ -631,9 +709,8 @@ static int set_structure( PARSE_DATA *parse_data, char * tag, int start )
         else
             parse_data->structure &= ~structure;
             
-        return 1;
     }
-    return 0;
+    return is_html_tag;
 }
 
 
