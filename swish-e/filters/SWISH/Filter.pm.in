@@ -359,6 +359,9 @@ sub convert {
         $attr{name} ||= $doc;
     }
 
+
+    $self->mywarn("\n>> Starting to process new document: $content_type");
+
     # Depreciated
     $self->{original_content_type} = $content_type;
     
@@ -396,8 +399,16 @@ sub convert {
     my @filter_set =  @{$self->{filters}};
     my @cur_filters;
 
+    my $done;
     for my $filter ( @filter_set )  {
+        if ( $done ) {
+            push @cur_filters, $filter;
+            next;
+        }
+            
         $doc_object->continue( 0 );  # reset just in case a non-filtering filter set this
+
+        $self->mywarn(" ++Checking filter [$filter] for $content_type" );
 
         my $start_content_type = $doc_object->content_type;
         
@@ -412,6 +423,8 @@ sub convert {
             next;
         }
         
+        $self->mywarn(" ++ $content_type " . ($filtered_doc ? '*WAS*' : 'was not') . " filtered by $filter\n");  
+
         # save the working filters in this list
         
         push @cur_filters, $filter;
@@ -430,7 +443,7 @@ sub convert {
             $doc_object->cur_doc($filtered_doc);    # and save it (filename or reference)
 
             # All done?
-            last unless $doc_object->continue( 0 );
+            $done++ unless $doc_object->continue( 0 );
         }
     }
     

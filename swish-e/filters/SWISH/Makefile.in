@@ -149,7 +149,7 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-perlmoduledir = $(libexecdir)/perl
+perlmoduledir = $(libexecdir)/perl/SWISH
 
 perlmodule_SCRIPTS = Filter.pm
 

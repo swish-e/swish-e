@@ -1,4 +1,4 @@
-perlmoduledir = $(libexecdir)/perl
+perlmoduledir = $(libexecdir)/perl/SWISH
 
 perlmodule_SCRIPTS = Filter.pm
 
