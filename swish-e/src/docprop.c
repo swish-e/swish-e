@@ -499,11 +499,11 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     if ( is_meta_number(meta_entry) )
     {
-        unsigned int i;
-        i = *(unsigned int *) prop->propValue;  /* read binary */
+        unsigned long i;
+        i = *(unsigned long *) prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_ULONG;
-        pv->value.v_ulong = (long)i;
+        pv->value.v_ulong = i;
         freeProperty( prop );
         return pv;
     }
@@ -1152,6 +1152,7 @@ static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw,
 #else
     unsigned char  *PropBuf;     /* For compressing and uncompressing */
     int             dest_size;
+    int             zlib_status = 0;
 
 
     /* Don't bother compressing smaller items */
@@ -1170,8 +1171,9 @@ static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw,
     PropBuf = allocatePropIOBuffer( sw, dest_size );
 
 
-    if ( compress2( (Bytef *)PropBuf, (uLongf *)&dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel) != Z_OK)
-        progerr("Property Compression Error");
+    zlib_status = compress2( (Bytef *)PropBuf, (uLongf *)&dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel);
+    if ( zlib_status != Z_OK )
+        progerr("Property Compression Error.  zlib compress2 returned: %d  Prop len: %d compress buf size: %d compress level:%d", zlib_status, prop->propLen, dest_size,sw->PropCompressionLevel);
 
 
     /* Make sure it's compressed enough */
@@ -1212,7 +1214,7 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
 #ifndef HAVE_ZLIB
 
     if ( *uncompressed_size )
-        progerr("The index was created with zlib compression.\nThis version of swish was not compiled with zlib");
+        progerr("The index was created with zlib compression.\n This version of swish was not compiled with zlib");
 
     *uncompressed_size = buf_len;
     return input_buf;
