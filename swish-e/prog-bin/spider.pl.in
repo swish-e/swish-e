@@ -123,6 +123,21 @@ sub UNIVERSAL::userinfo { '' };
         @servers = default_urls();
     } else {
         do $config or die "Failed to read $0 configuration parameters '$config' $! $@";
+
+        die "$0: config file '$config' failed to set \@servers array\n"
+            unless @servers;
+
+        die "$0: config file '$config' did not set \@servers array to contain a hash\n"
+            unless ref $servers[0] eq 'HASH';
+
+
+        # Check config options
+        for my $server ( @servers ) {
+            for ( keys %$server ) {
+                warn "$0: ** Warning: config option [$_] is unknown.  Perhaps misspelled?\n"
+                    unless $valid_config_options{$_}
+            }
+        }
     }
 
 
@@ -150,8 +165,14 @@ sub UNIVERSAL::userinfo { '' };
         $s = { %{ default_config() }, %$s } if $s->{use_default_config};
 
 
+        # Now, process each URL listed
+
         my @urls = ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} :( $s->{base_url});
         for my $url ( @urls ) {
+
+            # purge config options -- used when base_url is an array
+            $valid_config_options{$_} ||  delete $s->{$_} for keys %$s;
+
             $s->{base_url} = $url;
             process_server( $s );
         }
@@ -182,11 +203,6 @@ sub process_server {
     my $server = shift;
 
 
-    # Check config options
-    for ( keys %$server ) {
-        warn "Warning: config option [$_] is unknown.  Perhaps misspelled?\n"
-            unless $valid_config_options{$_}
-    }
 
     # set defaults
 
