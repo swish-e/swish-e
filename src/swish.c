@@ -505,7 +505,7 @@ struct stat stat_buf;
 				/* 05/00 Jose Ruiz
 				** Adjust totalwords
 				*/
-				sw->indexlist->header.totalwords -= stopwords;
+				/* sw->indexlist->header.totalwords -= stopwords; */
 				if(sw->indexlist->header.totalwords<0) sw->indexlist->header.totalwords=0;
 				printf("%d word%s removed.\n",
 					stopwords, (stopwords == 1) ? "" : "s");
