@@ -369,6 +369,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     case TXT:
         if (sw->verbose >= 3)
             printf(" - Using TXT filter - ");
+
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_TXT(sw, fprop, rd_buffer);
@@ -520,7 +521,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     int     hashval;
     IndexFILE *indexf = sw->indexlist;
 
-    if (sw->verbose >= 4)
+    // if (sw->verbose >= 4)
+    if ( DEBUG_MASK & DEBUG_WORDS )
     {
         printf("    Adding:'%s' Pos:%d Meta:%d Stuct:%X (", word, position, metaID, structure);
         if ( structure & IN_EMPHASIZED ) printf(" EM");
@@ -1870,6 +1872,10 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     /* get the next word as defined by whitespace */
     while ( next_word( &buf_pos, &word, &lenword ) )
     {
+        if ( DEBUG_MASK & DEBUG_PARSED_WORDS )
+            printf("White-space found word '%s'\n", word );
+
+    
         strtolower(word);
 
         /* is this a useful feature? */

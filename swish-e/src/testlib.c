@@ -5,6 +5,9 @@
 #include "merge.h"
 #include "docprop.h"
 
+unsigned int DEBUG_MASK = 0;
+
+
 int main()
 {
 SWISH *sw;
