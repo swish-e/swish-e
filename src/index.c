@@ -1424,6 +1424,8 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 /* Write the index entries that hold the word, rank, and other information.
 */
 
+
+
 void    write_index(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
@@ -1641,6 +1643,11 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 Also sorts properties
 */
 
+#ifdef PROPFILE
+void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname);
+#endif
+
+
 void    write_file_list(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
@@ -1691,7 +1698,17 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         printdeflatedictionary(bp, indexf);
     } */
 
+
+
     /* Sort properties -> Better search performance */
+
+#ifdef PROPFILE
+    /* First reopen the property file in read only mode for seek speed */
+if ( 1 )
+    DB_Reopen_PropertiesForRead_Native( indexf->DB, indexf->line );
+#endif    
+
+    printf("Sorting Properties...\n");
     sortFileProperties(sw,indexf);
 
 

@@ -87,6 +87,7 @@ void initModule_DBNative (SWISH  *sw)
     Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
 
+
     sw->Db = Db;
 
     return;
@@ -299,11 +300,38 @@ void *DB_Open_Native (char *dbname)
    return (void *)DB;
 }
 
+#ifdef PROPFILE
+void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname)
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
+
+
+    if ( DB->prop )
+        fclose( DB->prop );
+   
+    strcpy( s, dbname );
+    strcat( s, ".prop" );
+
+    if( !(DB->prop = openIndexFILEForRead(s)) )
+        progerrno("Couldn't open the property file \"%s\".", s);
+
+    efree(s);         
+}
+#endif
+
+
+
 void DB_Close_Native(void *db)
 {
    int i;
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
+
+#ifdef PROPFILE
+    fclose(DB->prop);
+    DB->prop = NULL;
+#endif    
 
    if(DB->mode)  /* If we are indexing update offsets to words and files */
    {
