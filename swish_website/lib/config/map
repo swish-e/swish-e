@@ -244,6 +244,7 @@
             docs        = docs_map
             discuss     = { tooltip = 'email list and list archive' }
             devel       = devel_map
+            scripts     = { name = 'related projects' }
             who         = { name = 'who uses it' }
             graphics    = { menu = [] }
             search      = {
