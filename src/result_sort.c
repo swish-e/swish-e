@@ -518,23 +518,31 @@ int     compFileProps(const void *s1, const void *s2)
             rc = 0,
             len = 0;
 
+    /* Find the current metaID */
     for (p1 = r1->docProperties; p1; p1 = p1->next)
         if (metaID == p1->metaID)
             break;
+
     for (p2 = r2->docProperties; p2; p2 = p2->next)
         if (metaID == p2->metaID)
             break;
+
+    /* Check for two values */
     if (!p1 && !p2)
         return 0;
+
     if (!p1 && p2)
         return 1;
+
     if (p1 && !p2)
         return -1;
 
     if (is_meta_number(r1->currentSortProp) || is_meta_date(r1->currentSortProp))
     {
-        rc = *((int *) p1->propValue) - *((int *) p2->propValue);
+        /* The PACKEDLONG is a string */
+        rc = memcmp( (const void *)p1->propValue, (const void *)p2->propValue, sizeof( unsigned long ) );
     }
+
     else if (is_meta_string(r1->currentSortProp))
     {
         len = Min(p1->propLen, p2->propLen);
@@ -562,6 +570,7 @@ void    sortFileProperties(IndexFILE * indexf)
     {
         m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
 		m->sorted_data = NULL;
+
         switch (indexf->header.metaEntryArray[j]->metaID)
         {
         case AUTOPROP_ID__REC_COUNT:
@@ -576,11 +585,13 @@ void    sortFileProperties(IndexFILE * indexf)
         case AUTOPROP_ID__SUMMARY:
         case AUTOPROP_ID__STARTPOS:
         default:               /* User properties */
-			    /* Array of filenums to store the sorted docs (referenced by its filenum) */
+
+		    /* Array of filenums to store the sorted docs (referenced by its filenum) */
 		    sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
 
             for (i = 0; i < indexf->filearray_cursize; i++)
                 indexf->filearray[i]->currentSortProp = m;
+
             /* Sort them using qsort. The main work is done by compFileProps */
             qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
