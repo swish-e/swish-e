@@ -714,11 +714,14 @@ how that information is made available during searching.
 
 =item ConvertHTMLEntities [YES|no]
 
-ASCII I<entities> can be converted automatically while indexing documents of type HTML and XML.
+ASCII I<entities> can be converted automatically while indexing documents of type HTML.
 For performance reasons you may wish to set this to C<no> if your documents do not contain HTML entities.
 The default is C<yes>.
 
 If C<ConvertHTMLEntities> is set C<no> the entities will be indexed without conversion.
+
+B<NOTE:> Entities within XML files and files parsed with libxml2 are converted regardless of this setting.
+
 
 =item MetaNames *list of names*
 
