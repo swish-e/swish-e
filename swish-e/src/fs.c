@@ -44,6 +44,112 @@
 
 #define MAXKEYLEN 34            /* Hash key -- allow for 64 bit inodes */
 
+/*
+  -- init structures for this module
+*/
+
+void initModule_FS (SWISH  *sw)
+{
+    struct MOD_FS *fs;
+
+    fs = (struct MOD_FS *) emalloc(sizeof(struct MOD_FS));
+    sw->FS = fs;
+            /* File system parameters */
+    fs->pathconlist=fs->dirconlist=fs->fileconlist=fs->titconlist=fs->fileislist
+=NULL;
+    fs->followsymlinks = 0;
+
+}
+
+
+/*
+  -- release all wired memory for this module
+*/
+
+void freeModule_FS (SWISH *sw)
+{
+  struct MOD_FS *fs = sw->FS;
+
+      /* Free fs parameters */
+  if (fs->pathconlist) freeswline(fs->pathconlist);
+  if (fs->dirconlist) freeswline(fs->dirconlist);
+  if (fs->fileconlist) freeswline(fs->fileconlist);
+  if (fs->titconlist) freeswline(fs->titconlist);
+  if (fs->fileislist) freeswline(fs->fileislist);
+
+       /* free module data */
+  efree (fs);
+  sw->FS = NULL;
+
+  return;
+}
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_FS (SWISH *sw, StringList *sl)
+
+{
+  struct MOD_FS *fs = sw->FS;
+  char *w0    = sl->word[0];
+  int  retval = 1;
+
+  if (strcasecmp(w0, "FileRules") == 0)
+  {
+     if (sl->n > 3)
+     {
+        char   *w1;
+        int     is2_contains = !strcasecmp(sl->word[2], "contains");
+
+        w1 = sl->word[1];
+
+        if (!(strcasecmp(w1, "path") && strcasecmp(w1, "pathname")) && is2_contains)
+        {
+           grabCmdOptions(sl, 3, &fs->pathconlist);
+           retval = 1;
+        }
+        else if (!strcasecmp(w1, "directory") && is2_contains)
+        {
+           grabCmdOptions(sl, 3, &fs->dirconlist);
+           retval = 1;
+        }
+        else if (!strcasecmp(w1, "filename") && is2_contains)
+        {
+           grabCmdOptions(sl, 3, &fs->fileconlist);
+           retval = 1;
+        }
+        else if (!strcasecmp(w1, "title") && is2_contains)
+        {
+           grabCmdOptions(sl, 3, &fs->titconlist);
+           retval = 1;
+        }
+        else if (!strcasecmp(w1, "filename") && !strcasecmp(sl->word[2], "is"))
+        {
+           grabCmdOptions(sl, 3, &fs->fileislist);
+           retval = 1;
+        }
+        else
+           progerr("Bad parameter in \"FileRules %s %s\"", sl->word[1], sl->word[2]);
+     }
+     else
+        progerr("Bad number of parameters in FileRules");
+  }
+  else if (strcasecmp(w0, "FollowSymLinks") == 0)
+  {
+     fs->followsymlinks = getYesNoOrAbort(sl, 1, 1);
+  }
+  else
+  {
+     retval = 0;                   /* not a module directive */
+  }
+
+  return retval;
+}
+
 /* Have we already indexed a file or directory?
 ** This function is used to avoid multiple index entries
 ** or endless looping due to symbolic links.
@@ -110,10 +216,11 @@ void    indexadir(SWISH * sw, char *dir)
     struct swline *tmplist;
     int     ilen1,
             ilen2;
+    struct MOD_FS *fs =sw->FS;
 
     sortfilelist = sortdirlist = NULL;
 
-    if (!sw->followsymlinks && islink(dir))
+    if (!fs->followsymlinks && islink(dir))
         return;
 
     if (fs_already_indexed(sw, dir))
@@ -125,7 +232,7 @@ void    indexadir(SWISH * sw, char *dir)
 
     /* Handle "FileRules directory contains" directive */
 
-    if (sw->dirconlist != NULL)
+    if (fs->dirconlist != NULL)
     {
         if ((dfd = opendir(dir)) == NULL)
             return;
@@ -134,7 +241,7 @@ void    indexadir(SWISH * sw, char *dir)
 
         while ((dp = readdir(dfd)) != NULL)
         {
-            tmplist = sw->dirconlist;
+            tmplist = fs->dirconlist;
             while (tmplist != NULL)
             {
                 if (matchARegex(dp->d_name, tmplist->line))
@@ -165,13 +272,13 @@ void    indexadir(SWISH * sw, char *dir)
             continue;
 
         /* This is stating the file name not the path, and is checked later on.
-           * if ( !sw->followsymlinks && islink(dp->d_name) )
+           * if ( !fs->followsymlinks && islink(dp->d_name) )
            * continue;
          */
 
         /* Handle "FileRules filename is" */
         badfile = 0;
-        tmplist = sw->fileislist;
+        tmplist = fs->fileislist;
         while (tmplist != NULL)
         {
             if (matchARegex(dp->d_name, tmplist->line))
@@ -186,7 +293,7 @@ void    indexadir(SWISH * sw, char *dir)
 
         /* Handle "FileRules filename contains" */
         badfile = 0;
-        tmplist = sw->fileconlist;
+        tmplist = fs->fileconlist;
         while (tmplist != NULL)
         {
             if (matchARegex(dp->d_name, tmplist->line))
@@ -215,13 +322,13 @@ void    indexadir(SWISH * sw, char *dir)
         s[ilen1 + ilen2] = '\0';
 
         /* Check if the path is a symlink */
-        if (!sw->followsymlinks && islink(s))
+        if (!fs->followsymlinks && islink(s))
             continue;
 
 
         /* FileRules pathname contains */
         badfile = 0;
-        tmplist = sw->pathconlist;
+        tmplist = fs->pathconlist;
         while (tmplist != NULL)
         {
             if (matchARegex(s, tmplist->line))
@@ -266,8 +373,9 @@ void    indexafile(SWISH * sw, char *path)
     int     badfile;
     char   *filename;
     struct swline *tmplist;
+    struct MOD_FS *fs = sw->FS;
 
-    if (!sw->followsymlinks && islink(path))
+    if (!fs->followsymlinks && islink(path))
         return;
 
     if (fs_already_indexed(sw, path))
@@ -277,7 +385,7 @@ void    indexafile(SWISH * sw, char *path)
         path[strlen(path) - 1] = '\0';
 
     badfile = 0;
-    tmplist = sw->fileislist;
+    tmplist = fs->fileislist;
     while (tmplist != NULL)
     {
         if (!matchARegex(path, tmplist->line))
@@ -291,7 +399,7 @@ void    indexafile(SWISH * sw, char *path)
         return;
 
     badfile = 0;
-    tmplist = sw->fileconlist;
+    tmplist = fs->fileconlist;
     while (tmplist != NULL)
     {
         if (matchARegex(path, tmplist->line))
@@ -305,7 +413,7 @@ void    indexafile(SWISH * sw, char *path)
         return;
 
     badfile = 0;
-    tmplist = sw->pathconlist;
+    tmplist = fs->pathconlist;
     while (tmplist != NULL)
     {
         if (matchARegex(path, tmplist->line))
@@ -425,62 +533,10 @@ void    fs_indexpath(SWISH * sw, char *path)
 
 
 
-/*
-   -- add. parsing for index method filesystem
-*/
-
-int     fs_parseconfline(SWISH * sw, void *l)
-{
-    int     rv = 0;
-    StringList *sl = (StringList *) l;
-
-
-    if (strcasecmp(sl->word[0], "FileRules") == 0)
-    {
-        if (sl->n > 3)
-        {
-            char   *w1;
-            int     is2_contains = !strcasecmp(sl->word[2], "contains");
-
-            w1 = sl->word[1];
-
-            if (!(strcasecmp(w1, "path") && strcasecmp(w1, "pathname")) && is2_contains)
-            {
-                grabCmdOptions(sl, 3, &sw->pathconlist);
-                rv = 1;
-            }
-            else if (!strcasecmp(w1, "directory") && is2_contains)
-            {
-                grabCmdOptions(sl, 3, &sw->dirconlist);
-                rv = 1;
-            }
-            else if (!strcasecmp(w1, "filename") && is2_contains)
-            {
-                grabCmdOptions(sl, 3, &sw->fileconlist);
-                rv = 1;
-            }
-            else if (!strcasecmp(w1, "title") && is2_contains)
-            {
-                grabCmdOptions(sl, 3, &sw->titconlist);
-                rv = 1;
-            }
-            else if (!strcasecmp(w1, "filename") && !strcasecmp(sl->word[2], "is"))
-            {
-                grabCmdOptions(sl, 3, &sw->fileislist);
-                rv = 1;
-            }
-            else
-                progerr("Bad parameter in \"FileRules %s %s\"", sl->word[1], sl->word[2]);
-        }
-        else
-            progerr("Bad number of parameters in FileRules");
-    }
-    return rv;
-}
 
 struct _indexing_data_source_def FileSystemIndexingDataSource = {
     "File-System",
     "fs",
     fs_indexpath,
-    fs_parseconfline
+    configModule_FS
 };

@@ -506,7 +506,7 @@ struct MOD_Index *idx = sw->Index;
 #endif
 
 
-int http_parseconfline(SWISH *sw,void *l)
+int http_parseconfline(SWISH *sw,StringList *l)
 {
     int i,rv = 0;
     int len;

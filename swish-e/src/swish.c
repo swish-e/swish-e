@@ -60,6 +60,7 @@ $Id$
 #include "keychar_out.h"
 #include "date_time.h"
 #include "db.h"
+#include "fs.h"
 #include "dump.h"
 
 
@@ -264,7 +265,7 @@ struct stat stat_buf;
 				hasMetaName = 1;
 		      }
 		else if (c == 'l') {
-			sw->followsymlinks = 1;
+			sw->FS->followsymlinks = 1;
 			argc--;
 		}
 		else if (c == 'b') {

@@ -40,6 +40,7 @@
 #include "result_output.h"
 #include "result_sort.h"
 #include "db.h"
+#include "fs.h"
 
 /* 
   -- init swish structure 
@@ -59,9 +60,9 @@ SWISH *SwishNew()
     initModule_DB (sw);
     initModule_Search (sw);
     initModule_Index (sw);
+    initModule_FS (sw);
 
 
-    sw->followsymlinks = 0;
     sw->TotalWords = 0;
     sw->TotalFiles = 0;
     sw->dirlist = NULL;
@@ -84,8 +85,6 @@ SWISH *SwishNew()
 
     sw->truncateDocSize = 0;      /* default: no truncation of docs    */
     
-        /* File system parameters */
-    sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
 
     /* prog system parameters */
     sw->progparameterslist =  NULL;
@@ -152,6 +151,7 @@ void SwishClose(SWISH *sw)
         freeModule_DB (sw);
         freeModule_Index (sw);
         freeModule_ResultSort (sw);
+        freeModule_FS (sw);
 
                         /* Free file structures */
         freefileoffsets(sw);
@@ -220,13 +220,6 @@ void SwishClose(SWISH *sw)
         }
         freeindexfile(sw->indexlist);
         
-        /* Free fs parameters */
-        if (sw->pathconlist) freeswline(sw->pathconlist);
-        if (sw->dirconlist) freeswline(sw->dirconlist);
-        if (sw->fileconlist) freeswline(sw->fileconlist);
-        if (sw->titconlist) freeswline(sw->titconlist);
-        if (sw->fileislist) freeswline(sw->fileislist);
-
         /* Free SWISH struct */
         efree(sw);
     }

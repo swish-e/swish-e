@@ -24,14 +24,6 @@
 #define CASE_SENSITIVE_ON 1
 #define CASE_SENSITIVE_OFF 0
 
-/* 06/00 Jose Ruiz
-** Structure  StringList. Stores words up to a number of n
-*/
-typedef struct  {
-        int n;
-        char **word;
-} StringList;
-
 char *lstrstr (char *, char *);
 char *getword (char *, int *skiplen);
 char *getconfvalue (char *, char *);

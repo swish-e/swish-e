@@ -627,6 +627,7 @@ typedef struct
     struct MOD_DB            *Db;             /* DB module data */
     struct MOD_Search        *Search;         /* Search module data */
     struct MOD_Index         *Index;          /* Index module data */
+    struct MOD_FS            *FS;             /* FileSystem Index module data */
 
 
     /* 08/00 Jose Ruiz Values for document type support */
@@ -659,7 +660,6 @@ typedef struct
     int     verbose;
     /* File counter */
     int     bigrank;
-    int     followsymlinks;
     /* Error vars */
     int     commonerror;
     int     lasterror;
@@ -685,14 +685,6 @@ typedef struct
     int     ReqMetaName;
     int     OkNoMeta;
 
-
-    /* file system specific configuration parameters */
-    struct swline *pathconlist;
-    struct swline *dirconlist;
-    struct swline *fileconlist;
-    struct swline *titconlist;
-    struct swline *fileislist;
-
     /* http system specific configuration parameters */
     int     maxdepth;
     int     delay;
@@ -711,6 +703,14 @@ typedef struct
 }
 SWISH;
 
+/* 06/00 Jose Ruiz
+** Structure  StringList. Stores words up to a number of n
+*/
+typedef struct  {
+        int n;
+        char **word;
+} StringList;
+
 /*
  * This structure defines all of the functions that need to
  * be implemented to an Indexing Data Source.
@@ -724,7 +724,7 @@ struct _indexing_data_source_def
     const char *IndexingDataSourceName; /* long name for data source */
     const char *IndexingDataSourceId; /* short name for data source */
     void    (*indexpath_fn) (SWISH * sw, char *path); /* routine to index a "path" */
-    int     (*parseconfline_fn) (SWISH * sw, void *line); /* parse config file lines */
+    int     (*parseconfline_fn) (SWISH * sw, StringList *l); /* parse config file lines */
 };
 
 

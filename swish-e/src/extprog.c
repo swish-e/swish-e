@@ -299,7 +299,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
 
 /* Don't have any specific configuration values to check */
-static int     extprog_parseconfline(SWISH * sw, void *l)
+static int     extprog_parseconfline(SWISH * sw, StringList *l)
 {
     return 0;
 }
