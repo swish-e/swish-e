@@ -88,10 +88,20 @@ $VERSION = '0.01';
         'Past',
         'Future',
         'Next 30 Days',
-        'All'
+        'All',
+        'Select Date Range',
     );
 
-    my %TIME_PERIODS = map { $_, 1} @TIME_PERIODS;
+    my %Num_to_label;
+    my %Label_to_num;
+    my $i = 1;
+    for ( @TIME_PERIODS ) {
+        my $label = $_;
+        $label =~ s/ /&nbsp;/g;
+        $Num_to_label{$i} = $label;
+        $Label_to_num{$_} = $i++;
+    }
+
 
 
 use Date::Calc qw /
@@ -105,6 +115,8 @@ use Date::Calc qw /
     Days_in_Month
     check_date
 /;
+
+my $prefix = 'dr';
 
 use Time::Local;
 
@@ -131,10 +143,25 @@ These store the HTML for display on your form.
 sub DateRangeForm {
     my ( $CGI, $params, $fields ) = @_;
 
-    die "Must supply arrary ref for 'options'"
+    die "Must supply array ref for 'options'"
         unless $params->{time_periods} && ref $params->{time_periods} eq 'ARRAY';
 
-    my @time_periods = grep { $TIME_PERIODS{$_} } @{ $params->{time_periods} };
+
+
+    my @time_periods;
+
+    # Filter out valid selections for radio buttons
+    for ( @{ $params->{time_periods} } ) {
+        next if !$Label_to_num{$_} || $_ eq 'Select Date Range';
+        push @time_periods, $Label_to_num{$_};
+    }
+
+
+    # Set default as default passed in, or the first one, or 'Select Date Range' if none passed in
+    my $default = $params->{default} && $Label_to_num{$params->{default}}
+                  ? $Label_to_num{$params->{default}}
+                  : @time_periods ? $time_periods[0] :  $Label_to_num{'Select Date Range'};
+
 
 
     $fields->{buttons} = '';
@@ -142,39 +169,39 @@ sub DateRangeForm {
     $fields->{date_range_low}  =  '';
     $fields->{date_range_high} =  '';
 
+    my $autoescape = $CGI->autoEscape(undef);  # labels have HTML
+
     $fields->{buttons} = 
           $CGI->radio_group( 
-            -name       => 'DateRanges_date_option',
+            -name       => 'dr_o',
             -values     => \@time_periods,
-            -default    => ($params->{default} || $time_periods[0]),
+            -default    => $default,
             -linebreak  => (exists $params->{line_break} ? $params->{line_break} : 1),
+            -labels     => \%Num_to_label,
             #-columns=>2,
           ) if @time_periods;
 
 
-    return unless $params->{date_range};
+    if ( $params->{date_range} ) {
 
-    $fields->{date_range_button} = 
-        $CGI->radio_group(
-            -name       => 'DateRanges_date_option',
-            -values     => ['Select Date Range'],
-            -default    => ($params->{default} || $time_periods[0]),
-            -linebreak  => (exists $params->{line_break} ? $params->{line_break} : 1),
-          );
+        $fields->{date_range_button} = 
+            $CGI->radio_group(
+                -name       => 'dr_o',
+                -values     => [$Label_to_num{'Select Date Range'}],
+                -default    => $default,
+                -labels     => \%Num_to_label,
+                -linebreak  => (exists $params->{line_break} ? $params->{line_break} : 1),
+              );
 
 
 
-    $fields->{date_range_low}  =  show_date_input($CGI, 'start');
-    $fields->{date_range_high} =  show_date_input($CGI, 'end');
+        $fields->{date_range_low}  =  show_date_input($CGI, 's');
+        $fields->{date_range_high} =  show_date_input($CGI, 'e');
+    }
 
-=pod
-    print '<br>Limit to the hour of: ',
-          popup_menu( -name       => 'Limit_hour',
-                      -default    => ' ',
-                      -values     => [' ',0..23], ),
-          '<br>';
-=cut          
-          
+
+    $CGI->autoEscape($autoescape);
+
 }
 
 =item my $args = GetDateRangeArgs( $cgi );
@@ -189,13 +216,13 @@ sub GetDateRangeArgs {
     my %args;
 
     
-    $args{DateRanges_date_option} = $CGI->param('DateRanges_date_option')
-        if defined $CGI->param('DateRanges_date_option');
+    $args{dr_o} = $CGI->param('dr_o')
+        if defined $CGI->param('dr_o');
 
 
     for ( qw/ mon day year / ) {
-        my $start = "DateRanges_start_$_";
-        my $end   =  "DateRanges_end_$_";
+        my $start = "dr_s_$_";
+        my $end   =  "dr_e_$_";
         $args{$start} = $CGI->param($start) if defined $CGI->param($start);
         $args{$end} = $CGI->param($end) if defined $CGI->param($end);
     }
@@ -211,13 +238,13 @@ sub GetDateRangeArgs {
 Parses the date range form and returns a low and high range unix timestamp.
 Returns false on error with the folowing key set in C<$form>:
 
-    DateRanges_error - error string explaining the problem
+    dr_error - error string explaining the problem
 
 C<$form> is a hash reference where the following keys may be set:
 
     All - no date ranges were selected
-    DateRanges_time_low - low range unix timestamp
-    DateRanges_time_high - high range unix timestamp
+    dr_time_low - low range unix timestamp
+    dr_time_high - high range unix timestamp
 
 =cut    
     
@@ -228,13 +255,23 @@ C<$form> is a hash reference where the following keys may be set:
 sub DateRangeParse {
     my ( $q, $form ) = @_;
 
-    $form->{DateRanges_error} = '';
+    $form->{dr_error} = '';
+
+
+    # For making HREFs
+    $form->{data_range_href} =  GetDateRangeArgs( $q );
+
+
+    
     
 
-
     # If requesting ALL (or not found in form) return true for all
-    if ( !$q->param('DateRanges_date_option') || $q->param('DateRanges_date_option') eq 'All' ) {
-        $form->{All}++;
+
+    my $num = $q->param('dr_o') || $Label_to_num{All};
+
+    # In range?
+   
+    if ( $num !~ /^\d+$/ || $num < 1 || $num > @TIME_PERIODS ) {
         return 1;
     }
 
@@ -242,13 +279,22 @@ sub DateRangeParse {
 
     my ( @start, @end );
 
-    for ($q->param('DateRanges_date_option') ) {
+    for ( $TIME_PERIODS[$num-1] ) {
+
+        /^All/        && do { return 1 };  # don't set any dates
     
         /^Today/      && do { @start = @end = Today(); last; };
 
-        /^Yesterday onward/  && do { @start = Add_Delta_Days( Today(), -1 ); last };
+        /^Yesterday onward/  && do {
+            @start = Add_Delta_Days( Today(), -1 );
+            @end = (2030,1,1);
+            last;
+         };
         
-        /^Yesterday/  && do { @start = @end = Add_Delta_Days( Today(), -1 ); last };
+        /^Yesterday/  && do {
+            @start = @end = Add_Delta_Days( Today(), -1 );
+            last;
+        };
 
 
         /^This Week/ && do {
@@ -292,8 +338,8 @@ sub DateRangeParse {
         /^Past/ && return 1;  # use defaults;
 
         /^Future/ && do {
-            $form->{DateRanges_time_low} = time;
-            delete $form->{DateRanges_time_high};
+            $form->{dr_time_low} = time;
+            delete $form->{dr_time_high};
             return 1;
         };
 
@@ -308,41 +354,45 @@ sub DateRangeParse {
         /^Select/ && do {
             my ( $day, $mon, $year );
 
-            $day    = $q->param('DateRanges_start_day') || 0;
-            $mon    = $q->param('DateRanges_start_mon') || 0;
-            $year   = $q->param('DateRanges_start_year') || 0;
+            $day    = $q->param('dr_s_day') || 0;
+            $mon    = $q->param('dr_s_mon') || 0;
+            $year   = $q->param('dr_s_year') || 0;
             @start = ( $year, $mon, $day );
 
-            $day    = $q->param('DateRanges_end_day') || 0;
-            $mon    = $q->param('DateRanges_end_mon') || 0;
-            $year   = $q->param('DateRanges_end_year') || 0;
+            $day    = $q->param('dr_e_day') || 0;
+            $mon    = $q->param('dr_e_mon') || 0;
+            $year   = $q->param('dr_e_year') || 0;
             @end = ( $year, $mon, $day );
             last;
         };
 
-        $form->{DateRanges_error} = 'Invalid Date Option ' . $q->param('DateRanges_date_option') . ' Selected';
+        $form->{dr_error} = 'Invalid Date Option ' . $q->param('dr_o') . ' Selected';
         return;
     }
 
 
     
-    $form->{DateRanges_error} = 'Invalid Start Date' && return if @start && !check_date( @start );
-    $form->{DateRanges_error} = 'Invalid Ending Date' && return if @end && !check_date( @end );
+    $form->{dr_error} = 'Invalid Start Date' && return if @start && !check_date( @start );
+    $form->{dr_error} = 'Invalid Ending Date' && return if @end && !check_date( @end );
 
 
     my $start_time = @start ? timelocal( 0, 0, 0, $start[2], $start[1]-1, $start[0]-1900 ) : 0;
     my $end_time   = @end   ? timelocal( 59, 59, 23, $end[2], $end[1]-1, $end[0]-1900 ) : 0;
 
 
-    $form->{DateRanges_error} = "Starting time should be before now, don't you think?" && return
+    $form->{dr_error} = "Starting time should be before now, don't you think?" && return
         if $start_time && $start_time > time();
         
-    $form->{DateRanges_error} = 'Start date must be same day or before end date' && return
+    $form->{dr_error} = 'Start date must be same day or before end date' && return
         if $start_time && $end_time && $start_time > $end_time;
 
 
-    $form->{DateRanges_time_low} = $start_time;
-    $form->{DateRanges_time_high} = $end_time;
+    $form->{dr_time_low} = $start_time;
+    $form->{dr_time_high} = $end_time;
+
+    print STDERR "$TIME_PERIODS[$num-1]: ", scalar localtime($start_time), " -> ", scalar localtime($end_time), "\n"
+        if 0;
+
     return 1;
 }
 
@@ -351,7 +401,7 @@ sub DateRangeParse {
 sub show_date_input {
     my ( $CGI, $name ) = @_;
 
-    $name = "DateRanges_$name";
+    $name = "dr_$name";
 
     my @months = qw/Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec/;
     my $x = 1;
@@ -364,7 +414,7 @@ sub show_date_input {
 
     my $cur_year = $year;
 
-    $cur_year += 5;
+    #$cur_year += 5;
 
     ($year,$mon,$day) = Date::Calc::Add_Delta_Days($year,$mon,$day, -28 ) if $name eq 'start';
 
@@ -376,18 +426,18 @@ sub show_date_input {
             -default    => $mon,
             -labels     => \%months
         ),
-        '&nbsp',
+        '&nbsp;',
         $CGI->popup_menu(
             -name       => "${name}_day",
             -default    => $day,
             -values     => [1..31],
         ),
 
-        '&nbsp',
+        '&nbsp;',
         $CGI->popup_menu(
             -name       => "${name}_year",
             -default    => $year,
-            -values     => [$year-5..$cur_year],
+            -values     => [reverse ($cur_year-8..$cur_year) ],
         );
 
 
