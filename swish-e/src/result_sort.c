@@ -965,6 +965,10 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
 #ifdef USE_BTREE
         DB_WriteSortedIndex(sw, metaID, out_array, total_files, indexf->DB);
+
+        for (i = 0; i < total_files; i++)
+            if ( PropLookup[i].SortProp )
+                freeProperty( PropLookup[i].SortProp );
 #else
         out_buffer = emalloc( total_files * 5 ); 
 
