@@ -557,7 +557,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         num = PACKLONG(num);
         tmpnum = (char *)&num;
 
-        for ( j=0; j <= sizeof(num)-1; j++ )
+        for ( j=0; j <= (int)sizeof(num)-1; j++ )
             newstr[j] = (unsigned char)tmpnum[j];
         
         newstr[ sizeof(num) ] = '\0';

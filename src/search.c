@@ -705,7 +705,6 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     /* 04/00 Jose Ruiz - Sort results by rank or by properties */
 
-    // ??? Currently this does -t limits.  Wrong place, if you ask me.
     totalResults = sortresults(sw, structure);
 
 
@@ -1766,7 +1765,7 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 
             rp->fi.filenum = rp->filenum = r1->filenum;
 
-            rp->rank = r1->rank + r2->rank;
+            rp->rank = ( r1->rank + r2->rank) * 2;  // bump up the or terms
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
             rp->indexf = r1->indexf;

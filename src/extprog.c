@@ -268,6 +268,10 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             fprop->work_path = estrdup( real_path );
             fprop->orig_path = estrdup( real_path );
 
+            /* Set the doc type from the header */
+            if ( docType )
+                fprop->doctype   = docType;
+
 
             /* set real_path, doctype, index_no_content, filter, stordesc */
             init_file_prop_settings(sw, fprop);
@@ -275,8 +279,6 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             fprop->fp = fp; /* stream to read from */
             fprop->fsize = fsize; /* how much to read */
             fprop->mtime = mtime;
-            if ( docType )
-                fprop->doctype   = docType;
 
             /* header can force index_no_content */
             if (index_no_content)

@@ -308,8 +308,6 @@ FileProp *init_file_properties(SWISH * sw)
 
     memset( fprop, 0, sizeof(FileProp) );
 
-    /* -- init -- */
-    fprop->doctype = sw->DefaultDocType;
     return fprop;
 }
 
@@ -330,10 +328,17 @@ void    init_file_prop_settings(SWISH * sw, FileProp * fprop)
        -- doctypes by jruiz
      */
 
-    fprop->doctype = getdoctype(fprop->real_path, sw->indexcontents);
-    if (fprop->doctype == NODOCTYPE && sw->DefaultDocType != NODOCTYPE)
+    /* Might already be set by a header in extpro.c */
+    if ( !fprop->doctype )
     {
-        fprop->doctype = sw->DefaultDocType;
+        /* Get the type by file extension -- or return NODOCTYPE */
+        fprop->doctype = getdoctype(fprop->real_path, sw->indexcontents);
+
+        /* If was not set by getdoctype() then assign it the default parser */
+        /* This could still be NODOCTYPE, or it might be something set by DefaultContents */
+        
+        if (fprop->doctype == NODOCTYPE)
+            fprop->doctype = sw->DefaultDocType;
     }
 
 
