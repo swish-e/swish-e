@@ -1,0 +1,260 @@
+[% META
+    title = "Discussion List"
+    id    = 'discuss'
+%]
+
+<h1>E-mail Discussion List</h1>
+
+<P>The <STRONG>Swish-e</STRONG> e-mail list is for the
+discussion of the Swish-e software and its implementation and use.
+Bug fixes, problem reports, desired features, and more are all appropriate
+topics.
+</p>
+
+<p>To subscribe, send the message:
+<pre>subscribe swish-e youraddr@yourdomain</pre>
+to
+<A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></i>.
+</P>
+
+<H3>Search the Archive</H3>
+
+<blockquote>
+<form method="get" action="search/swish.cgi" enctype="application/x-www-form-urlencoded" class="form">
+            <input  maxlength="200" value="" size="32" type="text" name="query" />
+
+            <input  value="Search!" type="submit" name="submit" /><br>
+
+            Limit search to:
+<input value="swishdefault" type="radio" checked name="metaname"/>Message text
+<input value="subject" type="radio"  name="metaname"/>Message Subject
+<input value="name" type="radio"  name="metaname"/>Poster's Name
+<input value="email" type="radio"  name="metaname"/>Poster's Email
+<br>
+            Sort by:
+<select name="sort">
+<option  value="swishrank">Rank</option>
+<option  value="subject">Message Subject</option>
+<option  value="name">Poster's Name</option>
+
+<option  value="email">Poster's Email</option>
+<option  value="sent">Message Date</option>
+</select>
+<input value="1" type="checkbox"  name="reverse"/>Reverse Sort
+
+        </form>
+</blockquote>
+
+<P>A Boolean "and" between words is assumed; that is, documents will be
+retrieved that have <B>all</B> the specified words. If you wish to find
+all the documents that have <B>any</B> word, then use "or"  between your
+search words. To truncate a word, use an asterisk (*) at the end. For
+example, the search "comput*" would retrieve documents that have the words
+"computer", "computing", "computation", etc. Search capability is being
+provided by <A
+HREF="http://swish-e.org/">Swish-e</A>, what else?</P>
+
+<H3><a href="archive">Browse the Archive</a></H3>
+
+<P>The Swish-e discussion began on July 9, 1997.
+
+<A NAME="Policy"><H3>Posting Policy</H3></A>
+<P>The following policy governs all postings to the Swish-e list.
+Offenders will be warned once and removed from the list after a second
+violation of the same policy:</P>
+
+<OL>
+
+<LI>All messages must relate to Swish-enhanced or issues related to the
+development or implementation of it.
+<LI> Advertisements are not appropriate. However, a simple statement that
+offers a way to follow-up for more information on a service or product is
+tolerated if it accompanies a substantive message discussing a subject
+appropriate to the list.
+<LI> Personal attacks such as name calling and personal insults will not be
+tolerated. Comments that are intended only to
+enrage the recipient rather than contribute to thoughtful discussion are
+prohibited.
+
+<LI> All postings must be free of copyright restrictions that limit
+distribution. For example, posting a significant amount of a copyrighted
+work verbatim requires the permission of the copyright holder. To verify
+that such permission was obtained, all postings of this nature must
+include a statement that this is the case.
+</OL>
+
+<A NAME="Administration"><H3>Administration</H3></A>
+
+<P>The <I>Swish-e</I> list is hosted by the UC Berkeley Library. It is an
+un-moderated list, but only subscribers may
+post messages. The software program List Processor (ListProc) 6.0
+is used to provide an
+automated method for persons to subscribe, unsubscribe, etc.
+Questions about the Swish-e list may be directed to <A
+HREF="http://escholarship.cdlib.org/rtennant/">Roy
+Tennant</A> (<A
+HREF="mailto:roy.tennant@ucop.edu">roy.tennant@ucop.edu</A>).
+</P>
+
+<A NAME="Commands"><H3>Command Reference</H3></A>
+
+<P>The mailing list manager for <I>Swish-e</I> is List Processor (ListProc)
+6.0. The basic commands are:</P>
+
+<P><EM>TO SUBSCRIBE:</EM><BR>
+
+Send the message "subscribe swish-e youraddr@yourdomain" to
+<A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+
+<P><EM>TO UNSUBSCRIBE:</EM><BR>
+
+Send the message "unsubscribe swish-e" to <A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+
+<P><EM>TO CONTRIBUTE TO THE DISCUSSION:</EM><BR>
+
+Send your message to <A
+HREF="mailto:swish-e@sunsite.berkeley.edu">swish-e@sunsite.berkeley.edu.</A>
+For more information
+on appropriate discussion topics, please see the information below.</P>
+
+<P><EM>TO RECEIVE A COMPLETE LIST OF LISTPROC COMMANDS:</EM><BR>
+
+Send the message "help" to <A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+
+<P><EM>TO SUSPEND AND RESUME MAIL:</EM><BR>
+To <B>suspend</B> mail from Swish-e, send the message 'set swish-e mail
+postpone' to <A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A>.
+To <B>resume</B> mail from Swish-e, send the message "set swish-e mail
+ack" <B>or</B> "set swish-e mail noack" to <A
+HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A>.
+"ACK" will acknowledge your list contributions, "NOACK" will not.</P>
+
+<HR>
+<H4>Full List of Commands</H4>
+
+<P>Everything appearing in [ ] below is optional; everything
+appearing in &lt; &gt; is mandatory; all arguments are case insensitive.
+The vertical bar ("|") is used as a logical OR operator between the
+arguments.  Requests may be abbreviated, but you must specify at least the
+first three characters.</P>
+
+<PRE>
+help [topic]
+------------
+Without arguments, this file. Otherwise get specific information on the
+selected topic. Topics may also refer to requests. To learn more about this
+system issue a 'help listproc' request. To get a listing of all available
+topics, generate an error message by sending a bogus request like 'help me'.
+
+set &lt;list&gt; [&lt;option&gt; &lt;arg[s]&gt;]
+------------------------------
+Without the optional arguments, get a list of all current settings for
+the specified list. Otherwise change the option to a new value for that
+list, as follows:
+
+        option can be: mail, password, address, conceal
+        arg for mail can be: ack, noack, postpone, digest
+        args for password have to be: current-password new-password
+        args for address have to be: current-password new-address
+        args for conceal can be: yes, no
+
+        'set swish-e': get the current option settings for the list
+        'set swish-e mail ack': your message is sent back to you
+        'set swish-e mail noack': your message is not sent back to you
+        'set swish-e mail postpone': no messages will be sent to you
+                until you change mode again. NOTE: To resume messages,
+                send the message 'set swish-e mail ack' or 'set swish-e
+                mail noack' (explanations of these commands are directly
+                above)
+        'set swish-e mail digest': your message is not sent back to you.
+                New messages are not sent to you as they arrive, but are
+                accumulated into digests that are periodically sent to you.
+        'set swish-e password &lt;current-password&gt; &lt;new-password&gt;':
+                change your password for live access to the system (i.e.
+                for subscriber access privileges when telneting to the system).
+        'set swish-e address &lt;current-password&gt; &lt;new-address&gt;:
+                change the address you are subscribed with; may not be available on all
+                lists.
+        'set swish-e conceal yes': remove yourself from 'recipients' and
+                'statistics' listings.
+        'set swish-e conceal no': opposite of previous mode.
+
+subscribe swish-e youraddr@yourdomain
+
+----------------------------
+The only way to subscribe to Swish-e.
+
+unsubscribe swish-e
+signoff swish-e
+------------------
+Two ways of removing yourself from the discussion
+
+recipients swish-e
+review swish-e
+-----------------
+Get a listing of all non-concealed people subscribed
+
+information swish-e
+------------------
+Get information about the list
+
+statistics swish-e {[subscriber email address(es)] | [-all]}
+-----------------------------------------------------------
+Get a listing of non-concealed subscribers along with the number of messages
+each one of them has sent to the specified list. If the optional email addresses
+are given, then statistics will be collected for these users only. For
+example:
+                stat foo user1@domain user2@domain
+
+will generate statistics about these two subscribers. "-all" lists statistics
+for all users that have posted on the list (whether currently subscribed ot
+not).
+
+lists
+-----
+Get a list of all local mailing lists that are served by this server, as well
+as of all known remote lists.
+
+index [archive | path-to-archive] [/password] [-all]
+----------------------------------------------------
+Get a list of files in the selected archive, or the master archive if no
+archive was specified. If an archive is private, you have to provide its
+password as well.
+
+get &lt;archive | path-to-archive&gt; &lt;file&gt; [/password] [parts]
+----------------------------------------------------------
+Get the requested file from the specified archive. Files are usually split in
+parts locally, and in such a case you will receive the file in multiple email
+messages -- an 'index' request tells you how many parts the file has been split
+into, and their sizes; if you need to obtain certain parts, specify them as
+optional arguments. If an archive is private, you have to provide its
+password as well.
+
+search &lt;archive | path-to-archive&gt;] [/password] [-all] &lt;pattern&gt;
+----------------------------------------------------------------
+Search all files of the specified archive (and all of its subarchives if -all
+is specified) for lines that match the pattern. The pattern can be an
+egrep(1)-style regular expression with support for the following additional
+operators: '~' (negation), '|' and '&'' (logical OR and AND), '&lt;' '&gt;'
+(group regular expressions). The pattern may be enclosed in single or
+double quotes. Note: . matches any character including new line.
+
+release
+-------
+Get information about the current release of this ListProcessor system.
+
+which
+-----
+Get a listing of local mailing lists to which you have subscribed.
+
+listproc
+--------
+Learn more about this system and list management software in general.
+
+</PRE>
+

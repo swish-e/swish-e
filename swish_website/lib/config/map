@@ -1,0 +1,259 @@
+[%#
+    Define site-wide navigation map.  See Badger book ch 11 p423
+
+    A menu is a hash that can contain three keys:
+
+
+    menu:
+        The hash *must* contain a "menu" key which is an array of menu
+        items.  These are really the id of each menu, and represent
+        the basename of the page without the final extension.  .html
+        is the final extension but it can be overridden.
+
+        If the item points to a subdirectory (by having a "menu"
+        entry in the "page" array), then it's the name of the
+        subdirectory.
+
+    name:
+        The hash *may* contain a "name" key which is a scalar
+        name used for accessing this menu from a parent menu.
+
+    page:
+        The hash *should* contain a "page" key which is a hash
+        that provides extra details about the menu item.  The "page"
+        hash *may* contain the follow keys:
+
+        name:
+            The description used for the menu item.  If not defined
+            then the key (menu id) is used as the menu description.
+
+        tooltip:
+            The description to use as the 'title' for the menu item.
+            Shows up on some browsers when the mouse is held over the
+            link.
+
+        extension:
+            Changes the menu's extension.  The default is '.html'
+            Might be useful for .cgi (but .html can be a cgi script
+            too). Can be blank.
+
+        file:
+            This overrides the default filename that is built
+            from the menu id and the extension (see config/expand
+            for details).  This might be used to link to a file
+            outside of the build tree.  $site.url.root is prepended
+            to the file.  External urls may be specified by setting
+            the "external"
+
+        external:
+            This can be set to an absolute URL that is a link
+            off-site.  It directly sets the "url" key (see below).
+
+        menu:
+            If this is defined then the item is actually pointing
+            to a subdirectory.  The menu's target won't be "id.html"
+            but id/index.html (or as set by the "indexname" key).
+            "menu" is what makes this a recursive menu structure.
+
+        indexname:
+            Changes the default index name from "index.html" to something
+            else.
+
+
+        hidden:
+            Makes the menu item hidden.  Useful to disable a menu item
+            but leave the items in the map.
+
+
+        The config/expand also sets some additional keys that are available
+        when generating the menu items in your menu layout template.
+        See config/expand for details
+
+        id:
+            This is the id of the page, which is the same as the entry
+            in the parent menu array (same as the key of this hash).
+
+        path:
+            This is the id with the above directory prepended, if any.
+
+        file:
+            (Same as above)
+            This is the path with either the extension added
+            or, in the case of a submenu item, the indexname
+            added.  But this can be overridden in this map.
+
+        url:
+            Final url used for this link.
+
+        hot:
+            Flag that's true when the path (above) matches
+            part or all of the current page.  So the link is
+            either THE link to the page, or it's on the path
+            to the page (i.e. it's a parent menu item).
+
+        subs:
+            Flag that's true when the menu item is "hot" AND
+            the item has a sub menu (i.e. has a "menu" key)
+
+        here:
+            Flag that's true when the file (see above) is
+            the same as the output file name (which is relative
+            to the top level dir). This is true when the menu item
+            is for the current page.
+
+
+-%]
+[%- #------------------------------------------------------
+    # This is the download sub-menu
+    docs_map    = {
+        name    = 'documentation'
+
+        # Sub menu
+        menu = [
+            'readme', 'install', 'changes', 'swish-config',
+            'swish-run', 'swish-search', 'swish-faq', 'swish-bugs',
+            'swish-3.0', 'swish-library', 'api',
+            'swish.cgi', 'search.cgi', 'spider','filter'
+        ]
+
+        # Sum menu descriptions (quote non \w chars)
+        page = {
+            'readme'        = {
+                name    = 'README'
+                tooltip = 'First time users'
+            }
+            'install'       = {
+                name    = 'Install'
+                tooltip = 'Installation and usage overview'
+            }
+            'changes'       = {
+                name    = 'Changes'
+                tooltip = 'Important changes from previous versions'
+            }
+            'swish-config'  = {
+                name    = 'Configuration'
+                tooltip = 'Directives that go in your Swish-e configuration file'
+            }
+            'swish-run'     = {
+                name    = 'Running'
+                tooltip = 'Command line options for Swish-e binary'
+            }
+            'swish-search'  = {
+                name    = 'Searching'
+                tooltip = "Swish-e's search language"
+            }
+            'swish-faq'     = { name    = 'FAQ' }
+            'swish-bugs'    = { name = 'Known issues' }
+            'swish-3.0'     = { name = 'The Future' }
+            'swish-library' = {
+                name    = 'C API'
+                tooltip = 'Swish-e C API'
+            }
+            'api'           = {
+                name    = 'Perl API'
+                tooltip = 'Perl interface to the Swish-e library'
+            }
+            'swish.cgi'     = {
+                name    = 'Swish.cgi'
+                tooltip = 'Example CGI/mod_perl script'
+            }
+            'search.cgi'    = {
+                name    = 'Search.cgi'
+                tooltip = 'Example Perl script using SWISH::API'
+            }
+            'spider'        = {
+                name    = 'Spider.pl'
+                tooltip = 'The Swish-e HTTP spider'
+            }
+            'filter'        = {
+                name    = 'Filters'
+                tooltip = 'How to index non-text documents'
+            }
+        }
+    }
+-%]
+[%- #-------------------------------------------------------
+    devel_map = {
+        name    = 'development'
+
+        #sum menu
+        menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs' ]
+        page    = {
+            daily       = { name = 'Swish-Daily' }
+
+            devel_docs  = {
+                name = 'docs'
+                menu = [] # fake subdir
+            }
+
+            cvs         = {
+                name        = 'CVS info'
+                tooltip     = 'How to build Swish-e from CVS'
+            }
+
+            view_cvs    = {
+                name        = 'View CVS'
+                external    = 'http://cvs.sourceforge.net/viewcvs.py/swishe/'
+                tooltip     = 'Go to the SourceForge.net Swish-e CVS Repository'
+            }
+        }
+    }
+-%]
+[%- #-------------------------------------------------------
+    download_map = {
+
+        #sum menu
+        menu    = ['old', 'daily' ]
+        page    = {
+            old     = {
+                name    = 'Archives'
+                tooltip = 'Previous versions'
+            }
+
+            daily = {
+                name    = 'Daily Builds'
+                tooltip = 'Daily packages from CVS'
+                file    = 'devel/daily'
+            }
+        }
+    }
+-%]
+[%-  #-------------------------------------------------------
+
+    # Here's the full site menu
+    map = {
+        name    = 'Swish-e.org',
+
+        # top level menu
+        menu    = [
+            'index', 'news', 'download', 'docs', 'support',
+            'discuss', 'graphics', 'scripts', 'devel', 'who', 'demos',
+            'search',
+        ]
+
+
+        # description of top-level menu items
+        # defaults are the name of the menu id
+        page    = {
+            index       = { name = 'home' }
+            download    = download_map
+            docs        = docs_map
+            devel       = devel_map
+            who         = { name = 'who uses it' }
+            graphics    = { menu = [] }
+            search      = {
+                name   = 'Search'
+                hidden = 1 # don't show on main menu
+                menu   = []  # make it /search/ instead of search.html
+            }
+        }
+
+    };
+
+    site.map = map;
+    # create expanded data map
+    PROCESS config/expand;
+
+    # USE Dumper;
+    # Dumper.dump ( map ) | stderr;
+-%]

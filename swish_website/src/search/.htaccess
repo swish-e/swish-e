@@ -1,0 +1,8 @@
+<files index.html>
+    Options +ExecCGI
+    SetHandler cgi-script
+</files>
+<files index.swish-e>
+    deny from all
+</files>
+

@@ -1,0 +1,7 @@
+[%-
+
+
+    # Define a macro to lookup a link
+    MACRO link_to_page(target, text, return_link_only ) INCLUDE menu/find_menu_link;
+
+-%]

@@ -1,0 +1,125 @@
+Mon Jan 17 07:32:40 PST 2005
+
+$id$
+
+Swish-e site.
+
+This site is maintained in CVS.  Pages should not be modified directly.
+Check out the site from cvs, and modify the pages locally.  Rebuild locally
+to review and then check in.
+
+Site layout
+-----------
+
+    ./
+        -> src              - web source docs.
+        -> public_html      - output files.  This is DocumentRoot
+        -> dirs_public      - download, archive, and swish-daily dirs
+        -> bin              - bin/build script and other utilities
+        -> lib/config       - site config templates.
+        -> lib/config/site  - contains swish-e current version (see TODO)
+        -> lib/config/map   - defines layout of site and site's menu
+        -> lib/page         - templates that define the look of each page
+        -> lib/pod_toc      - top-level index for pod docs
+
+
+
+Building the site
+-----------------
+
+    From the top-level directory* (where this README file is located)
+    run:
+
+        bin/build -all -swishsrc=$HOME/swish-e -v
+
+    (assuming that's where the swish-e source is located)
+
+    That builds both the website and the pod docs and writes them
+    to the "public_html" directory.
+
+    * Actually, from anywhere -- directories are determined relative to
+    where the /bin/build program is found.
+
+    Running without the -all switch will cause only the changed files to be
+    rebuilt.  Normally you run with -all.
+
+    Note: the docs/index.html file can only be correctly built if ALL the pods
+    are processed (using -all).  So do not rm public_html/docs/index.html and expect
+    it to be rebuilt automatically.
+
+    For a bit more info, run:
+
+        bin/build -help
+
+
+
+
+Building the html docs for distribution
+---------------------------------------
+
+    Specify the pod destination directory:
+
+        bin/build -all -swishsrc=$HOME/swish-e -poddest=$HOME/swish-e/html
+
+    This adjusts the links so that every non-pod link points to the swish-e.org
+    site; pod links are local.
+
+
+Content Creation
+----------------
+
+Links:
+    All internal pages can (and probably should) be defined in the 
+    config/map file.  This is mostly for defining the menu, but entries
+    can be marked "hidden".  Even off-site links can be entered (look for link to CVS)
+
+    Entries in the config/map file can then be linked
+    to using a macro:
+
+     Check out the [% link_to_page('readme#Key features', 'full list of features') %].
+
+    That will find the (first) menu item that has "readme" for an id
+    and create a complete <a>..</a> tag.  notice that it's possible to use
+    fragments.
+
+    The macro has at least three parameters:
+        1) the menu id to search for
+        2) optional text to use for the link -- otherwise the menu text is used
+        3) flag to say just return the href part of the link
+
+
+    TODO:
+        add MACROS for page sections and the abilty to create a TOC at the top of the
+        page.
+
+
+
+Indexing the site for searches
+------------------------------
+
+[todo]
+
+
+TODO
+----
+
+- add 404 and 500 pages
+
+- Have title be part of the layout (instead of added on each page)?
+
+
+- Fetch version from -swishsrc/configure instead of hard-coded in config/site
+
+- Split out some of the lib/page templates into smaller components that can be
+overridden separately.
+
+- add to META on each page [author = '$Author$'] and maybe also $Date$, although
+lastmod is probably fine.  Waiting until can think of a better way to do the same
+for the pod files.
+
+- test speedycgi and install on sunsite
+
+- enable template caching for the search script
+
+
+

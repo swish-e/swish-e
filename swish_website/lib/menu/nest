@@ -1,0 +1,26 @@
+[%
+
+DEFAULT pad = '';
+
+FOREACH item = menu.items;
+    pad;
+
+    INCLUDE menu/text
+      link = {
+        text     = item.name
+        url      = site.topdir _ item.url
+        class    = item.hot ? 'menuselect' : 'menu'
+      };
+
+    IF item.subs;
+        "<br />\n";
+        INCLUDE menu/nest
+          menu = item
+          pad  = pad ? "&nbsp;&nbsp;&nbsp;$pad"
+                     : "&nbsp;-&nbsp;";
+    END;
+
+    "<br />\n";
+END;
+
+-%]
