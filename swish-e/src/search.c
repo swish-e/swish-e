@@ -1073,8 +1073,7 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, in
 */
 RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 {
-    int     i,
-            j,
+    int     j,
             x,
             filenum,
             structure,
@@ -1086,8 +1085,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             index_structfreq,
             tmpval;
     RESULT *rp,
-           *rp2,
-           *tmp;
+           *rp2;
     long    wordID;
     unsigned long  nextposmetaname;
     char   *p;
@@ -1222,34 +1220,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     {
         /* Finally, if we are in an sequential search
            merge all results */
-        initresulthashlist(sw);
-        rp2 = NULL;
-        while (rp != NULL)
-        {
-            tmp = rp->next;
-            mergeresulthashlist(sw, rp);
-            rp = tmp;
-        }
-        for (i = 0; i < BIGHASHSIZE; i++)
-        {
-            rp = sw->Search->resulthashlist[i];
-            while (rp != NULL)
-            {
-                tmp = rp->next;
-
-                if(rp2 == NULL)
-                    rp2 = rp;
-                else
-                    rp2->head->next = rp;
-                rp2->head = rp;
-
-                rp = tmp;
-            }
-        }
-        rp = rp2;
-
-        /* Sort results by filenum */
-        rp = sortresultsbyfilenum(rp);
+        rp = mergeresulthashlist(sw, rp);
     }
     DB_EndReadWords(sw, indexf->DB);
     return rp;
@@ -2149,16 +2120,6 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
 
 
 
-/* Initializes the result hash list.
-*/
-           
-void    initresulthashlist(SWISH * sw)
-{
-    int     i;
-        
-    for (i = 0; i < BIGHASHSIZE; i++)
-        sw->Search->resulthashlist[i] = NULL;
-}
 
 
 /* Adds a file number to a hash table of results.
@@ -2169,88 +2130,113 @@ void    initresulthashlist(SWISH * sw)
 ** For better performance in large "or"
 ** keep the lists sorted by filenum
 */
-void    mergeresulthashlist(SWISH *sw, RESULT *r)
+RESULT *mergeresulthashlist(SWISH *sw, RESULT *r)
 {
     unsigned hashval;
     RESULT *rp,
            *tmp,
+           *next,
+           *start,
+           *tot_results = NULL,
            *newnode = NULL;
+    int    i,
+           tot_frequency,
+           pos_off,
+           filenum;
 
-    tmp = NULL;
-    hashval = bignumhash(r->filenum);
+    /* Init hash table */
+    for (i = 0; i < BIGHASHSIZE; i++)
+        sw->Search->resulthashlist[i] = NULL;
 
-    rp = sw->Search->resulthashlist[hashval];
-    while (rp != NULL)
+    for(next = NULL; r; r =next)
     {
-        if (rp->filenum == r->filenum)
+        next = r->next;
+
+        tmp = NULL;
+        hashval = bignumhash(r->filenum);
+
+        rp = sw->Search->resulthashlist[hashval];
+        for(tmp = NULL; rp; )
         {
-            /* Compute rank if not yet computed */
-            if(rp->rank == -1)
-                rp->rank = getrank( sw, rp->frequency, rp->tfrequency, rp->structure, rp->indexf, rp->filenum );
-
-            if(r->rank == -1)
-                r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
-
-            newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (rp->frequency + r->frequency) * sizeof(int));
-            memset( newnode, 0, sizeof(RESULT));
-            newnode->fi.filenum = newnode->filenum = rp->filenum;
-
-            newnode->rank = rp->rank + r->rank;
-            newnode->structure = rp->structure | r->structure;
-            newnode->tfrequency = 0;
-            newnode->frequency = rp->frequency + r->frequency;
-            newnode->indexf = rp->indexf;
-            newnode->sw = (struct SWISH *) rp->sw;
-
-            if (r->frequency)
+            if (r->filenum <= rp->filenum)
             {
-                CopyPositions(newnode->position, 0, r->position, 0, r->frequency);
+                break;
             }
-            if (rp->frequency)
-            {
-                CopyPositions(newnode->position, r->frequency, rp->position, 0, rp->frequency);
-            }
-
-            if(tmp == NULL)
-            {
-                sw->Search->resulthashlist[hashval] = newnode;
-            }
-            else
-            {
-                tmp->next = newnode;
-            }
-            newnode->next = rp->next;
-            return;
+            tmp = rp;
+            rp = rp->next;
         }
-        else if (r->filenum < rp->filenum)
-            break;
-        tmp = rp;
-        rp = rp->next;
-    }
-    if (!rp)
-    {
         if (tmp)
         {
             tmp->next = r;
-            r->next = NULL;
         }
         else
         {
             sw->Search->resulthashlist[hashval] = r;
-            r->next = NULL;
         }
+        r->next = rp;
     }
-    else
+
+    /* Now coalesce reptitive filenums */
+    for (i = 0; i < BIGHASHSIZE; i++)
     {
-        if (tmp)
+        rp = sw->Search->resulthashlist[i];
+        for (filenum = 0, start = NULL; ; )
         {
-            tmp->next = r;
-            r->next = rp;
-        }
-        else
-        {
-            sw->Search->resulthashlist[hashval] = r;
-            r->next = rp;
+            if(rp)
+                next = rp->next;
+            if(!rp || rp->filenum != filenum)
+            {
+                /* Start of new block, coalesce previous results */
+                if(filenum)
+                {
+                    for(tmp = start, tot_frequency = 0; tmp!=rp; tmp = tmp->next)
+                    {
+                        tot_frequency += tmp->frequency;                        
+                    }
+                    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + tot_frequency * sizeof(int));
+                    memset( newnode, 0, sizeof(RESULT));
+                    newnode->fi.filenum = newnode->filenum = filenum;
+                    newnode->rank = 0;
+                    newnode->structure = 0;
+                    newnode->tfrequency = 0;
+                    newnode->frequency = tot_frequency;
+                    newnode->indexf = start->indexf;
+                    newnode->sw = (struct SWISH *) start->sw;
+
+                    for(tmp = start, pos_off = 0; tmp!=rp; tmp = tmp->next)
+                    {
+                        /* Compute rank if not yet computed */
+                        if(tmp->rank == -1)
+                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->structure, tmp->indexf, tmp->filenum );
+
+                        newnode->rank += tmp->rank;
+                        newnode->structure |= tmp->structure;
+                        if (tmp->frequency)
+                        {
+                            CopyPositions(newnode->position, pos_off, tmp->position, 0, tmp->frequency);
+                            pos_off += tmp->frequency;
+                        }
+
+                    }
+                    /* Add at the end of total_results */
+                    newnode->next = NULL;
+                    if(!tot_results)
+                        tot_results = newnode;
+                    else
+                        tot_results->head->next = newnode;
+                    tot_results->head = newnode;
+
+
+                }
+                if(rp)
+                    filenum = rp->filenum;
+                start = rp;
+            }
+            if(!rp)
+                break;
+            rp = next;
         }
     }
+    return sortresultsbyfilenum(tot_results);
 }
+

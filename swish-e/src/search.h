@@ -115,8 +115,7 @@ struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
 struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header);
 
-void initresulthashlist (SWISH *sw);
-void mergeresulthashlist (SWISH *sw, RESULT *r);
+RESULT * mergeresulthashlist (SWISH *sw, RESULT *r);
 
 #endif
 
