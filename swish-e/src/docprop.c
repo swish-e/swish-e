@@ -1003,9 +1003,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
             if ( seek_pos < 0 )
                 progerr("failed to find seek postion for first property in file %d", filenum );
 
-            propbuf = buf = ( char * ) emalloc( fi->propTotalLen );
-
-            buf = DB_ReadProperty( sw, fi, i, indexf->DB );
+            propbuf = buf = DB_ReadProperty( sw, fi, i, indexf->DB );
 
             meta_entry.metaName = "(default)";
 
@@ -1028,7 +1026,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
             addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
 
             tempPropID = uncompress2((unsigned char **)&buf);
-		    efree(propbuf);
+            efree(propbuf);
         }
     }
 

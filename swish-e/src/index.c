@@ -2032,6 +2032,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
            *p;
     char   *buf1;
     struct file *fi;
+    char   stack_buffer[4096];
 
     fi = indexf->filearray[filenum - 1];
     if (fi)
@@ -2062,7 +2063,10 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     lookup_path = uncompress2(&p); /* Index to lookup table of paths */
     lookup_path--;
     len1 = uncompress2(&p);       /* Read length of filename */
-    buf1 = emalloc(len1);       /* Includes NULL terminator */
+    if(len1 <= sizeof(stack_buffer))
+        buf1 = stack_buffer;
+    else
+        buf1 = emalloc(len1);       /* Includes NULL terminator */
     memcpy(buf1, p, len1);      /* Read filename */
     p += len1;
 
@@ -2075,7 +2079,8 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     memcpy(fi->filename, indexf->header.pathlookup->all_entries[lookup_path]->val, len4);
     memcpy(fi->filename + len4, buf1, len1);
     fi->filename[len1 + len4] = '\0';
-    efree(buf1);
+    if(buf1 != stack_buffer)
+        efree(buf1);
 
 
     fi->filenum = filenum - 1;
@@ -2083,10 +2088,10 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
 #ifdef PROPFILE
     p = UnPackPropLocations( fi, p );
-#else    
+#else
     /* read the document properties section  */
     p = fetchDocProperties(fi, p);
-#endif    
+#endif
 
 
 
