@@ -91,6 +91,15 @@ static struct ResultExtFmtStrList *addResultExtFormatStr (
              struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
 
 
+/*
+** ----------------------------------------------
+** 
+**  Module management code starts here
+**
+** ----------------------------------------------
+*/
+
+
 
 /* 
   -- init structures for this module
@@ -150,12 +159,13 @@ void freeModule_ResultOutput (SWISH *sw)
 
 
 
-
-
-
-/* ---------------------------------------------- */
-
-
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
 
 
 /*
@@ -209,9 +219,14 @@ int cmdlineModule_ResultOutput_d (SWISH *sw, char opt, char **args)
 
 
 
-/* ---------------------------------------------- */
 
-
+/*
+** ----------------------------------------------
+** 
+**  Module code starts here
+**
+** ----------------------------------------------
+*/
 
 
 
