@@ -6,6 +6,26 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.2 - January ??, 2004
+
+=over 4
+
+=item * Fixed segfault when generating warnings while parsing
+
+Parser.c was incorrectly calling warning() incorrectly.
+And -Wall was not catching this!
+
+=item * Added check for internal property names.
+
+Parser was not checking for use of Swish-e reserved property
+names.
+
+   <swishrank>foo</swishrank>
+
+This will now generate a warning.
+
+=back
+
 =head2 Version 2.4.1 - December 17, 2003
 
 =over 4
