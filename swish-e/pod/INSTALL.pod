@@ -33,9 +33,19 @@ of HTML uses swish's html.c parser, where HTML2 uses libxml2's HTML parser.
 Likewise, a setting of XML uses the included Expat library, where XML2 uses libxml2 for parsing XML.
 All this may change in future releases.
 
+B<zlib compression>
+
+Swish can make use of zlib to compress document properties.  This is recommended
+if you are using C<StoreDescription|SWISH-CONFIG/"item_StoreDescription">
+
+B<Memory>
+
 Swish needs quite a bit of memory while indexing.  How much depends on what you are indexing.
 The index is portable between platforms, so you can index on a machine that has lots of
 memory available and move the index file(s) to another machine for searching.
+Use the C<-e> switch if you are short on memory.
+
+B<Perl modules>
 
 The HTTP document source method uses a Perl helper script that requires
 the LWP, HTTP, and HTML modules. (Note: depending on your perl installation, you might need to
@@ -63,8 +73,9 @@ Swish-e can now use libxml2 to parse HTML and XML documents.
 
 Installing the libxml2 library is not required at this time, but is recommended, espeically
 if you are running Linux or similar OS (e.g. Solaris) since installation is so easy.
-As mentioned above, the XML parser that swish ships with is fine.  The HTML parser that
-ships with swish has been in use for years, but the parser provided by libxml2 is preferred.
+As mentioned above, the XML parser that included with swish with is fine.  The HTML parser in
+swish has been in use for years, but the parser provided by libxml2 is preferred.
+The libxml2 HTML parser offers more features, and is more accurate.
 If you are running Linux it may already be installed (look for libxml2.so.2.4.5 or higher).
 
 The library can be downloaded from http://www.xmlsoft.org/.  Installation directions
@@ -81,43 +92,47 @@ You may see an error like:
     *** Error code 1
 
 In this case, try specifying where zlib can be found.  For example, if libz was located
-in /usr/local/lib you would use:
+in /usr/local/lib you would use this when building libxml2:
 
     ./configure --with-zlib=/usr/local
 
-If you do not have root access and/or do not install libxml2 in the standard locations (for header
-and library files), then you will need to set environment variables
-to tell swish where to look for libxml2 files.  You will need to do this *before* running
-I<swihs-e's> configure script since swish-e's configure script uses the settings to create
-the Makefiles.
+B<Building Swish with libxml2>
 
-For example, say you want to link against the library in its build
-directory of $HOME/libxml2-2.4.5.  You use CFLAGS to tell swish where to find the header files,
-and use LDFLAGS to tell swish where to look for the library files when linking.
+To enable swish to use libxml2 you must run swish-e's configure script as:
 
-    ~/swish-e > export CFLAGS="-I$HOME/libxml2-2.4.5/include -g -O2"
-    ~/swish-e > export LDFLAGS="-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
-    ~/swish-e > ./configure
+    ./configure --with-libxml2
 
-Under other shells (tcsh) you might use setenv:
+If you do not have root access and/or did not install libxml2 in the standard locations (for header
+and library files), then specify the path where libxml2 was installed:
 
-    ~/swish-e > setenv CFLAGS "-I$HOME/libxml2-2.4.5/include -g -O2"
-    ~/swish-e > setenv LDFLAGS "-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
-    ~/swish-e > ./configure
+    ./configure --with-libxml2=$HOME/libxml2-2.4.5
+    
+You may need to set LD_RUN_PATH or LDFLAGS when building swish to set the
+location of the libxml2 shared library:
 
-After running configure and before running make you must edit the Makefile in the F<src> directory
-and uncomment these three lines:
-
-    LIBXML2_OBJS = parser.o
-    LIBXML2_LIB  = -lxml2   
-    LIBXML2_CFLAGS = -DLIBXML2
+    LDFLAGS="-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs" \
+    ./configure --with-libxml2=$HOME/libxml2-2.4.5
 
 Now, you run C<make> as described in the following section.
 
+libxml2 can be downloaded from http://www.xmlsoft.org.
 
 Note that libxml2 will be linked as a
 shared library, so once you compile Swish-e to use the library, the library
 must not be deleted or moved.
+
+B<Building Swish with zlib>
+
+Swich can be built with zlib.  Building with zlib is similar to the instructions
+for building zlib with libxml2 above.  To select support for zlib run configure
+with:
+
+    ./configure --with-zlib
+
+zlib is common on many systems, but may be out of date.  You should run at least
+version 1.1.3.  To link with zlib in a non-standard location use, for example:
+
+    ./configure --with-zlib=$HOME/zlib
 
 
 =head2 Downloading and unpacking and building

@@ -171,6 +171,11 @@ document for information.
 
 Swish now uses James Clark's expat XML parser library.
 
+=item * Support for zlib
+
+Swish can be compiled with zlib.  This is useful for compressing large
+properties.
+
 =item * LST type of document no longer supported
 
 LST allowed indexing of files that contained multiple documents.
@@ -319,6 +324,12 @@ The default is to not index XML attributes.
 
 XMLClassAttributes can specify a list of attribute names whose content is
 combined with the element name to form metanames.
+
+=item * New directive: PropCompressionLevel [0-9]
+
+If compiled with zlib, Swish uses this setting to control the level of
+compression applied to properties.  Properties must be long enough
+(defined in config.h) to be compressed.  Useful for StoreDescription.
 
 =back
 
