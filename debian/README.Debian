@@ -1,0 +1,6 @@
+swish-e for Debian
+------------------
+
+This package does not include the SWISH::API Perl module described in the documenation.
+
+ -- Bill Moseley <moseley@hank.org>, Thu, 15 May 2003 12:06:51 -0700

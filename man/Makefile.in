@@ -138,13 +138,12 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 @BUILDDOCS_TRUE@man_MANS = \
+@BUILDDOCS_TRUE@    $(srcdir)/swish-e.1 \
 @BUILDDOCS_TRUE@    $(srcdir)/SWISH-CONFIG.1 \
 @BUILDDOCS_TRUE@    $(srcdir)/SWISH-FAQ.1 \
 @BUILDDOCS_TRUE@    $(srcdir)/SWISH-LIBRARY.1 \
 @BUILDDOCS_TRUE@    $(srcdir)/SWISH-RUN.1
 
-
-SUFFIXES = .1 .pod
 
 EXTRA_DIST = $(man_MANS)
 subdir = man
@@ -159,7 +158,6 @@ DIST_COMMON = Makefile.am Makefile.in
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .1 .pod
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign  man/Makefile
@@ -347,6 +345,10 @@ uninstall-man: uninstall-man1
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
 	uninstall-info-am uninstall-man uninstall-man1
 
+
+$(srcdir)/swish-e.1 : $(top_srcdir)/pod/swish-e.pod
+	-rm -f $@
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
 $(srcdir)/SWISH-CONFIG.1 : $(top_srcdir)/pod/SWISH-CONFIG.pod
 	-rm -f $@
