@@ -1652,7 +1652,10 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     IndexFILE *indexf = sw->indexlist;
 
     char   *buf_pos;        /* pointer to current position */
-    char   *cur_pos;       /* pointer to position with a word */
+    char   *cur_pos;        /* pointer to position with a word */
+
+    int     stem_return;    /* return value of stem operation */
+
 
 
     /* initialize buffers */
@@ -1719,7 +1722,6 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
         while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, &bump_position_flag ) )
         {
-
             /* Check Begin & EndCharacters */
             if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
                 continue;
@@ -1733,8 +1735,18 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 continue;
 
             if (indexf->header.applyStemmingRules)
-                Stem(&swishword, &lenswishword);
+            {
+                stem_return = Stem(&swishword, &lenswishword);
 
+                /* === 
+
+                if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
+                if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
+                if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", swishword );
+                if ( stem_return == STEM_TO_NOTHING ) printf("Stem: stems to nothing '%s'\n", swishword );
+
+                === */
+            }
 
             /* This needs fixing, no?  The soundex could might be longer than the string */
             if (indexf->header.applySoundexRules)
