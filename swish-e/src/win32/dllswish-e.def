@@ -1,0 +1,10 @@
+LIBRARY dllswish-e
+DESCRIPTION SWISH-E Search Engine Library
+
+EXPORTS
+     SwishOpen   @1
+     SwishClose  @2
+     SwishSearch @3
+     SwishNext   @4
+     SwishError  @5
+     Stem        @6
