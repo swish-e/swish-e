@@ -2359,6 +2359,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
     struct swline *sp_stem = NULL;
 
+    int not_fuzzy = FUZZY_NONE == indexf->header.fuzzy_data->stemmer->fuzzy_mode;
 
     /* Generate list of metaIDs to index unless passed in */
     if ( !metaID )
@@ -2413,8 +2414,8 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         }
 
 
-            
-        
+
+
 
         /* Translate chars */
         TranslateChars(indexf->header.translatecharslookuptable, (unsigned char *)word);
@@ -2455,14 +2456,62 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
 
             /* limit by stopwords, min/max length, max number of digits, ... */
+
             if (!isokword(sw, swishword, indexf))
                 continue;
 
             /* Now translate word if fuzzy mode */
+
+            if ( not_fuzzy )
+            {
+                addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+                wordcount++;
+            }
+
+            else
             {
                 char **current_word;
                 int  not_first = 0;
-                FUZZY_WORD *fw = fuzzy_convert( indexf->header.fuzzy_data, swishword );
+                FUZZY_WORD *fw;
+
+                sp_stem = NULL;  /* pointer to cached stemmed word */
+
+#ifndef NOSTEMCACHE
+
+                /* 2003/08 jmruiz */
+                /* Snowball's stemming is very slow. So, let's try some */
+                /* caching.                                             */
+                /* Cache for stemming */
+                /* Only use it if we are not in economic mode (-e) */
+
+                /* Note that double-metaphone may produce two values, so don't cache 
+                 * or figure a way to invalidate the cache entry if there's two words.
+                 */
+
+                if( !idx->swap_locdata )
+                {
+                    if((sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword)))
+                    {
+                        /* cache hit! */
+
+                        if ( sp_stem->other.data )  /* might be null if the stemmer returned more than one value */
+                        {
+                            addword(sp_stem->other.data, sw, filenum, structure, numMetaNames, metaID, position );
+                            wordcount++;
+                            continue;  /* done, continue on */
+                        }
+                    }
+                    else
+                    {
+                       sp_stem = add_word_to_hash_table( &indexf->hashstemcache, swishword, VERYBIGHASHSIZE);
+                       sp_stem->other.data = NULL;
+                   }
+                }
+#endif /* NOSTEMCACHE */
+
+
+                /* Convert the word */
+                fw = fuzzy_convert( indexf->header.fuzzy_data, swishword );
 
                 current_word = fw->word_list;
                 while ( *current_word )
@@ -2475,132 +2524,20 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
                     addword(*current_word, sw, filenum, structure, numMetaNames, metaID, position );
                     wordcount++;
+
+                    /* If using the stem cache, add reference to the word just entered in the index */
+                    /* but since the "data" payload currently can hold only one value, only cache if one stem */
+
+                    if ( sp_stem && !sp_stem->other.data && ( 1 == fw->list_size) )
+                        sp_stem->other.data = (getentry(sw,*current_word))->word;
+
+
                     current_word++; /* move to next word in list */
                 }
 
                 fuzzy_free_word( fw );
             }
-
-#ifdef commented_out
-            else
-            {
-                Fuzzy_Return
-                int     stem_return;    /* return value of stem operation */
-                int     word_count;     /* number of words in list */
-                char **stemmed_words;   /* List of stemmed words */
-
-                stem_return = Fuzzy_convert( &stemmed_words, &word_count, indexf, swishword );
-
-            switch ( indexf->header.fuzzy_data.fuzzy_mode )
-            {
-                case FUZZY_NONE:
-                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
-                    wordcount++;
-                    break;
-
-                case FUZZY_STEMMING_EN:
-                case FUZZY_SOUNDEX:
-#ifdef SNOWBALL
-                case FUZZY_STEMMING_ES:
-                case FUZZY_STEMMING_FR:
-                case FUZZY_STEMMING_PT:
-                case FUZZY_STEMMING_IT:
-                case FUZZY_STEMMING_DE:
-                case FUZZY_STEMMING_NL:
-                case FUZZY_STEMMING_EN1:
-                case FUZZY_STEMMING_EN2:
-                case FUZZY_STEMMING_NO:
-                case FUZZY_STEMMING_SE:
-                case FUZZY_STEMMING_DK:
-                case FUZZY_STEMMING_RU:
-                case FUZZY_STEMMING_FI:
-#endif
-#ifdef STEMCACHE
-                    /* 2003/08 jmruiz */
-                    /* Snowball's stemming is very slow. So, let's try some */
-                    /* caching.                                             */
-                    /* Cache for stemming */
-                    /* Only use it if we are not in economic mode (-e) */
-                    if(! idx->swap_locdata)
-                    {
-                       sp_stem = NULL;
-                       if((sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword))) 
-                       {
-                           swishword = SafeStrCopy(swishword,sp_stem->other.data,&lenswishword);
-                       }
-                       else
-                       {
-                           add_word_to_hash_table( &indexf->hashstemcache, swishword, VERYBIGHASHSIZE);
-                           sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword);
-                           sp_stem->other.data=NULL;
-                           stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
-                       }
-                    }
-                    else
-                       stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
-                         
-#else
-                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
-
-#endif
-                    /* === 
-                    if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
-                    if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
-                    if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", swishword );
-                    if ( stem_return == STEM_TO_NOTHING ) printf("Stem: stems to nothing '%s'\n", swishword );
-                    === */
-
-                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
-
-#ifdef STEMCACHE
-                    /* Put the pointer to the stemmed word in the stem cache */
-                    /* if it is a new entry (when other.data is NULL) */
-                    if((!idx->swap_locdata) && sp_stem && (!sp_stem->other.data) )
-                    {
-                       sp_stem->other.data = (getentry(sw,swishword))->word;
-                    }
-#endif
-                    wordcount++;
-                    break;
-
-                    
-
-                case FUZZY_METAPHONE:
-                case FUZZY_DOUBLE_METAPHONE:
-                    {
-                        char *codes[2];
-                        DoubleMetaphone(swishword, codes);
-                        
-                        if ( !(*codes[0]) )
-                        {
-                            efree( codes[0] );
-                            efree( codes[1] );
-                            addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
-                            wordcount++;
-                            break;
-                        }
-                        addword(codes[0], sw, filenum, structure, numMetaNames, metaID, position );
-                        wordcount++;
-
-                        if ( indexf->header.fuzzy_data.fuzzy_mode == FUZZY_DOUBLE_METAPHONE &&  *(codes[1]) && strcmp(codes[0], codes[1]) )
-                        {
-                            (*position)--; /* at same position as first word */
-                            addword(codes[1], sw, filenum, structure, numMetaNames, metaID, position );
-                            wordcount++;
-                        }
-
-                        efree( codes[0] );
-                        efree( codes[1] );
-                    }
-                    
-                    break;
-                    
-
-                default:
-                   progerr("Invalid FuzzyMode '%d'", (int)indexf->header.fuzzy_data.fuzzy_mode );
-            }
-#endif
-        }
+       }
     }
 
            /* Buffers can be reallocated - So, reasign them */
