@@ -54,8 +54,8 @@
 #include <stdarg.h>
 
 // for wait
-#ifndef _WIN32
 #include <sys/types.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
 
@@ -368,13 +368,14 @@ char   *url_uri(char *url, int *plen)
 * Returns
 *
 *************************************************************/
-#ifndef _WIN32
+#ifdef HAVE_WORKING_FORK
 static void run_program(char* prog, char** args)
 {
     pid_t pid = fork();
     int   status;
 
     /* In parent, wait for child */
+#ifdef HAVE_SYS_WAIT_H
     if ( pid )
     {
         wait( &status );
@@ -383,7 +384,8 @@ static void run_program(char* prog, char** args)
 
         progerr("%s exited with non-zero status (%d)", prog, WEXITSTATUS(status) );
     }
-        
+#endif /* HAVE_SYS_WAIT_H */
+
     execvp (prog, args);
     progerrno("Failed to fork '%s'. Error: ", prog );
 }
@@ -421,7 +423,7 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
     *plastretrieval = time(0);
 
     
-#ifdef _WIN32
+#ifndef HAVE_WORKING_FORK
     /* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
     {
         int     retval;

@@ -82,3 +82,4 @@
 /* Define if you have gettimeofday() call */
 /* #undef HAVE_BSDGETTIMEOFDAY */
 /* #undef NO_GETTOD */
+#define HAVE_ZLIB 1
