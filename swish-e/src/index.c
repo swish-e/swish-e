@@ -1427,7 +1427,8 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
 }
 
-
+/* 2001-08 jmruiz - Adjust positions if there was IgnoreLimit stopwords
+** In all cases, removes null end of chunk marks */
 void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp)
 {
     int     frequency,
