@@ -361,7 +361,7 @@ sub escape_name {
 
 # Thes first two fixup L<> links.
 # Pod::POM doesn't provide a way to get at the fragment for escaping,
-# so let Pod::POM deal with it and then then update
+# so let Pod::POM deal with it and then update
 
 sub view_seq_link {
     my $self = shift;
