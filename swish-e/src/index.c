@@ -662,7 +662,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
                 metaID[0] = q->metaID;
                 positionMeta[0] = 1;
-                indexstring(sw, filename, sw->filenum, IN_FILE, 1, metaID, positionMeta);
+                indexstring(sw, filename, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
             }
         }
     }
@@ -684,7 +684,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
                 metaID[0] = q->metaID;
                 positionMeta[0] = 1;
-                indexstring(sw, title, sw->filenum, IN_FILE, 1, metaID, positionMeta);
+                indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
             }
         }
     }
@@ -706,7 +706,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
                 metaID[0] = q->metaID;
                 positionMeta[0] = 1;
-                indexstring(sw, summary, sw->filenum, IN_FILE, 1, metaID, positionMeta);
+                indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
             }
         }
     }
@@ -1065,25 +1065,14 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
     ENTRYARRAY *ep;
-    ENTRY  *epi;
-    int     totalwords;
 
 
     BuildSortedArrayOfWords(sw, indexf);
     ep = sw->Index->entryArray;
+               /* Compress remaining data */
     if (ep)
-    {
-        totalwords = ep->numWords;
-        for (i = 0; i < totalwords; i++)
-        {
-            epi = ep->elist[i];
-            if (!isstopword(&indexf->header, epi->word))
-            {
-                /* Compress remaining data */
-                CompressCurrentLocEntry(sw, indexf, epi);
-            }
-        }
-    }
+        for (i = 0; i < ep->numWords; i++)
+            CompressCurrentLocEntry(sw, indexf, ep->elist[i]);
 }
 
 

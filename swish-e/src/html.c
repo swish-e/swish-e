@@ -131,14 +131,14 @@ char *title=parsetitle(buffer,fprop->real_filename);
 		efree(title);
 		return -2;
 	}
-	sw->filenum++;
+	sw->Index->filenum++;
 	
 	if (fprop->index_no_content) {
 		addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
-		addtofwordtotals(indexf, sw->filenum, 100);
+		addtofwordtotals(indexf, sw->Index->filenum, 100);
 		if(sw->swap_flag)
-			SwapFileData(sw, indexf->filearray[sw->filenum-1]);
-		n=countwordstr(sw, title, sw->filenum);
+			SwapFileData(sw, indexf->filearray[sw->Index->filenum-1]);
+		n=countwordstr(sw, title, sw->Index->filenum);
 		efree(title);
 		return n;
 	}
@@ -165,7 +165,7 @@ char *title=parsetitle(buffer,fprop->real_filename);
 
 			newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
+			ftotalwords +=indexstring(sw, newp, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			structure=IN_FILE;
 				/* Now let us look for a not escaped '>' */
@@ -222,11 +222,11 @@ char *title=parsetitle(buffer,fprop->real_filename);
 					}
 				} /* Check for META TAG TYPE 2 */
 				else if((tag[0]!='!') && lstrstr(tag,"META") && (Name=lstrstr(tag,"NAME")) && (Content=lstrstr(tag,"CONTENT"))) { 
-					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,Name,Content,thisFileEntry,&position_meta);
+					ftotalwords +=parseMetaData(sw,indexf,tag,sw->Index->filenum,structure,Name,Content,thisFileEntry,&position_meta);
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
-					ftotalwords +=parsecomment(sw,tag,sw->filenum,structure,1,positionMeta);
+					ftotalwords +=parsecomment(sw,tag,sw->Index->filenum,structure,1,positionMeta);
 					p=endtag;
 				}    /* Default: Continue */
 				else {   
@@ -238,16 +238,16 @@ char *title=parsetitle(buffer,fprop->real_filename);
 
 			newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
+			ftotalwords +=indexstring(sw, newp, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			p=NULL;
 		}
 	}
 	efree(metaName);
 	efree(positionMeta);
-	addtofwordtotals(indexf, sw->filenum, ftotalwords);
+	addtofwordtotals(indexf, sw->Index->filenum, ftotalwords);
 	if(sw->swap_flag)
-		SwapFileData(sw, indexf->filearray[sw->filenum-1]);
+		SwapFileData(sw, indexf->filearray[sw->Index->filenum-1]);
 	efree(title);
 	return ftotalwords;
 }
