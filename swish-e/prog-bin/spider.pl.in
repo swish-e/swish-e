@@ -981,10 +981,12 @@ sub output_content {
     # ugly and maybe expensive, but perhaps more portable than "use bytes"
     my $bytecount = length pack 'C0a*', $$content;
 
-
+    # Decode the URL
+    my $path = $uri;
+    $path =~ s/%([0-9a-fA-F]{2})/chr hex($1)/ge;
 
     my $headers = join "\n",
-        'Path-Name: ' .  $uri,
+        'Path-Name: ' .  $path,
         'Content-Length: ' . $bytecount,
         '';
 
