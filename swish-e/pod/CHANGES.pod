@@ -10,9 +10,14 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * No-Contents with -S prog
+
+Failed to use the correct default parser when using the No-Contents header
+and libxml2 linked in. [moseley]
+
 =item * Add tests for IRIX and sparc machines
 
-8-byte alignment in mem_zones is is required for these machine
+8-byte alignment in mem_zones is is required for these machine [moseley]
 
 
 =item * Fixed code when removing files
