@@ -208,13 +208,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
         if (strcasecmp(w0, "IndexComments") == 0)
         {
-            if (sl->n == 2)
-            {
-                sw->indexComments = atoi(sl->word[1]);
-            }
-            else
-                progerr("%s: IndexComments requires one value", w0);
-
+            sw->indexComments = getYesNoOrAbort(sl, 1, 1);
             continue;
         }
 
@@ -652,7 +646,8 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
+        /* $$$ this needs fixing */
         if (strcasecmp(w0, "StoreDescription") == 0)
         {
             if (sl->n == 3 || sl->n == 4)
@@ -851,12 +846,13 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
 
     if (n < sl->n)
     {
-        if (!strcasecmp(sl->word[n], "yes"))
+        if (!strcasecmp(sl->word[n], "yes") || !strcasecmp(sl->word[n], "1") )
             return 1;
-        if (!strcasecmp(sl->word[n], "no"))
+
+        if (!strcasecmp(sl->word[n], "no") || !strcasecmp(sl->word[n], "0"))
             return 0;
     }
-    progerr("%s requires as %d. parameter \"Yes\" or \"No\" value", sl->word[0], n);
+    progerr("%s requires parameter #%d of \"Yes\" or \"No\" value", sl->word[0], n);
     return 0;
 }
 

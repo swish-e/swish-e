@@ -24,8 +24,6 @@ bindir      = $(prefix)/bin
 exec_prefix = @exec_prefix@
 libdir      = @libdir@
 
-# Flags for C compiler
-CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\"
 
 
 LIBS        = @LIBS@
@@ -34,6 +32,7 @@ LIBS        = @LIBS@
 AR          = ar
 ARFLAGS     = cr
 RANLIB      = @RANLIB@
+
 
 #
 # The objects for the different methods and
@@ -45,41 +44,56 @@ HTTP_OBJS   =http.o httpserver.o
 FS_OBJS     =$(FILESYSTEM_OBJS)
 WEB_OBJS    =$(HTTP_OBJS)
 
+
+# James Clark's Expat
+
+XPDIR       = expat
+
+XP_OBJ = $(XPDIR)/xmltok/xmltok.o \
+         $(XPDIR)/xmltok/xmlrole.o \
+         $(XPDIR)/xmlparse/xmlparse.o
+
+XP_INC = -I$(XPDIR)/xmltok -I$(XPDIR)/xmlparse
+
+XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
+
+# Flags for C compiler
+CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC)
+
+
+
 OBJS=	check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
 	soundex.o docprop.o compress.o xml.o txt.o html.o\
 	metanames.o result_output.o parse_conffile.o result_sort.o\
-	filter.o lst.o search_alt.o keychar_out.o date_time.o \
+	filter.o search_alt.o keychar_out.o date_time.o \
 	extprog.o entities.o no_better_place_module.o \
 	db.o dump.o db_native.o swish_words.o proplimit.o swish_qsort.o \
 	ramdisk.o \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS)
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ)
 
-.SUFFIXES: 
-.SUFFIXES : .o .c
-.c.o :
-	$(CC) $(CFLAGS) -c $<
 
-.SUFFIXES : .a .c
-.c.a :
-	$(CC) $(CFLAGS) -c $<
-	$(AR) $(ARFLAGS) $@ $*.o
+#.SUFFIXES: 
+#.SUFFIXES : .o .c
 
+.c.o:
+	$(CC) $(CFLAGS) -c -o $@ $<
+	
 all:	$(NAME) swish-search
 
-$(NAME): $(OBJS) libswish-e.a swish.o
+$(NAME): libswish-e.a swish.o
 	$(CC) -o $@ $(CFLAGS) swish.o libswish-e.a $(LIBS)
 	chmod 755 $@
 
 libswish-e.a: $(OBJS)
-	$(AR) $(ARFLAGS) libswish-e.a $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 	$(RANLIB) libswish-e.a
 
 swish-search: $(NAME)
 	cp -f $(NAME) swish-search
 
 clean:
-	rm -f ../tests/*.index ../tests/core ./core  ./swish-e ./swish-search ./*.o ./index.swish ./libswish-e.a
+	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a
 
 realclean: clean
 	rm Makefile
@@ -124,5 +138,8 @@ install-lib:
 *.o: *.h
 
 *.c: *.h
+
+$(XPDIR)/xmltok/*.o: $(XPDIR)/xmltok/*.h
+$(XPDIR)/xmlparse/*.o: $(XPDIR)/xmlparse/*.h
 
 

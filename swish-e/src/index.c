@@ -125,7 +125,7 @@ $Id$
 #include "html.h"
 #include "xml.h"
 #include "txt.h"
-#include "lst.h"
+// #include "lst.h"
 #include "metanames.h"
 #include "result_sort.h"
 #include "result_output.h"
@@ -438,10 +438,12 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = countwords_XML;
         break;
 
+    /*
     case LST:
         strcpy(strType,"LST");
         countwords = countwords_LST;
         break;
+    */
 
     case WML:
         strcpy(strType,"WML");

@@ -1,8 +1,5 @@
 #!/usr/local/bin/perl -w
-use strict;
-use lib '.';
-use CGI;
-use Symbol;
+
 
 ####################################################################################
 #
@@ -33,14 +30,34 @@ use Symbol;
 #    $Id$
 #
 ####################################################################################
+package SwishSearch;
+use strict;
+use lib '.';
+use CGI;
+use Symbol;
 
-    use vars qw/%CONFIG $NotAWord/;
+use vars qw/$NotAWord/;
+
+    # Run the script    
+    handler() unless $ENV{MOD_PERL};
 
 
+#==================================================================================
+
+# This is written this was so the script can be used as a CGI script or a mod_perl
+# module without any code changes.
+
+sub handler {
+    my $r = shift;
+
+
+    # Taint issues
+    $ENV{PATH} = '/usr/bin';   # For taint checking
+
+    
     ##### Configuration Parameters #########
-
-
-    %CONFIG = (
+    
+    my %CONFIG = (
         title           => 'Search the Swish-e list',   # Title of your choice.
         swish_binary    => './swish-e',                 # Location of swish-e binary
         swish_index     => './index.swish-e',           # Location of your index file
@@ -75,7 +92,7 @@ use Symbol;
         # These settings will use some crude highlighting code to highlight search terms in the
         # property specified above as the description_prop (normally, 'swishdescription').
 
-        
+
         highlight_words => 1,     # enable highlighting
         show_words      => 12,    # Number of swish words+non-swish words to show around highlighted word
         max_words       => 100,   # If no words are found to highlighted then show this many words
@@ -84,7 +101,7 @@ use Symbol;
         #highlight_off   => '</b>',
         highlight_on    => '<font style="background:#FFFF99">',
         highlight_off   => '</font>',
-        
+
 
         # Property names listed here will be displayed in a table below each result
         display_props   => [qw/name email sent/],          # properties to display
@@ -147,7 +164,7 @@ use Symbol;
     );
 
 
-    # disable "date_ranges" in the above example
+    # disable "date_ranges" in the above example -- need additional module for that feature
     delete $CONFIG{date_ranges};
 
 
@@ -160,6 +177,9 @@ use Symbol;
     # Now run the request
 
     process_request( \%CONFIG );
+
+    return Apache::Constants::OK() if $ENV{MOD_PERL};
+}    
 
 #============================================================================
 sub process_request {
@@ -408,11 +428,16 @@ EOF
 #
 #
 
+my $mod_perl = $ENV{MOD_PERL}
+               ? '<br><small>Response brought to you by <em>MOD_PERL</em> <a href="http://perl.apache.org">perl.apache.org</a></small>'
+               : '';
+
 sub footer {
     return <<EOF;
 
     <hr>
     <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
+    $mod_perl
   </body>
 </html>
 EOF
@@ -919,9 +944,18 @@ sub set_match_regexp {
     $wc .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  # Warning: dependent on tolower used while indexing
 
 
-    return (
+
+    return $ENV{MOD_PERL}
+    ? (
+        qr/([^$wc]+)/,                     # regexp for splitting into swish-words
+        qr/^$ignoref([$wc]+?)$ignorel$/i,  # regexp for extracting out the words to compare
+        qr/^(?:$match_string)$/,           # regexp for comparing extracted words to query
+                                           # Must force lower case before testing
+    )
+    
+    : (
         qr/([^$wc]+)/o,                     # regexp for splitting into swish-words
-        qr/^$ignoref([$wc]+?)$ignorel$/io,  # regexp for extracting out the words to compare
+        qr/^$ignoref([$wc]+?)$ignorel$/oi,  # regexp for extracting out the words to compare
         qr/^(?:$match_string)$/o,           # regexp for comparing extracted words to query
                                             # Must force lower case before testing
     );
@@ -1238,6 +1272,8 @@ sub highlight {
 
 }
 
+1;
+
 
 __END__
 
@@ -1262,6 +1298,8 @@ and abstracting the interface with swish-e.
 
 Due to the forking nature of this program and its use of signals,
 this script probably will not run under Windows without some modifications.
+
+This script can be run under mod_perl.  See below for details.
 
 =head1 INSTALLATION
 
@@ -1465,7 +1503,6 @@ use the follow configuration in C<swish.cgi>:
 
         description_prop=> 'swishdescription',
         highlight_words => 1,
-
     );
 
 Other C<swish.cgi> configuration settings are available.  Please see the example configuration
@@ -1477,6 +1514,35 @@ at the top of the CGI script.
 You should now be ready to run your search engine.  Point your browser to:
 
     http://www.myserver.name/cgi-bin/swish.cgi
+
+=head1 MOD_PERL
+
+This script can be run under MOD_PERL.  This will improve the response time of the
+script compared to running under CGI.
+
+Configuration is simple.  In your httpd.conf or your startup.pl file you need to
+load the script.  For example, in httpd.conf you can use a perl section:
+
+    <perl>
+        use lib '/usr/local/apache/cgi-bin';
+        require "swish.cgi";
+    </perl>
+
+This loads the script into mod_perl.  Then to configure the script to run:
+
+    <location /search>
+        allow from all
+        SetHandler perl-script
+        PerlHandler SwishSearch
+    </location>
+
+Unlike CGI, mod_perl does not change dir to the location of the perl module, so
+your settings for the swish binary and the path to your index files must be absolute
+paths (or relative to the server root).
+
+Please post to the swish-e discussion list if you have any questions about running this
+script under mod_perl.
+
 
 =head1 DEBUGGING
 

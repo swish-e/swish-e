@@ -162,7 +162,7 @@ sub process_server {
 
 
 
-    eval { process_link( $server, $uri ) };
+    eval { process_link( $server, $uri->canonical ) };
     print STDERR $@ if $@;
 
     $start = time - $start;
@@ -190,7 +190,9 @@ sub process_server {
 my $parent;
 #----------- Process a url and recurse -----------------------
 sub process_link {
-    my ( $server, $uri ) = @_;
+    my ( $server, $url ) = @_;
+
+    my $uri = URI->new( $url );
 
     die if $abort || $server->{abort};
 
@@ -471,7 +473,9 @@ sub extract_links {
                 
                 $u->authority( $server->{authority} );  # Force all the same host name
 
-                push @links, $u;
+                my $z = $u->as_string;
+
+                push @links, $z;
                 print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
 
