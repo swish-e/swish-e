@@ -508,7 +508,8 @@ typedef struct IndexFILE
 
     char   *line;               /*Name of the index file */
 
-    int     total_bytes;  /* Just to show total size when indexing */
+    unsigned long total_bytes;  /* Just to show total size when indexing */
+    unsigned long total_word_positions;
 
 
     /* DB handle */
