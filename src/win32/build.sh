@@ -19,4 +19,6 @@ rm -f config.cross.cache
         --with-pcre=$PWD/../pcre
 
 make 
+make swish-search
+make docs
 
