@@ -241,57 +241,45 @@ unsigned char *buffer;
 	return (char *)buffer;
 }
 
+/* Mar 27, 2001 - moseley
+ * Separate out the creation of the file properties
+ *
+ */
 
-
-
-/*
-  -- file_properties
-  -- Get/eval information about a file and return it.
-  -- Some flags are calculated from swish configs for this "real_path"
-  -- Structure has to be freed using free_file_properties
-  -- 2000-11-15 rasc
-  -- return: (FileProp *)
-  -- A failed stat returns an empty (default) structure
-
-  -- 2000-12
-  -- Added StoreDescription
-*/
-
-FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
+FileProp *init_file_properties( SWISH *sw ) 
 {
-  FileProp     *fprop; 
-  struct stat  stbuf;
+    FileProp *fprop;
+
+    fprop = (FileProp *)emalloc(sizeof(FileProp));
+    /* emalloc checks fail and aborts... */
+
+    /* -- init */
+    fprop->fp = (FILE *) NULL;
+    fprop->fsize = 0;
+    fprop->mtime = (time_t) 0;
+    fprop->doctype = sw->DefaultDocType;  
+    fprop->index_no_content = 0;	      /* former: was indextitleonly! */
+    fprop->filterprog = NULL; 	      /* Default = No Filter */
+    fprop->stordesc = NULL; 	      /* Default = No summary */
+
+    return fprop;
+}
+
+
+/* Mar 27, 2001 - moseley
+ * Separate out the adjusting of file properties by config settings
+ *
+ */
+
+void init_file_prop_settings(SWISH *sw, FileProp *fprop )
+{
   char         *x;
-
-
-  fprop = (FileProp *)emalloc(sizeof(FileProp));
-  /* emalloc checks fail and aborts... */
-
-
-  /* -- init */
-  fprop->fp = (FILE *) NULL;
-  fprop->real_path = fprop->work_path = (char *)NULL;
-  fprop->fsize = 0;
-  fprop->mtime = (time_t) 0;
-  fprop->doctype = sw->DefaultDocType;  
-  fprop->index_no_content = 0;	      /* former: was indextitleonly! */
-  fprop->filterprog = NULL; 	      /* Default = No Filter */
-  fprop->stordesc = NULL; 	      /* Default = No summary */
-
-  fprop->real_path = real_path;
-  fprop->work_path = (work_file) ? work_file : real_path;
 
   /* Basename of document path => document filename */
   x = strrchr (fprop->real_path,'/');
   fprop->real_filename = (x) ? x+1 : fprop->real_path;  
-                                   
 
-  /* -- Get Properties of File
-     --  return if error or file not exists
-   */
-  if ( stat(fprop->work_path, &stbuf) ) return fprop;
-  fprop->fsize = (long) stbuf.st_size;
-  fprop->mtime = stbuf.st_mtime;
+
 
   /* -- get Doc Type as is in IndexContents or Defaultcontents
      -- doctypes by jruiz
@@ -316,6 +304,48 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
   fprop->filterprog = hasfilter (fprop->real_path,sw->filterlist);
 
   fprop->stordesc = hasdescription (fprop->doctype,sw->storedescription);
+
+}  
+
+
+
+/*
+  -- file_properties
+  -- Get/eval information about a file and return it.
+  -- Some flags are calculated from swish configs for this "real_path"
+  -- Structure has to be freed using free_file_properties
+  -- 2000-11-15 rasc
+  -- return: (FileProp *)
+  -- A failed stat returns an empty (default) structure
+
+  -- 2000-12
+  -- Added StoreDescription
+*/
+
+FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
+{
+  FileProp     *fprop; 
+  struct stat  stbuf;
+
+
+  fprop = init_file_properties( sw );
+
+  fprop->real_path = fprop->work_path = (char *)NULL;
+  fprop->real_path = real_path;
+  fprop->work_path = (work_file) ? work_file : real_path;
+
+                                   
+
+  /* -- Get Properties of File
+     --  return if error or file not exists
+   */
+  if ( stat(fprop->work_path, &stbuf) ) return fprop;
+  fprop->fsize = (long) stbuf.st_size;
+  fprop->mtime = stbuf.st_mtime;
+
+
+  init_file_prop_settings( sw, fprop );
+
 
 
 #ifdef DEBUG

@@ -38,6 +38,7 @@
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
 #define ALLOW_FILESYSTEM_INDEXING_DATA_SOURCE	1
+#define ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE	1
 
 /* These symbols allow compile-time elimination of indexing
 ** data sources. Any Data Source that is allowed by these
