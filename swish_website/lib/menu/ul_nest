@@ -19,11 +19,9 @@ FOREACH item = menu.items;
       };
 
     IF item.subs;
-        
         INCLUDE menu/ul_nest
           menu = item
           class = 'submenu';
-        
     END;
 
     "</li>";

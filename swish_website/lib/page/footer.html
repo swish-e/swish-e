@@ -12,6 +12,16 @@
     <p>
         <strong>URI &raquo;</strong> http://swish-e.org/ 
         &bull; <strong>Updated &raquo;</strong> [% Date.format(template.modtime) %]
+
+        [%-
+            IF template.author;
+                SET author = template.author;
+                author.replace('\$Author:\s+','');
+                author.replace('\s*\$$','',);
+                "by $author";
+
+            END;
+        -%]
     </p>
 </div>
 <!-- index -->
