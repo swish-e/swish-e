@@ -239,65 +239,9 @@ static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
 
     /* Allocate structure */
     DB = (struct Handle_DBNative *) emalloc(sizeof(struct Handle_DBNative));
+    memset( DB, 0, sizeof( struct Handle_DBNative ));
 
     DB->sw = sw;  /* for error messages */
-
-    DB->offsetstart = 0;
-#ifndef USE_BTREE
-    DB->hashstart = 0;
-#endif
-
-    DB->nextwordoffset = 0;
-    DB->num_words = 0;
-
-#ifndef USE_BTREE
-    DB->wordhash_counter = 0;
-    DB->wordhashdata = NULL;
-#endif
-
-    DB->worddata_counter = 0;
-    DB->lastsortedindex = 0;
-    DB->next_sortedindex = 0;
-
-#ifndef USE_BTREE
-    DB->rd = NULL;
-#endif
-
-    DB->tmp_index = 0;          /* flags that the index is opened as create as a temporary file name */
-    DB->tmp_prop = 0;
-    DB->cur_index_file = NULL;
-    DB->cur_prop_file = NULL;
-    DB->fp = NULL;
-    DB->prop = NULL;
-
-#ifdef USE_BTREE
-    DB->bt = NULL;
-    DB->fp_btree = NULL;
-    DB->tmp_btree = 0;
-    DB->cur_btree_file = NULL;
-
-    DB->worddata = NULL;
-    DB->fp_worddata = NULL;
-    DB->tmp_worddata = 0;
-    DB->cur_worddata_file = NULL;
-
-    DB->fp_array = NULL;
-    DB->tmp_array = 0;
-    DB->cur_array_file = NULL;
-
-    DB->presorted_array = NULL;
-    DB->presorted_root_node = NULL;
-    DB->presorted_propid = NULL;
-    DB->n_presorted_array = 0;
-    DB->tmp_presorted = 0;
-    DB->cur_presorted_file = NULL;
-    DB->fp_presorted = NULL;
-    DB->cur_presorted_array = NULL;
-    DB->cur_presorted_propid = 0;
-    DB->totwords_array = NULL;
-    DB->props_array = NULL;
-#endif
-
 
     if (WRITE_WORDS_RAMDISK)
     {
@@ -834,7 +778,7 @@ int     DB_EndWriteHeader_Native(void *db)
     FILE   *fp = DB->fp;
 
     /* End of header delimiter */
-    fputc(0, fp);
+    putc(0, fp);
 
     return 0;
 }
@@ -1012,6 +956,13 @@ int     DB_EndWriteWords_Native(void *db)
         }
         ramdisk_close((FILE *) DB->rd);
     }
+    /* Get last word file offset - For the last word, this will be
+    ** used to delimite the last word in the index file
+    ** In other words. This is the file offset where no more words
+    ** are added.
+    */
+    DB->offsets[ENDWORDPOS] = ftell(DB->fp);
+
     /* Restore file pointer at the end of file */
     fseek(DB->fp, 0, SEEK_END);
     fputc(0, DB->fp);           /* End of words mark */
@@ -1377,7 +1328,8 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long 
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
 
-    if (!DB->nextwordoffset)
+    /* Check for end of words */
+    if (!DB->nextwordoffset || DB->nextwordoffset == DB->offsets[ENDWORDPOS])
     {
         *resultword = NULL;
         *wordID = 0;

@@ -390,12 +390,9 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
     ENTRY *ep, *prev_ep;
     LOCATION *l;
 
-    /* Decrease filenum */
-    idx->filenum--;
-    indexf->header.totalfiles--;
 
     /* Should be removed */
-    if(idx->filenum < 0 || indexf->header.totalfiles < 0) 
+    if(idx->filenum == 0 || indexf->header.totalfiles == 0) 
         progerr("Internal error in remove_last_file_from_list");
 
 
@@ -409,20 +406,25 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
             {
                 if(ep->currentChunkLocationList)
                 {
-                    /* First of all - Adjust tfrequency */
-                    for(l = ep->currentChunkLocationList; l; l = l->next)
+                    if(ep->currentChunkLocationList->filenum == idx->filenum)
                     {
+                        /* First of all - Adjust tfrequency */
                         ep->tfrequency--;
+                        /* Now remove locations */
+                        for(l = ep->currentChunkLocationList; l; l = l->next)
+                        {
+                            if(ep->currentlocation == l || l->filenum != idx->filenum)
+                                break;
+                        }
+                        /* Remove locations */                 
+                        /* Do not use efree, locations uses a MemZone (currentChunkLocZone) */
+                        /* Will be freed later */
+                        ep->currentChunkLocationList = l;
                     }
-                    /* Remove locations */                 
-                    /* Do not use efree, locations uses a MemZone (currentChunkLocZone) */
-                    /* Will be freed later */
-                    ep->currentChunkLocationList = NULL;
-                    ep->currentlocation = NULL;
                     /* If there is no locations we must also remove the word */
                     /* Do not call efree to remove the entry, entries use
                     ** a MemZone (perDocTmpZone) - Will be freed later */
-                    if(!ep->allLocationList)
+                    if(!ep->currentChunkLocationList && !ep->allLocationList)
                     {
                         if(!prev_ep)
                         {
@@ -444,6 +446,10 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
             }
         }
     }
+    /* Decrease filenum */
+    idx->filenum--;
+    indexf->header.totalfiles--;
+
 }
 
 
