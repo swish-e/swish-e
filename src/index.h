@@ -43,12 +43,12 @@ void printlocationlookuptables(IndexFILE *);
 void printpathlookuptable(IndexFILE *);
 void decompress(SWISH *, IndexFILE *);
 char *ruleparse(SWISH *, char *);
-void stripIgnoreFirstChars(INDEXDATAHEADER, char *);
-int stripIgnoreLastChars(INDEXDATAHEADER, char *);
+void stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
+int stripIgnoreLastChars(INDEXDATAHEADER *, char *);
 
-#define isIgnoreFirstChar(header,c) header.ignorefirstcharlookuptable[(int)((unsigned char)c)]
-#define isIgnoreLastChar(header,c) header.ignorelastcharlookuptable[(int)((unsigned char)c)]
-#define isBumpPositionCounterChar(header,c) header.bumpposcharslookuptable[(int)((unsigned char)c)]
+#define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
+#define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
+#define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
 
 unsigned char *buildFileEntry(char *, FILE *, struct docPropertyEntry **, int, int *);
 struct file *readFileEntry(IndexFILE *,int);

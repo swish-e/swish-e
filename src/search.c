@@ -2207,8 +2207,8 @@ unsigned char PhraseDelimiterString[2];
 				{
 					word[j] = '\0';
 						/* Convert chars ignored in words to spaces  */
-					stripIgnoreLastChars(header,word);
-					stripIgnoreFirstChars(header,word);
+					stripIgnoreLastChars(&header,word);
+					stripIgnoreFirstChars(&header,word);
 					if(strlen(word))
 					{
 						searchwordlist = (struct swline *) addswline(searchwordlist, word);
@@ -2239,8 +2239,8 @@ unsigned char PhraseDelimiterString[2];
 	{
 		word[j] = '\0';
        /* Convert chars ignored in words to spaces  */
-		stripIgnoreLastChars(header,word);
-		stripIgnoreFirstChars(header,word);
+		stripIgnoreLastChars(&header,word);
+		stripIgnoreFirstChars(&header,word);
 		if(strlen(word))
 		{
 			searchwordlist = (struct swline *) addswline(searchwordlist, word);
