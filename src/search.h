@@ -79,6 +79,6 @@ void freeresultlist _AP ((SWISH *));
 void freefileoffsets _AP ((SWISH *));
 void freeresult _AP ((SWISH *,RESULT *));
 void freefileinfo _AP ((struct file *));
-struct swline *ignore_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
+struct swline *ignore_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *,unsigned char));
 struct swline *stem_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
 struct swline *soundex_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));

@@ -18,3 +18,7 @@ char *skip_ws (char *s);
 void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 				 char *subfmt, RESULT *r);
 
+void printSortedResults(SWISH *sw);
+void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r);
+
+
