@@ -597,7 +597,7 @@ sub find_binary {
 
 sub get_libexec {
 
-   return '@@libexecdir@@';  # the below isn't robust, so set at install time
+   return '@@mylibexecdir@@';  # the below isn't robust, so set at install time
 
    return unless $FindBin::Bin;
 
