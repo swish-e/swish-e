@@ -854,9 +854,13 @@ void     WritePropertiesToDisk( SWISH *sw )
             if ( !DB->prop )
                 progerr("Property database file not opened\n");
 
-            fi->propLocations[ propID ] = ftell( DB->prop );
+            if ( (fi->propLocations[ propID ] = ftell( DB->prop )) == -1 )
+                progerrno( "O/S failed to tell me where I am - file number %d metaID %d : ", indexf->filearray_cursize, propID );
+                
             fi->propSize[ propID ] = datalen;
-            fwrite(buffer, datalen, 1, DB->prop); /* Write data */
+
+            if ( (fi->propSize[ propID ] = fwrite(buffer, 1, datalen, DB->prop)) != datalen ) /* Write data */
+                progerrno( "Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", indexf->filearray_cursize, propID, datalen, fi->propSize[ propID ] );
         }
         total_len += datalen;
     }
@@ -928,10 +932,10 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
 
         if ( fseek( DB->prop, seek_pos, 0 ) == -1 )
-            progerrno("Failed to seek to properties located at %ld for file number %d", fi->propLocations, filenum );
+            progerrno("Failed to seek to properties located at %ld for file number %d : ", fi->propLocations, filenum );
 
-        if ( fread(buf, 1, fi->propTotalLen, DB->prop) == -1 )
-            progerrno("Failed to read properties located at %ld for file number %d", fi->propLocations, filenum );
+        if ( fread(buf, 1, fi->propTotalLen, DB->prop) != fi->propTotalLen )
+            progerrno("Failed to read properties located at %ld for file number %d : ", fi->propLocations, filenum );
     }
 
 
@@ -1045,7 +1049,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
         if ( fseek( DB->prop, fi->propLocations[ metaID ], 0 ) == -1 )
             progerrno("Failed to seek to properties located at %ld for file number %d", fi->propLocations, filenum );
 
-        if ( fread( buffer, 1, fi->propSize[ metaID ] , DB->prop) == -1 )
+        if ( fread( buffer, 1, fi->propSize[ metaID ] , DB->prop) != fi->propSize[ metaID ]  )
             progerrno("Failed to read property located at %ld for file number %d meta id %d", fi->propLocations, filenum, metaID );
     }
 
