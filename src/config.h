@@ -222,6 +222,20 @@
 ** meaning.
 */
 
+// #define BLANK_PROP_VALUE " *BLANK*"
+
+/* This effects how blank properties are stored 
+** Normally, blank properties are treated as if they were not even contained int
+** the document.  That is:
+**           <meta name="author" content="">
+** is ignored, and no "author" property is stored for that docment.
+** If BLANK_PROP_VALUE is set, then blank properties will be stored
+** but using the string provided as the property value.
+** If you use a leading space, then these properties will sort
+** before other properties (since leading whitespace is removed from
+** properties), and after documents that do not include the property
+*/
+
 #define RANK_TITLE		4.0
 #define RANK_HEADER		3.0
 #define RANK_META		3.0

@@ -318,11 +318,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 * Adapted from: msdn, I believe...
 *
 *    Call with:
-*       sort_array = pointer to first element
-*       numelements= number of elements in array
-*       key        = string key to get passed to compare function
-*       meta_entry = meta entry in question
-*       *result    = place to store index of result
+*       See below
 *
 *   Returns:
 *       Exact match, true (but could be more than one match location
@@ -354,6 +350,10 @@ static int binary_search(
     unsigned int half;
 
     *exact_match = -1;
+
+#ifdef DEBUGLIMIT
+    printf("\nbinary_search looking for %s entry\n", ( direction > 0 ? "high" : "low" ) );
+#endif    
 
     while ( low <= high )
     {
@@ -448,7 +448,10 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
         foundLo = binary_search(sw, indexf, sort_array, num, meta_entry->loPropRange, meta_entry, &low, -1, &exact_match);
 
         if ( !foundLo && exact_match >= 0 )
+        {
             low = exact_match;
+            foundLo = 1;  /* mark as an exact match */
+        }
     }
 
 
@@ -463,7 +466,10 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
         foundHi = binary_search(sw, indexf, sort_array, num, meta_entry->hiPropRange, meta_entry, &high, +1, &exact_match);
 
         if ( !foundHi && exact_match >= 0 )
+        {
             high = exact_match;
+            foundHi = 1;
+        }
     }
 
 #ifdef DEBUGLIMIT
@@ -610,34 +616,41 @@ static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *m
 ********************************************************************/
 static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 {
+    int error_flag;
+    char *lowrange  = param->lowrange;
+    char *highrange = param->highrange;
+
+    /* properties do not have leading white space */
+
+    printf("Low '%s' High '%s'\n", lowrange, highrange );
 
     /* Allow <= and >= in limits.  A NULL property means very low/very high */
 
-    if ( (strcmp( "<=", param->lowrange ) == 0)   )
+    if ( (strcmp( "<=", lowrange ) == 0)   )
     {
         meta_entry->loPropRange = NULL; /* indicates very small */
-        meta_entry->hiPropRange = CreateProperty( meta_entry, param->highrange, strlen( param->highrange ), 0 );
+        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
     }
 
-    else if ( (strcmp( ">=", param->lowrange ) == 0)   )
+    else if ( (strcmp( ">=", lowrange ) == 0)   )
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, param->highrange, strlen( param->highrange ), 0 );
+        meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
         meta_entry->hiPropRange = NULL; /* indicates very bit */
     }
 
     else
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, param->lowrange, strlen( param->lowrange ), 0 );
-        meta_entry->hiPropRange = CreateProperty( meta_entry, param->highrange, strlen( param->highrange ), 0 );
+        meta_entry->loPropRange = CreateProperty( meta_entry, lowrange, strlen( lowrange ), 0, &error_flag );
+        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
 
 
         if ( !(meta_entry->loPropRange && meta_entry->hiPropRange) )
-            progerr("Failed to set range for property '%s' values '%s' and '%s'", meta_entry->metaName, param->lowrange, param->highrange );
+            progerr("Failed to set range for property '%s' values '%s' and '%s'", meta_entry->metaName, lowrange, highrange );
 
         /* Validate range */
     
         if ( Compare_Properties( meta_entry, meta_entry->loPropRange, meta_entry->hiPropRange ) > 0 )
-            progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, param->lowrange, param->highrange );
+            progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, lowrange, highrange );
     }
 
 
