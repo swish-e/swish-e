@@ -306,7 +306,7 @@ For example to limit searches to documents modified in the last 48 hours:
     $search->SetSearchLimit( 'swishlastmodified', $start, time() );
 
 An error will be set if the property
-has already been specified or if $high > $low.
+has already been specified or if $high < $low.
 
 Other errors may not be reported until running the query, such as
 the property name is invalid or if $low or $high are not

@@ -81,11 +81,8 @@ static int compare_results_single_index(const void *s1, const void *s2)
 
 
         /* If haven't checked this property for a pre-sorted table then try to load the table */
-        if ( !sort_data->checked_presorted )
-        {
-            sort_data->checked_presorted = 1;
+        if ( !sort_data->property->sorted_loaded )
             LoadSortedProps( r1->db_results->indexf, sort_data->property );
-        }
 
 
         /* can we compare with pre-sorted numbers? (i.e. is the presorted data (sorted_data) loaded into the metaEntry?) */
@@ -109,10 +106,10 @@ static int compare_results_single_index(const void *s1, const void *s2)
 
 
             /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
-            /* tfrequency is used to store the index into the key (propery key) array */   
-         
+            /* tfrequency is used to store the index into the key (propery key) array */
+
             if ( sort_data->key[ r1->tfrequency ] == (propEntry *)-1 )
-                sort_data->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data->property, 0, sort_data->property->sort_len );            
+                sort_data->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data->property, 0, sort_data->property->sort_len );
 
             if ( sort_data->key[ r2->tfrequency ] == (propEntry *)-1 )
                 sort_data->key[ r2->tfrequency ] = getDocProperty( r2, &sort_data->property, 0, sort_data->property->sort_len );
@@ -129,10 +126,10 @@ static int compare_results_single_index(const void *s1, const void *s2)
 * compare_results
 *
 *  This code is used when tape-merging multiple indexes.  Almost the same
-*  as above, but may be comparing results from different indexes must 
+*  as above, but may be comparing results from different indexes must
 *  associate data with each result and can not use the presorted index tables.
 *
-*  Must make sure that the sort keys are the same for each index 
+*  Must make sure that the sort keys are the same for each index
 *  (e.g. same prop type, type of case compare)
 *
 *
@@ -184,9 +181,9 @@ int compare_results(const void *s1, const void *s2)
 
 
         /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
-            
+
         if ( sort_data1->key[ r1->tfrequency ] == (propEntry *)-1 )
-            sort_data1->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data1->property, 0, sort_data1->property->sort_len );            
+            sort_data1->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data1->property, 0, sort_data1->property->sort_len );
 
         if ( sort_data2->key[ r2->tfrequency ] == (propEntry *)-1 )
             sort_data2->key[ r2->tfrequency ] = getDocProperty( r2, &sort_data2->property, 0, sort_data2->property->sort_len );
@@ -198,7 +195,7 @@ int compare_results(const void *s1, const void *s2)
     }
     return 0;
 }
-                                                            
+
 
 
 /*******************************************************************
@@ -225,6 +222,11 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
     unsigned char *s;
     int     j;
 #endif
+
+    if ( m->sorted_loaded )
+        return m->sorted_data;
+
+    m->sorted_loaded = 1;  /* flag that we tried to load the data */
 
     DB_InitReadSortedIndex(indexf->sw, indexf->DB);
 
@@ -259,20 +261,20 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 }
 
 
-                                
+
 /***************************************************************************************
 * sort_single_index_results
 *
-*   Call with 
+*   Call with
 *       DB_RESULTS
 *
 *   Returns:
 *       total results
 *
-*   This does all the work.  
+*   This does all the work.
 *       - initializes an array of arrays to hold properties
 *       - pre-load the array[0] elements with properties, if needed
-*         (i.e. when the first sort key is non-presorted   
+*         (i.e. when the first sort key is non-presorted
 *
 *   Todo:
 *       This runs through the list results a number of times (plus qsort)
@@ -284,22 +286,22 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     int results_in_index = 0;
     RESULT  *cur_result;
     RESULT **sort_array;
-    SortData *sort_data;  
+    SortData *sort_data;
 
     /* Any results to process? */
     if( !db_results->resultlist )
         return 0;
-        
+
 
     /* sanity checks */
-    
+
     /* Should check for too big, too? */
     if ( db_results->num_sort_props < 1 )
         progerr("called sort_single_index_results with invalid number of sort keys");
-    
+
     if ( ! db_results->sort_data )
         progerr("called sort_single_index_results without a vaild sort_data struct");
-    
+
 
 
     /* Need to tally up the number of results in this set */
@@ -317,9 +319,9 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
         cur_result = cur_result->next;
     }
-    
+
     db_results->result_count = results_in_index;  /* needed so we know how big to create arrays */
-    
+
 
 
 
@@ -336,7 +338,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
         {
             /* otherwise, we must read all the properties off disk */
 
-            lookup_props = 1;  
+            lookup_props = 1;
 
 
             /* Create the array the size of the number of results to hold *propEntry's */
@@ -346,8 +348,6 @@ static int sort_single_index_results( DB_RESULTS *db_results )
             memset( sort_data->key, -1, db_results->result_count * sizeof( propEntry *) );
         }
 
-    sort_data->checked_presorted = 1; /* flag that this property has been checked for a pre-sorted index */
- 
 
 
     /* Now build an array to hold the results for sorting */
@@ -361,7 +361,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
     cur_result = db_results->resultlist->head;
 
-    
+
     while ( cur_result )
     {
         sort_array[ cur_result->tfrequency ] = cur_result;
@@ -373,11 +373,11 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
         cur_result = cur_result->next;
     }
-        
+
     /* Sort them */
     swish_qsort(sort_array, db_results->result_count, sizeof(RESULT *), compare_results_single_index);
 
-        
+
 
 
     /* Build the list -- the list is in reverse order, so build the list backwards */
@@ -392,12 +392,12 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
             /* Now's a good time to normalize the rank as we are processing each result */
 
-             
+
             /* Find the largest rank for scaling */
             if (r->rank > db_results->results->bigrank)
                 db_results->results->bigrank = r->rank;
 
-                    
+
             if ( !head )             // first time
             {
                 head = r;
@@ -408,7 +408,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
                 r->next = head;
                 head = r;
             }
-               
+
         }
         db_results->sortresultlist = head;
         db_results->resultlist->head = head;
@@ -421,7 +421,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     /* Free the memory of the array */
     efree( sort_array );
 
-    
+
     return db_results->result_count;
 }
 
@@ -429,7 +429,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 /***************************************************************************************
 * sortresults - sorts the results for one or more indexes searched
 *
-*   Call with 
+*   Call with
 *       A RESULTS_OBJECT which contains a list of DB_RESULTS
 *
 *   Returns:
@@ -445,13 +445,13 @@ int  sortresults(RESULTS_OBJECT *results)
 {
     int         TotalResults = 0;
     DB_RESULTS *db_results = results->db_results;
-    
+
     while ( db_results )
     {
         TotalResults += sort_single_index_results( db_results );
         db_results = db_results->next;
     }
-    
+
     /* set rank scaling factor based on the largest rank found of all results */
 
     if (results->bigrank)
