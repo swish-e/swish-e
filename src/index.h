@@ -32,6 +32,13 @@ struct IgnoreLimitPositions
         int    *pos;            /* Store metaID1,position1, metaID2,position2 ..... */
 };
 
+typedef struct {
+    int     *array;      /* list of metaIDs that need to be indexed */
+    int     max;         /* max size of table */
+    int     num;         /* number in list */
+    int     defaultID;   /* default metaID (should always be one, I suppose) */
+} METAIDTABLE;
+
 
 /*
    -- module data
@@ -40,6 +47,7 @@ struct IgnoreLimitPositions
 struct MOD_Index
 {
 	    /* entry vars */
+	METAIDTABLE metaIDtable;
     ENTRYARRAY *entryArray;
     ENTRY  *hashentries[SEARCHHASHSIZE];
 	char	hashentriesdirty[SEARCHHASHSIZE];	/* just a 0/1 flag */
@@ -127,7 +135,6 @@ void addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file 
 
 
 int getfilecount (IndexFILE *);
-int countwordstr (SWISH *, char *, int);
 
 int getNumberOfIgnoreLimitWords (SWISH *);
 void getPositionsFromIgnoreLimitWords(SWISH * sw);
@@ -152,7 +159,7 @@ void computehashentry(ENTRY **,ENTRY *);
 void sort_words(SWISH *, IndexFILE *);
 void sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
 
-int indexstring(SWISH*, char *, int, int, int, int *, int *);
+int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position);
 
 void addtofwordtotals(IndexFILE *, int, int);
 void addsummarytofile(IndexFILE *, int, char *);

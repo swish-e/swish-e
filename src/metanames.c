@@ -137,14 +137,8 @@ static struct metaEntry *create_meta_entry( char *name )
 {
     struct metaEntry *newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
 
+    memset(newEntry, 0, sizeof(struct metaEntry));
     newEntry->metaName = (char *) estrdup( name );
-    newEntry->metaType = 0;
-    newEntry->sorted_data = 0;
-    newEntry->inPropRange = NULL;
-    newEntry->loPropRange = NULL;
-    newEntry->hiPropRange = NULL;
-    newEntry->alias = 0;
-
     return newEntry;
 }
     

@@ -29,21 +29,35 @@ $Id$
 #include "index.h"
 #include "metanames.h"
 
-#include "xmlparse.h"  // James Clark's Expat
+#include "xmlparse.h"   // James Clark's Expat
+
+#define BUFFER_CHUNK_SIZE 20000
 
 typedef struct {
-    int        *metas;          // array of current metaIDs in use
-    int         meta_cnt;       // current end pointer + 1
-    int         metasize;
+    char   *buffer;     // text for buffer
+    int     cur;        // pointer to end of buffer
+    int     max;        // max size of buffer
+    int     defaultID;  // default ID for no meta names.
+} CHAR_BUFFER;
 
-    int        *props;          // array of current propIDs in use
-    int         prop_cnt;
-    int         propsize;
+
+// I think that the property system can deal with StoreDescription in a cleaner way.
+// This code shouldn't need to know about that StoreDescription.
+
+typedef struct {
+    struct metaEntry    *meta;
+    int                 save_size;   /* save max size */
+    char                *tag;        /* summary tag */
+    int                 active;      /* inside summary */
+} SUMMARY_INFO;
     
-    char       *buffer;         // text buffer for summary
-    int         buffmax;        // size of buffer
-    int         buffend;        // end of buffer.
-    struct metaEntry *summeta;  // summary metaEntry
+
+typedef struct {
+    CHAR_BUFFER text_buffer;    // buffer for collecting text
+
+    // CHAR_BUFFER prop_buffer;  // someday, may want a separate property buffer if want to collect tags within props
+
+    SUMMARY_INFO    summary;     // argh.
 
     char       *ignore_tag;     // tag that triggered ignore (currently used for both)
     int         total_words;
@@ -62,12 +76,10 @@ typedef struct {
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
+static void flush_buffer( PARSE_DATA  *parse_data );
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
-static void add_meta(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m );
-static void add_prop(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m );
-static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len);
-static void write_summary( PARSE_DATA *parse_data );
 
 
 
@@ -80,6 +92,8 @@ static void write_summary( PARSE_DATA *parse_data );
 *   Returns:
 *       Count of words indexed
 *
+*   ToDo:
+*       This is a stream parser, so could avoid loading entire document into RAM before parsing
 *
 *********************************************************************/
 
@@ -89,6 +103,7 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     XML_Parser          p = XML_ParserCreate(NULL);
     IndexFILE          *indexf = sw->indexlist;
     struct MOD_Index   *idx = sw->Index;
+    struct StoreDescription *stordesc = fprop->stordesc;
 
     /* I have no idea why addtofilelist doesn't do this! */
     idx->filenum++;
@@ -104,6 +119,18 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     parse_data.word_pos= 1;  /* compress doesn't like zero */
 
 
+    /* Don't really like this, as mentioned above */
+    if ( stordesc && (parse_data.summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+    {
+        /* Set property limit size for this document type, and store previous size limit */
+        parse_data.summary.save_size = parse_data.summary.meta->max_len;
+        parse_data.summary.meta->max_len = stordesc->size;
+        parse_data.summary.tag = stordesc->field;
+    }
+        
+    
+
+
     addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
     addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
 
@@ -111,13 +138,6 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 
     if (!p)
         progerr("Failed to create XML parser object for '%s'", fprop->real_path );
-
-
-
-    /* allocate some space */
-    parse_data.propsize = parse_data.metasize = parse_data.header->metaCounter + 100;
-    parse_data.props  = (int *) Mem_ZoneAlloc(idx->perDocTmpZone, sizeof( int *) * parse_data.propsize );
-    parse_data.metas  = (int *) Mem_ZoneAlloc(idx->perDocTmpZone, sizeof( int *) * parse_data.metasize );
 
 
     /* Set event handlers */
@@ -138,6 +158,19 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     /* clean up */
     XML_ParserFree(p);
 
+    /* Flush any text left in the buffer, and free the buffer */
+    flush_buffer( &parse_data );
+
+    if ( parse_data.text_buffer.buffer )
+        efree( parse_data.text_buffer.buffer );
+
+
+    /* Restore the size in the StoreDescription property */
+    if ( parse_data.summary.save_size )
+        parse_data.summary.meta->max_len = parse_data.summary.save_size;
+        
+
+
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
 
     return parse_data.total_words;
@@ -152,8 +185,6 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 *   To Do:
 *       deal with attributes!
 *
-*   2001-08 jmruiz - Minor change in tag handling to avoid memory 
-*                    fragmentation
 *********************************************************************/
 
 
@@ -162,39 +193,27 @@ static void start_hndl(void *data, const char *el, const char **attr)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     struct metaEntry *m;
     SWISH *sw = parse_data->sw;
-    char  tmp[MAXSTRLEN + 1];
-    char  *tag;
-    struct StoreDescription *stordesc = parse_data->fprop->stordesc;
-
-    /* Use a static array whenever possible (99.9999 %) to avoid memory fragmentation */
-    if(strlen(el) <= MAXSTRLEN)
-    {
-        tag = tmp;
-		strcpy(tmp,(char *)el);
-    }
-    else
-        tag = (char *)estrdup((char *) el);
-
-    strtolower( tag );
-
-
-    /* Check for store description */
-    if ( stordesc && !parse_data->buffer && ( strcmp(stordesc->field, tag) == 0)
-         && (parse_data->summeta = getPropNameByName(parse_data->header, AUTOPROPERTY_SUMMARY) ))
-    {
-        parse_data->buffmax = stordesc->size < RD_BUFFER_SIZE
-                             ? stordesc->size
-                             : RD_BUFFER_SIZE;
-
-        parse_data->buffer = (char *) Mem_ZoneAlloc( parse_data->sw->Index->perDocTmpZone, parse_data->buffmax + 1 );
-        parse_data->buffend = 0;
-    }
-
+    char  tag[MAXSTRLEN + 1];
 
 
     /* return if within an ignore block */
     if ( parse_data->ignore_tag )
         return;
+
+    /* Flush any text in the buffer */
+    flush_buffer( parse_data );
+
+
+    if(strlen(el) >= MAXSTRLEN)  // easy way out
+    {
+        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        return;
+    }
+
+    strcpy(tag,(char *)el);
+    strtolower( tag );  // $$$ swish ignores case in xml tags!
+
+
 
     /* Bump on all meta names, unless overridden */
     /* Done before the ignore tag check since still need to bump */
@@ -208,12 +227,10 @@ static void start_hndl(void *data, const char *el, const char **attr)
         return;
 
 
-    
-
     /* Check for metaNames */
 
     if ( (m  = getMetaNameByName( parse_data->header, tag)) )
-        add_meta( sw, parse_data, m );
+        m->in_tag++;
 
     else
     {
@@ -222,7 +239,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
             if (sw->verbose)
                 printf("Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
-            add_meta( sw, parse_data, addMetaEntry( parse_data->header, tag, META_INDEX, 0));
+            addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
         }
 
 
@@ -235,105 +252,78 @@ static void start_hndl(void *data, const char *el, const char **attr)
     /* Check property names */
 
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
-        add_prop( sw, parse_data, m );
+        m->in_tag++;
 
 
-    /* Check for store description */
-    
-    if(tag != tmp)
-        efree( tag );
-}
-
-/* kind of ugly duplication */
-static void add_meta( SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m )
-{
-    int *tmp;
-
-    if ( parse_data->meta_cnt >=  parse_data->metasize )
+    /* Look to enable StoreDescription */
     {
-        tmp = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(int *) * (parse_data->metasize + 100) );
-		memcpy(tmp,parse_data->metas, sizeof(int *) * parse_data->metasize );
-        parse_data->metasize += 100;
-        parse_data->metas = tmp;
+        SUMMARY_INFO    *summary = &parse_data->summary;
+        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
+            summary->active++;
     }
-    parse_data->metas[ parse_data->meta_cnt++ ] = m->metaID;
+
 }
-
-static void add_prop(SWISH *sw, PARSE_DATA *parse_data, struct metaEntry *m )
-{
-    int *tmp;
-
-    if ( parse_data->prop_cnt >= parse_data->propsize )
-    {
-        tmp = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(int *) * (parse_data->propsize + 100) );
-		memcpy(tmp,parse_data->props, sizeof(int *) * parse_data->propsize );
-        parse_data->propsize += 100;
-        parse_data->props = tmp;
-    }
-    parse_data->props[ parse_data->prop_cnt++ ] = m->metaID;
-}
-
 
 
 /*********************************************************************
 *   End Tag Event Handler
 *
-*   This routine will pop the meta/property tag off the stack
 *
 *
-*   2001-08 jmruiz - Minor change in tag handling to avoid memory 
-*                    fragmentation
 *********************************************************************/
 
 
 static void end_hndl(void *data, const char *el)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
-    char   tmp[MAXSTRLEN + 1];
-    char  *tag;
+    char  tag[MAXSTRLEN + 1];
+    struct metaEntry *m;
 
-    /* Use a static array whenever possible (99.9999 %) to avoid memory fragmentation */
-    if(strlen(el) <= MAXSTRLEN)
+    if(strlen(el) > MAXSTRLEN)
     {
-        tag = tmp;
-        strcpy(tmp,(char *)el);
+        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        return;
     }
-    else
-        tag = (char *)estrdup((char *) el);
 
-
+    strcpy(tag,(char *)el);
     strtolower( tag );
-
-    /* Check for store description */
-    if ( parse_data->buffer && ( strcmp(parse_data->fprop->stordesc->field, tag) == 0))
-        write_summary( parse_data );
-    
 
     if ( parse_data->ignore_tag )
     {
         if  (strcmp( parse_data->ignore_tag, tag ) == 0)
-            parse_data->ignore_tag = NULL;
+            parse_data->ignore_tag = NULL;  // don't free since it's a pointer to the config setting
         return;
     }
+
+    /* Flush any text in the buffer */
+    flush_buffer( parse_data );
+
 
     /* Don't allow matching across tag boundry */
     if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
        parse_data->word_pos++;
     
 
-    /* Tags must be balanced, of course. */
 
-    /* Exiting a metaID? */
-    if ( parse_data->meta_cnt &&  getMetaNameByName( parse_data->header, tag) )
-        parse_data->meta_cnt--;
-        
+    /* Flag that we are not in tag anymore - tags must be balanced, of course. */
 
-    /* Exiting a propID? */
-    if ( parse_data->prop_cnt &&  getPropNameByName( parse_data->header, tag) )
-        parse_data->prop_cnt--;
+    if ( ( m = getMetaNameByName( parse_data->header, tag) ) )
+        if ( m->in_tag )
+            m->in_tag--;
 
-    if(tag != tmp)
-        efree(tag);
+
+    if ( ( m = getPropNameByName( parse_data->header, tag) ) )
+        if ( m->in_tag )
+            m->in_tag--;
+
+
+    /* Look to disable StoreDescription */
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
+            summary->active--;
+    }
+
 }
 
 /*********************************************************************
@@ -348,145 +338,92 @@ static void end_hndl(void *data, const char *el)
 static void char_hndl(void *data, const char *txt, int txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
-    SWISH              *sw = parse_data->sw;
-    int                 i;
-    char *buf = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, txtlen + 1 );
-
-    strncpy( buf, txt, txtlen );
-    buf[txtlen] = '\0';
-
-
-    /* Add text to summary */
-    if ( parse_data->buffer && parse_data->buffend < parse_data->fprop->stordesc->size )
-        append_summary_text( parse_data, buf, txtlen);
-
-
-        
 
 
     /* If currently in an ignore block, then return */
     if ( parse_data->ignore_tag )
         return;
 
+    /* Buffer the text */
+    append_buffer( &parse_data->text_buffer, txt, txtlen );
 
-    /* If outside all meta tags then add default */
-    if ( !parse_data->meta_cnt && sw->OkNoMeta )
-    {
-        struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
-        if ( m )
-            add_meta( sw, parse_data, m );
-    }
-
-
-    /* Index the text */
-    /* 2001-08 jmruiz Change structure from IN_FILE | IN_META to IN_FILE */
-    /* Since structure does not have much sense in XML, if we use only IN_FILE 
-    ** we will save memory and disk space (one byte per location) */
-    if ( parse_data->meta_cnt )
-        parse_data->total_words +=
-            indexstring(
-                sw,
-                buf,
-                parse_data->filenum,
-                IN_FILE,
-                parse_data->meta_cnt,
-                parse_data->metas,
-                &(parse_data->word_pos)
-             );
-
-    /* Now store the properties -- will concat any existing property */
-
-    for ( i = 0; i < parse_data->prop_cnt; i++ )
-    {
-        struct metaEntry *m = getPropNameByID( parse_data->header, parse_data->props[i]);
-        if (!addDocProperty(&(parse_data->thisFileEntry->docProperties), m, buf, txtlen, 0))
-            progwarn("property '%s' not added for document '%s'\n", m->metaName, parse_data->fprop->real_path);
-    }
+    /* Some day, might want to have a separate property buffer if need to collect more than plain text */
+    // append_buffer( parse_data->prop_buffer, txt, txtlen );
 
 }
 
 /*********************************************************************
-*   Add characters to summary
+*   Append character data to the end of the buffer
 *
-*   This REALLY shouldn't be here.
-*   Could do better with general purpose properties:size
+*   Buffer is extended/created if needed
+*
+*   ToDo: Flush buffer if it gets too large
 *
 *
 *********************************************************************/
 
-static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 {
-    int j;
-    char *newbuf = NULL;
-	int newsize = 0;
-		
-    /* trim trailing space */
-    while ( isspace( buf[len-1] && len > 0 ))
-        len--;
-        
 
-    /* skip leading space */
-    for ( j=0; j < len && isspace( (int)buf[j] ); j++ );
-
-
-    if ( j >= len )
+    if ( !txtlen )  // shouldn't happen
         return;
 
 
-    /* Add space between */
-    if ( parse_data->buffend )
-        parse_data->buffer[parse_data->buffend++] = ' ';
-        
+    /* (re)allocate buf if needed */
+    
+    if ( buf->cur + txtlen >= buf->max )
+        buf->buffer = erealloc( buf->buffer, ( buf->max += BUFFER_CHUNK_SIZE+1 ) );
 
-    while ( j < len )
-    {
-        /* Check for max size reached */
-        if ( parse_data->buffend >= parse_data->fprop->stordesc->size )
-        {
-            if ( !isspace( (int)buf[j] ) && !isspace( (int)parse_data->buffer[parse_data->buffend-1] ))
-            {
-                while ( parse_data->buffend && !isspace( (int)parse_data->buffer[--parse_data->buffend] ));
-                parse_data->buffer[parse_data->buffend] = '\0';
-            }
 
-            write_summary( parse_data );
-            return;
-        }
-
-        /* reallocate if needed */
-        if ( parse_data->buffend >= parse_data->buffmax )
-        {
-            newsize = parse_data->buffend + RD_BUFFER_SIZE;
-            if ( newsize > parse_data->fprop->stordesc->size )
-                newsize = parse_data->fprop->stordesc->size;
-
-            newbuf = (char *)Mem_ZoneAlloc(parse_data->sw->Index->perDocTmpZone, newsize + 1);
-            memcpy(newbuf, parse_data->buffer, parse_data->buffend + 1);
-
-            parse_data->buffer = newbuf;
-            parse_data->buffmax = newsize;
-        }
-
-        parse_data->buffer[parse_data->buffend++] = buf[j++];
-    }
-        
-    parse_data->buffer[parse_data->buffend] = '\0';
+    memcpy( (void *) &(buf->buffer[buf->cur]), txt, txtlen );
+    buf->cur += txtlen;
 }
 
-static void write_summary( PARSE_DATA *parse_data )
-{
-    if ( parse_data->buffend )
-        if ( !addDocProperty(
-            &(parse_data->thisFileEntry->docProperties),
-            parse_data->summeta,
-            parse_data->buffer,
-            parse_data->buffend,
-            0)
-        )
-            progwarn("property '%s' not added for document '%s'\n", parse_data->summeta->metaName, parse_data->fprop->real_path);
 
-    parse_data->buffer = NULL;
-}    
+
+
+/*********************************************************************
+*   Flush buffer - adds words to index, and properties
+*
+*    2001-08 jmruiz Change structure from IN_FILE | IN_META to IN_FILE
+*    Since structure does not have much sense in XML, if we use only IN_FILE 
+*    we will save memory and disk space (one byte per location)
+*
+*
+*********************************************************************/
+static void flush_buffer( PARSE_DATA  *parse_data )
+{
+    CHAR_BUFFER *buf = &parse_data->text_buffer;
+    SWISH       *sw = parse_data->sw;
+
+    /* anything to do? */
+    if ( !buf->cur )
+        return;
+
+    buf->buffer[buf->cur] = '\0';
+
+
+    /* Index the text */
+    parse_data->total_words +=
+        indexstring( sw, buf->buffer, parse_data->filenum, IN_FILE, 0, NULL, &(parse_data->word_pos) );
+
+
+    /* Add the properties */
+    addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
+
+
+    /* yuck.  Ok, add to summary, if active */
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+        if ( summary->active )
+            addDocProperty( &(parse_data->thisFileEntry->docProperties), summary->meta, (unsigned char *)buf->buffer, buf->cur, 0 );
+    }
+
+
+    /* clear the buffer */
+    buf->cur = 0;
+}
+
 
 
 /*********************************************************************
@@ -500,45 +437,19 @@ static void write_summary( PARSE_DATA *parse_data )
 *********************************************************************/
 static void comment_hndl(void *data, const char *txt)
 {
-    PARSE_DATA         *parse_data = (PARSE_DATA *)data;
-    SWISH              *sw = parse_data->sw;
-    int                 added = 0;
-
-
-
-    /* If outside all meta tags then add default */
-    if ( !parse_data->meta_cnt )
-    {
-        struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
-        if ( m )
-        {
-            add_meta( sw, parse_data, m );
-            added++;
-        }
-    }
-            
-
-   
-    if ( parse_data->meta_cnt )
-    {
-        /* Bump position around comments - hard coded */
-        parse_data->word_pos++;
+    PARSE_DATA  *parse_data = (PARSE_DATA *)data;
+    SWISH       *sw = parse_data->sw;
     
-        parse_data->total_words +=
-            indexstring(
-                sw,
-                (char *)txt,
-                parse_data->filenum,
-                IN_COMMENTS,
-                parse_data->meta_cnt,
-                parse_data->metas,
-                &(parse_data->word_pos)
-             );
-        parse_data->word_pos++;
-    }
 
-    if ( added )
-        parse_data->meta_cnt--;             
+    /* Bump position around comments - hard coded, always done to prevent phrase matching */
+    parse_data->word_pos++;
+
+    /* Index the text */
+    parse_data->total_words +=
+        indexstring( sw, (char *)txt, parse_data->filenum, IN_COMMENTS, 0, NULL, &(parse_data->word_pos) );
+
+
+    parse_data->word_pos++;
 
 }
 
@@ -546,6 +457,8 @@ static void comment_hndl(void *data, const char *txt)
 
 /*********************************************************************
 *   check if a tag is an IgnoreTag
+*
+*   Note: this returns a pointer to the config set tag, so don't free it!
 *
 *
 *********************************************************************/
@@ -560,7 +473,7 @@ static char *isIgnoreMetaName(SWISH * sw, char *tag)
     while (tmplist)
     {
         if (strcmp(tag, tmplist->line) == 0)
-            return tag;
+            return tmplist->line;
 
         tmplist = tmplist->next;
     }
