@@ -372,7 +372,7 @@ int rc;
 
 int BTREE_GetPositionForKey(BTREE_Page *pg, unsigned char *key, int key_len, int *comp)
 {
-int i,j,k,isbigger;
+int i,j,k,isbigger=-1;
 int key_len_k;
 unsigned char *key_k;
     /* Use binary search for adding key */
@@ -645,7 +645,6 @@ unsigned long father_page;
 
 BTREE_Page *BTREE_SplitPage(BTREE *b, BTREE_Page *pg)
 {
-FILE *fp = b->fp;
 BTREE_Page *new_pg = BTREE_NewPage(b, pg->size, pg->flags);
 int         i,n;
 unsigned char *key_data, *p, *q, *start;
@@ -698,7 +697,6 @@ int BTREE_InsertInPage(BTREE *b, BTREE_Page *pg, unsigned char *key, int key_len
 BTREE_Page *new_pg, *next_pg, *root_page, *father_pg, *tmp_pg;
 unsigned int free_space, required_space;
 int key_pos, key_len0;
-unsigned int i = 0, mod_father = 0;
 unsigned char *key_data0;
 int comp;
 
@@ -922,7 +920,7 @@ int key_len_k;
 
 #include <time.h>
 
-#define N_TEST 3000000
+#define N_TEST 300000
 
 #ifdef _WIN32
 #define FILEMODE_READ           "rb"
@@ -946,7 +944,8 @@ unsigned char buffer[20];
 int i;
 static int nums[N_TEST];
 unsigned long root_page;
-
+unsigned char *found;
+int found_len;
     srand(time(NULL));
 
     goto test2;
@@ -968,7 +967,7 @@ printf("\n\nIndexing\n\n");
         sprintf(buffer,"%d",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
         BTREE_Insert(bt,buffer,strlen(buffer),nums[i]);
-        if(nums[i]!= BTREE_Search(bt,buffer,strlen(buffer),1))
+        if(nums[i]!= BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
             printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
         {
@@ -991,7 +990,7 @@ printf("\n\nSearching\n\n");
         sprintf(buffer,"%d",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
 
-        if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),1))
+        if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
             printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
             printf("%d             \r",i);
@@ -1018,6 +1017,8 @@ printf("\n\nIndexing\n\n");
         sprintf(buffer,"%d",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
         BTREE_Insert(bt,buffer,strlen(buffer),nums[i]);
+        if(nums[i]!= BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
+            printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
         {
             BTREE_FlushCache(bt);
@@ -1036,7 +1037,7 @@ printf("\n\nSearching\n\n");
     for(i=0;i<N_TEST;i++)
     {
         sprintf(buffer,"%d",nums[i]);
-        if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),1))
+        if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
             printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
             printf("%d            \r",i);

@@ -400,10 +400,6 @@ void   *DB_Open_Native(char *dbname)
     for (i = 0; i < MAXCHARS; i++)
         DB->offsets[i] = readlong(fp, fread);
 
-#ifdef USE_BTREE
-    DB->bt = BTREE_Open(DB->fp,8192,DB->offsets[WORDPOS]);
-#endif
-
     /* Read hashoffsets lookuptable */
     DB->hashstart = ftell(fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
@@ -474,7 +470,6 @@ void    DB_Close_Native(void *db)
     if(DB->bt)
         DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
-   return 0;
 #endif
 
     if (DB->mode)               /* If we are indexing update offsets to words and files */
@@ -914,6 +909,11 @@ int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
 
 int     DB_InitReadWords_Native(void *db)
 {
+#ifdef USE_BTREE
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    if(!DB->bt)
+        DB->bt = BTREE_Open(DB->fp,8192,DB->offsets[WORDPOS]);
+#endif
     return 0;
 }
 
