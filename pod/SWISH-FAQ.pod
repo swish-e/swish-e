@@ -16,6 +16,33 @@ You can use a FileRules operation to exclude the particular file name, or pathna
 certain types of files, they may not have valid text in them (they may be binary files, for instance). You can use NoContents to exclude that
 type of file.
 
+=head2 Swish isn't working and I can't solve the problem myself
+
+The SWISH-E discussion list is the place to go.  http://sunsite.berkeley.edu/SWISH-E/.
+
+Before you post you might read the next question.  Also, be sure to include in the following when asking for help.
+
+=over 4
+
+=item * The swish-e version (./swish-e -V)
+
+=item * What you are indexing (and perhaps a sample), and the number of files
+
+=item * Your swish-e configuration file
+
+=item * Any error messages that swish-e is reporting
+
+=back
+
+In addition, the utilities strace (or truss), and a backtrace from a debugger such as gdb
+may provide valuable information.  This can be helpful in tracking down segfaults:
+
+    % gdb /path/to/swish-e
+    [now run with parameters that cause a segfault]
+    (gdb) run -w foo -f index.file 
+    (gdb) bt
+
+
 =head2 Swish isn't indexing a certain word or phrase. 
 
 By default, swish-e tries to make it best guesses as to what it thinks are reasonable words and filters out "garbage" words according to a set
@@ -25,7 +52,11 @@ depending on your preference.
 
 Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>) C<WordCharacters>, C<BeginCharactes>, C<EndCharacters>,
 C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
-Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues.
+Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues -- index a single
+file that contains words that are are are not indexing as you expect and use -D -v 4 to out debugging information
+about the index.  A useful command might be:
+
+    ./swish-e -f index.swish-e -D -v 4 | grep -v ^0
 
 =head2 How can I index all my compressed files?
 
@@ -37,7 +68,10 @@ Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> for more in
 =head2 Can I index 8-bit text? 
 
 Yes, you can. Just remember that swish-e retains capitalization for all characters other than [a-z A-Z], so the word "Çelik" is not retrieved by
-"çelik", "Celik", or "celik". You can index and use words containing any entity from ! (#033) to ÿ (#255). 
+"çelik", "Celik", or "celik". You can index and use words containing any entity from ! (#033) to ÿ (#255).
+
+Also, the TranslateCharacters directive (L<SWISH-CONFIG|SWISH-CONFIG>) can translate characters while indexing
+and searching.  C<TranslateCharacters :ascii7:> is a predefined set of characters that will eight bit characters to ascii7 characters.
 
 =head2 How can I index phrases? 
 
@@ -89,7 +123,7 @@ swish-e -c swish-e.conf files.conf
 
 It's true that indexing can take up a lot of memory!
 One thing you can do is make many indices of smaller content instead of trying to do
-everything at once. You can then merge all the smaller pieces together.
+everything at once. You can then merge all the smaller pieces together with the C<-M> switch.
 
 Another option is use the C<-e> switch.  This will require less memory, but indexing will take longer as
 not all data will be stored in memory while indexing.
@@ -104,8 +138,7 @@ directive.
 =head2 Do I need to reindex my site each time I upgrade to a new Swish-e version? 
 
 Yes. At times it might not strictly necessary, but since you don't really know if anything in the index has changed,
-it is a good rule to reindex
-anyway. 
+it is a good rule to reindex anyway. 
 
 
 =head1 Document Info
