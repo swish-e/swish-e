@@ -28,6 +28,7 @@ use constant DEBUG_INFO     => $bit <<= 1;  # more verbose
 use constant DEBUG_LINKS    => $bit <<= 1;  # prints links as they are extracted
 
 
+use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
 
     
 
@@ -62,12 +63,14 @@ sub process_server {
     $server->{debug} ||= 0;
     $server->{debug} = 0 unless $server->{debug} =~ /^\d+$/;
 
-    $server->{max_size} ||= 1_000_000;
-    $server->{max_size} = 1_000_000 unless $server->{max_size} =~ /^\d+$/;
+    $server->{max_size} ||= MAX_SIZE;
+    die "max_size parameter '$server->{max_size}' must be a number\n" unless $server->{max_size} =~ /^\d+$/;
 
     $server->{link_tags} = ['a'] unless ref $server->{link_tags} eq 'ARRAY';
     my %seen;
     $server->{link_tags} = [ grep { !$seen{$_}++} map { lc } @{$server->{link_tags}} ];
+
+    die "max_depth parameter '$server->{max_depth}' must be a number\n" if defined $server->{max_depth} && $server->{max_depth} !~ /^\d+/;
 
 
     if ( $server->{keep_alive} ) {
@@ -221,14 +224,14 @@ sub process_link {
     $server->{no_index} = 0;
     $server->{no_spider} = 0;
 
-    my $first;
+    my $been_here;
     my $callback = sub {
-        unless ( $first++ ) {
-            die "skipped\n" unless check_user_function( 'test_response', $uri, $server, $_[1], \$_[0]  );
-        }
+
+        die "test_response" if !$been_here++ && !check_user_function( 'test_response', $uri, $server, $_[1], \$_[0]  );
+            
 
         if ( length( $content ) + length( $_[0] ) > $server->{max_size} ) {
-            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug}&DEBUG_ERRORS;
+            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug}&DEBUG_SKIPPED;
             die "too big!\n";
         }
 
@@ -239,17 +242,8 @@ sub process_link {
     my $response = $ua->simple_request( $request, $callback, 4096 );
 
 
-
-    # skip excluded by robots.txt
+    # Log the response
     
-    if ( !$response->is_success && $response->status_line =~ 'robots.txt' ) {
-        print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug}&DEBUG_SKIPPED;
-        $server->{counts}{'robots.txt'}++;
-        return;
-    }
-
-
-
     if ( ( $server->{debug} & DEBUG_URL ) || ( $server->{debug} & DEBUG_FAILED && !$response->is_success)  ) {
         print STDERR '>> ',
           join( ' ',
@@ -267,6 +261,27 @@ sub process_link {
         }
            
     }
+
+
+
+    # If the LWP callback aborts
+
+    if ( $response->header('client-aborted') ) {
+        $server->{counts}{Skipped}++;
+        return;
+    }
+    
+
+    # skip excluded by robots.txt
+    
+    if ( !$response->is_success && $response->status_line =~ 'robots.txt' ) {
+        print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug}&DEBUG_SKIPPED;
+        $server->{counts}{'robots.txt'}++;
+        return;
+    }
+
+
+
 
     print STDERR "\n----HEADERS for $uri ---\n", $response->headers_as_string,"-----END HEADERS----\n\n"
        if $server->{debug} & DEBUG_HEADERS;
@@ -311,6 +326,7 @@ sub process_link {
     
     if ( $server->{no_index} ) {
         $server->{counts}{Skipped}++;
+        print STDERR "-Skipped indexing $uri some callback set 'no_index' flag\n" if $server->{debug}&DEBUG_SKIPPED;
     } else {
         output_content( $server, \$content, $response );
     }
@@ -326,7 +342,11 @@ sub process_link {
     my $last_page = $parent || '';
     $parent = $uri;
     $depth++;
-    process_link( $server, $_ ) for @$links;
+
+    if ( ! defined $server->{max_depth} || $server->{max_depth} >= $depth ) {
+        process_link( $server, $_ ) for @$links;
+    }
+
     $depth--;
     $parent = $last_page;
 
@@ -375,7 +395,10 @@ sub extract_links {
 
 
     # allow skipping.
-    return [] if $server->{no_spider};
+    if ( $server->{no_spider} ) {
+        print STDERR '-Links not extracted: ', $response->request->uri->canonical, " some callback set 'no_spider' flag\n" if $server->{debug}&DEBUG_SKIPPED;
+        return [];
+    }
 
 
     $server->{Spidered}++;
@@ -743,7 +766,7 @@ made to the remote server, not the total number of files to index.
 
 This optional key sets the max size of a file read from the web server.
 This B<defaults> to 1,000,000 bytes.  If the size is exceeded the resource is
-skipped (and a message is written to STDERR if debug level is > 1.
+skipped (and a message is written to STDERR if DEBUG_SKIPPED is set.
 
 =item keep_alive
 
@@ -778,7 +801,7 @@ get the individual debugging of your choice.
 
 Here are basically the levels:
 
-    DEBUG_ERRORS   general program errors
+    DEBUG_ERRORS   general program errors (not used at this time)
     DEBUG_URL      print out every URL processes
     DEBUG_HEADERS  prints the response headers
     DEBUG_FAILED   failed to return a 200
@@ -800,6 +823,16 @@ You can easily run the spider without using swish for debugging purposes:
 
 And you will see debugging info as it runs, and the fetched documents will be saved
 in the C<spider.out> file.
+
+=item max_depth
+
+The C<max_depth> parameter can be used to limit how deeply to recurse a web site.
+The depth is just a count of levels of web pages decended, and not related to
+the number of path elements in a URL.
+
+A max_depth of zero says to only spider the page listed as the C<base_url>.  A max_depth of one will
+spider the C<base_url> page, plus all links on that page, and no more.  The default is to spider all
+pages.
 
 
 =item ignore_robots_file

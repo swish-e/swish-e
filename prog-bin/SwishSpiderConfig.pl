@@ -56,6 +56,9 @@ Please see C<perldoc spider.pl> for more information.
         delay_min       => .0001,
         link_tags       => [qw/ a frame /],
         max_files       => 50,
+
+        max_size        => 1_000_000,  # limit to 1MB file size
+        max_depth       => 10,         # spider only ten levels deep
         keep_alives     => 1,
 
         test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg)$/ },
