@@ -240,7 +240,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     int     docType = 0;
 
     mtime = 0;
-    fsize = 0;
+    fsize = -1;
     index_no_content = 0;
     real_path = NULL;
 
@@ -275,9 +275,16 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
         if (strlen(line) == 0) /* blank line indicates body */
         {
-            if (!fsize || !real_path)
-                progerr("External program failed to return required headers Path-Name: & Content-Length:");
+            if (!real_path)
+                progerr("External program failed to return required headers Path-Name:");
 
+            if ( fsize == -1)
+                progerr("External program failed to return required headers Content-Length: when processing file '%s'", real_path);
+
+            if ( fsize == 0 && sw->verbose >= 2)
+                progwarn("External program returned zero Content-Length when processing file'%s'", real_path);
+
+            
 
             /* Create the FileProp entry to describe this "file" */
 
