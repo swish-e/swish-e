@@ -1067,10 +1067,10 @@ with the element name (e.g. "person.greeting").
 This directive can be used to index extracted parts of a document's path.
 A common use would to to limit searches to specific areas of your file tree.
 
-C<*metaname*> must have been previously defined using the C<MetaNames> directive.
 The extracted string will be indexed under the specified meta name.
 
-See C<ReplaceRules> for a description of the various pattern replacement methods.
+See C<ReplaceRules> for a description of the various pattern replacement methods, but
+you will use the I<regex> method.
 
 For example, say your file system (or web tree) was organized into departments:
 
@@ -1078,10 +1078,8 @@ For example, say your file system (or web tree) was organized into departments:
     /web/parts/foo...
     /web/accounting/foo...
 
-And you wanted a way to limit searches to just documents under "sales".  To do this
-you first create a C<MetaName> for indexing, and the extract out the department name:
+And you wanted a way to limit searches to just documents under "sales".
 
-    MetaNames department
     ExtractPath department regex !^/web/([^/]+)/.*$!$1!
 
 Which says, extract out the department name (as substring $1) and index it as
@@ -1093,9 +1091,24 @@ Note that the C<regex> method uses a substitution pattern,
 so to index only a sub-string match the I<entire>
 document path in the regular expression, as shown above.
 
-You may use more than one C<ExtractPath> direcive.  More than one directive of the
+See the C<ExtractPathDefault> option for a way to set a value if not patterns match.
+
+Although unlikely, you may use more than one C<ExtractPath> direcive.  More than one directive of the
 I<same> meta name will operate successively (in order listed in the configuration file)
-on the path.
+on the path.  This allows you to use regular expressions on the results of the previous pattern
+substitution (as if piping the output from one expression to the patter of the next).
+
+    ExtractPath foo regex !^(...).+$!$1!
+    ExtractPath foo regex !^.+(.)$!$1!
+
+So, the third letter is indexed as meta name "foo" if both patterns match.    
+
+    ExtractPath foo regex !^X(...).+$!$1!
+    ExtractPath foo regex !^.+(.)$!$1!
+
+Now (not the "X"), if the first pattern doesn't match, the last character of the path name is indexed.
+You must be clear on this behavior if you are using more than one C<ExtractPath> directive
+with the same metaname.
 
 The document path operated on is the real path swish used to access the document.  That is,
 the C<ReplaceRules> directive has no effect on the path used with C<ExtractPath>.
@@ -1103,6 +1116,37 @@ the C<ReplaceRules> directive has no effect on the path used with C<ExtractPath>
 The full path is used for each meta name if more than one C<ExtractPath> directive is used.
 That is, changes to the path used in C<ExtractPath foo> do not effect the path used
 by C<ExtractPath bar>.
+
+=item ExtractPathDefault *metaname* default_value
+
+This can be used with C<ExtractPath> to set a default string to index under the given
+metaname if none of the C<ExtractPath> patterns match.
+
+For example, say your want to index each document with a metaname "department" based on the following
+path examples:
+
+    /web/sales/foo...
+    /web/parts/foo...
+    /web/accounting/foo...
+
+But you are also indexing documents that do not follow that pattern and you want to search those
+seperately, too.
+
+    ExtractPath department regex !^/web/([^/]+)/.*$!$1!
+    ExtractPathDefault department other
+
+Now, you may search like this:
+
+    -w foo department=(sales)      - limit searches to the sales documents
+    -w foo department=(parts)      - limit searches to the parts documents
+    -w foo department=(accounting) - limit searches to the accounting documents
+    -w foo department=(other)      - everything but sales, parts, and accounting.
+
+This basically is a shortcut for:
+
+    -w foo not department=(sales or parts or accounting)
+
+but you don't need to keep track of what was extracted.    
 
 =item PropertyNames *list of meta names*
 =item PropertyNamesCompareCase *list of meta names*
