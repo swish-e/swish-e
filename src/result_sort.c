@@ -82,7 +82,7 @@ void initModule_ResultSort (SWISH  *sw)
   -- release all wired memory for this module
 */
 
-/* Frees memory of vars used by Ouutput properties configuration */
+/* Frees memory of vars used by Output properties configuration */
 /* Code moved from FreeOutputPropertiesVars (docprop.c) */
 void freeModule_ResultSort (SWISH *sw)
 
@@ -119,6 +119,29 @@ void freeModule_ResultSort (SWISH *sw)
 
   return;
 }
+
+
+
+
+/* Frees memory of vars used by Output properties configuration */
+/* Code moved from FreeOutputPropertiesVars (docprop.c) */
+void resetModule_ResultSort (SWISH *sw)
+
+{
+  struct MOD_ResultSort *md = sw->ResultSort;
+  int i;
+ 
+
+   //$$$
+   //$$$   Jose would should be moved here 
+   //$$$   from freeModule...?
+
+
+   return;
+}
+
+
+
 
 
 

@@ -634,7 +634,7 @@ typedef struct
     struct MOD_ResultOutput  *ResultOutput;   /* result_output module data */
     struct MOD_Filter        *Filter;         /* filter module data */
     struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
-
+    struct MOD_Entities      *Entities;       /* html entities module data */
 
     /* entry vars */
     ENTRYARRAY *entryArray;
