@@ -25,7 +25,6 @@
 #define CASE_SENSITIVE_OFF 0
 
 char *lstrstr (char *, char *);
-char *getword (char *, int *skiplen);
 char *getconfvalue (char *, char *);
 int isoksuffix (char *filename, struct swline *rulelist);
 char *replace (char *, char *, char *);
