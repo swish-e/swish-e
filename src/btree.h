@@ -41,6 +41,7 @@ unsigned long BTREE_Close(BTREE *bt);
 int BTREE_Insert(BTREE *b, unsigned char *key, int key_len, unsigned long data_pointer);
 long BTREE_Search(BTREE *b, unsigned char *key, int key_len, unsigned char **found, int *found_len, int exact_match);
 long BTREE_Next(BTREE *b, unsigned char **found, int *found_len);
+int BTREE_Update(BTREE *b, unsigned char *key, int key_len, unsigned long new_data_pointer);
 
 
 

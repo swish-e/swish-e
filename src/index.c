@@ -162,6 +162,7 @@ void initModule_Index (SWISH  *sw)
 
     idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
     idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
+    idx->sz_worddata_buffer = 0;
 
     /* Init  entries hash table */
     for (i=0; i<SEARCHHASHSIZE; i++)
@@ -1891,7 +1892,10 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         epi = ep->elist[i];
 
         if (epi->u1.wordID > 0)   /* Not a stopword */
+        {
+            build_worddata(sw, epi, indexf);
             write_worddata(sw, epi, indexf);
+        }
     }
 
 
@@ -1919,7 +1923,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     ENTRY  *epi;
     int     totalwords;
     int     percent, lastPercent, n;
-
+    long    old_wordid;
+    unsigned char *buffer =NULL;
+    int     sz_buffer = 0;
 #define DELTA 10
 
 
@@ -1971,14 +1977,27 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         /* why check for stopwords here?  removestopwords could have remove them */
         if (!isstopword(&indexf->header, epi->word))
         {
-            /* Write word to index file */
-#ifdef USE_BTREE
-            write_worddata(sw, epi, indexf);
-            write_word(sw, epi, indexf);
-#else
-            write_word(sw, epi, indexf);
-            write_worddata(sw, epi, indexf);
-#endif
+            /* Build worddata buffer */
+            build_worddata(sw, epi, indexf);
+            /* let's see if word is already in the index */
+            old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
+            /* If exists, we have to add the new worddata buffer to the old one */
+            if(old_wordid)
+            {
+                 add_worddata(sw, epi, indexf, buffer, sz_buffer);
+                 efree(buffer);
+                 buffer = NULL;
+                 sz_buffer = 0;
+                 /* To do delete_worddata() */
+                 write_worddata(sw, epi, indexf);
+                 update_wordID(sw, epi, indexf);
+            }
+            else
+            {
+                 /* Write word to index file */
+                 write_worddata(sw, epi, indexf);
+                 write_word(sw, epi, indexf);
+            }
         }
     }    
 

@@ -60,8 +60,9 @@ struct MOD_Index
     unsigned char *compression_buffer;
     int     len_compression_buffer;
 
-    unsigned char *worddata_buffer;
-    long    len_worddata_buffer;
+    unsigned char *worddata_buffer;  /* Buffer to store worddata */
+    int    len_worddata_buffer;     /* Max size of the buffer */
+    int    sz_worddata_buffer;      /* Space being used in worddata_buffer */
 
     /* File counter */
     int     filenum;
