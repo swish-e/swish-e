@@ -461,8 +461,7 @@ static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
     SAXHandler->cdataBlock     = (charactersSAXFunc)&char_hndl;
     SAXHandler->ignorableWhitespace = (ignorableWhitespaceSAXFunc)&Whitespace;
 
-    if( sw->indexComments )
-        SAXHandler->comment    = (commentSAXFunc)&comment_hndl;
+    SAXHandler->comment    = (commentSAXFunc)&comment_hndl;
 
     if ( sw->parser_warn_level >= 1 )
         SAXHandler->fatalError     = (fatalErrorSAXFunc)&error;
@@ -1528,7 +1527,11 @@ static void comment_hndl(void *data, const char *txt)
 
         return;
     }
-    
+
+
+    if( !sw->indexComments )
+        return;
+
 
     /* Bump position around comments - hard coded, always done to prevent phrase matching */
     parse_data->word_pos++;
