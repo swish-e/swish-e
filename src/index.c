@@ -737,7 +737,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 #ifdef PROPFILE
     /* write properties to disk, and release memory */
-    WritePropertiesToDisk( sw );
+    WritePropertiesToDisk( sw , indexf->filearray_cursize );
 #endif
 
 

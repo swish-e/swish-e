@@ -30,6 +30,9 @@ $Id$
 ** 2001-06-08 wsm     Store propValue at end of docPropertyEntry to save memory
 ** 2001-06-14 moseley Most of the code rewritten, and propfile added
 ** 
+** 2001-09 jmruiz - ReadAllDocPropertiesFromDisk rewriten to be used
+**                  by merge.c
+**
 */
 
 #include <limits.h>     // for ULONG_MAX
@@ -861,11 +864,13 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 *
 * The list is terminated with a PropID with a value of zero
 *
+* 2001-09 - jmruiz - Added filenum for use in merge.c
+*
 *********************************************************************/
-void     WritePropertiesToDisk( SWISH *sw )
+void     WritePropertiesToDisk( SWISH *sw , int filenum)
 {
     IndexFILE *indexf = sw->indexlist;
-    struct file *fi = indexf->filearray[ indexf->filearray_cursize -1 ];
+    struct file *fi = indexf->filearray[ filenum - 1 ];
     docProperties *docProperties;
     int propID;
     int len;
@@ -961,11 +966,12 @@ void     WritePropertiesToDisk( SWISH *sw )
 *
 *   Maybe should return void, and just set?
 *   Or maybe should take a filenum, and instead take a position?
-*
+*   
+*   2001-09 jmruiz Modified to be used by merge.c
 *********************************************************************/
+
 docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
 {
-#ifdef COMMENT_OUT
     struct file *fi;
     docProperties *docProperties=NULL;
     char   *tempPropValue=NULL;
@@ -976,14 +982,9 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     char   *propbuf;
     long    seek_pos = -1;
     int     i;
-#endif    
 
-return NULL;
-
-#ifdef COMMENT_OUT
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
-
 
 
     /* already loaded? */
@@ -995,62 +996,47 @@ return NULL;
         return NULL;
 
     for ( i = 0; i < fi->propLocationsCount; i++ )
+    {
         if ( fi->propSize[i] )
         {
             seek_pos = fi->propLocations[ i ];
-            break;
+            if ( seek_pos < 0 )
+                progerr("failed to find seek postion for first property in file %d", filenum );
+
+            propbuf = buf = ( char * ) emalloc( fi->propTotalLen );
+
+            buf = DB_ReadProperty( sw, fi, i, indexf->DB );
+
+            meta_entry.metaName = "(default)";
+
+            tempPropID = uncompress2((unsigned char **)&buf);
+
+            /* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
+            tempPropID--;
+
+            /* Get the data length */
+            tempPropLen = uncompress2((unsigned char **)&buf);
+
+            /* BTW, len must no be 0 */
+            tempPropValue = buf;
+            buf += tempPropLen;
+
+            /* add the entry to the list of properties */
+            /* Flag as encoded, so won't encode again */
+            meta_entry.metaID = tempPropID;
+
+            addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
+
+            tempPropID = uncompress2((unsigned char **)&buf);
+		    efree(propbuf);
         }
-
-    if ( seek_pos < 0 )
-        progerr("failed to find seek postion for first property in file %d", filenum );
-
-
-    propbuf = buf = ( char * ) emalloc( fi->propTotalLen + 1 );
-
-    DB_ReadProperty( sw, buf, seek_pos, fi->propTotalLen, filenum, indexf->DB );
-
-
-
-    *(buf + fi->propTotalLen) = '\0'; /* flag end of buffer */
-
-
-    meta_entry.metaName = "(default)";
-
-    /* read all of the properties */
-    tempPropID = uncompress2((unsigned char **)&buf);
-
-    while(tempPropID > 0)
-    {
-        /* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
-        tempPropID--;
-
-        /* Get the data length */
-        tempPropLen = uncompress2((unsigned char **)&buf);
-
-        /* BTW, len must no be 0 */
-        tempPropValue = buf;
-        buf += tempPropLen;
-
-        /* add the entry to the list of properties */
-        /* Flag as encoded, so won't encode again */
-        meta_entry.metaID = tempPropID;
-
-        addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
-
-        /* found ending null? */
-        if (!*buf )
-            break;
-
-        tempPropID = uncompress2((unsigned char **)&buf);
     }
 
-    efree( propbuf );
 
     /* save it in the file entry */
     fi->docProperties = docProperties;
 
     return docProperties;
-#endif    
 }
 
 /*******************************************************************
