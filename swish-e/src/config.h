@@ -288,11 +288,11 @@
 ** properties), and after documents that do not include the property
 */
 
-#define RANK_TITLE		4.0
-#define RANK_HEADER		3.0
-#define RANK_META		3.0
-#define RANK_COMMENTS	1.0
-#define RANK_EMPHASIZED 0.0
+#define RANK_TITLE		4
+#define RANK_HEADER		3
+#define RANK_META		3
+#define RANK_COMMENTS	1
+#define RANK_EMPHASIZED 0
 
 /* This symbols affect the weights applied during ranking. Note that they are added
 ** together and added to a base rank of 1.0 -- thus defining a rank with a value of
