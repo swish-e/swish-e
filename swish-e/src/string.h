@@ -58,7 +58,6 @@ void makeallstringlookuptables _AP ((SWISH *));
 #define isindexchar(header,c) header.indexcharslookuptable[c]
 
 /* Functions for comparing integers for qsort */
-int icomp _AP ((const void *,const void *));
 int icomp2 _AP ((const void *,const void *));
 
 /* 06/00 Jose Ruiz 
@@ -75,6 +74,7 @@ char *parsetag _AP ((char *, char *, int, int ));
 
 int isnumstring _AP ((unsigned char*));
 void remove_newlines _AP ((char*));
+void remove_controls _AP ((char*));
 void remove_tags _AP ((char*));
 
 unsigned char *bin2string(unsigned char *,int);

@@ -833,11 +833,29 @@ performance reasons you may wish to set this to <CODE>no</CODE> if your document
 <P>
 META names are a way to define ``fields'' in your XML and HTML documents.
 You can use the META names in your queries to limit the search to just the
-words contained in that META name of your document. (see also the <CODE>-t</CODE> switch in <A HREF="././SWISH-RUN.html">SWISH-RUN</A>). For example, you might have a META tagged field in your documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
+words contained in that META name of your document. For example, you might
+have a META tagged field in your documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
 documents where ``foo'' is within the <CODE>subjects</CODE> META tag.
 
 <P>
-The <STRONG>MetaNames</STRONG> directive is a space separated list:
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w subjects=foo
+    
+(See also the C&lt;-t&gt; switch in L&lt;SWISH-RUN|SWISH-RUN&gt; for information about I&lt;context&gt; searching in HTML documents.)</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+The <STRONG>MetaNames</STRONG> directive is a space separated list. For example:
 
 <P>
 

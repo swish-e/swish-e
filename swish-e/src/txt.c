@@ -27,6 +27,8 @@ IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
 
 	sw->filenum++;
+		/* external filters can output control chars. So remove them */
+	remove_controls(buffer);
 
 	if(fprop->stordesc && fprop->stordesc->size)    /* Let us take the summary */
 	{

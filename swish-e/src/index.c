@@ -923,9 +923,9 @@ ENTRY *epi;
 int totalwords;
 	BuildSortedArrayOfWords(sw,indexf);
 	ep=sw->entryArray;
-	totalwords=sw->entryArray->numWords;
 	if(ep)
 	{
+		totalwords=ep->numWords;
 		for(i=0; i<totalwords; i++) 
 		{
 			epi=ep->elist[i];
@@ -1702,6 +1702,8 @@ ENTRY *e;
 	if(sw->verbose) {
 		printf("Sorting Words alphabetically\n");fflush(stdout);
 	}
+	if(!sw->entryArray || !sw->entryArray->numWords) return;
+
 		/* Build the array with the pointers to the entries */
 	sw->entryArray->elist=(ENTRY **)emalloc(sw->entryArray->numWords*sizeof(ENTRY *));
 		/* Fill the array with all the entries */

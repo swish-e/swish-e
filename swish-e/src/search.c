@@ -113,12 +113,20 @@
 #include "deflate.h"
 #include "metanames.h"
 
-/* 04/00 Jose Ruiz */
-/* Simple routing for comparing pointers to integers in order to
-get an ascending sort with qsort */
-int icomp(const void *s1,const void *s2)
+/* 01/2001 Jose Ruiz */
+/* Compare RESULTS using RANK */
+/* This routine is used by qsort */
+int compResultsByRank(const void *s1,const void *s2)
 {
-	return(*(int *)s1 - *(int *)s2);
+	return((*(RESULT* const*)s1)->rank - (*(RESULT* const*)s2)->rank);
+}
+
+/* 01/2001 Jose Ruiz */
+/* Compare RESULTS using RANK */
+/* This routine is used by qsort */
+int compResultsByFileNum(const void *s1,const void *s2)
+{
+	return((*(RESULT* const*)s1)->filenum - (*(RESULT* const*)s2)->filenum);
 }
 
 /* 04/00 Jose Ruiz */
@@ -1979,9 +1987,7 @@ SWISH *sw;
 int structure;
 { 
 int i, j;
-unsigned char *ptmp,*ptmp2;
-int *pi;
-RESULT *pv;
+RESULT **ptmp;
 RESULT *rtmp;
 RESULT *sortresultlist;
 RESULT *rp;
@@ -1995,28 +2001,17 @@ RESULT *rp;
 		if (!i) return NULL;
 			/* Compute array wide */
 		sortresultlist = NULL;
-		j=sizeof(int)+sizeof(void *);
 			/* Compute array size */
-		ptmp=(void *)emalloc(j*i);
+		ptmp=(void *)emalloc(i*sizeof(RESULT *));
 			/* Build an array with the elements to compare
 				 and pointers to data */
-		for(ptmp2=ptmp,rtmp=rp;rtmp;rtmp = rtmp->next) 
-			if (rtmp->structure & structure) {
-				pi=(int *)ptmp2;
-				pi[0] = rtmp->rank;
-				ptmp2+=sizeof(int);
-				memcpy((char *)ptmp2,(char *)&rtmp,sizeof(RESULT *));
-				ptmp2+=sizeof(void *);
-			}
+		for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next) 
+			if (rtmp->structure & structure) ptmp[j++]=rtmp;
 			/* Sort them */
-		qsort(ptmp,i,j,&icomp);
+		qsort(ptmp,i,sizeof(RESULT *),&compResultsByRank);
 			/* Build the list */
-		for(j=0,ptmp2=ptmp;j<i;j++){
-				pi=(int *)ptmp2;
-				ptmp2+=sizeof(int);
-				memcpy((char *)&pv,(char*)ptmp2,sizeof(RESULT *));
-				ptmp2+=sizeof(void *);
-				sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, pv);
+		for(j=0;j<i;j++){
+				sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);
 		}
 			/* Free the memory od the array */
 		efree(ptmp);
@@ -2032,9 +2027,7 @@ RESULT *sortresultsbyfilenum(rp)
 RESULT *rp;
 { 
 int i, j;
-unsigned char *ptmp,*ptmp2;
-int *pi;
-RESULT *pv;
+RESULT **ptmp;
 RESULT *rtmp;
 	              /* Very trivial case */
 		if(!rp) return NULL;
@@ -2042,31 +2035,19 @@ RESULT *rtmp;
 		for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next,i++);
 	              /* Another very trivial case */
 		if (i==1) return rp;
-			/* Compute array wide */
-		j=sizeof(int)+sizeof(void *);
 			/* Compute array size */
-		ptmp=(void *)emalloc(j*i);
+		ptmp=(void *)emalloc(i*sizeof(RESULT *));
 			/* Build an array with the elements to compare
 				 and pointers to data */
-		for(ptmp2=ptmp,rtmp=rp;rtmp;rtmp = rtmp->next) {
-			pi=(int *)ptmp2;
-			pi[0] = rtmp->filenum;
-			ptmp2+=sizeof(int);
-			memcpy((char *)ptmp2,(char *)&rtmp,sizeof(RESULT *));
-			ptmp2+=sizeof(void *);
-		}
+		for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next) ptmp[j++]=rtmp;
 			/* Sort them */
-		qsort(ptmp,i,j,&icomp);
+		qsort(ptmp,i,sizeof(RESULT *),&compResultsByFileNum);
 			/* Build the list */
-		for(j=0,rp=NULL,ptmp2=ptmp;j<i;j++){
-			pi=(int *)ptmp2;
-			ptmp2+=sizeof(int);
-			memcpy((char *)&pv,(char*)ptmp2,sizeof(RESULT *));
-			ptmp2+=sizeof(void *);
-			if(!rp)rp=pv;
+		for(j=0,rp=NULL;j<i;j++){
+			if(!rp)rp=ptmp[j];
 			else 
-				rtmp->next=pv;
-			rtmp=pv;
+				rtmp->next=ptmp[j];
+			rtmp=ptmp[j];
 			
 		}
 		rtmp->next=NULL;

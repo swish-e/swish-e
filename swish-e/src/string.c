@@ -638,6 +638,17 @@ char *p;
 	for(p=s;p;) if(p=strchr(p,'\r')) *p++=' ';
 }
 
+void remove_controls(char *s)
+{
+char *p,*q;
+	if(!s || !*s) return;
+	for(p=s,q=s;*p;) 
+		if(!iscntrl((int)(*(unsigned char *)p)))
+			*q++=*p++;
+		else
+			p++;
+	*q='\0';
+}
 
 void remove_tags(char *s)
 {
