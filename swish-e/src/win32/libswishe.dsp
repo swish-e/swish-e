@@ -113,6 +113,10 @@ SOURCE=..\docprop.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\double_metaphone.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\dump.c
 # End Source File
 # Begin Source File
@@ -322,6 +326,10 @@ SOURCE=.\dirent.h
 # Begin Source File
 
 SOURCE=..\docprop.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\double_metaphone.h
 # End Source File
 # Begin Source File
 
