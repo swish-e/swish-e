@@ -2119,7 +2119,7 @@ sub windows_fork {
     my ( $rdrfh, $wtrfh );
 
     # Ok, I'll say it.  Windows sucks.
-    my @command = map { s/"/\\"/g; $_ }  $self->{prog}, $self->swish_command_array;
+    my @command = map { s/"/\\"/g; qq["$_"] }  $self->{prog}, $self->swish_command_array;
     my $pid = IPC::Open2::open2($rdrfh, $wtrfh, @command );
 
 
