@@ -379,7 +379,6 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     int     found,
             lensummary;
 
-printf("HERE!\n");
     /* Get the summary if no metaname/field is given */
     if (!field && size)
     {
