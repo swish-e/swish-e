@@ -3,7 +3,7 @@ package SwishSearch;
 use strict;
 
 # This is set to where Swish-e's "make install" installed the helper modules.
-use lib qw( @@perlmoduledir@@ ); 
+use lib qw( @@perlmoduledir@@ );
 
 
 my $DEFAULT_CONFIG_FILE = '.swishcgi.conf';
@@ -354,7 +354,7 @@ sub default_config {
             #package         => 'SWISH::SimpleHighlight',
 
             show_words      => 10,    # Number of "swish words" words to show around highlighted word
-            max_words       => 100,   # If no words are found to highlighted then show this many words 
+            max_words       => 100,   # If no words are found to highlighted then show this many words
             occurrences     => 6,     # Limit number of occurrences of highlighted words
             #highlight_on   => '<b>', # HTML highlighting codes
             #highlight_off  => '</b>',
@@ -364,7 +364,7 @@ sub default_config {
             # This maps (real) search metatags to display properties.
             # e.g. if searching in "swishdefault" then highlight in the
             # swishtitle and swishdescription properties
-	    # Do not include "fake" metanames defined with meta_groups, just
+            # Do not include "fake" metanames defined with meta_groups, just
             # list the real metanames used in your index, and the properties they
             # relate to.
 
@@ -382,22 +382,22 @@ sub default_config {
         # The default is to search all indexes specified if this is not used.
         # When used, the first index is the default index.
 
-        # You need to specify your indexes as an array reference: 
-        #swish_index     => [ qw/ index.swish-e index.other index2.other index3.other index4.other / ], 
+        # You need to specify your indexes as an array reference:
+        #swish_index     => [ qw/ index.swish-e index.other index2.other index3.other index4.other / ],
 
         Xselect_indexes  => {
-	    # pick radio_group, popup_menu, or checkbox_group
+            # pick radio_group, popup_menu, or checkbox_group
             method  => 'checkbox_group',
             #method => 'radio_group',
             #method => 'popup_menu',
 
             columns => 3,
             # labels must match up one-to-one with elements in "swish_index"
-            labels  => [ 'Main Index', 'Other Index', qw/ two three four/ ],  
+            labels  => [ 'Main Index', 'Other Index', qw/ two three four/ ],
             description => 'Select Site: ',
-            
+
             # Optional - Set the default index if none is selected
-            # This needs to be an index file name listed in swish_index 
+            # This needs to be an index file name listed in swish_index
             # above, not a label
 
             default_index => '',
@@ -538,7 +538,7 @@ sub default_config {
             property_name   => 'swishlastmodified',      # property name to limit by
 
             # what you specify here depends on the DateRanges.pm module.
-            time_periods    => [  
+            time_periods    => [
                 'All',
                 'Today',
                 'Yesterday',
@@ -567,7 +567,7 @@ sub default_config {
 
         # This only works on unix-based systems when running the swish-e binary.
         # It greps /swish-e/ from the output of ps and aborts if the count is < limit_procs
-        
+
         # Set max number of swish-e binaries and ps command to run
         limit_procs     => 0,  # max number of swish process to run (zero to not limit)
         ps_prog         => '/bin/ps -Unobody -ocommand',  # command to list number of swish binaries
@@ -598,7 +598,7 @@ sub handler {
 
         # Already cached?
         # Note that this is cached for the life of the server -- must restart if want to change config
-        
+
         if ( $cached_configs{ $config_path } ) {
             process_request( $cached_configs{ $config_path } );
             return Apache::Constants::OK();
@@ -673,7 +673,7 @@ sub merge_read_config {
     }
 
     set_debug( $return );
-        
+
 
     # Merge settings
     return { %$config, %$return };
@@ -735,7 +735,7 @@ sub set_debug {
 
     print STDERR "Debug level set to: $conf->{debug} [", join( ', ', @debug_str), "]\n";
 }
-        
+
 
 #============================================================================
 #
@@ -753,15 +753,15 @@ sub process_request {
 
     # Limit number of requests - questionable value
     limit_swish( $conf->{limit_procs}, $conf->{ps_prog} )
-        if !$conf->{use_library} 
+        if !$conf->{use_library}
           && $conf->{limit_procs} && $conf->{limit_procs} =~ /^\d+$/
           && $conf->{ps_prog};
-    
+
 
 
     # Set default property used or the href link to the document
     $conf->{link_property} ||= 'swishdocpath';
-   
+
     # Use CGI.pm by default
     my $request_package = $conf->{request_package} || 'CGI';
 
@@ -790,7 +790,7 @@ sub process_request {
         request   => $request_object,
     );
 
-   
+
 
 
     # run the query (run if there's a query)
@@ -799,7 +799,7 @@ sub process_request {
     if ( $search->hits ) {
         $search->set_navigation;  # sets links
     }
-        
+
 
 
     show_debug_output( $conf, $search )
@@ -815,7 +815,7 @@ sub process_request {
 sub limit_swish {
     my ( $limit_procs, $ps_prog ) = @_;
 
-    
+
     my $num_procs = scalar grep { /swish-e/ } `$ps_prog`;
     return if $num_procs <= $limit_procs;
 
@@ -835,7 +835,7 @@ EOF
 
     exit;
 }
-        
+
 
 
 
@@ -891,7 +891,7 @@ sub set_debug_input {
 
     $conf->{page_size} = $max;
 }
-    
+
 #==================================================================
 # show debugging output
 #
@@ -1064,12 +1064,12 @@ sub results {
 sub navigation {
     my $self = shift;
     return unless ref $self->{navigation} eq 'HASH';
-    
+
     return exists $self->{navigation}{$_[0]} ? $self->{navigation}{$_[0]} : '';
 }
 
 sub CGI { $_[0]->{q} };
-    
+
 
 
 
@@ -1134,10 +1134,10 @@ sub errstr {
 sub set_query {
     my $self = shift;
     my $q = $self->{q};
-    
+
     # Sets the query string, and any -L limits.
     return unless $self->build_query;
-   
+
     # Set the starting position (which is offset by one)
 
     my $start = $q->param('start') || 0;
@@ -1145,7 +1145,7 @@ sub set_query {
 
     $self->swish_command( '-b', $start+1 );
 
-    
+
 
     # Set the max hits
 
@@ -1162,11 +1162,11 @@ sub set_query {
 
     return 1;
 
-}    
+}
 
 
 
-    
+
 
 #============================================
 # This returns "$self" just in case we want to seperate out into two objects later
@@ -1206,7 +1206,7 @@ sub run_query {
         $self->errstr(
             $@ =~ /$time_out_str/
             ? "Search timed out after $timeout seconds."
-            : "Service currently unavailable" 
+            : "Service currently unavailable"
         );
         return $self;
     }
@@ -1221,7 +1221,7 @@ sub set_navigation {
 
 
     # Single string
-    
+
     # default fields
     my @std_fields = qw/query metaname sort reverse/;
 
@@ -1237,14 +1237,14 @@ sub set_navigation {
 
 
     # Perhaps arrays
-    
+
     for my $p ( qw/si sbm/ ) {
         my @settings = $q->param($p);
         next unless @settings;
         push @query_string,  "$p=" . $q->escape( $_ ) for @settings;
     }
 
-    
+
 
 
     if ( $self->config('date_ranges' ) ) {
@@ -1255,13 +1255,13 @@ sub set_navigation {
 
     $self->{query_href} = $q->script_name . '?' . join '&amp;', @query_string;
     $self->{my_url} = $q->script_name;
-    
+
 
     my $hits = $self->hits;
 
     my $start = $self->swish_command('-b') || 1;
     $start--;
-        
+
     $self->{navigation}  = {
             showing     => $hits,
             from        => $start + 1,
@@ -1276,8 +1276,8 @@ sub set_navigation {
     $self->set_page ( $self->swish_command( '-m' ) );
 
     return $self;
-    
-}        
+
+}
 
 
 #============================================================
@@ -1289,7 +1289,7 @@ sub build_query {
     my $self = shift;
 
     my $q = $self->{q};
-    
+
 
     # set up the query string to pass to swish.
     my $query = $q->param('query') || '';
@@ -1301,7 +1301,7 @@ sub build_query {
 
     $self->{query_simple} = $query;    # without metaname
     $q->param('query', $query );  # clean up the query, if needed.
-    
+
 
     # Read in the date limits, if any.  This can create a new query, which is why it is here
     return unless $self->get_date_limits( \$query );
@@ -1382,10 +1382,10 @@ sub set_index_file {
     my $self = shift;
 
     my $q = $self->CGI;
-    
+
     # Set the index file - first check for options
 
-    my $si =  $self->config('select_indexes');    
+    my $si =  $self->config('select_indexes');
     if ( $si && ref $self->config('swish_index') eq 'ARRAY'  ) {
 
         my @choices = $q->param('si');
@@ -1441,7 +1441,7 @@ sub get_date_limits {
     eval { require SWISH::DateRanges };
     if ( $@ ) {
         print STDERR "\n------ Can't use DateRanges feature ------------\n",
-                     "\nScript will run, but you can't use the date range feature\n", 
+                     "\nScript will run, but you can't use the date range feature\n",
                      $@,
                      "\n--------------\n" if $conf->{debug};
 
@@ -1459,7 +1459,7 @@ sub get_date_limits {
     }
 
     # Store the values for later (for display on templates)
-    
+
     $self->{DateRanges_time_low} = $limits{dr_time_low};
     $self->{DateRanges_time_high} = $limits{dr_time_high};
 
@@ -1523,7 +1523,7 @@ sub set_sort_order {
     if ( $conf->{secondary_sort} ) {
         my @secondary = ref $conf->{secondary_sort} ? @{ $conf->{secondary_sort} } : $conf->{secondary_sort};
 
-        push @sort_params, @secondary         
+        push @sort_params, @secondary
             if $sortby ne $secondary[0];
     }
 
@@ -1541,13 +1541,13 @@ sub set_sort_order {
 # Feel free to clean this code up!
 #
 #   Pass:
-#       $resutls - reference to a hash (for access to the headers returned by swish)
+#       $results - reference to a hash (for access to the headers returned by swish)
 #       $q       - CGI object
 #
 #   Returns:
 #       Sets entries in the $results hash
 #
-    
+
 sub set_page {
 
     my ( $self, $Page_Size ) = @_;
@@ -1556,22 +1556,22 @@ sub set_page {
     my $config = $self->{config};
 
     my $navigation = $self->{navigation};
-    
-        
+
+
     my $start = $navigation->{from} - 1;   # Current starting record index
-    
+
 
     # Set start number for "prev page" and the number of hits on the prev page
-    
+
     my $prev = $start - $Page_Size;
     $prev = 0 if $prev < 0;
 
     if ( $prev < $start ) {
         $navigation->{prev} = $prev;
-        $navigation->{prev_count} = $start - $prev;  
+        $navigation->{prev_count} = $start - $prev;
     }
 
-    
+
     my $last = $navigation->{hits} - 1;
 
 
@@ -1590,9 +1590,9 @@ sub set_page {
 
     # Calculate pages  ( is this -1 correct here? )
     # Build an array of a range of page numbers.
-    
+
     my $total_pages = int (($navigation->{hits} -1) / $Page_Size);  # total pages for all results.
-    
+
     if ( $total_pages ) {
 
         my @pages = 0..$total_pages;
@@ -1605,7 +1605,7 @@ sub set_page {
 
 
         # If too many pages then limit
-        
+
         if ( @pages > $show_pages ) {
 
             my $start_page = int ( $start / $Page_Size - $show_pages/2) ;
@@ -1614,21 +1614,21 @@ sub set_page {
             # if close to the end then move of center
             $start_page = $total_pages - $show_pages
                 if $start_page + $show_pages - 1 > $total_pages;
-            
+
             @pages = $start_page..$start_page + $show_pages - 1;
 
 
             # Add first and last pages, unless config says otherwise
             unshift @pages, 0
                 unless $start_page == 0 || $config->{no_first_page_navigation};
-                
+
             push @pages, $total_pages
                 unless $start_page + $show_pages - 1 == $total_pages || $config->{no_last_page_navigation}
         }
 
 
         # Build "canned" pages HTML
-    
+
         $navigation->{pages} =
             join ' ', map {
                 my $page_start = $_ * $Page_Size;
@@ -1641,7 +1641,7 @@ sub set_page {
 
         # Build just the raw data - an array of hashes
         # for custom page display with templates
-        
+
         $navigation->{page_array} = [
             map {
                     {
@@ -1651,8 +1651,8 @@ sub set_page {
                     }
                 } @pages
         ];
-                    
-                    
+
+
     }
 
 }
@@ -1678,7 +1678,7 @@ sub get_date_ranges {
 
 
     # Set the layout:
-    
+
     my $string = '<br>Limit to: '
                  . ( $fields{buttons} ? "$fields{buttons}<br>" : '' )
                  . ( $fields{date_range_button} || '' )
@@ -1690,7 +1690,7 @@ sub get_date_ranges {
 }
 
 
-    
+
 #============================================
 # Run swish-e and gathers headers and results
 # Currently requires fork() to run.
@@ -1713,12 +1713,12 @@ sub run_swish {
     my $conf    = $self->{config};
     my $q       = $self->{q};
 
-    
+
     my @properties;
     my %seen;
 
     # Gather up the properties we need in results
-    
+
     for ( qw/ title_property description_prop display_props link_property/ ) {
         push @properties, ref $conf->{$_} ? @{$conf->{$_}} : $conf->{$_}
             if $conf->{$_} && !$seen{$_}++;
@@ -1729,7 +1729,7 @@ sub run_swish {
         push @properties, $_ unless $seen{$_};
     }
 
-    
+
     # add in the default prop - a number must be first (this might be a duplicate in -x, oh well)
     unshift @properties, 'swishreccount';
 
@@ -1746,12 +1746,12 @@ sub run_swish {
     }
 
 
-    
+
 
 
 
     # Use the swish-e library?
-    
+
     return $self->run_library( @properties )
         if $self->config('use_library');
 
@@ -1837,7 +1837,7 @@ sub html_escape {
 #============================================================================
 # Adds a result to the result list and highlight the search words
 
-# This is a common source of bugs!  The problem is that highlighting is done in this code. 
+# This is a common source of bugs!  The problem is that highlighting is done in this code.
 # This is good, especially for the description because it is trimmed down as processing each
 # result.  Otherwise, would use a lot of memory. It's bad because the highlighting is
 # creating html which really should be done in the template output code.
@@ -1861,7 +1861,7 @@ sub add_result_to_list {
     # because all properties are escaped.
 
     my $link_property = $self->config('link_property') || 'swishdocpath';
-    my $link_href = ( $self->config('prepend_path') || '' ) 
+    my $link_href = ( $self->config('prepend_path') || '' )
                                   . $props->{$link_property};
 
     # Replace spaces ***argh this is the wrong place to do this! ***
@@ -1895,13 +1895,13 @@ sub add_result_to_list {
     $props->{link_property} = $link_href;  # backwards compatible
 
 
-}    
+}
 
 
 #=======================================================================================
 
 
-# This will call the highlighting module as needed.  
+# This will call the highlighting module as needed.
 # The highlighting module MUST html escape the property.
 # returns a hash of properties highlighted
 
@@ -1937,15 +1937,15 @@ sub highlight_props {
     # this is probably backwards -- might be better to loop through the %$props
 
     while ( my( $meta, $phrases ) = each %{$self->{parsed_query}} ) {
-	next unless $meta_to_prop->{$meta};  # is it a prop defined to highlight?
+        next unless $meta_to_prop->{$meta};  # is it a prop defined to highlight?
 
-	# loop through the properties for the metaname
+        # loop through the properties for the metaname
 
-	for ( @{ $meta_to_prop->{$meta} } ) {
-	    if ( $props->{$_} ) {
-		$highlighted{$_}++ if $highlight_object->highlight( \$props->{$_}, $phrases, $_ );
-	    }
-	}
+        for ( @{ $meta_to_prop->{$meta} } ) {
+            if ( $props->{$_} ) {
+                $highlighted{$_}++ if $highlight_object->highlight( \$props->{$_}, $phrases, $_ );
+            }
+        }
     }
 
     return \%highlighted;
@@ -2122,7 +2122,7 @@ sub real_fork {
     my ( $conf, $self ) = @_;
 
 
-    # Run swish 
+    # Run swish
     my $fh = gensym;
     my $pid = open( $fh, '-|' );
 
@@ -2189,7 +2189,7 @@ a date range.
 
 On unix type systems the swish.cgi script is installed in the directory
 $prefix/lib/swish-e, which is typically /usr/local/lib/swish-e.  This
-can be overridden by the configure options --prefix or --libexecdir. 
+can be overridden by the configure options --prefix or --libexecdir.
 
 The standard configuration (i.e. not using a config file) should work
 with most swish index files.  Customization of the parameters will be
@@ -2204,10 +2204,10 @@ of configuration modifications.
 
 The script is modular in design.  Both the highlighting code and
 output generation is handled by modules, which are included in the
-F<example/modules> distribution directory and installed in the 
+F<example/modules> distribution directory and installed in the
 $libexecdir/perl directory.
 This allows for easy customization of
-the output without changing the main CGI script. 
+the output without changing the main CGI script.
 
 Included with the Swish-e distribution is a module to generate standard HTML
 output.  There's also modules and template examples to use with the popular
@@ -2370,7 +2370,7 @@ Here's one way to find out where perl is located (again, on unix):
     ~/swishdir$ which perl
     /usr/local/bin/perl
 
-    ~/swishdir$ /usr/local/bin/perl -v   
+    ~/swishdir$ /usr/local/bin/perl -v
     This is perl, v5.6.0 built for i586-linux
     ...
 
@@ -2415,7 +2415,7 @@ static page.  Apache needs to be told that swish.cgi is a CGI script.
 
 F<.htaccess> comes to the rescue:
 
-    ~/swishdir$ cat .htaccess 
+    ~/swishdir$ cat .htaccess
 
     # Deny everything by default
     Deny From All
@@ -2625,7 +2625,7 @@ The settings you use will depend on the index you create with swish:
         metanames       => [qw/swishdefault swishdocpath swishtitle/],
         display_props   => [qw/swishtitle swishlastmodified swishdocsize swishdocpath/],
         title_property  => 'swishdocpath',
-        prepend_path    => 'http://myhost/apachedocs', 
+        prepend_path    => 'http://myhost/apachedocs',
 
         name_labels => {
             swishdefault        => 'Search All',
@@ -2750,9 +2750,9 @@ Here are some examples:
 
     ~/swishtest$ SWISH_DEBUG=basic ./swish.cgi >outfile
     Debug level set to: 1
-    Enter a query [all]: 
+    Enter a query [all]:
     Using 'not asdfghjklzxcv' to match all records
-    Enter max results to display [1]: 
+    Enter max results to display [1]:
 
     ------ Can't use DateRanges feature ------------
 
@@ -2792,9 +2792,9 @@ Now, let's try again:
               'title' => 'Search the Apache Documentation'
             };
     -------------------------
-    Enter a query [all]: 
+    Enter a query [all]:
     Using 'not asdfghjklzxcv' to match all records
-    Enter max results to display [1]: 
+    Enter max results to display [1]:
     Found 1 results
 
     Can't locate SWISH::TemplateDefault.pm in @INC (@INC contains: modules /usr/local/lib/perl5/5.6.0/i586-linux /usr/local/lib/perl5/5.6.0 /usr/local/lib/perl5/site_perl/5.6.0/i586-linux /usr/local/lib/perl5/site_perl/5.6.0 /usr/local/lib/perl5/site_perl/5.005/i586-linux /usr/local/lib/perl5/site_perl/5.005 /usr/local/lib/perl5/site_perl .) at ./swish.cgi line 608.
@@ -2821,12 +2821,12 @@ your configuration file (or to the swish.cgi script):
               'title' => 'Search the Apache Documentation'
             };
     -------------------------
-    Enter a query [all]: 
+    Enter a query [all]:
     Using 'not asdfghjklzxcv' to match all records
-    Enter max results to display [1]: 
+    Enter max results to display [1]:
     Found 1 results
 
-That is much better!  
+That is much better!
 
 The "use lib" statement tells Perl where to look for modules by adding the path supplied
 to an array called @INC.
@@ -2868,9 +2868,9 @@ Ok, let's find out what output it is returning:
               'title' => 'Search the Apache Documentation'
             };
     -------------------------
-    Enter a query [all]: 
+    Enter a query [all]:
     Using 'not asdfghjklzxcv' to match all records
-    Enter max results to display [1]: 
+    Enter max results to display [1]:
       usage: swish [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]
       ...
     version: 2.0
@@ -2894,8 +2894,8 @@ example/modules/SWISH directory in the distribution, but are installed in
 the $prefix/lib/swish-e/perl/SWISH/ directory.
 
 To make simple changes you can edit the installed SWISH::TemplatDefault
-module directly, otherwise make a copy of the module and modify its package 
-name.  For example, change directories to the location of the installed 
+module directly, otherwise make a copy of the module and modify its package
+name.  For example, change directories to the location of the installed
 module and copy the module to a new name:
 
     $ cp TemplateDefault.pm MyTemplateDefault.pm
@@ -2912,8 +2912,8 @@ the top of F<swish.cgi> or in a configuration file:
             package     => 'SWISH::MyTemplateDefault',
         },
 
-The module does not need to be in the SWISH namespace, and can be stored in 
-any location as long as the module can be found via the @INC array (i.e. 
+The module does not need to be in the SWISH namespace, and can be stored in
+any location as long as the module can be found via the @INC array (i.e.
 modify the "use lib" statement in swish.cgi if needed).
 
 
@@ -2941,7 +2941,7 @@ All of the output generation modules are passed a hash with the results from the
 output page.  You can see this hash by using the debugging option "dump" or by using the included SWISH::TemplateDumper
 module:
 
-    ~/swishtest >cat .swishcgi.conf 
+    ~/swishtest >cat .swishcgi.conf
         return {
            title       => 'Search the Apache Documentation',
            template => {
@@ -2975,7 +2975,7 @@ swish.cgi script for:
     # Or use this instead -- PLEASE see perldoc CGI::Carp for details
     # use CGI::Carp qw(fatalsToBrowser warningsToBrowser);
 
-And change it to look like:    
+And change it to look like:
 
     #use Carp;
     # Or use this instead -- PLEASE see perldoc CGI::Carp for details
@@ -2993,7 +2993,7 @@ The most common reason for this message is that you did not use StoreDescription
     StoreDescription HTML* <body> 200000
 
 That tells swish to store the first 200,000 characters of text extracted from the body of each document parsed
-by the HTML parser.  The text is stored as property "swishdescription".  
+by the HTML parser.  The text is stored as property "swishdescription".
 
 The index must be recreated after changing the swish-e configuration.
 
@@ -3006,7 +3006,7 @@ will display the properties defined in your index file.
 This can happen with other properties, too.
 For example, this will happen when you are asking for a property to display that is not defined in swish.
 
-    ~/swishtest > ./swish-e -w install -m 1 -p foo   
+    ~/swishtest > ./swish-e -w install -m 1 -p foo
     # SWISH format: 2.1-dev-25
     # Search words: install
     err: Unknown Display property name "foo"
@@ -3031,9 +3031,9 @@ is asking for "foo" (sorry for the long lines):
 
     ~/swishtest > SWISH_DEBUG=command ./swish.cgi > /dev/null
     Debug level set to: 3
-    Enter a query [all]: 
+    Enter a query [all]:
     Using 'not asdfghjklzxcv' to match all records
-    Enter max results to display [1]: 
+    Enter max results to display [1]:
     ---- Running swish with the following command and parameters ----
     ./swish-e  \
     -w  \
@@ -3247,7 +3247,7 @@ you found this file) and called something like:
 
     SWISH-Stemmer-0.05.tar.gz
 
-The module should also be available on CPAN (http://search.cpan.org/).    
+The module should also be available on CPAN (http://search.cpan.org/).
 
 Here's an example session for installing the module.  (There will be quite a bit of output
 when running make.)
