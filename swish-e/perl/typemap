@@ -5,7 +5,7 @@ SW_HANDLE   O_OBJECT
 SW_SEARCH   O_OBJECT
 SW_RESULTS  O_OBJECT
 SW_RESULT   O_OBJECT
-
+SW_FUZZYWORD O_OBJECT
 
 # From: "perlobject.map"  Dean Roehrich, version 19960302
 # O_OBJECT	-> link an opaque C or C++ object to a blessed Perl object.

@@ -413,7 +413,47 @@ $swish->HeaderValue(), but the index file is not specified
 
 =item $stemmed_word = $swish->StemWord( $word );
 
+*Depreciated*
+
 Returns the stemmed version of the passed in word.
+
+Depreciated because only stems using the original Porter Stemmer
+and uses a shared memory location in the SW_HANDLE object to store the stemmed
+word.  See below for other stemming options.
+
+=item $mode_string = $result->FuzzyMode;
+
+Returns the string (e.g. "Stemming_en", "Soundex", "None" ) indicating the stemming
+method used while indexing the given document.
+
+=item $fuzzy_word = $result->FuzzyWord( $word );
+
+Converts $word using the same fuzzy mode used to index the $result.
+Returns a SWISH::API::FuzzyWord object.  Methods on the object are used
+to access the converted words and other data as shown below.
+
+=item $count = $fuzzy_word->WordCount;
+
+Returns the number of output words.  Normally this is the value one, but may
+be more depending on the stemmer used.  DoubleMetaphone can return two strings 
+for a single input string.
+
+=item $status = $fuzzy_word->WordError;
+
+Returns any error code that the stemmer might set.  Normally, this return value
+is zero, indicating that the stemming/fuzzy operation succedded.  The values returned
+are defined in the swish-e source file /src/stemmer.h.
+
+=item @words = $fuzzy_word->WordList;
+
+Returns the converted words from the stemming/fuzzy operation.  Normally, the array will
+contain a single element, although may contain more (i.e. if DoubleMetaphone is
+used and the input word returns two strings).
+
+In the even that a word does not stem (e.g. trying to stem a number), this method
+will return the original input word specified when $result->FuzzyWord( $word )
+was called.
+
 
 =item @parsed_words = $swish->SwishWords( $string, $index_file );
 
