@@ -1150,8 +1150,6 @@ sub run_swish {
 sub highlight {
     my ( $results, $text_ref, $stemmer_function, $wc_regexp, $extract_regexp, $match_regexp ) = @_;
 
-    
-
 
     my $last = 0;
 
@@ -1166,6 +1164,7 @@ sub highlight {
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
     my @words = split /$wc_regexp/, $$text_ref;
 
+    return 'No Content saved: Check StoreDescription setting' unless @words;
 
     my @flags;
     $flags[$#words] = 0;  # Extend array.
