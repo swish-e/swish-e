@@ -256,7 +256,7 @@ char *getResultPropAsString(RESULT *result, int ID)
         if ( !(prop = getDocProperty( result, &meta_entry, ID )) )
             return estrdup("");
 
-        /* $$$ Ignores other properties! */
+        /* $$$ Ignores possible other properties that are linked to this one */
         s = DecodeDocProperty( meta_entry, prop );
 #ifdef PROPFILE
         freeProperty( prop );
@@ -785,7 +785,6 @@ void     WritePropertiesToDisk( SWISH *sw )
     if ( !fi->docProperties )
         return;
 
-    
     docProperties = fi->docProperties;
 
     /* create an array to hold the properties */
@@ -863,6 +862,7 @@ void     WritePropertiesToDisk( SWISH *sw )
     }
 
 
+
     fi->propTotalLen = total_len;
 
     efree( buffer );
@@ -893,6 +893,8 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     struct  metaEntry meta_entry;
     char   *buf;
     char   *propbuf;
+    long    seek_pos = -1;
+    int     i;
 
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
@@ -901,9 +903,21 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
 
     /* already loaded? */
     if ( fi->docProperties )
+        return fi->docProperties;
+        
 
     if ( !fi->propTotalLen )
         return NULL;
+
+    for ( i = 0; i < fi->propLocationsCount; i++ )
+        if ( fi->propSize[i] )
+        {
+            seek_pos = fi->propLocations[ i ];
+            break;
+        }
+
+    if ( seek_pos < 0 )
+        progerr("failed to find seek postion for first property in file %d", filenum );
 
 
     propbuf = buf = ( char * ) emalloc( fi->propTotalLen+1 );
@@ -913,7 +927,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     {
         struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
 
-        if ( fseek(DB->prop,fi->propLocations[0],0) == -1 )
+        if ( fseek( DB->prop, seek_pos, 0 ) == -1 )
             progerrno("Failed to seek to properties located at %ld for file number %d", fi->propLocations, filenum );
 
         if ( fread(buf, 1, fi->propTotalLen, DB->prop) == -1 )
@@ -946,6 +960,10 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         meta_entry.metaID = tempPropID;
 
         addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
+
+        /* found ending null? */
+        if (!*buf )
+            break;
 
         tempPropID = uncompress2((unsigned char **)&buf);
     }
@@ -998,7 +1016,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 
         if ( !(docProp = fi->docProperties->propEntry[ metaID ]) )
             return NULL;
-        
+
         propLen = docProp->propLen;
         if ( max_size && (max_size >= 8) && (max_size < propLen ))
             propLen = max_size;
@@ -1067,7 +1085,8 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 }
 
 /*******************************************************************
-*   Packs the file entries data on where properties are stored
+*   Packs the file ENTRY's data related to properties into a buffer,
+*   which is later written to the index file.
 *
 *********************************************************************/
 unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
@@ -1084,7 +1103,7 @@ unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
     p = compress3( fi->propLocationsCount+1, p );
     p = compress3( fi->propTotalLen+1, p);
 
-    /* Now save the offsets and sizes - not that this currently saves even the NULLs */
+    /* Now save the offsets and sizes - note that this currently saves even the NULLs */
     for ( i = 0; i < fi->propLocationsCount; i++ )
     {
         p = compress3( fi->propLocations[i] + 1, p );
@@ -1097,7 +1116,7 @@ unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
 }
 
 /*******************************************************************
-*   Unpacks the file entries data on where properties are stored
+*   Unpacks the file ENTRY's data
 *
 *********************************************************************/
 unsigned char *UnPackPropLocations( struct file *fi, char *buf )
