@@ -219,14 +219,46 @@ typedef struct {
 } RankFactor;
 
 static RankFactor ranks[] = {
-    {IN_TITLE,        RANK_TITLE},
-    {IN_HEADER,        RANK_HEADER},
+    {IN_TITLE,       RANK_TITLE},
+    {IN_HEADER,      RANK_HEADER},
     {IN_META,        RANK_META},
     {IN_COMMENTS,    RANK_COMMENTS},
-    {IN_EMPHASIZED,    RANK_EMPHASIZED}
+    {IN_EMPHASIZED,  RANK_EMPHASIZED}
 };
 
 #define numRanks (sizeof(ranks)/sizeof(ranks[0]))
+
+
+/******************************************************************************
+* build_struct_map
+*
+*   Builds an array to hold all possible structure bits
+*   to adjust the rank by structure faster
+*
+*   Words always have a value of one.  
+*
+*******************************************************************************/
+static void build_struct_map( SWISH *sw )
+{
+    int     structure;
+    int     i;
+
+    int     array_size = sizeof( sw->structure_map ) / sizeof( sw->structure_map[0]);
+
+    for ( structure = 0; structure < array_size; structure++ )
+    {
+        int factor = 1;  /* All words are of value 1 */
+        
+        for (i = 0; i < numRanks; i++)
+            if (ranks[i].mask & structure)
+                factor += ranks[i].rank;
+
+        sw->structure_map[structure] = factor;
+    }
+
+    sw->structure_map_set = 1;  /* flag */
+}
+        
 
 
 /* 2001-11 jmruiz With thousands results (>1000000) this routine is a bottleneck. 
@@ -239,108 +271,95 @@ static RankFactor ranks[] = {
 **                To avoid the loss of precission I use rank *10000,
 **                reduction *10000, factor *10000, etc...
 */
-int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, int filenum )
+
+int
+getrank( RESULT *r )
 {
-    int          factor;
-    int          rank;
-    int          reduction;
-    int          structure;
-    int             i;
+    int        *posdata;
+    int         meta_bias;
+    IndexFILE  *indexf;
+    int         rank;
+    int         reduction;
+    int         words;
+    int         i;
+    SWISH      *sw;
+    int         metaID;
 
-    factor = 1;
+
+    /* has rank already been calculated? */
+    if ( r->rank >= 0 )
+        return r->rank;
+
+    /* load data locally */
+    indexf  = r->db_results->indexf;
+    sw      = indexf->sw;
+    posdata = r->posdata;
 
 
-    /* add up the multiplier factor based on where the word occurs */
+    /* Get bias for the given metaID */
+    metaID = r->rank * -1;
+    meta_bias = indexf->header.metaEntryArray[ metaID - 1 ]->rank_bias;
 
-    /* 2002/jmruiz - This must be rewritten */
-    for(structure = 0, i = 0; i < freq; i++)
-        structure |= GET_STRUCTURE(posdata[i]);
 
-    if(GET_STRUCTURE(structure) != IN_FILE)
-        for (i = 0; i < numRanks; i++)
-            if (ranks[i].mask & structure)
-                factor += ranks[i].rank;
+    /* pre-build the structure map array */
+    if ( !sw->structure_map_set )
+        build_struct_map( sw );
 
-    if(freq > 1000)  /* rare case - Do not overrun the static arrays (they only have 1000 entries) */
-        rank = (int)(10000 * (floor(log((double)freq) + 0.5)));
+
+    
+
+
+    /* Add up the raw word values for each word position */
+    /* Might also bias words with low position values, for example */
+    /* Should really consider r->tfrequency, which is the number of files that have */
+    /*  this word.  If the word is not found in many files then it should be ranked higher */
+
+    rank = 0;
+    for(i = 0; i < r->frequency; i++)
+    {
+        /* GET_STRUCTURE must return value in range! */
+        rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
+
+    }
+
+
+    if ( rank < 1 )
+        rank = 1;
+
+
+    /* Scale the rank - this was originally based on frequency, so with "rank" more likely to be over 1000 */
+
+    rank = rank > 1000
+        ? (int)(10000 * (floor(log((double)rank) + 0.5)))
+        : swish_log[rank] + 100000;  /* 100000 = 10 * 10000 */
+
+    /* This is off by default */
+    if ( indexf->header.ignoreTotalWordCountWhenRanking )
+        return ( r->rank = rank / 100);  
+            
+
+
+
+    /* bias by total words in the file -- this is off by default */
+
+    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
+    getTotalWordsPerFile(sw, indexf, r->filenum-1, &words);
+
+    if (words <= 10)
+        reduction = 10000;    /* 10000 * log10(10) = 10000 */
+    else if (words > 1000)
+    {
+        if(words >= 100000)   /* log10(10000) is 5 */
+            reduction = 50000;    /* As it was in previous version (5 * 10000) */
+        else           /* rare case - do not overrun the static arrays (tehy only have 1000 entries) */
+            reduction = (int) (10000 * (floor(log10((double)words) + 0.5)));
+    }
     else
-        rank = swish_log[freq] + 100000; /* 100000 = 10 * 10000 */
-
-
-//printf("%d freq:%d tfreq: %d  struct: %d factor: %d rank: %d ", filenum, freq, tfreq, structure, factor, rank );        
+        reduction = swish_log10[words];
         
+    r->rank = (rank * 100) / reduction;
 
-    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
-    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
-    {
-        int             words;
-
-        getTotalWordsPerFile(sw, indexf, filenum-1, &words);
-
-        if (words <= 10)
-            reduction = 10000;    /* 10000 * log10(10) = 10000 */
-        else if (words > 1000)
-        {
-            if(words >= 100000)   /* log10(10000) is 5 */
-                reduction = 50000;    /* As it was in previous version (5 * 10000) */
-            else           /* rare case - do not overrun the static arrays (tehy only have 1000 entries) */
-                reduction = (int) (10000 * (floor(log10((double)words) + 0.5)));
-        }
-        else reduction = swish_log10[words];
-        rank = (rank * factor * 100) / reduction;
-    }
-    /* multiply by the weighting factor, and scale to be sure we don't loose
-       precision when converted to an integer. The rank will be normalized later */
-    else
-    {
-        rank = (rank * factor) / 100;
-    }
-
-//printf(" finalrank: %d\n", rank );
-//rank = freq * factor;
-//printf("* Filenum %d freq %d factor %d  rank %d\n", filenum, freq, factor, rank );
-
-    return rank;
+    return r->rank;
 }
 
-int getrank_old(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, int filenum )
-{
-    double          factor;
-    double          rank;
-    double          reduction;
-    int             structure;
-    int             i;
-
-    /* 2002/jmruiz - This must be rewritten */
-    for(structure = 0, i = 0; i < freq; i++)
-        structure |= GET_STRUCTURE(posdata[i]);
-
-    factor = 1.0;
-
-    /* add up the multiplier factor based on where the word occurs */
-    for (i = 0; i < numRanks; i++)
-        if (ranks[i].mask & structure)
-            factor += ranks[i].rank;
-
-    rank = log((double)freq) + 10.0;
-
-    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
-    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
-    {
-        int             words;
-
-        getTotalWordsPerFile(sw, indexf, filenum-1, &words);
-
-        if (words < 10) words = 10;
-        reduction = log10((double)words);
-        if (reduction > 5.0) reduction = 5.0;
-        rank /= reduction;
-    }
-
-    /* multiply by the weighting factor, and scale to be sure we don't loose
-       precision when converted to an integer. The rank will be normalized later */
-    rank = rank * factor * 100.0 + 0.5;
-
-    return (int)rank;
-}
 

@@ -198,10 +198,7 @@ static int    *getLookupResultSortedProperties(RESULT * r)
         {
             if (is_meta_entry(m, AUTOPROPERTY_RESULT_RANK))
             {
-                /* If rank was delayed, compute it now */
-                if(r->rank == -1)
-                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->posdata, r->db_results->indexf, r->filenum );
-                props[i] = r->rank;
+                props[i] = getrank( r );
                 continue;
             }
 
@@ -391,6 +388,11 @@ int  sortresults(RESULTS_OBJECT *results)
             for (j = 0; j < files_in_index; j++)
             {
                 RESULT *r = sort_array[j];
+
+
+                /* Now's a good time to normalize the rank as we are processing each result */
+
+                getrank(r);  /* Make sure the rank is calculated */
                 
                 /* Find the largest rank for scaling */
                 if (r->rank > results->bigrank)
