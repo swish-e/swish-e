@@ -431,6 +431,10 @@ unsigned char PhraseDelimiterString[2];
 #ifdef IGNORE_STOPWORDS_IN_QUERY
 		tmplist = ignore_words_in_query(sw,indexlist,tmplist);
 #endif /* IGNORE_STOPWORDS_IN_QUERY */
+		if(indexlist->header.applyStemmingRules)
+			tmplist = stem_words_in_query(sw,indexlist,tmplist);
+		if(indexlist->header.applySoundexRules)
+			tmplist = soundex_words_in_query(sw,indexlist,tmplist);
 			/* Echo index file, fixed search, stopwords */
 		if (extended_info)
 		{
@@ -440,11 +444,12 @@ unsigned char PhraseDelimiterString[2];
 			for (k=0;k<indexlist->stopPos;k++)
 				printf(" %s",indexlist->stopList[k]);
 			printf("\n");
-			printf("# Parsed Search Words:");
+			printf("# Search Words: %s\n",words);
+			printf("# Parsed Words:");
 			tmplist2=tmplist; 
 			while(tmplist2)
 			{
-				printf(" %s",tmplist2->line);
+				printf("%s ",tmplist2->line);
 				tmplist2=tmplist2->next;
 			}
 			printf("\n");
@@ -1123,32 +1128,6 @@ int lenword;
 
 	newrp = returnrp = NULL;
 
-	if (indexf->header.applyStemmingRules)
-	{
-		/* apply stemming algorithm to the search term */
-		i=strlen(word)-1;
-		if(i && word[i]=='*') word[i]='\0';
-		else i=0; /* No star */
-		Stem(&word,&lenword);
-		if(i) 
-		{
-			tmp=emalloc(strlen(word)+2);
-			strcpy(tmp,word);
-			strcat(tmp,"*"); 
-			efree(word);
-			word=tmp;
-		}
-	}
-        if (indexf->header.applySoundexRules)
-        {
-                /* apply soundex algorithm to the search term */
-		i=strlen(word)-1;
-		if(i && word[i]=='*') word[i]='\0';
-		else i=0; /* No star */
-                soundex(word);   /* Need to fix word length ? */
-		if(i && (strlen(word)-1)<MAXWORDLEN) strcat(word,"*"); 
-        }
-
 	if (isstopword(indexf,word) && !isrule(word)) 
 	{
 		if (rulenum == OR_RULE && rp != NULL)
@@ -1338,7 +1317,7 @@ FILE *fp=indexf->fp;
 					uncompress1(x,fp);
 					position[j] = x;
 				}
-				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->fileoffsetarray[filenum-1]->ftotalwords,structure), structure,frequency,position,indexf);
+				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->fileoffsetarray[filenum-1]->ftotalwords,structure), structure,frequency,position,indexf,sw);
 				if (sw->verbose == 4)
 				{
 					/* dump diagnostic info */
@@ -1390,7 +1369,7 @@ FILE *fp=indexf->fp;
 	                while (rp != NULL) {
 				rp2 = (RESULT *) addtoresultlist(rp2,
 	                	rp->filenum, rp->rank, rp->structure,
-			        rp->frequency, rp->position,indexf);
+			        rp->frequency, rp->position,indexf,sw);
 				tmp = rp->next;
 				/* Do not free position in freeresult
 				It was added to rp2 !! */
@@ -1570,7 +1549,7 @@ int res=0;
 			allpositions=(int *)emalloc((r1->frequency+r2->frequency)*sizeof(int));
 			CopyPositions(allpositions,0,r1->position,0,r1->frequency);
 			CopyPositions(allpositions,r1->frequency,r2->position,0,r2->frequency);
-			newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, r1->frequency + r2->frequency, allpositions,r1->indexf);
+			newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, r1->frequency + r2->frequency, allpositions,r1->indexf,sw);
 			r1 = r1->next;
 			r2 = r2->next;
 		} else if(res>0) {
@@ -1627,7 +1606,7 @@ RESULT *newnode=NULL;
 		while (rp != NULL) {
 			newnode = (RESULT *) addtoresultlist(newnode,
 				rp->filenum, rp->rank, rp->structure,
-				rp->frequency, rp->position, rp->indexf);
+				rp->frequency, rp->position, rp->indexf,sw);
 			tmp = rp->next;
 				/* Do not free position in freeresult 
 				It was added to newnode !! */
@@ -1666,7 +1645,7 @@ RESULT *newp;
 	for (i = 1; i <= filenums; i++) {
 
 		if (!ismarked(i))
-			newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL,0,NULL,indexf);
+			newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL,0,NULL,indexf,sw);
 	}
 	
 	return newp;
@@ -1716,7 +1695,7 @@ int res=0;
 				* Storing positions is neccesary for further
 				* operations
 				*/
-				newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, found, allpositions,r1->indexf);
+				newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, found, allpositions,r1->indexf,sw);
 			}
 			r1 = r1->next;
 			r2 = r2->next;
@@ -1744,7 +1723,7 @@ int res=0;
 /* Adds a file number and rank to a list of results.
 */
 
-RESULT *addtoresultlist(rp, filenum, rank, structure, frequency, position,indexf)
+RESULT *addtoresultlist(rp, filenum, rank, structure, frequency, position,indexf,sw)
 RESULT *rp;
 int filenum;
 int rank;
@@ -1752,6 +1731,7 @@ int structure;
 int frequency;
 int *position;
 IndexFILE *indexf;
+SWISH *sw;
 {
 RESULT *newnode;
 	newnode = (RESULT *) emalloc(sizeof(RESULT));
@@ -1770,6 +1750,7 @@ RESULT *newnode;
 	newnode->Prop = NULL;
 	newnode->PropSort = NULL;
 	newnode->indexf = indexf;
+	newnode->sw = (struct SWISH *)sw;
 	
 	if (rp == NULL)
 		rp = newnode;
@@ -2122,7 +2103,7 @@ int *allpositions;
 			allpositions=(int *)emalloc((r1->frequency)*sizeof(int));
 			CopyPositions(allpositions,0,r1->position,0,r1->frequency);
 
-			newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure , r1->frequency, allpositions,r1->indexf);
+			newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure , r1->frequency, allpositions,r1->indexf,sw);
 			r1 = r1->next;
 		} else if(res>0) {
 			r2 = r2->next;
@@ -2135,7 +2116,7 @@ int *allpositions;
 	for(;r1;r1=r1->next) {
 		allpositions=(int *)emalloc((r1->frequency)*sizeof(int));
 		CopyPositions(allpositions,0,r1->position,0,r1->frequency);
-		newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure , r1->frequency, allpositions,r1->indexf);
+		newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure , r1->frequency, allpositions,r1->indexf,sw);
 	}
 			/* Free memory no longer needed */
 	while (r1b) {
@@ -2248,6 +2229,76 @@ struct swline *pointer1, *pointer2, *pointer3;
 		** we must not reassign it contents here
 		** pointer2 = pointer2->next;
 		*/
+	}
+	return searchwordlist;
+}
+
+struct swline *stem_words_in_query(sw,indexf,searchwordlist)
+SWISH *sw;
+IndexFILE *indexf;
+struct swline *searchwordlist;
+{
+struct swline *tmplist;
+int len,lenword;
+char *word,*tmp;
+
+	tmplist = searchwordlist;
+	while (tmplist != NULL) {
+		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) 
+		{
+			lenword=strlen(tmplist->line)+50;
+			word = emalloc(lenword+1);
+			strcpy(word,tmplist->line);
+			len=strlen(word)-1;
+			/* apply stemming algorithm to the search term */
+			len=strlen(word)-1;
+			if(len && word[len]=='*') word[len]='\0';
+			else len=0; /* No star */
+			Stem(&word,&lenword);
+			if(len) 
+			{
+				tmp=emalloc(strlen(word)+2);
+				strcpy(tmp,word);
+				strcat(tmp,"*"); 
+				efree(word);
+				word=tmp;
+			}
+			efree(tmplist->line);
+			tmplist->line=word;
+		}
+		tmplist=tmplist->next;
+	}
+	return searchwordlist;
+}
+
+struct swline *soundex_words_in_query(sw,indexf,searchwordlist)
+SWISH *sw;
+IndexFILE *indexf;
+struct swline *searchwordlist;
+{
+struct swline *tmplist;
+int len,lenword;
+char *word,*tmp;
+
+	tmplist = searchwordlist;
+	while (tmplist != NULL) {
+		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) 
+		{
+	                /* apply soundex algorithm to the search term */
+			/* Need to fix word length ? */
+			lenword=strlen(tmplist->line)+50;
+			word = emalloc(lenword+1);
+			strcpy(word,tmplist->line);
+			len=strlen(word)-1;
+			if(len && word[len]=='*') word[len]='\0';
+			else len=0; /* No star */
+			soundex(word);   /* Need to fix word length ? */
+			if(len && (strlen(word)-1)<MAXWORDLEN) 
+				strcat(word,"*");	 
+			efree(tmplist->line);
+			tmplist->line=word;
+		}
+		tmplist=tmplist->next;
 	}
 	return searchwordlist;
 }

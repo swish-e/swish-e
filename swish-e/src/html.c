@@ -181,7 +181,7 @@ struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameEntry;
 int i;
 IndexFILE *indexf=sw->indexlist;
-char *summary=NULL;
+char *Content=NULL,*Name=NULL,*summary=NULL;
 char *title=parsetitle(buffer,fprop->real_path);
 
 	if(!isoktitle(sw,title))
@@ -225,6 +225,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 			else newp=p;
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
+			structure=IN_FILE;
 				/* Now let us look for a not escaped '>' */
 			for(endtag=tag;;) 
 				if((endtag=strchr(endtag,'>'))) 
@@ -234,10 +235,10 @@ char *title=parsetitle(buffer,fprop->real_path);
 				} else break;
 			if(endtag) {  
 				*endtag++='\0';
-				structure = getstructure(tag,structure);
 				if((tag[0]=='!') && lstrstr(tag,"META") && (lstrstr(tag,"START") || lstrstr(tag,"END"))) {    /* Check for META TAG TYPE 1 */
+					structure |= IN_COMMENTS;
 					if(lstrstr(tag,"START")) {
-						if((metaNameEntry=getHTMLMeta(indexf,tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))) {
+						if((metaNameEntry=getHTMLMeta(indexf,tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta,NULL))) {
 							/* If must be indexed add the metaName to the currentlist of metaNames */
 							if(is_meta_index(metaNameEntry)) {
 								/* realloc memory if needed */
@@ -272,15 +273,16 @@ char *title=parsetitle(buffer,fprop->real_path);
 						p=endtag;
 					}
 				} /* Check for META TAG TYPE 2 */
-				else if((tag[0]!='!') && lstrstr(tag,"META") && lstrstr(tag,"NAME") && lstrstr(tag,"CONTENT")) { 
-					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,thisFileEntry);
+				else if((tag[0]!='!') && lstrstr(tag,"META") && (Name=lstrstr(tag,"NAME")) && (Content=lstrstr(tag,"CONTENT"))) { 
+					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,Name,Content,thisFileEntry);
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
 					ftotalwords +=parsecomment(sw,tag,sw->filenum,structure,1,positionMeta);
 					p=endtag;
 				}    /* Default: Continue */
-				else {    
+				else {   
+					structure = getstructure(tag,structure);
 					p=endtag;
 				}
 			} else p=tag;    /* tag not closed: continue */
@@ -391,12 +393,13 @@ int structure;
 
 */
 
-struct metaEntry *getHTMLMeta(indexf, tag, applyautomaticmetanames, verbose, OkNoMeta)
+struct metaEntry *getHTMLMeta(indexf, tag, applyautomaticmetanames, verbose, OkNoMeta, name)
 IndexFILE *indexf;
 char* tag;
 int *applyautomaticmetanames;
 int verbose;
 int OkNoMeta;
+char *name;
 {
 char* temp;
 static int lenword=0;
@@ -406,25 +409,25 @@ struct metaEntry *e=NULL;
 	
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
-	temp = (char*) lstrstr((char*)tag,(char*) "NAME");
-	if (temp == NULL)
-		return NULL;
-	
-	temp += strlen("NAME");
-	
-	/* Get to the '=' sign disreguarding blanks */
-	while (temp != NULL && *temp) {
-		if (*temp && (*temp != '='))  /* TAB */
+	if(!name)
+	{
+		if(!(temp = (char*) lstrstr((char*)tag,(char*) "NAME"))) return NULL;
+	} else temp=name;
+	temp += 4;   /* strlen("NAME") */
+
+	/* Get to the '=' sign disreguarding any other char */
+	while (*temp) {
+		if (*temp && (*temp != '='))  /* TAB */ 
 			temp++;
 		else {
 			temp++;
 			break;
 		}
 	}
-	
+
 	/* Get to the beginning of the word disreguarding blanks and quotes */
 	/* TAB */
-	while (temp != NULL && *temp) {
+	while (*temp) {
 		if (*temp == ' ' || *temp == '"' )
 			temp++;
 		else
@@ -487,12 +490,14 @@ struct metaEntry *e=NULL;
 }
 
 /* Parses the Meta tag */
-int parseMetaData(sw, indexf, tag, filenum, structure, thisFileEntry)
+int parseMetaData(sw, indexf, tag, filenum, structure, name, content, thisFileEntry)
 SWISH *sw;
 IndexFILE *indexf;
 char* tag;
 int filenum;
 int structure;
+char *name;
+char *content;
 struct file* thisFileEntry;
 {
 int metaName;
@@ -500,8 +505,7 @@ struct metaEntry *metaNameEntry;
 char *temp, *start, *convtag;
 int position=1; /* position of word */
 int wordcount=0; /* Word count */
-	temp = NULL;
-	metaNameEntry= getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta);
+	metaNameEntry= getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta,name);
 
 	/* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
 	if ( sw->ReqMetaName && !metaNameEntry )
@@ -514,33 +518,18 @@ int wordcount=0; /* Word count */
 	else
 		metaName=metaNameEntry->metaID;
 
-	temp = (char*) lstrstr((char*) tag,(char*) "CONTENT");
-	
-	/* if there is no  CONTENT is another tag so just ignore the whole thing
-	* the check is done here istead of before because META tags do not have
-	* a fixed length that can be checked
-	*/
-	if (temp != NULL && *temp) {
-		temp += strlen("CONTENT");
+	temp = content + 7;   /* 7 is strlen("CONTENT") */
 		
 		/* Get to the " sign disreguarding other characters */
-		while (*temp) {
-			if (*temp != '"')
-				temp++;
-			else {
-				temp++;
-				break;
-			}
-		}
-		
-		
+	if((temp=strchr(temp,'\"')))
+	{	
 		structure |= IN_COMMENTS;
 
-		start=temp;
+		start=temp+1;
 
 		/* Jump escaped \" */
-		temp=strchr(temp,'\"');
-		while(temp && *temp)
+		temp=strchr(start,'\"');
+		while(temp)
 		{ 
 			if(*(temp-1)=='\\') temp=strchr(temp+1,'\"');
 			else break;
@@ -548,7 +537,7 @@ int wordcount=0; /* Word count */
 
 		if (temp) 
 			*temp = '\0';	/* terminate CONTENT, temporarily */
-		
+	
 		if(sw->ConvertHTMLEntities)
 			convtag = (char *)convertentities(start, sw);
 		else convtag = start;

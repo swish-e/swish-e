@@ -33,21 +33,24 @@
 #include "string.h"
 #include "mem.h"
 
-/* My own case-insensitive strstr().
-*/
 
+/* Case-insensitive strstr(). */
+/* Jose Ruiz 02/2001 Faster one */
 char *lstrstr(s, t)
 char *s;
 char *t;
 {
-	int i, j, k, l;
-	
-	for (i = 0; s[i]; i++) {
-		for (j = 0, l = k = i; s[k] && t[j] &&
-			tolower(s[k]) == tolower(t[j]); j++, k++)
-			;
-		if (t[j] == '\0')
-			return s + l;
+int lens;
+int lent;
+int first=tolower((unsigned char)*t);
+	lent=strlen(t);
+	lens=strlen(s);
+	for (; lens && lent<=lens; lens--,s++) {
+		if(tolower((int)((unsigned char)*s))==first)
+		{
+			if(lent==1) return s;
+			if(strncasecmp(s+1,t+1,lent-1)==0) return s;
+		}
 	}
 	return NULL;
 }
@@ -95,7 +98,7 @@ char *word;
 	
 	*skiplen = line - start;
 
-		/* Do not wastw memory !! Resize word */	
+		/* Do not waste memory !! Resize word */	
 	p=word;
 	word=estrdup(p);
 	efree(p);
@@ -200,36 +203,6 @@ char* replaceWild (char* fileName, char* pattern, char* subs)
     }
 	return subs;
 }
-
-/* Like strcmp(), but the order of sorting the first char is
-** determined by the order of the characters in the wordchars array.
-*/
-
-/* Obsolete and slow
-int wordcompare(s1, s2)
-     char *s1;
-     char *s2;
-{
-	register int i, j;
-	
-	if (s1[0] != s2[0]) {
-		for (i = 0; wordchars[i] != '\0'; i++)
-			if (s1[0] == wordchars[i])
-			break;
-		for (j = 0; wordchars[j] != '\0'; j++)
-		{
-			if (s2[0] == wordchars[j])
-				break;
-		}
-		if (i < j)
-			return -1;
-		else
-			return 1;
-	}
-	else
-		return strcmp(s1, s2);
-}
-*/
 
 
 /* That regular expression matching and replacing thing */
@@ -677,7 +650,7 @@ char *p,*q;
 	*p='\0';
 }
 
-/* #### Function to conver binary data of length len to a string */
+/* #### Function to convert binary data of length len to a string */
 unsigned char *bin2string(unsigned char *data,int len)
 {
 unsigned char *s=NULL;
