@@ -438,10 +438,12 @@ sub convert {
     # Replace the list of filters with the current working ones
     $self->{filters} = \@cur_filters;
 
+    $doc_object->dump_filters_used  if $ENV{FILTER_DEBUG};
 
     return $doc_object;
 
 }
+
 
 # deprecitated
 sub original_content_type {
@@ -817,6 +819,22 @@ sub filters_used {
     my $self = shift;
     return $self->{filters_used} || undef;
 }
+
+sub dump_filters_used {
+    my $self = shift;
+    my $used = $self->filters_used;
+
+    local $SIG{__WARN__};
+    warn "\nFinal Content type for ", $self->name, " is ", $self->content_type, "\n";
+    
+    unless ( $used ) {
+        warn "  *No filters were used\n";
+        return;
+    }
+    
+    warn "  >Filter $_->{name} converted from [$_->{start_content_type}] to [$_->{end_content_type}]\n"
+        for @$used;
+}    
 
 =head2 Methods used by end-users and filter authors
 
