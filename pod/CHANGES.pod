@@ -10,6 +10,15 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Updates to the example scripts
+
+Updated PhraseHighlight.pm as suggested by Bill Schell for an optimization
+when all words in a document are highlighted.
+
+Updated search.cgi and PhraseHighlight.pm to use the internal stemmers via
+the SWISH::API module as suggested by Jonas Wolf.
+
+
 =item Leak when using C library
 
 David Windmueller found a memory leak when calling multiple searches
