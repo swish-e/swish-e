@@ -121,6 +121,11 @@ typedef struct
 
 
 // mem break point: helps a little to track down unfreed memory 
+// Say if you see 
+//      Unfreed: string.c line 958: Size: 11 Counter: 402
+// you can then add above line 958:  Mem_bp( 402 )
+// and then set a breakpoint for progwarn, and backtrace to find the allocation
+
 void Mem_bp(int n)
 {
     if ( n == memory_trace_counter )

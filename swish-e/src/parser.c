@@ -113,7 +113,7 @@ typedef struct {
 #define STACK_SIZE 255  // stack size, but can grow.
 
 typedef struct MetaStackElement {
-    struct MetaStackElement *next;      // pointer to sibling, if more one
+    struct MetaStackElement *next;      // pointer to *siblings*, if any
     struct metaEntry        *meta;      // pointer to meta that's inuse
     int                      ignore;    // flag that this meta turned on ignore
     char                     tag[1];    // tag to look for
@@ -573,8 +573,10 @@ static void free_parse_data( PARSE_DATA *parse_data )
 /*********************************************************************
 *   Start Tag Event Handler
 *
-*   These routines check to see if a given meta tag should be indexed
-*   and if the tags should be added as a property
+*   This is called by libxml2.  It normally just calls start_metaTag()
+*   and that decides how to deal with that meta tag.
+*   It also converts <meta> and <tag class=foo> into meta tags as swish
+*   would expect them (and then calls start_metaTag().
 *
 *   To Do:
 *       deal with attributes!
@@ -602,9 +604,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
     }
 
     strcpy(tag,(char *)el);
-    strtolower( tag );
-
-
+    strtolower( tag );  // xml?
 
 
     if ( parse_data->parsing_html )
@@ -645,33 +645,23 @@ static void start_hndl(void *data, const char *el, const char **attr)
     start_metaTag( parse_data, tag, tag, &meta_append, &prop_append, is_html_tag );
 
 
+
     /* Index the content of attributes */
+
     if ( !parse_data->parsing_html && attr )
     {
         int class_found = 0;
+
         /* Allow <foo class="bar"> to look like <foo.bar> */
+
         if ( parse_data->sw->XMLClassAttributes )
             class_found = start_XML_ClassAttributes( parse_data, tag, attr, &meta_append, &prop_append );
             
+
         /* Index XML attributes */
+
         if ( !class_found && parse_data->sw->UndefinedXMLAttributes != UNDEF_META_DISABLE )
             index_XML_attributes( parse_data, tag, attr );
-    }
-
-
-
-            
-
-
-
-
-    /* Look to enable StoreDescription - allow any tag */
-    /* Don't need to flush since this has it's own buffer */
-    {
-        SUMMARY_INFO    *summary = &parse_data->summary;
-
-        if ( summary->tag && (strcmp( tag, summary->tag ) == 0 ))
-            summary->active++;
     }
 
 }
@@ -682,6 +672,8 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
 /*********************************************************************
 *   End Tag Event Handler
+*
+*   Called by libxml2.
 *
 *
 *
@@ -726,14 +718,6 @@ static void end_hndl(void *data, const char *el)
 
 
     end_metaTag( parse_data, tag, is_html_tag );
-
-    /* Look to disable StoreDescription */
-    {
-        SUMMARY_INFO    *summary = &parse_data->summary;
-        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
-            summary->active--;
-    }
-
 }    
 
 
@@ -912,7 +896,8 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
         parse_data->word_pos++;
 
 
-    /* check for ignore tag (should propably remove char handler for speed) */
+    /* check for ignore tag (should probably remove char handler for speed) */
+    // Should specific property names and meta names override this?
     
     if ( isIgnoreMetaName( sw, tag ) )
     {
@@ -970,13 +955,32 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
     }
             
 
-    /* Check property names, again, limited to <meta> for html */
+    /* Check property names -- allows HTML tags as property names */
 
 
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
     {
         flush_buffer( parse_data, 7 );  // flush since it's a new meta tag
         push_stack( &parse_data->prop_stack, endtag, m, prop_append, 0 );
+    }
+
+
+
+    /* Look to enable StoreDescription - allow any tag */
+    /* Don't need to flush since this has it's own buffer */
+
+    // This should really be a property, and use aliasing as needed
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+
+        if ( summary->tag && (strcmp( tag, summary->tag ) == 0 ))
+        {
+            /* Flush data in buffer */
+            if ( 0 == summary->active )
+                flush_buffer( parse_data, 1 );
+
+            summary->active++;
+        }
     }
 
 }    
@@ -1001,6 +1005,21 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
     /* Don't allow matching across tag boundry */
     if (!is_html_tag && !isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
         parse_data->word_pos++;
+
+
+
+    /* Look to disable StoreDescription */
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
+        {        
+            /* Flush data in buffer */
+            if ( 1 == summary->active )
+                flush_buffer( parse_data, 1 );  // do first since flush buffer looks at summary->active
+
+            summary->active--;
+        }
+    }
 
 }
 
@@ -1300,7 +1319,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
 
 
-        flush_buffer( parse_data, 1 );
+        flush_buffer( parse_data, 1 ); // isn't needed, right?
         start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append, 0 );
         char_hndl( parse_data, content, strlen( content ) );
         end_metaTag( parse_data, tagbuf, 0 );
@@ -1421,7 +1440,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     if ( !buf->cur )
         return;
 
-    /* look back for word boundry */
+    /* look back for word boundry when "clear" is not set */
 
     if ( !clear && !isspace( (int)buf->buffer[buf->cur-1] ) )  // flush up to current word
     {
@@ -1462,7 +1481,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
         addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
 
 
-        /* yuck.  Ok, add to summary, if active */
+        /* yuck - addDocProperties should do this.  Ok, add to summary, if active */
         {
             SUMMARY_INFO    *summary = &parse_data->summary;
             if ( summary->active )
@@ -1785,9 +1804,12 @@ static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *ta
         return 0;
 
         
-    /* return if doesn't match stack */
+
+    /* return if doesn't match the tag at the top of the stack */
+   
     if ( strcmp( stack->stack[stack->pointer - 1]->tag, tag ) != 0 )
         return 0;
+
 
     flush_buffer( parse_data, 1 );
     pop_stack( stack );
@@ -1817,6 +1839,11 @@ static int pop_stack( MetaStack *stack )
         return 0;
 
     node =  stack->stack[--stack->pointer];
+
+    /* Now pop the stack. */
+
+    // Note that some end tags can pop more than one tag
+    // <foo class="bar"> can be to starting metanames <foo> and <foo:bar>, and </foo> pops all.
 
     while ( node )
     {
