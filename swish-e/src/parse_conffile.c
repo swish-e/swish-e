@@ -503,29 +503,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
         }
-        else if (strcasecmp(w0, "tmpdir") == 0)
-        {
-            if (sl->n == 2)
-            {
-                sw->Index->tmpdir = SafeStrCopy(sw->Index->tmpdir, sl->word[1], &sw->Index->lentmpdir);
-                if (!isdirectory(sw->Index->tmpdir))
-                {
-                    progerr("%s: %s is not a directory", w0, sw->Index->tmpdir);
-                }
-                else
-                {
-                    /* New names for temporal files */
-                    if (sw->Index->swap_file_name)
-                        efree(sw->Index->swap_file_name);
-                    if (sw->Index->swap_location_name)
-                        efree(sw->Index->swap_location_name);
-                    sw->Index->swap_file_name = tempnam(sw->Index->tmpdir, "swfi");
-                    sw->Index->swap_location_name = tempnam(sw->Index->tmpdir, "swlo");
-                }
-            }
-            else
-                progerr("%s: requires one value", w0);
-        }
 /* #### Added UndefinedMetaTags as defined by Bill Moseley */
         else if (strcasecmp(w0, "UndefinedMetaTags") == 0)
         {
@@ -597,16 +574,16 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
         }
-		else if (configModule_Entities(sw, sl));
+        else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
         else if (configModule_SearchAlt(sw, sl)); /* rasc */
 		/* Removed , patents ...
         else if (configModule_Deflate(sw, sl));*/ /* jmruiz */
-		else if (configModule_ResultSort(sw, sl)); /* jmruiz */
-		else if (configModule_DB(sw, sl)); /* jmruiz */
-		else if (configModule_Search(sw, sl)); /* jmruiz */
-		else if (configModule_Index(sw, sl)); /* jmruiz */
+        else if (configModule_ResultSort(sw, sl)); /* jmruiz */
+        else if (configModule_DB(sw, sl)); /* jmruiz */
+        else if (configModule_Search(sw, sl)); /* jmruiz */
+        else if (configModule_Index(sw, sl)); /* jmruiz */
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);
