@@ -46,6 +46,7 @@ $Id$
 **
 */
 
+#include <unistd.h>
 #include "swish.h"
 #include "mem.h"
 #include "string.h"
@@ -57,7 +58,6 @@ $Id$
 #include "index.h"
 #include "filter.h"
 #include "metanames.h"
-
 
 /* Is a file a directory?
 */
@@ -371,3 +371,107 @@ void    free_file_properties(FileProp * fprop)
     efree( fprop->orig_path );
     efree(fprop);
 }
+
+
+static char *temp_file_template = "XXXXXX";
+/***********************************************************************
+*  Create a temporary file
+*
+*   Call With:
+*       *SWISH              = to get at the TmpDir config setting which I don't like
+*       *prefix             = chars to prepend to the file name
+*       **file_name_buffer  = where to store address of file name
+*       unlink              = if true, will unlink file
+*                             if not unlinked, then caller must free the name
+*   Return:
+*       *FILE
+*       modified file_name_buffer
+*
+*   Will create temp files in the directory specified by environment vars
+*   TMPDIR and TMP, and by the config.h setting of TMPDIR in that order.
+*
+*   Note:
+*       It's expected that swish is not run suid, so
+*           (getuid()==geteuid()) && (getgid()==getegid())
+*       if not checked.  I'm not sure if that would choke on other platforms.
+*     
+*
+*   Source:
+*       http://www.linuxdoc.org/HOWTO/Secure-Programs-HOWTO/avoid-race.html
+*
+*   Questions:
+*       Can non-unix OS unlink the file and continue to hold the fd?
+*
+***********************************************************************/
+
+FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remove_file_name )
+{
+    int         temp_fd;
+    mode_t      old_mode;
+    FILE        *temp_file;
+    char        *file_name;
+    int         file_name_len;
+    struct MOD_Index *idx = sw->Index;
+    char        *tmpdir = NULL;
+    file_name_len = (prefix ? strlen(prefix) : 0) + strlen( temp_file_template );
+
+    
+
+    if ( !( tmpdir = getenv("TMPDIR")) )
+        tmpdir = getenv("TMP");
+
+    /* otherwise use configuration setting */
+    if ( !tmpdir )
+        tmpdir = idx->tmpdir;
+
+    if ( tmpdir )
+        file_name_len += strlen( tmpdir ) + 1;  // for path separator
+
+ 
+
+    file_name = emalloc( file_name_len + 1 );
+
+    *file_name = '\0';
+
+    if ( tmpdir )
+    {
+        strcat( file_name, tmpdir );
+        if ( file_name[ strlen(tmpdir)-1] != DIRDELIMITER )
+        {
+            file_name[ strlen(tmpdir)]     = DIRDELIMITER;
+            file_name[ strlen(tmpdir)+1]   = '\0';
+        }
+    }
+    
+    if ( prefix )
+        strcat( file_name, prefix );
+
+    strcat( file_name, temp_file_template );
+        
+    old_mode = umask(077);  /* Create file with restrictive permissions */
+
+    temp_fd = mkstemp( file_name );
+
+    (void) umask(old_mode);
+
+    if (temp_fd == -1)
+        progerrno("Couldn't open temporary file '%s': ", file_name );
+
+    if (!(temp_file = fdopen(temp_fd, "w+b")))
+        progerrno("Couldn't create temporary file '%s' file descriptor: ", file_name);
+
+    if ( remove_file_name )
+    {
+        if ( unlink( file_name ) == -1 )
+            progerrno("Couldn't unlink temporary file '%s' :", file_name);
+
+        efree( file_name );            
+    }
+    else
+        *file_name_buffer = file_name;
+
+        
+    return temp_file;
+}
+
+

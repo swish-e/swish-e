@@ -236,13 +236,6 @@ enum {
 // This is used to build the property to read/write to disk
 // It's here so the buffer can live between writes
 
-typedef struct
-{
-    unsigned long   propLen;        // uncompressed length.
-    unsigned  char  buffer[1];      // compressed or uncompressed data
-}
-PropIOBufType, *PropIOBufPtr;
-
 
 
 typedef struct propEntry
@@ -693,7 +686,7 @@ typedef struct
     struct MOD_PropLimit     *PropLimit;      /* For proplimit.c */
 
     unsigned long             PropIO_allocated;// total size of the structure
-    PropIOBufPtr              Prop_IO_Buf;     /* For compressing and uncompressing */
+    unsigned char            *Prop_IO_Buf;     /* For compressing and uncompressing */
     int                       PropCompressionLevel;
 
     /* 08/00 Jose Ruiz Values for document type support */

@@ -52,3 +52,6 @@ void     free_file_properties (FileProp *fprop);
  */
 
 int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);
+
+FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remove_file_name );
+

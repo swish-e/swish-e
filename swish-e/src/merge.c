@@ -1041,7 +1041,6 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
     /* Force the economic mode to save memory */
     sw->Index->swap_locdata = 1;
-    sw->Index->swap_filedata = 0;
 
     initindexfilehashlist();
 

@@ -151,6 +151,7 @@ void initModule_Index (SWISH  *sw)
     struct MOD_Index *idx;
 
     idx = (struct MOD_Index *) emalloc(sizeof(struct MOD_Index));
+    memset( idx, 0, sizeof( struct MOD_Index ) );
     sw->Index = idx;
 
     idx->filenum = 0;
@@ -169,26 +170,10 @@ void initModule_Index (SWISH  *sw)
         idx->hashentriesdirty[i] = 0;
     }
 
-    idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
-
-    idx->lentmpdir=MAXSTRLEN;
-    idx->tmpdir = (char *)emalloc(idx->lentmpdir + 1);idx->tmpdir[0]='\0';
-
-            /* Initialize tmpdir */
-    idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
 
         /* Economic flag and temp files*/
     idx->swap_locdata = SWAP_LOC_DEFAULT;
-    idx->swap_filedata = SWAP_FILE_DEFAULT;
 
-    if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
-    {
-        idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
-        idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
-    } else {
-        idx->swap_file_name=tempnam(NULL,"swfi");
-        idx->swap_location_name=tempnam(NULL,"swlo");
-    }
 
     for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
 
@@ -245,21 +230,7 @@ void freeModule_Index (SWISH *sw)
   int i;
 
 /* we need to call the real free here */
-#undef free
 
-  if (isfile(idx->swap_file_name))
-  {
-    if (idx->fp_file_read)
-        fclose(idx->fp_file_read);
-
-    if (idx->fp_file_write)
-        fclose(idx->fp_file_write);
-
-    remove(idx->swap_file_name);
-
-    /* tempnam internally calls malloc, so must use free not efree */
-    free(idx->swap_file_name);
-  }
 
   if (isfile(idx->swap_location_name))
   {
@@ -270,12 +241,14 @@ void freeModule_Index (SWISH *sw)
         idx->swap_close(idx->fp_loc_write);
 
     remove(idx->swap_location_name);
-
-    /* tempnam internally calls malloc, so must use free not efree */
-    free(idx->swap_location_name);
   }
 
-  if(idx->lentmpdir) efree(idx->tmpdir);        
+
+  if (idx->swap_location_name)
+      efree(idx->swap_location_name);
+
+
+  if(idx->tmpdir) efree(idx->tmpdir);        
 
         /* Free compression buffer */    
   efree(idx->compression_buffer);
@@ -348,26 +321,25 @@ int configModule_Index (SWISH *sw, StringList *sl)
   struct MOD_Index *idx = sw->Index;
   char *w0    = sl->word[0];
   int  retval = 1;
+  char *env_tmp = NULL;
 
   if (strcasecmp(w0, "tmpdir") == 0)
   {
      if (sl->n == 2)
      {
-        idx->tmpdir = SafeStrCopy(idx->tmpdir, sl->word[1],&idx->lentmpdir);
+        idx->tmpdir = erealloc( idx->tmpdir, strlen( sl->word[1] ) + 1 );
+        strcpy( idx->tmpdir, sl->word[1] );
+
         if (!isdirectory(idx->tmpdir))
-        {
            progerr("%s: %s is not a directory", w0, idx->tmpdir);
-        }
-        else
-        {
-              /* New names for temporal files */
-           if (idx->swap_file_name)
-              efree(idx->swap_file_name);
-           if (idx->swap_location_name)
-              efree(idx->swap_location_name);
-           idx->swap_file_name = (unsigned char *)tempnam(idx->tmpdir, "swfi");
-           idx->swap_location_name = (unsigned char *)tempnam(idx->tmpdir, "swlo");
-        }
+
+        if ( !( env_tmp = getenv("TMPDIR")) )
+            env_tmp = getenv("TMP");
+
+        if ( env_tmp )
+            progwarn("Configuration setting for TmpDir '%s' will be overridden by environment setting '%s'", idx->tmpdir, env_tmp );
+
+           
      }
      else
         progerr("%s: requires one value", w0);

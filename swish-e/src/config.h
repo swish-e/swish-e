@@ -290,7 +290,6 @@
 #define SPIDERDIRECTORY "./"
 
 #define SWAP_LOC_DEFAULT 0
-#define SWAP_FILE_DEFAULT 0
 
 /* 2001/08 jmruiz -- Default chunk size - Index will work with blocks of files. This number specifies when to coalesce locations to save memory */
 #define INDEX_DEFAULT_CHUNK_SIZE 1000
@@ -338,13 +337,13 @@
 typedef int pid_t;		/* process ID */
 #endif
 
-#ifdef _WIN32
-#define TMPDIR "c:\\windows\\temp"
-#elif defined(__VMS)
-#define TMPDIR "sys$scratch:"
-#else
-#define TMPDIR "/var/tmp"
-#endif
+//#ifdef _WIN32
+//#define TMPDIR "c:\\windows\\temp"
+//#elif defined(__VMS)
+//#define TMPDIR "sys$scratch:"
+//#else
+//#define TMPDIR "/var/tmp"
+//#endif
 			
 	/* Directory delimiter */
 #ifdef _WIN32

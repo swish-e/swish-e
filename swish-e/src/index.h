@@ -64,17 +64,14 @@ struct MOD_Index
     int     filenum;
 
     /* index tmp (both FS and HTTP methods)*/
-    int     lentmpdir;
     char   *tmpdir;
 
     /* Filenames of the swap files */
-    unsigned char   *swap_file_name;     /* File and properties file */
-    unsigned char   *swap_location_name; /* Location info file */
+    char   *swap_location_name; /* Location info file */
+
     /* handlers for both files */
     FILE   *fp_loc_write;       /* Location (writing) */
     FILE   *fp_loc_read;        /* Location (writing) */
-    FILE   *fp_file_write;      /* File (writing) */
-    FILE   *fp_file_read;       /* File (read) */
 
     struct dev_ino *inode_hash[BIGHASHSIZE];
 
@@ -85,7 +82,6 @@ struct MOD_Index
     char	*word;
 
     /* Economic mode (-e) */
-    int         swap_filedata;		/* swap file & property data */
     int         swap_locdata;		/* swap location data */
 
 	/* Pointer to swap functions */ 
