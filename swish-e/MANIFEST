@@ -78,6 +78,7 @@ prog-bin/DirTree.pl
 prog-bin/spider.pl
 prog-bin/SwishSpiderConfig.pl
 prog-bin/pdf2xml.pm
+prog-bin/pdf2html.pm
 prog-bin/doc2txt.pm
 pod/.htaccess
 pod/CHANGES.pod
@@ -209,6 +210,17 @@ src/vms/descrip.mms
 src/vms/readme_vms.txt
 src/vms/regex.c
 src/vms/regex.h
+src/vms/descrip_vax.mms
+src/vms/descrip_apx.mms
+src/vms/install  
+src/vms/license.txt  
+src/vms/makefile  
+src/vms/readme  
+src/vms/readme.html 
+src/vms/snprintf.c  
+src/vms/snprintf.c_orig  
+src/vms/snprintf.h  
+src/vms/test.c
 src/win32/config.h
 src/win32/dirent.c
 src/win32/dirent.h
