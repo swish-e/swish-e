@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Could not set SwsihSetSort() more than once
+
+David Windmueller found a problem when trying to set the sort
+order more than once on an existing search object.  Memory was not
+correctly reset after clearning the previous sort values.
+
 =item Access MetaNames and PropertyNames from API
 
 Patch provided by Jamie Herre to access the MetaNames and PropertyNames
@@ -56,7 +62,7 @@ stemmer is available.
 Fixed compile problem with building incremental indexing mode.  This is an
 experimental option with swish-e to allow adding files to an index.
 See configure --help for build option.  Incremental indexes are not
-compatible with stanard indexes.
+compatible with standard indexes.
 
 =item * Updated build instructions in INSTALL
 

@@ -1250,7 +1250,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
                but that didn't prevent phrase matches across tags
             */
             flush_buffer( parse_data, 1 );
-            parse_datra->word_pos++;
+            parse_data->word_pos++;
         }
     }
 

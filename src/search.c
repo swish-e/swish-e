@@ -279,7 +279,10 @@ void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
         return;
 
     if ( srch->sort_params )
+    {
         freeswline( srch->sort_params );
+        srch->sort_params = NULL;
+    }
 
 
     if ( !(slsort = parse_line(sort)) )
