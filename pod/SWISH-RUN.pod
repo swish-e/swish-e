@@ -72,23 +72,49 @@ This is typically specified in the L<configuration file|SWISH-CONFIG> with the B
 instead of on the command line.  Use of this switch overrides the configuration file settings.
 
 
-=item -S [fs|http|prog] (document Source mode)
+=item -S [fs|http|prog] (document source/access mode)
 
-This specifies the method to use for indexing. Can be either C<fs> for local indexing (the default),
+This specifies the method to use for accessing documents to index.
+Can be either C<fs> for local indexing via the file system (the default),
 C<http> for spidering, or C<prog> for reading documents from an external program.
 
+Located in the C<conf> directory are example configuration files that demonstrate
+indexing with the different document source methods.
+
+See the L<SWISH-FAQ|SWISH-FAQ> for a discussion on the different indexing methods, and the difference
+between spidering with the http method vs. using the file system method.
+
+=over 4
+
+=item fs - file system 
+
 The C<fs> method simply reads files from a local (or networked) drive.  This is the most common
-way to index documents with Swish.
+and fastest way to index documents with Swish.  See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
+directives specific to the C<fs> method.
+
+=item http - spider a web server
 
 The C<http> method is used to spider web servers.  It uses an included helper
-program called C<swishspider> located in the C<src> directory.
+program called C<swishspider> located in the C<src> directory.  Swish needs to be able to locate
+this program when using the C<http> method. See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
+directives specific to the C<http> method.
+
+=item prog - general purpose access method
 
 The C<prog> method is new to SWISH-E version 2.2.  It's designed as a general
 purpose method to feed documents to swish from an external program.
 For example, the program can read a database (e.g. MySQL), spider a web
 server, or convert documents from one format to another (e.g. pdf to html).
-The program name is passed to swish either by the C<IndexDir> directive,
-or via the C<-i> option.
+The external program name to run is passed to swish either by the C<IndexDir> directive,
+or via the C<-i> option.  Additional parameters may be passed to the external program
+via the C<SwishProgParameters> directive.
+
+The program prints to standard output (which swish captures)
+a set of headers followed by the content of the file to index.  The output looks similar to
+an email message or a HTTP document returned by a web server in that it includes a name/value pair
+headers, a blank line, and the content.  The content length is determined by a content-length header
+supplied to swish by the program; there is no "end of record" character or flag sent between documents.
+
 A few example programs are provided in the swish-e distribution
 located in the C<prog-bin> directory.
 
@@ -102,8 +128,7 @@ that you want indexed.
 You may use swish's filter feature with the C<prog> method, but performance will be better if you
 run filtering programs from within your external program.
 
-Located in the C<conf> directory are example configuration files that demonstrate
-indexing with the different document source methods.
+=back
 
 
 =item -f *indexfile* (index file)
@@ -160,7 +185,8 @@ Note that if the same variables occur in both files, older values may be written
 
 For large sites indexing may require more RAM than is available.  The C<-e> switch tells swish to use
 disk space to store data structures while indexing, saving memory.  This option is recommended if
-swish uses so much RAM that the computer begins to swap excessively.
+swish uses so much RAM that the computer begins to swap excessively, and you cannot increase available
+memory.  The trade-off is longer indexing times, and a busy disk drive.
 
 =item -l (symbolic links)
 
@@ -168,11 +194,12 @@ Specifying this option tells swish to follow symbolic links when indexing.
 The configuration file value B<FollowSymLinks> will override the command-line value.
 
 The default is not to follow symlinks.  A small improvement in indexing time my result
-from enabling FollowSymLinks.
+from enabling FollowSymLinks since swish does not need to stat every directory and file
+processed to determine if it is a symbolic link.
 
 =item -N path (index only newer files)
 
-The C<-N> option takes a path to a file, and only files I<newer> that the listed
+The C<-N> option takes a path to a file, and only files I<newer> than the specified
 file will be indexed.  This is helpful for creating incremental indexes -- that is,
 indexes that contain just files added since the last full index was created of all files.
 
