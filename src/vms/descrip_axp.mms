@@ -54,8 +54,11 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	proplimit.obj swish_qsort.obj ramdisk.obj rank.obj \
 	xmlparse.obj xmltok.obj xmlrole.obj swregex.obj vsnprintf.obj \
         double_metaphone.obj db_read.obj db_write.obj swstring.obj \
-	pre_sort.obj headers.obj docprop_write.obj \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
+	pre_sort.obj headers.obj docprop_write.obj stemmer.obj\
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS) \
+        api.obj stem_de.obj stem_dk.obj stem_en1.obj stem_en2.obj stem_es.obj\
+	stem_fi.obj stem_fr.obj stem_it.obj stem_nl.obj stem_no.obj \
+	stem_pt.obj stem_ru.obj stem_se.obj utilities.obj
 
 all :	acconfig.h $(NAME) swish-search.exe libtest.exe
 	!
@@ -181,3 +184,19 @@ swstring.obj : swstring.c
 pre_sort.obj : pre_sort.c
 hearders.obj : headers.c
 docprop_write.obj : docprop_write.c
+
+api.obj : [.snowball]api.c
+stem_de.obj : [.snowball]stem_de.c
+stem_dk.obj : [.snowball]stem_dk.c
+stem_en1.obj : [.snowball]stem_en1.c
+stem_en2.obj : [.snowball]stem_en2.c
+stem_es.obj : [.snowball]stem_es.c
+stem_fi.obj : [.snowball]stem_fi.c
+stem_fr.obj : [.snowball]stem_fr.c
+stem_it.obj : [.snowball]stem_it.c
+stem_nl.obj : [.snowball]stem_nl.c
+stem_no.obj : [.snowball]stem_no.c
+stem_pt.obj : [.snowball]stem_pt.c
+stem_ru.obj : [.snowball]stem_ru.c
+stem_se.obj : [.snowball]stem_se.c
+utilities.obj : [.snowball]utilities.c
