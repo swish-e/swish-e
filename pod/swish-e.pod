@@ -21,7 +21,7 @@ Swish-e is Simple Web Indexing System for Humans - Enhanced. Swish-e can
 quickly and easily index directories of files or remote web sites and
 search the generated indexes.
 
-Swish-e it extremely fast in both indexing and searching, highly
+Swish-e is extremely fast in both indexing and searching, highly
 configurable, and can be seamlessly integrated with existing web sites
 to maintain a consistent design. Swish-e can index web pages, but can
 just as easily index text files, mailing list archives, or data stored

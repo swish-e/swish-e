@@ -4,7 +4,7 @@ The Swish-e README File
 
 =head1 Upgrading?
 
-If you are upgrading Swish-e please review the CHANGES file before installation.
+If you are upgrading Swish-e, please review the CHANGES file before installation.
 The index format may change and existing indexes may need to be re-created before
 use.
 
@@ -14,13 +14,13 @@ Swish-e is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
 Swish-e can quickly and easily index directories of files or remote web sites
 and search the generated indexes.
 
-Swish-e it extremely fast in both indexing and searching, highly
+Swish-e is extremely fast in both indexing and searching, highly
 configurable, and can be seamlessly integrated with existing web sites to
 maintain a consistent design. Swish-e can index web pages, but can just as
 easily index text files, mailing list archives, or data stored in a
 relational database.
 
-Swish is designed to index small to medium sized collection of documents,
+Swish is designed to index small- to medium-sized collection of documents,
 Although a few users are indexing over a million documents, typical usage
 is more often in the tens of thousands.  Currently, Swish-e only indexes
 eight bit character encodings.
@@ -33,14 +33,14 @@ indexing and searching logic, better filter code, and the ability to index
 from any data source.
 
 Swish-e version 2.4 includes a major rewrite of the C API and a new Perl
-module for accessing the swish-e C library.  In addition, Swish-e 2.4 uses
+module for accessing the Swish-e C library.  In addition, Swish-e 2.4 uses
 the GNU Auto Tools.  The significant changes are where files are installed,
-and the use of Libtool to create the swish-e library as a shared library on
+and the use of Libtool to create the Swish-e library as a shared library on
 many platforms.  Basically, installation is easier than previous versions,
 and more files are installed in "standard" locations (e.g. documentation
-is installed in $prefix/share/doc/swish-e).
+is installed in C<$prefix/share/doc/swish-e>).
 
-Note: Due to the new build and installation system in Swish-e 2.4 some 
+Note: Due to the new build and installation system in Swish-e 2.4, some 
 documentation may incorrectly list the location of files.  Please report
 any documentation errors to the Swish-e Discussion list.
 
@@ -50,7 +50,7 @@ need to put the parts together as best meets your needs. This gives you the
 power to index and search your documents the way you wish and to seamlessly
 integrate a search engine into your web site or application.
 
-To use swish-e you will need to configure Swish-e to index your documents,
+To use Swish-e, you will need to configure Swish-e to index your documents,
 create an index by running Swish-e, and setup an interface such as a CGI
 script (a script is included) to search the index and display results. 
 Swish uses helper programs to index documents of types that Swish-e cannot
@@ -59,7 +59,7 @@ Swish-e.
 
 Swish-e is an Open Source (see: http://opensource.org ) program supported by
 developers and a large group of users. Please take time to join the Swish-e
-discussion list at http://Swish-e.org.
+discussion list at http://Swish-e.org .
 
 
 =head2 Key features
@@ -69,12 +69,12 @@ discussion list at http://Swish-e.org.
 =item *
 
 Quickly index a large number of documents in different formats
-including text, HTML, and XML
+including text, HTML, and XML.
 
 =item *
 
 Use "filters" to index other types of files such as PDF, gzip, or
-Postscript.
+PostScript.
 
 =item *
 
@@ -91,11 +91,11 @@ records from a relational database.
 
 Document "properties" (some subset of the source document, usually defined
 as a META or XML elements) may be stored in the index and returned with
-search results
+search results.
 
 =item *
 
-Document summaries can be returned with each search
+Document summaries can be returned with each search.
 
 =item *
 
@@ -107,20 +107,20 @@ Phrase searching and wildcard searching
 
 =item *
 
-Limit searches to HTML links
+Limit searches to HTML links.
 
 =item *
 
-Use powerful Regular Expressions to select documents for indexing or exclusion
+Use powerful Regular Expressions to select documents for indexing or exclusion.
 
 =item *
 
-Easily limit searches to parts or all of your web site
+Easily limit searches to parts or all of your web site.
 
 =item *
 
 Results can be sorted by relevance or by any number of properties
-in ascending or descending order
+in ascending or descending order.
 
 =item *
 
@@ -129,7 +129,7 @@ Limit searches to parts of documents such as certain HTML tags
 
 =item *
 
-Can report structural errors in your XML and HTML documents
+Can report structural errors in your XML and HTML documents.
 
 =item *
 
@@ -152,12 +152,12 @@ Swish-e is fast.
 
 =item *
 
-It's open source and FREE!  You can customize Swish-e and you can
+It's Open Source and FREE!  You can customize Swish-e and you can
 contribute your fancy new features to the project.
 
 =item *
 
-Supported by on-line user and developer groups
+Supported by on-line user and developer groups.
 
 =back
 
@@ -177,7 +177,7 @@ this site.
 
 Read the L<INSTALL|INSTALL> page.
 
-Building from source is recommended.  On most platforms Swish-e should build without problems.
+Building from source is recommended.  On most platforms, Swish-e should build without problems.
 A list of platforms where Swish-e has been built can be found in the L<INSTALL|INSTALL> page.
 Information on building for VMS and Win32 can be found in sub-directories of the C<src> directory.
 Check the Swish-e site for information about binary distributions (such as for Windows).
@@ -213,17 +213,17 @@ formats:
 See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
 versions of the documentation.
 
-Patches or updates to the documentation should be done against the POD files 
-located in the pod directory of the distribution, or (preffered) against
-the cvs repository.
+Patches or updates to the documentation should be done against the POD files,
+located in the pod directory of the distribution, or (preferably) against
+the CVS repository.
 
 =head1 Where do I get help with Swish-e?
 
-If you need help with installing or using Swish-e please subscribe to
-the Swish-e mailing list.  Visit the Swish-e web site listed above
+If you need help with installing or using Swish-e, please subscribe to
+the Swish-e mailing list.  Visit the Swish-e web site (listed above)
 for information on subscribing to the mailing list.
 
-Before posting any questions please read
+Before posting any questions, please read
 L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING">.
 
 =head1 Speling mistakes
@@ -231,18 +231,18 @@ L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING">.
 Please contact the Swish-e list with corrections to this documentation.
 Any help in cleaning up the docs will be appreciated!
 
-Any patches should be made against the .pod files, not the .html files.
+Any patches should be made against the C<.pod> files, not the C<.html> files.
 
 =head1 Swish-e Development
 
-Swish-e is currently being developed as an open source project on
+Swish-e is currently being developed as an Open-Source project on
 SourceForge http://sourceforge.net.
 
 Contact the Swish-e list for questions about Swish-e development.
 
 =head1 Swish-e's History
 
-SWISH was created by Kevin Hughes circa 1994 to fill the need of the growing number
+SWISH was created by Kevin Hughes, circa 1994, to fill the need of the growing number
 of Web administrators on the Internet - many of the indexing systems were
 not well documented, were hard to use and install, and were too complex
 for their own good. The system was widely used for several years, long
@@ -262,4 +262,3 @@ Swish-e program or the documentation as a whole.
 $Id$
 
 .
-

@@ -412,7 +412,7 @@ L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|INDEX|auto]
 
 =item *
 
-L<UndefinedXMLAttributes|/"item_UndefinedXMLAttributes"> [DISABLE| error|ignore|index|auto]
+L<UndefinedXMLAttributes|/"item_UndefinedXMLAttributes"> [DISABLE|error|ignore|index|auto]
 
 =item *
 
@@ -1191,7 +1191,7 @@ names explicitly in a B<MetaNames> directive.
 
 =back
 
-=item UndefinedXMLAttributes [DISABLE|error|index|auto]
+=item UndefinedXMLAttributes [DISABLE|error|ignore|index|auto]
 
 This is similar to C<UndefinedMetaTags>, but only applies to XML documents (parsed with libxml2).
 This allows indexing of attribute content, and provides a way to index the content under a
