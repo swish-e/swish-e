@@ -23,7 +23,7 @@ prefix      = @prefix@
 bindir      = $(prefix)/bin
 exec_prefix = @exec_prefix@
 libdir      = @libdir@
-
+cflags      = @CFLAGS@
 
 # libxml2 -- uncomment to enable
 #LIBXML2_OBJS = parser.o
@@ -64,11 +64,11 @@ XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
 
  
 # Flags for C compiler
-CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) $(LIBXML2_CFLAGS)
+CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) $(LIBXML2_CFLAGS) $(cflags)
 
 
 
-OBJS=	check.o file.o index.o search.o error.o methods.o\
+OBJS=	$(LIBXML2_OBJS) check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
 	soundex.o docprop.o compress.o xml.o txt.o html.o\
 	metanames.o result_output.o parse_conffile.o result_sort.o\
@@ -76,7 +76,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 	extprog.o entities.o no_better_place_module.o \
 	db.o dump.o db_native.o swish_words.o proplimit.o swish_qsort.o \
 	ramdisk.o \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ) $(LIBXML2_OBJS)
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ)
 
 
 #.SUFFIXES: 
