@@ -13,9 +13,10 @@
 #		added --disable-shared to libxml2 build
 #		--force actually works
 #		added --static to make --disable-shared optional
-
+#	0.04	fixed swishdir/installdir bug
+#			thanks to chyla@knihovnabbb.cz
 #
-##########################################################
+################################################################################
 $| = 1;
 
 use strict;
@@ -26,7 +27,7 @@ use Config qw( %Config );
 use File::Path qw( mkpath );
 use FindBin qw($Bin);
 
-my $Version 	= '0.03';
+my $Version 	= '0.04';
 
 # there must be a better way to dynamically retrieve the latest version
 # of a sw package, other than hardcoding urls. help?
@@ -76,9 +77,7 @@ Thanks.
 
 EOF
 
-if (! GetOptions($opts,keys %$allopts) or $opts->{help}) {
-	usage();
-}
+usage() unless GetOptions($opts,keys %$allopts) or $opts->{help};
 
 if ($opts->{opts}) {
 # print all options and descriptions
@@ -86,7 +85,10 @@ if ($opts->{opts}) {
 	exit;
 }
 
-use vars qw( 	$os $arch $cc $installdir $nogcc $min_gcc $tmpdir
+################################################################################
+
+use vars qw( 
+		$os $arch $cc $installdir $nogcc $min_gcc $tmpdir
 		$outlog $errlog $output $ld_opts $Cout $Cin
 		$zlib_test $libxml2_test $ld_test $gcc_test
 		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
@@ -966,10 +968,12 @@ sub swishe
 		
 	}
 
-	my $dir = get_src( 'swishe' );
+	#my $dir = get_src( 'swishe' );
 	
-	$swishdir = $dir;
-	chdir($dir) || die "can't chdir to $dir: $!\n";
+	#$swishdir = $dir;
+	$swishdir = get_src( 'swishe' );
+	#chdir($dir) || die "can't chdir to $dir: $!\n";
+	chdir($swishdir) || die "can't chdir to $swishdir: $!\n";
 	
 	if ($opts->{debug}) {
 	
@@ -977,8 +981,8 @@ sub swishe
 		
 	}
 	
-	$zlibdir ||= $swishdir;
-	$libxml2dir ||= $swishdir;
+	$zlibdir ||= $installdir;
+	$libxml2dir ||= $installdir;
 	
 	my @arg = (	"--with-zlib=$zlibdir",
 			"--with-libxml2=$libxml2dir",
