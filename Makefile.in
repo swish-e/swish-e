@@ -201,6 +201,7 @@ perl_dir = \
 
 pod_dir = \
     pod/.htaccess \
+    pod/swish-e.pod \
     pod/CHANGES.pod \
     pod/INSTALL.pod \
     pod/README.pod \
@@ -260,15 +261,15 @@ rpm_dir = \
 
 
 debian_dir = \
-	README.Debian \
-	changelog \
-	compat \
-	control \
-	copyright \
-	files \
-	rules \
-	swish-e.doc-base \
-	swish-e.substvars
+	debian/README.Debian \
+	debian/changelog \
+	debian/compat \
+	debian/control \
+	debian/copyright \
+	debian/files \
+	debian/rules \
+	debian/swish-e.doc-base \
+	debian/swish-e.substvars
 
 
 EXTRA_DIST = \
@@ -486,7 +487,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/config $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/vms/sprintf_2_2 $(distdir)/src/win32
+	$(mkinstalldirs) $(distdir)/config $(distdir)/debian $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/vms/sprintf_2_2 $(distdir)/src/win32
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \

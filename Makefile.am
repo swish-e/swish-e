@@ -73,6 +73,7 @@ perl_dir = \
 
 pod_dir = \
     pod/.htaccess \
+    pod/swish-e.pod \
     pod/CHANGES.pod \
     pod/INSTALL.pod \
     pod/README.pod \
@@ -130,15 +131,15 @@ rpm_dir = \
 
 
 debian_dir = \
-	README.Debian \
-	changelog \
-	compat \
-	control \
-	copyright \
-	files \
-	rules \
-	swish-e.doc-base \
-	swish-e.substvars
+	debian/README.Debian \
+	debian/changelog \
+	debian/compat \
+	debian/control \
+	debian/copyright \
+	debian/files \
+	debian/rules \
+	debian/swish-e.doc-base \
+	debian/swish-e.substvars
 
 
 EXTRA_DIST = \
