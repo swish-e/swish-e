@@ -726,7 +726,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         /* -- get rid of \n\r in string! */  // there shouldn't be any in the first place, I believe
         for (s = pv->value.v_str; *s; s++)
         {
-            if (isspace((unsigned char) *s))
+            if ('\t' != *s && isspace((unsigned char) *s))
                 *s = ' ';
         }
 
