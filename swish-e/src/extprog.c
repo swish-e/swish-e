@@ -23,24 +23,21 @@
 
 #include "swish.h"
 #include "index.h"
-#include "hash.h"
 #include "mem.h"
 #include "string.h"
 #include "file.h"
-#include "list.h"
-#include "fs.h"
-#include "check.h"
 #include "error.h"
-#include "xml.h"
-#include "txt.h"
-#include "parse_conffile.h"
+#include <unistd.h>
 
-FILE   *open_external_program(SWISH * sw, char *prog)
+
+static FILE   *open_external_program(SWISH * sw, char *prog)
 {
     char   *cmd;
     FILE   *fp;
     size_t  total_len;
-    struct swline *tmplist;
+    struct  swline *tmplist;
+    struct  stat stbuf;
+
 
     /* get total length of configuration parameters */
 
@@ -56,6 +53,21 @@ FILE   *open_external_program(SWISH * sw, char *prog)
     cmd = emalloc(total_len + 20);
     strcpy(cmd, prog);
 
+
+    /* this should probably be in file.c so filters.c can check, too */
+    /* note this won't catch errors in a shebang line, of course */
+    
+    if (stat(cmd, &stbuf))
+        progerr("External program '%s': %s", cmd, strerror( errno ) );
+
+    if ( stbuf.st_mode & S_IFDIR)
+        progerr("External program '%s' is a directory.", cmd );
+
+    if ( access( cmd, R_OK|X_OK ) )
+        progerr("Cannot execute '%s': %s", cmd, strerror( errno ) );
+
+
+
     tmplist = sw->progparameterslist;
     while (tmplist)
     {
@@ -66,11 +78,11 @@ FILE   *open_external_program(SWISH * sw, char *prog)
 
 
     fp = popen(cmd, FILEMODE_READ);
-    efree(cmd);
 
     if (!fp)
-        progerr("Failed to spawn external program");
+        progerr("Failed to spawn external program '%s'", cmd);
 
+    efree(cmd);
     return fp;
 }
 
@@ -79,7 +91,7 @@ FILE   *open_external_program(SWISH * sw, char *prog)
 /* This may not be save if running as a threaded app, and I'm not clear on how portable this is */
 /* This also uses read_stream to read in the file -- so the entire file is read into memory instead of chunked to the temp file */
 
-void    save_to_temp_file(FileProp *fprop)
+static void    save_to_temp_file(FileProp *fprop)
 {
     FILE   *out;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
@@ -87,7 +99,7 @@ void    save_to_temp_file(FileProp *fprop)
     
     fprop->work_path = tmpnam( (char *) NULL );
     if ( !fprop->work_path )
-        progerr("Failed to create a temporary file for filtering");
+        progerr("Failed to create a temporary file for filtering: %s", strerror( errno ) );
 
 
     /* slirp entire file into memory -- yuck */
@@ -98,13 +110,13 @@ void    save_to_temp_file(FileProp *fprop)
 
     if ( !out )
          /* ok, how do I easily get the filename and errno into the string? */
-        progerr("Failed to open temporary filter file");
+        progerr("Failed to open temporary filter file '%s': %s", fprop->work_path, strerror( errno ) );
 
 
     bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
 
     if ( bytes != (size_t)fprop->fsize )
-        progerr("Failed to write temporary filter file");
+        progerr("Failed to write temporary filter file '%s': %s", fprop->work_path, strerror( errno ) );
 
 
     /* hide the fact that it's an external program */
@@ -118,7 +130,7 @@ void    save_to_temp_file(FileProp *fprop)
 
 
 
-void    extprog_indexpath(SWISH * sw, char *prog)
+static void    extprog_indexpath(SWISH * sw, char *prog)
 {
     FileProp *fprop;
     FILE   *fp;
@@ -226,7 +238,7 @@ void    extprog_indexpath(SWISH * sw, char *prog)
             {
                 x = strchr(line, ':');
                 if (!x)
-                    progerr("Failed to parse Content-Length header");
+                    progerr("Failed to parse Content-Length header '%s'", line );
                 fsize = strtol(++x, NULL, 10);
                 continue;
             }
@@ -235,7 +247,7 @@ void    extprog_indexpath(SWISH * sw, char *prog)
             {
                 x = strchr(line, ':');
                 if (!x)
-                    progerr("Failed to parse Last-Mtime header");
+                    progerr("Failed to parse Last-Mtime header '%s'", line);
                 mtime = strtol(++x, NULL, 10);
                 continue;
             }
@@ -251,11 +263,11 @@ void    extprog_indexpath(SWISH * sw, char *prog)
             {
                 x = strchr(line, ':');
                 if (!x)
-                    progerr("Failed to parse Path-Name header");
+                    progerr("Failed to parse Path-Name header '%s'", line);
 
                 x = str_skip_ws(++x);
                 if (!*x)
-                    progerr("Failed to find path name in Path-Name header");
+                    progerr("Failed to find path name in Path-Name header '%s'", line);
 
                 real_path = emalloc(strlen(x) + 1);
                 strcpy(real_path, x);
@@ -272,7 +284,9 @@ void    extprog_indexpath(SWISH * sw, char *prog)
     /* restore the setting */
     sw->truncateDocSize = truncate_doc_size;
 
-    pclose(fp);                 /* progerr("Failed to properly close external program"); */
+    if ( pclose(fp) == -1 )                  /* progerr("Failed to properly close external program"); */
+        printf("Warning: to properly close external program: %s\n", strerror( errno ) );
+    
 }
 
 
@@ -280,7 +294,7 @@ void    extprog_indexpath(SWISH * sw, char *prog)
 
 
 /* Don't have any specific configuration values to check */
-int     extprog_parseconfline(SWISH * sw, void *l)
+static int     extprog_parseconfline(SWISH * sw, void *l)
 {
     return 0;
 }
