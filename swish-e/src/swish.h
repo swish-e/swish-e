@@ -50,6 +50,9 @@
 ** 2001-02-28 rasc   some cleanup, ANSI compliant
 ** 2001-03-12 rasc   logical search operators via config changable
 **                   moved some parts to config.h
+**
+** 2001-03-16 rasc   truncateDocSize
+** 
 */
 
 #include <stdio.h>
@@ -175,6 +178,7 @@
 #define SEARCHHASHSIZE 10001
 #define MAXPAR 10
 #define MAXCHARDEFINED 256
+#define RD_BUFFER_SIZE  65356     /* init size, larger to avoid often reallocs  (2001-03-16 rasc) */
 
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
@@ -599,24 +603,27 @@ typedef struct {
 */
 
 
-typedef enum {				/* Property Datatypes */
+typedef enum {                   /* Property Datatypes */
     UNDEFINED=-1, UNKNOWN=0, STRING, INTEGER, FLOAT, DATE
 } PropType;
  
-typedef union {				/* storage of the PropertyValue */
-	char   *v_str;		/* strings */
-	int     v_int;		/* Integer */
-	time_t  v_date;		/* Date    */
-	double  v_float;	/* Double Float */
+typedef union {                  /* storage of the PropertyValue */
+	char   *v_str;             /* strings */
+	int     v_int;             /* Integer */
+	time_t  v_date;            /* Date    */
+	double  v_float;           /* Double Float */
 } u_PropValue1; 
 
-typedef struct {			/* Propvalue with type info */
+typedef struct {                 /* Propvalue with type info */
 	PropType     datatype;
 	u_PropValue1  value;
 } PropValue;
 
 
+
 /* --------------------------------------- */
+
+
 
 /* Structure to hold all results per index */
 struct DB_RESULTS {
@@ -626,6 +633,9 @@ struct DB_RESULTS {
     RESULT *currentresult;
 	struct DB_RESULTS *next;
 };
+
+
+
 
 typedef struct {
 
@@ -686,9 +696,10 @@ typedef struct {
       /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList   *resultextfmtlist;
 	/* Filter vars */
-    struct filter *filterlist;                  /* 1998-08-07 rasc */
+    struct filter *filterlist;        /* 1998-08-07 rasc */
     char *filterdir;                  /* 1998-08-07 rasc */
-    int  enableAVSearchSyntax;	/* Altavista Search strings 0/1 */
+    int  enableAVSearchSyntax;        /* Altavista Search strings 0/1  (rasc) */
+    long truncateDocSize;             /* size of doc, at which it will be truncated (2001-03-16 rasc) */ 
 
                 /* 06/00 Jose Ruiz */
     int applyautomaticmetanames;

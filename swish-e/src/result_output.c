@@ -27,7 +27,7 @@ $Id$
    -- 2001-02-09 rasc    make propertynames always lowercase!  (may change) 
 				 this is get same handling as metanames...
    -- 2001-02-28 rasc    -b and counter corrected...
-   -- 2001-03-13 rasc    result header output routine  -X?
+   -- 2001-03-13 rasc    result header output routine  -H <n>
 
 */
 
@@ -579,7 +579,7 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
 
 
 /* 
-  -- print a standard result header (according to -X?)
+  -- print a standard result header (according to -H <n>)
   -- for the header of an index file
 */
 

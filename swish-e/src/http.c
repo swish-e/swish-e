@@ -434,7 +434,7 @@ FILE *fp;
 			   -- http document, the "get"-process has set to
 			   -- the last mod timestamp on the tmp file
 			   -- or we need to parse the server response...
-			   -- $$ still to be done! (rasc) to then,
+			   -- $$ still to be done! (rasc) until then,
 			   -- we are setting mtime to zero!
 			*/
 

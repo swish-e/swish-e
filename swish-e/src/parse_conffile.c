@@ -25,6 +25,8 @@ $Id$
 ** 2001-02-15 rasc    ResultExtFormatName 
 ** 2001-03-03 rasc    EnableAltaVistaSyntax
 **                    code optimize: getYesNoOrAbort 
+** 2001-03-13 rasc    SwishSearchOperators, SwishSearchDefaultRule
+** 2001-03-16 rasc    TruncateDocSize nbytes
 **
 */
 
@@ -419,11 +421,11 @@ char *w0;
 		else if (strcasecmp(w0, "ConvertHTMLEntities")==0)	{
 			sw->ConvertHTMLEntities = getYesNoOrAbort (sl, 1,1);
 		}
-		else if (strcasecmp(w0, "EnableAltaVistaSyntax")==0)	{
+		else if (strcasecmp(w0, "EnableAltaVistaSyntax")==0)	{	/* rasc 2001-02 */
                                     /* $$$ this will not work unless swish is reading the config file also for search ... */
 			sw->enableAVSearchSyntax = getYesNoOrAbort (sl, 1,1);
 		}
-		else if (strcasecmp(w0, "SwishSearchOperators")==0)	{
+		else if (strcasecmp(w0, "SwishSearchOperators")==0)	{	/* rasc 2001-03 */
                                     /* $$$ this will not work unless swish is reading the config file also for search ... */
 			if(sl->n == 4) {
 			   sw->srch_op.and = sl->word[1];
@@ -431,7 +433,7 @@ char *w0;
 			   sw->srch_op.not = sl->word[3];
 			} else progerr("%s: requires 3 parameters (and-, or-, not-word)",w0);
 		}
-		else if (strcasecmp(w0, "SwishSearchDefaultRule")==0)	{
+		else if (strcasecmp(w0, "SwishSearchDefaultRule")==0)	{	/* rasc 2001-03 */
                                     /* $$$ this will not work unless swish is reading the config file also for search ... */
 			if(sl->n == 2) {
 			   sw->srch_op.defaultrule = u_SelectDefaultRulenum(sw,sl->word[1]);
@@ -439,6 +441,11 @@ char *w0;
 				progerr("%s: requires \"%s\" or \"%s\"",w0, sw->srch_op.and, sw->srch_op.or);
 			   }
 			} else progerr("%s: requires 1 parameter",w0);
+		}
+		else if (strcasecmp(w0, "TruncateDocSize")==0)	{	/* rasc 2001-03 */
+			if(sl->n == 2 && isnumstring(sl->word[1]) ) {
+			   sw->truncateDocSize = atol (sl->word[1]);
+			} else progerr("%s: requires size parameter in bytes",w0);
 		}
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s\n", linenumber, line );
