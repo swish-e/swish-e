@@ -31,6 +31,7 @@
 #include "metanames.h"
 #include "db.h"
 #include "db_native.h"
+#include "stemmer.h"
 // #include "db_berkeley_db.h"
 
 #ifndef min
