@@ -311,6 +311,7 @@ typedef struct ENTRY
 {
     struct ENTRY *next;
     int     tfrequency;
+    int     last_filenum;
     LOCATION **locationarray;
     /* this union is just for saving memory */
     struct
@@ -413,11 +414,6 @@ typedef struct
     /* Lookup table for repetitive values of the path */
     struct char_lookup_st *pathlookup;
 
-    /* Internal Swish meta/props */
-    struct metaEntry *rankProp;
-    struct metaEntry *reccountProp;
-    struct metaEntry *filenumProp;
-    struct metaEntry *indexfileProp;
 
     /* shortcut properties to make addCommonProperties work faster */
 
@@ -501,7 +497,7 @@ struct multiswline
 typedef struct
 {
     int     numWords;
-    ENTRY **elist;
+    ENTRY **elist;     /* Sorted by word */
 }
 ENTRYARRAY;
 

@@ -535,12 +535,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
 
-
-
-
-
-
-
 /* Stores file names in alphabetical order so they can be
 ** indexed alphabetically. No big whoop.
 */
@@ -632,24 +626,32 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     }
     /* Compute hash value of word */
     hashval = searchhash(word);
+
+
     /* Look for the word in the hash array */
     for (efound = idx->hashentries[hashval]; efound; efound = efound->next)
         if (strcmp(efound->word, word) == 0)
             break;
 
-	/* flag hash entry used this pass */
+	/* flag hash entry used this file, so that the locations can be "compressed" in do_index_file */
 	idx->hashentriesdirty[hashval] = 1;
+
+
+    /* Word not found, so create a new word */
 
     if (!efound)
     {
         en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word) + 1);
         strcpy(en->word, word);
         en->tfrequency = 1;
+        en->last_filenum = filenum;
         en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
         en->currentlocation = 0;
         en->u1.max_locations = 1;
         en->next = idx->hashentries[hashval];
         idx->hashentries[hashval] = en;
+
+        /* create a location record */
         tp = (LOCATION *) emalloc(sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;
@@ -661,39 +663,67 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
         idx->entryArray->numWords++;
         indexf->header.totalwords++;
+
+        return;  /* all done here */
     }
-    else
+
+
+
+
+
+    /* Word found -- look for same metaID and filename */
+    /* $$$ To do it right, should probably compare the structure, too */
+    /* Note: filename not needed due to compress we are only looking at the current file */
+
+    for (l = efound->currentlocation; l < efound->u1.max_locations; l++)
     {
-        for (l = efound->currentlocation; l < efound->u1.max_locations; l++)
-        {
-            tp = efound->locationarray[l];
-            if (tp->filenum == filenum && tp->metaID == metaID)
-                break;
-        }
-        if (l == efound->u1.max_locations)
-        {                       /* filenum and metaname not found */
-            efound->locationarray = (LOCATION **) erealloc(efound->locationarray, (++efound->u1.max_locations) * sizeof(LOCATION *));
-            tp = (LOCATION *) emalloc(sizeof(LOCATION));
-            tp->filenum = filenum;
-            tp->frequency = 1;
-            tp->structure = structure;
-            tp->metaID = metaID;
-            tp->position[0] = position;
-            efound->locationarray[l] = tp;
-            if (efound->locationarray[efound->currentlocation]->filenum != filenum)
-			{
-                efound->tfrequency++;
-			}
-        }
-        else
-        {                       /* Found filenum and metaname */
-            tp = efound->locationarray[l];
-            tp = erealloc(tp, sizeof(LOCATION) + tp->frequency * sizeof(int));
-            tp->position[tp->frequency++] = position;
-            tp->structure |= structure;
-            efound->locationarray[l] = tp;
-        }
+        tp = efound->locationarray[l];
+        if (tp->filenum == filenum && tp->metaID == metaID)
+            break;
     }
+
+
+
+    /* matching metaID NOT found.  So, add a new LOCATION record onto the word */
+    /* This expands the size of the location array for this word by one */
+    
+    if (l == efound->u1.max_locations)
+    { 
+        efound->locationarray = (LOCATION **) erealloc(efound->locationarray, (++efound->u1.max_locations) * sizeof(LOCATION *));
+
+        /* create the new LOCAITON entry */
+        tp = (LOCATION *) emalloc(sizeof(LOCATION));
+        tp->filenum = filenum;
+        tp->frequency = 1;            /* count of times this word in this file:metaID */
+        tp->structure = structure;
+        tp->metaID = metaID;
+        tp->position[0] = position;
+
+        /* add the new LOCATION onto the array */
+        efound->locationarray[l] = tp;  /* that's an ell, not a one */
+
+
+        /* Count number of different files that this word is used in */
+        if ( efound->last_filenum != filenum )
+        {
+            efound->tfrequency++;
+            efound->last_filenum = filenum;
+        }
+
+        return; /* all done */
+    }
+
+
+    /* Otherwise, found matching LOCATION record (matches filenum and metaID) */
+    /* Just add the position number onto the end by expanding the size of the LOCATION record */
+    
+    tp = efound->locationarray[l];
+    tp = erealloc(tp, sizeof(LOCATION) + tp->frequency * sizeof(int));
+    tp->position[tp->frequency++] = position;
+    tp->structure |= structure;  /* Just merged the structure elements! */
+
+    efound->locationarray[l] = tp;
+
 }
 
 /*******************************************************************
@@ -1335,14 +1365,16 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
             j;
     ENTRY  *e;
 
-    if (sw->verbose)
-    {
-        printf("Sorting Words alphabetically\n");
-        fflush(stdout);
-    }
 
     if (!sw->Index->entryArray || !sw->Index->entryArray->numWords)
         return;
+
+
+    if (sw->verbose)
+    {
+        printf("Sorting %d words alphabetically\n", sw->Index->entryArray->numWords );
+        fflush(stdout);
+    }
 
     /* Build the array with the pointers to the entries */
     sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
@@ -1439,128 +1471,136 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 #define DELTA 10
 
 
-    ep = sw->Index->entryArray;
-    if (ep)
-    {
-        totalwords = ep->numWords;
-
-        DB_InitWriteWords(sw, indexf->DB);
+    if ( !(ep = sw->Index->entryArray ))
+        return;  /* nothing to do */
 
 
-		if (sw->verbose)
-			printf("  Writing word text: ...");
+    totalwords = ep->numWords;
 
-        n = lastPercent = 0;
-			
-
-        for (i = 0; i < totalwords; i++)
-        {
-            if ( sw->verbose && totalwords > 10000 )  // just some random guess
-            {
-    			n++;
-    			percent = (n * 100)/totalwords;
-    			if (percent - lastPercent >= DELTA )
-    			{
-    	    		printf("\r  Writing word text: %3d%%", percent );
-    				fflush(stdout);
-    				lastPercent = percent;
-    			}
-            }
-
-            epi = ep->elist[i];
-
-            if (!isstopword(&indexf->header, epi->word))
-            {
-                /* Write word to index file */
-                write_word(sw, epi, indexf);
-            }
-            else
-                epi->u1.fileoffset = -1L;
-        }    
-		if (sw->verbose)
-    		printf("\r  Writing word text: Complete\n" );
+    DB_InitWriteWords(sw, indexf->DB);
 
 
-
-        n = lastPercent = 0;
-
-        for (i = 0; i < SEARCHHASHSIZE; i++)
-        {
-            if ( sw->verbose )
-            {
-    			n++;
-    			percent = (n * 100)/SEARCHHASHSIZE;
-    			if (percent - lastPercent >= DELTA )
-    			{
-    	    		printf("\r  Writing word hash: %3d%%", percent );
-    				fflush(stdout);
-    				lastPercent = percent;
-    			}
-            }
-
-
-            if ((epi = sw->Index->hashentries[i]))
-            {
-                while (epi)
-                {
-                    /* If it is not a stopword write it */
-                    if (epi->u1.fileoffset >= 0L)  
-                        DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
-                    epi = epi->next;
-                }
-            }
-        }
-		if (sw->verbose)
-    		printf("\r  Writing word hash: Complete\n" );
-
-
-        n = lastPercent = 0;
-
-		if (sw->verbose)
-			printf("  Writing word data: ...");
-
-        for (i = 0; i < totalwords; i++)
-        {
-            if ( sw->verbose && totalwords > 10000 )  // just some random guess
-            {
-    			n++;
-    			percent = (n * 100)/totalwords;
-    			if (percent - lastPercent >= DELTA )
-    			{
-    	    		printf("\r  Writing word data: %3d%%", percent );
-    				fflush(stdout);
-    				lastPercent = percent;
-    			}
-            }
-
-
-            epi = ep->elist[i];
-            if (epi->u1.fileoffset >= 0L)
-            {
-                /* Sort locationlist by MetaName, Filenum
-                   ** for faster search */
-                sortentry(sw, indexf, epi);
-                write_worddata(sw, epi, indexf);
-            }
-            efree(epi->locationarray);
-        }
-
-
-		if (sw->verbose)
-    		printf("\r  Writing word data: Complete\n" );
-
-
-        DB_EndWriteWords(sw, indexf->DB);
-
-		/* free all ENTRY structs at once */
-		Mem_ZoneFree(&sw->Index->entryZone);
-
-		/* free all location compressed data */
-		Mem_ZoneFree(&sw->Index->locZone);
-
-        efree(ep->elist);
-
+	if (sw->verbose)
+	{
+		printf("  Writing word text: ...");
+		fflush(stdout);
     }
+
+    n = lastPercent = 0;
+    for (i = 0; i < totalwords; i++)
+    {
+        if ( sw->verbose && totalwords > 10000 )  // just some random guess
+        {
+			n++;
+			percent = (n * 100)/totalwords;
+			if (percent - lastPercent >= DELTA )
+			{
+	    		printf("\r  Writing word text: %3d%%", percent );
+				fflush(stdout);
+				lastPercent = percent;
+			}
+        }
+
+        epi = ep->elist[i];
+
+        /* why check for stopwords here?  removestopwords could have remove them */
+        if (!isstopword(&indexf->header, epi->word))
+        {
+            /* Write word to index file */
+            write_word(sw, epi, indexf);
+        }
+        else
+            epi->u1.fileoffset = -1L;  /* flag as a stop word */
+    }    
+
+	if (sw->verbose)
+	{
+		printf("\r  Writing word text: Complete\n" );
+		printf("  Writing word hash: ...");
+		fflush(stdout);
+    }
+
+
+
+    n = lastPercent = 0;
+    for (i = 0; i < SEARCHHASHSIZE; i++)
+    {
+        if ( sw->verbose )
+        {
+			n++;
+			percent = (n * 100)/SEARCHHASHSIZE;
+			if (percent - lastPercent >= DELTA )
+			{
+	    		printf("\r  Writing word hash: %3d%%", percent );
+				fflush(stdout);
+				lastPercent = percent;
+			}
+        }
+
+
+        if ((epi = sw->Index->hashentries[i]))
+        {
+            while (epi)
+            {
+                /* If it is not a stopword write it */
+                if (epi->u1.fileoffset >= 0L)  
+                    DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
+                epi = epi->next;
+            }
+        }
+    }
+
+
+	if (sw->verbose)
+    {
+		printf("\r  Writing word hash: Complete\n" );
+		printf("  Writing word data: ...");
+        fflush(stdout);
+    }
+
+
+    n = lastPercent = 0;
+    for (i = 0; i < totalwords; i++)
+    {
+        if ( sw->verbose && totalwords > 10000 )  // just some random guess
+        {
+			n++;
+			percent = (n * 100)/totalwords;
+			if (percent - lastPercent >= DELTA )
+			{
+	    		printf("\r  Writing word data: %3d%%", percent );
+				fflush(stdout);
+				lastPercent = percent;
+			}
+        }
+
+
+        epi = ep->elist[i];
+        if (epi->u1.fileoffset >= 0L)
+        {
+            /* Sort locationlist by MetaName, Filenum
+               ** for faster search */
+            sortentry(sw, indexf, epi);
+            write_worddata(sw, epi, indexf);
+        }
+        efree(epi->locationarray);
+    }
+
+
+	if (sw->verbose)
+		printf("\r  Writing word data: Complete\n" );
+
+
+    DB_EndWriteWords(sw, indexf->DB);
+
+	/* free all ENTRY structs at once */
+	Mem_ZoneFree(&sw->Index->entryZone);
+
+	/* free all location compressed data */
+	Mem_ZoneFree(&sw->Index->locZone);
+
+    efree(ep->elist);
+
 }
 
 

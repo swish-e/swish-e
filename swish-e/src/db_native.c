@@ -779,13 +779,15 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
         /* Init hash array */
         for(i=0;i<BIGHASHSIZE;i++)
             DB->hash[i] = NULL; 
+
 		/* If we are here we have finished WriteWord_Native */
 		/* If using ramdisk - Reserve space upto the size of the ramdisk */
         if(WRITE_WORDS_RAMDISK)
         {
             long ram_size = DB->w_seek((FILE *)DB->rd,0,SEEK_END);
             fseek(DB->fp,ram_size,SEEK_SET);
-	}
+        }
+
         DB->wordhashdata = emalloc(2 * DB->num_words * sizeof(long));
     }
 
@@ -798,6 +800,8 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
 
     DB->wordhashdata[2 * DB->wordhash_counter] = wordID;
     DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
+
+
          /* Should be a mem_zone -- > Todo */
          /* Add to the hash */
     numhash = (struct numhash *) emalloc(sizeof(struct numhash));

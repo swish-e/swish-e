@@ -983,11 +983,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     IndexingDataSource = data_sources[0];
 
 
-
-
-
-
-
     /* Read configuration files */
     while (params->conflist != NULL)
     {
