@@ -239,7 +239,7 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
 ** Otherwise, only the file name without its path is returned.
 */
 
-char   *parsetitle(char *buffer)
+char   *parseHTMLtitle(char *buffer)
 {
     char   *title;
 
@@ -259,9 +259,7 @@ char   *parsetitle(char *buffer)
 */
 /* This is to check "title contains" option in config file */
 
-static int     isoktitle(sw, title)
-     SWISH  *sw;
-     char   *title;
+int     isoktitle(SWISH *sw, char *title)
 {
     int     badfile;
     struct swline *tmplist;
@@ -291,9 +289,7 @@ static int     isoktitle(sw, title)
 ** a word is in.
 */
 
-static int     getstructure(tag, structure)
-     char   *tag;
-     int     structure;
+static int     getstructure(char *tag, int structure)
 {
 
 /* int len; *//* not used - 2/22/00 */
@@ -588,7 +584,6 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     int     position_no_meta = 1; /* Counter for words in doc (excluding metanames) */
     int     position_meta = 1;  /* Counter for words in doc (only for metanames) */
     int     currentmetanames;
-    int     n;
     char   *p,
            *newp,
            *tag,
@@ -601,7 +596,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     char   *Content = NULL,
            *Name = NULL,
            *summary = NULL;
-    char   *title = parsetitle(buffer);
+    char   *title = parseHTMLtitle(buffer);
 
     if (!isoktitle(sw, title))
     {
@@ -609,18 +604,6 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
         return -2;
     }
     idx->filenum++;
-
-    if (fprop->index_no_content)
-    {
-    	addtofilelist(sw, indexf, fprop->real_path, NULL );
-        addCommonProperties( sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize );
-
-        addtofwordtotals(indexf, idx->filenum, 100);
-
-        n = countwordstr(sw, title, idx->filenum);
-        efree(title);
-        return n;
-    }
 
 
     if (fprop->stordesc)

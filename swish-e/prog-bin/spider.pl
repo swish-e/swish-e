@@ -11,6 +11,7 @@ use strict;
 #
 # Apr 7, 2001 -- added quite a bit of bulk for easier debugging
 
+use lib '/data/_g/lii/perl/dl/URI-1.15';
 
 use LWP::RobotUA;
 use HTML::LinkExtor;
