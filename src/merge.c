@@ -874,13 +874,10 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 {
     int         j;
-    int         metaname = 0;
     int         word_count = 0;
-    int         loc_count = 0;
     char        word[2];
     char       *resultword;
     long        wordID;
-    unsigned long    nextposmetaname = 0L;
 
     DB_InitReadWords(sw, indexf->DB);
 
