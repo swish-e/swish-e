@@ -1884,6 +1884,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
             continue;                
         }
 
+
         /* Check for buzzwords */
         if ( indexf->header.buzzwords_used_flag )
         {

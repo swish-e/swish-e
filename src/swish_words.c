@@ -16,7 +16,7 @@ $Id$
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
 **
-** 2001-01-01  rasc    space for change history
+** 2001-05-23  moseley  created - replaced parser in search.c
 **
 */
 
@@ -80,7 +80,7 @@ static int isSearchOperatorChar( int c, int phrase_delimiter )
 /* This simply tokenizes by whitespace and by the special characters "()=" */
 /* I think it can be cleaner - moseley 23/05/01 (running a fever) */
 
-static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter )
+static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int max_size )
 {
     int     i;
     int     backslash;
@@ -98,7 +98,13 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
     
     while ( **buf && !isspace( (unsigned char) **buf) )
     {
-        /* reallocate buffer, if needed */
+
+        /* don't let searches allocate all memory */
+        if ( i > max_size + 4 )   /* leave a little room for directives */
+            progerr( "Search word exceeded maxwordlimit setting." ); 
+
+    
+        /* reallocate buffer, if needed -- only if maxwordlimit was set larger than MAXWORDLEN (1000) */
         if ( i == *lenword )
         {
             *lenword *= 2;
@@ -197,9 +203,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char
     /* Some initial adjusting of the word */
 
 
-    /* this might be an option if case sensitive searches are used */
-    strtolower( word );
-
     /* Translate chars */
     TranslateChars(header.translatecharslookuptable, word);
 
@@ -222,6 +225,9 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char
         /* ------- processed elsewhere for search ---------
         if (!isokword(sw, self->word, indexf))
             continue;
+        - stopwords are processed in search.c because removing them may have side effects
+        - maxwordlen is checked when first tokenizing for security reasons
+        - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
 
         if (header.applyStemmingRules)
@@ -327,9 +333,6 @@ static void fudge_wildcard( struct swline **original, struct swline *entry )
     char    *tmp;
     struct swline *wild_card;
 
-
-    
-
     wild_card = entry->next;        
 
     /* reallocate a string */
@@ -369,16 +372,18 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
     struct  MOD_Swish_Words *self = sw->SwishWords;
     struct  MOD_Search *srch = sw->Search;
     unsigned char PhraseDelimiter;
+    int     max_size;
 
     if ( !words || !*words )
         progerr("Please enter a search string.");
 
 
     PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
+    max_size        = header.maxwordlimit;
 
     curpos = words;  
 
-    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter ) )
+    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, max_size ) )
         tokens = (struct swline *) addswline( tokens, self->word );
 
 
@@ -412,13 +417,16 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
             continue;
         }
 
+        /* this might be an option if case sensitive searches are used */
+        strtolower( temp->line );
+    
+
         /* buzzwords */
         if ( checkbuzzword( header, temp->line ) )
         {
             temp = temp->next;
             continue;
         }
-
 
 
         /* query words left.  Turn into "swish_words" */

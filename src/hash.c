@@ -185,7 +185,13 @@ void    addbuzzwordhash(INDEXDATAHEADER *header, char *word)
 
     sp->line = (char *) estrdup(word);
 
-    hashval = hash(word);
+    
+    /* should buzzwords be case sensitive? */
+    strtolower( sp->line );
+
+    hashval = hash( sp->line );
+
+    
     sp->next = header->hashbuzzwordlist[hashval];
     header->hashbuzzwordlist[hashval] = sp;
 }
