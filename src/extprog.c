@@ -223,6 +223,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     int     index_no_content;
     long    truncate_doc_size;
     int     docType = 0;
+    int     original_update_mode = sw->Index->update_mode;
 
     mtime = 0;
     fsize = -1;
@@ -324,6 +325,10 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             do_index_file(sw, fprop);
 
+            /* Reset Update Mode */
+            sw->Index->update_mode = original_update_mode;
+
+
             if ( has_filter && remove( fprop->work_path ) )
                 progwarnno("Error removing temporary file '%s': ", fprop->work_path);
 
@@ -394,6 +399,45 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
                 continue;
             }
+
+           /* new Update-Mode: [Update|Remove|Index] header
+            * for this to work, swish-e has to be compiled with incremental option and
+            * in update mode (-u) so that index is opened in read/write mode
+            * dpavlin 2004-12-09
+            */
+
+            if (strncasecmp(line, "Update-Mode", 11) == 0)
+            {
+                char *x = strchr(line, ':');
+                if (!x)
+                    progerr("Failed to parse Update-Mode '%s'", line);
+
+                x = str_skip_ws(++x);
+                if (!*x)
+                    progerr("Failed to parse Update-Mode header '%s'", line);
+
+               /* should we dump error here? It seem to work without update mode! - dpavlin */
+               if (sw->Index->update_mode != MODE_UPDATE && sw->Index->update_mode != MODE_REMOVE)
+                       progwarn("Update-Mode header is supported only if swish-e is invoked in update (-u) mode");
+
+               if ( strncasecmp(x, "Update", 6) == 0 ) {
+                       sw->Index->update_mode = MODE_UPDATE;
+                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_UPDATE)\n", x );
+               } else if ( strncasecmp(x, "Remove", 6) == 0 ) {
+                       sw->Index->update_mode = MODE_REMOVE;
+                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_REMOVE)\n", x );
+               } else if ( strncasecmp(x, "Index", 5) == 0 ) {
+                       sw->Index->update_mode = MODE_UPDATE;
+                       if ( sw->verbose >= 2 ) printf( "Update mode: %s (MODE_UPDATE)\n", x );
+               } else {
+                       progerr("Unknown Update-Mode: %s", x);
+               }
+
+                continue;
+            }
+
+
+
 
             progwarn("Unknown header line: '%s' from program %s", line, prog);
 
