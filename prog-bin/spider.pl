@@ -305,6 +305,13 @@ sub process_link {
         # look for redirect
         if ( $response->is_redirect && $response->header('location') ) {
             my $u = URI->new_abs( $response->header('location'), $response->base );
+
+            if ( $u->canonical eq $uri->canonical ) {
+                print STDERR "Warning: $uri redirects to itself!.\n";
+                return;
+            }
+
+            $visited{ $u->canonical }++;  # say that we say this one.
             return [$u];
         }
         return;
