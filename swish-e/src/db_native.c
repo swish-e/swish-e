@@ -351,8 +351,8 @@ int DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db)
 
    FILE *fp = DB->fp;
 
-   compress1(id, fp);
-   compress1(len, fp);
+   compress1(id, fp, fputc);
+   compress1(len, fp, fputc);
    fwrite(s, len, sizeof(char), fp);
 
    return 0;
@@ -373,11 +373,11 @@ int DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
-   tmp = uncompress1(fp);
+   tmp = uncompress1(fp,fgetc);
    *id = tmp;
    if(tmp)
    {
-      tmp = uncompress1(fp);
+      tmp = uncompress1(fp,fgetc);
       *s = (char *) emalloc( tmp +1);
       *len = tmp;
       fread(*s, *len, sizeof(char), fp);
@@ -442,7 +442,7 @@ int DB_WriteWord_Native(char *word, long wordID, void *db)
 
     /* Write word length, word and a NULL offset */
     wordlen = strlen(word);
-    compress1(wordlen, fp);
+    compress1(wordlen, fp, fputc);
     fwrite(word, wordlen, sizeof(char), fp);
 
     printlong(fp, (long) 0);    /* hash offset */
@@ -469,7 +469,7 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
         /* Position file pointer in word */
     fseek(fp,wordID,SEEK_SET);
         /* Jump over word length and word */
-    wordlen = uncompress1(fp);   /* Get Word length */
+    wordlen = uncompress1(fp,fgetc);   /* Get Word length */
     fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
         /* Jump also hash pointer */
     fseek(fp,(long)sizeof(long),SEEK_CUR);  /* Jump Hash pointer */
@@ -481,7 +481,7 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
     fseek(fp,0,SEEK_END);   /* Come back to the end */
 
         /* Write the worddata to disk */
-    compress1(lendata,fp);
+    compress1(lendata,fp, fputc);
     fwrite(worddata,lendata,1,fp);
 
         /* A NULL byte to indicate end of word data */
@@ -506,7 +506,7 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
     }
     fseek(fp, wordID, SEEK_SET);
         /* Get wordlen */
-    wordlen = uncompress1(fp);
+    wordlen = uncompress1(fp,fgetc);
             /* Jump word */
     fseek(fp, (long) wordlen, SEEK_CUR);
             /* Write Null terminator */
@@ -516,7 +516,7 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
     {
         fseek(fp, DB->lasthashval[hashval], SEEK_SET);
             /* Get wordlen */
-        wordlen = uncompress1(fp);
+        wordlen = uncompress1(fp,fgetc);
             /* Jump word */
         fseek(fp, (long) wordlen, SEEK_CUR);
                 /* Overwrite previous NULL pointer */
@@ -566,7 +566,7 @@ int DB_ReadWordHash_Native(char *word, long *wordID, void *db)
         /* Position in file */
         fseek(fp, offset, SEEK_SET);
         /* Get word */
-        wordlen = uncompress1(fp);
+        wordlen = uncompress1(fp,fgetc);
         fileword = emalloc(wordlen + 1);
         fread(fileword, 1, wordlen, fp);
         fileword[wordlen] = '\0';
@@ -617,7 +617,7 @@ int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wo
     fseek(fp, DB->offsets[i], 0);
 
         /* Look for first occurrence */
-    wordlen = uncompress1(fp);
+    wordlen = uncompress1(fp,fgetc);
     fileword = (char *) emalloc(wordlen + 1);
 
     while (wordlen)
@@ -637,7 +637,7 @@ int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wo
             break;    
         }
             /* Go to next value */
-        wordlen = uncompress1(fp); /* Next word */
+        wordlen = uncompress1(fp,fgetc); /* Next word */
         if (!wordlen)
         {
             dataoffset = 0;
@@ -679,7 +679,7 @@ int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wor
 
     fseek(fp, DB->nextwordoffset, SEEK_SET);
 
-    wordlen = uncompress1(fp);
+    wordlen = uncompress1(fp,fgetc);
     fileword = (char *) emalloc(wordlen + 1);
 
     fread(fileword, 1, wordlen, fp);
@@ -713,7 +713,7 @@ long DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata,
     FILE    *fp = DB->fp;
 
     fseek(fp,wordID,0);
-    len = uncompress1(fp);
+    len = uncompress1(fp,fgetc);
     buffer = emalloc(len);
     fread(buffer,len,1,fp);
 
@@ -769,7 +769,7 @@ int DB_WriteFile_Native(int filenum, unsigned char *filedata,int sz_filedata, vo
    }
 
    DB->fileoffsetarray[filenum] = ftell(DB->fp);
-   compress1(sz_filedata, DB->fp); /* Write length */
+   compress1(sz_filedata, DB->fp, fputc); /* Write length */
    fwrite(filedata, sz_filedata, 1, DB->fp); /* Write data */
 
    DB->num_docs++;
@@ -797,7 +797,7 @@ int DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedata, v
     {
         fseek(DB->fp, DB->fileoffsetarray[filenum-1], 0);
 
-        len = uncompress1(DB->fp);
+        len = uncompress1(DB->fp,fgetc);
         buffer = emalloc(len);
         fread(buffer, len, 1, DB->fp);
 
@@ -844,9 +844,9 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
    tmp1 = ftell(fp);
    printlong(fp,(long)0);  /* Pointer to next table if any */
 	/* Write ID */
-   compress1(propID,fp);
+   compress1(propID,fp,fputc);
    /* Write len of data */
-   compress1(sz_data,fp);
+   compress1(sz_data,fp,putc);
    /* Write data */
    fwrite(data,sz_data,1,fp);
 
@@ -888,12 +888,12 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    fseek(fp,DB->offsets[SORTEDINDEX],0);
    next = readlong(fp);
         /* read propID */
-   id = uncompress1(fp);
+   id = uncompress1(fp,fgetc);
    while(1)
    {
        if(id == propID)
        {
-           tmp = uncompress1(fp);
+           tmp = uncompress1(fp,fgetc);
            *sz_data = tmp;
            *data = emalloc(*sz_data);
            fread(*data,*sz_data,1,fp);
@@ -903,7 +903,7 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
        {
            fseek(fp,next,0);
            next = readlong(fp);
-           id = uncompress1(fp);
+           id = uncompress1(fp,fgetc);
        }
        else
        {

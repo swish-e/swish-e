@@ -17,11 +17,11 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-void compress1(int num, FILE *fp);
+void compress1(int num, FILE *fp, int (*f_putc)(int , FILE *));
 unsigned char *compress2(int num, unsigned char *buffer);
 unsigned char *compress3(int num, unsigned char *buffer);
 
-int uncompress1(FILE *fp);
+int uncompress1(FILE *fp, int (*f_getc)(FILE *fp));
 int uncompress2(unsigned char **buffer);
 
 
