@@ -60,25 +60,25 @@ unsigned int DEBUG_MASK = 0;
 
 
 
-SWISH *SwishNew()
+SWISH  *SwishNew()
 {
-    SWISH *sw;
+    SWISH  *sw;
 
-    sw=emalloc(sizeof(SWISH));
-    memset( sw, 0, sizeof(SWISH));
-    
-    initModule_Filter (sw);
-    initModule_ResultOutput (sw);
-    initModule_SearchAlt (sw);
-    initModule_ResultSort (sw);
-    initModule_Entities (sw);
-    initModule_DB (sw);
-    initModule_Search (sw);
-    initModule_Index (sw);
-    initModule_FS (sw);
-    initModule_HTTP (sw);
-    initModule_Swish_Words (sw);
-    initModule_Prog (sw);
+    sw = emalloc(sizeof(SWISH));
+    memset(sw, 0, sizeof(SWISH));
+
+    initModule_Filter(sw);
+    initModule_ResultOutput(sw);
+    initModule_SearchAlt(sw);
+    initModule_ResultSort(sw);
+    initModule_Entities(sw);
+    initModule_DB(sw);
+    initModule_Search(sw);
+    initModule_Index(sw);
+    initModule_FS(sw);
+    initModule_HTTP(sw);
+    initModule_Swish_Words(sw);
+    initModule_Prog(sw);
     initModule_PropLimit(sw);
 
     sw->TotalWords = 0;
@@ -90,9 +90,9 @@ SWISH *SwishNew()
     sw->lasterror = RC_OK;
     sw->verbose = VERBOSE;
     sw->parser_warn_level = 0;
-    sw->indexComments = 0;		/* change default 5/01 wsm */
+    sw->indexComments = 0;      /* change default 5/01 wsm */
     sw->nocontentslist = NULL;
-    sw->DefaultDocType=NODOCTYPE;
+    sw->DefaultDocType = NODOCTYPE;
     sw->indexcontents = NULL;
     sw->storedescription = NULL;
     sw->suffixlist = NULL;
@@ -105,77 +105,75 @@ SWISH *SwishNew()
     sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
 #endif
 
-    sw->truncateDocSize = 0;      /* default: no truncation of docs    */
-    
+    sw->truncateDocSize = 0;    /* default: no truncation of docs    */
 
-        /* Make rest of lookup tables */
+
+    /* Make rest of lookup tables */
     makeallstringlookuptables(sw);
-    return(sw);
+    return (sw);
 }
 
 
 
 
 /* Free memory for search results and parameters (properties ...) */
-void SwishResetSearch(SWISH *sw)
+void    SwishResetSearch(SWISH * sw)
 {
 
-                /* Free sort stuff */
-    resetModule_Search (sw);
-    resetModule_ResultSort (sw);
+    /* Free sort stuff */
+    resetModule_Search(sw);
+    resetModule_ResultSort(sw);
 }
 
-void SwishClose(SWISH *sw)
+void    SwishClose(SWISH * sw)
 {
     IndexFILE *tmpindexlist;
-    int i;
+    int     i;
 
-    if(sw) {
+    if (sw) {
         /* Free search results and imput parameters */
         SwishResetSearch(sw);
-          
+
         /* Close any pending DB */
         tmpindexlist = sw->indexlist;
-        while(tmpindexlist)
-        {
-            if(tmpindexlist->DB)
+        while (tmpindexlist) {
+            if (tmpindexlist->DB)
                 DB_Close(sw, tmpindexlist->DB);
-            tmpindexlist=tmpindexlist->next;
+            tmpindexlist = tmpindexlist->next;
         }
 
-        freeModule_Filter (sw);
-        freeModule_ResultOutput (sw);
-        freeModule_SearchAlt (sw);
-        freeModule_Entities (sw);
-        freeModule_DB (sw);
-        freeModule_Index (sw);
-        freeModule_ResultSort (sw);
-        freeModule_FS (sw);
-        freeModule_HTTP (sw);
-        freeModule_Search (sw);
-        freeModule_Swish_Words (sw);
-        freeModule_Prog (sw);
+        freeModule_Filter(sw);
+        freeModule_ResultOutput(sw);
+        freeModule_SearchAlt(sw);
+        freeModule_Entities(sw);
+        freeModule_DB(sw);
+        freeModule_Index(sw);
+        freeModule_ResultSort(sw);
+        freeModule_FS(sw);
+        freeModule_HTTP(sw);
+        freeModule_Search(sw);
+        freeModule_Swish_Words(sw);
+        freeModule_Prog(sw);
 
         freeModule_PropLimit(sw);
 
 
         /* Free MetaNames and close files */
-        tmpindexlist=sw->indexlist;
+        tmpindexlist = sw->indexlist;
 
         /* Free ReplaceRules regular expressions */
-        free_regex_list( &sw->replaceRegexps );
+        free_regex_list(&sw->replaceRegexps);
 
         /* Free ExtractPath list */
-        free_Extracted_Path( sw );
+        free_Extracted_Path(sw);
 
         /* FileRules?? */
-        
 
-        while(tmpindexlist)
-        {
+
+        while (tmpindexlist) {
             /* free the meteEntry array */
-            if(tmpindexlist->header.metaCounter)
-                freeMetaEntries( &tmpindexlist->header );
+            if (tmpindexlist->header.metaCounter)
+                freeMetaEntries(&tmpindexlist->header);
 
             /* Free stopwords structures */
             freestophash(&tmpindexlist->header);
@@ -192,231 +190,241 @@ void SwishClose(SWISH *sw)
                     efree(tmpindexlist->dict[i]);
             }
 */
-            for(i=0;i<256;i++)
-                if(tmpindexlist->keywords[i])
+            for (i = 0; i < 256; i++)
+                if (tmpindexlist->keywords[i])
                     efree(tmpindexlist->keywords[i]);
 
-            tmpindexlist=tmpindexlist->next;
+            tmpindexlist = tmpindexlist->next;
         }
 
         freeindexfile(sw->indexlist);
 
-        if ( sw->Prop_IO_Buf )
-        {
-            efree( sw->Prop_IO_Buf );
+        if (sw->Prop_IO_Buf) {
+            efree(sw->Prop_IO_Buf);
             sw->Prop_IO_Buf = NULL;
         }
-        
+
         /* Free SWISH struct */
 
-        if ( sw->dirlist )
-            freeswline( sw->dirlist );
+        if (sw->dirlist)
+            freeswline(sw->dirlist);
 
         efree(sw);
     }
 }
 
 
-SWISH *SwishOpen(char *indexfiles)
+SWISH  *SwishOpen(char *indexfiles)
 {
-StringList *sl=NULL;
-SWISH *sw;
-int i;
-    if(indexfiles && indexfiles[0]) {
+    StringList *sl = NULL;
+    SWISH  *sw;
+    int     i;
+
+    if (indexfiles && indexfiles[0]) {
         sw = SwishNew();
-        sl=parse_line(indexfiles);
-        for(i=0;i<sl->n;i++)
-            sw->indexlist = (IndexFILE *) 
+        sl = parse_line(indexfiles);
+        for (i = 0; i < sl->n; i++)
+            sw->indexlist = (IndexFILE *)
                 addindexfile(sw->indexlist, sl->word[i]);
-        if((i=SwishAttach(sw,0))<0) {
+        if ((i = SwishAttach(sw, 0)) < 0) {
             SwishClose(sw);
-            sw=NULL;
+            sw = NULL;
         }
-    } else sw=NULL;
-    if (sl)    freeStringList(sl);
+    } else
+        sw = NULL;
+    if (sl)
+        freeStringList(sl);
+
     return sw;
 }
 
-int SwishSearch(SWISH *sw, char *words, int structure, char *props, char *sort)
+int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *sort)
 {
-StringList *slprops=NULL;
-StringList *slsort=NULL;
-int i,sortmode;
-char *field;
-    if(!sw) return INVALID_SWISH_HANDLE;
-        /* If previous search - reset its values (results, props ) */
-    SwishResetSearch(sw);
-    if(props && props[0]) 
+    StringList *slprops = NULL;
+    StringList *slsort = NULL;
+    int     i,
+            sortmode;
+    int     header_level;
+    char   *field;
+
+    if (!sw)
     {
-        slprops=parse_line(props);
-        for(i=0;i<slprops->n;i++)
-            addSearchResultDisplayProperty(sw,slprops->word[i]);
+        sw->lasterror = INVALID_SWISH_HANDLE;
+        return INVALID_SWISH_HANDLE;
     }
 
-    if(sort && sort[0]) 
-    {
-        slsort=parse_line(sort);
-        for(i=0;i<slsort->n;) 
-        {
-            sortmode=1;  /* Default mode is ascending */
-            field=slsort->word[i++];
-            if(i<slsort->n) 
-            {
-                if(!strcasecmp(slsort->word[i],"asc")) 
-                {
-                    sortmode=-1;  /* Ascending */
+    /* If previous search - reset its values (results, props ) */
+    SwishResetSearch(sw);
+
+    if (props && props[0]) {
+        slprops = parse_line(props);
+        for (i = 0; i < slprops->n; i++)
+            addSearchResultDisplayProperty(sw, slprops->word[i]);
+    }
+
+    if (sort && sort[0]) {
+        slsort = parse_line(sort);
+        for (i = 0; i < slsort->n;) {
+            sortmode = 1;       /* Default mode is ascending */
+            field = slsort->word[i++];
+            if (i < slsort->n) {
+                if (!strcasecmp(slsort->word[i], "asc")) {
+                    sortmode = -1; /* Ascending */
                     i++;
-                } 
-                else
-                { 
-                    if(!strcasecmp(slsort->word[i],"desc")) 
-                    {
-                        sortmode=1;  /* Ascending */
+                } else {
+                    if (!strcasecmp(slsort->word[i], "desc")) {
+                        sortmode = 1; /* Ascending */
                         i++;
                     }
                 }
             }
-            addSearchResultSortProperty(sw,field,sortmode);
+            addSearchResultSortProperty(sw, field, sortmode);
         }
     }
-    i=0;
-    i=search(sw,words,structure);   /* search with no eco */
-    if(slsort) freeStringList(slsort);
-    if(slprops) freeStringList(slprops);
+    i = 0;
+
+    header_level = sw->ResultOutput->headerOutVerbose;
+    sw->ResultOutput->headerOutVerbose = 0;
+
+    i = search(sw, words, structure); /* search with no eco */
+
+    sw->ResultOutput->headerOutVerbose = header_level;
+    if (slsort)
+        freeStringList(slsort);
+    if (slprops)
+        freeStringList(slprops);
     return i;
 }
 
 
-int SwishSeek(SWISH *sw,int pos)
+int     SwishSeek(SWISH * sw, int pos)
 {
-    int i;
-    RESULT *sp=NULL;
+    int     i;
+    RESULT *sp = NULL;
 
-    if(!sw)
+    if (!sw)
         return INVALID_SWISH_HANDLE;
 
-    if(!sw->Search->db_results)
-        return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+    if (!sw->Search->db_results)
+        return ((sw->lasterror = SWISH_LISTRESULTS_EOF));
 
     /* Check if only one index file -> Faster SwishSeek */
 
-    if(!sw->Search->db_results->next)
-    {
-        for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
+    if (!sw->Search->db_results->next) {
+        for (i = 0, sp = sw->Search->db_results->sortresultlist; sp && i < pos; i++)
             sp = sp->next;
 
-        sw->Search->db_results->currentresult=sp;
-    }
-    else
-    {
+        sw->Search->db_results->currentresult = sp;
+    } else {
         /* Well, we finally have more than one file */
         /* In this case we have no choice - We need to read the data from disk */
         /* The easy way: Let SwishNext do the job */
 
-        for (i=0;i<pos;i++)
-            if(!(sp=SwishNext(sw)))
+        for (i = 0; i < pos; i++)
+            if (!(sp = SwishNext(sw)))
                 break;
     }
 
-    if(!sp)
-        return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+    if (!sp)
+        return ((sw->lasterror = SWISH_LISTRESULTS_EOF));
 
     return pos;
 }
 
-int SwishError(SWISH *sw)
+int     SwishError(SWISH * sw)
 {
-    if(!sw) return INVALID_SWISH_HANDLE;
-    return(sw->lasterror);
-}
-    
-char *SwishErrorString(int errornumber)
-{
-    return(getErrorString(errornumber));
+    if (!sw)
+        return INVALID_SWISH_HANDLE;
+    return (sw->lasterror);
 }
 
-char tmp_header_buffer[50];  /*  Not thread safe $$$ */
-
-char *SwishHeaderParameter(IndexFILE *indexf,char *parameter_name)
+char   *SwishErrorString(int errornumber)
 {
-    if(!strcasecmp(parameter_name,WORDCHARSPARAMNAME)) 
+    return (getErrorString(errornumber));
+}
+
+char    tmp_header_buffer[50];  /*  Not thread safe $$$ */
+
+char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name)
+{
+    if (!strcasecmp(parameter_name, WORDCHARSPARAMNAME))
         return indexf->header.wordchars;
 
-    else if(!strcasecmp(parameter_name,BEGINCHARSPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, BEGINCHARSPARAMNAME))
         return indexf->header.beginchars;
 
-    else if(!strcasecmp(parameter_name,ENDCHARSPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, ENDCHARSPARAMNAME))
         return indexf->header.endchars;
 
-    else if(!strcasecmp(parameter_name,IGNOREFIRSTCHARPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, IGNOREFIRSTCHARPARAMNAME))
         return indexf->header.ignorefirstchar;
 
-    else if(!strcasecmp(parameter_name,IGNORELASTCHARPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, IGNORELASTCHARPARAMNAME))
         return indexf->header.ignorelastchar;
 
 
 
-    else if(!strcasecmp(parameter_name,NAMEHEADERPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, NAMEHEADERPARAMNAME))
         return indexf->header.indexn;
 
-    else if(!strcasecmp(parameter_name,DESCRIPTIONPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, DESCRIPTIONPARAMNAME))
         return indexf->header.indexd;
 
-    else if(!strcasecmp(parameter_name,POINTERPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, POINTERPARAMNAME))
         return indexf->header.indexp;
 
-    else if(!strcasecmp(parameter_name,MAINTAINEDBYPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, MAINTAINEDBYPARAMNAME))
         return indexf->header.indexa;
 
-    else if(!strcasecmp(parameter_name,INDEXEDONPARAMNAME)) 
+    else if (!strcasecmp(parameter_name, INDEXEDONPARAMNAME))
         return indexf->header.indexedon;
 
 
 
-    else if(!strcasecmp(parameter_name,STEMMINGPARAMNAME)) {
-        if(indexf->header.applyStemmingRules)return "1";
-        else return "0";
+    else if (!strcasecmp(parameter_name, STEMMINGPARAMNAME)) {
+        if (indexf->header.applyStemmingRules)
+            return "1";
+        else
+            return "0";
 
-    } else if(!strcasecmp(parameter_name,SOUNDEXPARAMNAME)) {
-        if(indexf->header.applySoundexRules)return "1";
-        else return "0";
+    } else if (!strcasecmp(parameter_name, SOUNDEXPARAMNAME)) {
+        if (indexf->header.applySoundexRules)
+            return "1";
+        else
+            return "0";
 
     } else if (!strcasecmp(parameter_name, FILECOUNTPARAMNAME)) {
-            sprintf(tmp_header_buffer, "%d", indexf->header.totalfiles);
-            return tmp_header_buffer;
+        sprintf(tmp_header_buffer, "%d", indexf->header.totalfiles);
+        return tmp_header_buffer;
 
     } else
         return "";
 }
 
-char **SwishStopWords(SWISH *sw, char * filename, int *numstops)
+char  **SwishStopWords(SWISH * sw, char *filename, int *numstops)
 {
-IndexFILE *indexf;
-    indexf=sw->indexlist;
-    while (indexf)
-    {
-        if (!strcasecmp(indexf->line,filename))
-        {
-            *numstops=indexf->header.stopPos;
+    IndexFILE *indexf;
+
+    indexf = sw->indexlist;
+    while (indexf) {
+        if (!strcasecmp(indexf->line, filename)) {
+            *numstops = indexf->header.stopPos;
             return indexf->header.stopList;
         }
     }
-    *numstops=0;
+    *numstops = 0;
     return NULL;
 }
 
-char *SwishWords(SWISH *sw, char * filename, char c)
+char   *SwishWords(SWISH * sw, char *filename, char c)
 {
-IndexFILE *indexf;
-    indexf=sw->indexlist;
-    while (indexf)
-    {
-       if (!strcasecmp(indexf->line,filename))
-       {
-           return getfilewords(sw,c,indexf);
-       }
+    IndexFILE *indexf;
+
+    indexf = sw->indexlist;
+    while (indexf) {
+        if (!strcasecmp(indexf->line, filename)) {
+            return getfilewords(sw, c, indexf);
+        }
     }
     return "";
 }
-
-
