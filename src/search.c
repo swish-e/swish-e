@@ -1188,13 +1188,13 @@ FILE *fp=indexf->fp;
 					position[j] = x;
 				}
 				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), structure,frequency,position,indexf,sw);
-				if (sw->verbose == 4)
+				if (sw->opt.X_headerOut >= 9)
 				{
 					/* dump diagnostic info */
 					long curFilePos;
 					curFilePos = ftell(fp);	/* save */
 					fi = readFileEntry(indexf, filenum);
-					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), frequency, tries);
+					resultHeaderOut(sw,9, "# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), frequency, tries);
 					fseek(fp, curFilePos, 0); /* restore */
 				}
 			} while(ftell(fp)!=nextposmetaname);
