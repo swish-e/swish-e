@@ -318,7 +318,7 @@ static void    usage()
     printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
     printf("         -d : next param is delimiter.\n");
     printf("         -P : next param is Phrase delimiter.\n");
-    printf("         -R : next param is Rank Scheme number.\n");
+    printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
     printf("         -V : prints the current version\n");
     printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
