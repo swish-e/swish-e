@@ -45,6 +45,9 @@ dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 
+dnl Check for vsnprintf in libsnprintf.so
+AC_CHECK_LIB(snprintf, vsnprintf)
+
 dnl Checks for header files.
 dnl looks for dirent.h and sets HAVE_DIRENT_H -- do we use?
 AC_HEADER_DIRENT
