@@ -51,7 +51,6 @@ use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
     my $abort;
     local $SIG{HUP} = sub { $abort++ };
 
-    my $depth = 0;
     my %visited;  # global -- I suppose would be smarter to localize it per server.
 
     process_server($_) for @servers;
@@ -161,8 +160,8 @@ sub process_server {
     $ua->cookie_jar( HTTP::Cookies->new ) if $server->{use_cookies};
 
 
-
-    eval { process_link( $server, $uri->canonical ) };
+    # uri, parent, depth
+    eval { spider( $server, $uri ) };
     print STDERR $@ if $@;
 
     $start = time - $start;
@@ -184,27 +183,38 @@ sub process_server {
             commify( $server->{counts}{$_} ),
             $server->{counts}{$_}/$start;
     }
+}
+
+#----------- Non recursive spidering ---------------------------
+
+sub spider {
+    my ( $server, $uri ) = @_;
+
+    my @link_array = [ $uri, '', 0 ];
+
+    $visited{ $uri->canonical }++;  # so we don't extract this link again
+
+    while ( @link_array ) {
+
+        die if $abort || $server->{abort};
+
+        my ( $uri, $parent, $depth ) = @{shift @link_array};
+        
+        my $new_links = process_link( $server, $uri, $parent, $depth );
+
+        push @link_array, map { [ $_, $uri, $depth+1 ] } @$new_links if $new_links;
+            
+    }
 }    
         
 
-my $parent;
-#----------- Process a url and recurse -----------------------
+#----------- Process a url and return links -----------------------
 sub process_link {
-    my ( $server, $url ) = @_;
-
-    my $uri = URI->new( $url );
-
-    die if $abort || $server->{abort};
+    my ( $server, $uri, $parent, $depth ) = @_;
 
 
     thin_dots( $uri, $server ) if $server->{thin_dots};
 
-
-    if ( $visited{ $uri->canonical }++ ) {
-        $server->{counts}{Skipped}++;
-        $server->{counts}{Duplicates}++;
-        return;
-    }
 
     $server->{counts}{'Unique URLs'}++;
 
@@ -257,17 +267,12 @@ sub process_link {
                 ( $response->is_success ? '+Fetched' : '-Failed' ),
                 $depth,
                 "Cnt: $server->{counts}{'Unique URLs'}",
-                $response->request->uri->canonical,
-                $response->code,
-                $response->content_type,
-                $response->content_length,
+                $uri,
+                ( $response->status_line || $response->status || 'unknown status' ),
+                ( $response->content_type || 'Unknown content type'),
+                ( $response->content_length || '???' ),
+                "parent:$parent",
            ),"\n";
-
-
-        if ( !$response->is_success && $parent ) {
-            print STDERR "   Found on page: ", $parent,"\n";
-        }
-           
     }
 
 
@@ -300,7 +305,7 @@ sub process_link {
         # look for redirect
         if ( $response->is_redirect && $response->header('location') ) {
             my $u = URI->new_abs( $response->header('location'), $response->base );
-            process_link( $server, $u );
+            return [$u];
         }
         return;
     }
@@ -344,22 +349,9 @@ sub process_link {
 
     # Allow skipping of this file for spidering.
 
+    return if defined $server->{max_depth} && $depth >= $server->{max_depth};
 
-
-    my $links = extract_links( $server, \$content, $response );
-
-    # Now spider
-    my $last_page = $parent || '';
-    $parent = $uri;
-    $depth++;
-
-    if ( ! defined $server->{max_depth} || $server->{max_depth} >= $depth ) {
-        process_link( $server, $_ ) for @$links;
-    }
-
-    $depth--;
-    $parent = $last_page;
-
+    return extract_links( $server, \$content, $response );
 }
 
 
@@ -473,9 +465,15 @@ sub extract_links {
                 
                 $u->authority( $server->{authority} );  # Force all the same host name
 
-                my $z = $u->as_string;
+                # Don't add the link if already seen
+                if ( $visited{ $u->canonical }++ ) {
+                    $server->{counts}{Skipped}++;
+                    $server->{counts}{Duplicates}++;
+                    next;
+                }
 
-                push @links, $z;
+
+                push @links, $u;
                 print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
 
@@ -565,6 +563,8 @@ sub commify {
 sub default_urls {
     die "$0: Must list URLs when using 'default'\n" unless @ARGV;
 
+    my @content_types  = qw{ text/html text/plain };
+
     return map {
         {
             base_url        => $_,
@@ -576,10 +576,11 @@ sub default_urls {
 
             test_response   => sub {
                 my $content_type = $_[2]->content_type;
-                my $ok = grep { $_ eq $content_type } qw{ text/html text/plain };
+                my $ok = grep { $_ eq $content_type } @content_types;
                 return 1 if $ok;
-                print STDERR "$_[0] wrong content type ( $content_type )\n";
+                print STDERR "$_[0] $content_type != (@content_types)\n";
                 return;
+
             }
         }
     } @ARGV;
