@@ -1995,7 +1995,9 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 #ifndef USE_BTREE
     /* now calculate seek_pos */
-    seek_pos = ((fi->filenum - 1) * index_size)  + DB->offsets[FILELISTPOS];
+    // seek_pos = ((fi->filenum - 1) * index_size)  + DB->offsets[FILELISTPOS];
+    // printlong currently always writes 4 bytes, so 8 bytes for length and seek
+    seek_pos = ((fi->filenum - 1) * 8 * count)  + DB->offsets[FILELISTPOS];
 
 
     /* and seek to table */

@@ -46,6 +46,8 @@ $Id$
 
 #include "rank.h"
 
+// #define DEBUGSORT 1
+
 /******************************************************
 * Here's some static data to make the sort arrays smaller
 * I don't think we need to worry about multi-threaded
@@ -732,17 +734,22 @@ fields */
 
 static int     compFileProps(const void *s1, const void *s2)
 {
-    int         *r1 = *(int * const *) s1;
-    int         *r2 = *(int * const *) s2;
-    int         a = (int)r1; 
-    int         b = (int)r2;
+    int         a = *(int *)s1;
+    int         b = *(int *)s2;
 
 #ifdef DEBUGSORT
-    printf("\n-------------\ncomparing file %d [%s] (len %d) <=> %d [%s] (len %d)\n", a, PropLookup[a].file_name, PropLookup[a].SortProp->propLen, b, PropLookup[b].file_name, PropLookup[b].SortProp->propLen );
-#endif
+    int  ret = Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
+    printf(" results: file %d [%s] (len %d) vs. %d [%s] (len %d).  Lower file = %s\n",
+            a, PropLookup[a].file_name, PropLookup[a].SortProp ? PropLookup[a].SortProp->propLen : -1,
+            b, PropLookup[b].file_name, PropLookup[b].SortProp ? PropLookup[b].SortProp->propLen : -1,
 
+            !ret ? "*same*" : ret < 0 ? PropLookup[a].file_name : PropLookup[b].file_name );
+
+    return ret;
+           
+#else
     return Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
-
+#endif
 }
 
 
@@ -806,7 +813,7 @@ int *CreatePropSortArray(SWISH *sw, IndexFILE *indexf, struct metaEntry *m, File
     {
         propEntry *d;
         FileRec fi;
-        struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
+        struct metaEntry *me = getPropNameByName( &indexf->header, "swishdocpath" );
         char *s;
 
         for (i = 0; i < total_files; i++)
@@ -945,7 +952,11 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         if (sw->verbose)
         {
+#ifdef DEBUGSORT
+            printf("\n-------------------\nSorting property: %s\n", m->metaName);
+#else
             printf("Sorting property: %-40.40s\r", m->metaName);
+#endif
             fflush(stdout);
         }
 
