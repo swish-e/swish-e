@@ -513,9 +513,9 @@ sub write_split_index_html_file{
         Pod::HtmlPsPdf::Common::read_file($index_file,\@content);
 
         foreach (@content) {
-            s|<LI><A HREF="([^.]+)\.html"|<LI><A HREF="$1/index.html"|gi;
-            s|<LI><A.HREF="([^.]+)\.html#([^\"]*)"|<LI><A HREF="$1/$2.html"|gsi;
-            s|HREF="([^.]+)\.html#([^\"]*)"|HREF="$1/$2.html"|gsi;
+            s|<LI><A HREF="(.+)\.html"|<LI><A HREF="$1/index.html"|gi;
+            s|<LI><A.HREF="(.+)\.html#([^\"]*)"|<LI><A HREF="$1/$2.html"|gsi;
+            s|HREF="(.+)\.html#([^\"]*)"|HREF="$1/$2.html"|gsi;
         }
 
         $index_file = "$split_root/$_.html";
