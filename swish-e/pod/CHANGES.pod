@@ -10,12 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
-=item New Directive: PropertyNamesNoStripChars
+=item * New Directive: PropertyNamesNoStripChars
 
 Swish replaces all series of low ASCII chars with a single space
-character.  This option instructs swish to store all chars in the property.
+character.  This option instructs swish to store all chars in the property. [moseley]
 
-=item Change to HTTP access defaults
+=item * Change HTTP access defaults
 
 Defaults used with -S http access method were changed.
 
@@ -24,62 +24,65 @@ Delay was reduced from one minute between start of each request to five seconds
 between requests. 
 
 MaxDepth was changed from five to zero, meaning there is no limit to depth indexed by
-default.
+default. [moseley]
 
-=item swishspider location and SpiderDirectory
+=item * swishspider location and SpiderDirectory
 
 The swishspider program is now installed in $prefix/lib/swish-e by default.  This can
-be changed by the --libexecdir option to configure.  The SpiderDirectory option now
-defaults to the value of libexecdir instead of the current directory.  This avoids
-the need to manually move the swishspider program to any specific location after
-installation.
+be changed by the --libexecdir option to configure.  
 
-=item Added libtool and automake support
+The SpiderDirectory option now defaults to the value of libexecdir instead of the current
+directory. [moseley]
+
+
+=item * Added libtool and automake support
 
 Replaces the build system with Autotools.  Now builds libswish-e as
 a shared library on systems that support shared libraries.
 The swish-e binary links against this shared library.
 Can also build outside the source tree on platforms with GNU make. [moseley]
 
-=item Fixed bug when searching at end of inverted index
+=item * Updates to installation
+
+Running "make install" now installs additional files.
+Files include the swish-e binary, the libswish-e search library, swish-e.h
+header, documentation files, the swishspider program, and Perl modules used for the example
+swish.cgi search script. Directories will be created if they do not already exist.
+Installation directories can be specified at build time.
+
+=item * Fixed bug when searching at end of inverted index
 
 Swish was not correctly detecting the end of the inverted index
 when searching a wildcard word that was past the last word in the index.
 Caught by Frank Heasley. [moseley]
 
 
-=item Increase sort key length from 50 to 100 characters
+=item * Increase sort key length from 50 to 100 characters
 
 The setting MAX_SORT_STRING_LEN in F<src/config.h> sets the max length used 
 when sorting in swish-e.  You may reduce this number to save memory while 
 sorting, or increase it if you have very long properties to sort.
 
-=item Remove &quot; entity from -p output
+=item * Remove &quot; entity from -p output
 
 The -p option to print properties was escaping double quotes in properties 
 with the &amp;quot; entity.  -x does not do that, so inconsistent.  -p no longer
-converts double quotes.  The user should pick a good delimiter with -d or better use
+converts double quotes.  The user should pick a good delimiter with -d or preferably use
 the -x method for generating output.
 
-=item XML parser and Windows
+=item * XML parser and Windows
 
 The XML parser was being passed the incorrect buffer length when used on Windows
 platform causing the parser to abort with an error.
 
-=item Configure script updates
-
-Running "make install" now installs the swish-e binary, the
-libswish-e library, swish-e.h header, and documentation files.   Directories will
-be created if they do not already exist.
-
-=item Version Numbering
+=item * Version Numbering
 
 SWISH-E versions starting with 2.3.4 use kernel version numbering.  Versions are 
 in the form: Major.Minor.Build.  Odd minor versions are development.  Even minor 
 versions are releases.  2.3.4 would be a development version.  
 2.4.0 would be a release version.  2.3.20 would be the 20th build of 2.3.
 
-=item Added RPM support
+=item * Added RPM support
 
 RPMs can be built with:
 
@@ -93,16 +96,16 @@ Copy the resulting tarball to RPM's SOURCES directory and then run as a superuse
 
 You should have swish-e packages in your RPMS/<arch> directory.  [augur]
 
-=item Changed default PERL location
+=item * Changed default perl binary location
 
-PERL scripts provided with SWISH-E now use /usr/bin/perl by default.
+Perl scripts provided with SWISH-E now use /usr/bin/perl by default.
 
-=item New Feature: MetaNamesRank
+=item * New Feature: MetaNamesRank
 
 MetaNamesRank can be used to adjust the ranking for words based on
 the word's MetaName.
 
-=item New Swish Library API and Perl Module
+=item * New Swish Library API and Perl Module
 
 The Swish-e C library interface was rewritten to provide
 better memory management and better separation of data.
@@ -123,8 +126,7 @@ interface to the SWISH::API module.  It can be downloaded from
 
 =item * NoContents not working with libxml2 parser
 
-Corrected problem when using NoContents with binary files
-and the HTML2 parser.
+Corrected problem when using NoContents with binary files and the HTML2 parser.
 
 Trying to index image file names with:
 
@@ -139,7 +141,7 @@ was not finding any text in the binary files. [moseley]
 
 The example/swish.cgi script can now use the SWISH::API module
 for searching an index.  Combined with mod_perl this module
-can improve search performance many times.
+can improve search performance considerably.
 
 The Perl modules used with the swish.cgi script have all been moved into
 the SWISH::* namespace.  Hence, files in the F<modules> directory were moved
