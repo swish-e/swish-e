@@ -121,7 +121,7 @@ void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry(char *, struct docProperties **, int, int *);
+unsigned char *buildFileEntry( struct file *, int *);
 struct file *readFileEntry(SWISH *, IndexFILE *,int);
 
 void computehashentry(ENTRY **,ENTRY *);

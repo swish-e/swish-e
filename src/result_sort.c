@@ -608,6 +608,10 @@ int     compFileProps(const void *s1, const void *s2)
            *p2;
     int     metaID = r1->currentSortProp->metaID;
 
+#ifdef PROPFILE
+    return Compare_Properties( r1->currentSortProp ,r1->SortProp, r2->SortProp );
+#endif
+
     /* Find the current metaID */
 	if(metaID < r1->docProperties->n)
 		p1 = r1->docProperties->propEntry[metaID];
@@ -663,55 +667,65 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
 		m->sorted_data = NULL;
 
 
-		/* Check if thi property must be in a presorted index */
-		if(is_presorted_prop(sw,m->metaName))
-		{
-           switch (indexf->header.metaEntryArray[j]->metaID)
+		/* Check if this property must be in a presorted index */
+		if( !is_presorted_prop(sw,m->metaName) )
+		    continue;
+
+       switch (indexf->header.metaEntryArray[j]->metaID)
+	   {
+
+	   /* "internal" properties are sorted at runtime */
+       case AUTOPROP_ID__REC_COUNT:
+       case AUTOPROP_ID__RESULT_RANK:
+       case AUTOPROP_ID__DOCPATH:
+       case AUTOPROP_ID__FILENUM:
+       case AUTOPROP_ID__INDEXFILE:
+           break;
+
+       default:
+
+            /* User properties */
+
+            /* only sort properties */
+            if ( !(m->metaType & META_PROP) )
+                break;
+                
+	       /* Array of filenums to store the sorted docs (referenced by its filenum) */
+	       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
+
+
+	       /* Save the metaEntry in ALL the files */
+           for (i = 0; i < indexf->filearray_cursize; i++)
+            {
+               indexf->filearray[i]->currentSortProp = m; /* waste of space */
+#ifdef PROPFILE
+               indexf->filearray[i]->SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, m->metaID, 0 );
+#endif;               
+            }
+           /* Sort them using qsort. The main work is done by compFileProps */
+
+           swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
+
+           /* Build the sorted table */
+           for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
 		   {
-
-		   /* "internal" properties are sorted at runtime */
-           case AUTOPROP_ID__REC_COUNT:
-           case AUTOPROP_ID__RESULT_RANK:
-           case AUTOPROP_ID__DOCPATH:
-           case AUTOPROP_ID__FILENUM:
-           case AUTOPROP_ID__INDEXFILE:
-               break;
-
-           default:
-
-                /* User properties */
-
-                /* only sort properties */
-                if ( !(m->metaType & META_PROP) )
-                    break;
-                    
-		       /* Array of filenums to store the sorted docs (referenced by its filenum) */
-		       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
-		       
-               for (i = 0; i < indexf->filearray_cursize; i++)
-                   indexf->filearray[i]->currentSortProp = m;
-                   
-               /* Sort them using qsort. The main work is done by compFileProps */
-
-               swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
-
-
-               /* Build the sorted table */
-               for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
+               /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
+               if (i)
 			   {
-                   /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
-                   if (i)
-				   {
-                       /* If consecutive elements are different increase the number */
-                       if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
-                           k++;
-				   }
-                   sortFilenums[indexf->filearray[i]->filenum - 1] = k;
+                   /* If consecutive elements are different increase the number */
+                   if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
+                       k++;
 			   }
-               /* Store the integer array of presorted data */
-               m->sorted_data = sortFilenums;
-              break;
+               sortFilenums[indexf->filearray[i]->filenum - 1] = k;
+
+#ifdef PROPFILE
+               freeProperty( indexf->filearray[i]->SortProp );
+#endif               
 		   }
+
+           /* Store the integer array of presorted data */
+           m->sorted_data = sortFilenums;
+           break;
 		}
     }
 }

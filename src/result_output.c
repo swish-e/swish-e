@@ -346,6 +346,11 @@ void    printSortedResults(SWISH * sw)
     {
         r->count = ++counter;   /* set rec. counter for output */
 
+
+        /* This may be an optimization */
+        // ReadAllDocPropertiesFromDisk( sw, indexf, r->count );
+        
+
         if (md->extendedformat)
             printExtResultEntry(sw, f_out, md->extendedformat, r);
 

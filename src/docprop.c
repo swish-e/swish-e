@@ -79,7 +79,7 @@ void freeDocProperties(docProperties *docProperties)
 	}
 
 	efree(docProperties);
-
+	docProperties = NULL;
 	
 }
 
@@ -169,6 +169,12 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
         progerr( "'%s' is not a PropertyName", (*meta_entry)->metaName );
 
 
+#ifdef PROPFILE
+    return ReadSingleDocPropertiesFromDisk(sw, indexf, result->filenum, metaID, 0 );
+#endif;    
+
+
+
     /* Read in the file info for this file - this can be a cached read */
 
     if ( ! (fi = readFileEntry( sw, indexf, result->filenum)) )
@@ -206,11 +212,12 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
 
 char *getResultPropAsString(RESULT *result, int ID)
 {
-    char *s=NULL;
+    char *s = NULL;
 
     
 	if( !result )
 	    return estrdup("");  // when would this happen?
+
 
 
     /* Deal with internally generated props */
@@ -250,7 +257,11 @@ char *getResultPropAsString(RESULT *result, int ID)
             return estrdup("");
 
         /* $$$ Ignores other properties! */
-        return DecodeDocProperty( meta_entry, prop );
+        s = DecodeDocProperty( meta_entry, prop );
+#ifdef PROPFILE
+        freeProperty( prop );
+#endif        
+        return s;
     }
 }
 
@@ -346,6 +357,9 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
             pv->datatype = STRING;
             pv->destroy++;       // caller must free this
             pv->value.v_str = bin2string(prop->propValue,prop->propLen);
+#ifdef PROPFILE
+            freeProperty( prop );
+#endif        
             return pv;
         }
 
@@ -365,6 +379,9 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
             i = UNPACKLONG(i);     /* Convert the portable number */
             pv->datatype = ULONG;
             pv->value.v_ulong = i;
+#ifdef PROPFILE
+            freeProperty( prop );
+#endif        
             return pv;
         }
 
@@ -376,14 +393,22 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
             i = UNPACKLONG(i);     /* Convert the portable number */
             pv->datatype = DATE;
             pv->value.v_date = (time_t)i;
+#ifdef PROPFILE
+            freeProperty( prop );
+#endif        
             return pv;
         }
+
+#ifdef PROPFILE
+        freeProperty( prop );
+#endif        
     }
+
 
  
 	if (pv->datatype == UNDEFINED) {	/* nothing found */
-	  efree (pv);
-	  pv = NULL;
+	    efree (pv);
+	    pv = NULL;
 	}
 
 	return pv;
@@ -843,8 +868,8 @@ void     WritePropertiesToDisk( SWISH *sw )
 
 
     /* Now free the doc properties */
-    //freeDocProperties( fi->docProperties );
-    //fi->docProperties = NULL;
+    freeDocProperties( fi->docProperties );
+    fi->docProperties = NULL;
     
 
 }
@@ -857,9 +882,9 @@ void     WritePropertiesToDisk( SWISH *sw )
 *   Or maybe should take a filenum, and instead take a position?
 *
 *********************************************************************/
-docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
+docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
 {
-    struct file *fi = indexf->filearray[ filenum - 1 ];
+    struct file *fi;
     docProperties *docProperties=NULL;
     char   *tempPropValue=NULL;
     int     tempPropLen=0;
@@ -867,6 +892,17 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
     struct  metaEntry meta_entry;
     char   *buf;
     char   *propbuf;
+
+    if ( !(fi = readFileEntry(sw, indexf, filenum)) )
+        progerr("Failed to read file entry for file '%d'", filenum );
+
+
+    /* already loaded? */
+    if ( fi->docProperties )
+{
+printf("returning all cached property\n" );
+        return fi->docProperties;
+}        
 
     if ( !fi->propTotalLen )
         return NULL;
@@ -916,6 +952,10 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
     }
 
     efree( propbuf );
+
+    /* save it in the file entry */
+    fi->docProperties = docProperties;
+    
     return docProperties;
 }
 
@@ -923,13 +963,13 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
 *   Reads a single doc property - this is used for sorting
 *   ONLY RETURNS THE FIRST PROPERTY (if more than one exist)
 *
-*   Maybe should return void, and just set?
-*   Or maybe should take a filenum, and instead take a position?
+*   Caller needs to destroy returned property
+*
 *
 *********************************************************************/
-propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, int filenum, int metaID, int max_size )
+propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum, int metaID, int max_size )
 {
-    struct file *fi = indexf->filearray[ filenum - 1 ];
+    struct file *fi;
     char   *buffer;
     char   *propbuf;
     struct  metaEntry meta_entry;
@@ -938,10 +978,39 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, int filenum, int 
     propEntry *docProp;
     int     error_flag;
 
+    if ( !(fi = readFileEntry(sw, indexf, filenum)) )
+        progerr("Failed to read file entry for file '%d'", filenum );
+
     
     /* Any properties? */
     if ( !fi->propTotalLen )
         return NULL;
+
+    /* And do we have one that high? */
+    if ( metaID >= fi->propLocationsCount )
+        return NULL;
+
+
+    /* already loaded? -- if so, duplicate the property for the given length */
+    if ( fi->docProperties )
+    {
+        if ( metaID >= fi->docProperties->n )
+            return NULL;
+
+        if ( !(docProp = fi->docProperties->propEntry[ metaID ]) )
+            return NULL;
+        
+        propLen = docProp->propLen;
+        if ( max_size && (max_size >= 8) && (max_size < propLen ))
+            propLen = max_size;
+
+        /* Duplicate the property */
+        meta_entry.metaName = "(default)";
+        meta_entry.metaID = metaID;
+        return CreateProperty( &meta_entry, docProp->propValue, propLen, 1, &error_flag );
+    }               
+
+
 
     /* Any for this metaID? */
     if ( !fi->propLocations[ metaID ] )
@@ -982,8 +1051,12 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, int filenum, int 
     propLen = uncompress2((unsigned char **)&buffer);
 
     /* and limit it's size */
-    if ( max_size && (max_size < propLen ))
+    /* $$$ don't know type, so just limit at 8, but should probably lookup its type */
+
+    if ( max_size && (max_size >= 8) && (max_size < propLen ))
         propLen = max_size;
+
+
 
     propValue = buffer;  /* just to be obvious */
 
@@ -1019,7 +1092,7 @@ unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
         p = compress3( fi->propSize[i] + 1, p );
     }
 
-    *propbuflen = p - buf + 1;
+    *propbuflen = p - buf;
 
     return buf;
 }
@@ -1365,7 +1438,10 @@ void dump_file_properties(IndexFILE * indexf, struct  file *fi )
     struct metaEntry *meta_entry;
 
 	if ( !fi->docProperties )  /* may not be any properties */
+	{
+	    printf(" (No Properties)\n");
 	    return;
+	}
 
     for (j = 0; j < fi->docProperties->n; j++)
     {

@@ -200,8 +200,6 @@ void initModule_Index (SWISH  *sw)
     idx->swap_seek = NULL;
     idx->swap_read = NULL;
     idx->swap_close = NULL;
-    idx->swap_getc = NULL;
-    idx->swap_putc = NULL;
 
     return;
 }
@@ -451,11 +449,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     wordcount = countwords(sw, fprop, rd_buffer);
 
-       /* Swap file info if it set */
-       /* LST method is built on top of XML - it needs to issue several */
-       /* calls to SwapFileData - So let it do the job */
-    if(idx->swap_filedata && fprop->doctype != LST)
-        SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 
     if (!external_program)
     {
@@ -494,11 +487,20 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         dump_file_properties( indexf, fi );
     }
 
-
 #ifdef PROPFILE
     /* write properties to disk, and release memory */
     WritePropertiesToDisk( sw );
 #endif
+
+
+    /* Swap file info if it set */
+    /* LST method is built on top of XML - it needs to issue several */
+    /* calls to SwapFileData - So let it do the job */
+
+
+    if(idx->swap_filedata && fprop->doctype != LST)
+        SwapFileData(sw, indexf->filearray[idx->filenum-1]);
+
 
 	/* walk the hash list, and compress entries */
 	{
@@ -1377,8 +1379,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
 
-		if(RAM_DISK)
-			e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+        e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
         compressed_data = (unsigned char *)e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */
@@ -1489,7 +1490,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
 
-unsigned char *buildFileEntry(char *filename, struct docProperties **docProperties, int lookup_path, int *sz_buffer)
+unsigned char *buildFileEntry(struct file *filep, int *sz_buffer)
 {
     int     len_filename;
     unsigned char *buffer1,
@@ -1500,6 +1501,11 @@ unsigned char *buildFileEntry(char *filename, struct docProperties **docProperti
     int     datalen1,
             datalen2,
             datalen3;
+    char    *filename = filep->filename;
+    int lookup_path = filep->lookup_path;
+#ifndef PROPFILE    
+    docProperties **docProperties = &filep->docProperties;
+#endif    
 
     len_filename = strlen(filename) + 1;
     lenbuffer1 = len_filename + 2 * 6;
@@ -1516,18 +1522,29 @@ unsigned char *buildFileEntry(char *filename, struct docProperties **docProperti
     p += len_filename;
     datalen1 = p - buffer1;
 
+
+#ifdef PROPFILE
+    buffer2 = PackPropLocations( filep, &datalen2 );
+    buffer3 = emalloc((datalen3 = datalen1 + datalen2));
+#else    
     buffer2 = storeDocProperties(*docProperties, &datalen2);
-    
     buffer3 = emalloc((datalen3 = datalen1 + datalen2 + 1));
+#endif
+
 
     memcpy(buffer3, buffer1, datalen1);
 
     if (datalen2)
+    {
         memcpy(buffer3 + datalen1, buffer2, datalen2);
+        efree(buffer2);
+    }
+
+#ifndef PROPFILE
     buffer3[datalen1 + datalen2] = '\0';
+#endif    
 
     efree(buffer1);
-    efree(buffer2);
 
     *sz_buffer = datalen3;
     return (buffer3);
@@ -1570,7 +1587,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     /* } */
 
 
-
     lookup_path = uncompress2(&p); /* Index to lookup table of paths */
     lookup_path--;
     len1 = uncompress2(&p);       /* Read length of filename */
@@ -1591,14 +1607,13 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
     fi->filenum = filenum - 1;
 
-    
-
-    /* read the document properties section  */
-    p = fetchDocProperties(fi, p);
 
 
 #ifdef PROPFILE
     p = UnPackPropLocations( fi, p );
+#else    
+    /* read the document properties section  */
+    p = fetchDocProperties(fi, p);
 #endif    
 
 
@@ -1637,30 +1652,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
             filep = indexf->filearray[i];
 
 
-        buffer = buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path, &sz_buffer);
-
-
-#ifdef PROPFILE
-    /* this can move into buildFileEntry later */
-    {
-        int propbuflen;
-        unsigned char *tmp;
-        unsigned char *proppointers = PackPropLocations( filep, &propbuflen );
-        int total_length;
-
-        if ( propbuflen )
-        {
-            tmp = emalloc( total_length = sz_buffer + propbuflen );
-            memcpy( tmp, buffer, sz_buffer );
-            memcpy( tmp + sz_buffer, proppointers, propbuflen );
-            efree( buffer );
-            efree( proppointers );
-            buffer = tmp;
-            sz_buffer = total_length;
-        }
-    }
-#endif        
-        
+        buffer = buildFileEntry(filep, &sz_buffer);
 
 
         /* Deflate stuff removed due to patents 

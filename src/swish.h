@@ -258,13 +258,14 @@ struct file
     int     filenum;
     int     lookup_path;
     char   *filename;
-    struct  metaEntry *currentSortProp;
     struct  docProperties *docProperties;
+    struct  metaEntry *currentSortProp;
 #ifdef PROPFILE
     long   *propLocations;          /* array of pointers to properties (less one) */
     int     propLocationsCount;     /* total size of array of props */
     long   *propSize;               /* array of how long each property is */
     long    propTotalLen;           /* total length of all props (for reading all) */
+    propEntry *SortProp;            /* for creating pre-sorted indexes */
 #endif
 };
 
