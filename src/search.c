@@ -920,8 +920,10 @@ int     SwishSeekResult(RESULTS_OBJECT *results, int pos)
     RESULT *cur_result = NULL;
 
     reset_lasterror( results->sw );
-    
 
+    if ( pos < 0 )
+        pos = 0;  /* really should warn.. */
+    
     if (!results)
         return (results->sw->lasterror = INVALID_RESULTS_HANDLE);
 
