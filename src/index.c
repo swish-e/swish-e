@@ -970,7 +970,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     {
         struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
 
-        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "UNKNOWN", metaID, word, position, structure);
+        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "PROP_UNKNOWN", metaID, word, position, structure);
         
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADING");

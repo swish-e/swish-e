@@ -25,6 +25,9 @@
 #ifndef __HasSeenModule_Search
 #define __HasSeenModule_Search       1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
    -- module data
@@ -117,5 +120,9 @@ struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header
 
 RESULT_LIST *mergeresulthashlist (SWISH *sw, RESULT_LIST *r);
 
-#endif
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* __HasSeenModule_Search */
 

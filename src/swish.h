@@ -104,6 +104,9 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #include <time.h>
 #include <setjmp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define SWISH_MAGIC 21076321L
 
@@ -697,13 +700,13 @@ typedef struct path_extract_list
 
 typedef enum
 {                               /* Property Datatypes */
-    UNDEFINED = -1,
-    UNKNOWN = 0,
-    STRING,
-    INTEGER,
-    FLOAT,
-    DATE, 
-    ULONG
+    PROP_UNDEFINED = -1,
+    PROP_UNKNOWN = 0,
+    PROP_STRING,
+    PROP_INTEGER,
+    PROP_FLOAT,
+    PROP_DATE, 
+    PROP_ULONG
 }
 PropType;
 
@@ -992,3 +995,8 @@ int     SwishSeek(SWISH * sw, int pos);
 
 
 extern unsigned int DEBUG_MASK;
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+

@@ -317,7 +317,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     /* create a propvalue to return to caller */
     pv = (PropValue *) emalloc (sizeof (PropValue));
-    pv->datatype = UNDEFINED;
+    pv->datatype = PROP_UNDEFINED;
     pv->destroy = 0;
 
 
@@ -327,7 +327,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     if ( !prop )
     {
-        pv->datatype = STRING;
+        pv->datatype = PROP_STRING;
         pv->value.v_str = "";
         return pv;
     }
@@ -335,7 +335,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
     {
-        pv->datatype = STRING;
+        pv->datatype = PROP_STRING;
         pv->destroy++;       // caller must free this
         pv->value.v_str = bin2string(prop->propValue,prop->propLen);
         freeProperty( prop );
@@ -361,7 +361,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
         unsigned int i;
         i = *(unsigned int *) prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        pv->datatype = ULONG;
+        pv->datatype = PROP_ULONG;
         pv->value.v_ulong = (long)i;
         freeProperty( prop );
         return pv;
@@ -373,7 +373,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
         unsigned long i;
         i = *(unsigned long *) prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        pv->datatype = DATE;
+        pv->datatype = PROP_DATE;
         pv->value.v_date = (time_t)i;
         freeProperty( prop );
         return pv;
@@ -383,7 +383,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
 
  
-	if (pv->datatype == UNDEFINED) {	/* nothing found */
+	if (pv->datatype == PROP_UNDEFINED) {	/* nothing found */
 	    efree (pv);
 	    pv = NULL;
 	}

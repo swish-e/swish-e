@@ -17,6 +17,9 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct swline *addswline (struct swline *rp, char *line);
 struct swline *dupswline (struct swline *rp);
@@ -26,3 +29,8 @@ void freeindexfile (IndexFILE *ptr);
 void init_header (INDEXDATAHEADER *header);
 void free_header (INDEXDATAHEADER *header);
 void splitswline (struct swline *rp, int c);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
