@@ -207,6 +207,9 @@ void freeModule_Index (SWISH *sw)
 {
   struct MOD_Index *idx = sw->Index;
 
+/* we need to call the real free here */
+#undef free
+
   if (isfile(idx->swap_file_name))
   {
 	if (idx->fp_file_read)
