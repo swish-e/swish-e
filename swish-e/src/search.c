@@ -2640,6 +2640,10 @@ struct swline *parse_search_string(SWISH * sw, char *words, INDEXDATAHEADER head
                     }
                     j = 0;
                 }
+		if (c == ((unsigned char) PhraseDelimiter))
+                {
+                        searchwordlist = (struct swline *) addswline(searchwordlist, PhraseDelimiterString);
+                }
 
             }
 
