@@ -271,8 +271,11 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             position = uncompress2(&p);
             q = compress3(position,q);
         }
-        efree(compressed_data);
+		/* if ram disk we can free it now, otherwise will free in the caller */
+		if (RAM_DISK)
+			efree(compressed_data);
     }
+
         /* Write in previous meta (curmetaID)
         ** file offset to end of metas */
     tmp=q - sw->Index->worddata_buffer;

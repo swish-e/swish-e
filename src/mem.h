@@ -36,6 +36,8 @@ $Id$
 **		If you turn on MEM_TRACE, turn on MEM_STATISTICS
 */
 
+#include <memory.h>
+
 /* MEM_DEBUG checks for memory consistency on alloc/free */
 #define MEM_DEBUG 0
 
@@ -68,6 +70,20 @@ void efree(void *ptr);
 /* Hook to print out statistics if enabled */
 void Mem_Summary(char *title, int final);
 
+/* Memory zone routines */
+
+/* create a zone -- size should be some reasonable number */
+MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size);
+
+/* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
+void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size);
+
+/* free all memory in a zone */
+void Mem_ZoneFree(MEM_ZONE_HEAD *head); 
+
+
+/* Don't let people use the regular C calls */
 #define malloc $Please_use_emalloc
 #define realloc $Please_use_erealloc
 #define free $Please_use_efree
+

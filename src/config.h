@@ -47,7 +47,7 @@
 *  a large amount of text.
 */
 
-#define RAM_DISK 1
+#define RAM_DISK 0
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
 #define ALLOW_FILESYSTEM_INDEXING_DATA_SOURCE	1
