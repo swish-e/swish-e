@@ -134,7 +134,8 @@ src/compress.h
 src/config.h
 src/date_time.c
 src/date_time.h
-src/db.c
+src/db_read.c
+src/db_write.c
 src/db.h
 src/db_native.c
 src/db_native.h
@@ -144,6 +145,7 @@ src/double_metaphone.c
 src/double_metaphone.h
 src/dump.c
 src/dump.h
+src/docprop_write.c
 src/docprop.c
 src/docprop.h
 src/entities.c
@@ -209,6 +211,7 @@ src/parser.c
 src/parser.h
 src/parse_conffile.c
 src/parse_conffile.h
+src/pre_sort.c
 src/proplimit.c
 src/proplimit.h
 src/ramdisk.c
