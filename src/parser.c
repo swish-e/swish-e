@@ -76,6 +76,7 @@ typedef struct {
     int         in_meta;            // just flag that we are in a meta
     int         parsing_html;
     struct metaEntry *titleProp;
+    int         flush_word;         // flag to flush buffer next time there's a white space.
     
 } PARSE_DATA;
 
@@ -85,7 +86,7 @@ static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
 static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
-static void flush_buffer( PARSE_DATA  *parse_data );
+static void flush_buffer( PARSE_DATA  *parse_data, int clear );
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
 static void warning(void *data, const char *msg, ...);
@@ -177,7 +178,7 @@ int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
     
 
     /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data );
+    flush_buffer( &parse_data, 1 );
 
     if ( parse_data.text_buffer.buffer )
         efree( parse_data.text_buffer.buffer );
@@ -271,7 +272,7 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     htmlSAXParseDoc( buffer, NULL, SAXHandler, &parse_data );
 
     /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data );
+    flush_buffer( &parse_data, 1 );
 
     if ( parse_data.text_buffer.buffer )
         efree( parse_data.text_buffer.buffer );
@@ -310,10 +311,6 @@ static void start_hndl(void *data, const char *el, const char **attr)
     if ( parse_data->ignore_tag )
         return;
 
-    /* Flush any text in the buffer */
-    flush_buffer( parse_data );
-
-
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
         progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
@@ -330,27 +327,21 @@ static void start_hndl(void *data, const char *el, const char **attr)
         /* handle <meta name="metaname" content="foo"> */
         if ( (strcmp( tag, "meta") == 0) && attr  )
         {
+            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
             process_htmlmeta( parse_data, attr );
             return;
         }
 
         /* Deal with structure */
         if ( set_structure( parse_data, tag, 1 ) )
-        {
-            /* And if we are in title, flat to save content as a doc property */
+            /* And if we are in title, flag to save content as a doc property */
             if ( !strcmp( tag, "title" ) && parse_data->titleProp )
                 parse_data->titleProp->in_tag++;
-                
-           // return;  must let it check for storeDescription
-        }
-
-
-            
     }
 
+
+    /* Now check if we are in a meta tag */
     start_metaTag( parse_data, tag );
-
-
 
 }
 
@@ -387,25 +378,24 @@ static void end_hndl(void *data, const char *el)
         return;
     }
 
-    /* Flush any text in the buffer */
-    flush_buffer( parse_data );
-
     if ( parse_data->parsing_html )
     {
         
         /* <meta> tags are closed in start_hndl */
         
         if ( (strcmp( tag, "meta") == 0)   )
+        {
+            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
             return;
+        }
+
+
 
         /* Deal with structure */
         if ( set_structure( parse_data, tag, 0 ) )
-        {
             if ( !strcmp( tag, "title" ) && parse_data->titleProp )
                 parse_data->titleProp->in_tag = 0;
 
-            // return;  must let it check for storeDescription
-        }
     }
     
     end_metaTag( parse_data, tag );
@@ -436,6 +426,11 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
     /* Some day, might want to have a separate property buffer if need to collect more than plain text */
     // append_buffer( parse_data->prop_buffer, txt, txtlen );
+
+
+    /* attempt to flush on a word boundry, if possible */
+    if ( parse_data->flush_word )
+        flush_buffer( parse_data, 0 );
 
 }
 
@@ -470,6 +465,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     if ( m || (m  = getMetaNameByName( parse_data->header, tag)) )
     {
+        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
         m->in_tag++;
         parse_data->in_meta++;
         parse_data->structure |= IN_META;
@@ -483,6 +479,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
             if (sw->verbose)
                 printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
+            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
             addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
             parse_data->in_meta++;
             parse_data->structure |= IN_META;
@@ -500,10 +497,14 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     if ( parse_data->in_html_meta || !parse_data->parsing_html )
         if ( (m  = getPropNameByName( parse_data->header, tag)) )
+        {
+            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
             m->in_tag++;
+        }
 
 
     /* Look to enable StoreDescription - allow any tag */
+    /* Don't need to flush since this has it's own buffer */
     {
         SUMMARY_INFO    *summary = &parse_data->summary;
 
@@ -571,24 +572,51 @@ static int set_structure( PARSE_DATA *parse_data, char * tag, int start )
     /* Check for structure bits */
 
     if ( strcmp( tag, "head" ) == 0 )
+    {
+        flush_buffer( parse_data, 1 );
         structure = IN_HEAD;
+    }
 
     else if ( strcmp( tag, "title" ) == 0 )
+    {
+        flush_buffer( parse_data, 1 );
         structure = IN_TITLE;
+    }
 
     else if ( strcmp( tag, "body" ) == 0 )
+    {
+        flush_buffer( parse_data, 1 );
         structure = IN_BODY;
+    }
 
     else if ( tag[0] == 'h' && isdigit((int) tag[1]))
+    {
+        flush_buffer( parse_data, 1 );
         structure = IN_HEADER;
+    }
 
     /* These should not be hard coded */
     else if ( !strcmp( tag, "em" ) || !strcmp( tag, "b" ) || !strcmp( tag, "strong" ) || !strcmp( tag, "i" ) )
+    {
+        /* This is hard.  The idea is to not break up words.  But messes up the structure
+         * ie: "this is b<b>O</b>ld word" so this would only flush "this is" on <b>,
+         * and </b> would not flush anything.  The PROBLEM is that then will make the next words
+         * have a IN_EMPHASIZED structure.  To "fix", I set a flag to flush at next word boundry.
+        */
+        flush_buffer( parse_data, 0 );
+        parse_data->flush_word++;
         structure = IN_EMPHASIZED;
+    }
+
+
+    /* Now, look for reasons to add whitespace */
+    
+    else if ( !strcmp( tag, "p" ) )
+        append_buffer( &parse_data->text_buffer, " ", 1 );
 
     if ( structure )
     {
-        // done when tag is found
+        // done when tag is found because some are block and some are char level
         // flush_buffer( parse_data );
 
         if ( start )
@@ -628,7 +656,6 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
         parse_data->in_html_meta++;
         start_metaTag( parse_data, metatag );
         char_hndl( parse_data, content, strlen( content ) );
-        flush_buffer( parse_data );
         end_metaTag( parse_data, metatag );
         parse_data->in_html_meta--;
     }
@@ -671,17 +698,41 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 *
 *
 *********************************************************************/
-static void flush_buffer( PARSE_DATA  *parse_data )
+static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 {
     CHAR_BUFFER *buf = &parse_data->text_buffer;
     SWISH       *sw = parse_data->sw;
     int         structure = parse_data->parsing_html ? parse_data->structure : IN_FILE;
+    int         orig_end = buf->cur;
+    char        save_char;
 
     /* anything to do? */
     if ( !buf->cur )
         return;
 
+    /* look back for word boundry */
+
+    if ( !clear && !isspace( buf->buffer[buf->cur-1] ) )  // flush up to current word
+    {
+        while ( buf->cur > 0 && !isspace( buf->buffer[buf->cur-1] ) )
+            buf->cur--;
+
+        if ( !buf->cur )  // then there's only a single word in the buffer
+        {
+            buf->cur = orig_end;
+            return;
+        }
+
+        save_char =  buf->buffer[buf->cur];
+
+        parse_data->flush_word = 0;
+    }
+            
+
+    /* Mark the end of the buffer - should switch over to using a length to avoid strlen */
+
     buf->buffer[buf->cur] = '\0';
+
 
 
     /* Index the text */
@@ -702,7 +753,15 @@ static void flush_buffer( PARSE_DATA  *parse_data )
 
 
     /* clear the buffer */
-    buf->cur = 0;
+
+    if ( orig_end && orig_end > buf->cur )
+    {
+        buf->buffer[buf->cur] = save_char;  // put back the char where null was placed
+        memmove( buf->buffer, &buf->buffer[buf->cur], orig_end - buf->cur );
+        buf->cur = orig_end - buf->cur;
+    }
+    else
+        buf->cur = 0;
 }
 
 
