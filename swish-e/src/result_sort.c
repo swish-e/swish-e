@@ -1,4 +1,11 @@
-/* jmruiz - 02/2001 - Sorting results ... */
+/* jmruiz - 02/2001 - Sorting results module
+**
+** 2001-05-04 jmruiz added new string comparison routines for proper sorting
+**                   sw_strcasecmp and sw_strcmp
+**                   also added the skeleton to initModule_ResultSort
+**                   and freeModule_ResultSort
+*/
+
 #include "swish.h"
 #include "mem.h"
 #include "merge.h"
@@ -402,5 +409,153 @@ void    sortFileProperties(IndexFILE * indexf)
         }
     }
     efree(sortFilenums);
+
+}
+
+
+/* Routines to get the proper sortorder of chars to be called when sorting */
+/* sw_strcasecmp sw_strcmp */
+
+
+/* Exceptions to the standard translation table for sorting strings */
+/* See initStrCaseCmpTranslationTable to see how it works */
+/* The table shows the equivalences in the following way: */
+/*     val(from) = val(order) + offset */
+/* where val is asciivalue * 256 */
+
+/* Some comments about äöü ...
+** In french and spanish this chars are equivalent to
+** ä -> a   (french)
+** ö -> o   (french)
+** ü -> u   (french + spanish)
+** In the other hand, in german:
+** ä -> a + 1  (german)
+** ö -> o + 1  (german)
+** ü -> u + 1  (german)
+** I have put the german default. I think that in spanish we can live with that
+** If you cannot modify them (change 1 by 0)
+** Any comments about other languages are always welcome
+*/
+struct {
+  unsigned char from;
+  unsigned char order;
+  int offset;
+} iTranslationTableExceptions[]=  { 
+   { 'Ä', 'A' , 1},    /* >>> german sort order of umlauts */
+   { 'Ö', 'O' , 1},    /*     2001-05-04 rasc */
+   { 'Ü', 'U' , 1},
+   { 'ä', 'a' , 1},
+   { 'ö', 'o' , 1},
+   { 'ü', 'u' , 1},
+   { 'ß', 's' , 1},    /* <<< german */
+   { 'á', 'a' , 0},    /* >>> spanish sort order exceptions */
+   { 'Á', 'A' , 0},    /*     2001-05-04 jmruiz */
+   { 'é', 'e' , 0}, 
+   { 'É', 'E' , 0}, 
+   { 'í', 'i' , 0}, 
+   { 'Í', 'I' , 0}, 
+   { 'ó', 'o' , 0}, 
+   { 'Ó', 'O' , 0}, 
+   { 'ú', 'u' , 0}, 
+   { 'Ú', 'U' , 0}, 
+   { 'ñ', 'n' , 1},
+   { 'Ñ', 'N' , 1},   /* <<< spanish */
+   { 'â', 'a' , 0},   /* >>> french sort order exceptions */
+   { 'Â', 'A' , 0},   /*     2001-05-04 jmruiz */
+   { 'à', 'a' , 0},   /*     Taken from the list - Please check */
+   { 'À', 'A' , 0},   /*     áéíóúÁÉÍÓÚ added in the spanish part */
+   { 'ç', 'c' , 0},   /*     äöüÄÖÜ added in the german part */
+   { 'Ç', 'C' , 0},
+   { 'è', 'e' , 0},
+   { 'È', 'E' , 0},
+   { 'ê', 'e' , 0},
+   { 'Ê', 'E' , 0},
+   { 'î', 'i' , 0},
+   { 'Î', 'I' , 0},
+   { 'ï', 'i' , 0},
+   { 'Ï', 'I' , 0},
+   { 'ô', 'o' , 0},
+   { 'Ô', 'O' , 0},
+   { 'ù', 'u' , 0},
+   { 'Ù', 'U' , 0},    /* >>> french */
+   { 0, 0, 0}
+};
+
+/* Initialization routine for the comparison table (ignoring case )*/
+/* This routine should be called once  at the start of the module */
+void initStrCaseCmpTranslationTable(int *iCaseTranslationTable)
+{
+int i;
+      /* Build default table using tolower(asciival) * 256 */
+      /* The goal of multiply by 256 is having holes to put values inside
+         eg: ñ is between n and o */
+   for(i=0;i<256;i++)
+      iCaseTranslationTable[i] = tolower(i) * 256;
+
+      /* Exceptions */
+   for(i=0; iTranslationTableExceptions[i].from;i++)
+      iCaseTranslationTable[iTranslationTableExceptions[i].from] = tolower(iTranslationTableExceptions[i].order) * 256 + iTranslationTableExceptions[i].offset;
+}
+
+/* Initialization routine for the comparison table (case sensitive) */
+/* This routine should be called once at the start of the module */
+void initStrCmpTranslationTable(int *iCaseTranslationTable)
+{
+int i;
+      /* Build default table using asciival * 256 */
+      /* The goal of multiply by 10 is having holes to put values inside
+         eg: ñ is between n and o */
+   for(i=0;i<256;i++)
+      iCaseTranslationTable[i] = i * 256;
+
+      /* Exceptions */
+   for(i=0; iTranslationTableExceptions[i].from;i++)
+      iCaseTranslationTable[iTranslationTableExceptions[i].from] = iTranslationTableExceptions[i].order * 256 + iTranslationTableExceptions[i].offset;
+}
+
+/* Comparison string routine function. 
+** Similar to strcasecmp but using our own translation table
+*/
+int sw_strcasecmp(unsigned char *s1,unsigned char *s2,int *iTranslationTable)
+{
+   while ( iTranslationTable[*s1] == iTranslationTable[*s2])
+      if (! *s1++) return 0;
+      else s2++;
+   return iTranslationTable[*s1] - iTranslationTable[*s2];
+}
+
+/* Comparison string routine function. 
+** Similar to strcmp but using our own translation table
+*/
+int sw_strcmp(unsigned char *s1,unsigned char *s2,int *iTranslationTable)
+{
+   while ( iTranslationTable[*s1] == iTranslationTable[*s2])
+      if (! *s1++) return 0;
+      else s2++;
+   return iTranslationTable[*s1] - iTranslationTable[*s2];
+}
+
+/*
+  -- init structures for this module
+*/
+
+void initModule_ResultSort (SWISH  *sw)
+
+{
+/* Must be uncommented  when completed
+    initSortResultProperties(sw);   Should me moved from swish2.c 
+    initStrCmpTranslationTable(sw->iSortTranslationTable);
+    initStrCaseCmpTranslationTable(sw->iSortCaseTranslationTable);
+*/
+}
+
+
+/*
+  -- release all wired memory for this module
+*/
+
+void freeModule_ResultSort (SWISH *sw)
+
+{
 
 }
