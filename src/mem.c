@@ -572,28 +572,36 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 
 	if (!zone || (zone->free < size))
 	{
-		/* Before allocating a new zone, let's see if there is enough room in
-		   a previous one 
+		/* Before allocating a new zone, let's see if the previous one is empty
+		** If so, a Mem_ZoneReset was previously issued. In this case we will put
+		** the filled zone at the end and the unused one at the start.
 		*/
 		if(zone)
 			tmp = zone->next;
 		else
 			tmp = NULL;
-		while(tmp)
+		if(tmp && (tmp->size == tmp->free))
 		{
-			if(tmp->free >= size)
-				break;
-			tmp = tmp->next;
+			head->next =tmp;
+			for(;;)
+			{
+				if(!tmp->next)
+				{ 
+					/* Put at the end */
+					tmp->next = zone;
+					zone->next = NULL;
+					break;
+				}
+				tmp = tmp->next;
+			}
 		}
-		if(!tmp)
+		else
 		{
 			newzone = allocChunk(size > head->size ? size : head->size);
 			head->next = newzone;
 			newzone->next = zone;
-			zone = newzone;
 		}
-		else
-			zone = tmp;
+		zone = head->next;
 	}
 
 	/* decrement free, advance pointer, and return allocation to the user */
