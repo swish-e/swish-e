@@ -858,6 +858,7 @@ static int merge_words(
                 ip3 = ip2;
                 buffer2 = NULL;
             }
+
             addentryMerge(sw, ip3);
 
             if(!result)
@@ -880,7 +881,7 @@ static int merge_words(
 *
 ************************************************************************/
 
-static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProperties *docProperties, int *totalfiles, int ftotalwords,
+static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProperties **dProps, int *totalfiles, int ftotalwords,
                              struct metaMergeEntry *metaFile, IndexFILE *indexf)
 {
     int     hashval;
@@ -890,6 +891,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
             size;
     time_t  mtime;
     struct metaEntry *m;
+    struct docProperties *docProperties = *dProps;
 
     /* $$$ These property name lookups should be cached */
     /* but I'm not clear why they are needed at all */
@@ -920,6 +922,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
 #ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
+            *dProps = NULL;
             sw->indexlist->filearray[ip->filenum - 1]->docProperties = NULL;
 #else
             sw->indexlist->filearray[ip->filenum - 1]->docProperties = docProperties;
@@ -935,6 +938,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
 #ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
+            *dProps = NULL;
 #endif
             return;
         }
@@ -969,6 +973,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
 #ifdef PROPFILE
         /* Save memory */
         freeDocProperties(docProperties);
+        *dProps =NULL;
         thisFileEntry->docProperties = NULL;
 #else
         thisFileEntry->docProperties = docProperties;
@@ -1096,7 +1101,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 #ifdef PROPFILE
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
 #endif
-        addindexfilelist(sw, i, fi->filename, fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
+        addindexfilelist(sw, i, fi->filename, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
 
         freefileinfo(fi);
         indexf1->filearray[i-1] = NULL;
@@ -1113,7 +1118,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 #ifdef PROPFILE
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
 #endif
-        addindexfilelist(sw, i + indexfilenum1, fi->filename, fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
+        addindexfilelist(sw, i + indexfilenum1, fi->filename, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
 
         freefileinfo(fi);
         indexf2->filearray[i-1] = NULL;
