@@ -346,7 +346,9 @@ FILE   *f_out;
 	   fprintf(f_out,"%d%s%s%s\"%s\"%s%d",
 			r->rank,  delimiter, r->filename,
 			delimiter, r->title, delimiter, r->size);
-	   printSearchResultProperties(sw, f_out, r->Prop);
+
+       printStandardResultProperties(sw, f_out, r);
+//	   printSearchResultProperties(sw, f_out, r->Prop);
 	   fprintf(f_out, "\n");
 	}
 				

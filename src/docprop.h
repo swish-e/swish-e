@@ -24,11 +24,9 @@ docProperties *fetchDocProperties (char * );
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
-void printSearchResultProperties (SWISH *, FILE *f_out, char **);
+void printStandardResultProperties(SWISH *, FILE *, RESULT *);
 
 docProperties *swapDocPropertyMetaNames (docProperties *, struct metaMergeEntry *);
-
-char **getResultProperties (RESULT *);
 
 docProperties *DupProps (docProperties *);
 
