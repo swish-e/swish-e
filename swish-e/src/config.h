@@ -42,7 +42,11 @@
 
 /* PROPFILE is a development testing option */
 
+#ifdef __VMS
+#define PROPFILE_EXTENSION "_prop"
+#else
 #define PROPFILE_EXTENSION ".prop"
+#endif
 
 /* Defines the file extension to use on the property file.
 */
@@ -65,7 +69,11 @@
 *  from versions previous to 2.2.
 */
 
+#ifdef __VMS
+#define USE_TEMPFILE_EXTENSION "_temp"
+#else
 #define USE_TEMPFILE_EXTENSION ".temp"
+#endif
 
 /* If USE_TMPFILE_EXTENSION is defined then swish will append the supplied
 *  extension onto the index files during indexing, and when indexing is
