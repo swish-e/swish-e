@@ -129,6 +129,7 @@ $Id$
 #include "search_alt.h"
 #include "db.h"
 #include "swish_words.h"
+#include "swish_qsort.h"
 
 #include "proplimit.h"
 
@@ -1734,7 +1735,7 @@ RESULT *sortresultsbyfilenum(RESULT * rp)
     for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
         ptmp[j++] = rtmp;
     /* Sort them */
-    qsort(ptmp, i, sizeof(RESULT *), &compResultsByFileNum);
+    swish_qsort(ptmp, i, sizeof(RESULT *), &compResultsByFileNum);
     /* Build the list */
     for (j = 0, rp = NULL; j < i; j++)
     {

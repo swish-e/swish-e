@@ -41,6 +41,7 @@ $Id$
 #include "error.h"
 #include "db.h"
 #include "parse_conffile.h"
+#include "swish_qsort.h"
 #include "result_sort.h"
 
 
@@ -574,7 +575,7 @@ int     sortresults(SWISH * sw, int structure)
             }
 
             /* Sort them */
-            qsort(ptmp, i, sizeof(RESULT *), compResults);
+            swish_qsort(ptmp, i, sizeof(RESULT *), compResults);
 
             /* Build the list */
             for (j = 0; j < i; j++)
@@ -714,7 +715,7 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
                    
                /* Sort them using qsort. The main work is done by compFileProps */
 
-               qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
+               swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
 
                /* Build the sorted table */
