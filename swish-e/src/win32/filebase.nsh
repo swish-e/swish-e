@@ -114,6 +114,44 @@ SubSection "PERL Support" SubSecPerlSupport
         SetOutPath "$R1\lib"
         File /r ..\..\perl\blib\arch\auto
     SectionEnd
+
+    Section /o "Perl CGI Scripts" SecPerlCgi
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlCgi" "1"
+
+        ; swish.cgi scripts
+        SetOutPath "$INSTDIR\lib\swish-e"
+        File ../../examples/swish.cgi.in
+        File ../../examples/search.cgi.in
+
+        ; swish.cgi other stuff
+        SetOutPath "$INSTDIR\share\swish-e"
+        File ../../examples/swish.tt
+        File ../../examples/swish.tmpl
+        File ../../examples/swish.gif
+        File ../../examples/README
+
+        ; swish.cgi templates
+        SetOutPath "$INSTDIR\share\swish-e\templates"
+        File ../../examples/templates/search.tt
+        File ../../examples/templates/page_layout
+        File ../../examples/templates/common_header
+        File ../../examples/templates/common_footer
+        File ../../examples/templates/style.css
+        File ../../examples/templates/markup.css
+
+        ; swish.cgi Modules
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
+        File ../../examples/modules/SWISH/DateRanges.pm
+        File ../../examples/modules/SWISH/DefaultHighlight.pm
+        File ../../examples/modules/SWISH/PhraseHighlight.pm
+        File ../../examples/modules/SWISH/SimpleHighlight.pm
+        File ../../examples/modules/SWISH/TemplateDefault.pm
+        File ../../examples/modules/SWISH/TemplateDumper.pm
+        File ../../examples/modules/SWISH/TemplateFrame.pm
+        File ../../examples/modules/SWISH/TemplateHTMLTemplate.pm
+        File ../../examples/modules/SWISH/TemplateToolkit.pm
+        File ../../examples/modules/SWISH/ParseQuery.pm
+    SectionEnd
     
     Section /o "PERL Filters" SecPerlFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
@@ -148,7 +186,6 @@ SubSectionEnd
 Section "Examples" SecExample
     SetOutPath "$INSTDIR\share\doc\swish-e\"
     File /r ..\..\conf
-    File /r ..\..\example
 
     ; Rename text files so Windows has a clue
     Rename "$INSTDIR\share\doc\swish-e\conf\README" "$INSTDIR\conf\README.txt"
@@ -231,6 +268,7 @@ Function .onInit
     !insertmacro SelectSection ${SecPerlFilter}
     !insertmacro SelectSection ${SecPerlApi}
     !insertmacro SelectSection ${SecPerlMethod}
+    !insertmacro SelectSection ${SecPerlCgi}
     
     end:
 FunctionEnd                                                                                                                                                                                                 
