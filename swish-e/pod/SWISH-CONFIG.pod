@@ -1134,7 +1134,7 @@ should consider writing your filter in C instead of a shell or perl script.
 
 =item FilterDir  *path-to-directory*
 
-This is the path to a directory where the filter programs are stored.  Swish looks in this directory to find
+This is the path to a directory where the filter programs are stored.  SWISH-E looks in this directory to find
 the filter specified in the B<FileFilter> directive. If this directive is omitted, you have to specify the
 full path to the filterscript on each FileFilter directive.
 
@@ -1145,6 +1145,8 @@ Example:
 =item FileFilter   *extension*   "filter-prog"   ["filter-options"]
 
 This maps file extensions to a filter program.
+If I<filter-prog> starts with a directory delimiter (absolute path), SWISH-E doesn't use
+the FilterDir settings, but uses the given I<filter-prog> path directly.
 
 Filter options:
    Filter options are a string passed as arguments to the I<filter-prog>.
@@ -1173,9 +1175,11 @@ Filter options:
           %D =     http://myserver/path1
           %d =     /tmp
 
-       Important hint:
+       Important hint for security:
            When using variable substitition, use quotes, to ensure filename integrity.
            e.g. "'%f'"  -->  'file name with spaces.doc'.
+           If you don't use this, your system security may be compromised, or filtering
+           may not work for these files.
 
 
 Examples for filters:
@@ -1184,17 +1188,20 @@ Examples for filters:
     FileFilter  .pdf       "pdftotext"   "'%p' -"
     FileFilter  .html.gz   ungzip-html
     FileFilter  .html.gz   gzip  "-c '%p'"
-    FileFilter  .doc       wword-filter.sh
+    FileFilter  .doc       /usr/local/filters/wword-filter.sh
     FileFilter  .dot       wword-filter.sh
     FileFilter  .ps        ghostscript-filter.pl
     FileFilter  .mydoc     "/some/path/mydocfilter"  "-d '%d' -example -url '%P' '%f'"
 
+
 Here are some simple examples of filters.
+
 
 Convert .pdf files to text:
 
     #!/bin/sh
     /usr/local/bin/pdftotext "$1" - 2>/dev/null
+
 
 Convert gzipped files to text:
 
@@ -1218,6 +1225,7 @@ Convert gzipped files to text:
         if $gzerrno != Z_STREAM_END ;
     
     $gz->gzclose() ;
+
 
 =back
 

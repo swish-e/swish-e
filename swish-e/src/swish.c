@@ -358,19 +358,19 @@ struct stat stat_buf;
 			if (((argv + 1)[0] != '\0') && (*(argv + 1)[0] != '-'))
 			{
 
-				sw->opt.stdResultFieldDelimiter=estrredup(sw->opt.stdResultFieldDelimiter,(++argv)[0]);
-				if (strcmp(sw->opt.stdResultFieldDelimiter, "dq") == 0)
-					{ sw->opt.stdResultFieldDelimiter=estrredup(sw->opt.stdResultFieldDelimiter, "\""); } /* double quote is cool */
-				if (sw->opt.stdResultFieldDelimiter[0]=='\\')
+				sw->ResultOutput->stdResultFieldDelimiter=estrredup(sw->ResultOutput->stdResultFieldDelimiter,(++argv)[0]);
+				if (strcmp(sw->ResultOutput->stdResultFieldDelimiter, "dq") == 0)
+					{ sw->ResultOutput->stdResultFieldDelimiter=estrredup(sw->ResultOutput->stdResultFieldDelimiter, "\""); } /* double quote is cool */
+				if (sw->ResultOutput->stdResultFieldDelimiter[0]=='\\')
 				{
-					switch(sw->opt.stdResultFieldDelimiter[1])
+					switch(sw->ResultOutput->stdResultFieldDelimiter[1])
 					{
-						case 'f': sw->opt.stdResultFieldDelimiter[0]='\f'; break;
-						case 'n': sw->opt.stdResultFieldDelimiter[0]='\n'; break;
-						case 'r': sw->opt.stdResultFieldDelimiter[0]='\r'; break;
-						case 't': sw->opt.stdResultFieldDelimiter[0]='\t'; break;
+						case 'f': sw->ResultOutput->stdResultFieldDelimiter[0]='\f'; break;
+						case 'n': sw->ResultOutput->stdResultFieldDelimiter[0]='\n'; break;
+						case 'r': sw->ResultOutput->stdResultFieldDelimiter[0]='\r'; break;
+						case 't': sw->ResultOutput->stdResultFieldDelimiter[0]='\t'; break;
 					}
-					sw->opt.stdResultFieldDelimiter[1]='\0';
+					sw->ResultOutput->stdResultFieldDelimiter[1]='\0';
 				}
 				argc--;
 			}
@@ -392,8 +392,8 @@ struct stat stat_buf;
 			   char *s;
 			   argv++;
 			   s = hasResultExtFmtStr (sw, *argv);
-			   sw->opt.extendedformat = (s) ? s : *argv;
-			   initPrintExtResult (sw, sw->opt.extendedformat);
+			   sw->ResultOutput->extendedformat = (s) ? s : *argv;
+			   initPrintExtResult (sw, sw->ResultOutput->extendedformat);
 			   argc--;
 			} else {
 			   usage();
@@ -402,7 +402,7 @@ struct stat stat_buf;
 		else if (c == 'H') {
 			  /* rasc 2001-02, 2001-03 */
 			if ( *(argv+1) && isdigit ((int) **(argv+1)) ) {
-			   sw->opt.headerOutVerbose = atoi(*(++argv));
+			   sw->ResultOutput->headerOutVerbose = atoi(*(++argv));
 			   argc--;
 			} else {
 			   usage();

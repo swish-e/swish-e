@@ -20,6 +20,11 @@ $Id$
 **   e.g.  "+word -word word"   (basic altavista, lycos, etc mode...)
 **         word1  UND  word2    (language specific boolean operators)
 **
+**
+**  $$$ This module currently handles also "renamed" boolean search operators.
+**  $$$ This part may be moved to the new search module, later
+**  $$$ This would be more apropriate than this module...  (2001-05-04 rasc)
+**
 **  
 **
 ** 2001-03-02 rasc   initial coding
@@ -48,13 +53,18 @@ $Id$
 void initModule_SearchAlt (SWISH  *sw)
 
 {
-   	sw->enableAltSearchSyntax = 0;	/* default: enable only Swish syntax */
+   struct MOD_SearchAlt *msa;
+
+      msa = (struct MOD_SearchAlt *) emalloc (sizeof (struct MOD_SearchAlt));
+      sw->SearchAlt = msa;
+
+   	msa->enableAltSearchSyntax = 0;	/* default: enable only Swish syntax */
 
 	/* init default logical operator words (2001-03-12 rasc) */
-	sw->srch_op.and = estrdup (_AND_WORD);
-	sw->srch_op.or  = estrdup (_OR_WORD);
-	sw->srch_op.not = estrdup (_NOT_WORD);
-	sw->srch_op.defaultrule = AND_RULE;	
+	msa->srch_op.and = estrdup (_AND_WORD);
+	msa->srch_op.or  = estrdup (_OR_WORD);
+	msa->srch_op.not = estrdup (_NOT_WORD);
+	msa->srch_op.defaultrule = AND_RULE;	
 
    return;
 }
@@ -67,11 +77,15 @@ void initModule_SearchAlt (SWISH  *sw)
 void freeModule_SearchAlt (SWISH *sw)
 
 {
-	/* free logical operator words   (2001-03-12 rasc) */
-	efree (sw->srch_op.and);
-	efree (sw->srch_op.or);
-	efree (sw->srch_op.not);
+   struct MOD_SearchAlt *msa = sw->SearchAlt;
 
+	/* free logical operator words   (2001-03-12 rasc) */
+	efree (msa->srch_op.and);
+	efree (msa->srch_op.or);
+	efree (msa->srch_op.not);
+
+      efree (sw->SearchAlt);
+      sw->SearchAlt = NULL;
   return;
 }
 
@@ -94,25 +108,26 @@ void freeModule_SearchAlt (SWISH *sw)
 int configModule_SearchAlt  (SWISH *sw, StringList *sl)
 
 {
+  struct MOD_SearchAlt *msa = sw->SearchAlt;
   char *w0    = sl->word[0];
   int  retval = 1;
 
                 /* $$$ this will not work unless swish is reading the config file also for search ... */
 
   if (strcasecmp(w0, "EnableAltSearchSyntax")==0) {         /* rasc 2001-02 */
-	sw->enableAltSearchSyntax = getYesNoOrAbort (sl, 1,1);
+	msa->enableAltSearchSyntax = getYesNoOrAbort (sl, 1,1);
   } else if (strcasecmp(w0, "SwishSearchOperators")==0) {   /* rasc 2001-03 */
 	if(sl->n == 4) {
-	   sw->srch_op.and = sl->word[1];
-	   sw->srch_op.or = sl->word[2];
-	   sw->srch_op.not = sl->word[3];
+	   msa->srch_op.and = sl->word[1];
+	   msa->srch_op.or = sl->word[2];
+	   msa->srch_op.not = sl->word[3];
 	} else progerr("%s: requires 3 parameters (and-, or-, not-word)",w0);
   }
   else if (strcasecmp(w0, "SwishSearchDefaultRule")==0) {   /* rasc 2001-03 */
 	if(sl->n == 2) {
-	   sw->srch_op.defaultrule = u_SelectDefaultRulenum(sw,sl->word[1]);
-	   if (sw->srch_op.defaultrule == NO_RULE) {
-		progerr("%s: requires \"%s\" or \"%s\"",w0, sw->srch_op.and, sw->srch_op.or);
+	   msa->srch_op.defaultrule = u_SelectDefaultRulenum(sw,sl->word[1]);
+	   if (msa->srch_op.defaultrule == NO_RULE) {
+		progerr("%s: requires \"%s\" or \"%s\"",w0, msa->srch_op.and, msa->srch_op.or);
 	   }
 	} else progerr("%s: requires 1 parameter",w0);
   }

@@ -98,7 +98,7 @@ $Id$
 **
 ** 2001-02-xx rasc  search call changed, tolower changed...
 ** 2001-03-03 rasc  altavista search, translatechar in headers
-** 2001-03-13 rasc  definable logical operators via  sw->srch_op.[and|or|nor]
+** 2001-03-13 rasc  definable logical operators via  sw->SearchAlt->srch_op.[and|or|nor]
 **                  bugfix in parse_search_string handling...
 ** 2001-03-14 rasc  resultHeaderOutput  -H <n>
 **
@@ -216,7 +216,7 @@ int     search(SWISH * sw, char *words, int structure)
     int     ret;
 
 
-    if (sw->enableAltSearchSyntax)
+    if (sw->SearchAlt->enableAltSearchSyntax)
     {                           /* AltaVista like search enabled? */
         sw_srch_str = convAltSearch2SwishStr(words);
         ret = search_2(sw, sw_srch_str, structure);
@@ -332,8 +332,7 @@ int     search_2(SWISH * sw, char *words, int structure)
             resultHeaderOut(sw, 3, " %s", indexlist->stopList[k]);
         resultHeaderOut(sw, 3, "\n");
 
-        if (sw->opt.headerOutVerbose >= 3)
-            printheaderbuzzwords(indexlist);
+        printheaderbuzzwords(sw,indexlist);
 
 
         resultHeaderOut(sw, 2, "# Search Words: %s\n", words);
@@ -842,23 +841,23 @@ void    readbuzzwords(IndexFILE * indexf)
 }
 
 /* Print the buzzwords */
-void    printheaderbuzzwords(IndexFILE * indexf)
+void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 {
     int     hashval;
     struct swline *sp = NULL;
 
-    printf("# BuzzWords:");
+    resultHeaderOut(sw, 3, "# BuzzWords:");
 
     for (hashval = 0; hashval < HASHSIZE; hashval++)
     {
         sp = indexf->hashbuzzwordlist[hashval];
         while (sp != NULL)
         {
-            printf(" %s", sp->line);
+            resultHeaderOut(sw, 3, " %s", sp->line);
             sp = sp->next;
         }
     }
-    printf("\n");
+    resultHeaderOut(sw, 3, "\n");
 }
 
 
@@ -1047,7 +1046,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
         word = SafeStrCopy(word, (*searchwordlist)->line, &lenword);
 
         if (rulenum == NO_RULE)
-            rulenum = sw->srch_op.defaultrule;
+            rulenum = sw->SearchAlt->srch_op.defaultrule;
         if (isunaryrule(word))
         {
             *searchwordlist = (*searchwordlist)->next;
@@ -1435,7 +1434,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                     (RESULT *) addtoresultlist(rp, filenum,
                                                getrank(sw, frequency, tfrequency, indexf->filetotalwordsarray[filenum - 1], structure,
                                                        indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
-                if (sw->opt.headerOutVerbose >= 9)
+                if (sw->ResultOutput->headerOutVerbose >= 9)
                 {
                     /* dump diagnostic info */
                     long    curFilePos;
@@ -1599,7 +1598,7 @@ int     u_isrule(SWISH * sw, char *word)
 {
     LOGICAL_OP *op;
 
-    op = &(sw->srch_op);
+    op = &(sw->SearchAlt->srch_op);
     if (!strcmp(word, op->and) || !strcmp(word, op->or) || !strcmp(word, op->not))
         return 1;
     else
@@ -1616,7 +1615,7 @@ int     isnotrule(char *word)
 
 int     u_isnotrule(SWISH * sw, char *word)
 {
-    if (!strcmp(word, sw->srch_op.not))
+    if (!strcmp(word, sw->SearchAlt->srch_op.not))
         return 1;
     else
         return 0;
@@ -1671,9 +1670,9 @@ int     getrulenum(char *word)
 
 int     u_SelectDefaultRulenum(SWISH * sw, char *word)
 {
-    if (!strcasecmp(word, sw->srch_op.and))
+    if (!strcasecmp(word, sw->SearchAlt->srch_op.and))
         return AND_RULE;
-    else if (!strcasecmp(word, sw->srch_op.or))
+    else if (!strcasecmp(word, sw->SearchAlt->srch_op.or))
         return OR_RULE;
     return NO_RULE;
 }

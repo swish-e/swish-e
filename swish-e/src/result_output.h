@@ -22,8 +22,39 @@ $Id$
 */
 
 
-#ifndef __HasSeenModule_RESULT_OUTPUT
-#define __HasSeenModule_RESULT_OUTPUT	1
+#ifndef __HasSeenModule_ResultOutput
+#define __HasSeenModule_ResultOutput	1
+
+
+/*
+   -- module data
+*/
+
+struct ResultExtFmtStrList
+{                               /* -x extended format by defined names */
+    char   *name;
+    char   *fmtstr;
+    struct ResultExtFmtStrList *next;
+    struct ResultExtFmtStrList *nodep;
+};
+
+
+
+/*
+   -- global module data structure
+*/
+
+struct MOD_ResultOutput
+{                               /* -x extended format by defined names */
+    char   *extendedformat;     /* -x "fmt", holds fmt or NULL */
+    char   *stdResultFieldDelimiter; /* -d <c> delimiter , (def: config.h) v1.x output style */
+    int     headerOutVerbose;   /* -H <n> print extended header info */
+
+    /* ResultExtendedFormat predefined List see: -x */
+    struct ResultExtFmtStrList *resultextfmtlist;
+};
+
+
 
 
 void initModule_ResultOutput (SWISH *sw);
@@ -43,7 +74,8 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *prtfmt, ...);
 void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h, 
 				char *pathname, int merged);
 
-
+/* $$$ to be moved to other module! */
+void	translatecharHeaderOut (SWISH *sw, int v, INDEXDATAHEADER *h );
 
 #endif
 

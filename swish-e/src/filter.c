@@ -55,8 +55,13 @@ static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop);
 void initModule_Filter (SWISH  *sw)
 
 {
-   sw->filterdir = NULL;    /* init FilterDir  */
-   sw->filterlist = NULL;   /* init FileFilter */
+   struct MOD_Filter *md;
+
+      md = (struct MOD_Filter *) emalloc(sizeof(struct MOD_Filter));
+      sw->Filter = md;
+
+      md->filterdir = NULL;    /* init FilterDir  */
+      md->filterlist = NULL;   /* init FileFilter */
    return;
 }
 
@@ -70,15 +75,14 @@ void initModule_Filter (SWISH  *sw)
 void freeModule_Filter (SWISH *sw)
 
 {
+  struct MOD_Filter *md = sw->Filter;
   struct FilterList *f, *fn;
 
 
-   efree(sw->filterdir);	/* free FilterDir */
+   efree(md->filterdir);	/* free FilterDir */
 
-   f = sw->filterlist;
-   if (! f) return;
-
-   while (f) {			/* free FileFilter */
+   f = md->filterlist;
+   while (f) {			/* free FileFilter List */
       efree (f->suffix);
       efree (f->options);
       efree (f->prog);
@@ -86,8 +90,10 @@ void freeModule_Filter (SWISH *sw)
       efree (f);
       f = fn;
    }
-   sw->filterlist = NULL;
+   md->filterlist = NULL;
 
+   efree (sw->Filter);   /* free modul data structure */
+   sw->Filter = NULL;
    return;
 }
 
@@ -103,6 +109,7 @@ void freeModule_Filter (SWISH *sw)
 int configModule_Filter  (SWISH *sw, StringList *sl)
 
 {
+  struct MOD_Filter *md = sw->Filter;
   char *w0;
   int  retval;
 
@@ -112,16 +119,16 @@ int configModule_Filter  (SWISH *sw, StringList *sl)
 
   if (strcasecmp(w0, "FilterDir")==0) {      /* 1999-05-05 rasc */
       if (sl->n==2) {
-          sw->filterdir = estrredup(sw->filterdir,sl->word[1]);
-          if (!isdirectory(sw->filterdir)) {
-             progerr("%s: %s is not a directory",w0,sw->filterdir);
+          md->filterdir = estrredup(md->filterdir,sl->word[1]);
+          if (!isdirectory(md->filterdir)) {
+             progerr("%s: %s is not a directory",w0,md->filterdir);
           }
       } else progerr("%s: requires one value",w0);
   }
   else if (strcasecmp(w0, "FileFilter")==0) {  /* 1999-05-05 rasc */
                                /* FileFilter fileextension  filterprog  [options] */
       if (sl->n==3 || sl->n==4) {
-          sw->filterlist = (struct FilterList *) addfilter(sw->filterlist,sl->word[1],sl->word[2],sl->word[3],sw->filterdir);
+          md->filterlist = (struct FilterList *) addfilter(md->filterlist,sl->word[1],sl->word[2],sl->word[3],md->filterdir);
       } else progerr("%s: requires \"extension\" \"filter\" \"[options]\"",w0);
   }
   else {
@@ -193,17 +200,18 @@ static struct FilterList *addfilter(struct FilterList *rp,
  -- Returns NULL or path to filter prog according conf file.
  -- 1999-08-07 rasc
  -- 2001-02-28 rasc  rewritten, now possible: search for ".pdf.gz", etc.
+ -- 3002-05-04 rasc  adapted to new module design
 */
 
-struct FilterList *hasfilter (char *filename, struct FilterList *filterlist)
+struct FilterList *hasfilter (SWISH *sw, char *filename)
 {
-struct FilterList *fl;
-char *s, *fe;
+  struct MOD_Filter *md = sw->Filter;
+  struct FilterList *fl;
+  char *s, *fe;
 
 
-   fl = filterlist;
+   fl = md->filterlist;
    if (! fl) return (struct FilterList *)NULL;
-
    fe = (filename + strlen(filename));
 
    while (fl != NULL) {

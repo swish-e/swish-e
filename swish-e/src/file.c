@@ -300,7 +300,7 @@ void init_file_prop_settings(SWISH *sw, FileProp *fprop )
      -- NULL = No Filter, (char *) path to filter prog.
   */
 
-  fprop->hasfilter= hasfilter (fprop->real_path,sw->filterlist);
+  fprop->hasfilter= hasfilter (sw,fprop->real_path);
 
   fprop->stordesc = hasdescription (fprop->doctype,sw->storedescription);
 

@@ -99,14 +99,17 @@ static struct ResultExtFmtStrList *addResultExtFormatStr (
 void initModule_ResultOutput (SWISH  *sw)
 
 {
+   struct MOD_ResultOutput *md;
 
-   sw->resultextfmtlist=NULL;
+   md = (struct MOD_ResultOutput *) emalloc(sizeof(struct MOD_ResultOutput));
+   sw->ResultOutput = md;
+
+   md->resultextfmtlist=NULL;
 
    /* cmd options */
-
-   sw->opt.extendedformat = NULL;               /* -x :cmd param  */
-   sw->opt.headerOutVerbose  = 1;               /* default = standard header */
-   sw->opt.stdResultFieldDelimiter = NULL;      /* -d :old 1.x result output delimiter */
+   md->extendedformat = NULL;               /* -x :cmd param  */
+   md->headerOutVerbose  = 1;               /* default = standard header */
+   md->stdResultFieldDelimiter = NULL;      /* -d :old 1.x result output delimiter */
 
    return;
 }
@@ -120,16 +123,15 @@ void initModule_ResultOutput (SWISH  *sw)
 void freeModule_ResultOutput (SWISH *sw)
 
 {
+ struct MOD_ResultOutput *md = sw->ResultOutput;
  struct ResultExtFmtStrList *l, *ln;
 
 
-   efree (sw->opt.stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
-  /* was not emalloc!# efree (sw->opt.extendedformat);               -x stuff */
+   efree (md->stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
+  /* was not emalloc!# efree (md->extendedformat);               -x stuff */
 
 
-   l = sw->resultextfmtlist;	                  /* free ResultExtFormatName */
-   if (! l) return;
-
+   l = md->resultextfmtlist;                  /* free ResultExtFormatName */
    while (l) {
       efree (l->name);
       efree (l->fmtstr);
@@ -137,8 +139,11 @@ void freeModule_ResultOutput (SWISH *sw)
       efree (l);
       l = ln;
    }
-   sw->resultextfmtlist = NULL;
+   md->resultextfmtlist = NULL;
 
+   /* free module data */
+   efree (sw->ResultOutput);
+   sw->ResultOutput = NULL;
 
   return;
 }
@@ -162,6 +167,7 @@ void freeModule_ResultOutput (SWISH *sw)
 int configModule_ResultOutput  (SWISH *sw, StringList *sl)
 
 {
+  struct MOD_ResultOutput *md = sw->ResultOutput;
   char *w0    = sl->word[0];
   int  retval = 1;
 
@@ -172,8 +178,8 @@ int configModule_ResultOutput  (SWISH *sw, StringList *sl)
   if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
                                  /* ResultExt...   name  fmtstring */
       if(sl->n==3) {
-         sw->resultextfmtlist = (struct ResultExtFmtStrList *)
-               addResultExtFormatStr(sw->resultextfmtlist,sl->word[1],sl->word[2]);
+         md->resultextfmtlist = (struct ResultExtFmtStrList *)
+               addResultExtFormatStr(md->resultextfmtlist,sl->word[1],sl->word[2]);
       } else progerr("%s: requires \"name\" \"fmtstr\"",w0);
   }
   else {
@@ -292,6 +298,7 @@ void printResultOutput (SWISH *sw) {
 void printSortedResults(SWISH *sw)
 
 {
+struct MOD_ResultOutput *md = sw->ResultOutput;
 RESULT *r;
 int    resultmaxhits;
 int    resultbeginhits;
@@ -303,7 +310,7 @@ FILE   *f_out;
   f_out = stdout;
   resultmaxhits = sw->maxhits;
   resultbeginhits = (sw->beginhits > 0) ? sw->beginhits - 1 : 0;
-  delimiter = (sw->opt.stdResultFieldDelimiter) ? sw->opt.stdResultFieldDelimiter : " ";
+  delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
   counter = resultbeginhits;
 
        /* jmruiz 02/2001 SwishSeek is faster because it does not read the
@@ -314,8 +321,8 @@ FILE   *f_out;
   while ((r=SwishNext(sw)) && (resultmaxhits!=0)) {
 	r->count = ++counter;		/* set rec. counter for output */
 
-	if (sw->opt.extendedformat)
-	   printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
+	if (md->extendedformat)
+	   printExtResultEntry (sw, f_out, md->extendedformat, r);
 	else {
 					 /* old style v 1.x std output  (compat) */
 	   fprintf(f_out,"%d%s%s%s\"%s\"%s%d",
@@ -662,7 +669,7 @@ char *hasResultExtFmtStr (SWISH *sw, char *name)
 {
   struct ResultExtFmtStrList *rfl;
 
-  rfl = sw->resultextfmtlist;
+  rfl = sw->ResultOutput->resultextfmtlist;
   if (! rfl) return (char *)NULL;
 
   while (rfl) {
@@ -702,7 +709,7 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
   va_list args;
 
   /* min_verbose to low, no output */
-  if (min_verbose > sw->opt.headerOutVerbose) return 0;
+  if (min_verbose > sw->ResultOutput->headerOutVerbose) return 0;
 
   /* print header info... */
   va_start (args,printfmt);
@@ -750,9 +757,7 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
 	resultHeaderOut (sw,v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
 	resultHeaderOut (sw,v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
 	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
-
-    if ( sw->opt.headerOutVerbose >= v )
-    	translatecharHeaderOut (sw, h );
+    	translatecharHeaderOut (sw, v, h );
 
 	
 	return;
@@ -768,14 +773,13 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
   // (keep the new module concept tidy and clean!)
   // $$$ ToDo   
 
-  // No prototype to generate a warning to remember
   // that this routine is wrong here...
   // --> there will be a new module word_rewrite.c
 
   // $$$ routine description missing
 
 
-void	translatecharHeaderOut (SWISH *sw, INDEXDATAHEADER *h )
+void	translatecharHeaderOut (SWISH *sw,  int v, INDEXDATAHEADER *h )
 {
     int   from_pos = 0;
     int   to_pos = 0;
@@ -802,7 +806,7 @@ void	translatecharHeaderOut (SWISH *sw, INDEXDATAHEADER *h )
     to[from_pos] = '\0';
 
     if ( *from )
-        printf( "%s %s -> %s\n", TRANSLATECHARTABLEHEADER, from, to );
+        resultHeaderOut (sw,v, "%s %s -> %s\n", TRANSLATECHARTABLEHEADER, from, to );
 
     efree( from );
     efree( to );

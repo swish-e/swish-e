@@ -501,13 +501,6 @@ struct multiswline
 
 
 
-struct ResultExtFmtStrList
-{                               /* -x extended format by defined names */
-    char   *name;
-    char   *fmtstr;
-    struct ResultExtFmtStrList *next;
-    struct ResultExtFmtStrList *nodep;
-};
 
 typedef struct
 {
@@ -590,60 +583,6 @@ struct char_lookup_st
 };
 
 
-/*
-  -- internal logical/boolean search operator words 
-  -- Defaults for user: see config.h
-  --  or changed via config directives.
-*/
-
-
-typedef struct
-{                               /* 2001-03-12 rasc */
-    char   *and;                /* Logical Search  */
-    char   *or;                 /* Operators (user) */
-    char   *not;
-    int     defaultrule;        /* missing op == this rule */
-}
-LOGICAL_OP;
-
-
-/* internal representation,  may not be changed */
-#define AND_WORD "<and>"
-#define OR_WORD "<or>"
-#define NOT_WORD "<not>"
-#define PHRASE_WORD "<precd>"
-#define AND_NOT_WORD "<andnot>"
-
-/* internal search rule numbers */
-#define NO_RULE 0
-#define AND_RULE 1
-#define OR_RULE 2
-#define NOT_RULE 3
-#define PHRASE_RULE 4
-#define AND_NOT_RULE 5
-
-
-
-
-
-/*
-   -- Structure CMDPARAM stores commandline parameters and
-   --   -options like -v -x "string" etc.
-   -- This structure is part of the global structure SWISH.
-   -- 2001-01-xx (rasc) 
-
-   $$$ ToDO:  move all cmdline params to this structure 
-       (takes some time and code changes)
-*/
-
-typedef struct
-{
-    char   *extendedformat;     /* -x "fmt", holds fmt or NULL */
-    char   *stdResultFieldDelimiter; /* -d <c> delimiter , (def: config.h) v1.x output style */
-    int     headerOutVerbose;   /* -H <n> print extended header info */
-}
-CMDPARAM;
-
 
 
 
@@ -654,6 +593,7 @@ CMDPARAM;
    -- 2001-01  rasc
   
    $$$ ToDO: data types are not yet fully supported by swish
+   $$$ Future: to be part of module data_types.c/h
 */
 
 
@@ -700,9 +640,11 @@ struct DB_RESULTS
 
 typedef struct
 {
+    /* New module design structure data */
+    struct MOD_SearchAlt     *SearchAlt;      /* search_alt module data */
+    struct MOD_ResultOutput  *ResultOutput;   /* result_output module data */
+    struct MOD_Filter        *Filter;         /* filter module data */
 
-    CMDPARAM opt;               /* Cmdline Options       */
-    LOGICAL_OP srch_op;         /* search operator words */
 
     /* entry vars */
     ENTRYARRAY *entryArray;
@@ -755,12 +697,7 @@ typedef struct
     int     lasterror;
 
     int     indexComments;
-    /* ResultExtendedFormat predefined List see: -x */
-    struct ResultExtFmtStrList *resultextfmtlist;
-    /* Filter vars */
-    struct FilterList *filterlist; /* 1998-08-07 rasc */
-    char   *filterdir;          /* 1998-08-07 rasc */
-    int     enableAltSearchSyntax; /* Alternate search strings 0/1  (rasc) */
+
     long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
 
     /* 06/00 Jose Ruiz */

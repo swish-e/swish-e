@@ -38,7 +38,13 @@ $Id$
 void initModule_#modulename# (SWISH  *sw)
 
 {
-...
+   struct MOD_#modulename# *md;
+
+      md = (struct MOD_#modulename# *) emalloc(sizeof(struct MOD_#modulename#));
+      sw->#modulename# = md;
+
+      md->myparameter = ...
+      ...
 
 }
 
@@ -51,7 +57,14 @@ void initModule_#modulename# (SWISH  *sw)
 void freeModule_#modulename# (SWISH *sw)
 
 {
-...
+   struct MOD_#modulename# *md = sw->#modulename#;
+
+      md->....
+      ...
+
+
+      efree (sw->#modulename#);
+      sw->#modulename# = NULL;
 }
 
 
@@ -66,6 +79,7 @@ void freeModule_#modulename# (SWISH *sw)
 int configModule_#modulename# (SWISH *sw, StringList *sl)
 
 {
+  struct MOD_#modulename# *md = sw->#modulename#;
   char *w0;
   int  retval;
 

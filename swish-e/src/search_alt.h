@@ -24,6 +24,51 @@ $Id$
 #define __HasSeenModule_SearchAlt	1
 
 
+/*
+  -- internal logical/boolean search operator words 
+  -- Defaults for user: see config.h
+  --  or changed via config directives.
+*/
+
+
+typedef struct {                /* 2001-03-12 rasc */
+    char   *and;                /* Logical Search  */
+    char   *or;                 /* Operators (user) */
+    char   *not;
+    int     defaultrule;        /* missing op == this rule */
+}
+LOGICAL_OP;
+
+
+
+/* Global module data */
+
+struct MOD_SearchAlt {
+    int     enableAltSearchSyntax;         /* Alternate search strings 0/1  */
+    LOGICAL_OP srch_op;                    /* search operator words         */
+};
+
+
+
+/* internal representation,  may not be changed */
+#define AND_WORD "<and>"
+#define OR_WORD "<or>"
+#define NOT_WORD "<not>"
+#define PHRASE_WORD "<precd>"
+#define AND_NOT_WORD "<andnot>"
+
+/* internal search rule numbers */
+#define NO_RULE 0
+#define AND_RULE 1
+#define OR_RULE 2
+#define NOT_RULE 3
+#define PHRASE_RULE 4
+#define AND_NOT_RULE 5
+
+
+
+
+
 /* exported Prototypes */
 
 void initModule_SearchAlt   (SWISH *sw);
