@@ -135,28 +135,6 @@ int     isokword(sw, word, indexf)
     return 1;
 }
 
-/* Does a word have valid characters?
-*/
-
-int     hasokchars(indexf, word)
-     IndexFILE *indexf;
-     char   *word;
-{
-    int     i;
-
-    if (!indexf->header.begincharslookuptable[(int) ((unsigned char) word[0])])
-        return 0;
-
-    if (!indexf->header.endcharslookuptable[(int) ((unsigned char) word[strlen(word) - 1])])
-        return 0;
-
-    for (i = 0; word[i] != '\0'; i++)
-        if (iswordchar(indexf->header, word[i]))
-            return 1;
-
-    return 0;
-}
-
 
 /*
   -- Determine document type by checking the file extension
