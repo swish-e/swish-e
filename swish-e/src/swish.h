@@ -47,7 +47,7 @@
 **                   removed SWISH.errorstr, etc. 
 **                   ResultExtFmtStrList & var
 **
-
+** 2001-02-28 rasc   some cleanup, ANSI compliant
 */
 
 #include <stdio.h>
@@ -65,13 +65,10 @@
 #include <sys/dir.h>
 #else
 
-#define snprintf snprintf_is_not_ANSI
 
 #ifdef _WIN32
 #include "win32/dirent.h"
 #include "Win32/regex.h"
-#define pclose _pclose
-#define popen _popen
 #define strcasecmp stricmp
 #else    
 #include <dirent.h>
@@ -90,73 +87,78 @@
 
 #define INDEXFILE "index.swish-e"
 
+
 #define BASEHEADER 1
 
 #define INDEXHEADER "# SWISH format: " SWISH_VERSION
 #define INDEXHEADER_ID BASEHEADER + 1 
 #define INDEXVERSION "# Swish-e format: " SWISH_VERSION
-#define INDEXVERSION_ID BASEHEADER + 2
+#define INDEXVERSION_ID (BASEHEADER + 2)
 
 
 #define NAMEHEADER "# Name:"
-#define NAMEHEADER_ID BASEHEADER + 3
+#define NAMEHEADER_ID (BASEHEADER + 3)
 #define SAVEDASHEADER "# Saved as:"
-#define SAVEDASHEADER_ID BASEHEADER + 4
+#define SAVEDASHEADER_ID (BASEHEADER + 4)
 #define COUNTSHEADER "# Counts:"
-#define COUNTSHEADER_ID BASEHEADER + 5
+#define COUNTSHEADER_ID (BASEHEADER + 5)
 #define INDEXEDONHEADER "# Indexed on:"
 #define INDEXEDONPARAMNAME "Indexed on"
-#define INDEXEDONHEADER_ID BASEHEADER + 6
+#define INDEXEDONHEADER_ID (BASEHEADER + 6)
 #define DESCRIPTIONHEADER "# Description:"
 #define DESCRIPTIONPARAMNAME "Description"
-#define DESCRIPTIONHEADER_ID BASEHEADER + 7
+#define DESCRIPTIONHEADER_ID (BASEHEADER + 7)
 #define POINTERHEADER "# Pointer:"
 #define POINTERPARAMNAME "IndexPointer"
-#define POINTERHEADER_ID BASEHEADER + 8
+#define POINTERHEADER_ID (BASEHEADER + 8)
 #define MAINTAINEDBYHEADER "# Maintained by:"
 #define MAINTAINEDBYPARAMNAME "IndexAdmin"
-#define MAINTAINEDBYHEADER_ID BASEHEADER + 9
+#define MAINTAINEDBYHEADER_ID (BASEHEADER + 9)
 #define WORDCHARSHEADER "# WordCharacters:"
 #define WORDCHARSPARAMNAME "WordCharacters"
-#define WORDCHARSHEADER_ID BASEHEADER + 10
+#define WORDCHARSHEADER_ID (BASEHEADER + 10)
 #define MINWORDLIMHEADER "# MinWordLimit:"
-#define MINWORDLIMHEADER_ID BASEHEADER + 11
+#define MINWORDLIMHEADER_ID (BASEHEADER + 11)
 #define MAXWORDLIMHEADER "# MaxWordLimit:"
-#define MAXWORDLIMHEADER_ID BASEHEADER + 12
+#define MAXWORDLIMHEADER_ID (BASEHEADER + 12)
 #define BEGINCHARSHEADER "# BeginCharacters:"
 #define BEGINCHARSPARAMNAME "BeginCharacters"
-#define BEGINCHARSHEADER_ID BASEHEADER + 13
+#define BEGINCHARSHEADER_ID (BASEHEADER + 13)
 #define ENDCHARSHEADER "# EndCharacters:"
 #define ENDCHARSPARAMNAME "EndCharacters"
-#define ENDCHARSHEADER_ID BASEHEADER + 14
+#define ENDCHARSHEADER_ID (BASEHEADER + 14)
 #define IGNOREFIRSTCHARHEADER "# IgnoreFirstChar:"
 #define IGNOREFIRSTCHARPARAMNAME "IgnoreFirstChar"
-#define IGNOREFIRSTCHARHEADER_ID BASEHEADER + 15
+#define IGNOREFIRSTCHARHEADER_ID (BASEHEADER + 15)
 #define IGNORELASTCHARHEADER "# IgnoreLastChar:"
 #define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
-#define IGNORELASTCHARHEADER_ID BASEHEADER + 16
+#define IGNORELASTCHARHEADER_ID (BASEHEADER + 16)
 
 #define STEMMINGHEADER	"# Stemming Applied:"
 #define STEMMINGPARAMNAME "Stemming"
-#define STEMMINGHEADER_ID BASEHEADER + 17
+#define STEMMINGHEADER_ID (BASEHEADER + 17)
 #define SOUNDEXHEADER "# Soundex Applied:"
 #define SOUNDEXPARAMNAME "Soundex"
-#define SOUNDEXHEADER_ID BASEHEADER + 18
-#define MERGED_ID BASEHEADER + 19
+#define SOUNDEXHEADER_ID (BASEHEADER + 18)
+#define MERGED_ID (BASEHEADER + 19)
 
 #define DOCPROPHEADER "# DocProperty"
-#define DOCPROPHEADER_ID BASEHEADER + 20
+#define DOCPROPHEADER_ID (BASEHEADER + 20)
 #define DOCPROPENHEADER "# DocumentProperties:"
-#define DOCPROPENHEADER_ID BASEHEADER + 21
-#define SORTDOCPROPHEADER_ID BASEHEADER + 22
+#define DOCPROPENHEADER_ID (BASEHEADER + 21)
+#define SORTDOCPROPHEADER_ID (BASEHEADER + 22)
 
 #define IGNORETOTALWORDCOUNTWHENRANKING "# IgnoreTotalWordCountWhenRanking:"
 #define IGNORETOTALWORDCOUNTWHENRANKINGPARAMNAME "IgnoreTotalWordCountWhenRanking"
-#define IGNORETOTALWORDCOUNTWHENRANKING_ID BASEHEADER + 23
+#define IGNORETOTALWORDCOUNTWHENRANKING_ID (BASEHEADER + 23)
 
 #define FILEINFOCOMPRESSION "# FileInfoCompression:"
 #define FILEINFOCOMPRESSIONPARAMNAME "FileInfoCompression"
-#define FILEINFOCOMPRESSION_ID BASEHEADER + 24
+#define FILEINFOCOMPRESSION_ID (BASEHEADER + 24)
+
+#define TRANSLATECHARTABLEHEADER "# TranslateCharacterTable:"
+#define TRANSLATECHARTABLEPARAMNAME "TranslateCharacterTable"
+#define TRANSLATECHARTABLE_ID (BASEHEADER + 25)
 
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
@@ -187,27 +189,27 @@
 #define IN_COMMENTS 16
 #define IN_HEADER 32
 #define IN_EMPHASIZED 64
-#define IN_ALL IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED
+#define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED)
 
 #define MAXLONGLEN 4
 #define MAXCHARS 266    /* 255 for chars plus ten more for other data */
-#define METANAMEPOS MAXCHARS - 7
-#define STOPWORDPOS MAXCHARS - 6
-#define FILELISTPOS MAXCHARS - 5
-#define FILEOFFSETPOS MAXCHARS - 4
-#define LOCATIONLOOKUPTABLEPOS MAXCHARS - 3
-#define PATHLOOKUPTABLEPOS MAXCHARS - 2
-#define DEFLATEDICTPOS MAXCHARS - 1
+#define METANAMEPOS (MAXCHARS - 7)
+#define STOPWORDPOS (MAXCHARS - 6)
+#define FILELISTPOS (MAXCHARS - 5)
+#define FILEOFFSETPOS (MAXCHARS - 4)
+#define LOCATIONLOOKUPTABLEPOS (MAXCHARS - 3)
+#define PATHLOOKUPTABLEPOS (MAXCHARS - 2)
+#define DEFLATEDICTPOS (MAXCHARS - 1)
 
 
 /* Document Types */
 #define BASEDOCTYPE 0
-#define NODOCTYPE BASEDOCTYPE
-#define TXT BASEDOCTYPE+1
-#define HTML BASEDOCTYPE+2
-#define XML BASEDOCTYPE+3
-#define MULTITXT BASEDOCTYPE+4
-#define WML BASEDOCTYPE+5
+#define NODOCTYPE	(BASEDOCTYPE)
+#define TXT 	(BASEDOCTYPE+1)
+#define HTML 	(BASEDOCTYPE+2)
+#define XML 	(BASEDOCTYPE+3)
+#define MULTITXT 	(BASEDOCTYPE+4)
+#define WML 	(BASEDOCTYPE+5)
 
 typedef struct docPropertyEntry {
 	int metaID;		/* meta field identifier; from getMetaName() */
@@ -342,7 +344,6 @@ typedef struct {
 	/* var to specify how to ranking while indexing */
     int ignoreTotalWordCountWhenRanking;	/* added 11/24/98 - MG */
 	/* Lookup tables for fast access */
-//$$$ rasc: why are these int and not unsigned char?
     int wordcharslookuptable[256];
     int begincharslookuptable[256];
     int endcharslookuptable[256];
@@ -550,7 +551,7 @@ struct char_lookup_st
    -- This structure is part of the global structure SWISH.
    -- 2001-01-xx (rasc) 
 
-   $$$ ToDO:  move all cmd params to this structure 
+   $$$ ToDO:  move all cmdline params to this structure 
        (takes some time and code changes)
 */
 
@@ -713,9 +714,6 @@ typedef struct {
     /* Save memory */
     int swap_flag;
 
-//$$$    /* Flag to apply ascii7 translation (rasc) */
-//$$$    int applyAscii7;
-
     /* Filenames of the swap files */
     char *swap_file_name;   /* File and properties file */
     char *swap_location_name;   /* Location info file */
@@ -800,35 +798,32 @@ VAR char *defaultstopwords[];
 
 #ifdef MAIN_FILE
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
-int main _AP ((int, char **));
-void usage _AP ((void));
-void printversion _AP ((void));
-void printrunning _AP ((long, long));
+
+int main (int, char **);
+void usage (void);
+void printversion (void);
+void printrunning (long, long);
 
 #endif
 
-long getthetime _AP ((void));
+long getthetime (void);
 
-void allocatedefaults _AP((void));
+void allocatedefaults (void);
 
-SWISH *SwishNew _AP ((void));
-void SwishDefaults _AP((SWISH *));
-void SwishFree _AP((SWISH *));
+SWISH *SwishNew (void);
+void SwishDefaults (SWISH *);
+void SwishFree (SWISH *);
 
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from index file
 */
-void printlong _AP ((FILE *, long));
-long readlong _AP ((FILE *));
+void printlong (FILE *, long);
+long readlong (FILE *);
 /* strcpy doesn't check for overflow in the 'to' string */
 /* strncpy doesn't guarantee null byte termination */
 /* can't check strlen of 'from' arg since it is sometimes a function call */
-#define safestrcpy(n,to,from)  { strncpy(to,from,n); to[n-1]='\0'; }
+#define safestrcpy(n,to,from)  { strncpy(to,from,n); (to)[(n)-1]='\0'; }
 
 /* Jose Ruiz 04/00
 ** Macro for copying postions between arrays of integers
@@ -837,13 +832,14 @@ long readlong _AP ((FILE *));
 */
 /* 
 #define CopyPositions(dest,posdest,orig,posorig,num) \
-{int i;for(i=0;i<num,i++) dest[i+posdest]=orig[i+posorig];}
+{int i;for(i=0;i<num,i++) (dest)[i+(posdest)]=(orig)[i+(posorig)];}
 */
-#define CopyPositions(dest,posdest,orig,posorig,num)  memcpy((char *)((int *)dest+posdest),(char *)((int *)orig+posorig),num*sizeof(int))
+#define CopyPositions(dest,posdest,orig,posorig,num) \
+ memcpy((char *)((int *)(dest)+(posdest)),(char *)((int *)(orig)+(posorig)),(num)*sizeof(int))
 
 
 /* Min macro */
-#define Min(a,b) (a<b?a:b)
+#define Min(a,b) ((a)<(b)?(a):(b))
 
 /* Definitions of word commands and, or, not, ... */
 /* Change them here */
@@ -857,10 +853,10 @@ long readlong _AP ((FILE *));
 #define AND_NOT_WORD "<andnot>"
 
 /* C library prototypes */
-SWISH * SwishOpen _AP ((char *));
-void SwishClose _AP ((SWISH *));
-void SwishResetSearch _AP ((SWISH *));
-RESULT * SwishNext _AP ((SWISH *));
-int SwishSearch _AP ((SWISH *, char *, int , char *, char *));
-int getnumPropertiesToDisplay _AP ((SWISH *));
+SWISH * SwishOpen (char *);
+void SwishClose (SWISH *);
+void SwishResetSearch (SWISH *);
+RESULT * SwishNext (SWISH *);
+int SwishSearch (SWISH *, char *, int , char *, char *);
+int getnumPropertiesToDisplay (SWISH *);
 

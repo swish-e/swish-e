@@ -152,7 +152,6 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
                 } else {
 						/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
                     fprop->fp = fopen(fprop->work_path, FILEMODE_READ );
-
                 }
 		
 
@@ -855,6 +854,7 @@ long itmp;
 		PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
 		PrintHeaderInt(FILEINFOCOMPRESSION_ID,header->applyFileInfoCompression,fp);
 		/* Jose Ruiz 06/00 Added this line to delimite the header */
+//$$$ todo: write translatecharstable  (table or string?)
 		fputc(0,fp);    
 	} else {
 		fprintf(fp, "%s\n", INDEXVERSION);
@@ -878,6 +878,7 @@ long itmp;
 		fprintf(fp, "%s %s\n", IGNOREFIRSTCHARHEADER, header->ignorefirstchar);
 		fprintf(fp, "%s %s\n", IGNORELASTCHARHEADER, header->ignorelastchar);
 		fprintf(fp, "%s %d\n", FILEINFOCOMPRESSION, header->applyFileInfoCompression);
+//$$$ todo: write translatecharstable  (table or string?)
 
 	}
 }
