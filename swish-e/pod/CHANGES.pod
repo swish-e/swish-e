@@ -15,10 +15,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 You can now use continuation lines in the config file:
 
     IgnoreWords: \
-        the
-        am
-        is
-        are
+        the \
+        am \
+        is \
+        are \
         was
 
 The cannot be any characters following the backslash.
