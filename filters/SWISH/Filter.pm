@@ -667,8 +667,7 @@ sub get_filter_list {
 
 # Set default method for name() type() and priority()
 
-# I don't see much us for this
-#sub name { "Filter did not set a name" }
+sub name { $_[0]->{name} || "Filter did not set a name" }
 
 sub type { 2 }
 sub priority{ 50 }
