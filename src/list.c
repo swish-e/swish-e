@@ -84,19 +84,19 @@ int i;
 	newnode->fp=NULL;
 	newnode->metaEntryArray=NULL;
 	newnode->metaCounter=0;
+
 	newnode->wordpos=0;
 	newnode->stopPos = 0;
 	newnode->stopMaxSize = 0;
 	newnode->stopList = NULL;
+	for (i=0; i<HASHSIZE; i++)
+	{
+	    newnode->hashstoplist[i] = NULL;
+        newnode->hashbuzzwordlist[i] = NULL;
+        newnode->hashuselist[i] = NULL;
+    }
 
-	newnode->buzzPos = 0;
-	newnode->buzzMaxSize = 0;
-	newnode->buzzList = NULL;
-	
-
-	for (i=0; i<HASHSIZE; i++) newnode->hashstoplist[i] = NULL;
 	newnode->is_use_words_flag=0;
-	for (i=0; i<HASHSIZE; i++) newnode->hashuselist[i] = NULL;
 	for (i=0; i<256; i++) newnode->keywords[i] = NULL;
 
 	newnode->locationlookup=NULL;

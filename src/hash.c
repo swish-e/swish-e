@@ -229,31 +229,6 @@ int     isbuzzword(IndexFILE * indexf, char *word)
     return 0;
 }
 
-/* This is just to build up a list of words for printing when searching -- seem like overkill */
-/* In this case, it would probably be easier to keep a list of pointers into the lookup hash. */
-
-void    addBuzzWordList(IndexFILE * indexf, char *word)
-{
-    char   *arrayWord;
-
-
-    /* only display each word once (which should always be the case) */
-    if (isbuzzword(indexf, word))
-        return;
-
-    if (indexf->buzzPos == indexf->buzzMaxSize)
-    {
-        indexf->buzzMaxSize += 100;
-        if (!indexf->buzzList)
-            indexf->buzzList = (char **) emalloc(indexf->buzzMaxSize * sizeof(char *));
-
-        else
-            indexf->buzzList = (char **) erealloc(indexf->buzzList, indexf->buzzMaxSize * sizeof(char *));
-    }
-
-    arrayWord = (char *) estrdup(word);
-    indexf->buzzList[indexf->buzzPos++] = arrayWord;
-}
 
 
 

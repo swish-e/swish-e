@@ -422,10 +422,6 @@ typedef struct IndexFILE
     /* Buzzwords hash */
     struct swline *hashbuzzwordlist[HASHSIZE];
     
-    char  **buzzList; /* these are to print the buzzwords when searching */
-    int     buzzMaxSize;
-    int     buzzPos;
-    
 
     /* values for handling "use" words - > Unused in the search proccess */
     int     is_use_words_flag;

@@ -768,7 +768,7 @@ struct stat stat_buf;
 
 		resultHeaderOut(sw,1, "%s\n", INDEXHEADER);
 			/* print out "original" search words */
-		resultHeaderOut(sw,1, "# Search words: %s\n#\n",wordlist);
+		resultHeaderOut(sw,1, "# Search words: %s\n",wordlist);
 
         search_starttime = TimeHiRes();
 

@@ -711,6 +711,42 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
   return 1;
 }
 
+void	translatecharHeaderOut (SWISH *sw, INDEXDATAHEADER *h )
+{
+    int   from_pos = 0;
+    int   to_pos = 0;
+    int   len,
+          i;
+    char *from,
+         *to;
+
+    len  = sizeof(h->translatecharslookuptable) / sizeof(int);
+    from = (char *) emalloc(len+1);
+    to   = (char *) emalloc(len+1);
+
+    for ( i = 0; i < len; i++ )
+    {
+        if ( h->translatecharslookuptable[i] == i )
+            continue;
+
+        /* what escaping should be done - and how to (re)allocate memory */
+        from[from_pos++] = (unsigned char) i;
+        to[to_pos++]     = (unsigned char) h->translatecharslookuptable[i];
+    }
+
+    from[from_pos] = '\0';
+    to[from_pos] = '\0';
+
+    if ( *from )
+        printf( "%s %s -> %s\n", TRANSLATECHARTABLEHEADER, from, to );
+
+    efree( from );
+    efree( to );
+            
+}        
+         
+
+         
 
 
 /* 
@@ -733,6 +769,7 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
       v = min_verbose;
 
 	resultHeaderOut (sw,v, "%s\n", INDEXVERSION);
+	/* why the blank merge header? */
 	resultHeaderOut (sw,v, "# %s\n", (merged) ? "MERGED INDEX" : "");
 	resultHeaderOut (sw,v, "%s %s\n", NAMEHEADER, (h->indexn[0] == '\0') ? "(no name)" : h->indexn);
 	resultHeaderOut (sw,v, "%s %s\n", SAVEDASHEADER,fname);
@@ -753,7 +790,10 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
 	resultHeaderOut (sw,v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
 	resultHeaderOut (sw,v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
 	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
-/*$$$ todo: write translatecharstable  (table or string or no output?) */
 
+    if ( sw->opt.headerOutVerbose >= v )
+    	translatecharHeaderOut (sw, h );
+
+	
 	return;
 }
