@@ -86,6 +86,11 @@ L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> *string*
 
 =item *
 
+L<Buzzwords|/"item_Buzzwords"> [*list of buzzwords*|File: path]
+
+
+=item *
+
 L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [YES|no]
 
 =item *
@@ -794,6 +799,8 @@ accessing databases, or to limit "runnaway" filters.
 Truncating doc input may destroy document structures for swish-e (e.g.
 swish may miss closing tags for XML or HTML documents).
 
+TruncateDocSize does not currently work with the C<prog> input source method.
+
 =item UseStemming [yes|NO]
 
 Put yes to apply word stemming algorithm during indexing,
@@ -933,9 +940,32 @@ Note: when indexing HTML documents HTML entities are converted to their characte
 being processed with these directives.  This is a change from previous versions of SWISH-E where you were required
 to include the characters C<0123456789&#;> to index entities.  See also L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> 
 
-If indexing any characters that have special meaning to SWISH "*" "=" "(" and ")", test carefully how they can be accessed
-and searched.  For example, "=" may be used in a query but only if backslashed, where "(" and ")" can be indexed
-but not searched (currently).
+
+=item Buzzwords [*list of buzzwords*|File: path]
+
+The Buzzwords option allows you to specify words that will be indexed regardless of
+WordCharacters, BeginCharacters, EndCharacters, stemming, soundex and many of the other checks
+do on words while indexing.
+
+Buzzwords are case insensitive.
+
+Buzzwords should be separated by spaces
+and may span multiple directives.  If the special format C<File:filename> is used then
+the Buzzwords will be read from an external file during indexing.
+
+Examples:
+
+    Buzzwords C++ TCP/IP
+
+    Buzzwords File:./buzzwords.lst
+
+If a Buzzword contains search operator characters they must be backslashed when searching.
+For example:
+
+    Buzzwords C++ TCP/IP web=http
+
+    ./swish-e -w 'web\=http'
+
 
 =item IgnoreWords [*list of stop words*|File: path]
 
@@ -963,6 +993,8 @@ and/or use the C<File:> form to specify a path to a file containing the words:
 
     UseWords perl python pascal fortran basic cobal php
     UseWords File: /path/to/my/wordlist
+
+Please drop the swish-e list a note if you actually use this feature.    
 
 =item IgnoreLimit *integer integer*
 
