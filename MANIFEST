@@ -113,6 +113,8 @@ src/merge.h
 src/metanames.c
 src/metanames.h
 src/methods.c
+src/result_output.c
+src/result_output.h
 src/search.c
 src/search.h
 src/soundex.c
@@ -135,8 +137,6 @@ src/win32/regex.c
 src/win32/regex.h
 src/xml.c
 src/xml.h
-tests/index.swish-e
-tests/index.xml
 tests/test.config
 tests/test.html
 tests/test.txt
