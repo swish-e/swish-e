@@ -124,6 +124,7 @@ typedef struct {
     int                 maxsize;        // size of stack
     int                 ignore_flag;    // count of ignores
     MetaStackElementPtr *stack;         // pointer to an array of stack data
+    int                 is_meta;        // is this a metaname or property stack?
 } MetaStack;
 
         
@@ -185,9 +186,11 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, stru
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
 static int get_structure( PARSE_DATA *parse_data );
+
 static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore );
 static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag );
 static int pop_stack( MetaStack *stack );
+
 static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **attr );
 static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append );
 static char *isXMLClassAttribute(SWISH * sw, char *tag);
@@ -513,12 +516,15 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
         MetaStack   *s;
 
         s = &parse_data->meta_stack;
+        s->is_meta = 1;
         s->maxsize = STACK_SIZE;
+        
         s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
         if ( fprop->index_no_content )
             s->ignore_flag++;
 
         s = &parse_data->prop_stack;
+        s->is_meta = 0;
         s->maxsize = STACK_SIZE;
         s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
         if ( fprop->index_no_content )  /* only works for HTML */
@@ -582,7 +588,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
     int         is_html_tag = 0;   // to allow <foo> type of meta tags in HTML
-    int         meta_append = 0;   // used allow siblings metanames
+    int         meta_append = 0;   // used to allow siblings metanames
     int         prop_append = 0;
 
 
@@ -877,13 +883,6 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int t
 }
                 
 
-                
-
-
-
-
-
-
 /*********************************************************************
 *   Start of a MetaTag
 *   All XML tags are metatags, but for HTML there's special handling.
@@ -894,6 +893,8 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int t
 *       endtag      = tag to look for as the ending tag
 *       meta_append = if zero, tells push that this is a new meta
 *       prop_append   otherwise, says it's a sibling of a previous call
+*                     (Argh Jan 29, 2001 -- now I don't remember what that _append does!)
+*                     (it's for working with xml attributes)
 *       is_html_tag = prevents UndefinedMetaTags from being applied to html tags
 *
 *   <foo class=bar> can start two meta tags "foo" and "foo.bar".  But "bar"
@@ -954,9 +955,6 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 
     if ( m )     /* Is a meta name */
     {
-        if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-            debug_show_tag( tag, parse_data, 1, "(MetaName)" );
-
         flush_buffer( parse_data, 6 );  /* new meta tag, so must flush */
         push_stack( &parse_data->meta_stack, endtag, m, meta_append, 0 );
         parse_data->structure[IN_META_BIT]++;
@@ -969,7 +967,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
                 progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
 
         else if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-            debug_show_tag( tag, parse_data, 1, "" );
+            debug_show_tag( tag, parse_data, 1, "(undefined meta name - no action)" );
     }
             
 
@@ -1002,14 +1000,8 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
 
 
     /* Don't allow matching across tag boundry */
-    if ( !is_html_tag )
-    {
-        if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
-           parse_data->word_pos++;
-
-        if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-            debug_show_tag( tag, parse_data, 0, "" );
-    }
+    if (!is_html_tag && !isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
+        parse_data->word_pos++;
 
 }
 
@@ -1717,6 +1709,17 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
 {
     MetaStackElementPtr    node;
 
+
+    if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+    {
+        int i;
+        for (i=0; i<stack->pointer; i++)
+            printf("    ");
+        
+        printf("<%s> (%s [%s]%s)\n", tag, stack->is_meta ? "meta" : "property", !meta ? "no meta name defined" : meta->metaName, ignore ? " *Start Ignore*" : ""  );
+    }
+    
+
     /* Create a new node ( MetaStackElement already has one byte allocated for string ) */
     node = (MetaStackElementPtr) emalloc( sizeof( MetaStackElement ) + strlen( tag ) );
     node->next = NULL;
@@ -1821,6 +1824,17 @@ static int pop_stack( MetaStack *stack )
 
         if ( node->ignore )
             stack->ignore_flag--;
+
+
+        if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+        {
+            int i;
+            for (i=0; i<stack->pointer; i++)
+                printf("    ");
+        
+            printf("</%s> (%s)%s\n", node->tag, stack->is_meta ? "meta" : "property", node->ignore ? " end ignore" : "" );
+        }
+
             
         node = node->next;
         efree( this );
