@@ -259,7 +259,7 @@ sub get_basic_credentials {
 
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" };
-        alarm( $server->{max_wait_time} ) unless $^O =~ /Win32/i;
+        alarm( $server->{credential_timeout} || 30 ) unless $^O =~ /Win32/i;
 
         if (  $uri->userinfo ) {
             print STDERR "\nSorry: invalid username/password\n";
@@ -271,6 +271,8 @@ sub get_basic_credentials {
         $user = <STDIN>;
         chomp($user);
         die "No Username specified\n" unless length $user;
+
+        alarm( $server->{credential_timeout} || 30 ) unless $^O =~ /Win32/i;
 
         print STDERR "Password: ";
         system("stty -echo");
@@ -919,8 +921,17 @@ spider.pl - Example Perl program to spider web servers
         },
     );
 
-  begin indexing:
+Begin indexing:
+
     swish-e -S prog -c swish.config
+
+Note: When running on some versions of Windows (e.g. Win ME and Win 98 SE)
+you may need to index using the command:
+
+    perl spider.pl | swish-e -S prog -c swish.conf -i stdin
+
+This pipes the output of the spider directly into swish.
+   
 
 =head1 DESCRIPTION
 
@@ -1367,6 +1378,11 @@ You may specify a username and password to be used automatically when spidering:
     credentials => 'username:password',
 
 A username and password supplied in a URL will override this setting.
+
+=item credential_timeout
+
+Sets the number of seconds to wait for user input when prompted for a username or password.
+The default is 30 seconds.
 
 =back
 
