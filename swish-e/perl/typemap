@@ -6,6 +6,7 @@ SW_SEARCH   O_OBJECT
 SW_RESULTS  O_OBJECT
 SW_RESULT   O_OBJECT
 SW_FUZZYWORD O_OBJECT
+SW_META	     O_OBJECT
 const char *            T_PV
 
 # From: "perlobject.map"  Dean Roehrich, version 19960302

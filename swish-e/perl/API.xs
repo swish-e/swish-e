@@ -192,7 +192,7 @@ SwishCriticalError(self)
     SW_HANDLE self
 
 
-# Return a search object
+# Return a search object  (uses a typemap to bless the return object)
 
 SW_SEARCH
 New_Search_Object(swish_handle, query = NULL)
@@ -232,6 +232,90 @@ SwishQuery( swish_handle, query = NULL )
             ResultsSetRefPtr( results, (void *)SvRV(ST(0)) );
             XSRETURN(1);
         }
+
+
+# Methods to return info about MetaNames and Properties
+# The C API provided by Jamie Herre in March 2004
+
+# Returns an array of SWISH::API::MetaName objects
+
+void
+SwishMetaList( swish_handle, index_name )
+    SW_HANDLE swish_handle
+    char *index_name
+
+    PREINIT:
+        char * CLASS = "SWISH::API::MetaName";
+        SWISH_META_LIST meta_list;
+
+    PPCODE:
+        /* Grab the list of pointers */
+        meta_list = SwishMetaList( swish_handle, index_name );
+
+        /* Check for an error -- typically this would be an invalid index name */
+        /* Fix: calling with an invalid swish_handle will call progerr */
+        if ( SwishError( swish_handle ) )
+            croak("%s %s", SwishErrorString( swish_handle ), SwishLastErrorMsg( swish_handle ) );
+
+        /* Make sure a list is returned and it's not empty */
+        if ( !meta_list || !*meta_list )
+            XSRETURN_UNDEF;
+
+
+        while ( *meta_list )
+        {
+            /* Create a new object */
+            SV *meta = sv_newmortal();
+            sv_setref_pv( meta, CLASS, (void *)*meta_list );
+
+            /* and push onto list */
+            XPUSHs( meta );
+            meta_list++;
+
+            /* $$$ Need to bump the handle ref count here */
+        }
+
+
+# Returns an array of SWISH::API::PropertyName objects
+
+void
+SwishPropertyList( swish_handle, index_name )
+    SW_HANDLE swish_handle
+    char *index_name
+
+    PREINIT:
+        char * CLASS = "SWISH::API::PropertyName";
+        SWISH_META_LIST meta_list;
+
+    PPCODE:
+        /* Grab the list of pointers */
+        meta_list = SwishPropertyList( swish_handle, index_name );
+
+        /* Check for an error -- typically this would be an invalid index name */
+        /* Fix: calling with an invalid swish_handle will call progerr */
+        if ( SwishError( swish_handle ) )
+            croak("%s %s", SwishErrorString( swish_handle ), SwishLastErrorMsg( swish_handle ) );
+
+        /* Make sure a list is returned and it's not empty */
+        if ( !meta_list || !*meta_list )
+            XSRETURN_UNDEF;
+
+
+        while ( *meta_list )
+        {
+            /* Create a new object */
+            SV *meta = sv_newmortal();
+            sv_setref_pv( meta, CLASS, (void *)*meta_list );
+
+            /* and push onto list */
+            XPUSHs( meta );
+            meta_list++;
+
+            /* $$$ Need to bump the handle ref count here */
+        }
+
+
+
 
 
 # Misc utility routines
@@ -658,3 +742,55 @@ SwishFuzzyWordList( fw )
             list++;
         }
 
+# ********************************************************************
+#
+#                   SWISH::API::MetaName
+#
+#  Methods for accessing data about metanames
+#
+# ********************************************************************
+
+MODULE = SWISH::API       PACKAGE = SWISH::API::MetaName  PREFIX = SwishMeta
+
+# Need a DESTROY method to reduce the swish_hande ref count.
+
+
+const char *
+SwishMetaName( meta )
+    SW_META meta
+
+int
+SwishMetaType( meta )
+    SW_META meta
+
+int
+SwishMetaID( meta )
+    SW_META meta
+
+
+# ********************************************************************
+#
+#                   SWISH::API::PropertyName
+#
+#  Methods for accessing data about metanames
+#  Should set a base class for both, but they are small classes
+#  and may want different behavior in the future.
+#
+# ********************************************************************
+
+MODULE = SWISH::API       PACKAGE = SWISH::API::PropertyName  PREFIX = SwishMeta
+
+# Need a DESTROY method to reduce the swish_hande ref count.
+
+
+const char *
+SwishMetaName( meta )
+    SW_META meta
+
+int
+SwishMetaType( meta )
+    SW_META meta
+
+int
+SwishMetaID( meta )
+    SW_META meta

@@ -1,7 +1,7 @@
 
 /*
    -- This module does metaname handling for swish-e
-   -- 
+   --
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
 ** as published by the Free Software Foundation; either version 2
@@ -17,7 +17,7 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
-   -- 2001-02-12 rasc    minor changes, concering the tolower problem 
+   -- 2001-02-12 rasc    minor changes, concering the tolower problem
                  (unsigned char) problem!!!
 
 */
@@ -118,7 +118,7 @@ struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int meta
 //    tmpEntry = metaType & META_PROP
 //               ? getPropNameByName(header, metaWord)
 //               : getMetaNameByName(header, metaWord);
-               
+
 
     if (!tmpEntry)              /* metaName not found - Create a new one */
         tmpEntry = addNewMetaEntry( header, metaWord, metaType, metaID);
@@ -132,7 +132,7 @@ struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int meta
     efree( metaWord );
 
     return tmpEntry;
-        
+
 }
 
 static struct metaEntry *create_meta_entry( char *name )
@@ -144,7 +144,7 @@ static struct metaEntry *create_meta_entry( char *name )
     newEntry->sort_len = MAX_SORT_STRING_LEN;  /* default for sorting strings */
     return newEntry;
 }
-    
+
 
 
 struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID)
@@ -153,12 +153,12 @@ struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int m
     struct metaEntry *newEntry;
     struct metaEntry **metaEntryArray = header->metaEntryArray;
     newEntry = create_meta_entry( metaWord );
-    
+
     newEntry->metaType = metaType;
 
     /* If metaID is 0 asign a value using metaCounter */
     /* Loaded stored metanames from index specifically sets the metaID */
-    
+
     newEntry->metaID = metaID ? metaID : metaCounter + 1;
 
 
@@ -219,13 +219,13 @@ void init_property_list(INDEXDATAHEADER *header)
     /* only needs to be called one time */
     if ( header->property_count )
         return;
- 
+
     if ( header->propIDX_to_metaID )
         progerr("Called init_property_list with non-null header->propIDX_to_metaID");
 
     if ( !header->metaCounter )
     {
-        header->property_count = -1;  
+        header->property_count = -1;
         return;
     }
 
@@ -248,7 +248,7 @@ void init_property_list(INDEXDATAHEADER *header)
         header->property_count = -1;
 }
 
-    
+
 
 
 /**************************************************************************
@@ -392,7 +392,7 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
     /* Make sure there are meta names assigned */
     if ( !header->metaCounter )
-        return; 
+        return;
 
 
     /* should the elements be set to NULL? */
@@ -409,7 +409,7 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
         if ( meta->extractpath_default )
             efree( meta->extractpath_default );
-            
+
 
         efree( meta );
     }
@@ -433,12 +433,12 @@ char *tmptag;
 
     if (!tmplist) return 0;
     if (strcmp(tmplist->line,"*")==0) return 1;
-    
+
     tmptag=estrdup(tag);
     tmptag=strtolower(tmptag);
     while(tmplist)
     {
-    
+
         if( strcasecmp(tmptag,tmplist->line)==0 )
         {
             efree(tmptag);
@@ -461,5 +461,162 @@ int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 )
 {
     int mask = META_STRING | META_NUMBER | META_DATE | META_IGNORE_CASE;
     return (m1->metaType & mask ) == ( m2->metaType & mask);
-} 
+}
+
+
+static IndexFILE *indexf_by_name( SWISH *sw, const char *index_name )
+{
+    IndexFILE *indexf = sw->indexlist;
+
+    while ( indexf )
+    {
+        if (strcmp( index_name, indexf->line ) == 0 )
+            return indexf;
+
+        indexf = indexf->next;
+    }
+    return NULL;
+}
+
+static struct metaEntry **meta_entries_for_index( IndexFILE *indexf, int want_props )
+{
+    INDEXDATAHEADER *header = NULL;
+    int     i, n;
+    struct metaEntry **entries;
+
+    header = &indexf->header;
+
+    if ( !header->metaCounter )
+      progerr("no meta names in index");
+
+    entries = (struct metaEntry **)emalloc( sizeof(struct metaEntry *) * ( 1 + header->metaCounter ) );
+    for (i = 0, n = 0; i < header->metaCounter; i++)
+    {
+      int is_prop = (is_meta_property(header->metaEntryArray[i]) && !header->metaEntryArray[i]->alias);
+      if (is_prop == want_props)
+      {
+        entries[n] = header->metaEntryArray[i];
+        n++;
+      }
+    }
+    entries[n] = 0;
+    return( entries );
+}
+
+/*********************************************************************
+* SwishMetaList -- Return a list of the meta entries for a given index.
+*
+**********************************************************************/
+
+struct metaEntry **SwishMetaList(SWISH *sw, const char *index_name)
+{
+    IndexFILE *indexf = indexf_by_name( sw, index_name );
+
+    if ( !sw )
+      progerr("SwishMetaNames requires a valid swish handle");
+
+    if ( !indexf ) {
+      set_progerr( HEADER_READ_ERROR, sw, "Index file '%s' is not an active index file", index_name );
+      return( NULL );
+    }
+
+    if ( indexf->meta_list )
+      return indexf->meta_list;
+
+    indexf->meta_list = meta_entries_for_index( indexf, 0 );
+
+    return( indexf->meta_list );
+}
+
+/*********************************************************************
+* SwishResultMetaList -- this is the same as SwishMetaNammes but requires
+* only a result instead of an index name.
+*
+**********************************************************************/
+
+struct metaEntry **SwishResultMetaList(RESULT *result)
+{
+  IndexFILE *indexf = result->db_results->indexf;
+
+  if ( indexf->meta_list )
+    return indexf->meta_list;
+
+  indexf->meta_list = meta_entries_for_index( indexf, 0 );
+
+  return( indexf->meta_list );
+}
+
+/*********************************************************************
+* SwishPropertyList -- return a list of all the properties only.
+*
+**********************************************************************/
+
+struct metaEntry **SwishPropertyList(SWISH *sw, const char *index_name)
+{
+    IndexFILE *indexf = indexf_by_name( sw, index_name );
+
+    if ( !sw )
+      progerr("SwishPropertyNames requires a valid swish handle");
+
+    if ( !indexf ) {
+      set_progerr( HEADER_READ_ERROR, sw, "Index file '%s' is not an active index file", index_name );
+      return( NULL );
+    }
+
+    if ( indexf->prop_list )
+      return indexf->prop_list;
+
+    indexf->prop_list = meta_entries_for_index( indexf, 1 );
+
+    return( indexf->prop_list );
+}
+
+/*********************************************************************
+* SwishResultPropertyList -- this is the same as SwishPropertyNammes
+* but requires uses a search result instead of an index name.
+*
+**********************************************************************/
+
+struct metaEntry **SwishResultPropertyList(RESULT *result)
+{
+  IndexFILE *indexf = result->db_results->indexf;
+
+  if ( indexf->prop_list )
+    return indexf->prop_list;
+
+  indexf->prop_list = meta_entries_for_index( indexf, 1 );
+
+  return( indexf->prop_list );
+}
+
+/*********************************************************************
+* SwishMetaName -- returns the name for the given meta entry.
+*
+**********************************************************************/
+
+const char *SwishMetaName( struct  metaEntry *meta )
+{
+  return( meta->metaName );
+}
+
+/*********************************************************************
+* SwishMetaType -- returns the type for the given meta entry.
+* (see swish-e.h for possible types)
+*
+**********************************************************************/
+
+int SwishMetaType( struct  metaEntry *meta )
+{
+  return( meta->metaType & (META_STRING | META_NUMBER | META_DATE) );
+}
+
+/*********************************************************************
+* SwishMetaID -- returns the ID for the given meta entry.
+*
+**********************************************************************/
+
+int SwishMetaID( struct  metaEntry *meta )
+{
+  return( meta->metaID );
+}
 
