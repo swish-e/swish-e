@@ -39,9 +39,10 @@
 ** detect if we need to spend some cycles for [un]packing the number in a
 ** portable format
 */
+#ifndef LITTLE_ENDIAN
 static const int swish_endian_test_value = 1;
 #define LITTLE_ENDIAN (*(const unsigned char *)&swish_endian_test_value)
-
+#endif
 
 /* 2001-05 jmruiz */
 /* Routines for compressing numbers - Macros converted to routines */
