@@ -80,36 +80,39 @@ dnl Optional building with libxml2
 dnl Probably should be 2.4.5 + patches
 LIBXML_REQUIRED_VERSION=2.4.3
 
+AC_ARG_WITH(libxml2,[  --with-libxml2[=ARG]    enable libxml2 [ARG=DIR,maybe,no] (maybe) ],,withval=maybe)
 
-AC_ARG_WITH(libxml2,[\
-  --with-libxml2[=DIR]    use libxml2 in DIR],,withval=no)
+dnl if the user explicity asked for no libxml2
+if test "$withval" != "no"; then
+    dnl find xml2-config program
+    XML2_CONFIG="no"
+    if test "$withval" != "yes" && test "$withval" != "maybe" ; then
+        XML2_CONFIG_PATH="$withval/bin"
+        AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
+    else
+        XML2_CONFIG_PATH=$PATH
+        AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
+    fi
+    
+    dnl we can't do anything without xml2-config
+    if test "$XML2_CONFIG" = "no"; then
+        withval="no"
+    else 
+        withval=`$XML2_CONFIG --prefix`
+    fi
+    
+    dnl if withval still maybe then we have failed
+    if test "$withval" = "maybe"; then
+        withval = "no"
+    fi
+fi
 
 if test "$withval" = "no"; then
     AC_MSG_RESULT([Not building with libxml2 - use --with-libxml2 to enable])
 else
 
-    if test "$withval" != "yes"; then
-        XML2_CONFIG_PATH="$withval/bin"
-    else
-        XML2_CONFIG_PATH=$PATH
-    fi
-
-    XML2_CONFIG="no"
-    AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
-
-
-    if test "$XML2_CONFIG" = "no"; then
-    	AC_MSG_ERROR(Could not find xml2-config in '$XML2_CONFIG_PATH': check ftp://xmlsoft.org/.)
-    fi
-
-    dnl Much of this was copied from libxslt's configure.in
-    dnl
-    dnl find libxml
-    dnl
-
     AC_SUBST(LIBXML_REQUIRED_VERSION)
     AC_MSG_CHECKING(for libxml libraries >= $LIBXML_REQUIRED_VERSION) 
-
 
     AC_DEFUN(VERSION_TO_NUMBER,
     [`$1 | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
@@ -145,8 +148,7 @@ dnl Checks for zlib library. -- from libxml2 configure.in
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
 
-AC_ARG_WITH(zlib,[\
-  --with-zlib[=DIR]       use libz in DIR],,withval=no)
+AC_ARG_WITH(zlib,[  --with-zlib[=DIR]       use libz in DIR],,withval=no)
 
 if test "$withval" != "no" -a "$withval" != "yes"; then
     Z_DIR=$withval
