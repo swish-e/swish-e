@@ -603,6 +603,13 @@ getrankIDF( RESULT *r )
 
     total_words 	= sw->TotalWordPos;
     average_words	= total_words / total_files;
+	
+#ifdef DEBUG_RANK
+    fprintf(stderr, "Total words: %d   Average words: %d   Indexed words in this doc: %d  ",
+	 total_words, average_words, words );
+#endif
+
+	
     
 /* normalizing term density in a collection.
 
@@ -648,8 +655,7 @@ where c > 0 (optimized at 2 ... we think...)
     
 
 #ifdef DEBUG_RANK
-    fprintf(stderr, "Total words: %d   Indexed words in this doc: %d   Average words: %d   Density: %d    Word Weight: %d   \n",
-	total_words, words, average_words, density, word_weight );
+    fprintf(stderr, "Density: %d    Word Weight: %d   \n", density, word_weight );
 #endif
 
 
