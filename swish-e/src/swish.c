@@ -594,8 +594,8 @@ struct stat stat_buf;
 		}
 
 		
+		Mem_Summary("After indexing", 0);
 
-		checkmem();
 			/* Create an empty File */
 		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
 		
@@ -908,7 +908,7 @@ struct stat stat_buf;
 	if(wordlist) efree(wordlist);
 	if(structstr) efree(structstr);
 
-	checkmem();
+	Mem_Summary("At end of program", 1);
 	
 	exit(0);
 
