@@ -1,5 +1,7 @@
 #include "swish.h"
 #include "mem.h"
+#include "merge.h"
+#include "docprop.h"
 #include "metanames.h"
 
 typedef struct 
@@ -14,16 +16,16 @@ int metaType;   /* see metanames.h for values. All values must be "ored" */
 /* Change them if you like but do not remove them       */
 /********************************************************/
 static defaultMetaNames SwishDefaultMetaNames[]={
-    {META_FILENAME, META_PROP}, /* Filename No index (META_INDEX is not set) */
+    {AUTOPROPERTY_DOCPATH, META_PROP}, /* Filename No index (META_INDEX is not set) */
 				/* If you want filename indexed and searchable*/
 				/* just add META_INDEX to it */
-    {META_TITLE, META_PROP}, /* Title No index (META_INDEX is not set) */
+    {AUTOPROPERTY_TITLE, META_PROP}, /* Title No index (META_INDEX is not set) */
 				/* If you want title indexed and searchable */
 				/* just add META_INDEX to it */
-    {META_FILEDATE, META_PROP | META_DATE},     /* File date */
-    {META_START,META_PROP | META_NUMBER},     /* File start */
-    {META_SIZE,META_PROP | META_NUMBER},     /* File size */
-    {META_SUMMARY, META_PROP}, /* Summary No index (META_INDEX is not set) */
+    {AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE},     /* File date */
+    {AUTOPROPERTY_STARTPOS, META_PROP | META_NUMBER},     /* File start */
+    {AUTOPROPERTY_DOCSIZE, META_PROP | META_NUMBER},     /* File size */
+    {AUTOPROPERTY_SUMMARY, META_PROP}, /* Summary No index (META_INDEX is not set) */
 				/* If you want summary indexed and searchable */
 				/* just add META_INDEX to it */
     {NULL,0}                    /* End mark */
@@ -116,12 +118,12 @@ struct metaEntry* newEntry;
 	tmpEntry->metaType |= metaType;
 
 	/* Asign internal metanames if found */
-	if(strcmp(metaWord,META_FILENAME)==0) indexf->filenameProp=tmpEntry;
-	else if(strcmp(metaWord,META_TITLE)==0) indexf->titleProp=tmpEntry;
-	else if(strcmp(metaWord,META_FILEDATE)==0)indexf->filedateProp=tmpEntry;
-	else if(strcmp(metaWord,META_START)==0) indexf->startProp=tmpEntry;
-	else if(strcmp(metaWord,META_SIZE)==0) indexf->sizeProp=tmpEntry;
-	else if(strcmp(metaWord,META_SUMMARY)==0) indexf->summaryProp=tmpEntry;
+	if(strcmp(metaWord,AUTOPROPERTY_DOCPATH)==0) indexf->filenameProp=tmpEntry;
+	else if(strcmp(metaWord,AUTOPROPERTY_TITLE)==0) indexf->titleProp=tmpEntry;
+	else if(strcmp(metaWord,AUTOPROPERTY_LASTMODIFIED)==0)indexf->filedateProp=tmpEntry;
+	else if(strcmp(metaWord,AUTOPROPERTY_STARTPOS)==0) indexf->startProp=tmpEntry;
+	else if(strcmp(metaWord,AUTOPROPERTY_DOCSIZE)==0) indexf->sizeProp=tmpEntry;
+	else if(strcmp(metaWord,AUTOPROPERTY_SUMMARY)==0) indexf->summaryProp=tmpEntry;
 
 	/* #### */
 }

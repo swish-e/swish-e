@@ -89,7 +89,6 @@ ENTRYARRAY *entryp;
 int INDEX_READ_ONLY;
 char *tmp;
 int swap_mode=0; /* No swap */
-int extended_flag=0; /* No extended */
 char keychar=0;
 int keychar2;
 char *keywords=NULL;
@@ -119,14 +118,18 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 	hasindex = hasdir = hasconf = hasverbose = hasMetaName = 0;
 	stopwords = 0;
 	conflist = tmplist = NULL;
-		/* Get swish handle */
-	sw=SwishNew();
 	structure = 1;
 	if(!lenwordlist)wordlist=(char *)emalloc((lenwordlist=MAXSTRLEN) + 1);
 	wordlist[0] = '\0';
 	if(!lenstructstr)structstr=(char *)emalloc((lenstructstr=MAXSTRLEN)+1);
 	structstr[0] = '\0';
 	setlocale(LC_CTYPE,"");
+
+
+	/* init cmd options, set default values   */
+	sw=SwishNew();				/* Get swish handle */
+	
+
 
 	/* By default we are set up to use the first data source in the list */
  	IndexingDataSource = data_sources[0];
@@ -360,10 +363,14 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 					/* info is preserved in temporal */
 					/* files */
 		}
-		else if (c == 'x')
+		else if (c == 'x') {
 					/* Jose Ruiz 09/00 */
 					/* Search proc will show more info */
-			extended_flag = 1;
+					/* rasc 2001-02 */
+			/*$$$ ToDo: better check if arg exists... Test only */
+			sw->opt.extendedformat = *(++argv);
+			argc--;
+		}
 		else
 			usage();
 		if (argc == 0)
@@ -754,7 +761,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			/* print out "original" search words */
 		printf("# Search words: %s\n#\n",wordlist);
 
-		rc=search(sw,wordlist, structure, extended_flag);
+		rc=search(sw,wordlist, structure);
 
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
@@ -780,7 +787,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		}
 		if(rc>0) {
                 	printf("# Number of hits: %d\n",rc);
-                	printsortedresults(sw,extended_flag);
+                	printsortedresults(sw);
 			printf(".\n");
 		} else if(!rc) {
 			printf("err: no results\n.\n");

@@ -81,6 +81,9 @@ int i;
 	sw->propModeToSort=NULL;
 
 
+	sw->opt.extendedformat = NULL;
+
+
 		/* File system parameters */
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->inode_hash[i]=NULL;
@@ -295,7 +298,7 @@ char *field;
 		}
         }
 	i=0;
-	i=search(sw,words,structure,0);   /* search with no eco */
+	i=search(sw,words,structure);   /* search with no eco */
         if(slsort) freeStringList(slsort);
         if(slprops) freeStringList(slprops);
 	return i;

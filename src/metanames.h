@@ -13,14 +13,6 @@
 #define is_meta_date(x)  ((x)->metaType & META_DATE)
 #define is_meta_string(x)  (((x)->metaType | (META_INDEX | META_PROP)) == (META_INDEX | META_PROP))
 
-/* Definitions for internal swish docs metafields */
-#define META_FILENAME "swishfilename"      
-#define META_TITLE "swishtitle"      
-#define META_FILEDATE "swishfiledate"      
-#define META_SUMMARY "swishsummary"      
-#define META_START "swishstart"      
-#define META_SIZE "swishsize"      
-
 /* Macro to check if both metaNames are of the same type (number, date, ...) */
 #define match_meta_type(x,y)  (((x)>>META_PROP)==((y)>>META_PROP))
 

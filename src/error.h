@@ -41,6 +41,5 @@ void progerr _AP ((char *));
 #define SWISH_LISTRESULTS_EOF ERROR_BASE-11
 #define INVALID_SWISH_HANDLE ERROR_BASE-12
 
-char *BuildErrorString(char *,int *,char *,char *);
 void progerr(char *);
 char *getErrorString(int);

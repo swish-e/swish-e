@@ -94,6 +94,8 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
+** 20001-02-03 rasc  search call changed
+**
 */
 
 #include "swish.h"
@@ -296,11 +298,11 @@ IndexFILE *tmplist;
 }
 
 
-int search(sw, words, structure,extended_info)
+int search(sw, words, structure)
 SWISH *sw;
 char *words;
 int structure;
-int extended_info;
+
 {
 int i, j, k, metaID, indexYes, totalResults;
 char word[MAXWORDLEN];
@@ -436,7 +438,7 @@ unsigned char PhraseDelimiterString[2];
 		if(indexlist->header.applySoundexRules)
 			tmplist = soundex_words_in_query(sw,indexlist,tmplist);
 			/* Echo index file, fixed search, stopwords */
-		if (extended_info)
+		if (sw->opt.extendedformat)
 		{
 			printf("# Index File: %s\n",indexlist->line);
 			printheader(&indexlist->header,stdout,indexlist->header.savedasheader, indexlist->header.totalwords, indexlist->header.totalfiles,0);
@@ -1823,70 +1825,6 @@ double  num;
 }
 
 
-/* Prints the final results of a search.
-*/
-
-void printsortedresults(sw, extended_info)
-SWISH *sw;
-int extended_info;
-{
-RESULT *sp;
-int resultmaxhits;
-	resultmaxhits=sw->maxhits;
-
-	while ((sp=SwishNext(sw))) 
-	{
-		if (!sw->beginhits) {
-			if (resultmaxhits) 
-			{
-				if (sw->useCustomOutputDelimiter)
-				{
-					if(extended_info)
-						printf("%d%s%s%s%s%s%s%s%s%s%s%s%d%s%d",
-						    sp->rank,           sw->customOutputDelimiter,
-						    sp->indexf->line,   sw->customOutputDelimiter,
-						    sp->filename,       sw->customOutputDelimiter,
-						    sp->ISOTime,        sw->customOutputDelimiter,
-						    sp->title,          sw->customOutputDelimiter,
-						    sp->summary,        sw->customOutputDelimiter,
-						    sp->start,          sw->customOutputDelimiter,
-						    sp->size);
-					else
-						printf("%d%s%s%s%s%s%d",
-						    sp->rank,           sw->customOutputDelimiter,
-						    sp->filename,       sw->customOutputDelimiter,
-						    sp->title,          sw->customOutputDelimiter,
-						    sp->size);
-				}
-				else
-				{
-					if(extended_info)
-						printf("%d %s %s \"%s\" \"%s\" \"%s\" %d %d",
-						    sp->rank,
-						    sp->indexf->line,
-						    sp->filename,
-						    sp->ISOTime,
-						    sp->title,
-						    sp->summary,
-						    sp->start,
-						    sp->size);
-					else
-						printf("%d %s \"%s\" %d",
-						    sp->rank,
-						    sp->filename,
-						    sp->title,
-						    sp->size);
-				}
-				printSearchResultProperties(sw, sp->Prop);
-				printf("\n");
-				if (resultmaxhits > 0) resultmaxhits--; /* Modified DN 08/29/99  */
-			}
-		}
-		if(sw->beginhits) sw->beginhits--;
-		sp = sp->nextsort;
-	}
-}
-
 /* Does an index file have a readable format?
 */
 
@@ -2050,7 +1988,9 @@ struct file *fileInfo;
 		fileInfo = readFileEntry(indexf, tmp->filenum);
 		tmp->filename=estrdup(fileInfo->fi.filename);
 
-  		strftime(tmp->ISOTime,sizeof(tmp->ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fileInfo->fi.mtime));
+//$$ISOTime  		strftime(tmp->ISOTime,sizeof(tmp->ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fileInfo->fi.mtime));
+//$$ New:
+		tmp->last_modified = fileInfo->fi.mtime;
 
 			/* Just to save some little memory */
 		if(fileInfo->fi.filename==fileInfo->fi.title)
