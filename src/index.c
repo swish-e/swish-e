@@ -1458,7 +1458,8 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                  metaID = uncompress2(&p);
 
                  chunk_size = *(unsigned int *)p;
-                 p += sizeof(unsigned int);
+                 memcpy((char *)&chunk_size,(char *)p,sizeof(chunk_size));
+                 p += sizeof(chunk_size);
 
                  filenum = 0;
                  while(chunk_size)
@@ -2598,17 +2599,22 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
                 /* add to the linked list and reset values */
                 /* Update the size of chunk's data in *size_p */
                 tmp = q - (size_p + sizeof(unsigned int));
+
                 /* Write the size */
-                *(unsigned int *)size_p = tmp;
+                memcpy(size_p, (char *)&tmp, sizeof(tmp) );
+
                 /* Add to the linked list keeping the data sorted by metaname, filenum */
                 /* Allocate memory space */
                 coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
-               /* Copy content to it */
+
+                /* Copy content to it */
                 memcpy(coalesced_buffer,buffer,q-buffer);
+
                 /* Add to the linked list */
                 add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
             }
-        /* Reset values */
+
+            /* Reset values */
             curfilenum = 0;
             curmetaID = metaID;
             q = buffer + sizeof(void *);   /* Make room for linked list pointer */        
@@ -2631,6 +2637,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
                 sz_buffer = sz_buffer * 2 +worst_case_size;
                 if(buffer != static_buffer)
                     efree(buffer);
+
                 /* Adjust pointers */
                 q = new_buffer + (q - buffer);
                 size_p = new_buffer + (size_p -buffer);
@@ -2641,17 +2648,23 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             /* add to the linked list and reset values */
             /* Update the size of chunk's data in *size_p */
             tmp = q - (size_p + sizeof(unsigned int));  /* tmp contains the size */
+
             /* Write the size */
-            *(unsigned int *)size_p = tmp;
+            memcpy(size_p,(char *)&tmp,sizeof(tmp));
+
             /* Add to the linked list keeping the data sorted by metaname, filenum */
             /* Allocate memory space */
             coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
+
             /* Copy content to it */
             memcpy(coalesced_buffer,buffer,q-buffer);
+
             /* Add to the linked list */
             add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
 
+
             /* Reset values */
+
             curfilenum = 0;
             curmetaID = metaID;
             q = buffer + sizeof(void *);   /* Make room for linked list pointer */
@@ -2685,15 +2698,19 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     if (num_locs)
     {
         /* add to the linked list and reset values */
+
         /* Update the size of chunk's data in *size_p */
         tmp = q - (size_p + sizeof(unsigned int));  /* tmp contains the size */
         /* Write the size */
-        *(unsigned int *)size_p = tmp;
+        memcpy(size_p,(char *)&tmp,sizeof(tmp));
+
         /* Add to the linked list keeping the data sorted by metaname, filenum */
         /* Allocate memory space */
         coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
+
         /* Copy content to it */
         memcpy(coalesced_buffer,buffer,q-buffer);
+
         /* Add to the linked list */
         add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
     }

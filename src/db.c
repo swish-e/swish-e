@@ -224,15 +224,17 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     for(l=ep->allLocationList;l;)
     {
         compressed_data = (unsigned char *) l;
-            /* Get next element */
+
+        /* Get next element */
         next = *(LOCATION **)compressed_data;
-            /* Jump pointer to next element */
+
+        /* Jump pointer to next element */
         p = compressed_data + sizeof(LOCATION *);
 
         metaID = uncompress2(&p);
 
-        chunk_size = *(unsigned int *)p;
-        p += sizeof(unsigned int);
+        memcpy((char *)&chunk_size,(char *)p,sizeof(chunk_size));
+        p += sizeof(chunk_size);
 
         if(curmetaID!=metaID) 
         {
@@ -263,21 +265,24 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
             }
 
-                /* store metaID in buffer */
+            /* store metaID in buffer */
             curmetaID=metaID;
             q = compress3(curmetaID,q);
 
-                /* preserve position for offset to next
-                ** metaname. We do not know its size
-                ** so store it as a packed long */ 
+
+            /* preserve position for offset to next
+            ** metaname. We do not know its size
+            ** so store it as a packed long */ 
             curmetanamepos=q - sw->Index->worddata_buffer;
 
-                /* Store 0 and increase pointer */
+            /* Store 0 and increase pointer */
             tmp=0L;
             PACKLONG2(tmp,q);
-
             q+=sizeof(unsigned long);
+
         }
+
+
         /* Store all data for this chunk */
         /* First check for enough space 
         **
@@ -410,9 +415,11 @@ unsigned char *q;
     curmetaID_2 = uncompress2(&p2);
     nextposmetaname_1 = UNPACKLONG2(p1); 
     p1 += sizeof(long);
+    
     curmetanamepos_1 = p1 - olddata;
     nextposmetaname_2 = UNPACKLONG2(p2); 
     p2 += sizeof(long);
+
     curmetanamepos_2 = p2 - newdata;
 
 
@@ -422,11 +429,12 @@ unsigned char *q;
         p = compress3(min(curmetaID_1,curmetaID_2),p);
 
         curmetanamepos = p - sw->Index->worddata_buffer;
-                /* Store 0 and increase pointer */
-        tmp=0L;
 
+        /* Store 0 and increase pointer */
+        tmp=0L;
         PACKLONG2(tmp,p);
         p+=sizeof(unsigned long);
+
         if(curmetaID_1 == curmetaID_2)
         {
             /* Both buffers have the same metaID - In this case I have to know
@@ -438,6 +446,7 @@ unsigned char *q;
                 /* Read on all items */
                 uncompress_location_values(&p1,&r_flag,&tmpval,&frequency);
                 last_filenum += tmpval;  
+
                 if(frequency > POSDATA_STACK)
                     posdata = (int *) emalloc(frequency * sizeof(int));
                 else
