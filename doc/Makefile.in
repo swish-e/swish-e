@@ -2,39 +2,53 @@
 #
 # $Id$
 #
-# Need to add a install_man: tag to convert and install docs as man pages
 
-SHELL       = /bin/sh
-srcdir      = @srcdir@
-VPATH       = $(srcdir)
-prefix      = @prefix@
-exec_prefix = @exec_prefix@
-bindir      = $(prefix)/bin
-mandir      = $(prefix)/man/man1
-perl		= @PERL@
-libdir		= @libdir@
+prefix   = @prefix@
+mandir   = @mandir@/man1
+MANPAGES = src/SWISH-RUN.1 src/SWISH-CONFIG.1 src/SWISH-RUN.1 src/SWISH-FAQ.1 src/SWISH-LIBRARY.1 src/SWISH-PERL.1
+VERSION  = release 2.1.10Devl6
 
-all:	html pod
+
+.PHONY: all html pod pdf man install-man clean realclean
+.SUFFIXES: .pod .1
+
+all:	html pod man
 
 html:
-	echo "Building HTML srcdir=$(srcdir)"
-	bin/build
+	@echo "Building HTML"
+	@bin/build
 
 pod:
 	chmod 644 src/*.pod
+	chmod 644 ../*.pod ../README
 	cp src/*.pod ..
 	pod2text src/README.pod > ../README
+	chmod 444 ../*.pod ../README
+
+
+.pod.1: $(MANPAGES)
+	pod2man --center="SWISH-E Documentation" --lax --release="$(VERSION)" $< > $@
+
+man: $(MANPAGES)
+
+install-man: man
+	cp $(MANPAGES) $(mandir)
+	
 
 pdf:
 	bin/build -d
 	cp -f rel_ps/swish-e_documentation.pdf ..
 	cp -f rel_ps/swish-e_documentation.ps ..
 	rm -rf rel_ps
-	echo "swish-e_documentation.pdf"
+	@echo "swish-e_documentation.pdf"
+
+
+
+realclean: clean
+	rm Makefile
 
 clean:
 	rm -rf rel_ps
 	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
+	rm -rf man
 
-realclean: clean
-	rm Makefile
