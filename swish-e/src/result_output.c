@@ -83,7 +83,7 @@ char   *delimiter;
      r->count = ++counter;		/* set rec. counter for output */
 
      if (!sw->beginhits) {
-	if (sw->maxhits) {
+	if (resultmaxhits) {
 	   if (sw->opt.extendedformat)
 	      print_ext_resultentry (sw, NULL, sw->opt.extendedformat, r);
 	   else {
