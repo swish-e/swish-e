@@ -598,15 +598,14 @@ int     sortresults(SWISH * sw, int structure)
 /* function for comparing data in order to
 get sorted results with qsort (including combinations of asc and descending
 fields */
+
 int     compFileProps(const void *s1, const void *s2)
 {
     struct file *r1 = *(struct file * const *) s1;
     struct file *r2 = *(struct file * const *) s2;
     propEntry *p1,
            *p2;
-    int     metaID = r1->currentSortProp->metaID,
-            rc = 0,
-            len = 0;
+    int     metaID = r1->currentSortProp->metaID;
 
     /* Find the current metaID */
 	if(metaID < r1->docProperties->n)
@@ -619,30 +618,7 @@ int     compFileProps(const void *s1, const void *s2)
 	else
 		p2 = NULL;
 
-    /* Check for two values */
-    if (!p1 && !p2)
-        return 0;
-
-    if (!p1 && p2)
-        return -1;
-
-    if (p1 && !p2)
-        return 1;
-
-    if (is_meta_number(r1->currentSortProp) || is_meta_date(r1->currentSortProp))
-    {
-        /* The PACKEDLONG is a string */
-        rc = memcmp( (const void *)p1->propValue, (const void *)p2->propValue, p1->propLen );
-    }
-
-    else if (is_meta_string(r1->currentSortProp))
-    {
-        len = Min(p1->propLen, p2->propLen);
-        rc = strncasecmp(p1->propValue, p2->propValue, len);
-        if (!rc)
-            rc = p1->propLen - p2->propLen;
-    }
-    return rc;
+    return Compare_Properties( r1->currentSortProp ,p1, p2 );
 }
 
 int is_presorted_prop(SWISH *sw, char *name)
