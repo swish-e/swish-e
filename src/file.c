@@ -347,7 +347,6 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
     FileProp *fprop;
     struct stat stbuf;
 
-
     /* create an initilized fprop structure */
     
     fprop = init_file_properties(sw);
@@ -362,7 +361,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
     /* for http.c it means the last mod date is the temp file date */
     /* Probably this entire function isn't needed - moseley */
 
-    if (stat(fprop->work_path, &stbuf))
+    if (!stat(fprop->work_path, &stbuf))
     {
         fprop->fsize = (long) stbuf.st_size;
         fprop->mtime = stbuf.st_mtime;
