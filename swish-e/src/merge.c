@@ -858,7 +858,6 @@ static int merge_words(
                 ip3 = ip2;
                 buffer2 = NULL;
             }
-printf("%s\n",ip3->word);
             addentryMerge(sw, ip3);
 
             if(!result)
