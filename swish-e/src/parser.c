@@ -165,7 +165,7 @@ static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
 static void error(void *data, const char *msg, ...);
 static void warning(void *data, const char *msg, ...);
-static void process_htmlmeta( PARSE_DATA *parse_data, const char ** atts );
+static void process_htmlmeta( PARSE_DATA *parse_data, const char ** attr );
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
 static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
@@ -174,16 +174,20 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 static void free_parse_data( PARSE_DATA *parse_data ); 
 static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
-static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry, char *tag );
+static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
 static int get_structure( PARSE_DATA *parse_data );
 static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore );
 static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag );
 static int pop_stack( MetaStack *stack );
-static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **atts );
-static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append );
+static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **attr );
+static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append );
 static char *isXMLClassAttribute(SWISH * sw, char *tag);
+
+static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *message );
+static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len );
+
 
 
 /*********************************************************************
@@ -637,14 +641,13 @@ static void start_hndl(void *data, const char *el, const char **attr)
     /* Index the content of attributes */
     if ( !parse_data->parsing_html && attr )
     {
+        int class_found = 0;
         /* Allow <foo class="bar"> to look like <foo.bar> */
         if ( parse_data->sw->XMLClassAttributes )
-            start_XML_ClassAttributes( parse_data, tag, attr, &meta_append, &prop_append );
+            class_found = start_XML_ClassAttributes( parse_data, tag, attr, &meta_append, &prop_append );
             
-        
-
         /* Index XML attributes */
-        if ( parse_data->sw->UndefinedXMLAttributes != UNDEF_META_DISABLE )
+        if ( !class_found && parse_data->sw->UndefinedXMLAttributes != UNDEF_META_DISABLE )
             index_XML_attributes( parse_data, tag, attr );
     }
 
@@ -754,16 +757,21 @@ static void char_hndl(void *data, const char *txt, int txtlen)
         flush_buffer( parse_data, 0 );  // flush upto last word - somewhat expensive
 
 
-    
+
     if ( (ret = Convert_to_latin1( parse_data, txt, txtlen )) != 0 )
     {
         if ( parse_data->sw->parser_warn_level >= 1 )
             xmlParserWarning(parse_data->ctxt, "Failed to convert internal UTF-8 to Latin-1.\nIndexing w/o conversion.\n");
-            
+
+        if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
+            debug_show_parsed_text( parse_data, (char *)txt, txtlen );
+
         append_buffer( &parse_data->text_buffer, txt, txtlen );
         return;
     }
 
+    if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
+        debug_show_parsed_text( parse_data, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
 
     /* Buffer the text */
     append_buffer( &parse_data->text_buffer, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
@@ -891,8 +899,12 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
         }
     }
 
+
     if ( m )
     {
+        if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+            debug_show_tag( tag, parse_data, 1, "(MetaName)" );
+
         flush_buffer( parse_data, 6 );  /* new meta tag, so must flush */
         push_stack( &parse_data->meta_stack, endtag, m, meta_append, 0 );
         parse_data->structure[IN_META_BIT]++;
@@ -900,7 +912,11 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 
     /* If set to "error" on undefined meta tags, then error */
     else if ( sw->UndefinedMetaTags == UNDEF_META_ERROR )
-        progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
+            progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
+
+    else if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+        debug_show_tag( tag, parse_data, 1, "" );
+            
 
 
 
@@ -935,6 +951,9 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
     /* Don't allow matching across tag boundry */
     if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
        parse_data->word_pos++;
+
+    if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+        debug_show_tag( tag, parse_data, 0, "" );
 
 }
 
@@ -1085,36 +1104,52 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 /*********************************************************************
 *   Allow <foo class="bar"> to start "foo.bar" meta tag
 *
+*   Returns true if any found
+*
 *********************************************************************/
-static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **atts, int *meta_append, int *prop_append )
+static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append )
 {
     char tagbuf[256];  /* we have our limits */
     char *t;
     int   i;
     int  taglen = strlen( tag );
     SWISH *sw = parse_data->sw;
+    int   found = 0;
     
     strcpy( tagbuf, tag );
     t = tagbuf + taglen;
     *t = '.';  /* hard coded! */
     t++;
 
-    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+
+    for ( i = 0; attr[i] && attr[i+1]; i+=2 )
     {
-        if ( !isXMLClassAttribute( sw, (char *)atts[i]) )
+        if ( !isXMLClassAttribute( sw, (char *)attr[i]) )
             continue;
-            
-        if ( strlen( (char *)atts[i+1] ) + taglen + 2 > 256 )
+
+
+        /* Is the tag going to be too long? */
+        if ( strlen( (char *)attr[i+1] ) + taglen + 2 > 256 )
         {
             warning("ClassAttribute on tag '%s' too long\n", tag );
             continue;
         }
 
+
+        /* All metanames are currently lowercase -- would be better to force this in metanames.c */
         strtolower( tagbuf );
         
-        strcpy( t, (char *)atts[i+1] );         /* create tag.attribute metaname */
+        strcpy( t, (char *)attr[i+1] );         /* create tag.attribute metaname */
         start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append );
+        found++;
+
+        /* Now, nest attributes */
+        if ( sw->UndefinedXMLAttributes != UNDEF_META_DISABLE )
+            index_XML_attributes( parse_data, tagbuf, attr );
+
     }
+
+    return found;
 
 }
 
@@ -1123,6 +1158,8 @@ static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, cons
 *
 *   Note: this returns a pointer to the config set tag, so don't free it!
 *   Duplicate code!
+*
+*   This does a case-insensitive lookup
 *
 *
 *********************************************************************/
@@ -1136,7 +1173,7 @@ static char *isXMLClassAttribute(SWISH * sw, char *tag)
         
     while (tmplist)
     {
-        if (strcmp(tag, tmplist->line) == 0)
+        if (strcasecmp(tag, tmplist->line) == 0)
             return tmplist->line;
 
         tmplist = tmplist->next;
@@ -1151,7 +1188,7 @@ static char *isXMLClassAttribute(SWISH * sw, char *tag)
 *   This extracts out the attributes and contents and indexes them
 *
 *********************************************************************/
-static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **atts )
+static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **attr )
 {
     char tagbuf[256];  /* we have our limits */
     char *content;
@@ -1171,24 +1208,31 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
     *t = '.';  /* hard coded! */
     t++;
 
-    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+    for ( i = 0; attr[i] && attr[i+1]; i+=2 )
     {
         meta_append = 0;
         prop_append = 0;
 
-        if ( strlen( (char *)atts[i] ) + taglen + 2 > 256 )
+        /* Skip attributes that are XMLClassAttribues */
+        if ( isXMLClassAttribute( sw, (char *)attr[i] ) )
+            continue;
+
+
+        if ( strlen( (char *)attr[i] ) + taglen + 2 > 256 )
         {
-            warning("Attribute on tag '%s' too long\n", tag );
+            warning("Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
             continue;
         }
         
-        strcpy( t, (char *)atts[i] );         /* create tag.attribute metaname */
-        content = (char *)atts[i+1];
+        strcpy( t, (char *)attr[i] );         /* create tag.attribute metaname */
+        content = (char *)attr[i+1];
 
         if ( !*content )
             continue;
 
         strtolower( tagbuf );
+
+
 
         flush_buffer( parse_data, 1 );
         start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append );
@@ -1207,7 +1251,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 *
 *********************************************************************/
 
-static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
+static void process_htmlmeta( PARSE_DATA *parse_data, const char **attr )
 {
     char *metatag = NULL;
     char *content = NULL;
@@ -1220,13 +1264,13 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
     if ( parse_data->fprop->index_no_content )
         return;
 
-    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
+    for ( i = 0; attr[i] && attr[i+1]; i+=2 )
     {
-        if ( (strcmp( atts[i], "name" ) == 0 ) && atts[i+1] )
-            metatag = (char *)atts[i+1];
+        if ( (strcmp( attr[i], "name" ) == 0 ) && attr[i+1] )
+            metatag = (char *)attr[i+1];
 
-        else if ( (strcmp( atts[i], "content" ) == 0 ) && atts[i+1] )
-            content = (char *)atts[i+1];
+        else if ( (strcmp( attr[i], "content" ) == 0 ) && attr[i+1] )
+            content = (char *)attr[i+1];
     }
 
     if ( metatag && content )
@@ -1478,7 +1522,7 @@ static void warning(void *data, const char *msg, ...)
 *
 *********************************************************************/
 
-static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry, char *tag )
+static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag )
 {
     char *href = NULL;
     int  i;
@@ -1487,12 +1531,12 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **atts, stru
     SWISH      *sw = parse_data->sw;
 
 
-    if ( !atts )
+    if ( !attr )
         return NULL;
 
-    for ( i = 0; atts[i] && atts[i+1]; i+=2 )
-        if ( (strcmp( atts[i], tag ) == 0 ) && atts[i+1] )
-            href = (char *)atts[i+1];
+    for ( i = 0; attr[i] && attr[i+1]; i+=2 )
+        if ( (strcmp( attr[i], tag ) == 0 ) && attr[i+1] )
+            href = (char *)attr[i+1];
 
     if ( !href )
         return NULL;
@@ -1694,6 +1738,85 @@ static int pop_stack( MetaStack *stack )
     return stack->pointer;
 }
 
-        
-        
+static int debug_get_indent( INDEXDATAHEADER *header )
+{
+    int i;
+    int indent = 0;
+    
+    for (i = 0; i < header->metaCounter; i++)
+        if ( is_meta_index(header->metaEntryArray[i]) )
+            indent += header->metaEntryArray[i]->in_tag;
 
+    return indent;
+}
+            
+        
+        
+static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *message )
+{
+    int  indent = debug_get_indent( &parse_data->sw->indexlist->header);
+    int  i;
+
+    for (i=0; i<indent; i++)
+        printf("    ");
+
+    printf("<%s%s> %s\n", start ? "" : "/", tag, message );
+}
+
+static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
+{
+    int indent = debug_get_indent( &parse_data->sw->indexlist->header);
+    int i;
+    char indent_buf[1000];
+    int  last_newline = 0;
+
+
+    indent_buf[0] = '\0';
+
+    for (i=0; i<indent; i++)
+        strcat( indent_buf, "    ");
+            
+
+    i = 0;
+    while ( i < len )
+    {
+        printf("%s", indent_buf );
+
+        /* skip leading space */
+        while ( i < len && isspace((int)txt[i] ) )
+            i++;
+
+        /* print text */
+        while ( i < len )
+        {
+            if ( txt[i] == '\n' )
+            {
+                printf("\n");
+                i++;
+                last_newline=1;
+                continue;
+            }
+
+            if ( !isprint((int)txt[i] ))
+            {
+                i++;
+                continue;
+            }
+
+            printf("%c", txt[i] );
+            i++;
+
+            if ( i + strlen( indent_buf ) > 65 )
+            {
+                printf("\n");
+                last_newline=1;
+                continue;
+            }
+        }
+    }
+
+
+    if ( !last_newline )
+        printf("\n");
+}
+    

@@ -852,6 +852,8 @@ int     getnumPropertiesToDisplay(SWISH *);
 #define DEBUG_PARSED_WORDS		(1<<1)
 #define DEBUG_PROPERTIES		(1<<2)
 #define DEBUG_REGEX 	    	(1<<3)
+#define DEBUG_PARSED_TAGS    	(1<<4)
+#define DEBUG_PARSED_TEXT 	   	(1<<5)
 
 /* These are only checked while searching */
 
