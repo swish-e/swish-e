@@ -34,11 +34,11 @@
 **  ARRAY *ARRAY_Create(FILE *fp)   
 **    Creates a virtual array. Returns the handle of the array
 **
-**  ARRAY *ARRAY_Open(FILE *fp, unsigned long root_page) 
+**  ARRAY *ARRAY_Open(FILE *fp, sw_off_t root_page) 
 **    Opens an existent Virtual Array. root_page is de value returned by
 **    Array_Close. Returns de handle of the array.
 **
-**  unsigned long ARRAY_Close(ARRAY *arr)
+**  sw_off_t ARRAY_Close(ARRAY *arr)
 **    Closes and frees memory. arr is the value returned by ARRAY_Create or
 **    ARRAY_Open. Returns the root page of the array. This value must be
 **
@@ -63,19 +63,19 @@
 /* A ARRAY page size */
 #define ARRAY_PageSize 4096
 
-#define SizeInt32 4
+#define SizeOfElement sizeof(long)
 
 /* Round to ARRAY_PageSize */
-#define ARRAY_RoundPageSize(n) (((sw_off_t)(n) + (sw_off_t)(ARRAY_PageSize - 1)) & (sw_off_t)(~(ARRAY_PageSize - 1)))
+#define ARRAY_RoundPageSize(n) (((sw_off_t)(n) + (sw_off_t)(ARRAY_PageSize - 1)) & (~(sw_off_t)(ARRAY_PageSize - 1)))
 
-#define ARRAY_PageHeaderSize (1 * SizeInt32) 
+#define ARRAY_PageHeaderSize (1 * sizeof(sw_off_t)) 
 
 #define ARRAY_PageData(pg) ((pg)->data + ARRAY_PageHeaderSize)
-#define ARRAY_Data(pg,i) (ARRAY_PageData((pg)) + (i) * SizeInt32)
+#define ARRAY_Data(pg,i) (ARRAY_PageData((pg)) + (i) * SizeOfElement)
 
-#define ARRAY_SetNextPage(pg,num) ( *(int *)((pg)->data + 0 * SizeInt32) = PACKLONG(num))
+#define ARRAY_SetNextPage(pg,num) (sw_off_t)( *(sw_off_t *)((pg)->data + 0 * sizeof(sw_off_t)) = PACKFILEOFFSET(num))
 
-#define ARRAY_GetNextPage(pg,num) ( (num) = UNPACKLONG(*(int *)((pg)->data + 0 * SizeInt32)))
+#define ARRAY_GetNextPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(sw_off_t *)((pg)->data + 0 * sizeof(sw_off_t))))
 
 
 int ARRAY_WritePageToDisk(FILE *fp, ARRAY_Page *pg)
@@ -160,11 +160,11 @@ ARRAY_Page *tmp,*next;
     return 0;
 }
 
-ARRAY_Page *ARRAY_ReadPageFromDisk(FILE *fp, unsigned long page_number)
+ARRAY_Page *ARRAY_ReadPageFromDisk(FILE *fp, sw_off_t page_number)
 {
 ARRAY_Page *pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + ARRAY_PageSize);
 
-    sw_fseek(fp,(sw_off_t)((sw_off_t)page_number * (sw_off_t)ARRAY_PageSize),SEEK_SET);
+    sw_fseek(fp,(sw_off_t)(page_number * (sw_off_t)ARRAY_PageSize),SEEK_SET);
     sw_fread(pg->data,ARRAY_PageSize, 1, fp);
 
     ARRAY_GetNextPage(pg,pg->next);
@@ -174,9 +174,9 @@ ARRAY_Page *pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + ARRAY_PageSize);
     return pg;
 }
 
-ARRAY_Page *ARRAY_ReadPage(ARRAY *b, unsigned long page_number)
+ARRAY_Page *ARRAY_ReadPage(ARRAY *b, sw_off_t page_number)
 {
-int hash = page_number % ARRAY_CACHE_SIZE;
+int hash = (int)(page_number % (sw_off_t)ARRAY_CACHE_SIZE);
 ARRAY_Page *tmp;
     if((tmp = b->cache[hash]))
     {
@@ -227,7 +227,7 @@ int size = ARRAY_PageSize;
 
     pg->next = 0;
 
-    pg->page_number = (unsigned long)(offset/(sw_off_t)ARRAY_PageSize);
+    pg->page_number = offset / (sw_off_t)ARRAY_PageSize;
 
     /* add to cache */
     pg->modified = 1;
@@ -297,7 +297,7 @@ int size = ARRAY_PageSize;
 }
 
 
-ARRAY *ARRAY_Open(FILE *fp, unsigned long root_page)
+ARRAY *ARRAY_Open(FILE *fp, sw_off_t root_page)
 {
 ARRAY *b;
 int size = ARRAY_PageSize;
@@ -309,9 +309,9 @@ int size = ARRAY_PageSize;
     return b;
 }
 
-unsigned long ARRAY_Close(ARRAY *bt)
+sw_off_t ARRAY_Close(ARRAY *bt)
 {
-unsigned long root_page = bt->root_page;
+sw_off_t root_page = bt->root_page;
     ARRAY_FlushCache(bt);
     ARRAY_CleanCache(bt);
     efree(bt);
@@ -321,17 +321,17 @@ unsigned long root_page = bt->root_page;
 
 int ARRAY_Put(ARRAY *b, int index, unsigned long value)
 {
-unsigned long next_page; 
+sw_off_t next_page; 
 ARRAY_Page *root_page, *tmp = NULL, *prev; 
 int i, hash, page_reads, page_index;
 
-    page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
+    page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
 
     root_page = ARRAY_ReadPage(b, b->root_page);
-    next_page = UNPACKLONG(*(unsigned long *)ARRAY_Data(root_page, hash));
+    next_page = UNPACKFILEOFFSET(*(sw_off_t *)ARRAY_Data(root_page, hash));
 
     prev = NULL;
     for(i = 0; i <= page_reads; i++)
@@ -342,7 +342,7 @@ int i, hash, page_reads, page_index;
             ARRAY_WritePage(b,tmp);
             if(!i)
             {
-                *(unsigned long *)ARRAY_Data(root_page,hash) = PACKLONG(tmp->page_number);
+                *(sw_off_t *)ARRAY_Data(root_page,hash) = PACKFILEOFFSET(tmp->page_number);
                  ARRAY_WritePage(b,root_page);
             }
             else
@@ -371,17 +371,19 @@ int i, hash, page_reads, page_index;
 
 unsigned long ARRAY_Get(ARRAY *b, int index)
 {
-unsigned long next_page, value; 
+sw_off_t next_page;
+unsigned long value; 
 ARRAY_Page *root_page, *tmp;
 int i, hash, page_reads, page_index;
 
-    page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
-    page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
+    page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
+    page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
 
     root_page = ARRAY_ReadPage(b, b->root_page);
-    next_page = UNPACKLONG(*(unsigned long *)ARRAY_Data(root_page, hash));
+/* $$$$ to be fixed $$$ */
+    next_page = UNPACKLONG(*(long *)ARRAY_Data(root_page, hash));
 
     tmp = NULL;
     for(i = 0; i <= page_reads; i++)
