@@ -46,6 +46,7 @@
 #include "metanames.h"
 #include "result_output.h"
 #include "result_sort.h"
+#include "entities.h"
 
 
 
@@ -105,17 +106,24 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *strin
         return 0;
     }
 
+
+    /* remove leading and trailing white space (strtoul() removes leading) */
+    {
+        int i = strlen( string );
+
+        while ( i  && isspace( (int)string[i-1]) )
+            string[--i] = '\0';
+
+        while ( isspace( (int)*string) )
+            string++;
+
+    }
+
+
+
     if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
     {
-        int j = strlen( string );
-
-        /* remove trailing white space (strtoul() removes leading) */
-
-        
-        while ( j  && isspace( (int)string[j-1]) )
-            string[--j] = '\0';
-
-        
+        int j;
 
         newstr = emalloc( sizeof( num ) + 1 );
         num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
@@ -158,7 +166,7 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *strin
 
 
 /* Add the given file/metaName/propValue data to the File object */
-int addDocProperty(docPropertyEntry **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+int addDocProperty( docPropertyEntry **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
 {
     docPropertyEntry *docProp;
 
@@ -252,7 +260,7 @@ int lenbuffer;
  * currently pointing to.
  */
 /* #### Added support for propLen */
-docPropertyEntry *fetchDocProperties(char *buf)
+docPropertyEntry *fetchDocProperties( char *buf)
 {
 docPropertyEntry *docProperties=NULL;
 char* tempPropValue=NULL;

@@ -212,11 +212,15 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
             *temp = '\0';       /* terminate CONTENT, temporarily */
 
 
+        /* Convert entities before saving as a property */
+        convtag = sw_ConvHTMLEntities2ISO(sw, start);
+
+        remove_newlines(convtag);  /** why isn't this just done for the entire doc? */
 
 
         /* If it is a property store it */
         if (metaNameEntry && is_meta_property(metaNameEntry))
-            if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, start, strlen(start),0) )
+            if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag),0) )
                 progwarn("prop not added for doc '%s'\n", filename );
 
 
@@ -224,8 +228,6 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
         /* Do not index as a metaName */
         if (metaNameEntry && !is_meta_index(metaNameEntry))
             metaName = 1;
-
-        convtag = sw_ConvHTMLEntities2ISO(sw, start);
 
 
         /* Meta tags get bummped */
@@ -678,6 +680,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                 else
                     break;
 
+
             if (endtag)
             {
                 *endtag++ = '\0';
@@ -723,12 +726,15 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             }
                             p = endtag;
 
-
                             /* If it is also a property store it until a < is found */
                             if (is_meta_property(metaNameEntry))
                             {
                                 if ((endtag = strchr(p, '<')))
                                     *endtag = '\0';
+                                p = sw_ConvHTMLEntities2ISO(sw, p);
+
+                                remove_newlines(p);  /** why isn't this just done for the entire doc? */
+
 
                                 if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0) )
                                     progwarn("prop not added for doc '%s'\n", fprop->real_path );
@@ -736,6 +742,9 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                                 
                                 if (endtag)
                                     *endtag = '<';
+
+                                p = endtag;    
+
                             }
                         }
 

@@ -156,7 +156,8 @@ int in_junk=0;
                 ftotalwords +=indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
                 if(newp!=p) efree(newp);
             }
-                /* Now let us look for '>' */
+            
+            /* Now let us look for '>' */
             if((endtag=strchr(tag,'>'))) {  
                 *endtag++='\0';
                 if ((tag[0]!='!') && (tag[0]!='/'))
@@ -213,9 +214,10 @@ int in_junk=0;
                             }
                          /* Remove tags and convert entities */
                             tempprop=estrdup(p);
-                            remove_newlines(tempprop);
+                            remove_newlines(tempprop);  /** why isn't this just done for the entire doc? */
                             remove_tags(tempprop);
-
+                            tempprop = sw_ConvHTMLEntities2ISO(sw, tempprop);
+                            
                             if ( !addDocProperty(&thisFileEntry->docProperties,metaNameXML,tempprop,strlen(tempprop),0) )
                                 progwarn("prop not added for doc '%s'\n", fprop->real_path );
                                     
