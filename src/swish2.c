@@ -339,27 +339,42 @@ char *SwishHeaderParameter(IndexFILE *indexf,char *parameter_name)
 {
     if(!strcasecmp(parameter_name,WORDCHARSPARAMNAME)) 
         return indexf->header.wordchars;
+
     else if(!strcasecmp(parameter_name,BEGINCHARSPARAMNAME)) 
         return indexf->header.beginchars;
-    else if(!strcasecmp(parameter_name,BEGINCHARSPARAMNAME)) 
-        return indexf->header.beginchars;
+
     else if(!strcasecmp(parameter_name,ENDCHARSPARAMNAME)) 
         return indexf->header.endchars;
+
     else if(!strcasecmp(parameter_name,IGNOREFIRSTCHARPARAMNAME)) 
         return indexf->header.ignorefirstchar;
+
     else if(!strcasecmp(parameter_name,IGNORELASTCHARPARAMNAME)) 
         return indexf->header.ignorelastchar;
-    else if(!strcasecmp(parameter_name,INDEXEDONPARAMNAME)) 
-        return indexf->header.indexedon;
+
+
+
+    else if(!strcasecmp(parameter_name,NAMEHEADERPARAMNAME)) 
+        return indexf->header.indexn;
+
     else if(!strcasecmp(parameter_name,DESCRIPTIONPARAMNAME)) 
         return indexf->header.indexd;
+
     else if(!strcasecmp(parameter_name,POINTERPARAMNAME)) 
         return indexf->header.indexp;
+
     else if(!strcasecmp(parameter_name,MAINTAINEDBYPARAMNAME)) 
         return indexf->header.indexa;
+
+    else if(!strcasecmp(parameter_name,INDEXEDONPARAMNAME)) 
+        return indexf->header.indexedon;
+
+
+
     else if(!strcasecmp(parameter_name,STEMMINGPARAMNAME)) {
         if(indexf->header.applyStemmingRules)return "1";
         else return "0";
+
     } else if(!strcasecmp(parameter_name,SOUNDEXPARAMNAME)) {
         if(indexf->header.applySoundexRules)return "1";
         else return "0";

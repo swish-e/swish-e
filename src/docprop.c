@@ -890,6 +890,7 @@ static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, i
 }
 
 
+#ifdef HAVE_ZLIB
 
 /*******************************************************************
 *   Allocate or reallocate the property buffer
@@ -927,7 +928,7 @@ static unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
     return sw->Prop_IO_Buf;
 }
     
- 
+#endif
 
 /*******************************************************************
 *   Compress a Property
@@ -947,16 +948,15 @@ static unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
 
 static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw, int *buf_len, int *uncompressed_len )
 {
-    unsigned char  *PropBuf;     /* For compressing and uncompressing */
-    int             dest_size;
-
 #ifndef HAVE_ZLIB
     *buf_len = prop->propLen;
     *uncompressed_len = 0;
     return prop->propValue;
 
-
 #else
+    unsigned char  *PropBuf;     /* For compressing and uncompressing */
+    int             dest_size;
+
 
     /* Don't bother compressing smaller items */
     if ( prop->propLen < MIN_PROP_COMPRESS_SIZE )
