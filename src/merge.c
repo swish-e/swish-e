@@ -387,15 +387,15 @@ int sz_buffer;
 	s = buffer;
 
 		/* parse word data to add it to the structure */
-	uncompress2(tfrequency,s);
+	tfrequency = uncompress2(&s);
 	ip->tfrequency = tfrequency;
 
-	uncompress2(metaID,s);
+	metaID = uncompress2(&s);
 	while(metaID) {
 		UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
 		do {
-			uncompress2(filenum,s);
-			uncompress2(index_structfreq,s);
+			filenum = uncompress2(&s);
+			index_structfreq = uncompress2(&s);
 			frequency=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[0];
 			index_structure=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[1];
 			structure=indexf->header.structurelookup->all_entries[index_structure-1]->val[0];
@@ -405,7 +405,7 @@ int sz_buffer;
 			loc->structure=structure;
 			loc->frequency=frequency;
 			for(j=0;j<frequency;j++){
-				uncompress2(x,s);
+				x = uncompress2(&s);
 				loc->position[j] = x;
 			}
 			/*Need to modify metaID with new list*/
@@ -430,7 +430,7 @@ int sz_buffer;
 				ip->locationarray=(LOCATION **) erealloc(ip->locationarray,(++ip->u1.max_locations)*sizeof(LOCATION *)); 
 			ip->locationarray[ip->u1.max_locations-1]=loc;
 		} while ((s - buffer) !=nextposmetaname);
-		uncompress2(metaID,s);
+		metaID = uncompress2(&s);
 	}
 	return ip;
 }

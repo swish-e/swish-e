@@ -393,7 +393,7 @@ int    *getLookupResultSortedProperties(RESULT * r)
 				/* Unpack / decompress the numbers */
 			for( j = 0; j < r->indexf->header.totalfiles; j++)
 			{
-				uncompress2(tmp,s);
+				tmp = uncompress2(&s);
 				m->sorted_data[j] = tmp;
 			}
 			efree(buffer);

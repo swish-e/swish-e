@@ -1193,9 +1193,9 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
         if (idx->economic_flag)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
         compressed_data = (char *) e->locationarray[k];
-        uncompress2(num, compressed_data); /* index to lookuptable */
+        num = uncompress2(&compressed_data); /* index to lookuptable */
         pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
-        uncompress2(num, compressed_data); /* filenum */
+        num = uncompress2(&compressed_data); /* filenum */
         pi[1] = num;
         ptmp2 += 2 * sizeof(int);
 
@@ -1301,10 +1301,10 @@ unsigned char *buildFileEntry(char *filename, struct docPropertyEntry **docPrope
     buffer1 = emalloc(lenbuffer1);
     p = buffer1;
     lookup_path++;              /* To avoid the 0 problem in compress increase 1 */
-    compress3(lookup_path, p);
+    p = compress3(lookup_path, p);
     /* We store length +1 to avoid problems with 0 length - So 
        it also writes the null terminator */
-    compress3(len_filename, p);
+    p = compress3(len_filename, p);
     memcpy(p, filename, len_filename);
     p += len_filename;
     datalen1 = p - buffer1;
@@ -1360,9 +1360,9 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
         p = buffer;
     /* } */
 
-    uncompress2(lookup_path, p); /* Index to lookup table of paths */
+    lookup_path = uncompress2(&p); /* Index to lookup table of paths */
     lookup_path--;
-    uncompress2(len1, p);       /* Read length of filename */
+    len1 = uncompress2(&p);       /* Read length of filename */
     buf1 = emalloc(len1);       /* Includes NULL terminator */
     memcpy(buf1, p, len1);      /* Read filename */
     p += len1;
@@ -1481,7 +1481,7 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
             for(i=0;i<indexf->filearray_cursize;i++)
             {
                 val = m->sorted_data[i];
-                compress3(val,s);
+                s = compress3(val,s);
             }
             DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
         }

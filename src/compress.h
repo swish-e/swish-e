@@ -17,23 +17,12 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/* Jose Ruiz 04/00
-** Now these functions are macros for better performance
-*/
-#define compress1(num,fp) {register int _i,_r; unsigned char _s[5]; _i=0;_r=num; while(_r) {_s[_i++] = _r & 127;_r >>= 7;} while(--_i >=0) fputc(_s[_i] | (_i ? 128 : 0), fp);}
+void compress1(int num, FILE *fp);
+unsigned char *compress2(int num, unsigned char *buffer);
+unsigned char *compress3(int num, unsigned char *buffer);
 
-/* same function but this works with a memory buffer instead of file output */
-#define compress2(num,buffer) {register int _i=num;while(_i) {*buffer = _i & 127; if(_i != num) *buffer|=128;_i >>= 7;buffer--;}}
-
-/* same function but this works with a memory buffer instead of file output */
-/* and also increases the memory pointer */
-#define compress3(num,buffer) {register int _i,_r; unsigned char _s[5]; _i=0;_r=num; while(_r) {_s[_i++] = _r & 127;_r >>= 7;} while(--_i >=0) *buffer++=(_s[_i] | (_i ? 128 : 0));}
-
-#define uncompress1(num,fp) {register int _c;num = 0; do{ _c=(int)fgetc(fp); num <<= 7; num |= _c & 127; if(!num) break; } while (_c & 128);}
-
-/* same function but this works with a memory forward buffer instead of file */
-/* output and also increases the memory pointer */
-#define uncompress2(num,buffer) {register int _c;num = 0; do{ _c=(int)((unsigned char)*buffer++); num <<= 7; num |= _c & 127; if(!num) break; } while (_c & 128);}
+int uncompress1(FILE *fp);
+int uncompress2(unsigned char **buffer);
 
 /* Macros to make long integers portable */
 #define PACKLONG(num) \

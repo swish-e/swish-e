@@ -126,9 +126,9 @@ int lenbuffer;
 		propID = docProperties->metaID;
 		/* Do not store 0!! - compress does not like it */
 		propID++;
-		compress3(propID,p);
+		p = compress3(propID,p);
 		/* including the length will make retrieval faster */
-		compress3(len,p);
+		p = compress3(len,p);
 		memcpy(p,docProperties->propValue, len);
 		*datalen += (p-q)+len;
 		docProperties = docProperties->next;
@@ -150,14 +150,14 @@ int tempPropLen=0;
 int tempPropID;
 
 	/* read all of the properties */
-        uncompress2(tempPropID,buf);
+        tempPropID = uncompress2((unsigned char **)&buf);
 	while(tempPropID > 0)
 	{
 		/* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
 		tempPropID--;
 
 		/* Get the data length */
-		uncompress2(tempPropLen,buf);
+		tempPropLen = uncompress2((unsigned char **)&buf);
 
 		/* BTW, len must no be 0 */
 	        tempPropValue=buf;
@@ -165,7 +165,7 @@ int tempPropID;
 
 			/* add the entry to the list of properties */
 		addDocProperty(&docProperties, tempPropID, tempPropValue, tempPropLen );
-        	uncompress2(tempPropID,buf);
+        	tempPropID = uncompress2((unsigned char **)&buf);
 	}
 	return docProperties;
 }

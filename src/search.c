@@ -1047,16 +1047,16 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
         s = buffer;
         /* Get the data of the word */
-        uncompress2(tfrequency, s); /* tfrequency */
+        tfrequency = uncompress2(&s); /* tfrequency */
         /* Now look for a correct Metaname */
-        uncompress2(curmetaID, s);
+        curmetaID = uncompress2(&s);
         while (curmetaID)
         {
             UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
             if (curmetaID >= metaID)
                 break;
             s = buffer + nextposmetaname;
-            uncompress2(curmetaID, s);
+            curmetaID = uncompress2(&s);
         }
         if (curmetaID == metaID)
             found = 1;
@@ -1066,8 +1066,8 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         {
             do
             {                   /* Read on all items */
-                uncompress2(filenum, s);
-                uncompress2(index_structfreq, s);
+                filenum = uncompress2(&s);
+                index_structfreq = uncompress2(&s);
                 frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
                 index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
                 structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
@@ -1075,7 +1075,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 
                 for (j = 0; j < frequency; j++)
                 {
-                    uncompress2(x, s);
+                    x = uncompress2(&s);
                     position[j] = x;
                 }
                 rp =

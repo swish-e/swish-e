@@ -101,18 +101,18 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 /* parse and print word's data */
             s = worddata;
 
-            uncompress2(x, s);     /* tfrequency */
-            uncompress2(x, s);     /* metaname */
+            x = uncompress2(&s);     /* tfrequency */
+            x = uncompress2(&s);     /* metaname */
             metaname = x;
             if (metaname)
             {
                 UNPACKLONG2(nextposmetaname,s); s += sizeof(long);
-                uncompress2(x, s); /* First file */
+                x = uncompress2(&s); /* First file */
             }
             while (x)
             {
                 filenum = x;
-                uncompress2(index_structfreq, s);
+                index_structfreq = uncompress2(&s);
                 frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
                 index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
                 structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
@@ -137,7 +137,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 }
                 for (i = 0; i < frequency; i++)
                 {
-                    uncompress2(x, s);
+                    x = uncompress2(&s);
                     if (sw->verbose >= 4)
                     {
                         if (i)
@@ -150,19 +150,19 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 }
                 if ((s - worddata) == nextposmetaname)
                 {
-                    uncompress2(x, s);
+                    x = uncompress2(&s);
                     metaname = x;
                     if (metaname)
                     {
                         UNPACKLONG2(nextposmetaname,s); 
                         s += sizeof(long);
-                        uncompress2(x, s);
+                        x = uncompress2(&s);
                     }
                     else
                         nextposmetaname = 0L;
                 }
                 else
-                    uncompress2(x, s);
+                    x = uncompress2(&s);
             }
             putchar((int) '\n');
 
