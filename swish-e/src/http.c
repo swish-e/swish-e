@@ -57,6 +57,120 @@
 #include "txt.h"
 #include "html.h"
 
+/*
+  -- init structures for this module
+*/
+
+void initModule_HTTP (SWISH  *sw)
+{
+    struct MOD_HTTP *http;
+    int i;
+
+    http = (struct MOD_HTTP *) emalloc(sizeof(struct MOD_HTTP));
+    sw->HTTP = http;
+
+    http->lenspiderdirectory=MAXSTRLEN;
+    http->spiderdirectory = (char *)emalloc(http->lenspiderdirectory + 1);http->spiderdirectory[0]='\0';
+        /* Initialize spider directory */
+    http->spiderdirectory = SafeStrCopy(http->spiderdirectory,SPIDERDIRECTORY,&http->lenspiderdirectory);
+
+    for(i=0;i<BIGHASHSIZE;i++) http->url_hash[i]=NULL;
+
+    http->equivalentservers=NULL;
+
+        /* http default system parameters */
+    http->maxdepth=5;
+    http->delay=60;
+}
+
+void freeModule_HTTP (SWISH *sw)
+{
+  struct MOD_HTTP *http = sw->HTTP;
+
+  if(http->spiderdirectory) efree(http->spiderdirectory);
+  efree(http);
+  sw->HTTP = NULL;
+}
+
+int configModule_HTTP(SWISH *sw,StringList *sl)
+{
+  struct MOD_HTTP *http = sw->HTTP;
+  char *w0    = sl->word[0];
+  int  retval = 1;
+
+  int i;
+  int len;
+  struct multiswline *list;
+  struct swline *slist;
+
+        if(strcasecmp(w0,"maxdepth")==0)
+        {
+                if(sl->n==2)
+                {
+                        retval=1;
+                        http->maxdepth=atoi(sl->word[1]);
+                }
+                else progerr("MaxDepth requires one value");
+        } 
+        else if(strcasecmp(w0,"delay")==0)
+        {
+                if(sl->n==2)
+                {
+                        retval=1;
+                        http->delay=atoi(sl->word[1]);
+                }
+                else progerr("Delay requires one value");
+        } 
+        else if(strcasecmp(w0,"spiderdirectory")==0)
+        {
+                if(sl->n==2)
+                {
+                        retval=1;
+                        http->spiderdirectory = SafeStrCopy(http->spiderdirectory, sl->word[1],&http->lenspiderdirectory);
+                        len = strlen(http->spiderdirectory);
+                        /* Make sure the directory has a trailing slash */
+                        if (len && (http->spiderdirectory[len - 1] != '/'))
+                        {
+                                if(len == http->lenspiderdirectory)
+                                        http->spiderdirectory=erealloc(http->spiderdirectory,++http->lenspiderdirectory+1);
+                                strcat(http->spiderdirectory, "/");
+                        }
+                        if(!isdirectory(http->spiderdirectory)) {
+                                progerr("SpiderDirectory. %s is not a directory",http->spiderdirectory);
+                        }
+                }
+                else progerr("SpiderDirectory requires one value");
+        }
+        else if (strcasecmp(w0,"equivalentserver") == 0)
+        {
+                if(sl->n>1)
+                {
+                        retval = 1;
+                        /* Add a new list of equivalent servers */
+                        list = (struct multiswline *)emalloc(sizeof(struct multiswline));
+                        list->next = http->equivalentservers;
+                        list->list = 0;
+                        http->equivalentservers = list;
+
+                        for(i=1;i<sl->n;i++)
+                        {
+                                /* Add a new entry to this list */
+                                slist = (struct swline *)emalloc(sizeof(struct swline));
+                                slist->line = sl->word[i];
+                                slist->next = list->list;
+                                list->list = slist;
+                        }
+
+                }
+                else progerr("EquivalentServers requires at least one value");
+        }
+        else
+        {
+                retval = 0;
+        }
+
+    return retval;
+}
 typedef struct urldepth {
     char *url;
     int depth;
@@ -71,13 +185,15 @@ urldepth *add_url(SWISH *sw, urldepth *list, char *url, int depth, char *baseurl
 urldepth *add_url(SWISH *sw, urldepth *list, char *url, int depth, char *baseurl)
 {
     urldepth *item;
+    struct MOD_HTTP *http = sw->HTTP;
+
 	
     if (!equivalentserver(sw, url, baseurl)) {
 		if (sw->verbose == 3)
 			printf( "Skipping %s:  %s\n", url, "Wrong method or server." );
 		
 		
-    } else if (sw->maxdepth && (depth >= sw->maxdepth)) {
+    } else if (http->maxdepth && (depth >= http->maxdepth)) {
 		if (sw->verbose == 3)
 			printf( "Skipping %s:  %s\n", url, "Too deep." );
     }else if (sw->nocontentslist && isoksuffix(url, sw->nocontentslist)) {
@@ -126,14 +242,14 @@ int http_already_indexed(SWISH *sw, char *url)
   
   int len;
   unsigned hashval;
-  struct MOD_Index *idx = sw->Index;
+  struct MOD_HTTP *http = sw->HTTP;
   
   /* Hash with via the uri alone.  Depending on the equivalent
   ** servers, we may or may not make the decision of the entire
   ** url or just the uri.
   */
   hashval = bighash(url_uri(url,&len)); /* Search hash for this file. */
-  for ( p = idx->url_hash[hashval]; p != NULL; p = p->next )
+  for ( p = http->url_hash[hashval]; p != NULL; p = p->next )
     if ( (strcmp(url, p->url ) == 0) ||
 	 (equivalentserver(sw, url, p->url) &&
 	  (strcmp(url_uri(url, &len), url_uri(p->url, &len)) == 0)) )
@@ -147,8 +263,8 @@ int http_already_indexed(SWISH *sw, char *url)
 	/* Not found, make new entry. */
   p = (struct url_info*)emalloc(sizeof(struct url_info));
   p->url = estrdup(url);
-  p->next = idx->url_hash[hashval];
-  idx->url_hash[hashval] = p;
+  p->next = http->url_hash[hashval];
+  http->url_hash[hashval] = p;
 	
   return 0;
 }
@@ -211,6 +327,8 @@ int get(SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *
   FILE *fp;
   char *command;
   struct MOD_Index *idx = sw->Index;
+  struct MOD_HTTP *http = sw->HTTP;
+
 #ifdef _WIN32
   char* spiderprog = "swishspider.pl";
   char commandline[] = "perl.exe %s%s %s/swishspider@%ld \"%s\"";
@@ -223,9 +341,9 @@ int get(SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *
 
   /* Sleep a little so we don't overwhelm the server
   **/
-    if ((time(0) - *plastretrieval) < sw->delay )
+    if ((time(0) - *plastretrieval) < http->delay )
       {
-	int num_sec = sw->delay - (time(0) - *plastretrieval);
+	int num_sec = http->delay - (time(0) - *plastretrieval);
 #ifdef _WIN32
 	_sleep(num_sec);
 #else
@@ -237,10 +355,10 @@ int get(SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *
     /* URLs can get quite large so don't depend on a fixed size buffer.  The
     ** +MAXPIDLEN is for the pid identifier and the trailing null.
     **/
-    cmdsize = strlen(idx->spiderdirectory) + strlen(url) + strlen(idx->tmpdir)
+    cmdsize = strlen(http->spiderdirectory) + strlen(url) + strlen(idx->tmpdir)
             + strlen(commandline) + strlen(spiderprog) + MAXPIDLEN;
     command = (char *)emalloc(cmdsize + 1);
-    sprintf(command, commandline, idx->spiderdirectory, spiderprog, idx->tmpdir, lgetpid(), url);
+    sprintf(command, commandline, http->spiderdirectory, spiderprog, idx->tmpdir, lgetpid(), url);
     
     if (system(command) == 0) {
       if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
@@ -501,87 +619,12 @@ struct MOD_Index *idx = sw->Index;
 #endif
 
 
-#ifdef _WIN32
-#define strncasecmp	strnicmp
-#endif
 
-
-int http_parseconfline(SWISH *sw,StringList *l)
-{
-    int i,rv = 0;
-    int len;
-    struct multiswline *list;
-    struct swline *slist;
-    StringList *sl = (StringList *)l;
-    struct MOD_Index *idx = sw->Index;
-
-	if(strcasecmp(sl->word[0],"maxdepth")==0)
-	{
-		if(sl->n==2)
-		{
-			rv=1;
-			sw->maxdepth=atoi(sl->word[1]);
-		} 
-		else progerr("MaxDepth requires one value");
-	} else if(strcasecmp(sl->word[0],"delay")==0)
-	{
-		if(sl->n==2)
-		{
-			rv=1;
-			sw->delay=atoi(sl->word[1]);
-		} 
-		else progerr("Delay requires one value");
-	} else if(strcasecmp(sl->word[0],"spiderdirectory")==0)
-	{
-		if(sl->n==2)
-		{
-			rv=1;
-			idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,sl->word[1],&idx->lenspiderdirectory);
-			len = strlen(idx->spiderdirectory);
-			/* Make sure the directory has a trailing slash */
-			if (len && (idx->spiderdirectory[len - 1] != '/')) 
-			{
-				if(len == idx->lenspiderdirectory) 
-					idx->spiderdirectory=erealloc(idx->spiderdirectory,++idx->lenspiderdirectory+1);
-				strcat(idx->spiderdirectory, "/");
-			}
-			if(!isdirectory(idx->spiderdirectory)) {
-				progerr("SpiderDirectory. %s is not a directory",idx->spiderdirectory);
-			}
-		} 
-		else progerr("SpiderDirectory requires one value");
-    	}
-	else if (strcasecmp(sl->word[0],"equivalentserver") == 0) 
-	{
-		if(sl->n>1)
-		{
-			rv = 1;
-			/* Add a new list of equivalent servers */
-			list = (struct multiswline *)emalloc(sizeof(struct multiswline));
-			list->next = sw->equivalentservers;
-			list->list = 0;
-			sw->equivalentservers = list;
-		
-			for(i=1;i<sl->n;i++)
-			{	
-				/* Add a new entry to this list */
-				slist = (struct swline *)emalloc(sizeof(struct swline));
-				slist->line = sl->word[i];
-				slist->next = list->list;
-				list->list = slist;
-			}
-			
-		}
-		else progerr("EquivalentServers requires at least one value");
-	}
-    
-    return rv;
-}
 
 struct _indexing_data_source_def HTTPIndexingDataSource = {
   "HTTP-Crawler",
   "http",
   http_indexpath,
-  http_parseconfline
+  configModule_HTTP
 };
 

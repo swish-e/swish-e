@@ -321,6 +321,7 @@ int basemethodlen;
 char *baseserverport;
 int baseserverportlen;
 struct multiswline *walk=NULL;
+struct MOD_HTTP *http = sw->HTTP;
 	
     method = url_method(url, &methodlen);
     serverport = url_serverport(url, &serverportlen);
@@ -342,7 +343,7 @@ struct multiswline *walk=NULL;
     /* Do we find the method/server info for this and the base url
     ** in the same equivalence list?
     **/
-    for (walk = sw->equivalentservers; walk; walk = walk->next ) {
+    for (walk = http->equivalentservers; walk; walk = walk->next ) {
 		if (serverinlist(url, walk->list) &&
 			serverinlist(baseurl, walk->list)) {
 			return 1;

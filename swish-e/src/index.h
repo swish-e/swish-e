@@ -55,10 +55,6 @@ struct MOD_Index
     int     lentmpdir;
     char   *tmpdir;
 
-	/* spider directory for index (HTTP method) */
-    int     lenspiderdirectory;
-    char   *spiderdirectory;
-
     /* Filenames of the swap files */
     unsigned char   *swap_file_name;     /* File and properties file */
     unsigned char   *swap_location_name; /* Location info file */
@@ -69,7 +65,6 @@ struct MOD_Index
     FILE   *fp_file_read;       /* File (read) */
 
     struct dev_ino *inode_hash[BIGHASHSIZE];
-    struct url_info *url_hash[BIGHASHSIZE];
 
     /* Buffers used by indexstring */
     int lenswishword;

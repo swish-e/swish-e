@@ -163,15 +163,11 @@ void initModule_Index (SWISH  *sw)
 
     idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
 
-    idx->lentmpdir=idx->lenspiderdirectory=MAXSTRLEN;
+    idx->lentmpdir=MAXSTRLEN;
     idx->tmpdir = (char *)emalloc(idx->lentmpdir + 1);idx->tmpdir[0]='\0';
-    idx->spiderdirectory = (char *)emalloc(idx->lenspiderdirectory + 1);idx->spiderdirectory[0]='\0';
 
             /* Initialize tmpdir */
     idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
-
-        /* Initialize spider directory */
-    idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,SPIDERDIRECTORY,&idx->lenspiderdirectory);
 
         /* Economic flag and temp files*/
     idx->economic_flag=SWAP_DEFAULT;
@@ -186,7 +182,6 @@ void initModule_Index (SWISH  *sw)
     }
 
     for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
-    for(i=0;i<BIGHASHSIZE;i++) idx->url_hash[i]=NULL;
 
     /* initialize buffers used by indexstring */
     idx->word = (char *) emalloc((idx->lenword = MAXWORDLEN) + 1);
@@ -217,7 +212,6 @@ void freeModule_Index (SWISH *sw)
       efree(idx->swap_location_name);
   }
 
-  if(idx->lenspiderdirectory) efree(idx->spiderdirectory);        
   if(idx->lentmpdir) efree(idx->tmpdir);        
 
           /* Free compression info */    

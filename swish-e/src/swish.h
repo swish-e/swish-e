@@ -628,6 +628,7 @@ typedef struct
     struct MOD_Search        *Search;         /* Search module data */
     struct MOD_Index         *Index;          /* Index module data */
     struct MOD_FS            *FS;             /* FileSystem Index module data */
+    struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
 
 
     /* 08/00 Jose Ruiz Values for document type support */
@@ -684,11 +685,6 @@ typedef struct
     /* MetaName indexing options */
     int     ReqMetaName;
     int     OkNoMeta;
-
-    /* http system specific configuration parameters */
-    int     maxdepth;
-    int     delay;
-    struct multiswline *equivalentservers;
 
     /* prog system specific configuration parameters */
     struct swline *progparameterslist;
