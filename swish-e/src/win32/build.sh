@@ -4,11 +4,11 @@
 # To jumpstart your development here are pcre, libxml2, and zlib:
 # http://www.webaugur.com/wares/files/swish-e/builddir.zip
 
-# Host Arch
-HA=i386
+# You also need the following from Debian (unstable?):
+# apt-get install mingw32 mingw32-binutils mingw32-runtime
 
-# cross-compiler: gcc 3.3.1 20030804-1, binutils 2.15.91 20040904, mingw-runtime 3.3
-PATH=/opt/mingw/bin:/opt/mingw/${HA}-mingw32msvc:$PATH
+# Host Arch
+HA=i586
 
 # Remove the cache for our configure script else we will have problems.
 rm -f config.cross.cache
@@ -24,11 +24,6 @@ rm -f config.cross.cache
         --with-zlib=$PWD/../zlib \
         --with-pcre=$PWD/../pcre
 
-# Build docs
-pushd doc
-make
-popd
-
-# Build Binaries; pushd in case something else fails
+# Build Binaries
 make
 
