@@ -1487,7 +1487,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= idx->plimit && ep->tfrequency >= idx->flimit)
             {
-                add_word_to_hash_table( &indexf->header.hashstoplist, ep->word);
+                add_word_to_hash_table( &indexf->header.hashstoplist, ep->word, HASHSIZE);
 
                 /* for printing words removed at the end */
                 idx->IgnoreLimitWords = addswline( idx->IgnoreLimitWords, ep->word);
@@ -2360,6 +2360,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     char   *swishword = idx->swishword;
     int     lenswishword = idx->lenswishword;
 
+    struct swline *sp_stem = NULL;
 
 
     /* Generate list of metaIDs to index unless passed in */
@@ -2485,8 +2486,35 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 case FUZZY_STEMMING_RU:
                 case FUZZY_STEMMING_FI:
 #endif
+#ifdef STEMCACHE
+                    /* 2003/08 jmruiz */
+                    /* Snowball's stemming is very slow. So, let's try some */
+                    /* caching.                                             */
+                    /* Cache for stemming */
+                    /* Only use it if we are not in economic mode (-e) */
+                    if(! idx->swap_locdata)
+                    {
+                       sp_stem = NULL;
+                       if((sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword))) 
+                       {
+                           swishword = SafeStrCopy(swishword,sp_stem->other.data,&lenswishword);
+                       }
+                       else
+                       {
+printf("-");
+                           add_word_to_hash_table( &indexf->hashstemcache, swishword, VERYBIGHASHSIZE);
+                           sp_stem = is_word_in_hash_table( indexf->hashstemcache, swishword);
+                           sp_stem->other.data=NULL;
+                           stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
+                       }
+                    }
+                    else
+                       stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
+                         
+#else
                     stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
 
+#endif
                     /* === 
                     if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
                     if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
@@ -2495,6 +2523,15 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     === */
 
                     addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
+
+#ifdef STEMCACHE
+                    /* Put the pointer to the stemmed word in the stem cache */
+                    /* if it is a new entry (when other.data is NULL) */
+                    if((!idx->swap_locdata) && sp_stem && (!sp_stem->other.data) )
+                    {
+                       sp_stem->other.data = (getentry(sw,swishword))->word;
+                    }
+#endif
                     wordcount++;
                     break;
 

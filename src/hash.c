@@ -34,63 +34,59 @@
 #include "mem.h"
 #include "search.h"
 
-/* Hashes a string.
+/* Hashes a string. Common routine
 */
 
-unsigned hash(s)
-     char   *s;
+unsigned string_hash(char *s, int hash_size)
 {
     unsigned hashval;
 
     for (hashval = 0; *s != '\0'; s++)
         hashval = (int) ((unsigned char) *s) + 31 * hashval;
-    return hashval % HASHSIZE;
+    return hashval % hash_size;
+}
+
+/* Hashes a string.
+*/
+unsigned hash(char *s)
+{
+    return string_hash(s,HASHSIZE);
 }
 
 /* Hashes a string for a larger hash table.
 */
-
-unsigned bighash(s)
-     char   *s;
+unsigned bighash(char *s)
 {
-    unsigned hashval;
+    return string_hash(s,BIGHASHSIZE);
+}
 
-    for (hashval = 0; *s != '\0'; s++)
-        hashval = (int) ((unsigned char) *s) + 31 * hashval;
-    return hashval % BIGHASHSIZE;
+/* Hashes a int. Common routine
+*/
+unsigned int_hash(int i, int hash_size)
+{
+    return i % hash_size;
 }
 
 /* Hashes a int.
 */
-
-unsigned numhash(i)
-     int     i;
+unsigned numhash(int i)
 {
-    return i % HASHSIZE;
+    return int_hash(i, HASHSIZE);
 }
 
 /* Hashes a int for a larger hash table.
 */
-
-unsigned bignumhash(i)
-     int     i;
+unsigned bignumhash(int i)
 {
-    return i % BIGHASHSIZE;
+    return int_hash(i, BIGHASHSIZE);
 }
 
 /* Hashes a string for a larger hash table (for search).
 */
-
-unsigned verybighash(s)
-     char   *s;
+unsigned verybighash(char *s)
 {
-    unsigned hashval;
-
-    for (hashval = 0; *s != '\0'; s++)
-        hashval = (int) ((unsigned char) *s) + 31 * hashval;
-    return hashval % VERYBIGHASHSIZE;
+    return string_hash(s, VERYBIGHASHSIZE);
 }
-
 
 
 /******************************************************************
@@ -103,23 +99,23 @@ unsigned verybighash(s)
 *       void;
 *******************************************************************/
 
-void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word)
+void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
 {
     struct swline **hash_array = table_ptr->hash_array;
     unsigned hashval;
     struct swline *sp;
 
-    hashval = hash(word);
-
+    hashval = string_hash(word,hash_size);
 
     /* Create the array if it doesn't exist */
     if ( !hash_array )
     {
-        int ttl_bytes = sizeof(struct swline *) * HASHSIZE;
+        int ttl_bytes = sizeof(struct swline *) * (hash_size = (hash_size ? hash_size : HASHSIZE));
         
         hash_array = (struct swline  **)emalloc( ttl_bytes );
         memset( hash_array, 0, ttl_bytes );
         table_ptr->hash_array = hash_array;
+        table_ptr->hash_size = hash_size;
         table_ptr->count = 0;
     }
     else
@@ -146,11 +142,11 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word)
 *       array of swline pointers
 *
 *   Returns:
-*       true if word found
+*       true (swline) if word found, NULL if not found
 *
 *******************************************************************/
 
-int is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
+struct swline * is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
 {
     unsigned hashval;
     struct swline *sp;
@@ -158,16 +154,16 @@ int is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
     if ( !table.hash_array )
         return 0;
 
-    hashval = hash(word);
+    hashval = string_hash(word, table.hash_size);
     sp = table.hash_array[hashval];
 
     while (sp != NULL)
     {
         if (!strcmp(sp->line, word))
-            return 1;
+            return sp;
         sp = sp->next;
     }
-    return 0;
+    return NULL;
 }
 
 /******************************************************************
@@ -184,6 +180,7 @@ int is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
 void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
 {
     struct swline **hash_array = table_ptr->hash_array;
+    int             hash_size = table_ptr->hash_size;
     int     i;
     struct swline *sp,
            *tmp;
@@ -191,7 +188,7 @@ void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
     if ( !hash_array )
         return;
 
-    for (i = 0; i < HASHSIZE; i++)
+    for (i = 0; i < hash_size; i++)
     {
         if ( !hash_array[i])
             continue;
@@ -208,6 +205,7 @@ void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
     efree( hash_array );
     
     table_ptr->hash_array = NULL;
+    table_ptr->hash_size = 0;
     table_ptr->count = 0;
 }
 

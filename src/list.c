@@ -40,9 +40,9 @@ struct swline *newnode;
     if (rp == NULL)
         rp = newnode;
     else
-        rp->nodep->next = newnode;
+        rp->other.nodep->next = newnode;
     
-    rp->nodep = newnode;
+    rp->other.nodep = newnode;
     
     return rp;
 }
