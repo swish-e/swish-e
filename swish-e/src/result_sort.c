@@ -303,7 +303,6 @@ int *sortFilenums;
 struct metaEntry *m;
 FILE *fp=indexf->fp;
 
-printf("DBG: Starting sorting of properties\n");fflush(stdout);
 		/* Array of filenums to store the sorted docs (referenced by its filenum) */
 	sortFilenums=emalloc(indexf->fileoffsetarray_cursize*sizeof(int));
 		/* Execute for each property */
@@ -354,5 +353,4 @@ printf("DBG: Starting sorting of properties\n");fflush(stdout);
 	}
 	efree(sortFilenums);
 
-printf("DBG: End sorting of properties\n");fflush(stdout);
 }

@@ -77,7 +77,7 @@ $Id$
 ** Many modifications to make some functions thread safe
 **
 ** 08/00 - Jose Ruiz
-** New function indexstring. Up to know there were 4 functions doing almost
+** New function indexstring. Up to now there were 4 functions doing almost
 ** the same thing: countwords, countwordstr, parseMetaData and parsecomment
 ** From now on, these 4 functions calls indexstring wich is the common part
 ** to all of them. In fact, countwordstr, parseMetaData and parsecomment
@@ -197,32 +197,32 @@ int      external_program;
 		    switch(fprop->doctype) {
 
 		      case TXT:
-			if(sw->verbose == 3) printf(" - Using TXT filter - ");
+			if(sw->verbose >= 3) printf(" - Using TXT filter - ");
 			wordcount = countwords_TXT(sw, fprop, rd_buffer); 
 			break;
 
 		      case HTML:
-			if(sw->verbose == 3) printf(" - Using HTML filter - ");
+			if(sw->verbose >= 3) printf(" - Using HTML filter - ");
 			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 
 		      case XML:
-			if(sw->verbose == 3) printf(" - Using XML filter - ");
+			if(sw->verbose >= 3) printf(" - Using XML filter - ");
 			wordcount = countwords_XML(sw, fprop, rd_buffer); 
 			break;
 
 		      case LST:
-			if(sw->verbose == 3) printf(" - Using LST filter - ");
+			if(sw->verbose >= 3) printf(" - Using LST filter - ");
 			wordcount = countwords_LST(sw, fprop, rd_buffer); 
 			break;
 
 		      case WML:
-			if(sw->verbose == 3) printf(" - Using WML filter - ");
+			if(sw->verbose >= 3) printf(" - Using WML filter - ");
 			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 
 		      default:
-			if(sw->verbose == 3) printf(" - Using DEFAULT filter - ");
+			if(sw->verbose >= 3) printf(" - Using DEFAULT filter - ");
 			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 		    }
@@ -238,7 +238,7 @@ int      external_program;
 		}
 		efree(rd_buffer);
 
-		if (sw->verbose == 3) {
+		if (sw->verbose >= 3) {
 			if (wordcount > 0)
 				printf(" (%d words)\n", wordcount);
 			else if (wordcount == 0) 
@@ -314,6 +314,11 @@ ENTRY *en,*efound;
 LOCATION *tp;
 int hashval;
 IndexFILE *indexf=sw->indexlist;
+
+    if ( sw->verbose >=4 ) {
+        printf("Adding word:'%s' Position:%d Meta:%d\n", word, position, metaID );
+    }
+
 	if(!sw->entryArray)
 	{
 		sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
@@ -730,7 +735,7 @@ struct filepos *fpos;
 		{
 			for(ep=sw->hashentries[i];ep;ep=ep->nexthash)
 			{
-				if(sw->verbose==3) 
+				if(sw->verbose >=3) 
 				{
 					printf("Computing new positions for %s (%d occurrences)                        \r",ep->word,ep->u1.max_locations);
 					fflush(stdout);
@@ -777,7 +782,7 @@ struct filepos *fpos;
 					}
 				}
 			}
-			if(sw->verbose==3) printf("\n");
+			if(sw->verbose >=3) printf("\n");
 		}
 				/* Free the memory used by the table of files */
 		for(i=0;i<totalfiles;i++)
@@ -1505,7 +1510,7 @@ char ISOTime[20];
                         index_structure=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[1];
                         structure=indexf->structurelookup->all_entries[index_structure-1]->val[0];
 
-			if (sw->verbose == 4)
+			if (sw->verbose >= 4)
 			{
 				struct file *fileInfo;
 				printf(" Meta:%d", metaname);
@@ -1526,7 +1531,7 @@ char ISOTime[20];
 			for(i=0;i<frequency;i++)
 			{
 				uncompress1(x,fp);	
-				if (sw->verbose == 4)
+				if (sw->verbose >= 4)
 				{
 					if(i) printf(",%d", x);
 					else printf("%d",x);

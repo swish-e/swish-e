@@ -72,7 +72,7 @@ int fs_already_indexed(SWISH *sw,char *path)
 		if ( p->dev == buf.st_dev &&
 		p->ino == buf.st_ino    )
 	{                               /* We found it. */
-		if ( sw->verbose == 3 )
+		if ( sw->verbose >= 3 )
 			printf( "Skipping %s:  %s\n",path,"Already indexed." );
 		return 1;
 	}
@@ -315,7 +315,7 @@ FileProp *fprop;
 	
 
 	if (filename) {
-		if (sw->verbose == 3) {
+		if (sw->verbose >= 3) {
 			if ((s = (char *) strrchr(filename, '/')) == NULL)
 				printf("  %s", filename);
 			else
@@ -359,9 +359,9 @@ void printdirs(SWISH *sw, DOCENTRYARRAY *e)
 int i;
 	if (e) {
 		for(i=0;i<e->currentsize;i++) {
-			if (sw->verbose == 3)
+			if (sw->verbose >= 3)
 				printf("\nIn dir \"%s\":\n", e->filenames[i]);
-			else if (sw->verbose == 2)
+			else if (sw->verbose >= 2)
 				printf("Checking dir \"%s\"...\n",e->filenames[i]);
 			indexadir(sw,e->filenames[i]);
 			efree(e->filenames[i]);

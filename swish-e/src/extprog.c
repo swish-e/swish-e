@@ -35,93 +35,101 @@
 #include "txt.h"
 #include "parse_conffile.h"
 
-FILE *open_external_program( SWISH *sw, char *prog )
+FILE   *open_external_program(SWISH * sw, char *prog)
 {
-    char *cmd;
-    FILE *fp;
-    size_t total_len;
+    char   *cmd;
+    FILE   *fp;
+    size_t  total_len;
     struct swline *tmplist;
 
     /* get total length of configuration parameters */
 
     total_len = strlen(prog);
 
-    tmplist = sw->progparameterslist ;
-    while (tmplist) {
-        total_len += strlen( tmplist->line ) + 1;  /* separate by spaces */
+    tmplist = sw->progparameterslist;
+    while (tmplist)
+    {
+        total_len += strlen(tmplist->line) + 1; /* separate by spaces */
         tmplist = tmplist->next;
-	 }
+    }
 
-    cmd = emalloc( total_len + 20 );
-    strcpy( cmd, prog );
+    cmd = emalloc(total_len + 20);
+    strcpy(cmd, prog);
 
     tmplist = sw->progparameterslist;
-    while (tmplist) {
-        strcat( cmd, " ");
-        strcat( cmd, tmplist->line );
+    while (tmplist)
+    {
+        strcat(cmd, " ");
+        strcat(cmd, tmplist->line);
         tmplist = tmplist->next;
-	 }
-    
+    }
 
-    fp = popen( cmd, FILEMODE_READ );
-    efree ( cmd );
 
-    if ( !fp ) progerr( "Failed to spawn external program" );
+    fp = popen(cmd, FILEMODE_READ);
+    efree(cmd);
+
+    if (!fp)
+        progerr("Failed to spawn external program");
 
     return fp;
 }
 
 
-void extprog_indexpath( SWISH *sw, char *prog )
+void    extprog_indexpath(SWISH * sw, char *prog)
 {
-FileProp *fprop;
-FILE *fp;
-char *line;
-char *ln;
-char *x;
-char *real_path;
-long fsize;
-time_t mtime;
-int  index_no_content;
-long truncate_doc_size;
+    FileProp *fprop;
+    FILE   *fp;
+    char   *line;
+    char   *ln;
+    char   *x;
+    char   *real_path;
+    long    fsize;
+    time_t  mtime;
+    int     index_no_content;
+    long    truncate_doc_size;
 
     mtime = 0;
     fsize = 0;
     index_no_content = 0;
     real_path = NULL;
 
-    fp = open_external_program( sw, prog );
+    fp = open_external_program(sw, prog);
 
-    ln = emalloc( MAXSTRLEN + 1 );
+    ln = emalloc(MAXSTRLEN + 1);
 
     truncate_doc_size = sw->truncateDocSize;
-    sw->truncateDocSize = 0;  /* can't truncate -- prog should make sure doc is not too large */
+    sw->truncateDocSize = 0;    /* can't truncate -- prog should make sure doc is not too large */
 
     /* loop on headers */
-    while (fgets(ln, MAXSTRLEN, fp) != NULL) {
+    while (fgets(ln, MAXSTRLEN, fp) != NULL)
+    {
 
-        line = str_skip_ws(ln);      /* skip leading white space */
-        x = strrchr( line, '\n' );    /* replace \n with null -- better to remove trailing white space */
-        if ( x ) x[0] = '\0';
+        line = str_skip_ws(ln); /* skip leading white space */
+        x = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
+        if (x)
+            x[0] = '\0';
 
 
-        if ( strlen( line ) == 0 ) {  /* blank line indicates body */
+        if (strlen(line) == 0)
+        {                       /* blank line indicates body */
 
-            if ( fsize && real_path ) {
+            if (fsize && real_path)
+            {
 
-                fprop = init_file_properties( sw );
+                fprop = init_file_properties(sw);
                 fprop->real_path = real_path;
                 fprop->work_path = real_path;
 
                 /* set real_path, doctype, index_no_content, filter, stordesc */
-                init_file_prop_settings( sw, fprop );
+                init_file_prop_settings(sw, fprop);
 
-                fprop->fp = fp;         /* stream to read from */
-                fprop->fsize = fsize;   /* how much to read */
-                fprop->mtime = mtime; 
+                fprop->fp = fp; /* stream to read from */
+                fprop->fsize = fsize; /* how much to read */
+                fprop->mtime = mtime;
 
                 /* header can force index_no_content */
-                if ( index_no_content ) fprop->index_no_content++;
+                if (index_no_content)
+                    fprop->index_no_content++;
 
 
                 /*  the quick hack to make filters work is for FilterOpen
@@ -131,84 +139,105 @@ long truncate_doc_size;
                  *  simply filter in the prog, after all.  Faster, too.
                  */
 
-                if ( fprop->hasfilter )
+                if (fprop->hasfilter)
                     progerr("Filters currently do not work with 'prog' document source");
 
-                do_index_file( sw, fprop );
+                if (sw->verbose >= 3)
+                {
+                    printf("%s", real_path);
+                }
+                else if (sw->verbose >= 2)
+                {
+                    printf("Processing %s...\n", real_path);
+                }
 
-                free_file_properties( fprop );
-                efree( real_path ); 
+                do_index_file(sw, fprop);
+
+                free_file_properties(fprop);
+                efree(real_path);
                 real_path = NULL;
                 mtime = 0;
                 fsize = 0;
                 index_no_content = 0;
 
-            } else {
+            }
+            else
+            {
                 /* now this could be more helpful */
                 progerr("External program failed to return required headers");
             }
 
-        } else {
+        }
+        else
+        {
 
 
-            if ( strncasecmp( line, "Content-Length", 14 ) == 0) {
-                x = strchr(line,':');
-                if ( !x ) progerr("Failed to parse Content-Length header");
-                fsize = strtol( ++x, NULL, 10 );
+            if (strncasecmp(line, "Content-Length", 14) == 0)
+            {
+                x = strchr(line, ':');
+                if (!x)
+                    progerr("Failed to parse Content-Length header");
+                fsize = strtol(++x, NULL, 10);
                 continue;
             }
 
-            if ( strncasecmp( line, "Last-Mtime", 10 ) == 0) {
-                x = strchr(line,':');
-                if ( !x ) progerr("Failed to parse Last-Mtime header");
-                mtime = strtol( ++x, NULL, 10 );
+            if (strncasecmp(line, "Last-Mtime", 10) == 0)
+            {
+                x = strchr(line, ':');
+                if (!x)
+                    progerr("Failed to parse Last-Mtime header");
+                mtime = strtol(++x, NULL, 10);
                 continue;
             }
-            
-            if ( strncasecmp( line, "No-Contents:", 12 ) == 0) {
+
+            if (strncasecmp(line, "No-Contents:", 12) == 0)
+            {
                 index_no_content++;
                 continue;
             }
-            
 
-            if ( strncasecmp( line, "Path-Name", 9 ) == 0) {
-                x = strchr(line,':');
-                if ( !x ) progerr("Failed to parse Path-Name header");
+
+            if (strncasecmp(line, "Path-Name", 9) == 0)
+            {
+                x = strchr(line, ':');
+                if (!x)
+                    progerr("Failed to parse Path-Name header");
 
                 x = str_skip_ws(++x);
-	            if (! *x) progerr("Failed to find path name in Path-Name header");
+                if (!*x)
+                    progerr("Failed to find path name in Path-Name header");
 
-                real_path = emalloc( strlen(x) + 1 );
-                strcpy( real_path, x );
+                real_path = emalloc(strlen(x) + 1);
+                strcpy(real_path, x);
                 continue;
             }
 
             printf("Warning: Failed to parse header line: '%s' from program %s\n", line, prog);
-            
+
         }
     }
 
-    efree( ln );
+    efree(ln);
 
     /* restore the setting */
     sw->truncateDocSize = truncate_doc_size;
 
-    pclose( fp ); /* progerr("Failed to properly close external program"); */
+    pclose(fp);                 /* progerr("Failed to properly close external program"); */
 }
 
-            
+
 
 
 
 /* Don't have any specific configuration values to check */
-int extprog_parseconfline(SWISH *sw, void *l)
+int     extprog_parseconfline(SWISH * sw, void *l)
 {
     return 0;
 }
 
 struct _indexing_data_source_def ExternalProgramDataSource = {
-  "External-Program",
-  "prog",
-  extprog_indexpath,
-  extprog_parseconfline
+    "External-Program",
+    "prog",
+    extprog_indexpath,
+    extprog_parseconfline
 };
