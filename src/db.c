@@ -50,6 +50,7 @@ void initModule_DB (SWISH  *sw)
 
 void freeModule_DB (SWISH *sw)
 {
+   freeModule_DBNative(sw);
   return;
 }
 
