@@ -20,7 +20,6 @@ AC_ARG_ENABLE(docs,
              docs=yes)
 AM_CONDITIONAL(BUILDDOCS, test x$docs = xyes)
 
-dnl Provide an option for enabling btree/incremental indexing for development
 AC_ARG_ENABLE(daystamp,
              AC_HELP_STRING([--enable-daystamp], [Adds today's date to version]),
              daystamp=yes,)
@@ -304,6 +303,38 @@ if test "x$libexecdiropt" = "x"; then
         libexecdir='${exec_prefix}/lib/${PACKAGE}'
 	AC_MSG_NOTICE([Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}])
 fi
+
+dnl Memory Debugging options
+
+AC_ARG_ENABLE([memdebug],
+	AC_HELP_STRING([--enable-memdebug], [(developers only) checks for memory consistency on alloc/free]),
+	,
+	enableval=no)
+
+if test "$enableval" != "no"; then
+	AC_MSG_NOTICE([MEM_DEBUG enabled])
+	AC_DEFINE(MEM_DEBUG,1,[checks for memory consistency on alloc/free])
+fi
+AC_ARG_ENABLE([memtrace],
+	AC_HELP_STRING([--enable-memtrace], [(developers only)  checks for unfreed memory, and where it is allocated]),
+	,
+	enableval=no)
+
+if test "$enableval" != "no"; then
+	AC_MSG_NOTICE([MEM_TRACE enabled])
+	AC_DEFINE(MEM_TRACE,1,[checks for unfreed memory, and where it is allocated])
+fi
+AC_ARG_ENABLE([memstats],
+	AC_HELP_STRING([--enable-memstats], [(developers only) gives memory statistics (bytes allocated, calls, etc)]),
+	,
+	enableval=no)
+
+if test "$enableval" != "no"; then
+	AC_MSG_NOTICE([MEM_STATISTICS enabled])
+	AC_DEFINE(MEM_STATISTICS,1,[gives memory statistics (bytes allocated, calls, etc)])
+fi
+
+
 
 
 AC_CONFIG_FILES( 

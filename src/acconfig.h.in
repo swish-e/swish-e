@@ -156,6 +156,15 @@
 /* Define to 1 if you have the <zlib.h> header file. */
 #undef HAVE_ZLIB_H
 
+/* checks for memory consistency on alloc/free */
+#undef MEM_DEBUG
+
+/* gives memory statistics (bytes allocated, calls, etc) */
+#undef MEM_STATISTICS
+
+/* checks for unfreed memory, and where it is allocated */
+#undef MEM_TRACE
+
 /* Get time of day */
 #undef NO_GETTOD
 
