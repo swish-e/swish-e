@@ -178,7 +178,7 @@
         tooltip = 'CVS, daily builds and development documentation'
 
         #sum menu
-        menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs', 'another' ]
+        menu    = ['daily', 'cvs', 'view_cvs', 'devel_docs' ]
         page    = {
             daily       = {
                 name    = 'swish-daily'
@@ -199,12 +199,6 @@
                 name        = 'view cvs'
                 external    = 'http://cvs.sourceforge.net/viewcvs.py/swishe/'
                 tooltip     = 'Go to the SourceForge.net Swish-e CVS Repository'
-            }
-
-
-            another = {
-                name = 'deeper'
-                menu = ['one', 'two']
             }
         }
     }
