@@ -30,7 +30,8 @@
 #include "btree.h"
 #include "array.h"
 #include "worddata.h"
-#define MAXCHARS 6            /* Only 5 are needed when BTREE is used */
+#include "fhash.h"
+#define MAXCHARS 8            /* Only 8 are needed when BTREE is used */
 
 #else
 
@@ -47,6 +48,7 @@
 
 #ifdef USE_BTREE
 #define TOTALWORDSPERFILEPOS (MAXCHARS - 7)
+#define FILEHASHPOS (MAXCHARS - 8)
 #endif
 
 
@@ -134,13 +136,14 @@ struct Handle_DBNative
    int      tmp_worddata;
    char    *cur_worddata_file;
 
-   FILE    *fp_array;
-   int      tmp_array;
-   char    *cur_array_file;
-
+   FHASH   *hashfile;
    FILE    *fp_hashfile;
    int      tmp_hashfile;
    char    *cur_hashfile_file;
+
+   FILE    *fp_array;
+   int      tmp_array;
+   char    *cur_array_file;
 
    int      n_presorted_array;
    unsigned long *presorted_root_node;

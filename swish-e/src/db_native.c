@@ -185,6 +185,7 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
 #ifdef USE_BTREE
                 btree,
                 worddata,
+                hashfile,
                 array,
                 presorted,
 #endif
@@ -211,6 +212,13 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
         if (DB->unique_ID != worddata)
         {
             set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
+            return;
+        }
+
+        hashfile = readlong(DB->fp_hashfile, fread);
+        if (DB->unique_ID != hashfile)
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and hashfile file '%s' are not related.", DB->cur_index_file, DB->cur_hashfile_file);
             return;
         }
 
@@ -454,6 +462,7 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 
     DB->cur_hashfile_file = estrdup(filename);
     printlong(DB->fp_hashfile, DB->unique_ID, fwrite);
+    DB->hashfile=FHASH_Create(DB->fp_hashfile);
 
 
 #endif
@@ -654,6 +663,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 #else
     DB->bt = BTREE_Open(DB->fp_btree,4096,DB->offsets[WORDPOS]);
     DB->worddata = WORDDATA_Open(DB->fp_worddata);
+    DB->hashfile = FHASH_Open(DB->fp_hashfile,DB->offsets[FILEHASHPOS]);
     DB->totwords_array = ARRAY_Open(DB->fp_array,DB->offsets[TOTALWORDSPERFILEPOS]);
     DB->props_array = ARRAY_Open(DB->fp_array,DB->offsets[FILEOFFSETPOS]);
 
@@ -786,6 +796,8 @@ void    DB_Close_Native(void *db)
     /* Close (and rename) hash-filr index file, if it's open */
     if(DB->fp_hashfile)
     {
+        DB->offsets[FILEHASHPOS] = FHASH_Close(DB->hashfile);
+        DB->hashfile = NULL;
         DB_Close_File_Native(&DB->fp_hashfile, &DB->cur_hashfile_file, &DB->tmp_hashfile);
     }
 #endif
@@ -962,6 +974,7 @@ int     DB_EndWriteWords_Native(void *db)
 
     /* If we close the BTREE here we can save some memory bytes */
     /* Close (and rename) worddata file, if it's open */
+
     fp_tmp =DB->worddata->fp;
     WORDDATA_Close(DB->worddata);
     DB->worddata=NULL;

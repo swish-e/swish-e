@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "swish.h"
+#include "compress.h"
 #include "mem.h"
 #include "fhash.h"
 
@@ -89,7 +91,8 @@ unsigned long tmp;
 
     f = (FHASH *) emalloc(sizeof(FHASH));
     f->start = start;
-
+    f->fp = fp;
+    
     /* put file pointer at start of hash table */
     fseek(fp,start,SEEK_SET);
 
@@ -99,6 +102,7 @@ unsigned long tmp;
         fread((unsigned char *)&tmp,sizeof(unsigned long), 1, fp);
         f->hash_offsets[i] = UNPACKLONG(tmp);
     }
+    return f;
 }
 
 unsigned long FHASH_Close(FHASH *f)
@@ -165,6 +169,7 @@ unsigned long tmp;
     compress1(data_len,fp,fputc);
     fwrite((unsigned char *)data, data_len, 1, fp);
     f->hash_offsets[hashval] = next;
+    return 0;
 }
 
 int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
@@ -249,7 +254,7 @@ unsigned long next = f->hash_offsets[hashval];
 unsigned long prev = 0;
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
-int read_key_len, read_data_len;
+int read_key_len;
 unsigned long tmp;
     while(next)
     {
