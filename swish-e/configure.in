@@ -305,6 +305,12 @@ if test "x$libexecdiropt" == "x"; then
 fi
 
 
-AC_CONFIG_FILES( Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile)
+AC_CONFIG_FILES( 
+       Makefile html/Makefile man/Makefile 
+       doc/Makefile src/Makefile src/expat/Makefile 
+       src/replace/Makefile perl/Makefile.PL 
+       rpm/swish-e.spec tests/Makefile 
+       example/Makefile prog-bin/Makefile 
+       filters/Makefile conf/Makefile filter-bin/Makefile)
 AC_OUTPUT
 

@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = filters prog-bin example html man src tests
+SUBDIRS = filters prog-bin conf filter-bin example html man src tests
 
 
 if BUILDDOCS
@@ -24,23 +24,6 @@ config_dir  = \
      config/ltmain.sh \
      config/missing \
      config/mkinstalldirs
-
-conf_dir = \
-    conf/stopwords/dutch.txt \
-    conf/stopwords/english.txt \
-    conf/stopwords/german.txt \
-    conf/stopwords/spanish.txt \
-    conf/README \
-    conf/example1.config \
-    conf/example2.config \
-    conf/example3.config \
-    conf/example4.config \
-    conf/example5.config \
-    conf/example6.config \
-    conf/example7.config \
-    conf/example8.config \
-    conf/example9.config \
-    conf/example9.pl
 
 
 doc_dir = \
@@ -68,14 +51,6 @@ doc_dir = \
     doc/tmpl/page.tmpl \
     doc/tmpl/pageps.tmpl \
     doc/tmpl/splitpage.tmpl
-
-
-filter_dir = \
-    filter-bin/README \
-    filter-bin/swish_filter.pl \
-    filter-bin/_binfilter.sh \
-    filter-bin/_pdf2html.pl
-
 
 
 perl_dir = \
@@ -154,7 +129,7 @@ rpm_dir = \
 
 
 EXTRA_DIST = \
-    $(config_dir) $(conf_dir) $(doc_dir) $(perl_dir) \
+    $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
     win32.nsi \

@@ -9,7 +9,8 @@ spider.pl
 	Working example of a web spider.  This program is a full-featured
 	spider, that is fully customizable through its configuration file.
 
-	Type perldoc spider.pl from the prog-bin directory for documentation.
+        Note: spider.pl is installed in the scripts directory.
+              Running swish-e -h will display the scripts directory.
 
 SwishSpiderConfig.pl
 	Example configuration file for the spider.pl program
@@ -28,14 +29,14 @@ DirTree.pl
 
 
 MySQL.pl
-    Another simple example that shows how to index data stored in a
-    MySQL database.  Instructions are included on how to configure the
-    swish.cgi program 
+	Another simple example that shows how to index data stored in a
+	MySQL database.  Instructions are included on how to configure the
+	swish.cgi program 
 
 
 index_hypermail.pl
-    An example program for indexing mailing list archives that are created
-    with the popular Hypermail program.
+	An example program for indexing mailing list archives that are created
+	with the popular Hypermail program.
 
 
 pdf2xml.pm and pdf2html.pm
@@ -49,3 +50,6 @@ doc2txt.pm
 	Requires the catdoc program.  Type perldoc doc2txt.pm
 	from the prog-bin directory for documentation.
 
+
+Note: The modules to convert PDF and MS Word documents are outdated.
+See SWISH::Filter for more information.

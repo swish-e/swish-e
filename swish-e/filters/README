@@ -19,33 +19,35 @@ install the xpdf package that includes the pdftotext and pdfinfo
 programs.  SWISH::Filters::Pdf2HTML only provides a unified interface
 to this programs.
 
-In addition to installing the required filter programs, you will need
-to set the path to the SWISH::Filter modules before indexing.  For example,
-if you unpacked the Swish-e distribution into $HOME/swish-e-2.2 directory
-you could do (with bourne type of shell):
+The included program F<spider.pl> will use SWISH::Filter by default.
+This means that installing the programs that do the filter is all that
+is needed to start filtering documents.  For example, installing the
+xpdf package will enable indexing of PDF file when spidering.
 
-    export PERL5LIB=$HOME/swish-e-2.2/filters
+The filter modules are in the $libexecdir/perl directory.  Running swish-e
+-h will list the setting for $libexecdir, but is typically
+/usr/local/lib/swish-e if swish-e was built from source, or /usr/lib/swish-e
+if installed as a package.  On Window $libexecdir will be set at 
+installation time.
+
+Note that $libexecdir/perl is not normally part of Perl's @INC array. So to
+read documenation on a specific filter you will need to either specify the
+full path to the filter or set PERL5LIB.  For example:
+
+    export PERL5LIB=/usr/local/lib/swish-e/perl
+    perldoc SWISH::Filter
+
+Documentation for SWISH::Filter can also be found in the html directory and 
+at http://swish-e.org.
 
 When first testing you may also wish to set
 
     export FILTER_DEBUG=1
 
-which will generate additional warnings when filter modules fail to load.    
-
-Please see the SWISH::Filter documentation for more information.
-
-    ~/swish-e/filters $ perldoc SWISH::Filter
-
-See also src/swishspider and prog-bin/spider.pl for examples of how
-to use the SWISH::Filter module.
-
-
-Swish-e has another filter system.
-The FileFilter directive that can be used to
-filter documents through an external program while indexing.
-That system requires a separate filter setup for each type
-of document. See the SWISH-CONFIG page for information
-on that type of filtering.
+Swish-e has another filter system. The FileFilter directive that can be used
+to filter documents through an external program while indexing. That system
+requires a separate filter setup for each type of document. See the
+SWISH-CONFIG page for information on that type of filtering.
 
 Current filters distributed with Swish-e:
 -----------------------------------------
