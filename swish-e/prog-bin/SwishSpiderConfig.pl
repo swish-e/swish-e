@@ -67,7 +67,7 @@ Please see C<perldoc spider.pl> for more information.
         # limit to only .html files
         test_url    => sub { $_[0]->path =~ /\.html?$/ },
 
-        delay_min   => .0001,     # Delay in minutes between requests
+        delay_sec   => 2,         # Delay in seconds between requests
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 100,       # Max Unique URLs to spider
         max_indexed => 20,        # Max number of files to send to swish for indexing
@@ -86,8 +86,8 @@ Please see C<perldoc spider.pl> for more information.
 
         base_url        => 'http://www.swish-e.org/',
         email           => 'swish@domain.invalid',
-        delay_min       => .0001,
         link_tags       => [qw/ a frame /],
+        delay_sec       => 30,        # Delay in seconds between requests
         max_files       => 50,         
         max_indexed     => 20,        # Max number of files to send to swish for indexing
 
@@ -124,7 +124,6 @@ Please see C<perldoc spider.pl> for more information.
         same_hosts  => [ qw/www.swish-e.org/ ],
         agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
-        delay_min   => .0001,     # Delay in minutes between requests
         keep_alive  => 1,         # Try to keep the connection open
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 20,        # Max files to spider

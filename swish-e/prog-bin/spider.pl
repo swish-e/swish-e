@@ -219,6 +219,19 @@ sub process_server {
 
     my $ua;
 
+
+    # set the delay
+    unless ( defined $server->{delay_sec} ) {
+
+        if ( defined $server->{delay_min} && $server->{delay_min} =~ /^\d+\.?\d*$/ ) {
+            $server->{delay_sec} = $server->{delay_min} * 60;
+        }
+        
+        $server->{delay_sec} = 5 unless defined $server->{delay_sec};
+    }
+    $server->{delay_sec} = 5 unless $server->{delay_sec} =~ /^\d+$/;
+    
+
     if ( $server->{ignore_robots_file} ) {
         $ua = LWP::UserAgent->new;
         return unless $ua;
@@ -228,7 +241,7 @@ sub process_server {
     } else {
         $ua = LWP::RobotUA->new( $server->{agent}, $server->{email} );
         return unless $ua;
-        $ua->delay( $server->{delay_min} || 0.1 );
+        $ua->delay( 0 );  # handle delay locally.
     }
 
     # Set the timeout on the server and using Windows.
@@ -247,6 +260,7 @@ sub process_server {
             $ua->conn_cache( { total_capacity => $keep_alive } );
 
         } else {
+            delete $server->{keep_alive};
             warn "Can't use keep-alive: conn_cache method not available\n";
         }
     }
@@ -354,12 +368,33 @@ sub spider {
 
         my ( $uri, $parent, $depth ) = @{shift @link_array};
         
+        delay_request( $server );
+        
         my $new_links = process_link( $server, $uri, $parent, $depth );
 
         push @link_array, map { [ $_, $uri, $depth+1 ] } @$new_links if $new_links;
             
     }
-}    
+}
+
+#---------- Delay a request based on the delay time -------------
+
+sub delay_request {
+    my ( $server ) = @_;
+    
+    # return if no delay or first request
+    
+    return if !$server->{delay_sec} || !$server->{last_response_time};    
+
+    return if $server->{keep_alive} && ! delete $server->{connection_closed};
+    
+    my $wait = $server->{delay_sec} - ( time - $server->{last_response_time} );
+    
+    return unless $wait > 0;
+
+    print STDERR "sleeping $wait seconds\n" if $server->{debug} & DEBUG_URL;
+    sleep( $wait );
+}
         
 
 #----------- Process a url and return links -----------------------
@@ -391,6 +426,8 @@ sub process_link {
 
 
     # Set basic auth if defined - use URI specific first, then credentials
+    # this doesn't track what should have authorization
+
     if ( my ( $user, $pass ) = split /:/, ( $uri->userinfo || $server->{credentials} || '' ) ) {
         $request->authorization_basic( $user, $pass );
     }
@@ -510,6 +547,11 @@ sub process_link {
         $server->{counts}{'robots.txt'}++;
         return;
     }
+
+
+    # save the request completion time for delay_min
+    $server->{last_response_time} = time;
+    $server->{connection_closed} = ($response->header('Connection') || '') =~ /close/i;
 
 
     # Report bad links (excluding those skipped by robots.txt
@@ -934,7 +976,6 @@ sub default_urls {
             #debug => DEBUG_URL|DEBUG_SKIPPED|DEBUG_INFO,
             base_url        => \@ARGV,
             email           => 'swish@domain.invalid',
-            delay_min       => .0001,
             link_tags       => [qw/ a frame /],
             test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
 
@@ -1075,7 +1116,7 @@ And with libwww-perl-5.53_91 HTTP/1.1 keep alive requests can reduce the load on
 the server even more (and potentially reduce spidering time considerably!)
 
 Still, discuss spidering with a site's administrator before beginning.
-Use the C<delay_min> to adjust how fast the spider fetches documents.
+Use the C<delay_sec> to adjust how fast the spider fetches documents.
 Consider running a second web server with a limited number of children if you really
 want to fine tune the resources used by spidering.
 
@@ -1280,20 +1321,32 @@ For example, to extract tags from C<a> tags and from C<frame> tags:
     );
 
 
-=item delay_min
+=item delay_sec
 
-This optional key sets the delay in minutes to wait between requests.  See the
-LWP::RobotUA man page for more information.  The default is 0.1 (6 seconds),
-but in general you will probably want it much smaller.  But, check with
-the webmaster before using too small a number.
+This optional key sets the delay in seconds to wait between requests.  See the
+LWP::RobotUA man page for more information.  The default is 5 seconds.
+Set to zero for no delay.
+
+When using the keep_alive feature (recommended) the delay will used only
+where the previous request returned a "Connection: closed" header.
+
+Note: A common recommendation is to use a delay of one minute between requests.
+For example, one minute is the default used in the LWP::RobotUA Perl module.
+
+
+=item delay_min  (depreciated)
+
+Set the delay to wait between requests in minutes.  If both delay_sec and
+delay_min are defined, delay_sec will be used.
+
 
 =item max_wait_time
 
 This setting is the number of seconds to wait for data to be returned from
-the request.  Data is returned in chunks to the spider, and the timer is reset each time
-a new chunk is reported.  Therefore, documents (requests) that take longer than this setting
-should not be aborted as long as some data is received every max_wait_time seconds.
-The default it 30 seconds.
+the request.  Data is returned in chunks to the spider, and the timer is
+reset each time a new chunk is reported.  Therefore, documents (requests)
+that take longer than this setting should not be aborted as long as some
+data is received every max_wait_time seconds. The default it 30 seconds.
 
 NOTE: This option has no effect on Windows.
 
@@ -1328,13 +1381,16 @@ skipped and a message is written to STDERR if the DEBUG_SKIPPED debug flag is se
 =item keep_alive
 
 This optional parameter will enable keep alive requests.  This can dramatically speed
-up searching and reduce the load on server being spidered.  The default is to not use
+up spidering and reduce the load on server being spidered.  The default is to not use
 keep alives, although enabling it will probably be the right thing to do.
 
 To get the most out of keep alives, you may want to set up your web server to
 allow a lot of requests per single connection (i.e MaxKeepAliveRequests on Apache).
-Apache's default is 100, which should be good.  (But, in general, don't enable KeepAlives
-on a mod_perl server.)
+Apache's default is 100, which should be good.
+
+When a connection is not closed the spider does not wait the "delay_sec"
+time when making the next request.  In other words, there is no delay in
+requesting documents while the connection is open.
 
 Note: try to filter as many documents as possible B<before> making the request to the server.  In
 other words, use C<test_url> to look for files ending in C<.html> instead of using C<test_response> to look
