@@ -39,6 +39,7 @@ struct MOD_Index
 	    /* entry vars */
     ENTRYARRAY *entryArray;
     ENTRY  *hashentries[SEARCHHASHSIZE];
+	int		hashentriesdirty[SEARCHHASHSIZE];
 
     /* Compression Work buffer while compression locations in index
        ** proccess */

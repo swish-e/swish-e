@@ -105,6 +105,8 @@ $Id$
 **
 */
 
+/* following is temp for testing */
+#define MEIER
 
 #include "swish.h"
 #include "string.h"
@@ -158,8 +160,11 @@ void initModule_Index (SWISH  *sw)
 
 
         /* Init  entries hash table */
-    for (i=0; i<SEARCHHASHSIZE; i++) 
-        idx->hashentries[i] = NULL;
+	for (i=0; i<SEARCHHASHSIZE; i++)
+	{
+		idx->hashentries[i] = NULL;
+		idx->hashentriesdirty[i] = 0;
+	}
 
     idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
 
@@ -443,6 +448,27 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fflush(stdout);
     }
 
+#ifdef MEIER
+/* walk the list, and compress entries */
+	{
+	ENTRY  *ep;
+    int     i;
+    IndexFILE *indexf = sw->indexlist;
+
+	for (i = 0; i < SEARCHHASHSIZE; i++)
+		if (sw->Index->hashentriesdirty[i])
+		{
+			sw->Index->hashentriesdirty[i] = 0;
+			for (ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
+			{
+				CompressCurrentLocEntry(sw, indexf, ep);
+				ep->currentlocation = ep->u1.max_locations;
+			}
+		}
+
+	}
+#endif
+
     return;
 }
 
@@ -549,6 +575,9 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         if (strcmp(efound->word, word) == 0)
             break;
 
+#ifdef MEIER
+	sw->Index->hashentriesdirty[hashval] = 1;
+#endif
 
     if (!efound)
     {
@@ -592,10 +621,12 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
             efound->locationarray[l] = tp;
             if (efound->locationarray[efound->currentlocation]->filenum != filenum)
             {
+#ifndef MEIER
                 /* Compress previous location data */
                 CompressPrevLocEntry(sw, indexf, efound);
-                efound->tfrequency++;
                 efound->currentlocation = l;
+#endif
+                efound->tfrequency++;
             }
         }
         else
