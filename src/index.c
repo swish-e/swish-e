@@ -2102,7 +2102,7 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
-        m = getMetaNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+        m = getPropNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
 
         if (m && m->sorted_data)
         {
@@ -2112,6 +2112,11 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
                 val = m->sorted_data[i];
                 s = compress3(val,s);
             }
+
+            if (sw->verbose)
+                printf("Writing sorted index for '%s'\n", m->metaName );
+
+
             DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
         }
     }

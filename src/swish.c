@@ -1155,10 +1155,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
         write_file_list(sw, sw->indexlist);
 
-
-        if (sw->verbose)
-            printf("Writing sorted index ...\n");
-
         write_sorted_index(sw, sw->indexlist);
     }
 
