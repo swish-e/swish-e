@@ -539,17 +539,17 @@ int wordcount=0; /* Word count */
 		if (temp) 
 			*temp = '\0';	/* terminate CONTENT, temporarily */
 	
-		if(sw->ConvertHTMLEntities)
-			convtag = (char *)convertentities(start, sw);
-		else convtag = start;
-
 			/* If it is a property store it */
 		if(metaNameEntry && is_meta_property(metaNameEntry))
-			addDocProperty(&thisFileEntry->docProperties, metaName, convtag, strlen(convtag));
+			addDocProperty(&thisFileEntry->docProperties, metaName, start, strlen(start));
 
 			/* Do not index as a metaName */
 		if(metaNameEntry && !is_meta_index(metaNameEntry)) 
 			metaName=1;
+
+		if(sw->ConvertHTMLEntities)
+			convtag = (char *)convertentities(start, sw);
+		else convtag = start;
 
 		wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
 		if(convtag!=start) efree(convtag);
@@ -580,10 +580,6 @@ int found,lensummary;
 		tmp=estrdup(p);
 		remove_newlines(tmp);
 		remove_tags(tmp);
-//$$$ Jose, have a look on these IMO should be removed (rasc 2001-02-12)
-//$$$		convsummary=convertentities(tmp, sw);
-//$$$		if(convsummary!=tmp) efree(tmp); 
-//$$$		tmp=convsummary;
 
 		/* use only the required memory -save those not used */
 		summary=estrdup(tmp);
@@ -702,10 +698,6 @@ int found,lensummary;
 	{
 		remove_newlines(summary);
 		remove_tags(summary);
-//$$$ Jose, have a look on these IMO should be removed (rasc 2001-02-12)
-//$$$		convsummary=convertentities(summary,sw);
-//$$$		if(convsummary!=summary) efree(summary);
-//$$$		summary=convsummary;
         }
         if(summary && size && ((int)strlen(summary))>size) 
                 summary[size]='\0';
