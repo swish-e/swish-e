@@ -63,6 +63,9 @@ perl/Makefile.PL
 perl/SWISHE.pm
 perl/SWISHE.xs
 perl/test.pl
+prog-bin/file.pl
+prog-bin/spider.pl
+prog-bin/README
 pod/.htaccess
 pod/CHANGES.pod
 pod/INSTALL.pod

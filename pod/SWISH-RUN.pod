@@ -34,7 +34,8 @@ in L<SEARCHING|/"SEARCHING>.  Also, see L<SWISH-SEARCH|SWISH-SEARCH> for example
 
 SWISH-E usage:
 
-    swish-e [-i dir file ... ] [-c file] [-f file] [-l] [-v (num)] [-S method(fs)]
+    swish-e [-i dir file ... ] [-c file] [-f file] [-l] \
+            [-v (num)] [-S method(fs)] [-N path]
 
 The C<-h> switch (help) will list the available SWISH-E command line arguments:
 
@@ -51,6 +52,14 @@ See L<SWISH-CONFIG|SWISH-CONFIG> for information on the configuration file.
 Security Note: If the swish binary is named C<swish-search> then swish will not allow any operation that
 would cause swish to write to the index file.
 
+When indexing it may be advisable to index to a temporary file, and then after
+indexing has successfully completed rename the file to the final location.
+This is especially important when replacing an index that is currently in use.
+
+    swish-e -c swish.config -f index.tmp
+    [check return code from swish or look for err: output]
+    mv index.tmp index.swish-e
+
 
 =head2 Indexing Command Line Arguments
 
@@ -63,10 +72,19 @@ This is typically specified in the L<configuration file|SWISH-CONFIG> with the B
 instead of on the command line.  Use of this switch overrides the configuration file settings.
 
 
-=item -S [fs|http] (indexing mode)
+=item -S [fs|http|prog] (indexing mode)
 
 This specifies the method to use for indexing. Can be either C<fs> for local indexing (the default),
-or C<http> for spidering.
+C<http> for spidering, or C<prog> for reading documents from an external program.
+
+The C<prog> method is new to SWISH-E version 2.2.  It's meant as a general
+purpose method to feed documents to swish from an external program.
+For example, the program can read a database (e.g. MySQL), spider a web
+server, or convert documents from one format to another (e.g. pdf to html).
+The program name is passed to swish either by the C<IndexDir> directive,
+or via the C<-i> option.
+A few example programs are provided in the swish-e distribution
+located in the C<prog-bin> directory.
 
 Currently, there are a number of special L<configuration file|SWISH-CONFIG> directives that
 control the HTTP indexing method.
@@ -132,8 +150,53 @@ swish uses so much RAM that the computer begins to swap excessively.
 Specifying this option tells swish to follow symbolic links when indexing.
 The configuration file value B<FollowSymLinks> will override the command-line value.
 
+The default is not to follow symlinks.  A small improvement in indexing time my result
+from enabling FollowSymLinks.
 
-=item -v [0|1|2|3] (verbosity level)
+=item -N path (index only newer files)
+
+The C<-N> option takes a path to a file, and only files I<newer> that the listed
+file will be indexed.  This is helpful for creating incremental indexes -- that is,
+indexes that contain just files added since the last full index was created of all files.
+
+Example (bad example)
+
+    swish-e -c config.file -N index.swish-e -f index.new
+   
+This will index as normal, but only files with a modified date newer
+than C<index.swish-e> will be indexed.
+
+This is a bad example because it uses C<index.swish-e> which one might assume
+was the date of last indexing.  The problem is that files might have been added
+between the time indexing read the directory and when the C<index.swish-e> file
+was created -- which can be quite a bit of time for very large indexing jobs.
+
+The only solution is to prevent any new file additions while full indexing is running.
+If this is impossible then it will be slightly better to do this:
+
+Full indexing:
+
+    touch indexing_time.file
+    swish-e -c config.file -f index.tmp
+    mv index.tmp index.full
+
+Incremental indexing:
+
+    swish-e -c config.file -N indexing_time.file -f index.tmp
+    mv index.tmp index.incremental
+
+Then search with
+
+    swish-e -w foo -f index.full index.incremental
+
+or merge the indexes
+
+    swish-e -M index.full index.incremental index.tmp
+    mv index.tmp index.swish-e
+    swish-e -w foo
+
+
+=item -v [0|1|2|3|4] (verbosity level)
 
 The C<-v> option can take a numerical value from 0 to 3.
 Specify 0 for completely silent operation and 3 for detailed reports.

@@ -51,7 +51,7 @@ file in the src directory of the swish-e distribution package. By editing the ru
 depending on your preference.
 
 Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>)
-C<WordCharacters>, C<BeginCharactes>, C<EndCharacters>,
+C<WordCharacters>, C<BeginCharacters>, C<EndCharacters>,
 C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
 
 Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues --
@@ -71,6 +71,8 @@ Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> for more in
 
 Yes, you can. Just remember that swish-e retains capitalization for all characters other than [a-z A-Z], so the word "Çelik" is not retrieved by
 "çelik", "Celik", or "celik". You can index and use words containing any entity from ! (#033) to ÿ (#255).
+
+(note: but swish uses tolower(3), so locale settings may apply.)
 
 Also, the TranslateCharacters directive (L<SWISH-CONFIG|SWISH-CONFIG>) can translate characters while indexing
 and searching.  C<TranslateCharacters :ascii7:> is a predefined set of characters that will translate eight bit characters to ascii7 characters.
@@ -115,19 +117,23 @@ edit the line in your configuration file:
 
 It's true that indexing can take up a lot of memory!
 One thing you can do is make many indices of smaller content instead of trying to do
-everything at once. You can then merge all the smaller pieces together with the C<-M> switch.
+everything at once. You can then merge all the smaller pieces together with the C<-M> switch, or use
+the C<-f> switch to specify more than one index while searching.
 
 Another option is use the C<-e> switch.  This will require less memory, but indexing will take longer as
-not all data will be stored in memory while indexing.
+not all data will be stored in memory while indexing.  Please report back your findings as it seems C<-e>
+requires quite a bit less RAM, but often not that much more time.
 
 =head2 I can't limit search to title/body/comment.
 
-I can't search with meta names, all the names are indexed as "plain" 
+Or, I<I can't search with meta names, all the names are indexed as "plain".>
 
 Check in the config.h file if #define INDEXTAGS is set to 1. If it is, change it to 0, recompile, and index again. When INDEXTAGS is 1,
 ALL the tags are indexed as plain text, that is you index "title", "h1", and so on, AND they loose their indexing meaning. If INDEXTAGS is
 set to 0, you will still index meta tags and comments, unless you have indicated otherwise in the user config file with the IndexComments
-directive. 
+directive.
+
+Also, check for the C<UndefinedMetaTags> setting in your configuration file.
 
 =head2 Do I need to reindex my site each time I upgrade to a new Swish-e version? 
 
@@ -140,7 +146,9 @@ Swish-e can internally only handle HTML, WML, XML and TXT (text) files.
 To index other document types you have to install a filter into swish-e using the FileFilter config directive.
 These filters have to translate a document into the swish-e known formats (e.g. text or html). You can use
 "xpdf" or "ghostscript" to convert pdf to text or e.g. "catdoc" to convert winword documents on unix.  
-For details, please have a look on the filter configuration part.
+For details, please have a look on the filter configuration part, and look in the C<filter-bin> directory
+of the SWISH-E distribution.
+
 
 =head2 How do I make swish highlight words in search results?
 
@@ -154,7 +162,7 @@ you must parse the doucment into words and tags (and comments).  A word you wish
 mutilple HTML tags, or be a word in a URL and you wish to highlight the entire <A> text.
 
 Perl modules such as HTML::Parser
-and XML::Parser make this possible.  Then you need to consider that swish uses settings such as
+and XML::Parser make word extraction possible.  Next, you need to consider that swish uses settings such as
 WordCharacters, BeginCharacters, EndCharacters, IgnoreFirstChar, and IgnoreLast, char to define a
 "word".  That is, you can't consider that a string of characters with white space on each side is a word.
 
@@ -238,20 +246,27 @@ This is a question for the swish-e discussion list.
 How does one create the incremental index?
 
 One method is by using the C<-N> switch to pass a file path to swish when indexing.
-Swish will only index files that have a last modificaiton date newer that the file
+Swish will only index files that have a last modificaiton date C<newer> than the file
 supplied with the C<-N> switch.
-This option has the disadvantage that swish must stat all the files in the directory tree to just
-find a few new files.  Also, if you use the swish index file as the file passed to -N there may be files
-that were added after indexing was started, but before the index file was written.  This could result in
-a file not being added to the index.
 
-Another option is to maintain a parallel directory tree that contains symlinks pointing to the main files.
-When a new file is added you create a symlink to the real file in the parallel directory tree.
+This option has the disadvantage that swish must process every file in every directory
+as if they were going to be indexed (the test for -N is done last right before indexing
+of the file contents begin and after all other tests on the file have been completed)
+-- all that just to find a few new files.
+Also, if you use the swish index file as the file passed to -N there may be files
+that were added after indexing was started, but before the index file was written.
+This could result in a file not being added to the index.
+
+Another option is to maintain a parallel directory tree that contains
+symlinks pointing to the main files.
+When a new file is added you create a symlink to the real file in the parallel
+directory tree.
 Then just index the symlink directory to generate the incremental index.
 
-This option has the disadvantage that you need to have a central program that creates the new files that can
-can also create the symlinks.  But, indexing is quite fast since swish only has to look at the files that need to
-be indexed.  When you run full indexing you simply unlink (delete) all the symlinks.
+This option has the disadvantage that you need to have a central program that creates
+the new files that can also create the symlinks.  But, indexing is quite fast since swish
+only has to look at the files that need to be indexed.
+When you run full indexing you simply unlink (delete) all the symlinks.
 
 Both of these methods have issues where files could end up in both indexes, or files being left out of an index.
 Use of file locks while indexing, and hash lookups during searches can help prevent these problems.
@@ -260,8 +275,6 @@ Use of file locks while indexing, and hash lookups during searches can help prev
 
 You can either merge C<-M> two indexes into a single index,
 or use C<-f> to specify more than one index while searching.
-
-
 
 
 =head1 Document Info
