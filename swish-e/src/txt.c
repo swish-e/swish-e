@@ -55,7 +55,7 @@ char *summary=NULL;
 	metaName[0]=1; positionMeta[0]=1; /* No metanames in TXT */
 	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, metaName, positionMeta);
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
-	if(sw->swap_flag)
+	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 	if(summary) efree(summary);
 	return ftotalwords;

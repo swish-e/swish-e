@@ -91,9 +91,6 @@ SWISH *SwishNew()
 
     sw->equivalentservers=NULL;
 
-        /* Swap flag and temp files*/
-    sw->swap_flag=SWAP_DEFAULT;
-
         /* Load Default Values */
     SwishDefaults(sw);
         /* Make rest of lookup tables */

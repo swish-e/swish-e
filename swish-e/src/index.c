@@ -173,6 +173,8 @@ void initModule_Index (SWISH  *sw)
         /* Initialize spider directory */
     idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,SPIDERDIRECTORY,&idx->lenspiderdirectory);
 
+        /* Economic flag and temp files*/
+    idx->economic_flag=SWAP_DEFAULT;
 
     if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
     {
@@ -189,6 +191,7 @@ void initModule_Index (SWISH  *sw)
     /* initialize buffers used by indexstring */
     idx->word = (char *) emalloc((idx->lenword = MAXWORDLEN) + 1);
     idx->swishword = (char *) emalloc((idx->lenswishword = MAXWORDLEN) + 1);
+
 
     return;
 }
@@ -1132,6 +1135,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
            *ptmp2,
            *compressed_data;
     int    *pi = NULL;
+    struct  MOD_Index *idx = sw->Index;
 
     /* Very trivial case */
     if (!e)
@@ -1151,7 +1155,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     for (k = 0, ptmp2 = ptmp; k < i; k++)
     {
         pi = (int *) ptmp2;
-        if (sw->swap_flag)
+        if (idx->economic_flag)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
         compressed_data = (char *) e->locationarray[k];
         uncompress2(num, compressed_data); /* index to lookuptable */
@@ -1373,6 +1377,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
     struct file *filep;
     unsigned char *buffer;
     int     sz_buffer;
+    struct  MOD_Index *idx = sw->Index;
 
     /* Deflate studd removed ...
     struct buffer_pool *bp = NULL;
@@ -1382,7 +1387,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
     for (i = 0; i < indexf->filearray_cursize; i++)
     {
-        if (sw->swap_flag)
+        if (idx->economic_flag)
         {
             filep = unSwapFileData(sw);
             filep->fi.filenum = i + 1;

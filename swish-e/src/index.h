@@ -77,6 +77,11 @@ struct MOD_Index
     int lenword;
     char *word;
 
+    /* Economic mode (-e) */
+    /* If true. Swap part of the info to disk while indexing */
+    /* Save memory */
+    int     economic_flag;
+
 };
 
 void initModule_Index (SWISH *);

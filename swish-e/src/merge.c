@@ -90,7 +90,7 @@ int is_first1, is_first2;
 	sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
 
 		/* Force the economic mode to save memory */
-	sw->swap_flag=1;
+	sw->Index->economic_flag=1;
 
 	initindexfilehashlist();
 	
@@ -473,7 +473,7 @@ struct mergeindexfileinfo *ip;
 		/* swap meta values for properties */
 	swapDocPropertyMetaNames(docProperties, metaFile);
 
-	if(sw->swap_flag)
+	if(sw->Index->economic_flag)
 		SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum-1]);
 
 }
