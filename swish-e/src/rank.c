@@ -259,10 +259,7 @@ int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, in
     if(GET_STRUCTURE(structure) != IN_FILE)
         for (i = 0; i < numRanks; i++)
             if (ranks[i].mask & structure)
-            {
-                printf("has bit %d adding %d to factor %d\n", ranks[i].mask, ranks[i].rank, factor);
                 factor += ranks[i].rank;
-            }
 
     if(freq > 1000)  /* rare case - Do not overrun the static arrays (they only have 1000 entries) */
         rank = (int)(10000 * (floor(log((double)freq) + 0.5)));
@@ -270,7 +267,7 @@ int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, in
         rank = swish_log[freq] + 100000; /* 100000 = 10 * 10000 */
 
 
-printf("%d freq:%d tfreq: %d  struct: %d factor: %d rank: %d ", filenum, freq, tfreq, structure, factor, rank );        
+//printf("%d freq:%d tfreq: %d  struct: %d factor: %d rank: %d ", filenum, freq, tfreq, structure, factor, rank );        
         
 
     /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
@@ -299,7 +296,7 @@ printf("%d freq:%d tfreq: %d  struct: %d factor: %d rank: %d ", filenum, freq, t
         rank = (rank * factor) / 100;
     }
 
-printf(" finalrank: %d\n", rank );
+//printf(" finalrank: %d\n", rank );
 //rank = freq * factor;
 //printf("* Filenum %d freq %d factor %d  rank %d\n", filenum, freq, factor, rank );
 
