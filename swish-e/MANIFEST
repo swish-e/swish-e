@@ -99,6 +99,8 @@ src/docprop.c
 src/docprop.h
 src/error.c
 src/error.h
+src/extprog.c
+src/extprog.h
 src/file.c
 src/file.h
 src/filter.c
