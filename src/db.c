@@ -271,6 +271,8 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             position = uncompress2(&p);
             q = compress3(position,q);
         }
+		if (sw->Index->swap_locdata)
+	        efree(compressed_data);
     }
 
         /* Write in previous meta (curmetaID)
