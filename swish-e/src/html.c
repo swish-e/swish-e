@@ -654,6 +654,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
     for (p = buffer; p && *p;)
     {
+
         /* Look for non escaped '<' */
         if ((tag = strchr(p, '<')) && ((tag == p) || (*(tag - 1) != '\\')))
         {
@@ -689,7 +690,6 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                 {
                     /* Check for META TAG TYPE 1 */
                     structure |= IN_META;
-
                     if (lstrstr(tag, "START"))
                     {
                         if ((metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL)))
@@ -731,10 +731,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             {
                                 if ((endtag = strchr(p, '<')))
                                     *endtag = '\0';
+
+                                    
                                 p = sw_ConvHTMLEntities2ISO(sw, p);
 
                                 remove_newlines(p);  /** why isn't this just done for the entire doc? */
-
 
                                 if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0) )
                                     progwarn("prop not added for doc '%s'\n", fprop->real_path );
@@ -743,8 +744,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                                 if (endtag)
                                     *endtag = '<';
 
-                                p = endtag;    
-
+                                continue;
                             }
                         }
 
@@ -764,8 +764,9 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                                 positionMeta = position_no_meta;
                             }
                         }
-                        p = endtag;
                     }
+
+                    p = endtag;
                 }
 
                 /* Check for META TAG TYPE 2 */
@@ -774,11 +775,13 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                     ftotalwords += parseMetaData(sw, indexf, tag, idx->filenum, structure, Name, Content, thisFileEntry, &position_meta, fprop->real_path);
                     p = endtag;
                 }               /*  Check for COMMENT */
+
                 else if ((tag[0] == '!') && sw->indexComments)
                 {
                     ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
                     p = endtag;
                 }               /* Default: Continue */
+
                 else
                 {
                     structure = getstructure(tag, structure);

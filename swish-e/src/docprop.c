@@ -93,13 +93,20 @@ void freeDocProperties(docProperties)
 *       What about convert entities here?
 *
 ********************************************************************/
-int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *string )
+int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring )
 {
     unsigned long int num;
     char     *newstr;
     char     *badchar;
     char     *tmpnum;
+    char     *string;
     
+    string = propstring;
+
+    /* skip leading white space */
+    while ( isspace( (int)*string) )
+        string++;
+
     if ( !string || !*string )
     {
         progwarn("Null string passed to EncodeProperty");
@@ -107,18 +114,16 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *strin
     }
 
 
-    /* remove leading and trailing white space (strtoul() removes leading) */
+    /* make a working copy */
+    string = estrdup( string );
+
+    /* remove trailing white space  */
     {
         int i = strlen( string );
 
         while ( i  && isspace( (int)string[i-1]) )
             string[--i] = '\0';
-
-        while ( isspace( (int)*string) )
-            string++;
-
     }
-
 
 
     if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
@@ -127,15 +132,18 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *strin
 
         newstr = emalloc( sizeof( num ) + 1 );
         num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
+        
         if ( num == ULONG_MAX )
         {
             progwarnno("Attempted to convert '%s' to a number", string );
+            efree(string);
             return 0;
         }
 
         if ( *badchar ) // I think this is how it works...
         {
             progwarn("Invalid char '%c' found in string '%s'", badchar[0], string);
+            efree(string);
             return 0;
         }
         /* I'll bet there's an easier way */
@@ -149,13 +157,15 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *strin
 
         *encodedStr = newstr;
 
+        efree(string);
+
         return (int)sizeof(num);
     }
         
 
     if ( is_meta_string(meta_entry) )
     {
-        *encodedStr = estrdup( string );
+        *encodedStr = string;
         return (int)strlen( string );
     }
 
