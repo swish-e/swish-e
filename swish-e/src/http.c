@@ -429,7 +429,7 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
     /* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
     {
         int     retval;
-        char    commandline[] = "perl %s %s \"%s\"";
+        char    commandline[] = "perl \"%s\" \"%s\" \"%s\"";
         char   *command = emalloc( strlen(commandline) + strlen(spider_prog) + strlen(file_prefix) + strlen(url) + 1 );
 
         sprintf(command, commandline, spider_prog, file_prefix, url);
