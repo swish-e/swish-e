@@ -352,15 +352,23 @@
 
 //#define USE_BTREE
 
-#define sw_off_t unsigned long
 #define sw_fopen fopen
 #define sw_fclose fclose
 #define sw_fwrite fwrite
 #define sw_fread fread
-#define sw_fseek fseek
-#define sw_ftell ftell
 #define sw_fputc fputc
 #define sw_fgetc fgetc
+
+/* 64 bit LFS support */
+#ifdef _LARGEFILE_SOURCE
+#define sw_off_t off_t
+#define sw_fseek fseeko
+#define sw_ftell ftello
+#else
+#define sw_off_t unsigned long
+#define sw_fseek fseek
+#define sw_ftell ftell
+#endif
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess

@@ -90,11 +90,11 @@ void add_buffer_ramdisk(struct ramdisk *rd)
 }
 
 /* Equivalent to ftell to get the position while writing to the ramdisk */
-long ramdisk_tell(FILE *fp)
+sw_off_t ramdisk_tell(FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
 
-    return rd->cur_pos;
+    return (sw_off_t)rd->cur_pos;
 }
 
 
@@ -136,9 +136,10 @@ unsigned int avail;
 }
 
 /* Equivalent to fseek */
-int ramdisk_seek(FILE *fp,long pos, int set)
+int ramdisk_seek(FILE *fp,sw_off_t _pos, int set)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
+unsigned long pos = (unsigned long) _pos;
 
     switch(set)
     {
