@@ -62,9 +62,29 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 {
     int     i;
     struct  file *fi = NULL;
+    int     end = indexf->header.totalfiles;
+
+    i = sw->Search->beginhits ? sw->Search->beginhits - 1 : 0;
+
+    if ( i >= indexf->header.totalfiles )
+    {
+        printf("Hey, there are only %d files\n", indexf->header.totalfiles );
+        exit(-1);
+    }
+
+    end = indexf->header.totalfiles;
+
+    if ( sw->Search->maxhits > 0 )
+    {
+        end = i + sw->Search->maxhits;
+        if ( end > indexf->header.totalfiles )
+            end = indexf->header.totalfiles;
+    }
+
    
     printf("\n\n-----> FILES in index %s <-----\n", indexf->line );
-    for (i = 0; i < indexf->header.totalfiles; i++)
+
+    for (; i < end; i++)
     {
         fi = readFileEntry(sw, indexf, i + 1);
 
@@ -101,6 +121,18 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
         meta_entry = getPropNameByID( &indexf->header, j );
         dump_single_property( p, meta_entry );
+
+        { // show compression
+            PropIOBufPtr    buffer;
+            long    length   = fi->propSize[ meta_entry->metaID ];
+
+            if ( (buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, meta_entry->metaID, indexf->DB )))
+                if ( buffer->propLen )
+                    printf("  %20s: %lu -> %lu (%4.2f%%)\n", "**Compressed**", buffer->propLen, length, (float)length/(float)buffer->propLen * 100.00f );
+        }
+        
+
+        
         freeProperty( p );
     }
 }
