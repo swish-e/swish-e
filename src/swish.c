@@ -1093,14 +1093,14 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         {
             int pos;
         
-            /* 05/00 Jose Ruiz  Adjust totalwords  */
-            /* sw->indexlist->header.totalwords -= stopwords; */
+            /* 05/00 Jose Ruiz  Adjust totalwords for IgnoreLimit ONLY  */
+            sw->indexlist->header.totalwords -= stopwords;
 
             if (sw->indexlist->header.totalwords < 0)
                 sw->indexlist->header.totalwords = 0;
 
-            printf("%d word%s removed.\n", stopwords, (stopwords == 1) ? "" : "s");
-            printf("%d words removed not in common words array:\n", sw->indexlist->header.stopPos);
+            /* Same as "stopwords" */
+            printf("%d words removed by IgnoreLimit:\n", sw->indexlist->header.stopPos);
 
             for (pos = 0; pos < sw->indexlist->header.stopPos; pos++)
                 printf("%s, ", sw->indexlist->header.stopList[pos]);
@@ -1113,52 +1113,52 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         printf("Writing main index...\n");
     }
 
-
-
-
-    if (sw->verbose)
-        printf("Sorting words ...\n");
-
-    sort_words(sw, sw->indexlist);
-
-
-
-    if (sw->verbose)
-        printf("Writing header ...\n");
-    fflush(stdout);
-
-
-    write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
-
-    fflush(stdout);
-
-    if (sw->verbose)
-        printf("Writing index entries ...\n");
-
-
-    write_index(sw, sw->indexlist);
-
-
-    if (sw->verbose)
+    if ( !sw->indexlist->header.totalwords )
     {
-        if (sw->indexlist->header.totalwords)
+        printf("No unique words indexed!\n");
+        /* $$$ To Do - flag to not reaname the indexes so existing indexes are left as is */
+    }    
+    else
+    {
+    
+
+        if (sw->verbose)
+            printf("Sorting words ...\n");
+
+        sort_words(sw, sw->indexlist);
+
+
+
+        if (sw->verbose)
+            printf("Writing header ...\n");
+        fflush(stdout);
+
+
+        write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
+
+        fflush(stdout);
+
+        if (sw->verbose)
+            printf("Writing index entries ...\n");
+
+
+        write_index(sw, sw->indexlist);
+
+
+        if (sw->verbose)
+        {
             printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
-        else
-            printf("no unique words indexed.\n");
-        printf("Writing file index...\n");
+            printf("Writing file list ...\n");
+        }
+
+        write_file_list(sw, sw->indexlist);
+
+
+        if (sw->verbose)
+            printf("Writing sorted index ...\n");
+
+        write_sorted_index(sw, sw->indexlist);
     }
-
-    if (sw->verbose)
-        printf("Writing file list ...\n");
-
-    write_file_list(sw, sw->indexlist);
-
-
-
-    if (sw->verbose)
-        printf("Writing sorted index ...\n");
-
-    write_sorted_index(sw, sw->indexlist);
 
 
 
