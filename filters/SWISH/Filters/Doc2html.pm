@@ -1,49 +1,28 @@
 package SWISH::Filters::Doc2html;
-use vars qw/ @ISA $VERSION $prog /;
+use vars qw/ $VERSION /;
 
-$prog = 'wvWare';
 
-$VERSION = '0.01';
-@ISA = ('SWISH::Filter');
+$VERSION = '0.02';
+
+
 sub new {
-    my ( $pack, %params ) = @_;
+    my ( $class ) = @_;
 
     my $self = bless {
-        name => $params{name} || $pack,
-    }, $pack;
+        mimetypes   => [ qr!application/(x-)?msword! ], # list of types this filter handles
+    }, $class;
 
-
-    # check for helpers
-    my $path = $self->find_binary( $prog );
-    unless ( $path ) {
-        $self->mywarn("Can not use Filter $pack -- need to install $prog");
-        return;
-    }
-    $self->{$prog} = $path;
-
-    return $self;
-
+    return $self->set_programs( 'wvWare' );
 }
 
-sub name { $_->{name} || 'unknown' };
-
-sub priority{ 40 };  # This will be used over the catdoc filter which is 50
-
 sub filter {
-    my ( $self, $filter) = @_;
-
-    # Do we care about this document?
-    return unless $filter->content_type =~ m!application/(x-)?msword!;
-
-    # We need a file name to pass to the wvware program
-    my $file = $filter->fetch_filename;
+    my ( $self, $doc ) = @_;
 
     # Grab output from running program
-    my $content = $filter->run_program( $prog, "-1", $file );
-    return unless $content;
+    my $content = $self->run_wvWare( "-1", $doc->fetch_filename ) || return;
 
     # update the document's content type
-    $filter->set_content_type( 'text/html' );
+    $doc->set_content_type( 'text/html' );
 
     # return the document
     return \$content;

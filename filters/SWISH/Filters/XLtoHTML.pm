@@ -8,41 +8,35 @@ use strict;
 
 
 
-use vars qw/ @ISA $VERSION /;
+use vars qw/ $VERSION /;
 
-$VERSION = '0.01';
-
-@ISA = ('SWISH::Filter');
+$VERSION = '0.02';
 
 sub new {
-    my ( $pack, %params ) = @_;
+    my ( $class ) = @_;
 
     my $self = bless {
-        name => $params{name} || $pack,
-    }, $pack;
+        mimetypes   => [
+            qr!application/vnd.ms-excel!,
+            qr!application/excel!,
+        ],
+    }, $class;
 
-    return unless $self->use_modules( qw/ Spreadsheet::ParseExcel  HTML::Entities / );
-
-    return $self;
+    return $self->use_modules( qw/ Spreadsheet::ParseExcel  HTML::Entities / );
 
 }
 
-sub name { $_->{name} || 'unknown' };
-
 
 sub filter {
-    my ( $self, $filter) = @_;
-
-    # Do we care about this document?
-    return unless $filter->content_type =~ m!(application/vnd.ms-excel|application/excel)!;
+    my ( $self, $doc ) = @_;
 
     # We need a file name to pass to the conversion function
-    my $file = $filter->fetch_filename;
+    my $file = $doc->fetch_filename;
 
     my $content_ref = get_xls_content_ref( $file ) || return;
 
     # update the document's content type
-    $filter->set_content_type( 'text/html' );
+    $doc->set_content_type( 'text/html' );
 
     # If filtered must return either a reference to the doc or a pathname.
     return \$content_ref;
@@ -54,10 +48,10 @@ sub get_xls_content_ref {
 
     my $oExcel = Spreadsheet::ParseExcel->new;
     return unless $oExcel;
-    
+
     my $oBook = $oExcel->Parse($file);
     my($iR, $iC, $oWkS, $oWkC, $ExcelWorkBook);
-    
+
     # Here we gather up all the workbook metadata
     my $ExcelFilename = encode_entities($oBook->{File});
     my $ExcelSheetCount = encode_entities($oBook->{SheetCount});
@@ -67,7 +61,7 @@ sub get_xls_content_ref {
     my $ExcelFirstWorksheetName = encode_entities($oBook->{Worksheet}[0]->{Name});
 
     my $ReturnValue = <<EOF;
-<html>    
+<html>
 <head>
     <title>$ExcelFirstWorksheetName - $ExcelFilename v.$ExcelVersion</title>
     <meta name="Filename" content="$ExcelFilename">
@@ -82,7 +76,7 @@ EOF
     {
      # For each Worksheet do the following
      $oWkS = $oBook->{Worksheet}[$iSheet];
-     
+
      # Name of the worksheet
      my $ExcelWorkSheet = "<h2>" . encode_entities($oWkS->{Name}) . "</h2>\n";
      $ExcelWorkSheet .= "<table>\n";
@@ -93,19 +87,19 @@ EOF
      {
         # For each row do the following
         $ExcelWorkSheet .= "<tr>\n";
-        
+
         for(my $iC = $oWkS->{MinCol} ;
           defined $oWkS->{MaxCol} && $iC <= $oWkS->{MaxCol} ;
           $iC++)
         {
             # For each cell do the following
             $oWkC = $oWkS->{Cells}[$iR][$iC];
-            
+
             my $CellData = encode_entities($oWkC->Value) if($oWkC);
             $ExcelWorkSheet .= "\t<td>" . $CellData . "</td>\n" if $CellData;
         }
         $ExcelWorkSheet .= "</tr>\n";
-        
+
         # Our last duty
         $ExcelWorkBook .= $ExcelWorkSheet;
         $ExcelWorkSheet = "";
@@ -119,7 +113,7 @@ $ExcelWorkBook
 </body>
 </html>
 EOF
-    
+
     return $ReturnValue;
 }
 
@@ -141,7 +135,7 @@ Depends on two perl modules:
 
 =head1 SUPPORT
 
-Please contact the Swish-e discussion list.  
+Please contact the Swish-e discussion list.
 http://swish-e.org/
 
 =cut

@@ -1,47 +1,28 @@
 package SWISH::Filters::Doc2txt;
-use vars qw/ @ISA $VERSION /;
+use vars qw/ $VERSION /;
 
-$VERSION = '0.01';
-@ISA = ('SWISH::Filter');
+$VERSION = '0.02';
+
+
 sub new {
-    my ( $pack, %params ) = @_;
+    my ( $class ) = @_;
 
     my $self = bless {
-        name => $params{name} || $pack,
-    }, $pack;
+        mimetypes   => [ qr!application/(x-)?msword! ], # list of types this filter handles
+        priority    => 50,  # Make this a higher number (lower priority than the wvware filter
+    }, $class;
 
 
     # check for helpers
-    for my $prog ( qw/ catdoc / ) {
-        my $path = $self->find_binary( $prog );
-        unless ( $path ) {
-            $self->mywarn("Can not use Filter $pack -- need to install $prog");
-            return;
-        }   
-        $self->{$prog} = $path;
-    }
-
-    return $self;
+    return $self->set_programs( 'catdoc' );
 
 }
 
-sub name { $_->{name} || 'unknown' };
-
-sub priority{ 50 };  # Make this a higher number (lower priority than the wvware filter
 
 sub filter {
-    my ( $self, $filter) = @_;
+    my ( $self, $doc ) = @_;
 
-    # Do we care about this document?
-    return unless $filter->content_type =~ m!application/(x-)?msword!;
-
-    # We need a file name to pass to the catdoc program
-    my $file = $filter->fetch_filename;
-
-    # Grab output from running program
-    my $content = $filter->run_program( $self->{catdoc}, $file );
-
-    return unless $content;
+    my $content = $self->run_catdoc( $doc->fetch_filename ) || return;
 
     # update the document's content type
     $filter->set_content_type( 'text/plain' );

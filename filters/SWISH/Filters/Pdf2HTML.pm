@@ -1,50 +1,28 @@
 package SWISH::Filters::Pdf2HTML;
 use strict;
 
-use vars qw/ @ISA $VERSION /;
+use vars qw/ $VERSION /;
 
-$VERSION = '0.01';
-
-@ISA = ('SWISH::Filter');
+$VERSION = '0.02';
 
 sub new {
-    my ( $pack, %params ) = @_;
+    my ( $class ) = @_;
 
     my $self = bless {
-	name => $params{name} || $pack,
-    }, $pack;
+        mimetypes   => [ qr!application/pdf! ],
+    }, $class;
 
-
-    # check for helpers
-    for my $prog ( qw/ pdftotext pdfinfo / ) {
-        my $path = $self->find_binary( $prog );
-        unless ( $path ) {
-            $self->mywarn("Can not use Filter $pack -- need to install $prog");
-            return;
-        }
-        $self->{$prog} = $path;
-    }
-
-    return $self;
-
+    return $self->set_programs( qw/ pdftotext pdfinfo / );
 }
 
-# set sort order for this filter
-
-sub name { $_->{name} || 'unknown' };        
-
-
 sub filter {
-    my ( $self, $filter) = @_;
+    my ( $self, $doc ) = @_;
 
-    return unless $filter->content_type =~ m!application/pdf!;
-
-
-    my $user_data = $filter->user_data;
+    my $user_data = $doc->user_data;
     my $title_tag = $user_data->{pdf}{title_tag} if ref $user_data eq 'HASH';
-    
 
-    my $metadata = $self->get_pdf_headers( $filter );
+    my $file = $doc->fetch_filename;
+    my $metadata = $self->get_pdf_headers( $file );
 
     my $headers = format_metadata( $metadata );
 
@@ -53,7 +31,7 @@ sub filter {
 
         $headers = "<title>$title</title>\n" . $headers
     }
-    
+
 
     # Check for encrypted content
 
@@ -64,15 +42,15 @@ sub filter {
         $content_ref = \'';
 
     } else {
-        $content_ref = $self->get_pdf_content_ref( $filter );
+        $content_ref = $self->get_pdf_content_ref( $file );
     }
 
     # update the document's content type
-    $filter->set_content_type( 'text/html' );
+    $doc->set_content_type( 'text/html' );
 
 
     my $txt = <<EOF;
-<html>    
+<html>
 <head>
 $headers
 </head>
@@ -86,19 +64,19 @@ EOF
 
     return \$txt;
 
-    
+
 
 }
 
 sub get_pdf_headers {
 
-    my ($self, $filter ) = @_;
+    my ($self, $file ) = @_;
 
     # We need a file name to pass to the pdf conversion programs
-    
-    
+
+
     my %metadata;
-    my $headers = $filter->run_program( $self->{pdfinfo}, $filter->fetch_filename );
+    my $headers = $self->run_pdfinfo( $file );
     return \%metadata unless $headers;
 
     for (split /\n/, $headers ) {
@@ -117,7 +95,7 @@ sub format_metadata {
     my $metadata = shift;
 
     my $metas = join "\n", map {
-        qq[<meta name="$_" content="] . escapeXML( $metadata->{$_} ) . '">';
+        qq[<meta name="$_" content="] . escapeXML( $metadata->{$_} ) . '">'; #'
     } sort keys %$metadata;
 
 
@@ -125,9 +103,9 @@ sub format_metadata {
 }
 
 sub get_pdf_content_ref {
-    my ( $self, $filter )  = @_;
+    my ( $self, $file )  = @_;
 
-    my $content = escapeXML( $filter->run_program($self->{pdftotext}, $filter->fetch_filename, '-' ) );
+    my $content = escapeXML( $self->run_pdftotext( $file, '-' ) );
 
     return \$content;
 }
@@ -178,7 +156,7 @@ You may pass into SWISH::Filter's new method a tag to use as the html
         user_data => \%user_data,
     );
 
-Then if a PDF info tag of "title" is found that will be used as the HTML <title>.    
+Then if a PDF info tag of "title" is found that will be used as the HTML <title>.
 
 
 
