@@ -33,9 +33,10 @@ int positionMeta[1];    /* Position of word in file */
 int structure,currentmetanames;
 struct file *thisFileEntry = NULL;
 IndexFILE *indexf=sw->indexlist;
+struct MOD_Index *idx = sw->Index;
 char *summary=NULL;
 
-	sw->Index->filenum++;
+	idx->filenum++;
 		/* external filters can output control chars. So remove them */
 	remove_controls(buffer);
 
@@ -52,10 +53,10 @@ char *summary=NULL;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
 	currentmetanames= 0; /* No metanames in TXT */
 	metaName[0]=1; positionMeta[0]=1; /* No metanames in TXT */
-	ftotalwords +=indexstring(sw, buffer, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
-	addtofwordtotals(indexf, sw->Index->filenum, ftotalwords);
+	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, metaName, positionMeta);
+	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 	if(sw->swap_flag)
-		SwapFileData(sw, indexf->filearray[sw->Index->filenum-1]);
+		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 	if(summary) efree(summary);
 	return ftotalwords;
 }
