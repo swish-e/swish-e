@@ -132,7 +132,7 @@ int     isfile(char *path)
 
 int     islink(char *path)
 {
-#ifndef NO_SYMBOLIC_FILE_LINKS
+#ifdef HAVE_LSTAT
     struct stat stbuf;
 
     if (lstat(path, &stbuf))
