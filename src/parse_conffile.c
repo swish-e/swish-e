@@ -55,7 +55,8 @@ $Id$
 #include "db.h"
 #include "extprog.h"
 
-static void Build_ReplaceRules( StringList *sl, regex_list **reg_list );
+static void Build_ReplaceRules( char *name, StringList *sl, regex_list **reg_list );
+static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, StringList *sl );
 
 
 
@@ -289,7 +290,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "ReplaceRules") == 0)
         {
             if (sl->n > 2)
-                Build_ReplaceRules( sl, &sw->replaceRegexps );
+                Build_ReplaceRules( w0, sl, &sw->replaceRegexps );
             else
                 progerr("%s: requires at least two values", w0);
 
@@ -388,6 +389,25 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             continue;
         }
+
+
+        if (strcasecmp(w0, "ExtractPath") == 0)
+        {
+            struct metaEntry *m;
+
+            if (sl->n < 4)
+                progerr("%s: requires at least three values: metaname expression type and a expression/strings", w0);
+
+            if ( !( m = getMetaNameByName( &indexf->header, sl->word[1])) )
+                progerr("%s - name '%s' is not a MetaName", w0, sl->word[1] );
+
+            sl->word++; /* past meta name */
+            add_ExtractPath( w0, sw, m, sl );
+
+            continue;
+        }
+
+                
 
 
         if (strcasecmp(w0, "MetaNames") == 0)
@@ -862,6 +882,84 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
 }
 
 
+static  void add_ExtractPath( char *name, SWISH *sw, struct metaEntry *m, StringList *sl )
+{
+    path_extract_list *list = sw->pathExtractList;
+    path_extract_list *last = NULL;
+
+    
+    while ( list && list->meta_entry != m  )
+    {
+        last = list;
+        list = list->next;
+    }
+
+
+    /* need to create a meta entry */
+    if ( !list )
+    {
+        list = emalloc( sizeof( path_extract_list ));
+        if ( last )
+            last->next = list;
+        else
+            sw->pathExtractList = list;
+
+        list->meta_entry = m;
+        list->regex = NULL;
+        list->next  = NULL;
+    }
+
+    /* now add regular expression to list */
+    Build_ReplaceRules( name, sl, &list->regex ); /* compile and add to list of expression */
+}
+
+/*********************************************************
+*  Free a regular express list
+*
+*********************************************************/
+
+void free_regex_list( regex_list **reg_list )
+{
+    regex_list *list = *reg_list;
+    regex_list *next;
+    while ( list )
+    {
+        if ( list->replace )
+            efree( list->replace );
+
+        regfree(&list->re);
+
+        next = list->next;
+        efree( list );
+        list = next;
+    }
+    *reg_list = NULL;
+}
+
+/********************************************************
+*  Free a ExtractPath list
+*
+*********************************************************/
+void free_Extracted_Path( SWISH *sw )
+{
+    path_extract_list *list = sw->pathExtractList;
+    path_extract_list *next;
+
+    while ( list )
+    {
+        next = list->next;
+        free_regex_list( &list->regex );
+        efree( list );
+        list = next;
+    }
+
+    sw->pathExtractList = NULL;
+}
+
+        
+        
+
+
 static void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global )
 {
     regex_list *new_node = emalloc( sizeof( regex_list ) );
@@ -872,6 +970,7 @@ static void add_regular_expression( regex_list **reg_list, char *pattern, char *
 
     if ( (status = regcomp( &new_node->re, pattern, cflags )))
         progerr("Failed to complie regular expression '%s', pattern. Error: %d", pattern, status );
+
 
     efree( pattern );        
     new_node->replace = replace;
@@ -918,7 +1017,7 @@ static void add_regular_expression( regex_list **reg_list, char *pattern, char *
 
 
 
-static void Build_ReplaceRules( StringList *sl, regex_list **reg_list )
+static void Build_ReplaceRules( char *name, StringList *sl, regex_list **reg_list )
 {
     char *pattern = NULL;
     char *replace = NULL;
@@ -965,7 +1064,7 @@ static void Build_ReplaceRules( StringList *sl, regex_list **reg_list )
         word++; /* past the first delimiter */
 
         if ( !(pos = strchr( word, delimiter )))
-            progerr("ReplaceRules regex: failed to find search pattern delimiter '%c' in pattern '%s'", (char)delimiter, word );
+            progerr("%s regex: failed to find search pattern delimiter '%c' in pattern '%s'", name, (char)delimiter, word );
 
         *pos = '\0';            
         pattern = estrdup(word);
@@ -973,7 +1072,7 @@ static void Build_ReplaceRules( StringList *sl, regex_list **reg_list )
         word = pos + 1;  /* now at replace pattern */
 
         if ( !(pos = strchr( word, delimiter )))
-            progerr("ReplaceRules regex: failed to find replace pattern delimiter '%c' in pattern '%s'", (char)delimiter, word );
+            progerr("%s regex: failed to find replace pattern delimiter '%c' in pattern '%s'", name, (char)delimiter, word );
 
         *pos = '\0';            
         replace = estrdup(word);
@@ -988,13 +1087,13 @@ static void Build_ReplaceRules( StringList *sl, regex_list **reg_list )
             else if ( *word == 'g' )
                 global++;
             else
-                progerr("ReplaceRules regexp %s: unknown flag '%c'", sl->word[2], *word );
+                progerr("%s regexp %s: unknown flag '%c'", name, sl->word[2], *word );
         }
         
     }
 
     else
-        progerr("ReplaceRules: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", sl->word[1] );
+        progerr("%s: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", name, sl->word[1] );
 
 
     add_regular_expression( reg_list, pattern, replace, cflags, global );

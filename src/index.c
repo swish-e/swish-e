@@ -134,6 +134,9 @@ $Id$
 #include "dump.h"
 #include "swish_qsort.h"
 
+static void index_path_parts( SWISH *sw, char *path, path_extract_list *list );
+
+
 
 /* 
   -- init structures for this module
@@ -960,7 +963,34 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
 
 
     efree(ruleparsedfilename_tmp);
+
+
+    /* This allows extracting out parts of a path and indexing as a separate meta name */
+    if ( sw->pathExtractList )
+        index_path_parts( sw, filename, sw->pathExtractList );
+        
+
 }
+/*******************************************************************
+*   extracts out parts from a path name and indexes that part
+*
+********************************************************************/
+static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
+{
+    int metaID;
+    int positionMeta = 1;
+    
+    while ( list )
+    {
+        char *str = process_regex_list( estrdup(path), list->regex );
+        
+        metaID = list->meta_entry->metaID;
+        indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+        efree( str );
+        list = list->next;
+    }
+}
+
 
 /*******************************************************************
 *   Adds a file to the file list

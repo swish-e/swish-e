@@ -59,7 +59,6 @@ typedef struct {
 
 
 /* Prototypes */
-int     _countwords_XML(SWISH * sw, FileProp * fprop, char *buffer, int start, int size);
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
@@ -71,11 +70,6 @@ static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len);
 static void write_summary( PARSE_DATA *parse_data );
 
 
-
-int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
-{
-    return _countwords_XML(sw, fprop, buffer, 0, fprop->fsize);
-}
 
 
 /*********************************************************************
@@ -89,7 +83,7 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 *
 *********************************************************************/
 
-int     _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int size)
+int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     PARSE_DATA          parse_data;
     XML_Parser          p = XML_ParserCreate(NULL);
@@ -111,7 +105,7 @@ int     _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int
 
 
     addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
-    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, start, size);
+    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
 
 
 
@@ -136,7 +130,7 @@ int     _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int
 
     //XML_SetProcessingInstructionHandler(p, proc_hndl);
 
-    if ( !XML_Parse(p, buffer, size, 1) )
+    if ( !XML_Parse(p, buffer, fprop->fsize, 1) )
         progwarn("XML parse error in file '%s' line %d.  Error: %s",
                      fprop->real_path, XML_GetCurrentLineNumber(p),XML_ErrorString(XML_GetErrorCode(p))); 
 

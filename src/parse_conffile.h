@@ -15,3 +15,8 @@ void readusewordsfile(SWISH *, IndexFILE *, char *);
 int parseconfline(SWISH *, StringList *);
 void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 
+void free_Extracted_Path( SWISH *sw );
+void free_regex_list( regex_list **reg_list );
+
+
+
