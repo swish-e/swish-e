@@ -547,26 +547,31 @@ FILE *fp=indexf->fp;
 				ReadHeaderStr(buffer,bufferlen,len,fp);
 				indexf->header.wordchars = SafeStrCopy(indexf->header.wordchars,buffer,&indexf->header.lenwordchars);
 				sortstring(indexf->header.wordchars);
+				makelookuptable(indexf->header.wordchars,indexf->header.wordcharslookuptable);
 				break;
 			case BEGINCHARSHEADER_ID:
 				ReadHeaderStr(buffer,bufferlen,len,fp);
 				indexf->header.beginchars = SafeStrCopy(indexf->header.beginchars,buffer,&indexf->header.lenbeginchars);
 				sortstring(indexf->header.beginchars);
+				makelookuptable(indexf->header.beginchars,indexf->header.begincharslookuptable);
 				break;
 			case ENDCHARSHEADER_ID:
 				ReadHeaderStr(buffer,bufferlen,len,fp);
 				indexf->header.endchars = SafeStrCopy(indexf->header.endchars,buffer,&indexf->header.lenendchars);
 				sortstring(indexf->header.endchars);
+				makelookuptable(indexf->header.endchars,indexf->header.endcharslookuptable);
 				break;
 			case IGNOREFIRSTCHARHEADER_ID:
 				ReadHeaderStr(buffer,bufferlen,len,fp);
 				indexf->header.ignorefirstchar = SafeStrCopy(indexf->header.ignorefirstchar,buffer,&indexf->header.lenignorefirstchar);
 				sortstring(indexf->header.ignorefirstchar);
+				makelookuptable(indexf->header.ignorefirstchar,indexf->header.ignorefirstcharlookuptable);
 				break;
 			case IGNORELASTCHARHEADER_ID:
 				ReadHeaderStr(buffer,bufferlen,len,fp);
 				indexf->header.ignorelastchar = SafeStrCopy(indexf->header.ignorelastchar,buffer,&indexf->header.lenignorelastchar);
 				sortstring(indexf->header.ignorelastchar);
+				makelookuptable(indexf->header.ignorelastchar,indexf->header.ignorelastcharlookuptable);
 				break;
 			case STEMMINGHEADER_ID:
 				ReadHeaderInt(itmp,fp);
@@ -2049,7 +2054,6 @@ unsigned char PhraseDelimiterString[2];
 	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
 	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
 	PhraseDelimiterString[1] = '\0';
-
 
 	for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++) 
 	{
