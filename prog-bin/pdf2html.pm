@@ -82,6 +82,7 @@ sub pdf2html {
     ? create_temp_file( $file_or_content )
     : $file_or_content;
 
+warn "File == $file\n";
     my $metadata = get_pdf_headers( $file );
 
     my $headers = format_metadata( $metadata );
@@ -119,7 +120,7 @@ $$content_ref
 EOF
 
     if ( ref $file_or_content ) {
-        unlink $file;
+#        unlink $file;
         return \$txt;
     }
 
@@ -146,6 +147,7 @@ sub get_pdf_headers {
     my $file = shift;
     my $sym = gensym;
 
+warn "Looking at pdfinfo $file\n";
     open $sym, "pdfinfo $file |" || die "$0: Failed to open $file $!";
 
     my %metadata;
@@ -176,6 +178,8 @@ sub format_metadata {
 
 sub get_pdf_content_ref {
     my $file = shift;
+
+warn "Looking at pdftotext $file\n";
 
     my $sym = gensym;
     open $sym, "pdftotext $file - |" or die "$0: failed to run pdftotext: $!";

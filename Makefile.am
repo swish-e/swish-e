@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = example html man src tests
+SUBDIRS = filters prog-bin example html man src tests
 
 
 if BUILDDOCS
@@ -74,13 +74,7 @@ filter_dir = \
     filter-bin/README \
     filter-bin/swish_filter.pl \
     filter-bin/_binfilter.sh \
-    filter-bin/_pdf2html.pl \
-    filters/README \
-    filters/SWISH/Filter.pm \
-    filters/SWISH/Filters/Doc2txt.pm \
-    filters/SWISH/Filters/Pdf2HTML.pm \
-    filters/SWISH/Filters/ID3toHTML.pm \
-    filters/SWISH/Filters/XLtoHTML.pm
+    filter-bin/_pdf2html.pl
 
 
 
@@ -99,19 +93,6 @@ perl_dir = \
     perl/t/third.html
 
 
-libexec_SCRIPTS = prog-bin/spider.pl
-
-prog_bin_dir = \
-    prog-bin/README \
-    prog-bin/file.pl \
-    prog-bin/DirTree.pl \
-    prog-bin/spider.pl \
-    prog-bin/SwishSpiderConfig.pl \
-    prog-bin/pdf2xml.pm \
-    prog-bin/pdf2html.pm \
-    prog-bin/doc2txt.pm \
-    prog-bin/MySQL.pl \
-    prog-bin/index_hypermail.pl
 
 pod_dir = \
     pod/.htaccess \
@@ -173,8 +154,8 @@ rpm_dir = \
 
 
 EXTRA_DIST = \
-    $(config_dir) $(conf_dir) $(doc_dir) $(filter_dir) $(perl_dir) \
-    $(prog_bin_dir) $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
+    $(config_dir) $(conf_dir) $(doc_dir) $(perl_dir) \
+    $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
     win32.nsi \
     win32src.nsi

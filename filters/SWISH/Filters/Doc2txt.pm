@@ -1,16 +1,36 @@
 package SWISH::Filters::Doc2txt;
-use vars qw/ %FilterInfo $VERSION /;
-
+use vars qw/ @ISA $VERSION /;
 
 $VERSION = '0.01';
+@ISA = ('SWISH::Filter');
+sub new {
+    my ( $pack, %params ) = @_;
 
-%FilterInfo = (
-    type     => 2,  # normal filter
-    priority => 50, # normal priority 1-100
-);
+    my $self = bless {
+        name => $params{name} || $pack,
+    }, $pack;
+
+
+    # check for helpers
+    for my $prog ( qw/ catdoc / ) {
+        my $path = $self->find_binary( $prog );
+        unless ( $path ) {
+            $self->mywarn("Can not use Filter $pack -- need to install $prog");
+            return;
+        }   
+        $self->{$prog} = $path;
+    }
+
+    return $self;
+
+}
+
+sub name { $_->{name} || 'unknown' };
+
+
 
 sub filter {
-    my $filter = shift;
+    my ( $self, $filter) = @_;
 
     # Do we care about this document?
     return unless $filter->content_type =~ m!application/msword!;
@@ -19,7 +39,7 @@ sub filter {
     my $file = $filter->fetch_filename;
     
     # Grab output from running program
-    my $content = $filter->run_program( 'catdoc', $file );
+    my $content = $filter->run_program( $self->{catdoc}, $file );
 
     return unless $content;
 

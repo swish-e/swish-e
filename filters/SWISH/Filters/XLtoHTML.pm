@@ -2,21 +2,36 @@ package SWISH::Filters::XLtoHTML;
 
 use strict;
 
-use Spreadsheet::ParseExcel;
-use HTML::Entities;
+# use Spreadsheet::ParseExcel;
+# use HTML::Entities;
 
-# Define the sort order for this filter
-use vars qw/ %FilterInfo $VERSION /;
+
+
+
+use vars qw/ @ISA $VERSION /;
 
 $VERSION = '0.01';
 
-%FilterInfo = (
-    type     => 2,  # normal filter 1-10
-    priority => 50, # normal priority 1-100
-);
+@ISA = ('SWISH::Filter');
+
+sub new {
+    my ( $pack, %params ) = @_;
+
+    my $self = bless {
+        name => $params{name} || $pack,
+    }, $pack;
+
+    return unless $self->use_modules( qw/ Spreadsheet::ParseExcel  HTML::Entities / );
+
+    return $self;
+
+}
+
+sub name { $_->{name} || 'unknown' };
+
 
 sub filter {
-    my $filter = shift;
+    my ( $self, $filter) = @_;
 
     # Do we care about this document?
     return unless $filter->content_type =~ m!application/vnd.ms-excel!;
@@ -37,7 +52,7 @@ sub filter {
 sub get_xls_content_ref {
     my $file = shift;
 
-    my $oExcel = new Spreadsheet::ParseExcel;
+    my $oExcel = Spreadsheet::ParseExcel->new;
     
     my $oBook = $oExcel->Parse($file);
     my($iR, $iC, $oWkS, $oWkC, $ExcelWorkBook);

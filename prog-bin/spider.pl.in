@@ -1,6 +1,8 @@
-#!/usr/bin/perl -w
+#!@@perlbinary@@ -w
 use strict;
 
+# This is set to where Swish-e's "make install" installed the helper modules.
+use lib qw( @@perlmoduledir@@ );
 
 # $Id$
 #
@@ -1013,31 +1015,69 @@ sub default_urls {
 
     die "$0: Must list URLs when using 'default'\n" unless @ARGV;
 
+    ## See if we have any filters
 
-    my @content_types  = qw{ text/html text/plain };
+    my ($filter_sub, $response_sub);
+
+    eval { require SWISH::Filter };
+
+    unless ( $@ ) {
+        my $filter = SWISH::Filter->new;
+
+        $filter_sub = sub {
+            my ( $uri, $server, $response, $content_ref ) = @_;
+
+            my $content_type = $response->content_type;
+
+            # Ignore text/* content type -- no need to filter
+            return 1 if !$content_type || $content_type =~ m!^text/!;
+
+            return unless $filter->filter(
+                document     => $content_ref,
+                name         => $response->base,
+                content_type => $content_type,
+            );
+
+            # nicer to use **char...
+            $$content_ref = ${$filter->fetch_doc};
+
+            # let's see if we can set the parser.
+            $server->{parser_type} = $filter->swish_parser_type || '';
+
+            return 1;            
+        }
+    } else {
+        warn "Failed to find the SWISH::Filter module\n";
+
+        my @content_types  = qw{ text/html text/plain };
+
+        $response_sub = sub {
+            my $content_type = $_[2]->content_type;
+            my $ok = grep { $_ eq $content_type } @content_types;
+            return 1 if $ok;
+            print STDERR "$_[0] $content_type != (@content_types)\n";
+            return;
+        }
+    }
 
     return map {
         {
             #debug => DEBUG_HEADERS,
             #debug => DEBUG_URL|DEBUG_SKIPPED|DEBUG_INFO,
             base_url        => \@ARGV,
-            email           => 'swish@domain.invalid',
+            email           => 'swish@user.failed.to.set.email.invalid',
             link_tags       => [qw/ a frame /],
             keep_alive      => 1,
             test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
 
-            test_response   => sub {
-                my $content_type = $_[2]->content_type;
-                my $ok = grep { $_ eq $content_type } @content_types;
-                return 1 if $ok;
-                print STDERR "$_[0] $content_type != (@content_types)\n";
-                return;
-            },
-            validate_links => $validate,
+            test_response   => $response_sub,
+            filter_content  => $filter_sub,
+            validate_links  => $validate,
 
         }
     } @ARGV;
 }
+
 
             
 

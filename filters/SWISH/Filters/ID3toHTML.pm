@@ -2,18 +2,15 @@ package SWISH::Filters::ID3toHTML;
 
 use strict;
 
-use MP3::Tag;
-use HTML::Entities;
+#use MP3::Tag;
+#use HTML::Entities;
 
-# Define the sort order for this filter
-use vars qw/ %FilterInfo $VERSION /;
+use vars qw/ @ISA $VERSION /;
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
-%FilterInfo = (
-    type     => 2,  # normal filter 1-10
-    priority => 50, # normal priority 1-100
-);
+@ISA = ('SWISH::Filter');
+
 
 # Convert known ID3v2 tags to metanames.
 
@@ -43,8 +40,25 @@ my %id3v2_tags = (
 );
 
 
+sub new {
+    my ( $pack, %params ) = @_;
+
+    my $self = bless {
+        name => $params{name} || $pack,
+    }, $pack;
+
+
+    return unless $self->use_modules( qw/ MP3::Tag  HTML::Entities / );
+
+    return $self;
+
+}
+
+sub name { $_->{name} || 'unknown' };
+
+
 sub filter {
-    my $filter = shift;
+    my ( $self, $filter) = @_;
 
     # Do we care about this document?
     return unless $filter->content_type =~ m!audio/mpeg!;

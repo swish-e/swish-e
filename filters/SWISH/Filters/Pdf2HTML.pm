@@ -1,21 +1,41 @@
 package SWISH::Filters::Pdf2HTML;
 use strict;
 
-
-
-# Define the sort order for this filter
-
-use vars qw/ %FilterInfo $VERSION /;
+use vars qw/ @ISA $VERSION /;
 
 $VERSION = '0.01';
 
-%FilterInfo = (
-    type     => 2,  # normal filter 1-10
-    priority => 50, # normal priority 1-100
-);
+@ISA = ('SWISH::Filter');
+
+sub new {
+    my ( $pack, %params ) = @_;
+
+    my $self = bless {
+	name => $params{name} || $pack,
+    }, $pack;
+
+
+    # check for helpers
+    for my $prog ( qw/ pdftotext pdfinfo / ) {
+        my $path = $self->find_binary( $prog );
+        unless ( $path ) {
+            $self->mywarn("Can not use Filter $pack -- need to install $prog");
+            return;
+        }
+        $self->{$prog} = $path;
+    }
+
+    return $self;
+
+}
+
+# set sort order for this filter
+
+sub name { $_->{name} || 'unknown' };        
+
 
 sub filter {
-    my $filter = shift;
+    my ( $self, $filter) = @_;
 
     return unless $filter->content_type =~ m!application/pdf!;
 
@@ -24,7 +44,7 @@ sub filter {
     my $title_tag = $user_data->{pdf}{title_tag} if ref $user_data eq 'HASH';
     
 
-    my $metadata = get_pdf_headers( $filter );
+    my $metadata = $self->get_pdf_headers( $filter );
 
     my $headers = format_metadata( $metadata );
 
@@ -44,7 +64,7 @@ sub filter {
         $content_ref = \'';
 
     } else {
-        $content_ref = get_pdf_content_ref( $filter );
+        $content_ref = $self->get_pdf_content_ref( $filter );
     }
 
     # update the document's content type
@@ -72,12 +92,13 @@ EOF
 
 sub get_pdf_headers {
 
-    my $filter = shift;
+    my ($self, $filter ) = @_;
 
     # We need a file name to pass to the pdf conversion programs
     
+    
     my %metadata;
-    my $headers = $filter->run_program('pdfinfo', $filter->fetch_filename );
+    my $headers = $filter->run_program( $self->{pdfinfo}, $filter->fetch_filename );
     return \%metadata unless $headers;
 
     for (split /\n/, $headers ) {
@@ -104,9 +125,9 @@ sub format_metadata {
 }
 
 sub get_pdf_content_ref {
-    my $filter = shift;
+    my ( $self, $filter )  = @_;
 
-    my $content = escapeXML( $filter->run_program('pdftotext', $filter->fetch_filename, '-' ) );
+    my $content = escapeXML( $filter->run_program($self->{pdftotext}, $filter->fetch_filename, '-' ) );
 
     return \$content;
 }
