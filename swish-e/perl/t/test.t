@@ -5,8 +5,6 @@
 use strict;
 require SWISH::API;
 
-warn "$_ -> $INC{$_}\n" for sort keys %INC;
-
 my $lastcase = 145;
 print "1..$lastcase\n";
 
@@ -312,8 +310,7 @@ sub check_error {
 
     my $msg = $swish->ErrorString . ' (' . $swish->LastErrorMsg . ')';
 
-    #print "not ok $num $str - $msg\n";
-    warn "not ok $num $str - $msg\n";
+    print "not ok $num $str - $msg\n";
 
     die "Found critical error" if $swish->CriticalError;
 
