@@ -87,4 +87,8 @@ char *strtolower (char *str);
 char *str_skip_ws (char *s);
 char charDecode_C_Escape (char *s, char **se);
 
+/* ISO-Routines */
+
+char char_ISO_normalize (char c);
+char *str_ISO_normalize (char *s);
 
