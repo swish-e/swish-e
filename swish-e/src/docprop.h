@@ -12,6 +12,9 @@
  * 2001-02-09  rasc  printSearchResultProperties changed
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void freeProperty( propEntry *prop );
 void freeDocProperties (docProperties *);
@@ -70,6 +73,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
 #define AUTOPROPERTY_SUMMARY      "swishdescription"
 #define AUTOPROPERTY_STARTPOS     "swishstartpos"
 
-
-
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 

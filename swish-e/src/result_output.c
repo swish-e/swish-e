@@ -661,13 +661,13 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
     {
         /* use passed or default fmt */
 
-    case INTEGER:
+    case PROP_INTEGER:
         fmt = (subfmt) ? subfmt : "%d";
         if (f)
             fprintf(f, fmt, pv->value.v_int);
         break;
 
-    case ULONG:
+    case PROP_ULONG:
         fmt = (subfmt) ? subfmt : "%lu";
         if (f)
             fprintf(f, fmt, pv->value.v_ulong);
@@ -675,7 +675,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 
         
 
-    case STRING:
+    case PROP_STRING:
         fmt = (subfmt) ? subfmt : "%s";
 
         /* -- get rid of \n\r in string! */  // there shouldn't be any in the first place, I believe
@@ -699,7 +699,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         break;
 
 
-    case DATE:
+    case PROP_DATE:
         fmt = (subfmt) ? subfmt : "%Y-%m-%d %H:%M:%S %Z";
         if (!strcmp(fmt, "%ld"))
         {
@@ -718,7 +718,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         }
         break;
 
-    case FLOAT:
+    case PROP_FLOAT:
         fmt = (subfmt) ? subfmt : "%f";
         if (f)
             fprintf(f, fmt, (double) pv->value.v_float);

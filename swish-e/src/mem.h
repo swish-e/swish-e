@@ -38,6 +38,10 @@ $Id$
 
 #include <memory.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* MEM_DEBUG checks for memory consistency on alloc/free */
 #define MEM_DEBUG 0
 
@@ -107,4 +111,9 @@ int Mem_ZoneSize(MEM_ZONE *head);
 #define malloc $Please_use_emalloc
 #define realloc $Please_use_erealloc
 #define free $Please_use_efree
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 

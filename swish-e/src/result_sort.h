@@ -26,6 +26,9 @@ $Id$
 #ifndef __HasSeenModule_ResultSort
 #define __HasSeenModule_ResultSort	1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
    -- global module data structure
@@ -96,5 +99,8 @@ int sw_strcmp(unsigned char *,unsigned char *, int *);
 
 int *LoadSortedProps( SWISH *sw, IndexFILE *indexf, struct metaEntry *m );
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
-#endif
+#endif /* __HasSeenModule_ResultSort  */
