@@ -141,8 +141,8 @@ SUBDIRS = expat replace
 
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
-swish_e_LDADD = libswishindex.la libswish-e.la
-swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
+swish_e_LDADD = libswishindex.la libswish-e.la replace/libreplace.la
+swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" $(Z_CFLAGS) $(PCRE_CFLAGS) -Ireplace
 
 EXTRA_PROGRAMS = libtest
 libtest_SOURCES = libtest.c 
@@ -191,9 +191,9 @@ EXTRA_libswish_e_la_SOURCES = \
 
 
 noinst_LTLIBRARIES = libswishindex.la
-libswishindex_la_LIBADD = expat/libswexpat.la $(LIBXML2_OBJS)
-libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
+libswishindex_la_LIBADD = expat/libswexpat.la $(LIBXML2_OBJS) replace/libreplace.la 
+libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS) 
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" $(Z_CFLAGS) $(PCRE_CFLAGS) -Ireplace
 
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
 
@@ -268,7 +268,8 @@ am_swish_e_OBJECTS = swish_e-swish.$(OBJEXT) \
 	swish_e-keychar_out.$(OBJEXT) swish_e-dump.$(OBJEXT) \
 	swish_e-result_output.$(OBJEXT)
 swish_e_OBJECTS = $(am_swish_e_OBJECTS)
-swish_e_DEPENDENCIES = libswishindex.la libswish-e.la
+swish_e_DEPENDENCIES = libswishindex.la libswish-e.la \
+	replace/libreplace.la
 swish_e_LDFLAGS =
 SCRIPTS = $(libexec_SCRIPTS)
 
@@ -356,7 +357,7 @@ all: acconfig.h
 .SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/Makefile
+	  $(AUTOMAKE) --gnu  src/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
 
