@@ -161,7 +161,7 @@ if test "$withval" != "no" -a "$withval" != "yes"; then
 fi
 
 dnl if withval is maybe
-if test "$withval" == "maybe"; then
+if test "$withval" = "maybe"; then
     withval="yes"
     Z_DIR=""
     CPPFLAGS="${CPPFLAGS}"

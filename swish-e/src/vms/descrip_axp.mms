@@ -83,7 +83,7 @@ libswish-e.olb : $(OBJS)
 swish-search.exe : $(NAME)
 	copy $(NAME) swish-search.exe
 
-regex.obj : [.vms]regex.c [.vms]descrip.mms
+regex.obj : [.vms]regex.c [.vms]descrip_axp.mms
 
 acconfig.h : [.vms]acconfig.h_vms
 	copy $(MMS$SOURCE) $(MMS$TARGET)
@@ -110,9 +110,9 @@ test :	$(NAME)
 	mc [-.src]swish-e -f test.index -w """three little pigs"""
 
 
-$(OBJS) :	[.vms]descrip.mms config.h swish.h acconfig.h
+$(OBJS) :	[.vms]descrip_axp.mms config.h swish.h acconfig.h
 
-swish.obj :	[.vms]descrip.mms config.h swish.h acconfig.h
+swish.obj :	[.vms]descrip_axp.mms config.h swish.h acconfig.h
 
 install :	
 	!
