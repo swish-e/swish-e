@@ -254,6 +254,7 @@ sub process_link {
           join( ' ',
                 ( $response->is_success ? '+Fetched' : '-Failed' ),
                 $depth,
+                "Cnt: $server->{counts}{'Unique URLs'}",
                 $response->request->uri->canonical,
                 $response->code,
                 $response->content_type,
