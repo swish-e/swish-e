@@ -105,52 +105,6 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID
     
 
 
-/* This should be a routine in result_sort.c */
-
-/*******************************************************************
-*   Loads metaentry->sorted_data with sorted array for the given metaEntry
-*
-*   Call with:
-*       *sw
-*       *indexf
-*       *metaEntry - meta entry in question
-*
-*   Returns:
-*       pointer to an array of int (metaentry->sorted_data)
-*
-********************************************************************/
-static int *LoadSortedProps( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
-{
-    unsigned char *buffer, *s;
-    int     sz_buffer;
-    int     j;
-    int     tmp;
-
-    DB_InitReadSortedIndex(sw, indexf->DB);
-    
-    /* Get the sorted index of the property */
-    DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
-
-    /* Table doesn't exist */
-    if ( !sz_buffer )
-        return NULL;
-
-
-    s = buffer;
-    m->sorted_data = (int *)emalloc( indexf->header.totalfiles * sizeof(int) );
-
-    /* Unpack / decompress the numbers */
-    for( j = 0; j < indexf->header.totalfiles; j++)
-    {
-        tmp = uncompress2(&s);
-        m->sorted_data[j] = tmp;
-    }
-    efree(buffer);
-
-    return m->sorted_data;
-}
-
-
 
 /*==============================================================*/
 /*                 typedefs and structures                      */

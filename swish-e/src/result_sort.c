@@ -338,6 +338,7 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
             sortmode;
     SWISH  *sw = (SWISH *) r1->sw;
 
+
     num_fields = sw->ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
@@ -404,21 +405,68 @@ RESULT *addsortresult(sw, sphead, r)
     return r;
 }
 
+
+/*******************************************************************
+*   Loads metaentry->sorted_data with sorted array for the given metaEntry
+*
+*   Call with:
+*       *sw
+*       *indexf
+*       *metaEntry - meta entry in question
+*
+*   Returns:
+*       pointer to an array of int (metaentry->sorted_data)
+*
+********************************************************************/
+int *LoadSortedProps( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
+{
+    unsigned char *buffer, *s;
+    int     sz_buffer;
+    int     j;
+
+    DB_InitReadSortedIndex(sw, indexf->DB);
+    
+    /* Get the sorted index of the property */
+    DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
+
+    /* Table doesn't exist */
+    if ( !sz_buffer )
+    {
+        DB_EndReadSortedIndex(sw, indexf->DB);
+        return NULL;
+    }
+
+
+    s = buffer;
+    m->sorted_data = (int *)emalloc( indexf->header.totalfiles * sizeof(int) );
+
+    /* Unpack / decompress the numbers */
+    for( j = 0; j < indexf->header.totalfiles; j++)
+        m->sorted_data[j] = uncompress2(&s);
+
+    efree(buffer);
+    DB_EndReadSortedIndex(sw, indexf->DB);
+
+    return m->sorted_data;
+}
+
+
+
 /* Routine to get the presorted lookupdata for a result for all the specified properties */
 int    *getLookupResultSortedProperties(RESULT * r)
 {
-    int     i,j,tmp;
+    int     i;
     int    *props = NULL;       /* Array to Store properties Lookups */
     struct metaEntry *m = NULL;
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
-    unsigned char *buffer, *s;
-    int sz_buffer;
 
     props = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
 
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
     {
+
+        /* This shouldn't happen -- the meta names should be checked before this */
         if ( !(m = getMetaIDData(&indexf->header, indexf->propIDToSort[i])) )
         {
             props[i] = 0;
@@ -426,6 +474,7 @@ int    *getLookupResultSortedProperties(RESULT * r)
         }
 
 
+        /* Deal with internal meta names */
         if ( is_meta_internal( m ) )
         {
             if ( is_meta_entry( m, AUTOPROPERTY_RESULT_RANK ) )
@@ -453,42 +502,21 @@ int    *getLookupResultSortedProperties(RESULT * r)
             }
         }
 
-        if ( m->sorted_data )
-        {
-            props[i] = m->sorted_data[r->filenum - 1];
-            continue;
-        }
 
-        /* not loaded, read sorted_data */        
-            
-        DB_InitReadSortedIndex(sw, r->indexf->DB);
+        /* Load the sorted data from disk, if first time */
+        /* If no sorted data available, return NULL, which will fall back to old sort method */
 
-        /* Get the sorted index of the property */
-        DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer,r->indexf->DB);
-
-        if(sz_buffer)
-        {                 /* Exists a presorted table - Let's use it */
-           s = buffer;
-           m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
-           /* Unpack / decompress the numbers */
-           for( j = 0; j < r->indexf->header.totalfiles; j++)
-           {
-              tmp = uncompress2(&s);
-              m->sorted_data[j] = tmp;
-           }
-           efree(buffer);
-        }
-
-        else                 /* Does not exits a presorted table */
+        if ( !m->sorted_data && !LoadSortedProps( sw, indexf, m ) )
         {
            efree(props);
-           DB_EndReadSortedIndex(sw, r->indexf->DB);
            return NULL;
         }
 
-        DB_EndReadSortedIndex(sw, r->indexf->DB);
 
+        /* Now store the sort value in the array */
+        props[i] = m->sorted_data[r->filenum - 1];
     }
+
     return props;
 }
 
@@ -587,10 +615,12 @@ int     sortresults(SWISH * sw, int structure)
             /* Build an array with the elements to compare and pointers to data */
             for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
                 if (rtmp->structure & structure)
-                    ptmp[j++] = rtmp;
+                    ptmp[j++] = rtmp;   /* j is counter, but i is used  in qsort? */
+
 
             /* Sort them */
             swish_qsort(ptmp, i, sizeof(RESULT *), compResults);
+
 
             /* Build the list */
             for (j = 0; j < i; j++)
@@ -739,8 +769,8 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
         * properties by filenum after this point.
         */
 
+       /* Build the sorted table */
        swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
-
 
        /* Build the sorted table */
 
@@ -756,15 +786,22 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
            sortFilenums[indexf->filearray[i]->filenum - 1] = k;
 	   }
 
+#ifdef DEBUGSORT
+    for (i = 0;  i < indexf->filearray_cursize; i++)
+    {
+        printf( " Done File num = '%d' sort value = %d", indexf->filearray[i]->filenum, sortFilenums[indexf->filearray[i]->filenum-1] );
+        dump_single_property( indexf->filearray[i]->SortProp, m );
+    }
+#endif
 
 #ifdef PROPFILE
-    /* Now free properties */
-    for (i = 0; i < indexf->filearray_cursize; i++)
-        if ( indexf->filearray[i]->SortProp )
-        {
-            freeProperty( indexf->filearray[i]->SortProp );
-            indexf->filearray[i]->SortProp = NULL;
-        }
+        /* Now free properties */
+        for (i = 0; i < indexf->filearray_cursize; i++)
+            if ( indexf->filearray[i]->SortProp )
+            {
+                freeProperty( indexf->filearray[i]->SortProp );
+                indexf->filearray[i]->SortProp = NULL;
+            }
 #endif            
 
 

@@ -91,5 +91,7 @@ void initStrCaseCmpTranslationTable(int *);
 int sw_strcasecmp(unsigned char *,unsigned char *, int *);
 int sw_strcmp(unsigned char *,unsigned char *, int *);
 
+int *LoadSortedProps( SWISH *sw, IndexFILE *indexf, struct metaEntry *m );
+
 
 #endif
