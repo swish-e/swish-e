@@ -196,3 +196,24 @@ void free_header(INDEXDATAHEADER *header)
 	if(header->lensavedasheader) efree(header->savedasheader);	
 	if(header->lenbumpposchars) efree(header->bumpposchars);
 }
+
+
+/* 2001/04Jose Ruiz
+Splits a swline struct by char c */
+void splitswline(struct swline *rp, int c)
+{
+struct swline *temp;
+char *p;
+	for(p=rp->line;(p=strrchr(rp->line,c));)
+	{
+		*p='\0';
+		p++;
+		if(*p)
+		{
+			temp=(struct swline *)emalloc(sizeof(struct swline));
+			temp->next=rp->next;
+			temp->line=(char *)estrdup(p);
+			rp->next=temp;
+		}
+	}
+}
