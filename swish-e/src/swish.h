@@ -754,6 +754,9 @@ typedef struct {
     struct multiswline *equivalentservers;
     struct url_info *url_hash[BIGHASHSIZE];
 
+    /* prog system specific configuration parameters */
+    struct swline *progparameterslist;
+
     /* Phrase delimiter char */
     int PhraseDelimiter;
 

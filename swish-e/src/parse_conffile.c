@@ -447,6 +447,11 @@ char *w0;
 			   sw->truncateDocSize = atol (sl->word[1]);
 			} else progerr("%s: requires size parameter in bytes",w0);
 		}
+		else if (strcasecmp(w0,"SwishProgParameters")==0) {
+			if(sl->n>1) {
+				grabCmdOptions(sl,1,&sw->progparameterslist);
+			} else progerr("%s: requires at least one value",w0);
+		}
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s\n", linenumber, line );
 			baddirective = 1;
