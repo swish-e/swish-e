@@ -540,6 +540,7 @@ typedef struct RESULT
     int     rank;
     int     structure;
     int     frequency;
+    int     tfrequency;         /* Total frequency of result */
     int    *position;
 
     /* file position where this document's properties are stored */

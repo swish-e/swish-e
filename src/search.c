@@ -133,6 +133,8 @@ $Id$
 
 #include "proplimit.h"
 
+#include "rank.h"
+
 
 /*** ??? $$$ fix this ****/
 #define TOTAL_WORDS_FIX 1;
@@ -1051,56 +1053,7 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, in
 }
 
 
-typedef struct {
-    long    mask;
-    double    rank;
-} RankFactor;
 
-static RankFactor ranks[] = {
-    {IN_TITLE,        RANK_TITLE},
-    {IN_HEADER,        RANK_HEADER},
-    {IN_META,        RANK_META},
-    {IN_COMMENTS,    RANK_COMMENTS},
-    {IN_EMPHASIZED,    RANK_EMPHASIZED}
-};
-
-#define numRanks (sizeof(ranks)/sizeof(ranks[0]))
-
-
-static int getrank(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, int filenum )
-{
-    double          factor;
-    double          rank;
-    double          reduction;
-    int             i;
-
-    factor = 1.0;
-
-    /* add up the multiplier factor based on where the word occurs */
-    for (i = 0; i < numRanks; i++)
-        if (ranks[i].mask & structure)
-            factor += ranks[i].rank;
-
-    rank = log((double)freq) + 10.0;
-
-    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
-    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
-    {
-        INDEXDATAHEADER *header = &indexf->header;
-        int             words = header->TotalWordsPerFile[filenum-1];
-
-        if (words < 10) words = 10;
-        reduction = log10((double)words);
-        if (reduction > 5.0) reduction = 5.0;
-        rank /= reduction;
-    }
-
-    /* multiply by the weighting factor, and scale to be sure we don't loose
-       precision when converted to an integer. The rank will be normalized later */
-    rank = rank * factor * 100.0 + 0.5;
-
-    return (int)rank;
-}
 
 
 /* Finds a word and returns its corresponding file and rank information list.
@@ -1235,10 +1188,12 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                 position = (int *) emalloc(frequency * sizeof(int));
                 uncompress_location_positions(&s,flag,frequency,position);
 
+                    /* Store -1 in rank - This way delay its computation */
+                    /* This is very useful if we sorted by other property */
                 rp = (RESULT *) addtoresultlist(
                     rp, filenum,
-                    getrank( sw, frequency, tfrequency, structure, indexf, filenum ),
-                    structure, frequency, position, indexf, sw);
+                    -1,
+                    structure, tfrequency, frequency, position, indexf, sw);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1276,7 +1231,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             rp = sw->Search->resulthashlist[i];
             while (rp != NULL)
             {
-                rp2 = (RESULT *) addtoresultlist(rp2, rp->filenum, rp->rank, rp->structure, rp->frequency, rp->position, indexf, sw);
+                rp2 = (RESULT *) addtoresultlist(rp2, rp->filenum, -1, rp->structure, rp->tfrequency, rp->frequency, rp->position, indexf, sw);
                 tmp = rp->next;
                 /* Do not free position in freeresult
                    It was added to rp2 !! */
@@ -1459,6 +1414,11 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
             int     newRank = 0;
             int    *allpositions;
 
+            if(r1->rank == -1)
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+            if(r2->rank == -1)
+                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->structure, r2->indexf, r2->filenum );
+
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
             /*
                * Storing all positions could be useful
@@ -1469,7 +1429,7 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
             CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
             CopyPositions(allpositions, r1->frequency, r2->position, 0, r2->frequency);
             newnode =
-                (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, r1->frequency + r2->frequency, allpositions,
+                (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, allpositions,
                                            r1->indexf, sw);
             r1 = r1->next;
             r2 = r2->next;
@@ -1533,7 +1493,7 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
         rp = sw->Search->resulthashlist[i];
         while (rp != NULL)
         {
-            newnode = (RESULT *) addtoresultlist(newnode, rp->filenum, rp->rank, rp->structure, rp->frequency, rp->position, rp->indexf, sw);
+            newnode = (RESULT *) addtoresultlist(newnode, rp->filenum, rp->rank, rp->structure, rp->tfrequency, rp->frequency, rp->position, rp->indexf, sw);
             tmp = rp->next;
             /* Do not free position in freeresult 
                It was added to newnode !! */
@@ -1652,7 +1612,7 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
     {
 
         if (!ismarked(markentrylist, i))
-            newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, NULL, indexf, sw);
+            newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, 0, NULL, indexf, sw);
     }
 
     freemarkentrylist(markentrylist);
@@ -1710,13 +1670,18 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
             if (found)
             {
                 /* To do: Compute newrank */
+                if(r1->rank == -1)
+                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+                if(r2->rank == -1)
+                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->structure, r2->indexf, r2->filenum );
+
                 newRank = (r1->rank + r2->rank) / 2;
                 /*
                    * Storing positions is neccesary for further
                    * operations
                  */
                 newnode =
-                    (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, found, allpositions, r1->indexf, sw);
+                    (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, found, allpositions, r1->indexf, sw);
             }
             r1 = r1->next;
             r2 = r2->next;
@@ -1751,7 +1716,7 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 */
 
 
-RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int frequency, int *position, IndexFILE * indexf, SWISH * sw)
+RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int tfrequency, int frequency, int *position, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
 
@@ -1762,6 +1727,7 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
 
     newnode->rank = rank;
     newnode->structure = structure;
+    newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
     if (frequency && position)
         newnode->position = position;
@@ -1779,21 +1745,6 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
 }
 
 
-/* Counts the number of files that are the result
-   of a search
-*/
-
-int     countResults(RESULT * sp)
-{
-    int     tot = 0;
-
-    while (sp)
-    {
-        tot++;
-        sp = sp->nextsort;
-    }
-    return (tot);
-}
 
 
 RESULT *SwishNext(SWISH * sw)
@@ -1804,12 +1755,12 @@ RESULT *SwishNext(SWISH * sw)
     int     rc;
     struct DB_RESULTS *db_results = NULL,
            *db_results_winner = NULL;
-    double  num;
+    int  num;
 
     if (srch->bigrank)
-        num = 1000.0f / (float) srch->bigrank;
+        num = 10000000 / srch->bigrank;
     else
-        num = 1000.0f;
+        num = 10000;
 
     /* Check for a unique index file */
     if (!sw->Search->db_results->next)
@@ -1818,6 +1769,10 @@ RESULT *SwishNext(SWISH * sw)
         {
             /* Increase Pointer */
             sw->Search->db_results->currentresult = res->nextsort;
+            /* If rank was delayed, compute it now */
+            if(res->rank == -1)
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
+
         }
     }
 
@@ -1830,7 +1785,13 @@ RESULT *SwishNext(SWISH * sw)
         db_results_winner = sw->Search->db_results;
 
         if ((res = db_results_winner->currentresult))
+        {
+            /* If rank was delayed, compute it now */
+            if(res->rank == -1)
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
+
             res->PropSort = getResultSortProperties(res);
+        }
 
 
         for (db_results = sw->Search->db_results->next; db_results; db_results = db_results->next)
@@ -1838,7 +1799,13 @@ RESULT *SwishNext(SWISH * sw)
             if (!(res2 = db_results->currentresult))
                 continue;
             else
+            {
+                            /* If rank was delayed, compute it now */
+                if(res2->rank == -1)
+                   res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->structure, res2->indexf, res2->filenum );
+
                 res2->PropSort = getResultSortProperties(res2);
+            }
 
             if (!res)
             {
@@ -1864,7 +1831,7 @@ RESULT *SwishNext(SWISH * sw)
     /* Normalize rank */
     if (res)
     {
-        res->rank = (int) ((float) res->rank * num);
+        res->rank = (int) (res->rank * num)/10000;
         if (res->rank >= 999)
             res->rank = 1000;
         else if (res->rank < 1)
@@ -1927,13 +1894,20 @@ void    freeresult(SWISH * sw, RESULT * rp)
         {
             for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
                 efree(rp->PropSort[i]);
+/* For better performance with thousands of results this is stored in a MemZone
+   in result_sort.c module
             efree(rp->PropSort);
+*/
+
         }
+/* For better performance with thousands of results this is stored in a MemZone
+   in result_sort.c module
+
         if (sw->ResultSort->numPropertiesToSort && rp->iPropSort)
         {
             efree(rp->iPropSort);
         }
-
+*/
         efree(rp);
     }
 }
@@ -2021,7 +1995,7 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
 
             CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
 
-            newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->frequency, allpositions, r1->indexf, sw);
+            newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, allpositions, r1->indexf, sw);
             r1 = r1->next;
         }
         else if (res > 0)
@@ -2040,7 +2014,7 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
         allpositions = (int *) emalloc((r1->frequency) * sizeof(int));
 
         CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
-        newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->frequency, allpositions, r1->indexf, sw);
+        newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, allpositions, r1->indexf, sw);
     }
     /* Free memory no longer needed */
     while (r1b)
@@ -2199,8 +2173,16 @@ void    mergeresulthashlist(SWISH *sw, RESULT *r)
     {
         if (rp->filenum == r->filenum)
         {
+            /* Compute rank if not yet computed */
+            if(rp->rank == -1)
+                rp->rank = getrank( sw, rp->frequency, rp->tfrequency, rp->structure, rp->indexf, rp->filenum );
+
+            if(r->rank == -1)
+                r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
+
             rp->rank += r->rank;
             rp->structure |= r->structure;
+            rp->tfrequency = 0;
             if (r->frequency)
             {
                 if (rp->frequency)

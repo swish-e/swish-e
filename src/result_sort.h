@@ -59,6 +59,8 @@ struct MOD_ResultSort
               /* Array to hold the sort mode of the props specified in -s */
               /* -1 for asc and 1 for desc */
     int    *propModeToSort;
+
+    MEM_ZONE *resultSortZone;
 };
 
 

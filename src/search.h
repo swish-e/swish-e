@@ -76,7 +76,6 @@ struct swline *expandphrase(struct swline *, char);
 
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 
-int countResults(RESULT *);
 RESULT *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
 RESULT *operate(SWISH *, RESULT *, int, char *, void *, int, int, IndexFILE *);
 RESULT *getfileinfo(SWISH *, char *, IndexFILE *, int);
@@ -97,7 +96,7 @@ RESULT *orresultlists(SWISH *, RESULT *, RESULT *);
 RESULT *notresultlist(SWISH *, RESULT *, IndexFILE *);
 RESULT *notresultlists(SWISH *, RESULT *, RESULT *);
 RESULT *phraseresultlists(SWISH *, RESULT *, RESULT *, int);
-RESULT *addtoresultlist(RESULT *, int, int, int, int, int *, IndexFILE *,SWISH *);
+RESULT *addtoresultlist(RESULT *, int, int, int, int, int, int *, IndexFILE *,SWISH *);
 
 
 RESULT *sortresultsbyfilenum(RESULT *);

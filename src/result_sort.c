@@ -44,6 +44,7 @@ $Id$
 #include "swish_qsort.h"
 #include "result_sort.h"
 
+#include "rank.h"
 
 /******************************************************
 * Here's some static data to make the sort arrays smaller
@@ -103,6 +104,9 @@ void    initModule_ResultSort(SWISH * sw)
     md->propModeToSort = NULL;
     md->isPreSorted = 1;        /* Use presorted Index by default */
     md->presortedindexlist = NULL;
+
+    md->resultSortZone = Mem_ZoneCreate("resultSort Zone", 0, 0);
+
 }
 
 
@@ -142,6 +146,7 @@ void    resetModule_ResultSort(SWISH * sw)
         tmpindexlist->propIDToSort = NULL;
     }
 
+    Mem_ZoneReset(md->resultSortZone);
 
     return;
 }
@@ -156,6 +161,7 @@ void    freeModule_ResultSort(SWISH * sw)
     if (md->presortedindexlist)
         freeswline(md->presortedindexlist);
 
+    Mem_ZoneFree(&md->resultSortZone);
     /* Free Module Data Structure */
     /* should not be freed here */
     efree(md);
@@ -369,17 +375,15 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
     RESULT *r2 = *(RESULT * const *) s2;
     int     i,
             rc,
-            num_fields,
-            sortmode;
+            num_fields;
     SWISH  *sw = (SWISH *) r1->sw;
+    struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
-
-    num_fields = sw->ResultSort->numPropertiesToSort;
+    num_fields = ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
-        sortmode = sw->ResultSort->propModeToSort[i];
-        if ((rc = sortmode * sw_strcasecmp(r1->PropSort[i], r2->PropSort[i], sw->ResultSort->iSortCaseTranslationTable)))
-            return rc;
+        if ((rc = sw_strcasecmp(r1->PropSort[i], r2->PropSort[i], ResultSort->iSortCaseTranslationTable)))
+            return (rc * ResultSort->propModeToSort[i]);
     }
     return 0;
 }
@@ -393,19 +397,18 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
 {
     RESULT *r1 = *(RESULT * const *) s1;
     RESULT *r2 = *(RESULT * const *) s2;
-    register int i,
+    int i,
             num_fields;
-    int     rc,
-            sortmode;
+    int     rc;
     SWISH  *sw = (SWISH *) r1->sw;
+    struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
-    num_fields = sw->ResultSort->numPropertiesToSort;
+    num_fields = ResultSort->numPropertiesToSort;
+
     for (i = 0; i < num_fields; i++)
     {
-        sortmode = sw->ResultSort->propModeToSort[i];
-        rc = sortmode * (r1->iPropSort[i] - r2->iPropSort[i]);
-        if (rc)
-            return rc;
+        if((rc = r1->iPropSort[i] - r2->iPropSort[i]))
+            return (rc * ResultSort->propModeToSort[i]);
     }
     return 0;
 }
@@ -459,16 +462,12 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
            *s;
     int     sz_buffer;
     int     j;
-    int     propIDX;
-    INDEXDATAHEADER *header = &indexf->header;
-
 
     DB_InitReadSortedIndex(sw, indexf->DB);
 
     /* Get the sorted index of the property */
 
     /* Convert to a property index */
-//    propIDX = header->metaID_to_PropIDX[m->metaID];
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
 #ifndef USE_BTREE
@@ -506,10 +505,12 @@ int    *getLookupResultSortedProperties(RESULT * r)
     struct metaEntry *m = NULL;
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
+    struct MOD_ResultSort *ResultSort = sw->ResultSort;
 
-    props = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
 
-    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
+    props = (int *) Mem_ZoneAlloc(ResultSort->resultSortZone, ResultSort->numPropertiesToSort * sizeof(int));
+
+    for (i = 0; i < ResultSort->numPropertiesToSort; i++)
     {
         /* This shouldn't happen -- the meta names should be checked before this */
         if (!(m = getPropNameByID(&indexf->header, indexf->propIDToSort[i])))
@@ -523,6 +524,9 @@ int    *getLookupResultSortedProperties(RESULT * r)
         {
             if (is_meta_entry(m, AUTOPROPERTY_RESULT_RANK))
             {
+                /* If rank was delayed, compute it now */
+                if(r->rank == -1)
+                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
                 props[i] = r->rank;
                 continue;
             }
@@ -572,11 +576,12 @@ char  **getResultSortProperties(RESULT * r)
     char  **props = NULL;       /* Array to Store properties */
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
+    struct MOD_ResultSort *ResultSort = sw->ResultSort;
 
-    if (sw->ResultSort->numPropertiesToSort == 0)
+    if (ResultSort->numPropertiesToSort == 0)
         return NULL;
 
-    props = (char **) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(char *));
+    props = (char **) Mem_ZoneAlloc(ResultSort->resultSortZone, ResultSort->numPropertiesToSort * sizeof(char *));
 
     /* $$$ -- need to pass in the max string length */
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
@@ -617,19 +622,23 @@ int     sortresults(SWISH * sw, int structure)
             compResults = compResultsBySortedProps;
 
             /* As we are sorting a unique index file, we can use the presorted data in the index file */
-            for (tmp = rp; tmp; tmp = tmp->next)
+            for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                /* Load the presorted data */
-                tmp->iPropSort = getLookupResultSortedProperties(tmp);
-
-
-                /* If some of the properties is not presorted */
-                /* use the old method (ignore presorted index)*/
-
-                if (!tmp->iPropSort)
+                if (tmp->structure & structure)
                 {
-                    presorted_data_not_available = 1;
-                    break;
+                    /* Load the presorted data */
+                    tmp->iPropSort = getLookupResultSortedProperties(tmp);
+
+                    /* If some of the properties is not presorted */
+                    /* use the old method (ignore presorted index)*/
+
+                    if (!tmp->iPropSort)
+                    {
+                        presorted_data_not_available = 1;
+                        break;
+                    }
+                    /* Compute number of results */
+                    i++;
                 }
             }
         }
@@ -643,16 +652,19 @@ int     sortresults(SWISH * sw, int structure)
 
 
             /* Read the property value string(s) for all the sort properties */
-            for (tmp = rp; tmp; tmp = tmp->next)
-                tmp->PropSort = getResultSortProperties(tmp);
+            for (i = 0, tmp = rp; tmp; tmp = tmp->next)
+            {
+                if (tmp->structure & structure)
+                {
+                    tmp->PropSort = getResultSortProperties(tmp);
+                }
+                /* Compute number of results */
+                i++;
+            }
         }
 
-        /* Compute number of results */
-        for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-            if (rtmp->structure & structure)
-                i++;
 
-
+        /* i contains the number of valid results */
         if (i)                  /* If there is something to sort ... */
         {
             /* Compute array size */
@@ -680,7 +692,7 @@ int     sortresults(SWISH * sw, int structure)
             if (db_results->sortresultlist)
             {
                 db_results->currentresult = db_results->sortresultlist;
-                TotalResults += countResults(db_results->sortresultlist);
+                TotalResults += i;
             }
         }
     }
