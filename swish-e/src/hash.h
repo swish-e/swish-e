@@ -22,7 +22,7 @@ unsigned hash (char *);
 unsigned numhash (int);
 unsigned bighash (char *);
 unsigned bignumhash (int);
-unsigned searchhash (char *);
+unsigned verybighash (char *);
 void addstophash (INDEXDATAHEADER *, char *);
 void addusehash (INDEXDATAHEADER *, char *);
 int isstopword (INDEXDATAHEADER *, char *);

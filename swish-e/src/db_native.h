@@ -64,9 +64,9 @@ struct Handle_DBNative
    long offsets[MAXCHARS];
 
 #ifndef USE_BTREE
-   long hashoffsets[SEARCHHASHSIZE];
+   long hashoffsets[VERYBIGHASHSIZE];
 
-   int lasthashval[SEARCHHASHSIZE];
+   int lasthashval[VERYBIGHASHSIZE];
    int wordhash_counter;
 #endif
 

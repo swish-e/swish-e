@@ -165,7 +165,7 @@ void initModule_Index (SWISH  *sw)
     idx->sz_worddata_buffer = 0;
 
     /* Init  entries hash table */
-    for (i=0; i<SEARCHHASHSIZE; i++)
+    for (i=0; i<VERYBIGHASHSIZE; i++)
     {
         idx->hashentries[i] = NULL;
         idx->hashentriesdirty[i] = 0;
@@ -399,7 +399,7 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
 
 
     /* walk the hash list to remove words */
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
         if (idx->hashentriesdirty[i])
         {
@@ -913,7 +913,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         ENTRY       *ep;
 
         /* walk the hash list, and compress entries */
-        for (i = 0; i < SEARCHHASHSIZE; i++)
+        for (i = 0; i < VERYBIGHASHSIZE; i++)
         {
             if (idx->hashentriesdirty[i])
             {
@@ -926,7 +926,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
         if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
         {
-            for (i = 0; i < SEARCHHASHSIZE; i++)
+            for (i = 0; i < VERYBIGHASHSIZE; i++)
                 for (ep = idx->hashentries[i]; ep; ep = ep->next)
                     coalesce_word_locations(sw, indexf, ep);
             /* Make zone available for reuse */
@@ -985,7 +985,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         idx->entryArray->elist = NULL;
     }
     /* Compute hash value of word */
-    hashval = searchhash(word);
+    hashval = verybighash(word);
 
 
     /* Look for the word in the hash array */
@@ -1362,7 +1362,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
     /* this is the easy part: Remove the automatic stopwords from the hash array */
     /* Builds a list estop[] of ENTRY's that need to be removed */
 
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
         for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->next)
         {
@@ -1670,7 +1670,7 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
     sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
 
     /* Fill the array with all the entries */
-    for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0, j = 0; i < VERYBIGHASHSIZE; i++)
         for (e = sw->Index->hashentries[i]; e; e = e->next)
             sw->Index->entryArray->elist[j++] = e;
 
@@ -1838,12 +1838,12 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
     n = lastPercent = 0;
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
         if ( sw->verbose )
         {
             n++;
-            percent = (n * 100)/SEARCHHASHSIZE;
+            percent = (n * 100)/VERYBIGHASHSIZE;
             if (percent - lastPercent >= DELTA )
             {
                 printf("\r  Writing word hash: %3d%%", percent );
@@ -1874,16 +1874,16 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
     n = lastPercent = last_loc_swap = -1;
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
 		/* If we are in economic mode -e restore locations */
 		if(sw->Index->swap_locdata)
 		{
-			if (((i * (MAX_LOC_SWAP_FILES - 1)) / (SEARCHHASHSIZE - 1)) != last_loc_swap)
+			if (((i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1)) != last_loc_swap)
 			{
                 /* Free not longer needed memory */
 				Mem_ZoneReset(sw->Index->totalLocZone);
-				last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (SEARCHHASHSIZE - 1);
+				last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
 			    unSwapLocData(sw, last_loc_swap );
 			}
 		}

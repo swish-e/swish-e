@@ -432,9 +432,9 @@ void   *DB_Create_Native(char *dbname)
         DB->offsets[i] = 0L;
 
 #ifndef USE_BTREE
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
         DB->hashoffsets[i] = 0L;
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
         DB->lasthashval[i] = 0L;
 #endif
 
@@ -448,7 +448,7 @@ void   *DB_Create_Native(char *dbname)
 
 #ifndef USE_BTREE
     DB->hashstart = ftell(DB->fp);
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
         printlong(DB->fp, (long) 0, fwrite);
 #endif
 
@@ -571,7 +571,7 @@ void   *DB_Open_Native(char *dbname,int mode)
 #ifndef USE_BTREE
     /* Read hashoffsets lookuptable */
     DB->hashstart = ftell(DB->fp);
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
         DB->hashoffsets[i] = readlong(DB->fp, fread);
 #else
     DB->bt = BTREE_Open(DB->fp_btree,4096,DB->offsets[WORDPOS]);
@@ -704,7 +704,7 @@ void    DB_Close_Native(void *db)
 
 #ifndef USE_BTREE
         fseek(fp, DB->hashstart, 0);
-        for (i = 0; i < SEARCHHASHSIZE; i++)
+        for (i = 0; i < VERYBIGHASHSIZE; i++)
             printlong(fp, DB->hashoffsets[i], fwrite);
 #endif
     }
@@ -1133,7 +1133,7 @@ int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
         DB->wordhashdata = emalloc(3 * DB->num_words * sizeof(long));
     }
 
-    hashval = searchhash(word);
+    hashval = verybighash(word);
 
     if (!DB->hashoffsets[hashval])
     {
@@ -1199,7 +1199,7 @@ int     DB_ReadWordHash_Native(char *word, long *wordID, void *db)
     res = 1;
 
     /* Get hash file offset */
-    hashval = searchhash(word);
+    hashval = verybighash(word);
     if (!(offset = DB->hashoffsets[hashval]))
     {
         *wordID = 0;

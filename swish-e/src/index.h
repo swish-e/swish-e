@@ -54,8 +54,8 @@ struct MOD_Index
     /* entry vars */
     METAIDTABLE metaIDtable;
     ENTRYARRAY *entryArray;
-    ENTRY  *hashentries[SEARCHHASHSIZE];
-    char    hashentriesdirty[SEARCHHASHSIZE]; /* just a 0/1 flag */
+    ENTRY  *hashentries[VERYBIGHASHSIZE];
+    char    hashentriesdirty[VERYBIGHASHSIZE]; /* just a 0/1 flag */
 
     /* Compression Work buffer while compression locations in index ** proccess */
     unsigned char *compression_buffer;

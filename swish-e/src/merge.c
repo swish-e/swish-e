@@ -913,7 +913,7 @@ static void compress_entries( SWISH *sw )
     int         i;
 
     /* walk the hash list, and compress entries */
-    for (i = 0; i < SEARCHHASHSIZE; i++)
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
         if (idx->hashentriesdirty[i])
         {
@@ -926,7 +926,7 @@ static void compress_entries( SWISH *sw )
     /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
     if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
     {
-        for (i = 0; i < SEARCHHASHSIZE; i++)
+        for (i = 0; i < VERYBIGHASHSIZE; i++)
             for (ep = idx->hashentries[i]; ep; ep = ep->next)
                 coalesce_word_locations(sw, indexf, ep);
 
