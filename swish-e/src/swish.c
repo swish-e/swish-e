@@ -1315,30 +1315,20 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     /* Check for UPDATE_MODE jmruiz 2002/03 */
     if ( MODE_UPDATE == params->run_mode || MODE_REMOVE == params->run_mode )
+#ifndef USE_BTREE
+        progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
+#else
     {
         /* Set update_mode */
         sw->Index->update_mode = params->run_mode;
 
-        /* Open the index file for read/write */
-        sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
-        if ( sw->lasterror )
+        if ( !open_single_index( sw, sw->indexlist, DB_READWRITE ) )
             SwishAbortLastError( sw );
 
-
-        /* Read the header and overwrite the '-c' option and default values -
-        ** In other words, the header values are the good ones */
-        read_header(sw, &sw->indexlist->header, sw->indexlist->DB);
-        sw->TotalWords = sw->indexlist->header.totalwords;
-        sw->TotalFiles = sw->indexlist->header.totalfiles;
-        sw->TotalWordPos = sw->indexlist->header.total_word_positions;
-
-        /* Adjust filenum to totalfiles */
-        sw->Index->filenum = sw->TotalFiles;
-
-#ifndef USE_BTREE
-        progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
-#endif
+        /* Adjust file number to start after the last file number in the index */
+        sw->Index->filenum = sw->indexlist->header.totalfiles;
     }
+#endif
 
 
     else
@@ -1655,7 +1645,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
     if (sw->verbose)
     {
-        int totalwords = sw->indexlist->header.totalwords - sw->indexlist->header.removedwords;
+        int totalwords = sw->indexlist->header.totalwords;
         printf("%s unique word%s indexed.\n", comma_long( totalwords ), (totalwords == 1) ? "" : "s");
     }
 
@@ -1681,12 +1671,13 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
         if (totalfiles)
         {
             printf("%s file%s indexed.  ",
-                    comma_long( totalfiles ), (totalfiles == 1) ? "" : "s");
+            comma_long( totalfiles ), (totalfiles == 1) ? "" : "s"); /* common_long is not thread safe -- shares memory */
 
             printf("%s total bytes.  ", comma_long(sw->indexlist->total_bytes) );
 
-            printf("%s total words.\n", comma_long(sw->indexlist->total_word_positions) );
+            printf("%s total words.\n", comma_long(sw->indexlist->total_word_positions_cur_run) );
         }
+
         else
             printf("no files indexed.\n");
 

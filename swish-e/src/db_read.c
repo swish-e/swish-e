@@ -227,12 +227,12 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             header->totalwords = tmp1;
             header->totalfiles = tmp2;
             header->total_word_positions = tmp3;
-	    header->removedfiles = tmp4;
+            header->removedfiles = tmp4;
             break;
 
         case TOTALWORDS_REMOVED_ID:  /* Added here instead of above to keep index compatible */
             parse_int_from_buffer(tmp, buffer);
-            header->removedwords = tmp;
+            header->removed_word_positions = tmp;
             break;
 
 /* removed due to patents problems
@@ -268,7 +268,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 #endif
 
         default:
-            progerr("Severe index error in header");
+            progerr("Severe index error in header.  Unknown index header ID: %d", id );
             break;
         }
         efree(buffer);

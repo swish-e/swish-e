@@ -892,7 +892,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             {
                 DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
                 cur_index->header.removedfiles++;
-                cur_index->header.removedwords += existing_word_count;
+                cur_index->header.removed_word_positions += existing_word_count;
 
                 if (sw->verbose >= 3)
                     printf(" - Update mode - File '%s' replaced existing file number %d because %s\n",
@@ -936,7 +936,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
             DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
             cur_index->header.removedfiles++;
-            cur_index->header.removedwords += existing_word_count;
+            cur_index->header.removed_word_positions += existing_word_count;
 
 
             /* This is expected, so set 3 */
@@ -1048,7 +1048,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     /* Now bump the file counter  */
     idx->filenum++;
-    indexf->header.totalfiles++; /* why ??? is this needed */
+    indexf->header.totalfiles++;
     fi.filenum = idx->filenum;
 
     /** PARSE **/
@@ -1223,7 +1223,7 @@ void   addentry(SWISH * sw, ENTRY *e, int filenum, int structure, int metaID, in
     struct MOD_Index *idx = sw->Index;
 
 
-    indexf->total_word_positions++;
+    indexf->total_word_positions_cur_run++;
 
     if ( DEBUG_MASK & DEBUG_WORDS )
     {

@@ -54,11 +54,12 @@ typedef struct
 static HEADER_MAP header_map[] = {
     {  "Name",              SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexn ) },
     {  "Saved as",          SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, savedasheader ) },
+    /* $$$ Total Words is  unique words, and is Not corrected for removed words */
     {  "Total Words",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalwords ) },
     {  "Total Files",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalfiles ) },
     {  "Removed Files",     SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, removedfiles ) },
-    {  "Removed Words",     SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, removedwords ) },
     {  "Total Word Pos",    SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, total_word_positions ) },
+    {  "Removed Word Pos",  SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, removed_word_positions ) },
     {  "Indexed on",        SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexedon ) },
     {  "Description",       SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexd ) },
     {  "Pointer",           SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexp ) },
@@ -275,8 +276,8 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
             if ( (void *)data_pointer == &header->totalfiles )
                 value.number -= header->removedfiles;
 
-            if ( (void *)data_pointer == &header->totalwords )
-                value.number -= header->removedwords;
+            if ( (void *)data_pointer == &header->total_word_positions )
+                value.number -= header->removed_word_positions;
 
             return value;
 
