@@ -10,6 +10,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Leak when using C library
+
+David Windmueller found a memory leak when calling multiple searches
+on a swish handle.  The problem was swish loading the pre-sorted
+property index on every search, even after the table had been loaded
+into memory.
+
 =item Swish.cgi now kills swish-e on time out
 
 The example script F<swish.cgi> uses an alarm (on platforms that support
