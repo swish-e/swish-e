@@ -707,13 +707,10 @@ struct swline *expandphrase(struct swline *sp, char delimiter)
             }
             else
             {
-                /* Fix for and, not or when not in a phrase */
-                if (!strcasecmp(tmp->line, _AND_WORD))
-                    newp = (struct swline *) addswline(newp, AND_WORD);
-                else if (!strcasecmp(tmp->line, _OR_WORD))
-                    newp = (struct swline *) addswline(newp, OR_WORD);
-                else if (!strcasecmp(tmp->line, _NOT_WORD))
-                    newp = (struct swline *) addswline(newp, NOT_WORD);
+                const char *operator;
+
+                if ( ( operator = isBooleanOperatorWord( tmp->line )) )
+                    newp = (struct swline *) addswline(newp, (char *)operator);
                 else
                     newp = (struct swline *) addswline(newp, tmp->line);
             }
