@@ -1096,7 +1096,7 @@ A filter is an external program that swish executes when processing a document o
 SWISH-E will execute the filter program for each file that matches the file extension set in the
 B<FileFilter> directive.
 
-SWISH-E calls the external program passing as arguments:
+SWISH-E calls the external program passing as B<default> arguments:
 
 =over 4
 
@@ -1116,12 +1116,14 @@ indexing under the http method this will be the URL of the source document.
 
 =back
 
+SWISH-E can also pass other parameters to the filter program. These parameters can be defined using the 
+B<FileFilter> directive.
+
 The filter program must open the file, process its contents, and return it to SWISH-E by printing to STDOUT.
 
 Note that this can add a significant amount of time to the indexing process.  If you have many files to filter you
 should consider writing your filter in C instead of a shell or perl script.
 
-B<Note:> Filtering in swish may change in the future (see L<SWISH-3.0|SWISH-3.0>).
 
 =over 4
 
@@ -1135,19 +1137,54 @@ Example:
 
     FilterDir /usr/local/swish/filters
 
-=item FileFilter
+=item FileFilter   *extension*   "filter-prog"   ["filter-options"]
 
 This maps file extensions to a filter program.
 
-Examples:
+Filter options:
+   Filter options are a string passed as arguments to the I<filter-prog>.
+   Filter options can contain variables, replaced by SWISH-E.
 
-    FileFilter  .pdf       pdf-filter.sh
-    Filefilter  .html.gz   ungzip-html
-    Filefilter  .doc       wword-filter.sh
-    Filefilter  .dot       wword-filter.sh
-    Filefilter  .ps        ghostscript-filter.pl
+   If you ommit I<filter-options> SWISH-E will use default parameters for the options.
 
-Here are some examples of filters.
+        Default:      "'%p' '%P'"
+        Which means:  pass   "workfile path" and "documentfile path" to filter (each quoted).
+
+   Variables in filter options:
+
+       %%   =  %
+       %P   =  Full document pathname (e.g. URL, or path on filesystem)  
+       %p   =  Full pathname to work file (maybe a tmpfile or the real document path on filesystem)
+       %F   =  Filename stripped from full document pathname
+       %f   =  Filename stripped from "work" pathname
+       %D   =  Directoryname stripped from full document pathname
+       %d   =  Directoryname stripped from full "work" pathname
+
+       Example:
+          %P =  document pathname:  http://myserver/path1/mydoc.txt
+          %p =  work pathname:      /tmp/tmp.1234.mydoc.txt
+          %F =     mydoc.txt
+          %f =     tmp.1234.mydoc.txt
+          %D =     http://myserver/path1
+          %d =     /tmp
+
+       Important hint:
+           When using variable substitition, use quotes, to ensure filename integrity.
+           e.g. "'%f'"  -->  'file name with spaces.doc'.
+
+
+Examples for filters:
+
+    FileFilter  .pdf       pdf2html.sh
+    FileFilter  .pdf       "pdftotext"   "'%p' -"
+    FileFilter  .html.gz   ungzip-html
+    FileFilter  .html.gz   gzip  "-c '%p'"
+    FileFilter  .doc       wword-filter.sh
+    FileFilter  .dot       wword-filter.sh
+    FileFilter  .ps        ghostscript-filter.pl
+    FileFilter  .mydoc     "/some/path/mydocfilter"  "-d '%d' -example -url '%P' '%f'"
+
+Here are some simple examples of filters.
 
 Convert .pdf files to text:
 

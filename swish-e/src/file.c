@@ -217,11 +217,13 @@ unsigned char *buffer;
 		}
 
 		buffer=emalloc(filelen+1);
+		*buffer = '\0';
 		fread(buffer,1,filelen,fp);
 
 	} else {    /* if we are reading from a popen call, filelen is 0 */
 
 		buffer=emalloc((bufferlen=RD_BUFFER_SIZE)+1);
+		*buffer = '\0';
 		for(offset=0;(c=fread(buffer+offset,1,RD_BUFFER_SIZE,fp))==RD_BUFFER_SIZE;offset+=RD_BUFFER_SIZE)
 		{
 			/* truncate? break if to much read */
@@ -259,7 +261,7 @@ FileProp *init_file_properties( SWISH *sw )
     fprop->mtime = (time_t) 0;
     fprop->doctype = sw->DefaultDocType;  
     fprop->index_no_content = 0;	      /* former: was indextitleonly! */
-    fprop->filterprog = NULL; 	      /* Default = No Filter */
+    fprop->hasfilter = NULL; 	      /* Default = No Filter */
     fprop->stordesc = NULL; 	      /* Default = No summary */
 
     return fprop;
@@ -268,17 +270,14 @@ FileProp *init_file_properties( SWISH *sw )
 
 /* Mar 27, 2001 - moseley
  * Separate out the adjusting of file properties by config settings
- *
+ * 2001-04-09  rasc changed filters
  */
 
 void init_file_prop_settings(SWISH *sw, FileProp *fprop )
 {
-  char         *x;
 
   /* Basename of document path => document filename */
-  x = strrchr (fprop->real_path,'/');
-  fprop->real_filename = (x) ? x+1 : fprop->real_path;  
-
+  fprop->real_filename = str_basename (fprop->real_path);
 
 
   /* -- get Doc Type as is in IndexContents or Defaultcontents
@@ -301,7 +300,7 @@ void init_file_prop_settings(SWISH *sw, FileProp *fprop )
      -- NULL = No Filter, (char *) path to filter prog.
   */
 
-  fprop->filterprog = hasfilter (fprop->real_path,sw->filterlist);
+  fprop->hasfilter= hasfilter (fprop->real_path,sw->filterlist);
 
   fprop->stordesc = hasdescription (fprop->doctype,sw->storedescription);
 

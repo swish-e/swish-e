@@ -36,6 +36,7 @@ $Id$
 **                   otherwise some chars may fail.
 **
 ** 2001-03-08 rasc   rewritten and enhanced suffix routines
+** 2001-04-10 rasc   str_dirname, str_basename, changed char_decode_C_ESC
 **
 */
 
@@ -714,6 +715,7 @@ char *str_skip_ws (char *s)
              se:  string ptr to char after control sequence.
                  (ignore, if NULL ptr)
   -- 2001-02-04  rasc
+  -- 2001-04-10  rasc   handle  '\''\0'  (safty!)
 */
 
 
@@ -747,6 +749,8 @@ char charDecode_C_Escape (char *s, char **se)
 		s = --se2;
 		break;
 
+	case '\0':				/* outch!! null after \ */
+		s--;				/* it's a "\"	   */
 	default: 
 		c =  *s;		/* print the escaped character */
 		break;
@@ -966,4 +970,65 @@ int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to)
 
   return 1;
 }
+
+
+
+
+/* ---------------------------------------------------------- */
+
+
+/*
+  -- cstr_basename
+  -- return basename of a document path
+  -- return: (char *) copy of filename
+*/
+
+char *cstr_basename (char *path)
+{
+  return (char *) estrdup (str_basename (path));
+}
+
+
+/*
+  -- str_basename
+  -- return basename of a document path
+  -- return: (char *) ptr into(!) path string
+*/
+
+char *str_basename (char *path)
+{
+  char *s;
+
+  s = strrchr (path,DIRDELIMITER);
+  return (s) ? s+1 : path;  
+}
+
+
+/*
+  -- cstr_dirname (copy)
+  -- return dirname of a document path
+  -- return: (char *) ptr on copy(!) of path
+*/
+
+char *cstr_dirname (char *path)
+{
+  char *s;
+  char *dir;
+  int  len;
+
+  s = strrchr (path,DIRDELIMITER);
+  
+  if (!s) {
+    dir = (char *)estrdup (" ");
+    *dir = (*path==DIRDELIMITER) ? DIRDELIMITER : '.'; 
+  } else {
+    len = s-path;
+    dir = emalloc (len+1);
+    strncpy (dir, path, len);
+    *(dir+len) = '\0';
+  }
+ 
+  return dir;  
+}
+
 

@@ -131,7 +131,7 @@ long truncate_doc_size;
                  *  simply filter in the prog, after all.  Faster, too.
                  */
 
-                if ( fprop->filterprog )
+                if ( fprop->hasfilter )
                     progerr("Filters currently do not work with 'prog' document source");
 
                 do_index_file( sw, fprop );

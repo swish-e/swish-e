@@ -17,13 +17,33 @@ $Id$
 **
 **
 ** 2001-02-28 rasc    own module started for filters
+** 2001-04-09 rasc    enhancing filters
 */
 
 
+#ifndef __HasSeenModule_FILTERS
+#define __HasSeenModule_FILTERS	1
 
-struct filter *addfilter (struct filter *rp, char *FilterSuffix, char *FilterProg, char *FilterDir);
-char *hasfilter (char *filename, struct filter *filterlist);
+
+
+struct filter {	/* Store filtersprogs and extension */
+        char *suffix;
+        char *prog;
+        char *options;       /* 2001-04-09 rasc */
+        struct filter *next;
+        struct filter *nodep;
+};
+
+
+void initModule_Filter   (SWISH *sw);
+void freeModule_Filter   (SWISH *sw);
+int  configModule_Filter (SWISH *sw, StringList *sl);
+
+struct filter *hasfilter (char *filename, struct filter *filterlist);
 FILE *FilterOpen (FileProp *fprop);
 int FilterClose (FILE *fp);
+
+
+#endif
 
 

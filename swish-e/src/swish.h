@@ -53,6 +53,7 @@
 **
 ** 2001-03-16 rasc   truncateDocSize
 ** 2001-03-17 rasc   fprop enhanced by real_filename
+** 2001-04-09 rasc   filters changed and enhanced
 ** 
 */
 
@@ -272,7 +273,8 @@ typedef struct  {
 	int    index_no_content;/* Flag, index "filename/real_path" only! */
 	struct StoreDescription *stordesc;  
 				/* Null if no description/summary */
-	char   *filterprog;     /* path to a filterscript or NULL */
+	struct filter *hasfilter;
+			     /* NULL if no filter for this file */
 } FileProp;
 
 
@@ -455,12 +457,6 @@ struct multiswline {
 };
 
 
-struct filter {	/* Store filtersprogs and extension */
-        char *suffix;
-        char *prog;
-        struct filter *next;
-        struct filter *nodep;
-};
 
 struct ResultExtFmtStrList {  /* -x extended format by defined names */
         char *name;

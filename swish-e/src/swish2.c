@@ -34,6 +34,7 @@ $Id$
 #include "docprop.h"
 #include "mem.h"
 #include "hash.h"
+#include "filter.h"
 
 
 /* 
@@ -74,8 +75,7 @@ int i;
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
 
 	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
-	sw->filterdir = NULL;
-	sw->filterlist = NULL;
+	initModule_Filter (sw);
 	sw->resultextfmtlist=NULL;
 	sw->enableAVSearchSyntax = 0;	/* default: enable only Swish syntax */	
       sw->truncateDocSize = 0;      /* default: no truncation of docs    */
@@ -190,7 +190,7 @@ if(sw) {
 
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
-		efree(sw->filterdir);
+		freeModule_Filter (sw);
 		efree(sw->opt.stdResultFieldDelimiter);	
 
                         /* Free file structures */
