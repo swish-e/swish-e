@@ -86,7 +86,6 @@ int i;
     
         /* File system parameters */
     sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
-    for(i=0;i<BIGHASHSIZE;i++) sw->inode_hash[i]=NULL;
 
     /* prog system parameters */
     sw->progparameterslist =  NULL;

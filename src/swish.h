@@ -504,13 +504,6 @@ typedef struct
 }
 DOCENTRYARRAY;
 
-struct dev_ino
-{
-    dev_t   dev;
-    ino_t   ino;
-    struct dev_ino *next;
-};
-
 struct url_info
 {
     char   *url;
@@ -699,7 +692,6 @@ typedef struct
     struct swline *fileconlist;
     struct swline *titconlist;
     struct swline *fileislist;
-    struct dev_ino *inode_hash[BIGHASHSIZE];
 
     /* http system specific configuration parameters */
     int     maxdepth;
