@@ -369,6 +369,7 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
 
     out_header->totalfiles = 0;
     out_header->removedfiles = 0;
+    out_header->removedwords = 0;
     out_header->totalwords = 0;
 
     freeMetaEntries( out_header );
