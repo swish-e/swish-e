@@ -37,7 +37,7 @@ For example, to sort by the rank and title:
 
     swish-e -w foo -s swishrank desc swishtitle asc
 
-=item * The header display has been slighly reorganized.
+=item * The header display has been slightly reorganized.
 
 If you are parsing output headers in a program then you may need to adjust your code.
 
@@ -65,7 +65,7 @@ Here's a summary of the way swish works for the different versions.
 
 =item * Indexing and searching speed improvements
 
-A number of imporvements in indexing and searching speed were made, especially for searching
+A number of improvements in indexing and searching speed were made, especially for searching
 very large indexes and sorting by properties.
 
 =item * New B<prog> document source indexing method
@@ -96,7 +96,7 @@ directory.  The configuration directives are now described in L<SWISH-CONFIG|SWI
 
 =item * Ports to Win32 and VMS
 
-David Norris has included the files required to build swish under windows.  In addition, a binary version of
+David Norris has included the files required to build swish under Windows.  In addition, a binary version of
 swish for Win32 is now included in the distribution.
 See C<src/win32>.
 
@@ -130,7 +130,7 @@ C<-S prog> document source method.
 
 =item * New directive: ConvertHTMLEntities [yes|no]
 
-Disables parsing and conversion of HTML entities.
+Controls parsing and conversion of HTML entities.
 
 =item * New directive DontBumpPositionOnMetaTags
 
@@ -138,6 +138,10 @@ The word position is bumped when a new metatag is found -- this
 is to prevent phrases from matching across meta tags.
 
 This currently works only with XML parsing.
+
+=item * Change of default for IndexComments
+
+This has been changed such that comments are not indexed by default.
 
 =item * New directive Words
 
