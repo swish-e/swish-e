@@ -6,9 +6,8 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.2rc2
+=head2 Version 2.2rc2 - September ??, 2002
 
-Release Date: ????
 
 =over 4
 
@@ -21,14 +20,15 @@ were indexed. [moseley]
 
 Updated from _WIN32 checks to feature checks using autoconf [moseley, norris]
 
+=item updates to run on Alpha (Linux 2.4 (Debian 3.0))
 
-Moved 
+Fixed a cast error when calling zlib, and the calls to read/write a packed longs
+to disk. [jmruiz, moseley]
+
 
 =back
 
-=head2 Version 2.2rc1
-
-Release Date: August 29, 2002
+=head2 Version 2.2rc1 - August 29, 2002
 
 Many large changes were made internally in the code, some for performance
 reasons, some for feature changes and additions, and some to prepare
