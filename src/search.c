@@ -133,62 +133,326 @@ $Id$
 
 
 /* ------ static fucntions ----------- */
-static DB_RESULTS * query_index( SEARCH_OBJECT *srch, IndexFILE *indexf );
+static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word );
+static void query_index( DB_RESULTS *db_results );
 static int isbooleanrule(char *);
 static int isunaryrule(char *);
 static int getrulenum(char *);
-static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist);
-static RESULT_LIST *operate(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf);
-static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * indexf, int metaID);
-
-static RESULT_LIST *andresultlists(SEARCH_OBJECT *srch, RESULT_LIST *, RESULT_LIST *, int);
-static RESULT_LIST *orresultlists(SEARCH_OBJECT *srch, RESULT_LIST *, RESULT_LIST *);
-static RESULT_LIST *notresultlist(SEARCH_OBJECT *srch, RESULT_LIST *, IndexFILE *);
-static RESULT_LIST *notresultlists(SEARCH_OBJECT *srch, RESULT_LIST *, RESULT_LIST *);
-static RESULT_LIST *phraseresultlists(SEARCH_OBJECT *srch, RESULT_LIST *, RESULT_LIST *, int);
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, SEARCH_OBJECT * srch);
-static void freeresultlist(DB_RESULTS *);
-static void freeresult(RESULT *);
-static RESULT_LIST *mergeresulthashlist (SEARCH_OBJECT *srch, RESULT_LIST *r);
 static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *r);
+
+static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist);
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf);
+static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID);
+static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
+static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
+static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST *, IndexFILE *);
+static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
+static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
+static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
+static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, DB_RESULTS * db_results);
+static void freeresultlist(DB_RESULTS *db_results);
+static void freeresult(RESULT *);
 static void  make_db_res_and_free(RESULT_LIST *l_res);
 
 
-/* Create a new search object */
+/****************************************************************
+*  New_Search_Object - Create a new search object
+*
+*   Pass in:
+*       SWISH *sw - swish handle (database handle, if you like)
+*       query - query string
+*
+*   Returns:
+*       SEARCH_OBJECT
+*
+*   Notes:
+*       This does not run the search, but just creates an object
+*       than can generate a set of results.
+*
+*****************************************************************/
 
 SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
 {
-    SEARCH_OBJECT *srch;
-
-    srch = (SEARCH_OBJECT *) emalloc(sizeof(SEARCH_OBJECT));
+    int         index_count;
+    IndexFILE  *indexf = sw->indexlist;
+    
+    SEARCH_OBJECT *srch = (SEARCH_OBJECT *)emalloc( sizeof(SEARCH_OBJECT) );
     memset( srch, 0, sizeof(SEARCH_OBJECT) );
 
     srch->sw = sw;  /* parent object */
-
-    srch->params.PhraseDelimiter = PHRASE_DELIMITER_CHAR;
-    srch->params.structure = IN_FILE;
+    srch->PhraseDelimiter = PHRASE_DELIMITER_CHAR;
+    srch->structure = IN_FILE;
 
     if ( query )
         set_query( srch, query );
-      
-    srch->resultSearchZone = Mem_ZoneCreate("resultSearch Zone", 0, 0);
+
+
+    index_count = 0;
+    /* Allocate place to hold the limit arrays */
+    while( indexf )
+    {
+        index_count++;
+        indexf = indexf->next;
+    }
+
+
+    /* Create a table index by indexf number */
+    srch->prop_limits = (PROP_LIMITS **)emalloc( sizeof(PROP_LIMITS **) * index_count );
+
+    indexf = sw->indexlist;
+    index_count = 0;
+
+    while( indexf )
+    {
+        int     table_size = sizeof(PROP_LIMITS) * (indexf->header.metaCounter + 1); /* metaID start at one */
+        PROP_LIMITS *index_limits;  /* an array of limits data */
+
+        /* Create a table indexed by meta ID */
+        index_limits = (PROP_LIMITS *)emalloc( table_size );
+        memset( index_limits, 0, table_size );
+        
+        srch->prop_limits[index_count++] = index_limits;
+
+        indexf = indexf->next;
+    }
+
+
     return srch;
 }
+
+/****************************************************************
+*  Free_Search_Object - Frees a search object
+*
+*   Pass in:
+*       SEARCH_OBJECT
+*
+*   Frees up memory associated with a search (not results)
+*
+*****************************************************************/
+
+void Free_Search_Object( SEARCH_OBJECT *srch )
+{
+    int         index_count;
+    IndexFILE   *indexf;
+    
+    if ( !srch )
+        return;
+
+    /* Free up any query parameters */
+
+    if ( srch->query )
+        efree( srch->query );
+
+    if ( srch->sort_params )
+        freeswline( srch->sort_params );
+
+
+
+    ResetLimitParameters( srch );  /* clears data associated with the parameters and the processed data */
+
+
+    /* Free up the limit tables */
+
+    indexf = srch->sw->indexlist;
+    index_count = 0;
+    while ( indexf )
+    {
+        PROP_LIMITS *index_limits = srch->prop_limits[index_count++];
+        efree( index_limits );
+        indexf = indexf->next;
+    }
+
+    efree ( srch->prop_limits );
+
+    efree (srch);
+}
+
 
 
 void set_query(SEARCH_OBJECT *srch, char *words )
 {
-    
-    if ( srch->params.query )
-        efree( srch->params.query );
+    if ( srch->query )
+        efree( srch->query );
 
-    srch->params.query = words ? estrdup( words ) : NULL;
+    srch->query = words ? estrdup( words ) : NULL;
 }
 
-static void free_db_results( SEARCH_OBJECT *srch )
+
+
+/****************************************************************
+*  New_Results_Object - Creates a structure for holding a set of results
+*
+*   Pass in:
+*       SEARCH_OBJECT - parameters for running the search
+*
+*   Returns:
+*       Initialized RESULTS_OBJECT
+*
+*   Notes:
+*       This does not run the query.
+*
+*****************************************************************/
+
+static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
+{
+    RESULTS_OBJECT  *results;
+    IndexFILE       *indexf;
+    DB_RESULTS      *last = NULL;
+    int             indexf_count;
+    
+    results = (RESULTS_OBJECT *)emalloc( sizeof(RESULTS_OBJECT) );
+    memset( results, 0, sizeof(RESULTS_OBJECT) );
+
+    results->srch = srch;
+    results->sw = srch->sw;
+
+    /* Create place to store results */
+    results->resultSearchZone = Mem_ZoneCreate("resultSearch Zone", 0, 0);
+
+    /* Create place to store sort keys */
+    results->resultSortZone = Mem_ZoneCreate("resultSort Zone", 0, 0);
+
+
+
+    /* Add in a DB_RESULTS for each index file - place to store results for a single index file */
+    indexf_count = 0;
+    
+    for ( indexf = srch->sw->indexlist; indexf; indexf = indexf->next )
+    {
+        DB_RESULTS * db_results = (DB_RESULTS *) emalloc(sizeof(DB_RESULTS));
+        memset( db_results, 0, sizeof(DB_RESULTS));
+
+        db_results->results     = results;      /* parent object */
+        db_results->indexf      = indexf;
+        db_results->index_num   = indexf_count++;
+        db_results->srch        = srch;         /* associated search */
+
+
+
+        if ( !last )
+            results->db_results = db_results;  /* first one */
+        else
+            last->next = db_results;
+
+        last = db_results;
+
+        /* memory allocations after linking the db_results into the list */
+        
+        if ( !init_sort_propIDs( db_results, srch->sort_params ) )
+            return results;
+    }
+
+
+
+    /* Make sure we have a query string passed in */
+    if (!srch->query || !*srch->query)
+        srch->sw->lasterror = NO_WORDS_IN_SEARCH;
+    else
+        results->query = estrdup( srch->query );
+    
+
+    return results;
+}
+
+/**************************************************************************
+*  init_sort_propIDs -- load the prop ids for a single index file
+*
+***************************************************************************/
+
+static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
+{
+    int cur_length = 0;    /* array size */
+    struct metaEntry *m;
+
+
+
+    /* If none set then default to rank $$$ maybe can avoid this in the sort code?? */
+    if ( !sort_word )  /* set the default */
+    {
+        db_results->num_sort_props = 1;
+        db_results->sort_directions = (int *)emalloc( sizeof(int) );
+        db_results->propIDToSort = (int *)emalloc( sizeof(int) );
+        
+        m = getPropNameByName(&db_results->indexf->header, AUTOPROPERTY_RESULT_RANK);
+        if ( !m )
+            progerr("Rank is not defined as an auto property - must specify sort parameters");
+
+        db_results->propIDToSort[0] = m->metaID;
+        db_results->sort_directions[0] = 1;
+
+        return 1;
+    }
+        
+
+
+    while ( sort_word )
+    {
+        char *field = sort_word->line;
+        int  sortmode = -1;  /* default */
+
+        db_results->num_sort_props++;
+
+        /* see if there's a "asc" or "desc" modifier following */
+        
+        if (sort_word->next)
+        {
+            if (!strcasecmp(sort_word->next->line, "asc"))
+            {
+                sortmode = -1; /* asc sort */
+                sort_word = sort_word->next;
+            }
+            else if (!strcasecmp(sort_word->next->line, "desc"))
+            {
+                sortmode = 1; /* desc sort */
+                sort_word = sort_word->next;
+            }
+        }
+
+        /* array big enough? */
+        if ( db_results->num_sort_props > cur_length )
+        {
+            cur_length += 20;
+            db_results->sort_directions = (int *)erealloc(db_results->sort_directions, sizeof(int) * cur_length );
+            db_results->propIDToSort = (int *)erealloc(db_results->propIDToSort, sizeof(int) * cur_length );
+        }
+
+
+        m = getPropNameByName(&db_results->indexf->header, field);
+        if ( !m )
+        {
+            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT, db_results->results->sw, "Property '%' is not defined in index '%s'", field, db_results->indexf->line);
+            return 0;
+        }
+
+        db_results->propIDToSort[db_results->num_sort_props-1] = m->metaID;
+        db_results->sort_directions[db_results->num_sort_props-1] = sortmode;
+
+
+        sort_word = sort_word->next;
+    }
+    return 1;
+}
+
+    
+
+/****************************************************************
+*  Free_Results_Object - Frees all memory associated with search results
+*
+*   Pass in:
+*       RESULTS_OBJECT
+*
+*****************************************************************/
+
+
+void Free_Results_Object( RESULTS_OBJECT *results )
 {
     DB_RESULTS *next;
-    DB_RESULTS *cur = srch->db_results;
+    DB_RESULTS *cur;
+
+    if ( !results )
+        return;
+
+    cur = results->db_results;
 
     while ( cur )
     {
@@ -198,56 +462,45 @@ static void free_db_results( SEARCH_OBJECT *srch )
         freeswline( cur->parsed_words );
         freeswline( cur->removed_stopwords );
 
+        if ( cur->propIDToSort )
+            efree(cur->propIDToSort);
+
+        if ( cur->sort_directions )
+            efree(cur->sort_directions);
+
+
+        /* free the property string cache, if used */
+        if ( cur->prop_string_cache )
+        {
+            int i;
+            for ( i=0; i< cur->indexf->header.metaCounter; i++ )
+                if ( cur->prop_string_cache[i] )
+                    efree( cur->prop_string_cache[i] );
+
+            efree( cur->prop_string_cache );
+        }
+        
+
 
         efree(cur);
         cur = next;
     }
 
-    srch->db_results = NULL;
+    if ( results->query )
+        efree( results->query );
+        
+
+    /* Free up any results */
+    Mem_ZoneFree( &results->resultSearchZone );
+
+    /* Free up sort keys */
+    Mem_ZoneFree( &results->resultSortZone );
+
+    efree( results );
 }
 
 
 
-void Free_Search_Object( SEARCH_OBJECT *srch )
-{
-    if ( !srch )
-        return;
-
-    /* Free up any query parameters */
-
-    if ( srch->params.query )
-        efree( srch->params.query );
-
-    if ( srch->params.limit_params )
-        ClearLimitParameter( srch->params.limit_params );
-
-
-
-    /* Free results from search if they exists */
-    free_db_results( srch );
-
-
-    Mem_ZoneFree(&srch->resultSearchZone);
-    efree (srch);
-}
-
-
-/************************************************************
-* New_db_results -- one for each index file searched
-*
-*************************************************************/
-
-
-DB_RESULTS *New_db_results( SEARCH_OBJECT *srch, IndexFILE *indexf )
-{
-    DB_RESULTS * db_results = (DB_RESULTS *) emalloc(sizeof(DB_RESULTS));
-    memset( db_results, 0, sizeof(DB_RESULTS));
-
-    db_results->indexf = indexf;
-    db_results->srch = srch;
-
-    return db_results;
-}
 
 
 // #define DUMP_RESULTS 1
@@ -255,9 +508,9 @@ DB_RESULTS *New_db_results( SEARCH_OBJECT *srch, IndexFILE *indexf )
 
 #ifdef DUMP_RESULTS
 
-static void dump_result_lists( SEARCH_OBJECT *srch, char *message )    
+static void dump_result_lists( RESULTS_OBJECT *results, char *message )    
 {
-    DB_RESULTS *db_results = srch->db_results;
+    DB_RESULTS *db_results = results->db_results;
     int cnt = 0;
     struct swline *query;
 
@@ -314,14 +567,18 @@ static void dump_result_lists( SEARCH_OBJECT *srch, char *message )
 *       SWISH * - swish handle
 *       char *  - query string
 *
+*   Returns:
+*       RESULTS_OBJECT;
+*
+*
 ********************************************************************************/
 
-SEARCH_OBJECT *SwishQuery(SWISH *sw, char *words )
+RESULTS_OBJECT *SwishQuery(SWISH *sw, char *words )
 {
     SEARCH_OBJECT *srch = New_Search_Object( sw, words );
-    
-    SwishExecute( srch, NULL );
-    return srch;
+    RESULTS_OBJECT *results = SwishExecute( srch, NULL );
+    Free_Search_Object( srch );
+    return results;
 }
 
 
@@ -334,19 +591,24 @@ SEARCH_OBJECT *SwishQuery(SWISH *sw, char *words )
 *       SEARCH_OBJECT * - existing search object
 *       char *  - optional query string
 *
-*   Notes:
-*       would probably be better to return a separate "results" object
-*       as then would not worry about calling this again on the same object (and needing to clean up first)
+*   Returns:
+*       RESULTS_OBJECT -- regardless of errors CALLER MUST DESTROY
+*
+*   Errors:
+*       Sets sw->lasterror
+*
+*   ToDo:
+*       localize the errorstr
 *
 ********************************************************************************/
 
 
 
-int SwishExecute(SEARCH_OBJECT *srch, char *words)
+RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words)
 {
-    IndexFILE *indexf;
-    int     rc = 0;
-    SWISH   *sw;
+    RESULTS_OBJECT *results;
+    DB_RESULTS     *db_results;
+    SWISH          *sw;
 
     if ( !srch )
         progerr("Passed in NULL search object to SwishExecute");
@@ -354,117 +616,105 @@ int SwishExecute(SEARCH_OBJECT *srch, char *words)
     sw = srch->sw;
 
 
-    /* just in case calling with same object */
-    free_db_results( srch );
-
-
     /* Allow words to be passed in */
     if ( words )
         set_query( srch, words );
 
 
-    /* If not words - do nothing */
-    if (!srch->params.query || !*srch->params.query)
-        return (sw->lasterror = NO_WORDS_IN_SEARCH);
 
-
-
-    if ((rc = initSortResultProperties(srch->sw)))
-        return rc;
-
-
+    /* Create the results object based on the search input object */
+    results = New_Results_Object( srch );
+    if ( sw->lasterror )
+        return results;
 
 
     /* This returns false when no files found within the limit */
-    
+    /* or on errors such as bad property name */
+
+    /* $$$ make sure this is not repeated once set  */
+
     if ( !Prepare_PropLookup( srch ) )
-        return sw->lasterror;  /* normally RC_OK (no results), but could be an error */
+        return results;
 
 
 
     /* Fecth results for each index file */
+    db_results = results->db_results;
 
-    for ( indexf = sw->indexlist; indexf; indexf = indexf->next )
+    while ( db_results )
     {
 
-        DB_RESULTS *cur_results = query_index( srch, indexf );
-
-        /* add cur_results to the end of the list of results */
-
-        if ( !srch->db_results)
-            srch->db_results = cur_results;
-        else
-        {
-            DB_RESULTS *db_tmp = srch->db_results;
-            while (db_tmp)
-            {
-                if (!db_tmp->next)
-                {
-                    db_tmp->next = cur_results;
-                    break;
-                }
-                db_tmp = db_tmp->next;
-            }
-        }
+        /* Parse the query and run the search */
+        query_index( db_results );
         
 
         /* Any big errors? */
         /* This is ugly, but allows processing all indexes before reporting an error */
         /* one could argue if this is the correct approach or not */
+       
         
         if ( sw->lasterror )
         {
             if ( sw->lasterror == QUERY_SYNTAX_ERROR )
-                return sw->lasterror;
+                return results;
 
-            if ( sw->lasterror > srch->lasterror )
-                srch->lasterror = sw->lasterror;
+            if ( sw->lasterror < results->lasterror )
+                results->lasterror = sw->lasterror;
 
             sw->lasterror = RC_OK;
         }
+
+        db_results = db_results->next;
     }
 
-    /* Were all the index files empty - shouldn't happen? */
 
-    if (!srch->total_files)
-        return (sw->lasterror = INDEX_FILE_IS_EMPTY);
-        
+    /* Check for errors */
+    
+    if ( !results->total_files )
+        sw->lasterror = INDEX_FILE_IS_EMPTY;
 
-
-    /* Did any of the indexes have a parsed query? */
-
-    if (!srch->search_words_found)
-        return (sw->lasterror = NO_WORDS_IN_SEARCH);
+    else if ( !results->search_words_found )
+        sw->lasterror = results->lasterror ? results->lasterror : NO_WORDS_IN_SEARCH;
 
 
-    /* catch any other general errors */
     if ( sw->lasterror )
-        return sw->lasterror;
+        return results;
 
    
 
-    /* 04/00 Jose Ruiz - Sort results by rank or by properties */
+    /*  Sort results by rank or by properties */
 
-    srch->total_results = sortresults(srch);
+    results->total_results = sortresults( results );
 
 
 
     /* If no results then return the last error, or any error found while processing index files */
-    if (!srch->total_results )
-        return ( sw->lasterror = sw->lasterror ? sw->lasterror : srch->lasterror );
+    if (!results->total_results )
+        sw->lasterror = sw->lasterror ? sw->lasterror : results->lasterror;
 
 
 
 #ifdef DUMP_RESULTS
-    dump_result_lists( srch, "After sorting" );
+    dump_result_lists( results , "After sorting" );
 #endif
 
-    return srch->total_results;
+    return results;
 }
 
 
 /**************************************************************************
 *  limit_result_list -- removes results that are not within the limit
+*
+*   Notes:
+*
+*   If all properties were pre-sorted would be better to limit results in
+*   something like getfileinfo() before doing all the work of adding the file
+*   and then removing it.  Another advantage would be that the individual
+*   flag arrays (one set for each index, and one for each property name)
+*   could be ANDed into a single small array (bytes or vectored)
+*   for each index file.
+*
+*
 *
 ***************************************************************************/
 
@@ -484,7 +734,9 @@ static void limit_result_list( DB_RESULTS *db_results )
 
     while (result)
     {
-        if ( !LimitByProperty( result->indexf, result->filenum ) )
+        PROP_LIMITS *prop_limits = db_results->srch->prop_limits[db_results->index_num];
+        
+        if ( !LimitByProperty( db_results->indexf, prop_limits, result->filenum ) )
         {
             prev = result;
             result = result->next;
@@ -503,6 +755,8 @@ static void limit_result_list( DB_RESULTS *db_results )
             db_results->resultlist->head = next;
         else
             prev->next = next;
+
+        result = result->next;            
     }
 
 }
@@ -530,48 +784,234 @@ static void limit_result_list( DB_RESULTS *db_results )
 *
 *********************************************************************************/
 
-static DB_RESULTS * query_index( SEARCH_OBJECT *srch, IndexFILE *indexf )
+static void query_index( DB_RESULTS *db_results )
 {
-    struct swline *searchwordlist, *tmpswl;
-    DB_RESULTS *db_results;
+    struct swline   *searchwordlist, *tmpswl;
+    RESULTS_OBJECT  *results = db_results->results;
 
     
-    /* Allocate memory for the result list structure for the current index file */
-    db_results = New_db_results( srch, indexf );
-
-
 
     /* This is used to detect if all the index files were empty for error reporting */
     /* $$$ Can this every happen? */
-    srch->total_files += indexf->header.totalfiles;
+    results->total_files += db_results->indexf->header.totalfiles;
 
 
     /* convert the search into a parsed list */
     /* also sets db_results->(removed_stopwords|parsed_words) */
 
     if ( !(searchwordlist = parse_swish_query( db_results )) )
-        return db_results;
+        return;
 
 
-    srch->search_words_found++;  /* flag that some words were found for search so can tell difference between all stop words removed vs. no words in query */        
+    results->search_words_found++;  /* flag that some words were found for search so can tell difference between all stop words removed vs. no words in query */        
 
 
     /* Now do the search */
 
     tmpswl = searchwordlist;
 
-    db_results->resultlist = parseterm(srch, 0, 1, indexf, &searchwordlist);
+    db_results->resultlist = parseterm(db_results, 0, 1, db_results->indexf, &searchwordlist);
 
     freeswline( tmpswl );
 
 
     /* Limit result list by -L parameter */
-    if ( srch->params.limit_params && db_results->resultlist )
+    if ( db_results->srch->limit_params && db_results->resultlist )
         limit_result_list( db_results );
-
-
-    return db_results;
 }
+
+/***************************************************************************
+* SwishSeekResult -- seeks to the result number specified
+*
+*   Returns the position or a negative number on error
+*
+*   
+*
+****************************************************************************/
+
+
+int     SwishSeekResult(RESULTS_OBJECT *results, int pos)
+{
+    int    i;
+    RESULT *cur_result = NULL;
+
+    if (!results)
+        return (results->sw->lasterror = INVALID_RESULTS_HANDLE);
+
+    if ( !results->db_results )
+    {
+        set_progerr(SWISH_LISTRESULTS_EOF, results->sw, "Attempted to SwishSeekResult before searching");
+        return SWISH_LISTRESULTS_EOF;
+    }
+
+
+
+    /* Check if only one index file -> Faster SwishSeek */
+
+    if (!results->db_results->next)
+    {
+        for (i = 0, cur_result = results->db_results->sortresultlist; cur_result && i < pos; i++)
+            cur_result = cur_result->next;
+
+        results->db_results->currentresult = cur_result;
+        
+
+
+    } else {
+        /* Well, we finally have more than one index file */
+        /* In this case we have no choice - We need to read the data from disk */
+        /* The easy way: Let SwishNextResult do the job */
+
+        /* Must reset the currentresult pointers first */
+        /* $$$ could keep the current result seek pos number in results, and then just offset from there if greater */
+        DB_RESULTS *db_results;
+
+        for ( db_results = results->db_results; db_results; db_results = db_results->next )
+            db_results->currentresult = db_results->sortresultlist;
+
+        /* If want first one then we are done */
+        if ( 0 == pos )
+            return pos;
+        
+
+        for (i = 0; i < pos; i++)
+            if (!(cur_result = SwishNextResult(results)))
+                break;
+    }
+
+    if (!cur_result)
+        return ((results->sw->lasterror = SWISH_LISTRESULTS_EOF));
+
+    return pos;
+}
+
+
+
+
+
+RESULT *SwishNextResult(RESULTS_OBJECT *results)
+{
+    RESULT *res = NULL;
+    RESULT *res2 = NULL;
+    int     rc;
+    DB_RESULTS *db_results = NULL;
+    DB_RESULTS *db_results_winner = NULL;
+    int  num;
+    SWISH   *sw = results->sw;
+    
+
+    if (results->bigrank)
+        num = 10000000 / results->bigrank;
+    else
+        num = 10000;
+
+
+    /* Seems like we should error here if there are no results */
+    if ( !results->db_results )
+    {
+        set_progerr(SWISH_LISTRESULTS_EOF, sw, "Attempted to read results before searching");
+        return NULL;
+    }
+
+    
+
+    /* Check for a unique index file */
+    if (!results->db_results->next)
+    {
+        if ((res = results->db_results->currentresult))
+        {
+            /* Increase Pointer */
+            results->db_results->currentresult = res->next;
+            
+            /* If rank was delayed, compute it now */
+            if(res->rank == -1)
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->db_results->indexf, res->filenum );
+        }
+    }
+
+
+    else    /* tape merge to find the next one from all the index files */
+    
+    {
+        /* We have more than one index file - can't use pre-sorted index */
+        /* Get the lower value */
+        db_results_winner = results->db_results;
+
+        if ((res = db_results_winner->currentresult))
+        {
+            /* If rank was delayed, compute it now */
+            if(res->rank == -1)
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->db_results->indexf, res->filenum );
+
+            if ( !res->PropSort )
+                res->PropSort = getResultSortProperties(res);
+        }
+
+
+        for (db_results = results->db_results->next; db_results; db_results = db_results->next)
+        {
+            /* Any more results for this index? */
+            if (!(res2 = db_results->currentresult))
+                continue;
+
+            /* If rank was delayed, compute it now */
+
+            if(res2->rank == -1)
+               res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->posdata, res2->db_results->indexf, res2->filenum );
+
+
+            /* Load the sort properties for this results */
+
+            if ( !res2->PropSort )
+                res2->PropSort = getResultSortProperties(res2);
+
+                
+            /* Compare the properties */
+            
+            if (!res)  /* first one doesn't exist, so second wins */
+            {
+                res = res2;
+                db_results_winner = db_results;
+                continue;
+            }
+
+            rc = (int) compResultsByNonSortedProps(&res, &res2);
+            if (rc < 0)
+            {
+                res = res2;
+                db_results_winner = db_results;
+            }
+        }
+
+        
+        /* Move current pointer to next for this index */
+        if ((res = db_results_winner->currentresult))
+            db_results_winner->currentresult = res->next;
+    }
+
+
+
+    /* Normalize rank */
+    if (res)
+    {
+        res->rank = (int) (res->rank * num)/10000;
+        if (res->rank >= 999)
+            res->rank = 1000;
+        else if (res->rank < 1)
+            res->rank = 1;
+    }
+    else
+    {
+        // it's expected to just return null on end of list.
+        // sw->lasterror = SWISH_LISTRESULTS_EOF;  
+    }
+
+        
+    return res;
+
+}
+
+
 
 
 
@@ -583,7 +1023,7 @@ static DB_RESULTS * query_index( SEARCH_OBJECT *srch, IndexFILE *indexf )
 ** with the default metaname.
 */
 
-static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
+static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
 {
     int     rulenum;
     char   *word;
@@ -607,7 +1047,7 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
     int     andLevel = 0;       /* number of terms ANDed so far */
 
     /* $$$ this should be in the search object */
-    LOGICAL_OP *srch_op = &srch->sw->SearchAlt->srch_op;
+    LOGICAL_OP *srch_op = &db_results->results->sw->SearchAlt->srch_op;
 
     word = NULL;
     lenword = 0;
@@ -628,8 +1068,8 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
         if (isunaryrule(word))  /* is it a NOT? */
         {
             *searchwordlist = (*searchwordlist)->next;
-            l_rp = parseterm(srch, 1, metaID, indexf, searchwordlist);
-            l_rp = notresultlist(srch, l_rp, indexf);
+            l_rp = parseterm(db_results, 1, metaID, indexf, searchwordlist);
+            l_rp = notresultlist(db_results, l_rp, indexf);
 
             /* Wild goose chase */
             rulenum = NO_RULE;
@@ -663,20 +1103,20 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
             
             /* Recurse */
             *searchwordlist = (*searchwordlist)->next;
-            new_l_rp = (RESULT_LIST *) parseterm(srch, 0, metaID, indexf, searchwordlist);
+            new_l_rp = parseterm(db_results, 0, metaID, indexf, searchwordlist);
 
 
             if (rulenum == AND_RULE)
-                l_rp = (RESULT_LIST *) andresultlists(srch, l_rp, new_l_rp, andLevel);
+                l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
 
             else if (rulenum == OR_RULE)
-                l_rp = (RESULT_LIST *) orresultlists(srch, l_rp, new_l_rp);
+                l_rp = orresultlists(db_results, l_rp, new_l_rp);
 
             else if (rulenum == PHRASE_RULE)
-                l_rp = (RESULT_LIST *) phraseresultlists(srch, l_rp, new_l_rp, 1);
+                l_rp = phraseresultlists(db_results, l_rp, new_l_rp, 1);
 
             else if (rulenum == AND_NOT_RULE)
-                l_rp = (RESULT_LIST *) notresultlists(srch, l_rp, new_l_rp);
+                l_rp = notresultlists(db_results, l_rp, new_l_rp);
 
             if (!*searchwordlist)
                 break;
@@ -721,18 +1161,18 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
 
             /* Now recursively process the next terms */
             
-            new_l_rp = (RESULT_LIST *) parseterm(srch, parseone, metaID, indexf, searchwordlist);
+            new_l_rp = parseterm(db_results, parseone, metaID, indexf, searchwordlist);
             if (rulenum == AND_RULE)
-                l_rp = (RESULT_LIST *) andresultlists(srch, l_rp, new_l_rp, andLevel);
+                l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
 
             else if (rulenum == OR_RULE)
-                l_rp = (RESULT_LIST *) orresultlists(srch, l_rp, new_l_rp);
+                l_rp = orresultlists(db_results, l_rp, new_l_rp);
 
             else if (rulenum == PHRASE_RULE)
-                l_rp = (RESULT_LIST *) phraseresultlists(srch, l_rp, new_l_rp, 1);
+                l_rp = phraseresultlists(db_results, l_rp, new_l_rp, 1);
 
             else if (rulenum == AND_NOT_RULE)
-                l_rp = (RESULT_LIST *) notresultlists(srch, l_rp, new_l_rp);
+                l_rp = notresultlists(db_results, l_rp, new_l_rp);
 
             if (!*searchwordlist)
                 break;
@@ -745,7 +1185,7 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
 
         /* Finally, look up a word, and merge with previous results. */
 
-        l_rp = (RESULT_LIST *) operate(srch, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
+        l_rp = operate(db_results, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
 
         if (parseone)
         {
@@ -767,7 +1207,7 @@ static RESULT_LIST *parseterm(SEARCH_OBJECT *srch, int parseone, int metaID, Ind
 ** it calls getfileinfo(), which does the real searching.
 */
 
-static RESULT_LIST *operate(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
 {
     RESULT_LIST     *new_l_rp;
     RESULT_LIST     *return_l_rp;
@@ -783,29 +1223,29 @@ static RESULT_LIST *operate(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, int rulenum
 
 
     /* Lookup the word in the index */
-    new_l_rp = getfileinfo(srch, word, indexf, metaID);
+    new_l_rp = getfileinfo(db_results, word, metaID);
 
     switch (rulenum)
     {
         case AND_RULE:
-            return_l_rp = andresultlists(srch, l_rp, new_l_rp, andLevel);
+            return_l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
             break;
 
 
         case OR_RULE:
-            return_l_rp = orresultlists(srch, l_rp, new_l_rp);
+            return_l_rp = orresultlists(db_results, l_rp, new_l_rp);
             break;
 
         case NOT_RULE:
-            return_l_rp = notresultlist(srch, new_l_rp, indexf);
+            return_l_rp = notresultlist(db_results, new_l_rp, indexf);
             break;
 
         case PHRASE_RULE:
-            return_l_rp = phraseresultlists(srch, l_rp, new_l_rp, 1);
+            return_l_rp = phraseresultlists(db_results, l_rp, new_l_rp, 1);
             break;
 
         case AND_NOT_RULE:
-            return_l_rp = notresultlists(srch, l_rp, new_l_rp);
+            return_l_rp = notresultlists(db_results, l_rp, new_l_rp);
             break;
     }
 
@@ -815,12 +1255,14 @@ static RESULT_LIST *operate(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, int rulenum
 }
 
 
-static RESULT_LIST *newResultsList(SEARCH_OBJECT *srch)
+static RESULT_LIST *newResultsList(DB_RESULTS *db_results)
 {
-    RESULT_LIST *result_list = (RESULT_LIST *)Mem_ZoneAlloc(srch->resultSearchZone, sizeof(RESULT_LIST));
+    RESULTS_OBJECT *results = db_results->results;
+    
+    RESULT_LIST *result_list = (RESULT_LIST *)Mem_ZoneAlloc(results->resultSearchZone, sizeof(RESULT_LIST));
     memset( result_list, 0, sizeof( RESULT_LIST ) );
 
-    result_list->srch = srch;
+    result_list->results = results;
     return result_list;
 }
 
@@ -873,7 +1315,7 @@ static int test_structure(int structure, int frequency, int *posdata)
 
 #define MAX_POSDATA_STACK 256
 
-static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * indexf, int metaID)
+static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 {
     int     j,
             x,
@@ -894,14 +1336,22 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
     unsigned char flag;
     int     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
     int    *posdata;
-    SWISH  *sw = srch->sw;
-    int     structure = srch->params.structure;
+    IndexFILE  *indexf = db_results->indexf;
+    SWISH  *sw = indexf->sw;
+    int     structure = db_results->srch->structure;
 
     x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     nextposmetaname = 0L;
 
 
     l_rp = l_rp2 = NULL;
+
+    
+    if (*word == '*')
+    {
+        sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+        return NULL;
+    }
 
 
     /* First: Look for star at the end of the word */
@@ -937,7 +1387,7 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
         if(!wordID)
         {    
             DB_EndReadWords(sw, indexf->DB);
-            sw->lasterror = WORD_NOT_FOUND;
+            // sw->lasterror = WORD_NOT_FOUND;
             return NULL;
         }
     }        
@@ -958,7 +1408,7 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
         if (!wordID)
         {
             DB_EndReadWords(sw, indexf->DB);
-            sw->lasterror = WORD_NOT_FOUND;
+            // sw->lasterror = WORD_NOT_FOUND;
             return NULL;
         }
         efree(resultword);   /* Do not need it */
@@ -1027,12 +1477,12 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
                 {
                     /* This is very useful if we sorted by other property */
                     if(!l_rp)
-                       l_rp = newResultsList(srch);
+                       l_rp = newResultsList(db_results);
 
                     // tfrequency = number of files with this word
                     // frequency = number of times this words is in this document for this metaID
 
-                    addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, srch);
+                    addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, db_results);
 
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
@@ -1040,7 +1490,7 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
                     // Temp fix
                     {
                         RESULT *r1 = l_rp->tail;
-                        r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                        r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
                     }
                 }
                 if(posdata != stack_posdata)
@@ -1081,7 +1531,7 @@ static RESULT_LIST *getfileinfo(SEARCH_OBJECT *srch, char *word, IndexFILE * ind
     if (p)
     {
         /* Finally, if we are in an sequential search merge all results */
-        l_rp = mergeresulthashlist(srch, l_rp);
+        l_rp = mergeresulthashlist(db_results, l_rp);
     }
 
     DB_EndReadWords(sw, indexf->DB);
@@ -1148,12 +1598,14 @@ static int     getrulenum(char *word)
 ** On output, the new result list remains sorted
 */
 
-static RESULT_LIST *andresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel)
+static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel)
 {
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1;
     RESULT *r2;
     int     res = 0;
+    SWISH  *sw = db_results->indexf->sw;
+
 
     /* patch provided by Mukund Srinivasan */
     if (l_r1 == NULL || l_r2 == NULL)
@@ -1180,22 +1632,21 @@ static RESULT_LIST *andresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RES
              * and recompute a new, equally weighted average.
              */
             int     newRank = 0;
-            SWISH  *sw = srch->sw;
 
 
             if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
 
             if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->indexf, r2->filenum );
+                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
             
 
             if(!new_results_list)
-                new_results_list = newResultsList(srch);
+                new_results_list = newResultsList(db_results);
 
-            addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, r1->indexf, srch);
+            addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, r1->db_results->indexf, db_results);
 
 
             /* Storing all positions could be useful in the future  */
@@ -1233,7 +1684,7 @@ static RESULT_LIST *andresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RES
 */
 
 
-static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
+static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 {
     int     rc;
     RESULT *r1;
@@ -1241,6 +1692,9 @@ static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESU
     RESULT *rp,
            *tmp;
     RESULT_LIST *new_results_list = NULL;
+    SWISH  *sw = db_results->indexf->sw;
+    RESULTS_OBJECT *results = db_results->results;
+
 
 
     /* If either list is empty, just return the other */
@@ -1272,20 +1726,19 @@ static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESU
         else /* Matching file number */
         {
             int result_size;
-            SWISH  *sw = srch->sw;
             
             /* Compute rank if not yet computed */
             if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
 
             if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->posdata, r2->indexf, r2->filenum );
+                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
 
 
-            /* Create a new RESULT - Should be a function to creeate this, I'd think */
+            /* Create a new RESULT - Should be a function to creete this, I'd think */
 
             result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
-            rp = (RESULT *) Mem_ZoneAlloc(srch->resultSearchZone, result_size );
+            rp = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
             memset( rp, 0, result_size );
 
 
@@ -1294,7 +1747,7 @@ static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESU
             rp->rank = ( r1->rank + r2->rank) * 2;  // bump up the or terms
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
-            rp->indexf = r1->indexf;
+            rp->db_results = r1->db_results;
 
             
             /* save the combined position data in the new result.  (Would freq ever be zero?) */
@@ -1312,7 +1765,7 @@ static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESU
         /* Now add the result to the output list */
         
         if(!new_results_list)
-            new_results_list = newResultsList(srch);
+            new_results_list = newResultsList(db_results);
 
         addResultToList(new_results_list,rp);
     }
@@ -1327,7 +1780,7 @@ static RESULT_LIST *orresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESU
         rp = tmp;
         tmp = tmp->next;
         if(!new_results_list)
-            new_results_list = newResultsList(srch);
+            new_results_list = newResultsList(db_results);
 
         addResultToList(new_results_list,rp);
     }
@@ -1350,12 +1803,12 @@ struct markentry
 /* This marks a number as having been printed.
 */
 
-static void    marknum(SEARCH_OBJECT *srch, struct markentry **markentrylist, int num)
+static void    marknum(RESULTS_OBJECT *results, struct markentry **markentrylist, int num)
 {
     unsigned hashval;
     struct markentry *mp;
 
-    mp = (struct markentry *) Mem_ZoneAlloc(srch->resultSearchZone, sizeof(struct markentry));
+    mp = (struct markentry *) Mem_ZoneAlloc( results->resultSearchZone, sizeof(struct markentry));
 
     mp->num = num;
 
@@ -1413,13 +1866,14 @@ static void    freemarkentrylist(struct markentry **markentrylist)
 ** marked (GH)
 */
 
-static RESULT_LIST *notresultlist(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, IndexFILE * indexf)
+static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST * l_rp, IndexFILE * indexf)
 {
     int     i,
             filenums;
     RESULT *rp;
     RESULT_LIST *new_results_list = NULL;
     struct markentry *markentrylist[BIGHASHSIZE];
+    RESULTS_OBJECT *results = db_results->results;
 
     if(!l_rp)
         rp = NULL;
@@ -1429,7 +1883,7 @@ static RESULT_LIST *notresultlist(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, Index
     initmarkentrylist(markentrylist);
     while (rp != NULL)
     {
-        marknum(srch, markentrylist, rp->filenum);
+        marknum(results, markentrylist, rp->filenum);
         rp = rp->next;
     }
 
@@ -1440,9 +1894,9 @@ static RESULT_LIST *notresultlist(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, Index
         if (!ismarked(markentrylist, i))
         {
             if(!new_results_list)
-                new_results_list = newResultsList(srch);
+                new_results_list = newResultsList(db_results);
 
-            addtoresultlist(new_results_list, i, 1000, 0, 0, indexf, srch);
+            addtoresultlist(new_results_list, i, 1000, 0, 0, indexf, db_results);
         }
     }
 
@@ -1459,7 +1913,7 @@ static RESULT_LIST *notresultlist(SEARCH_OBJECT *srch, RESULT_LIST * l_rp, Index
 ** On input, both result lists r1 abd r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-static RESULT_LIST *phraseresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
+static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
 {
     int     i,
             j,
@@ -1469,6 +1923,9 @@ static RESULT_LIST *phraseresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, 
     int     res = 0;
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1, *r2;
+    SWISH  *sw = db_results->indexf->sw;
+                
+
 
     if (l_r1 == NULL || l_r2 == NULL)
         return NULL;
@@ -1500,13 +1957,11 @@ static RESULT_LIST *phraseresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, 
             }
             if (found)
             {
-                SWISH  *sw = srch->sw;
-                
                 /* Compute newrank */
                 if(r1->rank == -1)
-                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
                 if(r2->rank == -1)
-                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->indexf, r2->filenum );
+                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
 
                 newRank = (r1->rank + r2->rank) / 2;
                 /*
@@ -1514,9 +1969,9 @@ static RESULT_LIST *phraseresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, 
                    * operations 
                  */
                 if(!new_results_list)
-                    new_results_list = newResultsList(srch);
+                    new_results_list = newResultsList(db_results);
                 
-                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, r1->indexf, srch);
+                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, r1->db_results->indexf, db_results);
 
                 CopyPositions(new_results_list->tail->posdata, 0, allpositions, 0, found);
                 efree(allpositions);
@@ -1542,13 +1997,14 @@ static RESULT_LIST *phraseresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, 
 */
 
 
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, SEARCH_OBJECT * srch)
+static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE *indexf, DB_RESULTS *db_results)
 {
     RESULT *newnode;
     int     result_size;
+    RESULTS_OBJECT *results = db_results->results;
 
     result_size = sizeof(RESULT) + ((frequency - 1) * sizeof(int));
-    newnode = (RESULT *) Mem_ZoneAlloc( srch->resultSearchZone, result_size );
+    newnode = (RESULT *) Mem_ZoneAlloc( results->resultSearchZone, result_size );
     memset( newnode, 0, result_size );
     
     newnode->fi.filenum = newnode->filenum = filenum;
@@ -1556,203 +2012,10 @@ static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfreq
     newnode->rank = rank;
     newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
-    newnode->indexf = indexf;
+    newnode->db_results = db_results;
 
     addResultToList(l_rp, newnode);
 }
-
-/***************************************************************************
-* SwishSeekResult -- seeks to the result number specified
-*
-*   Returns the position or a negative number on error
-*
-*   
-*
-****************************************************************************/
-
-
-int     SwishSeekResult(SEARCH_OBJECT *srch, int pos)
-{
-    int    i;
-    RESULT *cur_result = NULL;
-
-    if (!srch)
-        return (srch->sw->lasterror = INVALID_SWISH_HANDLE);
-
-    if ( !srch->db_results )
-    {
-        set_progerr(SWISH_LISTRESULTS_EOF, srch->sw, "Attempted to SwishSeekResult before searching");
-        return SWISH_LISTRESULTS_EOF;
-    }
-
-
-
-    /* Check if only one index file -> Faster SwishSeek */
-
-    if (!srch->db_results->next)
-    {
-        for (i = 0, cur_result = srch->db_results->sortresultlist; cur_result && i < pos; i++)
-            cur_result = cur_result->next;
-
-        srch->db_results->currentresult = cur_result;
-        
-
-
-    } else {
-        /* Well, we finally have more than one index file */
-        /* In this case we have no choice - We need to read the data from disk */
-        /* The easy way: Let SwishNext do the job */
-
-        /* Must reset the currentresult pointers first */
-        /* $$$ could keep the current result seek pos number in srch, and then just offset from there if greater */
-        DB_RESULTS *db_results;
-
-        for ( db_results = srch->db_results; db_results; db_results = db_results->next )
-            db_results->currentresult = db_results->sortresultlist;
-
-        /* If want first one then we are done */
-        if ( 0 == pos )
-            return pos;
-        
-
-        for (i = 0; i < pos; i++)
-            if (!(cur_result = SwishNextResult(srch)))
-                break;
-    }
-
-    if (!cur_result)
-        return ((srch->sw->lasterror = SWISH_LISTRESULTS_EOF));
-
-    return pos;
-}
-
-
-
-
-
-RESULT *SwishNextResult(SEARCH_OBJECT * srch)
-{
-    RESULT *res = NULL;
-    RESULT *res2 = NULL;
-    int     rc;
-    DB_RESULTS *db_results = NULL;
-    DB_RESULTS *db_results_winner = NULL;
-    int  num;
-    SWISH   *sw = srch->sw;
-    
-
-    if (srch->bigrank)
-        num = 10000000 / srch->bigrank;
-    else
-        num = 10000;
-
-
-    /* Seems like we should error here if there are no results */
-    if ( !srch->db_results )
-    {
-        set_progerr(SWISH_LISTRESULTS_EOF, sw, "Attempted to read results before searching");
-        return NULL;
-    }
-
-    
-
-    /* Check for a unique index file */
-    if (!srch->db_results->next)
-    {
-        if ((res = srch->db_results->currentresult))
-        {
-            /* Increase Pointer */
-            srch->db_results->currentresult = res->next;
-            
-            /* If rank was delayed, compute it now */
-            if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->indexf, res->filenum );
-        }
-    }
-
-
-    else    /* tape merge to find the next one from all the index files */
-    
-    {
-        /* We have more than one index file - can't use pre-sorted index */
-        /* Get the lower value */
-        db_results_winner = srch->db_results;
-
-        if ((res = db_results_winner->currentresult))
-        {
-            /* If rank was delayed, compute it now */
-            if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->indexf, res->filenum );
-
-            if ( !res->PropSort )
-                res->PropSort = getResultSortProperties(sw, res);
-        }
-
-
-        for (db_results = srch->db_results->next; db_results; db_results = db_results->next)
-        {
-            /* Any more results for this index? */
-            if (!(res2 = db_results->currentresult))
-                continue;
-
-            /* If rank was delayed, compute it now */
-
-            if(res2->rank == -1)
-               res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->posdata, res2->indexf, res2->filenum );
-
-
-            /* Load the sort properties for this results */
-
-            if ( !res2->PropSort )
-                res2->PropSort = getResultSortProperties(sw, res2);
-
-                
-            /* Compare the properties */
-            
-            if (!res)  /* first one doesn't exist, so second wins */
-            {
-                res = res2;
-                db_results_winner = db_results;
-                continue;
-            }
-
-            rc = (int) compResultsByNonSortedProps(&res, &res2);
-            if (rc < 0)
-            {
-                res = res2;
-                db_results_winner = db_results;
-            }
-        }
-
-        
-        /* Move current pointer to next for this index */
-        if ((res = db_results_winner->currentresult))
-            db_results_winner->currentresult = res->next;
-    }
-
-
-
-    /* Normalize rank */
-    if (res)
-    {
-        res->rank = (int) (res->rank * num)/10000;
-        if (res->rank >= 999)
-            res->rank = 1000;
-        else if (res->rank < 1)
-            res->rank = 1;
-    }
-    else
-    {
-        // it's expected to just return null on end of list.
-        // sw->lasterror = SWISH_LISTRESULTS_EOF;  
-    }
-
-        
-    return res;
-
-}
-
-
 
 
 
@@ -1809,15 +2072,20 @@ static void    freeresultlist(DB_RESULTS *dbres)
 static void    freeresult(RESULT * rp)
 {
     int     i;
-    SWISH  *sw = rp->indexf->sw;
+    DB_RESULTS *db_results;
 
     if (!rp)
         return;
 
+
     freefileinfo( &rp->fi );  // may have already been freed
+
+    
+    db_results = rp->db_results;
+    
         
-    if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
-        for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
+    if (db_results && rp->PropSort)
+        for (i = 0; i < db_results->num_sort_props; i++)
             efree(rp->PropSort[i]);
 }
 
@@ -1888,7 +2156,7 @@ static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST * l_rp)
 ** On input, both result lists r1 and r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-static RESULT_LIST *notresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
+static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 {
     RESULT *rp, *r1, *r2;
     RESULT_LIST *new_results_list = NULL;
@@ -1912,7 +2180,7 @@ static RESULT_LIST *notresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RES
             rp = r1;
             r1 = r1->next;
             if(!new_results_list)
-                new_results_list = newResultsList(srch);
+                new_results_list = newResultsList(db_results);
             addResultToList(new_results_list,rp);
         }
         else if (res > 0)
@@ -1931,7 +2199,7 @@ static RESULT_LIST *notresultlists(SEARCH_OBJECT * srch, RESULT_LIST * l_r1, RES
         rp = r1;
         r1 = r1->next;
         if(!new_results_list)
-            new_results_list = newResultsList(srch);
+            new_results_list = newResultsList(db_results);
         addResultToList(new_results_list,rp);
     }
 
@@ -1960,7 +2228,7 @@ static int     icomp_posdata(const void *s1, const void *s2)
 **
 ** Jose Ruiz 2001/11 Rewritten to get better performance
 */
-static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
+static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r)
 {
     unsigned hashval;
     RESULT *r,
@@ -1974,7 +2242,8 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
            tot_frequency,
            pos_off,
            filenum;
-    SWISH  *sw = srch->sw;
+    SWISH  *sw = db_results->indexf->sw;
+    RESULTS_OBJECT *results = db_results->results;
 
     if(!l_r)
         return NULL;
@@ -1984,7 +2253,7 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
 
     /* Init hash table */
     for (i = 0; i < BIGHASHSIZE; i++)
-        srch->resulthashlist[i] = NULL;
+        results->resulthashlist[i] = NULL;
 
     for(r = l_r->head, next = NULL; r; r =next)
     {
@@ -1993,7 +2262,7 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
         tmp = NULL;
         hashval = bignumhash(r->filenum);
 
-        rp = srch->resulthashlist[hashval];
+        rp = results->resulthashlist[hashval];
 
         for(tmp = NULL; rp; )
         {
@@ -2010,7 +2279,7 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
         }
         else
         {
-            srch->resulthashlist[hashval] = r;
+            results->resulthashlist[hashval] = r;
         }
         r->next = rp;
     }
@@ -2018,7 +2287,7 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
     /* Now coalesce reptitive filenums */
     for (i = 0; i < BIGHASHSIZE; i++)
     {
-        rp = srch->resulthashlist[i];
+        rp = results->resulthashlist[i];
         for (filenum = 0, start = NULL; ; )
         {
             if(rp)
@@ -2036,20 +2305,20 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
                     }
 
                     result_size = sizeof(RESULT) + ((tot_frequency - 1) * sizeof(int));
-                    newnode = (RESULT *) Mem_ZoneAlloc(srch->resultSearchZone, result_size );
+                    newnode = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
                     memset( newnode, 0, result_size );
                     
                     newnode->fi.filenum = newnode->filenum = filenum;
                     newnode->rank = 0;
                     newnode->tfrequency = 0;
                     newnode->frequency = tot_frequency;
-                    newnode->indexf = start->indexf;
+                    newnode->db_results = start->db_results;
 
                     for(tmp = start, pos_off = 0; tmp!=rp; tmp = tmp->next)
                     {
                         /* Compute rank if not yet computed */
                         if(tmp->rank == -1)
-                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->posdata, tmp->indexf, tmp->filenum );
+                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->posdata, tmp->db_results->indexf, tmp->filenum );
 
                         newnode->rank += tmp->rank;
                         if (tmp->frequency)
@@ -2062,7 +2331,7 @@ static RESULT_LIST *mergeresulthashlist(SEARCH_OBJECT *srch, RESULT_LIST *l_r)
                     /* Add at the end of new_results_list */
                     if(!new_results_list)
                     {
-                        new_results_list = newResultsList(srch);
+                        new_results_list = newResultsList(db_results);
                     }
                     addResultToList(new_results_list,newnode);
                     /* Sort positions */

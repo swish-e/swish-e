@@ -22,8 +22,8 @@ $Id$
 
 #include <limits.h>     // for ULONG_MAX
 #include "swish.h"
-#include "mem.h"
 #include "string.h"
+#include "mem.h"
 #include "error.h"
 #include "list.h"
 #include "search.h"
@@ -32,17 +32,25 @@ $Id$
 #include "http.h"
 #include "merge.h"
 #include "docprop.h"
-#include "metanames.h"
-#include "parse_conffile.h"
+#include "hash.h"
+#include "entities.h"
+#include "filter.h"
+#include "search_alt.h"
 #include "result_output.h"
 #include "result_sort.h"
-#include "keychar_out.h"
-#include "date_time.h"
 #include "db.h"
 #include "fs.h"
-#include "dump.h"
-
+#include "swish_words.h"
+#include "extprog.h"
+#include "metanames.h"
 #include "proplimit.h"
+#include "parse_conffile.h"
+#include "date_time.h"
+#include "dump.h"
+#include "keychar_out.h"
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
 
 
 /*
@@ -103,10 +111,16 @@ typedef struct
     CMD_MODE    run_mode;           /* selected run mode */
     char        keychar;            /* for dumping words */
 
-    SEARCH_OBJECT *srch;            /* needed as a place to store prop limits */
+
+    /* Search related params */
+    char        *query;             /* Query string */
+    int          PhraseDelimiter;   /* Phrase delimiter char */
+    int          structure;         /* Structure for limiting to HTML tags */
+    struct swline *sort_params;     /* sort properties */
+    LIMIT_PARAMS *limit_params;     /* for storing -L command line settings */
+    
     int         query_len;          /* length of buffer */
 
-    struct swline *tmpsortprops;    /* sort properties */
     struct swline *disp_props;      /* extra display props */
     int         beginhits;          /* starting hit number */
     int         maxhits;            /* total hits to display */
@@ -145,9 +159,13 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
 static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
-static void display_result_headers( SEARCH_OBJECT *srch );
+static void display_result_headers( RESULTS_OBJECT *results );
 static void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl );
+
+static SWISH  *swish_new();
+static void    swish_close(SWISH * sw);
+
 
 /************* TOC ***************************************/
 
@@ -162,7 +180,7 @@ int     main(int argc, char **argv)
 
 
     /* Start a session */
-    sw = SwishNew();            /* Get swish handle */
+    sw = swish_new();            /* Get swish handle */
 
 
 
@@ -175,6 +193,7 @@ int     main(int argc, char **argv)
 
     params = new_swish_params(sw);
     get_command_line_params(sw, argv, params );
+
 
     switch( params->run_mode )
     {
@@ -206,7 +225,8 @@ int     main(int argc, char **argv)
 
     free_command_line_params( params );
 
-    SwishClose(sw);
+
+    swish_close(sw);
 
     Mem_Summary("At end of program", 1);
 
@@ -313,6 +333,159 @@ static void    printversion()
 }
 
 
+
+
+/* 
+  -- init swish structure 
+*/
+
+/*************************************************************************
+* swish_new -- create a general purpose swish structure
+*
+*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish2.c:SwishNew()
+*
+*  SwishNew is search related only
+*
+**************************************************************************/
+
+static SWISH  *swish_new()
+
+{
+    SWISH  *sw;
+
+    /* Default is to write errors to stdout */
+    set_error_handle(stdout);
+
+    sw = emalloc(sizeof(SWISH));
+    memset(sw, 0, sizeof(SWISH));
+
+    initModule_DB(sw);
+    initModule_SearchAlt(sw);
+    initModule_ResultSort(sw);
+    initModule_Swish_Words(sw);  /* allocate a buffer */
+
+    initModule_Filter(sw);
+    initModule_Entities(sw);
+    initModule_Index(sw);
+    initModule_FS(sw);
+    initModule_HTTP(sw);
+    initModule_Prog(sw);
+
+
+    sw->lasterror = RC_OK;
+    sw->lasterrorstr[0] = '\0';
+    sw->verbose = VERBOSE;
+    sw->DefaultDocType = NODOCTYPE;
+
+#ifdef HAVE_ZLIB
+    sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
+#endif
+
+
+
+    /* Make rest of lookup tables */
+    makeallstringlookuptables(sw);
+    return (sw);
+}
+
+
+/*************************************************************************
+* swish_close -- free up a general purpose swish structure
+*
+*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish2.c:SwishClose()
+*
+*  SwishClose is search related only
+*
+**************************************************************************/
+
+
+
+static void    swish_close(SWISH * sw)
+{
+    IndexFILE *tmpindexlist;
+    int     i;
+
+    if (sw) {
+        /* Close any pending DB */
+        tmpindexlist = sw->indexlist;
+        while (tmpindexlist) {
+            if (tmpindexlist->DB)
+                DB_Close(sw, tmpindexlist->DB);
+            tmpindexlist = tmpindexlist->next;
+        }
+
+        freeModule_Swish_Words(sw);
+        freeModule_Filter(sw);
+        freeModule_SearchAlt(sw);
+        freeModule_Entities(sw);
+        freeModule_DB(sw);
+        freeModule_Index(sw);
+        freeModule_ResultSort(sw);
+        freeModule_FS(sw);
+        freeModule_HTTP(sw);
+        freeModule_Prog(sw);
+
+
+
+        /* Free MetaNames and close files */
+        tmpindexlist = sw->indexlist;
+
+        /* Free ReplaceRules regular expressions */
+        free_regex_list(&sw->replaceRegexps);
+
+        /* Free ExtractPath list */
+        free_Extracted_Path(sw);
+
+        /* FileRules?? */
+
+        /* meta name for ALT tags */
+        if ( sw->IndexAltTagMeta )
+        {
+            efree( sw->IndexAltTagMeta );
+            sw->IndexAltTagMeta = NULL;
+        }
+
+
+
+        while (tmpindexlist)
+        {
+            /* free the meteEntry array */
+            if (tmpindexlist->header.metaCounter)
+                freeMetaEntries(&tmpindexlist->header);
+
+            /* Free stopwords structures */
+            freestophash(&tmpindexlist->header);
+            freeStopList(&tmpindexlist->header);
+
+            freebuzzwordhash(&tmpindexlist->header);
+
+            free_header(&tmpindexlist->header);
+
+            for (i = 0; i < 256; i++)
+                if (tmpindexlist->keywords[i])
+                    efree(tmpindexlist->keywords[i]);
+
+
+            tmpindexlist = tmpindexlist->next;
+        }
+
+        freeindexfile(sw->indexlist);
+
+        if (sw->Prop_IO_Buf) {
+            efree(sw->Prop_IO_Buf);
+            sw->Prop_IO_Buf = NULL;
+        }
+
+        /* Free SWISH struct */
+
+
+        freeSwishConfigOptions( sw );  // should be freeConfigOptions( sw->config )
+        efree(sw);
+    }
+}
+
+
+
 /*************************************************************************
 *   Deal with -T debug options
 *
@@ -369,9 +542,9 @@ static CMDPARAMS *new_swish_params(SWISH *sw)
 
     params->run_mode = MODE_SEARCH; /* default run mode */
 
+    params->PhraseDelimiter = PHRASE_DELIMITER_CHAR;
+    params->structure = IN_FILE;
 
-    /* Normally will search when run from the command line */
-    params->srch = New_Search_Object( sw, NULL );
 
     return params;
 }
@@ -402,8 +575,15 @@ static void free_command_line_params( CMDPARAMS *params )
     if ( params->conflist )
         freeswline( params->conflist );
 
-    if ( params->srch )
-        Free_Search_Object( params->srch );
+    if ( params->query )
+        efree( params->query );
+
+    if ( params->sort_params )
+        freeswline( params->sort_params );
+
+    if ( params->limit_params )
+        ClearLimitParams( params->limit_params );
+
 
     efree( params );
 }
@@ -800,8 +980,6 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char )
 {
     char *w;
-    SEARCH_OBJECT *srch = params->srch;
-    
 
     /*** Display Properties Setup ***/
     if ( !sw->ResultOutput )
@@ -817,11 +995,11 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             if ( !is_another_param( argv ) )
                 progerr(" '-w' requires list of search words.");
 
-            if ( !srch->params.query )
+            if ( !params->query )
             {
                 params->query_len = 200;
-                srch->params.query = (char *)emalloc( params->query_len + 1 );
-                srch->params.query[0] = '\0';
+                params->query = (char *)emalloc( params->query_len + 1 );
+                params->query[0] = '\0';
             }
                 
                 
@@ -831,14 +1009,14 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 if (w[0] == '\0')
                     continue;
 
-                if ((int)( strlen(srch->params.query) + strlen(" ") + strlen(w) ) >= params->query_len)
+                if ((int)( strlen(params->query) + strlen(" ") + strlen(w) ) >= params->query_len)
                 {
-                    params->query_len = strlen(srch->params.query) + strlen(" ") + strlen(w) + 200;
-                    srch->params.query = (char *) erealloc(srch->params.query, params->query_len + 1);
+                    params->query_len = strlen(params->query) + strlen(" ") + strlen(w) + 200;
+                    params->query = (char *) erealloc(params->query, params->query_len + 1);
                 }
 
                 params->run_mode = MODE_SEARCH;
-                sprintf(srch->params.query, "%s%s%s", srch->params.query, (srch->params.query[0] == '\0') ? "" : " ", w);
+                sprintf(params->query, "%s%s%s", params->query, (params->query[0] == '\0') ? "" : " ", w);
             }
             break;
         }
@@ -851,7 +1029,9 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             if ( !( is_another_param( argv ) && is_another_param( argv + 1  ) && is_another_param( argv + 2 )) )
                 progerr("-L requires three parameters <propname> <lorange> <highrange>");
 
-            if ( !SetLimitParameter(params->srch, argv[1], argv[2], argv[3]) )
+
+            params->limit_params = setlimit_params(sw, params->limit_params, argv[1], argv[2], argv[3]);
+            if ( sw->lasterror )
                 SwishAbortLastError( sw );
 
             argv += 3;
@@ -866,7 +1046,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             if ( !(w = next_param( &argv )) )
                 progerr("'-P' requires a phrase delimiter.");
 
-            srch->params.PhraseDelimiter = (int) w[0];
+            params->PhraseDelimiter = (int) w[0];
             break;
         }
         
@@ -881,31 +1061,31 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 progerr("Specify tag fields (HBtheca).");
 
 
-            srch->params.structure = 0;  /* reset to none */
+            params->structure = 0;  /* reset to none */
 
             for ( c = w; *c; c++ )
                 switch ( *c )
                 {
                 case 'H':
-                    srch->params.structure |= IN_HEAD;
+                    params->structure |= IN_HEAD;
                     break;
                 case 'B':
-                    srch->params.structure |= IN_BODY;
+                    params->structure |= IN_BODY;
                     break;
                 case 't':
-                    srch->params.structure |= IN_TITLE;
+                    params->structure |= IN_TITLE;
                     break;
                 case 'h':
-                    srch->params.structure |= IN_HEADER;
+                    params->structure |= IN_HEADER;
                     break;
                 case 'e':
-                    srch->params.structure |= IN_EMPHASIZED;
+                    params->structure |= IN_EMPHASIZED;
                     break;
                 case 'c':
-                    srch->params.structure |= IN_COMMENTS;
+                    params->structure |= IN_COMMENTS;
                     break;
                 case 'a':
-                    srch->params.structure |= IN_ALL;
+                    params->structure |= IN_ALL;
                     break;
                 default:
                     progerr("-t must only include HBthec.  Found '%c'", *c );
@@ -922,7 +1102,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 progerr(" '-s' requires list of sort properties.");
                 
             while ( (w = next_param( &argv )) )
-                params->tmpsortprops = addswline(params->tmpsortprops, w);
+                params->sort_params = addswline(params->sort_params, w);
 
             break;
         }
@@ -970,7 +1150,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
 
         /* Search header output control */
         case 'H':
-            sw->ResultOutput->headerOutVerbose = get_param_number( &argv, switch_char );
+            sw->headerOutVerbose = get_param_number( &argv, switch_char );
             break;
 
 
@@ -1253,7 +1433,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
         progerr("Merge output file '%s' already exists.  Won't overwrite.\n", params->merge_out_file);
 
     /* create output */
-    sw_out = SwishNew();
+    sw_out = swish_new();
 
     addindexfile(sw_out, params->merge_out_file);
 
@@ -1272,7 +1452,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     write_index_file( sw_out, 0, elapsedStart, cpuStart, 1, 0);
 
-    SwishClose( sw_out );
+    swish_close( sw_out );
 
     efree( params->merge_out_file );
 }
@@ -1297,11 +1477,11 @@ static void cmd_keywords( SWISH *sw, CMDPARAMS *params )
 **************************************************************************/
 static void cmd_search( SWISH *sw, CMDPARAMS *params )
 {
-    int     rc = 0;
     double  elapsedStart = TimeElapsed();
     double  elapsedSearchStart;
     double  elapsedEnd;
-    SEARCH_OBJECT *srch = params->srch;
+    SEARCH_OBJECT *srch;
+    RESULTS_OBJECT *results;
 
 
     /* Set default index file, if none specified */
@@ -1309,8 +1489,34 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
         addindexfile(sw, INDEXFILE);
 
 
+    /* Open index files */        
 
-    /* Do these early to catch errors before searching */
+    if ( !SwishAttach(sw) ) 
+        SwishAbortLastError( sw );
+
+    
+    srch = New_Search_Object( sw, params->query );
+    if ( sw->lasterror )
+        SwishAbortLastError( sw );
+
+
+    srch->PhraseDelimiter = params->PhraseDelimiter;
+    srch->structure       = params->structure;
+    if ( params->sort_params )
+    {
+        srch->sort_params = params->sort_params;
+        params->sort_params = NULL;
+    }
+
+    if ( params->limit_params )
+    {
+        srch->limit_params =  params->limit_params;
+         params->limit_params = NULL;
+    }
+
+
+
+    /* Set up for -p printing */
     if ( params->disp_props )
     {
         struct swline *tmp = params->disp_props;
@@ -1319,46 +1525,11 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
             addSearchResultDisplayProperty(sw, tmp->line);
             tmp = tmp->next;
         }
+
+        initSearchResultProperties(sw);
     }
     
-    if ((rc = initSearchResultProperties(sw)))  
-        SwishAbortLastError( sw );
 
-
-
-    /*** Set the result sort order ***/
-
-    if ( params->tmpsortprops )
-    {
-        int sortmode = -1;      /* Ascendind by default */
-        struct swline *tmplist;
-        char   *field;
-
-        for (tmplist = params->tmpsortprops; tmplist; tmplist = tmplist->next)
-        {
-            field = tmplist->line;
-            if (tmplist->next)
-            {
-                if (!strcasecmp(tmplist->next->line, "asc"))
-                {
-                    sortmode = -1; /* asc sort */
-                    tmplist = tmplist->next;
-                }
-                else if (!strcasecmp(tmplist->next->line, "desc"))
-                {
-                    sortmode = 1; /* desc sort */
-                    tmplist = tmplist->next;
-                }
-            }
-            addSearchResultSortProperty(sw, field, sortmode);
-        }
-    }
-
-
-    /* Open index files */        
-
-    if ( !SwishAttach(sw) ) 
-        SwishAbortLastError( sw );
 
 
     /* Get starting time */
@@ -1368,29 +1539,33 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
     /* Run the query */
 
-    rc = SwishExecute( srch, NULL );
+    results = SwishExecute( srch, NULL );
+    display_result_headers(results);
 
-    display_result_headers(srch);
-
-    if ( rc < 0 )
+    if ( sw->lasterror )
         SwishAbortLastError( sw );
 
 
-    if (rc > 0)
+
+    if (results->total_results > 0)
     {
-        resultHeaderOut(sw, 1, "# Number of hits: %d\n", rc);
+        resultHeaderOut(sw, 1, "# Number of hits: %d\n", results->total_results);
 
         elapsedEnd = TimeElapsed();
         resultHeaderOut(sw, 1, "# Search time: %0.3f seconds\n", elapsedEnd - elapsedSearchStart);
         resultHeaderOut(sw, 1, "# Run time: %0.3f seconds\n", elapsedEnd - elapsedStart);
 
         /* Display the results */
-        printSortedResults(srch, params->beginhits, params->maxhits);
+        printSortedResults(results, params->beginhits, params->maxhits);
 
         resultHeaderOut(sw, 1, ".\n");
     }
-    else // rc == 0
+    else 
         resultHeaderOut(sw, 1, "err: no results\n.\n");
+
+
+    Free_Results_Object( results );
+    Free_Search_Object( srch );
 
 
 
@@ -1533,18 +1708,16 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 *
 ******************************************************************/
 
-static void display_result_headers( SEARCH_OBJECT *srch )
+static void display_result_headers( RESULTS_OBJECT *results )
 {
-    SWISH       *sw = srch->sw;
-    DB_RESULTS  *db_results = srch->db_results;
+    SWISH       *sw = results->sw;
+    DB_RESULTS  *db_results = results->db_results;
 
     
     resultHeaderOut(sw, 1, "%s\n", INDEXHEADER);  /* print # SWISH format: <version> */
 
     /* print out "original" search words */
-    resultHeaderOut(sw, 1, "# Search words: %s\n", srch->params.query);
-
-    resultHeaderOut(sw, 2, "#\n");
+    resultHeaderOut(sw, 1, "# Search words: %s\n", results->query);
 
     while ( db_results )
     {
@@ -1578,7 +1751,7 @@ static void display_result_headers( SEARCH_OBJECT *srch )
 
 
         /* Duplicate header */
-        resultHeaderOut(sw, 2, "# Search Words: %s\n", srch->params.query);
+        resultHeaderOut(sw, 2, "# Search Words: %s\n", results->query);
 
 
         /* Show parsed words */

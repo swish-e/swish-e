@@ -471,7 +471,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 
 
 
-    PhraseDelimiter = (unsigned char) srch->params.PhraseDelimiter;
+    PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
     max_size        = header->maxwordlimit;
 
     curpos = words;  
@@ -603,7 +603,6 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 *  parse_swish_query -- convert a string in a SEARCH_OBJECT into a list of tokens
 *
 *   Pass in:
-*       srch - a search object
 *       db_results - container for the search results for a single index
 *
 *   Returns:
@@ -640,7 +639,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     /* returns false if no words or error */
     /* may set sw->lasterror on unknown metanames or word too big */
 
-    if (!(searchwordlist = tokenize_query_string(srch, srch->params.query, &indexf->header)))
+    if (!(searchwordlist = tokenize_query_string(srch, srch->query, &indexf->header)))
         return NULL;
 
 
@@ -669,7 +668,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
 
         
     /* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
-    searchwordlist = expandphrase(searchwordlist, srch->params.PhraseDelimiter);
+    searchwordlist = expandphrase(searchwordlist, srch->PhraseDelimiter);
 
     searchwordlist = fixmetanames(searchwordlist);
     searchwordlist = fixnot1(searchwordlist);
@@ -727,7 +726,7 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
     int             word_count = 0; /* number of search words found */
     int             paren_count = 0;
     int             stop_word_removed = 0;
-    unsigned char   phrase_delimiter = (unsigned char)srch->params.PhraseDelimiter;
+    unsigned char   phrase_delimiter = (unsigned char)srch->PhraseDelimiter;
     
 
 

@@ -47,9 +47,6 @@ struct ResultExtFmtStrList
 
 struct MOD_ResultOutput {
    /* public:  */
-    int     headerOutVerbose;   /* -H <n> print extended header info */
-                                /* should be private, of proper method is defined */
-
    /* private: don't use outside this module! */
                                 /* -x extended format by defined names */
     char   *extendedformat;     /* -x "fmt", holds fmt or NULL */
@@ -73,7 +70,8 @@ int configModule_ResultOutput (SWISH *sw, StringList *sl);
 
 void initPrintExtResult (SWISH *sw, char *fmt);
 
-void printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits);
+void printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits);
+
 int initSearchResultProperties(SWISH *sw);
 
 char *hasResultExtFmtStr (SWISH *sw, char *name);

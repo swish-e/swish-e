@@ -170,6 +170,7 @@ static error_msg_map swishErrors[]={
     { 1, INDEX_FILE_IS_EMPTY,                      "Index file(s) is empty" },
     { 1, INDEX_FILE_ERROR,                         "Index file error" },
     { 1, INVALID_SWISH_HANDLE,                     "Invalid swish handle" },
+    { 1, INVALID_RESULTS_HANDLE,                   "Invalid results object" },
 };
 
 

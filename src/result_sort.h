@@ -48,22 +48,7 @@ struct MOD_ResultSort
     int iSortTranslationTable[256];
               /* Ignore Case translarion table */
     int iSortCaseTranslationTable[256];
-
-        /* In search, the following variables hold the parameters specified */
-        /* in -s command line option */
-              /* Number of properties */
-    int     numPropertiesToSort;    
-              /* Internal variable - holds the max size of the arrays */
-              /* propNameToSort and propModeToSort. It is modified */
-              /* dinamically */
-    int     currentMaxPropertiesToSort;
-              /* Array to hold the names of the props specified in -s */
-    char  **propNameToSort;
-              /* Array to hold the sort mode of the props specified in -s */
-              /* -1 for asc and 1 for desc */
-    int    *propModeToSort;
-
-    MEM_ZONE *resultSortZone;
+    
 };
 
 
@@ -79,17 +64,16 @@ int configModule_ResultSort (SWISH *sw, StringList *sl);
 int compResultsByNonSortedProps(const void *,const void *);
 int compResultsBySortedProps(const void *,const void *);
 
-char **getResultSortProperties(SWISH *, RESULT *);
+char **getResultSortProperties(RESULT *);
 
-int initSortResultProperties (SWISH *);
+int     sortresults(RESULTS_OBJECT *results);
+
 
 void addSearchResultSortProperty (SWISH *, char*, int );
 
 int *CreatePropSortArray( SWISH *sw, IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache );
 void sortFileProperties(SWISH *sw, IndexFILE *indexf);
 
-// RESULT *addsortresult(SWISH *, RESULT *sp, RESULT *);
-int sortresults ( SEARCH_OBJECT *srch );
 
 void initStrCmpTranslationTable(int *);
 void initStrCaseCmpTranslationTable(int *);

@@ -406,15 +406,6 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
             efree( meta->sorted_data );
 #endif
 
-        if ( meta->inPropRange )
-            efree( meta->inPropRange);
-
-        if ( meta->loPropRange )
-            freeProperty( meta->loPropRange );
-
-        if ( meta->hiPropRange )
-            freeProperty( meta->hiPropRange );
-
         if ( meta->extractpath_default )
             efree( meta->extractpath_default );
             

@@ -1,5 +1,5 @@
 /*
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
+**
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
 ** This program and library is free software; you can redistribute it and/or
@@ -16,9 +16,11 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **-------------------------------------------------------
-** Added getMetaName & isMetaName 
-** to support METADATA
-** G. Hill 3/18/97 ghill@library.berkeley.edu
+**
+**
+**  Sept 2002 - isolate the search and results into more separate "objects".
+**              Still misses the mark.  -L stores the lookup tabels in indexf instead
+**              of in a "search" object.
 */
 
 
@@ -40,9 +42,11 @@ BEGIN_C_DECLS
 typedef struct s_LIMIT_PARAMS LIMIT_PARAMS;
 typedef struct s_RESULT RESULT;
 typedef struct s_SEARCH_OBJECT SEARCH_OBJECT;
+typedef struct s_RESULTS_OBJECT RESULTS_OBJECT;
 typedef struct s_DB_RESULTS DB_RESULTS;
 
 
+/* These are the input parameters */
 
 struct s_LIMIT_PARAMS
 {
@@ -52,19 +56,56 @@ struct s_LIMIT_PARAMS
     unsigned char    *highrange;
 };
 
+/* These are the processed parameters ready for searching */
 
 
-/* This defines the input parameters for a query */
-
-typedef struct SEARCH_PARAMS
+typedef struct
 {
+    unsigned char   *inPropRange;  /* indexed by file number -- should be a vector to save room, but what is fastest?  int? */
+    propEntry       *loPropRange;
+    propEntry       *hiPropRange;
+} PROP_LIMITS;
+
+
+
+struct s_SEARCH_OBJECT
+{
+    SWISH          *sw;                /* Parent object */
     char           *query;             /* Query string */
     int             PhraseDelimiter;   /* Phrase delimiter char */
     int             structure;         /* Structure for limiting to HTML tags */
+    struct swline  *sort_params;       /* List of sort parameter strings */
+
+    int             limits_prepared;   /* Flag that the parameters have been prepared */
     LIMIT_PARAMS   *limit_params;      /* linked list of -L limit settings */
+    PROP_LIMITS   **prop_limits;       /* flags to detect if file should be limited -L for each index, and for each metaname*/
+};
 
 
-} SEARCH_PARAMS;
+    /* == Results Structures == */ 
+
+
+
+/* A single result */
+
+struct s_RESULT
+{
+    RESULT     *next;
+    DB_RESULTS *db_results;     /* parent object */
+
+    int         count;          /* result Entry-Counter */
+    int         filenum;        /* there's an extra four bytes we don't need */
+    FileRec     fi;             /* This is used to cache the properties and the seek index */
+    int         rank;
+    int         frequency;
+    int         tfrequency;     /* Total frequency of result */
+
+    char      **PropSort;       /* array of property strings for sorting */
+    int        *iPropSort;      /* array of pre-sorted index numbers */
+
+    int         posdata[1];     /* used for phrase searches */
+};
+
 
 
 
@@ -76,33 +117,11 @@ typedef struct RESULT_LIST
 {
     RESULT *head;
     RESULT *tail;
-    SEARCH_OBJECT *srch;
+    RESULTS_OBJECT *results;
     // DB_RESULTS *db_results;  /* parent object */
 }
 RESULT_LIST;
 
-
-
-/* A single result */
-
-struct s_RESULT
-{
-    RESULT *next;
-
-    int     count;              /* result Entry-Counter */
-    int     filenum;            /* there's an extra four bytes we don't need */
-    FileRec fi;                 /* This is used to cache the properties and the seek index */
-    int     rank;
-    int     frequency;
-    int     tfrequency;         /* Total frequency of result */
-
-    /* file position where this document's properties are stored */
-    char  **PropSort;
-    int    *iPropSort;          /* Used for presorted data */
-    IndexFILE *indexf;          /* needed to get metaname info (but could use reslist)  */
-
-    int     posdata[1];
-};
 
 
 /* Structure to hold all results per index */
@@ -110,25 +129,35 @@ struct s_RESULT
 struct s_DB_RESULTS
 {
     DB_RESULTS   *next;
-    SEARCH_OBJECT *srch;           
 
-    IndexFILE   *indexf;           /* the associated index file */
-    RESULT_LIST *resultlist;       /* pointer to list of results (indirectly) */
-    RESULT      *sortresultlist;   /* linked list of RESULTs in sort order (actually just points to resultlist->head) */
-    RESULT      *currentresult;    /* pointer to the current seek position */
-    struct swline *parsed_words;   /* parsed search query */
-    struct swline *removed_stopwords; /* stopwords that were removed from the query */
+    RESULTS_OBJECT *results;            /* parent */
+    SEARCH_OBJECT  *srch;               /* make life easy */
+
+
+    IndexFILE   *indexf;                /* the associated index file */
+    int          index_num;             /* index into params indexed by index number */
+
+    RESULT_LIST *resultlist;            /* pointer to list of results (indirectly) */
+    RESULT      *sortresultlist;        /* linked list of RESULTs in sort order (actually just points to resultlist->head) */
+    RESULT      *currentresult;         /* pointer to the current seek position */
+    struct swline *parsed_words;        /* parsed search query */
+    struct swline *removed_stopwords;   /* stopwords that were removed from the query */
+
+    int         *propIDToSort;          /* cache of Property ID numbers for this index to use for generating the sort key */
+    int         *sort_directions;       /* -1 for asc and 1 for desc */
+    int          num_sort_props;        /* number of sort properties */
+    char       **prop_string_cache;     /* place to cache a result's string properties  $$$ I think this may be a mistake */
+
 };
 
-
-/* This is a main search object */
-
-struct s_SEARCH_OBJECT
+struct s_RESULTS_OBJECT
 {
-    SWISH          *sw;                 /* Parent object */
-    SEARCH_PARAMS   params;             /* Search Parameters */
-    DB_RESULTS     *db_results;         /* Linked list of results groupped by index file */
+    SEARCH_OBJECT  *srch;               /* params that generated these results */
+    SWISH          *sw;                 /* parent */
+    char           *query;              /* in case user forgot what they searched for */
 
+    DB_RESULTS     *db_results;         /* Linked list of results - one for each index file */
+    
     int             total_results;      /* total number of results */
     int             total_files;        /* total number of files in all combined indexes */
     int             search_words_found; /* flag that some search words were found in some index after parsing -- for error message */
@@ -136,17 +165,20 @@ struct s_SEARCH_OBJECT
     int             bigrank;            /* Largest rank found, for scaling */
     MEM_ZONE       *resultSearchZone;   /* pool for allocating results */
 
+    MEM_ZONE       *resultSortZone;     /* pool for allocating sort keys for each result */
+
     RESULT         *resulthashlist[BIGHASHSIZE];    /* Hash array for merging results */
+
 };
 
 SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query );
 void Free_Search_Object( SEARCH_OBJECT *srch );
+void Free_Results_Object( RESULTS_OBJECT *results );
 
-
-SEARCH_OBJECT *SwishQuery(SWISH *sw, char *words );
-int SwishExecute(SEARCH_OBJECT *srch, char *words);
-RESULT *SwishNextResult(SEARCH_OBJECT *srch);
-int     SwishSeekResult(SEARCH_OBJECT *srch, int pos);
+RESULTS_OBJECT *SwishQuery(SWISH *sw, char *words );
+RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words);
+RESULT *SwishNextResult(RESULTS_OBJECT *results);
+int     SwishSeekResult(RESULTS_OBJECT *results, int pos);
 void set_query(SEARCH_OBJECT *srch, char *words );
 int isMetaNameOpNext(struct swline *);
 

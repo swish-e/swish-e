@@ -200,7 +200,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 
 static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID )
 {
-    IndexFILE *indexf = result->indexf; 
+    IndexFILE *indexf = result->db_results->indexf; 
     int     error_flag;
     unsigned long num;
 
@@ -239,7 +239,7 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
 
             
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_INDEXFILE ) )
-            return CreateProperty( *meta_entry, (unsigned char *)result->indexf->line, strlen( result->indexf->line ), 0, &error_flag );
+            return CreateProperty( *meta_entry, (unsigned char *)result->db_results->indexf->line, strlen( result->db_results->indexf->line ), 0, &error_flag );
     }
                    
 
@@ -310,22 +310,21 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
     propEntry           *prop;
     struct metaEntry    *meta_entry = NULL;
     IndexFILE           *indexf;
+    DB_RESULTS          *db_results;
     
 	if( !result )
-	{
-	    result->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
 	    return "";  // when would this happen?
-	}
 
 
-	indexf = result->indexf;
+    db_results = result->db_results;
+	indexf = result->db_results->indexf;
 
 
     /* Ok property name? */
 
     if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
     {
-        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->indexf->sw, "Invalid property name '%s'", pname );
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, indexf->sw, "Invalid property name '%s'", pname );
         return "(null)";
     }
 
@@ -349,18 +348,18 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
     /* create a place to store the strings */
 
-	if ( ! indexf->prop_string_cache )
+	if ( ! db_results->prop_string_cache )
 	{
-	    indexf->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
-	    memset( indexf->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
+	    db_results->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
+	    memset( db_results->indexf, 0, indexf->header.metaCounter * sizeof( char *) );
 	}
 
     /* Free previous, if needed  -- note the metaIDs start at one */
 
-    if ( indexf->prop_string_cache[ meta_entry->metaID-1 ] )
-        efree( indexf->prop_string_cache[ meta_entry->metaID-1 ] );
+    else if ( db_results->prop_string_cache[ meta_entry->metaID-1 ] )
+        efree( db_results->prop_string_cache[ meta_entry->metaID-1 ] );
 
-    indexf->prop_string_cache[ meta_entry->metaID-1 ] = s;
+    db_results->prop_string_cache[ meta_entry->metaID-1 ] = s;
     return s;
 }
 
@@ -390,19 +389,19 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
     
 	if( !result )
 	{
-	    result->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
+	    result->db_results->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
             return ULONG_MAX;
 	}
 
 
-	indexf = result->indexf;
+	indexf = result->db_results->indexf;
 
 
     /* Ok property name? */
 
     if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
     {
-        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->indexf->sw, "Invalid property name '%s'", pname );
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->db_results->indexf->sw, "Invalid property name '%s'", pname );
         return ULONG_MAX;
     }
 
@@ -410,7 +409,7 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
     /* make sure it's a numeric prop */
     if ( !is_meta_number(meta_entry) &&  !is_meta_date(meta_entry)  )
     {
-        set_progerr(INVALID_PROPERTY_TYPE, result->indexf->sw, "Property '%s' is not numeric", pname );
+        set_progerr(INVALID_PROPERTY_TYPE, result->db_results->indexf->sw, "Property '%s' is not numeric", pname );
         return ULONG_MAX;
     }
     
@@ -458,7 +457,7 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
     /* Lookup by property name, if supplied */
     if ( pname )
-        if ( !(meta_entry = getPropNameByName( &r->indexf->header, pname )) )
+        if ( !(meta_entry = getPropNameByName( &r->db_results->indexf->header, pname )) )
             return NULL;
 
 
