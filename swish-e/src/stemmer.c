@@ -69,7 +69,7 @@
 #include <string.h>
 #include <stdio.h>
 
-
+#include "headers.h"
 #include "stemmer.h"
 #include "mem.h"
 #include "search.h"  /* for stemming via a result */
