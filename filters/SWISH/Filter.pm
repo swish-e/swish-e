@@ -38,7 +38,7 @@ if ( $0 eq 'Filter.pm' && @ARGV >= 2 && shift =~ /^test/i) {
 
             print "File: $file\nContent-type: ",
                   $filter->content_type, "\n\n",
-                  substr( ${$filter->fetch_doc}, 0, 400 );
+                  substr( ${$filter->fetch_doc}, 0, 800 );
 
         } else {
             print "File: $file\nContent-type: ",
@@ -409,8 +409,14 @@ sub get_filter_list {
 
             
 
-            require "SWISH/Filters/${base}$suffix";
-            warn $@, next if $@;
+            eval { require "SWISH/Filters/${base}$suffix" };
+            if ( $@ ) {
+                print STDERR "Failed to load 'SWISH/Filters/${base}$suffix'\n",
+                '-+' x 40, "\n",
+                $@,
+                '-+' x 40, "\n";
+                next;
+            }
 
             my $package =  "SWISH::Filters::" . $base;
 
