@@ -61,15 +61,15 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     /* note this won't catch errors in a shebang line, of course */
 
     if (stat(cmd, &stbuf))
-        progerr("External program '%s': %s", cmd, strerror( errno ) );
+        progerrno("External program '%s': ", cmd);
 
     if ( stbuf.st_mode & S_IFDIR)
-        progerr("External program '%s' is a directory.", cmd );
+        progerr("External program '%s' is a directory.", cmd);
 
 #ifndef _WIN32
 
     if ( access( cmd, R_OK|X_OK ) )
-        progerr("Cannot execute '%s': %s", cmd, strerror( errno ) );
+        progerrno("Cannot execute '%s': ", cmd);
 
 #endif
 
@@ -86,7 +86,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     fp = popen(cmd, FILEMODE_READ);
 
     if (!fp)
-        progerr("Failed to spawn external program '%s': %s", cmd, strerror( errno ));
+        progerrno("Failed to spawn external program '%s': ", cmd);
 
     efree(cmd);
     return fp;
@@ -105,7 +105,7 @@ static void    save_to_temp_file(FileProp *fprop)
     
     fprop->work_path = tmpnam( (char *) NULL );
     if ( !fprop->work_path )
-        progerr("Failed to create a temporary file for filtering: %s", strerror( errno ) );
+        progerrno("Failed to create a temporary file for filtering: ");
 
 
     /* slirp entire file into memory -- yuck */
@@ -115,14 +115,13 @@ static void    save_to_temp_file(FileProp *fprop)
     out = fopen( fprop->work_path, "w" );  /* is "w" portable? */        
 
     if ( !out )
-         /* ok, how do I easily get the filename and errno into the string? */
-        progerr("Failed to open temporary filter file '%s': %s", fprop->work_path, strerror( errno ) );
+        progerrno("Failed to open temporary filter file '%s': ", fprop->work_path);
 
 
     bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
 
     if ( bytes != (size_t)fprop->fsize )
-        progerr("Failed to write temporary filter file '%s': %s", fprop->work_path, strerror( errno ) );
+        progerrno("Failed to write temporary filter file '%s': ", fprop->work_path);
 
 
     /* hide the fact that it's an external program */
@@ -219,7 +218,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 do_index_file(sw, fprop);
 
                 if ( has_filter && remove( fprop->work_path ) )
-                    progwarn("Error removing temporary file '%s': %s\n", fprop->work_path, strerror( errno ) );
+                    progwarnno("Error removing temporary file '%s': ", fprop->work_path);
 
                 free_file_properties(fprop);
                 efree(real_path);
@@ -244,7 +243,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             {
                 x = strchr(line, ':');
                 if (!x)
-                    progerr("Failed to parse Content-Length header '%s'", line );
+                    progerr("Failed to parse Content-Length header '%s'", line);
                 fsize = strtol(++x, NULL, 10);
                 continue;
             }
@@ -280,7 +279,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 continue;
             }
 
-            progwarn("Failed to parse header line: '%s' from program %s\n", line, prog);
+            progwarn("Failed to parse header line: '%s' from program %s", line, prog);
 
         }
     }
@@ -291,7 +290,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     sw->truncateDocSize = truncate_doc_size;
 
     if ( pclose(fp) == -1 )                  /* progerr("Failed to properly close external program"); */
-        progwarn("Failed to properly close external program: %s\n", strerror( errno ) );
+        progwarnno("Failed to properly close external program: ");
     
 }
 

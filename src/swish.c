@@ -717,8 +717,7 @@ struct stat stat_buf;
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
 				resultHeaderOut(sw,1, "# Name: unknown index\n");
-				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
-				exit(-1);
+				progerrno("could not open index file: ");
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
 				progerr("the index file format is unknown");
