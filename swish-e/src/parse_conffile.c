@@ -424,8 +424,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "UseStemming") == 0)
         {
+#ifdef SNOWBALL
+            if (sl->n != 2)
+                progerr("%s: requires one value", w0);
+
+            set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming_es" );
+#else
             if ( getYesNoOrAbort(sl, 1, 1) )
-                indexf->header.fuzzy_mode = set_fuzzy_mode( "Stemming" );
+                set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming" );
+#endif
                     
             continue;
         }
@@ -433,7 +440,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "UseSoundex") == 0)
         {
             if ( getYesNoOrAbort(sl, 1, 1) )
-                indexf->header.fuzzy_mode = set_fuzzy_mode( "Soundex" );
+                set_fuzzy_mode( &indexf->header.fuzzy_data, "Soundex" );
 
             continue;
         }
@@ -444,7 +451,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n != 2)
                 progerr("%s: requires one value", w0);
 
-            indexf->header.fuzzy_mode = set_fuzzy_mode( sl->word[1] );
+            set_fuzzy_mode( &indexf->header.fuzzy_data, sl->word[1] );
             continue;
         }
 

@@ -445,6 +445,14 @@ typedef enum {
     FUZZY_SOUNDEX,
     FUZZY_METAPHONE,
     FUZZY_DOUBLE_METAPHONE
+#ifdef SNOWBALL
+    ,FUZZY_STEMMING_ES,
+    FUZZY_STEMMING_FR,
+    FUZZY_STEMMING_IT,
+    FUZZY_STEMMING_PT,
+    FUZZY_STEMMING_DE,
+    FUZZY_STEMMING_NL
+#endif
 } FuzzyIndexType;
 
 
@@ -456,6 +464,14 @@ typedef struct {
     int              count;
 }  WORD_HASH_TABLE;
 
+
+typedef struct {
+    FuzzyIndexType fuzzy_mode;
+    int     (*fuzzy_routine) (char **word, int *len);
+#ifdef SNOWBALL
+    struct SN_env *snowball;
+#endif
+} FUZZY_INDEX; 
 
 typedef struct
 {
@@ -511,7 +527,7 @@ typedef struct
     int     minwordlimit;
     int     maxwordlimit;
 
-    FuzzyIndexType fuzzy_mode;
+    FUZZY_INDEX fuzzy_data;
 
     /* Total files and words in index file */
     int     totalwords;

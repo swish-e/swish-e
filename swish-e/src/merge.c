@@ -425,11 +425,11 @@ static void check_header_match( IndexFILE *in_index, SWISH *sw_output )
     compare_header( in_index->line, "BumpPositionChars", &in_header->lenbumpposchars,  &out_header->lenbumpposchars );
 
 
-    if ( in_header->fuzzy_mode != out_header->fuzzy_mode )
+    if ( in_header->fuzzy_data.fuzzy_mode != out_header->fuzzy_data.fuzzy_mode )
         progerr("FuzzyIndexingMode in index %s of '%s' doesn't match '%s'",
             in_index->line,
-            fuzzy_mode_to_string( in_header->fuzzy_mode ),
-            fuzzy_mode_to_string( out_header->fuzzy_mode ) );
+            fuzzy_mode_to_string( in_header->fuzzy_data.fuzzy_mode ),
+            fuzzy_mode_to_string( out_header->fuzzy_data.fuzzy_mode ) );
             
         
     if ( in_header->ignoreTotalWordCountWhenRanking != out_header->ignoreTotalWordCountWhenRanking )

@@ -68,9 +68,9 @@ static HEADER_MAP header_map[] = {
     {  "IgnoreLastChar",    SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, ignorelastchar ) },
     {  "StopWords",         SWISH_WORD_HASH, 3,  offsetof( INDEXDATAHEADER, hashstoplist ) },
     {  "BuzzWords",         SWISH_WORD_HASH, 3,  offsetof( INDEXDATAHEADER, hashbuzzwordlist ) },
-    {  "Stemming Applied", SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_mode ) },
-    {  "Soundex Applied",   SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_mode ) },
-    {  "Fuzzy Mode",        SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_mode ) },
+    {  "Stemming Applied", SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
+    {  "Soundex Applied",   SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
+    {  "Fuzzy Mode",        SWISH_OTHER_DATA, 2, offsetof( INDEXDATAHEADER, fuzzy_data.fuzzy_mode ) },
     {  "IgnoreTotalWordCountWhenRanking", SWISH_BOOL, 2, offsetof( INDEXDATAHEADER, ignoreTotalWordCountWhenRanking ) }
 };
 
@@ -288,7 +288,7 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
         case SWISH_OTHER_DATA:
             if ( strcasecmp( "Fuzzy Mode", header_map->description ) == 0 )
             {
-                value.string = (const char *)fuzzy_mode_to_string( header->fuzzy_mode );
+                value.string = (const char *)fuzzy_mode_to_string( header->fuzzy_data.fuzzy_mode );
                 *data_type = SWISH_STRING;
                 return value;
                 
@@ -296,14 +296,14 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
             else if ( strcasecmp( "Stemming Applied", header_map->description ) == 0 )
             {
-                value.number = FUZZY_STEMMING == header->fuzzy_mode ? 1 : 0;
+                value.number = FUZZY_STEMMING == header->fuzzy_data.fuzzy_mode ? 1 : 0;
                 *data_type = SWISH_BOOL;
                 return value;
             }
 
             else if ( strcasecmp( "Soundex Applied", header_map->description ) == 0 )
             {
-                value.number = FUZZY_SOUNDEX == header->fuzzy_mode ? 1 : 0;
+                value.number = FUZZY_SOUNDEX == header->fuzzy_data.fuzzy_mode ? 1 : 0;
                 *data_type = SWISH_BOOL;
                 return value;
             }
