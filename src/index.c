@@ -106,10 +106,10 @@
 
 
 #include "swish.h"
+#include "string.h"
 #include "index.h"
 #include "hash.h"
 #include "mem.h"
-#include "string.h"
 #include "check.h"
 #include "search.h"
 #include "merge.h"
@@ -133,6 +133,121 @@
 #include "date_time.h"
 #include "db.h"
 
+
+/* 
+  -- init structures for this module
+*/
+
+void initModule_Index (SWISH  *sw)
+{
+	int i;
+    struct MOD_Index *idx;
+
+    idx = (struct MOD_Index *) emalloc(sizeof(struct MOD_Index));
+    sw->Index = idx;
+
+	idx->filenum = 0;
+	idx->entryArray = NULL;
+
+   	idx->len_compression_buffer = MAXSTRLEN;  /* For example */
+	idx->compression_buffer=(unsigned char *)emalloc(idx->len_compression_buffer);
+
+  	idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
+	idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
+
+
+		/* Init  entries hash table */
+	for (i=0; i<SEARCHHASHSIZE; i++) 
+		idx->hashentries[i] = NULL;
+
+	idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
+
+	idx->lentmpdir=idx->lenspiderdirectory=MAXSTRLEN;
+	idx->tmpdir = (char *)emalloc(idx->lentmpdir + 1);idx->tmpdir[0]='\0';
+	idx->spiderdirectory = (char *)emalloc(idx->lenspiderdirectory + 1);idx->spiderdirectory[0]='\0';
+
+	        /* Initialize tmpdir */
+	idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
+
+        /* Initialize spider directory */
+    idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,SPIDERDIRECTORY,&idx->lenspiderdirectory);
+
+
+	if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
+	{
+		idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
+		idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
+	} else {
+		idx->swap_file_name=tempnam(NULL,"swfi");
+		idx->swap_location_name=tempnam(NULL,"swlo");
+	}
+   
+   return;
+}
+
+
+/* 
+  -- release all wired memory for this module
+  -- 2001-04-11 rasc
+*/
+
+void freeModule_Index (SWISH *sw)
+{
+  struct MOD_Index *idx = sw->Index;
+
+  if (isfile(idx->swap_file_name))
+  {
+	  remove(idx->swap_file_name);
+	  efree(idx->swap_file_name);
+  }
+  if (isfile(idx->swap_location_name))
+  {
+	  remove(idx->swap_location_name);
+	  efree(idx->swap_location_name);
+  }
+
+  if(idx->lenspiderdirectory) efree(idx->spiderdirectory);		
+  if(idx->lentmpdir) efree(idx->tmpdir);		
+
+  		/* Free compression info */	
+		/* Free compression buffer */	
+  efree(idx->compression_buffer);
+        /* free worddata buffer */
+  efree(idx->worddata_buffer);
+
+       /* free module data */
+  efree (idx);
+  sw->Index = NULL;
+
+  return;
+}
+
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_Index (SWISH *sw, StringList *sl)
+
+{
+  //struct MOD_Index *srch = sw->Index;
+  //char *w0    = sl->word[0];
+  int  retval = 1;
+
+  return retval;
+}
 
 /*
    -- Start the real indexing process for a file.
@@ -381,16 +496,16 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         printf(" )\n");
     }
 
-    if (!sw->entryArray)
+    if (!sw->Index->entryArray)
     {
-        sw->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
-        sw->entryArray->numWords = 0;
-        sw->entryArray->elist = NULL;
+        sw->Index->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
+        sw->Index->entryArray->numWords = 0;
+        sw->Index->entryArray->elist = NULL;
     }
     /* Compute hash value of word */
     hashval = searchhash(word);
     /* Look for the word in the hash array */
-    for (efound = sw->hashentries[hashval]; efound; efound = efound->nexthash)
+    for (efound = sw->Index->hashentries[hashval]; efound; efound = efound->nexthash)
         if (strcmp(efound->word, word) == 0)
             break;
 
@@ -404,8 +519,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp = (LOCATION *) emalloc(sizeof(LOCATION));
         en->currentlocation = 0;
         en->u1.max_locations = 1;
-        en->nexthash = sw->hashentries[hashval];
-        sw->hashentries[hashval] = en;
+        en->nexthash = sw->Index->hashentries[hashval];
+        sw->Index->hashentries[hashval] = en;
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
@@ -414,7 +529,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
         en->locationarray[0] = tp;
 
-        sw->entryArray->numWords++;
+        sw->Index->entryArray->numWords++;
         indexf->header.totalwords++;
     }
     else
@@ -732,7 +847,7 @@ int     removestops(SWISH * sw)
        ** the hash array */
     for (i = 0; i < SEARCHHASHSIZE; i++)
     {
-        for (ep2 = NULL, ep = sw->hashentries[i]; ep; ep = ep->nexthash)
+        for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
         {
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= sw->plimit && ep->tfrequency >= sw->flimit)
@@ -744,9 +859,9 @@ int     removestops(SWISH * sw)
                 if (ep2)
                     ep2->nexthash = ep->nexthash;
                 else
-                    sw->hashentries[i] = ep->nexthash;
+                    sw->Index->hashentries[i] = ep->nexthash;
                 totalwords--;
-                sw->entryArray->numWords--;
+                sw->Index->entryArray->numWords--;
                 indexf->header.totalwords--;
                 if (estopsz == estopmsz)
                 {               /* More memory? */
@@ -832,7 +947,7 @@ int     removestops(SWISH * sw)
            ** I could achieve!! */
         for (i = 0; i < SEARCHHASHSIZE; i++)
         {
-            for (ep = sw->hashentries[i]; ep; ep = ep->nexthash)
+            for (ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
             {
                 if (sw->verbose >= 3)
                 {
@@ -955,7 +1070,7 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
 
 
     BuildSortedArrayOfWords(sw, indexf);
-    ep = sw->entryArray;
+    ep = sw->Index->entryArray;
     if (ep)
     {
         totalwords = ep->numWords;
@@ -1041,7 +1156,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     int     totalwords;
 
 
-    ep = sw->entryArray;
+    ep = sw->Index->entryArray;
     if (ep)
     {
         totalwords = ep->numWords;
@@ -1066,7 +1181,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 		
 	    for (i = 0; i < SEARCHHASHSIZE; i++)
 		{
-			if ((epi = sw->hashentries[i]))
+			if ((epi = sw->Index->hashentries[i]))
 			{
 				while (epi)
 				{
@@ -1499,17 +1614,17 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
         printf("Sorting Words alphabetically\n");
         fflush(stdout);
     }
-    if (!sw->entryArray || !sw->entryArray->numWords)
+    if (!sw->Index->entryArray || !sw->Index->entryArray->numWords)
         return;
 
     /* Build the array with the pointers to the entries */
-    sw->entryArray->elist = (ENTRY **) emalloc(sw->entryArray->numWords * sizeof(ENTRY *));
+    sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
     /* Fill the array with all the entries */
     for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
-        for (e = sw->hashentries[i]; e; e = e->nexthash)
-            sw->entryArray->elist[j++] = e;
+        for (e = sw->Index->hashentries[i]; e; e = e->nexthash)
+            sw->Index->entryArray->elist[j++] = e;
     /* Sort them */
-    qsort(sw->entryArray->elist, sw->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
+    qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
 }
 
 
@@ -1777,3 +1892,5 @@ void    addsummarytofile(IndexFILE * indexf, int filenum, char *summary)
     else
         indexf->filearray[filenum - 1]->fi.summary = estrdup(summary);
 }
+
+

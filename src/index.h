@@ -19,6 +19,54 @@ $Id$
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef __HasSeenModule_Index
+#define __HasSeenModule_Index       1
+
+
+/*
+   -- module data
+*/
+
+struct MOD_Index
+{
+	    /* entry vars */
+    ENTRYARRAY *entryArray;
+    ENTRY  *hashentries[SEARCHHASHSIZE];
+
+    /* Compression Work buffer while compression locations in index
+       ** proccess */
+    unsigned char *compression_buffer;
+    int     len_compression_buffer;
+
+    unsigned char *worddata_buffer;
+    long  len_worddata_buffer;
+
+	    /* File counter */
+    int     filenum;
+
+    /* index tmp (both FS and HTTP methods)*/
+    int     lentmpdir;
+    char   *tmpdir;
+
+	/* spider directory for index (HTTP method) */
+    int     lenspiderdirectory;
+    char   *spiderdirectory;
+
+    /* Filenames of the swap files */
+    unsigned char   *swap_file_name;     /* File and properties file */
+    unsigned char   *swap_location_name; /* Location info file */
+    /* handlers for both files */
+    FILE   *fp_loc_write;       /* Location (writing) */
+    FILE   *fp_loc_read;        /* Location (writing) */
+    FILE   *fp_file_write;      /* File (writing) */
+    FILE   *fp_file_read;       /* File (read) */
+
+};
+
+void initModule_Index (SWISH *);
+void freeModule_Index (SWISH *);
+int  configModule_Index (SWISH *, StringList *);
+
 
 void do_index_file (SWISH *sw, FileProp *fprop);
 
@@ -59,3 +107,4 @@ void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
 
 void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
 
+#endif

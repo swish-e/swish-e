@@ -76,10 +76,10 @@ void    DB_Remove_Native(void *db);
 
 int     DB_InitWriteHeader_Native(void *db);
 int     DB_EndWriteHeader_Native(void *db);
-int     DB_WriteHeaderData_Native(int id, char *s, int len, void *db);
+int     DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db);
 
 int     DB_InitReadHeader_Native(void *db);
-int     DB_ReadHeaderData_Native(int *id, char **s, int *len, void *db);
+int     DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db);
 int     DB_EndReadHeader_Native(void *db);
 
 
@@ -88,14 +88,14 @@ int     DB_InitWriteWords_Native(void *db);
 long    DB_GetWordID_Native(void *db);
 int     DB_WriteWord_Native(char *word, long wordID, void *db);
 int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
-long    DB_WriteWordData_Native(long wordID, char *worddata, int lendata, void *db);
+long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db);
 int     DB_EndWriteWords_Native(void *db);
 
 int     DB_InitReadWords_Native(void *db);
 int     DB_ReadWordHash_Native(char *word, long *wordID, void *db);
 int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
 int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
-long    DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, void *db);
+long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db);
 int     DB_EndReadWords_Native(void *db);
 
 

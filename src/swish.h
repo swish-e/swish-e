@@ -631,12 +631,10 @@ typedef struct
     struct MOD_Filter        *Filter;         /* filter module data */
     struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
     struct MOD_Entities      *Entities;       /* html entities module data */
-	struct MOD_DB            *Db;             /* DB module data */
+    struct MOD_DB            *Db;             /* DB module data */
     struct MOD_Search        *Search;         /* Search module data */
+    struct MOD_Index         *Index;          /* Index module data */
 
-    /* entry vars */
-    ENTRYARRAY *entryArray;
-    ENTRY  *hashentries[SEARCHHASHSIZE];
 
     /* 08/00 Jose Ruiz Values for document type support */
     int     DefaultDocType;
@@ -661,12 +659,6 @@ typedef struct
     /* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
 
-    /* Compression Work buffer while compression locations in index
-       ** proccess */
-    unsigned char *compression_buffer;
-    int     len_compression_buffer;
-
-
     /* Total words and files in all index files */
     int     TotalWords;
     int     TotalFiles;
@@ -688,13 +680,6 @@ typedef struct
     int     applyautomaticmetanames;
     int     isvowellookuptable[256];
 
-
-    /* http proccessing */
-    int     lentmpdir;
-    char   *tmpdir;
-
-    int     lenspiderdirectory;
-    char   *spiderdirectory;
 
     /* Values for IgnoreLimit */
     long    plimit;
@@ -733,14 +718,6 @@ typedef struct
     /* Save memory */
     int     swap_flag;
 
-    /* Filenames of the swap files */
-    char   *swap_file_name;     /* File and properties file */
-    char   *swap_location_name; /* Location info file */
-    /* handlers for both files */
-    FILE   *fp_loc_write;       /* Location (writing) */
-    FILE   *fp_loc_read;        /* Location (writing) */
-    FILE   *fp_file_write;      /* File (writing) */
-    FILE   *fp_file_read;       /* File (read) */
 }
 SWISH;
 

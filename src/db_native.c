@@ -315,7 +315,7 @@ int DB_EndWriteHeader_Native(void *db)
    return 0;
 }
 
-int DB_WriteHeaderData_Native(int id, char *s, int len, void *db)
+int DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
@@ -337,7 +337,7 @@ int DB_InitReadHeader_Native(void *db)
    return 0;
 }
 
-int DB_ReadHeaderData_Native(int *id, char **s, int *len, void *db)
+int DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
 {
    int tmp;
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -415,7 +415,7 @@ int DB_WriteWord_Native(char *word, long wordID, void *db)
 }
 
 
-long DB_WriteWordData_Native(long wordID, char *worddata, int lendata, void *db)
+long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
 {
     long f_offset;
     int wordlen;
@@ -670,7 +670,7 @@ int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wor
 }
 
 
-long DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, void *db)
+long DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db)
 {
     int      len;
     char    *buffer;

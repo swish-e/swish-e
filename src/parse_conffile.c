@@ -33,9 +33,9 @@ $Id$
 
 
 #include "swish.h"
+#include "string.h"
 #include "mem.h"
 #include "list.h"
-#include "string.h"
 #include "file.h"
 #include "metanames.h"
 #include "hash.h"
@@ -43,6 +43,7 @@ $Id$
 #include "entities.h"
 #include "filter.h"
 #include "result_output.h"
+#include "index.h"
 #include "search.h"
 #include "search_alt.h"
 #include "parse_conffile.h"
@@ -506,20 +507,20 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n == 2)
             {
-                sw->tmpdir = SafeStrCopy(sw->tmpdir, sl->word[1], &sw->lentmpdir);
-                if (!isdirectory(sw->tmpdir))
+                sw->Index->tmpdir = SafeStrCopy(sw->Index->tmpdir, sl->word[1], &sw->Index->lentmpdir);
+                if (!isdirectory(sw->Index->tmpdir))
                 {
-                    progerr("%s: %s is not a directory", w0, sw->tmpdir);
+                    progerr("%s: %s is not a directory", w0, sw->Index->tmpdir);
                 }
                 else
                 {
                     /* New names for temporal files */
-                    if (sw->swap_file_name)
-                        efree(sw->swap_file_name);
-                    if (sw->swap_location_name)
-                        efree(sw->swap_location_name);
-                    sw->swap_file_name = tempnam(sw->tmpdir, "swfi");
-                    sw->swap_location_name = tempnam(sw->tmpdir, "swlo");
+                    if (sw->Index->swap_file_name)
+                        efree(sw->Index->swap_file_name);
+                    if (sw->Index->swap_location_name)
+                        efree(sw->Index->swap_location_name);
+                    sw->Index->swap_file_name = tempnam(sw->Index->tmpdir, "swfi");
+                    sw->Index->swap_location_name = tempnam(sw->Index->tmpdir, "swlo");
                 }
             }
             else
@@ -604,6 +605,8 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Deflate(sw, sl));*/ /* jmruiz */
 		else if (configModule_ResultSort(sw, sl)); /* jmruiz */
 		else if (configModule_DB(sw, sl)); /* jmruiz */
+		else if (configModule_Search(sw, sl)); /* jmruiz */
+		else if (configModule_Index(sw, sl)); /* jmruiz */
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);

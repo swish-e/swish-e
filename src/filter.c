@@ -79,7 +79,8 @@ void freeModule_Filter (SWISH *sw)
   struct FilterList *f, *fn;
 
 
-   efree(md->filterdir);	/* free FilterDir */
+   if(md->filterdir)
+      efree(md->filterdir);	/* free FilterDir */
 
    f = md->filterlist;
    while (f) {			/* free FileFilter List */

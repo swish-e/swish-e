@@ -41,6 +41,7 @@ $Id$
 
 #include "swish.h"
 #include "string.h"
+#include "index.h"
 #include "mem.h"
 
 #include "http.h"
@@ -147,19 +148,19 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 		}
 		sprintf(buffer, "%srobots.txt", server->baseurl);
 		if (get(sw,contenttype, &server->lastretrieval, buffer) == 200) {
-			if((int)(strlen(sw->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
-				lenbuffer=strlen(sw->tmpdir)+MAXPIDLEN+30+200;
+			if((int)(strlen(sw->Index->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+				lenbuffer=strlen(sw->Index->tmpdir)+MAXPIDLEN+30+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
-			sprintf(buffer, "%s/swishspider@%ld.contents", sw->tmpdir, (long)lgetpid());
+			sprintf(buffer, "%s/swishspider@%ld.contents", sw->Index->tmpdir, (long)lgetpid());
 			fp = fopen(buffer, "r");
 			parserobotstxt(fp, server);
 			fclose(fp);
 		}
 		
-		cmdf(unlink, "%s/swishspider@%ld.response", sw->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.contents", sw->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.links", sw->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.response", sw->Index->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.contents", sw->Index->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%ld.links", sw->Index->tmpdir, lgetpid());
     }
 	
     return server;
