@@ -81,18 +81,19 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         printf("ReadAllDocProperties:\n");
         fi->docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
         dump_file_properties( indexf, fi );
+
         freeDocProperties( fi->docProperties );
         fi->docProperties = NULL;
         printf("\n");
 
 
-        printf("ReadSingleDocPropertiesFromDisk:\n");
-
 {
     propEntry *p;
     int j;
     struct metaEntry *meta_entry;
-    
+
+    printf("ReadSingleDocPropertiesFromDisk:\n");
+
     for (j=0; j<= 20; j++) // just for testing
     {
         if ( !(p = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, j, 0 )) )
@@ -103,7 +104,8 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         freeProperty( p );
     }
 }
-#endif        
+#endif
+        printf("\n");
 
 
         freefileinfo(fi);
