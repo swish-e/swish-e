@@ -175,6 +175,7 @@ Section "-post" ; (post install section, happens last after any optional section
     ; fixperl needs these values:  installdir libexecdir perlmoduledir pkgdatadir swishbinary
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "installdir" "$INSTDIR"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "libexecdir" "$INSTDIR\lib\swish-e"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "mylibexecdir" "$INSTDIR\lib\swish-e"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "pkgdatadir" "$INSTDIR\lib\swish-e"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" "swishbinary" "$INSTDIR\swish-e.exe"
