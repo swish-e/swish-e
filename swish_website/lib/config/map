@@ -213,7 +213,7 @@
             daily = {
                 name    = 'Daily Builds'
                 tooltip = 'Daily packages from CVS'
-                file    = 'devel/daily'
+                file    = 'devel/daily.html'
             }
         }
     }
