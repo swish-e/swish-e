@@ -405,7 +405,7 @@ char *w0;
 		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
 			indexf->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
 		}
-		else if (strcasecmp(w0,"IgnoreTag")==0) {
+		else if (strcasecmp(w0,"IgnoreTags")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->ignoremetalist);
 					/* Go lowercase*/
