@@ -596,10 +596,6 @@ typedef struct {
 
     CMDPARAM  opt;
 
-	/* All files header info */
-    INDEXDATAHEADER mergedheader;
-
-
 	/* entry vars */
     ENTRYARRAY *entryArray;
     ENTRY *hashentries[SEARCHHASHSIZE];
