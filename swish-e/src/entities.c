@@ -458,8 +458,6 @@ void initModule_Entities (SWISH  *sw)
 
       } /* end init hash block */
 
-//$$$ uncomment to get a quick module debug!!!
-//$$$  debugModule_Entities ();
 }
 
 
@@ -708,7 +706,6 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
   } /* end if */
 
 
-//$$$  if (!(e_end && IS_EOE(*e_end))) code = *s;
   if (! e_end) {
      code = *s;
      e_end = s+1;
@@ -735,79 +732,5 @@ static int is_EOE (int c)
   return ((!isprint(c))||ispunct(c)||isspace(c))
           ? 1 : 0;
 }
-
-
-
-
-
-
-/*
-$$$
- --- debug routine
- --- display entity hash
- --- will be removed on on release version!  (rasc)
- --- prototype warnings are intended as a reminder
-*/
-
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-void debugModule_Entities (void)
-
-{
-
-      /* 
-        -- debug local entity hash table 
-      */
-      {
-       int          i;
-       struct CEHE  *hash_p;
-       
-        /* free ptr "chains" in array */
-        for (i=0; i< sizeof(ce_hasharray)/sizeof(ce_hasharray[0]); i++) {
-            hash_p =  ce_hasharray[i];
-            fprintf (stderr,"Hash-Entry: %d ('%c'):\n",i,(char)i);
-            while (hash_p) {
-                 fprintf (stderr,"--> '%s' (%d)\n",hash_p->ce->name,hash_p->ce->code);
-                 hash_p = hash_p->next;
-            }
-        }
-
-      } /* end debug hash block */
-
-
-//----- $$$ manual test routine...
-
-{
- unsigned char *s,*t;
- char buf[1024];
- int  i;
-
- 
-  while (gets(buf)) {
-     printf ("in: __%s__\n",buf);
-     s = buf;
-
-     i = charEntityDecode (s, &t );
-     printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,t);
-
-     printf ("converted: _%s_\n\n", strConvHTMLEntities2ISO(buf));
-  }
-
- }
- 
-//--------
-
-
-
-
-
-  return;
-}
- 
-
-
 
 
