@@ -96,6 +96,8 @@ void Mem_ZoneStatistics(MEM_ZONE *head);
 /* make all memory in a zone reusable */
 void Mem_ZoneReset(MEM_ZONE *head); 
 
+/* Returns the allocated memory owned by a zone */
+int Mem_ZoneSize(MEM_ZONE *head);
 
 /* Don't let people use the regular C calls */
 #define malloc $Please_use_emalloc

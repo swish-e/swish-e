@@ -295,6 +295,10 @@
 /* 2001/08 jmruiz -- Default chunk size - Index will work with blocks of files. This number specifies when to coalesce locations to save memory */
 #define INDEX_DEFAULT_CHUNK_SIZE 1000
 
+/* 2001/08 jmruiz -- Default optimal zone size for temporal storage of locations */
+/* 1<<21  is 2 MB */
+#define INDEX_DEFAULT_OPTIMAL_CHUNK_ZONE_SIZE_FOR_LOCATIONS 1<<21  
+
 /* 2001/08 jmruiz -- To avoid emalloc/erealloc in some routines some stack arrays have been added. This is their default size */
 #define MAX_STACK_POSITIONS 1024
 

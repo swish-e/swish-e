@@ -209,6 +209,9 @@ void initModule_Index (SWISH  *sw)
     /* Index in blocks of chunk_size documents */
     idx->chunk_size = INDEX_DEFAULT_CHUNK_SIZE;
 
+    /* Use this value to avoid using big zones just as a temporary location storage */
+    idx->optimalChunkLocZoneSize = INDEX_DEFAULT_OPTIMAL_CHUNK_ZONE_SIZE_FOR_LOCATIONS;
+
     /* memory zones for common structures */
     idx->perDocTmpZone = Mem_ZoneCreate("Per Doc Temporal Zone", 0, 0);
     idx->currentChunkLocZone = Mem_ZoneCreate("Current Chunk Locators", 0, 0);
@@ -381,6 +384,69 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     addtofwordtotals(indexf, idx->filenum, n);
  
     return n;
+}
+
+
+/*********************************************************************
+** 2001-08 jmruiz - A couple of specialized routines to be used with
+** locations and MemZones. The main goal is avoid malloc/realloc/free
+** wich produces a lot of fragmentation
+**
+** The memory will be allocated in blocks of 64 bytes inside a zone.
+** (I have tried both 32 and 64. 64 looks fine
+** In this way, there is some overhead because when a new block is
+** requested from the MemZone, the space is not recovered. But this
+** only true for the current document because the MemZone is reset
+** onces the document is processed. Then, the space is recovered
+** after a MemZoneReset is issued
+********************************************************************/
+
+#define LOC_BLOCK_SIZE 64
+
+/********************************************************************
+** 2001-08 jmruiz
+** Routine to allocate memory inside a zone for a plain LOCATION
+** (frequency is 1). Since we are asking for LOC_BLOCK_SIZE bytes, we 
+** are loosing some of the space.
+** The advantage is that we do not need to call realloc so often. In 
+** fact, most realloc function work this way. They asks for more memory
+** to avoid the overhead of the sequence malloc, memcpy, free.
+********************************************************************/
+LOCATION *Mem_ZoneNewLocation(MEM_ZONE *head)
+{
+        /* Round size to LOC_BLOCK_SIZE  (borrowed from mem.c) */
+        int size = (sizeof(LOCATION) + LOC_BLOCK_SIZE - 1) & (~(LOC_BLOCK_SIZE - 1));
+		/* Asks for size */
+        return (LOCATION *)Mem_ZoneAlloc(head, size);
+}
+
+/********************************************************************
+** 2001-08 jmruiz
+** Routine to reallocate memory inside a zone for a previous allocated
+** LOCATION (frequency > 1). 
+** A new block is allocated only if the previous becomes full
+********************************************************************/
+LOCATION *Mem_ZoneAddPositionToLocation(void *oldp, MEM_ZONE *head, int frequency)
+{
+        LOCATION *newp;
+        int oldsize; 
+		int newsize;
+
+		oldsize = sizeof(LOCATION) + (frequency - 1) * sizeof(int);
+		newsize = oldsize + sizeof(int);
+
+        /* Check for available size in block */
+		if(!(oldsize % LOC_BLOCK_SIZE))
+        {
+            /* Not enough size - Allocate a new block. Size rounded to LOC_BLOCK_SIZE */
+			newp = (LOCATION *)Mem_ZoneAlloc(head, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
+            memcpy((void *)newp,(void *)oldp,sizeof(LOCATION) + (frequency - 1) * sizeof(int));
+        }
+		else
+            /* Enough size */
+			newp = oldp;
+
+        return newp;
 }
 
 /***********************************************************************
@@ -580,7 +646,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 	}
 
     /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
-    if(idx->filenum && !(idx->filenum % idx->chunk_size))
+    if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
     {
         for (i = 0; i < SEARCHHASHSIZE; i++)
             for (ep = idx->hashentries[i]; ep; ep = ep->next)
@@ -657,7 +723,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         idx->hashentries[hashval] = en;
 
         /* create a location record */
-        tp = (LOCATION *) Mem_ZoneAlloc(idx->perDocTmpZone,sizeof(LOCATION));
+        tp = (LOCATION *) Mem_ZoneNewLocation(idx->perDocTmpZone);
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
@@ -697,7 +763,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     if(!found)
     {
         /* create the new LOCATION entry */
-        tp = (LOCATION *) Mem_ZoneAlloc(idx->perDocTmpZone,sizeof(LOCATION));
+        tp = (LOCATION *) Mem_ZoneNewLocation(idx->perDocTmpZone);
         tp->filenum = filenum;
         tp->frequency = 1;            /* count of times this word in this file:metaID */
         tp->structure = structure;
@@ -725,8 +791,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     /* 2001/08 jmruiz - Much better memory usage occurs if we use MemZones */
     /* MemZone will be reset when the doc is completely proccesed */
 
-    newtp = Mem_ZoneAlloc(idx->perDocTmpZone, sizeof(LOCATION) + tp->frequency * sizeof(int));
-    memcpy(newtp,tp,sizeof(LOCATION) + (tp->frequency - 1) * sizeof(int));
+    newtp = Mem_ZoneAddPositionToLocation(tp, idx->perDocTmpZone, tp->frequency);
 
     if(newtp != tp)
     {
