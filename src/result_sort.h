@@ -80,6 +80,7 @@ int initSortResultProperties (SWISH *);
 
 void addSearchResultSortProperty (SWISH *, char*, int );
 
+int *CreatePropSortArray( SWISH *sw, IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache );
 void sortFileProperties(SWISH *sw, IndexFILE *indexf);
 
 RESULT *addsortresult(SWISH *, RESULT *sp, RESULT *);

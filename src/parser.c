@@ -158,7 +158,7 @@ typedef struct {
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
-static void ignorableWhitespace(void *data, const char *txt, int txtlen);
+static void Whitespace(void *data, const xmlChar *txt, int txtlen);
 static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data, int clear );
 static void comment_hndl(void *data, const char *txt);
@@ -446,7 +446,7 @@ static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
     SAXHandler->endElement     = (endElementSAXFunc)&end_hndl;
     SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
     SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
-    SAXHandler->ignorableWhitespace = (ignorableWhitespaceSAXFunc)&ignorableWhitespace;
+    SAXHandler->ignorableWhitespace = (ignorableWhitespaceSAXFunc)&Whitespace;
 
     if( sw->indexComments )
         SAXHandler->comment    = (commentSAXFunc)&comment_hndl;
@@ -773,7 +773,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 *
 *********************************************************************/
 
-static void ignorableWhitespace(void *data, const char *txt, int txtlen)
+static void Whitespace(void *data, const xmlChar *txt, int txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 

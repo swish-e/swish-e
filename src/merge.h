@@ -35,6 +35,7 @@ struct metaMergeEntry {
 
 /* called by swish.c */
 void readmerge (char *, char *, char *, int);
+void merge_indexes( SWISH *sw_input, SWISH *sw_output );
 
 
 #endif

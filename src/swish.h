@@ -368,36 +368,49 @@ typedef struct
     /* vars for WordCharacters */
     int     lenwordchars;
     char   *wordchars;
+
     /* vars for BeginCharacters */
     int     lenbeginchars;
     char   *beginchars;
+
     /* vars for EndCharacters */
     int     lenendchars;
     char   *endchars;
+
     /* vars for IgnoreLastChar */
     int     lenignorelastchar;
     char   *ignorelastchar;
+
     /* vars for IgnoreFirstChar */
     int     lenignorefirstchar;
     char   *ignorefirstchar;
-    /* vars for WordCharacters */
+
+    /* vars for bump position chars */
     int     lenbumpposchars;
     char   *bumpposchars;
+
     /* vars for header values */
     char   *savedasheader;
     int     lensavedasheader;
+
     int     lenindexedon;
     char   *indexedon;
+
     int     lenindexn;
     char   *indexn;
+
     int     lenindexd;
     char   *indexd;
+
     int     lenindexp;
     char   *indexp;
+
     int     lenindexa;
     char   *indexa;
+
     int     minwordlimit;
     int     maxwordlimit;
+
     int     applyStemmingRules; /* added 11/24/98 - MG */
     int     applySoundexRules;  /* added 09/01/99 - DN */
 
@@ -409,7 +422,7 @@ typedef struct
     int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
 
     int     *TotalWordsPerFile;
-    int     TotalWordsPerFileMax;  /* max size of array */
+    int     TotalWordsPerFileMax;  /* max size of array - this isn't saved in the header */
 
 
     /* Lookup tables for fast access */
@@ -428,6 +441,7 @@ typedef struct
     int     stopPos;
 
     /* This is an array of properties that are used */
+    /* These should not be in the header, rather in indexf as they are not written to disk */
     int     *propIDX_to_metaID;
     int     *metaID_to_PropIDX;
     int     property_count;
@@ -472,6 +486,17 @@ typedef struct IndexFILE
     /* props IDs */
     int    *propIDToDisplay;
     int    *propIDToSort;
+
+
+    /* Support for merge */
+    int     *meta_map;              // maps metas from this index to the output index
+    int     *path_order;            // lists files in order of pathname
+    int     current_file;           // current file pointer, used for merged reading
+    struct  metaEntry *path_meta;   // meta entry for the path name
+    struct  metaEntry *modified_meta;
+    propEntry *cur_prop;            // last read pathname
+    int     filenum;                // current filenumber to use
+    
 
 }
 IndexFILE;

@@ -1,9 +1,6 @@
 /*
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
-** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
-**
 ** This program and library is free software; you can redistribute it and/or
-** modify it under the terms of the GNU (Library) General Public License
+** modify it under the terms of the GNU General Public License
 ** as published by the Free Software Foundation; either version 2
 ** of the License, or any later version.
 **
@@ -16,20 +13,8 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **-----------------------------------------------------------------
-** Fixed the merge option -M
-** G. Hill 3/7/97
 **
-** Changed readindexline, mergeindexentries, printindexentry and
-** added marknumMerge, addtoresultlistMerge, markentrylistMerge,
-** ismarkedMerge to add support for METADATA
-** G. Hill 3/26/97 ghill@library.berkeley.edu
-**
-** change sprintf to snprintf to avoid corruption
-** added safestrcpy() macro to avoid corruption from strcpy overflow
-** SRE 11/17/99
-**
-** 2001-02-12 rasc   errormsg "print" changed...
-**
+**  rewritten from scratch - moseley Oct 17, 2001
 **
 */
 
@@ -49,1205 +34,754 @@
 #include "metanames.h"
 #include "db.h"
 #include "dump.h"
+#include "result_sort.h"
+#include "swish_qsort.h"
+#include "result_output.h"
+static void dup_header( SWISH *sw_input, SWISH *sw_output );
+static void check_header_match( IndexFILE *in_index, SWISH *sw_output );
+static void make_meta_map( IndexFILE *in_index, SWISH *sw_output);
+static void load_filename_sort( SWISH *sw, IndexFILE *cur_index );
+static IndexFILE *get_next_file_in_order( SWISH *sw_input );
+static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output );
+static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
+static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map );
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int structure, int position );
 
 
-/* Private structures, and data */
+// #define DEBUG_MERGE
 
-struct mapentry
+/****************************************************************************
+*  merge_indexes -- reads from input indexes, and outputs a new index
+*
+*
+*****************************************************************************/
+
+void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 {
-    struct mapentry *next;
-    struct mapentry *next2;
-    int     oldnum;
-    int     newnum;
-};
-struct mapentry *mapentrylist[BIGHASHSIZE];
-struct mapentry *mapentrylist2[BIGHASHSIZE];
-
-struct mergeindexfileinfo
-{
-    struct mergeindexfileinfo *next;
-    int     filenum;
-    int     start;
-    int     size;
-    time_t  mtime;
-    IndexFILE *indexf;
-    char    path[0];
-};
-
-typedef struct {
-    struct metaEntry *filename;
-    struct metaEntry *size;
-    struct metaEntry *mtime;
-    struct metaEntry *start;
-} METAS;
-
-struct mergeindexfileinfo *indexfilehashlist[BIGHASHSIZE];
+    IndexFILE   *cur_index = sw_input->indexlist;
+    FILE        *filenum_map;
+    char        *tmpfilename;
 
 
-struct markentryMerge
-{
-    struct markentryMerge *next;
-    int     num;
-    int     metaName;
-};
-struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
+    /* Duplicate the first index's header into the output index */
+    dup_header( sw_input, sw_output );
+
+#ifdef DEBUG_MERGE
+    printf("----- Output Header ----------\n");
+    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
+#endif
 
 
 
-static int     getnew(int num);
+    /*******************************************************************************
+    * Get ready to merge the indexes.  For each index:
+    *   - check that it has the correct headers
+    *   - create meta entries in output index, and create a map to convert metas
+    *   - load an array of file numbers sorted by filename so can merge sort the filesnames
+    *   - set some initial defaults.
+    *********************************************************************************/
 
-
-
-
-
-/* Private Routines */
-
-static int get_numeric_prop(struct docProperties *docProperties, struct metaEntry *meta_entry)
-{
-    unsigned long i;
-    propEntry *p;
-
-    if ( !meta_entry )
-        return 0;
-
-    if ((meta_entry->metaID < docProperties->n) && (p = docProperties->propEntry[meta_entry->metaID]))
+    while( cur_index )
     {
-        i = *(unsigned long *) p->propValue;
-        return (int) UNPACKLONG(i);
+        printf("Input index '%s' has %d files and %d words\n", cur_index->line, cur_index->header.totalfiles, cur_index->header.totalwords);
+        check_header_match( cur_index, sw_output );  // errors if headers don't match - don't really need to check first one since it was the one that was dupped 
+        make_meta_map( cur_index, sw_output);        // add metas to new index, and create map
+        load_filename_sort( sw_input, cur_index );   // so can read in filename order
+
+        cur_index->current_file = 0;  
+        cur_index->cur_prop = NULL;
+
+#ifdef DEBUG_MERGE
+        dump_metanames( sw_input, cur_index, 1 );
+        dump_metanames( sw_output, sw_output->indexlist, 0 );
+#endif
+
+        cur_index = cur_index->next;
     }
+
+
+    /****************************************************************************
+    *  Now, read in filename order (so can throw out duplicates)
+    *  - read properties and write out to new index
+    *  - write a temporay of records to identify
+    *       - indexfile
+    *       - old filenum to new filenum mapping
+    *       - total words per file, if set
+    ****************************************************************************/
+
+    /* place to store file number map and total words per file */
+    filenum_map = create_tempfile(sw_input, "fnum", &tmpfilename, 0 );
+
+    while( (cur_index = get_next_file_in_order( sw_input )) )
+        add_file( filenum_map, cur_index, sw_input, sw_output );
+
+    fclose( filenum_map );
+
+    if ( !(filenum_map = fopen( tmpfilename, FILEMODE_READ )) )
+        progerrno("failed to reopen '%s' :", tmpfilename );
+
+
+
+    /****************************************************************************
+    *  Finally, read the indexes one-by-one to read word and position data
+    *  - reads through the temp file for each index to build a filenumber map
+    *
+    ****************************************************************************/
+
+
+    cur_index = sw_input->indexlist;
+    while( cur_index )
+    {
+        int *file_num_map = get_map( filenum_map, cur_index );
+
+        dump_index(sw_input, cur_index, sw_output, file_num_map );
+        
+        cur_index = cur_index->next;
+
+        efree( file_num_map );
+
+        /* Compress the entries for this index?  */
+
+    }
+
+#ifdef DEBUG_MERGE
+    printf("----- Final Output Header ----------\n");
+    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
+#endif
+
+    remove( tmpfilename );
+}
+
+/****************************************************************************
+*  dup_header -- duplicates a header
+*
+*  rereads the header from the data base, and clears out some values
+*
+*****************************************************************************/
+       
+static void dup_header( SWISH *sw_input, SWISH *sw_output )
+{
+    INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
+
+    // probably need to free the sw_output header from what's created in swishnew.
+
+    /* Read in the header from the first merge file and store in the output file */
+    read_header(sw_input, out_header, sw_input->indexlist->DB);
+
+    out_header->totalfiles = 0;
+    out_header->totalwords = 0;
+
+    freeMetaEntries( out_header );
+
+    if ( out_header->indexedon )
+    {
+        efree( out_header->indexedon );
+        out_header->indexedon = NULL;
+        out_header->lenindexedon = 0;
+    }
+}
+    
+/****************************************************************************
+*  check_header_match -- makes sure that the imporant settings match
+*
+*
+*****************************************************************************/
+
+typedef struct
+{
+    int     len;
+    char    *str;
+} *HEAD_CMP;
+
+static void compare_header( char *index, char *name, void *in, void *out )
+{
+    HEAD_CMP    in_item = (HEAD_CMP)in;
+    HEAD_CMP    out_item = (HEAD_CMP)out;
+
+    if ( in_item->len != out_item->len )
+        progerr("Header %s in index %s doesn't match length in length with output header", name, index );
+
+    if ( memcmp( (const void *)in_item->str, (const void *)in_item->str, in_item->len ) )
+        progerr("Header %s in index %s doesn't match output header", name, index );
+}
+
+   
+static void check_header_match( IndexFILE *in_index, SWISH *sw_output )
+{
+    INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
+    INDEXDATAHEADER *in_header = &in_index->header;
+
+    compare_header( in_index->line, "WordCharacters", &in_header->lenwordchars,  &out_header->lenwordchars );
+    compare_header( in_index->line, "BeginCharacters", &in_header->lenbeginchars,  &out_header->lenbeginchars );
+    compare_header( in_index->line, "EndCharacters", &in_header->lenendchars,  &out_header->lenendchars );
+
+    compare_header( in_index->line, "IgnoreLastChar", &in_header->lenignorelastchar,  &out_header->lenignorelastchar );
+    compare_header( in_index->line, "IgnoreFirstChar", &in_header->lenignorefirstchar,  &out_header->lenignorefirstchar );
+
+    compare_header( in_index->line, "BumpPositionChars", &in_header->lenbumpposchars,  &out_header->lenbumpposchars );
+
+
+    if ( in_header->applyStemmingRules != out_header->applyStemmingRules )
+        progerr("Stemming Rules doesn't match for index %s", in_index->line );
+
+    if ( in_header->applySoundexRules != out_header->applySoundexRules )
+        progerr("Soundex Rules doesn't match for index %s", in_index->line );
+
+        
+    if ( in_header->ignoreTotalWordCountWhenRanking != out_header->ignoreTotalWordCountWhenRanking )
+        progerr("ignoreTotalWordCountWhenRanking Rules doesn't match for index %s", in_index->line );
+
+    if ( memcmp( &in_header->translatecharslookuptable, &out_header->translatecharslookuptable, sizeof(in_header->translatecharslookuptable) / sizeof( int ) ) )
+        progerr("TranslateChars header doesn't match for index %s", in_index->line );
+
+
+    //??? need to compare stopword lists
+
+    //??? need to compare buzzwords
+
+}
+
+/****************************************************************************
+*  make_meta_map - adds metanames to output index and creates map
+*
+*
+*****************************************************************************/
+
+static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
+{
+    INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
+    INDEXDATAHEADER *in_header = &in_index->header;
+    int             i;
+    struct metaEntry *in_meta;
+    struct metaEntry *out_meta;
+    int             *meta_map;
+    
+
+    meta_map = emalloc( sizeof( int ) * (in_header->metaCounter + 1) );
+    memset( meta_map, 0, sizeof( int ) * (in_header->metaCounter + 1) );
+
+    for( i = 0; i < in_header->metaCounter; i++ )
+    {
+        in_meta = in_header->metaEntryArray[i];
+
+
+        /* Try to see if it's an existing metaname */
+        out_meta = is_meta_index( in_meta )
+                   ? getMetaNameByNameNoAlias( out_header, in_meta->metaName )
+                   : getPropNameByNameNoAlias( out_header, in_meta->metaName );
+
+        /* if it's not found, then add it */
+        if ( !out_meta )
+            out_meta = addMetaEntry(out_header, in_meta->metaName, in_meta->metaType, 0);
+        else
+            if (out_meta->metaType != in_meta->metaType )
+                progerr("meta name %s in index %s is different type than in output index", in_meta->metaName, in_index->line );
+
+
+        /* Now, save the mapping */
+        meta_map[ in_meta->metaID ] = out_meta->metaID;                
+
+
+        /* now here's a pain, and lots of room for screw up. */
+        /* Basically, check for alias mappings, and that they are correct */
+        /* you can say title is an alias for swishtitle in one index, and then say */
+        /* title is an alias for doctitle in another index */
+
+        /* If it's an alias, then make that mapping, too */
+        if ( in_meta->alias )
+        {
+            struct metaEntry *in_alias;
+            struct metaEntry *out_alias;
+
+            /* Grab alias meta entry so we can look it up in the out_header */
+            
+            in_alias = is_meta_index( in_meta )
+                   ? getMetaNameByID( in_header, in_meta->alias )
+                   : getPropNameByID( in_header, in_meta->alias );
+
+            if ( !in_alias )
+                progerr("Failed to lookup alias for %s in index %s", in_meta->metaName, in_index->line );
+
+
+            /* now lookup the alias in the out_header by name */
+            out_alias = is_meta_index( in_alias )
+                   ? getMetaNameByNameNoAlias( out_header, in_alias->metaName )
+                   : getPropNameByNameNoAlias( out_header, in_alias->metaName );
+
+
+            /* should be there, since it would have been added earlier - the real metas must be added before the aliases */
+            if ( !out_alias )
+                progerr("Failed to lookup alias for %s in output index", out_meta->metaName );
+
+
+            /* If this is new (or doesn't point to the alias root, then just assign it */
+            if ( !out_meta->alias )
+                out_meta->alias = out_alias->metaID;
+
+            /* else, if it is already an alias, but points someplace else, we have a problem */
+            else if ( out_meta->alias != out_alias->metaID )
+                progerr("In index %s metaname '%s' is an alias for '%s'(%d).  But another index already mapped '%s' to ID# '%d'", in_index->line, in_meta->metaName, in_alias->metaName, in_alias->metaID, out_meta->metaName, out_meta->alias );
+        }
+    }
+
+    in_index->meta_map = meta_map;
+
+
+#ifdef DEBUG_MERGE
+    printf(" %s   ->   %s  ** Meta Map **\n", in_index->line, sw_output->indexlist->line );
+    for ( i=0; i<in_header->metaCounter + 1;i++)
+        printf("%4d  ->  %3d\n", i, meta_map[i] );
+#endif
+        
+}
+
+/****************************************************************************
+*  load_filename_sort - creates an array for reading in filename order
+*
+*
+*****************************************************************************/
+
+static int  *sorted_data;
+
+static int     compnums(const void *s1, const void *s2)
+{
+    int         *r1 = *(int * const *) s1;
+    int         *r2 = *(int * const *) s2;
+    int         a = (int)r1; // filenumber passed from qsort
+    int         b = (int)r2;
+    int         v1 = sorted_data[ a-1 ];
+    int         v2 = sorted_data[ b-1 ];
+
+    // return v1 <=> v2;
+    
+    if ( v1 < v2 )
+        return -1;
+    if ( v1 > v2 )
+        return 1;
 
     return 0;
 }
 
-static char *get_string_prop(struct docProperties *docProperties, struct metaEntry *meta_entry)
-{
-    propEntry *p;
 
-    if ( !meta_entry )
+static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
+{
+    struct metaEntry *path_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_DOCPATH );
+    int         i;
+    int         *sort_array;
+    int         totalfiles = cur_index->header.totalfiles;
+
+    if ( !path_meta )
+        progerr("Can't merge index %s.  It doesn't contain the property %s", cur_index->line, AUTOPROPERTY_DOCPATH );
+
+
+    /* Save for looking up pathname when sorting */
+    cur_index->path_meta = path_meta;
+
+
+    cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
+
+        
+    if ( !LoadSortedProps( sw, cur_index, path_meta ) )
+    {
+        FileRec fi;
+        memset( &fi, 0, sizeof( FileRec ));
+        path_meta->sorted_data = CreatePropSortArray( sw, cur_index, path_meta, &fi, 1 );
+    }
+
+
+    /* So the qsort compare function can read it */
+    sorted_data = path_meta->sorted_data;
+
+
+    if ( !sorted_data )
+        progerr("failed to load or create sorted properties for index %s", cur_index->line );
+
+
+    sort_array = emalloc(  totalfiles * sizeof( int ) );
+    memset( sort_array, 0, totalfiles * sizeof( int ) );
+
+
+    /* build an array with file numbers and sort into filename order */
+    for ( i = 0; i < totalfiles; i++ )
+        sort_array[i] = i+1;  // filenumber starts a one
+
+
+    swish_qsort( sort_array, totalfiles, sizeof( int ), &compnums);
+
+    cur_index->path_order = sort_array;
+
+    efree( path_meta->sorted_data );
+    path_meta->sorted_data = NULL;
+}
+
+/****************************************************************************
+*  get_next_file_in_order -- grabs the next file entry from all the indexes
+*  in filename (and then modified date) order
+*
+*
+*****************************************************************************/
+
+
+
+static IndexFILE *get_next_file_in_order( SWISH *sw_input )
+{
+    IndexFILE   *winner = NULL;
+    IndexFILE   *cur_index = sw_input->indexlist;
+    FileRec     fi;
+    int         ret;
+
+    memset(&fi, 0, sizeof( FileRec ));
+
+    for ( cur_index = sw_input->indexlist; cur_index; cur_index = cur_index->next )
+    {
+        /* still some to read in this index? */
+        if ( cur_index->current_file >= cur_index->header.totalfiles )
+            continue;
+
+
+        /* don't use cached props, as they belong to a different index! */
+        if ( fi.prop_index )
+            efree( fi.prop_index );
+
+        memset(&fi, 0, sizeof( FileRec ));
+
+        /* get file number from lookup table */
+        fi.filenum = cur_index->path_order[cur_index->current_file];
+
+        if ( !cur_index->cur_prop )
+            cur_index->cur_prop = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->path_meta->metaID, 0 );
+
+
+        if ( !winner )
+        {
+            winner = cur_index;
+            continue;
+        }
+
+        ret = Compare_Properties( cur_index->path_meta, cur_index->cur_prop, winner->cur_prop );
+
+        if ( ret < 0 )  /* take cur_index if it's smaller */
+            winner = cur_index;
+
+        /* if they are the same name, then take the newest, and increment the older one */
+
+        else if ( ret == 0 && cur_index->modified_meta && winner->modified_meta )
+        {
+            propEntry *wp, *cp;
+
+            /* read the modified time for the current file */
+            cp = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->modified_meta->metaID, 0 );
+
+            /* read the modified time for the current winner */
+            if ( fi.prop_index )
+                efree( fi.prop_index );
+            memset(&fi, 0, sizeof( FileRec ));
+
+            fi.filenum = winner->path_order[winner->current_file];
+            wp = ReadSingleDocPropertiesFromDisk(sw_input, winner, &fi, cur_index->modified_meta->metaID, 0 );
+
+            ret = Compare_Properties( cur_index->modified_meta, cp, wp );
+
+            freeProperty( cp );
+            freeProperty( wp );
+
+
+            /* If current is greater (newer) then throw away winner */
+            if ( ret > 0 )
+            {
+                winner->current_file++;
+                if ( winner->cur_prop )
+                    efree( winner->cur_prop );
+                winner->cur_prop = NULL;
+                winner = cur_index;
+            }
+            /* else, keep winner, and throw away current */
+            else
+            {
+                cur_index->current_file++;
+                if ( cur_index->cur_prop )
+                    efree( cur_index->cur_prop );
+
+                cur_index->cur_prop = NULL;
+            }
+        }
+    }
+
+    if ( !winner )
         return NULL;
 
-    if ((meta_entry->metaID < docProperties->n) && (p = docProperties->propEntry[meta_entry->metaID]))
-        return DecodeDocProperty( meta_entry, p );
-
-    return NULL;        
-}
-
-
-
-
-
-/* This reads the next line in the index file and puts the results
-** in a result structure.
-*/
-
-static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEntry *metaFile, int c, int *is_first, int num)
-{
-    int     tfrequency,
-            filenum,
-            structure,
-            metaID,
-            metaID2,
-            frequency,
-           *position,
-            tmpval;
-    LOCATION *loc, *prev_loc;
-    ENTRY  *ip;
-    struct metaMergeEntry *tmp = NULL;
-    unsigned long nextposmetaname;
-    unsigned char word[2];
-    char   *resultword;
-    long    wordID;
-    unsigned char *worddata,
-           *s,
-            flag;
-    int     sz_worddata;
-
-    word[0] = (unsigned char) c;
-    word[1] = '\0';
-
-    tfrequency = filenum = structure = metaID = frequency = 0;
-    position = NULL;
-    nextposmetaname = 0L;
-
-    loc = NULL;
-
-    if (*is_first)
-    {
-        DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
-        *is_first = 0;
-    }
-    else
-        DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
-
-    if (!wordID)                /* No more words */
-        return NULL;
-
-    ip = (ENTRY *) Mem_ZoneAlloc(sw->Index->entryZone,sizeof(ENTRY) + strlen(resultword) + 1);
-    strcpy(ip->word, resultword);
-
-    ip->allLocationList = ip->currentChunkLocationList = ip->currentlocation = NULL;
-
-    /* read Word data */
-    DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
-    s = worddata;
-
-    /* parse word data to add it to the structure */
-    tfrequency = uncompress2(&s);
-    ip->tfrequency = tfrequency;
-
-    metaID = uncompress2(&s);
-
-    if (metaID)
-    {
-        nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
-    }
-    filenum = 0;
-
-    prev_loc = NULL;
-
-    while(1)
-    {                   /* Read on all items */
-        uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
-        filenum += tmpval;
-
-        loc = (LOCATION *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(LOCATION) + (frequency - 1) * sizeof(int));
-
-        /* Adjust filenum based on map */
-        loc->filenum = (int) getnew(filenum + num);;
-
-        loc->structure = structure;
-        loc->frequency = frequency;
-        uncompress_location_positions(&s,flag,frequency,loc->position);
-
-        if(loc->filenum)
-        {
-            /* we also need to modify metaID with new list */
-            metaID2 = 1;
-            if (metaID != 1)
-            {
-                for (tmp = metaFile; tmp; tmp = tmp->next)
-                {
-                    if (tmp->oldMetaID == metaID)
-                    {                
-                        metaID2 = tmp->newMetaID;
-                        break;
-                    }
-                }
-            }
-     
-            /* Severe bug if metaID not found */
-            if (!tmp && metaID != 1)
-                progerr("Merge internal error: Could not translate metaname");
-
-            loc->metaID = metaID2;
         
-            loc->next = NULL;
-        }
+    winner->filenum = winner->path_order[winner->current_file++];
 
-        /* Add only if filenum is not null */
-        if(loc->filenum)
-        {
-            if(!prev_loc)
-                ip->currentChunkLocationList = loc;
-            else
-                prev_loc->next = loc;
-        
-            prev_loc = loc;        
-        }
-
-        if ((s - worddata) == sz_worddata)
-            break;   /* End of worddata */
-
-        if ((unsigned long)(s - worddata) == nextposmetaname)
-        {
-            filenum = 0;
-            metaID = uncompress2(&s);
-            if (metaID)
-            {
-                nextposmetaname = UNPACKLONG2(s); 
-                s += sizeof(long);
-            }
-            else
-                nextposmetaname = 0L;
-        }
-    }
-
-    return ip;
-}
-
-/* This puts all the file info into a hash table so that it can
-** be looked up by its pathname and filenumber. This is how
-** we find redundant file information.
-*/
-
-
-
-/* This returns the file number corresponding to a pathname.
-** 2001-10 jmruiz size removed. Two files with same filename and start are 
-** considered the same file
-*/
-
-static struct mergeindexfileinfo *lookupindexfilepath(char *path, int start)
-{
-    unsigned hashval;
-    struct mergeindexfileinfo *ip;
-
-    hashval = bighash(path);
-    ip = indexfilehashlist[hashval];
-
-    while (ip != NULL)
-    {
-        if ((strcmp(ip->path, path) == 0) && ip->start == start)
-            return ip;
-        ip = ip->next;
-    }
-    return NULL;
-}
-
-#ifndef PROPFILE
-
-static struct mergeindexfileinfo *lookupindexfilepath2(char *path, int filenum)
-{
-    unsigned hashval;
-    struct mergeindexfileinfo *ip;
-
-    hashval = bighash(path);
-    ip = indexfilehashlist[hashval];
-
-    while (ip != NULL)
-    {
-        if ((strcmp(ip->path, path) == 0) && ip->filenum == filenum)
-            return ip;
-        ip = ip->next;
-    }
-    return NULL;
-}
-
+#ifdef DEBUG_MERGE
+printf("   Files in order: index %s file# %d winner\n", winner->line, winner->filenum );            
 #endif
 
+    /* free prop, as it's not needed anymore */
+    if ( winner->cur_prop )
+        efree( winner->cur_prop );
+    winner->cur_prop = NULL;
 
-void freemergeindexfileinfo()
+
+    return winner;
+}
+
+        
+/****************************************************************************
+*  add_file
+*
+*  Now, read in filename order (so can throw out duplicates)
+*  - read properties and write out to new index
+*  - write a temporay of records to identify
+*       - indexfile
+*       - old filenum to new filenum mapping
+*       - total words per file, if set
+****************************************************************************/
+
+static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output )
 {
-    struct mergeindexfileinfo *ip , *next;
-    int i;
+    FileRec             fi;
+    IndexFILE           *indexf = sw_output->indexlist;
+    struct MOD_Index    *idx = sw_output->Index;
+    docProperties       *d;
+    int                 i;
+    propEntry           *tmp;
+    docProperties       *docProperties=NULL;
+    struct metaEntry    meta_entry;
 
-    for(i=0;i<BIGHASHSIZE;i++)
-    {
-        ip = indexfilehashlist[i];
-        indexfilehashlist[i] = NULL;
-        while (ip != NULL)
+
+    meta_entry.metaName = "(default)";  /* for error message, I think */
+
+
+    memset( &fi, 0, sizeof( FileRec ));
+
+    /* read the properties and map them as needed */
+    d = ReadAllDocPropertiesFromDisk( sw_input, cur_index, cur_index->filenum );
+
+
+    /* all this off-by-one things are a mess */
+
+    /* read through all the property slots, and map them, as needed */
+    for ( i = 0; i < d->n; i++ )
+        if ( (tmp = d->propEntry[i]) )
         {
-            next = ip->next;
-            efree(ip);
-            ip = next;
-        }
-    }
-}
-
-/* This simply concatenates two location lists that correspond
-** to a word found in both index files.
-**
-** 2001-10 jmruiz Fixed the crash when an entry has no locations
-**                (The location list can be empty if a document
-**                was deleted while merging files)
-*/
-
-static ENTRY  *mergeindexentries(ENTRY * ip1, ENTRY * ip2, int num)
-{
-    LOCATION *lap;
-
-    /* Locations can be from discarted documents. So if ip1 does not have locations
-    ** we will discard it. ip2 will be checked later */
-
-    if(!ip1->currentChunkLocationList)
-        return ip2;
-
-    for (lap = ip1->currentChunkLocationList; ; lap = lap->next)
-        if(!lap->next)
-             break;
-
-    lap->next = ip2->currentChunkLocationList;
-
-    ip1->tfrequency += ip2->tfrequency;
-
-    return ip1;
-}
-
-/* This associates a number with a new number.
-** This function is used to remap file numbers from index
-** files to a new merged index file.
-*/
-
-static void    remap(int oldnum, int newnum)
-{
-    unsigned hashval;
-    struct mapentry *mp;
-
-    mp = (struct mapentry *) emalloc(sizeof(struct mapentry));
-
-    mp->oldnum = oldnum;
-    mp->newnum = newnum;
-
-    hashval = bignumhash(oldnum);
-    mp->next = mapentrylist[hashval];
-    mapentrylist[hashval] = mp;
-
-    hashval = bignumhash(newnum);
-    mp->next2 = mapentrylist2[hashval];
-    mapentrylist2[hashval] = mp;
-}
-
-/* This retrieves the number associated with another.
-*/
-
-static int     getnew(int num)
-{
-    unsigned hashval;
-    struct mapentry *mp;
-
-    hashval = bignumhash(num);
-    mp = mapentrylist[hashval];
-
-    while (mp != NULL)
-    {
-        if (mp->oldnum == num)
-            return mp->newnum;
-        mp = mp->next;
-    }
-    return num;
-}
-
-
-/* TAB */
-/* gprof suggests that this is a major CPU eater  :-(, that's
-   because it gets called a _lot_ rather than because it is inefficient...
-
-   ... and it's probably an indicator that free() is a major CPU hog :-(
-
-   you'd think that putting the NULL assignment into the if() condition
-   would be fastest, but either gcc is really stupid, or really smart,
-   because gprof showed that unconditionally setting it after reading it
-   saved about 10% over setting it unconditionally at the end of the loop
-   (that could be sampling error though), and setting it inside the loop
-   definitely increased it by 15-20% ... go figure?   - TAB oct/99
-
-   For reference:
-   Reading specs from /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/specs
-   gcc version 2.7.2.3
-
-   hhmm... I wonder if we should consider making it a macro? No, there are
-   routines using 1/4 the CPU, getting called 20 times as often (compress)
-   so obviously subrouting overhead isn't the issue...
-
-*/
-
-
-/* Initialize the main file list.
-*/
-
-void    initindexfilehashlist()
-{
-    int     i;
-
-    for (i = 0; i < BIGHASHSIZE; i++)
-    {
-        indexfilehashlist[i] = NULL;
-    }
-}
-
-/* Initialize the mapentrylist 
-*/
-
-static void    initmapentrylist()
-{
-    int     i;
-
-    for (i = 0; i < BIGHASHSIZE; i++)
-    {
-        mapentrylist[i] = NULL;
-    }
-}
-
-/* Reads the meta names from the index. Needs to be different from
-** readMetaNames because needs to zero out the counter.
-*/
-static struct metaMergeEntry *readMergeMeta(SWISH * sw, int metaCounter, struct metaEntry **metaEntryArray)
-{
-    struct metaMergeEntry *mme = NULL,
-           *tmp = NULL,
-           *tmp2 = NULL;
-    int     i;
-
-    for (i = 0; i < metaCounter; i++)
-    {
-        tmp2 = tmp;
-        tmp = (struct metaMergeEntry *) emalloc(sizeof(struct metaMergeEntry));
-
-        tmp->metaName = (char *) estrdup(metaEntryArray[i]->metaName);
-        tmp->oldMetaID = metaEntryArray[i]->metaID;
-        tmp->metaType = metaEntryArray[i]->metaType;
-        tmp->next = NULL;
-        if (!mme)
-            mme = tmp;
-        else
-        {
-            tmp2->next = tmp;
-            tmp2 = tmp;
-        }
-    }
-    return mme;
-}
-
-
-/* Adds an entry to the merged meta names list and changes the
- ** new index in the idividual file entry
- **
- ** 2001-10 jmruiz Fix to store metanames and properties with
- **                different ID
- */
-
-
-
-static void addMetaMergeArray(IndexFILE *indexf, struct metaMergeEntry *metaFileEntry)
-{
-    int     newMetaID;
-    struct metaEntry *tmpEntry;
-    char   *metaWord;
-    int     metaType = 0;
-    int     i;
-    int     count = indexf->header.metaCounter;
-    struct metaEntry **metaEntryArray = indexf->header.metaEntryArray;
-
-    newMetaID = 0;
-
-    metaWord = metaFileEntry->metaName;
-    metaType = metaFileEntry->metaType;
-
-    if (metaEntryArray)
-    {
-        for (i = 0; i < count; i++)
-        {
-            tmpEntry = metaEntryArray[i];
-
-            if (strcmp(tmpEntry->metaName, metaWord) == 0)
-            {
-                if(is_meta_property(metaFileEntry))
-                {
-                    if(is_meta_property(tmpEntry))
-                    {
-                        /* Both are META_PROP - Check for types */
-                        if( match_meta_type(metaType,tmpEntry->metaType))
-                        {
-                            newMetaID = tmpEntry->metaID;
-                            break;
-                        }
-                        else
-                        {
-                            progerr("Couldn't merge: metaname \"%s\" : types do not match.", metaWord);
-                        }
-                    }
-                }
-                else 
-                {
-                    if(!is_meta_property(tmpEntry))
-                    {
-                        /* Both are META_INDEX */
-                        newMetaID = tmpEntry->metaID;
-                        break;
-                    }
-                }    
-            }
+            meta_entry.metaID = cur_index->meta_map[ i ];
+            addDocProperty(&docProperties, &meta_entry, tmp->propValue, tmp->propLen, 1 );
         }
 
+   
+    /* Now bump the file counter  */
+    idx->filenum++;
+    indexf->header.totalfiles++;
 
-
-        if (i < count)       /* metaname exists */
-        {
-            metaFileEntry->newMetaID = newMetaID;
-        }
-        else
-        {
-/***************** FIX ******************/       
-            metaFileEntry->newMetaID = count + 1; 
-            addNewMetaEntry( &indexf->header, metaWord, metaType, 0);
-        }
-    }
-    else //   if (!metaEntryArray)
+    if ( docProperties )  /* always true */
     {
-        count = 0;
-/***************** FIX ******************/       
-        metaFileEntry->newMetaID = 1;
-        addNewMetaEntry( &indexf->header, metaWord, metaType, 0);
-    }
-}
+        fi.filenum = idx->filenum;
+        fi.docProperties = docProperties;
 
+        WritePropertiesToDisk( sw_output , &fi );
 
-
-
-static void    addentryMerge(SWISH * sw, ENTRY * ip)
-{
-    int     hashval;
-    IndexFILE *indexf = sw->indexlist;
-
-    if (!sw->Index->entryArray)
-    {
-        sw->Index->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
-        sw->Index->entryArray->numWords = 0;
-        sw->Index->entryArray->elist = NULL;
-    }
-    /* Compute hash value of word */
-    hashval = searchhash(ip->word);
-    /* Add to the array of hashes */
-    ip->next = sw->Index->hashentries[hashval];
-    sw->Index->hashentries[hashval] = ip;
-
-    sw->Index->entryArray->numWords++;
-    indexf->header.totalwords++;
-
-    CompressCurrentLocEntry(sw, indexf, ip);
-    coalesce_word_locations(sw, indexf, ip);
-}
-
-/* Creates a list of all the meta names in the indexes
-*/
-static void createMetaMerge(IndexFILE *indexf, struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2)
-{
-    struct metaMergeEntry *tmpEntry;
-
-
-    for (tmpEntry = metaFile1; tmpEntry; tmpEntry = tmpEntry->next)
-        addMetaMergeArray(indexf, tmpEntry);
-
-    for (tmpEntry = metaFile2; tmpEntry; tmpEntry = tmpEntry->next)
-        addMetaMergeArray(indexf, tmpEntry);
-
-}
-
-
-/***********************************************************************
-*  Merge the index headers into one
-*
-*
-************************************************************************/
-
-static void merge_index_headers( IndexFILE *indexf, IndexFILE *indexf1, IndexFILE *indexf2 )
-{
-
-
-    /* Merge values of both files */
-    if (strcmp(indexf1->header.wordchars, indexf2->header.wordchars))
-    {
-        printf("Warning: WordCharacters do not match. Merging them\n");
-        indexf->header.wordchars = mergestrings(indexf1->header.wordchars, indexf2->header.wordchars);
-        indexf->header.lenwordchars = strlen(indexf->header.wordchars);
-    }
-    else
-    {
-        indexf->header.wordchars = SafeStrCopy(indexf->header.wordchars, indexf1->header.wordchars, &indexf->header.lenwordchars);
-    }
-    makelookuptable(indexf->header.wordchars, indexf->header.wordcharslookuptable);
-
-    if (strcmp(indexf1->header.beginchars, indexf2->header.beginchars))
-    {
-        printf("Warning: BeginCharacters do not match. Merging them\n");
-        indexf->header.beginchars = mergestrings(indexf1->header.beginchars, indexf2->header.beginchars);
-        indexf->header.lenbeginchars = strlen(indexf->header.beginchars);
-    }
-    else
-    {
-        indexf->header.beginchars = SafeStrCopy(indexf->header.beginchars, indexf1->header.beginchars, &indexf->header.lenbeginchars);
-    }
-    makelookuptable(indexf->header.beginchars, indexf->header.begincharslookuptable);
-
-    if (strcmp(indexf1->header.endchars, indexf2->header.endchars))
-    {
-        printf("Warning: EndCharacters do not match. Merging them\n");
-        indexf->header.endchars = mergestrings(indexf1->header.endchars, indexf2->header.endchars);
-        indexf->header.lenendchars = strlen(indexf->header.endchars);
-    }
-    else
-    {
-        indexf->header.endchars = SafeStrCopy(indexf->header.endchars, indexf1->header.endchars, &indexf->header.lenendchars);
-    }
-    makelookuptable(indexf->header.endchars, indexf->header.endcharslookuptable);
-
-    if (strcmp(indexf1->header.ignorefirstchar, indexf2->header.ignorefirstchar))
-    {
-        printf("Warning: IgnoreFirstChar do not match. Merging them\n");
-        indexf->header.ignorefirstchar = mergestrings(indexf1->header.ignorefirstchar, indexf2->header.ignorefirstchar);
-        indexf->header.lenignorefirstchar = strlen(indexf->header.ignorefirstchar);
-    }
-    else
-    {
-        indexf->header.ignorefirstchar =
-            SafeStrCopy(indexf->header.ignorefirstchar, indexf1->header.ignorefirstchar, &indexf->header.lenignorefirstchar);
-    }
-    makelookuptable(indexf->header.ignorefirstchar, indexf->header.ignorefirstcharlookuptable);
-
-    if (strcmp(indexf1->header.ignorelastchar, indexf2->header.ignorelastchar))
-    {
-        printf("Warning: IgnoreLastChar do not match. Merging them\n");
-        indexf->header.ignorelastchar = mergestrings(indexf1->header.ignorelastchar, indexf2->header.ignorelastchar);
-        indexf->header.lenignorelastchar = strlen(indexf->header.ignorelastchar);
-    }
-    else
-    {
-        indexf->header.ignorelastchar = SafeStrCopy(indexf->header.ignorelastchar, indexf1->header.ignorelastchar, &indexf->header.lenignorelastchar);
-    }
-    makelookuptable(indexf->header.ignorelastchar, indexf->header.ignorelastcharlookuptable);
-
-    indexf->header.applyStemmingRules = indexf1->header.applyStemmingRules && indexf2->header.applyStemmingRules;
-    indexf->header.applySoundexRules = indexf1->header.applySoundexRules && indexf2->header.applySoundexRules;
-    indexf->header.ignoreTotalWordCountWhenRanking = indexf1->header.ignoreTotalWordCountWhenRanking
-        && indexf2->header.ignoreTotalWordCountWhenRanking;
-
-    if (indexf1->header.minwordlimit < indexf2->header.minwordlimit)
-        indexf->header.minwordlimit = indexf1->header.minwordlimit;
-    else
-        indexf->header.minwordlimit = indexf2->header.minwordlimit;
-
-    if (indexf1->header.maxwordlimit < indexf2->header.maxwordlimit)
-        indexf->header.maxwordlimit = indexf1->header.maxwordlimit;
-    else
-        indexf->header.maxwordlimit = indexf2->header.maxwordlimit;
-
-    /* removed - Patents ...
-       indexf->header.applyFileInfoCompression=indexf1->header.applyFileInfoCompression && indexf2->header.applyFileInfoCompression;
-     */
-}     
-
-/***********************************************************************
-*  Merge the word lists
-*
-*
-************************************************************************/
-
-
-static int merge_words(
-    SWISH *sw, SWISH *sw1, SWISH *sw2,
-    IndexFILE *indexf1, IndexFILE *indexf2,
-    struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2,
-    int indexfilenum1, int indexfilenum2 )
-{
-    int     j,
-            result,
-            skipwords;
-    int     is_first1,
-            is_first2;
-    int     firstTime = 1;
-    int     endip1,
-            endip2;
-    ENTRY  *ip1,
-           *ip2,
-           *ip3;
-    ENTRY  *buffer1,
-           *buffer2;
-
-
-
-    DB_InitReadWords(sw1, indexf1->DB);
-    DB_InitReadWords(sw2, indexf2->DB);
-
-    /* Adjust file pointer to start of word info */
-    skipwords = 0;
-    /* Read on all chars */
-    for (j = 0; j < 256; j++)
-    {
-        is_first1 = is_first2 = 1;
-        ip1 = ip2 = ip3 = NULL;
-        endip1 = endip2 = 0;
-        buffer1 = buffer2 = NULL;
-
-        while (1)
-        {
-            if (buffer1 == NULL)
-            {
-                if (endip1)
-                    ip1 = NULL;
-                else
-                    ip1 = readindexline(sw1, indexf1, metaFile1, j, &is_first1,0);
-                if (ip1 == NULL)
-                {
-                    endip1 = 1;
-                    if (ip2 == NULL && !firstTime)
-                    {
-                        break;
-                    }
-                }
-                buffer1 = ip1;
-            }
-            firstTime = 0;
-            if (buffer2 == NULL)
-            {
-                if (endip2)
-                    ip2 = NULL;
-                else
-                    ip2 = readindexline(sw2, indexf2, metaFile2, j, &is_first2, indexfilenum1);
-                if (ip2 == NULL)
-                {
-                    endip2 = 1;
-                    if (ip1 == NULL)
-                    {
-                        break;
-                    }
-                }
-
-                buffer2 = ip2;
-            }
-            if (ip1 == NULL)
-                result = 1;
-            else if (ip2 == NULL)
-                result = -1;
-            else
-                result = strcmp(ip1->word, ip2->word);
-            if (!result)
-            {
-                ip3 = (ENTRY *) mergeindexentries(ip1, ip2, indexfilenum1);
-                buffer1 = buffer2 = NULL;
-                skipwords++;
-            }
-            else if (result < 0)
-            {
-                ip3 = ip1;
-                buffer1 = NULL;
-            }
-            else
-            {
-                ip3 = ip2;
-                buffer2 = NULL;
-            }
-
-            /* check for locations in ip3 - This is done because some of
-            ** the files may have been removed and, in the worst case, all
-            the locations may have been deleted */
-            if(ip3->currentChunkLocationList)
-               addentryMerge(sw, ip3);
-
-            /* Reset memzone when both ip1 and ip2 are used at the same tine */
-            if(!result)
-            {
-                /* Make zone available for reuse */
-                Mem_ZoneReset(sw->Index->perDocTmpZone);
-            }
-        }
-    }
-    DB_EndReadWords(sw1, indexf1->DB);
-    DB_EndReadWords(sw2, indexf2->DB);
-
-    return skipwords;
-}
-
-/***********************************************************************
-*  Cache the meta name lookups, so only are done once per index
-*
-*
-************************************************************************/
-
-static void init_metas( METAS *metas, INDEXDATAHEADER *header )
-{
-    
-    /* Get path from property list */
-    metas->filename = getPropNameByName( header, AUTOPROPERTY_DOCPATH );
-    metas->start    = getPropNameByName( header, AUTOPROPERTY_STARTPOS );
-    metas->size     = getPropNameByName( header, AUTOPROPERTY_DOCSIZE );
-    metas->mtime    = getPropNameByName( header, AUTOPROPERTY_LASTMODIFIED );
-}
-
-
-
-/***********************************************************************
-*  adds a file and it's associated properties to the output index
-*
-*
-************************************************************************/
-
-static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docProperties **dProps, int *totalfiles, int ftotalwords,
-                             struct metaMergeEntry *metaFile, IndexFILE *indexf)
-{
-    int     hashval;
-    FileRec *thisFileEntry = NULL;
-    struct mergeindexfileinfo *ip;
-    int     start,
-            size;
-    time_t  mtime;
-    struct docProperties *docProperties = *dProps;
-    char    *filename;
-    int     prev_filenum;
-    FileProp fprop;     // This isn't perfect, as addtofilelist can add words to index (ExtractPath)
-
-
-    /* Lookup the properties */
-    filename = get_string_prop(docProperties, metas->filename );
-    start    = get_numeric_prop(docProperties, metas->start );
-    size     = get_numeric_prop(docProperties, metas->size );
-    mtime    = get_numeric_prop(docProperties, metas->mtime );
-
-    fprop.real_path = fprop.orig_path = filename;
-
-
-    /* Do a hash lookup to find the file */
-    ip = lookupindexfilepath(filename, start);
-
-    if (ip)  /* If existing pathname */
-    {
-
-        /* Use mtime to map to the newest entry */
-        *totalfiles = *totalfiles - 1;
-
-        if(mtime > ip->mtime) /* Current one is newer */
-        {
-            /* Modify word count */
-//???            addtofwordtotals(sw->indexlist, getnew(ip->filenum), ftotalwords);
-
-            /* swap meta values for properties */
-            swapDocPropertyMetaNames(&docProperties, metaFile);
-
-            /* Get the filenum previously assigned and update the content */
-            prev_filenum = getnew(ip->filenum);
-
-            /* Save memory */
-            freeDocProperties(docProperties);
-            *dProps = NULL;
-
-
-            /* Now save ip for later (so we can load the properties) */
-            // Bill, here is the fix... ip->num and sw->Index->filenum are different
-//??? need to find another way to pass
-//            sw->indexlist->filearray[prev_filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
-            
-            ip->mtime = mtime;
-            ip->indexf = indexf;
-            remap(ip->filenum, 0);  /* Remap old filenum to 0 - word's data of this filenum will be removed later */
-            remap(num,prev_filenum);  /* Remap new one to old one */
-            ip->filenum = num;
-        } 
-
-
-        else  /* Flag that this one should not be merged */
-        {
-            remap(num, 0);   /* Remap to 0 - word's data of this filenum will be removed later */
-
-            /* Save memory */
-            freeDocProperties(docProperties);
-            *dProps = NULL;
-
-            if ( filename )
-                efree( filename );
-            return;
-        }
+        freeDocProperties( d );
     }
 
-
-    /* New path name */
-
-    else
-    {
-        sw->Index->filenum++;
-        remap(num, sw->Index->filenum);
-    
-        ip = (struct mergeindexfileinfo *) emalloc(sizeof(struct mergeindexfileinfo) + strlen(filename) + 1);
-
-        ip->filenum = num;
-        ip->start = start;
-        ip->size = size;
-        ip->mtime = mtime;
-        ip->indexf = indexf;
-        strcpy(ip->path , filename);
-
-        hashval = bighash(ip->path);
-        ip->next = indexfilehashlist[hashval];
-        indexfilehashlist[hashval] = ip;
-
-//???        addtofilelist(sw, sw->indexlist, &fprop, &thisFileEntry);
-
-        /* don't need to addCommonProperties since they will be copied with the "real" properties */
-        // addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
-//???        addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
-
-        /* swap meta values for properties */
-        swapDocPropertyMetaNames(&docProperties, metaFile);
-
-        /* Save memory */
-        freeDocProperties(docProperties);
-        *dProps =NULL;
-        thisFileEntry->docProperties = NULL;
-
-        /* Now save ip for later (so we can load the properties) */
-        // Bill, here is the fix... ip->num and sw->Index->filenum are different
-///???        sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
-
-    }
     
 
-    if ( filename )
-        efree( filename );
+
+    /* now write out the data to be used for mapping file for a given index. */
+    //    compress1( cur_index->filenum, filenum_map, fputc );   // what file number this came from
+
+    fwrite( &cur_index->filenum, sizeof(int), 1, filenum_map);
+    fwrite( &cur_index, sizeof(IndexFILE *), 1, filenum_map);        // what index
+
+
+    /* Save total words per file */
+    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
+    {
+        INDEXDATAHEADER *header = &indexf->header;
+        int idx1 = fi.filenum - 1;
+
+        if ( !header->TotalWordsPerFile || idx1 >= header->TotalWordsPerFileMax )
+        {
+            header->TotalWordsPerFileMax += 20000;  /* random guess -- could be a config setting */
+            header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(int) );
+        }
+
+        header->TotalWordsPerFile[idx1] = cur_index->header.TotalWordsPerFile[cur_index->filenum-1];
+    }
 }
 
-
-
-/***********************************************************************
-*  Reads file1 and file2, and writes merged files to outfile
+/****************************************************************************
+*  Builds a old_filenum -> new_filenum map;
 *
-* 2001-09 jmruiz - rewritten
-************************************************************************/
+*  This makes is so you can lookup an old file number and map it to a new file number
+*
+****************************************************************************/
+
+static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
+{
+    int         *array = emalloc( cur_index->header.totalfiles * sizeof( int ) );
+    IndexFILE   *idf;
+    int         filenum;
+    int         new_filenum = 0;
+
+    memset( array, 0, cur_index->header.totalfiles * sizeof( int ) );
+
+    clearerr( filenum_map );
+    fseek( filenum_map, 0, 0 );  /* start at beginning */
+
+    while ( 1 )
+    {
+        new_filenum++;
+
+        if (!fread( &filenum, sizeof(int), 1, filenum_map))
+            break;
+        
+        
+        if(!fread( &idf, sizeof(IndexFILE *), 1, filenum_map))
+            break;
 
 
-void    readmerge(char *file1, char *file2, char *outfile, int verbose)
+
+        if ( idf == cur_index )
+            array[filenum] = new_filenum;
+
+        if ( feof( filenum_map ) )
+            break;
+    }
+
+    return array;
+}
+
+/****************************************************************************
+*  Reads the index and calls write_word_pos
+*
+*  This should be a common, shared function in swish.  Would also be good
+*  written as an iterator function so it retuns a position structure.
+*  Currently, calls write_word_pos for each position.  Would it be better
+*  to call with a LOCATION structure?
+*
+****************************************************************************/
+   
+static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map )
 {
     int     i,
-            indexfilenum1,
-            indexfilenum2,
-            wordsfilenum1,
-            wordsfilenum2,
-            totalfiles,
-            totalwords,
-            skipwords,
-            skipfiles;
-    struct metaMergeEntry *metaFile1,
-           *metaFile2;
-    SWISH  *sw1,
-           *sw2,
-           *sw;
-    IndexFILE *indexf1,
-           *indexf2,
-           *indexf;
-//???    FileRec *fi;
-    METAS   metas;
+            j,
+            frequency,
+            metaname,
+            structure,
+            tmpval,
+            filenum,
+           *position;
+    unsigned long    nextposmetaname;
+    char    word[2];
+    char   *resultword;
+    unsigned char   *worddata, *s, flag;
+    int     sz_worddata;
+    long    wordID;
+    metaname = 0;
 
-    if (verbose)
-        printf("Opening and reading file 1 header...\n");
-
-    if (!(sw1 = SwishOpen(file1)))
-        progerr("Couldn't read the index file \"%s\".", file1);
-
-    if (verbose)
-        printf("Opening and reading file 2 header...\n");
-
-    if (!(sw2 = SwishOpen(file2)))
-        progerr("Couldn't read the index file \"%s\".", file2);
-
-
-
-    indexf1 = sw1->indexlist;
-    indexf2 = sw2->indexlist;
-
-    /* Output data */
-    sw = SwishNew();
-    indexf = sw->indexlist = addindexfile(sw->indexlist, outfile);
-
-    /* Create and empty outfile */
-    /* and open it for read/write */
-    sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
-
-    /* Force the economic mode to save memory */
-    sw->Index->swap_locdata = 1;
-
-    initindexfilehashlist();
-
-    merge_index_headers( indexf, indexf1, indexf2 );
-
-    initmapentrylist();
-
-    if (verbose)
-        printf("Counting files... ");
-
-    indexfilenum1 = indexf1->header.totalfiles;
-    indexfilenum2 = indexf2->header.totalfiles;
-    wordsfilenum1 = indexf1->header.totalwords;
-    wordsfilenum2 = indexf2->header.totalwords;
-    totalfiles = indexfilenum1 + indexfilenum2;
-    totalwords = wordsfilenum1 + wordsfilenum2;
-
-    if (verbose)
-        printf("%d files.\n", indexfilenum1 + indexfilenum2);
-
-
-    /* Prepare to read the two index files */
+    nextposmetaname = 0L;
+    frequency = 0;
     
-    DB_InitReadFiles(sw1, indexf1->DB);
-    DB_InitReadFiles(sw2, indexf2->DB);
 
+    DB_InitReadWords(sw, indexf->DB);
 
-
-    metaFile1 = metaFile2 = NULL;
-    metaFile1 = readMergeMeta(sw1, indexf1->header.metaCounter, indexf1->header.metaEntryArray);
-    metaFile2 = readMergeMeta(sw2, indexf2->header.metaCounter, indexf2->header.metaEntryArray);
-
-
-
-    /* Create the merged list and modify the
-       individual ones with the new meta index
-     */
-    createMetaMerge(indexf, metaFile1, metaFile2);
-
-
-
-    /** Read in the file entries, and save them to the new index **/
-
-    if (verbose)
-        printf("\nReading file 1 info ...");
-    fflush(stdout);
-
-
-    /* Cache metaname lookups */
-    init_metas( &metas, &sw1->indexlist->header );
-
-
-    for (i = 1; i <= indexfilenum1; i++)
+    for(j=0;j<256;j++)
     {
-//???        fi = readFileEntry(sw1, indexf1, i);
-        /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
-#ifdef PROPFILE
-//???        fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
-#endif
-        
-//        addindexfilelist(sw, i, &metas, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
+        word[0] = (unsigned char) j; word[1] = '\0';
+        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-//        freefileinfo(fi);
-//???        indexf1->filearray[i-1] = NULL;
-    }
-
-
-    if (verbose)
-        printf("\nReading file 2 info ...");
-
-
-
-    /* Cache metaname lookups for index2 */
-    init_metas( &metas, &sw2->indexlist->header );
-
-
-    for (i = 1; i <= indexfilenum2; i++)
-    {
-///        fi = readFileEntry(sw2, indexf2, i);
-        /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
-#ifdef PROPFILE
-//???        fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
-#endif
-//        addindexfilelist(sw, i + indexfilenum1, &metas, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
-
-//        freefileinfo(fi);
-//???        indexf2->filearray[i-1] = NULL;
-    }
-
-
-
-
-    /* If we are here, we have all the files, with dups removed from filelist */
-    /* So, let's write them to disk if we have PROPFILE */
-
-    for(i = 1; i <= sw->indexlist->header.totalfiles; i++)
-    {
-//???        struct mergeindexfileinfo *ip;
-
-//???        ip = (struct mergeindexfileinfo *)indexf->filearray[i - 1]->currentSortProp;
-
-//???        if(!ip)
-            progerr("Internal merge error. File not found while merge");
-
-// Hi Jose,
-// you only had the #ifdef PROPFILE around the WritePropertiesToDisk( sw , i );
-// The ReadAllDocProperetiesFromDisk is only defined with PROPFILE so I expanded the #ifdef section
-// If not PROPFILE then docProperites are already attached to the file entry, right?
-
-
-#ifdef PROPFILE
-        /* Attach properties from the old index file, and write them back to the new index file */
-
-
-//        if(ip->indexf == indexf1)
-//???            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, ip->filenum );
-//        else
-//            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, ip->filenum - indexfilenum1);
-
-        /* write properties to disk, and release memory */
-//        WritePropertiesToDisk( sw , i );
-
-        /* Now clean up the file entry */
-        /* ip->filenum contains the filenum in indexf1 */
-        /* ip->filenum contaons the filenum in indexf2 plus indexfilenum1 */
-//        if(ip->indexf == indexf1)
+        while(wordID)
         {
-//            indexf1->filearray[ip->filenum - 1]->docProperties = NULL;
- //           freefileinfo(indexf1->filearray[ip->filenum - 1]);
- //           indexf1->filearray[ip->filenum - 1] = NULL;
+            /* Read Word's data */
+            DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
+
+            /* parse and print word's data */
+            s = worddata;
+
+            tmpval = uncompress2(&s);     /* tfrequency */
+            metaname = uncompress2(&s);     /* metaID */
+            if (metaname)
+            {
+                nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
+            }
+
+            filenum = 0;
+
+            while(1)
+            {                   /* Read on all items */
+                uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                filenum += tmpval;
+                position = (int *) emalloc(frequency * sizeof(int));
+                uncompress_location_positions(&s,flag,frequency,position);
+
+
+                /* now we have the word data */
+                for (i = 0; i < frequency; i++)
+                    write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, structure, position[i] );
+ 
+                efree(position);
+
+                if ((s - worddata) == sz_worddata)
+                    break;   /* End of worddata */
+
+                if ((unsigned long)(s - worddata) == nextposmetaname)
+                {
+                    filenum = 0;
+                    metaname = uncompress2(&s);
+                    if (metaname)
+                    {
+                        nextposmetaname = UNPACKLONG2(s); 
+                        s += sizeof(long);
+                    }
+                    else
+                        nextposmetaname = 0L;
+                }
+            }
+
+            efree(worddata);
+            efree(resultword);
+            DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
         }
-//        else 
-        {
-//            indexf2->filearray[ip->filenum - indexfilenum1 - 1]->docProperties = NULL;
- //           freefileinfo(indexf2->filearray[ip->filenum - indexfilenum1 - 1]); 
-  //          indexf2->filearray[ip->filenum - indexfilenum1 - 1] = NULL;
-        }
-#endif
     }
-
-    /* Get rid of this data - We do not longer need it */
-    freemergeindexfileinfo();
-
-    if (verbose)
-        printf("\nCreating output file ... ");
-
-
-
-    if (verbose)
-        printf("\nMerging words... ");
-
-    skipwords = merge_words( sw, sw1, sw2, indexf1, indexf2, metaFile1, metaFile2, indexfilenum1, indexfilenum2 );
-
-
-    if (verbose)
-    {
-        if (skipwords)
-            printf("%d redundant word%s.\n", skipwords, (skipwords == 1) ? "" : "s");
-        else
-            printf("no redundant words.\n");
-    }
-
-    if (verbose)
-        printf("\nSorting words ... ");
-
-    /* Words are sorted in merge - So this should be useless but the routine also builds */
-    /* an array with the words (elist) */
-    sort_words(sw, indexf); 
-
-
-    if (verbose)
-        printf("\nPrinting header... ");
-
-    write_header(sw, &indexf->header, indexf->DB, outfile, (totalwords - skipwords), totalfiles, 1);
-
-    if (verbose)
-        printf("\nPrinting words... \n");
-
-    if (verbose)
-        printf("Writing index entries ...\n");
-
-    write_index(sw, indexf);
-
-    if (verbose)
-        printf("\nMerging file info... ");
-
-//    write_file_list(sw, indexf);
-
-//??    write_sorted_index(sw, indexf);
-
-    skipfiles = (indexfilenum1 + indexfilenum2) - totalfiles;
-
-    if (verbose)
-    {
-        if (skipfiles)
-            printf("%d redundant file%s.\n", skipfiles, (skipfiles == 1) ? "" : "s");
-        else
-            printf("no redundant files.\n");
-    }
-
-    SwishClose(sw1);
-    SwishClose(sw2);
-
-    SwishClose(sw);
-
-    if (verbose)
-        printf("\nDone.\n");
+    DB_EndReadWords(sw, indexf->DB);
 }
 
+/****************************************************************************
+*  Writes a word out to the index
+*
+*
+****************************************************************************/
+
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int structure, int position )
+{
+    int         new_file;
+    int         new_meta;
+    IndexFILE   *out_index = sw_output->indexlist;
+
+    printf("\nindex %s '%s' Struct: %d Pos: %d",
+    indexf->line, resultword, structure, position );
+
+    if ( !(new_file = file_num_map[ filenum ]) )
+    {
+        printf("  file: %d **File deleted!**\n", filenum);
+        return;
+    }
+
+    if ( !(new_meta = indexf->meta_map[ metaID ] ))
+    {
+        printf("  file: %d **Failed to map meta ID **\n", filenum);
+        return;
+    }
+
+    out_index->header.totalwords++;
+    printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
+
+    addentry( sw_output, resultword, new_file, structure, metaID, position );
+
+    /* Compress the entries ?  */
+
+}
+
+    
 
