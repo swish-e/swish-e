@@ -127,7 +127,6 @@ typedef struct
     int              direction;  /* -1 for asc and 1 for desc */
     propEntry        **key;      /* pointer to an array of PropEntry's indexed by result */
     struct metaEntry *property;  /* pointer to the metaEntry for this key - need for sorting propEntry */
-    int              checked_presorted; /* flag to track if attempted to load presorted array */
     int              is_rank_sort; /* flag for faster sorting by rank */
 } SortData;
 

@@ -346,7 +346,7 @@ struct metaEntry
     int         alias;              /* if non-zero, this is an alias to the listed metaID */
     int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
     int        *sorted_data;        /* Sorted data . NULL if not read/done */
-                                    /* If 0, files are not sorted by this metaName/property */
+    int         sorted_loaded;      /* true if have attempted to load sorted data (doesn't me it exists) */
 };
 
 /* These are used to build the table of seek pointers in the main index. */
