@@ -100,10 +100,10 @@ static int compare_results_single_index(const void *s1, const void *s2)
             /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
             
             if ( sort_data->key[ r1->filenum - 1 ] == (propEntry *)-1 )
-                sort_data->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data->property, 0, MAX_SORT_STRING_LEN );            
+                sort_data->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data->property, 0, sort_data->property->sort_len );            
 
             if ( sort_data->key[ r2->filenum - 1 ] == (propEntry *)-1 )
-                sort_data->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data->property, 0, MAX_SORT_STRING_LEN );
+                sort_data->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data->property, 0, sort_data->property->sort_len );
                 
             /* finally compare the properties */
             if ( (rc = Compare_Properties(  sort_data->property, sort_data->key[ r1->filenum - 1 ], sort_data->key[ r2->filenum - 1 ]) ) )
@@ -161,10 +161,10 @@ int compare_results(const void *s1, const void *s2)
         /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
             
         if ( sort_data1->key[ r1->filenum - 1 ] == (propEntry *)-1 )
-            sort_data1->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data1->property, 0, MAX_SORT_STRING_LEN );            
+            sort_data1->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data1->property, 0, sort_data1->property->sort_len );            
 
         if ( sort_data2->key[ r2->filenum - 1 ] == (propEntry *)-1 )
-            sort_data2->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data2->property, 0, MAX_SORT_STRING_LEN );
+            sort_data2->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data2->property, 0, sort_data2->property->sort_len );
                 
         /* finally compare the properties */
         if ( (rc = Compare_Properties(  sort_data1->property, sort_data1->key[ r1->filenum - 1 ], sort_data2->key[ r2->filenum - 1 ]) ) )
@@ -319,7 +319,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
         
         if ( lookup_props )
             sort_data->key[ cur_result->filenum - 1 ] = 
-                getDocProperty( cur_result, &sort_data->property, 0, MAX_SORT_STRING_LEN );
+                getDocProperty( cur_result, &sort_data->property, 0, sort_data->property->sort_len );
 
         cur_result = cur_result->next;
     }

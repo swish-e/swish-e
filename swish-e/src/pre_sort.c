@@ -354,7 +354,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
             fi->prop_index = NULL;
 
 
-        PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(indexf, fi, m->metaID, MAX_SORT_STRING_LEN);
+        PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(indexf, fi, m->metaID, m->sort_len);
         PropLookup[i].prop_index = fi->prop_index;  // save it for next time
         sort_array[i] = i;
     }

@@ -1042,7 +1042,7 @@ static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, i
     propLen = docProp->propLen;
 
     /* Limit size,if possible - should really check if it's a string */
-    if ( max_size && (max_size >= 8) && (max_size < propLen ))
+    if ( max_size && (max_size < propLen ))
         propLen = max_size;
 
     /* Duplicate the property */
@@ -1208,6 +1208,20 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
         progerr("Mapped propID %d to invalid property index", metaID );
 
 
+    /* limit size if requested and is a string property - hope this isn't too slow */
+
+    if ( max_size )
+    {
+        struct metaEntry *m = getPropNameByID(header, metaID); /* might be better if the caller passes the metaEntry */
+        
+        /* Reset to zero if the property is not a string */
+        if ( !is_meta_string( m ) )
+            max_size = 0;
+    }
+
+
+
+
 
     /* already loaded? -- if so, duplicate the property for the given length */
     /* This should only happen if ReadAllDocPropertiesFromDisk() was called, and only with db_native.c */
@@ -1226,8 +1240,8 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
 
 	propLen = uncompressed_len; /* just to be clear ;) */
 
-    /* Limit size,if possible - should really check if it's a string */
-    if ( max_size && (max_size >= 8) && (max_size < propLen ))
+    /* Limit size,if possible  */
+    if ( max_size && (max_size < propLen ))
         propLen = max_size;
 
 

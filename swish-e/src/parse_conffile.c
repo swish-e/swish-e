@@ -931,6 +931,44 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
+
+        /* Set the sort length */
+
+        if (strcasecmp(w0, "PropertyNamesSortKeyLength") == 0)
+        {
+            struct metaEntry *meta_entry;
+            int               max_length = 0;
+            
+            if (sl->n < 3)
+                progerr("%s: requires only two or more values, a length and a list of property names", w0);
+
+
+            max_length = read_integer( sl->word[1], w0, 1, INT_MAX );
+                
+
+            for (i = 2; i < sl->n; i++)
+            {
+                /* already exists? */
+                if ( (meta_entry = getPropNameByNameNoAlias( &indexf->header, sl->word[i])) )
+                {
+                    if ( meta_entry->alias )
+                        progerr("Can't assign a length to property '%s': it is an alias", meta_entry->metaName );
+
+                    if ( meta_entry->max_len )
+                        progwarn("Why are you redefining the max sort key length of property '%s'?", meta_entry->metaName );
+
+                    if ( !is_meta_string( meta_entry ) )
+                        progerr("%s - name '%s' is not a STRING type of Property", w0, sl->word[i] );
+                }
+                else
+                    meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING, 0);
+
+
+                meta_entry->sort_len = max_length;    
+            }
+
+            continue;
+        }
         
 
 

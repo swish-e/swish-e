@@ -56,7 +56,7 @@ $Id$
 *
 ********************************************************************/
 
-static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, int metaID )
+static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, struct metaEntry *m )
 {
     propEntry *d;
     FileRec fi;
@@ -64,7 +64,7 @@ static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, int metaID 
     fi.filenum = filenum;
     
 
-    d = ReadSingleDocPropertiesFromDisk(indexf, &fi, metaID, MAX_SORT_STRING_LEN );
+    d = ReadSingleDocPropertiesFromDisk(indexf, &fi, m->metaID, m->sort_len );
     freefileinfo(&fi);
 
     return d;
@@ -84,11 +84,11 @@ static void printdocprop( propEntry *d )
     printf("%s (%d)", str, d->propLen );
 }
 
-static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
+static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, struct metaEntry *m )
 {
     propEntry *d;
 
-    if ( (d = GetPropertyByFile( indexf, filenum,metaID )))
+    if ( (d = GetPropertyByFile( indexf, filenum, m )))
         printdocprop( d );
     else
         printf("File %d does not have a property for metaID %d", filenum, metaID );
@@ -308,7 +308,7 @@ static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry
         
         
 
-    if ( !(fileprop = GetPropertyByFile( indexf, sort_array->filenum, meta_entry->metaID )) )
+    if ( !(fileprop = GetPropertyByFile( indexf, sort_array->filenum, meta_entry )) )
     {
 #ifdef DEBUGLIMIT
         printf("(no prop found for filenum %d) - return +1\n", sort_array->filenum );
@@ -597,7 +597,7 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
     for (i = 0; i < size; i++)
     {
         printf("%d File: %d Sort: %lu : ", i, sort_array[i].filenum, sort_array[i].sort );
-        printfileprop( sw, indexf, sort_array[i].filenum, meta_entry->metaID );
+        printfileprop( sw, indexf, sort_array[i].filenum, meta_entry );
         printf("\n");
     }
 #endif
@@ -899,7 +899,7 @@ int LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, int filenum )
         
         {
             int limit = 0;
-            propEntry *prop = GetPropertyByFile( indexf, filenum, meta_entry->metaID );
+            propEntry *prop = GetPropertyByFile( indexf, filenum, meta_entry );
 
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */

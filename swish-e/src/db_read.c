@@ -274,6 +274,7 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
     int     metaType,
             i,
             alias,
+            sort_len,
             bias,
             metaID;
     char   *word;
@@ -299,6 +300,8 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 
         alias = uncompress2(&s) - 1;
 
+        sort_len = uncompress2(&s);
+
         bias = uncompress2(&s) - RANK_BIAS_RANGE - 1;
 
 
@@ -308,6 +311,7 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 
         m->alias = alias;
         m->rank_bias = bias;
+        m->sort_len = sort_len;
 
         efree(word);
     }

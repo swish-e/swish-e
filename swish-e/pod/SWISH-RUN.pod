@@ -694,6 +694,10 @@ What properties are pre-sorted can be controlled by the configuration parameter 
 Using the C<-L> switch on a property that was not pre-sorted will still work, but may be I<much>
 slower during searching.
 
+Note that the PropertyNamesSortKeyLength setting is used for sorting properties.
+Using too small a PropertyNamesSortKeyLength could result in -L selecting
+the wrong properties due to incomplete sorting.
+
 This is an experimental feature, and its use and interface are subject to change.
 
 =item -x formatstring (extended output format)
