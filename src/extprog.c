@@ -215,7 +215,6 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     time_t  mtime;
     int     index_no_content;
     long    truncate_doc_size;
-    int     has_filter = 0;
     int     docType = 0;
 
     mtime = 0;
@@ -229,15 +228,16 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
     truncate_doc_size = sw->truncateDocSize;
     sw->truncateDocSize = 0;    /* can't truncate -- prog should make sure doc is not too large */
-// $$$ This is no longer true with libxml push parser
+    // $$$ This is no longer true with libxml push parser
 
     // $$$ next time, break out the header parsing in its own function, please
 
     /* loop on headers */
     while (fgets(ln, MAXSTRLEN, fp) != NULL)
     {
-        char *end;
-        char *line;
+        char    *end;
+        char    *line;
+        int     has_filter = 0;
         
         line = str_skip_ws(ln); /* skip leading white space */
         end = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
@@ -313,6 +313,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             mtime = 0;
             fsize = 0;
             index_no_content = 0;
+            
         }
 
 
