@@ -127,8 +127,12 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
             long    length   = fi->propSize[ meta_entry->metaID ];
 
             if ( (buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, meta_entry->metaID, indexf->DB )))
+            {
                 if ( buffer->propLen )
                     printf("  %20s: %lu -> %lu (%4.2f%%)\n", "**Compressed**", buffer->propLen, length, (float)length/(float)buffer->propLen * 100.00f );
+
+                efree(buffer);
+            }
         }
         
 
