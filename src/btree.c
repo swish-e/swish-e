@@ -195,7 +195,7 @@ int hash;
         return NULL;
 
     /* Get file pointer */
-    if(sw_fseek(fp,0,SEEK_END) !=0)
+    if(sw_fseek(fp,(sw_off_t)0,SEEK_END) !=0)
     {
         printf("mal\n");
     }
