@@ -1665,20 +1665,52 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 /*******************************************************************************
 *  USE_BTREE Sorted data tables (presorted indexes)
 *
-*  DB->offsets[SORTEDINDEX]     points to start of presorted index tables
-*  DB->n_presorted_array        number of props in index
-*  DB->presorted_array          points to array[ # props ] of pointers to ARRAY
+*  DB->offsets[SORTEDINDEX]     Points to start of presorted index tables
+*  DB->n_presorted_array        Number of props in index
+*  DB->presorted_array          Points to array[ # props ] of pointers to ARRAY
 *                               ARRAY is defined in array.h
-*  DB->presorted_root_node      points to array[ # props ] of unsigned longs
+*  DB->presorted_root_node      Points to array[ # props ] of unsigned longs
+*                               holds the seek pointer to the root node for 
+*                               each of the sorted props.
+*  DB->next_sortedindex         Counter - index into structure below.
+*                               incremented after each write of an array.
 *
 *  Index layout:
 *            +-------------------------------+
 *            |  Num props                    |  <<-- DB->offsets[SORTEDINEDEX]
 *            +-------------------------------+
-*            |  PropID                       |
+*            |  PropIDX[0]                   |  <- propID for
 *            +-------------------------------+
-*            |  Array Pointer                |
-*            (to be completed)
+*            |  Array Pointer[0]             |  <- seek point of root node for this prop
+*            +-------------------------------+
+*            |  PropIDX[1]                   |
+*            +-------------------------------+
+*            |  Array Pointer[1]             |
+*            +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+*            |  PropIDX[n_props-1]           |  up to number of props defined in
+*            +-------------------------------+  the index.  Not all will be filled
+*            |  Array Pointer[n_props-1]     |  since not all props are pre-sorted.
+*            +-------------------------------+  They are filled sequentially.
+*            |  Data for all arrays follows  |
+*            |  here.  (true?)               |
+*            +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+*
+*  I (moseley) don't really follow why  DB->presorted_array and
+*   DB->presorted_root_node are needed during write operations.
+*
+*  Also, since the above is total number of props long, why not just
+*  have it indexed by propIDX (not propID)?  Then don't need to search
+*  for a given propID -- just do 
+*
+*           sorted_props_index = read_sorted_props_table_from_disk();
+*           root_array_seek_pointer = sorted_props_index[ propIDX ];
+*
+*  Since the table above is fixed length, don't really need a loop to write
+*  or read from the disk.
+*
+*  Maybe the DB->presorted_(propid|root_node|array) could all be part of
+*  one structure (i.e. DB->presorted[n].array ).
+*
 *
 *
 *******************************************************************************/
@@ -1692,7 +1724,7 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 
    DB->offsets[SORTEDINDEX] = sw_ftell(fp);
 
-   /* Write number of properties */
+   /* Write number of properties possible.  May not write all*/
    printlong(fp,(unsigned long) n_props, sw_fwrite);
 
    DB->n_presorted_array = n_props;
@@ -1727,8 +1759,11 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 *
 * Why pass *char and then cast to an *int?  *int is the
 * original data type in pre_sort.c.  Why not "int *data"?
-* 
 *
+*
+* Questions:
+*   Why does DB->presorted_root_node[] array needed to be populated during the write
+*   operation? 
 *
 *
 *
@@ -1758,9 +1793,14 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
 */
    }
 
+   /* ARRAY_Close() returns the offset of the root node for this array */
    DB->presorted_root_node[DB->next_sortedindex] = ARRAY_Close(arr);
 
+
+   /* Seek to start of this record in the index */
    sw_fseek(fp,DB->offsets[SORTEDINDEX] + (1 + 2 * DB->next_sortedindex) * sizeof(unsigned long),SEEK_SET);
+
+   /* Write out the propID and the seek position of this array's root node */
    printlong(fp,(unsigned long) propID, sw_fwrite);
    printlong(fp,(unsigned long) DB->presorted_root_node[DB->next_sortedindex], sw_fwrite);
 
@@ -1775,7 +1815,12 @@ int     DB_EndWriteSortedIndex_Native(void *db)
 }
 
 /********************************************************************************
-*  BTREEE Read pre-sorted indexes
+*  BTREE DB_InitReadSortedIndex
+*
+*  Reads the index table into memory:
+*       DB->presorted_array[]       all set to null
+*       DB->presorted_propid[]      list of propIDs
+*       DB->presorted_root_node[]   seek points for the array for each propID
 *
 *********************************************************************************/
 
@@ -1791,9 +1836,15 @@ int     DB_InitReadSortedIndex_Native(void *db)
    /* Read number of properties */
    DB->n_presorted_array = readlong(fp,sw_fread);
 
+   /* init the arrays */
+
    DB->presorted_array = (ARRAY **)emalloc(DB->n_presorted_array * sizeof(ARRAY *));
    DB->presorted_root_node = (unsigned long *)emalloc(DB->n_presorted_array * sizeof(unsigned long));
    DB->presorted_propid = (unsigned long *)emalloc(DB->n_presorted_array * sizeof(unsigned long));
+
+
+   /* read the table into memory */
+
    for(i = 0; i < DB->n_presorted_array ; i++)
    {
        DB->presorted_array[i] = NULL;
@@ -1804,11 +1855,21 @@ int     DB_InitReadSortedIndex_Native(void *db)
 
 }
 
+
+
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp_presorted;
    int i;
+
+   /* Open the array for the propID specified, if not already open */
+
+
+   /* $$$ looks like a bug -- If cur_presorted_array is set, but the propid doesn't match
+    * Then it will search for the new matching propID.  But if it doesn't find it then
+    * DB-cur_presorted_array is STILL true, so it will return the wrong array.
+    * Seems like need to set DB->cur_presorted_array = NULL before entering the loop. */
 
    if(!DB->cur_presorted_array || DB->cur_presorted_propid != (unsigned long)propID)
    {
@@ -1822,6 +1883,8 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
            }
        }
    }
+
+   /* If found, then return */
    if(DB->cur_presorted_array)
    {
        *data = (unsigned char *)DB->cur_presorted_array;

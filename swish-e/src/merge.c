@@ -579,7 +579,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 *
 *****************************************************************************/
 
-static int  *sorted_data;
+static int  *sorted_data;  /* Static array to make the qsort function a bit quicker */
 
 static int     compnums(const void *s1, const void *s2)
 {
@@ -587,6 +587,12 @@ static int     compnums(const void *s1, const void *s2)
     int         b = *(int *)s2;
     int         v1 = sorted_data[ a-1 ];
     int         v2 = sorted_data[ b-1 ];
+    /* $$$ to work with BTREE would need something like:
+     * but that won't work if the pre-sorted array does not exist
+     * in the index already.  CreatePropSortArray creates an actual integer array!
+    int         v1 = DB_ReadSortedData( sorted_data, a-1 );
+    int         v2 = DB_ReadSortedData( sorted_data, b-1 );
+    ***/
 
     // return v1 <=> v2;
 
@@ -598,6 +604,13 @@ static int     compnums(const void *s1, const void *s2)
     return 0;
 }
 
+/******************************************************************************
+* load_filename_sort -
+*
+*   Creates an array used for sorting file names.
+*   Uses the pre-sorted array, if available, otherwise, creates one.
+*
+*******************************************************************************/
 
 static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 {
@@ -650,6 +663,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 
     cur_index->path_order = sort_array;
 
+    /* $$$ can this be freeded when using BTREE??? */
     efree( path_meta->sorted_data );
     path_meta->sorted_data = NULL;
 }

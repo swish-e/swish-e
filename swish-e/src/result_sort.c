@@ -90,6 +90,9 @@ static int compare_results_single_index(const void *s1, const void *s2)
 
         if ( (presorted = sort_data->property->sorted_data) )
         {
+            /* $$$ - fix for USE_BTREE
+            if ( (rc = DB_ReadSortedData( presorted, r1->filenum - 1) -  DB_ReadSortedData( presorted, r2->filenum - 1))
+            */
             if((rc = presorted[ r1->filenum - 1] - presorted[ r2->filenum - 1] ))
                 return ( rc * sort_data->direction );  /* is the multiplication slow? */
         }
