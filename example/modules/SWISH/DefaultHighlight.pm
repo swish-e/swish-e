@@ -227,7 +227,7 @@ sub match_string {
                     : quotemeta
                } keys %words;
 
-    my $re = $ENV{MOD_PERL} ? qr/^(?:$match_string)$/ : qr/^(?:$match_string)$/o;
+    my $re = qr/^(?:$match_string)$/;
 
     $self->{cache}{$prop_name} = $re;
 
@@ -263,14 +263,8 @@ sub set_match_regexp {
     # qr// go out of scope would release the compiled pattern.
     # doesn't really matter, as $wc probably never changes
 
-    if ( $ENV{MOD_PERL} ) {
-        $self->{wc_regexp}      = qr/([^$wc]+)/;                     # regexp for splitting into swish-words
-        $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/i;  # regexp for extracting out the words to compare
-
-     } else {
-        $self->{wc_regexp}      = qr/([^$wc]+)/o;                    # regexp for splitting into swish-words
-        $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/oi;  # regexp for extracting out the words to compare
-     }
+    $self->{wc_regexp}      = qr/([^$wc]+)/;                     # regexp for splitting into swish-words
+    $self->{extract_regexp} = qr/^$ignoref([$wc]+?)$ignorel$/i;  # regexp for extracting out the words to compare
 }
 
 1;
