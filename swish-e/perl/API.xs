@@ -6,6 +6,11 @@
 
 #include <swish-e.h>
 
+#ifndef newSVuv
+#   define newSVuv(i) newSViv(i)
+#endif
+
+
 
 MODULE = SWISH::API        PACKAGE = SWISH::API    PREFIX = Swish
 

@@ -90,7 +90,11 @@ my $mem_test = 0;
 
     my $seen;
 
+    my @results;
+
     while ( my $result = $results->NextResult ) {
+
+        push @results, $result;
 
         check_error('Call $swish->NextResult', $swish)
             unless $seen;
@@ -198,7 +202,6 @@ my $mem_test = 0;
         is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
     }
     
-
 
     # cough, hack, cough....
     
