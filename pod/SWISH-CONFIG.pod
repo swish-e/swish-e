@@ -9,9 +9,12 @@ by a configuration file.
 The configuration file is passed to swish as a command line argument by using the C<-c> switch
 (see L<SWISH-RUN|SWISH-RUN>).
 
-The configuration file is a text file composed of comments, blank lines, and B<configuration directives>.
-Order of the directives is not important.  Some directives may be used more than once in the configuration file,
-while others can only be used once (e.g. additional directives will overwrite preceding directives).
+The configuration file is a text file composed of comments, 
+blank lines, and B<configuration directives>.
+Currently, the order of the directives may be important 
+(e.g. a directive that uses a metaname may require that the metaname is defined).
+Some directives may be used more than once in the configuration file,
+while others can only be used once.
 Case of the directive is not important -- you may use upper, lower, or mixed case.
 
 Comments are any line that begin with a "#".
@@ -46,11 +49,11 @@ the regular expression in quotes then you must use double-backslashes.
 
 Swish will convert the double backslash into a single backslash before passing the
 parameter to the regular expression compiler.
-    
+
 Commented example configuration files are included in the F<config> directory of the
 SWISH-E distribution.
 
-Typically, configuration file the directives are grouped together
+Typically, configuration file directives are grouped together
 in some logical order -- that is, directives that control the source of the documents would be grouped
 together first, and directives that control how each document is filtered or its words index in another group of
 directives. (The directives listed below are grouped in this order).
