@@ -517,7 +517,7 @@ word.  See below for other stemming options.
 =item $fuzzy_word = $swish->Fuzzy( $indexname, $word );
 
 Like StemWord used to work, only it uses whatever stemmer is named in $indexname.
-Returns the same kind of fuzzy_word object as the L<FuzzyWord> method.
+Returns the same kind of fuzzy_word object as the FuzzyWord() method.
 
 =item $mode_string = $result->FuzzyMode;
 
