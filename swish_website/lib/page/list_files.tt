@@ -27,7 +27,7 @@
     [% showed_one = 1 %]
     <tr>
         <td><a href="[% "${url}/${file.name}" %]">[% file.name %]</a></td>
-        <td>[% Date.format( file.mtime )%]</td>
+        <td nowrap>[% Date.format( file.mtime )%]</td>
         <td align="right">[% file.size_formatted %]</td>
     </tr>
     [% END %]
