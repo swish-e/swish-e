@@ -53,7 +53,7 @@
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"
-#include <time.h>
+#include <sys/time.h>
 
 
 
@@ -99,8 +99,10 @@ char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 clock_t search_starttime, run_starttime;
+struct timeval run_tv, search_tv, end_tv;
+struct timeval Tp;
 
-
+    gettimeofday( &run_tv, NULL );
     run_starttime = clock();
 
 	starttime=0L;
@@ -775,6 +777,7 @@ clock_t search_starttime, run_starttime;
 		printf("# Search words: %s\n#\n",wordlist);
 
         search_starttime = clock();
+        gettimeofday( &search_tv, NULL );
 
 		rc=search(sw,wordlist, structure);
 
@@ -807,6 +810,17 @@ clock_t search_starttime, run_starttime;
                 	     (double)(clock()-search_starttime)/CLOCKS_PER_SEC );
                 	printf("# Run time: %0.3f seconds\n",
                 	     (double)(clock()-run_starttime)/CLOCKS_PER_SEC );
+
+                    gettimeofday (&end_tv, NULL);
+                    printf("# Test run time: %0.3f\n",
+                        (double)(( end_tv.tv_sec + end_tv.tv_usec / 1000000.0 ) -
+                        ( run_tv.tv_sec + run_tv.tv_usec / 1000000.0 )) );
+
+                    printf("# Test search time: %0.3f\n",
+                        (double)(( end_tv.tv_sec + end_tv.tv_usec / 1000000.0 ) -
+                        ( search_tv.tv_sec + search_tv.tv_usec / 1000000.0 )) );
+        
+                	     
 
                 	printSortedResults(sw);
 			printf(".\n");
