@@ -1,0 +1,440 @@
+#!@@perlbinary@@ -w
+#!/usr/bin/speedy -w
+use strict;
+
+######################################################################
+# Skeleton CGI script for searching a Swsih-e index with SWISH::API.
+# see below for documenation or run "perldoc search.cgi"
+#
+# Copyright 2003 Bill Moseley - All rights reserved.
+#######################################################################
+
+
+# This needs to be set to where Swish-e installed the Perl modules 
+
+# This is set to where Swish-e's "make install" installed the helper modules.
+use lib qw( @@perlmoduledir@@ );
+
+#------------------- Modules --------------------------------------
+use SWISH::API;             # for searching the index file
+use SWISH::ParseQuery;      # Parses the query string
+use SWISH::PhraseHighlight; # for highlighting
+use CGI;                    # provides a param() method -- could use Apache::Request, for example.
+use HTML::FillInForm;       # makes the form elements sticky
+use Template;               # Template-Toolkit: http://tt2.org or see http://search.cpan.org
+
+
+
+#-------------------- Defaults/Parameters --------------------------
+# Directory where templates are stored (if using an external template)
+use constant INCLUDE_PATH => "/home/moseley/apache";
+
+
+# Cached varilables
+my ($template, $swish, %headers, $highlight_object, $fill_in_object );  
+
+
+# Params used for the highlighting modules
+my %highlight_settings = (
+    show_words      => 8,  # number of words to show
+    occurrences     => 5,   # number of words to show
+    max_words       => 100, # max number of words to show if not highlighted words found
+    highlight_on    => '<span class="highlight">',
+    highlight_off   => '</span>',
+);
+
+
+#--------------------- Code ----------------------------------------
+# Entry point for normal CGI programs.
+process_request();
+
+
+# Entry point for mod_perl (not tested yet)
+sub handler {
+    my $r = shift;
+    process_request();
+}
+
+
+
+sub process_request {
+    my $cgi = CGI->new;  # could also be Apache::Request or other fast access to CGI params
+    my $query = $cgi->param('query');
+
+
+    # This data is made available to the template.
+    my %params = (
+        title   => 'Company Name',  # what-ever data
+        index   => 'index.swish-e', # index to search
+        myself  => 'search.cgi',    # for use in generating links back to script
+        pid   => $$,
+    );
+
+
+    # Create template object if not cached
+    $template ||= Template->new( INCLUDE_PATH => INCLUDE_PATH );
+    die $template->error unless $template;
+
+
+    # If a query was passed in then run the search
+    if ( $query ) {
+        my $start = $cgi->param('page') || 1;
+        my $pagesize = 15;
+        $params{search} = run_query( $query, $start, $pagesize, $params{index} );
+    }
+
+
+
+    # Generate the output from the template
+
+    print $cgi->header;
+    my $template_output;
+
+    $template->process( \*DATA, \%params, \$template_output) || die $template->error;
+    #$template->process( 'foo.tt', \%params, \$template_output ) || die $template->error;
+
+
+
+    # Run output through HTML::FillInForm to make form elements sticky
+
+    $fill_in_object ||= HTML::FillInForm->new;
+    print $fill_in_object->fill( scalarref => \$template_output, fobject => $cgi );
+
+}
+
+
+
+
+
+# Subroutine to run the Swish query.  Returns a hash reference.
+# A better design might be to return an object with methods for accessing the data.
+
+sub run_query {
+    my ($query, $page, $pagesize, $index) = @_;
+
+    $page = 1 unless defined $page  && $page =~ /^\d+$/;
+    $pagesize = 15 unless defined $pagesize && $pagesize =~ /^\d+$/ && $pagesize > 0 && $pagesize < 50; 
+
+
+    # Create the swish object if not cached.
+    # Also read in the header data and initialize the highlighting module
+
+    if ( ! $swish ) {
+        $swish = SWISH::API->new( $index );
+        die "Failed to create SWISH::API object" unless $swish;
+        $swish->AbortLastError if $swish->Error;
+
+
+        # Now cache header data (used for highlighting)
+        %headers = map { lc($_) => ($swish->HeaderValue( $index, $_ )||'') } $swish->HeaderNames;
+
+        # and cache the highlighting object
+        $highlight_object = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers );
+    }
+
+
+    # Run the search.  See SWISH::API for more options (like sorting)
+
+    my $results = $swish->Query( $query );
+
+    if ( $swish->Error ) {
+        $swish->AbortLastError if $swish->CriticalError;
+        return {
+            query   => $query,
+            message => join( ' ', $swish->ErrorString, $swish->LastErrorMsg ),
+        };
+    }
+
+
+    # Seek to the first record of the page requested
+
+    $results->SeekResult( ($page-1) * $pagesize );
+
+    my @records;
+    my $result;
+    my $cnt = $pagesize;
+
+
+
+    # Store the result objects in an array
+    push @records, $result while $cnt-- && ($result = $results->NextResult);
+
+    # Now create a filter 'highlight' for use in the template to highlight terms
+    # Usage requires passing in the *metaname* associated with the property
+    # that's being highlighted -- this allows the program to know what
+    # search words to use in highlighting 
+
+    my $parsed_query = parse_query( join ' ', $results->ParsedWords( $index ) );
+
+
+    $template->context->define_filter( 'highlight', sub {
+        my ( $context,  $metaname ) = @_;
+        my $phrases = $parsed_query->{$metaname};
+        return sub {
+            my $text = shift;
+            $highlight_object->highlight( \$text, $phrases);
+            return $text;
+        }
+    }, 1 );
+
+
+
+    # Return the results structure
+
+    my %query = (
+        # parse out the query words
+        query   => $query,
+        results => \@records,
+        hits    => $results->Hits,
+        shown   => scalar @records,
+        page    => $page,
+        start   => ($page-1) * $pagesize,
+    );
+
+
+    $query{prev} = $page-1 if $page > 1;
+    $query{next} = $page+1 if $query{start} + $pagesize < $query{hits}-1;
+
+    return \%query;
+}
+
+
+
+__DATA__
+
+
+<html>
+<head>
+    <title>Search Documents</title>
+
+    <style type="text/css">
+        a:hover { background: #CCC; }
+        body { font-family : verdana,arial,helvetica,sans-serif; }
+        .header { background-color: #EEEEEE; padding-left: 5px; }
+        .title { font-size: 1.2em; margin-top: 1em; }
+        .rank  { color: red; font-size: 0.8em; }
+        .description { 
+            margin-top: 1em; margin-bottom: 1em; margin-left: 2em; 
+            max-width: 700px; /* not supported by IE */
+            width:expression(document.body.clientWidth > 600? "600px": "auto" );
+        }
+        .metadata { margin-left: 2em; font-size: 0.8em; color: green; }
+        .metadata a { text-decoration: none; color: green; }
+        .highlight { background : #FFFF99; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+
+    [% PROCESS form %]
+    <p>
+    [% IF search %]
+        [% IF search.message; '<h2 align="center">'; search.message; "</h2>"; END %]
+
+        [% IF search.shown %]
+            [% PROCESS results_header %]
+            [% PROCESS display_results %]
+        [% END %]
+    [% END %]
+</body>
+
+
+
+[% BLOCK form %]
+    <form method="get" action="[% myself %]" enctype="application/x-www-form-urlencoded">
+        <input type="text" name="query" value="install" size="40" maxlength="200" />
+        <input type="submit" name="submit" value="Search!" />
+    </form>
+[% END %]
+
+
+[% BLOCK results_header %]
+<div class="header">
+    Showing page [% search.page %] 
+    ([% search.start +1 %] - [% (search.start + search.shown) %] of [% search.hits %] hits) 
+    for <b>[% search.query | html %]</b><br>
+
+    [% USE myurl = url( myself, query=search.query ) %]
+
+    [% IF search.prev %]
+       <a href="[% myurl( page=search.prev ) %]">Previous</a> 
+    [% END %]
+    [% IF search.next %]
+       <a href="[% myurl( page=search.next ) %]">Next</a> 
+    [% END %]
+</div>
+[% END %]
+
+[% BLOCK display_results %]
+    [% USE date %]
+    [% FOREACH item = search.results %]
+        <div class="title">
+            <a href="[% item.Property('swishdocpath') | uri | html %]">
+                [%  item.Property('swishtitle') || item.Property('swishdocpath') | html %]
+            </a>
+
+            <span class="rank">-- rank: <b>[% item.Property('swishrank') %]</b></span>
+        </div>
+
+        <div class="description">
+            [% item.Property('swishdescription') || "No description" | highlight('swishdefault') %]
+        </div>
+
+        <div class="metadata">
+            Path: <a href="[% item.Property('swishdocpath') | uri | html %]">[% item.Property('swishdocpath') | html %]</a>
+            - [% item.Property('swishdocsize') %] bytes<br>
+            Date: [% date.format( item.Property('swishlastmodified')) %]<br>
+        </div>
+    [% END %]
+[% END %]
+[% STOP %]
+
+__END__
+
+=head1 NAME
+
+search.cgi -- Example Perl program for searching with Swish-e and SWISH::API
+
+=head1 DESCRIPTION
+
+This is a very simple program that shows how to use the SWISH::API module
+in a CGI script.  Unlike swish.cgi, this is suppose to not have many
+built-in features.  So don't ask why it doesn't do something.  The
+point is that this is used as a starting point that YOU customize.
+
+This program is intended for programmers that want to create a custom
+search script.
+
+This program does require that some modules are installed from CPAN.
+See REQUIREMENTS below for details and an explanation of why.
+
+This program does not handle multiple index files, special metanames
+that can be selected by drop-down boxes or anything else fancy.  Again,
+the point is that this script gets customized by you.
+
+Template-Toolkit is used to render the output.  The template
+is included below the program code in the __DATA__ section.
+A Template-Toolkit "filter" is created to highlight terms in
+the description.  The filter uses the same modules that the swish.cgi
+script uses for highlighting.
+
+The template can be placed in its own file if you like.  That's the normal
+way templates are used.  It's in the __DATA__ section in this script so that
+only one file is needed.  If you run under mod_perl or SpeedyCGI you must
+use a separate template file.
+
+The index file is hard-coded as index.swish-e.  Change it as needed.
+The script uses page numbers instead of record numbers.  Record
+numbers might be more flexible.
+
+This script can be run under SpeedyCGI by changing the top line to:
+
+    #!/usr/bin/speedy -w
+
+and installing SpeedyCGI, of course.  When run under SpeedyCGI
+or mod_perl the template must be moved out into a separate file.
+Set the INCLUDE_PATH to the directory where you store the
+template file.
+
+The script can also be run as a mod_perl handler.  If you use mod_perl
+you might want to use Apache::Request instead of CGI.pm.
+
+=head1 USAGE
+
+The script is installed when Swish-e is installed.  On unix-like systems
+this will like be at /usr/local/lib/swish-e/search.cgi.  If you used a
+different --prefix option at compile time then it would be wise to look
+there, instead.  Windows users will find the program someplace similar, but
+different.  If installed as part of your OS distribution then it might be in
+/usr/lib/swish-e.
+
+Install the required modules (see next section) and then copy or symlink
+the program to where you normally run CGI scripts.  Use .htaccess or whatever
+your web server requires to indicate that the script is indeed a CGI script.
+
+Create an index.  If the index is not in the current working directory when
+the script is run, and is not called "index.swish-e" (the default swish-e index name)
+then modify the script to find the correct index file.
+
+Testing CGI script from the command line first will impress your friends.
+
+The script is lightly commented so that hopefully you can understand how it works
+and thus understand how to add the features you need.
+
+=head1 REQUIREMENTS
+
+To use this script as-is a few Perl modules will need to be installed.
+You are not required to use these modules, but I like them and thus
+I'm recommending that you give them a try.
+
+=over 4
+
+=item Template-Toolkit
+
+Template-Toolkit (or TT) is available from CPAN or from
+
+    http://search.cpan/org/
+    http://tt2.org/
+
+TT is used to generate the HTML output.  It's good code design to separate the
+output generation from the "model" code that does the work of fetching the data.
+
+I'm a big fan of Template-Toolkit.  It's simple enough that it's easy to learn
+how to work with basic templates.  It's also not limiting and provides power to do what's
+needed in the template without requiring too much setup in the logic part of your
+code.  Note in the code how TT works directly with the objects returned by SWISH::API.
+TT's dot notation means that you can change the backend data (e.g. from a hash to an object)
+and the template does not need to change.
+
+Please give TT a try.  It's a much better use of your time than writing Yet Another
+Homemade Templating System.
+
+=item HTML::FillInForm
+
+This module is also available from CPAN
+
+    http://search.cpan.org/
+
+HTML::FillInForm makes HTML forms "sticky" -- that is, it takes previous data from
+a CGI request and fills in the form elements.  What this means is you can write very
+plain, basic HTML forms in the template and HTML::FillInForm will make them sticky.
+
+The other way to have sticky forms is to use the CGI.pm module (which can be used directly
+with Template-Toolkit).  Besides requiring that the large CGI.pm module gets loaded, it
+means there's more programming-like code in the template, which should really just be
+basic HTML, and means the template writer needs to also learn a little more Perl.
+
+
+=back
+
+=head1 SUPPORT
+
+Not much support is provided.  But what support is provided is ONLY provided via
+the Swish-e discussion list.
+
+    http://swish-e.org/
+
+
+=head1 AUTHOR
+
+Bill Moseley
+
+=head1 LICENSE
+
+Copyright 2003 Bill Moseley.  All rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=head1 SEE ALSO
+
+L<SWISH::API>,  L<Template>, L<HTML::FillInForm>
+
+
+
+
+
+
+
+
+
