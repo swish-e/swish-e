@@ -212,7 +212,13 @@ struct MOD_Index *idx = sw->Index;
         progerr("Internal error in compress_location routine");
 
         /* Swap location info to file */
-    q=(unsigned char *)SwapLocData(sw,++p,i);
+	if(RAM_DISK) {
+		q=(unsigned char *)SwapLocData(sw,++p,i);
+	}
+	else {
+		q=(unsigned char *)emalloc(i);
+		memcpy(q,++p,i);
+	}
     efree(l);
     return (unsigned char *)q;
 }
