@@ -32,10 +32,29 @@
 #				because of unannounced api change. reverting to .13
 #			--errlog option; errors now print to stderr instead of to log by default
 #			SWISHBIN replaced by SWISHBINDIR for making SWISH::API
-#			--perllib to indicate specific install dir, otherwise defaults to perl Config
+#			--perllib to indicate specific install dir, 
+#				otherwise defaults to perl Config
 #			usage fixes
 #
+#	0.07	Wed Dec  8 15:25:57 CST 2004
+#			added xpdf to build (mostly for CrayDoc)
+#			fixed get src logic (again)
+#			standardized swish,swish-e,swishe debacle
+#			remember CWD from where we start so relative paths are resolved from opts
+#			zlib update
+#			changed libxml2 back to .16 to support 2.4.3 fix
+#			added swish_api_dir to determine where exactly 
+#				the swish::api mod is installed
+#			use File::Basename
+#			assuming >=2.4.3 is now latest.
+#			all 3rdparty stuff now has 'latest' URL (thanks to developers!)
+#			changed default ld_opts to same as Linux, et al.
+#			fixed SWISH::API LIBS and LDFLAGS opt to work on Solaris
+#			unset LD_LIBRARY_PATH env var to accurately test linking
+#
+#
 ################################################################################
+
 $| = 1;
 
 use strict;
@@ -43,23 +62,30 @@ require 5.006;	# might work with < perl 5.6.0 but untested
 use sigtrap qw(die normal-signals error-signals);
 use Getopt::Long;
 use Config qw( %Config );
+use Cwd;
+use File::Basename;
 use File::Path qw( mkpath );
-use FindBin qw($Bin);
+use File::Spec;
+use FindBin qw( $Bin );
 
-my $Version 	= '0.06';
-
-# there must be a better way to dynamically retrieve the latest version
-# of a sw package, other than hardcoding urls. help?
+my $Version 	= '0.07';
 
 my %URLs	= (
 
 'swish-e' 	=> 'http://swish-e.org/Download/latest.tar.gz',
-'zlib'		=> 'http://www.zlib.net/zlib-1.2.1.tar.gz',
-'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.13.tar.gz',
+'zlib'		=> 'http://www.zlib.net/zlib-1.2.2.tar.gz',
+# madler@alumni.caltech.edu assures me that zlib will support a
+# http://www.zlib.net/zlib-current.tar.gz link ...
+
+'libxml2'	=> 'http://xmlsoft.org/sources/LATEST_LIBXML2',
+'xpdf'		=> 'http://www.cray.com/craydoc/src/xpdf-3.01.tar.gz',
+#'xpdf'		=> 'ftp://ftp.foolabs.com/pub/xpdf/xpdf-current.tar.gz',
+
+# NOTE that official xpdf needs patch to 3.01!
+# CrayDoc version is pre-patched.
 
 );
 
-$URLs{'swishe'} = $URLs{'swish-e'};	# common misspelling...
 
 my $swish_cvs 	= ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/swishe';
 my $cvs_cmd 	= "cvs -q -d$swish_cvs co swish-e";
@@ -76,7 +102,7 @@ my $allopts =
         
 	'quiet'		=> "run non-interactively",
 	'cvs'		=> "use latest CVS version of SWISH-E",
-	'swish|swish-e|swishe=s'	=> "use <X> as SWISH-E source -- either URL, tar.gz or directory",
+	'swish-e=s'	=> "use <X> as SWISH-E source -- either URL, tar.gz or directory",
 	'libxml2=s'	=> "use <X> as libxml2 source -- either URL, tar.gz or directory",
 	'zlib=s'	=> "use <X> as zlib source -- either URL, tar.gz or directory",
 	'prevzlib=s'	=> "use already-installed zlib in directory <X>",
@@ -84,17 +110,23 @@ my $allopts =
 	'installdir=s'	=> "install in <X> [$defdir]",
 	'verbose'	=> "don't send compiler output to log, send it to stdout",
 	'srcdir=s'	=> "look in <X> for all src tar.gz files [./]",
-	'tmpdir=s'	=> "use <X> to compile and test [$deftmp]",
+	'tmpdir=s'	=> "use <X> to unpack tar files, compile and test [$deftmp]",
 	'help'		=> "print usage statement",
 	'opts'		=> "print options and description",
 	'force'		=> "install zlib and libxml2 no matter what",
 	'debug'		=> "lots of on-screen verbage",
-	'sudo'      => "run 'make' commands with sudo\n".' 'x$usage_gutter."!! must be interactive if sudo expects a password !!",
-	'static'	=> "build with static library paths",
+	'sudo'      => "run 'make' commands with sudo\n"
+				.' 'x$usage_gutter.
+				"!! must be interactive if sudo expects a password !!",
+	'static'	=> "build with --disable-shared flag",
 	'progress'	=> "with --quiet, will print a few important progress messages to stdout",
 	'make=s'	=> "use <X> as make command (useful if your GNU make is named gmake)",
 	'errlog=s'	=> 'write build errors to <X> file instead of stderr',
-	'perllib=s'	=> "install SWISH::API in <X>\n".' 'x$usage_gutter."[ $Config{sitearch} ]",
+	'perllib=s'	=> "install SWISH::API in <X>\n".
+				' 'x$usage_gutter.
+				"[ $Config{sitearch} ]",
+	'xpdf=s'	=> 'use <X> as xpdf source -- either URL, tar.gz or directory',
+	'noxpdf'	=> "don't install xpdf",
 	
 };
 
@@ -121,7 +153,7 @@ use vars qw(
 		$outlog $errlog $output $ld_opts $Cout $Cin
 		$zlib_test $libxml2_test $ld_test $gcc_test
 		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
-		$Make
+		$Make $startdir $swish_api_dir
 		
 		);
 
@@ -131,7 +163,9 @@ $libxml2dir	= $opts->{prevxml2} || '';
 
 # some defaults
 $installdir = $opts->{installdir} || $defdir;
+$installdir =~ s,/+$,,;
 
+$startdir 	= Cwd::cwd();
 $MinLibxml2	= '2.4.3';	# this is same as in swish-2.4.2 -- sync it better than this.
 $nogcc 		= "I refuse to compile without gcc\nCheck out http://gcc.gnu.org\n";
 $min_gcc 	= '2.95';
@@ -218,14 +252,20 @@ sanity();
 
 my %routines = (
 
-	libxml2		=> \&libxml2,
-	zlib		=> \&zlib,
-	swish		=> \&swishe,
-	'swish::api'	=> \&swish_api
+	libxml2         => \&libxml2,
+	zlib            => \&zlib,
+	'swish-e'       => \&swishe,
+	'swish::api'    => \&swish_api,
+	xpdf            => \&xpdf,
 	
 	);
 	
-for ( qw( zlib libxml2 swish swish::api ) ) {
+my @toinstall = qw( zlib libxml2 swish-e swish::api );	# order matters
+	
+push(@toinstall,'xpdf') unless $opts->{noxpdf};
+	
+for ( @toinstall )
+{
 
 	my $prevout;
 	if ( $opts->{progress} ) {
@@ -306,6 +346,7 @@ sub checkenv
 	print "os... $os\n";
 	print "arch... $arch\n";
 	print "cc... $cc\n";
+	print "opt: $_ -> $opts->{$_}\n" for sort keys %$opts;
     }
     
 	system("rm -f $outlog $errlog");	# so we start afresh
@@ -341,7 +382,7 @@ sub sanity
 	
 	}
 	
-	if ( ! $opts->{quiet} ) {
+	unless ( $opts->{quiet} ) {
 	
 		print "Continue on our merry way? [y] ";
 		nice_exit() if ! confirm();
@@ -377,7 +418,7 @@ sub test_c_prog
 	
 		chomp( my $o = `$Cout` );
 		
-		if ($o lt $$test) {
+		if ($o lt $$test) {	# this fails dotted versions like 2.4.23 !!
 			
 			print $o . "\n";
 			
@@ -401,7 +442,7 @@ sub test_for_prior_zlib
 	return undef if $opts->{force};
 	
 	print "testing for already-installed zlib... "; 
-	return get_ld_path('libz', '', \$zlibdir) if ! test_c_prog( $zlib_test, '-lz' );
+	return get_ld_path('libz', '', \$zlibdir) unless test_c_prog( $zlib_test, '-lz' );
 	
 }
 
@@ -414,25 +455,27 @@ sub test_for_prior_libxml2
 	
 # first include -lxml2 and see if it returns a path
 
-# include $installdir in -I path, since we may be a repeat user
-
 	my $path = get_ld_path('libxml2', '', \$libxml2dir)
-	  if ! test_c_prog( $ld_test,
-	  		    $ld_opts,
-			    #"-Wl,$installdir/include/libxml2 -L$installdir/include/libxml2",
+	  unless test_c_prog(
+	  			$ld_test,
+				$ld_opts,
 			    '-lxml2' );
 
 # then check version with xmlversion.h
 
-	return 0 if ! $path;
+	return 0 unless $path;
 	
 	print "minimum libxml2 version required is $MinLibxml2 and you have... ";
 	return get_ld_path('libxml2', '', \$libxml2dir)
-	  if ! test_c_prog( $libxml2_test,
-	  		    "-I$path/include/libxml2",
+	# include $installdir in -I path, since we may be a repeat user
+	  unless test_c_prog(
+	  			$libxml2_test,
+				'-I'. File::Spec->catfile( $installdir, 'include', 'libxml2' ),
+	  		    '-I'. File::Spec->catfile( $path, 'include', 'libxml2' ),
 			    $ld_opts,
 			    '-lxml2',
-			    \$MinLibxml2 );
+			    \$MinLibxml2
+				);
 	  
 	
 }
@@ -442,7 +485,7 @@ sub cleanup
 {
 
 	print STDOUT "swish-e was installed in $installdir\n";
-	print STDOUT "SWISH::API was installed in $installdir/lib/$arch\n";
+	print STDOUT "SWISH::API was installed in $swish_api_dir\n";
 
 }
 
@@ -572,11 +615,21 @@ sub ld_opts
 # might go anywhere at all. and while some OSes use LD_RUN_PATH, some do not.
 # we try and cover all the bases here.
 
-	my @path = ( "$installdir/lib", $installdir, $libxml2dir, $zlibdir );
+# both set env var LD_RUN_PATH and pass it at configure time
+
+	my @path = ( File::Spec->catfile($installdir, 'lib'),
+				 $installdir, $libxml2dir, $zlibdir );
+	
+	my %uniq = ();
+	$uniq{$_}++ for @path;
 	
 	$ENV{LD_RUN_PATH} ||= '.';
 	
-	$ENV{LD_RUN_PATH} = join(':', grep { /./ } @path, $ENV{LD_RUN_PATH});
+	$ENV{LD_RUN_PATH} = join(':', grep { /./ } keys %uniq, $ENV{LD_RUN_PATH});
+	
+	
+# unset LD_LIBRARY_PATH for this script, so that tests accurately reflect what we've linked
+	$ENV{LD_LIBRARY_PATH} = '';
 	
 	
 # Darwin (Mac OS X) requirements
@@ -595,6 +648,8 @@ sub ld_opts
 		$ld_opts = 	"-Wl,-L" . 
 				join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
 		
+	# special irix req
+		
 		$ENV{LD_LIBRARYN32_PATH} = $ENV{LD_RUN_PATH};
 		
 		
@@ -602,6 +657,8 @@ sub ld_opts
 	} elsif ($os =~ /sun|sol/i) {
 		$ld_opts = "-Wl,-rpath -Wl,$ENV{LD_RUN_PATH} -L$ENV{LD_RUN_PATH}";
 		
+		#$ld_opts = 	"-Wl,-L" . 
+		#		join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
 		
 		
 # linux
@@ -617,11 +674,14 @@ sub ld_opts
 		#$ld_opts = 	'-Wl,-rpath ' .
 		#		"-Wl,$ENV{LD_RUN_PATH} -L$ENV{LD_RUN_PATH}";
 				
-		$ld_opts = 	'-Wl,-rpath';
-		for ( split(/:/,$ENV{LD_RUN_PATH}) ) {
-			$ld_opts .= " -Wl,$_ -L$_ ";
-		}
+#		$ld_opts = 	'-Wl,-rpath';
+#		for ( split(/:/,$ENV{LD_RUN_PATH}) ) {
+#			$ld_opts .= " -Wl,$_ -L$_ ";
+#		}
 	
+		$ld_opts = 	"-Wl,-L" . 
+			join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
+
 		
 	}
 	if ($opts->{debug}) {
@@ -708,8 +768,13 @@ sub get_src
 
 	my $sw = shift;
 
-	chdir( $Bin );	# start in same dir where this script was called from
-					# since that might be swish src dir
+	my $src;	# will ultimately be a directory path to sw src
+	
+	# check tmpdir first since that's where we download via http
+	
+  DIR: for my $Dir ( $tmpdir, $startdir, $Bin ) {
+   
+	chdir( $Dir );
 		
 # several scenarios
 # 1. srcdir indicates dir to look in for tar.gz files
@@ -717,11 +782,11 @@ sub get_src
 # 3. --sw=file.tar.gz with no srcdir base
 # 4. no --srcdir and no --sw [ this is default ]
 	
-	my $src;	# will ultimately be a directory path to sw src
-	
 	if ( $opts->{srcdir} and ! $opts->{$sw} ) {
 	
 		my $dir = $opts->{srcdir};
+		
+		$dir = File::Spec->catfile( $startdir, $dir ) if $dir !~ m!^/!;
 		
 		print "looking in $dir for $sw|latest.*tar.gz\n";
 		
@@ -735,23 +800,38 @@ sub get_src
 			
 				$dir .= "/$f";
 				$found++;
+				last;
 			}
 			
 		}
 		closedir(DIR);
+		
+		$dir = File::Spec->canonpath( $dir );
 		
 		if ($found) {
 			print "Found $dir\n";
 			print "Shall I use that? [y] ";
 			nice_exit() unless confirm();
 			$src = $dir;
+			last DIR;
 		}
 	
 	} elsif ( $opts->{srcdir} and $opts->{$sw} ) {
 	
 	# --sw could be a file or a dir; we trust the user
+	# we might also have specified a file IN srcdir
+	# so try and allow for both
 	
-		$src = join '/', $opts->{srcdir}, $opts->{$sw};
+		my $full = File::Spec->catfile( $opts->{srcdir}, $opts->{$sw} );
+		unless ( -e $full ) {
+		
+			$src = $opts->{$sw}; # use exactly what user said
+			
+		} else {
+		
+			$src = $full;	# combine --srcdir and --sw
+			
+		}
 	
 	
 	} elsif ( $opts->{$sw} ) {
@@ -766,27 +846,29 @@ sub get_src
 	
 	}
 	
+	next DIR unless $src;
 	
-	my ($bare) = ( $src =~ m/^.*\/(.*)/ );
+	my ($bare,$path) = fileparse( $src );
 	
 	if ($opts->{debug}) {
 	
 		print "sw was $sw\n";
 		print "src looks like $src\n";
 		print "bare looks like $bare\n";
+		print "path looks like $path\n";
 		
 	}
 	
 	
 # now check on readability of what we've deduced
 
-	if ( -r "$Bin/$bare"  and $src =~ m!^http://! ) {
+	if ( -r "$Dir/$bare"  and $src =~ m!^http://! ) {
 	# use local cached version if it's here
 	
-		print "Found local copy of $bare in $Bin.\n";
+		print "Found local copy of $bare in $Dir.\n";
 		print "Should I use that instead of downloading? [y] ";
 		
-		$src = "$Bin/$bare" if confirm();
+		$src = "$Dir/$bare" if confirm();
 
 	}
 
@@ -818,7 +900,10 @@ sub get_src
 	} elsif ( $src =~ m/http:/ ) {
 	
 	# fetch it
-		print "fetching $sw -> $src\n";
+	
+		chdir( $tmpdir );
+	
+		print "fetching $src -> $tmpdir/$bare\n";
 		
 		if (ref $fetcher eq 'CODE') {
 		
@@ -840,7 +925,7 @@ sub get_src
 			
 		}
 		
-		$src = "$Bin/$bare";	# default is to download to same dir where we run script
+		$src = "$tmpdir/$bare";
 	
 	
 	} else {
@@ -851,9 +936,14 @@ sub get_src
 		
 	}
 	
+	# if we found something, don't look again
+	last DIR if $src && -r $src;
+	
+  }
+	
 # at this point, $src should be either a dir or a tar.gz file
 	
-	return -d $src ? $src : decompress( $src );
+	return -d $src ? File::Spec->canonpath( $src ) : decompress( $src );
 
 }
 
@@ -872,7 +962,8 @@ sub test_make
 {
 	print "testing $Make ...  ";
 	my @o = `$Make -v`;
-	if (! grep { /GNU Make version 3\.(7|8)/ } @o) {
+	unless ( grep { /GNU\b.*\ 3\.(7|8)/ } @o)
+	{
 		warn "we've only tested with GNU make version 3.79 or higher\n";
 		warn "you've got " . shift @o;
 	} else {
@@ -890,7 +981,6 @@ sub configure
 	#print "I'm in ";
 	#system("pwd");
 	my $arg = join(' ',@_) || '';
-	$arg .= " --disable-shared " if $opts->{static};
 	my $conf = "./configure --prefix=$installdir $arg $output";
 	print "configuring with:\n$conf\n";
 	nice_exit() if system($conf);
@@ -921,8 +1011,8 @@ sub make_test
 	my $c = shift || "$Make test";
 	print "running $c ...\n";
 	if ( system("$c $output") ) {
-		warn "\aWARNING: $c failed\n";
-		warn "make install should run anyway but results are unpredictable.\n";
+		warn "\aWARNING: $c failed!!\n";
+		warn "make install will run anyway but results are unpredictable.\n";
 	}
 	
 	1;	# always return true from make test so make install will work
@@ -953,6 +1043,14 @@ sub decompress
 	
 # unpack in the tmpdir
 	chdir($tmpdir);
+	
+	unless ( -f $f and -r $f ) {
+	
+		warn "can't read $f: $!\n";
+		nice_exit();
+		
+	}
+	
 	#print "I'm in ";
 	#system('pwd');
 	my $c = "gunzip -c $f | tar xvf -";
@@ -980,11 +1078,12 @@ sub zlib
 
    my $dir = get_src( 'zlib' );
    chdir($dir) || die "can't chdir to $dir: $!\n";
-   configure();
+   configure( );
    make();
    make_test();
 # these seem to be ignored at ./configure time??
-   my @arg = (	"includedir=$installdir/include",
+   my @arg = (
+		"includedir=$installdir/include",
    		"libdir=$installdir/lib",
 		"mandir=$installdir/man"
 		);
@@ -1005,11 +1104,31 @@ sub libxml2
 	
 	my $dir = get_src( 'libxml2' );
 	chdir($dir) || die "can't chdir to $dir: $!\n";
-	configure("LDFLAGS='$ld_opts'");
+	
+	my @arg = ( "LDFLAGS='$ld_opts'" );
+	push(@arg, " --disable-shared ") if $opts->{static};
+	configure( @arg );
+	
+	make( );
+	make_test( );
+	make_install( );
+	
+	$libxml2dir = $installdir;
+	
+}
+
+sub xpdf
+{
+	
+	my $dir = get_src( 'xpdf' );
+	chdir($dir) || die "can't chdir to $dir: $!\n";
+	my @arg = ( "LDFLAGS='$ld_opts'" );
+	push(@arg, " --disable-shared ") if $opts->{static};
+
+	configure( @arg );
 	make();
 	make_test();
 	make_install();
-	$libxml2dir = $installdir;
 	
 }
 
@@ -1017,6 +1136,10 @@ sub libxml2
 sub swishe
 {
 
+# --swishe trumps all
+# else if we've specified --cvs, download latest.
+# else check if script was run from a src dir.
+# if all else fails, use the get_src() function to locate it.
 	
 	chdir( $Bin );	# back to where we started
 	print "we're in " . `pwd` if $opts->{debug};
@@ -1067,6 +1190,8 @@ sub swishe
 			"LDFLAGS='$ld_opts'",
 			"CPPFLAGS='-I$zlibdir/include -I$libxml2dir/include'",
 			);
+			
+	push(@arg, " --disable-shared ") if $opts->{static};
 
 	configure(@arg);
 	make();
@@ -1079,28 +1204,41 @@ sub swishe
 sub swish_api
 {
 	chdir("$swishdir/perl");
-	my $arg = join ' ', (	
-				"PREFIX=$installdir",
-				#"LIB=$installdir/lib",
-				"LIBS='-L$installdir/lib -lswish-e -lz'",
-				"LDFLAGS='-L$installdir'",
+	my @a = (	
+				# solaris needs the -R
+				# linux, et al, do not
+				
+				"LIBS='-L$installdir/lib -R$installdir/lib -lswish-e -lz'",
+				"LDFLAGS='-L$installdir/lib'",
+				#LDFLAGS seems to be ignored by MakeMaker...
 				"CCFLAGS='-I$installdir/include'"
 				);
 				
-	$arg .= $opts->{perllib} ? ' LIB='. $opts->{perllib} : '';
+	if ( $opts->{perllib} )
+	{
+	
+		push(@a,
+			'LIB='.$opts->{perllib},
+			'PREFIX='.$opts->{perllib}
+			);
+		
+	}
+	
+	my $arg = join ' ', @a;
 				
 	$ENV{SWISHBINDIR} = "$installdir/bin";
+	
+	my $cmd = $swishdir =~ m/2\.4\.[12]/
+	  ? "$^X Makefile.PL $arg"
+	  : "$^X Makefile.PL $arg $output";
+
 	
 	print "env SWISHBINDIR set to '$installdir/bin'\n";
 	print "configuring with:\n";
 	print "$^X Makefile.PL $arg\n";
-				
-	# once 2.4.3 becomes 'latest' we can use $output on this Makefile.PL
-	# call since that should support SWISHBINDIR by default
-	# and we'll no longer need to see stdout.
-				
-	#nice_exit() if system("$^X Makefile.PL $arg $output");
-	nice_exit() if system("$^X Makefile.PL $arg");
+																
+	nice_exit() if system( $cmd );
+	# pre-2.4.3 versions need to be interactive
 	make();
 	make_test();
 	make_install();
@@ -1112,13 +1250,33 @@ sub test_api
 {
 
 # load SWISH::API
-	delete $ENV{PERL5LIB};	# just in case we have it somewhere else...
-	my $inc = "-I$installdir/lib -I$installdir/lib/$arch";
-	nice_exit() if system("$^X $inc -MSWISH::API -e '\$c = new SWISH::API(\"foo\")'");
+	print '=' x 60 . "\n";
+	print "testing SWISH::API now that we've installed it.\n";
+	print '~' x 60 . "\n";
 	
+	my $vers = sprintf("%vd", $^V);
+
+	delete $ENV{PERL5LIB};	# just in case we have it somewhere else...
+	my $inc = '';
+	if ( $opts->{perllib} ) {
+		$inc = join ' ',
+			"-I" . File::Spec->catfile( $opts->{perllib}, $vers, $arch ).
+			"-I" . File::Spec->catfile( $opts->{perllib}, 'site_perl', $vers, $arch ),
+			"-I" . File::Spec->catfile( $opts->{perllib}, $arch );
+	}
+		
+	my $cmd = "$^X $inc -MSWISH::API -e '\$c = new SWISH::API(\"foo\")'";
+		
+	print "cmd: $cmd\n" if $opts->{debug};
+		
+	nice_exit() if system( $cmd );
+	
+	$swish_api_dir = `$^X $inc -MSWISH::API -e 'print \$INC{"SWISH/API.pm"}'`;
+	
+	print "looks good.\n";
+	
+	1;
 }
-
-
 
 
 
@@ -1169,10 +1327,6 @@ of Unix and Linux.
  ldd (or otool for Darwin)
  
 =head1 TODO
-
-A better way to get latest version of zlib and libxml2. Right now
-the version numbers are hardcoded, or you must know them and pass as options.
-Is there a way to query the websites for this?
 
 A good test suite for SWISH-E.
 
