@@ -1514,7 +1514,7 @@ Examples:
 
     Buzzwords C++ TCP/IP
 
-    Buzzwords File:./buzzwords.lst
+    Buzzwords File: ./buzzwords.lst
 
 If a Buzzword contains search operator characters they must be backslashed when searching.
 For example:
@@ -1544,7 +1544,7 @@ Examples:
 
     IgnoreWords www http a an the of and or
 
-    IgnoreWords File:./stopwords.de
+    IgnoreWords File: ./stopwords.de
 
 =item UseWords [*list of words*|File: path]
 
