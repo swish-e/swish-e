@@ -56,11 +56,11 @@
                 <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
 
                 <TMPL_IF PREV_COUNT>
-                    <a href="<TMPL_VAR QUERY_HREF>;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
+                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
                 </TMPL_IF>
                 
                 <TMPL_IF NEXT>
-                    <a href="<TMPL_VAR QUERY_HREF>;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
+                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
                 </TMPL_IF>
                 <p>
 
@@ -94,11 +94,11 @@
                 <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
 
                 <TMPL_IF PREV_COUNT>
-                    <a href="<TMPL_VAR MY_URL>?query=<TMPL_VAR QUERY_HREF>;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
+                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
                 </TMPL_IF>
                 
                 <TMPL_IF NEXT>
-                    <a href="<TMPL_VAR MY_URL>?query=<TMPL_VAR QUERY_HREF>;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
+                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
                 </TMPL_IF>
 
                 
