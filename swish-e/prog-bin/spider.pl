@@ -38,7 +38,12 @@ use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
     use vars '@servers';
 
     my $config = shift || 'SwishSpiderConfig.pl';
-    do $config or die "Failed to read $0 configuration parameters '$config' $! $@";
+
+    if ( lc( $config ) eq 'default' ) {
+        @servers = default_urls();
+    } else {
+        do $config or die "Failed to read $0 configuration parameters '$config' $! $@";
+    }
 
 
     print STDERR "$0: Reading parameters from '$config'\n";
@@ -547,6 +552,31 @@ sub commify {
     return $_;
 }
 
+sub default_urls {
+    die "$0: Must list URLs when using 'default'\n" unless @ARGV;
+
+    return map {
+        {
+            base_url        => $_,
+            email           => 'swish@domain.invalid',
+            delay_min       => .0001,
+            link_tags       => [qw/ a frame /],
+
+            test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|.png)$/i },
+
+            test_response   => sub {
+                my $content_type = $_[2]->content_type;
+                my $ok = grep { $_ eq $content_type } qw{ text/html text/plain };
+                return 1 if $ok;
+                print STDERR "$_[0] wrong content type ( $content_type )\n";
+                return;
+            }
+        }
+    } @ARGV;
+}
+
+            
+
 __END__
 
 =head1 NAME
@@ -659,6 +689,19 @@ program will receive as its first parameter C</path/to/config.pl>, and
 spider.pl will read C</path/to/config.pl> to get the spider configuration
 settings.  If C<SwishProgParameters> is not set, the program will try to
 use C<SwishSpiderConfig.pl>.
+
+There is a special case of:
+
+    SwishProgParameters default http://www.mysite/index.html ...
+
+Where default parameters are used.  This will only index documents of type
+C<text/html> or C<text/plain>, and will skip any file with an extension that matches
+the pattern:
+
+    /\.(?:gif|jpeg|.png)$/i
+
+This can be useful for indexing just your web documnts, but you will probably want finer
+control over your spidering by using a configuration file.
 
 The configuration file must set a global variable C<@servers> (in package main).
 Each element in C<@servers> is a reference to a hash.  The elements of the has

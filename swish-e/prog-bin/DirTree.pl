@@ -17,18 +17,18 @@ use pdf2xml;     # example module for pdf to xml conversion
 use constant DEBUG => 0;
 
 
-my $dir = shift || '.';
-
 find(
     {
         wanted => \&wanted,
         no_chdir => 1,
     },
-    $dir,
+    @ARGV,
 );
 
 sub wanted {
     return if -d;
+
+    return unless /\.pdf$/;
 
     if ( /\.pdf$/ ) {
         print STDERR "Indexing pdf $File::Find::name\n" if DEBUG;
