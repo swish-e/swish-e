@@ -42,50 +42,50 @@
 #include "parse_conffile.h"
 
 
-#define MAXKEYLEN 34 /* Hash key -- allow for 64 bit inodes */
+#define MAXKEYLEN 34            /* Hash key -- allow for 64 bit inodes */
 
 /* Have we already indexed a file or directory?
 ** This function is used to avoid multiple index entries
 ** or endless looping due to symbolic links.
 */
 
-int fs_already_indexed(SWISH *sw,char *path)
+int     fs_already_indexed(SWISH * sw, char *path)
 {
 #ifndef NO_SYMBOLIC_FILE_LINKS
-	struct dev_ino *p;
-	struct stat buf;
-	char key[MAXKEYLEN];     /* Hash key -- allow for 64 bit inodes */
-	unsigned hashval;
+    struct dev_ino *p;
+    struct stat buf;
+    char    key[MAXKEYLEN];     /* Hash key -- allow for 64 bit inodes */
+    unsigned hashval;
 
-	if ( stat( path, &buf ) )
-		return 0;
-	
-	/* Create hash key:  string contains device and inode. */
-	/* Avoid snprintf -> MAXKEYLEN is big enough for two longs
-	snprintf( key, MAXKEYLEN, "%lx/%lx", (unsigned long)buf.st_dev,
-		(unsigned long)buf.st_ino  );
-	*/
-	sprintf( key, "%lx/%lx", (unsigned long)buf.st_dev, (unsigned long)buf.st_ino  );
-	
-	hashval = bighash(key); /* Search hash for this file. */
-	for ( p = sw->inode_hash[hashval]; p != NULL; p = p->next )
-		if ( p->dev == buf.st_dev &&
-		p->ino == buf.st_ino    )
-	{                               /* We found it. */
-		if ( sw->verbose >= 3 )
-			printf( "Skipping %s:  %s\n",path,"Already indexed." );
-		return 1;
-	}
-	
-	/* Not found, make new entry. */
-	p = (struct dev_ino*)emalloc(sizeof(struct dev_ino));
-	p->dev = buf.st_dev;
-	p->ino = buf.st_ino;
-	p->next = sw->inode_hash[hashval];
-	sw->inode_hash[hashval] = p;
+    if (stat(path, &buf))
+        return 0;
+
+    /* Create hash key:  string contains device and inode. */
+    /* Avoid snprintf -> MAXKEYLEN is big enough for two longs
+       snprintf( key, MAXKEYLEN, "%lx/%lx", (unsigned long)buf.st_dev,
+       (unsigned long)buf.st_ino  );
+     */
+    sprintf(key, "%lx/%lx", (unsigned long) buf.st_dev, (unsigned long) buf.st_ino);
+
+    hashval = bighash(key);     /* Search hash for this file. */
+    for (p = sw->inode_hash[hashval]; p != NULL; p = p->next)
+        if (p->dev == buf.st_dev && p->ino == buf.st_ino)
+        {                       /* We found it. */
+            if (sw->verbose >= 3)
+                printf("Skipping %s:  %s\n", path, "Already indexed.");
+            return 1;
+        }
+
+    /* Not found, make new entry. */
+    p = (struct dev_ino *) emalloc(sizeof(struct dev_ino));
+
+    p->dev = buf.st_dev;
+    p->ino = buf.st_ino;
+    p->next = sw->inode_hash[hashval];
+    sw->inode_hash[hashval] = p;
 #endif
 
-	return 0;
+    return 0;
 }
 
 
@@ -93,260 +93,287 @@ int fs_already_indexed(SWISH *sw,char *path)
 ** functions for each file that's found.
 */
 
-void indexadir(SWISH *sw,char *dir)
+void    indexadir(SWISH * sw, char *dir)
 {
-int badfile;
-DIR *dfd;
+    int     badfile;
+    DIR    *dfd;
+
 #ifdef NEXTSTEP
-struct direct *dp;
+    struct direct *dp;
 #else
-struct dirent *dp;
+    struct dirent *dp;
 #endif
-int lens;
-char *s;
-DOCENTRYARRAY *sortfilelist, *sortdirlist;
-struct swline *tmplist;
-int ilen1,ilen2;
-	
-	sortfilelist = sortdirlist = NULL;
+    int     lens;
+    char   *s;
+    DOCENTRYARRAY *sortfilelist,
+           *sortdirlist;
+    struct swline *tmplist;
+    int     ilen1,
+            ilen2;
 
-	if ( !sw->followsymlinks && islink(dir) )
-		return;
+    sortfilelist = sortdirlist = NULL;
 
-	if ( fs_already_indexed(sw, dir) )
-		return;
+    if (!sw->followsymlinks && islink(dir))
+        return;
 
-	if (dir[strlen(dir) - 1] == '/')
-		dir[strlen(dir) - 1] = '\0';
-	
+    if (fs_already_indexed(sw, dir))
+        return;
+
+    if (dir[strlen(dir) - 1] == '/')
+        dir[strlen(dir) - 1] = '\0';
+
 
     /* Handle "FileRules directory contains" directive */
 
-    if ( sw->dirconlist != NULL ) {
+    if (sw->dirconlist != NULL)
+    {
         if ((dfd = opendir(dir)) == NULL)
-		    return;
+            return;
 
         badfile = 0;
 
-        while ((dp = readdir(dfd)) != NULL) {
-		    tmplist = sw->dirconlist;
-		    while (tmplist != NULL) {
-			    if (matchARegex(dp->d_name, tmplist->line)) {
-				    badfile = 1;
-				    break;
-			    }
-			    tmplist = tmplist->next;
-		    }
-		    if (badfile) {
-		        closedir(dfd);
-			    return;
-			}
+        while ((dp = readdir(dfd)) != NULL)
+        {
+            tmplist = sw->dirconlist;
+            while (tmplist != NULL)
+            {
+                if (matchARegex(dp->d_name, tmplist->line))
+                {
+                    badfile = 1;
+                    break;
+                }
+                tmplist = tmplist->next;
+            }
+            if (badfile)
+            {
+                closedir(dfd);
+                return;
+            }
         }
-    	closedir(dfd);
-	}
+        closedir(dfd);
+    }
 
-	s=(char *)emalloc((lens=MAXFILELEN) + 1);
+    s = (char *) emalloc((lens = MAXFILELEN) + 1);
 
-	if ((dfd = opendir(dir)) == NULL)
-		return;
-	
-	while ((dp = readdir(dfd)) != NULL) {
-		
-		if ((dp->d_name)[0] == '.')
-			continue;
+    if ((dfd = opendir(dir)) == NULL)
+        return;
+
+    while ((dp = readdir(dfd)) != NULL)
+    {
+
+        if ((dp->d_name)[0] == '.')
+            continue;
 
         /* This is stating the file name not the path, and is checked later on.
-		* if ( !sw->followsymlinks && islink(dp->d_name) )
-		*	continue;
-		*/	
+           * if ( !sw->followsymlinks && islink(dp->d_name) )
+           * continue;
+         */
 
         /* Handle "FileRules filename is" */
-		badfile = 0;
-		tmplist = sw->fileislist;
-		while (tmplist != NULL) {
-			if (matchARegex(dp->d_name, tmplist->line)) {
-				badfile = 1;
-				break;
-			}
-			tmplist = tmplist->next;
-		}
-		if (badfile)
-			continue;
+        badfile = 0;
+        tmplist = sw->fileislist;
+        while (tmplist != NULL)
+        {
+            if (matchARegex(dp->d_name, tmplist->line))
+            {
+                badfile = 1;
+                break;
+            }
+            tmplist = tmplist->next;
+        }
+        if (badfile)
+            continue;
 
-		/* Handle "FileRules filename contains" */
-		badfile = 0;
-		tmplist = sw->fileconlist;
-		while (tmplist != NULL) {
-			if (matchARegex(dp->d_name, tmplist->line)) {
-				badfile = 1;
-				break;
-			}
-			tmplist = tmplist->next;
-		}
-		if (badfile)
-			continue;
+        /* Handle "FileRules filename contains" */
+        badfile = 0;
+        tmplist = sw->fileconlist;
+        while (tmplist != NULL)
+        {
+            if (matchARegex(dp->d_name, tmplist->line))
+            {
+                badfile = 1;
+                break;
+            }
+            tmplist = tmplist->next;
+        }
+        if (badfile)
+            continue;
 
-		/* Build full path to file */	
+        /* Build full path to file */
 
-		ilen1=strlen(dir);
-		ilen2=strlen(dp->d_name);
-		if((ilen1 + 1 + ilen2)>=lens) {
-			lens=ilen1 + 1 + ilen2 + 200;
-			s=(char *)erealloc(s,lens+1);
-		}
-		memcpy(s,dir,ilen1);
-		if(dir[ilen1 - 1] != '/') s[ilen1++]='/';
-		memcpy(s+ilen1,dp->d_name,ilen2);
-		s[ilen1+ilen2]='\0';
+        ilen1 = strlen(dir);
+        ilen2 = strlen(dp->d_name);
+        if ((ilen1 + 1 + ilen2) >= lens)
+        {
+            lens = ilen1 + 1 + ilen2 + 200;
+            s = (char *) erealloc(s, lens + 1);
+        }
+        memcpy(s, dir, ilen1);
+        if (dir[ilen1 - 1] != '/')
+            s[ilen1++] = '/';
+        memcpy(s + ilen1, dp->d_name, ilen2);
+        s[ilen1 + ilen2] = '\0';
 
         /* Check if the path is a symlink */
-		if ( !sw->followsymlinks && islink(s) )
-			continue;
+        if (!sw->followsymlinks && islink(s))
+            continue;
 
 
-		/* FileRules pathname contains */
-		badfile = 0;
-		tmplist = sw->pathconlist;
-		while (tmplist != NULL) {
-			if (matchARegex(s, tmplist->line)) {
-				badfile = 1;
-				break;
-			}
-			tmplist = tmplist->next;
-		}
-		if (badfile)
-			continue;
+        /* FileRules pathname contains */
+        badfile = 0;
+        tmplist = sw->pathconlist;
+        while (tmplist != NULL)
+        {
+            if (matchARegex(s, tmplist->line))
+            {
+                badfile = 1;
+                break;
+            }
+            tmplist = tmplist->next;
+        }
+        if (badfile)
+            continue;
 
-		if (!isdirectory(s)) {
-			if ( fs_already_indexed(sw, s) )
-				continue;
-		
-			if (!isoksuffix(dp->d_name, sw->suffixlist))
-				continue; 
-			
-			sortfilelist = (DOCENTRYARRAY *)
-				addsortentry(sortfilelist, s);
-		}
-		else {
-			sortdirlist = (DOCENTRYARRAY *)
-				addsortentry(sortdirlist, s);
-		}
-	}
-	
-	efree(s);
+        if (!isdirectory(s))
+        {
+            if (fs_already_indexed(sw, s))
+                continue;
 
-	closedir(dfd);
+            if (!isoksuffix(dp->d_name, sw->suffixlist))
+                continue;
 
-	printfiles(sw, sortfilelist);
-	printdirs(sw, sortdirlist);
+            sortfilelist = (DOCENTRYARRAY *) addsortentry(sortfilelist, s);
+        }
+        else
+        {
+            sortdirlist = (DOCENTRYARRAY *) addsortentry(sortdirlist, s);
+        }
+    }
+
+    efree(s);
+
+    closedir(dfd);
+
+    printfiles(sw, sortfilelist);
+    printdirs(sw, sortdirlist);
 }
 
 /* Calls the word-indexing function for a single file.
 */
 
-void indexafile(SWISH *sw, char *path)
+void    indexafile(SWISH * sw, char *path)
 {
-int badfile;
-char *filename;
-struct swline *tmplist;
-	
-	if (!sw->followsymlinks && islink(path) )
-		return;
-	
-	if ( fs_already_indexed(sw, path) )
-		return;
-	
-	if (path[strlen(path) - 1] == '/')
-		path[strlen(path) - 1] = '\0';
-	
-	badfile = 0;
-	tmplist = sw->fileislist;
-	while (tmplist != NULL) {
-		if (!matchARegex(path, tmplist->line)) {
-			badfile = 1;
-			break;
-		}
-		tmplist = tmplist->next;
-	}
-	if (badfile)
-		return;
-	
-	badfile = 0;
-	tmplist = sw->fileconlist;
-	while (tmplist != NULL) {
-		if (matchARegex(path, tmplist->line)) {
-			badfile = 1;
-			break;
-		}
-		tmplist = tmplist->next;
-	}
-	if (badfile)
-		return;
-	
-	badfile = 0;
-	tmplist = sw->pathconlist;
-	while (tmplist != NULL) {
-		if (matchARegex(path, tmplist->line)) {
-			badfile = 1;
-			break;
-		}
-		tmplist = tmplist->next;
-	}
-	if (badfile)
-		return;
-	
-	if (!isoksuffix(path, sw->suffixlist))
-		return; 
-	
+    int     badfile;
+    char   *filename;
+    struct swline *tmplist;
 
-	filename = (char *) estrdup(path);
+    if (!sw->followsymlinks && islink(path))
+        return;
 
-	printfile(sw,filename);
+    if (fs_already_indexed(sw, path))
+        return;
+
+    if (path[strlen(path) - 1] == '/')
+        path[strlen(path) - 1] = '\0';
+
+    badfile = 0;
+    tmplist = sw->fileislist;
+    while (tmplist != NULL)
+    {
+        if (!matchARegex(path, tmplist->line))
+        {
+            badfile = 1;
+            break;
+        }
+        tmplist = tmplist->next;
+    }
+    if (badfile)
+        return;
+
+    badfile = 0;
+    tmplist = sw->fileconlist;
+    while (tmplist != NULL)
+    {
+        if (matchARegex(path, tmplist->line))
+        {
+            badfile = 1;
+            break;
+        }
+        tmplist = tmplist->next;
+    }
+    if (badfile)
+        return;
+
+    badfile = 0;
+    tmplist = sw->pathconlist;
+    while (tmplist != NULL)
+    {
+        if (matchARegex(path, tmplist->line))
+        {
+            badfile = 1;
+            break;
+        }
+        tmplist = tmplist->next;
+    }
+    if (badfile)
+        return;
+
+    if (!isoksuffix(path, sw->suffixlist))
+        return;
+
+
+    filename = (char *) estrdup(path);
+
+    printfile(sw, filename);
 }
 
 
 /* Indexes the words in the file
 */
 
-void printfile(SWISH *sw, char *filename)
+void    printfile(SWISH * sw, char *filename)
 {
-char     *s;
-FileProp *fprop;
-	
-
-	if (filename) {
-		if (sw->verbose >= 3) {
-			if ((s = (char *) strrchr(filename, '/')) == NULL)
-				printf("  %s", filename);
-			else
-				printf("  %s", s + 1);
-			fflush(stdout);
-		}
+    char   *s;
+    FileProp *fprop;
 
 
-		fprop = file_properties (filename, filename, sw);
-		do_index_file(sw,fprop);
+    if (filename)
+    {
+        if (sw->verbose >= 3)
+        {
+            if ((s = (char *) strrchr(filename, '/')) == NULL)
+                printf("  %s", filename);
+            else
+                printf("  %s", s + 1);
+            fflush(stdout);
+        }
 
 
-		free_file_properties (fprop);
-		efree(filename);
-	}
+        fprop = file_properties(filename, filename, sw);
+        do_index_file(sw, fprop);
+
+
+        free_file_properties(fprop);
+        efree(filename);
+    }
 }
 
 /* Indexes the words in all the files in the array of files
 ** The array is sorted alphabetically
 */
 
-void printfiles(SWISH *sw, DOCENTRYARRAY *e)
+void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
 {
-int i;
-	if(e) {
-		for(i=0;i<e->currentsize;i++) 
-			printfile(sw, e->filenames[i]);
-	/* free the array and filenames */
-		efree(e->filenames);
-		efree(e);
-	}	
+    int     i;
+
+    if (e)
+    {
+        for (i = 0; i < e->currentsize; i++)
+            printfile(sw, e->filenames[i]);
+        /* free the array and filenames */
+        efree(e->filenames);
+        efree(e);
+    }
 }
 
 /* Prints out the directory names as things are getting indexed.
@@ -354,21 +381,24 @@ int i;
 ** in alphabetical order...
 */
 
-void printdirs(SWISH *sw, DOCENTRYARRAY *e)
+void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
 {
-int i;
-	if (e) {
-		for(i=0;i<e->currentsize;i++) {
-			if (sw->verbose >= 3)
-				printf("\nIn dir \"%s\":\n", e->filenames[i]);
-			else if (sw->verbose >= 2)
-				printf("Checking dir \"%s\"...\n",e->filenames[i]);
-			indexadir(sw,e->filenames[i]);
-			efree(e->filenames[i]);
-		}
-		efree(e->filenames);
-		efree(e);
-	}
+    int     i;
+
+    if (e)
+    {
+        for (i = 0; i < e->currentsize; i++)
+        {
+            if (sw->verbose >= 3)
+                printf("\nIn dir \"%s\":\n", e->filenames[i]);
+            else if (sw->verbose >= 2)
+                printf("Checking dir \"%s\"...\n", e->filenames[i]);
+            indexadir(sw, e->filenames[i]);
+            efree(e->filenames[i]);
+        }
+        efree(e->filenames);
+        efree(e);
+    }
 }
 
 
@@ -377,17 +407,19 @@ int i;
 /*					"Public" functions					*/
 /********************************************************/
 
-void fs_indexpath(SWISH *sw, char *path)
+void    fs_indexpath(SWISH * sw, char *path)
 {
-    if (isdirectory(path)) {
-		if (sw->verbose >= 2)
-			printf("\nChecking dir \"%s\"...\n", path);
-		indexadir(sw,path);
+    if (isdirectory(path))
+    {
+        if (sw->verbose >= 2)
+            printf("\nChecking dir \"%s\"...\n", path);
+        indexadir(sw, path);
     }
-    else if (isfile(path)) {
-		if (sw->verbose >= 2)
-			printf("\nChecking file \"%s\"...\n", path);
-		indexafile(sw,path);
+    else if (isfile(path))
+    {
+        if (sw->verbose >= 2)
+            printf("\nChecking file \"%s\"...\n", path);
+        indexafile(sw, path);
     }
 }
 
@@ -397,45 +429,58 @@ void fs_indexpath(SWISH *sw, char *path)
    -- add. parsing for index method filesystem
 */
 
-int fs_parseconfline(SWISH *sw, void *l)
+int     fs_parseconfline(SWISH * sw, void *l)
 {
-int rv = 0;
-StringList *sl=(StringList *)l;
+    int     rv = 0;
+    StringList *sl = (StringList *) l;
 
 
-	if (strcasecmp(sl->word[0], "FileRules")==0) {
-	   if (sl->n>3) {
-		char *w1;
-		int  is2_contains = !strcasecmp(sl->word[2],"contains");
+    if (strcasecmp(sl->word[0], "FileRules") == 0)
+    {
+        if (sl->n > 3)
+        {
+            char   *w1;
+            int     is2_contains = !strcasecmp(sl->word[2], "contains");
 
-			w1 = sl->word[1]; 
+            w1 = sl->word[1];
 
-			if( !(strcasecmp(w1,"path") && strcasecmp(w1,"pathname"))&& is2_contains) {
-				grabCmdOptions(sl,3, &sw->pathconlist);
-				rv = 1;
-			}
-			else if(!strcasecmp(w1,"directory") && is2_contains) {
-				grabCmdOptions(sl,3, &sw->dirconlist); 
-				rv = 1;
-			} else if(!strcasecmp(w1,"filename") && is2_contains) {
-				grabCmdOptions(sl,3, &sw->fileconlist); 
-				rv = 1;
-			} else if(!strcasecmp(w1,"title") && is2_contains) {
-				grabCmdOptions(sl,3, &sw->titconlist); 
-				rv = 1;
-			} else if(!strcasecmp(w1,"filename") && !strcasecmp(sl->word[2],"is"))	{
-				grabCmdOptions(sl,3, &sw->fileislist); 
-				rv = 1;
-			} else progerr("Bad parameter in \"FileRules %s %s\"",sl->word[1],sl->word[2]);
-		} 
-		else progerr("Bad number of parameters in FileRules");
-	}
+            if (!(strcasecmp(w1, "path") && strcasecmp(w1, "pathname")) && is2_contains)
+            {
+                grabCmdOptions(sl, 3, &sw->pathconlist);
+                rv = 1;
+            }
+            else if (!strcasecmp(w1, "directory") && is2_contains)
+            {
+                grabCmdOptions(sl, 3, &sw->dirconlist);
+                rv = 1;
+            }
+            else if (!strcasecmp(w1, "filename") && is2_contains)
+            {
+                grabCmdOptions(sl, 3, &sw->fileconlist);
+                rv = 1;
+            }
+            else if (!strcasecmp(w1, "title") && is2_contains)
+            {
+                grabCmdOptions(sl, 3, &sw->titconlist);
+                rv = 1;
+            }
+            else if (!strcasecmp(w1, "filename") && !strcasecmp(sl->word[2], "is"))
+            {
+                grabCmdOptions(sl, 3, &sw->fileislist);
+                rv = 1;
+            }
+            else
+                progerr("Bad parameter in \"FileRules %s %s\"", sl->word[1], sl->word[2]);
+        }
+        else
+            progerr("Bad number of parameters in FileRules");
+    }
     return rv;
 }
 
 struct _indexing_data_source_def FileSystemIndexingDataSource = {
-  "File-System",
-  "fs",
-  fs_indexpath,
-  fs_parseconfline
+    "File-System",
+    "fs",
+    fs_indexpath,
+    fs_parseconfline
 };
