@@ -600,7 +600,7 @@ unsigned char *unSwapLocData(SWISH * sw, long pos)
         idx->swap_close(idx->fp_loc_write);
         idx->fp_loc_write = NULL;
         if (!(idx->fp_loc_read = fopen(idx->swap_location_name, F_READ_BINARY)))
-            progerrno("Could not open temp file %s", idx->swap_location_name);
+            progerrno("Could not open temp file %s: ", idx->swap_location_name);
     }
 
     idx->swap_seek(idx->fp_loc_read, pos, SEEK_SET);

@@ -1037,7 +1037,7 @@ long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendat
         if (DB->wordhashdata[3 * numhash->index] == wordID)
             break;
     if (!numhash)
-        progerrno("Internal db_native.c error in DB_WriteWordData_Native");
+        progerrno("Internal db_native.c error in DB_WriteWordData_Native: ");
     DB->wordhashdata[3 * numhash->index + 2] = ftell(fp);
 
     DB->worddata_counter++;
@@ -1152,7 +1152,7 @@ int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
             if (DB->wordhashdata[3 * numhash->index] == DB->lasthashval[hashval])
                 break;
         if (!numhash)
-            progerrno("Internal db_native.c error in DB_WriteWordHash_Native");
+            progerrno("Internal db_native.c error in DB_WriteWordHash_Native: ");
         DB->wordhashdata[3 * numhash->index + 1] = (long) wordID;
     }
     DB->lasthashval[hashval] = wordID;

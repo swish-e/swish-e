@@ -25,7 +25,7 @@
 #define __HasSeenModule_Error		1
 
 
-
+void set_error_handle( FILE *where );
 
 void progerr (char *msgfmt, ...);
 void progerrno (char *msgfmt, ...);
@@ -36,7 +36,12 @@ void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...);
 
 void progwarn (char *msgfmt, ...);
 void progwarnno (char *msgfmt, ...);
+
+
 char *getErrorString(int);
+int  SwishError(SWISH * sw);
+char *SwishErrorString(int errornumber);
+void abort_last_error(SWISH *sw);
 
 #define RC_OK 0
 #define ERROR_BASE RC_OK
@@ -55,6 +60,7 @@ char *getErrorString(int);
 #define INVALID_SWISH_HANDLE ERROR_BASE-12
 #define SEARCH_WORD_TOO_BIG ERROR_BASE-13
 #define QUERY_SYNTAX_ERROR ERROR_BASE-14
+#define PROP_LIMIT_ERROR ERROR_BASE-15
 
 
 #endif

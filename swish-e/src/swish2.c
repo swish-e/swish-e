@@ -64,6 +64,9 @@ SWISH  *SwishNew()
 {
     SWISH  *sw;
 
+    /* Default is to write errors to stdout */
+    set_error_handle(stdout);
+
     sw = emalloc(sizeof(SWISH));
     memset(sw, 0, sizeof(SWISH));
 
@@ -88,6 +91,7 @@ SWISH  *SwishNew()
     sw->replaceRegexps = NULL;
     sw->pathExtractList = NULL;
     sw->lasterror = RC_OK;
+    sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
     sw->parser_warn_level = 0;
     sw->indexComments = 0;      /* change default 5/01 wsm */
@@ -335,17 +339,6 @@ int     SwishSeek(SWISH * sw, int pos)
     return pos;
 }
 
-int     SwishError(SWISH * sw)
-{
-    if (!sw)
-        return INVALID_SWISH_HANDLE;
-    return (sw->lasterror);
-}
-
-char   *SwishErrorString(int errornumber)
-{
-    return (getErrorString(errornumber));
-}
 
 char    tmp_header_buffer[50];  /*  Not thread safe $$$ */
 
