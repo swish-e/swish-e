@@ -89,7 +89,7 @@ char charDecode_C_Escape (char *s, char **se);
 
 /* ISO-Routines */
 
-char char_ISO_normalize (char c);
+unsigned char char_ISO_normalize (unsigned char c);
 char *str_ISO_normalize (char *s);
 
 unsigned char *StringListToString(StringList *sl,int n);

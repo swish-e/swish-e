@@ -371,8 +371,9 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 
 			if (*(argv+1)) {
 			   char *s;
-			   s = hasResultExtFmtStr (sw, *(argv+1));
-			   sw->opt.extendedformat = (s) ? s : *(argv+1);
+			   argv++;
+			   s = hasResultExtFmtStr (sw, *argv);
+			   sw->opt.extendedformat = (s) ? s : *argv;
 			   initPrintExtResult (sw, sw->opt.extendedformat);
 			   argc--;
 			}
