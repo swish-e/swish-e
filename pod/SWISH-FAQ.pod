@@ -168,6 +168,14 @@ is fully supported by swish-e.  See http://www.robotstxt.org/
 You can also modify the F<spider.pl> spider perl program to skip, index content only, or spider only listed web
 pages.  Type C<perldoc spider.pl> in the C<prog-bin> directory for details.
 
+=head2 How do I prevent indexing *parts* of a web page
+
+If, for example, you want to keep swish from indexing a common header, footer, or navigation bar, AND
+you are using libxml2 for parsing HTML, then you may use a fake HTML tag around the text
+you wish to ignore and use the C<IgnoreMetaTags> directive.  This will generate an error message if
+the C<ParserWarningLevel> is set.
+
+
 =head2 I'm using the spider.pl program to spider my web site, but some files large files are not indexed.
 
 The C<spider.pl> program has a default limit of 5MB file size.  This can be changed with the C<max_size>

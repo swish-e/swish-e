@@ -15,12 +15,23 @@ as HP-UX or AIX) you may see more warnings during the build process.
 Any problems should be sent to the swish-e discussion list after searching the
 list archives.
 
+B<libxml2>
+
 Swish-e 2.2 can (and probably should) use the libxml2 library for parsing HTML and XML files.
 This library can be found at http://www.xmlsoft.org/.  Instructions for installing and
-enabling the library are described below.  Currently, this library is not required, but
-is a much better parser than the tired old swish-e parsers html.c and xml.c  xml.c has been
-replaced with James Clark's Expat library, but the html.c code is still broken in a number of ways.
-Libxml2 is compatible with Expat, and offers a much better HTML parser.  Use it if possible.
+enabling the library are described below.  Currently, the libxml2 library is not required, but
+is a much better parser than the tired old swish-e parsers html.c and xml.c.
+
+Swish's old xml.c paser has been rewritten to use James Clark's Expat library
+(included with the swish-e distribution),
+but Swish's old html.c code is still broken in a number of ways.
+Libxml2 is comparable to Expat, but offers a much better HTML parser that swish-e's html.c parser.
+Use libxml2 if possible.
+
+Currently, setting a content type (IndexContents or DefaultContents)
+of HTML uses swish's html.c parser, where HTML2 uses libxml2's HTML parser.
+Likewise, a setting of XML uses the included Expat library, where XML2 uses libxml2 for parsing XML.
+All this may change in future releases.
 
 Swish needs quite a bit of memory while indexing.  How much depends on what you are indexing.
 The index is portable between platforms, so you can index on a machine that has lots of
@@ -50,15 +61,17 @@ for building under VMS can be found in C<src/vms>.
 Daniel Veillard's libxml2 is a well supported library for working with HTML and XML documents.
 Swish-e can now use libxml2 to parse HTML and XML documents.
 
-Installing the library is not required at this time, but is recommended, espeically
+Installing the libxml2 library is not required at this time, but is recommended, espeically
 if you are running Linux or similar OS (e.g. Solaris) since installation is so easy.
+As mentioned above, the XML parser that swish ships with is fine.  The HTML parser that
+ships with swish has been in use for years, but the parser provided by libxml2 is preferred.
 If you are running Linux it may already be installed (look for libxml2.so.2.4.5 or higher).
 
 The library can be downloaded from http://www.xmlsoft.org/.  Installation directions
 are included in the INSTALL file in the libxml2 package.  Uncompressing, building, and
-installation is very similar to the way Swish-e is built.
+installation of libxml2 is very similar to the way Swish-e is built.
 
-If it complains that it can not find zlib then you may need to specify the location of
+If libxml2 complains during compilation that it can not find zlib then you may need to specify the location of
 libz.  This happens (on Solaris) when the ./configure script finds the zlib header files,
 but the compiler and linker do not know to look in /usr/local/lib for the library.
 You may see an error like:
@@ -66,17 +79,21 @@ You may see an error like:
     ld: fatal: library -lz: not found
     ld: fatal: File processing errors. No output written to .libs/libxml2.so.2.4.5
     *** Error code 1
-    
-In this case, try specifying where zlib can be found.
+
+In this case, try specifying where zlib can be found.  For example, if libz was located
+in /usr/local/lib you would use:
 
     ./configure --with-zlib=/usr/local
 
-This would be used if libz was located in /usr/local/lib.
+If you do not have root access and/or do not install libxml2 in the standard locations (for header
+and library files), then you will need to set environment variables
+to tell swish where to look for libxml2 files.  You will need to do this *before* running
+I<swihs-e's> configure script since swish-e's configure script uses the settings to create
+the Makefiles.
 
-If you do not have root access, then you will need to set environment
-variables to point to libxml2's library and header files *before* running
-I<swihs-e's> configure script.  For example, say you want to link against
-the library in its build directory:
+For example, say you want to link against the library in its build
+directory of $HOME/libxml2-2.4.5.  You use CFLAGS to tell swish where to find the header files,
+and use LDFLAGS to tell swish where to look for the library files when linking.
 
     ~/swish-e > export CFLAGS="-I$HOME/libxml2-2.4.5/include -g -O2"
     ~/swish-e > export LDFLAGS="-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
@@ -88,14 +105,14 @@ Under other shells (tcsh) you might use setenv:
     ~/swish-e > setenv LDFLAGS "-R$HOME/libxml2-2.4.5/.libs -L$HOME/libxml2-2.4.5/.libs"
     ~/swish-e > ./configure
 
-Then before running make you must edit the Makefile in the F<src> directory
+After running configure and before running make you must edit the Makefile in the F<src> directory
 and uncomment these three lines:
 
     LIBXML2_OBJS = parser.o
     LIBXML2_LIB  = -lxml2   
     LIBXML2_CFLAGS = -DLIBXML2
 
-Now, you run make as described in the next section.    
+Now, you run C<make> as described in the following section.
 
 
 Note that libxml2 will be linked as a
@@ -128,28 +145,30 @@ Uncompressing should create the following directories:
 
    swish-e-x.x/            configure script and top-level Makefile
    swish-e-x.x/pod/        swish-e documentation
+   swish-e-x.x/html/       HTML version of the documentation
    swish-e-x.x/src/        source code
+   swish-e-x.x/conf/       example configuration files and stopword files
+   swish-e-x.x/example/    working example CGI scripts
+   swish-e-x.x/filter-bin/ filter samples
+   swish-e-x.x/prog-bin/   -S prog a web spider and other examples
+   swish-e-x.x/perl/       perl interface to the SWISH-E C library
    swish-e-x.x/src/expat/  James Clark's Expat XML parser
    swish-e-x.x/src/win32/  win32 binary and buid files
    swish-e-x.x/src/vms/    files required for building under VMS
-   swish-e-x.x/conf/       example configuration files and stopword files
    swish-e-x.x/tests/      tests used for running "make test"
-   swish-e-x.x/perl/       perl interface to the SWISH-E library
-   swish-e-x.x/html/       HTML version of the documentation
    swish-e-x.x/doc/        directory used or building the documentation
-   swish-e-x.x/filter-bin/ filter samples
-   swish-e-x.x/prog-bin/   -S prog a web spider and other examples
 
 
 =item 2 Make any needed changes in F<src/config.h>
 
 Compile-time configuration settings are adjusted in the file F<src/config.h>.
-Many of the settings may also be specified in the configuration file used during
+Most of the settings may also be specified in the configuration file used during
 indexing.  You probably will not need to change this file, but it's helpful to become
 familiar with the default compiled-in settings.
 
 =item 3 Build SWISH-E
 
+Building swish-e on most systems is a simple procedure.
 In the swish-e-x.x/ top level directory type the following commands
 
    ./configure
@@ -159,6 +178,9 @@ In the swish-e-x.x/ top level directory type the following commands
 This will create the swish-e executable F<src/swish-e> and test that the
 executable is working correctly.  C<make test> will generate an index file
 in the F<tests> directory and run a number of searches against this index.
+
+Note: If you wish to use libxml2 (described in the previous section) you may need to
+set CFLAGS and LDFLAGS before running F<./configure>.
 
 You may optionally "build" the F<swish-search> executable.  This is a
 version of swish-e that cannot write to the index file.  This version
@@ -186,7 +208,7 @@ You may need to superuser privileges:
    make install
    exit
 
-The bin directory may be set when first running ./configure. For example:
+The bin directory may be set when first running F<./configure>. For example:
 
    ./configure --bindir=$HOME/bin
 
@@ -198,12 +220,13 @@ program in that location.
 =head2 Join the SWISH-E discussion list
 
 The SWISH-E discussion list is the place to ask questions about installing and using swish-e,
-see bug fix or security announcements, and a place where B<you> can offer help to others.
+see or post bug fix or security announcements, and a place where B<you> can offer help to others.
 
-The list is typically very low traffic, so it won't overload your inbox.  Please take time
+The list is typically I<very low traffic>, so it won't overload your inbox.  Please take time
 to subscribe.  See http://swish-e.org.
 
-If you are using SWISH-E on a public site, please let the list know!
+If you are using SWISH-E on a public site, please let the list know so it can be added to the list
+of sites that use SWISH-E!
 
 =head2 Installing the SWISH-E C Library (optional)
 
@@ -211,6 +234,8 @@ Swish 2.2 creates the C library F<libswish-e.a> during the build.
 Install this library if you wish to embed SWISH-E into another application.
 For example, the library should be installed before using the high level Perl
 SWISH modules located on CPAN. http://search.cpan.org/search?mode=module&query=SWISH
+
+This is an optional step.
 
 To install the library issue the following commands (again, you may need to su root)
 
@@ -279,16 +304,80 @@ The pod source files used to create the man files were written running under per
 may complain slightly about the formatting of the pod files.  This shouldn't be a problem, but please let the
 swish-e list know if otherwise.
 
+=head1 QUESTIONS AND TROUBLESHOOTING
+
+Please search the SWISH-E list archive before posting a question, and check the L<SWISH-FAQ|SWISH-FAQ> to
+see if your question hasn't already been asked.
+
+Support for installation, configuration and usage is available via the SWISH-E
+discussion list.  Visit http://swish-e.org for information.
+Do not contact developers directly for help -- always post your question to the list.
+
+Before posting use tools available to narrow down the problem.
+
+SWISH-E has the -T, -v, and -k switches that may help resolve issues.
+If possible find a single document that shows the problem, then index with -T INDEXED_WORDS and watch
+the exact words that are indexed.  Use -H 9 when searching and look at C<Parsed Words:> to make
+sure you are searching the correct words.
+
+You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
+programs like C<truss> or C<strace> can often provide interesting information, if you are adventurous.
+
+=head2 When posting please provide the following information:
+
+=over 4
+
+=item *
+
+The exact version of SWISH-E that you are using.  Running swish-e with the C<-V> switch will print the
+version number.  Also, supply the output from C<uname -a> or similar command that identifies the
+operating system you are running on.  If you are running an old version of swish be prepared for
+a response to your question of "upgrade."
+
+=item *
+
+A summary of the problem.  This should include the commands issued (e.g. for indexing or searching)
+and their output, and why you don't think it's working correctly.
+Please cut-n-paste the exact commands and their output instead of retyping to avoid errors.
+
+=item *
+
+Include a copy of the configuration file you are using, if any.  Swish has reasonable
+defaults so in many cases you can run swish without using a configuration file.  But, if you need
+to use a configuration file, reduce it down to the absolute minimum number of commands required
+to demonstrate your problem.  Again, cut-n-paste.
+
+=item *
+
+A small copy of a source document that demonstrates the problem.
+
+If you are having problems spidering a web server, use lwp-download or wget to
+copy the file locally to make sure you can index the document using the file system
+method.
+
+If you do need help with spidering, don't post fake URLs, as it makes it impossible to help.
+If you don't want to expose your web page to the people on the swish-e list, find some other site
+to test spidering on.  If that works, but you still cannot spider your own site then post your real
+URL if you want help.
+
+=item *
+
+If you are having trouble building SWISH-E please cut-n-paste the output from make (or from ./configure if
+that's where the problem is).
+
+
+=back
 
 =head1 BASIC CONFIGURATION AND USAGE
 
 This section should give you a basic overview of indexing and searching with B<SWISH-E>.
-Other examples can be found in the F<conf> directory, and you may find the L<SWISH-FAQ|SWISH-FAQ>
-helpful.
+Other examples can be found in the F<conf> directory,
+and you should review the L<SWISH-FAQ|SWISH-FAQ>.
 
 SWISH-E reads a configuration file (see L<SWISH-CONFIG|SWISH-CONFIG>) for directives that control
 what and how SWISH-E indexes files.  Then running SWISH-E is controlled by command line arguments
-(see L<SWISH-RUN|SWISH-RUN>).
+(see L<SWISH-RUN|SWISH-RUN>).  Swish does not require a configuration file, but most people
+need to change the default behavior of swish by settings in a configuration file.
 
 To try the examples below change to the F<tests> subdirectory of the distribution.  The tests will
 use the *.html files in this directory when creating the test index.  You may wish to review these
@@ -466,13 +555,9 @@ a META tagged field in your documents called C<subjects> and then you can search
 Document I<Properties> are somewhat related to meta tags:  Properties allow the contents of a META tag in a source
 document to be stored within the index, and that text to be returned along with search results.
 
-META tags can have three formats in your documents.
+META tags can have two formats in your documents.
 
     <META NAME="keyName" CONTENT="some Content">
-
-    <!-- META START NAME="keyName" -->
-        some Content
-    <!-- META END -->
 
 And in XML format
 
@@ -480,6 +565,17 @@ And in XML format
         Some Content
     </keyName>
 
+If using libxml, you can optionally use a non-html tag as a metaname:
+
+    <html>
+    <body>
+        Hello swish users!
+        <keyName>
+            this is meta data
+        </keyName>.
+    </body>
+
+This, of course, is invalid HTML.
 
 To continue with our sample F<swish-e.conf> file, add the following lines:
 
@@ -512,70 +608,6 @@ C<-S prog> method are shown in the F<prog-bin> directory>.
 Swish can also use I<filters> to convert documents as they are processed by swish.  For example,
 MS-Word or PDF documents can be converted and indexed by swish-e by using filters.  See the section
 on filters in L<SWISH-CONFIG|SWISH-CONFIG>, and the examples shown in the C<filter-bin> directory.
-
-=head1 QUESTIONS AND TROUBLESHOOTING
-
-Please search the SWISH-E list archive before posting, and check the L<SWISH-FAQ|SWISH-FAQ> to
-see if your question hasn't already been asked.
-
-Support for installation, configuration and usage is available via the SWISH-E
-discussion list.  Visit http://swish-e.org for information.
-Do not contact developers directly for help -- always post your question to the list.
-
-Before posting use tools available to narrow down the problem.
-
-SWISH-E has the -T, -v, and -k switches that may help resolve issues.
-If possible find a single document that shows the problem, then index with -T INDEXED_WORDS and watch
-the exact words that are indexed.  Use -H 9 when searching and look at C<Parsed Words:> to make
-sure you are searching the correct words.
-
-You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
-programs like C<truss> or C<strace> can often provide interesting information, if you are adventurous.
-
-=head2 When posting please provide the following information:
-
-=over 4
-
-=item *
-
-The exact version of SWISH-E that you are using.  Running swish-e with the C<-V> switch will print the
-version number.  Also, supply the output from C<uname -a> or similar command that identifies the
-operating system you are running on.  If you are running an old version of swish be prepared for
-a response to your question of "upgrade."
-
-=item *
-
-A summary of the problem.  This should include the commands issued (e.g. for indexing or searching)
-and their output, and why you don't think it's working correctly.
-Please cut-n-paste the exact commands and their output instead of retyping to avoid errors.
-
-=item *
-
-Include a copy of the configuration file you are using, if any.  Swish has reasonable
-defaults so in many cases you can run swish without using a configuration file.  But, if you need
-to use a configuration file, reduce it down to the absolute minimum number of commands required
-to demonstrate your problem.  Again, cut-n-paste.
-
-=item *
-
-A small copy of a source document that demonstrates the problem.
-
-If you are having problems spidering a web server, use lwp-download or wget to
-copy the file locally to make sure you can index the document using the file system
-method.
-
-If you do need help with spidering, don't post fake URLs, as it makes it impossible to help.
-If you don't want to expose your web page to the people on the swish-e list, find some other site
-to test spidering on.  If that works, but you still cannot spider your own site then post your real
-URL if you want help.
-
-=item *
-
-If you are having trouble building SWISH-E please cut-n-paste the output from make (or from ./configure if
-that's where the problem is).
-
-
-=back
 
 
 
