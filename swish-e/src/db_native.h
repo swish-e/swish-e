@@ -43,9 +43,10 @@
 #define HEADERPOS (MAXCHARS - 3)
 #define WORDPOS (MAXCHARS - 4)
 #define SORTEDINDEX (MAXCHARS - 5)
+#define ENDWORDPOS (MAXCHARS - 6)
 
 #ifdef USE_BTREE
-#define TOTALWORDSPERFILEPOS (MAXCHARS - 6)
+#define TOTALWORDSPERFILEPOS (MAXCHARS - 7)
 #endif
 
 
@@ -88,7 +89,6 @@ struct Handle_DBNative
       struct numhash *next;
    } *hash[BIGHASHSIZE];
    MEM_ZONE *hashzone;
-
 #endif
 
    int num_words;

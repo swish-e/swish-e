@@ -1418,9 +1418,4 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
         printf("Indexing done!\n");
     }
 
-
-#ifdef INDEXPERMS
-    chmod(sw->indexlist->line, INDEXPERMS);
-#endif
 }
-

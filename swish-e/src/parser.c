@@ -1240,12 +1240,19 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 *********************************************************************/
 static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append )
 {
-    char tagbuf[256];  /* we have our limits */
+    char tagbuf[MAXSTRLEN + 1];
     char *t;
     int   i;
     int  taglen = strlen( tag );
     SWISH *sw = parse_data->sw;
     int   found = 0;
+
+    if(strlen(tag) >= MAXSTRLEN)  // easy way out
+    {
+        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        return 0;
+    }
+    
     
     strcpy( tagbuf, tag );
     t = tagbuf + taglen;
@@ -1321,7 +1328,7 @@ static char *isXMLClassAttribute(SWISH * sw, char *tag)
 *********************************************************************/
 static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **attr )
 {
-    char tagbuf[256];  /* we have our limits */
+    char tagbuf[MAXSTRLEN+1];
     char *content;
     char *t;
     int   i;
@@ -1332,7 +1339,13 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
     UndefMetaFlag  tmp_undef = sw->UndefinedMetaTags;  // save
 
     sw->UndefinedMetaTags = sw->UndefinedXMLAttributes;
-    
+
+    if(strlen(tag) >= MAXSTRLEN)  // easy way out
+    {
+        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        return;
+    }
+
 
     strcpy( tagbuf, tag );
     t = tagbuf + taglen;
@@ -2000,7 +2013,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
 
     indent_buf[0] = '\0';
 
-    for (i=0; i<indent; i++)
+    for (i=0; i<indent && strlen(indent_buf)<900; i++)
         strcat( indent_buf, "    ");
             
 
