@@ -47,7 +47,6 @@ $Id$
 
 
 
-
 /*
 ** ----------------------------------------------
 ** 
@@ -703,8 +702,15 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
             if ( !(m->metaType & META_PROP) )
                 break;
 
-	       /* Array of filenums to store the sorted docs (referenced by its filenum) */
-	       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
+            if ( sw->verbose )
+            {
+                printf("Sorting property: %-40.40s\r", m->metaName );
+                fflush(stdout);
+            }
+                
+
+	        /* Array of filenums to store the sorted docs (referenced by its filenum) */
+	        sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
 
 
 	       /* Save the metaEntry in ALL the files */
@@ -763,6 +769,9 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
            break;
 		}
     }
+
+    if ( sw->verbose )
+        printf("Property Sorting complete. %-40s\n", " " ); 
 
 
 }
