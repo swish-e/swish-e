@@ -34,6 +34,7 @@ $Id$
 #include "swish_qsort.h"
 #include "proplimit.h"
 
+
 // #define DEBUGLIMIT
 
 /*==================== These should be in other modules ================*/
@@ -699,9 +700,8 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 
         if ( !create_lookup_array( sw, indexf, meta_entry ) )
             return 0;
-printf("created lookup array\n");
     }
-printf("ok\n");
+
     return 1;  // ** flag that it's ok to continue the search.
         
 }
