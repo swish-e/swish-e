@@ -11931,7 +11931,7 @@ CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
 
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
-if test "x$libexecdiropt" == "x"; then
+if test "x$libexecdiropt" = "x"; then
         libexecdir='${exec_prefix}/lib/${PACKAGE}'
 	{ echo "$as_me:$LINENO: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&5
 echo "$as_me: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&6;}
