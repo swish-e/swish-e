@@ -1151,7 +1151,7 @@ static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw,
 
 #else
     unsigned char  *PropBuf;     /* For compressing and uncompressing */
-    int             dest_size;
+    uLongf          dest_size;
     int             zlib_status = 0;
 
 
@@ -1164,16 +1164,16 @@ static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw,
     }
     
     /* Buffer should be +1% + a few bytes. */
-    dest_size = prop->propLen + ( prop->propLen / 100 ) + 1000;  // way more than should be needed
+    dest_size = (uLongf)(prop->propLen + ( prop->propLen / 100 ) + 1000);  // way more than should be needed
 
 
     /* Get an output buffer */
     PropBuf = allocatePropIOBuffer( sw, dest_size );
 
 
-    zlib_status = compress2( (Bytef *)PropBuf, (uLongf *)&dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel);
+    zlib_status = compress2( (Bytef *)PropBuf, &dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel);
     if ( zlib_status != Z_OK )
-        progerr("Property Compression Error.  zlib compress2 returned: %d  Prop len: %d compress buf size: %d compress level:%d", zlib_status, prop->propLen, dest_size,sw->PropCompressionLevel);
+        progerr("Property Compression Error.  zlib compress2 returned: %d  Prop len: %d compress buf size: %d compress level:%d", zlib_status, prop->propLen, (int)dest_size,sw->PropCompressionLevel);
 
 
     /* Make sure it's compressed enough */
@@ -1184,7 +1184,7 @@ static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw,
         return prop->propValue;
     }
 
-    *buf_len = dest_size;
+    *buf_len = (int)dest_size;
     *uncompressed_len = prop->propLen;
 
     return PropBuf;
@@ -1220,7 +1220,10 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
     return input_buf;
 
 #else
-    unsigned char *PropBuf;
+    unsigned char   *PropBuf;
+    int             zlib_status = 0;
+    uLongf          buf_size = (uLongf)*uncompressed_size;
+    
 
 
     if ( *uncompressed_size == 0 ) /* wasn't compressed */
@@ -1236,11 +1239,17 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
     PropBuf = allocatePropIOBuffer( sw, *uncompressed_size );
 
 
-    if ( uncompress(PropBuf, (uLongf *)uncompressed_size, input_buf, buf_len ) != Z_OK )
+    zlib_status = uncompress(PropBuf, &buf_size, input_buf, buf_len );
+//    if ( zlib_status != Z_OK )
     {
-        progwarn("Failed to uncompress Property\n");
+        // $$$ make sure this works ok if returning null $$$
+        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
+            zlib_status, buf_size, buf_len );
         return NULL;
     }
+
+
+    *uncompressed_size = (int)buf_size;
 
 
     return PropBuf;
@@ -1391,7 +1400,8 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
     if ( !(buf = (unsigned char*)DB_ReadProperty( sw, indexf, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
         return NULL;
 
-	propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len );
+	if ( !(propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len )) )
+	    return NULL;
 
 	propLen = uncompressed_len; /* just to be clear ;) */
 
