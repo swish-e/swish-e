@@ -85,7 +85,7 @@ sub UNIVERSAL::host_port { '' };
 
     # Check if can use zlib compression
     eval { require Compress::Zlib };
-    my $can_uncompress++ unless $@;
+    my $can_uncompress = 1 unless $@;
 
 
     print STDERR "$0: Reading parameters from '$config'\n" unless $ENV{SPIDER_QUIET};
