@@ -57,6 +57,7 @@ static HEADER_MAP header_map[] = {
     {  "Total Words",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalwords ) },
     {  "Total Files",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalfiles ) },
     {  "Removed Files",     SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, removedfiles ) },
+    {  "Removed Words",     SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, removedwords ) },
     {  "Total Word Pos",    SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, total_word_positions ) },
     {  "Indexed on",        SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexedon ) },
     {  "Description",       SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexd ) },
@@ -251,8 +252,9 @@ SWISH_HEADER_VALUE SwishHeaderValue( SWISH *sw, const char *index_name, const  c
 
 static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *header_map, SWISH_HEADER_TYPE *data_type )
 {
-    SWISH_HEADER_VALUE value;
-    INDEXDATAHEADER    *header = &indexf->header;
+    SWISH_HEADER_VALUE  value;
+    INDEXDATAHEADER     *header = &indexf->header;
+    char                *data_pointer = (char *)header + header_map->offset; /* should that be void* as a generic address? */
 
     value.string = NULL;
 
@@ -261,24 +263,30 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
     switch ( header_map->data_type )
     {
         case SWISH_STRING:
-            value.string = *(const char **) ( (char *)header + header_map->offset );
+            value.string = *(const char **) data_pointer;
             return value;
 
         case SWISH_NUMBER:
         case SWISH_BOOL:
-            value.number = *(unsigned long *) ( (char *)header + header_map->offset );
+            value.number = *(unsigned long *) data_pointer;
+
+            /* $$$ Ugly hack alert! */
+            /* correct for removed files */
+            if ( (void *)data_pointer == &header->totalfiles )
+                value.number -= header->removedfiles;
+
             return value;
 
         case SWISH_LIST:
         {
-            struct swline *first_item = *(struct swline **)( (char *)header + header_map->offset );
+            struct swline *first_item = *(struct swline **) data_pointer;
             value.string_list = create_string_list( indexf->sw, first_item );
             return value;
         }
 
         case SWISH_WORD_HASH:
         {
-            WORD_HASH_TABLE table = *(WORD_HASH_TABLE *)( (char *)header + header_map->offset );
+            WORD_HASH_TABLE table = *(WORD_HASH_TABLE *) data_pointer;
             *data_type = SWISH_LIST;
             value.string_list = string_list_from_hash( indexf->sw, table ); 
             return value;

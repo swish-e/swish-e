@@ -75,12 +75,17 @@ static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline
         DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 4, (DB)); \
 }
 
-
-void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int total_word_positions, int removedfiles, int merged)
+void    write_header(SWISH *sw, int merged_flag )
 {
-    char   *c,
-           *tmp;
+    IndexFILE       *indexf     = sw->indexlist;       /* first element in the list */
+    INDEXDATAHEADER *header     = &indexf->header;
+    char            *filename   = indexf->line;
+    void            *DB         = indexf->DB;
+    char            *c;
+    char            *tmp;
 
+
+    /* $$$ this isn't portable */
     c = (char *) strrchr(filename, '/');
     if (!c || (c && !*(c + 1)))
         c = filename;
@@ -91,10 +96,11 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 
     DB_WriteHeaderData(sw, INDEXHEADER_ID, (unsigned char *)INDEXHEADER, strlen(INDEXHEADER) +1, DB);
     DB_WriteHeaderData(sw, INDEXVERSION_ID, (unsigned char *)INDEXVERSION, strlen(INDEXVERSION) + 1, DB);
-    write_header_int(sw, MERGED_ID, merged, DB);
+    write_header_int(sw, MERGED_ID, merged_flag, DB);
     DB_WriteHeaderData(sw, NAMEHEADER_ID, (unsigned char *)header->indexn, strlen(header->indexn) + 1, DB);
     DB_WriteHeaderData(sw, SAVEDASHEADER_ID, (unsigned char *)c, strlen(c) + 1, DB);
-    write_header_int4(sw, COUNTSHEADER_ID, totalwords, totalfiles, total_word_positions, removedfiles, DB);
+
+    write_header_int4(sw, COUNTSHEADER_ID, header->totalwords, header->totalfiles, indexf->total_word_positions, header->removedfiles, DB);
     tmp = getTheDateISO();
     DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB);
     efree(tmp);
@@ -137,8 +143,10 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 #ifndef USE_BTREE
     /* Write the total words per file array, if used */
     if ( !header->ignoreTotalWordCountWhenRanking )
-        write_integer_table_to_header(sw, TOTALWORDSPERFILE_ID, header->TotalWordsPerFile, totalfiles, DB);
+        write_integer_table_to_header(sw, TOTALWORDSPERFILE_ID, header->TotalWordsPerFile, header->totalfiles, DB);
 #endif
+
+    write_header_int(sw, TOTALWORDS_REMOVED_ID, header->removedwords, DB);
 
     DB_EndWriteHeader(sw, DB);
 }

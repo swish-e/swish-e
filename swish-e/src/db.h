@@ -34,7 +34,7 @@ DB_OPEN_MODE;
 void initModule_DB (SWISH *);
 void freeModule_DB (SWISH *);
 
-void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int, int, int);
+void    write_header(SWISH *ws, int merged_flag );
 void    update_header(SWISH *, void *, int, int );
 void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
