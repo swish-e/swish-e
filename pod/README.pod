@@ -1,26 +1,28 @@
 =head1 NAME
 
-The SWISH-E README File
+The Swish-e README File
 
-=head1 What is SWISH-E?
+=head1 What is Swish-e?
 
-SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
-SWISH-E can quickly and easily index directories of files or remote web sites and search the generated
-indexes.
+Swish-e is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
+Swish-e can quickly and easily index directories of files or remote web sites
+and search the generated indexes.
 
-SWISH was created by Kevin Hughes to fill the need of the growing number of Web administrators on the
-Internet - many of the indexing systems were not well documented, were hard to use and install,
-and were too complex for their own good. The system was widely used for several years,
-long enough to collect some bug fixes and requests for enhancements.
+Swish-e it extremely fast in both indexing and searching, highly configurable,
+and can be seamlessly integrated with existing web sites to maintain a consistent design.
+Swish-e can index web pages, but can just as easily index text files, mailing list archives,
+or data sorted in a relational database.
 
-In Fall 1996, The Library of UC Berkeley received permission from Kevin Hughes to implement bug fixes and
-enhancements to the original binary. The result is SWISH-Enhanced or SWISH-E, brought to you by the
-SWISH-E Development Team.
+Swish-e is an Open Source program supported by developers and a large group of users.
+Please take time to join the Swish-e discussion list at http://Swish-e.org.
 
-SWISH-E version 2.2 represents a major rewrite of the code and the addition of many new features.
-Memory requirements for indexing have been reduced, and indexing speed is much improved.
-New features allow more control over indexing, better document parsing, improved indexing and searching
-logic, better filter code, and the ability to index from any data source.
+Swish-e version 2.2 represents a major rewrite of the code and the
+addition of many new features.  Memory requirements for indexing have
+been reduced, and indexing speed is much improved.  New features allow
+more control over indexing, better document parsing, improved indexing
+and searching logic, better filter code, and the ability to index from
+any data source.
+
 
 =head2 Key features
 
@@ -33,24 +35,25 @@ including text, HTML, and XML
 
 =item *
 
+Use "filters" to index other types of files such as PDF, gzip, or
+Postscript.
+
+=item *
+
 Includes a web spider for indexing remote documents over HTTP.
 Follows Robots Exclusion Rules (including <META> tags).
 
 =item *
 
-Use "filters" to index any type of file such as PDF, gzip, or Postscript
+Use an external program to supply documents to Swish-e, such as an
+advanced spider for your web server, or a program to read and format
+records from a relational database management system (RDBMS).
 
 =item *
 
-Use an external program to supply documents to swish, such as an advanced
-spider for your web server, or a program to read and format records from a relational
-database management system (RDBMS).
-
-=item *
-
-Document "properties" (some subset of the source document, usually
-defined as a META or XML elements) may be stored in the index and
-returned with search results
+Document "properties" (some subset of the source document, usually defined
+as a META or XML elements) may be stored in the index and returned with
+search results
 
 =item *
 
@@ -70,7 +73,7 @@ Limit searches to HTML links
 
 =item *
 
-Use powerful Regular Expression to select documents for indexing
+Use powerful Regular Expressions to select documents for indexing
 
 =item *
 
@@ -79,7 +82,7 @@ Easily limit searches to parts or all of your web site
 =item *
 
 Results can be sorted by relevance or by any number of properties
-in ascending or decending order
+in ascending or descending order
 
 =item *
 
@@ -96,81 +99,87 @@ Includes example search scripts
 
 =item *
 
-SWISH-E is fast.
+Swish-e is fast.
 
 =item *
 
-It's open source and FREE!  You can customize SWISH-E and you
-can contribute your fancy new features to the project.
+It's open source and FREE!  You can customize Swish-e and you can
+contribute your fancy new features to the project.
 
 =item *
 
-Supported by on-line user and developer group
+Supported by on-line user and developer groups
 
 =back
 
 
-=head1 Where do I get SWISH-E?
+=head1 Where do I get Swish-e?
 
-The current version of SWISH-E can be found at:
+The current version of Swish-e can be found at:
 
-http://swish-e.org
+http://Swish-e.org
 
-Please make sure you use a current version of swish-e.
+Please make sure you use a current version of Swish-e.
 
-Information about Windows binary distributions can also be
-found at this site.
+Information about Windows binary distributions can also be found at
+this site.
 
-=head1 How Do I Install Swish?
+=head1 How Do I Install Swish-e?
 
-Read the L<INSTALL|INSTALL> page.  Information on specific ports
-(VMS and Win32) can be found in sub-directories of the C<src> directory.
+Read the L<INSTALL|INSTALL> page.  Information on specific ports (VMS
+and Win32) can be found in sub-directories of the C<src> directory.
 
 The Windows binary can be found in the C<src/win32> directory.
 
-In addition to the INSTALL page,
-make sure you read the L<SWISH-FAQ|SWISH-FAQ> page if you have any questions, or
-to get an idea of questions that you might someday ask.
+In addition to the INSTALL page, make sure you read the
+L<SWISH-FAQ|SWISH-FAQ> page if you have any questions, or to get an idea
+of questions that you might someday ask.
 
 
-=head1 The SWISH-E Documentation
+=head1 The Swish-e Documentation
 
-Documetation is provided in the SWISH-E distribution package in two forms, POD (Plain Old Documentation),
-and in html format.  The POD documentation is in the F<pod> directory, and the HTML documentation is in the
-F<html> directory, of course.
+Documetation is provided in the Swish-e distribution package in two forms,
+POD (Plain Old Documentation), and in html format.  The POD documentation
+is in the F<pod> directory, and the HTML documentation is in the F<html>
+directory, of course.
 
-If your system includes the required support files and programs,
-the distribution make files can also generate the documentation in these formats:
+If your system includes the required support files and programs, the
+distribution make files can also generate the documentation in these
+formats:
 
     Postscript
     PDF (Adobe Acrobat)
     system man pages
 
-You may also build a "split" version of the documentation where each topic heading is a separate
-web page.  Building the split version also creates a SWISH-E index of the documentation that makes
-the documentation searchable via the included Perl CGI program.
+You may also build a "split" version of the documentation where each
+topic heading is a separate web page.  Building the split version also
+creates a Swish-e index of the documentation that makes the documentation
+searchable via the included Perl CGI program.
 
-Buiding these other forms of documentation require aditional helper applications -- most modern Linux
-distributions will include all that's needed.  At least mine does...  You shouldn't have a problem
-if you have kept your perl and perl libraries up to date.
+Buiding these other forms of documentation require aditional helper
+applications -- most modern Linux distributions will include all that's
+needed.  At least mine does...  You shouldn't have a problem if you have
+kept your perl and perl libraries up to date.
 
-Online documentation can be found at the SWISH-E web site listed above.
+Online documentation can be found at the Swish-e web site listed above.
 
 See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
-versions of the documentation, and for information on installing the SWISH-* documentation as Unix man(1) pages.
+versions of the documentation, and for information on installing the
+SWISH-* documentation as Unix man(1) pages.
 
 
-=head2 How do I read the SWISH-E documentation?
+=head2 How do I read the Swish-e documentation?
 
-The SWISH-E documentation included with the SWISH-E distribution is in POD and HTML formats.
-The POD documentation can be found in the F<pod> directory, and the HTML documentation can be
-found in the F<html> directory.
+The Swish-e documentation included with the distribution is in POD and
+HTML formats.  The POD documentation can be found in the F<pod> directory,
+and the HTML documentation can be found in the F<html> directory.
 
-To view the HTML documentation point your browser to the F<html/index.html> file.
+To view the HTML documentation point your browser to the
+F<html/index.html> file.
 
-The POD documentation is displayed by
-the "perldoc" command that is included with every Perl installation.
-For example, to view the swish-e installation documentation page called "INSTALL", type
+The POD documentation is displayed by the "perldoc" command that is
+included with every Perl installation.  For example, to view the Swish-e
+installation documentation page called "INSTALL", type
 
    perldoc pod/INSTALL
 
@@ -180,90 +189,96 @@ or to make life easier,
    perldoc INSTALL
    perldoc SWISH-RUN
 
-Complain to your system administrator if the C<perldoc> command is not available on your machine.
+Complain to your system administrator if the C<perldoc> command is not
+available on your machine.
 
 =head2  Included Documentation
 
-The following documentation is included in this SWISH-E distribution:
+The following documentation is included in this Swish-e distribution:
 
 =over 4
 
-=item *
+=item L<README|README>
 
-L<README|README> --  this file
+This file
 
-=item *
+=item L<INSTALL|INSTALL>
 
-L<INSTALL|INSTALL>  -- Installation and basic usage instructions
+Installation and basic usage instructions
 
-=item *
+=item L<SWISH-CONFIG|SWISH-CONFIG>
 
-L<SWISH-CONFIG|SWISH-CONFIG> -- Configuration File Directives
+Configuration File Directives
 
-=item *
+=item L<SWISH-RUN|SWISH-RUN>
 
-L<SWISH-RUN|SWISH-RUN> -- Running Swish and Command Line Switches
+Running Swish and Command Line Switches
 
-=item *
+=item L<SWISH-SEARCH|SWISH-SEARCH>
 
-L<SWISH-SEARCH|SWISH-SEARCH> --All about Searching with SWISH-E
+All about Searching with Swish-e
 
-=item *
+=item L<SWISH-FAQ|SWISH-FAQ>
 
-L<SWISH-FAQ|SWISH-FAQ> -- Common questions, and some answers
+Common questions, and some answers
 
-=item *
+=item L<SWISH-LIBRARY|SWISH-LIBRARY>
 
-L<SWISH-LIBRARY|SWISH-LIBRARY> -- Interface to the SWISH-E C library
+Interface to the Swish-e C library
 
-=item *
+=item L<SWISH-PERL|SWISH-PERL>
 
-L<SWISH-PERL|SWISH-PERL> -- Instructions for using the Perl library
+Instructions for using the Perl library
 
-=item *
+=item L<CHANGES|CHANGES>
 
-L<CHANGES|CHANGES> -- List of feature changes and bug fixes
+List of feature changes and bug fixes
 
-=item *
+=item L<SWISH-BUGS|SWISH-BUGS>
 
-L<SWISH-BUGS|SWISH-BUGS> -- List of known bugs in the release.
+List of known bugs in the release
 
 =back
 
 =head2 Document Generation
 
-The SWISH-E documentation in HTML format was created with Pod::HtmlPsPdf, a package of Perl modules written
-and/or modified by Stas Bekman to automate the conversion of documents in pod format (see perldoc perlpod)
-to HTML, Postscript, and PDF.  A slightly modified version of this package is include with the SWISH-E distribution
-and used for building the HTML.  As distributed, SWISH-E contains only the pod and HTML documentation.
-See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript, and PFD formats.
+The Swish-e documentation in HTML format was created with Pod::HtmlPsPdf,
+a package of Perl modules written and/or modified by Stas Bekman to
+automate the conversion of documents in pod format (see perldoc perlpod)
+to HTML, Postscript, and PDF.  A slightly modified version of this package
+is include with the Swish-e distribution and used for building the HTML.
+As distributed, Swish-e contains only the pod and HTML documentation.
+See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript,
+and PDF formats.
 
 Thanks, Stas, for your help!
 
-=head1 What's included in the SWISH-E distribution?
+=head1 What's included in the Swish-e distribution?
 
-Here's an overview of the directories included in the swish-e distribution:
+Here's an overview of the directories included in the Swish-e
+distribution:
 
 =over 3
 
 =item conf/
 
-Example swish-e configuration setups to help you get started.
-In the C<stopwords> sub-directory are
-a number of stopword files for different languages.
+Example Swish-e configuration setups to help you get started.  In the
+C<stopwords> sub-directory are a number of stopword files for different
+languages.
 
 =item doc/
 
-Contains files required for building the HTML, PDF, and Postscript documentation.
+Contains files required for building the HTML, PDF, and Postscript
+documentation.
 
 =item example/
 
-This contains a sample CGI front-end for running swish-e.
+This contains a sample CGI front-end for running Swish-e.
 
 =item filter-bin/
 
-Sample programs to use with swish-e's "filters".  Examples include
-PDF, MS Word, and binary strings filters.
+Sample programs to use with Swish-e's "filters".  Examples include PDF,
+MS Word, and binary strings filters.
 
 =item html/
 
@@ -271,11 +286,11 @@ The documentation in HTML format.
 
 =item perl/
 
-The perl interface to the swish-e C library.
+The perl interface to the Swish-e C library.
 
 =item pod/
 
-The documentation in perldoc (pod) format.
+The source for all documentation in perldoc (pod) format.
 
 =item prog-bin/
 
@@ -285,8 +300,8 @@ pdf and MS word documents.
 
 =item src/
 
-This directory contains the source code for swish-e.  OS-specific directories are also
-found here.
+This directory contains the source code for Swish-e.  OS-specific
+directories are also found here.
 
 =item tests/
 
@@ -296,32 +311,46 @@ The documents used for running C<make test>.
 =back
 
 
-=head1 Where do I get help with SWISH-E?
+=head1 Where do I get help with Swish-e?
 
-If you need help with installing or using SWISH-E please subscribe to
-the SWISH-E mailing list.  See visit the SWISH-E web site listed above
-for information on subscribing to the SWISH-E list.
+If you need help with installing or using Swish-e please subscribe to
+the Swish-e mailing list.  See visit the Swish-e web site listed above
+for information on subscribing to the mailing list.
 
-Before posting any questions please read
-L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING"> in the L<INSTALL|INSTALL>
-documentation page.
+Before posting any questions please read L<QUESTIONS AND
+TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING"> in the
+L<INSTALL|INSTALL> documentation page.
 
 =head1 Speling mistakes
 
-Please contact the SWISH-E list with corrections to this documentation.  Any help
-in cleaning up the docs will be appreciated!
+Please contact the Swish-e list with corrections to this documentation.
+Any help in cleaning up the docs will be appreciated!
 
-=head1 SWISH-E Development
+=head1 Swish-e Development
 
-SWISH-E is currently being developed as an open source project on SourceForge
-http://sourceforge.net.
+Swish-e is currently being developed as an open source project on
+SourceForge http://sourceforge.net.
 
-Contact the SWISH-E list for questions.
+Contact the Swish-e list for questions.
+
+=head1 Swish-e's History
+
+SWISH was created by Kevin Hughes to fill the need of the growing number
+of Web administrators on the Internet - many of the indexing systems were
+not well documented, were hard to use and install, and were too complex
+for their own good. The system was widely used for several years, long
+enough to collect some bug fixes and requests for enhancements.
+
+In Fall 1996, The Library of UC Berkeley received permission from
+Kevin Hughes to implement bug fixes and enhancements to the original
+binary. The result is Swish-enhanced or Swish-e, brought to you by the
+Swish-e Development Team.
 
 =head1 Document Info
 
-Each document in the SWISH-E distribution contains this section.  It refers only to the specific
-page it's located in, and not to the SWISH-E program or the documentation as a whole.
+Each document in the Swish-e distribution contains this section.
+It refers only to the specific page it's located in, and not to the
+Swish-e program or the documentation as a whole.
 
 $Id$
 

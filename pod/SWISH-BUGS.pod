@@ -1,15 +1,15 @@
 =head1 NAME
 
-SWISH-BUGS - List of bugs known in swish-e
+SWISH-BUGS - List of bugs known in Swish-e
 
 =head1 DESCRIPTION
 
-This file contains a list of bugs reported or known in swish-e.  If
+This file contains a list of bugs reported or known in Swish-e.  If
 you find a bug listed here you do not need to report it as a bug.  But feel
-free to bug the developers about it on the swish-e discussion list.
+free to bug the developers about it on the Swish-e discussion list.
 
 
-=head1 Bugs in swish-e version 2.2
+=head1 Bugs in Swish-e version 2.2
 
 =over 4
 

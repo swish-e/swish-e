@@ -1,60 +1,72 @@
 =head1 NAME
 
-SWISH-RUN - Running Swish and Command Line Switches
+SWISH-RUN - Running Swish-e and Command Line Switches
 
 =head1 OVERVIEW
 
-The SWISH-E program is controlled by command line arguments (called I<switches>).  Often, SWISH-E
-is run manually from a shell (command prompt), or from a program such as a CGI script that passes
-the command line arguments to swish.
+The Swish-e program is controlled by command line arguments (called
+I<switches>).  Often, it is run manually from a shell (command
+prompt), or from a program such as a CGI script that passes the command
+line arguments to swish.
 
-Note: A number of the command line switches may be specified in the SWISH-E configuration file specified
-with the C<-c> command line argument.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for a complete description
-of available configuration file directives.
+Note: A number of the command line switches may be specified in the
+Swish-e configuration file specified with the C<-c> command line argument.
+Please see L<SWISH-CONFIG|SWISH-CONFIG> for a complete description of
+available configuration file directives.
 
-There are two basic operating modes of SWISH-E: indexing and searching.  There are command line arguments
-that are unique to each mode, and others that apply to both (yet may have different meaning depending on
-the operating mode).  These command line arguments are listed below, grouped by:
+There are two basic operating modes of Swish-e: indexing and searching.
+There are command line arguments that are unique to each mode, and
+others that apply to both (yet may have different meaning depending on
+the operating mode).  These command line arguments are listed below,
+grouped by:
 
-L<INDEXING|/"INDEXING> -- describes the command line arguments used while indexing.
+L<INDEXING|/"INDEXING> -- describes the command line arguments used
+while indexing.
 
-L<SEARCHING|/"SEARCHING> -- lists the command line arguments used while searching.
+L<SEARCHING|/"SEARCHING> -- lists the command line arguments used while
+searching.
 
-L<OTHER SWITCHES|/"OTHER SWITCHES> -- lists switches that don't apply to searching or indexing.
+L<OTHER SWITCHES|/"OTHER SWITCHES> -- lists switches that don't apply
+to searching or indexing.
 
-Beginning with SWISH-E version 2.1, you may embed the SWISH-E search engine into your applications.  Please
-see L<SWISH-LIBRARY|SWISH-LIBRARY>.
+Beginning with Swish-e version 2.1, you may embed its search engine into
+your applications.  Please see L<SWISH-LIBRARY|SWISH-LIBRARY>.
 
 
 =head1 INDEXING
 
-Swish indexing is initiated by passing I<command line arguments> to swish.
-The command line arguments used for I<searching> are described
-in L<SEARCHING|/"SEARCHING>.  Also, see L<SWISH-SEARCH|SWISH-SEARCH> for examples of searching with SWISH-E.
+Swish-e indexing is initiated by passing I<command line arguments> to
+swish.  The command line arguments used for I<searching> are described
+in L<SEARCHING|/"SEARCHING>.  Also, see L<SWISH-SEARCH|SWISH-SEARCH>
+for examples of searching with Swish-e.
 
-SWISH-E usage:
+Swish-e usage:
 
     swish-e [-i dir file ... ] [-c file] [-f file] [-l] \
             [-v (num)] [-S method(fs|http|prog)] [-N path]
 
-The C<-h> switch (help) will list the available SWISH-E command line arguments:
+The C<-h> switch (help) will list the available Swish-e command line
+arguments:
 
     swish-e -h
 
-Typically, most if not all indexing settings are placed in a configuration file
-(specified with the C<-c> switch).  Once the configuration file is setup indexing is
-initiated as:
+Typically, most if not all indexing settings are placed in a configuration
+file (specified with the C<-c> switch).  Once the configuration file is
+setup indexing is initiated as:
 
     swish-e -c /path/to/config/file
 
-See L<SWISH-CONFIG|SWISH-CONFIG> for information on the configuration file.
+See L<SWISH-CONFIG|SWISH-CONFIG> for information on the configuration
+file.
 
-Security Note: If the swish binary is named F<swish-search> then swish will not allow any operation that
-would cause swish to write to the index file.
+Security Note: If the swish binary is named F<swish-search> then swish
+will not allow any operation that would cause swish to write to the
+index file.
 
-When indexing it may be advisable to index to a temporary file, and then after
-indexing has successfully completed rename the file to the final location.
-This is especially important when replacing an index that is currently in use.
+When indexing it may be advisable to index to a temporary file, and
+then after indexing has successfully completed rename the file to the
+final location.  This is especially important when replacing an index
+that is currently in use.
 
     swish-e -c swish.config -f index.tmp
     [check return code from swish or look for err: output]
@@ -67,9 +79,11 @@ This is especially important when replacing an index that is currently in use.
 
 =item -i *directories and/or files* (input file)
 
-This specifies the directories and/or files to index. Directories will be indexed recursively.
-This is typically specified in the L<configuration file|SWISH-CONFIG> with the B<IndexDir> directive
-instead of on the command line.  Use of this switch overrides the configuration file settings.
+This specifies the directories and/or files to index. Directories will be
+indexed recursively.  This is typically specified in the L<configuration
+file|SWISH-CONFIG> with the B<IndexDir> directive instead of on the
+command line.  Use of this switch overrides the configuration file
+settings.
 
 
 =item -S [fs|http|prog] (document source/access mode)
@@ -101,7 +115,7 @@ directives specific to the C<http> method.
 
 =item prog - general purpose access method
 
-The C<prog> method is new to SWISH-E version 2.2.  It's designed as a general
+The C<prog> method is new to Swish-e version 2.2.  It's designed as a general
 purpose method to feed documents to swish from an external program.
 For example, the program can read a database (e.g. MySQL), spider a web
 server, or convert documents from one format to another (e.g. pdf to html).  Or,
@@ -212,7 +226,7 @@ files (one or more) to search from. The default index file is index.swish-e in t
 =item -c *file ...* (configuration files)
 
 Specify the configuration file(s) to use for indexing.  This file contains many directives that
-control how SWISH-E proceeds.
+control how Swish-e proceeds.
 See L<SWISH-CONFIG|SWISH-CONFIG> for a complete listing of configuration file directives.
 
 
@@ -322,13 +336,13 @@ See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
 
 =head1 SEARCHING
 
-The following command line arguments are available when searching with SWISH-E.  These switches are used
+The following command line arguments are available when searching with Swish-e.  These switches are used
 to select the index to search, what fields to search, and how and what to print as results.
 
 This section just lists the available command line arguments and their usage.
 Please see L<SWISH-SEARCH|SWISH-SEARCH> for detailed searching instructions.
 
-B<Warning>: If using SWISH-E via a CGI interface, please see L<CGI Danger!|SWISH-SEARCH/"CGI Danger!">
+B<Warning>: If using Swish-e via a CGI interface, please see L<CGI Danger!|SWISH-SEARCH/"CGI Danger!">
 
 Security Note: If the swish binary is named F<swish-search> then swish will not allow any operation that
 would cause swish to write to the index file.
@@ -411,7 +425,7 @@ search only in header (<H*>) tags
 
 =item -d *string* (delimiter)
 
-Set the delimiter used when printing results.  By default, SWISH-E separates the output fields by a
+Set the delimiter used when printing results.  By default, Swish-e separates the output fields by a
 space, and places double-quotes around the document title.  This output may be hard to parse, so it
 is recommended to use C<-d> to specify a character or string used as a separator between fields.
 
@@ -571,7 +585,7 @@ propertynames must be placed within "E<lt>" and "E<gt>".
 
 B<User properties:>
 
-SWISH-E allows you to specify certain META tags within your documents that can be used as B<document properties>.
+Swish-e allows you to specify certain META tags within your documents that can be used as B<document properties>.
 The contents of any META tag that has been identified as a document property can be returned as
 part of the search results.  Doucment properties must be defined while indexing using the B<PropertyNames>
 configuration directive (see L<SWISH-CONFIG|SWISH-CONFIG/"item_PropertyNames">).

@@ -1,6 +1,6 @@
 =head1 NAME
 
-SWISH-PERL - Perl Interface to the SWISH-E Library
+SWISH-PERL - Perl Interface to the Swish-e Library
 
 =head1 SYNOPSIS
 
@@ -55,30 +55,35 @@ SWISH-PERL - Perl Interface to the SWISH-E Library
 
 =head1 ABSTRACT
 
-SWISHE version 2.1.x creates an archive library of the internal SWISHE C functions.
-This perl module provides access to those functions by embedding the SWISHE search code in
-your application.  The benefits are faster searches (no need to fork/execute an external program)
-and avoids commonly used unsafe system calls.
+SWISHE version 2.1.x creates an archive library of the internal SWISHE
+C functions.  This perl module provides access to those functions by
+embedding the SWISHE search code in your application.  The benefits are
+faster searches (no need to fork/execute an external program) and avoids
+commonly used unsafe system calls.
 
-This module provides direct access to the SWISHE C library functions.  For a higher level, object
-oriented interface to SWISH visit http://search.cpan.org/search?mode=module&query=SWISH
+This module provides direct access to the SWISHE C library functions.
+For a higher level, object oriented interface to SWISH visit
+http://search.cpan.org/search?mode=module&query=SWISH
 
 
 =head1 INSTALLATION
 
-Before you can build the perl module you must build and install SWISH-E.  Please read the
-B<INSTALL> documentation included in the SWISHE distribution package.
+Before you can build the perl module you must build and install Swish-e.
+Please read the B<INSTALL> documentation included in the SWISHE
+distribution package.
 
     perldoc INSTALL
 
-After building the SWISHE executable and successfully running make test, you will need to install
-the SWISHE archive library.  This is done while in the top-level directory of the SWISHE distribution.
+After building the SWISHE executable and successfully running make test,
+you will need to install the SWISHE archive library.  This is done while
+in the top-level directory of the SWISHE distribution.
 
     % su root
     % make install-lib
     % exit
 
-This will install the archive library (F<libswish-e.a>) into /usr/local/lib by default.
+This will install the archive library (F<libswish-e.a>) into
+/usr/local/lib by default.
 
 Next, build the perl module.
 
@@ -99,14 +104,16 @@ And then in your perl script:
     use lib '/path/to/my/local/perl/library';
 
 
-To test it you can run the test.pl script.  Type "./test.pl" at your command prompt.
-This perl script uses the index file built by the "make test" command used during the build
-of SWISHE as described in the B<INSTALL> document.
+To test it you can run the test.pl script.  Type "./test.pl" at your
+command prompt.  This perl script uses the index file built by the
+"make test" command used during the build of SWISHE as described in the
+B<INSTALL> document.
 
-B<NOTE>Currently swish will exit the running program on some fatal errors.  In general
-this should not happen, but it is something to think about if running under mod_perl
-as an error will kill off the web server process.  Apache, for example, should recover
-by starting up a new child process.  But, it's not a very graceful way to handle errors.
+B<NOTE>Currently Swish-e will exit the running program on some fatal errors.
+In general this should not happen, but it is something to think about if
+running under mod_perl as an error will kill off the web server process.
+Apache, for example, should recover by starting up a new child process.
+But, it's not a very graceful way to handle errors.
 
 =head1 FUNCTION DESCRIPTIONS
 
@@ -158,12 +165,12 @@ Examples:
 
 =item *
 
-$structure is an integer value only applicable for an html search.  It defines
-where in an html search to look.
-It can be IN_FILE, IN_TITLE, IN_HEAD, IN_BODY, IN_COMMENTS, IN_HEADER or IN_EMPHASIZED or
-or'ed combinations of them (e.g.: IN_HEAD | IN_BODY).
-Use IN_FILE (a value of 1) if your documents are not html.
-The numerical values for these constants are in src/swish.h
+$structure is an integer value only applicable for an html search.
+It defines where in an html search to look.  It can be IN_FILE, IN_TITLE,
+IN_HEAD, IN_BODY, IN_COMMENTS, IN_HEADER or IN_EMPHASIZED or or'ed
+combinations of them (e.g.: IN_HEAD | IN_BODY).  Use IN_FILE (a value
+of 1) if your documents are not html.  The numerical values for these
+constants are in src/swish.h
 
 You can define these in your code with:
 
@@ -176,8 +183,9 @@ Not many people use the structure feature.
 
 =item *
 
-$properties is a string with the properties to be returned separated by spaces.  Properties must
-be defined during indexing.  See L<SWISH-CONFIG|SWISH-CONFIG> for more information.
+$properties is a string with the properties to be returned
+separated by spaces.  Properties must be defined during indexing.
+See L<SWISH-CONFIG|SWISH-CONFIG> for more information.
 
 Example:
 
@@ -205,7 +213,8 @@ Examples:
 
 ($rank, $filename, $title, $size, @properties) = SwishNext( $handle );
 
-This function returns the next hit of a search. Must be executed after SwishSearch to read the results.
+This function returns the next hit of a search. Must be executed after
+SwishSearch to read the results.
 
 =over 2
 
@@ -237,8 +246,8 @@ See the SYNOPSIS above for an example.
 =item B<$rc=SwishSeek($handle, $num);>
 
 Repositions the pointer in the result list to the element pointed by num.
-It is useful when you want to read only the results starting at $num (e.g. for showing
-results one page at a time).
+It is useful when you want to read only the results starting at $num
+(e.g. for showing results one page at a time).
 
 =item B<$error_number=SwishError($handle);>
 
@@ -254,8 +263,8 @@ Returns the error string for the number supplied.
 =item B<@ParameterArray=SwishHeaderParameter($handle,$HeaderParameterName);>
 
 This function is useful to access the header data of the index files
-Returns the contents of the requested header parameter of all index files
-opened by SwishOpen in an array.
+Returns the contents of the requested header parameter of all index
+files opened by SwishOpen in an array.
 
 Example:
 
@@ -278,13 +287,14 @@ Valid values for HeaderParameterName are:
     Stemming
     Soundex
 
-Note that this list may be incomplete.  Check the source code or the swish-e
-discussion list for more info.
+Note that this list may be incomplete.  Check the source code or the
+swish-e discussion list for more info.
 
 =item B<@stopwords = SwishStopWords( $handle, $indexfilename );>
 
-Returns an array containing all the stopwords stored in the index file pointed by $indexfilename
-where $indexfilename must match one of the names used in SwishOpen.
+Returns an array containing all the stopwords stored in the index file
+pointed by $indexfilename where $indexfilename must match one of the
+names used in SwishOpen.
 
 Example:
     @stopwords = SwishStopWords( $handle, $indexfilename );
@@ -294,9 +304,9 @@ Example:
 
 =item B<@keywords = SwishWords( $handle, $indexfilename, $c);>
 
-Returns an array containing all the keywords stored in the index file pointed by
-$indexfilename ($indexfilename must match one of the names used in SwishOpen)
-and starting with the character $c.
+Returns an array containing all the keywords stored in the index file
+pointed by $indexfilename ($indexfilename must match one of the names
+used in SwishOpen) and starting with the character $c.
 
 Example:
     my $letter = 't';
@@ -318,8 +328,8 @@ Example:
 
 =head1 SUPPORT
 
-Questions about this module and SWISHE should be posted to the SWISHE mailing list.
-See http://swish-e.org
+Questions about this module and Swish-e should be posted to the Swish-e
+mailing list.  See http://swish-e.org
 
 
 =head1 AUTHOR
