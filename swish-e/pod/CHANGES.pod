@@ -18,9 +18,15 @@ cannot read indexes created with previous versions.
 
 =back
 
-=head2 Version 2.4.0 (Release Candidate 4)  September xx, 2003
+=head2 Version 2.4.0 (Release Candidate 4)  September 26, 2003
 
 =over 4
+
+=item * robots.txt not closed correctly
+
+When using -S http method robots.txt was not closed and that caused
+the (last) .contents file to not be unlinked under Windows.  Windows
+seems to think filenames are related to files.
 
 =item * SWISH::Filter and locating programs on Windows
 
