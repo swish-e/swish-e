@@ -167,6 +167,7 @@ WORDDATA_Page *tmp,*next;
                 efree(tmp);
                 tmp = next;
             }
+            b->cache[i] = NULL;
         }
     }
     return 0;
@@ -211,6 +212,7 @@ WORDDATA_Page *tmp;
     return tmp;
 }
 
+
 WORDDATA_Page *WORDDATA_NewPage(WORDDATA *b)
 {
 WORDDATA_Page *pg;
@@ -218,34 +220,79 @@ long offset;
 FILE *fp = b->fp;
 int hash;
 int size = WORDDATA_PageSize;
-
-    /* Get file pointer */
-    if(fseek(fp,0,SEEK_END) !=0)
+int i;
+unsigned long page_number =0;
+    /* Let's see if we have a previous available page */
+    if(b->num_Reusable_Pages)
     {
-        printf("mal\n");
+        /* First, look for a page of the same size */
+        for(i = 0; i < b->num_Reusable_Pages ; i++)
+        {
+            if(size == b->Reusable_Pages[i].page_size)
+                break;
+        }
+        /* If not found, let's try with a bigger one if exits */
+        if(i == b->num_Reusable_Pages)
+        {
+            for(i = 0; i < b->num_Reusable_Pages ; i++)
+            {
+                if(size < b->Reusable_Pages[i].page_size)
+                    break;
+            }
+        }
+        /* If we got one page return it */
+        if(i != b->num_Reusable_Pages)
+        {
+            page_number = b->Reusable_Pages[i].page_number;
+            if(size == b->Reusable_Pages[i].page_size)
+            {
+                for(++i;i<b->num_Reusable_Pages;i++)
+                {
+                    /* remove page */
+                    b->Reusable_Pages[i-1].page_number=b->Reusable_Pages[i].page_number;
+                    b->Reusable_Pages[i-1].page_size=b->Reusable_Pages[i].page_size;
+                }
+                b->num_Reusable_Pages--;
+            }
+            else
+            {
+                b->Reusable_Pages[i].page_number += size/WORDDATA_PageSize;
+                b->Reusable_Pages[i].page_size -= size;
+            }
+        }
     }
-    offset = ftell(fp);
-    /* Round up file pointer */
-    offset = WORDDATA_RoundPageSize(offset);
-
-    /* Set new file pointer - data will be aligned */
-    if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
+    /* If there is not any reusable page let's get it from disk */
+    if(! page_number)
     {
-        printf("mal\n");
+        /* Get file pointer */
+        if(fseek(fp,0,SEEK_END) !=0)
+        {
+            printf("mal\n");
+        }
+        offset = ftell(fp);
+        /* Round up file pointer */
+        offset = WORDDATA_RoundPageSize(offset);
+
+        /* Set new file pointer - data will be aligned */
+        if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
+        {
+            printf("mal\n");
+        }
+        if(fwrite("\0",1,size,fp)!=size || ((long)size + offset) != ftell(fp))
+        {
+            printf("mal\n");
+        }
+        page_number = offset/WORDDATA_PageSize;
     }
 
     pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + size);
     memset(pg,0,sizeof(WORDDATA_Page) + size);
-    /* Reserve space in file */
-    if(fwrite(pg->data,1,size,fp)!=size || ((long)size + offset) != ftell(fp))
-    {
-        printf("mal\n");
-    }
+        /* Reserve space in file */
 
     pg->used_blocks = 0;
     pg->n = 0; /* Number of records */
 
-    pg->page_number = offset/WORDDATA_PageSize;
+    pg->page_number = page_number;
 
     /* add to cache */
     pg->modified = 1;
@@ -281,11 +328,14 @@ WORDDATA *b;
 int i;
     b = (WORDDATA *) emalloc(sizeof(WORDDATA));
     b->fp = fp;
-    b->last_page = 0;
+    b->last_put_page = 0;
+    b->last_del_page = 0;
+    b->last_get_page = 0;
     b->page_counter = 0;
     for(i = 0; i < WORDDATA_CACHE_SIZE; i++)
         b->cache[i] = NULL;
 
+    b->num_Reusable_Pages = 0;
     return b;
 }
 
@@ -310,19 +360,66 @@ void WORDDATA_Close(WORDDATA *bt)
 unsigned long WORDDATA_PutBig(WORDDATA *b, unsigned int len, unsigned char *data)
 {
 long offset;
+int size = WORDDATA_RoundPageSize(sizeof(unsigned long) + len);
 unsigned long p_len = (unsigned long)PACKLONG((unsigned long)len);
 FILE *fp = b->fp;
 unsigned long id;
-
-    /* Get file pointer */
-    if(fseek(fp,0,SEEK_END) !=0)
+unsigned long page_number = 0;
+int i;
+    /* Let's see if we have a previous available page */
+    if(b->num_Reusable_Pages)
     {
-        printf("mal\n");
+        /* First, look for a page of the same size */
+        for(i = 0; i < b->num_Reusable_Pages ; i++)
+        {
+            if(size == b->Reusable_Pages[i].page_size)
+                break;
+        }
+        /* If not found, let's try with a bigger one if exits */
+        if(i == b->num_Reusable_Pages)
+        {
+            for(i = 0; i < b->num_Reusable_Pages ; i++)
+            {
+                if(size < b->Reusable_Pages[i].page_size)
+                    break;
+            }
+        }
+        /* If we got one page return it */
+        if(i != b->num_Reusable_Pages)
+        {
+            page_number = b->Reusable_Pages[i].page_number;
+            if(size == b->Reusable_Pages[i].page_size)
+            {
+                for(++i;i<b->num_Reusable_Pages;i++)
+                {
+                    /* remove page */
+                    b->Reusable_Pages[i-1].page_number=b->Reusable_Pages[i].page_number;
+                    b->Reusable_Pages[i-1].page_size=b->Reusable_Pages[i].page_size;
+                }
+                b->num_Reusable_Pages--;
+            }
+            else
+            {
+                b->Reusable_Pages[i].page_number += size/WORDDATA_PageSize;
+                b->Reusable_Pages[i].page_size -= size;
+            }
+        }
     }
-    offset = ftell(fp);
-    /* Round up file pointer */
-    offset = WORDDATA_RoundPageSize(offset);
-
+    if(! page_number)
+    {
+        /* Get file pointer */
+        if(fseek(fp,0,SEEK_END) !=0)
+        {
+            printf("mal\n");
+        }
+        offset = ftell(fp);
+        /* Round up file pointer */
+        offset = WORDDATA_RoundPageSize(offset);
+    }
+    else
+    {
+        offset = page_number * WORDDATA_PageSize;
+    }
     /* Set new file pointer - data will be aligned */
     if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
     {
@@ -358,6 +455,7 @@ int i, r_id, r_len, tmp;
 int last_id, free_id;
 unsigned char *p,*q;
 unsigned char buffer[WORDDATA_PageSize];
+WORDDATA_Page *last_page=NULL;
     /* Check if data fits in a single page */
     /* We need 1 byte for the id plus two bytes for the size */ 
     required_length = len + 1 + 2;
@@ -369,31 +467,55 @@ unsigned char buffer[WORDDATA_PageSize];
         return WORDDATA_PutBig(b,len,data);
     }
 
-    /* let's see if the data fits in page */
-    if(b->last_page)
+    /* let's see if the data fits in the last page */
+    /* First - Check for a page with a Del Operation */
+    if(b->last_del_page)
     {
-        free_blocks = 255 - b->last_page->used_blocks;
-        if(required_length > (free_blocks * WORDDATA_BlockSize))
+        free_blocks = 255 - b->last_del_page->used_blocks;
+        if(!(required_length > (free_blocks * WORDDATA_BlockSize)))
         {
-            WORDDATA_FreePage(b,b->last_page);
-            b->last_page = WORDDATA_NewPage(b);
+            last_page = b->last_del_page;
         }
     }
-    else
+    if(!last_page)
     {
-        /* Save some memory - Do some flush flush of the data */
-
-        if(!(b->page_counter % WORDDATA_CACHE_SIZE))
+        if( b->last_put_page)
         {
-            WORDDATA_FlushCache(b);
-            WORDDATA_CleanCache(b);
-            b->page_counter = 0;
+            /* Now check for the last page in a put operation */
+            free_blocks = 255 - b->last_put_page->used_blocks;
+            if(required_length > (free_blocks * WORDDATA_BlockSize))
+            {
+                WORDDATA_FreePage(b,b->last_put_page);
+
+                /* Save some memory - Do some flush flush of the data */
+                if(!(b->page_counter % WORDDATA_CACHE_SIZE))
+                {
+                    WORDDATA_FlushCache(b);
+                    WORDDATA_CleanCache(b);
+                    b->page_counter = 0;
+                    b->last_get_page = b->last_put_page = b->last_del_page =  0;
+                }
+                b->page_counter++;
+                b->last_put_page = WORDDATA_NewPage(b);
+            }
         }
-        b->page_counter++;
-        b->last_page = WORDDATA_NewPage(b);
+        else
+        {
+            /* Save some memory - Do some flush flush of the data */
+            if(!(b->page_counter % WORDDATA_CACHE_SIZE))
+            {
+                WORDDATA_FlushCache(b);
+                WORDDATA_CleanCache(b);
+                b->page_counter = 0;
+                b->last_get_page = b->last_put_page = b->last_del_page =  0;
+            }
+            b->page_counter++;
+            b->last_put_page = WORDDATA_NewPage(b);
+        }
+        last_page = b->last_put_page;
     }
     
-    for(i = 0, free_id = 0, last_id = 0, p = WORDDATA_PageData(b->last_page); i < b->last_page->n; i++)
+    for(i = 0, free_id = 0, last_id = 0, p = WORDDATA_PageData(last_page); i < last_page->n; i++)
     {
         /* Get the record id */
         r_id = (int) (p[0]);
@@ -411,14 +533,14 @@ unsigned char buffer[WORDDATA_PageSize];
         free_id = last_id + 1;
 
     q = buffer;
-    memcpy(q,WORDDATA_PageData(b->last_page), p - WORDDATA_PageData(b->last_page));
-    q += p - WORDDATA_PageData(b->last_page);
+    memcpy(q,WORDDATA_PageData(last_page), p - WORDDATA_PageData(last_page));
+    q += p - WORDDATA_PageData(last_page);
     q[0] = (unsigned char) free_id;
     q[1] = (unsigned char) (len >> 8);
     q[2] = (unsigned char) (len & 0xff);
     memcpy(q+3,data,len);
     q += WORDDATA_RoundBlockSize((3 + len));
-    for(;i < b->last_page->n; i++)
+    for(;i < last_page->n; i++)
     {
         /* Get the record length */
         r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
@@ -427,11 +549,11 @@ unsigned char buffer[WORDDATA_PageSize];
         p += tmp;
         q += tmp;
     }
-    memcpy(WORDDATA_PageData(b->last_page),buffer,q - buffer);
-    b->last_page->n++;
-    b->last_page->used_blocks += required_length / WORDDATA_BlockSize;
-    WORDDATA_WritePage(b,b->last_page);
-    return (unsigned long)(b->lastid=(unsigned long)((b->last_page->page_number << 8) + free_id));
+    memcpy(WORDDATA_PageData(last_page),buffer,q - buffer);
+    last_page->n++;
+    last_page->used_blocks += required_length / WORDDATA_BlockSize;
+    WORDDATA_WritePage(b,last_page);
+    return (unsigned long)(b->lastid=(unsigned long)((last_page->page_number << 8) + free_id));
 }
 
 unsigned char *WORDDATA_GetBig(WORDDATA *b, unsigned long page_number, unsigned int *len)
@@ -460,12 +582,12 @@ unsigned char *data;
     {
         return WORDDATA_GetBig(b,page_number,len);
     }
-    if(b->last_page)
-        WORDDATA_FreePage(b,b->last_page);
+    if(b->last_get_page)
+        WORDDATA_FreePage(b,b->last_get_page);
 
-    b->last_page = WORDDATA_ReadPage(b,page_number);
+    b->last_get_page = WORDDATA_ReadPage(b,page_number);
 
-    for(i = 0, p = WORDDATA_PageData(b->last_page); i < b->last_page->n; i++)
+    for(i = 0, p = WORDDATA_PageData(b->last_get_page); i < b->last_get_page->n; i++)
     {
         /* Get the id */
         r_id = (int) (p[0]);
@@ -491,6 +613,91 @@ unsigned char *data;
     return data;
 }
 
+void WORDDATA_DelBig(WORDDATA *b, unsigned long page_number, unsigned int *len)
+{
+long offset = (long) (page_number * WORDDATA_PageSize);
+unsigned long p_len;
+    fseek(b->fp, offset, SEEK_SET);
+    fread(&p_len,1,SizeInt32,b->fp);
+    *len = UNPACKLONG(p_len) + sizeof(unsigned long);
+
+    if(b->num_Reusable_Pages < WORDDATA_MAX_REUSABLE_PAGES)
+    {
+       b->Reusable_Pages[b->num_Reusable_Pages].page_number = page_number;
+       b->Reusable_Pages[b->num_Reusable_Pages++].page_size = WORDDATA_RoundPageSize(*len);
+    }
+}
+
+void WORDDATA_Del(WORDDATA *b, unsigned long global_id, unsigned int *len)
+{
+unsigned long page_number = global_id >> 8;
+int id = (int)(global_id & 0xff);
+int r_id,r_len,tmp;
+int i;
+unsigned char *p, *q;
+int deleted_length;
+
+    if(!id)
+    {
+        WORDDATA_DelBig(b,page_number,len);
+        return;
+    }
+    if(b->last_del_page)
+        WORDDATA_FreePage(b,b->last_del_page);
+
+    b->last_del_page = WORDDATA_ReadPage(b,page_number);
+
+    for(i = 0, p = WORDDATA_PageData(b->last_del_page); i < b->last_del_page->n; i++)
+    {
+        /* Get the id */
+        r_id = (int) (p[0]);
+        /* Get the record length */
+        r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+        if(r_id == id)   /* id found */
+            break;
+        p += WORDDATA_RoundBlockSize((3 + r_len));
+    }
+
+    if(id == r_id)
+    {
+        *len = r_len;
+        deleted_length = WORDDATA_RoundBlockSize(r_len);
+        /* Move rest of worddata to put them contigous (Remove the hole) */
+        /* q points to the hole, p to the next record */
+        q = p;
+        p += WORDDATA_RoundBlockSize((3 + r_len));
+        for(++i;i < b->last_del_page->n; i++)
+        {
+           /* Get the record length */
+           r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+           tmp = WORDDATA_RoundBlockSize((3 + r_len));
+           memcpy(q,p,tmp);
+           p += tmp;
+           q += tmp;
+        }
+        b->last_del_page->n--;
+        b->last_del_page->used_blocks -= deleted_length / WORDDATA_BlockSize;
+        if(!b->last_del_page->n)
+        {
+            if(b->num_Reusable_Pages < WORDDATA_MAX_REUSABLE_PAGES)
+            {
+                b->Reusable_Pages[b->num_Reusable_Pages].page_number = page_number;
+                b->Reusable_Pages[b->num_Reusable_Pages++].page_size = WORDDATA_PageSize;
+            }
+            b->last_del_page = 0;
+        }
+        else
+        {
+            WORDDATA_WritePage(b,b->last_del_page);
+        }
+    }
+    else   /* Error */
+    {
+        *len = 0;
+    }
+
+    return;
+}
 
 
 #ifdef DEBUG

@@ -74,6 +74,7 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_WriteWordHash = DB_WriteWordHash_Native;
 #else
     Db->DB_UpdateWordID = DB_UpdateWordID_Native;
+    Db->DB_DeleteWordData = DB_DeleteWordData_Native;
 #endif
 
     Db->DB_WriteWordData = DB_WriteWordData_Native;
@@ -1077,6 +1078,16 @@ int     DB_UpdateWordID_Native(char *word, long new_wordID, void *db)
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     BTREE_Update(DB->bt, (unsigned char *)word, strlen(word), (unsigned long) new_wordID);
+
+    return 0;
+}
+
+int     DB_DeleteWordData_Native(long wordID, void *db)
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    int dummy;
+
+    WORDDATA_Del(DB->worddata, wordID, &dummy);
 
     return 0;
 }

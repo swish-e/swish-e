@@ -187,6 +187,12 @@ void    update_wordID(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 	    /* Store word offset for futher hash computing */
     ep->u1.wordID = wordID;
 }
+
+void    delete_worddata(SWISH * sw, long wordID, IndexFILE * indexf)
+{
+    DB_DeleteWordData(sw,wordID,indexf->DB);
+}
+
 #endif
 
 /* Jose Ruiz 11/00
@@ -1198,6 +1204,12 @@ int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB)
 {
    return sw->Db->DB_UpdateWordID(word, wordID, DB);
 }
+
+int     DB_DeleteWordData(SWISH *sw, long wordID, void *DB)
+{
+   return sw->Db->DB_DeleteWordData(wordID, DB);
+}
+
 #endif
 
 int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)

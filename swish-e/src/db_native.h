@@ -181,6 +181,7 @@ int     DB_WriteWord_Native(char *word, long wordID, void *db);
 
 #ifdef USE_BTREE
 int     DB_UpdateWordID_Native(char *word, long new_wordID, void *db);
+int     DB_DeleteWordData_Native(long wordID, void *db);
 #endif
 
 int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
