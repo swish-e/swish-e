@@ -121,7 +121,7 @@ typedef struct LOOKUP_TABLE
 
 
 /* This is the list of parameters supplied with the query */
-typedef struct
+typedef struct PARAMS
 {
     struct PARAMS   *next;
     char    *propname;
@@ -591,8 +591,8 @@ static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *m
 static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 {
     int error_flag;
-    char *lowrange  = param->lowrange;
-    char *highrange = param->highrange;
+    unsigned char *lowrange  = param->lowrange;
+    unsigned char *highrange = param->highrange;
 
     /* properties do not have leading white space */
 
@@ -659,7 +659,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
     curp = params;
 
     /* Look at each parameter */
-    for (curp = params; curp; (struct PARAMS *)curp = curp->next )
+    for (curp = params; curp; curp = curp->next )
     {
         found = 0;
 
