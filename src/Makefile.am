@@ -3,8 +3,8 @@ SUBDIRS = expat replace
 
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
-swish_e_LDADD = libswishindex.la libswish-e.la
-swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
+swish_e_LDADD = libswishindex.la libswish-e.la replace/libreplace.la
+swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" $(Z_CFLAGS) $(PCRE_CFLAGS) -Ireplace
 
 EXTRA_PROGRAMS = libtest
 libtest_SOURCES = libtest.c 
@@ -60,9 +60,9 @@ EXTRA_libswish_e_la_SOURCES =  \
 ## Convenience lib for indexing code
 
 noinst_LTLIBRARIES = libswishindex.la
-libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS)
-libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
+libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS) replace/libreplace.la 
+libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS) 
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" $(Z_CFLAGS) $(PCRE_CFLAGS) -Ireplace
 
 ## in case these change
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
