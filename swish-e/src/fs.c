@@ -30,8 +30,8 @@
 #include "index.h"
 #include "hash.h"
 #include "mem.h"
-#include "file.h"
 #include "string.h"
+#include "file.h"
 #include "list.h"
 #include "fs.h"
 #include "check.h"
@@ -370,16 +370,38 @@ void fs_indexpath(SWISH *sw, char *path)
 }
 
 
-int fs_parseconfline(SWISH *sw, char *line)
+int fs_parseconfline(SWISH *sw, void *l)
 {
-    int rv = 0;
-	if (lstrstr(line, "FileRules")) 
+int rv = 0;
+StringList *sl=(StringList *)l;
+	if (strcasecmp(sl->word[0], "FileRules")==0) 
 	{
-		if (grabCmdOptions(line, "pathname contains", &sw->pathconlist)) { rv = 1; }
-		else if (grabCmdOptions(line, "directory contains", &sw->dirconlist)) { rv = 1; }
-		else if (grabCmdOptions(line, "filename contains", &sw->fileconlist)) { rv = 1; }
-		else if (grabCmdOptions(line, "title contains", &sw->titconlist)) { rv = 1; }
-		else if (grabCmdOptions(line, "filename is", &sw->fileislist)) { rv = 1; }
+		if (sl->n>4)
+		{
+			if(strcasecmp(sl->word[1],"path")==0 && strcasecmp(sl->word[2],"contains")==0)
+			{
+				grabCmdOptions(sl,3, &sw->pathconlist);
+				rv = 1;
+			}
+			else if(strcasecmp(sl->word[1],"directory")==0 && strcasecmp(sl->word[2],"contains")==0)
+			{
+				grabCmdOptions(sl,3, &sw->dirconlist); 
+				rv = 1;
+			} else if(strcasecmp(sl->word[1],"filename")==0 && strcasecmp(sl->word[2],"contains")==0)
+			{
+				grabCmdOptions(sl,3, &sw->fileconlist); 
+				rv = 1;
+			} else if(strcasecmp(sl->word[1],"title")==0 && strcasecmp(sl->word[2],"contains")==0)
+			{
+				grabCmdOptions(sl,3, &sw->titconlist); 
+				rv = 1;
+			} else if(strcasecmp(sl->word[1],"filename")==0 && strcasecmp(sl->word[2],"is")==0)
+			{
+				grabCmdOptions(sl,3, &sw->fileislist); 
+				rv = 1;
+			} else progerr("Bad parameter in FileRules");
+		} 
+		else progerr("Bad number of parameters in FileRules");
 	}
     return rv;
 }

@@ -504,61 +504,74 @@ FILE *fp;
 #endif
 
 
-int http_parseconfline(SWISH *sw,char *line)
+int http_parseconfline(SWISH *sw,void *l)
 {
-    int rv = 0;
-    static char es[] = "equivalentserver";
-    char *word;
-    int skiplen,len;
+    int i,rv = 0;
+    int len;
     struct multiswline *list;
     struct swline *slist;
-    char *StringValue;
+    StringList *sl = (StringList *)l;
 
-	if (grabIntValueField(line, "maxdepth", &sw->maxdepth, 0))	{ rv = 1; }
-	else if (grabIntValueField(line, "delay", &sw->delay, 0))	{ rv = 1; }
-	else if ((StringValue=grabStringValueField(line, "spiderdirectory")))
+	if(strcasecmp(sl->word[0],"maxdepth")==0)
 	{
-		sw->spiderdirectory = SafeStrCopy(sw->spiderdirectory,StringValue,&sw->lenspiderdirectory);
-		len = strlen(sw->spiderdirectory);
-		rv = 1;
-		
-		/* Make sure the directory has a trailing slash
-		**/
-		if (len && (sw->spiderdirectory[len - 1] != '/')) 
+		if(sl->n==2)
 		{
-			if(len == sw->lenspiderdirectory) 
-				sw->spiderdirectory=erealloc(sw->spiderdirectory,++sw->lenspiderdirectory+1);
-			strcat(sw->spiderdirectory, "/");
-		}
-		if(!isdirectory(sw->spiderdirectory)) {
-			progerr("SpiderDirectory. %s is not a directory",sw->spiderdirectory);
-		}
-    	}
-	else if (strncasecmp(line, es, sizeof(es) - 1) == 0) 
+			rv=1;
+			sw->maxdepth=atoi(sl->word[1]);
+		} 
+		else progerr("MaxDepth requires one value");
+	} else if(strcasecmp(sl->word[0],"delay")==0)
 	{
-		rv = 1;
+		if(sl->n==2)
+		{
+			rv=1;
+			sw->delay=atoi(sl->word[1]);
+		} 
+		else progerr("Delay requires one value");
+	} else if(strcasecmp(sl->word[0],"spiderdirectory")==0)
+	{
+		if(sl->n==2)
+		{
+			rv=1;
+			sw->spiderdirectory = SafeStrCopy(sw->spiderdirectory,sl->word[1],&sw->lenspiderdirectory);
+			len = strlen(sw->spiderdirectory);
+			/* Make sure the directory has a trailing slash */
+			if (len && (sw->spiderdirectory[len - 1] != '/')) 
+			{
+				if(len == sw->lenspiderdirectory) 
+					sw->spiderdirectory=erealloc(sw->spiderdirectory,++sw->lenspiderdirectory+1);
+				strcat(sw->spiderdirectory, "/");
+			}
+			if(!isdirectory(sw->spiderdirectory)) {
+				progerr("SpiderDirectory. %s is not a directory",sw->spiderdirectory);
+			}
+		} 
+		else progerr("SpiderDirectory requires one value");
+    	}
+	else if (strcasecmp(sl->word[0],"equivalentserver") == 0) 
+	{
+		if(sl->n>1)
+		{
+			rv = 1;
+			/* Add a new list of equivalent servers */
+			list = (struct multiswline *)emalloc(sizeof(struct multiswline));
+			list->next = sw->equivalentservers;
+			list->list = 0;
+			sw->equivalentservers = list;
 		
-		/* Add a new list of equivalent servers
-		**/
-		list = (struct multiswline *)emalloc(sizeof(struct multiswline));
-		list->next = sw->equivalentservers;
-		list->list = 0;
-		sw->equivalentservers = list;
-		
-		line += (sizeof(es) - 1);
-		while (*(word = getword(line, &skiplen)) != '\0') {
-			/* Add a new entry to this list
-			**/
-			slist = (struct swline *)emalloc(sizeof(struct swline));
-			slist->line = word;
-			slist->next = list->list;
-			list->list = slist;
+			for(i=1;i<sl->n;i++)
+			{	
+				/* Add a new entry to this list */
+				slist = (struct swline *)emalloc(sizeof(struct swline));
+				slist->line = sl->word[i];
+				slist->next = list->list;
+				list->list = slist;
+			}
 			
-			/* Move to the next word
-			**/
-			line += skiplen;
 		}
-    }
+		else progerr("EquivalentServers requires at least one value");
+	}
+    
     return rv;
 }
 

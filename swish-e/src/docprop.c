@@ -29,6 +29,7 @@
 */
 
 #include "swish.h"
+#include "string.h"
 #include "file.h"
 #include "hash.h"
 #include "mem.h"
@@ -36,7 +37,6 @@
 #include "error.h"
 #include "search.h"
 #include "index.h"
-#include "string.h"
 #include "docprop.h"
 #include "error.h"
 #include "compress.h"

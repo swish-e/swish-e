@@ -92,3 +92,4 @@ char charDecode_C_Escape (char *s, char **se);
 char char_ISO_normalize (char c);
 char *str_ISO_normalize (char *s);
 
+unsigned char *StringListToString(StringList *sl,int n);

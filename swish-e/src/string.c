@@ -874,3 +874,28 @@ char *str_ISO_normalize (char *s)
 }
 
 
+/* 02/2001 Jmruiz - Builds a string from a Stringlist starting at the
+n element */
+unsigned char *StringListToString(StringList *sl,int n)
+{
+int i,j;
+char *s;
+int len_s,len_w;
+	s=emalloc((len_s=2)+1);
+	/* compute required string size */
+	for(i=n,j=0;i<sl->n;i++) 
+	{
+		len_w=strlen(sl->word[i]);
+		if(len_s<(j+len_w+1))
+			s=erealloc(s,(len_s+=len_w+1)+1);
+		if(i!=n)
+		{
+			*(s+j)=' ';
+			j++;
+		}
+		memcpy(s+j,sl->word[i],len_w);
+		j+=len_w;
+	}
+	*(s+j)='\0';
+	return s;
+}

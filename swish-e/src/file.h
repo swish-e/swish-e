@@ -21,43 +21,39 @@
 */
 
 /*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
+** use) for easier cross-compiler (non-ANSI) porting 
+** <return value> <functionname> (<arg prototypes>) );
 */
 
 
-int isdirectory _AP ((char *));
-int isfile _AP ((char *));
-int islink _AP ((char *));
-int getsize _AP ((char *));
-void getdefaults _AP ((SWISH *, char *, int *, int *, int));
-void checkReplaceList _AP ((SWISH *));
-void checkListRegex _AP ((struct swline *list));
+int isdirectory(char *);
+int isfile(char *);
+int islink(char *);
+int getsize(char *);
+void getdefaults(SWISH *, char *, int *, int *, int);
+void checkReplaceList(SWISH *);
+void checkListRegex(struct swline *list);
 
 /*
  * Some handy routines for parsing the Configuration File
  */
 
-int grabYesNoField _AP ((char* line, char* commandTag, int* yesNoValue));
-char *grabStringValueField _AP ((char* line, char* commandTag));
-int grabIntValueField _AP ((char* line, char* commandTag, int* singleValue, int dontToIt));
-int grabCmdOptionsMega _AP ((char* line, char* commandTag, struct swline **listOfWords, int* gotAny, int dontToIt));
-int grabCmdOptions _AP ((char* line, char* commandTag, struct swline **listOfWords));
-int grabCmdOptionsIndexFILE _AP ((char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt));
-void readstopwordsfile _AP ((SWISH *, IndexFILE *, char *));
-void readusewordsfile _AP ((SWISH *, IndexFILE *, char *));
+void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords);
+int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);
+void readstopwordsfile(SWISH *, IndexFILE *, char *);
+void readusewordsfile(SWISH *, IndexFILE *, char *);
 
 /* use these to open Index files (because they are binary files: Win32)  */
-FILE* openIndexFILEForWrite _AP ((char *));
-FILE* openIndexFILEForRead _AP ((char *));
-FILE* openIndexFILEForReadAndWrite _AP ((char *));
-void CreateEmptyFile _AP ((SWISH *, char *));
+FILE* openIndexFILEForWrite(char *);
+FILE* openIndexFILEForRead(char *);
+FILE* openIndexFILEForReadAndWrite(char *);
+void CreateEmptyFile(SWISH *, char *);
 
-void indexpath _AP((SWISH *, char *));
-int parseconfline _AP((SWISH *, char *));
+void indexpath(SWISH *, char *);
+int parseconfline(SWISH *, StringList *);
 
 
-char *read_stream _AP((FILE *, int ));
+char *read_stream(FILE *, int );
 
 /* Get/eval properties for file  (2000-11 rasc) */
 FileProp *file_properties (char *real_path, char *work_path, SWISH *sw);
