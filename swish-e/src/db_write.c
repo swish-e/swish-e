@@ -740,8 +740,7 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 void setTotalWordsPerFile(IndexFILE *indexf, int idx,int wordcount)
 {
 #ifdef USE_BTREE
-        DB_WriteTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
-
+        DB_WriteTotalWordsPerFile(indexf->sw, idx, wordcount, indexf->DB);
 #else
 INDEXDATAHEADER *header = &indexf->header;
 
