@@ -1,9 +1,32 @@
-/* jmruiz - 02/2001 - Sorting results module
+/*
+$Id$
+**
+** This program and library is free software; you can redistribute it and/or
+** modify it under the terms of the GNU (Library) General Public License
+** as published by the Free Software Foundation; either version 2
+** of the License, or any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+** GNU (Library) General Public License for more details.
+**
+** You should have received a copy of the GNU (Library) General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+**
+** jmruiz - 02/2001 - Sorting results module
 **
 ** 2001-05-04 jmruiz added new string comparison routines for proper sorting
 **                   sw_strcasecmp and sw_strcmp
 **                   also added the skeleton to initModule_ResultSort
 **                   and freeModule_ResultSort
+**
+** 2001-05-05 rasc   just rearranged functions, to make modules look similar
+**                   (makes code better to read and understand)
+**
+**
 */
 
 #include "swish.h"
@@ -18,8 +41,79 @@
 #include "result_sort.h"
 
 
+
+
+/*
+  -- init structures for this module
+*/
+
+void initModule_ResultSort (SWISH  *sw)
+
+{
+/* Must be uncommented  when completed
+    initSortResultProperties(sw);   Should me moved from swish2.c 
+    initStrCmpTranslationTable(sw->iSortTranslationTable);
+    initStrCaseCmpTranslationTable(sw->iSortCaseTranslationTable);
+*/
+}
+
+
+/*
+  -- release all wired memory for this module
+*/
+
+void freeModule_ResultSort (SWISH *sw)
+
+{
+
+  return;
+}
+
+
+
+/* ---------------------------------------------- */
+
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_ResultSort  (SWISH *sw, StringList *sl)
+
+{
+ // struct MOD_ResultSort *md = sw->ResultSort;
+  char *w0    = sl->word[0];
+  int  retval = 1;
+
+
+
+  // @ Jose:  I don't want to add code, while your work is in progress
+  // but here is the idea:
+  //   wordsequence of character orders 
+  // Config statement:   ResultSortOrder   "AÄ"  "aä"
+  //    could work like follows:   v = value[*s];  loop i rest: value[*(s+i)] = v+i;     
+
+
+  retval = 0; // tmp due to empty routine
+
+  return retval;
+}
+
+
+
+/* ---------------------------------------------- */
+
+
+
+
+
+
 /* preprocess Sort Result Properties to get the ID */
 /* If there is not a sort properties then use rank */
+
 int     initSortResultProperties(SWISH * sw)
 {
     int     i;
@@ -533,29 +627,4 @@ int sw_strcmp(unsigned char *s1,unsigned char *s2,int *iTranslationTable)
       if (! *s1++) return 0;
       else s2++;
    return iTranslationTable[*s1] - iTranslationTable[*s2];
-}
-
-/*
-  -- init structures for this module
-*/
-
-void initModule_ResultSort (SWISH  *sw)
-
-{
-/* Must be uncommented  when completed
-    initSortResultProperties(sw);   Should me moved from swish2.c 
-    initStrCmpTranslationTable(sw->iSortTranslationTable);
-    initStrCaseCmpTranslationTable(sw->iSortCaseTranslationTable);
-*/
-}
-
-
-/*
-  -- release all wired memory for this module
-*/
-
-void freeModule_ResultSort (SWISH *sw)
-
-{
-
 }

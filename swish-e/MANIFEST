@@ -2,6 +2,7 @@ MANIFEST
 MANIFEST.SKIP
 Makefile.in
 README
+VERSION
 conf/stopwords/dutch.txt
 conf/stopwords/english.txt
 conf/stopwords/german.txt
