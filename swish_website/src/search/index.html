@@ -1,5 +1,5 @@
 #![%- META type = 'text' -%]
-[% locate.in_path( 'foo') || locate.in_path( 'perl' ) %]
+[% locate.in_path( 'speedy') || locate.in_path( 'perl' ) %]
 
 package SwishAPISearch;
 use strict;
@@ -32,7 +32,6 @@ use SWISH::PhraseHighlight; # for highlighting
 use CGI;                    # provides a param() method -- could use Apache::Request, for example.
 use HTML::FillInForm;       # makes the form elements sticky
 use Template;               # Template-Toolkit: http://tt2.org or see http://search.cpan.org
-
 
 
 
