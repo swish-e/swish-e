@@ -78,7 +78,7 @@ void progwarn(char *msgfmt,...)
   va_start (args,msgfmt);
   fprintf  (stdout, "\nWarning: ");
   vfprintf (stdout, msgfmt, args);
-  fprintf  (stdout, "\n.\n");
+  fprintf  (stdout, "\n");
   va_end   (args);
  }
 
