@@ -227,14 +227,14 @@ typedef struct propEntry
     struct propEntry *next;     /* It is possible to have more than 1 */
 								/* property for the same metaID */
     unsigned int propLen;       /* Length of buffer */
-    unsigned char propValue[0]; /* Actual property value starts here */
+    unsigned char propValue[1]; /* Actual property value starts here */
 }
 propEntry;
 
 typedef struct docProperties
 {
 	int n;                      /* Number of entries in the array */
-	struct propEntry *propEntry[0];  /* Array to hold properties */
+	struct propEntry *propEntry[1];  /* Array to hold properties */
 }
 docProperties;
 
@@ -323,7 +323,7 @@ typedef struct ENTRY
     u1;
     /* this union is just for saving memory */
     int     currentlocation;
-	char	word[0];	/* actual word starts here */
+	char	word[1];	/* actual word starts here */
 }
 ENTRY;
 

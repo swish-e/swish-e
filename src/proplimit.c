@@ -124,9 +124,9 @@ typedef struct LOOKUP_TABLE
 typedef struct PARAMS
 {
     struct PARAMS   *next;
-    char    *propname;
-    char    *lowrange;
-    char    *highrange;
+    unsigned char    *propname;
+    unsigned char    *lowrange;
+    unsigned char    *highrange;
 } PARAMS;
 
 
@@ -211,9 +211,9 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 
     newparam = emalloc( sizeof( PARAMS ) );
     
-    newparam->propname = estrdup( propertyname );
-    newparam->lowrange = estrdup( low );
-    newparam->highrange = estrdup( hi );
+    newparam->propname = (unsigned char *)estrdup( propertyname );
+    newparam->lowrange = (unsigned char *)estrdup( low );
+    newparam->highrange = (unsigned char *)estrdup( hi );
 
     params = self->params;
 
@@ -602,19 +602,19 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
     if ( (strcmp( "<=", lowrange ) == 0)   )
     {
         meta_entry->loPropRange = NULL; /* indicates very small */
-        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
+        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
     }
 
     else if ( (strcmp( ">=", lowrange ) == 0)   )
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
+        meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
         meta_entry->hiPropRange = NULL; /* indicates very bit */
     }
 
     else
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, lowrange, strlen( lowrange ), 0, &error_flag );
-        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( highrange ), 0, &error_flag );
+        meta_entry->loPropRange = CreateProperty( meta_entry, lowrange, strlen( (char *)lowrange ), 0, &error_flag );
+        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
 
 
         if ( !(meta_entry->loPropRange && meta_entry->hiPropRange) )
@@ -663,7 +663,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
     {
         found = 0;
 
-        if ( !(meta_entry = getPropNameByName( &indexf->header, curp->propname )))
+        if ( !(meta_entry = getPropNameByName( &indexf->header, (char *)curp->propname )))
             progerr("Specified limit name '%s' is not a PropertyName", curp->propname );
 
 
