@@ -96,6 +96,8 @@ int i;
 	for (i=0; i<SEARCHHASHSIZE; i++) sw->hashentries[i] = NULL;
 		/* Swap flag and temp files*/
 	sw->swap_flag=SWAP_DEFAULT;
+		/* By default do not translate to ascii7 */
+	sw->applyAscii7=0;
 	sw->fp_loc_write=sw->fp_loc_read=sw->fp_file_write=sw->fp_file_read=NULL;
 	if(sw->tmpdir && sw->tmpdir[0] && isdirectory(sw->tmpdir))
 	{
