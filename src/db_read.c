@@ -454,9 +454,9 @@ int     DB_CheckFileNum(SWISH *sw, int filenum, void *DB)
    return sw->Db->DB_CheckFileNum(filenum, DB);
 }
 
-int     DB_ReadFileNum(SWISH *sw, int *filenum, unsigned char *filedata,int sz_filedata, void *DB)
+int     DB_ReadFileNum(SWISH *sw, unsigned char *filedata, void *DB)
 {
-   return sw->Db->DB_ReadFileNum(filenum, filedata,sz_filedata, DB);
+   return sw->Db->DB_ReadFileNum( filedata, DB);
 }
 
  

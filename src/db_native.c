@@ -1611,19 +1611,19 @@ int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata, int sz_file
 }
 
 /* Routine to get filenum from path */
-int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata, int sz_filedata, void *db)
+int     DB_ReadFileNum_Native(unsigned char *filedata, void *db)
 {
 #ifdef USE_BTREE
     unsigned long tmp;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     /* Write it to the hash index */
-    FHASH_Search(DB->hashfile, filedata, sz_filedata, (unsigned char *)&tmp, sizeof(unsigned long));
+    FHASH_Search(DB->hashfile, filedata, strlen(filedata), (unsigned char *)&tmp, sizeof(unsigned long));
 
     /* UnPack tmp */
     tmp = PACKLONG(tmp);
 
-    *filenum = (int)tmp;
+    return (int)tmp;
 #endif
     return 0;
 }

@@ -127,7 +127,7 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 
 int     DB_WriteFileNum(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
-int     DB_ReadFileNum(SWISH *sw, int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+int     DB_ReadFileNum(SWISH *sw, unsigned char *filedata, void *DB);
 int     DB_CheckFileNum(SWISH *sw, int filenum, void *DB);
 int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB);
 
@@ -181,7 +181,7 @@ struct MOD_DB
     
     
     int    (*DB_WriteFileNum) (int filenum, unsigned char *filedata,int sz_filedata, void *DB);
-    int    (*DB_ReadFileNum) (int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+    int    (*DB_ReadFileNum) ( unsigned char *filedata, void *DB);
     int    (*DB_CheckFileNum) (int filenum, void *DB);
     int    (*DB_RemoveFileNum) (int filenum, void *DB);
 
