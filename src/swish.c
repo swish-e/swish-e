@@ -53,6 +53,7 @@
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"
+#include <time.h>
 
 
 
@@ -97,6 +98,10 @@ int keychar2;
 char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
+clock_t search_time, run_time;
+
+
+    run_time = clock();
 
 	starttime=0L;
 
@@ -769,6 +774,8 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			/* print out "original" search words */
 		printf("# Search words: %s\n#\n",wordlist);
 
+        search_time = clock();
+
 		rc=search(sw,wordlist, structure);
 
 		switch(rc) {
@@ -795,6 +802,12 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		}
 		if(rc>0) {
                 	printf("# Number of hits: %d\n",rc);
+
+                	printf("# Search time: %0.3f seconds\n",
+                	     ((float)clock()-search_time)/CLOCKS_PER_SEC );
+                	printf("# Run time: %0.3f seconds\n",
+                	     ((float)clock()-run_time)/CLOCKS_PER_SEC );
+
                 	printSortedResults(sw);
 			printf(".\n");
 		} else if(!rc) {
