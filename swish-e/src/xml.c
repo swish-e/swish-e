@@ -66,7 +66,7 @@ struct metaEntry* e;
 
 		/* Go lowercase as discussed even if we are in xml */
                 /* Use Rainer's routine */
-        strtolower(temp);
+	strtolower(temp);
 
 	while(1) {
 		if((e=getMetaNameData(indexf,temp)))
@@ -117,13 +117,14 @@ int metaNamelen;
 int *positionMeta;    /* Position of word in file */
 int tmpposition=1;    /* Position of word in file */
 int currentmetanames;
-unsigned char *newp,*p,*endjunktag, *endjunktag2, *tag, *endtag=NULL,*endproptag=NULL,*tempprop;
+unsigned char *newp,*p, *tag, *endtag=NULL,*endproptag=NULL,*tempprop;
 int structure,dummy;
 struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameXML,*metaNameXML2;
 int i;
 IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
+int in_junk=0;
 	dummy=0;
 	sw->filenum++;
 
@@ -142,7 +143,7 @@ char *summary=NULL;
 		if((tag=strchr(p,'<'))) {   /* Look for '<' */
 				/* Index up to the tag */
 			*tag++='\0';
-			if(currentmetanames || (!currentmetanames && !sw->ReqMetaName))
+			if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
 			{
 				if(sw->ConvertHTMLEntities)
 					newp=convertentities(p,sw);
@@ -158,7 +159,7 @@ char *summary=NULL;
 					if((metaNameXML=getXMLField(indexf, tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))
 					{
 					/* If the data must be indexed add the metaName to the currentlist of metaNames */
-						if(is_meta_index(metaNameXML))
+						if(is_meta_index(metaNameXML) && !in_junk)
 						{
 							/* realloc memory if needed */
 							if(currentmetanames==metaNamelen) {
@@ -215,47 +216,33 @@ char *summary=NULL;
 						/* Check for junk metaname */
 						if(isJunkMetaName(sw,tag))
 						{
-							/* look for the end and ignore the content */
-							for(endjunktag=endtag+1;endjunktag && *endjunktag;)
-							{
-								if((endjunktag=strstr(endjunktag,"</")))
-								{
-									if((endjunktag2=strchr(endjunktag,'>')))
-									{
-										*endjunktag2++='\0';
-										if(strcasecmp(endjunktag+2,tag)==0)
-										{   /* found */
-											p=endjunktag2;
-											break;
-										} else {
-											*(endjunktag2-1)='>';
-											endjunktag=endjunktag2;
-										}
-									} else {
-										endjunktag+=2;
-									}
-								} else {
-									p=NULL;
-								}
-							}	
-						} else {
-							/* Ignore and continue */
-							p=endtag;
+							in_junk++;
 						}
+							/* continue */
+						p=endtag;
 					} 
 				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) {
-					/* search for the metaname in the
+				else if(tag[0]=='/') 
+				{
+					if((metaNameXML=getXMLField(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))
+					{
+						/* search for the metaname in the
 				        ** list of currentmetanames */
-					if(currentmetanames) {
-			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML->metaID) break;
-						if(i>=0) currentmetanames=i;
-						if(!currentmetanames) {
-						    metaName[0] = 1;
-							/* Restore position counter */
-						    positionMeta[0] = tmpposition;
+						if(currentmetanames) 
+						{
+							for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML->metaID) break;
+							if(i>=0) currentmetanames=i;
+							if(!currentmetanames) {
+								metaName[0] = 1;
+								/* Restore position counter */
+								positionMeta[0] = tmpposition;
+							}
 						}
-					}	
+					}
+					else if (isJunkMetaName(sw,tag+1))
+					{
+						if(in_junk>0) in_junk--;
+					}
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
@@ -267,7 +254,7 @@ char *summary=NULL;
 				}
 			} else p=tag;    /* tag not closed: continue */
 		} else {    /* No more '<' */
-			if(currentmetanames || (!currentmetanames && !sw->ReqMetaName))
+			if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
 			{
 				if(sw->ConvertHTMLEntities)
 					newp=convertentities(p,sw);
