@@ -32,6 +32,7 @@
 #include "hash.h"
 #include "ramdisk.h"
 #include "swish_qsort.h"
+#include "file.h"
 
 
 /* 2001-05 jmruiz */
@@ -456,8 +457,8 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
 
     if (!idx->fp_loc_write)
     {
-        if (!(idx->fp_loc_write = fopen(idx->swap_location_name, FILEMODE_WRITE)))
-            progerr("Could not create temp file %s", idx->swap_location_name);
+        idx->fp_loc_write = create_tempfile(sw, "swishloc", &idx->swap_location_name, 0 );
+
         idx->swap_tell = ftell;
         idx->swap_write = fwrite;
         idx->swap_close = fclose;
@@ -494,12 +495,14 @@ unsigned char *unSwapLocData(SWISH * sw, long pos)
     int     lenbuf;
     struct MOD_Index *idx = sw->Index;
 
+
+    /* Reopen in read mode for (for faster reads, I suppose) */
     if (!idx->fp_loc_read)
     {
         idx->swap_close(idx->fp_loc_write);
         idx->fp_loc_write = NULL;
         if (!(idx->fp_loc_read = fopen(idx->swap_location_name, FILEMODE_READ)))
-            progerr("Could not open temp file %s", idx->swap_location_name);
+            progerrno("Could not open temp file %s", idx->swap_location_name);
     }
 
     idx->swap_seek(idx->fp_loc_read, pos, SEEK_SET);

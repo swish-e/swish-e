@@ -166,21 +166,14 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     char   *rd_buffer = NULL;   /* complete file read into buffer */
     size_t  bytes;
     
-    efree( fprop->work_path );
-    fprop->work_path = tmpnam( (char *) NULL );
-    if ( !fprop->work_path )
-        progerrno("Failed to create a temporary file for filtering: ");
-
 
     /* slirp entire file into memory -- yuck */
     rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, fprop->fsize, 0);
         
 
-    out = fopen( fprop->work_path, "w" );  /* is "w" portable? */        
-
-    if ( !out )
-        progerrno("Failed to open temporary filter file '%s': ", fprop->work_path);
-
+    /* Save content to a temporary file */
+    efree( fprop->work_path );
+    out = create_tempfile(sw, "swishfil", &fprop->work_path, 0 );
 
     bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
 

@@ -848,6 +848,43 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 
 }
 
+/*******************************************************************
+*   Duplicate a property that's already in memory and return it.
+*
+*   Caller must destroy
+*
+*********************************************************************/
+
+static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, int max_size )
+{
+    propEntry      *docProp;
+    struct          metaEntry meta_entry;
+    int             propLen;
+    int             error_flag;
+
+    if ( metaID >= props->n )
+        return NULL;
+
+    if ( !(docProp = props->propEntry[ metaID ]) )
+        return NULL;
+
+
+    meta_entry.metaName = "(default)";  /* for error message, I think */
+    meta_entry.metaID   = metaID;
+
+
+    /* Duplicate the property */
+    propLen = docProp->propLen;
+
+    /* Limit size,if possible - should really check if it's a string */
+    if ( max_size && (max_size >= 8) && (max_size < propLen ))
+        propLen = max_size;
+
+    /* Duplicate the property */
+    return CreateProperty( &meta_entry, docProp->propValue, propLen, 1, &error_flag );
+}
+
+
 
 /*******************************************************************
 *   Allocate or reallocate the property buffer
@@ -858,25 +895,30 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 *
 *********************************************************************/
 
-static PropIOBufPtr allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
+static unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
 {
     unsigned long total_size;
 
+    if ( !buf_needed )
+        progerr("Asked for too small of a buffer size!");
 
-    total_size = sizeof(PropIOBufType) + buf_needed - 1;
 
-    if ( !sw->Prop_IO_Buf ||  total_size > sw->PropIO_allocated )
+    if ( !sw->Prop_IO_Buf ||  buf_needed > sw->PropIO_allocated )
     {
+        /* don't reallocate because we don't need to memcpy */
         if ( sw->Prop_IO_Buf )
             efree( sw->Prop_IO_Buf );
 
-        total_size = total_size > sw->PropIO_allocated + RD_BUFFER_SIZE
-                    ? total_size
+
+        total_size = buf_needed > sw->PropIO_allocated + RD_BUFFER_SIZE
+                    ? buf_needed
                     : sw->PropIO_allocated + RD_BUFFER_SIZE;
             
         sw->Prop_IO_Buf = emalloc( total_size );
         sw->PropIO_allocated = total_size;  /* keep track of structure size */
     }
+
+
     return sw->Prop_IO_Buf;
 }
     
@@ -885,103 +927,121 @@ static PropIOBufPtr allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
 /*******************************************************************
 *   Compress a Property
 *
-*   This compresses all properties -- might be good to only compress if
-*   they are longer than some size.
+*   Call with:
+*       propEntry       - the in data and its length
+*       propID          - current property
+*       SWISH           - to get access to the common buffer
+*       *uncompress_len - returns the length of the original buffer, or zero if not compressed
+*       *buf_len        - the length of the returned buffer
+*
+*   Returns:
+*       pointer the buffer of buf_len size
 *
 *
 *********************************************************************/
 
-static unsigned long compress_property( propEntry *prop, int propID, SWISH *sw )
+static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw, int *buf_len, int *uncompressed_len )
 {
-    PropIOBufPtr    PropBuf = sw->Prop_IO_Buf;     /* For compressing and uncompressing */
-    unsigned long   dest_size = prop->propLen;
+    unsigned char  *PropBuf;     /* For compressing and uncompressing */
+    int             dest_size;
 
-#ifdef HAVE_ZLIB
+#ifndef HAVE_ZLIB
+    *buf_len = prop->propLen;
+    *uncompressed_len = 0;
+    return prop->propValue;
 
-    /* Should maybe only compress if string, and over some length? */
+
+#else
+
+    /* Don't bother compressing smaller items */
+    if ( prop->propLen < MIN_PROP_COMPRESS_SIZE )
+    {
+        *buf_len = prop->propLen;
+        *uncompressed_len = 0;
+        return prop->propValue;
+    }
+    
+    /* Buffer should be +1% + a few bytes. */
     dest_size = prop->propLen + ( prop->propLen / 100 ) + 1000;  // way more than should be needed
 
-#endif
 
     /* Get an output buffer */
     PropBuf = allocatePropIOBuffer( sw, dest_size );
-    PropBuf->propLen    = PACKLONG(prop->propLen);  /* original size */
 
 
-#ifdef HAVE_ZLIB
-
-
-    if ( prop->propLen < MIN_PROP_COMPRESS_SIZE )
-    {
-        memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
-        PropBuf->propLen    = 0;  /* Flag that it's not compressed */
-        return sizeof(PropIOBufType) + prop->propLen - 1;
-    }
-    else
-        if ( compress2( (Bytef *)&PropBuf->buffer, &dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel) != Z_OK)
-            progerr("Property Compression Error");
+    if ( compress2( (Bytef *)PropBuf, (uLongf *)&dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel) != Z_OK)
+        progerr("Property Compression Error");
 
 
     /* Make sure it's compressed enough */
     if ( dest_size >= prop->propLen )
     {
-        dest_size = prop->propLen;
-        memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
-        PropBuf->propLen    = 0;  /* Flag that it's not compressed */
+        *buf_len = prop->propLen;
+        *uncompressed_len = 0;
+        return prop->propValue;
     }
 
-    return sizeof(PropIOBufType) + dest_size - 1;
+    *buf_len = dest_size;
+    *uncompressed_len = prop->propLen;
 
-
-#else
-
-    memcpy( &PropBuf->buffer, prop->propValue, prop->propLen );
-    PropBuf->propLen    = 0;  /* Flag that it's not compressed */
-    return sizeof(PropIOBufType) + dest_size - 1;
+    return PropBuf;
 
 #endif
-
 }
 
 /*******************************************************************
 *   Uncompress a Property
 *
+*   Call with:
+*       SWISH
+*       *input_buf          - buffer address
+*       buf_len             - size of buffer
+*       *uncompressed_size  - size of original prop, or zero if not compressed.
+*
+*   Returns:
+*       buffer address of uncompressed property
+*       uncompressed_size is set to length of buffer
+*
 *
 *********************************************************************/
 
-static unsigned char *uncompress_property( SWISH *sw, PropIOBufPtr input_buf, unsigned long read_size )
+static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, int buf_len, int *uncompressed_size )
 {
-    unsigned long compressed_len = read_size - sizeof( PropIOBufType ) + 1;
-#ifdef HAVE_ZLIB
-    /* make sure buffer is big enough for the uncompressed data */
-    PropIOBufPtr  PropBuf;
 
-    if ( input_buf->propLen == 0 ) /* wasn't compressed */
+#ifndef HAVE_ZLIB
+
+    if ( *uncompressed_size )
+        progerr("The index was created with zlib compression.\nThis version of swish was not compiled with zlib");
+
+    *uncompressed_size = buf_len;
+    return input_buf;
+
+#else
+    unsigned char *PropBuf;
+
+
+    if ( *uncompressed_size == 0 ) /* wasn't compressed */
     {
-        input_buf->propLen = compressed_len;
-        return input_buf->buffer;
+        *uncompressed_size = buf_len;
+        return input_buf;
     }
 
-    /* Convert back from network order */
-    input_buf->propLen = UNPACKLONG( input_buf->propLen );
 
-    PropBuf = allocatePropIOBuffer( sw, input_buf->propLen );
 
-    if ( uncompress(PropBuf->buffer, &input_buf->propLen, input_buf->buffer, compressed_len ) != Z_OK )
+    /* make sure we have enough space */
+    
+    PropBuf = allocatePropIOBuffer( sw, *uncompressed_size );
+
+
+    if ( uncompress(PropBuf, (uLongf *)uncompressed_size, input_buf, buf_len ) != Z_OK )
     {
         progwarn("Failed to uncompress Property\n");
         return NULL;
     }
 
-    return PropBuf->buffer;
 
-#else
+    return PropBuf;
 
-    if ( input_buf->propLen != 0 )
-        progerr("The index was created with zlib compression.\nThis version of swish was not compiled with zlib");
-
-    input_buf->propLen = compressed_len;
-    return input_buf->buffer;
 
 #endif
 
@@ -1004,7 +1064,9 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     INDEXDATAHEADER *header = &indexf->header;
     docProperties   *docProperties = fi->docProperties;
     propEntry       *prop;
-    unsigned long   compress_len;
+    int             uncompressed_len;
+    unsigned char   *buf;
+    int             buf_len;
     int             count;
     int             i;
     
@@ -1038,17 +1100,13 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
         /* convert the count to a propID */
         int propID = header->propIDX_to_metaID[i];
 
-        //??? just make the properties allocate what it needs 
-        if ( propID >= docProperties->n )
-            continue;
 
         if ( !(prop = docProperties->propEntry[propID]))
             continue;
 
-        compress_len = compress_property( prop, propID, sw );
+        buf = compress_property( prop, propID, sw, &buf_len, &uncompressed_len );
 
-        DB_WriteProperty( sw, fi, propID, (unsigned char *)sw->Prop_IO_Buf, compress_len, indexf->DB );
-
+        DB_WriteProperty( sw, fi, propID, buf, buf_len, uncompressed_len, indexf->DB );
     }
 
 
@@ -1086,10 +1144,11 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
     int             propLen;
     int             error_flag;
     struct          metaEntry meta_entry;
-    PropIOBufPtr    buffer;
+    unsigned char  *buf;
+    int             buf_len;            /* size on disk */
+    int             uncompressed_len;   /* size uncompressed */
     propEntry      *docProp;
     unsigned char  *propbuf;
-    unsigned long   read_size;
     INDEXDATAHEADER *header = &indexf->header;
     int             count;
     int             propIDX;
@@ -1111,50 +1170,33 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
 
 
 
-    meta_entry.metaName = "(default)";  /* for error message, I think */
-    meta_entry.metaID   = metaID;
-
     /* already loaded? -- if so, duplicate the property for the given length */
     /* This should only happen if ReadAllDocPropertiesFromDisk() was called, and only with db_native.c */
 
     if ( fi->docProperties )
-    {
-        if ( metaID >= fi->docProperties->n )
-            return NULL;
-
-        if ( !(docProp = fi->docProperties->propEntry[ metaID ]) )
-            return NULL;
+        return duplicate_in_mem_property( fi->docProperties, metaID, max_size );
 
 
-        /* Duplicate the property */
-        propLen = docProp->propLen;
+    /* Otherwise, read from disk */
 
-        /* Limit size,if possible - should really check if it's a string */
-        if ( max_size && (max_size >= 8) && (max_size < propLen ))
-            propLen = max_size;
-
-        /* Duplicate the property */
-        return CreateProperty( &meta_entry, docProp->propValue, propLen, 1, &error_flag );
-    }
-
-
-
-    if ( !(buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, metaID, indexf->DB )))
+    if ( !(buf = DB_ReadProperty( sw, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
         return NULL;
 
-    read_size = fi->prop_index->prop_position[propIDX].length;        
+	propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len );
 
-
-	propbuf = uncompress_property( sw, buffer, read_size );
-	propLen = buffer->propLen;
+	propLen = uncompressed_len; /* just to be clear ;) */
 
     /* Limit size,if possible - should really check if it's a string */
     if ( max_size && (max_size >= 8) && (max_size < propLen ))
         propLen = max_size;
 
+
+    meta_entry.metaName = "(default)";  /* for error message, I think */
+    meta_entry.metaID   = metaID;
+
     docProp = CreateProperty( &meta_entry, (char *)propbuf, propLen, 1, &error_flag );
 
-	efree( buffer );
+	efree( buf );
 	return docProp;
 }
 	

@@ -633,6 +633,13 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 
     pv = getResultPropValue(sw, r, propname, 0);
 
+    if (!pv)
+    {
+        if (f)
+            fprintf(f, "(NULL)"); /* Null value, no propname */
+        return;
+    }
+
 #ifdef USE_DOCPATH_AS_TITLE
     if ( strcmp( AUTOPROPERTY_TITLE, propname ) == 0 && strcmp( "", pv->value.v_str ) == 0 )
     {
@@ -649,12 +656,6 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 #endif        
 
 
-    if (!pv)
-    {
-        if (f)
-            fprintf(f, "(NULL)"); /* Null value, no propname */
-        return;
-    }
 
 
     switch (pv->datatype)

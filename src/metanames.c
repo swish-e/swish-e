@@ -62,13 +62,14 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
     { AUTOPROPERTY_DEFAULT,      META_INDEX },  /* REQUIRED */
 
 
-    /* These are the "internal" meta names generated at search time */
+    /* These are the "internal" meta names generated at search time they are all required */
     { AUTOPROPERTY_REC_COUNT,    META_PROP | META_INTERNAL | META_NUMBER },
     { AUTOPROPERTY_RESULT_RANK,  META_PROP | META_INTERNAL | META_NUMBER },
     { AUTOPROPERTY_FILENUM,      META_PROP | META_INTERNAL | META_NUMBER },
     { AUTOPROPERTY_INDEXFILE,    META_PROP | META_INTERNAL },
 
     /* These meta names "real" meta names that are available by default */
+    /* These can be commented out (e.g. to save disk space) and added back in with PropertyNames */
     { AUTOPROPERTY_DOCPATH,      META_PROP},
     { AUTOPROPERTY_TITLE,        META_PROP},
     { AUTOPROPERTY_DOCSIZE,      META_PROP | META_NUMBER},

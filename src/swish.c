@@ -1039,7 +1039,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     /* Update Economic mode */
     sw->Index->swap_locdata = params->swap_mode;
-    sw->Index->swap_filedata = params->swap_mode;
 
 
     /* Create an empty File - before indexing to make sure can write to the index */

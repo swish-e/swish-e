@@ -35,7 +35,6 @@
 #include "swish_qsort.h"
 #include "ramdisk.h"
 #include "db_native.h"
-
 /*
   -- init structures for this module
 */
@@ -1204,7 +1203,7 @@ int     DB_InitWriteFiles_Native(void *db)
 *
 *****************************************************************************/
 
-void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffer, int datalen, void *db)
+void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     int             written_bytes;
@@ -1244,16 +1243,42 @@ void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffe
         progerrno("O/S failed to tell me where I am - file number %d metaID %d : ", fi->filenum, propID);
 
 
-    if ((written_bytes = fwrite(buffer, 1, datalen, DB->prop)) != datalen) /* Write data */
-        progerrno("Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", fi->filenum, propID, datalen,
+    /* First write the uncompressed size */
+   compress1( uncompressed_len+1, DB->prop, putc);
+
+
+    if ((written_bytes = fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
+        progerrno("Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", fi->filenum, propID, buf_len,
                   written_bytes);
 
-    prop_loc->length = datalen;     /* length of this prop */
+    prop_loc->length = buf_len;     /* length of this prop */
 }
 
 
 /****************************************************************************
 *   Writes out the seek positions for the properties
+*
+*   This writes out a fixed size records, one for each file.  Each
+*   record is a list of <length>:<seek pos> entries, one for
+*   each property defined.  Length is null if this file doesn't have a
+*   property.
+*
+*   The advantage of the fixed width records is that the can be written
+*   to disk after each file, saving RAM, and more importanly, all the
+*   files don't need to be read when searhing.  Can just seek to the
+*   file of interest, read the table, then read the property file.
+*
+*   This comes at a cost of disk space, since the much of the
+*   data could be compressed.
+*
+*   An optional approach would be to only save the seek positions, plus
+*   an extra seek position at the end (the next position after the last
+*   property.  Then could calculate length by comparing the various start
+*   positions.
+*
+*   For, say, five properties this would save 5 x 4(bytes/int) 20 bytes per
+*   file.  But we need an extra position, so that's 20 - 4 = 16.  So, for
+*   100,000 files that's only 1.6M of disk space.  Probably not worth the trouble.
 *
 *
 *****************************************************************************/
@@ -1350,7 +1375,7 @@ void DB_ReadPropPositions_Native(SWISH *sw, FileRec *fi, void *db)
 *       *char (buffer -- must be destoryed by caller)
 *
 *****************************************************************************/
-char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, void *db)
+char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     PROP_INDEX      *pindex = fi->prop_index;
@@ -1386,6 +1411,8 @@ char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, void *db)
     seek_pos = pindex->prop_position[propIDX].seek;
     length   = pindex->prop_position[propIDX].length;
 
+    *buf_len = length;  /* pass the length back */
+
 
     /* Any for this metaID? */
     if (!length )
@@ -1396,15 +1423,16 @@ char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, void *db)
         progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, fi->filenum);
 
 
+    /* read uncomprssed size (for use in zlib uncompression) */
+    *uncompressed_len = uncompress1( DB->prop, fgetc ) - 1;
+
+
     /* allocate a read buffer */
-    buffer = emalloc(length + 1);
+    buffer = emalloc(length);
 
 
     if (fread(buffer, 1, length, DB->prop) != length)
         progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, fi->filenum);
-
-
-    *(buffer + length) = '\0';  /* flag end of buffer - but not currently used! */
 
     return buffer;
 }
