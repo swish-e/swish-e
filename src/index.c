@@ -670,12 +670,12 @@ IndexFILE *indexf=sw->indexlist;
 		for(i=0;i<estopsz;i++) 
 		{
 			e=estop[i];
-			if(sw->verbose) printf("\nRemoving word #%d '%s' (%d occureneces)\n",i,e->word,e->u1.max_locations);
+			if(sw->verbose) printf("\nRemoving word #%d '%s' (%d occurrences)\n",i,e->word,e->u1.max_locations);
        		 	for(j=0;j<SEARCHHASHSIZE;j++)
 			{
 				for(ep=sw->hashentries[j];ep;ep=ep->nexthash)
 				{
-					if(sw->verbose) printf("Computing new positions for %s (%d occurences)                        \r",ep->word,ep->u1.max_locations);
+					if(sw->verbose) printf("Computing new positions for %s (%d occurrences)                        \r",ep->word,ep->u1.max_locations);
 					fflush(stdout);
 					for(m=0,modified=0;m<ep->u1.max_locations;m++)
 					{
