@@ -23,9 +23,9 @@ $Id$
 /* Contains routines for parsing the configuration file */
 
 /*
-** 2001-02-15 rasc    ResultExtFormatName 
+** 2001-02-15 rasc    ResultExtFormatName
 ** 2001-03-03 rasc    EnableAltaVistaSyntax
-**                    code optimize: getYesNoOrAbort 
+**                    code optimize: getYesNoOrAbort
 ** 2001-03-13 rasc    SwishSearchOperators, SwishSearchDefaultRule
 ** 2001-03-16 rasc    TruncateDocSize nbytes
 ** 2001-04-09 rasc    Filters: options (opt.)
@@ -52,7 +52,7 @@ $Id$
 #include "merge.h"   /* Argh, needed for docprop.h */
 #include "docprop.h"
 #include "result_output.h"
-/* removed stuff 
+/* removed stuff
 #include "deflate.h"
 */
 #include "result_sort.h"
@@ -76,6 +76,7 @@ static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *
 static void readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file);
 static void word_hash_config(StringList *sl, WORD_HASH_TABLE *table_ptr );
 
+static char *read_line_from_file( int * linenum, FILE *fp );
 
 void fuzzy_or_die( IndexFILE *indexf, char *mode )
 {
@@ -93,7 +94,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
     int     i,
             gotdir,
             gotindex;
-    char    line[MAXSTRLEN];
+    char   *line = NULL;
     FILE   *fp;
     int     linenumber = 0;
     int     baddirective = 0;
@@ -117,11 +118,17 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
     indexf = sw->indexlist;
 
 
+
     sl = NULL;
 
-    while (fgets(line, MAXSTRLEN, fp) != NULL)
+    while ( !feof( fp ) )
     {
-        linenumber++;
+        /* Free previous line */
+        if ( line )
+            efree( line );
+
+        /* Read a line */
+        line = read_line_from_file( &linenumber, fp );
 
         if ( sl )
             freeStringList(sl);
@@ -153,10 +160,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
 
-            continue;                
+            continue;
         }
 
-        
+
         if (strcasecmp(w0, "IncludeConfigFile") == 0)
         {
             if (sl->n == 2)
@@ -170,7 +177,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "NoContents") == 0)
         {
             if (sl->n > 1)
@@ -183,7 +190,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexFile") == 0)
         {
             if (!(*hasindex))
@@ -199,11 +206,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else
                     progerr("%s: requires one value", w0);
             }
-            
+
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexReport") == 0)
         {
             if (sl->n == 2)
@@ -264,7 +271,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
-        
+
 
         if (strcasecmp(w0, "IndexComments") == 0)
         {
@@ -331,7 +338,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IgnoreLastChar") == 0)
         {
             if (sl->n == 2)
@@ -344,7 +351,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
-        
+
         if (strcasecmp(w0, "IgnoreFirstChar") == 0)
         {
             if (sl->n == 2)
@@ -358,7 +365,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "ReplaceRules") == 0)
         {
             if (sl->n > 2)
@@ -369,7 +376,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexName") == 0)
         {
             if (sl->n > 1)
@@ -382,7 +389,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 progerr("%s: requires a value", w0);
             continue;
         }
-        
+
 
         if (strcasecmp(w0, "IndexDescription") == 0)
         {
@@ -398,7 +405,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexPointer") == 0)
         {
             if (sl->n > 1)
@@ -413,7 +420,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexAdmin") == 0)
         {
             if (sl->n > 1)
@@ -428,13 +435,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "UseStemming") == 0)
         {
             progwarn("UseStemming is deprecated.  See FuzzyIndexingMode in the docs");
             if ( getYesNoOrAbort(sl, 1, 1) )
                 fuzzy_or_die( indexf, "Stemming_en" );
-                    
+
             continue;
         }
 
@@ -457,14 +464,14 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
-        
+
         if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking") == 0)
         {
             indexf->header.ignoreTotalWordCountWhenRanking = getYesNoOrAbort(sl, 1, 1);
             continue;
         }
 
-        
+
 
         if (strcasecmp(w0, "TranslateCharacters") == 0)
         {
@@ -515,7 +522,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-                
+
 
 
         if (strcasecmp(w0, "MetaNames") == 0)
@@ -540,7 +547,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             struct metaEntry *meta_entry;
             struct metaEntry *new_meta;
-            
+
             if (sl->n < 3)
                 progerr("%s: requires at least two values", w0);
 
@@ -551,15 +558,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 progerr("%s - name '%s' not a MetaName", w0, sl->word[1] );
 
 
-            if ( meta_entry->alias )                
+            if ( meta_entry->alias )
                 progerr("%s - name '%s' must not be an alias", w0, sl->word[1] );
 
-                
+
             for (i = 2; i < sl->n; i++)
             {
                 if ( getMetaNameByNameNoAlias( &indexf->header, sl->word[i]) )
                     progerr("%s - name '%s' is already a MetaName or MetaNameAlias", w0, sl->word[i] );
-                    
+
                 new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0);
                 new_meta->alias = meta_entry->metaID;
             }
@@ -574,13 +581,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             struct metaEntry *meta_entry;
             int               rank = 0;
-            
+
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a rank (integer) and a list of property names", w0);
 
 
             rank = read_integer( sl->word[1], w0, -RANK_BIAS_RANGE, RANK_BIAS_RANGE  );  // NOTE: if this is changed db.c must match
-                
+
 
             for (i = 2; i < sl->n; i++)
             {
@@ -597,14 +604,14 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_INDEX, 0);
 
 
-                meta_entry->rank_bias = rank;    
+                meta_entry->rank_bias = rank;
             }
 
             continue;
         }
-        
 
-        
+
+
 
 
         /* Meta name to extract out <a href> links */
@@ -648,9 +655,9 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-                
 
-        
+
+
         /* Meta name to extract out <img src> links */
         if (strcasecmp(w0, "ImageLinksMetaName") == 0)
         {
@@ -682,7 +689,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 #endif
             continue;
         }
-        
+
 
 
 
@@ -706,7 +713,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesIgnoreCase") == 0)
         {
             struct metaEntry *m;
-            
+
             if (sl->n <= 1)
                 progerr("%s: requires at least one value", w0);
 
@@ -731,7 +738,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesCompareCase") == 0)
         {
             struct metaEntry *m;
-            
+
             if (sl->n <= 1)
                 progerr("%s: requires at least one value", w0);
 
@@ -757,7 +764,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesNoStripChars") == 0)
         {
             struct metaEntry *m;
-            
+
             if (sl->n <= 1)
                 progerr("%s: requires at least one value", w0);
 
@@ -782,7 +789,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesStripChars") == 0)
         {
             struct metaEntry *m;
-            
+
             if (sl->n <= 1)
                 progerr("%s: requires at least one value", w0);
 
@@ -835,13 +842,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
-        
+
 
         if (strcasecmp(w0, "PropertyNameAlias") == 0)
         {
             struct metaEntry *meta_entry;
             struct metaEntry *new_meta;
-            
+
             if (sl->n < 3)
                 progerr("%s: requires at least two values", w0);
 
@@ -852,15 +859,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 progerr("%s - name '%s' not a PropertyName", w0, sl->word[1] );
 
 
-            if ( meta_entry->alias )                
+            if ( meta_entry->alias )
                 progerr("%s - name '%s' must not be an alias", w0, sl->word[1] );
 
-                
+
             for (i = 2; i < sl->n; i++)
             {
                 if ( getPropNameByNameNoAlias( &indexf->header, sl->word[i]) )
                     progerr("%s - name '%s' is already a PropertyName or PropertyNameAlias", w0, sl->word[i] );
-                    
+
                 new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0);
                 new_meta->alias = meta_entry->metaID;
             }
@@ -879,19 +886,19 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         //    PropertyNameMaxLength 10 h1 h2 h3
         // then the total length would be 5000, but each one would be limited, too.  I find that hard to imagine
         // it would be useful.  So the current design is you can only assign to a non-alias.
-        
-        
+
+
         if (strcasecmp(w0, "PropertyNamesMaxLength") == 0)
         {
             struct metaEntry *meta_entry;
             int               max_length = 0;
-            
+
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a length and a list of property names", w0);
 
 
             max_length = read_integer( sl->word[1], w0, 0, INT_MAX );
-                
+
 
             for (i = 2; i < sl->n; i++)
             {
@@ -911,7 +918,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING, 0);
 
 
-                meta_entry->max_len = max_length;    
+                meta_entry->max_len = max_length;
             }
 
             continue;
@@ -923,13 +930,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             struct metaEntry *meta_entry;
             int               max_length = 0;
-            
+
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a length and a list of property names", w0);
 
 
             max_length = read_integer( sl->word[1], w0, 1, INT_MAX );
-                
+
 
             for (i = 2; i < sl->n; i++)
             {
@@ -949,12 +956,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     meta_entry = addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING, 0);
 
 
-                meta_entry->sort_len = max_length;    
+                meta_entry->sort_len = max_length;
             }
 
             continue;
         }
-        
+
 
 
         /* Hashed word lists */
@@ -976,7 +983,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             word_hash_config( sl, &indexf->header.hashuselist );
             continue;
         }
-        
+
 
 
         /* IndexVerbose is supported for backwards compatibility */
@@ -989,7 +996,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexOnly") == 0)
         {
             if (sl->n > 1)
@@ -999,10 +1006,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
 
-            continue;    
+            continue;
         }
 
-        
+
         if (strcasecmp(w0, "IndexContents") == 0)
         {
             if (sl->n > 2)
@@ -1073,7 +1080,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "DefaultContents") == 0)
         {
             if (sl->n == 2 )
@@ -1086,7 +1093,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
+
         if (strcasecmp(w0, "BumpPositionCounterCharacters") == 0)
         {
             if (sl->n > 1)
@@ -1120,7 +1127,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
-        
+
         if (strcasecmp(w0, "IgnoreMetaTags") == 0)
         {
             if (sl->n > 1)
@@ -1172,7 +1179,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
             continue;
         }
-        
+
         if (strcasecmp(w0, "TruncateDocSize") == 0)
         {                       /* rasc 2001-03 */
             if (sl->n == 2 && isnumstring( (unsigned char *)sl->word[1] ))
@@ -1239,7 +1246,7 @@ static int read_integer( char *string,  char *message, int low, int high )
     if ( *badchar )
         progerr("Invalid char '%c' found in argument to '%s %s'", badchar[0], message, string);
 
-    result = (int)num;        
+    result = (int)num;
 
 
     if ( result < low || result > high )
@@ -1291,7 +1298,7 @@ static  void add_ExtractPath( char *name, SWISH *sw, struct metaEntry *m, char *
     path_extract_list *list = sw->pathExtractList;
     path_extract_list *last = NULL;
 
-    
+
     while ( list && list->meta_entry != m  )
     {
         last = list;
@@ -1354,7 +1361,7 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
     params++;
 
     /* these two could be optimized, of course */
-    
+
     if ( strcasecmp( params[0], "append") == 0 )
     {
         pattern = estrdup("$");
@@ -1367,14 +1374,14 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
         replace = estrdup(params[1]);
     }
 
-       
+
     else if  ( strcasecmp( params[0], "remove") == 0 )
     {
         pattern = estrdup(params[1]);
         replace = estrdup( "" );
         global++;
     }
-        
+
 
     else if  ( strcasecmp( params[0], "replace") == 0 )
     {
@@ -1390,7 +1397,7 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
         add_replace_expression( name, reg_list, params[1] );
         return;
     }
-        
+
 
     else
         progerr("%s: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", name, params[0] );
@@ -1426,7 +1433,7 @@ int	strtoDocType( char * s )
         {"HTML", HTML},
         {"XML", XML},
         {"WML", WML},
-#ifdef HAVE_LIBXML2        
+#ifdef HAVE_LIBXML2
         {"XML2", XML2 },
         {"HTML2", HTML2 },
         {"TXT2", TXT2 },
@@ -1500,15 +1507,15 @@ void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
 static void word_hash_config( StringList *sl, WORD_HASH_TABLE *table_ptr )
 {
     int i;
-    
+
     if (sl->n < 2)
         progerr("%s: requires at least one value", sl->word[0]);
 
-        
+
     if (lstrstr(sl->word[1], "SwishDefault"))
         progwarn("SwishDefault is obsolete. See the CHANGES file.");
 
-        
+
     if (lstrstr(sl->word[1], "File:"))
     {
         if (sl->n == 3)
@@ -1523,7 +1530,7 @@ static void word_hash_config( StringList *sl, WORD_HASH_TABLE *table_ptr )
 
 
     for (i = 1; i < sl->n; i++)
-        add_word_to_hash_table( table_ptr, sl->word[i], HASHSIZE);
+        add_word_to_hash_table( table_ptr, strtolower(sl->word[i]), HASHSIZE);
 }
 
 
@@ -1553,7 +1560,7 @@ static void    readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file)
         if (sl && sl->n)
         {
             for (i = 0; i < sl->n; i++)
-                add_word_to_hash_table( table_ptr, sl->word[i], HASHSIZE);
+                add_word_to_hash_table( table_ptr, strtolower(sl->word[i]), HASHSIZE);
 
             freeStringList(sl);
         }
@@ -1577,10 +1584,10 @@ static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *
 {
     if (sl->n != 2)
         progerr("%s: requires one value", w0);
-        
+
     if (strcasecmp(sl->word[1], "error") == 0)
         *setting = UNDEF_META_ERROR;
-        
+
     else if (strcasecmp(sl->word[1], "ignore") == 0)
         *setting = UNDEF_META_IGNORE;
 
@@ -1630,7 +1637,7 @@ void freeSwishConfigOptions( SWISH *sw )
         while ( sw->indexcontents )
         {
              next = sw->indexcontents->next;
-             
+
              if ( sw->indexcontents->patt )
                 freeswline( sw->indexcontents->patt );
 
@@ -1653,9 +1660,51 @@ void freeSwishConfigOptions( SWISH *sw )
              sw->storedescription = next;
         }
     }
-      
-        
+
+
 }
 
 
+
+#define LINE_BUF_LEN MAXSTRLEN
+
+static char *read_line_from_file( int * linenum, FILE *fp )
+{
+    char * line = NULL;         /* output buffer */
+    int  buf_size = 0;
+
+    /* Initialze the buffer */
+    buf_size = LINE_BUF_LEN * sizeof( char );
+    line = emalloc( buf_size );
+    *line = '\0';
+
+
+    /* repeat until we have either a full line or no line */
+    while( 1 )
+    {
+        int cur_len = strlen( line );
+
+
+        /* Make sure there's at least LINE_BUF_LEN room in the buffer */
+        if ( buf_size - cur_len < LINE_BUF_LEN )
+        {
+            buf_size = cur_len + LINE_BUF_LEN;
+            line = erealloc( line, buf_size );
+        }
+
+        /* Read line, if there is one */
+        if ( !fgets( &(line[cur_len]), LINE_BUF_LEN, fp ) ) 
+            break;
+
+        (*linenum)++;
+
+        /* Look for continuation mark (backslash+\n) and replace with space */
+        cur_len = strlen( line );
+        if ( line[cur_len-2] == '\\' && line[cur_len-1] == '\n' )
+            line[cur_len-2] = '\0';
+        else
+            break;
+    }
+    return line;
+}
 
