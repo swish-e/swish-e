@@ -74,9 +74,8 @@
 #include <time.h>
 #include <setjmp.h>
 
-/* -- moved version into top-level configure.in -- 
-#define SWISH_VERSION "2.1-dev18"
-*/
+
+#define SWISH_VERSION "2.1-dev19"
 
 #define SWISH_MAGIC 21076321L
 
@@ -84,9 +83,9 @@
 
 #define BASEHEADER 1
 
-#define INDEXHEADER "# SWISH format: 2.1-dev18"
+#define INDEXHEADER "# SWISH format: 2.1-dev19"
 #define INDEXHEADER_ID BASEHEADER + 1 
-#define INDEXVERSION "# Swish-e format: 2.1-dev18"
+#define INDEXVERSION "# Swish-e format: 2.1-dev19"
 #define INDEXVERSION_ID BASEHEADER + 2
 
 
@@ -201,28 +200,18 @@
 #define MULTITXT BASEDOCTYPE+4
 #define WML BASEDOCTYPE+5
 
-/* #### Added propLen  to allow binary data */
 typedef struct docPropertyEntry {
-	int metaName;		/* meta field identifier; from getMetaName() */
+	int metaID;		/* meta field identifier; from getMetaName() */
 	unsigned char *propValue;  /* buffer from META's CONTENTS attribute */
 	unsigned int propLen;	/* Length of buffer */
 
 	struct docPropertyEntry *next;
 } docPropertyEntry;
-/* #### */
 
 struct metaEntry {
-	char* metaName;
-	int index;
-	
-	/* #### Commented - Use metaType instead */
-	/* is this meta field a Document Property? */
-	/* int isDocProperty;*/		/* true is doc property */
-	/*int isOnlyDocProperty;*/	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
-	
+	char* metaName;   /* MetaName string */
+	int metaID;      /* Meta ID */
 	int metaType;    /* See metanames.h for values */
-	/* #### */
-	struct metaEntry* next;
 };
 
 typedef struct {
@@ -273,7 +262,7 @@ typedef struct  {
 
 
 typedef struct {
-	int metaName;
+	int metaID;
 	int filenum;
 	int structure;
 	int frequency;
@@ -284,15 +273,14 @@ typedef struct ENTRY {
 	char *word;
 	int tfrequency;
 	LOCATION **locationarray;
+		/* this union is just for saving memory */
 	struct {
 		long fileoffset;
 		int max_locations;
 	} u1;
-		/* ths union is just for saving memory */
-	union {
-		struct ENTRY *nexthash;
-		int currentlocation;
-	} u2;
+	struct ENTRY *nexthash;
+		/* this union is just for saving memory */
+	int currentlocation;
 } ENTRY;
 
 struct swline {
@@ -355,6 +343,7 @@ typedef struct {
     int ignorefirstcharlookuptable[256];
     int ignorelastcharlookuptable[256];
     int bumpposcharslookuptable[256];
+    int indexcharslookuptable[256];
 } INDEXDATAHEADER;
 
 typedef struct IndexFILE {
@@ -373,8 +362,8 @@ typedef struct IndexFILE {
 		/* Offsets of words in index file */
 	long wordpos; 
        		 /* Values for fields (metanames) */
-	struct metaEntry* metaEntryList;
-	int Metacounter;
+	struct metaEntry **metaEntryArray;
+	int metaCounter;   /* Number of metanames */
 		
 		/* values for handling stopwords */
 	struct swline *hashstoplist[HASHSIZE];
@@ -458,8 +447,7 @@ struct filter {
 };
 
 typedef struct {
-	int currentsize;
-	int maxsize;
+	int maxWordSize;
 	ENTRY **elist;
 } ENTRYARRAY;
 
@@ -542,7 +530,7 @@ typedef struct {
 
 
 	/* entry vars */
-    ENTRYARRAY *entrylist;
+    ENTRYARRAY *entryArray;
     ENTRY *hashentries[SEARCHHASHSIZE];
 
 	/* 08/00 Jose Ruiz Values for document type support */

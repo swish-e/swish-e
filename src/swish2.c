@@ -43,7 +43,7 @@ int i;
 	sw->TotalFiles = 0;
 	sw->filenum = 0;
 	sw->useCustomOutputDelimiter = 0;           /* added 11/24/98 */
-	sw->entrylist = NULL;
+	sw->entryArray = NULL;
         sw->dirlist = NULL;
         sw->indexlist = NULL;
         sw->replacelist = NULL;
@@ -141,7 +141,7 @@ void SwishResetSearch(SWISH *sw)
         sw->maxhits = -1;
         sw->beginhits = 0;
 		/* Free results from previous search if they exists */
-	if(sw->resultlist) freeresultlist(sw);
+	if(sw->resultlist) freeresultlist(sw);sw->resultlist=NULL;
 	if(sw->searchwordlist) freeswline(sw->searchwordlist); sw->searchwordlist=NULL;
 		/* Free props arrays */
 	FreeOutputPropertiesVars(sw);
@@ -149,11 +149,13 @@ void SwishResetSearch(SWISH *sw)
 
 void SwishClose(SWISH *sw)
 {
-struct metaEntry *metatmplist=NULL,*metatmplist2=NULL;
 IndexFILE *tmpindexlist;
 int i;
 
 if(sw) {
+		/* Free search results and imput parameters */
+		SwishResetSearch(sw);
+
 		free_header(&sw->mergedheader);
                 if(sw->lencustomOutputDelimiter)efree(sw->customOutputDelimiter);
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
@@ -166,12 +168,14 @@ if(sw) {
 		tmpindexlist=sw->indexlist;
 		while(tmpindexlist)
 		{
-                	metatmplist = tmpindexlist->metaEntryList;
-         		while (metatmplist) {
-                       		metatmplist2 = metatmplist->next;
-                        	efree(metatmplist->metaName);
-                        	efree(metatmplist);
-                        	metatmplist = metatmplist2;
+			if(tmpindexlist->metaCounter)
+			{
+				for(i=0;i<tmpindexlist->metaCounter;i++)
+				{
+                			efree(tmpindexlist->metaEntryArray[i]->metaName);
+                			efree(tmpindexlist->metaEntryArray[i]);
+				}
+                		efree(tmpindexlist->metaEntryArray);
 			}
 			if (tmpindexlist->fp) 
 				fclose(tmpindexlist->fp);
@@ -218,8 +222,6 @@ if(sw) {
 			tmpindexlist=tmpindexlist->next;
                 }
 		freeindexfile(sw->indexlist);
-		/* Free search results and imput parameters */
-		SwishResetSearch(sw);
 		
 		/* Free fs parameters */
 		if (sw->pathconlist) freeswline(sw->pathconlist);

@@ -22,7 +22,7 @@ void do_index_file (SWISH *sw, FileProp *fprop);
 
 void printMetaNames (IndexFILE *);
 DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
-ENTRYARRAY *addentry (SWISH *, ENTRYARRAY *, char*, int, int, int, int );
+void addentry (SWISH *, char*, int, int, int, int );
 void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
 int getfilecount (IndexFILE *);
 char *getthedate(void);
@@ -62,4 +62,4 @@ int indexstring _AP ((SWISH*, char *, int, int, int, int *, int *));
 void addtofwordtotals _AP ((IndexFILE *, int, int));
 void addsummarytofile _AP ((IndexFILE *, int, char *));
 
-
+void BuildSortedArrayOfWords(SWISH *,IndexFILE *);

@@ -49,11 +49,10 @@ char *metaName;
 
 struct metaEntry * getMetaNameData(IndexFILE *indexf, char *word)
 {
-struct metaEntry* temp;
-
-	for (temp = indexf->metaEntryList; temp != NULL; temp = temp->next) 
-		if (!strcmp(temp->metaName, word))
-			return temp;
+int i;
+	for (i=0;i<indexf->metaCounter; i++) 
+		if (!strcmp(indexf->metaEntryArray[i]->metaName, word))
+			return indexf->metaEntryArray[i];
 	return NULL;
 }
 
@@ -62,23 +61,23 @@ struct metaEntry* temp;
 
 struct metaEntry * getMetaIDData(IndexFILE *indexf, int number)
 {
-struct metaEntry* temp;
-
-	for (temp = indexf->metaEntryList; temp != NULL; temp = temp->next) 
-		if (temp->index==number)
-			return temp;
-	return NULL;
+	number--; 
+	number--;
+	if(number<indexf->metaCounter)
+		return indexf->metaEntryArray[number];
+	else
+		return NULL;
 }
 
 
 
-/* Add an entry to the metaEntryList with the given value and the
+/* Add an entry to the metaEntryArray with the given value and the
 ** appropriate index
 */
 /* #### Changed the name isDocProp by metaType */
 void addMetaEntry(IndexFILE *indexf, char *metaWord, int metaType, int *applyautomaticmetanames)
 {
-int i;
+register int i;
 struct metaEntry* tmpEntry;
 struct metaEntry* newEntry;
 	
@@ -92,30 +91,25 @@ struct metaEntry* newEntry;
 		*applyautomaticmetanames =1;
 		return;
 	}
-	if (indexf->Metacounter <2)
-		indexf->Metacounter = 2;
 
 /* #### Jose Ruiz - New Stuff. Use metaType */
-	/* See if there is a previous metaname */
-	for (tmpEntry=indexf->metaEntryList;tmpEntry;tmpEntry=tmpEntry->next)   
-		if (strcmp(tmpEntry->metaName,metaWord)==0) break; /* found */
+	/* See if there is a previous metaname with the same name */
+	tmpEntry = getMetaNameData(indexf, metaWord);
 
 	if(!tmpEntry)      /* metaName not found - Create a new one */
 	{
 		newEntry=(struct metaEntry*) emalloc(sizeof(struct metaEntry));
 		newEntry->metaType = 0;
 		newEntry->metaName = (char*)estrdup(metaWord);
-		newEntry->index = indexf->Metacounter++;
-		newEntry->next = NULL;
+		newEntry->metaID = indexf->metaCounter + 2;
+
 			/* Add at the end of the list of metanames */
-		if (indexf->metaEntryList)
-		{
-			for(tmpEntry=indexf->metaEntryList;tmpEntry->next!=NULL;tmpEntry=tmpEntry->next)
-			;
-			tmpEntry->next = newEntry;
-		}
+		if (indexf->metaCounter)
+			indexf->metaEntryArray = (struct metaEntry **)erealloc(indexf->metaEntryArray,(indexf->metaCounter+1)*sizeof(struct metaEntry *));
 		else
-			indexf->metaEntryList = newEntry;
+			indexf->metaEntryArray = (struct metaEntry **)emalloc(sizeof(struct metaEntry *));
+
+		indexf->metaEntryArray[indexf->metaCounter++] = newEntry;
 		tmpEntry = newEntry;
 	}
 	/* Add metaType info */
@@ -130,4 +124,20 @@ struct metaEntry* newEntry;
 	else if(strcmp(metaWord,META_SUMMARY)==0) indexf->summaryProp=tmpEntry;
 
 	/* #### */
+}
+
+
+/* Returns the ID associated with the metaName if it exists
+*/
+
+int getMetaNameID(indexf, word)
+IndexFILE *indexf;
+char * word;
+{
+int i;
+
+	for (i=0;i<indexf->metaCounter;i++) 
+		if (strcmp(indexf->metaEntryArray[i]->metaName, word)==0)
+			return (i+2);
+	return 1;
 }

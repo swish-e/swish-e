@@ -179,7 +179,7 @@ void freeentry(ENTRY *e)
 {
 int i;
 	if (!e) return;
-	for(i=0;i<e->u2.currentlocation;i++) efree(e->locationarray[i]);
+	for(i=0;i<e->currentlocation;i++) efree(e->locationarray[i]);
 	efree(e->locationarray);
 	efree(e->word);
 	efree(e);

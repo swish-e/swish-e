@@ -52,7 +52,7 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 		compress2(l->position[i],p);
 	}
 	compress2(l->filenum,p);
-	/* Pack metaName frequency and structure in just one integer */
+	/* Pack metaID frequency and structure in just one integer */
 	/* Pack structure in just one smaller integer */
 	vars[0]=l->structure;
 	index_structure=get_lookup_index(&indexf->structurelookup,1,vars)+1;
@@ -60,7 +60,7 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 	vars[1]=index_structure;
 	index_structfreq=get_lookup_index(&indexf->structfreqlookup,2,vars)+1;
 	/* Pack and add 1 to index to avoid problems with compress 0 */
-	vars[0]=l->metaName;
+	vars[0]=l->metaID;
 	vars[1]=index_structfreq;
 	index=get_lookup_index(&indexf->locationlookup,2,vars)+1;
 	compress2(index,p);
@@ -86,16 +86,16 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 LOCATION *uncompress_location(SWISH *sw,IndexFILE *indexf, unsigned char *p)
 {
 LOCATION *loc;
-int i,tmp,metaName,filenum,structure,frequency,index,index_structfreq,index_structure;
+int i,tmp,metaID,filenum,structure,frequency,index,index_structfreq,index_structure;
 	uncompress2(index,p);
 	uncompress2(filenum,p);
-	metaName=indexf->locationlookup->all_entries[index-1]->val[0];
+	metaID=indexf->locationlookup->all_entries[index-1]->val[0];
 	index_structfreq=indexf->locationlookup->all_entries[index-1]->val[1];
 	frequency=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[0];
 	index_structure=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[1];
 	structure=indexf->structurelookup->all_entries[index_structure-1]->val[0];
 	loc=(LOCATION *)emalloc(sizeof(LOCATION)+(frequency-1)*sizeof(int));
-	loc->metaName=metaName;
+	loc->metaID=metaID;
 	loc->filenum=filenum;
 	loc->structure=structure;
 	loc->frequency=frequency;
@@ -115,7 +115,7 @@ void CompressPrevLocEntry(SWISH *sw,IndexFILE *indexf,ENTRY *e)
 {
 int i,max_locations;
 	max_locations=e->u1.max_locations;
-	for(i=e->u2.currentlocation;i<max_locations;i++)
+	for(i=e->currentlocation;i<max_locations;i++)
 	{
 			/* Compress until current filenum */
 		if(e->locationarray[i]->filenum==sw->filenum) return;
@@ -130,7 +130,7 @@ void CompressCurrentLocEntry(SWISH *sw,IndexFILE *indexf,ENTRY *e)
 {
 int i,max_locations;
 	max_locations=e->u1.max_locations;
-	for(i=e->u2.currentlocation;i<max_locations;i++)
+	for(i=e->currentlocation;i<max_locations;i++)
 	{
 		e->locationarray[i]=(LOCATION *)compress_location(sw,indexf,e->locationarray[i]);
 	}

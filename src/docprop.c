@@ -91,7 +91,7 @@ void freeDocProperties(docProperties)
 }
 
 /* #### Added propLen to allow binary data */
-void addDocProperty(docPropertyEntry **docProperties, int metaName, unsigned char *propValue, int propLen)
+void addDocProperty(docPropertyEntry **docProperties, int metaID, unsigned char *propValue, int propLen)
 {
 	/* Add the given file/metaName/propValue data to the File object */
 docPropertyEntry *docProp;
@@ -99,7 +99,7 @@ docPropertyEntry *docProp;
 	if(propLen)
 	{
 		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
-		docProp->metaName = metaName;
+		docProp->metaID = metaID;
 		docProp->propValue = (char *)emalloc(propLen);
 		memcpy(docProp->propValue, propValue,propLen);
 		docProp->propLen=propLen;
@@ -145,7 +145,7 @@ int lenbuffer;
 		}
 		p= q = buffer + *datalen;
 		/* the ID of the property */
-		propID = docProperties->metaName;
+		propID = docProperties->metaID;
 		/* Do not store 0!! - compress does not like it */
 		propID++;
 		compress3(propID,p);
@@ -160,11 +160,11 @@ int lenbuffer;
 /* #### */
 
 /* #### Added propLen support and simplify it */
-/* Read one entry and return it; also set the metaName.
- * In all cases, metaName will be zero when the end of the
+/* Read one entry and return it; also set the metaID.
+ * In all cases, metaID will be zero when the end of the
  * set is reached.
  */
-unsigned char* readNextDocPropEntry(char **buf, int *metaName, int *propLen)
+unsigned char* readNextDocPropEntry(char **buf, int *metaID, int *propLen)
 {
 char* propValueBuf=NULL;
 int tempPropID;
@@ -173,7 +173,7 @@ char *p=*buf;
 	uncompress2(tempPropID,p);
 	if (!tempPropID) return NULL;		/* end of list */
 
-	*metaName = --tempPropID;
+	*metaID = --tempPropID;
 
 	/* grab the data length */
 	uncompress2(len,p);
@@ -282,7 +282,7 @@ IndexFILE *indexf;
 		/* Get ID for each index file */
 		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		{
-                	indexf->propIDToSort[i] = getMetaName(indexf, sw->propNameToSort[i]);
+                	indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
                 	if (indexf->propIDToSort[i] == 1)
                 	{
 				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Sort property name \"%s\" in one of the index files\n.\n", sw->propNameToSort[i]);
@@ -312,7 +312,7 @@ int i;
 		/* Get ID for each index file */
 		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		{
-			indexf->propIDToDisplay[i] = getMetaName(indexf, sw->propNameToDisplay[i]);
+			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
 			if (indexf->propIDToDisplay[i] == 1)
 			{
 				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Display property name \"%s\"\n.\n", sw->propNameToDisplay[i]);
@@ -372,7 +372,7 @@ docPropertyEntry *p;
 	{
 		for(p=docProperties;p;p=p->next)
 		{
-			if(indexf->propIDToDisplay[i]==p->metaName) break;
+			if(indexf->propIDToDisplay[i]==p->metaID) break;
 		}
                 props[i] = getPropAsString(indexf,p);
 	}
@@ -394,7 +394,7 @@ docPropertyEntry *p;
 	{
 		for(p=docProperties;p;p=p->next)
 		{
-			if(indexf->propIDToSort[i]==p->metaName) break;
+			if(indexf->propIDToSort[i]==p->metaID) break;
 		}
                 props[i] = getPropAsString(indexf,p);
 	}
@@ -413,9 +413,9 @@ void swapDocPropertyMetaNames(docProperties, metaFile)
 		metaFileTemp = metaFile;
 		while (metaFileTemp)
 		{
-			if (docProperties->metaName == metaFileTemp->oldIndex)
+			if (docProperties->metaID == metaFileTemp->oldMetaID)
 			{
-				docProperties->metaName = metaFileTemp->newIndex;
+				docProperties->metaID = metaFileTemp->newMetaID;
 				break;
 			}
 
@@ -516,7 +516,7 @@ docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
 	while(dp)
 	{
 		tmp=emalloc(sizeof(docPropertyEntry));
-		tmp->metaName=dp->metaName;
+		tmp->metaID=dp->metaID;
 		tmp->propValue=emalloc(dp->propLen);
 		memcpy(tmp->propValue,dp->propValue,dp->propLen);
 		tmp->propLen=dp->propLen;
@@ -594,7 +594,7 @@ char *s=NULL;
 unsigned long i;
 struct metaEntry *q;
 	if(!p) return estrdup("");
-	q=getMetaIDData(indexf,p->metaName); /* BTW metaName is de ID !!!*/
+	q=getMetaIDData(indexf,p->metaID); 
 	if(!q) return estrdup("");
 
 	if(is_meta_string(q))      /* check for ascii/string data */
@@ -628,25 +628,25 @@ char **props;      /* Array to Store properties */
 docPropertyEntry *p;
 	for(p=fi->docProperties;p;p=p->next)
 	{
-		if(indexf->filenameProp->index==p->metaName) {}
-		else if(indexf->titleProp->index==p->metaName) 
+		if(indexf->filenameProp->metaID==p->metaID) {}
+		else if(indexf->titleProp->metaID==p->metaID) 
 			fi->fi.title=bin2string(p->propValue,p->propLen);
-		else if(indexf->filedateProp->index==p->metaName) 
+		else if(indexf->filedateProp->metaID==p->metaID) 
 		{
 			fi->fi.mtime=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.mtime);
 		}
-		else if(indexf->startProp->index==p->metaName) 
+		else if(indexf->startProp->metaID==p->metaID) 
 		{
 			fi->fi.start=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.start);
 		}
-		else if(indexf->sizeProp->index==p->metaName) 
+		else if(indexf->sizeProp->metaID==p->metaID) 
 		{
 			fi->fi.size=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.size);
 		}
-		else if(indexf->summaryProp->index==p->metaName) 
+		else if(indexf->summaryProp->metaID==p->metaID) 
 			fi->fi.summary=bin2string(p->propValue,p->propLen);
 	}
 }
