@@ -532,7 +532,7 @@ struct MOD_Index *idx = sw->Index;
 					buffer=erealloc(buffer,lenbuffer+1);
 				}
 				sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
-				title=SafeStrCopy(title, (char *) (tmptitle=parsetitle(buffer, item->url)),&lentitle);
+				title=SafeStrCopy(title, (char *) (tmptitle=parsetitle(buffer)),&lentitle);
 				efree(tmptitle);
 			} else {
 				if ((p=strrchr(item->url, '/')))

@@ -253,25 +253,18 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
 ** Otherwise, only the file name without its path is returned.
 */
 
-char   *parsetitle(char *buffer, char *alttitle)
+char   *parsetitle(char *buffer)
 {
-    char   *shorttitle,
-           *title;
+    char   *title;
 
 
-    shorttitle = estrdup(alttitle);
     if (!buffer)
-    {
-        return shorttitle;
-    }
+        return "";
 
     if ((title = parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
-    {
-        efree(shorttitle);
         return title;
-    }
 
-    return shorttitle;
+    return "";
 }
 
 
@@ -622,7 +615,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     char   *Content = NULL,
            *Name = NULL,
            *summary = NULL;
-    char   *title = parsetitle(buffer, fprop->real_filename);
+    char   *title = parsetitle(buffer);
 
     if (!isoktitle(sw, title))
     {
