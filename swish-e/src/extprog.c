@@ -21,6 +21,8 @@
 **
 */
 
+#include "acconfig.h"
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
