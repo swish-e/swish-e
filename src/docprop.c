@@ -1435,8 +1435,18 @@ int isAutoProperty (char *propname)
 void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
 {
     char *propstr;
+    char proptype = '?';
 
-    printf("  %20s (%2d):", meta_entry->metaName, meta_entry->metaID );
+    if  ( is_meta_string(meta_entry) )
+        proptype = 'S';
+
+    else if ( is_meta_date(meta_entry) )
+        proptype = 'D';
+
+    else if ( is_meta_number(meta_entry) )
+        proptype = 'N';
+
+    printf("  %20s (%2d) %c:", meta_entry->metaName, meta_entry->metaID, proptype );
 
     for ( ;prop; prop = prop->next )
     {
