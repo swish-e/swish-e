@@ -64,6 +64,7 @@ binmode STDOUT;
     local $SIG{HUP} = sub { $abort++ };
 
     my %visited;  # global -- I suppose would be smarter to localize it per server.
+    my %validated;
 
     for my $s ( @servers ) {
         if ( !$s->{base_url} ) {
@@ -87,6 +88,9 @@ sub process_server {
 
     $server->{debug} ||= 0;
     $server->{debug} = 0 unless $server->{debug} =~ /^\d+$/;
+
+    $server->{debug} |= DEBUG_FAILED if $server->{validate_links};
+
 
     $server->{max_size} ||= MAX_SIZE;
     die "max_size parameter '$server->{max_size}' must be a number\n" unless $server->{max_size} =~ /^\d+$/;
@@ -121,6 +125,7 @@ sub process_server {
             die "Entry number $n in $_ is not a code reference\n" unless ref $sub eq 'CODE';
         }
     }
+
     
 
     my $start = time;
@@ -496,6 +501,7 @@ sub extract_links {
                 unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
                     print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
                     $server->{counts}{'Off-site links'}++;
+                    validate_link( $u ) if $server->{validate_links} && $u->scheme eq 'http';
                     next;
                 }
                 
@@ -529,6 +535,21 @@ sub extract_links {
 
     return \@links;
 }
+
+sub validate_link {
+    my $uri = shift;
+
+    return if $visited{ $uri->canonical } || $validated{ $uri->canonical }++;
+
+    my $ua = LWP::UserAgent->new;
+    my $request = HTTP::Request->new('HEAD', $uri->canonical );
+    my $response = $ua->simple_request( $request );
+
+    print STDERR "$uri - returned '",
+        ( $response->status_line || $response->status || 'unknown status' ),
+        "\n" unless $response->is_success;
+}
+    
 
 sub output_content {
     my ( $server, $content, $response ) = @_;
@@ -572,6 +593,12 @@ sub commify {
 sub default_urls {
     die "$0: Must list URLs when using 'default'\n" unless @ARGV;
 
+    my $validate = 0;
+    if ( $ARGV[0] eq 'validate' ) {
+        shift @ARGV;
+        $validate = 1;
+    }
+
     my @content_types  = qw{ text/html text/plain };
 
     return map {
@@ -588,8 +615,9 @@ sub default_urls {
                 return 1 if $ok;
                 print STDERR "$_[0] $content_type != (@content_types)\n";
                 return;
+            },
+            validate_links => 1,
 
-            }
         }
     } @ARGV;
 }
