@@ -15,11 +15,8 @@
 
         [%-
             IF template.author;
-                SET author = template.author;
-                author.replace('\$Author:\s+','');
-                author.replace('\s*\$$','',);
-                "by $author";
-
+                matches = template.author.match('\$Author:\s+(\w+)' );
+                "by ${matches.0}" IF matches.0;
             END;
         -%]
     </p>
