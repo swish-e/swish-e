@@ -618,6 +618,14 @@ typedef struct {			/* Propvalue with type info */
 
 /* --------------------------------------- */
 
+/* Structure to hold all results per index */
+struct DB_RESULTS {
+    /* Values for handling results */
+    RESULT *resultlist;
+    RESULT *sortresultlist;
+    RESULT *currentresult;
+	struct DB_RESULTS *next;
+};
 
 typedef struct {
 
@@ -706,10 +714,8 @@ typedef struct {
     long plimit;
     long flimit;
 
-    /* Values for handling results */
-    RESULT *resultlist;
-    RESULT *sortresultlist;
-    RESULT *currentresult;
+	/* All Results per index file */
+	struct DB_RESULTS *db_results;
 
 	/* MetaName indexing options */
     int ReqMetaName;

@@ -8,6 +8,7 @@
 #include "search.h"
 #include "error.h"
 #include "string.h"
+#include "result_sort.h"
 
 
 /* preprocess Sort Result Properties to get the ID */
@@ -201,81 +202,64 @@ SWISH *sw=(SWISH *)r->sw;
 /* Jose Ruiz 04/00
 ** Sort results by property
 */
-RESULT *sortresults(SWISH *sw, int structure)
+int sortresults(SWISH *sw, int structure)
 { 
-int i, j;
+int i,j,TotalResults;
 RESULT **ptmp;
 RESULT *rtmp;
-RESULT *sortresultlist;
 RESULT *rp,*tmp;
-struct IndexFILE *indexf;
+struct DB_RESULTS *db_results;
 int (*compResults)(const void *,const void *);
-	rp=sw->resultlist;
-		/* Trivial case */
-	if (!rp) return NULL;
 
-	/* get properties if needed */
-	/* First. Check out how many index files we have */
-	for(i=0, indexf=sw->indexlist; indexf; indexf=indexf->next,i++);
-	if(i==1)
+		/* Sort each index file resultlist */
+	for(TotalResults=0,db_results=sw->db_results; db_results; db_results=db_results->next)
 	{
+		db_results->sortresultlist=NULL;
+		db_results->currentresult=NULL;
+		rp=db_results->resultlist;
 		/* Asign comparison routine to be used by qsort */
 		compResults=compResultsBySortedProps;
-			/* If we are only using 1 index file, we can use the presorted data in the index file */
+			/* As we are sorting a unique index file, we can use the presorted data in the index file */
 		for(tmp=rp;tmp;tmp=tmp->next)
 		{
 			/* Load the presorted data */
 			tmp->iPropSort=getLookupResultSortedProperties(tmp);
 		}
-	} 
-	else
-	{
-		/* Asign comparison routine to be used by qsort */
-		compResults=compResultsByNonSortedProps;
-
-		/* We need to read the data for each result */
-		for(tmp=rp;tmp;tmp=tmp->next)
+			/* Compute number of results */
+		for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next) {
+			if (rtmp->structure & structure) {
+				i++;
+			}
+		}
+		if (i)   /* If there is something to sort ... */
 		{
-			tmp=getproperties(tmp);  /* Reads all data except the properties to sort */
-					/* read the properties to sort */
-			tmp->PropSort=getResultSortProperties(tmp);
-		}
-
-	
-	}
-
-
-	sortresultlist = NULL;
-		/* Compute number of results */
-	for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next) {
-		if (rtmp->structure & structure) {
-			i++;
-		}
-	}
-		/* Another trivial case */
-	if (!i) return NULL;
-
-		/* Compute array size */
-	ptmp=(RESULT **)emalloc(i*sizeof(RESULT *));
-		/* Build an array with the elements to compare
+			/* Compute array size */
+			ptmp=(RESULT **)emalloc(i*sizeof(RESULT *));
+			/* Build an array with the elements to compare
 			 and pointers to data */
-	for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next,j++) {
-		if (rtmp->structure & structure) {
-			ptmp[j]=rtmp;
+			for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next,j++) {
+				if (rtmp->structure & structure) {
+					ptmp[j]=rtmp;
+				}
+			}
+
+			/* Sort them */
+			qsort(ptmp,i,sizeof(RESULT *),compResults);
+
+			/* Build the list */
+			for(j=0;j<i;j++){
+				db_results->sortresultlist = (RESULT *) addsortresult(sw, db_results->sortresultlist, ptmp[j]);
+			}
+			/* Free the memory of the array */
+			efree(ptmp);
+			if(db_results->sortresultlist)
+			{
+				db_results->currentresult = db_results->sortresultlist;
+				TotalResults += countResults(db_results->sortresultlist);
+			}
 		}
 	}
-
-		/* Sort them */
-	qsort(ptmp,i,sizeof(RESULT *),compResults);
-
-		/* Build the list */
-	for(j=0;j<i;j++){
-		sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);
-	}
-		/* Free the memory of the array */
-	efree(ptmp);
-
-	return sortresultlist;
+	return TotalResults;
 }
 
 /* 01/2001 Jose Ruiz */

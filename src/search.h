@@ -75,7 +75,7 @@ int isokindexheader(FILE *);
 int wasStemmingAppliedToIndex(FILE *);
 int wasSoundexAppliedToIndex(FILE *);
 
-void freeresultlist(SWISH *);
+void freeresultlist(SWISH *sw,struct DB_RESULTS *);
 void freefileoffsets(SWISH *);
 void freeresult(SWISH *,RESULT *);
 void freefileinfo(struct file *);

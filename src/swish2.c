@@ -64,9 +64,8 @@ int i;
 	sw->ignoremetalist = NULL;
 	sw->dontbumptagslist = NULL;
 
-	sw->resultlist=NULL;
-	sw->sortresultlist=NULL;
-	sw->currentresult=NULL;
+	sw->db_results=NULL;
+
 	sw->applyautomaticmetanames = 0;
 	sw->len_compression_buffer = MAXSTRLEN;  /* For example */
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
@@ -155,11 +154,20 @@ void SwishDefaults(SWISH *sw)
 /* Free memory for search results and parameters (properties ...) */
 void SwishResetSearch(SWISH *sw)
 {
+struct DB_RESULTS *tmp,*tmp2;
+
 		/* Default variables for search */
-        sw->maxhits = -1;
-        sw->beginhits = 0;
+	sw->maxhits = -1;
+	sw->beginhits = 0;
 		/* Free results from previous search if they exists */
-	if(sw->resultlist) freeresultlist(sw);sw->resultlist=NULL;
+	for(tmp=sw->db_results;tmp;)
+	{
+		freeresultlist(sw,tmp);
+		tmp2=tmp->next;
+		efree(tmp);
+		tmp=tmp2;
+	}
+	sw->db_results=NULL;
 		/* Free props arrays */
 	FreeOutputPropertiesVars(sw);
 }
@@ -336,13 +344,28 @@ time_t tp;
 int SwishSeek(SWISH *sw,int pos)
 {
 int i;
-RESULT *sp;
+RESULT *sp=NULL;
 	if(!sw) return INVALID_SWISH_HANDLE;
-        for (i=0,sp=sw->sortresultlist;sp && i<pos;i++)
-        {
-		sp = sp->nextsort;
+	if(!sw->db_results) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+		/* Check if only one index file -> Faster SwishSeek */
+	if(!sw->db_results->next)
+	{      
+		for (i=0,sp=sw->db_results->sortresultlist;sp && i<pos;i++)
+		{
+			sp = sp->nextsort;
+		}
+		sw->db_results->currentresult=sp;
 	}
-	sw->currentresult=sp;
+	else
+	{
+		/* Well, we finally have more than one file */
+		/* In this case we have no choice - We need to read the data from disk */
+		/* The easy way: Let SwishNext do the job */
+		for (i=0;sp && i<pos;i++)
+		{
+			sp=SwishNext(sw);
+		}
+	}
 	if(!sp) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
 	return pos;
 }
