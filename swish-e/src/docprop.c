@@ -202,7 +202,7 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
 
 #ifdef PROPFILE
     return ReadSingleDocPropertiesFromDisk(sw, indexf, result->filenum, metaID, 0 );
-#endif;    
+#endif
 
 
 
