@@ -27,7 +27,9 @@
 #include <string.h> 
 #include <sys\types.h> 
 #include <sys\stat.h> 
+#define _SWISH_PORT
 #include "dirent.h" 
+#include "config.h"
 
 /* 
  *	NT specific 
@@ -273,18 +275,32 @@ void
 fixDirectoryName( char *name ) {
 
 	int position,length;
+	char newdelimiter, olddelimiter;
 
 	position = 0;
 	length = strlen( name );
 
+	if( DIRDELIMITER == '\\' ){
+		newdelimiter == '\\';
+		olddelimiter == '/';
+	}
+	else {
+		newdelimiter == '/';
+		olddelimiter == '\\';
+	}
+
 	while(name[position]){
-		if( name[position] == '\\' )
-			name[position] = '/';
+		if( name[position] == olddelimiter )
+			name[position] = newdelimiter;
 		position++;
 	}
-	if( name[ length - 1 ] == '/' ){
+
+	/* Some functions are appending extra delimiters.  */
+	while( (name[ length - 1 ] == '\\') || (name[ length - 1 ] == '/') ){
 		name[ length - 1 ] = '\0';
+		length = strlen( name );
 	}
+
 }
 /* end of fixDirectoryName()  */
 
@@ -293,8 +309,9 @@ fixDirectoryName( char *name ) {
  * See Microsoft KB Article: Q137230
  */
 int
-my_stat(const char *name, struct _stat *statb){
+my_stat(char *name, struct _stat *statb){
     char path[ OFS_MAXPATHNAME ]; 
+	int retcode, length;
     register char *ip, *op;
 	
 	/* copy name to a working variable path  */
@@ -304,6 +321,7 @@ my_stat(const char *name, struct _stat *statb){
 			break;
 		}
     }
+
 	/* FIX our local copy of the variable  */
 	FIX_DIRECTORY_NAME( path );
 
