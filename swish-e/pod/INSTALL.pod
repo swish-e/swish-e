@@ -539,7 +539,7 @@ verbose level to two.  There are a number of configuration options specific to t
 http input source.  See L<SWISH-CONFIG|SWISH-CONFIG>.  Note that only files of Content-Type
 text/* will be indexed.
 
-The C<-S http> method is depreciated in favor of the next input method.
+The C<-S http> method is deprecated in favor of the next input method.
 
 The other method is a general purpose input method where Swish-e reads input from a program 
 that produces documents in a special format.  The program might read and format data stored 

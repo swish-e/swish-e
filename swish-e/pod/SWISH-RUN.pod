@@ -116,7 +116,7 @@ Security Note: Under Windows swish passes the URLs fetched from remote documents
 uses the system() command for running F<swishspider> under Windows), and this may be considered
 an additional security risk.
 
-The C<http> method is depreciated (or at least not very well appreciated).  Consider using
+The C<http> method is deprecated (or at least not very well appreciated).  Consider using
 the C<prog> method described below for spidering.  There's a spider program available in the
 F<prog-bin> directory for use with the C<prog> method.  Here's a number of limitation with 
 this method that are solved with the C<prog> method:

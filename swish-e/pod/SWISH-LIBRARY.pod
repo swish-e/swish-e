@@ -422,7 +422,7 @@ This fuction may change in the future since only 8-bit chars can currently be us
 
 =item char * SwsishStemWord( SW_HANDLE sw, char *in_word );
 
-Depreciated
+Deprecated
 
 This can be used to convert a word to its stem.  It uses only the 
 original Porter Stemmer.

@@ -413,11 +413,11 @@ $swish->HeaderValue(), but the index file is not specified
 
 =item $stemmed_word = $swish->StemWord( $word );
 
-*Depreciated*
+*Deprecated*
 
 Returns the stemmed version of the passed in word.
 
-Depreciated because only stems using the original Porter Stemmer
+Deprecated because only stems using the original Porter Stemmer
 and uses a shared memory location in the SW_HANDLE object to store the stemmed
 word.  See below for other stemming options.
 
