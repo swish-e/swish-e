@@ -48,6 +48,7 @@
 #include "compress.h"
 #include "mem.h"
 #include "fhash.h"
+#include "error.h"
 
 FHASH *FHASH_Create(FILE *fp)
 {

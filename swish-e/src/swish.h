@@ -138,7 +138,13 @@ extern "C" {
 #endif
 
 
+/* $$$ THESE NEED TO BE UPGRADED WHEN THE INDEX FORMAT CHANGES */
+
+#ifdef USE_BTREE
+#define SWISH_MAGIC 11076322L
+#else
 #define SWISH_MAGIC 21076322L
+#endif
 
 #define INDEXFILE "index.swish-e"
 

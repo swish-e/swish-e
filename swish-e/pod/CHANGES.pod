@@ -10,7 +10,14 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
-=item * updated build instructions in INSTALL
+=item * Fixed problem building incremental version
+
+Fixed compile problem with building incremental indexing mode.  This is an
+experimental option with swish-e to allow adding files to an index.
+See configure --help for build option.  Incremental indexes are not
+compatible with stanard indexes.
+
+=item * Updated build instructions in INSTALL
 
 Added a few comments about use of CPPFLAGS and LDFLAGS.
 

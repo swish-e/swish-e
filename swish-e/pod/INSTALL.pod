@@ -286,7 +286,7 @@ when running the configure script.  Before running configure type:
 
 And it should list $HOME/local/bin/xml2-config.
 
-Now run configure (remember, were are in a separate "build" directory):
+Now run configure (remember, we are in a separate "build" directory):
 
     $ ../swish-e-2.4.0/configure \
         --prefix=$HOME/local \

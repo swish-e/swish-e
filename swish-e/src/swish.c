@@ -298,6 +298,9 @@ static void    usage()
     printf("              The default value is: \"%s\"\n", defaultIndexingSystem);
 
     printf("         -i : create an index from the specified files\n");
+#ifdef USE_BTREE
+    printf("         -u : update: adds files to existing index\n");
+#endif
     printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -t : tags to search in - specify as a string\n");
     printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
