@@ -606,6 +606,8 @@ int     sortresults(SWISH * sw, int structure)
     struct MOD_ResultSort *rs = sw->ResultSort;
     int     presorted_data_not_available = 0;
 
+    i = 0;
+
 
     /* Sort each index file's resultlist */
     for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)

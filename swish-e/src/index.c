@@ -958,12 +958,13 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     IndexFILE *indexf = sw->indexlist;
     struct MOD_Index *idx = sw->Index;
 
+
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
         struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
 
-        printf("    Adding:[%s:%d]   '%s'   Pos:%d  Stuct:0x%0X (", m ? m->metaName : "UNKNOWN", metaID, word, position, structure);
+        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "UNKNOWN", metaID, word, position, structure);
         
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADING");
@@ -1032,9 +1033,10 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     tp = efound->currentChunkLocationList;
     found = 0;
+
     while (tp != efound->currentlocation)
     {
-        if(tp->metaID == metaID && tp->filenum == filenum)
+        if(tp->metaID == metaID && tp->filenum == filenum  )
         {
             found =1;
             break;
@@ -2287,6 +2289,9 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 continue;
             }
         }
+
+
+            
         
 
         /* Translate chars */
@@ -2300,6 +2305,25 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
         while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, position ) )
         {
+
+            /* Weed out Numbers - or anything that's all the listed chars */
+            if ( indexf->header.numberchars_used_flag )
+            {
+                unsigned char *c = (unsigned char *)swishword;
+
+                /* look for any char that's NOT in the lookup table */
+                while ( *c ) {
+                    if ( !indexf->header.numbercharslookuptable[(int) *c ] )
+                        break;
+                    c++;
+                }
+
+                /* if got all the way through the string then it's only those chars */
+                if ( !*c )
+                    continue; /* skip this word */
+            }
+
+            
             /* Check Begin & EndCharacters */
             if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
                 continue;
