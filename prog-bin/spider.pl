@@ -1597,7 +1597,7 @@ You can also set flags in the server hash (the second parameter) to control inde
 For example, to avoid index the contents of "private.html", yet still follow any links
 in that file:
 
-    test_url => sub {
+    test_response => sub {
         my $server = $_[1];
         $server->{no_index}++ if $_[0]->path =~ /private\.html$/;
         return 1;

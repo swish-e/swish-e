@@ -59,8 +59,8 @@ Please see C<perldoc spider.pl> for more information.
     {
         skip        => 1,  # skip spidering this server
         
-        base_url    => 'http://www.infopeople.org/index.html',
-        same_hosts  => [ qw/infopeople.org/ ],
+        base_url    => 'http://www.swish-e.org/index.html',
+        same_hosts  => [ qw/swish-e.org/ ],
         agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
 
@@ -84,7 +84,7 @@ Please see C<perldoc spider.pl> for more information.
         skip        => 1,  # skip spidering this server
         debug       => DEBUG_URL,  # print some debugging info to STDERR                                  
 
-        base_url        => 'http://www.infopeople.org/',
+        base_url        => 'http://www.swish-e.org/',
         email           => 'swish@domain.invalid',
         delay_min       => .0001,
         link_tags       => [qw/ a frame /],
@@ -93,7 +93,7 @@ Please see C<perldoc spider.pl> for more information.
 
         max_size        => 1_000_000,  # limit to 1MB file size
         max_depth       => 10,         # spider only ten levels deep
-        keep_alives     => 1,
+        keep_alive      => 1,
 
         test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg)$/ },
 
