@@ -135,6 +135,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params );
 static void cmd_merge( SWISH *sw, CMDPARAMS *params );
 static void cmd_search( SWISH *sw, CMDPARAMS *params );
 static void cmd_keywords( SWISH *sw, CMDPARAMS *params );
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge);
 /************* TOC ***************************************/
 
 
@@ -787,10 +788,10 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             while ( (w = next_param( &argv )) )
             {
                 /* Last one listed is the output file */
-                if ( is_another_param( argv + 1  ) )
+                if ( is_another_param( argv  ) )
                     sw->indexlist = addindexfile(sw->indexlist, w);
                 else
-                    params->merge_out_file = estrdup( *argv );
+                    params->merge_out_file = estrdup( w );
             }
 
             continue;
@@ -1004,10 +1005,8 @@ static void cmd_dump( SWISH *sw, CMDPARAMS *params )
 
 static void cmd_index( SWISH *sw, CMDPARAMS *params )
 {
-    int     stopwords = 0;
     int     hasdir = (sw->dirlist == NULL) ? 0 : 1;
     int     hasindex = (sw->indexlist == NULL) ? 0 : 1;
-    int     totalfiles = 0;
     double  elapsedStart = TimeElapsed();
     double  cpuStart = TimeCPU();
     struct swline *tmpswline;
@@ -1076,108 +1075,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     fflush(stdout);
 
-    totalfiles = getfilecount(sw->indexlist);
-
-    /* Proccess IgnoreLimit option */
-    getPositionsFromIgnoreLimitWords(sw);
-
-    stopwords = getNumberOfIgnoreLimitWords(sw);
-
-
-    if (sw->verbose)
-    {
-        if (stopwords)
-        {
-            int pos;
-        
-            /* 05/00 Jose Ruiz  Adjust totalwords for IgnoreLimit ONLY  */
-            sw->indexlist->header.totalwords -= stopwords;
-
-            if (sw->indexlist->header.totalwords < 0)
-                sw->indexlist->header.totalwords = 0;
-
-            /* Same as "stopwords" */
-            printf("%d words removed by IgnoreLimit:\n", sw->indexlist->header.stopPos);
-
-            for (pos = 0; pos < sw->indexlist->header.stopPos; pos++)
-                printf("%s, ", sw->indexlist->header.stopList[pos]);
-
-            printf("\n");
-        }
-        else
-            printf("no words removed.\n");
-
-        printf("Writing main index...\n");
-    }
-
-    if ( !sw->indexlist->header.totalwords )
-        /* Would be better to flag so db_native would know not to rename the (empty) index file */
-        // printf("No unique words indexed!\n");
-        progerr("No unique words indexed!");
-
-    else
-    {
-    
-
-        if (sw->verbose)
-            printf("Sorting words ...\n");
-
-        sort_words(sw, sw->indexlist);
-
-
-
-        if (sw->verbose)
-            printf("Writing header ...\n");
-        fflush(stdout);
-
-
-        write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
-
-        fflush(stdout);
-
-        if (sw->verbose)
-            printf("Writing index entries ...\n");
-
-
-        write_index(sw, sw->indexlist);
-
-
-        if (sw->verbose)
-            printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
-
-
-        /* Sort properties -> Better search performance */
-
-        /* First reopen the property file in read only mode for seek speed */
-        DB_Reopen_PropertiesForRead( sw, sw->indexlist->DB  );
-
-        /* This does it all */
-        sortFileProperties(sw,sw->indexlist);
-    }
-
-
-
-
-    if (sw->verbose)
-    {
-        if (totalfiles)
-            printf("%d file%s indexed.  %d total bytes.\n", totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes);
-        else
-            printf("no files indexed.\n");
-
-        printf("Elapsed time: ");
-        printTime(TimeElapsed() - elapsedStart);
-        printf(" CPU time: ");
-        printTime(TimeCPU() - cpuStart);
-        printf("\n");
-    }
-
-    printf("Indexing done!\n");
-
-
-#ifdef INDEXPERMS
-    chmod(sw->indexlist->line, INDEXPERMS);
-#endif
+    write_index_file( sw, 1, elapsedStart, cpuStart, 0);
 }
 
 
@@ -1190,6 +1088,8 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 {
     SWISH *sw_out;
+    double  elapsedStart = TimeElapsed();
+    double  cpuStart = TimeCPU();
 
     if ( params->index_read_only )
         progerr("Sorry, this program is in readonly mode");
@@ -1212,6 +1112,9 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     /* create output */
     sw_out = SwishNew();
+
+    sw_out->indexlist = addindexfile(sw_out->indexlist, params->merge_out_file);
+
         
     /* Update Economic mode */
     sw_out->Index->swap_locdata = params->swap_mode;
@@ -1220,10 +1123,9 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
     /* Create an empty File - before indexing to make sure can write to the index */
     sw_out->indexlist->DB = (void *) DB_Create(sw_out, params->merge_out_file);
 
-    // merge_indexes( sw_input, sw_output );
+    merge_indexes( sw_input, sw_out );
 
-
-    // wrtie_index( sw_out );
+    write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
 }
 
 
@@ -1347,4 +1249,123 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
 }
 
+
+
+/*************************************************************************
+*   write_index_file -- used for both merge and for indexing
+*
+**************************************************************************/
+
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge)
+{
+    int totalfiles = getfilecount(sw->indexlist);
+    int stopwords = 0;
+
+    if ( process_stopwords )
+    {
+
+        /* Proccess IgnoreLimit option */
+        getPositionsFromIgnoreLimitWords(sw);
+
+        stopwords = getNumberOfIgnoreLimitWords(sw);
+
+
+        if (sw->verbose )
+        {
+            if (stopwords)
+            {
+                int pos;
+        
+                /* 05/00 Jose Ruiz  Adjust totalwords for IgnoreLimit ONLY  */
+                sw->indexlist->header.totalwords -= stopwords;
+
+                if (sw->indexlist->header.totalwords < 0)
+                    sw->indexlist->header.totalwords = 0;
+
+                /* Same as "stopwords" */
+                printf("%d words removed by IgnoreLimit:\n", sw->indexlist->header.stopPos);
+
+                for (pos = 0; pos < sw->indexlist->header.stopPos; pos++)
+                    printf("%s, ", sw->indexlist->header.stopList[pos]);
+
+                printf("\n");
+            }
+            else
+                printf("no words removed.\n");
+
+        }
+    }
+
+    if (sw->verbose)
+        printf("Writing main index...\n");
+
+    if ( !sw->indexlist->header.totalwords )
+        /* Would be better to flag so db_native would know not to rename the (empty) index file */
+        // printf("No unique words indexed!\n");
+        progerr("No unique words indexed!");
+
+    else
+    {
+    
+
+        if (sw->verbose)
+            printf("Sorting words ...\n");
+
+        sort_words(sw, sw->indexlist);
+
+
+
+        if (sw->verbose)
+            printf("Writing header ...\n");
+        fflush(stdout);
+
+
+        write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, merge);
+
+        fflush(stdout);
+
+        if (sw->verbose)
+            printf("Writing index entries ...\n");
+
+
+        write_index(sw, sw->indexlist);
+
+
+        if (sw->verbose)
+            printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
+
+
+        /* Sort properties -> Better search performance */
+
+        /* First reopen the property file in read only mode for seek speed */
+        DB_Reopen_PropertiesForRead( sw, sw->indexlist->DB  );
+
+        /* This does it all */
+        sortFileProperties(sw,sw->indexlist);
+    }
+
+
+
+
+    if (sw->verbose)
+    {
+        if (totalfiles)
+            printf("%d file%s indexed.  %d total bytes.\n", totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes);
+        else
+            printf("no files indexed.\n");
+
+        printf("Elapsed time: ");
+        printTime(TimeElapsed() - elapsedStart);
+        printf(" CPU time: ");
+        printTime(TimeCPU() - cpuStart);
+        printf("\n");
+    }
+
+    printf("Indexing done!\n");
+
+
+#ifdef INDEXPERMS
+    chmod(sw->indexlist->line, INDEXPERMS);
+#endif
+}
 

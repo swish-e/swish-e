@@ -737,6 +737,114 @@ int     is_presorted_prop(SWISH * sw, char *name)
 }
 
 
+/***********************************************************************
+* Pre sort a single property 
+*
+************************************************************************/
+int *CreatePropSortArray(SWISH *sw, IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache )
+{
+    int             *sort_array = NULL;     /* array that gets sorted */
+    int             *out_array = NULL;     /* array that gets sorted */
+    int             total_files = indexf->header.totalfiles;
+    int             i,
+                    k;
+    
+
+    sort_array = emalloc( total_files * sizeof( long ) );
+    out_array  = emalloc( total_files * sizeof( long ) );
+
+    /* First time called, create place to cache property positions */
+    if ( !PropLookup )
+    {
+        PropLookup = emalloc( total_files * sizeof( PROP_LOOKUP ));
+        memset( PropLookup, 0, total_files * sizeof( PROP_LOOKUP ) );
+    }
+
+
+    /* This is need to know how to compare the properties */
+    CurrentPreSortMetaEntry = m;
+    
+
+#ifdef DEBUGSORT
+    {
+        propEntry *d;
+        FileRec fi;
+        struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
+        char *s;
+
+        for (i = 0; i < total_files; i++)
+        {
+            memset(&fi, 0, sizeof( FileRec ));
+            fi.filenum = i+1;
+
+            d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
+
+            s = emalloc( d->propLen + 1 );
+            memcpy( s, d->propValue, d->propLen );
+            s[d->propLen] = '\0';
+
+            PropLookup[i].file_name = s;
+        }
+    }
+#endif
+
+    
+
+    /* Populate the arrays */
+
+    for (i = 0; i < total_files; i++)
+    {
+        /* Here's a FileRec where the property index will get loaded */
+        fi->filenum = i + 1;
+
+        /* Used cached seek pointers for this file, if not the first time */
+        if ( PropLookup[i].prop_index ) 
+            fi->prop_index = PropLookup[i].prop_index;
+        else
+            fi->prop_index = NULL;
+
+
+        PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, fi, m->metaID, MAX_SORT_STRING_LEN);
+        PropLookup[i].prop_index = fi->prop_index;  // save it for next time
+        sort_array[i] = i;
+    }
+
+
+    /* Sort them using qsort. The main work is done by compFileProps */
+    swish_qsort( sort_array, total_files, sizeof( int ), &compFileProps);
+
+
+    /* Build the sorted table */
+
+    for (i = 0, k = 1; i < total_files; i++)
+    {
+        /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
+        if (i)
+        {
+            /* If consecutive elements are different increase the number */
+            if ((compFileProps( &sort_array[i - 1], &sort_array[i])))
+                k++;
+        }
+
+        out_array[ sort_array[i] ] = k;
+    }
+
+    efree( sort_array );
+
+
+    if ( free_cache )
+    {
+        for (i = 0; i < total_files; i++)
+            if ( PropLookup[i].prop_index )
+                efree( PropLookup[i].prop_index );
+        efree( PropLookup );
+        PropLookup = NULL;
+    }
+
+    
+    return out_array;
+}
+
 
 /***********************************************************************
 * Pre sort all the properties
@@ -748,9 +856,7 @@ int     is_presorted_prop(SWISH * sw, char *name)
 
 void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
-    int             i,
-                    k;
-    int             *sort_array = NULL;     /* array that gets sorted */
+    int             i;
     int             *out_array = NULL;     /* array that gets sorted */
     unsigned char   *out_buffer  = NULL;
     unsigned char   *cur;
@@ -763,8 +869,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
     memset( &fi, 0, sizeof( FileRec ) );
     
-
-
 
     DB_InitWriteSortedIndex(sw, indexf->DB );
 
@@ -803,86 +907,11 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
             fflush(stdout);
         }
 
-
-        /* Allocate memory for array, if not already done */
-        
-        if ( !sort_array )
-        {
-            /* Note, we could save memory by only using two array at any given time */
-            out_buffer = emalloc( total_files * 5 ); // ??? Jose, why 5?
-            sort_array = emalloc( total_files * sizeof( long ) );
-            out_array  = emalloc( total_files * sizeof( long ) );
-
-            PropLookup = emalloc( total_files * sizeof( PROP_LOOKUP ));
-            memset( PropLookup, 0, total_files * sizeof( PROP_LOOKUP ) );
-
-#ifdef DEBUGSORT
-            {
-                propEntry *d;
-                FileRec fi;
-                struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
-                char *s;
-
-                for (i = 0; i < total_files; i++)
-                {
-                    memset(&fi, 0, sizeof( FileRec ));
-                    fi.filenum = i+1;
-
-                    d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
-
-                    s = emalloc( d->propLen + 1 );
-                    memcpy( s, d->propValue, d->propLen );
-                    s[d->propLen] = '\0';
-        
-                    PropLookup[i].file_name = s;
-                }
-            }
-#endif
-
-            
-        }
+        out_array = CreatePropSortArray( sw, indexf, m, &fi, 0 );
 
 
-        /* This is need to know how to compare the properties */
-        CurrentPreSortMetaEntry = m;
+        out_buffer = emalloc( total_files * 5 ); 
 
-        /* Populate the arrays */
-        for (i = 0; i < total_files; i++)
-        {
-            /* Here's a FileRec where the property index will get loaded */
-            fi.filenum = i + 1;
-
-            /* Used cached seek pointers for this file, if not the first time */
-            if ( PropLookup[i].prop_index ) 
-                fi.prop_index = PropLookup[i].prop_index;
-            else
-                fi.prop_index = NULL;
-
-
-            PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, m->metaID, MAX_SORT_STRING_LEN);
-            PropLookup[i].prop_index = fi.prop_index;  // save it for next time
-            sort_array[i] = i;
-        }
-
-
-        /* Sort them using qsort. The main work is done by compFileProps */
-        swish_qsort( sort_array, total_files, sizeof( int ), &compFileProps);
-
-
-        /* Build the sorted table */
-
-        for (i = 0, k = 1; i < total_files; i++)
-        {
-            /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
-            if (i)
-            {
-                /* If consecutive elements are different increase the number */
-                if ((compFileProps( &sort_array[i - 1], &sort_array[i])))
-                    k++;
-            }
-
-            out_array[ sort_array[i] ] = k;
-        }
 
         /* Now compress */
         cur = out_buffer;
@@ -899,6 +928,9 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         DB_WriteSortedIndex(sw, metaID, out_buffer, cur - out_buffer, indexf->DB);
 
+        efree( out_array );
+        efree( out_buffer );
+
         props_sorted++;
     }
 
@@ -911,9 +943,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         for (i = 0; i < total_files; i++)
             if ( PropLookup[i].prop_index )
                 efree( PropLookup[i].prop_index );
-        efree( out_array );
-        efree( out_buffer );
-        efree( sort_array );
         efree( PropLookup );
         PropLookup = NULL;
     }

@@ -181,7 +181,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     /* Do metanames first as that will be helpful for decoding next */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
-        dump_metanames( sw, indexf );
+        dump_metanames( sw, indexf, 1 );
 
     if (DEBUG_MASK & DEBUG_INDEX_WORDS_ONLY)
     {
@@ -212,7 +212,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
         int     *meta_used;
         int     end_meta = 0;
 
-        printf("\n-----> WORD INFO <-----\n");
+        printf("\n-----> WORD INFO in index %s <-----\n", indexf->line);
 
         for(i = 0; i < indexf->header.metaCounter; i++)
             if ( indexf->header.metaEntryArray[i]->metaID > end_meta )
@@ -373,7 +373,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     /* Decode Stop Words: All them are in just one line */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_STOPWORDS)  )
     {
-        printf("\n\n-----> STOP WORDS <-----\n");
+        printf("\n\n-----> STOP WORDS in %s <-----\n" , indexf->line);
         for(i=0;i<indexf->header.stopPos;i++)
             printf("%s ",indexf->header.stopList[i]);
         printf("\n");
@@ -409,12 +409,12 @@ int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
 }
 
 
-void dump_metanames( SWISH *sw, IndexFILE *indexf )
+void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
 {
     struct metaEntry *meta_entry;
     int i;
 
-    printf("\n\n-----> METANAMES <-----\n");
+    printf("\n\n-----> METANAMES for %s <-----\n", indexf->line );
     for(i = 0; i < indexf->header.metaCounter; i++)
     {
         meta_entry = indexf->header.metaEntryArray[i];
@@ -445,7 +445,8 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf )
                 printf("unknown!");
         }
 
-        if ( check_sorted_index( sw, indexf, meta_entry)  )
+
+        if ( check_presorted && check_sorted_index( sw, indexf, meta_entry)  )
             printf(" *presorted*");
 
 
