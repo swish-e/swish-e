@@ -97,7 +97,6 @@ sub escapeHTML {
        s/</&lt;/go;
        s/>/&gt;/go;
        s/"/&quot;/go;
-       tr/\014/ /; # ^L
     }
    return $str;
 }

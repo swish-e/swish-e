@@ -110,6 +110,10 @@ The example/swish.cgi script can now use the SWISH::API module
 for searching an index.  Combined with mod_perl this module
 can improve search performance many times.
 
+The Perl modules used with the swish.cgi script have all been moved into
+the SWISH::* namespace.  Hence, files in the F<modules> directory were moved
+into the F<modules::SWISH> directory.
+
 =back
 
 =head2 Version 2.2.3 - December 11, 2002
