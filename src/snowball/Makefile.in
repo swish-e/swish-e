@@ -106,7 +106,12 @@ noinst_LTLIBRARIES = libsnowball.la
 libsnowball_la_SOURCES = \
 	api.c \
 	utilities.c \
-	stem_es.c
+	stem_es.c \
+	stem_fr.c \
+	stem_it.c \
+	stem_pt.c \
+	stem_de.c \
+	stem_nl.c
 
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = ../../src/acconfig.h ../../$@)]
@@ -120,7 +125,7 @@ LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 libsnowball_la_LDFLAGS = 
 libsnowball_la_LIBADD = 
-libsnowball_la_OBJECTS =  api.lo utilities.lo stem_es.lo
+libsnowball_la_OBJECTS =  api.lo utilities.lo stem_es.lo stem_fr.lo stem_it.lo stem_pt.lo stem_de.lo stem_nl.lo
 CFLAGS = @CFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -133,7 +138,7 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = gtar
 GZIP_ENV = --best
-DEP_FILES =  .deps/api.P .deps/stem_es.P .deps/utilities.P
+DEP_FILES =  .deps/api.P .deps/stem_es.P .deps/utilities.P .deps/stem_fr.P .deps/stem_it.P .deps/stem_pt.P .deps/stem_de.P .deps/stem_nl.P
 SOURCES = $(libsnowball_la_SOURCES)
 OBJECTS = $(libsnowball_la_OBJECTS)
 
