@@ -272,7 +272,7 @@ void *DB_Create_Native (char *dbname)
 #ifdef USE_TEMPFILE_EXTENSION
     strcat( filename, USE_TEMPFILE_EXTENSION );
     DB->tmp_prop = 1;
-#endif;
+#endif
 
     CreateEmptyFile(filename);
     if( !(DB->prop = openIndexFILEForWrite(filename)) )
