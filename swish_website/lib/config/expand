@@ -51,6 +51,7 @@ FOREACH id IN map.menu;
             SET page.file = "docs/$page.file" UNLESS page.file.match('^docs/');
 
         ELSE;
+            item.hidden = 1 IF this.abslinks;  # This removes the non-doc items from the menu
             item.url = "$site.url.root/$item.file";
 
         END;

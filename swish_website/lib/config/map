@@ -106,7 +106,7 @@
 [%- #------------------------------------------------------
     # This is the download sub-menu
     docs_map    = {
-        name    = 'documentation'
+        name    = this.abslinks ? 'Doc Overview' : 'documentation'
 
         # Sub menu
         menu = [
