@@ -82,6 +82,10 @@
 /* Define if you have gettimeofday() call */
 #undef HAVE_BSDGETTIMEOFDAY
 #undef NO_GETTOD
+#undef HAVE_SYS_TIMEB_H
+
+/* Do we have lstat() */
+#undef HAVE_LSTAT
 
 /* Do we have libxml2 */
 #undef HAVE_LIBXML2

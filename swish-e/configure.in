@@ -59,7 +59,7 @@ dnl so why bother?
 dnl AC_HEADER_STDC
 
 dnl Again, I don't think we do any tests for these, so why bother
-AC_CHECK_HEADERS(unistd.h stdlib.h)
+AC_CHECK_HEADERS(unistd.h stdlib.h sys/timeb.h)
 
 AC_HEADER_SYS_WAIT
 
@@ -74,7 +74,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_FUNC_FORK
-AC_CHECK_FUNCS(re_comp regcomp strdup strstr)
+AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat)
 AC_CHECK_LIB(m,log)
 
 AC_REPLACE_FUNCS(vsnprintf)
