@@ -697,7 +697,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 progerr("-N requires a path to a local file");
 
             if (stat( w, &stat_buf))
-                progerrno("Bad path '%w' specified with -N: ", w );
+                progerrno("Bad path '%s' specified with -N: ", w );
 
             sw->mtime_limit = stat_buf.st_mtime;
 
