@@ -314,6 +314,9 @@ L<PropertyNamesNumeric|/"item_PropertyNamesNumeric"> *list of meta names*
 
 =item *
 
+L<PropertyNamesMaxLength|/"item_PropertyNamesMaxLength"> integer *list of meta names*
+=item *
+
 L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append|regex]
 
 =item *
@@ -796,7 +799,7 @@ META tags can have two formats in your B<HTML> source documents:
 
     <META NAME="meta1" CONTENT="some content">
 
-and
+and (if using the HTML2/libxml2 parser)
 
     <meta1>
         some content
@@ -884,6 +887,20 @@ The Alias work at search time, too.  So these will also limit the searh to the
 
     -w description=foo
     -w overview=foo
+
+=item MetaNamesRank integer *list of meta names*
+
+    * Not implemented yet *
+
+You can assign a bias to metanames that will effect how ranking is calculated.
+The range of values is from -10 to +10, with zero being no bias.
+
+    MetaNamesRank 4 subject
+    MetaNamesRank 3 swishdefault
+    MetaNamesRank 2 author publisher
+    MetaNamesRank -5 wrongwords
+
+This feature is not implemented yet
 
 =item HTMLLinksMetaName *metaname*
 
@@ -1278,6 +1295,32 @@ use:
 
 Not that "swishtitle" is the built-in property used to store the title of a document, and
 therefore you do not need to specify it as a PropertyName before use.
+
+=item PropertyNamesMaxLength  integer *list of meta names*
+
+This option will set the max length of the text stored in a property.  You must specify a number
+between 0 and the max integer size on your platform, and a list of properties.  The properties
+specified must not be aliases.
+
+If any of the property names do not exist they will be created (e.g. you do not need to define the
+property with PropertyNames first).
+
+In general, this feature will only be useful when parsing HTML or XML with the libxml2 parser.
+
+For example:
+
+    PropertyNamesMaxLength 1000 body
+
+Is somewhat like
+
+    StoreDescription HTML2 <body> 1000
+
+except StoreDescription uses the property name "swishdescription" (and a few other differences).
+
+    PropertyNamesMaxLength 1000 headings
+    PropertyNameAlias headings h1 h2 h3 h4
+
+collects all the heading text into a single property called "headings".
 
 
 =item PreSortedIndex *list of property names*
