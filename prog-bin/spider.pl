@@ -84,7 +84,6 @@ sub process_server {
     }
 
 
-
     for ( qw/ test_url test_response filter_content / ) {
         next unless $server->{$_};
         $server->{$_} = [ $server->{$_} ] unless ref $server->{$_} eq 'ARRAY';
@@ -131,7 +130,6 @@ sub process_server {
     # set default agent for log files
 
     $server->{agent} ||= 'swish-e spider 2.2 http://sunsite.berkeley.edu/SWISH-E/';
-
 
 
     # get a user agent object
@@ -218,7 +216,10 @@ sub process_link {
 
     my $content = '';
 
+    # Really should just subclass the response object!
     $server->{no_contents} = 0;
+    $server->{no_index} = 0;
+    $server->{no_spider} = 0;
 
     my $first;
     my $callback = sub {
@@ -305,9 +306,20 @@ sub process_link {
 
     return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
 
-    output_content( $server, \$content, $response );
 
-    $server->{Spidered}++;
+    # Index the file
+    
+    if ( $server->{no_index} ) {
+        $server->{counts}{Skipped}++;
+    } else {
+        output_content( $server, \$content, $response );
+    }
+
+
+    # Allow skipping of this file for spidering.
+
+
+
     my $links = extract_links( $server, \$content, $response );
 
     # Now spider
@@ -360,6 +372,13 @@ sub extract_links {
 
     return [] unless $response->header('content-type') &&
                      $response->header('content-type') =~ m[^text/html];
+
+
+    # allow skipping.
+    return [] if $server->{no_spider};
+
+
+    $server->{Spidered}++;
 
     my @links;
 
@@ -532,7 +551,7 @@ The available configuration parameters are discussed below.
 This script will not spider files blocked by robots.txt, unless
 explicitly overridden -- something you probably should not do.
 This script only spiders one file at a time, so load on the web server is not that great.
-And with libwww-perl-5.53_90 HTTP/1.1 keep alive requests can reduce the load on
+And with libwww-perl-5.53_91 HTTP/1.1 keep alive requests can reduce the load on
 the server even more (and potentially reduce spidering time considerably!)
 
 Still, discuss spidering with a site's administrator before beginning.
@@ -580,7 +599,7 @@ server.  See L<CALLBACK FUNCTIONS|CALLBACK FUNCTIONS> below for more information
 
 =head1 REQUIREMENTS
 
-Perl 5 (hopefully 5.00503) or later.
+Perl 5 (hopefully at least 5.00503) or later.
 
 You must have the LWP Bundle on your computer.  Load the LWP::Bundle via the CPAN.pm shell,
 or download libwww-perl-x.xx from CPAN (or via ActiveState's ppm utility).
@@ -588,6 +607,12 @@ Also required is the the HTML-Parser-x.xx bundle of modules also from CPAN
 (and from ActiveState for Windows).
 
 You will also need Digest::MD5 if you wish to use the MD5 feature.
+Other modules may be required (for example, the pod2xml.pm module
+has its own requirementes -- see perldoc pod2xml for info).
+
+The script expects perl to live in /usr/local/bin.  If this is not the case
+then either add a symlink at /usr/local/bin/perl to point to where perl is installed,
+or modify the shebang (#!) line at the top of the spider.pl program.
 
 
 =head1 CONFIGURATION FILE
@@ -838,11 +863,63 @@ subroutine (or kill -HUP yourself).
 The first two parameters passed are a URI object (to have access to the current URL), and
 a reference to the current server hash.  Other parameters may be passes, as described below.
 
-Each callback function B<must> return true to continue processing the URL.  Returning false will
-cause processing of this URL to be skipped.
-
 Note that you can create your own counters to display when processing is done by adding a value to
 the hash pointed to by C<$server->{counts}>.  See the example below.
+
+Each callback function B<must> return true to continue processing the URL.  Returning false will
+cause processing of this URL to be skipped.  Setting flags in the C<$server> hash can be used for finer
+control over the spidering.  Currently there are three flags:
+
+    no_contents -- index only the file name, and not the contents
+    no_index    -- do not index this file, but continue to spider if HTML
+    no_spider   -- index, but do not spider this file for links to follow
+    abort       -- stop spidering any more files
+
+
+Swish (not this spider) has a configuration directive C<NoContents> that will instruct swish to
+index only the file name, and not the contents.  This is often used when
+indexing binary files such as image files, but can also be used with html
+files to index only the document titles.
+
+You can turn this feature on for specific documents by setting a flag in
+the server hash passed into the C<test_response> or C<filter_contents> subroutines:
+
+    $server{test_response} = sub {
+        my ( $uri, $server, $response ) = @_;
+        $server->{no_contents} =
+            $response->content_type =~ m[^image/];
+        return 1;  # ok to spider, but pass the index_no_contents to swish
+    }
+
+The entire contents of the resource is still read from the web server, and passed
+on to swish, but swish will also be passed a C<No-Contents> header which tells
+swish to enable the NoContents feature for this document only.
+
+NoContents only works with HTML type of files (IndexContents) in swish 2.2.
+
+A similar flag may be set to prevent indexing a document at all, but still allow spidering.
+In general, if you want completely skip spidering a file you return false from one of the three
+callback routines (C<test_url>, C<test_response>, or C<filter_content>).  Returning false from any of those
+three callbacks will stop processing of that file, and the file will B<not> be spidered.
+
+But there may be some cases where you still want to spider (extract links) yet, not index the file.  An example
+might be where you wish to index only PDF files, but you still need to spider all HTML files to find
+the links to the PDF files.
+
+    $server{test_response} = sub {
+        my ( $uri, $server, $response ) = @_;
+        $server->{no_index} = $response->content_type ne 'application/pdf';
+        return 1;  # ok to spider, but don't index
+    }
+
+So, the difference between C<no_contents> and C<no_index> is that C<no_contents> will still index the file
+name, just not the contents, where C<no_index> will still spider the file (if it's C<text/html>) but the
+file will not be processed by swish.
+
+The C<no_spider> flag can be set to avoid spiderering an HTML file.  The file will still be indexed unless
+C<no_index> is also set.  But if you do not want to index and spider, then simply return false from one of the three
+callback funtions.
+
 
 =over 4
 
@@ -888,27 +965,6 @@ you could use this callback subroutine to check the Content-Type: header.
         my ( $uri, $server, $response ) = @_;
         return $response->content_type !~ m[^image/];
     }
-
-Swish has a configuration directive C<NoContents> that will instruct swish to
-index only the file name, and not the contents.  This is often used when
-indexing binary files such as image files, but can also be used with html
-files to index only the document titles.
-
-You can turn this feature on for specific documents by setting a flag in
-the server hash passed into the C<test_response> subroutine:
-
-    $server{test_response} = sub {
-        my ( $uri, $server, $response ) = @_;
-        $server->{no_contents} =
-            $response->content_type =~ m[^image/];
-        return 1;  # ok to spider, but pass the index_no_contents to swish
-    }
-
-The entire contents of the resource is still read from the web server, and passed
-on to swish, but swish will also be passed a C<No-Contents> header which tells
-swish to enable the NoContents feature for this document only.
-
-NoContents only works with HTML type of files (IndexContents) in swish 2.2.
 
 
 =item filter_content

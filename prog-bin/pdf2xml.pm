@@ -37,9 +37,8 @@ program.
 Uses the xpdf package that includes the pdftotext conversion program.
 This is available from http://www.foolabs.com/xpdf/xpdf.html.
 
-You will also need the module File::Temp available from CPAN if passing content
-to this module (instead of a file name).  I'm not thrilled about how that
-currently works...
+You will also need the module File::Temp (and its dependencies)
+available from CPAN if passing content to this module (instead of a file name).
 
 
 =head1 AUTHOR
