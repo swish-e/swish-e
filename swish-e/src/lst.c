@@ -24,12 +24,15 @@
 #include "lst.h"
 #include "mem.h"
 #include "string.h"
+#include "compress.h"
+#include "index.h"
 
 
 int countwords_LST (SWISH *sw, FileProp *fprop, char *buffer)
 {
 char *begintag=NULL,*endtag=NULL,*p,*q,*tag;
 IndexFILE *indexf=sw->indexlist;
+struct MOD_Index *idx = sw->Index;
 int numwords=0,lentag=0;
 		/* First time - Look for the first valid tag */
 	for(p=buffer,tag=NULL;p;)
@@ -62,6 +65,9 @@ int numwords=0,lentag=0;
 		}
 			/* Index it using xml module */
 		numwords += _countwords_XML(sw,fprop,q,q-buffer,strlen(q));
+		if(idx->swap_filedata)
+		        SwapFileData(sw, indexf->filearray[idx->filenum-1]);
+
 		if(p)
 		{
 			*p='<';
