@@ -9,23 +9,37 @@
 
 prefix      = @prefix@
 mandir      = @mandir@/man1
+datadir     = @datadir@
 VERSION     = @VERSION@
+SHELL       = @SHELL@
+top_srcdir  = @top_srcdir@
 INSTALL     = @INSTALL@
+POD2MAN     = @POD2MAN@
+
+INSTALL_DATA    = @INSTALL_DATA@
+MKINSTALLDIRS   = $(SHELL) $(top_srcdir)/mkinstalldirs
+
+docdir      = $(datadir)/doc/swish-e
 
 SOURCEPODS = ../pod/CHANGES.pod    ../pod/README.pod   ../pod/SWISH-CONFIG.pod  ../pod/SWISH-LIBRARY.pod \
              ../pod/SWISH-RUN.pod  ../pod/INSTALL.pod  ../pod/SWISH-3.0.pod     ../pod/SWISH-FAQ.pod \
              ../pod/SWISH-PERL.pod ../pod/SWISH-SEARCH.pod
 
 MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
-HTMLDOCS = ../html/API.html ../html/CHANGES.html ../html/Filter.html \
-           ../html/index.html ../html/index_long.html ../html/INSTALL.html \
-           ../html/README.html ../html/search.cgi ../html/spider.html \
-           ../html/style.css ../html/SWISH-3.0.html ../html/SWISH-BUGS.html \
-           ../html/SWISH-CONFIG.html ../html/SWISH-FAQ.html ../html/swish.html \
+HTMLDOCS = ../html/API.html          ../html/CHANGES.html     ../html/Filter.html \
+           ../html/index.html        ../html/index_long.html  ../html/INSTALL.html \
+           ../html/README.html       ../html/search.cgi       ../html/spider.html \
+           ../html/style.css         ../html/SWISH-3.0.html   ../html/SWISH-BUGS.html \
+           ../html/SWISH-CONFIG.html ../html/SWISH-FAQ.html   ../html/swish.html \
            ../html/SWISH-LIBRARY.html ../html/SWISH-PERL.html ../html/SWISH-RUN.html \
-           ../html/SWISH-SEARCH.html ../html/images/dotrule1.gif \
-           ../html/images/swish2b.gif ../html/images/swish2.gif \
-           ../html/images/swishbanner1.gif ../html/images/swish.gif
+           ../html/SWISH-SEARCH.html
+
+
+HTMLIMAGES = ../html/images/dotrule1.gif \
+             ../html/images/swish2b.gif \
+             ../html/images/swish2.gif \
+             ../html/images/swishbanner1.gif \
+             ../html/images/swish.gif
 
 
 # How portable is .PHONY?
@@ -54,6 +68,8 @@ installpage: ../INSTALL
 
 #--- create/install man pages ----------
 
+# Does every 
+
 %.1: ../pod/%.pod
 	pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)' $< > $@
 
@@ -62,15 +78,44 @@ $(MANPAGES): ../configure
 man: $(MANPAGES)
 
 install-man: man
-	@INSTALL_DATA@ $(MANPAGES) $(mandir)
+	$(MKINSTALLDIRS) $(mandir)
+	$(INSTALL_DATA) $(MANPAGES) $(mandir)
 
-install-docs: readme installpage html
-	@INSTALL@ -d $(prefix)/share/doc/swish-e/html/images
-	@INSTALL_DATA@ $(HTMLDOCS) $(prefix)/share/doc/swish-e/html
+
+install-docs:
+	$(MKINSTALLDIRS) $(docdir)/html/images
+	$(INSTALL_DATA) $(HTMLDOCS) $(docdir)/html
+	$(INSTALL_DATA) $(HTMLIMAGES) $(docdir)/html/images
+	
+# Check to see if the HTML docs exist
+# should always be able to install man because pod2man is part of perl
+
+# Question: should filter-bin, example, prog-bin, conf be installed?
+
+install-docs-test:
+	@if test -f ../html/index.html; then \
+		$(MAKE) $(MFLAGS) $(MVARS) install-docs; \
+	else \
+		echo "  *** No HTML docs to install - may need to run make docs first ***"; \
+	fi
+	@if test $(POD2MAN)x = x; then \
+		echo "  *** No pod2man command -- not installing man pages ***"; \
+	else \
+		$(MAKE) $(MFLAGS) $(MVARS) install-man; \
+	fi
+	@if test -f ../README; then \
+		$(MKINSTALLDIRS) $(docdir); $(INSTALL_DATA) ../README $(docdir); \
+	fi
+	@if test -f ../INSTALL; then \
+		$(MKINSTALLDIRS) $(docdir); $(INSTALL_DATA) ../INSTALL $(docdir); \
+	fi
+
 
 #--- create html pages ------
 
 
+
+# This is to display the version in the documetation
 
 ./Version.pm: ../configure
 	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
