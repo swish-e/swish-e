@@ -19340,8 +19340,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin"
-for as_dir in $as_dummy
+for as_dir in $PATH
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -19354,7 +19353,7 @@ do
 done
 done
 
-  test -z "$ac_cv_path_PERL" && ac_cv_path_PERL="/usr/local/bin/perl"
+  test -z "$ac_cv_path_PERL" && ac_cv_path_PERL="no"
   ;;
 esac
 fi
@@ -19366,6 +19365,11 @@ echo "${ECHO_T}$PERL" >&6
 else
   echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6
+fi
+
+if test "$PERL" = "false"; then
+    { echo "$as_me:$LINENO: WARNING: perl was not found - needed for script shebang lines" >&5
+echo "$as_me: WARNING: perl was not found - needed for script shebang lines" >&2;}
 fi
 
 
@@ -19393,6 +19397,7 @@ do
 done
 done
 
+  test -z "$ac_cv_prog_POD2MAN" && ac_cv_prog_POD2MAN="false"
 fi
 fi
 POD2MAN=$ac_cv_prog_POD2MAN
@@ -19404,6 +19409,10 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
+if test "$POD2MAN" = "false"; then
+        { echo "$as_me:$LINENO: WARNING: pod2man was not found - needed for building man pages" >&5
+echo "$as_me: WARNING: pod2man was not found - needed for building man pages" >&2;}
+fi
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -23209,6 +23218,65 @@ _ACEOF
 fi
 
 
+echo "$as_me:$LINENO: checking for working strcoll" >&5
+echo $ECHO_N "checking for working strcoll... $ECHO_C" >&6
+if test "${ac_cv_func_strcoll_works+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "$cross_compiling" = yes; then
+  ac_cv_func_strcoll_works=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+exit (strcoll ("abc", "def") >= 0 ||
+	 strcoll ("ABC", "DEF") >= 0 ||
+	 strcoll ("123", "456") >= 0)
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_func_strcoll_works=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+ac_cv_func_strcoll_works=no
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+echo "$as_me:$LINENO: result: $ac_cv_func_strcoll_works" >&5
+echo "${ECHO_T}$ac_cv_func_strcoll_works" >&6
+if test $ac_cv_func_strcoll_works = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_STRCOLL 1
+_ACEOF
+
+fi
+
+
 echo "$as_me:$LINENO: checking for uid_t in sys/types.h" >&5
 echo $ECHO_N "checking for uid_t in sys/types.h... $ECHO_C" >&6
 if test "${ac_cv_type_uid_t+set}" = set; then
@@ -23915,65 +23983,6 @@ _ACEOF
         LIBXML2_OBJS="parser.lo"
 
 
-
-fi
-
-
-echo "$as_me:$LINENO: checking for working strcoll" >&5
-echo $ECHO_N "checking for working strcoll... $ECHO_C" >&6
-if test "${ac_cv_func_strcoll_works+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$cross_compiling" = yes; then
-  ac_cv_func_strcoll_works=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-$ac_includes_default
-int
-main ()
-{
-exit (strcoll ("abc", "def") >= 0 ||
-	 strcoll ("ABC", "DEF") >= 0 ||
-	 strcoll ("123", "456") >= 0)
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_func_strcoll_works=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_func_strcoll_works=no
-fi
-rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-fi
-echo "$as_me:$LINENO: result: $ac_cv_func_strcoll_works" >&5
-echo "${ECHO_T}$ac_cv_func_strcoll_works" >&6
-if test $ac_cv_func_strcoll_works = yes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_STRCOLL 1
-_ACEOF
 
 fi
 
