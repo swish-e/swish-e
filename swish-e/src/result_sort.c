@@ -990,119 +990,46 @@ struct
 }
 iTranslationTableExceptions[] =
 {
-    {
-    'Ä', 'A', 1}
-    ,                           /* >>> german sort order of umlauts */
-    {
-    'Ö', 'O', 1}
-    ,                           /*     2001-05-04 rasc */
-    {
-    'Ü', 'U', 1}
-    ,
-    {
-    'ä', 'a', 1}
-    ,
-    {
-    'ö', 'o', 1}
-    ,
-    {
-    'ü', 'u', 1}
-    ,
-    {
-    'ß', 's', 1}
-    ,                           /* <<< german */
-    {
-    'á', 'a', 0}
-    ,                           /* >>> spanish sort order exceptions */
-    {
-    'Á', 'A', 0}
-    ,                           /*     2001-05-04 jmruiz */
-    {
-    'é', 'e', 0}
-    ,
-    {
-    'É', 'E', 0}
-    ,
-    {
-    'í', 'i', 0}
-    ,
-    {
-    'Í', 'I', 0}
-    ,
-    {
-    'ó', 'o', 0}
-    ,
-    {
-    'Ó', 'O', 0}
-    ,
-    {
-    'ú', 'u', 0}
-    ,
-    {
-    'Ú', 'U', 0}
-    ,
-    {
-    'ñ', 'n', 1}
-    ,
-    {
-    'Ñ', 'N', 1}
-    ,                           /* <<< spanish */
-    {
-    'â', 'a', 0}
-    ,                           /* >>> french sort order exceptions */
-    {
-    'Â', 'A', 0}
-    ,                           /*     2001-05-04 jmruiz */
-    {
-    'à', 'a', 0}
-    ,                           /*     Taken from the list - Please check */
-    {
-    'À', 'A', 0}
-    ,                           /*     áéíóúÁÉÍÓÚ added in the spanish part */
-    {
-    'ç', 'c', 0}
-    ,                           /*     äöüÄÖÜ added in the german part */
-    {
-    'Ç', 'C', 0}
-    ,
-    {
-    'è', 'e', 0}
-    ,
-    {
-    'È', 'E', 0}
-    ,
-    {
-    'ê', 'e', 0}
-    ,
-    {
-    'Ê', 'E', 0}
-    ,
-    {
-    'î', 'i', 0}
-    ,
-    {
-    'Î', 'I', 0}
-    ,
-    {
-    'ï', 'i', 0}
-    ,
-    {
-    'Ï', 'I', 0}
-    ,
-    {
-    'ô', 'o', 0}
-    ,
-    {
-    'Ô', 'O', 0}
-    ,
-    {
-    'ù', 'u', 0}
-    ,
-    {
-    'Ù', 'U', 0}
-    ,                           /* >>> french */
-    {
-    0, 0, 0}
+    {'Ä', 'A', 1},                           /* >>> german sort order of umlauts */
+    {'Ö', 'O', 1},                           /*     2001-05-04 rasc */
+    {'Ü', 'U', 1},
+    {'ä', 'a', 1},
+    {'ö', 'o', 1},
+    {'ü', 'u', 1},
+    {'ß', 's', 1},                           /* <<< german */
+
+    {'á', 'a', 0},                           /* >>> spanish sort order exceptions */
+    {'Á', 'A', 0},                           /*     2001-05-04 jmruiz */
+    {'é', 'e', 0},
+    {'É', 'E', 0},
+    {'í', 'i', 0},
+    {'Í', 'I', 0},
+    {'ó', 'o', 0},
+    {'Ó', 'O', 0},
+    {'ú', 'u', 0},
+    {'Ú', 'U', 0},
+    {'ñ', 'n', 1},
+    {'Ñ', 'N', 1},                           /* <<< spanish */
+
+    {'â', 'a', 0},                           /* >>> french sort order exceptions */
+    {'Â', 'A', 0},                           /*     2001-05-04 jmruiz */
+    {'à', 'a', 0},                           /*     Taken from the list - Please check */
+    {'À', 'A', 0},                           /*     áéíóúÁÉÍÓÚ added in the spanish part */
+    {'ç', 'c', 0},                           /*     äöüÄÖÜ added in the german part */
+    {'Ç', 'C', 0},
+    {'è', 'e', 0},
+    {'È', 'E', 0},
+    {'ê', 'e', 0},
+    {'Ê', 'E', 0},
+    {'î', 'i', 0},
+    {'Î', 'I', 0},
+    {'ï', 'i', 0},
+    {'Ï', 'I', 0},
+    {'ô', 'o', 0},
+    {'Ô', 'O', 0},
+    {'ù', 'u', 0},
+    {'Ù', 'U', 0},                           /* <<< french */
+    {0, 0, 0}
 };
 
 /* Initialization routine for the comparison table (ignoring case )*/
@@ -1130,7 +1057,7 @@ void    initStrCmpTranslationTable(int *iCaseTranslationTable)
     int     i;
 
     /* Build default table using asciival * 256 */
-    /* The goal of multiply by 10 is having holes to put values inside
+    /* The goal of multiply by 256 is having holes to put values inside
        eg: ñ is between n and o */
     for (i = 0; i < 256; i++)
         iCaseTranslationTable[i] = i * 256;

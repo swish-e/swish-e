@@ -116,63 +116,89 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define INDEXVERSION "# Swish-e format: " SWISH_VERSION
 #define INDEXVERSION_ID (BASEHEADER + 2)
 
+/* Admin header */
+#define NAMEHEADERPARAMNAME "IndexName"
+#define DESCRIPTIONPARAMNAME "IndexDescription"
+#define POINTERPARAMNAME "IndexPointer"
+#define MAINTAINEDBYPARAMNAME "IndexAdmin"
 
+
+/* Other headers that can be looked via the swish-e library */
+#define INDEXEDONPARAMNAME "IndexedOn"
+#define WORDCHARSPARAMNAME "WordCharacters"
+#define BEGINCHARSPARAMNAME "BeginCharacters"
+#define ENDCHARSPARAMNAME "EndCharacters"
+#define IGNOREFIRSTCHARPARAMNAME "IgnoreFirstChar"
+#define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
+#define STEMMINGPARAMNAME "Stemming"
+#define SOUNDEXPARAMNAME "Soundex"
+
+
+
+/* Headers for output, and their offsets */
 #define NAMEHEADER "# Name:"
 #define NAMEHEADER_ID (BASEHEADER + 3)
+
 #define SAVEDASHEADER "# Saved as:"
 #define SAVEDASHEADER_ID (BASEHEADER + 4)
+
 #define COUNTSHEADER "# Counts:"
 #define COUNTSHEADER_ID (BASEHEADER + 5)
+
 #define INDEXEDONHEADER "# Indexed on:"
-#define INDEXEDONPARAMNAME "Indexed on"
 #define INDEXEDONHEADER_ID (BASEHEADER + 6)
+
 #define DESCRIPTIONHEADER "# Description:"
-#define DESCRIPTIONPARAMNAME "Description"
 #define DESCRIPTIONHEADER_ID (BASEHEADER + 7)
+
 #define POINTERHEADER "# Pointer:"
-#define POINTERPARAMNAME "IndexPointer"
 #define POINTERHEADER_ID (BASEHEADER + 8)
+
 #define MAINTAINEDBYHEADER "# Maintained by:"
-#define MAINTAINEDBYPARAMNAME "IndexAdmin"
 #define MAINTAINEDBYHEADER_ID (BASEHEADER + 9)
+
 #define WORDCHARSHEADER "# WordCharacters:"
-#define WORDCHARSPARAMNAME "WordCharacters"
 #define WORDCHARSHEADER_ID (BASEHEADER + 10)
+
 #define MINWORDLIMHEADER "# MinWordLimit:"
 #define MINWORDLIMHEADER_ID (BASEHEADER + 11)
+
 #define MAXWORDLIMHEADER "# MaxWordLimit:"
 #define MAXWORDLIMHEADER_ID (BASEHEADER + 12)
+
 #define BEGINCHARSHEADER "# BeginCharacters:"
-#define BEGINCHARSPARAMNAME "BeginCharacters"
 #define BEGINCHARSHEADER_ID (BASEHEADER + 13)
+
 #define ENDCHARSHEADER "# EndCharacters:"
-#define ENDCHARSPARAMNAME "EndCharacters"
 #define ENDCHARSHEADER_ID (BASEHEADER + 14)
+
 #define IGNOREFIRSTCHARHEADER "# IgnoreFirstChar:"
-#define IGNOREFIRSTCHARPARAMNAME "IgnoreFirstChar"
 #define IGNOREFIRSTCHARHEADER_ID (BASEHEADER + 15)
+
 #define IGNORELASTCHARHEADER "# IgnoreLastChar:"
-#define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
 #define IGNORELASTCHARHEADER_ID (BASEHEADER + 16)
 
 #define STEMMINGHEADER	"# Stemming Applied:"
-#define STEMMINGPARAMNAME "Stemming"
 #define STEMMINGHEADER_ID (BASEHEADER + 17)
+
 #define SOUNDEXHEADER "# Soundex Applied:"
-#define SOUNDEXPARAMNAME "Soundex"
 #define SOUNDEXHEADER_ID (BASEHEADER + 18)
+
 #define MERGED_ID (BASEHEADER + 19)
 
+/* vv not used vv */
 #define DOCPROPHEADER "# DocProperty"
 #define DOCPROPHEADER_ID (BASEHEADER + 20)
+/* ^^ not used ^^ */
+
 #define DOCPROPENHEADER "# DocumentProperties:"
 #define DOCPROPENHEADER_ID (BASEHEADER + 21)
+
 #define SORTDOCPROPHEADER_ID (BASEHEADER + 22)
 
 #define IGNORETOTALWORDCOUNTWHENRANKING "# IgnoreTotalWordCountWhenRanking:"
 #define IGNORETOTALWORDCOUNTWHENRANKINGPARAMNAME "IgnoreTotalWordCountWhenRanking"
 #define IGNORETOTALWORDCOUNTWHENRANKING_ID (BASEHEADER + 23)
-
 
 #define TRANSLATECHARTABLEHEADER "# TranslateCharacterTable:"
 #define TRANSLATECHARTABLEPARAMNAME "TranslateCharacterTable"
@@ -184,6 +210,8 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
 
 #define TOTALWORDSPERFILE_ID (BASEHEADER + 30)  /* total words per file array */
+
+/* -- end of headers */
 
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
