@@ -28,7 +28,7 @@ one configuration file.
 This allows you to have a master configuration file used for many different indexes, and smaller
 configuration files for each separate index.  You can specify the different configuration files when
 running from the command line with the C<-c> switch, or you may include other Configuration file with the
-B<IncludeConfig> directive.
+B<IncludeConfigFile> directive.
 
 Some command line arguments can override directives specified in the configuration file.
 Please see also the L<SWISH-RUN|SWISH-RUN> for instructions on running SWISH-E,
@@ -138,7 +138,7 @@ L<IgnoreWords|/"item_IgnoreWords"> *list of stop words*
 
 =item *
 
-L<IncludeConfig|/"item_IncludeConfig">
+L<IncludeConfigFile|/"item_IncludeConfigFile">
 
 =item *
 
@@ -211,6 +211,10 @@ L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append]
 
 =item *
 
+L<ResultExtFormatName|/"item_ResultExtFormatName">  name -x format string
+
+=item *
+
 L<SpiderDirectory|/"item_SpiderDirectory"> *path*
 
 =item *
@@ -243,11 +247,11 @@ These configuration directives control the behavior of SWISH-E.
 
 =over 4
 
-=item IncludeConfig *path to config file*
+=item IncludeConfigFile *path to config file*
 
 This directive can be used to include configuration directives located in another file.
 
-    IncludeConfig /usr/local/swish/conf/site_config.config
+    IncludeConfigFile /usr/local/swish/conf/site_config.config
 
 =item IndexReport [0|1|2|3]
 
@@ -301,6 +305,22 @@ Examples:
     IndexDescription "This is an index of /usr/doc on our Linux machine." 
     IndexPointer "http://localhost/swish/linux/index.html"
     IndexAdmin "webmaster"
+
+=item ResultExtFormatName name -x format string
+
+The output of swish can be defined by specifying a format string with the C<-x>
+command line argument.  Using C<ResultExtFormatName> you can assign a predefined format
+string to a name.
+
+Examples:
+
+    ResultExtFormatName  moreinfo   "%c|%r|%t|%p|<author>|<publishyear>\n"
+
+Then when searching you can specify the the format string's name
+   
+    swish-e   ...  -x moreinfo  ...
+
+See the C<-x> switch in L<SWISH-RUN|SWISH-RUN> for more information about output formats.
 
 =back
 
@@ -559,7 +579,7 @@ B<MetaNames> dirictive.
 SWISH-E allows you to specify certain META tags that can be used as B<document properties>.
 The contents of any META tag that has been identified as a document property can be returned as
 part of the search results along with the rank, file name, title, and document size
-(see the C<-p> switch in L<SWISH-RUN|SWISH-RUN>).
+(see the C<-p> and C<-x> switches in L<SWISH-RUN|SWISH-RUN>).
 
 Properties are useful for returning additional data from documents in search results -- this saves the effort of
 reading and parsing the source files while reading SWISH-E search results,
