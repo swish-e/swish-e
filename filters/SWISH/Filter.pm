@@ -833,12 +833,14 @@ to be from standard input).
 If the file is currently on disk then it will be read into memory.  If the file was stored
 in a temporary file on disk the file will be deleted once read into memory.
 
+The file is stored with binmode set unless the content type is "text/".
+
 =cut
 
 sub fetch_doc_reference {
     my ( $self ) = @_;
 
-    return ref $self->{cur_doc}
+    return ref $self->{cur_doc}  # just $self->read_file should work
         ? $self->{cur_doc}
         : $self->read_file;
 }
@@ -914,6 +916,7 @@ sub read_file {
 
 
 # write file out to a temporary file
+
 sub create_temp_file {
     my $self = shift;
     my $doc = $self->{cur_doc};
@@ -992,13 +995,15 @@ sub AUTOLOAD {
 
 Runs $program with @args.  Must pass in @args.
 
-Under Windows calls
-IPC::Open2, which passes data through the shell.  Double-quotes are escaped (backslashed)
-and each parameter is wrapped in double-quotes.
+Under Windows calls IPC::Open2, which may pass data through the shell.  Double-quotes are
+escaped (backslashed) and each parameter is wrapped in double-quotes.
 
 On other platforms a fork and exec is used to avoid passing any data through the shell.
-
 Returns a reference to a scalar containing the output from your program, or dies.
+
+This method is intended to read output from a program that converts one format into text.
+The output is read back in text mode -- on systems like Windows this means \r\n (CRLF) will
+be convertet to \n. 
 
 =cut
 
@@ -1056,8 +1061,15 @@ sub windows_fork {
     my ( $rdrfh, $wtrfh );
 
     my @command = map { s/"/\\"/g; qq["$_"] }  @args;
-    
+
+     
     my $pid = IPC::Open2::open2($rdrfh, $wtrfh, @command );
+
+    # IPC::Open3 uses binmode for some reason (5.6.1)
+    # Assume that the output from the program will be in text
+    # Maybe an invalid assumption if running through a binary filter
+
+    binmode $rdrfh, ':crlf';  # perhpaps: unless delete $self->{binary_output};
 
     $self->{pid} = $pid;
 

@@ -109,13 +109,8 @@ directives specific to the C<fs> method.
 =item http - spider a web server
 
 The C<http> method is used to spider web servers.  It uses an included helper
-program called F<swishspider> located in the F<src> directory.  Swish needs to be able to locate
-this program when using the C<http> method. See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
+program called F<swishspider>.  See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
 directives specific to the C<http> method.
-
-By default, swish looks in the current directory for the F<swishspider> program, or in the directory
-specified by the C<SwishSpiderDir> directive.  The first line of the F<swishspider> program
-(the "shebang" line) must point to the location of the Perl program (if your operating system uses it).
 
 Security Note: Under Windows swish passes the URLs fetched from remote documents through the shell (swish
 uses the system() command for running F<swishspider> under Windows), and this may be considered
@@ -123,17 +118,56 @@ an additional security risk.
 
 The C<http> method is depreciated (or at least not very well appreciated).  Consider using
 the C<prog> method described below for spidering.  There's a spider program available in the
-F<prog-bin> directory for use with the C<prog> method.
+F<prog-bin> directory for use with the C<prog> method.  Here's a number of limitation with 
+this method that are solved with the C<prog> method:
+
+=over 4
+
+=item *
+
+swishspider only spiders standard E<lt>a href="..."E<gt> links.  Frames and other links are 
+not followed.  
+
+=item * 
 
 By default, this method of spidering only indexes files that have a content type of "text/*"
 (e.g. text/plain, text/html, text/xml).  You should use C<DefaultContents> and C<IndexContents> to
-map file extensions to parsers used by swish (e.g.  C<IndexContents HTML* .html .htm>).
+map file extensions to parsers used by swish (e.g.  C<IndexContents HTML* .html .htm>), but 
+this will fail where a document does not have a file extension.
 
-The Swish-e distribution includes perl modules to make converting non-text documents into a format
-that Swish-e can parse easy.  The helper script F<swishspider> will use these modules if installed.  These
-modules only provide an interface to programs that do the conversion.  For example, you will need to
-download and install the "catdoc" program to convert MSWord documents into text for indexing.
-Please see F<filters/README> to see how to use this filter system.
+=item *
+
+Swish-e's C<FileFilter> directive can be used with the C<http> access method, although it 
+requires a separate process (in addition to the swsihspider process) for each document 
+filtered.
+
+=item *
+
+The SWISH::Filter modules can be used with the swishspider program.  SWISH::Filter provides 
+a general purpose filtering system (see SWISH::Filter documentation).  To use SWISH::Filter 
+set PERL5LIB to point to the location of the SWISH module name space (typically 
+/usr/local/lib/swish-e under Unix).  For example:
+
+   export PERL5LIB=/usr/local/lib/swish-e  # bash, bourne shells
+   setenv PERL5LIB /usr/local/lib/swish-e  # csh, tcsh
+
+or under Windows
+
+   set PERL5LIB=c:\program files\swish-e2.4\lib\swish-e
+
+SWISH::Filter is not enabled by default due to the overhead of loading the modules for every
+document fetched.
+
+The Swish-e distribution includes perl modules in the SWISH::Filters::* namespace to make
+converting non-text documents into a format that Swish-e can parse easy.  As mentioned 
+above, the helper script
+F<swishspider> will use these modules if can be found via PERL5LIB.  These modules only 
+provide an interface
+to programs that do the conversion.  For example, you will need to download and install the
+"catdoc" program to convert MSWord documents into text for indexing. Please see
+F<filters/README> to see how to use this filter system.
+
+=back
 
 =item prog - general purpose access method
 

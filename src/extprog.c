@@ -192,6 +192,11 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 /* This may not be safe if running as a threaded app, and I'm not clear on how portable this is */
 /* This also uses read_stream to read in the file -- so the entire file is read into memory instead of chunked to the temp file */
 
+/* Notice that the data is read out in TEXT mode -- this is because it's read from the */
+/* external program in TEXT mode.  Binary files will be modified while in memory */
+/* (under Windows) but writing back in TEXT mode should restore the file to its */
+/* original binary format for use by the filter.  Really, don't use FileFilter with -S prog */
+
 static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
 {
     FILE   *out;
