@@ -24,8 +24,6 @@ my $mem_test = 0;
     my @header_names = $swish->HeaderNames;
     is_ok( "header names " . join(':',@header_names), @header_names);
 
-    my $d = $swish->HeaderValue( 't/index.swish-e', 'Indexed on' );
-    print "found [$d]\n";
 
     my @index_names = $swish->IndexNames;
 
