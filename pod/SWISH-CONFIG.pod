@@ -1227,6 +1227,10 @@ Convert gzipped files to text:
     $gz->gzclose() ;
 
 
+Note: If you are using the C<prog> input method (C<-S prog>), you will likely see better performance
+by including the filtering within your C<prog> method program.  Keep this in mind if indexing speed is
+critical.
+
 =back
 
 =head2 Directives for the File Access method only

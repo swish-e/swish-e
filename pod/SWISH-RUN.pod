@@ -92,12 +92,15 @@ or via the C<-i> option.
 A few example programs are provided in the swish-e distribution
 located in the C<prog-bin> directory.
 
-The C<prog> method bypasses most of the configuration parameters available
+The C<prog> method bypasses some of the configuration parameters available
 to the file system method -- settings such as C<IndexOnly> and C<FileRules>
-are ignored when using the C<prog> method.  This is because the external
-program can filter documents before passing the document onto swish.  In
+are ignored when using the C<prog> method.  It's expected that these operations
+are better accomplished in the external program before passing the document onto swish.  In
 other words, when using the C<prog> method, only send the documents to swish
 that you want indexed.
+
+You may use swish's filter feature with the C<prog> method, but performance will be better if you
+run filtering programs from within your external program.
 
 Located in the C<conf> directory are example configuration files that demonstrate
 indexing with the different document source methods.
