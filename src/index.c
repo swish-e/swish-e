@@ -461,6 +461,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* -- Read  all data  (len = 0 if filtered...) */
     rd_buffer = read_stream(fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
+    /* just for fun */
+    sw->indexlist->total_bytes += fprop->fsize;
+
 
     /* Set which parser to use */
     
