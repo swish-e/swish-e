@@ -21,7 +21,17 @@ libsnowball_la_SOURCES = \
 	stem_de.c \
 	stem_de.h \
 	stem_nl.c \
-	stem_nl.h 
+	stem_nl.h \
+	stem_no.c \
+	stem_no.h \
+	stem_se.c \
+	stem_se.h \
+	stem_dk.c \
+	stem_dk.h \
+	stem_ru.c \
+	stem_ru.h \
+	stem_fi.c \
+	stem_fi.h
 
 
 
