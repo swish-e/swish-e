@@ -405,15 +405,21 @@ sub spider {
 
 sub delay_request {
     my ( $server ) = @_;
-    
-    # return if no delay or first request
-    
-    return if !$server->{delay_sec} || !$server->{last_response_time};    
 
-    return if $server->{keep_alive_connection};
-    
+    # return if no delay or first request
+
+    return if !$server->{delay_sec} || !$server->{last_response_time};
+
+    if ( $server->{keep_alive_connection} ) {
+        $server->{counts}{'Connection: Keep-Alive'}++;
+        # no delay on keep-alives
+        return;
+    }
+
+    $server->{counts}{'Connection: Close'}++;
+
     my $wait = $server->{delay_sec} - ( time - $server->{last_response_time} );
-    
+
     return unless $wait > 0;
 
     print STDERR "sleeping $wait seconds\n" if $server->{debug} & DEBUG_URL;
@@ -586,9 +592,14 @@ sub process_link {
 
     # save the request completion time for delay_min
     $server->{last_response_time} = time;
-    $server->{keep_alive_connection} = $server->{keep_alive} && 
-           ($response->header('Connection') || '') !~ /close/i;
 
+
+    # LWP failes to return the Connection header after the first response
+
+    my $connection = $response->header('Connection') || 'Keep-alive';
+    $server->{keep_alive_connection} = $server->{keep_alive} && $connection !~ /close/i;
+
+    
 
     # Report bad links (excluding those skipped by robots.txt
 
