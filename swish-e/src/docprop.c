@@ -1098,8 +1098,10 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 #ifdef HAVE_STRCOLL
         /* note that the propValue should be null terminated.  See CreateProperty()  */
         /* could use a strncoll() and one for case ignore */
+#ifdef DEBUGPROP
         if ( is_meta_use_strcoll(meta_entry) )
             printf("using strcol %s <=> %s = %d\n",  (const char *)p1->propValue, (const char *)p2->propValue,strcoll( (const char *)p1->propValue, (const char *)p2->propValue ));
+#endif
         if ( is_meta_use_strcoll(meta_entry) )
             return strcoll( (const char *)p1->propValue, (const char *)p2->propValue );
 #endif
@@ -1108,7 +1110,9 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
              ? strncasecmp( (char *)p1->propValue, (char *)p2->propValue, len )
              : strncmp( (char *)p1->propValue, (char *)p2->propValue, len );
 
+#ifdef DEBUGPROP
         printf("using %s  %s <=> %s = %d\n", (is_meta_ignore_case( meta_entry) ? "strncasecmp" : "strncmp"),  (const char *)p1->propValue, (const char *)p2->propValue, rc );
+#endif
 
 
         if ( rc != 0 )
