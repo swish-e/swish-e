@@ -833,6 +833,7 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
                         hash = verybighash(e->word);
                         if(sw_output->Index->hashentriesdirty[hash])
                         {
+                            /* Reset the hashentriesdirty flag - Not needed by merge */
                             sw_output->Index->hashentriesdirty[hash] = 0;
                             CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
                         }
@@ -864,22 +865,30 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
                 /* Reset the hashentriesdirty flag - Not needed by merge */
                 sw_output->Index->hashentriesdirty[verybighash(e->word)] = 0;
                 CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
-
                 word_count++;
             }
 
 
             /* Let's coalesce location from time to time to save memory */
+            /* FIX 08/2002 jmruiz
+            ** Unfortunately, we cannot coalesce because this routine
+            ** need that the worddata is sorted by filenum. In merge,
+            ** this is not true because new filenums are asigned on the
+            ** fly in write_word_pos routine. If done
+            **
+            ** BTW, if we cannot call coalesce_word_locations, -e is useless
+            ** Probably, this need some redesign ...
+            */
             if(!(word_count % 1000))
             {
                 printf("Processing words in index '%s': %6d words\r", indexf->line, word_count);
                 fflush(stdout);
 
-                coalesce_all_word_locations(sw_output, sw_output->indexlist);
+                //coalesce_all_word_locations(sw_output, sw_output->indexlist);
 
                 /* Make zone available for reuse */
-                Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
-                sw_output->Index->freeLocMemChain = NULL;
+                //Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
+                //sw_output->Index->freeLocMemChain = NULL;
 
             }
 
@@ -893,11 +902,13 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
     DB_EndReadWords(sw, indexf->DB);
 
     /* Coalesce pending work*/
-    coalesce_all_word_locations(sw_output, sw_output->indexlist);
+    /* FIX 08/2002 jmruiz - See above
+    */
+    //coalesce_all_word_locations(sw_output, sw_output->indexlist);
 
     /* Make zone available for reuse */
-    Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
-    sw_output->Index->freeLocMemChain = NULL;
+    //Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
+    //sw_output->Index->freeLocMemChain = NULL;
 }
 
 /****************************************************************************
