@@ -182,20 +182,21 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 libsnowball_la_LDFLAGS =
 libsnowball_la_LIBADD =
 am_libsnowball_la_OBJECTS = api.lo utilities.lo stem_en1.lo stem_en2.lo \
-	stem_es.lo stem_fr.lo stem_it.lo stem_pt.lo stem_de.lo stem_nl.lo \
-	stem_no.lo stem_se.lo stem_dk.lo stem_ru.lo stem_fi.lo
+	stem_es.lo stem_fr.lo stem_it.lo stem_pt.lo stem_de.lo \
+	stem_nl.lo stem_no.lo stem_se.lo stem_dk.lo stem_ru.lo \
+	stem_fi.lo
 libsnowball_la_OBJECTS = $(am_libsnowball_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 @AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/api.Plo ./$(DEPDIR)/stem_de.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_en1.Plo ./$(DEPDIR)/stem_en2.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_es.Plo ./$(DEPDIR)/stem_fr.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_dk.Plo ./$(DEPDIR)/stem_en1.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_en2.Plo ./$(DEPDIR)/stem_es.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_fi.Plo ./$(DEPDIR)/stem_fr.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/stem_it.Plo ./$(DEPDIR)/stem_nl.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_pt.Plo ./$(DEPDIR)/stem_no.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_se.Plo ./$(DEPDIR)/stem_dk.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_ru.Plo ./$(DEPDIR)/stem_fi.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_no.Plo ./$(DEPDIR)/stem_pt.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_ru.Plo ./$(DEPDIR)/stem_se.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/utilities.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -237,18 +238,18 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_de.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_dk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_en1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_en2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_es.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_fi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_fr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_it.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_nl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_pt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_no.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_se.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_dk.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_pt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_ru.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_fi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_se.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utilities.Plo@am__quote@
 
 distclean-depend:
