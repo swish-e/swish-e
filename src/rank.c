@@ -387,7 +387,7 @@ getrankDEF( RESULT *r )
         /* GET_STRUCTURE must return value in range! */
         rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
 #ifdef DEBUG_RANK
-        // fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+        fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
         struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
 #endif
 
@@ -414,7 +414,7 @@ getrankDEF( RESULT *r )
      for ( i = 0; i <= 255; i++ )
          if ( struct_tally[i] )
          {
-             fprintf( stderr, "      struct 0x%x = %2d (", i, struct_tally[i] );
+             fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
             if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
             if ( i & IN_HEADER ) fprintf(stderr," HEADING");
             if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
@@ -624,7 +624,16 @@ where c > 0 (optimized at 2 ... we think...)
     
     density		= freq * log( 1 + ( density_magic * ( average_words / words ) ) ); */
     
-    /* doesn't work that well with int values */
+    /* doesn't work that well with int values. Use below (cruder) instead.
+    NOTE that there is likely a sweet spot for density. A word like 'the' will always have a high
+    density in normal language, but it is not very relevant. A word like 'foo' might have a very
+    low density in doc A but slightly higher in doc B -- doc B is likely more relevant. So low
+    density is not a good indicator and neither is high density. Instead, something like:
+    
+    | density  scale --->                  |
+    0       X                           100
+    useless sweet                       useless
+    */
     
     
     density		= ( ( average_words * 100 ) / words ) * freq;
@@ -651,7 +660,7 @@ where c > 0 (optimized at 2 ... we think...)
         word_score += word_weight * ( sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias );
 	
 #ifdef DEBUG_RANK
- /* fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );  */
+        fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
  
         struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
 #endif
@@ -684,7 +693,7 @@ where c > 0 (optimized at 2 ... we think...)
      for ( i = 0; i <= 255; i++ )
          if ( struct_tally[i] )
          {
-             fprintf( stderr, "      struct 0x%x = %2d (", i, struct_tally[i] );
+             fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
             if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
             if ( i & IN_HEADER ) fprintf(stderr," HEADING");
             if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");

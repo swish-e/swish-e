@@ -1179,8 +1179,8 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
      * The andLevel is used to help keep the ranking function honest
      * when it ANDs the results of the latest search term with
      * the results so far (rp).  The idea is that if you AND three
-     * words together you ultimately want to resulting rank to
-     * be the average of all three individual work ranks. By keeping
+     * words together you ultimately want the resulting rank to
+     * be the average of all three individual ranks. By keeping
      * a running total of the number of terms already ANDed, the
      * next AND operation can properly scale the average-rank-so-far
      * and recompute the new average properly (see andresultlists()).
@@ -1625,9 +1625,11 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                     if(!l_rp)
                        l_rp = newResultsList(db_results);
 
-                    // tfrequency = number of files with this word
-                    // frequency = number of times this words is in this document for this metaID
-                    // metarank is the negative of the metaID - for use in getrank()
+                    /*
+		       tfrequency = number of files with this word
+                       frequency = number of times this words is in this document for this metaID
+                       metarank is the negative of the metaID - for use in getrank()
+		    */
 
                     addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, db_results);
 
@@ -1776,8 +1778,12 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
              */
             int     newRank = 0;
 
-
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
+
+
+#ifdef DEBUG_RANK
+    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, andLevel, newRank );
+#endif
             
 
             if(!new_results_list)
@@ -1871,7 +1877,12 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 
             rp->fi.filenum = rp->filenum = r1->filenum;
 
-            rp->rank = ( r1->rank + r2->rank) * 2;  // bump up the or terms
+            rp->rank = ( r1->rank + r2->rank) * 2;  /* bump up the or terms */
+	    
+#ifdef DEBUG_RANK
+    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, rp->rank );
+#endif
+
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
             rp->db_results = r1->db_results;
