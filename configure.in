@@ -55,7 +55,7 @@ dnl so why bother?
 dnl AC_HEADER_STDC
 
 dnl Again, I don't think we do any tests for these, so why bother
-dnl AC_CHECK_HEADERS(strings.h unistd.h)
+AC_CHECK_HEADERS(unistd.h stdlib.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
