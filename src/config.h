@@ -215,8 +215,12 @@
 
 /* IGNORESAME is the maximum times a character can repeat in a word.
 */
+/* Dec 6, 2001 - Grabbed "letters" from /usr/local/share/aspell/iso8859-1.dat (http://aspell.sf.net) - moseley */
+#define WORDCHARS "0123456789abcdefghijklmnopqrstuvwxyzªµºÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİŞßàáâãäåæçèéêëìíîïğñòóôõöøùúûüışÿ"
 
+/*
 #define WORDCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
+*/
 
 /* WORDCHARS is a string of characters which SWISH permits to
 ** be in words.  Words are defined by these characters.
@@ -226,14 +230,14 @@
 ** make the compiler understand them.
 */
 
-#define BEGINCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
+#define BEGINCHARS "0123456789abcdefghijklmnopqrstuvwxyzªµºÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİŞßàáâãäåæçèéêëìíîïğñòóôõöøùúûüışÿ"
 
 /* Of the characters that you decide can go into words, this is
 ** a list of characters that words can begin with. It should be
 ** a subset of (or equal to) WORDCHARS.
 */
 
-#define ENDCHARS "abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌĞİŞÍğÎÏÒÓÔÕØÙÛîèãõšœ€ßƒŠŒøŸ£ÜíÀ0123456789"
+#define ENDCHARS "0123456789abcdefghijklmnopqrstuvwxyzªµºÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏĞÑÒÓÔÕÖØÙÚÛÜİŞßàáâãäåæçèéêëìíîïğñòóôõöøùúûüışÿ"
 
 /* This is the same as BEGINCHARS, except you're testing for
 ** valid characters at the ends of words.
