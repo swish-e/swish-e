@@ -81,6 +81,7 @@ SWISH *SwishNew()
     sw->dirlist = NULL;
     sw->indexlist = NULL;
     sw->replacelist = NULL;
+    sw->replaceRegexps = NULL;
     sw->lasterror = RC_OK;
     sw->verbose = VERBOSE;
     sw->indexComments = 0;		/* change default 5/01 wsm */

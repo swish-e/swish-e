@@ -162,6 +162,10 @@ properties.
 
 Swish now uses James Clark's expat XML parser library.
 
+=item * LST type of document no longer supported
+
+LST allowed indexing of files that contained multiple documents.
+
 =back
 
 Changes to Configuration File Directives.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for

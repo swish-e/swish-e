@@ -35,8 +35,6 @@ char *SafeStrCopy (char *,char *, int *);
 void sortstring (char *);
 char *mergestrings (char *,char *);
 
-char *matchAndChange (char *str, char *pattern, char *subs);
-char *replaceWild (char* fileName, char* pattern, char* subs);
 
 void makelookuptable (char * ,int *);
 void makeallstringlookuptables (SWISH *);
@@ -99,3 +97,7 @@ char *cstr_dirname (char *path);
 char *estrdup (char *str);
 char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
+
+char *process_regex_list( char *str, regex_list *regex );
+char *regex_replace( char *str, regex_list *regex, int offset );
+

@@ -161,8 +161,6 @@ src/keychar_out.c
 src/keychar_out.h
 src/list.c
 src/list.h
-src/lst.c
-src/lst.h
 src/mem.c
 src/mem.h
 src/merge.c

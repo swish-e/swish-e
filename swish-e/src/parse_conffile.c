@@ -55,6 +55,9 @@ $Id$
 #include "db.h"
 #include "extprog.h"
 
+static void Build_ReplaceRules( StringList *sl, regex_list **reg_list );
+
+
 
 /* Reads the configuration file and puts all the right options
 ** in the right variables and structures.
@@ -285,13 +288,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "ReplaceRules") == 0)
         {
-            if (sl->n > 1)
-            {
-                grabCmdOptions(sl, 1, &sw->replacelist);
-                checkReplaceList(sw);
-            }
+            if (sl->n > 2)
+                Build_ReplaceRules( sl, &sw->replaceRegexps );
             else
-                progerr("%s: requires at least one value", w0);
+                progerr("%s: requires at least two values", w0);
 
             continue;
         }
@@ -862,6 +862,148 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
 }
 
 
+static void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global )
+{
+    regex_list *new_node = emalloc( sizeof( regex_list ) );
+    regex_list *last;
+    char       *c;
+    int         status;
+    int         escape = 0;
+
+    if ( (status = regcomp( &new_node->re, pattern, cflags )))
+        progerr("Failed to complie regular expression '%s', pattern. Error: %d", pattern, status );
+
+    efree( pattern );        
+    new_node->replace = replace;
+
+    new_node->global = global;  /* repeat flag */
+
+    new_node->replace_length = strlen( replace );
+
+    new_node->replace_count = 0;
+    for ( c = replace; *c; c++ )
+    {
+        if ( escape )
+        {
+            escape = 0;
+            continue;
+        }
+        
+        if ( *c == '\\' )
+        {
+            escape = 1;
+            continue;
+        }
+
+        if ( *c == '$' && *(c+1) )
+            new_node->replace_count++;
+    }
+         
+            
+    new_node->next = NULL;
+
+
+    if ( *reg_list == NULL )
+        *reg_list = new_node;
+    else
+    {
+        /* get end of list */
+        for ( last = *reg_list; last->next; last = last->next );
+
+        last->next = new_node;
+    }
+
+}
+
+
+
+
+static void Build_ReplaceRules( StringList *sl, regex_list **reg_list )
+{
+    char *pattern = NULL;
+    char *replace = NULL;
+    int   cflags = REG_EXTENDED;
+    int   global = 0;
+
+    /* these two could be optimized, of course */
+    
+    if ( strcasecmp( sl->word[1], "append") == 0 )
+    {
+        pattern = estrdup("$");
+        replace = estrdup(sl->word[2]);
+    }
+
+    else if  ( strcasecmp( sl->word[1], "prepend") == 0 )
+    {
+        pattern = estrdup("^");
+        replace = estrdup(sl->word[2]);
+    }
+
+       
+    else if  ( strcasecmp( sl->word[1], "remove") == 0 )
+    {
+        pattern = estrdup(sl->word[2]);
+        replace = estrdup( "" );
+        global++;
+    }
+        
+
+    else if  ( strcasecmp( sl->word[1], "replace") == 0 )
+    {
+        pattern = estrdup(sl->word[2]);
+        replace = estrdup(sl->word[3]);
+        global++;
+    }
+
+
+    else if  ( strcasecmp( sl->word[1], "regex") == 0 )
+    {
+        int delimiter = (int)*(sl->word[2]);
+        char    *word = sl->word[2];
+        char    *pos;
+
+        word++; /* past the first delimiter */
+
+        if ( !(pos = strchr( word, delimiter )))
+            progerr("ReplaceRules regex: failed to find search pattern delimiter '%c' in pattern '%s'", (char)delimiter, word );
+
+        *pos = '\0';            
+        pattern = estrdup(word);
+
+        word = pos + 1;  /* now at replace pattern */
+
+        if ( !(pos = strchr( word, delimiter )))
+            progerr("ReplaceRules regex: failed to find replace pattern delimiter '%c' in pattern '%s'", (char)delimiter, word );
+
+        *pos = '\0';            
+        replace = estrdup(word);
+
+        /* now check for flags */
+        for ( word = pos + 1; *word; word++ )
+        {
+            if ( *word == 'i' )
+                cflags |= REG_ICASE;
+            else if ( *word == 'm' )
+                cflags |= REG_NEWLINE;
+            else if ( *word == 'g' )
+                global++;
+            else
+                progerr("ReplaceRules regexp %s: unknown flag '%c'", sl->word[2], *word );
+        }
+        
+    }
+
+    else
+        progerr("ReplaceRules: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", sl->word[1] );
+
+
+    add_regular_expression( reg_list, pattern, replace, cflags, global );
+}
+
+    
+
+
+
 /*
   --  check if word "n" in StringList  is a DocumentType
   --  returns (doctype-id)
@@ -878,23 +1020,11 @@ int     getDocTypeOrAbort(StringList * sl, int n)
     }
            *d, doc[] =
     {
-        {
-        "TXT", TXT}
-        ,
-        {
-        "HTML", HTML}
-        ,
-        {
-        "XML", XML}
-        ,
-        {
-        "WML", WML}
-        ,
-        {
-        "LST", LST}
-        ,
-        {
-        NULL, NODOCTYPE}
+        {"TXT", TXT},
+        {"HTML", HTML},
+        {"XML", XML},
+        {"WML", WML},
+        {NULL, NODOCTYPE}
     };
 
 
