@@ -5,7 +5,6 @@
 User-agent: *
 Disallow: //
 Disallow: /search
-Disallow: /devel/docs
 # off site links
 Disallow: /scripts
 Disallow: /scripts.html
@@ -13,4 +12,7 @@ Disallow: /who
 Disallow: /who.html
 # These are offsite, but alllow
 # Disallow: /demos.html
+# This is old site that will soon be removed
+# /Discussion/archive is now just /archive
+Disallow: /Discussion
 
