@@ -167,11 +167,8 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     if ( *meta_entry )
         metaID = (*meta_entry)->metaID;
 
-    else if ( !(*meta_entry = getMetaIDData(&indexf->header, metaID )) )
+    else if ( !(*meta_entry = getPropNameByID(&indexf->header, metaID )) )
         return NULL;
-
-    if ( ! ( (*meta_entry)->metaType & META_PROP) )
-        progerr( "'%s' is not a PropertyName", (*meta_entry)->metaName );
 
 
     /* This is a memory leak if not using PROPFILE */
@@ -300,7 +297,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     /* Lookup by property name, if supplied */
     if ( pname )
-        if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname )) )
+        if ( !(meta_entry = getPropNameByName( &r->indexf->header, pname )) )
             return NULL;
 
 
@@ -1316,14 +1313,9 @@ int initSearchResultProperties(SWISH *sw)
 		/* Get ID for each index file */
 		for( indexf = sw->indexlist; indexf; indexf = indexf->next )
 		{
-		    if ( !(meta_entry = getMetaNameData( &indexf->header, srch->propNameToDisplay[i])))
+		    if ( !(meta_entry = getPropNameByName( &indexf->header, srch->propNameToDisplay[i])))
 			{
 				progerr ("Unknown Display property name \"%s\"", srch->propNameToDisplay[i]);
-				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
-			}
-			else if ( !( meta_entry->metaType & META_PROP) )
-			{
-				progerr ("Name \"%s\" is not a PropertyName", srch->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 			else
@@ -1382,7 +1374,7 @@ void dump_file_properties(IndexFILE * indexf, struct  file *fi )
         if ( !fi->docProperties->propEntry[j] )
             continue;
 
-        meta_entry = getMetaIDData( &indexf->header, j );
+        meta_entry = getPropNameByID( &indexf->header, j );
         prop = fi->docProperties->propEntry[j];
         
         dump_single_property( prop, meta_entry );

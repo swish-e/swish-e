@@ -334,7 +334,7 @@ void *DB_Open_Native (char *dbname)
         if( !(DB->prop = openIndexFILEForRead(s)) )
             progerrno("Couldn't open the property file \"%s\": ", s);
 
-        DB->cur_prop_file = estrdup( s ); 
+        DB->cur_prop_file = s;
     }
 #endif
 

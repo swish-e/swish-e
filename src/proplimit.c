@@ -649,7 +649,6 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 ********************************************************************/
 static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 {
-    int j;
     struct metaEntry *meta_entry;
     PARAMS  *curp;
     int found;
@@ -658,76 +657,39 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
     curp = params;
 
     /* Look at each parameter */
-    while ( curp )
+    for (curp = params; curp; (struct PARAMS *)curp = curp->next )
     {
         found = 0;
 
+        if ( !(meta_entry = getPropNameByName( &indexf->header, curp->propname )))
+            progerr("Specified limit name '%s' is not a PropertyName", curp->propname );
+            
+        /* see if array has already been allocated (cached) */
+        if ( meta_entry->inPropRange )
+            continue;
 
-        /* look for a matching metaname */
-        
-        for ( j = 0; j < indexf->header.metaCounter; j++)
-        {
-            meta_entry =
-                getMetaIDData( &indexf->header, indexf->header.metaEntryArray[j]->metaID );
-
-            /* see if array has already been allocated (cached) */
-            if ( meta_entry->inPropRange )
-            {
-                found++;
-                break;
-            }
-
-            /* Is this our metaEntry? */
-            if ( strcasecmp( curp->propname, meta_entry->metaName) != 0 )
-                continue;
-
-
-            /* Is this an aliased meta entry? */
-            if ( meta_entry->alias )
-            {
-                int id = meta_entry->alias;
-                
-                if ( !(meta_entry = getMetaIDData( &indexf->header, id )))
-                    progerr("failed to load alias meta ID '%d'", id );
-            }
-
-                
-            if ( !is_meta_property( meta_entry ) )
-                progerr("Name '%s' is not a PropertyName", curp->propname );
-
-
-            found++;
 
             /* Encode the parameters into properties for comparing, and store in the metaEntry */
+            /* $$$ what happens if it fails -- should this progerr? */
+            
             if ( !params_to_props( meta_entry, curp ) )
-                break;  /* This means that it failed to set a range */
+                continue;  /* This means that it failed to set a range */
                 
 
-            /* load the sorted_data array, if not already done*/
+            /* load the sorted_data array, if not already done */
             if ( !meta_entry->sorted_data )
                 if( !LoadSortedProps( sw, indexf, meta_entry ) )
-                {
-                    // progwarn("limit by '%s' may be slow: No pre-sorted data available", meta_entry->metaName );
-                    break;
-                }
+                    continue;  /* thus it will sort manually without pre-sorted index */
 
 
             /* Now create the lookup table in the metaEntry */
             /* A false return means that an array was built but it was all zero */
             /* No need to check anything else at this time, since can only AND -L options */
+            /* i.e. = return No Results right away */
             /* This allows search.c to bail out early */
 
             if ( !create_lookup_array( sw, indexf, meta_entry ) )
                 return 0;
-
-
-            break;  // out to next parameter
-        }
-
-        if ( !found )
-            progerr("Specified limit name '%s' is not a PropertyName", curp->propname );
-
-        (struct PARAMS *)curp = curp->next;
     }
 
     return 1;  // ** flag that it's ok to continue the search.
@@ -798,25 +760,27 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
 {
     int j;
     struct metaEntry  *meta_entry;
-    int limit = 0;
 
 
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
-        meta_entry =
-            getMetaIDData( &indexf->header, indexf->header.metaEntryArray[j]->metaID );
+        /* Look at all the properties */
+        
+        if ( !(meta_entry = getPropNameByID( &indexf->header, indexf->header.metaEntryArray[j]->metaID )))
+            continue;  /* continue if it's not a property */
 
-        /* see if array has already been allocated (cached), and use that */
+
+
+        /* If inPropRange is allocated then it is an array for limiting already created */
         if ( meta_entry->inPropRange )
-        {
-            if ( !meta_entry->inPropRange[filenum-1] )
-                return 1;
-        }
+            return !meta_entry->inPropRange[filenum-1];
 
+
+        /* Otherwise, if either range is set, then use a manual lookup of the property */
         
-        
-        else if ( meta_entry->loPropRange || meta_entry->hiPropRange )
+        if ( meta_entry->loPropRange || meta_entry->hiPropRange )
         {
+            int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
 
             /* Return true (i.e. limit) if the file's prop is less than the low range */
@@ -830,11 +794,12 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
 #ifdef PROPFILE    
             freeProperty( prop );
 #endif
-
-
+            /* If limit by this property, then return to limit right away */
+            if ( limit )
+                return 1;
         }
     }
 
-    return limit;
+    return 0;  /* don't limit by default */
 }    
 

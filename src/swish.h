@@ -415,16 +415,6 @@ typedef struct
     struct char_lookup_st *pathlookup;
 
 
-    /* shortcut properties to make addCommonProperties work faster */
-
-    struct metaEntry *filenameProp;
-    struct metaEntry *titleProp;
-    struct metaEntry *filedateProp;
-    struct metaEntry *startProp;
-    struct metaEntry *sizeProp;
-    struct metaEntry *summaryProp;
-
-
     /* Array to handle the number of words per doc */
     int    *filetotalwordsarray;
 

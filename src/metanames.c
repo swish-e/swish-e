@@ -20,18 +20,18 @@
 #include "docprop.h"
 #include "metanames.h"
 #include "dump.h"
+#include "error.h"
 
 typedef struct
 {
     char   *metaName;
     int     metaType;           /* see metanames.h for values. All values must be "ored" */
-    
 }
 defaultMetaNames;
 
 
 /**************************************************************************
-*   List of internal meta names
+*   List of *internal* meta names
 *
 *   Note:
 *       Removing any of these will prevent access for result output
@@ -62,80 +62,236 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
     { AUTOPROPERTY_DOCSIZE,      META_PROP | META_NUMBER},
     { AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE},
     { AUTOPROPERTY_SUMMARY,      META_PROP},
-    { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},
+    // { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},  // should be added only if LST is selected
 };
 
 /* Add the Internal swish metanames to the index file structure */
 void    add_default_metanames(IndexFILE * indexf)
 {
-    int     i,
-            dummy;
+    int     i;
 
     for (i = 0; i < sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0]); i++)
-        addMetaEntry(&indexf->header, SwishDefaultMetaNames[i].metaName, SwishDefaultMetaNames[i].metaType, 0, NULL, &dummy);
+        addMetaEntry(&indexf->header, SwishDefaultMetaNames[i].metaName, SwishDefaultMetaNames[i].metaType, 0);
+}
 
+
+
+/**************************************************************************
+*   These next routines add a new property/metaname to the list
+*
+*
+***************************************************************************/
+
+
+
+/* Add an entry to the metaEntryArray if one doesn't already exist */
+
+
+struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID)
+{
+    struct metaEntry *tmpEntry = NULL;
+    char *metaWord;
+
+    if (metaname == NULL || metaname[0] == '\0')
+        progerr("internal error - called addMetaEntry without a name");
+
+
+    metaWord = estrdup( metaname );
+    strtolower(metaWord);
+
+
+    /* See if there is a previous metaname with the same name */
+//    tmpEntry = metaType & META_PROP
+//               ? getPropNameByName(header, metaWord)
+//               : getMetaNameByName(header, metaWord);
+               
+
+    if (!tmpEntry)              /* metaName not found - Create a new one */
+        tmpEntry = addNewMetaEntry( header, metaWord, metaType, metaID);
+
+    else
+        /* This allows adding Numeric or Date onto an existing property. */
+        /* Probably not needed */
+        tmpEntry->metaType |= metaType;
+
+
+    efree( metaWord );
+
+    return tmpEntry;
+        
+}
+
+static struct metaEntry *create_meta_entry( char *name )
+{
+    struct metaEntry *newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
+
+    newEntry->metaName = (char *) estrdup( name );
+    newEntry->metaType = 0;
+    newEntry->sorted_data = 0;
+    newEntry->inPropRange = NULL;
+    newEntry->loPropRange = NULL;
+    newEntry->hiPropRange = NULL;
+    newEntry->alias = 0;
+
+    return newEntry;
+}
+    
+
+
+struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID)
+{
+    int    metaCounter = header->metaCounter;
+    struct metaEntry *newEntry;
+    struct metaEntry **metaEntryArray = header->metaEntryArray;
+    newEntry = create_meta_entry( metaWord );
+    
+    newEntry->metaType = metaType;
+
+    /* If metaID is 0 asign a value using metaCounter */
+    /* Loaded stored metanames from index specifically sets the metaID */
+    
+    newEntry->metaID = metaID ? metaID : metaCounter + 1;
+
+
+    /* Create or enlarge the array, as needed */
+    if(! metaEntryArray)
+    {
+        metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
+        metaCounter = 0;
+    }
+    else
+        metaEntryArray = (struct metaEntry **) erealloc(metaEntryArray,(metaCounter + 1) * sizeof(struct metaEntry *));
+
+
+    /* And save it in the array */
+    metaEntryArray[metaCounter++] = newEntry;
+
+    /* Now update the header */
+    header->metaCounter = metaCounter;
+    header->metaEntryArray = metaEntryArray;
+
+    return newEntry;
+}
+
+/**************************************************************************
+*   These routines lookup either a property or a metaname
+*   by its ID or name
+*
+*   The routines only look at either properites or metanames
+*
+*   Note: probably could save a bit by just saying that if not META_PROP then
+*   it's a a meta index entry.  In otherwords, the type flag of zero could mean
+*   META_INDEX, otherwise it's a PROPERTY.  $$$ todo...
+*
+*
+***************************************************************************/
+
+
+/** Lookup META_INDEX -- these only return meta names, not properties **/
+
+struct metaEntry *getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
+{
+    int     i;
+
+    for (i = 0; i < header->metaCounter; i++)
+        if (is_meta_index(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+            return header->metaEntryArray[i];
+
+    return NULL;
 }
 
 
 /* Returns the structure associated with the metaName if it exists
 *  Requests for Aliased names returns the base meta entry, not the alias meta entry.
+*  Note that on a alias it checks the *alias*'s type, so it must match.
 */
 
-struct metaEntry *getMetaNameData(INDEXDATAHEADER * header, char *word)
+struct metaEntry *getMetaNameByName(INDEXDATAHEADER * header, char *word)
 {
     int     i;
 
     for (i = 0; i < header->metaCounter; i++)
-        if (!strcmp(header->metaEntryArray[i]->metaName, word))
+        if (is_meta_index(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i]->alias
-                   ? getMetaIDData( header, header->metaEntryArray[i]->alias )
+                   ? getMetaNameByID( header, header->metaEntryArray[i]->alias )
                    : header->metaEntryArray[i];
 
     return NULL;
 }
 
 
-struct metaEntry *getMetaNameDataNoAlias(INDEXDATAHEADER * header, char *word)
-{
-    int     i;
-
-    for (i = 0; i < header->metaCounter; i++)
-        if (!strcmp(header->metaEntryArray[i]->metaName, word))
-            return header->metaEntryArray[i];
-
-    return NULL;
-}
-
-/* Returns the ID associated with the metaName if it exists
-   $$$ this can probably be replace with getMetaNameData
-*/
-
-int     getMetaNameID(IndexFILE *indexf, char * word)
-{
-    struct metaEntry *m;
-
-    if ( (m = getMetaNameData( &indexf->header, word )) )
-        return m->metaID;
-
-    return 1;
-}
-
-
-
 /* Returns the structure associated with the metaName ID if it exists
 */
 
-struct metaEntry *getMetaIDData(INDEXDATAHEADER *header, int number)
+struct metaEntry *getMetaNameByID(INDEXDATAHEADER *header, int number)
 {
     int     i;
 
     for (i = 0; i < header->metaCounter; i++)
     {
-        if (number == header->metaEntryArray[i]->metaID)
+        if (is_meta_index(header->metaEntryArray[i]) && number == header->metaEntryArray[i]->metaID)
             return header->metaEntryArray[i];
     }
     return NULL;
 }
+
+
+
+/** Lookup META_PROP -- these only return properties **/
+
+struct metaEntry *getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
+{
+    int     i;
+
+    for (i = 0; i < header->metaCounter; i++)
+        if (is_meta_property(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+            return header->metaEntryArray[i];
+
+    return NULL;
+}
+
+
+/* Returns the structure associated with the metaName if it exists
+*  Requests for Aliased names returns the base meta entry, not the alias meta entry.
+*  Note that on a alias it checks the *alias*'s type, so it must match.
+*/
+
+struct metaEntry *getPropNameByName(INDEXDATAHEADER * header, char *word)
+{
+    int     i;
+
+
+    for (i = 0; i < header->metaCounter; i++)
+        if (is_meta_property(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+            return header->metaEntryArray[i]->alias
+                   ? getPropNameByID( header, header->metaEntryArray[i]->alias )
+                   : header->metaEntryArray[i];
+
+    return NULL;
+}
+
+
+/* Returns the structure associated with the metaName ID if it exists
+*/
+
+struct metaEntry *getPropNameByID(INDEXDATAHEADER *header, int number)
+{
+    int     i;
+
+    for (i = 0; i < header->metaCounter; i++)
+    {
+        if (is_meta_property(header->metaEntryArray[i]) && number == header->metaEntryArray[i]->metaID)
+            return header->metaEntryArray[i];
+    }
+
+    return NULL;
+}
+
+
+
+
+
+/* This is really used to check for seeing which internal metaname is being requested */
 
 int is_meta_entry( struct metaEntry *meta_entry, char *name )
 {
@@ -143,94 +299,12 @@ int is_meta_entry( struct metaEntry *meta_entry, char *name )
 }
 
 
+/**************************************************************************
+*   Free list of MetaEntry's
+*
+***************************************************************************/
 
 
-
-/* Add an entry to the metaEntryArray with the given value and the
-** appropriate index
-*/
-/* #### Changed the name isDocProp by metaType */
-
-struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID, int *sort_array, int *applyautomaticmetanames)
-{
-    struct metaEntry *tmpEntry;
-    char *metaWord;
-
-    if (metaname == NULL || metaname[0] == '\0')
-        return NULL;
-
-    metaWord = estrdup( metaname );
-    strtolower(metaWord);
-
-
-    /* 06/00 Jose Ruiz - Check for automatic metanames
-     */
-    if (((int) strlen(metaWord) == 9) && memcmp(metaWord, "automatic", 9) == 0)
-    {
-        *applyautomaticmetanames = 1;
-        efree( metaWord );
-        return NULL;
-    }
-
-    /* Hack to allow synonym in meta names */
-    if ( !metaID && metaType == META_INDEX )
-    {
-        /* !metaname says this is not a meta name (useful for nested xml tags) */
-        if ( metaWord[0] == '!' )
-        {
-            metaWord++;
-            metaID = 1;
-        }
-
-        /* Allow synonyms in meta names with =metaname */
-        if ( metaWord[0] == '=' )
-        {
-            metaWord++;
-            metaID = header->metaEntryArray[header->metaCounter - 1]->metaID;
-        }
-    }
-            
-        
-
-    /* #### Jose Ruiz - New Stuff. Use metaType */
-    /* See if there is a previous metaname with the same name */
-    tmpEntry = getMetaNameData(header, metaWord);
-
-    if (!tmpEntry)              /* metaName not found - Create a new one */
-    {
-        header->metaEntryArray = addNewMetaEntry(header->metaEntryArray, &header->metaCounter, metaID, metaWord, metaType, sort_array);
-        tmpEntry = getMetaNameData(header, metaWord);
-    }
-    else
-    {
-        /* Default value NULL means no yet sorted */
-        tmpEntry->sorted_data = sort_array;
-        /* Add metaType info */
-        tmpEntry->metaType |= metaType;
-	}
-
-
-    /* Assign internal metanames if found */
-    /* This just makes adding common properties a bit faster -- probably should just lookup the metaID */
-    
-    if (strcmp(metaWord, AUTOPROPERTY_DOCPATH) == 0)
-        header->filenameProp = tmpEntry;
-    else if (strcmp(metaWord, AUTOPROPERTY_TITLE) == 0)
-        header->titleProp = tmpEntry;
-    else if (strcmp(metaWord, AUTOPROPERTY_LASTMODIFIED) == 0)
-        header->filedateProp = tmpEntry;
-    else if (strcmp(metaWord, AUTOPROPERTY_STARTPOS) == 0)
-        header->startProp = tmpEntry;
-    else if (strcmp(metaWord, AUTOPROPERTY_DOCSIZE) == 0)
-        header->sizeProp = tmpEntry;
-    else if (strcmp(metaWord, AUTOPROPERTY_SUMMARY) == 0)
-        header->summaryProp = tmpEntry;
-
-    efree( metaWord );
-
-    return tmpEntry;
-        
-}
 
 /* Free meta entries for an index file */
 
@@ -272,6 +346,10 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 }
 
 
+/**************************************************************************
+*   Check if should bump word position on this meta name
+*
+***************************************************************************/
 
 
 int isDontBumpMetaName(SWISH *sw,char *tag)
@@ -295,48 +373,4 @@ char *tmptag;
 
 }
 
-static struct metaEntry *create_meta_entry( char *name )
-{
-    struct metaEntry *newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
-
-    newEntry->metaName = (char *) estrdup( name );
-    newEntry->metaType = 0;
-    newEntry->sorted_data = 0;
-    newEntry->inPropRange = NULL;
-    newEntry->loPropRange = NULL;
-    newEntry->hiPropRange = NULL;
-    newEntry->alias = 0;
-
-    return newEntry;
-}
-    
-
-
-struct metaEntry **addNewMetaEntry(struct metaEntry **metaEntryArray, int *metaCounter, int metaID, char *metaWord, int metaType, int *sort_array)
-{
-    struct metaEntry *newEntry;
-
-    newEntry = create_meta_entry( metaWord );
-    newEntry->metaType = metaType;
-    newEntry->sorted_data = sort_array;
-    
-
-    /* If metaID is 0 asign a value using metaCounter */
-    if (metaID)
-        newEntry->metaID = metaID;
-    else
-        newEntry->metaID = (*metaCounter) + 1;
-
-    if(! metaEntryArray)
-    {
-        metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
-        *metaCounter = 0;
-    }
-    else
-        metaEntryArray = (struct metaEntry **) erealloc(metaEntryArray,(*metaCounter + 1) * sizeof(struct metaEntry *));
-
-    metaEntryArray[(*metaCounter)++] = newEntry;
-
-    return metaEntryArray;
-}
 

@@ -382,20 +382,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
-        if (strcasecmp(w0, "MetaNames") == 0)
-        {
-            if (sl->n > 1)
-            {
-                for (i = 1; i < sl->n; i++)
-                    addMetaEntry(&indexf->header, sl->word[i], META_INDEX, 0, NULL, &sw->applyautomaticmetanames);
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-            continue;
-        }
 
-        
         if (strcasecmp(w0, "TranslateCharacters") == 0)
         {
             if (sl->n >= 2)
@@ -408,45 +395,25 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-        
-        if (strcasecmp(w0, "PropertyNames") == 0)
-        {
-            if (sl->n > 1)
-            {
-                for (i = 1; i < sl->n; i++)
-                    addMetaEntry(&indexf->header, sl->word[i], META_PROP, 0, NULL, &sw->applyautomaticmetanames);
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-            continue;
-        }
 
-        if (strcasecmp(w0, "PropertyNamesNumeric") == 0)
+        if (strcasecmp(w0, "MetaNames") == 0)
         {
-            if (sl->n > 1)
-            {
-                for (i = 1; i < sl->n; i++)
-                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_NUMBER, 0, NULL, &sw->applyautomaticmetanames);
-            }
-            else
+            if (sl->n <= 1)
                 progerr("%s: requires at least one value", w0);
-            continue;
-        }
-        
-        if (strcasecmp(w0, "PropertyNamesDate") == 0)
-        {
-            if (sl->n > 1)
+
+            for (i = 1; i < sl->n; i++)
             {
-                for (i = 1; i < sl->n; i++)
-                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_DATE, 0, NULL, &sw->applyautomaticmetanames);
+                if ( getMetaNameByName( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a MetaName", w0, sl->word[i] );
+
+                addMetaEntry(&indexf->header, sl->word[i], META_INDEX, 0);
             }
-            else
-                progerr("%s: requires at least one value", w0);
+
             continue;
         }
 
 
-        if (strcasecmp(w0, "AliasTags") == 0)
+        if (strcasecmp(w0, "MetaNameAlias") == 0)
         {
             struct metaEntry *meta_entry;
             struct metaEntry *new_meta;
@@ -454,22 +421,105 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n < 3)
                 progerr("%s: requires at least two values", w0);
 
-            for (i = 1; i < sl->n; i++)
-                if ( strcasecmp( sl->word[i], "automatic" ) == 0 )
-                    progerr("%s: 'automatic' is a reserved word.", w0);
 
-            if ( !(meta_entry = getMetaNameDataNoAlias( &indexf->header, sl->word[1]) ) )
-                progerr("%s - meta name '%s' not a meta name", w0, sl->word[1] );
+            /* Make sure first entry is not an alias */
+            /* Lookup entry, and do not follow alias */
+            if ( !(meta_entry = getMetaNameByNameNoAlias( &indexf->header, sl->word[1]) ) )
+                progerr("%s - name '%s' not a MetaName", w0, sl->word[1] );
+
 
             if ( meta_entry->alias )                
-                progerr("%s - meta name '%s' cannot be an alias", w0, sl->word[1] );
+                progerr("%s - name '%s' must not be an alias", w0, sl->word[1] );
+
                 
             for (i = 2; i < sl->n; i++)
             {
-                if ( getMetaNameDataNoAlias( &indexf->header, sl->word[i]) )
-                    progerr("%s - name '%s' is already an metaname", w0, sl->word[i] );
+                if ( getMetaNameByNameNoAlias( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a MetaName or MetaNameAlias", w0, sl->word[i] );
                     
-                new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0, NULL, &sw->applyautomaticmetanames);
+                new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0);
+                new_meta->alias = meta_entry->metaID;
+            }
+
+            continue;
+        }
+
+
+
+        
+        if (strcasecmp(w0, "PropertyNames") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( getPropNameByName( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a PropertyName", w0, sl->word[i] );
+
+                addMetaEntry(&indexf->header, sl->word[i], META_PROP, 0);
+            }
+
+            continue;
+        }
+
+        if (strcasecmp(w0, "PropertyNamesNumeric") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( getPropNameByName( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a PropertyName", w0, sl->word[i] );
+
+                addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_NUMBER, 0);
+            }
+
+            continue;
+        }
+        if (strcasecmp(w0, "PropertyNamesDate") == 0)
+        {
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( getPropNameByName( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a PropertyName", w0, sl->word[i] );
+
+                addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_DATE, 0);
+            }
+
+            continue;
+        }
+        
+
+        if (strcasecmp(w0, "PropertyNameAlias") == 0)
+        {
+            struct metaEntry *meta_entry;
+            struct metaEntry *new_meta;
+            
+            if (sl->n < 3)
+                progerr("%s: requires at least two values", w0);
+
+
+            /* Make sure first entry is not an alias */
+            /* Lookup entry, and do not follow alias */
+            if ( !(meta_entry = getPropNameByNameNoAlias( &indexf->header, sl->word[1]) ) )
+                progerr("%s - name '%s' not a PropertyName", w0, sl->word[1] );
+
+
+            if ( meta_entry->alias )                
+                progerr("%s - name '%s' must not be an alias", w0, sl->word[1] );
+
+                
+            for (i = 2; i < sl->n; i++)
+            {
+                if ( getPropNameByNameNoAlias( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already a PropertyName or PropertyNameAlias", w0, sl->word[i] );
+                    
+                new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0);
                 new_meta->alias = meta_entry->metaID;
             }
 

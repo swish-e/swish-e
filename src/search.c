@@ -847,7 +847,14 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
         /* Check if the next word is '=' */
         if (isMetaNameOpNext((*searchwordlist)->next))
         {
-            metaID = getMetaNameID(indexf, word);
+            struct metaEntry *m = getMetaNameByName(&indexf->header, word);
+
+            /* shouldn't happen since already checked */
+            if ( !m )
+                progerr("Unknown metaname '%s'", word );
+
+            metaID = m->metaID;
+                
 
             /****
           seems like that's ok....
