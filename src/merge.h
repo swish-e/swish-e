@@ -59,10 +59,6 @@ struct mapentry *mapentrylist[BIGHASHSIZE];
 struct markentry *markentrylist[BIGHASHSIZE];
 struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
 void readmerge (char *, char *, char *, int);
 void addfilenums (ENTRY *, int);

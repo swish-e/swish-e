@@ -21,14 +21,10 @@ typedef struct robotrules {
 } robotrules;
 
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
-httpserverinfo *getserverinfo _AP((SWISH *sw, char *url));
-int urldisallowed _AP((SWISH *sw, char *url));
-int equivalentserver _AP((SWISH *sw, char *url, char *baseurl));
+httpserverinfo *getserverinfo (SWISH *sw, char *url);
+int urldisallowed (SWISH *sw, char *url);
+int equivalentserver (SWISH *sw, char *url, char *baseurl);
 
 
 #endif
