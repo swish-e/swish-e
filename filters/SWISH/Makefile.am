@@ -16,7 +16,8 @@ nobase_perlmodule_SCRIPTS = \
     Filters/Doc2html.pm \
     Filters/Pdf2HTML.pm \
     Filters/ID3toHTML.pm \
-    Filters/XLtoHTML.pm
+    Filters/XLtoHTML.pm \
+    Filters/pp2html.pm
 
 EXTRA_DIST = \
     Filter.pm.in \
@@ -24,4 +25,6 @@ EXTRA_DIST = \
     Filters/Doc2html.pm \
     Filters/Pdf2HTML.pm \
     Filters/ID3toHTML.pm \
-    Filters/XLtoHTML.pm
+    Filters/XLtoHTML.pm \
+    Filters/pp2html.pm
+

@@ -1,14 +1,22 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = filters prog-bin conf filter-bin example html man src tests
+SUBDIRS = filters prog-bin conf filter-bin example html man src tests pod
 
 
 if BUILDDOCS
+
 docdir = $(datadir)/doc/$(PACKAGE)
 
+
+# Install these three in the doc directory
+# INSTALL and README are built at make time from .pod source
+
 doc_DATA = \
-	$(srcdir)/INSTALL \
-	$(srcdir)/README \
-        README.cvs
+    $(srcdir)/INSTALL \
+    $(srcdir)/README \
+    README.cvs
+
+# These create REAME and INSTALL in the top level *source*
+# directory for the distribution.  Created at "make" time.
 
 $(srcdir)/INSTALL: $(top_srcdir)/pod/INSTALL.pod
 	-rm -f $(top_srcdir)/INSTALL
@@ -28,32 +36,6 @@ config_dir  = \
      config/mkinstalldirs
 
 
-doc_dir = \
-    doc/Makefile.in \
-    doc/Pod/HtmlPsPdf.pm \
-    doc/Pod/HtmlPsPdf/Book.pm \
-    doc/Pod/HtmlPsPdf/Chapter.pm \
-    doc/Pod/HtmlPsPdf/Common.pm \
-    doc/Pod/HtmlPsPdf/Config.pm \
-    doc/Pod/HtmlPsPdf/Html.pm \
-    doc/Pod/HtmlPsPdf/RunTime.pm \
-    doc/Version.pm \
-    doc/bin/build \
-    doc/bin/html2ps \
-    doc/bin/pod2hpp \
-    doc/conf/html2ps-global.conf \
-    doc/conf/html2ps-slides.conf \
-    doc/conf/html2ps.conf \
-    doc/conf/html2ps.html \
-    doc/conf/hyphen.tex \
-    doc/split.conf \
-    doc/swish.conf \
-    doc/tmpl/index.tmpl \
-    doc/tmpl/indexps.tmpl \
-    doc/tmpl/page.tmpl \
-    doc/tmpl/pageps.tmpl \
-    doc/tmpl/splitpage.tmpl
-
 
 perl_dir = \
     perl/Changes \
@@ -69,30 +51,6 @@ perl_dir = \
     perl/t/first.html \
     perl/t/second.html \
     perl/t/third.html
-
-
-
-pod_dir = \
-    pod/.htaccess \
-    pod/swish-e.pod \
-    pod/CHANGES.pod \
-    pod/INSTALL.pod \
-    pod/README.pod \
-    pod/SWISH-3.0.pod \
-    pod/SWISH-BUGS.pod \
-    pod/SWISH-CONFIG.pod \
-    pod/SWISH-FAQ.pod \
-    pod/SWISH-LIBRARY.pod \
-    pod/SWISH-RUN.pod \
-    pod/SWISH-SEARCH.pod \
-    pod/images/dotrule1.gif \
-    pod/images/swish.gif \
-    pod/images/swish2.gif \
-    pod/images/swish2b.gif \
-    pod/images/swishbanner1.gif \
-    pod/search.cgi \
-    pod/style.css
-
 
 vms_dir = \
     src/vms/acconfig.h_vms \
@@ -133,23 +91,23 @@ rpm_dir = \
 
 
 debian_dir = \
-	debian/README.Debian \
-	debian/changelog \
-	debian/compat \
-	debian/control \
-	debian/copyright \
-	debian/files \
-	debian/rules \
-	debian/swish-e.doc-base \
-	debian/swish-e.substvars
+    debian/README.Debian \
+    debian/changelog \
+    debian/compat \
+    debian/control \
+    debian/copyright \
+    debian/files \
+    debian/rules \
+    debian/swish-e.doc-base \
+    debian/swish-e.substvars
 
 bin_SCRIPTS = swish-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = swish-e.pc
 
 EXTRA_DIST = \
-    $(config_dir) $(doc_dir) $(perl_dir) \
-    $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
+    $(config_dir) $(perl_dir) \
+    $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) swish-config.in swish-e.pc.in\
     $(debian_dir)
 

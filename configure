@@ -24469,7 +24469,7 @@ _ACEOF
 
 
 
-                                                                                                                                                                                    ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile src/snowball/Makefile rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile filters/SWISH/Makefile conf/Makefile filter-bin/Makefile swish-e.pc swish-config"
+                                                                                                                                                                                    ac_config_files="$ac_config_files Makefile html/Makefile pod/Makefile man/Makefile src/Makefile src/expat/Makefile src/replace/Makefile src/snowball/Makefile rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile filters/SWISH/Makefile conf/Makefile filter-bin/Makefile swish-e.pc swish-config"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -25050,8 +25050,8 @@ do
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
   "html/Makefile" ) CONFIG_FILES="$CONFIG_FILES html/Makefile" ;;
+  "pod/Makefile" ) CONFIG_FILES="$CONFIG_FILES pod/Makefile" ;;
   "man/Makefile" ) CONFIG_FILES="$CONFIG_FILES man/Makefile" ;;
-  "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "src/expat/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/expat/Makefile" ;;
   "src/replace/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/replace/Makefile" ;;

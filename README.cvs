@@ -1,28 +1,59 @@
 Using CVS
 ---------
 
-Swish-e is available via cvs from SourceForge.  See http://swish-e.org for 
+Swish-e is available via cvs from SourceForge.  See http://swish-e.org for
 links to SourceForge and instructions downloading via cvs.
 
-Much of the documentation is not stored in cvs, but rather built from source 
-files (mostly .pod files in the pod directory). 
+The cvs version does not included the HTML documentation (which is pulled form
+various source files (mostly pod) in the distribution).  The tools to build the
+HTML docs can also be fetched via cvs from SourceForge (see the swish_website
+cvs module).
 
-Documentation is built with Perl code that's part of the swish-e 
-distribution.  Still, your system may not have the required tools for this 
-operation.  If that is the case you can disable much of the documentation 
-building by building with:
+The cvs version will not build without the HTML docs.  To avoid the build failing
+configure as so:
 
   ./configure --disable-docs
   make
   make check
   make install
 
+This disables the creation and installation of html, pod, and man pages.
+
+Modifications to any of the build files (Makefile.am, configure.in) requires
+running the bootstrap script.  You will need a full set of developer tools
+for thise to work (autoconf, automake, libtool).
+
+
+Building with HTML docs
+-----------------------
+
+  cvs co swish-e  # or whatever you need to do
+  mkdir build && chdir build
+  $HOME/swish-e/configure  # maybe --prefix
+
+  # write docs to the just created empty (except for Makefile) html dir
+  $HOME/swish_website/bin/build -swishsrc=$HOME/swish-e -poddest=html -v
+  make && make check
+  make dist
+
+
+Daily Builds
+------------
+
+The swish-daily.pl script can be used to build swish-e from cvs (or
+from tarball) via cron.  See script for details.
+
+
+
+
+
+
 Developer Notes:
 
 Release and Tag
 ---------------
 
-1) Run cvs update to make sure have current sources and cvs -nq update to 
+1) Run cvs update to make sure have current sources and cvs -nq update to
    make sure there's nothing left to check in
 
 2) Edit the pod/CHANGES.pod file to update the date of the release
@@ -37,10 +68,10 @@ Release and Tag
    systems will attempt to build the documentation and they may not have the
    right tools installed.
 
-6) good idea to upload the tarball created by make distcheck someplace and 
+6) good idea to upload the tarball created by make distcheck someplace and
    then test on a few platforms
 
-7)  Check in the updated version Makefiles:  
+7)  Check in the updated version Makefiles:
 
   $ cvs ci
 
@@ -57,21 +88,21 @@ run ./bootstrap and check in.
 Patching a previous version
 ---------------------------
 
-Say development has started on the next release but a bug is found in the last. 
+Say development has started on the next release but a bug is found in the last.
 Development has gone on too far to use the development version.
 
 -- Creating a Branch in CVS -
 
-The first thing that is needed is to create a branch of the cvs tree.  This 
-only needs to be done *once*, and there's more than one way to do it: you can 
-either branch based on a checked out version (e.g. first check out the tagged 
+The first thing that is needed is to create a branch of the cvs tree.  This
+only needs to be done *once*, and there's more than one way to do it: you can
+either branch based on a checked out version (e.g. first check out the tagged
 version), or the branch can be done on the repository.
 
 So, to just branch the repository:
 
   $ cvs -d :ext:<developer>@cvs.sourceforge.net:/cvsroot/swishe rtag -b -r rel-2-4-0 rel-2-4-0-patches swish-e
 
-which says to create a branch called rel-2-4-0.patches branched off of the 
+which says to create a branch called rel-2-4-0.patches branched off of the
 tagged source rel-2-4-0.
 
 [See NOTE below about before following this example]
@@ -83,9 +114,9 @@ to the branch or simply do a new checkout.  I prefer to do a new checkout.
 
   $ cvs -d :ext:<moseley>@cvs.sourceforge.net:/cvsroot/swishe -z3 checkout -r rel-2-4-0-patches -d swish-e-2.4.0.patches swish-e
 
-This specifies the Root again with -d, -z3 is compression, we checkout 
+This specifies the Root again with -d, -z3 is compression, we checkout
 rel-2-4-0-patches from the swish-e module, but instead of writing to
-the "swish-e" directory use -d to create a directory called 
+the "swish-e" directory use -d to create a directory called
 swish-e-2.4.0.patches swish-e.
 
 -- Make chages --
@@ -102,7 +133,7 @@ and that will ONLY update this current branch.
 Changes and fixes that are done on the branch will proably need to be moved
 to the main branch.
 
-To merge in changs from another branch into your working copy (the main HEAD 
+To merge in changs from another branch into your working copy (the main HEAD
 branch - 2.5.x in this example)
 
   (in your 2.5.x working copy)
@@ -110,16 +141,16 @@ branch - 2.5.x in this example)
 
 That should update your sources.  Watch out for conflicts!
 
-Note that this is a bit tricky, because this will likely change the version 
+Note that this is a bit tricky, because this will likely change the version
 number in configure.in.
 
-Verify version in configure.in (might have been changed) then don't forget to 
+Verify version in configure.in (might have been changed) then don't forget to
 check the new patches into the HEAD branch.
 
-  $ cvs ci -m "Merged patches from 2-4-0-patches" 
+  $ cvs ci -m "Merged patches from 2-4-0-patches"
 
-Now, once merged go to your patches directory (swish-e-2.4.0.patches in this 
-example) and *tag* it.  That will allow merging later updates into the HEAD 
+Now, once merged go to your patches directory (swish-e-2.4.0.patches in this
+example) and *tag* it.  That will allow merging later updates into the HEAD
 branch without re-merging what was just merged.
 
   (in the .patches directory)
@@ -127,21 +158,21 @@ branch without re-merging what was just merged.
 
 that just tags the rel-2-4-0-patches branch.
 
-Then when 2.4.2 is later created, just the changes from 2.4.1 to 2.4.2 can be 
+Then when 2.4.2 is later created, just the changes from 2.4.1 to 2.4.2 can be
 merged:
 
   (in the main branch)
   $ cvs update -j rel-2-4-1 -j rel-2-4-0-patches
 
-which says merge from the tag rel-2-4-1 to the end of the branch 
+which says merge from the tag rel-2-4-1 to the end of the branch
 rel-2-4-0-patches into the current directory.
 
 At least I think that's how it works.
 
 
-NOTE: The example for naming the branch may not be best.  In this example we 
-are fixing a bug in 2.4.0 so will likely release a 2.4.1.  Development is now 
-in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead 
+NOTE: The example for naming the branch may not be best.  In this example we
+are fixing a bug in 2.4.0 so will likely release a 2.4.1.  Development is now
+in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead
 of rel-2-4-0-patches) and then all 2.4.x updates will get added there.
 
 
@@ -179,7 +210,7 @@ an install directory (all this happens in the /data/_a/webdata/SWISH-E/builds di
 The HTML docs are indexed and the symlink at /data/_a/webdata/SWISH-E/current/docs is
 updated to point to this install directory.
 
-Then make dist is run and the resulting tarball is copied to 
+Then make dist is run and the resulting tarball is copied to
 /data/_a/webdata/SWISH-E/Download
 
 The --notimestamp option disables the timestamp option used by configure to add a date to
@@ -192,7 +223,7 @@ time a build is created the old installation directory is removed.
 
 5) Announce on list.
 
-6) back at cvs, change to a new dev version by editing configure.in, ./bootstrap and 
+6) back at cvs, change to a new dev version by editing configure.in, ./bootstrap and
 checkin.
 
 

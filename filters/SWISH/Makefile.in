@@ -160,7 +160,8 @@ nobase_perlmodule_SCRIPTS = \
     Filters/Doc2html.pm \
     Filters/Pdf2HTML.pm \
     Filters/ID3toHTML.pm \
-    Filters/XLtoHTML.pm
+    Filters/XLtoHTML.pm \
+    Filters/pp2html.pm
 
 
 EXTRA_DIST = \
@@ -169,7 +170,8 @@ EXTRA_DIST = \
     Filters/Doc2html.pm \
     Filters/Pdf2HTML.pm \
     Filters/ID3toHTML.pm \
-    Filters/XLtoHTML.pm
+    Filters/XLtoHTML.pm \
+    Filters/pp2html.pm
 
 subdir = filters/SWISH
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
