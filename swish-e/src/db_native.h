@@ -117,5 +117,10 @@ int     DB_InitReadSortedIndex_Native(void *db);
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
 
+/* 04/00 Jose Ruiz
+** Functions to read/write longs from a file
+*/
+void    printlong(FILE *, unsigned long);
+unsigned long    readlong(FILE *);
 
 #endif
