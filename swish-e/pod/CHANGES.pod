@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed translate character table
+
+Michael Levy found an error in the table used to translate 8859-1 to
+ascii7.  Luckily, it was an upper case translation and the table is only used on lower
+case characters.
+
 =item MetaNamesRank documentation
 
 Changed the 'not yet implemented' caveat to 'implemented but experimental'.
