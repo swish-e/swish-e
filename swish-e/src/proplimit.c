@@ -56,7 +56,7 @@ $Id$
 *
 ********************************************************************/
 
-static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
+static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, int metaID )
 {
     propEntry *d;
     FileRec fi;
@@ -88,7 +88,7 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID
 {
     propEntry *d;
 
-    if ( (d = GetPropertyByFile( sw, indexf, filenum,metaID )))
+    if ( (d = GetPropertyByFile( indexf, filenum,metaID )))
         printdocprop( d );
     else
         printf("File %d does not have a property for metaID %d", filenum, metaID );
@@ -119,9 +119,70 @@ typedef struct LOOKUP_TABLE
 /*==============================================================*/
 
 
-void ClearLimitParameter (LIMIT_PARAMS *params )
+/*******************************************************************
+* ResetLimitParameters  -- clears memory used by -L 
+*
+*   Call with:
+*       SEARCH_OBJECT
+*
+*   Returns:
+*       void
+*
+*   This clears up the input params, and the stored data created
+*   by Prepare_PropLookup(), but does not clear the tables create
+*   in the search object to hold the data.
+*
+********************************************************************/
+
+
+void ResetLimitParameters( SEARCH_OBJECT *srch )
+{
+    IndexFILE  *indexf = srch->sw->indexlist;
+    int         index_count = 0;
+    int         metaID;
+    
+
+    if ( !srch->limits_prepared )
+        return;
+
+
+    /* Free up the input parameters */
+    ClearLimitParams( srch->limit_params );
+
+            
+
+    /* Free up the stored limits for each meta entry */
+    while ( indexf )
+    {
+        PROP_LIMITS *index_limits = srch->prop_limits[index_count++];
+
+        for ( metaID = 0; metaID < indexf->header.metaCounter; metaID++ )
+        {
+            if ( index_limits[metaID].inPropRange )
+                efree ( index_limits[metaID].inPropRange );
+
+            if ( index_limits[metaID].loPropRange )
+                efree ( index_limits[metaID].loPropRange );
+
+            if ( index_limits[metaID].hiPropRange )
+                efree ( index_limits[metaID].hiPropRange );
+        }
+        
+
+        indexf = indexf->next;
+    }
+
+    srch->limits_prepared = 0;
+
+}
+
+/*  ClearLimitParams -- used internally */
+
+
+void ClearLimitParams( LIMIT_PARAMS *params )
 {
     LIMIT_PARAMS  *tmp;
+
 
     while ( params ) {
         efree( params->propname );
@@ -132,6 +193,8 @@ void ClearLimitParameter (LIMIT_PARAMS *params )
         params = tmp;
     }
 }
+
+
 
 
 
@@ -151,10 +214,25 @@ void ClearLimitParameter (LIMIT_PARAMS *params )
 *       Error checking, and maybe pass in a StringList
 *
 ********************************************************************/
-int SetLimitParameter(SEARCH_OBJECT * srch, char *propertyname, char *low, char *hi)
+int SetLimitParameter(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
+{
+    if ( srch->limits_prepared )
+    {
+        set_progerr( PROP_LIMIT_ERROR, srch->sw, "Limits have been prepared (and executed) -- call ResetLimitParameters() first" );
+        return 0;
+    }
+
+    srch->limit_params = setlimit_params( srch->sw, srch->limit_params, propertyname, low, hi );
+    return ( srch->sw->lasterror == 0 );
+
+}
+
+/* This just sets the LIMIT_PARAMS struct -- useful when don't have a SEARCH_OBJECT */
+
+LIMIT_PARAMS *setlimit_params( SWISH *sw, LIMIT_PARAMS *params, char *propertyname, char *low, char *hi )
 {
     LIMIT_PARAMS *newparam;
-    LIMIT_PARAMS *params = srch->params.limit_params;
+    LIMIT_PARAMS *head = params;
 
 
     /* Currently, can only limit by one property -- so check that one hasn't already been used */
@@ -168,7 +246,7 @@ int SetLimitParameter(SEARCH_OBJECT * srch, char *propertyname, char *low, char 
 
     if ( params )
     {
-        set_progerr( PROP_LIMIT_ERROR, srch->sw, "Property '%s' is already limited", propertyname );
+        set_progerr( PROP_LIMIT_ERROR, sw, "Property '%s' is already limited", propertyname );
         return 0;
     }
         
@@ -181,11 +259,9 @@ int SetLimitParameter(SEARCH_OBJECT * srch, char *propertyname, char *low, char 
     newparam->highrange = (unsigned char *)estrdup( hi );
 
     /* put at head of list */
-    newparam->next = srch->params.limit_params;
-    srch->params.limit_params = newparam;
+    newparam->next = head;
 
-    return 1;
-
+    return newparam;
 }
 
 
@@ -203,7 +279,7 @@ int SetLimitParameter(SEARCH_OBJECT * srch, char *propertyname, char *low, char 
 *   Returns:
 *
 ********************************************************************/
-static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry, propEntry *key, LOOKUP_TABLE *sort_array)
+static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry *key, LOOKUP_TABLE *sort_array)
 {
     propEntry *fileprop;
     int        cmp_value;
@@ -218,7 +294,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
         
         
 
-    if ( !(fileprop = GetPropertyByFile( sw, indexf, sort_array->filenum, meta_entry->metaID )) )
+    if ( !(fileprop = GetPropertyByFile( indexf, sort_array->filenum, meta_entry->metaID )) )
     {
 #ifdef DEBUGLIMIT
         printf("(no prop found for filenum %d) - return +1\n", sort_array->filenum );
@@ -265,7 +341,6 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 ***************************************************************************/
 
 static int binary_search(
-    SWISH *sw,                      // needed to lookup a file entry
     IndexFILE *indexf,              // 
     LOOKUP_TABLE *sort_array,       // table to search through
     int numelements,                // size of table
@@ -295,7 +370,7 @@ static int binary_search(
             mid = low + (num & 1 ? half : half - 1);
 
 
-            if ( (cmp = test_prop( sw, indexf, meta_entry, key, &sort_array[mid] )) == 0 )
+            if ( (cmp = test_prop( indexf, meta_entry, key, &sort_array[mid] )) == 0 )
             {
                 *exact_match = mid;  // exact match
                 cmp = direction;     // but still look for the lowest/highest exact match.
@@ -315,7 +390,7 @@ static int binary_search(
          }
          else if (num)
          {
-            if( (cmp = test_prop( sw, indexf, meta_entry, key, &sort_array[low] )) ==0)
+            if( (cmp = test_prop( indexf, meta_entry, key, &sort_array[low] )) ==0)
             {
                 *result = low;
                 return 1;
@@ -323,7 +398,7 @@ static int binary_search(
             if ( cmp < 0 ) // this breaks need another compare
             {
                 /* less than current, but is is greater */
-                if ( low > 0 && (test_prop( sw, indexf, meta_entry, key, &sort_array[low-1] ) < 0))
+                if ( low > 0 && (test_prop( indexf, meta_entry, key, &sort_array[low-1] ) < 0))
                     *result = low - 1;
                 else
                     *result = low;
@@ -363,7 +438,7 @@ static int binary_search(
 *       true if any in range, otherwise false
 *
 ********************************************************************/
-static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, int num, struct metaEntry *meta_entry )
+static int find_prop(IndexFILE *indexf,  LOOKUP_TABLE *sort_array, int num, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
 {
     int low, high, j;
     int foundLo, foundHi;
@@ -371,14 +446,14 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     int exact_match;
     
 
-    if ( !meta_entry->loPropRange )
+    if ( !prop_limits->loPropRange )
     {
         foundLo = 1;    /* signal exact match */
         low = 0;        /* and start at beginning */
     }
     else
     {
-        foundLo = binary_search(sw, indexf, sort_array, num, meta_entry->loPropRange, meta_entry, &low, -1, &exact_match);
+        foundLo = binary_search(indexf, sort_array, num, prop_limits->loPropRange, meta_entry, &low, -1, &exact_match);
 
         if ( !foundLo && exact_match >= 0 )
         {
@@ -389,14 +464,14 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
 
 
 
-    if ( !meta_entry->hiPropRange )
+    if ( !prop_limits->hiPropRange )
     {
         foundHi = 1;    /* signal exact match */
         high = num -1;  /* and end very end */
     }
     else
     {
-        foundHi = binary_search(sw, indexf, sort_array, num, meta_entry->hiPropRange, meta_entry, &high, +1, &exact_match);
+        foundHi = binary_search(indexf, sort_array, num, prop_limits->hiPropRange, meta_entry, &high, +1, &exact_match);
 
         if ( !foundHi && exact_match >= 0 )
         {
@@ -427,6 +502,7 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
         high--;
 
 
+    /* Now mark by file number if it's within the range or not */
     for ( j = 0; j < num; j++ )
     {
          if ( j >= low && j <= high )
@@ -476,7 +552,7 @@ int sortbyfile(const void *s1, const void *s2)
 *
 ********************************************************************/
 
-static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry )
+static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
 {
     LOOKUP_TABLE *sort_array;
     int      i;
@@ -500,7 +576,7 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
     swish_qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbysort);
 
     /* This marks in the new array which ones are in range */
-    some_found = find_prop( sw, indexf, sort_array, size, meta_entry );
+    some_found = find_prop( indexf, sort_array, size, prop_limits, meta_entry );
 
 
 #ifdef DEBUGLIMIT
@@ -525,11 +601,13 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
 
 
     /* allocate a place to save the lookup table */
-    meta_entry->inPropRange = (int *) emalloc( size * sizeof(int) );
+    /* What size is best for speed?  bitvector for size would be good */
+    
+    prop_limits->inPropRange = (char *) emalloc( size * sizeof(char) );
 
     /* populate the array in the metaEntry */
     for (i = 0; i < size; i++)
-        meta_entry->inPropRange[i] = sort_array[i].sort;
+        prop_limits->inPropRange[i] = (unsigned char)sort_array[i].sort;
 
     efree( sort_array );
 
@@ -551,11 +629,12 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
 *
 *
 ********************************************************************/
-static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAMS *param )
+static int params_to_props( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry, LIMIT_PARAMS *param )
 {
     int error_flag;
     unsigned char *lowrange  = param->lowrange;
     unsigned char *highrange = param->highrange;
+    SWISH *sw = indexf->sw;
 
     /* properties do not have leading white space */
 
@@ -564,23 +643,23 @@ static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAM
 
     if ( (strcmp( "<=", (char *)lowrange ) == 0)   )
     {
-        meta_entry->loPropRange = NULL; /* indicates very small */
-        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
+        prop_limits->loPropRange = NULL; /* indicates very small */
+        prop_limits->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
     }
 
     else if ( (strcmp( ">=", (char *)lowrange ) == 0)   )
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
-        meta_entry->hiPropRange = NULL; /* indicates very big */
+        prop_limits->loPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
+        prop_limits->hiPropRange = NULL; /* indicates very big */
     }
 
     else
     {
-        meta_entry->loPropRange = CreateProperty( meta_entry, lowrange, strlen( (char *)lowrange ), 0, &error_flag );
-        meta_entry->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
+        prop_limits->loPropRange = CreateProperty( meta_entry, lowrange, strlen( (char *)lowrange ), 0, &error_flag );
+        prop_limits->hiPropRange = CreateProperty( meta_entry, highrange, strlen( (char *)highrange ), 0, &error_flag );
 
 
-        if ( !(meta_entry->loPropRange && meta_entry->hiPropRange) )
+        if ( !(prop_limits->loPropRange && prop_limits->hiPropRange) )
         {
             set_progerr(PROP_LIMIT_ERROR, sw, "Failed to set range for property '%s' values '%s' and '%s'", meta_entry->metaName, lowrange, highrange );
             return 0;
@@ -588,7 +667,7 @@ static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAM
 
         /* Validate range */
     
-        if ( Compare_Properties( meta_entry, meta_entry->loPropRange, meta_entry->hiPropRange ) > 0 )
+        if ( Compare_Properties( meta_entry, prop_limits->loPropRange, prop_limits->hiPropRange ) > 0 )
         {
             set_progerr(PROP_LIMIT_ERROR, sw, "Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, lowrange, highrange );
             return 0;
@@ -596,7 +675,7 @@ static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAM
     }
 
 
-    return (  meta_entry->loPropRange || meta_entry->hiPropRange );
+    return (  prop_limits->loPropRange || prop_limits->hiPropRange );
 }        
 
 
@@ -619,11 +698,14 @@ static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAM
 *       that you can't OR limits.  Will need fixing at some point
 *
 ********************************************************************/
-static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
+static int load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS *params )
 {
     struct metaEntry *meta_entry;
-    LIMIT_PARAMS  *curp;
-    int found;
+    LIMIT_PARAMS     *curp;
+    PROP_LIMITS       *cur_prop_limits;
+    int               found;
+    SWISH            *sw = indexf->sw;
+    
     
 
     curp = params;
@@ -640,7 +722,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
         }
 
 
-        /* This, of course, is not the truth -- but the only slightly useful would be filenum */
+        /* This, of course, is not the truth -- but the only slightly useful would be filenum  */
         /* indexfile can be specified on the command line, rank and reccount is not really known */
        
         if ( is_meta_internal( meta_entry ) )
@@ -649,15 +731,20 @@ static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
             return 0;
         }
 
+        cur_prop_limits = &prop_limits[meta_entry->metaID];
+
 
         /* see if array has already been allocated (cached) */
-        if ( meta_entry->inPropRange )
+        /* probably should catch this earlier */
+
+        if ( cur_prop_limits->inPropRange )
             continue;
 
 
-        /* Encode the parameters into properties for comparing, and store in the metaEntry */
 
-        if ( !params_to_props( sw, meta_entry, curp ) )
+        /* Encode the parameters into properties for comparing, and store */
+
+        if ( !params_to_props( indexf, cur_prop_limits, meta_entry, curp ) )
         {
             if ( sw->lasterror )  // check for failure
                 return 0;
@@ -667,6 +754,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
             
 
         /* load the sorted_data array, if not already done */
+
         if ( !meta_entry->sorted_data )
             if( !LoadSortedProps( sw, indexf, meta_entry ) )
                 continue;  /* thus it will sort manually without pre-sorted index */
@@ -678,7 +766,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
         /* i.e. = return No Results right away */
         /* This allows search.c to bail out early */
 
-        if ( !create_lookup_array( sw, indexf, meta_entry ) )
+        if ( !create_lookup_array( indexf, cur_prop_limits, meta_entry ) )
             return 0;
     }
 
@@ -698,45 +786,49 @@ static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
 *       indicating there will never be a match
 *       ( this falls apart if allow OR limits )
 *
-*   ToDo:
-*       How to deal with non-presorted properties?
-*
-*       This stores data in the indexf's meta entry table.
-*       Should be in the srch object, but it makes it harder
-*       to releate the two -- would have to have a linked list
-*       of index file pointers in the srch object.
+*   Notes:
+*       See note in search.c limit_result_list()
+*       processed limits are stored in the search object
 *
 *
 ********************************************************************/
 
-int Prepare_PropLookup(SEARCH_OBJECT * srch )
+int Prepare_PropLookup(SEARCH_OBJECT *srch )
 {
-    IndexFILE *indexf;
-    int total_indexes = 0;
-    int total_no_docs = 0;
-    LIMIT_PARAMS *params = srch->params.limit_params;
+    int             total_indexes = 0;
+    int             total_no_docs = 0;
+    LIMIT_PARAMS   *params = srch->limit_params;
+    SWISH          *sw = srch->sw;
+    IndexFILE      *indexf = sw->indexlist;
+
+
+    /* already prepared? */
+    if ( srch->limits_prepared++ )
+        return 1;
 
 
 
     /* nothing to limit by */
-    if ( params )
+    if ( !params )
         return 1;
 
 
 
 
     /* process each index file */
-    for( indexf = srch->sw->indexlist; indexf; indexf = indexf->next)
+    while ( indexf )
     {
-        total_indexes++;
-        
-        if ( !load_index( srch->sw, indexf, params ) )
+        /* Prop limits is where to store the tables */
+        PROP_LIMITS *prop_limits = srch->prop_limits[total_indexes++];
+
+        if ( !load_index( indexf, prop_limits, params ) )
         {
-            if ( srch->sw->lasterror )    // check for error
+            if ( sw->lasterror )    // check for error
                 return 0;
                 
             total_no_docs++;
         }
+        indexf = indexf->next;
     }
 
     /* if all indexes are all no docs within limits, then return false */
@@ -757,21 +849,24 @@ int Prepare_PropLookup(SEARCH_OBJECT * srch )
 *
 *
 ********************************************************************/
-int LimitByProperty( IndexFILE *indexf, int filenum )
+int LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, int filenum )
 {
     int j;
-    SWISH *sw = indexf->sw;
     struct metaEntry  *meta_entry;
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
+         PROP_LIMITS *cur_limit;
+
         /* Look at all the properties */
 
         /* Should cache this in the index file, or is this fast enough? */
         if ( !(meta_entry = getPropNameByID( &indexf->header, indexf->header.metaEntryArray[j]->metaID )))
             continue;  /* continue if it's not a property */
 
+        cur_limit = &prop_limits[meta_entry->metaID];            
+
         /* anything to check? */
-        if ( !meta_entry->loPropRange && !meta_entry->hiPropRange )
+        if ( !cur_limit->loPropRange && !cur_limit->hiPropRange )
             continue;
             
 
@@ -779,8 +874,8 @@ int LimitByProperty( IndexFILE *indexf, int filenum )
 
         /* If inPropRange is allocated then there is an array for limiting already created from the presorted data */
 
-        if ( meta_entry->inPropRange )
-            return !meta_entry->inPropRange[filenum-1];
+        if ( cur_limit->inPropRange )
+            return !cur_limit->inPropRange[filenum-1];
 
 
 
@@ -789,17 +884,18 @@ int LimitByProperty( IndexFILE *indexf, int filenum )
         
         {
             int limit = 0;
-            propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
+            propEntry *prop = GetPropertyByFile( indexf, filenum, meta_entry->metaID );
 
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */
             if (
-                (Compare_Properties( meta_entry, prop, meta_entry->loPropRange ) < 0 ) ||
-                (meta_entry->hiPropRange && (Compare_Properties( meta_entry, prop, meta_entry->hiPropRange ) > 0 ))
+                (Compare_Properties( meta_entry, prop, cur_limit->loPropRange ) < 0 ) ||
+                (cur_limit->hiPropRange && (Compare_Properties( meta_entry, prop, cur_limit->hiPropRange ) > 0 ))
                )
                 limit = 1;
 
             freeProperty( prop );
+
             /* If limit by this property, then return to limit right away */
             if ( limit )
                 return 1;

@@ -330,12 +330,6 @@ struct metaEntry
     int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
     int        *sorted_data;        /* Sorted data . NULL if not read/done */
                                     /* If 0, files are not sorted by this metaName/property */
-
-    /* $$$ Thses are search related and should not be here */
-    int        *inPropRange;        /* Used for limiting to a range */
-    propEntry  *loPropRange;
-    propEntry  *hiPropRange;
-
 };
 
 
@@ -571,8 +565,6 @@ typedef struct IndexFILE
     unsigned long total_word_positions;
 
 
-    char   **prop_string_cache;  /* place to cache a result's string properties */
-                                 /* so caller (library) won't need to free */
 
     /* DB handle */
     void   *DB;
@@ -584,9 +576,10 @@ typedef struct IndexFILE
     char   *keywords[256];
 
 
+
     /* props IDs */
+
     int    *propIDToDisplay;  /* $$$ This is only for -p style printing */
-    int    *propIDToSort;
 
 
     /* Support for merge */
@@ -805,6 +798,9 @@ typedef struct SWISH
     /* verbose flag */
     int     verbose;
 
+    int     headerOutVerbose;   /* -H <n> print extended header info */     
+    
+
     /* Error vars */
     int     lasterror;
     char    lasterrorstr[MAX_ERROR_STRING_LEN+1];
@@ -935,7 +931,7 @@ struct _indexing_data_source_def
 };
 
 
-
+#define GLOBAL_VARS
 
 #ifndef GLOBAL_VARS
 #define VAR extern

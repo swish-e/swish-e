@@ -272,11 +272,14 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         if ( (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCPATH )) )
                         {
                             RESULT r;
+                            DB_RESULTS db_results;
                             char  *s;
 
                             memset( &r, 0, sizeof( RESULT ) );
+                            memset( &db_results, 0, sizeof( DB_RESULTS ) );
+                            db_results.indexf = indexf;
 
-                            r.indexf = indexf;
+                            r.db_results = &db_results;
                             r.filenum = filenum;
                             r.fi.filenum = filenum;
 

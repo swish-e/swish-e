@@ -68,34 +68,38 @@ INPUT_METHODS_OBJS  = $(FILESYSTEM_OBJS) $(HTTP_OBJS) $(EXTPROG_OBJS) methods.o
 PARSER_OBJS         = html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
                       
 
-#--- Indexing modules ---
+#--- Logical Groups of modules ---
+
 INDEXING_OBJS       = $(INPUT_METHODS_OBJS) $(PARSER_OBJS) \
                       index.o merge.o stemmer.o soundex.o \
                       filter.o parse_conffile.o swregex.o double_metaphone.o
 
-#--- Logical Groups ---
 
 SEARCHING_OBJS      = swish2.o search.o swish_words.o proplimit.o \
-                      search_alt.o result_output.o rank.o
+                      search_alt.o rank.o
 
 DB_OBJS             = hash.o compress.o db.o db_native.o ramdisk.o btree.o array.o
 
 UTIL_OBJS           = check.o file.o error.o list.o mem.o string.o \
                       docprop.o metanames.o result_sort.o \
-                      dump.o swish_qsort.o  date_time.o \
+                      swish_qsort.o  date_time.o \
                       no_better_place_module.o @LIBOBJS@
 
+
 # Only for building the binary
-SWISH_BINARY_OBJS   = swish.o keychar_out.o                     
+
+SWISH_BINARY_OBJS   = swish.o keychar_out.o dump.o result_output.o 
 
 
-# Collection of files for building swish library
-# later, separate out indexing from searching
-LIB_OBJS            =   $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
-SEARCH_LIB_OBJS     =   $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
+# Collection of files for building swish libraries
+
+LIB_OBJS            = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS) $(INDEXING_OBJS) 
+SEARCH_LIB_OBJS     = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 
 # All objects for make clean target
-OBJS                = $(SWISH_BINARY_OBJS) $(SEARCHING_OBJS) $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
+OBJS                = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS) $(INDEXING_OBJS)  $(SWISH_BINARY_OBJS) 
+
+
  
 # Flags for C compiler
 CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ @PCRE_CFLAGS@ $(cflags)
@@ -112,7 +116,7 @@ LDFLAGS     = $(ldflags)
 	
 all:	$(NAME)
 
-$(NAME): libswish-e.a $(SWISH_BINARY_OBJS)
+$(NAME): libswish-e.a libsearchswish-e.a $(SWISH_BINARY_OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SWISH_BINARY_OBJS) libswish-e.a $(LIBS)
 	chmod 755 $@
 
@@ -167,8 +171,6 @@ libtest: all libsearchswish-e.a libtest.o
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(LIBS)
 	chmod 755 $@
 
-
-# Just for searching - some day.
 
 libsearchswish-e.a: $(SEARCH_LIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $(SEARCH_LIB_OBJS)

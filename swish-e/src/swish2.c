@@ -1,6 +1,6 @@
 /*
+** $Id$
 **
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
 ** This program and library is free software; you can redistribute it and/or
@@ -18,36 +18,25 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#define GLOBAL_VARS
-
 #include "swish.h"
-
 #include "string.h"
 #include "mem.h"
 #include "error.h"
 #include "list.h"
 #include "search.h"
-#include "index.h"
 #include "file.h"
-#include "http.h"
 #include "merge.h"
 #include "docprop.h"
 #include "hash.h"
-#include "entities.h"
-#include "filter.h"
 #include "search_alt.h"
-#include "result_output.h"
-#include "result_sort.h"
 #include "db.h"
-#include "fs.h"
 #include "swish_words.h"
-#include "extprog.h"
 #include "metanames.h"
 #include "proplimit.h"
-#include "parse_conffile.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
+
 
 
 /* Moved here so it's in the library */
@@ -71,20 +60,14 @@ SWISH  *SwishNew()
 
     initModule_DB(sw);
     initModule_SearchAlt(sw);
-    initModule_ResultSort(sw);
     initModule_Swish_Words(sw);  /* allocate a buffer */
-
-    initModule_Filter(sw);
-    initModule_Entities(sw);
-    initModule_Index(sw);
-    initModule_FS(sw);
-    initModule_HTTP(sw);
-    initModule_Prog(sw);
 
 
     sw->lasterror = RC_OK;
     sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
+    sw->headerOutVerbose = 1;
+    
     sw->DefaultDocType = NODOCTYPE;
 
 #ifdef HAVE_ZLIB
@@ -94,23 +77,13 @@ SWISH  *SwishNew()
 
 
     /* Make rest of lookup tables */
-    makeallstringlookuptables(sw);
+    makeallstringlookuptables(sw);  /* isvowel */
     return (sw);
 }
 
 
 
 
-/* Free memory for search results and parameters (properties ...) */
-void    SwishResetSearch(SWISH * sw)
-{
-
-    /* Free sort stuff */
-    resetModule_ResultSort(sw);
-
-    sw->lasterror = RC_OK;
-    sw->lasterrorstr[0] = '\0';
-}
 
 void    SwishClose(SWISH * sw)
 {
@@ -118,9 +91,6 @@ void    SwishClose(SWISH * sw)
     int     i;
 
     if (sw) {
-        /* Free search results and imput parameters */
-        SwishResetSearch(sw);
-
         /* Close any pending DB */
         tmpindexlist = sw->indexlist;
         while (tmpindexlist) {
@@ -130,53 +100,17 @@ void    SwishClose(SWISH * sw)
         }
 
         freeModule_Swish_Words(sw);
-        freeModule_Filter(sw);
         freeModule_SearchAlt(sw);
-        freeModule_Entities(sw);
         freeModule_DB(sw);
-        freeModule_Index(sw);
-        freeModule_ResultSort(sw);
-        freeModule_FS(sw);
-        freeModule_HTTP(sw);
-        freeModule_Prog(sw);
 
 
 
         /* Free MetaNames and close files */
         tmpindexlist = sw->indexlist;
 
-        /* Free ReplaceRules regular expressions */
-        free_regex_list(&sw->replaceRegexps);
 
-        /* Free ExtractPath list */
-        free_Extracted_Path(sw);
-
-        /* FileRules?? */
-
-        /* meta name for ALT tags */
-        if ( sw->IndexAltTagMeta )
+        while (tmpindexlist)
         {
-            efree( sw->IndexAltTagMeta );
-            sw->IndexAltTagMeta = NULL;
-        }
-
-
-
-        while (tmpindexlist) {
-
-            /* free the property string cache, if used */
-            if ( tmpindexlist->prop_string_cache )
-            {
-                int i;
-                for ( i=0; i<tmpindexlist->header.metaCounter; i++ )
-                    if ( tmpindexlist->prop_string_cache[i] )
-                        efree( tmpindexlist->prop_string_cache[i] );
-
-                efree( tmpindexlist->prop_string_cache );
-                tmpindexlist->prop_string_cache = NULL;
-            }
-
-            
             /* free the meteEntry array */
             if (tmpindexlist->header.metaCounter)
                 freeMetaEntries(&tmpindexlist->header);
@@ -205,19 +139,19 @@ void    SwishClose(SWISH * sw)
         }
 
         /* Free SWISH struct */
-
-
-        freeSwishConfigOptions( sw );  // should be freeConfigOptions( sw->config )
         efree(sw);
     }
 }
 
-/**************************************************
-* SwishOpen - Create a swish handle
-* Returns a swish handle
-* Caller much check sw->lasterror for errors
-* and call SwishClose() to free memory
-**************************************************/
+
+/*************************************************************************
+* SwishInit -- create a search swish structure
+*
+*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish.c swish_new
+*
+*  $$$ Please join these routines!
+*
+**************************************************************************/
 
 
 SWISH  *SwishInit(char *indexfiles)
@@ -258,31 +192,12 @@ SWISH  *SwishInit(char *indexfiles)
 }
 
 
-/**************************************************
-* SwishOpen - Create a swish handle
-* Returns NULL on error -- no error message available
-* Frees memory on error
-* This is depreciated form
-**************************************************/
-
-
-SWISH  *SwishOpen(char *indexfiles)
-{
-    SWISH  *sw = SwishInit( indexfiles );
-
-    if ( sw->lasterror )
-    {
-        SwishClose(sw);
-        sw = NULL;
-    }
-
-    return sw;
-}
-
 
 
 /**************************************************
 * SwishAttach - Connect to the database
+*  This just opens the index files
+*
 * Returns false on Failure
 **************************************************/
 
@@ -316,69 +231,6 @@ int     SwishAttach(SWISH * sw)
 
     return ( sw->lasterror == 0 ); 
 }
-
-
-
-
-int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *sort)
-{
-    StringList *slprops = NULL;
-    StringList *slsort = NULL;
-    int     i,
-            sortmode;
-    int     header_level;
-    char   *field;
-
-    if (!sw)
-    {
-        sw->lasterror = INVALID_SWISH_HANDLE;
-        return INVALID_SWISH_HANDLE;
-    }
-
-
-    /* If previous search - reset its values (results, props ) */
-    SwishResetSearch(sw);
-
-    if (props && props[0]) {
-        slprops = parse_line(props);
-        for (i = 0; i < slprops->n; i++)
-            addSearchResultDisplayProperty(sw, slprops->word[i]);
-    }
-
-    if (sort && sort[0]) {
-        slsort = parse_line(sort);
-        for (i = 0; i < slsort->n;) {
-            sortmode = 1;       /* Default mode is ascending */
-            field = slsort->word[i++];
-            if (i < slsort->n) {
-                if (!strcasecmp(slsort->word[i], "asc")) {
-                    sortmode = -1; /* Ascending */
-                    i++;
-                } else {
-                    if (!strcasecmp(slsort->word[i], "desc")) {
-                        sortmode = 1; /* Ascending */
-                        i++;
-                    }
-                }
-            }
-            addSearchResultSortProperty(sw, field, sortmode);
-        }
-    }
-    i = 0;
-
-    header_level = sw->ResultOutput->headerOutVerbose;
-    sw->ResultOutput->headerOutVerbose = 0;
-
-//    i = search(sw, words, structure); /* search with no eco */
-
-    sw->ResultOutput->headerOutVerbose = header_level;
-    if (slsort)
-        freeStringList(slsort);
-    if (slprops)
-        freeStringList(slprops);
-    return i;
-}
-
 
 
 
@@ -473,3 +325,5 @@ char   *SwishWords(SWISH * sw, char *filename, char c)
     }
     return "";
 }
+
+

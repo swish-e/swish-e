@@ -100,14 +100,8 @@ void    initModule_ResultSort(SWISH * sw)
     initStrCaseCmpTranslationTable(md->iSortCaseTranslationTable);
 
     /* Init data for -s command option */
-    md->numPropertiesToSort = 0;
-    md->currentMaxPropertiesToSort = 0;
-    md->propNameToSort = NULL;
-    md->propModeToSort = NULL;
     md->isPreSorted = 1;        /* Use presorted Index by default */
     md->presortedindexlist = NULL;
-
-    md->resultSortZone = Mem_ZoneCreate("resultSort Zone", 0, 0);
 
 }
 
@@ -119,38 +113,6 @@ void    initModule_ResultSort(SWISH * sw)
 /* Resets memory of vars used by ResultSortt properties configuration */
 void    resetModule_ResultSort(SWISH * sw)
 {
-    struct MOD_ResultSort *md = sw->ResultSort;
-    int     i;
-    IndexFILE *tmpindexlist;
-
-
-    /* First the common part to all the index files */
-
-    if (md->propNameToSort)
-    {
-        for (i = 0; i < md->numPropertiesToSort; i++)
-            efree(md->propNameToSort[i]);
-        efree(md->propNameToSort);
-    }
-
-    if (md->propModeToSort)
-        efree(md->propModeToSort);
-
-    md->propNameToSort = NULL;
-    md->propModeToSort = NULL;
-    md->numPropertiesToSort = 0;
-    md->currentMaxPropertiesToSort = 0;
-
-    /* Now free memory for the IDs of each index file */
-    for (tmpindexlist = sw->indexlist; tmpindexlist; tmpindexlist = tmpindexlist->next)
-    {
-        if (tmpindexlist->propIDToSort)
-            efree(tmpindexlist->propIDToSort);
-        tmpindexlist->propIDToSort = NULL;
-    }
-
-    Mem_ZoneReset(md->resultSortZone);
-
     return;
 }
 
@@ -164,9 +126,6 @@ void    freeModule_ResultSort(SWISH * sw)
     if (md->presortedindexlist)
         freeswline(md->presortedindexlist);
 
-    Mem_ZoneFree(&md->resultSortZone);
-    /* Free Module Data Structure */
-    /* should not be freed here */
     efree(md);
     sw->ResultSort = NULL;
 }
@@ -277,146 +236,60 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
 */
 
 
-/* Routine to add the properties specified in -s to the internal structure */
-void    addSearchResultSortProperty(SWISH * sw, char *propName, int mode)
-{
-    IndexFILE *indexf;
-    struct MOD_ResultSort *rs = sw->ResultSort;
-
-    /* add a property to the list of properties that will be displayed */
-    if (rs->numPropertiesToSort >= rs->currentMaxPropertiesToSort)
-    {
-        /* Allocate memory */
-        if (rs->currentMaxPropertiesToSort)
-        {
-            /* Reallocate memory */
-            rs->currentMaxPropertiesToSort += 2;
-            rs->propNameToSort = (char **) erealloc(rs->propNameToSort, rs->currentMaxPropertiesToSort * sizeof(char *));
-
-            for (indexf = sw->indexlist; indexf; indexf = indexf->next)
-                indexf->propIDToSort = (int *) erealloc(indexf->propIDToSort, rs->currentMaxPropertiesToSort * sizeof(int));
-            rs->propModeToSort = (int *) erealloc(rs->propModeToSort, rs->currentMaxPropertiesToSort * sizeof(int));
-        }
-        else
-        {
-            /* Allocate memory */
-            rs->currentMaxPropertiesToSort = 5;
-            rs->propNameToSort = (char **) emalloc(rs->currentMaxPropertiesToSort * sizeof(char *));
-            rs->propModeToSort = (int *) emalloc(rs->currentMaxPropertiesToSort * sizeof(int));
-        }
-        /* End allocation of memory */
-    }
-    rs->propNameToSort[rs->numPropertiesToSort] = estrdup(propName);
-    rs->propModeToSort[rs->numPropertiesToSort++] = mode;
-}
-
-
-
-
-/* preprocess Sort Result Properties to get the ID */
-/* If there is not a sort properties then use rank */
-
-int     initSortResultProperties(SWISH * sw)
-{
-    int     i;
-    IndexFILE *indexf;
-
-    if (sw->ResultSort->numPropertiesToSort == 0)
-    {
-        /* hack -> If no sort perperties have been specified then use rank in descending mode */
-        addSearchResultSortProperty(sw, AUTOPROPERTY_RESULT_RANK, 1);
-
-        for (indexf = sw->indexlist; indexf; indexf = indexf->next)
-        {
-            struct metaEntry *m = getPropNameByName(&indexf->header, AUTOPROPERTY_RESULT_RANK);
-
-            if ( !m )
-                progerr("Rank is not defined as an auto property");
-
-            indexf->propIDToSort = (int *) emalloc(sizeof(int));
-            indexf->propIDToSort[0] = m->metaID;
-        }
-
-        return RC_OK;
-    }
-
-
-    /* Allocate list of sort properites per index file */
-
-    for (indexf = sw->indexlist; indexf; indexf = indexf->next)
-    {
-        if ( indexf->propIDToSort )
-            efree( indexf->propIDToSort );
-            
-        indexf->propIDToSort = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
-    }
-
-
-
-
-    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
-    {
-        makeItLow(sw->ResultSort->propNameToSort[i]);
-
-        /* Get ID for each index file */
-        for (indexf = sw->indexlist; indexf; indexf = indexf->next)
-        {
-            struct metaEntry *m = getPropNameByName(&indexf->header, sw->ResultSort->propNameToSort[i] );
-
-            if ( !m )
-                progerr("Unknown Sort property name \"%s\" in one of the index files", sw->ResultSort->propNameToSort[i]);
-
-            indexf->propIDToSort[i] = m->metaID;
-        }
-    }
-    return RC_OK;
-}
 
 
 /* 02/2001 Jose Ruiz */
-/* function for comparing data in order to
-get sorted results with qsort (including combinations of asc and descending
-fields */
+/*****************************************************************************
+* compResultsByNonSortedProps - qsort compare function
+*
+*   function for comparing data in order to
+*   get sorted results with qsort
+*   (including combinations of asc and descending fields)
+*
+*   $$$ This does not follow the case setting specified in the config file.
+*   Should convert to sorting Prop structures (using Compare_Properties)
+*   Would still need a function like this for doing the merge sort in search.c.
+*   
+*
+*****************************************************************************/
+
 int     compResultsByNonSortedProps(const void *s1, const void *s2)
 {
     RESULT *r1 = *(RESULT * const *) s1;
     RESULT *r2 = *(RESULT * const *) s2;
-    int     i,
-            rc,
-            num_fields;
-    SWISH  *sw = r1->indexf->sw;
-    struct MOD_ResultSort    *ResultSort = sw->ResultSort;
+    int     i;
+    int     rc;
+    int     num_fields      = r1->db_results->num_sort_props;
+    int    *sort_direction  = r1->db_results->sort_directions;
+    struct MOD_ResultSort *md = r1->db_results->results->sw->ResultSort;
 
-    num_fields = ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
-        if ((rc = sw_strcasecmp( (unsigned char*)r1->PropSort[i], (unsigned char*)r2->PropSort[i], ResultSort->iSortCaseTranslationTable)))
-            return (rc * ResultSort->propModeToSort[i]);
+        if ((rc = sw_strcasecmp( (unsigned char*)r1->PropSort[i], (unsigned char*)r2->PropSort[i], md->iSortCaseTranslationTable)))
+            return ( rc * sort_direction[i] );
     }
     return 0;
 }
 
-/* 02/2001 Jose Ruiz */
-/* function for comparing data in order to
-get sorted results with qsort (including combinations of asc and descending
-fields */
-/* This routine uses the presorted tables built during the index proccess */
+/*****************************************************************************
+* compResultsBySortedProps - qsort compare function when the index is pre-sorted
+*
+*
+*****************************************************************************/
+
 int     compResultsBySortedProps(const void *s1, const void *s2)
 {
     RESULT *r1 = *(RESULT * const *) s1;
     RESULT *r2 = *(RESULT * const *) s2;
-    int i,
-            num_fields;
+    int     i;
     int     rc;
-    SWISH  *sw = r1->indexf->sw;
-    struct MOD_ResultSort    *ResultSort = sw->ResultSort;
-
-    num_fields = ResultSort->numPropertiesToSort;
+    int     num_fields      = r1->db_results->num_sort_props;
+    int    *sort_direction  = r1->db_results->sort_directions;
 
     for (i = 0; i < num_fields; i++)
     {
         if((rc = r1->iPropSort[i] - r2->iPropSort[i]))
-            return (rc * ResultSort->propModeToSort[i]);
+            return ( rc * sort_direction[i] );
     }
     return 0;
 }
@@ -433,6 +306,9 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
 *
 *   Returns:
 *       pointer to an array of int (metaentry->sorted_data)
+*
+*   Notes:
+*       This is also called by proplimit and merge code
 *
 ********************************************************************/
 int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
@@ -476,22 +352,35 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
 
 
 
-/* Routine to get the presorted lookupdata for a result for all the specified properties */
-int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
+/***************************************************************************************
+* getLookupResultSortedProperties
+*   create an array to hold the sort key when all sorts are pre-sorted
+*
+*   Creates array in a mem-zone.
+*
+*   Returns:
+*       pointer to array of integers for the current result.
+*
+****************************************************************************************/
+
+static int    *getLookupResultSortedProperties(RESULT * r)
 {
-    int     i;
-    int    *props = NULL;       /* Array to Store properties Lookups */
+    int             i;
+    int            *props = NULL;       /* Array to Store properties Lookups */
     struct metaEntry *m = NULL;
-    IndexFILE *indexf = r->indexf;
-    struct MOD_ResultSort *ResultSort = sw->ResultSort;
+    DB_RESULTS     *db_results = r->db_results;
+    RESULTS_OBJECT *results = db_results->results;
+    IndexFILE      *indexf = db_results->indexf;
+    SWISH          *sw = indexf->sw;
+    int            num_props = db_results->num_sort_props;
 
 
-    props = (int *) Mem_ZoneAlloc(ResultSort->resultSortZone, ResultSort->numPropertiesToSort * sizeof(int));
+    props = (int *) Mem_ZoneAlloc(results->resultSortZone, num_props * sizeof(int));
 
-    for (i = 0; i < ResultSort->numPropertiesToSort; i++)
+    for (i = 0; i < num_props; i++)
     {
         /* This shouldn't happen -- the meta names should be checked before this */
-        if (!(m = getPropNameByID(&indexf->header, indexf->propIDToSort[i])))
+        if (!(m = getPropNameByID(&indexf->header, db_results->propIDToSort[i])))
         {
             props[i] = 0;
             continue;
@@ -504,7 +393,7 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
             {
                 /* If rank was delayed, compute it now */
                 if(r->rank == -1)
-                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->posdata, r->indexf, r->filenum );
+                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->posdata, r->db_results->indexf, r->filenum );
                 props[i] = r->rank;
                 continue;
             }
@@ -547,162 +436,186 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
     return props;
 }
 
-/*******************************************************
-* For a given result, return an array of pointers to strings
+
+
+/***************************************************************************************
+* getResultSortProperties
+*   create an array to hold the sort key of strings
 *
-***********************************************************/
-char  **getResultSortProperties(SWISH *sw, RESULT * r)
+*   Creates array in a mem-zone.
+*
+*   Returns:
+*       pointer to array of points to string for the current result.
+*
+*   Note, this is also called by search.c
+*
+****************************************************************************************/
+char  **getResultSortProperties(RESULT * r)
 {
     int     i;
     char  **props = NULL;       /* Array to Store properties */
-    IndexFILE *indexf = r->indexf;
-    struct MOD_ResultSort *ResultSort = sw->ResultSort;
+    DB_RESULTS     *db_results = r->db_results;
+    RESULTS_OBJECT *results = db_results->results;
+    int            num_props = db_results->num_sort_props;
 
-    if (ResultSort->numPropertiesToSort == 0)
+    if ( !num_props )
         return NULL;
 
-    props = (char **) Mem_ZoneAlloc(ResultSort->resultSortZone, ResultSort->numPropertiesToSort * sizeof(char *));
+    props = (char **) Mem_ZoneAlloc(results->resultSortZone, num_props * sizeof(char *));
 
     /* $$$ -- need to pass in the max string length */
-    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
-        props[i] = getResultPropAsString(r, indexf->propIDToSort[i]);
+    for (i = 0; i < num_props; i++)
+        props[i] = getResultPropAsString(r, db_results->propIDToSort[i]);
 
     return props;
 }
 
 
-/* Jose Ruiz 04/00
-** Sort results by property
-*/
-int     sortresults(SEARCH_OBJECT *srch)
-{
-    int     i,
-            j,
-            TotalResults;
-    RESULT **ptmp;
-    RESULT *rtmp;
-    RESULT *rp,
-           *tmp;
-    DB_RESULTS *db_results;
-    int     (*compResults) (const void *, const void *) = NULL;
-    SWISH  *sw = srch->sw;
-    struct MOD_ResultSort *rs = sw->ResultSort;
-    int     presorted_data_not_available = 0;
 
-    i = 0;
+
+/***************************************************************************************
+* sortresults - sorts each index file's list of results
+*
+*   Returns:
+*       total results
+*
+*   ToDo:
+*       1) when not using pre-sorted index then should use Props, not strings
+*          this would allow correct sorting (THIS IS A BUG)
+*       2) there's no reason[*] can't mix-n-match pre-sorted and not pre-sorted
+*          just need an array of pointers, and an array of flages to indicate
+*          if the pointer is to an int or to a Prop.
+*
+*       [*] well, it would make the qsort compare function more complicated
+*           which is not the best for performance
+*
+*   rewritten Sept 2002 - moseley
+*
+****************************************************************************************/
+
+int  sortresults(RESULTS_OBJECT *results)
+{
+    int         TotalResults = 0;
+    DB_RESULTS *db_results;
+    int        (*compResults) (const void *, const void *) = NULL;
 
 
     /* Sort each index file's resultlist */
-    for (TotalResults = 0, db_results = srch->db_results; db_results; db_results = db_results->next)
+
+    for (db_results = results->db_results; db_results; db_results = db_results->next)
     {
-        db_results->sortresultlist = NULL;
-        db_results->currentresult = NULL;
-        if(db_results->resultlist)
-            rp = db_results->resultlist->head;
-        else
-            rp = NULL;
+        RESULT  *cur_result;
+        RESULT **sort_array;
+        int      presorted_data_not_available = 0;
+        int      files_in_index = 0;
 
-        if (rs->isPreSorted)
+
+        /* any results for this index? */
+        
+        if( !db_results->resultlist )
+            continue;
+
+        compResults = compResultsBySortedProps;  /* assume that can use pre-sorted data */
+            
+        cur_result = db_results->resultlist->head;
+
+        while ( cur_result )
         {
-            /* Asign comparison routine to be used by qsort */
-            compResults = compResultsBySortedProps;
-
-            /* As we are sorting a unique index file, we can use the presorted data in the index file */
-            for (i = 0, tmp = rp; tmp; tmp = tmp->next)
+            files_in_index++;
+            
+            if ( !(cur_result->iPropSort = getLookupResultSortedProperties(cur_result) ) )
             {
-                /* Load the presorted data */
-                tmp->iPropSort = getLookupResultSortedProperties(sw, tmp);
-
-                /* If some of the properties is not presorted */
-                /* use the old method (ignore presorted index)*/
-
-                if (!tmp->iPropSort)
-                {
-                    presorted_data_not_available = 1;
-                    break;
-                }
-                /* Compute number of results */
-                i++;
+                presorted_data_not_available = 1;
+                break;
             }
+            cur_result = cur_result->next;
         }
 
 
-        if (!rs->isPreSorted || presorted_data_not_available)
+
+        /* If some property didn't have a presorted index, then fall back to comparing the strings */
+        /* $$$ should compare Prop's instead of strings so can compare case as specified in config */
+
+        if ( presorted_data_not_available )
         {
-            /* We do not have presorted tables or do not want to use them */
-            /* Assign comparison routine to be used by qsort */
+            files_in_index = 0;
             compResults = compResultsByNonSortedProps;
 
+            cur_result = db_results->resultlist->head;
 
-            /* Read the property value string(s) for all the sort properties */
-            for (i = 0, tmp = rp; tmp; tmp = tmp->next)
+            while ( cur_result )
             {
-                tmp->PropSort = getResultSortProperties(sw, tmp);
-                /* Compute number of results */
-                i++;
+                files_in_index++;
+                cur_result->PropSort = getResultSortProperties(cur_result);
+
+                cur_result = cur_result->next;
             }
         }
 
+        TotalResults += files_in_index;
+        
 
-        /* i contains the number of valid results */
-        if (i)                  /* If there is something to sort ... */
+        /* Now build an array to hold the results for sorting */
+
+        sort_array = (RESULT **) emalloc(files_in_index * sizeof(RESULT *));
+
+        /* Build an array with the elements to compare and pointers to data */
+
+        cur_result = db_results->resultlist->head;
+        files_in_index = 0;
+
+        while ( cur_result )
         {
-            /* Compute array size */
-            ptmp = (RESULT **) emalloc(i * sizeof(RESULT *));
-
-            /* Build an array with the elements to compare and pointers to data */
-            for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-                ptmp[j++] = rtmp;
-
-
-            /* Sort them */
-            swish_qsort(ptmp, i, sizeof(RESULT *), compResults);
-
-
-            /* Build the list -- the list is in reverse order, so build the list backwards */
-            {
-                tmp = NULL;
-
-                for (j = 0; j < i; j++)
-                {
-                    RESULT *r = ptmp[j];
-                    
-                    /* Find the largest rank for scaling */
-                    if (r->rank > srch->bigrank)
-                        srch->bigrank = r->rank;
-
-                        
-                    if ( !tmp )             // first time
-                    {
-                        tmp = r;
-                        r->next = NULL;
-                    }
-                    else                    // otherwise, place this at the head of the list
-                    {
-                        r->next = tmp;
-                        tmp = r;
-                    }
-                    
-                }
-                db_results->sortresultlist = tmp;
-                db_results->resultlist->head = tmp;
-            }
-//                db_results->sortresultlist = (RESULT *) addsortresult(sw, db_results->sortresultlist, ptmp[j]);
-
-
-            /* Free the memory of the array */
-            efree(ptmp);
-
-
-            if (db_results->sortresultlist)
-            {
-                db_results->currentresult = db_results->sortresultlist;
-                TotalResults += i;
-            }
+            sort_array[files_in_index++] = cur_result;
+            cur_result = cur_result->next;
         }
+        
+        /* Sort them */
+        swish_qsort(sort_array, files_in_index, sizeof(RESULT *), compResults);
+
+        
+
+
+        /* Build the list -- the list is in reverse order, so build the list backwards */
+        {
+            RESULT *head = NULL;
+            int j;
+
+            for (j = 0; j < files_in_index; j++)
+            {
+                RESULT *r = sort_array[j];
+                
+                /* Find the largest rank for scaling */
+                if (r->rank > results->bigrank)
+                    results->bigrank = r->rank;
+
+                    
+                if ( !head )             // first time
+                {
+                    head = r;
+                    r->next = NULL;
+                }
+                else                    // otherwise, place this at the head of the list
+                {
+                    r->next = head;
+                    head = r;
+                }
+                
+            }
+            db_results->sortresultlist = head;
+            db_results->resultlist->head = head;
+            db_results->currentresult = head;
+        }
+
+
+
+        /* Free the memory of the array */
+        efree( sort_array );
     }
     return TotalResults;
 }
+
+
 
 
 /* 01/2001 Jose Ruiz */

@@ -112,6 +112,7 @@ void    initModule_ResultOutput(SWISH * sw)
     struct MOD_ResultOutput *md;
 
     md = (struct MOD_ResultOutput *) emalloc(sizeof(struct MOD_ResultOutput));
+    memset(md, 0, sizeof(struct MOD_ResultOutput));  
 
     sw->ResultOutput = md;
 
@@ -119,41 +120,7 @@ void    initModule_ResultOutput(SWISH * sw)
 
     /* cmd options */
     md->extendedformat = NULL;  /* -x :cmd param  */
-    md->headerOutVerbose = 1;   /* default = standard header */
     md->stdResultFieldDelimiter = NULL; /* -d :old 1.x result output delimiter */
-
-
-    /* Free display props arrays -- only used for -p list */
-
-    /* First the common part to all the index files */
-    if (md->propNameToDisplay)
-    {
-        int i;
-        
-        for( i=0; i < md->numPropertiesToDisplay; i++ )
-            efree(md->propNameToDisplay[i]);
-        
-        efree(md->propNameToDisplay);
-    }
-     
-    md->propNameToDisplay=NULL;
-    md->numPropertiesToDisplay=0;
-    md->currentMaxPropertiesToDisplay=0;
-
-
-    /* Now the prop IDs stored in each index file */
-    {
-        IndexFILE *tmpindexlist;
-        for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
-            if (tmpindexlist->propIDToDisplay)
-            {
-                efree(tmpindexlist->propIDToDisplay);
-                tmpindexlist->propIDToDisplay=NULL;
-            }
-    }
-
-
-
 
     return;
 }
@@ -186,6 +153,37 @@ void    freeModule_ResultOutput(SWISH * sw)
         l = ln;
     }
     md->resultextfmtlist = NULL;
+
+
+    /* Free display props arrays -- only used for -p list */
+
+    /* First the common part to all the index files */
+    if (md->propNameToDisplay)
+    {
+        int i;
+        
+        for( i=0; i < md->numPropertiesToDisplay; i++ )
+            efree(md->propNameToDisplay[i]);
+        
+        efree(md->propNameToDisplay);
+    }
+     
+    md->propNameToDisplay=NULL;
+    md->numPropertiesToDisplay=0;
+    md->currentMaxPropertiesToDisplay=0;
+
+
+    /* Now the prop IDs stored in each index file */
+    {
+        IndexFILE *tmpindexlist;
+        for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
+            if (tmpindexlist->propIDToDisplay)
+            {
+                efree(tmpindexlist->propIDToDisplay);
+                tmpindexlist->propIDToDisplay=NULL;
+            }
+    }
+
 
     /* free module data */
     efree(sw->ResultOutput);
@@ -340,9 +338,9 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
   This frees memory as it goes along, so this can't be called from the library.
 */
 
-void    printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits)
+void    printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits)
 {
-    SWISH  *sw = srch->sw;
+    SWISH  *sw = results->sw;
     struct MOD_ResultOutput *md = sw->ResultOutput;
     RESULT *r = NULL;
     FileRec *fi;
@@ -365,8 +363,8 @@ void    printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits)
 
     /* Seek, and report errors if trying to seek past eof */
     
-    if ( SwishSeekResult(srch, begin) < 0 )
-        SwishAbortLastError( srch->sw );
+    if ( SwishSeekResult(results, begin) < 0 )
+        SwishAbortLastError( results->sw );
 
     
 
@@ -377,7 +375,7 @@ void    printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits)
 
     /* -- resultmaxhits: >0 or -1 (all hits) */
 
-    while ( (r = SwishNextResult(srch)) && maxhits )
+    while ( (r = SwishNextResult(results)) && maxhits )
     {
         fi = &r->fi;  /* get address of FileRec to store properties and pointers */
         
@@ -877,7 +875,7 @@ int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
     va_list args;
 
     /* min_verbose to low, no output */
-    if (min_verbose > sw->ResultOutput->headerOutVerbose)
+    if (min_verbose > sw->headerOutVerbose)
         return 0;
 
     /* print header info... */
@@ -956,13 +954,14 @@ void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char
 void printStandardResultProperties(FILE *f, RESULT *r)
 {
     int     i;
-    SWISH  *sw = r->indexf->sw;
+    IndexFILE *indexf = r->db_results->indexf;
+    SWISH  *sw = indexf->sw;
     struct  MOD_ResultOutput *md = sw->ResultOutput;
     char   *s;
     char   *propValue;
     int    *metaIDs;
 
-    metaIDs = r->indexf->propIDToDisplay;
+    metaIDs = indexf->propIDToDisplay;
 
     if (md->numPropertiesToDisplay == 0)
         return;
