@@ -2,17 +2,15 @@
 dnl set version (or would AM_INIT_AUTOMAKE(package_name, package_version) be better?
 dnl to update the version, modify here and run "autoconf" to generate a new ./configure script
 AC_SUBST(VERSION)
-VERSION=2.1-dev-22
+VERSION=2.1-dev-23
 
 AC_SUBST(PROJECT)
 PROJECT=swish-e
 
-
-dnl Tell configure where the source is
+dnl Have configure make sure the source code is found
 AC_INIT(src/swish.c)
 
-dnl Header file for -D defines
-AC_CONFIG_HEADER(src/acconfig.h)
+
 
 dnl Check for gettimeofday()
 AC_CHECK_FUNC(BSDgettimeofday, 
@@ -20,14 +18,19 @@ AC_CHECK_FUNC(BSDgettimeofday,
               [AC_CHECK_FUNC(gettimeofday, , 
                              [AC_DEFINE(NO_GETTOD)])])
 
+
+
+
 dnl check for #! (shebang)
 AC_SYS_INTERPRETER
 
-dnl Set the @SET_MAKE@ variable
+dnl Set the @SET_MAKE@ variable=make if $(MAKE) not set 
 AC_PROG_MAKE_SET
 
-dnl Check for Perl
+dnl Check for Perl - used for making the distribution
 AC_PATH_PROG(PERL, perl, /usr/local/bin/perl,$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin)
+
+
 
 
 dnl -- from src/configure.in --
@@ -43,9 +46,16 @@ dnl Replace `main' with a function in -lm:
 AC_CHECK_LIB(m, main)
 
 dnl Checks for header files.
+dnl looks for dirent.h and sets HAVE_DIRENT_H -- do we use?
 AC_HEADER_DIRENT
-AC_HEADER_STDC
-AC_CHECK_HEADERS(strings.h unistd.h)
+
+dnl Looks for standard C headers
+dnl which we need and don't do anything abut if we don't have them
+dnl so why bother?
+dnl AC_HEADER_STDC
+
+dnl Again, I don't think we do any tests for these, so why bother
+dnl AC_CHECK_HEADERS(strings.h unistd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -59,6 +69,76 @@ AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(re_comp regcomp strdup strstr)
 AC_CHECK_LIB(m,log)
+
+
+dnl Optional building with libxml2
+
+AC_ARG_WITH(libxml2,[\
+  --with-libxml2[=DIR]    use libxml2 in DIR],,withval=no)
+
+if test "$withval" == "yes"; then
+    AC_MSG_RESULT([** Enabling libxml2 support -- good choice! **])
+    LIBXML2_OBJS="parser.o"
+    LIBXML2_LIB="-lxml2"
+    AC_DEFINE(HAVE_LIBXML2)
+elif test "$withval" != "no"; then
+    AC_MSG_RESULT([** Enabling libxml2 support at '$withval': good choice! **])
+    LIBXML2_OBJS="parser.o"
+    LIBXML2_LIB="-R$withval/lib -L$withval/lib -lxml2"
+    LIBXML2_CFLAGS="-I$withval/include"
+    AC_DEFINE(HAVE_LIBXML2)
+else
+    AC_MSG_RESULT([Not building with libxml2 - use --with-libxml2 to enable])
+fi
+
+AC_SUBST(LIBXML2_OBJS)
+AC_SUBST(LIBXML2_LIB)
+AC_SUBST(LIBXML2_CFLAGS)
+
+
+
+dnl Checks for zlib library. -- from libxml2 configure.in
+_cppflags="${CPPFLAGS}"
+_ldflags="${LDFLAGS}"
+
+AC_ARG_WITH(zlib,[\
+  --with-zlib[=DIR]       use libz in DIR],,withval=no)
+
+if test "$withval" != "no" -a "$withval" != "yes"; then
+    Z_DIR=$withval
+    CPPFLAGS="${CPPFLAGS} -I$withval/include"
+    LDFLAGS="${LDFLAGS} -L$withval/lib"
+fi
+
+if test "$withval" != "no"; then
+    AC_CHECK_HEADERS(zlib.h,
+        AC_CHECK_LIB(z, gzread,[
+    	AC_DEFINE(HAVE_LIBZ)
+            if test "x${Z_DIR}" != "x"; then
+                Z_CFLAGS="-I${Z_DIR}/include"
+                Z_LIBS="-L${Z_DIR}/lib -lz"
+    	    [case ${host} in
+    		*-*-solaris*)
+    		    Z_LIBS="-L${Z_DIR}/lib -R${Z_DIR}/lib -lz"
+    		    ;;
+    	    esac]
+            else
+                Z_LIBS="-lz"
+            fi]))
+    AC_SUBST(Z_CFLAGS)
+    AC_SUBST(Z_LIBS)
+    AC_DEFINE(HAVE_ZLIB)
+else
+    AC_MSG_RESULT([Not building with zlib for property compression - use --with-zlib to enable])
+fi
+
+CPPFLAGS=${_cppflags}
+LDFLAGS=${_ldflags}
+
+
+
+dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
+AC_CONFIG_HEADER(src/acconfig.h)
 
 
 AC_OUTPUT(Makefile doc/Makefile src/Makefile)
