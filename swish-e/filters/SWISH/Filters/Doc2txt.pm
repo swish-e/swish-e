@@ -1,4 +1,5 @@
 package SWISH::Filters::Doc2txt;
+use strict;
 use vars qw/ $VERSION /;
 
 $VERSION = '0.02';
@@ -25,7 +26,7 @@ sub filter {
     my $content = $self->run_catdoc( $doc->fetch_filename ) || return;
 
     # update the document's content type
-    $filter->set_content_type( 'text/plain' );
+    $doc->set_content_type( 'text/plain' );
 
     # return the document
     return \$content;

@@ -1,5 +1,4 @@
 package SWISH::Filters::ID3toHTML;
-
 use strict;
 
 #use MP3::Tag;

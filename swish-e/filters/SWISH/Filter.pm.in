@@ -61,53 +61,60 @@ SWISH::Filter - Perl extension for filtering documents with Swish-e
   # Fetch the final content type of the document
   my $content_type = $doc->content_type;
 
-  # Fetch swish-e parser type (TXT*, XML*, HTML*, or undefined)
+  # Fetch Swish-e parser type (TXT*, XML*, HTML*, or undefined)
   my $doc_type = $doc->swish_parser_type;
 
 =head1 DESCRIPTION
 
-SWISH::Filter provides a unified way to convert documents into a type that swish-e
-can index.  Individual filters are installed as separate perl modules.  For example,
-there might be a filter that converts from PDF format to HTML format.
+SWISH::Filter provides a unified way to convert documents into a type that
+Swish-e can index.  Individual filters are installed as separate perl modules.
+For example, there might be a filter that converts from PDF format to HTML
+format.
 
-Note that this is just a framework for filtering documents.  Additional helper programs
-or Perl module may need to be installed to use SWISH::Filter to filter documents.  For
-example, to filter PDF documents you must install the Xpdf package.
+Note that this is just a framework for filtering documents.  Additional helper
+programs or Perl module may need to be installed to use SWISH::Filter to filter
+documents.  For example, to filter PDF documents you must install the Xpdf
+package.
 
-The filters are automatically loaded when C<SWISH::Filters-E<gt>new()> is called.  Filters
-define a type and priority that determines the processing order of the filter.  Filters are
-processed in this sort order until a filter accepts the document for filtering. The filter
-uses the document's content type to determine if the filter should handle the current
-document.  The content-type is determined by the files suffix if supplied by the calling
+The filters are automatically loaded when C<SWISH::Filters-E<gt>new()> is
+called.  Filters define a type and priority that determines the processing
+order of the filter.  Filters are processed in this sort order until a filter
+accepts the document for filtering. The filter uses the document's content type
+to determine if the filter should handle the current document.  The
+content-type is determined by the files suffix if not supplied by the calling
 program.
 
-The individual filters are not designed to be used as separate modules.  All access to
-the filters is through this SWISH::Filter module.
+The individual filters are not designed to be used as separate modules.  All
+access to the filters is through this SWISH::Filter module.
 
-Normally, once a document is filtered processing stops.  Some filters can filter the document
-yet set a flag saying that filtering should continue (for example a filter that uncompresses a
-MS Word document before passing on to the filter that converts from MS Word to text).
-All this should be transparent to the end user.
+Normally, once a document is filtered processing stops.  Filters can filter the
+document and then set a flag saying that filtering should continue (for example
+a filter that uncompresses a MS Word document before passing on to the filter
+that converts from MS Word to text).  All this should be transparent to the end
+user.  So, filters can be pipe-lined.
 
-The idea of SWISH::Filter is that new filters can be created, and then downloaded and
-installed to provide new filtering capabilities.  For example, if you needed to index MS
-Excel documents you might be able to download a filter from the Swish-e site and magically
-next time you run indexing MS Excel docs would be indexed.
+The idea of SWISH::Filter is that new filters can be created, and then
+downloaded and installed to provide new filtering capabilities.  For example,
+if you needed to index MS Excel documents you might be able to download a
+filter from the Swish-e site and magically next time you run indexing MS Excel
+docs would be indexed.
 
-The SWISH::Filter setup can be used with -S prog or -S http.  It works best with the
--S prog method because the filter modules only need to be loaded and compiled one time.
-The -S prog program F<spider.pl> will automatically use SWISH::Filter when spidering with
-default settings (using "default" as the first parameter to spider.pl).
+The SWISH::Filter setup can be used with -S prog or -S http.  It works best
+with the -S prog method because the filter modules only need to be loaded and
+compiled one time.  The -S prog program F<spider.pl> will automatically use
+SWISH::Filter when spidering with default settings (using "default" as the
+first parameter to spider.pl).
 
-The -S http indexing method uses a Perl helper script called F<swishspider>.  F<swishspider>
-has been updated to work with SWISH::Filter, but (unlike spider.pl) does not contain a "use
-lib" line to point to the location of SWISH::Filter.  This means that by default
-F<swishspider> will B<not> use SWISH::Filter for filtering.  The reason for this is because
-F<swishspider> runs for every URL fetched, and loading the Filters for each document can be
-slow.  The recommended way of spidering is using -S prog with spider.pl, but if -S http is
-desired the way to enable SWISH::Filter is to set PERL5LIB before running swish so that
-F<swishspider> will be able to locate the SWISH::Filter module.  Here's one way
-to set the PERL5LIB with the bash shell:
+The -S http indexing method uses a Perl helper script called F<swishspider>.
+F<swishspider> has been updated to work with SWISH::Filter, but (unlike
+spider.pl) does not contain a "use lib" line to point to the location of
+SWISH::Filter.  This means that by default F<swishspider> will B<not> use
+SWISH::Filter for filtering.  The reason for this is because F<swishspider>
+runs for every URL fetched, and loading the Filters for each document can be
+slow.  The recommended way of spidering is using -S prog with spider.pl, but if
+-S http is desired the way to enable SWISH::Filter is to set PERL5LIB before
+running swish so that F<swishspider> will be able to locate the SWISH::Filter
+module.  Here's one way to set the PERL5LIB with the bash shell:
 
   $ export PERL5LIB=`swish-filter-test -path`
 
@@ -154,7 +161,7 @@ sub new {
     warn "Unknown SWISH::Filter->new() config setting '$_'\n"
         for keys %attr;
 
-    $self->create_filter_list;
+    $self->create_filter_list( %attr );
 
     eval { require MIME::Types };
     if ( $@ ) {
@@ -212,11 +219,11 @@ sub ignore_filters {
 
 =item $doc_object = $filter->convert();
 
-This method filters a document.  Returns an object of the class SWISH::Filter::Document
+This method filters a document.  Returns an object of the class SWISH::Filter::document
 or undefined if passed in an empty document, a filename that cannot be read off disk, or
 if no filters have been loaded.
 
-SWISH::Filter::Document methods listed below can be called on the object to, for
+SWISH::Filter::document methods listed below can be called on the object to, for
 example, check if the document was filtered and to fetch the document content (filtered or
 not).
 
@@ -232,9 +239,9 @@ This is required.
 
 =item content_type
 
-The MIME type of the document.  This is only required when passing in a scalar reference
-to a document is passed. The content type string is what the filters use to match
-a document type.
+The MIME type of the document.  This is only required when passing in a scalar
+reference to a document. The content type string is what the filters use to
+match a document type.
 
 When passing in a file name and C<content_type> is not set, then the content type will
 be determined from the file's extension by using the MIME::Types Perl module (available on CPAN).
@@ -405,8 +412,9 @@ sub convert {
 
 =item $filter->mywarn()
 
-Internal function used for writing warning messages to STDERR if $ENV{FILTER_DEBUG} is set.
-Set the environment variable FILTER_DEBUG before running to see the verbose warning messages.
+Internal function used for writing warning messages to STDERR if
+$ENV{FILTER_DEBUG} is set.  Set the environment variable FILTER_DEBUG before
+running to see extra messages while processing.
 
 =cut
 
@@ -437,7 +445,7 @@ sub filter_list {
 # Creates the list of filters
 
 sub create_filter_list {
-    my ( $self ) = @_;
+    my ( $self, %attr ) = @_;
 
     my @filters;
 
@@ -482,7 +490,7 @@ sub create_filter_list {
                 push @{"$package\::ISA"}, 'SWISH::Filters::_BASE';
             }
 
-            my $filter = $package->new;
+            my $filter = $package->new( %attr );
 
             $self->mywarn(":-( Filter [SWISH/Filters/${base}$suffix] not loaded\n")
                 unless $filter;
@@ -505,7 +513,7 @@ sub create_filter_list {
     $self->filter_list( [ sort { $a->type <=> $b->type || $a->priority <=> $b->priority } @filters ] );
 }
 
-=item $filter = $filter->can_filter( $content_type );
+=item @filter = $filter->can_filter( $content_type );
 
 This is useful for testing to see if a mimetype might be handled by SWISH::Filter
 wihtout having to pass in a document.  Helpful if doing HEAD requests.
@@ -596,13 +604,10 @@ The new method must return a blessed hash reference.  The only required attribut
 is B<mimetypes>.  This attribute must contain a reference to an array of regular
 expressions used for matching the content-type of the document passed in.
 
-A has of parameters is passed in -- currently the only parameter is "path"
-which contains the path to the specific filter -- not much use.
-
 Example:
 
     sub new {
-        my ( $class, %params ) = @_;
+        my ( $class ) = @_;
 
         # List of regular expressions
         my @mimetypes = (
@@ -610,14 +615,15 @@ Example:
             qr[application/worddoc],
         );
 
-        return bless {
+        my %settings = (
             mimetypes   => \@mimetypes,
 
             # Optional settings
-            path        => $params{path} || $class,
             priority    => 20,
             type        => 2,
-        };
+        );
+
+        return bless \%settings, $class;
     }
 
 The attribute "mimetypes" returns an array reference to a list of regular
@@ -660,63 +666,56 @@ as shown above.
 =back
 
 Again, the point of the type() and priority() methods is to allow setting the sort order
-of the filters.  Useful if you have two filters that for filtering similar content-types,
+of the filters.  Useful if you have two filters for filtering the same content-type,
 but prefer to use one over the other.  Neither are required.
 
-Here's a module to index MS Word documents using the program "catdoc":
+Here's a module to convert MS Word documents using the program "catdoc":
 
     package SWISH::Filters::Doc2txt;
-    use vars qw/ @ISA $VERSION /;
+    use vars qw/ $VERSION /;
 
-    $VERSION = '0.01';
-    @ISA = ('SWISH::Filter');
+    $VERSION = '0.02';
+
 
     sub new {
-        my ( $pack, %params ) = @_;
+        my ( $class ) = @_;
 
         my $self = bless {
-            name => $params{name} || $pack,
-        }, $pack;
+            mimetypes   => [ qr!application/(x-)?msword! ],
+            priority    => 50,
+        }, $class;
 
 
         # check for helpers
-        for my $prog ( qw/ catdoc / ) {
-            my $path = $SELF->find_binary( $prog );
-            unless ( $path ) {
-                $self->mywarn("Can not use Filter $pack -- need to install $prog");
-                return;
-            }
-            $self->{$prog} = $path;
-        }
-
-        return $self;
+        return $self->set_programs( 'catdoc' );
 
     }
 
 
-
     sub filter {
-    my ( $self, $document ) = @_;
+        my ( $self, $doc ) = @_;
 
-        # Do we care about this document?
-        return unless $document->content_type =~ m!application/msword!;
-
-        # We need a file name to pass to the catdoc program
-        my $file = $document->fetch_filename;
-
-
-        # Grab output from running program
-        my $content = $document->run_program( $self->{catdoc}, $file );
-
-        return unless $content;
+        my $content = $self->run_catdoc( $doc->fetch_filename ) || return;
 
         # update the document's content type
-        $document->set_content_type( 'text/plain' );
+        $filter->set_content_type( 'text/plain' );
 
         # return the document
         return \$content;
     }
     1;
+
+The new() constructor creates a blessed hash which contains an array reference
+of mimetypes patterns that this filter accepts.  The priority sets this
+filter to run after any other filters that might handle the same type of content.
+The F<set_programs()> function says that we need to call a program called "catdoc".
+The function either returns $self or undefined if catdoc could not be found.
+The F<set_programs()> function creates a new method for running catdoc.
+
+The filter function runs catdoc passing in the name of the file (if the file is in memory
+a temporary file is created).  That F<run_catdoc()> function was created by the
+F<set_programs()> call above.
+
 
 =cut
 
@@ -729,7 +728,7 @@ use Symbol;
 
 use vars '$AUTOLOAD';
 
-=head1 SWISH::Filter::Document Methods
+=head1 SWISH::Filter::document Methods
 
 These methods are available to Filter authors, and also provide access to the
 document after calling the convert() method to end-users of SWISH::Filter.
@@ -739,17 +738,17 @@ End users of SWISH::Filter will use a subset of these methods.  Mostly:
    $doc_object->fetch_doc      # and alias for fetch_document_reference()
    $doc_object->was_filtered   # true the document was filtered
    $doc_object->content_type   # document's current content type (mime type)
-   $doc_object->swish_parser_type # returns a parser type to use with swish-e -S prog method
+   $doc_object->swish_parser_type # returns a parser type to use with Swish-e -S prog method
    $doc_object->is_binary      # returns $content_type !~ m[^text/];
 
 These methods are also available to the individual filter modules.  The filter's "filter"
-function is also passed a SWISH::Filter::Document object.  Method calls may be made on this
+function is also passed a SWISH::Filter::document object.  Method calls may be made on this
 object to check the document's current content type, or to fetch the document as either a
 file name or a reference to a scalar containing the document content.
 
 =cut
 
-# Returns a new SWISH::Filter::Document object
+# Returns a new SWISH::Filter::document object
 # or null if just can't process the document
 
 sub new {
@@ -1452,9 +1451,8 @@ Please contact the Swish-e discussion list.  http://swish-e.org
 
 =head1 Bugs, todo items, and other notes
 
-I wonder if the filters shouldn't just register the content types they handle
-instead of checking the content type.  Would want to be able to register regular
-expressions.
+TBD
+
 
 =head1 AUTHOR
 

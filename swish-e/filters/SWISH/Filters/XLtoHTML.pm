@@ -1,5 +1,4 @@
 package SWISH::Filters::XLtoHTML;
-
 use strict;
 
 # use Spreadsheet::ParseExcel;
