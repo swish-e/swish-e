@@ -53,6 +53,7 @@ sub get_xls_content_ref {
     my $file = shift;
 
     my $oExcel = Spreadsheet::ParseExcel->new;
+    return unless $oExcel;
     
     my $oBook = $oExcel->Parse($file);
     my($iR, $iC, $oWkS, $oWkC, $ExcelWorkBook);
