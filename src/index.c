@@ -457,10 +457,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 		{
 			sw->Index->hashentriesdirty[i] = 0;
 			for (ep = sw->Index->hashentries[i]; ep; ep = ep->next)
-			{
 				CompressCurrentLocEntry(sw, indexf, ep);
-				ep->currentlocation = ep->u1.max_locations;
-			}
 		}
 
 	}

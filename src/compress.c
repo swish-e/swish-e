@@ -251,34 +251,18 @@ int i,tmp,metaID,filenum,structure,frequency,index,index_structfreq,index_struct
     return loc;
 }
 
-/* 09/00 Jose Ruiz
-** Compress all location data of an entry except for 
-** the last one (the current filenum)
-*/
-void CompressPrevLocEntry(SWISH *sw,IndexFILE *indexf,ENTRY *e)
-{
-int i,max_locations;
-struct MOD_Index *idx = sw->Index;
-    max_locations=e->u1.max_locations;
-    for(i=e->currentlocation;i<max_locations;i++)
-    {
-            /* Compress until current filenum */
-        if(e->locationarray[i]->filenum==idx->filenum) return;
-        e->locationarray[i]=(LOCATION *)compress_location(sw,indexf,e->locationarray[i]);
-    }
-}
 
 /* 09/00 Jose Ruiz
 ** Compress all non yet compressed location data of an entry
 */
 void CompressCurrentLocEntry(SWISH *sw,IndexFILE *indexf,ENTRY *e)
 {
-int i,max_locations;
-    max_locations=e->u1.max_locations;
-    for(i=e->currentlocation;i<max_locations;i++)
-    {
-        e->locationarray[i]=(LOCATION *)compress_location(sw,indexf,e->locationarray[i]);
-    }
+int i;
+
+    for(i = e->currentlocation; i < e->u1.max_locations; i++)
+        e->locationarray[i] = (LOCATION *)compress_location(sw, indexf, e->locationarray[i]);
+
+	e->currentlocation = e->u1.max_locations;
 }
 
 /* 09/00 Jose Ruiz
