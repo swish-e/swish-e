@@ -155,6 +155,8 @@ src/no_better_place_module.c
 src/no_better_place_module.h
 src/parse_conffile.c
 src/parse_conffile.h
+src/proplimit.c
+src/proplimit.h
 src/result_output.c
 src/result_output.h
 src/result_sort.c
