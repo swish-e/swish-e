@@ -189,8 +189,6 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
    DB->wordhash_counter = 0;
    DB->wordhashdata = NULL;
    DB->worddata_counter = 0;
-   DB->worddata_wordID = NULL;
-   DB->worddata_offset = NULL;
    DB->mode = 1;
    DB->lastsortedindex = 0;
    DB->rd = NULL;
@@ -560,7 +558,10 @@ int DB_EndWriteWords_Native(void *db)
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = (FILE *) DB->fp;
    int i, wordlen;
-   long wordID,f_offset,word_pos;
+   long wordID,f_hash_offset,f_offset,word_pos;
+
+         /* Free hash zone */
+   Mem_ZoneFree(&DB->hashzone);
 
          /* Now update word's data offset into the list of words */
          /* Simple check  words and worddata must match */
@@ -568,8 +569,11 @@ int DB_EndWriteWords_Native(void *db)
    if(DB->num_words != DB->wordhash_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter: ");
 
+   if(DB->num_words != DB->worddata_counter)
+       progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter: ");
+
       /* Sort wordhashdata to be writte to allow sequential writes */
-   swish_qsort(DB->wordhashdata,DB->num_words,2*sizeof(long), cmp_wordhashdata);
+   swish_qsort(DB->wordhashdata,DB->num_words,3*sizeof(long), cmp_wordhashdata);
 
    if(WRITE_WORDS_RAMDISK)
    {
@@ -577,8 +581,9 @@ int DB_EndWriteWords_Native(void *db)
    }
    for(i=0;i<DB->num_words;i++)
    {
-       wordID = DB->wordhashdata[2 * i];
-       f_offset = DB->wordhashdata[2 * i + 1];
+       wordID = DB->wordhashdata[3 * i];
+       f_hash_offset = DB->wordhashdata[3 * i + 1];
+       f_offset = DB->wordhashdata[3 * i + 2];
 
        word_pos = wordID;
        if(WRITE_WORDS_RAMDISK)
@@ -590,39 +595,15 @@ int DB_EndWriteWords_Native(void *db)
         /* Jump over word length and word */
        wordlen = uncompress1(fp,DB->w_getc);   /* Get Word length */
        DB->w_seek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
+        /* Write offset to next chain */
+       printlong(fp,f_hash_offset,DB->w_write);
         /* Write offset to word data */
        printlong(fp,f_offset,DB->w_write);
    }
 
-   if(DB->num_words != DB->worddata_counter)
-       progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter: ");
-
-   for(i=0;i<DB->num_words;i++)
-   {
-       wordID = DB->worddata_wordID[i];
-       f_offset = DB->worddata_offset[i];
-
-       word_pos = wordID;
-       if(WRITE_WORDS_RAMDISK)
-       {
-           word_pos -= DB->offsets[WORDPOS];
-       }
-
-        /* Position file pointer in word */
-       DB->w_seek(fp,word_pos,SEEK_SET);
-        /* Jump over word length and word */
-       wordlen = uncompress1(fp,DB->w_getc);   /* Get Word length */
-       DB->w_seek(fp,(long)(wordlen + sizeof(long)),SEEK_CUR);  /* Jump Word and hash chain offset */
-        /* Write offset to word data */
-       printlong(fp,f_offset,DB->w_write);
-   } 
-   efree(DB->worddata_wordID);
-   DB->worddata_wordID = NULL;
-   efree(DB->worddata_offset);
-   DB->worddata_offset = NULL;
-   DB->worddata_counter = 0;
    efree(DB->wordhashdata);
    DB->wordhashdata = NULL;
+   DB->worddata_counter = 0;
    DB->wordhash_counter = 0;
 
    if(WRITE_WORDS_RAMDISK)
@@ -705,8 +686,9 @@ int DB_WriteWord_Native(char *word, long wordID, void *db)
 long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-
     FILE *fp = DB->fp;
+    struct  numhash *numhash;
+    int numhashval;
 
         /* We must be at the end of the file */
 
@@ -723,16 +705,17 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
               /* it will be write later */
            fseek((FILE *)DB->fp,ramdisk_size,SEEK_END);
        }
-
-           /* Free hash zone */
-       Mem_ZoneFree(&DB->hashzone);
-
-       DB->worddata_wordID = emalloc(DB->num_words * sizeof(long));
-       DB->worddata_offset = emalloc(DB->num_words * sizeof(long));
     }
-        /* Preserve word's data offset */
-    DB->worddata_wordID[DB->worddata_counter] = wordID;
-    DB->worddata_offset[DB->worddata_counter++] = ftell(fp);
+        /* Search for word's ID */
+    numhashval = bignumhash(wordID);
+    for(numhash = DB->hash[numhashval]; numhash; numhash = numhash->next)
+    if(DB->wordhashdata[3 * numhash->index] == wordID)
+       break;
+    if(! numhash)
+        progerrno("Internal db_native.c error in DB_WriteWordData_Native");
+    DB->wordhashdata[3 * numhash->index + 2] = ftell(fp);
+
+    DB->worddata_counter++;
 
         /* Write the worddata to disk */
     compress1(lendata,fp, fputc);
@@ -768,7 +751,7 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
             fseek(DB->fp,ram_size,SEEK_SET);
         }
 
-        DB->wordhashdata = emalloc(2 * DB->num_words * sizeof(long));
+        DB->wordhashdata = emalloc(3 * DB->num_words * sizeof(long));
     }
 
     hashval = searchhash(word);
@@ -778,8 +761,8 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
         DB->hashoffsets[hashval] = wordID;
     }
 
-    DB->wordhashdata[2 * DB->wordhash_counter] = wordID;
-    DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
+    DB->wordhashdata[3 * DB->wordhash_counter] = wordID;
+    DB->wordhashdata[3 * DB->wordhash_counter + 1] = (long)0;
 
 
          /* Add to the hash */
@@ -797,11 +780,11 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
            /* Search for DB->lasthashval[hashval] */
         numhashval = bignumhash(DB->lasthashval[hashval]);
         for(numhash = DB->hash[numhashval]; numhash; numhash = numhash->next)
-            if(DB->wordhashdata[2 * numhash->index] == DB->lasthashval[hashval])
+            if(DB->wordhashdata[3 * numhash->index] == DB->lasthashval[hashval])
                break;
         if(! numhash)
               progerrno("Internal db_native.c error in DB_WriteWordHash_Native");
-        DB->wordhashdata[2 * numhash->index + 1] = (long)wordID;
+        DB->wordhashdata[3 * numhash->index + 1] = (long)wordID;
     }
     DB->lasthashval[hashval] = wordID;
 

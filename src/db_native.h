@@ -53,6 +53,7 @@ struct Handle_DBNative
    long lastsortedindex;
    
    int wordhash_counter;
+   int worddata_counter;
    long *wordhashdata;
 
       /* Hash array to improve wordhashdata performance */
@@ -62,10 +63,6 @@ struct Handle_DBNative
       struct numhash *next;
    } *hash[BIGHASHSIZE];
    MEM_ZONE *hashzone;
-
-   int worddata_counter;
-   long *worddata_wordID;
-   long *worddata_offset;
 
    int num_words;
    int num_docs;
