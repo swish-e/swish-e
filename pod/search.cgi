@@ -129,14 +129,12 @@ sub footer {
     <P ALIGN="CENTER">
 
     <div class="footer">
-        Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Hewlett-Packard Company<BR>
-        Originally by Kevin Hughes, kev\@kevcom.com, March 11, 1994.
-        <BR>SWISH-E is distributed with <B>no warranty</B> under the terms of the <A 
-        HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</A>,<BR>
+        <BR>SWISH-E is distributed with <B>no warranty</B> under the terms of the
+        <A HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</A>,<BR>
         Free Software Foundation, Inc., 
         59 Temple Place - Suite 330, Boston, MA  02111-1307, USA<BR> 
         Public questions may be posted to 
-        the <A HREF="http://sunsite.berkeley.edu/SWISH-E/Discussion/">SWISH-E Discussion</A>.
+        the <A HREF="http://swish-e.org/Discussion/">SWISH-E Discussion</A>.
     </div>
 
   </body>
