@@ -20,7 +20,7 @@ swish.gif   - Swish-e logo for the CGI scripts.
 
 swish.tmpl  - HTML template files for use with swish.cgi.
 swish2.tmpl   These are just simple examples that you can modify
-              to meet your needs.  They are use with the swish2.cgi
+              to meet your needs.  They are used with the swish2.cgi
               example program.
 
 SWISH-Stemmer-0.05.tar.gz
