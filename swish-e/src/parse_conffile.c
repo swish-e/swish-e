@@ -408,7 +408,7 @@ char *w0;
 					/* Go lowercase*/
 				for(tmplist=sw->ignoremetalist;tmplist;tmplist=tmplist->next)
 					tmplist->line=strtolower(tmplist->line);
-			} else progerr("IgnoreMeta requires at least one value");
+			} else progerr("IgnoreTag requires at least one value");
 		}
 		else if (strcasecmp(w0,"DontBumpPositionOnMetaTags")==0) {
 			if(sl->n>1) {
