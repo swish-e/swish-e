@@ -63,7 +63,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     FILE        *filenum_map;
     char        *tmpfilename;
     struct MOD_Index *idx_output = sw_output->Index;
-    ENTRY       *e;
+    ENTRY       *e, *prev;
     int          hash,
                  sz_worddata,
                  tmpval,
@@ -309,6 +309,43 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
     remove( tmpfilename );
     efree( tmpfilename );
+
+
+    /* 2002/09 MERGE fix jmruiz */
+    /* Finally, remove words from the hash array with tfrequncy == 0 */
+    /* walk the hash list to merge worddata */
+    for (word_count = 0, hash = 0; hash < VERYBIGHASHSIZE; hash++)
+    {
+        for (prev = NULL, e = idx_output->hashentries[hash]; e; e = e->next)
+        {
+            if( ! e->tfrequency )
+            {
+                word_count++;
+                if( ! prev)   /* First in list */
+                {
+                    idx_output->hashentries[hash] = e->next;
+                }
+                else
+                {
+                    prev->next = e->next;
+                }
+                /* Adjust counters */
+                idx_output->entryArray->numWords--;
+                sw_output->indexlist->header.totalwords--;
+            }
+            else
+            {
+                prev = e;
+            }
+        }
+    }
+    printf("Removed %6d words no longer present in docs for index '%s'\n",
+       word_count, sw_output->indexlist->line);
+
+    /* 2002/09 MERGE FIX end */
+
+
+
 }
 
 /****************************************************************************

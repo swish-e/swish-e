@@ -1250,7 +1250,7 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
         warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
-        return;
+        return 0;
     }
     
     
