@@ -220,7 +220,7 @@ void *DB_Create_Native (char *dbname)
           /* Create index File */
    CreateEmptyFile(dbname);
    if(!(DB->fp = openIndexFILEForReadAndWrite(dbname)))
-	   progerrno("Couldn't create the index file \"%s\".", dbname);
+	   progerrno("Couldn't create the index file \"%s\": ", dbname);
 
    fp = DB->fp;
 
@@ -232,7 +232,7 @@ void *DB_Create_Native (char *dbname)
 
         CreateEmptyFile(s);
         if( !(DB->prop = openIndexFILEForWrite(s)) )
-            progerrno("Couldn't create the property file \"%s\".", s);
+            progerrno("Couldn't create the property file \"%s\": ", s);
 
         efree(s);         
     }
@@ -269,7 +269,7 @@ void *DB_Open_Native (char *dbname)
 
           /* Create index File */
    if(!(DB->fp = openIndexFILEForRead(dbname)))
-      progerrno("Couldn't open the index file \"%s\".", dbname);
+      progerrno("Could not open the index file '%s': ", dbname);
 
 
 #ifdef PROPFILE
@@ -279,7 +279,7 @@ void *DB_Open_Native (char *dbname)
         strcat( s, ".prop" );
 
         if( !(DB->prop = openIndexFILEForRead(s)) )
-            progerrno("Couldn't open the property file \"%s\".", s);
+            progerrno("Couldn't open the property file \"%s\": ", s);
 
         efree(s);         
     }
@@ -330,7 +330,7 @@ void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname)
     strcat( s, ".prop" );
 
     if( !(DB->prop = openIndexFILEForRead(s)) )
-        progerrno("Couldn't open the property file \"%s\".", s);
+        progerrno("Couldn't open the property file \"%s\": ", s);
 
     efree(s);         
 }
@@ -485,7 +485,7 @@ int DB_EndWriteWords_Native(void *db)
          /* Simple check  words and worddata must match */
 
    if(DB->num_words != DB->wordhash_counter)
-       progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter");
+       progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter: ");
 
    if(WRITE_WORDS_RAMDISK)
    {
@@ -511,7 +511,7 @@ int DB_EndWriteWords_Native(void *db)
    }
 
    if(DB->num_words != DB->worddata_counter)
-       progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter");
+       progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter: ");
 
    for(i=0;i<DB->num_words;i++)
    {
