@@ -920,19 +920,13 @@ int key_len_k;
 
 #define N_TEST 300000
 
-#ifdef _WIN32
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#elif defined(__VMS)
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#else
-#define FILEMODE_READ           "r"
-#define FILEMODE_WRITE          "w"
-#define FILEMODE_READWRITE      "r+"
-#endif
+#define F_READ_BINARY           "rb"
+#define F_WRITE_BINARY          "wb"
+#define F_READWRITE_BINARY      "rb+"
+
+#define F_READ_TEXT             "r"
+#define F_WRITE_TEXT            "w"
+#define F_READWRITE_TEXT        "r+"
 
 int main()
 {
@@ -948,10 +942,10 @@ int found_len;
 
     goto test2;
 
-    fp = fopen("kkkkk",FILEMODE_WRITE);
+    fp = fopen("kkkkk",F_WRITE_BINARY);
     fwrite("asjhd",1,5,fp);
     fclose(fp);
-    fp = fopen("kkkkk",FILEMODE_READWRITE);
+    fp = fopen("kkkkk",F_READWRITE_BINARY);
 
 printf("\n\nIndexing\n\n");
 
@@ -980,7 +974,7 @@ printf("\n\nIndexing\n\n");
 search:;
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",FILEMODE_READ);
+    fp = fopen("kkkkk",F_READ_BINARY);
     bt = BTREE_Open(fp,15,root_page);
 
     for(i=0;i<N_TEST;i++)
@@ -999,9 +993,9 @@ printf("\n\nSearching\n\n");
 test2:;
 
 
-    fp = fopen("kkkkk",FILEMODE_WRITE);
+    fp = fopen("kkkkk",F_WRITE_BINARY);
     fclose(fp);
-    fp = fopen("kkkkk",FILEMODE_READWRITE);
+    fp = fopen("kkkkk",F_READWRITE_BINARY);
 
     fwrite("aaa",1,3,fp);
 
@@ -1029,7 +1023,7 @@ printf("\n\nIndexing\n\n");
 
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",FILEMODE_READ);
+    fp = fopen("kkkkk",F_READ_BINARY);
     bt = BTREE_Open(fp,15,root_page);
 
     for(i=0;i<N_TEST;i++)

@@ -387,19 +387,13 @@ typedef int pid_t;		/* process ID */
  * Note: text files should be opened normally, without the "b" option,
  * otherwise end-of-line processing is not done correctly (on Win32).
  */
-#ifdef _WIN32
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#elif defined(__VMS)
-#define FILEMODE_READ           "rb"
-#define FILEMODE_WRITE          "wb"
-#define FILEMODE_READWRITE      "rb+"
-#else
-#define FILEMODE_READ           "r"
-#define FILEMODE_WRITE          "w"
-#define FILEMODE_READWRITE      "r+"
-#endif
+#define F_READ_BINARY           "rb"
+#define F_WRITE_BINARY          "wb"
+#define F_READWRITE_BINARY      "rb+"
+
+#define F_READ_TEXT             "r"
+#define F_WRITE_TEXT            "w"
+#define F_READWRITE_TEXT        "r+"
 
 
 

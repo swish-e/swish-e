@@ -154,7 +154,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
 			sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
-			fp = fopen(buffer, "r");
+			fp = fopen(buffer, F_READ_TEXT);
 			parserobotstxt(fp, server);
 			fclose(fp);
 		}

@@ -270,7 +270,7 @@ FILE *FilterOpen (FileProp *fprop)
    filtercmd=emalloc(len + 2);
    sprintf(filtercmd, "%s %s", fi->prog, cmd_opts);
 
-   fp = popen (filtercmd,"r");  /* Open stream */
+   fp = popen (filtercmd, F_READ_TEXT);  /* Open stream */
 
    efree (filtercmd);
    efree (cmd_opts);

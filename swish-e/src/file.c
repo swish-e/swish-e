@@ -125,17 +125,17 @@ int     getsize(char *path)
 
 FILE   *openIndexFILEForWrite(char *filename)
 {
-    return fopen(filename, FILEMODE_WRITE);
+    return fopen(filename, F_WRITE_BINARY);
 }
 
 FILE   *openIndexFILEForRead(char *filename)
 {
-    return fopen(filename, FILEMODE_READ);
+    return fopen(filename, F_READ_BINARY);
 }
 
 FILE   *openIndexFILEForReadAndWrite(char *filename)
 {
-    return fopen(filename, FILEMODE_READWRITE);
+    return fopen(filename, F_READWRITE_BINARY);
 }
 
 void    CreateEmptyFile(char *filename)
@@ -419,7 +419,7 @@ static char *temp_file_template = "XXXXXX";
 *
 ***********************************************************************/
 
-FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remove_file_name )
+FILE *create_tempfile(SWISH *sw, const char *f_mode, char *prefix, char **file_name_buffer, int remove_file_name )
 {
     int         temp_fd;
     mode_t      old_mode;
@@ -476,11 +476,7 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
     if (temp_fd == -1)
         progerrno("Couldn't open temporary file '%s': ", file_name );
 
-#ifdef __VMS
-    if (!(temp_file = fdopen(temp_fd, "w")))
-#else
-    if (!(temp_file = fdopen(temp_fd, "w+b")))
-#endif
+    if (!(temp_file = fdopen(temp_fd, f_mode)))
         progerrno("Couldn't create temporary file '%s' file descriptor: ", file_name);
 
     if ( remove_file_name )

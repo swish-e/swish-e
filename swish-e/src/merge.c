@@ -119,7 +119,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     ****************************************************************************/
 
     /* place to store file number map and total words per file */
-    filenum_map = create_tempfile(sw_input, "fnum", &tmpfilename, 0 );
+    filenum_map = create_tempfile(sw_input, F_WRITE_BINARY, "fnum", &tmpfilename, 0 );
 
     while( (cur_index = get_next_file_in_order( sw_input )) )
         add_file( filenum_map, cur_index, sw_input, sw_output );
@@ -135,7 +135,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
     fclose( filenum_map );
 
-    if ( !(filenum_map = fopen( tmpfilename, FILEMODE_READ )) )
+    if ( !(filenum_map = fopen( tmpfilename, F_READ_BINARY )) )
         progerrno("failed to reopen '%s' :", tmpfilename );
 
 

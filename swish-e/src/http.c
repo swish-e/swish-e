@@ -409,7 +409,7 @@ int     get(SWISH * sw, char *contenttype_or_redirect, time_t * plastretrieval, 
             buffer = erealloc(buffer, lenbuffer + 1);
         }
         sprintf(buffer, "%s/swishspider@%ld.response", idx->tmpdir, (long) lgetpid());
-        fp = fopen(buffer, "r");
+        fp = fopen(buffer, F_READ_TEXT);
         fgets(buffer, lenbuffer, fp);
         code = atoi(buffer);
         if ((code == 200) || ((code / 100) == 3))
@@ -662,7 +662,7 @@ void    http_indexpath(SWISH * sw, char *url)
                 buffer = erealloc(buffer, lenbuffer + 1);
             }
             sprintf(buffer, "%s/swishspider@%ld.links", idx->tmpdir, (long) lgetpid());
-            if ((fp = fopen(buffer, "r")) != NULL)
+            if ((fp = fopen(buffer, F_READ_TEXT)) != NULL)
             {
 
                 /* URLs can get quite large so don't depend on a fixed size buffer

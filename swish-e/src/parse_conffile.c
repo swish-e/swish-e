@@ -97,7 +97,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
     gotdir = gotindex = 0;
 
-    if ((fp = fopen(conffile, FILEMODE_READ)) == NULL || !isfile(conffile))
+    if ((fp = fopen(conffile, F_READ_TEXT)) == NULL || !isfile(conffile))
     {
         progerrno("Couldn't open the configuration file '%s': ", conffile);
     }
@@ -1310,7 +1310,7 @@ static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
     int     i;
 
 
-    if ((fp = fopen(stopw_file, FILEMODE_READ)) == NULL || !isfile(stopw_file))
+    if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
     {
         progerr("Couldn't open the stopword file \"%s\".", stopw_file);
     }
@@ -1350,7 +1350,7 @@ static void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
     int     i;
 
 
-    if ((fp = fopen(stopw_file, FILEMODE_READ)) == NULL || !isfile(stopw_file))
+    if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
     {
         progerr("Couldn't open the buzzword file \"%s\".", stopw_file);
     }
@@ -1403,7 +1403,7 @@ static void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
     int     i;
 
 
-    if ((fp = fopen(usew_file, FILEMODE_READ)) == NULL || !isfile(usew_file))
+    if ((fp = fopen(usew_file, F_READ_TEXT)) == NULL || !isfile(usew_file))
     {
         progerr("Couldn't open the useword file \"%s\".", usew_file);
     }

@@ -457,7 +457,7 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
 
     if (!idx->fp_loc_write)
     {
-        idx->fp_loc_write = create_tempfile(sw, "loc", &idx->swap_location_name, 0 );
+        idx->fp_loc_write = create_tempfile(sw, F_WRITE_BINARY, "loc", &idx->swap_location_name, 0 );
 
         idx->swap_tell = ftell;
         idx->swap_write = fwrite;
@@ -501,7 +501,7 @@ unsigned char *unSwapLocData(SWISH * sw, long pos)
     {
         idx->swap_close(idx->fp_loc_write);
         idx->fp_loc_write = NULL;
-        if (!(idx->fp_loc_read = fopen(idx->swap_location_name, FILEMODE_READ)))
+        if (!(idx->fp_loc_read = fopen(idx->swap_location_name, F_READ_BINARY)))
             progerrno("Could not open temp file %s", idx->swap_location_name);
     }
 
