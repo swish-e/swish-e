@@ -26,7 +26,8 @@
 extern "C" {
 #endif
 
-long get_run_time ();
+typedef unsigned long long cpu_seconds;
+cpu_seconds get_cpu_secs ();
 
 #ifdef __cplusplus
 }

@@ -19,10 +19,16 @@ Boston, MA 02111-1307, USA.  */
 
 #include "acconfig.h"
 
+/* For testing */
+// #undef HAVE_GETRUSAGE
+// #undef HAVE_SYS_RESOURCE_H
+// #undef HAVE_TIMES
+
 /* There are several ways to get elapsed execution time; unfortunately no
    single way is available for all host systems, nor are there reliable
    ways to find out which way is correct for a given host. */
 
+#include "getruntime.h"
 #include <time.h>
 
 #if defined (HAVE_GETRUSAGE) && defined (HAVE_SYS_RESOURCE_H)
@@ -60,28 +66,52 @@ Boston, MA 02111-1307, USA.  */
 #endif
 #endif
 
-long
-get_run_time ()
+cpu_seconds 
+get_cpu_secs ()
 {
 #if defined (HAVE_GETRUSAGE) && defined (HAVE_SYS_RESOURCE_H)
   struct rusage rusage;
+  cpu_seconds secs;
 
   getrusage (0, &rusage);
-  return (rusage.ru_utime.tv_sec * 1000000 + rusage.ru_utime.tv_usec
-	  + rusage.ru_stime.tv_sec * 1000000 + rusage.ru_stime.tv_usec);
+  secs = (cpu_seconds)( rusage.ru_utime.tv_sec + rusage.ru_stime.tv_sec );
+
+  if (  rusage.ru_utime.tv_usec > 500000 )
+     secs++;
+  if (  rusage.ru_stime.tv_usec > 500000 )
+     secs++;
+
+  return secs;
+
+
 #else /* ! HAVE_GETRUSAGE */
 #ifdef HAVE_TIMES
+
+  /* This returns number of clock "ticks" since: */
+  /* In linux since boot, in BSD since 1/1/1970 */
+  /* Again, these are clock_t, which may overflow, but under linux it's 1/100 second so about 6000 hours */
+
   struct tms tms;
 
   times (&tms);
-  return (tms.tms_utime + tms.tms_stime) * (1000000 / GNU_HZ);
+
+  return  (cpu_seconds)( (tms.tms_utime + tms.tms_stime) / GNU_HZ);
+
+
 #else /* ! HAVE_TIMES */
   /* Fall back on clock and hope it's correctly implemented. */
-  const long clocks_per_sec = CLOCKS_PER_SEC;
-  if (clocks_per_sec <= 1000000)
-    return clock () * (1000000 / clocks_per_sec);
-  else
-    return clock () / clocks_per_sec;
+  /* clock() returns clock_t, which seems to be a long.  On Linux CLOCKS_PER_SEC is 10^6 */
+  /* so expect an overflow at about 35 minutes. */
+
+  clock_t t = clock();
+  if ( t < 0 )
+      t = 0;
+
+  return (cpu_seconds) (t / CLOCKS_PER_SEC );
+
 #endif  /* HAVE_TIMES */
 #endif  /* HAVE_GETRUSAGE */
 }
+
+
+
