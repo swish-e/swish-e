@@ -220,12 +220,12 @@ int search(SWISH *sw, char *words, int structure)
 int search_2 (SWISH *sw, char *words, int structure)
 {
 int j,k, hassearch, metaID, indexYes, totalResults;
-RESULT *tmpresultlist,*tmpresultlist2;
 struct swline *searchwordlist, *tmplist2;
 IndexFILE *indexlist;
 int rc=0;
 unsigned char PhraseDelimiter;
 char  *tmpwords;
+struct DB_RESULTS *db_results,*db_tmp;
 
 			/* If not words - do nothing */
 	if (!words || !*words) 
@@ -234,7 +234,7 @@ char  *tmpwords;
 	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
 
 	indexlist=sw->indexlist;
-	sw->sortresultlist=NULL;
+	sw->db_results=NULL;
 	j=0;
 	searchwordlist = NULL;
 	metaID = 1;
@@ -316,22 +316,30 @@ char  *tmpwords;
 		searchwordlist = (struct swline *) expandphrase(searchwordlist,PhraseDelimiter);
 		searchwordlist = (struct swline *) fixnot(searchwordlist); 
 
-		tmpresultlist=NULL;
+		/* Allocate memory for the result list structure */
+		db_results=(struct DB_RESULTS *) emalloc(sizeof(struct DB_RESULTS));
+		db_results->currentresult=NULL;
+		db_results->sortresultlist=NULL;
+		db_results->resultlist=NULL;
+		db_results->next=NULL;
+
 		if(searchwordlist)
 		{
-			tmplist2=searchwordlist ;
-			tmpresultlist = (RESULT *) parseterm(sw,0,metaID,indexlist,&tmplist2);
+			tmplist2=searchwordlist;
+			db_results->resultlist = (RESULT *) parseterm(sw,0,metaID,indexlist,&tmplist2);
 		}
-		if(!sw->resultlist)
-			sw->resultlist = tmpresultlist;
+
+			/* add db_results to the list of results */
+		if(!sw->db_results)
+			sw->db_results = db_results;
 		else {
-			tmpresultlist2=sw->resultlist;
-			while(tmpresultlist2) {
-				if(!tmpresultlist2->next) {
-					tmpresultlist2->next=tmpresultlist;
+			db_tmp=sw->db_results;
+			while(db_tmp) {
+				if(!db_tmp->next) {
+					db_tmp->next=db_results;
 					break;
 				}
-				tmpresultlist2=tmpresultlist2->next;
+				db_tmp=db_tmp->next;
 			}
 
 		}
@@ -356,19 +364,8 @@ char  *tmpwords;
 /* 
 04/00 Jose Ruiz - Sort results by rank or by properties
 */
-	sw->sortresultlist = sortresults(sw, structure);
-	//if (isSortProp(sw)) 
-	//	sw->sortresultlist = (RESULT *) sortresultsbyproperty(sw, structure);
-	//else
-	//	sw->sortresultlist = (RESULT *) sortresultsbyrank(sw, structure);
-	if (!sw->sortresultlist) {
-		if (!sw->commonerror) totalResults=0;
-	} else {
-			/* Point current result at the begining */
-		sw->currentresult = sw->sortresultlist;
-		totalResults = countResults(sw->sortresultlist);
-	}
-		
+	totalResults=sortresults(sw, structure);
+
 	if (!totalResults && sw->commonerror) return (sw->lasterror=WORDS_TOO_COMMON);
 	if (!totalResults && !indexYes) return (sw->lasterror=INDEX_FILE_IS_EMPTY);
 
@@ -1678,26 +1675,78 @@ int countResults(RESULT *sp)
 
 RESULT *SwishNext(SWISH *sw)
 {
-RESULT *tmp;
+RESULT *res=NULL;
+RESULT *res2=NULL;
+int rc;
+struct DB_RESULTS *db_results=NULL,*db_results_winner=NULL;
 double  num;
-	tmp = sw->currentresult;
-		/* Increase Pointer */
 
-        if (sw->bigrank) num = 1000.0f / (float) sw->bigrank;
-        else num = 1000.0f;
-	if(tmp) {
-		tmp->rank = (int) ((float) tmp->rank * num);
-		if (tmp->rank >= 999) tmp->rank = 1000;
-		else if (tmp->rank <1) tmp->rank = 1;
-		sw->currentresult = tmp->nextsort;
+	if (sw->bigrank) num = 1000.0f / (float) sw->bigrank;
+	else num = 1000.0f;
+
+		/* Check for a unique index file */
+	if(!sw->db_results->next)
+	{
+		if((res = sw->db_results->currentresult))
+		{
+			/* Increase Pointer */
+			sw->db_results->currentresult = res->nextsort;
+
 			/* 02/2001 jmruiz - Read file data here */
 			/* Doing it here we get better performance if maxhits specified
 				and not all the results data (only read maxhits) */
-
-		tmp=getproperties(tmp);
+			res=getproperties(res);
+		}
 	}
-	if(!tmp)sw->lasterror=SWISH_LISTRESULTS_EOF;
-	return tmp;
+	else
+	{
+		/* We have more than one index file */
+		/* Get the lower value */
+		db_results_winner=sw->db_results;
+		if((res=db_results_winner->currentresult)) 
+		{
+			res=getproperties(res);
+			if(!res->PropSort)
+				res->PropSort=getResultSortProperties(res);
+		}
+
+		for(db_results=sw->db_results->next;db_results;db_results=db_results->next)
+		{
+			if(!(res2=db_results->currentresult)) continue;
+			else 
+			{
+				res2=getproperties(res2);
+				if(!res2->PropSort)
+					res2->PropSort=getResultSortProperties(res2);
+			}
+			if(!res) 
+			{
+				res=res2;
+				db_results_winner=db_results;
+				continue;
+			}
+			rc=(int)compResultsByNonSortedProps(&res,&res2);
+			if(rc<0) 
+			{
+				res=res2;
+				db_results_winner=db_results;
+			}
+		}
+		if((res=db_results_winner->currentresult))
+			db_results_winner->currentresult=res->nextsort;
+	}
+		/* Normalize rank */
+	if(res) {
+		res->rank = (int) ((float) res->rank * num);
+		if (res->rank >= 999) res->rank = 1000;
+		else if (res->rank <1) res->rank = 1;
+	} 
+	else
+	{
+		sw->lasterror=SWISH_LISTRESULTS_EOF;
+	}
+	return res;
+	
 }
 
 
@@ -1731,17 +1780,19 @@ int isMetaNameOpNext (struct swline *searchWord)
 }
 
 /* funtion to free all memory of a list of results */
-void freeresultlist(SWISH *sw)
+void freeresultlist(SWISH *sw,struct DB_RESULTS *dbres)
 {
 RESULT *rp;
 RESULT *tmp;
-	rp=sw->resultlist;
+	rp=dbres->resultlist;
 	while(rp) {
 		tmp = rp->next;
 		freeresult(sw,rp);
 		rp =tmp;
 	}
-	sw->resultlist=NULL;
+	dbres->resultlist=NULL;
+	dbres->currentresult=NULL;
+	dbres->sortresultlist=NULL;
 }
 
 /* funtion to free the memory of one result */

@@ -191,7 +191,6 @@ FILE   *f_out;
 	}
 				
 	if (resultmaxhits > 0) resultmaxhits--;
-	r = r->nextsort;
   }
 
 }
