@@ -48,7 +48,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input );
 static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output );
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output );
-static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata );
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, unsigned int posdata );
 
 
 // #define DEBUG_MERGE
@@ -80,8 +80,8 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     unsigned char   *worddata;
     unsigned char   *s, *start;
     unsigned char   flag;
-    int          local_posdata[MAX_STACK_POSITIONS];
-    int         *posdata;
+    unsigned int          local_posdata[MAX_STACK_POSITIONS];
+    unsigned int         *posdata;
     int          i;
 
     /*******************************************************************************
@@ -222,7 +222,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                             filenum += tmpval;
                             /* Use stack array when possible to avoid malloc/free overhead */
                             if(frequency > MAX_STACK_POSITIONS)
-                                posdata = (int *) emalloc(frequency * sizeof(int));
+                                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                             else
                                 posdata = local_posdata;
                             
@@ -966,7 +966,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 *
 ****************************************************************************/
 
-static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata )
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, unsigned int posdata )
 {
     int         new_file;
     int         new_meta;

@@ -409,15 +409,15 @@ typedef struct LOCATION
     int     metaID;
     int     filenum;
     int     frequency;
-    int     posdata[1];
+    unsigned int     posdata[1];
 }
 LOCATION;
 
 
 /* 2002/01 jmruiz macros for accesing POSITION and structure */
-#define SET_POSDATA(pos,str)  ((pos) << 8 | (str))
-#define GET_POSITION(pos)      ((pos) >> 8)
-#define GET_STRUCTURE(pos)     ((pos) & 0xff)
+#define SET_POSDATA(pos,str)  ((unsigned int)((unsigned int)(pos) << (unsigned int)8 | (unsigned int)(str)))
+#define GET_POSITION(pos)      ((int)((unsigned int)(pos) >> (unsigned int)8))
+#define GET_STRUCTURE(pos)     ((int)((unsigned int)(pos) & (unsigned int)0xff))
 
 typedef struct ENTRY
 {
@@ -868,6 +868,8 @@ typedef struct SWISH
     /* Should comments be indexed */
     int     indexComments;
 
+    /* Should positions be compressed */
+    int     compressPositions;
 
 
     /******** Variables used by the parsers *********/

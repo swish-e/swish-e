@@ -386,7 +386,7 @@ I wonder if storing the initial postion would improve that much.
 
 
 
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *posdata)
+void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, unsigned int *posdata)
 {
     unsigned char *p = *buf;
     unsigned char *flag;
@@ -454,7 +454,7 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     *buf = p;
 }
 
-void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *posdata)
+void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, unsigned int *posdata)
 {
     unsigned char *p = *buf;
     int i, j;
@@ -593,7 +593,7 @@ unsigned long four_bit_called = 0;
 unsigned long not_four_called;
 
 
-void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *posdata)
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, unsigned int *posdata)
 {
     int i, j, tmp;
     unsigned char *p = *buf;
@@ -629,7 +629,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
         }
 
         /* First position is always "as is" */
-        posdata[0] = uncompress2(&p);
+        posdata[0] = (unsigned int)uncompress2(&p);
 
         /* Check if positions where stored as two values per byte or the old "compress" style */
         if(flag & POS_4_BIT)
@@ -637,9 +637,9 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
             for (i = 1, j = 0; i < frequency; i++, j++)
             {
                 if(j%2)
-                    posdata[i] = p[j/2] & 0x0F;
+                    posdata[i] = (unsigned int)((unsigned int)p[j/2] & (unsigned int)0x0F);
                 else
-                    posdata[i] = p[j/2] >> 4;
+                    posdata[i] = (unsigned int)((unsigned int)p[j/2] >> (unsigned int)4);
             }
             p += ((j + 1)/2);
         }
@@ -648,7 +648,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
             for (i = 1; i < frequency; i++)
             {
                 tmp = uncompress2(&p);
-                posdata[i] = tmp;
+                posdata[i] = (unsigned int)tmp;
             }
         }
         /* Position were compressed incrementally. So restore them */

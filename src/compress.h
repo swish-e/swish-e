@@ -39,11 +39,11 @@ void PACKFILEOFFSET2(sw_off_t num, unsigned char *buffer);
 sw_off_t UNPACKFILEOFFSET(sw_off_t num);
 sw_off_t UNPACKLONGFILEOFFSET2(unsigned char *buffer);
 
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *position);
-void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position);
+void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, unsigned int *posdata);
+void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, unsigned int *posdata);
 
 void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency);
-void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *position);
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, unsigned int *posdata);
 
 void CompressCurrentLocEntry(SWISH *, ENTRY *);
 

@@ -1183,6 +1183,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+        if (strcasecmp(w0, "CompressPositions") == 0)
+        {
+            sw->compressPositions = getYesNoOrAbort(sl, 1, 1);
+            continue;
+        }
+
 
         else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */

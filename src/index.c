@@ -1436,8 +1436,8 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             frequency,
             tmpval,
             filenum;
-    int    *positions;
-    int     local_positions[MAX_STACK_POSITIONS];
+    unsigned int    *posdata;
+    unsigned int     local_posdata[MAX_STACK_POSITIONS];
 
     LOCATION *l, *next;
     ENTRY  *ep,
@@ -1574,11 +1574,11 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                      filenum += tmpval;
 
                      if(frequency > MAX_STACK_POSITIONS)
-                         positions = (int *) emalloc(frequency * sizeof(int));
+                         posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                      else
-                         positions = local_positions;
+                         posdata = local_posdata;
 
-                     uncompress_location_positions(&p,flag,frequency,positions);
+                     uncompress_location_positions(&p,flag,frequency,posdata);
 
                      chunk_size -= (p-q);
          
@@ -1600,13 +1600,13 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                      for (m = fpos->n * 2, k = 0; k < frequency; k++)
                      {
                          fpos->pos[m++] = metaID;
-                         fpos->pos[m++] = GET_POSITION(positions[k]);
+                         fpos->pos[m++] = GET_POSITION(posdata[k]);
                      }
 
                      fpos->n += frequency;
 
-                     if(positions != local_positions)
-                         efree(positions);
+                     if(posdata != local_posdata)
+                         efree(posdata);
                 }
                 l = next;
             }
@@ -1640,12 +1640,12 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
             metaID,
             tmpval,
             r_filenum, 
-            w_filenum,
-           *posdata;
+            w_filenum;
+    unsigned int       *posdata;
     int     i,j,k;
     unsigned long    r_nextposmeta;
     unsigned char   *w_nextposmeta;
-    int     local_posdata[MAX_STACK_POSITIONS];
+    unsigned int     local_posdata[MAX_STACK_POSITIONS];
     unsigned char r_flag, *w_flag;
     unsigned char *p, *q;
 
@@ -1667,7 +1667,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
         if(frequency <= MAX_STACK_POSITIONS)
             posdata = local_posdata;
         else
-            posdata = (int *) emalloc(frequency * sizeof(int));
+            posdata = (unsigned int *) emalloc(frequency * sizeof(int));
 
         uncompress_location_positions(&p,r_flag,frequency,posdata);
 
@@ -2613,8 +2613,8 @@ void    coalesce_word_locations(SWISH * sw, ENTRY *e)
     unsigned char *buffer;
     unsigned int sz_buffer;
     unsigned char *coalesced_buffer;
-    int     *posdata;
-    int      local_posdata[MAX_STACK_POSITIONS];
+    unsigned int     *posdata;
+    unsigned int      local_posdata[MAX_STACK_POSITIONS];
 
 
     /* Check for new locations in the current chunk */
@@ -2731,7 +2731,7 @@ void    coalesce_word_locations(SWISH * sw, ENTRY *e)
         }
 
         if(frequency > MAX_STACK_POSITIONS)
-            posdata = emalloc(frequency * sizeof(int));
+            posdata = (unsigned int *)emalloc(frequency * sizeof(int));
         else
             posdata = local_posdata;
 
