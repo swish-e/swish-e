@@ -18,12 +18,6 @@ Was not correctly removing words from index when parser aborted [jmruiz]
 
 Fixed segfault caused by trying to print null dates while merging [moseley]
 
-=back
-
-=head2 Version 2.2 - September 19, 2002
-
-=over 4
-
 =item * Documentation patches
 
 Spelling corrections to the SWISH-CONFIG pod page [Steve Eckert]
@@ -42,7 +36,7 @@ Added missing filters and vms build file into MANIFEST [moseley]
 
 =back
 
-=head2 Version 2.2 - September 17, 2002
+=head2 Version 2.2 - September 18, 2002
 
 
 =over 4
