@@ -62,7 +62,6 @@ FILE *fp;
 int linenumber = 0;
 int baddirective = 0;
 StringList *sl;
-int DocType=0;
 struct IndexContents *ic;
 struct StoreDescription *sd;
 IndexFILE *indexf=NULL;
@@ -308,23 +307,8 @@ char *w0;
 		}
 		else if (strcasecmp(w0,"IndexContents")==0) {
 			if(sl->n>2) {
-				if(strcasecmp(sl->word[1],"TXT")==0) {
-					DocType=TXT;
-				}
-				else if(strcasecmp(sl->word[1],"HTML")==0) {
-					DocType=HTML;
-				}
-				else if(strcasecmp(sl->word[1],"XML")==0) {
-					DocType=XML;
-				}
-				else if(strcasecmp(sl->word[1],"LST")==0) {
-					DocType=LST;
-				}
-				else if(strcasecmp(sl->word[1],"WML")==0) {
-					DocType=WML;
-				} else progerr("Unknown document type in IndexContents");
 				ic=(struct IndexContents *)emalloc(sizeof(struct IndexContents));
-				ic->DocType=DocType;
+				ic->DocType = getDocTypeOrAbort (sl, 1);
 				ic->patt=NULL;
 				for(i=2;i<sl->n;i++)
 					ic->patt=addswline(ic->patt,sl->word[i]);
@@ -337,23 +321,8 @@ char *w0;
 		}
 		else if (strcasecmp(w0,"StoreDescription")==0) {
 			if(sl->n==3 || sl->n==4) {
-				if(strcasecmp(sl->word[1],"TXT")==0) {
-					DocType=TXT;
-				}
-				else if(strcasecmp(sl->word[1],"HTML")==0) {
-					DocType=HTML;
-				}
-				else if(strcasecmp(sl->word[1],"XML")==0) {
-					DocType=XML;
-				}
-				else if(strcasecmp(sl->word[1],"LST")==0) {
-					DocType=LST;
-				}
-				else if(strcasecmp(sl->word[1],"WML")==0) {
-					DocType=WML;
-				} else progerr("Unknown document type in StoreDescription");
 				sd=(struct StoreDescription *)emalloc(sizeof(struct StoreDescription));
-				sd->DocType=DocType;
+				sd->DocType = getDocTypeOrAbort (sl, 1);
 				sd->size=0;
 				sd->field=NULL;
 				i=2;
@@ -381,22 +350,7 @@ char *w0;
 		}
 		else if (strcasecmp(w0,"DefaultContents")==0) {
 			if(sl->n>1) {
-				if(strcasecmp(sl->word[1],"TXT")==0) {
-					DocType=TXT;
-				}
-				else if(strcasecmp(sl->word[1],"HTML")==0) {
-					DocType=HTML;
-				}
-				else if(strcasecmp(sl->word[1],"XML")==0) {
-					DocType=XML;
-				}
-				else if(strcasecmp(sl->word[1],"LST")==0) {
-					DocType=LST;
-				}
-				else if(strcasecmp(sl->word[1],"WML")==0) {
-					DocType=WML;
-				} else progerr("Unknown document type in DefaultContents");
-				sw->DefaultDocType=DocType;
+				sw->DefaultDocType = getDocTypeOrAbort (sl, 1);
 			} else progerr("IndexContents requires at least one value");
 		}
 		else if (strcasecmp(w0,"BumpPositionCounterCharacters")==0) {
@@ -508,6 +462,43 @@ int getYesNoOrAbort (StringList *sl, int n, int lastparam)
         sl->word[0],n);
    return 0;
 }
+
+
+/*
+  --  check if word "n" in StringList  is a DocumentType
+  --  returns (doctype-id)
+  --  aborts if not a DocumentType, or no param
+  --  2001-03-04 rasc
+*/
+
+int getDocTypeOrAbort (StringList *sl, int n)
+{
+  static struct {
+     char *type;
+     int  id;
+  } *d, doc[] = {
+	 {"TXT",  TXT }, {"HTML", HTML}, {"XML",  XML },
+	 {"WML",  WML }, {"LST",  LST },
+	 { NULL,  NODOCTYPE }
+ 	};
+
+
+   if (n < sl->n) {
+	d = doc;
+      while (d->type) {
+	   if (!strcasecmp (d->type,sl->word[n])) 
+		break;
+	   d++;
+	}
+	if (! d->type)
+	   progerr("%s: Unknown document type \"%s\"",sl->word[0],sl->word[n]);
+	else
+	   return d->id;
+   }
+
+   progerr ("%s: missing %d. parameter", sl->word[0],n);
+}
+
 
 
 /* --------------------------------------------------------- */
