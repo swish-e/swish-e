@@ -28,6 +28,7 @@
 #include "compress.h"
 #include "hash.h"
 #include "db.h"
+#include "swish_qsort.h"
 #include "db_native.h"
 
 
@@ -421,6 +422,12 @@ int DB_InitWriteWords_Native(void *db)
    return 0;
 }
 
+int cmp_wordhashdata(const void *s1, const void *s2)
+{
+int *i = (int *) s1;
+int *j = (int *) s2;
+     return(*i - *j);
+}
 
 int DB_EndWriteWords_Native(void *db)
 {
@@ -438,10 +445,12 @@ int DB_EndWriteWords_Native(void *db)
    if(DB->num_words != DB->wordhash_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter");
 
+      /* Sort wordhashdata to be writte to allow sequential writes */
+   swish_qsort(DB->wordhashdata,DB->num_words,2*sizeof(long), cmp_wordhashdata);
+
    for(i=0;i<DB->num_words;i++)
    {
        wordID = DB->wordhashdata[2 * i];
-//printf("%d\n",wordID);
        f_offset = DB->wordhashdata[2 * i + 1];
         /* Position file pointer in word */
        fseek(fp,wordID,SEEK_SET);
@@ -572,6 +581,7 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
             /* Update previous word in hashlist */
     if(DB->lasthashval[hashval])
     {
+        // This must be a binary search - Use bsearch - To do !!
         for(i=0;i<DB->wordhash_counter;i++)
             if(DB->wordhashdata[2 * i] == DB->lasthashval[hashval])
                 break;
