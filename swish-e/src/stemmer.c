@@ -69,6 +69,11 @@
 #include "snowball/stem_nl.h"
 #include "snowball/stem_en1.h"
 #include "snowball/stem_en2.h"
+#include "snowball/stem_no.h"
+#include "snowball/stem_se.h"
+#include "snowball/stem_dk.h"
+#include "snowball/stem_ru.h"
+#include "snowball/stem_fi.h"
 #include "snowball/api.h"
 #endif
 
@@ -529,11 +534,7 @@ int     ReplaceEnd(char *word, RuleList *rule)
             structures with comments.
 **/
 
-#ifdef SNOWBALL
-int     Stem(char **inword, int *lenword, struct SN_env  *snowball, int (*lang_stem)(struct SN_env *))
-#else
-int     Stem(char **inword, int *lenword)
-#endif
+int     Stem(char **inword, int *lenword, void  *dummy)
 {
     char   *end;                /* pointer to the end of the word */
     char    word[MAXWORDLEN+1];
@@ -616,13 +617,12 @@ typedef struct
 {
     FuzzyIndexType  fuzzy_mode;
     char            *name;
+    int             (*routine) (char **, int *, void *);
 #ifdef SNOWBALL
-    int             (*routine) (char **, int *, struct SN_env  *, int (*lang_stem)(struct SN_env *));
     struct SN_env  *(*init) (void);
     void           (*free) (struct SN_env *);
     int            (*lang_stem)(struct SN_env *);
 #else
-    int             (*routine) (char **, int *);
     void           *dummy1;
     void           *dummy2;
     int            *dummy3;
@@ -646,13 +646,29 @@ static FUZZY_OPTS fuzzy_opts[] = {
     { FUZZY_STEMMING_DE, "Stemming_de", Stem_snowball, german_create_env, german_close_env, german_stem },
     { FUZZY_STEMMING_NL, "Stemming_nl", Stem_snowball, dutch_create_env, dutch_close_env, dutch_stem },
     { FUZZY_STEMMING_EN1, "Stemming_en1", Stem_snowball, porter_create_env, porter_close_env, porter_stem },
-    { FUZZY_STEMMING_EN2, "Stemming_en2", Stem_snowball, english_create_env, english_close_env, english_stem }
+    { FUZZY_STEMMING_EN2, "Stemming_en2", Stem_snowball, english_create_env, english_close_env, english_stem },
+    { FUZZY_STEMMING_NO, "Stemming_no", Stem_snowball, norwegian_create_env, norwegian_close_env, norwegian_stem },
+    { FUZZY_STEMMING_SE, "Stemming_se", Stem_snowball, swedish_create_env, swedish_close_env, swedish_stem },
+    { FUZZY_STEMMING_DK, "Stemming_dk", Stem_snowball, danish_create_env, danish_close_env, danish_stem },
+    { FUZZY_STEMMING_RU, "Stemming_ru", Stem_snowball, russian_create_env, russian_close_env, russian_stem },
+    { FUZZY_STEMMING_FI, "Stemming_fi", Stem_snowball, finnish_create_env, finnish_close_env, finnish_stem }
 #endif
 };
+
+#ifdef SNOWBALL
+typedef struct
+{
+    struct SN_env *snowball;
+    int     (*lang_stem) (struct SN_env *);
+} STEMMING_OPTS;
+#endif
 
 void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
 {
     int     i;
+#ifdef SNOWBALL
+    STEMMING_OPTS *opts;
+#endif
 
     for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
@@ -660,20 +676,22 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
             fi->fuzzy_routine = fuzzy_opts[i].routine;
 #ifdef SNOWBALL
+            opts = (STEMMING_OPTS *)emalloc(sizeof(STEMMING_OPTS));
             if(fuzzy_opts[i].lang_stem)
-                fi->lang_stem = fuzzy_opts[i].lang_stem;
+                opts->lang_stem = fuzzy_opts[i].lang_stem;
 
             if(fuzzy_opts[i].init)
-                fi->snowball = fuzzy_opts[i].init();
+                opts->snowball = fuzzy_opts[i].init();
+
+            fi->fuzzy_args = (void *) opts;
+#else
+            fi->fuzzy_args = NULL;
 #endif
             return;
         }
 
     fi->fuzzy_mode = FUZZY_NONE;
-    fi->fuzzy_routine = NULL;
-#ifdef SNOWBALL
-    fi->snowball = NULL;
-#endif
+    fi->fuzzy_args = NULL;
 
     progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
 }
@@ -681,6 +699,9 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
 void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
 {
     int     i;
+#ifdef SNOWBALL
+    STEMMING_OPTS *opts;
+#endif
 
     for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
         if ( fuzzy == fuzzy_opts[i].fuzzy_mode ) 
@@ -688,20 +709,22 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
             fi->fuzzy_routine = fuzzy_opts[i].routine;
 #ifdef SNOWBALL
+            opts = (STEMMING_OPTS *)emalloc(sizeof(STEMMING_OPTS));
             if(fuzzy_opts[i].lang_stem)
-                fi->lang_stem = fuzzy_opts[i].lang_stem;
+                opts->lang_stem = fuzzy_opts[i].lang_stem;
 
             if(fuzzy_opts[i].init)
-                fi->snowball = fuzzy_opts[i].init();
+                opts->snowball = fuzzy_opts[i].init();
+
+            fi->fuzzy_args = (void *)opts;
+#else
+            fi->fuzzy_args = NULL;
 #endif
             return;
         }
 
     fi->fuzzy_mode = FUZZY_NONE;
-    fi->fuzzy_routine = NULL;
-#ifdef SNOWBALL
-    fi->snowball = NULL;
-#endif
+    fi->fuzzy_args = NULL;
 
     progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
 }
@@ -709,28 +732,26 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
 void free_fuzzy_mode( FUZZY_INDEX *fi )
 {
     int     i;
+#ifdef SNOWBALL
+    STEMMING_OPTS *opts = (STEMMING_OPTS *)fi->fuzzy_args;
+#endif
 
     for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
         if ( fi->fuzzy_mode == fuzzy_opts[i].fuzzy_mode )
         {
             fi->fuzzy_mode = FUZZY_NONE;
-            fi->fuzzy_routine = NULL;
 #ifdef SNOWBALL
             if(fuzzy_opts[i].free)
-                fuzzy_opts[i].free(fi->snowball);
-
-            fi->lang_stem = NULL;
-            fi->snowball = NULL;
+                fuzzy_opts[i].free(opts->snowball);
+            if(opts)
+                efree(opts);
 #endif
+            fi->fuzzy_args = NULL;
             return;
         }
 
     fi->fuzzy_mode = FUZZY_NONE;
-    fi->fuzzy_routine = NULL;
-#ifdef SNOWBALL
-    fi->lang_stem = NULL;
-    fi->snowball = NULL;
-#endif
+    fi->fuzzy_args = NULL;
 }
 
 char *fuzzy_mode_to_string( FuzzyIndexType mode )
@@ -754,19 +775,27 @@ int stemmer_applied(INDEXDATAHEADER *header)
              FUZZY_STEMMING_DE == header->fuzzy_data.fuzzy_mode ||
              FUZZY_STEMMING_NL == header->fuzzy_data.fuzzy_mode ||
              FUZZY_STEMMING_EN1 == header->fuzzy_data.fuzzy_mode ||
-             FUZZY_STEMMING_EN2 == header->fuzzy_data.fuzzy_mode
+             FUZZY_STEMMING_EN2 == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_NO == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_SE == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_DK == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_RU == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_FI == header->fuzzy_data.fuzzy_mode 
 #endif
                                ) ? 1 : 0;
 }
 
 #ifdef SNOWBALL
-/* 06/2003 Jose Ruiz - Interface to snowball's stemmer */
-int     Stem_snowball(char **inword, int *lenword, struct SN_env *snowball, int (*lang_stem)(struct SN_env *))
+/* 06/2003 Jose Ruiz - Interface to snowball's spanish stemmer */
+int     Stem_snowball(char **inword, int *lenword, void *args)
 {
     int new_lenword;
+    STEMMING_OPTS *opts = (STEMMING_OPTS *)args;
+    struct SN_env *snowball = opts->snowball;
 
+printf("%p\n",opts);
     SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    lang_stem(snowball);
+    opts->lang_stem(snowball);
 
     if((*lenword) < snowball->l)
     {

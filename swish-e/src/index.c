@@ -2479,10 +2479,15 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 case FUZZY_STEMMING_NL:
                 case FUZZY_STEMMING_EN1:
                 case FUZZY_STEMMING_EN2:
-                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.snowball,indexf->header.fuzzy_data.lang_stem);
-#else
-                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword);
+                case FUZZY_STEMMING_NO:
+                case FUZZY_STEMMING_SE:
+                case FUZZY_STEMMING_DK:
+                case FUZZY_STEMMING_RU:
+                case FUZZY_STEMMING_FI:
 #endif
+printf("Antes Stemm index.c %p\n",indexf->header.fuzzy_data.fuzzy_routine);
+                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword,indexf->header.fuzzy_data.fuzzy_args);
+printf("Despues Stemm index.c\n");
 
                     /* === 
                     if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );

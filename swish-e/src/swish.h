@@ -453,7 +453,12 @@ typedef enum {
     FUZZY_STEMMING_DE,
     FUZZY_STEMMING_NL,
     FUZZY_STEMMING_EN1,
-    FUZZY_STEMMING_EN2
+    FUZZY_STEMMING_EN2,
+    FUZZY_STEMMING_NO,
+    FUZZY_STEMMING_SE,
+    FUZZY_STEMMING_DK,
+    FUZZY_STEMMING_RU,
+    FUZZY_STEMMING_FI
 #endif
 } FuzzyIndexType;
 
@@ -469,13 +474,8 @@ typedef struct {
 
 typedef struct {
     FuzzyIndexType fuzzy_mode;
-#ifdef SNOWBALL
-    int     (*fuzzy_routine) (char **, int *, void *, int (*lang_stem) (void *));
-    int     (*lang_stem) (void *);
-    struct SN_env *snowball;
-#else
-    int     (*fuzzy_routine) (char **, int *);
-#endif
+    void    *fuzzy_args;  /* Used to hide Snowball's data */
+    int     (*fuzzy_routine) (char **, int *, void *);
 } FUZZY_INDEX; 
 
 typedef struct
