@@ -348,12 +348,14 @@ void    printSortedResults(SWISH * sw)
 
         else
         {
-            /* old style v 1.x std output  (compat) */
-            fprintf(f_out, "%d%s%s%s\"%s\"%s%d", r->rank, delimiter, r->filename, delimiter, r->title, delimiter, r->size);
+            char *format = emalloc( (3* strlen( delimiter )) + 100 );
 
+            sprintf( format, "%%r%s%%p%s\"%%t\"%s%%l", delimiter, delimiter, delimiter );
+            printExtResultEntry(sw, f_out, format, r);
             printStandardResultProperties(sw, f_out, r);
 
             fprintf(f_out, "\n");
+            efree( format );
         }
 
         if (resultmaxhits > 0)
@@ -637,6 +639,14 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         if (f)
             fprintf(f, fmt, pv->value.v_int);
         break;
+
+    case ULONG:
+        fmt = (subfmt) ? subfmt : "%lu";
+        if (f)
+            fprintf(f, fmt, pv->value.v_ulong);
+        break;
+
+        
 
     case STRING:
         fmt = (subfmt) ? subfmt : "%s";
