@@ -348,7 +348,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 *
 ***************************************************************************/
 
-static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, int numelements, char *key, int keyLen, struct metaEntry *meta_entry, int *result)
+static int binary_search(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, int numelements, char *key, int keyLen, struct metaEntry *meta_entry, int *result)
 {
     int low = 0;
     int high = numelements - 1;
@@ -358,6 +358,7 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
     unsigned int half;
 
     /* Not sure if this will be any faster */
+    /** ------cut------ now with <= and >= probably not needed
     if ( test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[0] ) < 0 )
     {
         *result = 0;
@@ -369,6 +370,8 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
         *result = num;
         return 0;
     }
+    ------------cut------- */
+    
 
 
     while ( low <= high )
@@ -505,7 +508,7 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
     else
     {
-        foundLo = binary_sort(sw, indexf, sort_array, num, paramlo, paramloLen, meta_entry, &low);
+        foundLo = binary_search(sw, indexf, sort_array, num, paramlo, paramloLen, meta_entry, &low);
         if ( foundLo ) // exact match
             while ( low > 0 && (test_prop( sw, indexf, meta_entry, paramlo, paramloLen, &sort_array[low-1] ) == 0))
                 low--;
@@ -520,7 +523,7 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
     else
     {
-        foundHi = binary_sort(sw, indexf, sort_array, num, paramhi, paramhiLen, meta_entry, &high);
+        foundHi = binary_search(sw, indexf, sort_array, num, paramhi, paramhiLen, meta_entry, &high);
         if ( foundHi )
             while ( high < num-1 && (test_prop( sw, indexf, meta_entry, paramhi, paramhiLen, &sort_array[high+1] ) == 0))
                 high++;
