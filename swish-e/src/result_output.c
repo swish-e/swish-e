@@ -136,7 +136,7 @@ void    freeModule_ResultOutput(SWISH * sw)
     struct MOD_ResultOutput *md = sw->ResultOutput;
     struct ResultExtFmtStrList *l,
            *ln;
-
+    
 
     if (md->stdResultFieldDelimiter)
         efree(md->stdResultFieldDelimiter); /* -d :free swish 1.x delimiter */
@@ -167,23 +167,22 @@ void    freeModule_ResultOutput(SWISH * sw)
         
         efree(md->propNameToDisplay);
     }
-     
     md->propNameToDisplay=NULL;
+    
+    if (md->propIDToDisplay)
+    {
+        int i;
+        IndexFILE *indexf;
+        for( i = 0, indexf = sw->indexlist; indexf; i++, indexf = indexf->next)
+        {
+            efree(md->propIDToDisplay[i]);
+        }
+        efree(md->propIDToDisplay);
+    } 
+    md->propIDToDisplay=NULL;
+
     md->numPropertiesToDisplay=0;
     md->currentMaxPropertiesToDisplay=0;
-
-
-    /* Now the prop IDs stored in each index file */
-    {
-        IndexFILE *tmpindexlist;
-        for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
-            if (tmpindexlist->propIDToDisplay)
-            {
-                efree(tmpindexlist->propIDToDisplay);
-                tmpindexlist->propIDToDisplay=NULL;
-            }
-    }
-
 
     /* free module data */
     efree(sw->ResultOutput);
@@ -904,16 +903,27 @@ int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
 static void printStandardResultProperties(FILE *f, RESULT *r)
 {
     int     i;
-    IndexFILE *indexf = r->db_results->indexf;
+    IndexFILE *tmp, *indexf = r->db_results->indexf;
     SWISH  *sw = indexf->sw;
     struct  MOD_ResultOutput *md = sw->ResultOutput;
     char   *s;
     char   *propValue;
-    int    *metaIDs;
+    int    *metaIDs = NULL;
 
-    metaIDs = indexf->propIDToDisplay;
 
     if (md->numPropertiesToDisplay == 0)
+        return;
+
+    for( i = 0, tmp = sw->indexlist; tmp ; i++, tmp = tmp->next )
+    {
+        if(tmp == indexf)
+        {
+           metaIDs = md->propIDToDisplay[i];
+           break;
+        }
+    }
+
+    if(!metaIDs)
         return;
 
     for ( i = 0; i < md->numPropertiesToDisplay; i++ )
@@ -977,7 +987,7 @@ void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 int initSearchResultProperties(SWISH *sw)
 {
     IndexFILE *indexf;
-    int i;
+    int i, j, index_count;
     struct MOD_ResultOutput *md = sw->ResultOutput;
     struct metaEntry *meta_entry;
 
@@ -987,15 +997,20 @@ int initSearchResultProperties(SWISH *sw)
 	if (md->numPropertiesToDisplay == 0)
 		return RC_OK;
 
-	for( indexf = sw->indexlist; indexf; indexf = indexf->next )
-		indexf->propIDToDisplay=(int *) emalloc(md->numPropertiesToDisplay*sizeof(int));
+	/* get number of index files */
+	for( index_count = 0, indexf = sw->indexlist; indexf; index_count++, indexf = indexf->next );
+
+	md->propIDToDisplay = (int **) emalloc(index_count * sizeof(int *));
+
+	for( i = 0 ,indexf = sw->indexlist; i < index_count; i++, indexf = indexf->next )
+		md->propIDToDisplay[i]=(int *) emalloc(md->numPropertiesToDisplay*sizeof(int));
 
 	for (i = 0; i < md->numPropertiesToDisplay; i++)
 	{
 		makeItLow(md->propNameToDisplay[i]);
 
 		/* Get ID for each index file */
-		for( indexf = sw->indexlist; indexf; indexf = indexf->next )
+		for( j = 0, indexf = sw->indexlist; j < index_count; j++, indexf = indexf->next )
 		{
 		    if ( !(meta_entry = getPropNameByName( &indexf->header, md->propNameToDisplay[i])))
 			{
@@ -1003,7 +1018,7 @@ int initSearchResultProperties(SWISH *sw)
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 			else
-			    indexf->propIDToDisplay[i] = meta_entry->metaID;
+			    md->propIDToDisplay[j][i] = meta_entry->metaID;
 		}
 	}
 	return RC_OK;

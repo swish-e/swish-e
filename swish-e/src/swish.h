@@ -585,13 +585,6 @@ typedef struct IndexFILE
     /* Pointer to cache the keywords */
     char   *keywords[256];
 
-
-
-    /* props IDs */
-
-    int    *propIDToDisplay;  /* $$$ This is only for -p style printing */
-
-
     /* Support for merge */
     int     *meta_map;              // maps metas from this index to the output index
     int     *path_order;            // lists files in order of pathname
@@ -817,7 +810,7 @@ typedef struct SWISH
 
 
     /* 06/00 Jose Ruiz */
-    int     isvowellookuptable[256];  //??? is this used any place?
+    int     isvowellookuptable[256];  /* used in check.c */
 
 
     /********* Document Source info **********/

@@ -58,6 +58,7 @@ struct MOD_ResultOutput {
     int     numPropertiesToDisplay;
     int     currentMaxPropertiesToDisplay;
     char  **propNameToDisplay;
+    int   **propIDToDisplay;
 };
 
 
