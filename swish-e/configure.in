@@ -64,11 +64,19 @@ AC_SYS_INTERPRETER
 dnl Set the @SET_MAKE@ variable=make if $(MAKE) not set
 AC_PROG_MAKE_SET
 
-dnl Check for Perl - used for making the distribution
-AC_PATH_PROG(PERL, perl, /usr/local/bin/perl,$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin)
+dnl Check for Perl - need full path for scripts
+AC_PATH_PROG([PERL], [perl], [no])
+if test "$PERL" = "false"; then
+    AC_MSG_WARN([perl was not found - needed for script shebang lines])
+fi
+
 
 dnl Check pod2man for creating man pages
-AC_CHECK_PROG(POD2MAN, pod2man, pod2man)
+AC_CHECK_PROG([POD2MAN], [pod2man], [pod2man], [false])
+if test "$POD2MAN" = "false"; then
+    dnl disable building of man pages?
+    AC_MSG_WARN([pod2man was not found - needed for building man pages])
+fi
 
 dnl Check for install - used for installing distribution
 AC_PROG_INSTALL
@@ -110,6 +118,9 @@ AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat setenv access)
 AC_CHECK_FUNCS(strchr memcpy)
 AC_CHECK_FUNCS(clock times getrusage)
 AC_CHECK_LIB(m,log)
+
+dnl Allow use strcoll() instead of strncmp()/strncasecmp() to enable locale dependent collating
+AC_FUNC_STRCOLL
 
 AC_FUNC_GETGROUPS
 
@@ -185,9 +196,6 @@ else
     AC_SUBST(LIBXML2_CFLAGS)
 fi
 
-
-dnl Allow use strcoll() instead of strncmp()/strncasecmp() to enable locale dependent collating
-AC_FUNC_STRCOLL
 
 
 dnl Provide an option for enabling btree/incremental indexing for development
