@@ -241,7 +241,7 @@ char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
         buffer[filelen] = '\0';
 
         if ( strlen( buffer ) < bytes_read ) 
-            printf("\nWarning: possible embedded null in file '%s'\n", name );
+            progwarn("Possible embedded null in file '%s'\n", name );
 
     }
     else

@@ -219,7 +219,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 do_index_file(sw, fprop);
 
                 if ( has_filter && remove( fprop->work_path ) )
-                    printf("Error removing temporary file '%s': %s\n", fprop->work_path, strerror( errno ) );
+                    progwarn("Error removing temporary file '%s': %s\n", fprop->work_path, strerror( errno ) );
 
                 free_file_properties(fprop);
                 efree(real_path);
@@ -280,7 +280,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 continue;
             }
 
-            printf("Warning: Failed to parse header line: '%s' from program %s\n", line, prog);
+            progwarn("Failed to parse header line: '%s' from program %s\n", line, prog);
 
         }
     }
@@ -291,7 +291,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     sw->truncateDocSize = truncate_doc_size;
 
     if ( pclose(fp) == -1 )                  /* progerr("Failed to properly close external program"); */
-        printf("Warning: to properly close external program: %s\n", strerror( errno ) );
+        progwarn("Failed to properly close external program: %s\n", strerror( errno ) );
     
 }
 
