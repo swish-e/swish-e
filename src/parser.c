@@ -1757,7 +1757,6 @@ static void warning(void *data, const char *msg, ...)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char str[1000];
 
-    printf("8888\n");
     va_start(args, msg);
     vsnprintf(str, 1000, msg, args );
     va_end(args);
