@@ -1,0 +1,7 @@
+
+Installation:
+  $ phpize
+  $ ./configure --with-swishe=/usr
+  $ make
+  $ sudo make install
+
