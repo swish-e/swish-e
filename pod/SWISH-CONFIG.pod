@@ -394,7 +394,7 @@ L<SpiderDirectory|/SpiderDirectory> *path*
 
 =item *
 
-L<StoreDescription|/StoreDescription> [XML <tag>|HTML <meta>|TXT size]
+L<StoreDescription|/StoreDescription> [XML E<lt>tagE<gt>|HTML E<lt>metaE<gt>|TXT size]
 
 =item *
 
@@ -402,11 +402,11 @@ L<"SwishProgParameters|/"SwishProgParameters> *list of parameters*
 
 =item *
 
-L<SwishSearchDefaultRule|/SwishSearchDefaultRule>   [<AND-WORD>|<or-word>]
+L<SwishSearchDefaultRule|/SwishSearchDefaultRule>   [E<lt>AND-WORDE<gt>|E<lt>or-wordE<gt>]
 
 =item *
 
-L<SwishSearchOperators|/SwishSearchOperators> <and-word> <or-word> <not-word>
+L<SwishSearchOperators|/SwishSearchOperators> E<lt>and-wordE<gt> E<lt>or-wordE<gt> E<lt>not-wordE<gt>
 
 =item *
 
@@ -544,7 +544,7 @@ Example:
     "-"  = following word may not be in any document found
     " "  = following word will be searched in documents
 
-=item SwishSearchOperators <and-word> <or-word> <not-word>
+=item SwishSearhOperators E<lt>and-wordE<gt> E<lt>or-wordE<gt> E<lt>not-wordE<gt>
 
 B<NOTE>: This following item is currently not available.
 
@@ -556,7 +556,7 @@ Example (german):
 
     SwishSearchOperators   UND  ODER  NICHT
 
-=item SwishSearchDefaultRule   [<AND-WORD>|<or-word>]
+=item SwishSearchDefaultRule   [E<lt>AND-WORDE<gt>|E<lt>or-wordE<gt>]
 
 B<NOTE>: This following item is currently not available.
 
@@ -1093,7 +1093,7 @@ This feature is only available with the libxml2 HTML parser.
 
 =item IndexAltTagMetaName *tagname*|as-text
 
-Allows indexing of images <IMG> ALT tag text.  Specify either a tag name which will be
+Allows indexing of images E<lt>IMGE<gt> ALT tag text.  Specify either a tag name which will be
 used as a metaname, or the special text "as-text" which says to index the ALT text as
 if it were plain text at the current location.
 
@@ -1135,7 +1135,7 @@ This feature is only available when using the libxml2 parser (HTML2 and XML2).
 
 If this is set true then Swish-e will attempt to convert relative URIs
 extracted from HTML documents for use with C<HTMLLinksMetaName> and
-C<ImageLinksMetaName> into absolute URIs.  Swish-e will use any <BASE> tag
+C<ImageLinksMetaName> into absolute URIs.  Swish-e will use any E<lt>BASEE<gt> tag
 found in the document, otherwise it will use the file's pathname.  The pathname
 used will be the pathname *after* C<ReplaceRules> has been applied to the
 document's pathname.
@@ -1322,9 +1322,9 @@ Swish-e parses as:
     </xml> 
     Indexing done!
 
-One thing to note is that the first <person> block finds a class name
+One thing to note is that the first E<lt>personE<gt> block finds a class name
 "student" so all metanames that are created from attributes use the
-combined name "person.student".  The second <person> block doesn't contain
+combined name "person.student".  The second E<lt>personE<gt> block doesn't contain
 a "class" so, the attribute name is combined directly with the element
 name (e.g. "person.greeting").
 
@@ -1576,7 +1576,7 @@ For example, if you only wish to sort results by a property called C<title>:
     PreSortedIndex  title
 
 
-=item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
+=item StoreDescription [XML E<lt>tagE<gt> size|HTML E<lt>metaE<gt> size|TXT size]
 
 B<StoreDescription> allows you to store a document description in the index
 file.  This description can be returned in your search results when the C<-x>

@@ -593,7 +593,7 @@ tags, B stands for BODY tags, t is all TITLE tags, h is H1
 to H6 (header) tags, e is emphasized tags (this may be B, I,
 EM, or STRONG), and c is HTML comment tags
 
-search only in header (<H*>) tags
+search only in header (E<lt>H*E<gt>) tags
 
     swish-e -w word -t h
 
@@ -913,7 +913,7 @@ B<Examples of -x format strings:>
     -x "xml_out: \<title\><swishtitle>\>\</title\>\n"
     -x "xml_out: <swishtitle fmt='<title>%s</title>'>\n"
 
-=item -H [0|1|2|3|<n>]  (header output verbosity)
+=item -H [0|1|2|3|E<lt>nE<gt>]  (header output verbosity)
 
 The C<-H n> switch generates extened I<header> output.  This is most useful when searching more than one
 index file at a time by specifying more than one index file with the C<-f> switch.

@@ -124,13 +124,13 @@ module.  Here's one way to set the PERL5LIB with the bash shell:
 
 =over 4
 
-=item $filter = SWISH::Filter->new()
+=item $filter = SWISH::Filter-E<gt>new()
 
 This creates a SWISH::Filter object.  You may pass in options as a list or a hash reference.
 
 =back
 
-=head2 SWISH::Filter->new Options
+=head2 SWISH::Filter-E<gt>new Options
 
 There is currently only one option that can be passed in to new():
 
@@ -217,7 +217,7 @@ sub ignore_filters {
 
 
 
-=item $doc_object = $filter->convert();
+=item $doc_object = $filter-E<gt>convert();
 
 This method filters a document.  Returns an object of the class SWISH::Filter::document
 or undefined if passed in an empty document, a filename that cannot be read off disk, or
@@ -410,7 +410,7 @@ sub convert {
 
 
 
-=item $filter->mywarn()
+=item $filter-E<gt>mywarn()
 
 Internal function used for writing warning messages to STDERR if
 $ENV{FILTER_DEBUG} is set.  Set the environment variable FILTER_DEBUG before
@@ -424,7 +424,7 @@ sub mywarn {
     print STDERR @_,"\n" if $ENV{FILTER_DEBUG};
 }
 
-=item @filters = $filter->filter_list;
+=item @filters = $filter-E<gt>filter_list;
 
 Returns a list of filter objects installed.
 
@@ -513,7 +513,7 @@ sub create_filter_list {
     $self->filter_list( [ sort { $a->type <=> $b->type || $a->priority <=> $b->priority } @filters ] );
 }
 
-=item @filter = $filter->can_filter( $content_type );
+=item @filter = $filter-E<gt>can_filter( $content_type );
 
 This is useful for testing to see if a mimetype might be handled by SWISH::Filter
 wihtout having to pass in a document.  Helpful if doing HEAD requests.
@@ -584,9 +584,9 @@ called again I<during the same run>.  Calling die when running with -S http or
 -S fs has no effect since the program is run once per document.
 
 Once a filter returns something other than undef no more filters will be
-called.  If the filter calls $filter->set_continue then processing will
+called.  If the filter calls $filter-E<gt>set_continue then processing will
 continue as if the file was not filtered.  For example, a filter can uncompress
-data and then set $filter->set_continue and let other filters process the
+data and then set $filter-E<gt>set_continue and let other filters process the
 document.
 
 
@@ -833,7 +833,7 @@ sub dump_filters_used {
 =over 4
 
 
-=item $doc_ref = $doc_object->fetch_doc_reference;
+=item $doc_ref = $doc_object-E<gt>fetch_doc_reference;
 
 Returns a scalar reference to the document.  This can be used when the filter
 can operate on the document in memory (or if an external program expects the input
@@ -841,9 +841,9 @@ to be from standard input).
 
 If the file is currently on disk then it will be read into memory.  If the file was stored
 in a temporary file on disk the file will be deleted once read into memory.
-The file will be read in binmode if $doc->is_binary is true.
+The file will be read in binmode if $doc-E<gt>is_binary is true.
 
-Note that $doc_object->fetch_doc is an alias.
+Note that $doc_object-E<gt>fetch_doc is an alias.
 
 =cut
 
@@ -860,7 +860,7 @@ sub fetch_doc_reference {
 *fetch_doc = *fetch_doc_reference;
 
 
-=item $was_filtered = $doc_object->was_filtered
+=item $was_filtered = $doc_object-E<gt>was_filtered
 
 Returns true if some filter processed the document
 
@@ -871,7 +871,7 @@ sub was_filtered {
     return $self->filters_used ? 1 : 0;
 }
 
-=item $content_type = $doc_object->content_type;
+=item $content_type = $doc_object-E<gt>content_type;
 
 Fetches the current content type for the document.
 
@@ -886,7 +886,7 @@ sub content_type {
     return $_[0]->{content_type} || '';
 }
 
-=item $type = $doc_object->swish_parser_type
+=item $type = $doc_object-E<gt>swish_parser_type
 
 Returns a parser type based on the content type
 
@@ -914,7 +914,7 @@ sub swish_parser_type {
     return;
 }
 
-=item $doc_object->is_binary
+=item $doc_object-E<gt>is_binary
 
 Returns true if the document's content-type does not match "text/".
 
@@ -931,7 +931,7 @@ sub is_binary {
 
 =over 4
 
-=item $file_name = $doc_object->fetch_filename;
+=item $file_name = $doc_object-E<gt>fetch_filename;
 
 Returns a path to the document as stored on disk.
 This name can be passed to external programs (e.g. catdoc) that expect input
@@ -940,7 +940,7 @@ as a file name.
 If the document is currently in memory then a temporary file will be created.  Do not expect
 the file name passed to be the real path of the document.
 
-The file will be written in binmode if $doc->is_binary is true.
+The file will be written in binmode if $doc-E<gt>is_binary is true.
 
 This method is not normally used by end-users of SWISH::Filter.
 
@@ -957,7 +957,7 @@ sub fetch_filename {
         : $self->{cur_doc};
 }
 
-=item $doc_object->set_continue;
+=item $doc_object-E<gt>set_continue;
 
 Processing will continue to the next filter if this is set to a true value.
 This should be set for filters that change encodings or uncompress documents.
@@ -978,7 +978,7 @@ sub continue {
 
 
 
-=item $doc_object->set_content_type( $type );
+=item $doc_object-E<gt>set_content_type( $type );
 
 Sets the content type for a document.
 
@@ -1035,21 +1035,21 @@ sub create_temp_file {
 }
 
 
-=item $doc_object->name
+=item $doc_object-E<gt>name
 
 Fetches the name of the current file.  This is useful for printing out the
 name of the file in an error message.
-This is the name passed in to the SWISH::Filter->convert method.
+This is the name passed in to the SWISH::Filter-E<gt>convert method.
 It is optional and thus may not always be set.
 
     my $name = $doc_object->name || 'Unknown name';
     warn "File '$name': failed to convert -- file may be corrupt\n";
 
 
-=item $doc_object->user_data
+=item $doc_object-E<gt>user_data
 
 Fetches the the user_data passed in to the filter.
-This can be any data or data structure passed into SWISH::Filter->new.
+This can be any data or data structure passed into SWISH::Filter-E<gt>new.
 
 This is an easy way to pass special parameters into your filters.
 
@@ -1104,7 +1104,7 @@ when writing your new() constructor.
 
 =over 4
 
-=item $self->type
+=item $self-E<gt>type
 
 This method fetches the type of the filter.  The value returned sets the
 primary sort key for sorting the filters.  You can override this in your
@@ -1118,7 +1118,7 @@ some documents before passing on to another group for filtering.
 
 sub type { 2 };
 
-=item $self->priority
+=item $self-E<gt>priority
 
 This method fetches the priority of the filter.  The value returned sets the
 secondary sort key for sorting the filters.  You can override this in your
@@ -1135,7 +1135,7 @@ at the same time.
 
 sub priority { 50 };  # default priority
 
-=item @types = $self->mimetypes
+=item @types = $self-E<gt>mimetypes
 
 Returns the list of mimetypes (as regular expressions) set for the filter.
 
@@ -1153,7 +1153,7 @@ sub mimetypes {
     return @{ $self->{mimetypes} };
 }
 
-=item $pattern = $self->can_filter_mimetype( $content_type )
+=item $pattern = $self-E<gt>can_filter_mimetype( $content_type )
 
 Returns true if passed in content type matches one of the filter's mimetypes
 Returns the pattern that matched.
@@ -1182,7 +1182,7 @@ sub mywarn {
     print STDERR "Filter: $self: ", @_,"\n" if $ENV{FILTER_DEBUG};
 }
 
-=item $boolean = $self->set_programs( @program_list );
+=item $boolean = $self-E<gt>set_programs( @program_list );
 
 Returns true if all the programs listed in @program_list are found
 and can be executed as the current user.  Creates a method for each
@@ -1223,7 +1223,7 @@ sub set_programs {
 }
 
 
-=item $path = $self->find_binary( $prog );
+=item $path = $self-E<gt>find_binary( $prog );
 
 Use in a filter's new() method to test for a necesary program located in $PATH.
 Returns the path to the program or undefined if not found or does not pass the -x
@@ -1305,7 +1305,7 @@ sub get_libexec {
 
 }
 
-=item $bool = $self->use_modules( @module_list );
+=item $bool = $self-E<gt>use_modules( @module_list );
 
 Attempts to load each of the module listed and calls its import() method.
 
@@ -1341,7 +1341,7 @@ sub use_modules {
     return $self;
 }
 
-=item $doc_ref = $self->run_program( $program, @args );
+=item $doc_ref = $self-E<gt>run_program( $program, @args );
 
 Runs $program with @args.  Must pass in @args.
 
