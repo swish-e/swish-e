@@ -187,14 +187,14 @@ int     DB_DeleteWordData_Native(long wordID, void *db);
 #endif
 
 int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
-long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db);
+long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
 int     DB_EndWriteWords_Native(void *db);
 
 int     DB_InitReadWords_Native(void *db);
 int     DB_ReadWordHash_Native(char *word, long *wordID, void *db);
 int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
 int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
-long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db);
+long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
 int     DB_EndReadWords_Native(void *db);
 
 

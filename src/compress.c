@@ -34,6 +34,10 @@
 #include "swish_qsort.h"
 #include "file.h"
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif
+
 /* Surfing the web I found this:
 ** it is a very simple macro that can be used in *PACKLONG* routines to 
 ** detect if we need to spend some cycles for [un]packing the number in a
@@ -630,7 +634,87 @@ void    CompressCurrentLocEntry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 }
 
 
+/* 2002/11 jmruiz
+** Simple routine to compress worddata using zlib where available
+**
+** On exit returns the new size of the compressed buffer
+*/
+int compress_worddata(unsigned char *wdata,int wdata_size)
+{
+#ifndef HAVE_ZLIB
+    return wdata_size;
+#else
+    unsigned char  *WDataBuf;     /* For compressing and uncompressing */
+    uLongf          dest_size;
+    int             zlib_status = 0;
+    unsigned char   local_buffer[8192];/* Just to avoid emalloc/efree overhead*/
 
+
+    /* Don't bother compressing smaller items */
+    if ( wdata_size < MIN_WORDDATA_COMPRESS_SIZE )
+    {
+        return wdata_size;
+    }
+
+    /* Buffer should be +1% + a few bytes. */
+    dest_size = (uLongf)(wdata_size + ( wdata_size / 100 ) + 1000);  // way more than should be needed
+
+    /* Get an output buffer */
+    if( dest_size > sizeof(local_buffer) )
+        WDataBuf = (unsigned char *) emalloc((int)dest_size );
+    else
+        WDataBuf = local_buffer;
+
+    zlib_status = compress2((Bytef *)WDataBuf, &dest_size, wdata, wdata_size, 9);
+    if ( zlib_status != Z_OK )
+        progerr("WordData Compression Error.  zlib compress2 returned: %d  Worddata size: %d compress buf size: %d", zlib_status, wdata_size, (int)dest_size);
+
+    /* Make sure it's compressed enough */
+    if ( dest_size < wdata_size )
+    {
+        memcpy(wdata,WDataBuf,(int)dest_size);
+    }
+    else
+    {
+        dest_size = wdata_size;
+    }
+
+    if ( WDataBuf != local_buffer)
+        efree(WDataBuf);
+    return (int)dest_size;
+#endif
+}
+
+
+/* 2002/11 jmruiz
+** Routine to uncompress worddata
+*/
+void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
+{
+#ifdef HAVE_ZLIB
+    unsigned char *new_buf;
+    int             zlib_status = 0;
+    uLongf          new_buf_size = (uLongf)(*buf_size + saved_bytes);
+
+    if(! saved_bytes)     /* nothing to do */
+        return;   
+    new_buf= (unsigned char *) emalloc(*buf_size + saved_bytes);
+    zlib_status = uncompress(new_buf, &new_buf_size, *buf, (uLongf)buf_size );
+    if ( zlib_status != Z_OK )
+    {
+        // $$$ make sure this works ok if returning null $$$
+        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
+            zlib_status, new_buf_size, buf_size );
+        return NULL;
+    }
+    efree(*buf);
+    *buf_size = (int)new_buf_size;
+    *buf = new_buf;
+#else
+    if ( saved_bytes )
+        progerr("The index was created with zlib compression.\n This version of swish was not compiled with zlib");
+#endif
+}
 
 
 /* 2002/09 jmruiz

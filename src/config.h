@@ -57,6 +57,8 @@
  * must be compiled with zlib.
  */
 #define MIN_PROP_COMPRESS_SIZE 100
+/* Same for worddata */
+#define MIN_WORDDATA_COMPRESS_SIZE 100
 
 /* This is the character used to replace UTF-8 characters that cannot be
  * converted to 8859-1 Latin-1 character

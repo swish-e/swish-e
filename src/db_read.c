@@ -103,6 +103,7 @@ long read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **b
 {
 long wordID;
 char *word = ep->word;
+int saved_bytes = 0;
 
     DB_InitReadWords(sw, indexf->DB);
     DB_ReadWordHash(sw, word, &wordID, indexf->DB);
@@ -115,7 +116,8 @@ char *word = ep->word;
         *sz_buffer = 0;
         return 0L;
    } 
-   DB_ReadWordData(sw, wordID, buffer, sz_buffer, indexf->DB);
+   DB_ReadWordData(sw, wordID, buffer, sz_buffer, &saved_bytes, indexf->DB);
+   uncompress_worddata(buffer,sz_buffer,saved_bytes);
    DB_EndReadWords(sw, indexf->DB);
    return wordID;
 }
@@ -433,9 +435,9 @@ int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, l
    return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *lendata, void *DB)
+long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
 {
-   return sw->Db->DB_ReadWordData(wordID, worddata, lendata, DB);
+   return sw->Db->DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
 }
 
 int     DB_EndReadWords(SWISH *sw, void *DB)

@@ -1417,6 +1417,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     SWISH  *sw = indexf->sw;
     int     structure = db_results->srch->structure;
     unsigned char *start;
+    int saved_bytes = 0;
 
     x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     metadata_length = 0;
@@ -1497,7 +1498,9 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
     do
     {
-        DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
+        DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, &saved_bytes , indexf->DB);
+        uncompress_worddata(&buffer,&sz_buffer,saved_bytes);
+
         s = buffer;
 
         // buffer structure = <tfreq><metaID><delta to next meta>
