@@ -91,16 +91,6 @@ unsigned searchhash(s)
     return hashval % SEARCHHASHSIZE;
 }
 
-/* Reads the internal list of default stopwords.
-*/
-
-void    readdefaultstopwords(INDEXDATAHEADER *header)
-{
-    int     i;
-
-    for (i = 0; defaultstopwords[i] != NULL; i++)
-        addstophash(header, defaultstopwords[i]);
-}
 
 /* Adds a stop word to the list of removed common words */
 void    addStopList(INDEXDATAHEADER *header, char *word)
