@@ -83,9 +83,36 @@ TranslateCharacters now is done before WordCharacters is checked.  For example,
     TranslateCharacters ñ n
 
 Now C<El Niño> will be indexed as El Nino (el and nino), even though C<ñ> is
-not listed in WordCharacters.  Previously, stopwords were checked after stemming and
+not listed in WordCharacters.
+
+Previously, stopwords were checked after stemming and
 soundex conversions, as well as most of the other word checks (WordCharacters, min/max length
 and so on).  This meant that the stopword list probably didn't work as expected when using stemming.
+This has been corrected.
+
+=item * The search parser was rewritten to be more logical
+
+The search parser was rewritten to correct a number of logic errors.  Previously, swish
+did not differentiate between meta names, swish operators and search words when parsing
+the query.  This meant, for example, that metanames might be broken up by the WordCharacters
+setting, and that it could be stemmed.  This has been fixed.
+
+Swish operator characters C<"*()=> can now be searched by escaping with a backslash.
+For example:
+
+    ./swish-e -w 'this\=odd\)word'
+
+will end up searching for the word C<this=odd)word>.  To search for a backslash character
+preceed it with a backslash.
+
+Currently, searching for:
+
+    ./swish-e -w 'this\*'
+
+is the same as a wildcard search.  This may be fixed in the future.    
+
+Searching for buzzwords with those characters will still require backslashing.  This also may change to allow
+some un-escaped operator characters, but some will always need to be escaped (e.g. the double-quote phrase character).
 
 =item * Example C<user.config> file removed.
 
