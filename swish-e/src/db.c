@@ -668,6 +668,9 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
     unsigned char   *s = (unsigned char *)buffer;
 
 
+    /* First clear out the default metanames */
+    freeMetaEntries( header );
+
     num_metanames = uncompress2(&s);
 
     for (i = 0; i < num_metanames; i++)

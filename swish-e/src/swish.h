@@ -412,14 +412,24 @@ typedef struct
     struct int_lookup_st *structfreqlookup;
     /* Lookup table for repetitive values of the path */
     struct char_lookup_st *pathlookup;
-	    /* Internal Swish meta/props */
+
+    /* Internal Swish meta/props */
+    struct metaEntry *rankProp;
+    struct metaEntry *reccountProp;
+    struct metaEntry *filenumProp;
+    struct metaEntry *indexfileProp;
+
+    /* shortcut properties to make addCommonProperties work faster */
+
     struct metaEntry *filenameProp;
     struct metaEntry *titleProp;
     struct metaEntry *filedateProp;
     struct metaEntry *startProp;
     struct metaEntry *sizeProp;
     struct metaEntry *summaryProp;
-		/* Array to handle the number of words per doc */
+
+
+    /* Array to handle the number of words per doc */
     int    *filetotalwordsarray;
 
 }

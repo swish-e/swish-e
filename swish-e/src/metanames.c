@@ -19,55 +19,61 @@
 #include "string.h"
 #include "docprop.h"
 #include "metanames.h"
+#include "dump.h"
 
 typedef struct
 {
     char   *metaName;
     int     metaType;           /* see metanames.h for values. All values must be "ored" */
-    int     metaID;             /* see metanames.h for values */
+    
 }
 defaultMetaNames;
 
-/* List of the internal metanames */
-/********************************************************/
-/* IMPORTANT: DO NOT REMOVE ANY OF THE DEFAULTMATANAMES */
-/* Change them if you like but do not remove them       */
-/********************************************************/
+
+/**************************************************************************
+*   List of internal meta names
+*
+*   Note:
+*       Removing any of these will prevent access for result output
+*       Removing any of the "real" meta names will also prevent storing
+*       of the data in the property file.
+*       That is, they may be commented out and then selected in the
+*       configuration file as needed.
+*       Hard to imagine not wanting the doc path!
+*
+***************************************************************************/
+
+
 static defaultMetaNames SwishDefaultMetaNames[] = {
-    {AUTOPROPERTY_DOCPATH, META_PROP, AUTOPROP_ID__DOCPATH}, /* DocPath not indexed by default (META_INDEX is not set) */
-    /* If you want filename indexed and searchable */
-    /* just add META_INDEX to it */
-    {AUTOPROPERTY_TITLE, META_PROP, AUTOPROP_ID__TITLE}, /* Title No index (META_INDEX is not set) */
-    /* If you want title indexed and searchable */
-    /* just add META_INDEX to it */
-    {AUTOPROPERTY_DOCSIZE, META_PROP | META_NUMBER, AUTOPROP_ID__DOCSIZE}, /* File size */
-    {AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE, AUTOPROP_ID__LASTMODIFIED}, /* File date */
-    {AUTOPROPERTY_SUMMARY, META_PROP, AUTOPROP_ID__SUMMARY}, /* Summary not indexed by default (META_INDEX is not set) */
-    /* If you want summary indexed and searchable */
-    /* just add META_INDEX to it */
-    {AUTOPROPERTY_STARTPOS, META_PROP | META_NUMBER, AUTOPROP_ID__STARTPOS}, /* File start */
-    {AUTOPROPERTY_INDEXFILE, META_PROP, AUTOPROP_ID__INDEXFILE}, /* It is here just for using a ID */
-	{AUTOPROPERTY_FILENUM, META_PROP | META_NUMBER, AUTOPROP_ID__FILENUM},  /* Doc filenum */
-    {NULL, 0}                   /* End mark */
+
+    /* This is the default meta ID ( number 1 ) that plain text is stored as */
+    { "(DEFAULT)",               META_INDEX },  /* REQUIRED */
+
+
+    /* These are the "internal" meta names generated at search time */
+    { AUTOPROPERTY_REC_COUNT,    META_PROP | META_INTERNAL | META_NUMBER },
+    { AUTOPROPERTY_RESULT_RANK,  META_PROP | META_INTERNAL | META_NUMBER },
+    { AUTOPROPERTY_FILENUM,      META_PROP | META_INTERNAL | META_NUMBER },
+    { AUTOPROPERTY_INDEXFILE,    META_PROP | META_INTERNAL },
+
+    /* These meta names "real" meta names that are available by default */
+    { AUTOPROPERTY_DOCPATH,      META_PROP},
+    { AUTOPROPERTY_TITLE,        META_PROP},
+    { AUTOPROPERTY_DOCSIZE,      META_PROP | META_NUMBER},
+    { AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE},
+    { AUTOPROPERTY_SUMMARY,      META_PROP},
+    { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},
 };
 
 /* Add the Internal swish metanames to the index file structure */
 void    add_default_metanames(IndexFILE * indexf)
 {
     int     i,
-            dummy,
-            metaType,
-            metaID;
-    char   *metaName;
+            dummy;
 
-    for (i = 0; SwishDefaultMetaNames[i].metaName; i++)
-    {
-        metaName = estrdup(SwishDefaultMetaNames[i].metaName);
-        metaType = SwishDefaultMetaNames[i].metaType;
-        metaID = SwishDefaultMetaNames[i].metaID;
-        addMetaEntry(&indexf->header, metaName, metaType, metaID, NULL, &dummy);
-        efree(metaName);
-    }
+    for (i = 0; i < sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0]); i++)
+        addMetaEntry(&indexf->header, SwishDefaultMetaNames[i].metaName, SwishDefaultMetaNames[i].metaType, 0, NULL, &dummy);
+
 }
 
 
@@ -109,13 +115,15 @@ struct metaEntry *getMetaIDData(INDEXDATAHEADER *header, int number)
 */
 /* #### Changed the name isDocProp by metaType */
 
-void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID, int *sort_array, int *applyautomaticmetanames)
+void addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID, int *sort_array, int *applyautomaticmetanames)
 {
     struct metaEntry *tmpEntry;
+    char *metaWord;
 
-    if (metaWord == NULL || metaWord[0] == '\0')
+    if (metaname == NULL || metaname[0] == '\0')
         return;
 
+    metaWord = estrdup( metaname );
     strtolower(metaWord);
 
 
@@ -124,6 +132,7 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
     if (((int) strlen(metaWord) == 9) && memcmp(metaWord, "automatic", 9) == 0)
     {
         *applyautomaticmetanames = 1;
+        efree( metaWord );
         return;
     }
 
@@ -154,10 +163,6 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
     if (!tmpEntry)              /* metaName not found - Create a new one */
     {
         header->metaEntryArray = addNewMetaEntry(header->metaEntryArray, &header->metaCounter, metaID, metaWord, metaType, sort_array);
-
-         /* what, no sw->verbose available?
-         printf("Added '%s' into metaEntryArray[%d] with metaID = %d\n", metaWord,  header->metaCounter, newEntry->metaID );
-         */
         tmpEntry = getMetaNameData(header, metaWord);
     }
     else
@@ -183,7 +188,8 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
     else if (strcmp(metaWord, AUTOPROPERTY_SUMMARY) == 0)
         header->summaryProp = tmpEntry;
 
-    /* #### */
+    efree( metaWord );
+        
 }
 
 /* Free meta entries for an index file */
@@ -221,6 +227,8 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
     /* And free the pointer to the list */
     efree( header->metaEntryArray);
+    header->metaEntryArray = NULL;
+    header->metaCounter = 0;
 }
 
 
@@ -238,6 +246,12 @@ int     getMetaNameID(indexf, word)
             return (indexf->header.metaEntryArray[i]->metaID);
     return 1;
 }
+
+int is_meta_entry( struct metaEntry *meta_entry, char *name )
+{
+    return strcasecmp( meta_entry->metaName, name ) == 0;
+}
+
 
 int isDontBumpMetaName(SWISH *sw,char *tag)
 {
@@ -274,14 +288,17 @@ struct metaEntry *newEntry;
     newEntry->loPropRange = NULL;
     newEntry->hiPropRange = NULL;
 
-        /* If metaID is 0 asign a value using metaCounter */
+    /* If metaID is 0 asign a value using metaCounter */
     if (metaID)
         newEntry->metaID = metaID;
     else
-        newEntry->metaID = (*metaCounter) + AUTOPROP_ID__DOCPATH; /* DOCPATH is the first metaname */
+        newEntry->metaID = (*metaCounter) + 1;
 
     if(! metaEntryArray)
+    {
         metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
+        *metaCounter = 0;
+    }
     else
         metaEntryArray = (struct metaEntry **) erealloc(metaEntryArray,(*metaCounter + 1) * sizeof(struct metaEntry *));
 

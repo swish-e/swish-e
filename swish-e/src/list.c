@@ -85,9 +85,9 @@ int i;
 
 	newnode->next = NULL;
 
-/* #### Add default metanames */
+
+    /* Add default meta names -- these will be replaced if reading from an index file */
 	add_default_metanames(newnode);
-/* #### */
 
 	if (rp == NULL)
 		rp = newnode;

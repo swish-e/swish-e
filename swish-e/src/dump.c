@@ -32,6 +32,7 @@
 #include "search.h"
 #include "result_output.h"
 #include "metanames.h"
+#include "dump.h"
 
 void dump_memory_file_list( SWISH *sw, IndexFILE *indexf ) 
 {
@@ -113,6 +114,8 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 }
 
 
+
+
 /* Prints out the data in an index DB */
 
 void    DB_decompress(SWISH * sw, IndexFILE * indexf)
@@ -165,41 +168,9 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     /* Do metanames first as that will be helpful for decoding next */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
-    {
-        struct metaEntry *meta_entry;
+        dump_metanames( sw, indexf );
 
-        printf("\n\n-----> METANAMES <-----\n");
-        for(i = 0; i < indexf->header.metaCounter; i++)
-        {
-            meta_entry = indexf->header.metaEntryArray[i];
-            
-            printf("%s id:%d type:%d ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
 
-            if ( is_meta_index( meta_entry ) )
-                printf(" META_INDEX");
-
-            if ( is_meta_property( meta_entry ) )
-            {
-                printf(" META_PROP:");
-
-                if  ( is_meta_string(meta_entry) )
-                    printf("STRING");
-
-                else if ( is_meta_date(meta_entry) )
-                    printf("DATE");
-
-                else if ( is_meta_number(meta_entry) )
-                    printf("NUMBER");
-
-                else
-                    printf("unknown!");
-            }
-            printf("\n");
-            
-        }
-        printf("\n");
-    }
-    
 
 
     if (DEBUG_MASK & DEBUG_INDEX_WORDS_ONLY)
@@ -388,3 +359,69 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     DB_Close(sw, indexf->DB);
 
 }
+
+int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
+{
+    unsigned char *buffer;
+    int     sz_buffer;
+
+    DB_InitReadSortedIndex(sw, indexf->DB);
+    
+    /* Get the sorted index of the property */
+    DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
+
+    if ( sz_buffer )
+        efree( buffer );
+
+    /* Table doesn't exist */
+    return sz_buffer;
+}
+
+
+void dump_metanames( SWISH *sw, IndexFILE *indexf )
+{
+    struct metaEntry *meta_entry;
+    int i;
+
+    printf("\n\n-----> METANAMES <-----\n");
+    for(i = 0; i < indexf->header.metaCounter; i++)
+    {
+        meta_entry = indexf->header.metaEntryArray[i];
+        
+        printf("%s id:%d type:%d ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
+
+        if ( is_meta_index( meta_entry ) )
+            printf(" META_INDEX");
+
+        if ( is_meta_internal( meta_entry ) )
+            printf(" META_INTERNAL");
+            
+
+        if ( is_meta_property( meta_entry ) )
+        {
+            printf(" META_PROP:");
+
+            if  ( is_meta_string(meta_entry) )
+                printf("STRING");
+
+            else if ( is_meta_date(meta_entry) )
+                printf("DATE");
+
+            else if ( is_meta_number(meta_entry) )
+                printf("NUMBER");
+
+            else
+                printf("unknown!");
+        }
+
+        if ( check_sorted_index( sw, indexf, meta_entry)  )
+            printf(" *presorted*");
+
+
+        printf("\n");
+        
+    }
+    printf("\n");
+}
+
+

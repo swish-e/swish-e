@@ -667,9 +667,6 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
     
         if ( Compare_Properties( meta_entry, meta_entry->loPropRange, meta_entry->hiPropRange ) > 0 )
             progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, lowrange, highrange );
-
-dump_single_property( meta_entry->loPropRange, meta_entry );
-dump_single_property( meta_entry->hiPropRange, meta_entry );
     }
 
 
