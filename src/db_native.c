@@ -1338,6 +1338,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     /* create a place to store them */
 
     index_size = sizeof( PROP_INDEX ) + sizeof( PROP_LOCATION ) * (count - 1);
+
     pindex = fi->prop_index = emalloc( index_size );
     memset( pindex, 0, index_size );
 

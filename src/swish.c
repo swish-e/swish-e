@@ -1129,6 +1129,8 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
     write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
 
     SwishClose( sw_out );
+
+    efree( params->merge_out_file );
 }
 
 

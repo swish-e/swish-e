@@ -116,6 +116,15 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     while( (cur_index = get_next_file_in_order( sw_input )) )
         add_file( filenum_map, cur_index, sw_input, sw_output );
 
+
+
+    /* Don't need the pre-sorted indexes any more */
+    for ( cur_index = sw_input->indexlist; cur_index; cur_index = cur_index->next )
+    {
+        efree( cur_index->path_order );
+        cur_index->path_order = NULL;
+    }
+
     fclose( filenum_map );
 
     if ( !(filenum_map = fopen( tmpfilename, FILEMODE_READ )) )
@@ -135,13 +144,17 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
         int *file_num_map = get_map( filenum_map, cur_index );
 
         dump_index(sw_input, cur_index, sw_output, file_num_map );
-        
-        cur_index = cur_index->next;
-
-        efree( file_num_map );
 
         /* Compress the entries ?  */
         compress_entries( sw_output );
+
+
+        /* free the maps */
+        efree( file_num_map );
+        efree( cur_index->meta_map );
+        cur_index->meta_map = NULL;
+
+        cur_index = cur_index->next;
 
     }
 
@@ -151,6 +164,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 #endif
 
     remove( tmpfilename );
+    efree( tmpfilename );
 }
 
 /****************************************************************************
@@ -450,14 +464,15 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
 
     for ( cur_index = sw_input->indexlist; cur_index; cur_index = cur_index->next )
     {
+        /* don't use cached props, as they belong to a different index! */
+        if ( fi.prop_index )
+            efree( fi.prop_index );
+
         /* still some to read in this index? */
         if ( cur_index->current_file >= cur_index->header.totalfiles )
             continue;
 
 
-        /* don't use cached props, as they belong to a different index! */
-        if ( fi.prop_index )
-            efree( fi.prop_index );
 
         memset(&fi, 0, sizeof( FileRec ));
 
@@ -490,7 +505,9 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
 
 
         /* read the modified time for the current file */
+        /* Use the same fi record, because it has the cached prop seek locations */
         cp = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->modified_meta->metaID, 0 );
+
 
         /* read the modified time for the current winner */
         if ( fi.prop_index )
@@ -529,6 +546,10 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
         freeProperty( wp );
 
     }
+
+    if ( fi.prop_index )
+        efree( fi.prop_index );
+
 
     if ( !winner )
         return NULL;

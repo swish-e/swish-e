@@ -1273,6 +1273,10 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         efree( new_prop );
     }
 
+    /* Free the prop seek location cache */
+    if ( fi.prop_index )
+        efree( fi.prop_index );
+
     return docProperties;
 }
 
