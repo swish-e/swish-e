@@ -196,11 +196,10 @@ sub escapeXML {
    my $str = shift;
 
    for ( $str ) {
+       s/&/&amp;/go;
+       s/"/&quot;/go;
        s/</&lt;/go;
        s/>/&gt;/go;
-       tr/\014/ /; # ^L
-       # s/&/&amp;/go;
-       # s/"/&quot;/go;
     }
    return $str;
 }

@@ -50,6 +50,19 @@ my $mem_test = 0;
         is_ok( "returned $hits hits", $hits );
     }
 
+    # A short-cut way to search with a metaname
+
+    {
+        my $results = $swish->Query( "meta_name=f*" );
+        check_error('metaname Call $swish->Query', $swish);
+        my $hits = $results->Hits;
+
+        is_ok( "returned $hits hits", $hits );
+    }
+
+
+
+
     # Or more typically
     my $search = $swish->New_Search_Object;
     check_error('Call $swish->New_Search_Object', $swish);
