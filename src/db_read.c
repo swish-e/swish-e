@@ -229,6 +229,12 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             header->total_word_positions = tmp3;
 	    header->removedfiles = tmp4;
             break;
+
+        case TOTALWORDS_REMOVED_ID:  /* Added here instead of above to keep index compatible */
+            parse_int_from_buffer(tmp, buffer);
+            header->removedwords = tmp;
+            break;
+
 /* removed due to patents problems
         case FILEINFOCOMPRESSION_ID:
             ReadHeaderInt(itmp, fp);

@@ -722,6 +722,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 #ifdef USE_BTREE
     int existing_filenum;
     int existing_is_deleted;
+    int existing_word_count = 0;
 #endif
 
     memset( &fi, 0, sizeof( FileRec ) );
@@ -795,12 +796,12 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     existing_filenum = DB_ReadFileNum(sw, fprop->real_path, indexf->DB);
 
     /* $$$ rename DB_CheckFileNum to something like FetchWordCount */
-    existing_is_deleted = existing_filenum && indexf->header.removedfiles && !DB_CheckFileNum(sw,existing_filenum,indexf->DB);
+    existing_is_deleted = existing_filenum && indexf->header.removedfiles && !( existing_word_count = DB_CheckFileNum(sw,existing_filenum,indexf->DB) );
 
 
     if ( sw->verbose >= 5 )
-        printf("\nFile %s.  Existing filenum: %d.  Existing is deleted: %d\n",
-                fprop->real_path, existing_filenum, existing_is_deleted );
+        printf("\nFile %s.  Existing filenum: %d.  Existing is deleted: %d Existing wordcount: %d\n",
+                fprop->real_path, existing_filenum, existing_is_deleted, existing_word_count );
 
     switch(sw->Index->update_mode)
     {
@@ -887,6 +888,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             {
                 DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
                 cur_index->header.removedfiles++;
+                cur_index->header.removedwords += existing_word_count;
+
                 if (sw->verbose >= 3)
                     printf(" - Update mode - File '%s' replaced existing file number %d because %s\n",
                                 fprop->real_path,
@@ -926,8 +929,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         {
             IndexFILE   *cur_index = sw->indexlist;
             /* Remove old filenum and continue */
+
             DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
             cur_index->header.removedfiles++;
+            cur_index->header.removedwords += existing_word_count;
+
 
             /* This is expected, so set 3 */
 

@@ -1665,7 +1665,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
     fflush(stdout);
 
-    write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, sw->indexlist->total_word_positions, sw->indexlist->header.removedfiles, merge);
+    write_header( sw, merge );
 
     fflush(stdout);
 

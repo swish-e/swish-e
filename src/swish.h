@@ -264,6 +264,8 @@ checked in db_native.c (DB_CheckHeader routine) */
 #define TOTALWORDSPERFILE_ID (BASEHEADER + 30)  /* total words per file array */
 #endif
 
+#define TOTALWORDS_REMOVED_ID (BASEHEADER + 31) /* 2005-01-14 for tracking total words removed */
+
 /* -- end of headers */
 
 #define MAXFILELEN 1000
@@ -548,6 +550,7 @@ typedef struct
     int     totalwords;
     int     totalfiles;
     int     removedfiles;
+    int     removedwords;
 
     /* var to specify how to ranking while indexing */
     int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
