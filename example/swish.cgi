@@ -1369,11 +1369,7 @@ sub run_swish {
     # add in the default prop - a number must be first (this might be a duplicate in -x, oh well)
     @properties = ( 'swishreccount', @properties );
 
-    my @props = map {
-        $_ eq 'swishlastmodified' ? "$_ fmt='%Y-%m-%d'" : $_
-    } @properties;
-
-    $self->swish_command( -x => join( '\t', map { "<$_>" } @props ) . '\n' );
+    $self->swish_command( -x => join( '\t', map { "<$_>" } @properties ) . '\n' );
 
     $self->swish_command( -H => 9 );
 
