@@ -205,10 +205,14 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
              */
 
          
-            if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+            if(!metaNameEntry || !isDontBumpMetaName( sw->dontbumpstarttagslist, metaNameEntry->metaName ) )
                     position[0]++;
 
             wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
+
+            if(!metaNameEntry || !isDontBumpMetaName( sw->dontbumpendtagslist, metaNameEntry->metaName ) )
+                    position[0]++;
+
         }
 
 
@@ -694,7 +698,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
 
                             /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                            if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                            if( !isDontBumpMetaName( sw->dontbumpstarttagslist, metaNameEntry->metaName ) )
                                     positionMeta++;
 
                             currentmetanames++;

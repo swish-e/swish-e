@@ -34,6 +34,6 @@ struct metaEntry * addMetaEntry(INDEXDATAHEADER *header, char *metaname, int met
 struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID);
 
 void freeMetaEntries( INDEXDATAHEADER * );
-int isDontBumpMetaName(SWISH *sw,char *tag);
+int isDontBumpMetaName(struct swline *,char *tag);
 int is_meta_entry( struct metaEntry *meta_entry, char *name );
 

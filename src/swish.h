@@ -656,8 +656,10 @@ typedef struct
 
     /* structure to handle Ignoremeta metanames */
     struct swline *ignoremetalist;
+
     /* Structure for handling metatags from DontBumpPositionOnMetaTags */
-    struct swline *dontbumptagslist;
+    struct swline *dontbumpstarttagslist;
+    struct swline *dontbumpendtagslist;
 
     /* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
@@ -665,8 +667,10 @@ typedef struct
     /* Total words and files in all index files */
     int     TotalWords;
     int     TotalFiles;
+
     /* verbose flag */
     int     verbose;
+
     /* Error vars */
     int     commonerror;
     int     lasterror;
