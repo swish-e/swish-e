@@ -115,7 +115,8 @@ sub fixup_pm_files {
         next unless /\.(pm|cgi|pl)(\.in)?$/;
         my $orig_file = "$self->{src_root}/$_";
 
-        my ($name,$path,$suffix) = fileparse($_,'\.pm', '\.cgi.in', '\.cgi', '\.pl', '\.pl.in');
+
+        my ($name,$path,$suffix) = fileparse($_,'\.pm\.in', '\.pm', '\.cgi\.in', '\.cgi', '\.pl', '\.pl\.in');
 
         $_ = "$name.pod";
 

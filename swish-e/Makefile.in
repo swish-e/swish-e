@@ -200,7 +200,7 @@ perl_dir = \
     perl/Changes \
     perl/MANIFEST \
     perl/README \
-    perl/Makefile.PL.in \
+    perl/Makefile.PL \
     perl/API.pm \
     perl/API.xs \
     perl/typemap \
