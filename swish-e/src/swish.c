@@ -44,11 +44,11 @@ $Id$
 
 #include "swish.h"
 
+#include "string.h"
 #include "error.h"
 #include "list.h"
 #include "search.h"
 #include "index.h"
-#include "string.h"
 #include "file.h"
 #include "http.h"
 #include "merge.h"
@@ -59,6 +59,8 @@ $Id$
 #include "result_output.h"
 #include "keychar_out.h"
 #include "date_time.h"
+#include "db.h"
+#include "dump.h"
 
 
 /*
@@ -81,7 +83,7 @@ SWISH *sw;
 int rc=0,sortmode;
 char *field;
 int totalfiles, pos, j;
-long offsetstart, hashstart, starttime, stoptime;
+long starttime, stoptime;
 int lentmpindex1=0;
 char *tmpindex1=NULL;
 int lentmpindex2=0;
@@ -101,7 +103,7 @@ char keychar=0;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 double search_starttime, run_starttime, endtime;
 struct stat stat_buf;
-FILE *fp;
+
 
     run_starttime = TimeHiRes();
 
@@ -266,27 +268,27 @@ FILE *fp;
 		}
 		else if (c == 'b') {
 			if ((argv + 1)[0] == '\0')
-				sw->beginhits = 0;
+				sw->Search->beginhits = 0;
 			else {
 				beginhitstr = SafeStrCopy(beginhitstr, (++argv)[0],&lenbeginhitstr);
 				if (isdigit((int)beginhitstr[0]))
-					sw->beginhits = atoi(beginhitstr);
+					sw->Search->beginhits = atoi(beginhitstr);
 				else
-					sw->beginhits = 0;
+					sw->Search->beginhits = 0;
 				argc--;
 			}
 		}
 		else if (c == 'm') {
 			if ((argv + 1)[0] == '\0')
-				sw->maxhits = -1;
+				sw->Search->maxhits = -1;
 			else {
 				maxhitstr = SafeStrCopy(maxhitstr, (++argv)[0],&lenmaxhitstr);
 				if (lstrstr(maxhitstr, "all"))
-					sw->maxhits = -1;
+					sw->Search->maxhits = -1;
 				else if (isdigit((int)maxhitstr[0])) /* cast to int, 2/22/00 */
-					sw->maxhits = atoi(maxhitstr);
+					sw->Search->maxhits = atoi(maxhitstr);
 				else
-					sw->maxhits = -1;
+					sw->Search->maxhits = -1;
 				argc--;
 			}
 		}
@@ -428,15 +430,7 @@ FILE *fp;
 		
 		while (sw->indexlist != NULL) {
 			
-			if ((fp = openIndexFILEForRead(sw->indexlist->line)) == NULL) {
-				progerr("Couldn't open the index file \"%s\".", sw->indexlist->line);
-			}
-			sw->indexlist->DB = (void *) fp;
-			if (!isokindexheader(fp)) {
-				progerr("File \"%s\" has an unknown format.", sw->indexlist->line);
-			}
-			
-			decompress(sw,sw->indexlist);
+			DB_decompress(sw,sw->indexlist);
 			putchar('\n');
 			
 			sw->indexlist = sw->indexlist->next;
@@ -488,11 +482,8 @@ FILE *fp;
 		}
 
 			/* Create an empty File */
-		CreateEmptyFile(sw,sw->indexlist->line);
-			/* Open it for Read/Write */
-		fp = openIndexFILEForReadAndWrite(sw->indexlist->line);
-		sw->indexlist->DB = (void *) fp;
-
+		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+		
 		if (sw->verbose > 1)
 			putchar('\n');
 		if (sw->verbose)
@@ -512,9 +503,9 @@ FILE *fp;
 				if(sw->indexlist->header.totalwords<0) sw->indexlist->header.totalwords=0;
 				printf("%d word%s removed.\n",
 					stopwords, (stopwords == 1) ? "" : "s");
-				printf("%d words removed not in common words array:\n", sw->indexlist->stopPos);
-				for (pos = 0; pos < sw->indexlist->stopPos; pos++) 
-					printf("%s, ", sw->indexlist->stopList[pos]);
+				printf("%d words removed not in common words array:\n", sw->indexlist->header.stopPos);
+				for (pos = 0; pos < sw->indexlist->header.stopPos; pos++) 
+					printf("%s, ", sw->indexlist->header.stopList[pos]);
 				printf("\n");
 			}
 			else
@@ -523,30 +514,18 @@ FILE *fp;
 		}
 
 		if (sw->verbose)
+			printf("Sorting words ...\n");
+		sort_words(sw, sw->indexlist);
+
+		if (sw->verbose)
 			printf("Writing header ...\n");
 		fflush(stdout);
-		printheader(&sw->indexlist->header,fp, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
+		write_header(sw, &sw->indexlist->header,sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
 		fflush(stdout);
 		
-		offsetstart = ftell(fp);
-		for (i = 0; i < MAXCHARS; i++)
-			printlong(fp,(long)0);
-		
-		hashstart = ftell(fp);
-		for (i = 0; i < SEARCHHASHSIZE; i++)
-			printlong(fp,(long)0);
-
 		if (sw->verbose)
 			printf("Writing index entries ...\n");
-		printindex(sw, sw->indexlist);
-		if (sw->verbose)
-			printf("Writing stopwords ...\n");
-		printstopwords(sw->indexlist);
-
-		if (sw->verbose)
-			printf("Writing buzzwords ...\n");
-		printbuzzwords(sw->indexlist);
-		
+		write_index(sw, sw->indexlist);
 
 		if (sw->verbose) {
 			if (sw->indexlist->header.totalwords)
@@ -559,33 +538,12 @@ FILE *fp;
 		
 		if(sw->verbose)
 			printf("Writing file list ...\n");
-		printfilelist(sw,sw->indexlist);
+		write_file_list(sw,sw->indexlist);
 
 		if(sw->verbose)
-			printf("Writing file offsets ...\n");
-		printfileoffsets(sw->indexlist);
+			printf("Writing sorted index ...\n");
+		write_sorted_index(sw,sw->indexlist);
 
-		if(sw->verbose)
-			printf("Writing MetaNames ...\n");
-		printMetaNames(sw->indexlist);
-
-		if(sw->verbose)
-			printf("Writing Location lookup tables ...\n");
-		printlocationlookuptables(sw->indexlist);
-		printpathlookuptable(sw->indexlist);
-
-		if(sw->verbose)
-			printf("Writing offsets (2)...\n");
-		fseek(fp, offsetstart, 0);
-		for (i = 0; i < MAXCHARS; i++)
-			printlong(fp,sw->indexlist->offsets[i]);
-
-		fseek(fp, hashstart, 0);
-		for (i = 0; i < SEARCHHASHSIZE; i++)
-			printlong(fp,sw->indexlist->hashoffsets[i]);
-		fclose(fp);
-		sw->indexlist->DB=NULL;
-	
 		if (sw->verbose) 
 		{
 			if (totalfiles)
@@ -750,8 +708,8 @@ FILE *fp;
 			}
 		}
 		
-		if (sw->maxhits <= 0)
-			sw->maxhits = -1;
+		if (sw->Search->maxhits <= 0)
+			sw->Search->maxhits = -1;
 		if (hasMetaName)
 			while (conflist != NULL) {
 				getdefaults(sw,conflist->line, &hasdir, &hasindex, hasverbose);

@@ -22,7 +22,6 @@ $Id$
 
 void do_index_file (SWISH *sw, FileProp *fprop);
 
-void printMetaNames (IndexFILE *);
 DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 void addentry (SWISH *, char*, int, int, int, int );
 void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
@@ -31,31 +30,23 @@ int countwordstr (SWISH *, char *, int);
 int parsecomment (SWISH *, char *, int, int, int, int *);
 int removestops (SWISH *);
 int getrank(SWISH *, int, int, int, int, int);
-void printheader(INDEXDATAHEADER *, FILE *, char *, int, int, int);
-void printindex(SWISH *, IndexFILE *);
-void printword(SWISH *, ENTRY *, IndexFILE *);
-void printworddata(SWISH *, ENTRY *, IndexFILE *);
-void printhash(ENTRY **, IndexFILE *);
-void printfilelist(SWISH *, IndexFILE *);
-void printstopwords(IndexFILE *);
-void printfileoffsets(IndexFILE *);
-void printlocationlookuptables(IndexFILE *);
-void printpathlookuptable(IndexFILE *);
+void write_file_list(SWISH *, IndexFILE *);
+void write_sorted_index(SWISH *, IndexFILE *);
 void decompress(SWISH *, IndexFILE *);
 char *ruleparse(SWISH *, char *);
 void stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
 void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
-void printbuzzwords(IndexFILE *);
 
 #define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry(char *, FILE *, struct docPropertyEntry **, int, int *);
-struct file *readFileEntry(IndexFILE *,int);
+unsigned char *buildFileEntry(char *, struct docPropertyEntry **, int, int *);
+struct file *readFileEntry(SWISH *, IndexFILE *,int);
 
 void computehashentry(ENTRY **,ENTRY *);
 
+void sort_words(SWISH *, IndexFILE *);
 void sortentry(SWISH *, IndexFILE *, ENTRY *);
 
 int indexstring(SWISH*, char *, int, int, int, int *, int *);
@@ -67,7 +58,5 @@ void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
 
 
 
-void PrintHeaderStr(int id, char *s, FILE *fp);
-void PrintHeaderInt(int id, int i, FILE *fp);
 void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
 

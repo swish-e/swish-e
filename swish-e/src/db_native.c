@@ -38,8 +38,58 @@
 
 void initModule_DBNative (SWISH  *sw)
 {
-          /* Allocate structure */
-  return;
+    struct MOD_DB *Db;
+
+    Db = (struct MOD_DB *)emalloc(sizeof(struct MOD_DB));
+
+    Db->DB_name = (char *) estrdup("native");
+
+    Db->DB_Create = DB_Create_Native;
+    Db->DB_Open = DB_Open_Native;
+    Db->DB_Close = DB_Close_Native;
+    Db->DB_Remove = DB_Remove_Native;
+    
+    Db->DB_InitWriteHeader = DB_InitWriteHeader_Native;
+    Db->DB_WriteHeaderData = DB_WriteHeaderData_Native;
+    Db->DB_EndWriteHeader = DB_EndWriteHeader_Native;
+    
+    Db->DB_InitReadHeader = DB_InitReadHeader_Native;
+    Db->DB_ReadHeaderData = DB_ReadHeaderData_Native;
+    Db->DB_EndReadHeader = DB_EndReadHeader_Native;
+    
+    Db->DB_InitWriteWords = DB_InitWriteWords_Native;
+    Db->DB_GetWordID = DB_GetWordID_Native;
+    Db->DB_WriteWord = DB_WriteWord_Native;
+    Db->DB_WriteWordHash = DB_WriteWordHash_Native;
+    Db->DB_WriteWordData = DB_WriteWordData_Native;
+    Db->DB_EndWriteWords = DB_EndWriteWords_Native;
+    
+    Db->DB_InitReadWords = DB_InitReadWords_Native;
+    Db->DB_ReadWordHash = DB_ReadWordHash_Native;
+    Db->DB_ReadFirstWordInvertedIndex = DB_ReadFirstWordInvertedIndex_Native;
+    Db->DB_ReadNextWordInvertedIndex = DB_ReadNextWordInvertedIndex_Native;
+    Db->DB_ReadWordData = DB_ReadWordData_Native;
+    Db->DB_EndReadWords = DB_EndReadWords_Native;
+    
+    Db->DB_InitWriteFiles = DB_InitWriteFiles_Native;
+    Db->DB_WriteFile = DB_WriteFile_Native;
+    Db->DB_EndWriteFiles = DB_EndWriteFiles_Native;
+
+    Db->DB_InitReadFiles = DB_InitReadFiles_Native;
+    Db->DB_ReadFile = DB_ReadFile_Native;
+    Db->DB_EndReadFiles = DB_EndReadFiles_Native;
+    
+    Db->DB_InitWriteSortedIndex = DB_InitWriteSortedIndex_Native;
+    Db->DB_WriteSortedIndex = DB_WriteSortedIndex_Native;
+    Db->DB_EndWriteSortedIndex = DB_EndWriteSortedIndex_Native;
+     
+    Db->DB_InitReadSortedIndex = DB_InitReadSortedIndex_Native;
+    Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
+    Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
+
+    sw->Db = Db;
+
+    return;
 }
 
 
@@ -49,7 +99,9 @@ void initModule_DBNative (SWISH  *sw)
 
 void freeModule_DBNative (SWISH *sw)
 {
-  return;
+   efree(sw->Db->DB_name);
+   efree(sw->Db);
+   return;
 }
 
 
@@ -196,7 +248,7 @@ void *DB_Open_Native (char *dbname)
    for ( i = 0; (pos=readlong(fp)) ; i++)
    {
        if (i == DB->fileoffsetarray_maxsize)
-			DB->fileoffsetarray = erealloc(DB->fileoffsetarray,(DB->fileoffsetarray_maxsize += 10000) * sizeof(long));
+          DB->fileoffsetarray = erealloc(DB->fileoffsetarray,(DB->fileoffsetarray_maxsize += 10000) * sizeof(long));
        DB->fileoffsetarray[i] = pos;
    }
    DB->num_docs = i;
@@ -204,9 +256,10 @@ void *DB_Open_Native (char *dbname)
    return (void *)DB;
 }
 
-void DB_Close_Native(struct Handle_DBNative *DB)
+void DB_Close_Native(void *db)
 {
    int i;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
    if(DB->mode)  /* If we are indexing update offsets to words and files */
@@ -224,8 +277,10 @@ void DB_Close_Native(struct Handle_DBNative *DB)
    efree(DB);
 }
 
-void DB_Remove_Native(struct Handle_DBNative *DB)
+void DB_Remove_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    fclose(DB->fp);
    remove(DB->dbname);
    efree(DB->dbname);
@@ -239,16 +294,19 @@ void DB_Remove_Native(struct Handle_DBNative *DB)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteHeader_Native(struct Handle_DBNative *DB)
+int DB_InitWriteHeader_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    DB->offsets[HEADERPOS] = ftell(DB->fp);
    return 0;
 }
 
 
-int DB_EndWriteHeader_Native(struct Handle_DBNative *DB)
+int DB_EndWriteHeader_Native(void *db)
 {
-FILE *fp=DB->fp;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp=DB->fp;
 
       /* End of header delimiter */
    fputc(0, fp);
@@ -256,40 +314,45 @@ FILE *fp=DB->fp;
    return 0;
 }
 
-int DB_WriteHeaderData_Native(int id, char *s, int len, struct Handle_DBNative *DB)
+int DB_WriteHeaderData_Native(int id, char *s, int len, void *db)
 {
-    FILE *fp = DB->fp;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
-    compress1(id, fp);
-    compress1(len, fp);
-    fwrite(s, len, sizeof(char), fp);
+   FILE *fp = DB->fp;
 
-    return 0;
+   compress1(id, fp);
+   compress1(len, fp);
+   fwrite(s, len, sizeof(char), fp);
+
+   return 0;
 }
 
 
-int DB_InitReadHeader_Native(struct Handle_DBNative *DB)
+int DB_InitReadHeader_Native(void *db)
 {
-    fseek(DB->fp,DB->offsets[HEADERPOS],0);
-    return 0;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+   fseek(DB->fp,DB->offsets[HEADERPOS],0);
+   return 0;
 }
 
-int DB_ReadHeaderData_Native(int *id, char **s, int *len, struct Handle_DBNative *DB)
+int DB_ReadHeaderData_Native(int *id, char **s, int *len, void *db)
 {
-    int tmp;
-    FILE *fp = DB->fp;
+   int tmp;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->fp;
 
-    uncompress1(tmp, fp);
-    *id = tmp;
-    uncompress1(tmp, fp);
-    *s = (char *) emalloc( tmp +1);
-    *len = tmp;
-    fread(*s, *len, sizeof(char), fp);
+   uncompress1(tmp, fp);
+   *id = tmp;
+   uncompress1(tmp, fp);
+   *s = (char *) emalloc( tmp +1);
+   *len = tmp;
+   fread(*s, *len, sizeof(char), fp);
 
-    return 0;
+   return 0;
 }
 
-int DB_EndReadHeader_Native(struct Handle_DBNative *DB)
+int DB_EndReadHeader_Native(void *db)
 {
     return 0;
 }
@@ -300,28 +363,36 @@ int DB_EndReadHeader_Native(struct Handle_DBNative *DB)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteWords_Native(struct Handle_DBNative *DB)
+int DB_InitWriteWords_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    DB->offsets[WORDPOS] = ftell(DB->fp);
    return 0;
 }
 
 
-int DB_EndWriteWords_Native(struct Handle_DBNative *DB)
+int DB_EndWriteWords_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    fputc(0, DB->fp);   /* End of words mark */
    return 0;
 }
 
-long DB_GetWordID_Native(struct Handle_DBNative *DB)
+long DB_GetWordID_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    return ftell(DB->fp);   /* Native database uses position as a Word ID */
 }
 
-int DB_WriteWord_Native(char *word, long wordID, struct Handle_DBNative *DB)
+int DB_WriteWord_Native(char *word, long wordID, void *db)
 {
     int     i,
             wordlen;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
     FILE   *fp = DB->fp;
 
 
@@ -343,10 +414,12 @@ int DB_WriteWord_Native(char *word, long wordID, struct Handle_DBNative *DB)
 }
 
 
-long DB_WriteWordData_Native(long wordID, char *worddata, int lendata, struct Handle_DBNative *DB)
+long DB_WriteWordData_Native(long wordID, char *worddata, int lendata, void *db)
 {
     long f_offset;
     int wordlen;
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
     FILE *fp = DB->fp;
 
 
@@ -381,11 +454,12 @@ long DB_WriteWordData_Native(long wordID, char *worddata, int lendata, struct Ha
 
 
 
-int DB_WriteWordHash_Native(char *word, long wordID, struct Handle_DBNative *DB)
+int DB_WriteWordHash_Native(char *word, long wordID, void *db)
 {
-    int wordlen,
-    hashval;
-    FILE *fp = DB->fp;
+    int     wordlen,
+            hashval;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    FILE   *fp = DB->fp;
 
     hashval = searchhash(word);
     if(!DB->hashoffsets[hashval])
@@ -418,25 +492,25 @@ int DB_WriteWordHash_Native(char *word, long wordID, struct Handle_DBNative *DB)
     return 0;
 }
 
-int     DB_InitReadWords_Native(struct Handle_DBNative *DB)
+int     DB_InitReadWords_Native(void *db)
 {
     return 0;
 }
 
-int     DB_EndReadWords_Native(struct Handle_DBNative *DB)
+int     DB_EndReadWords_Native(void *db)
 {
     return 0;
 }
 
 
-int DB_ReadWordHash_Native(char *word, long *wordID, struct Handle_DBNative *DB)
+int DB_ReadWordHash_Native(char *word, long *wordID, void *db)
 {
     int     wordlen,
             res,
             hashval;
     long    offset, dataoffset;
     char   *fileword = NULL;
-
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
 
 
@@ -480,7 +554,7 @@ int DB_ReadWordHash_Native(char *word, long *wordID, struct Handle_DBNative *DB)
 
 
 
-int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, struct Handle_DBNative *DB)
+int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db)
 {
     int     wordlen,
             i,
@@ -489,8 +563,9 @@ int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wo
             found;
     long    dataoffset = 0;
     char   *fileword = NULL;
-
-    FILE *fp = DB->fp;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    FILE   *fp = DB->fp;
+  
 
     len = strlen(word);
 
@@ -547,14 +622,14 @@ int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wo
     return 0;
 }
 
-int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, struct Handle_DBNative *DB)
+int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db)
 {
     int     len,
             wordlen;
     long    dataoffset;
-    char    *fileword;
-
-    FILE *fp = DB->fp;
+    char   *fileword;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    FILE   *fp = DB->fp;
 
     if(!DB->nextwordoffset)
     {
@@ -594,12 +669,12 @@ int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wor
 }
 
 
-long DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, struct Handle_DBNative *DB)
+long DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, void *db)
 {
     int      len;
     char    *buffer;
-
-    FILE *fp = DB->fp;
+    struct   Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    FILE    *fp = DB->fp;
 
     fseek(fp,wordID,0);
     uncompress1(len,fp);
@@ -618,8 +693,10 @@ long DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, struct H
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteFiles_Native(struct Handle_DBNative *DB)
+int DB_InitWriteFiles_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    DB->offsets[FILELISTPOS] = ftell(DB->fp);
    DB->fileoffsetarray = (long *) emalloc((DB->fileoffsetarray_maxsize = BIGHASHSIZE) * sizeof(long));
 
@@ -627,10 +704,11 @@ int DB_InitWriteFiles_Native(struct Handle_DBNative *DB)
 }
 
 
-int DB_EndWriteFiles_Native(struct Handle_DBNative *DB)
+int DB_EndWriteFiles_Native(void *db)
 {
    int     i;
    long    offset;
+   struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE   *fp = DB->fp;
 
    fputc(0, fp);   /* End of filelist mark */
@@ -645,8 +723,10 @@ int DB_EndWriteFiles_Native(struct Handle_DBNative *DB)
    return 0;
 }
 
-int DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, struct Handle_DBNative *DB)
+int DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    if (DB->fileoffsetarray_maxsize == filenum)
    {
        DB->fileoffsetarray = (long *) erealloc(DB->fileoffsetarray, (DB->fileoffsetarray_maxsize += 10000) * sizeof(long));
@@ -661,15 +741,16 @@ int DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, struct Hand
    return 0;
 }
 
-int DB_InitReadFiles_Native(struct Handle_DBNative *DB)
+int DB_InitReadFiles_Native(void *db)
 {
    return 0;
 }
 
-int DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, struct Handle_DBNative *DB)
+int DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, void *db)
 {
     int     len;
     char   *buffer;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     if (filenum > DB->num_docs)
     {
@@ -692,7 +773,7 @@ int DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, struct Han
 }
 
 
-int DB_EndReadFiles_Native(struct Handle_DBNative *DB)
+int DB_EndReadFiles_Native(void *db)
 {
 
    return 0;
@@ -709,16 +790,19 @@ int DB_EndReadFiles_Native(struct Handle_DBNative *DB)
 
 
 
-int     DB_InitWriteSortedIndex_Native(struct Handle_DBNative *DB)
+int     DB_InitWriteSortedIndex_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
    DB->offsets[SORTEDINDEX] = ftell(DB->fp);
 
    return 0;
 }
 
-int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,struct Handle_DBNative *DB)
+int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,void *db)
 {
    long tmp1,tmp2;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
    tmp1 = ftell(fp);
@@ -741,20 +825,21 @@ int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,struct Ha
    return 0;
 }
 
-int     DB_EndWriteSortedIndex_Native(struct Handle_DBNative *DB)
+int     DB_EndWriteSortedIndex_Native(void *db)
 {
    return 0;
 }
 
  
-int     DB_InitReadSortedIndex_Native(struct Handle_DBNative *DB)
+int     DB_InitReadSortedIndex_Native(void *db)
 {
    return 0;
 }
 
-int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,struct Handle_DBNative *DB)
+int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,void *db)
 {
    long next, id, tmp;
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
    fseek(fp,DB->offsets[SORTEDINDEX],0);
@@ -787,7 +872,7 @@ int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,struct H
    return 0;
 }
 
-int     DB_EndReadSortedIndex_Native(struct Handle_DBNative *DB)
+int     DB_EndReadSortedIndex_Native(void *db)
 {
    return 0;
 }

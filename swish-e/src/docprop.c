@@ -179,29 +179,26 @@ int tempPropID;
 int getnumPropertiesToDisplay(SWISH *sw)
 {
 	if(sw)
-		return sw->numPropertiesToDisplay;
+		return sw->Search->numPropertiesToDisplay;
 	return 0;
 }
 
 void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
-IndexFILE *indexf;
-
+struct MOD_Search *srch = sw->Search;
 
 	/* add a property to the list of properties that will be displayed */
-	if (sw->numPropertiesToDisplay >= sw->currentMaxPropertiesToDisplay)
+	if (srch->numPropertiesToDisplay >= srch->currentMaxPropertiesToDisplay)
 	{
-		if(sw->currentMaxPropertiesToDisplay) {
-			sw->currentMaxPropertiesToDisplay+=2;
-			sw->propNameToDisplay=(char **)erealloc(sw->propNameToDisplay,sw->currentMaxPropertiesToDisplay*sizeof(char *));
-			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-				indexf->propIDToDisplay=(int *)erealloc(indexf->propIDToDisplay,sw->currentMaxPropertiesToDisplay*sizeof(int));
+		if(srch->currentMaxPropertiesToDisplay) {
+			srch->currentMaxPropertiesToDisplay+=2;
+			srch->propNameToDisplay=(char **)erealloc(srch->propNameToDisplay,srch->currentMaxPropertiesToDisplay*sizeof(char *));
 		} else {
-			sw->currentMaxPropertiesToDisplay=5;
-			sw->propNameToDisplay=(char **)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(char *));
+			srch->currentMaxPropertiesToDisplay=5;
+			srch->propNameToDisplay=(char **)emalloc(srch->currentMaxPropertiesToDisplay*sizeof(char *));
 		}
 	}
-	sw->propNameToDisplay[sw->numPropertiesToDisplay++] = estrdup(propName);
+	srch->propNameToDisplay[srch->numPropertiesToDisplay++] = estrdup(propName);
 }
 
 
@@ -215,10 +212,11 @@ IndexFILE *indexf;
 void printSearchResultProperties(SWISH *sw, FILE *f, char **prop)
 {
 int i;
-	if (sw->numPropertiesToDisplay == 0)
+struct MOD_Search *srch = sw->Search;
+	if (srch->numPropertiesToDisplay == 0)
 		return;
 
-	for (i = 0; i<sw->numPropertiesToDisplay; i++)
+	for (i = 0; i<srch->numPropertiesToDisplay; i++)
 	{
 		char* propValue;
 		propValue = prop[i];
@@ -255,11 +253,11 @@ int i;
 char **props;      /* Array to Store properties */
 IndexFILE *indexf=r->indexf;
 SWISH *sw=(SWISH *)r->sw;
-
-    if (sw->numPropertiesToDisplay == 0) return NULL;
+struct MOD_Search *srch = sw->Search;
+    if (srch->numPropertiesToDisplay == 0) return NULL;
 	
-	props=(char **) emalloc(sw->numPropertiesToDisplay*sizeof(char *));
-	for (i = 0; i<sw->numPropertiesToDisplay; i++)
+	props=(char **) emalloc(srch->numPropertiesToDisplay*sizeof(char *));
+	for (i = 0; i<srch->numPropertiesToDisplay; i++)
 	{
 		props[i] = getResultPropAsString(r, indexf->propIDToDisplay[i]);
 	}
@@ -322,16 +320,17 @@ void FreeOutputPropertiesVars(SWISH *sw)
 {
 int i;
 IndexFILE *tmpindexlist;
+struct MOD_Search *srch = sw->Search;
 		/* First the common part to all the index files */
-	if (sw->propNameToDisplay) 
+	if (srch->propNameToDisplay) 
 	{
-		for(i=0;i<sw->numPropertiesToDisplay;i++)
-			efree(sw->propNameToDisplay[i]);
-		efree(sw->propNameToDisplay);
+		for(i=0;i<srch->numPropertiesToDisplay;i++)
+			efree(srch->propNameToDisplay[i]);
+		efree(srch->propNameToDisplay);
 	}
-	sw->propNameToDisplay=NULL;
-	sw->numPropertiesToDisplay=0;
-        sw->currentMaxPropertiesToDisplay=0;
+	srch->propNameToDisplay=NULL;
+	srch->numPropertiesToDisplay=0;
+    srch->currentMaxPropertiesToDisplay=0;
 		/* Now the IDs of each index file */
 	for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
 	{
@@ -346,23 +345,24 @@ int initSearchResultProperties(SWISH *sw)
 {
 IndexFILE *indexf;
 int i;
+struct MOD_Search *srch = sw->Search;
 	/* lookup selected property names */
 
-	if (sw->numPropertiesToDisplay == 0)
+	if (srch->numPropertiesToDisplay == 0)
 		return RC_OK;
 	for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-		indexf->propIDToDisplay=(int *)emalloc(sw->numPropertiesToDisplay*sizeof(int));
+		indexf->propIDToDisplay=(int *)emalloc(srch->numPropertiesToDisplay*sizeof(int));
 
-	for (i = 0; i<sw->numPropertiesToDisplay; i++)
+	for (i = 0; i<srch->numPropertiesToDisplay; i++)
 	{
-		makeItLow(sw->propNameToDisplay[i]);
+		makeItLow(srch->propNameToDisplay[i]);
 		/* Get ID for each index file */
 		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		{
-			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
+			indexf->propIDToDisplay[i] = getMetaNameID(indexf, srch->propNameToDisplay[i]);
 			if (indexf->propIDToDisplay[i] == 1)
 			{
-				progerr ("Unknown Display property name \"%s\"", sw->propNameToDisplay[i]);
+				progerr ("Unknown Display property name \"%s\"", srch->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 		}
@@ -378,7 +378,7 @@ unsigned long i;
 struct metaEntry *q;
 docPropertyEntry *d;
 	if(!p) return estrdup("");
-	q=getMetaIDData(indexf,ID); 
+	q=getMetaIDData(&indexf->header,ID); 
 	if(!q) return estrdup("");
 		/* Search the property */
 	for(d=p->docProperties;d;d=d->next)
@@ -462,7 +462,7 @@ docPropertyEntry *d;
 			s=estrdup(p->summary);
 			break;
 		default:   /* User properties */
-			q=getMetaIDData(indexf,ID); 
+			q=getMetaIDData(&indexf->header,ID); 
 			if(!q) return estrdup("");
 				/* Search the property */
 			for(d=indexf->filearray[p->filenum-1]->docProperties;d;d=d->next)
@@ -502,25 +502,25 @@ void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
 docPropertyEntry *p;
 	for(p=fi->docProperties;p;p=p->next)
 	{
-		if(indexf->filenameProp->metaID==p->metaID) {}
-		else if(indexf->titleProp->metaID==p->metaID) 
+		if(indexf->header.filenameProp->metaID==p->metaID) {}
+		else if(indexf->header.titleProp->metaID==p->metaID) 
 			fi->fi.title=bin2string(p->propValue,p->propLen);
-		else if(indexf->filedateProp->metaID==p->metaID) 
+		else if(indexf->header.filedateProp->metaID==p->metaID) 
 		{
 			fi->fi.mtime=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.mtime);
 		}
-		else if(indexf->startProp->metaID==p->metaID) 
+		else if(indexf->header.startProp->metaID==p->metaID) 
 		{
 			fi->fi.start=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.start);
 		}
-		else if(indexf->sizeProp->metaID==p->metaID) 
+		else if(indexf->header.sizeProp->metaID==p->metaID) 
 		{
 			fi->fi.size=*(unsigned long *)p->propValue;
 			UNPACKLONG(fi->fi.size);
 		}
-		else if(indexf->summaryProp->metaID==p->metaID) 
+		else if(indexf->header.summaryProp->metaID==p->metaID) 
 		{
 			fi->fi.summary=bin2string(p->propValue,p->propLen);
 		}
@@ -629,8 +629,8 @@ PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
 		       -- $$$ ToDO: other types...
 		    */
 
-		   for(i=0;i<sw->numPropertiesToDisplay;i++) {
-			if(!strcasecmp(pname,sw->propNameToDisplay[i])) {
+		   for(i=0;i<sw->Search->numPropertiesToDisplay;i++) {
+			if(!strcasecmp(pname,sw->Search->propNameToDisplay[i])) {
 				pv->datatype = STRING;
 				pv->value.v_str = r->Prop[i];
 				break;

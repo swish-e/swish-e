@@ -21,6 +21,7 @@
 */
 
 #include "swish.h"
+#include "string.h"
 #include "compress.h"
 #include "mem.h"
 #include "error.h"
@@ -58,14 +59,15 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 	/* Pack metaID frequency and structure in just one integer */
 	/* Pack structure in just one smaller integer */
 	vars[0]=l->structure;
-	index_structure=get_lookup_index(&indexf->structurelookup,1,vars)+1;
+	index_structure=get_lookup_index(&indexf->header.structurelookup,1,vars)+1;
 	vars[0]=l->frequency;
 	vars[1]=index_structure;
-	index_structfreq=get_lookup_index(&indexf->structfreqlookup,2,vars)+1;
+	index_structfreq=get_lookup_index(&indexf->header.structfreqlookup,2,vars)+1;
+
 	/* Pack and add 1 to index to avoid problems with compress 0 */
 	vars[0]=l->metaID;
 	vars[1]=index_structfreq;
-	index=get_lookup_index(&indexf->locationlookup,2,vars)+1;
+	index=get_lookup_index(&indexf->header.locationlookup,2,vars)+1;
 	compress2(index,p);
 		/* Get the length of all the data */
 	i=sw->compression_buffer+sw->len_compression_buffer-p-1;
@@ -92,11 +94,11 @@ LOCATION *loc;
 int i,tmp,metaID,filenum,structure,frequency,index,index_structfreq,index_structure;
 	uncompress2(index,p);
 	uncompress2(filenum,p);
-	metaID=indexf->locationlookup->all_entries[index-1]->val[0];
-	index_structfreq=indexf->locationlookup->all_entries[index-1]->val[1];
-	frequency=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[0];
-	index_structure=indexf->structfreqlookup->all_entries[index_structfreq-1]->val[1];
-	structure=indexf->structurelookup->all_entries[index_structure-1]->val[0];
+	metaID=indexf->header.locationlookup->all_entries[index-1]->val[0];
+	index_structfreq=indexf->header.locationlookup->all_entries[index-1]->val[1];
+	frequency=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[0];
+	index_structure=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[1];
+	structure=indexf->header.structurelookup->all_entries[index_structure-1]->val[0];
 	loc=(LOCATION *)emalloc(sizeof(LOCATION)+(frequency-1)*sizeof(int));
 	loc->metaID=metaID;
 	loc->filenum=filenum;
@@ -207,7 +209,7 @@ int sz_buffer,tmp;
 		progerr("Could not create temp file %s",sw->swap_file_name);
 	}
 		
-	buffer=buildFileEntry(filep->fi.filename, sw->fp_file_write, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
+	buffer=buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
 	tmp=sz_buffer+1;
 	compress1(tmp,sw->fp_file_write);   /* Write len */
 	fwrite(buffer,sz_buffer,1,sw->fp_file_write);

@@ -58,7 +58,7 @@ int     isokword(sw, word, indexf)
     if (word[0] == '\0')
         return 0;
 
-    if (isstopword(indexf, word))
+    if (isstopword(&indexf->header, word))
         return 0;
 
     wordlen = strlen(word);

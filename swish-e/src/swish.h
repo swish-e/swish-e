@@ -85,6 +85,8 @@
 #include "vms/regex.h"
 #include <dirent.h>
 #include <stdarg.h>
+extern int snprintf(char *, size_t, const char *, /*args */ ...);
+extern int vsnprintf(char *, size_t, const char *, va_list);
 #else
 #include <dirent.h>
 #include <regex.h>
@@ -96,8 +98,6 @@
 #include <stdlib.h>
 #include <time.h>
 #include <setjmp.h>
-
-
 
 
 #define SWISH_MAGIC 21076321L
@@ -168,13 +168,22 @@
 #define IGNORETOTALWORDCOUNTWHENRANKINGPARAMNAME "IgnoreTotalWordCountWhenRanking"
 #define IGNORETOTALWORDCOUNTWHENRANKING_ID (BASEHEADER + 23)
 
+/* Removed - Patents ...
 #define FILEINFOCOMPRESSION "# FileInfoCompression:"
 #define FILEINFOCOMPRESSIONPARAMNAME "FileInfoCompression"
 #define FILEINFOCOMPRESSION_ID (BASEHEADER + 24)
+*/
 
 #define TRANSLATECHARTABLEHEADER "# TranslateCharacterTable:"
 #define TRANSLATECHARTABLEPARAMNAME "TranslateCharacterTable"
 #define TRANSLATECHARTABLE_ID (BASEHEADER + 25)
+
+#define STOPWORDS_ID (BASEHEADER + 26)
+#define METANAMES_ID (BASEHEADER + 27)
+#define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
+#define PATHLOOKUPTABLE_ID (BASEHEADER + 29)
+#define BUZZWORDS_ID (BASEHEADER + 30) /* 2001-04-24 moseley */
+#define WORDSPERDOC_ID (BASEHEADER + 31)
 
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
@@ -201,16 +210,6 @@
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED)
 
 #define MAXLONGLEN 4
-#define MAXCHARS 266            /* 255 for chars plus ten more for other data */
-#define BUZZWORDPOS (MAXCHARS - 8) /* 2001-04-24 moseley */
-#define METANAMEPOS (MAXCHARS - 7)
-#define STOPWORDPOS (MAXCHARS - 6)
-#define FILELISTPOS (MAXCHARS - 5)
-#define FILEOFFSETPOS (MAXCHARS - 4)
-#define LOCATIONLOOKUPTABLEPOS (MAXCHARS - 3)
-#define PATHLOOKUPTABLEPOS (MAXCHARS - 2)
-#define DEFLATEDICTPOS (MAXCHARS - 1)
-
 
 /* Document Types */
 #define BASEDOCTYPE 0
@@ -236,9 +235,8 @@ struct metaEntry
     char   *metaName;           /* MetaName string */
     int     metaID;             /* Meta ID */
     int     metaType;           /* See metanames.h for values */
-    long    sort_offset;        /* Offset in index file to sorted file data */
     /* If 0, files are not sorted by this metaName/property */
-    int    *sorted_data;        /* Sorted data . NULL if not read */
+    int    *sorted_data;        /* Sorted data . NULL if not read/done */
 };
 
 typedef struct
@@ -365,7 +363,9 @@ typedef struct
     int     maxwordlimit;
     int     applyStemmingRules; /* added 11/24/98 - MG */
     int     applySoundexRules;  /* added 09/01/99 - DN */
-    int     applyFileInfoCompression; /* added 10/00 Jose Ruiz */
+/* Removed - Patents ...
+    int     applyFileInfoCompression;
+	*/
     /* Total files and words in index file */
     int     totalwords;
     int     totalfiles;
@@ -379,30 +379,6 @@ typedef struct
     int     ignorelastcharlookuptable[256];
     int     bumpposcharslookuptable[256];
     int     translatecharslookuptable[256]; /* $$$ rasc 2001-02-21 */
-    /* int indexcharslookuptable[256];  indexchars stuff removed */
-}
-INDEXDATAHEADER;
-
-typedef struct IndexFILE
-{
-    char   *line;               /*Name of the index file */
-    /* Offsets to words */
-    long    offsets[MAXCHARS];
-    long    hashoffsets[SEARCHHASHSIZE];
-    /* file index info */
-    struct file **filearray;
-    int     filearray_cursize;
-    int     filearray_maxsize;
-    long   *fileoffsetarray;
-    int    *filetotalwordsarray;
-    int     fileoffsetarray_cursize;
-    int     fileoffsetarray_maxsize;
-
-    /* Offsets of words in index file */
-    long    wordpos;
-    /* Values for fields (metanames) */
-    struct metaEntry **metaEntryArray;
-    int     metaCounter;        /* Number of metanames */
 
     /* values for handling stopwords */
     struct swline *hashstoplist[HASHSIZE];
@@ -414,16 +390,13 @@ typedef struct IndexFILE
     int    buzzwords_used_flag; /* flag to indicate that buzzwords are being used */
     struct swline *hashbuzzwordlist[HASHSIZE];
     
-
     /* values for handling "use" words - > Unused in the search proccess */
     int     is_use_words_flag;
     struct swline *hashuselist[HASHSIZE];
 
-    /* DB handle */
-    void   *DB;
-
-    /* Header Info */
-    INDEXDATAHEADER header;
+	    /* Values for fields (metanames) */
+    struct metaEntry **metaEntryArray;
+    int     metaCounter;        /* Number of metanames */
 
     /* Lookup tables for repetitive values of locations (frequency,structureand metaname */
     /* Index use all of them */
@@ -433,6 +406,33 @@ typedef struct IndexFILE
     struct int_lookup_st *structfreqlookup;
     /* Lookup table for repetitive values of the path */
     struct char_lookup_st *pathlookup;
+	    /* Internal Swish meta/props */
+    struct metaEntry *filenameProp;
+    struct metaEntry *titleProp;
+    struct metaEntry *filedateProp;
+    struct metaEntry *startProp;
+    struct metaEntry *sizeProp;
+    struct metaEntry *summaryProp;
+		/* Array to handle the number of words per doc */
+    int    *filetotalwordsarray;
+
+}
+INDEXDATAHEADER;
+
+typedef struct IndexFILE
+{
+    char   *line;               /*Name of the index file */
+    /* file index info */
+    struct file **filearray;
+    int     filearray_cursize;
+    int     filearray_maxsize;
+
+
+    /* DB handle */
+    void   *DB;
+
+    /* Header Info */
+    INDEXDATAHEADER header;
 
     /* Pointer to cache the keywords */
     char   *keywords[256];
@@ -440,20 +440,14 @@ typedef struct IndexFILE
     struct IndexFILE *next;
     struct IndexFILE *nodep;
 
+	/* Removed due to patents problems
     int     n_dict_entries;
-    unsigned char **dict;       /* Used to store the patterns when
+    unsigned char **dict; */      /* Used to store the patterns when
                                    ** DEFLATE_FILES is enabled */
-    /* props IDs */
+
+        /* props IDs */
     int    *propIDToDisplay;
     int    *propIDToSort;
-    /* Internal Swish meta/props */
-    struct metaEntry *filenameProp;
-    struct metaEntry *titleProp;
-    struct metaEntry *filedateProp;
-    struct metaEntry *startProp;
-    struct metaEntry *sizeProp;
-    struct metaEntry *summaryProp;
-
 }
 IndexFILE;
 
@@ -628,7 +622,6 @@ struct DB_RESULTS
 
 
 
-
 typedef struct
 {
     /* New module design structure data */
@@ -637,6 +630,8 @@ typedef struct
     struct MOD_Filter        *Filter;         /* filter module data */
     struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
     struct MOD_Entities      *Entities;       /* html entities module data */
+	struct MOD_DB            *Db;             /* DB module data */
+    struct MOD_Search        *Search;         /* Search module data */
 
     /* entry vars */
     ENTRYARRAY *entryArray;
@@ -681,8 +676,6 @@ typedef struct
     /* File counter */
     int     filenum;
     int     bigrank;
-    int     beginhits;
-    int     maxhits;
     int     followsymlinks;
     /* Error vars */
     int     commonerror;
@@ -696,10 +689,6 @@ typedef struct
     int     applyautomaticmetanames;
     int     isvowellookuptable[256];
 
-    /* Properties vars */
-    int     numPropertiesToDisplay;
-    int     currentMaxPropertiesToDisplay;
-    char  **propNameToDisplay;
 
     /* http proccessing */
     int     lentmpdir;
@@ -715,8 +704,6 @@ typedef struct
     /* Limit indexing by a file date */
     time_t  mtime_limit;
 
-    /* All Results per index file */
-    struct DB_RESULTS *db_results;
 
     /* MetaName indexing options */
     int     ReqMetaName;
@@ -903,8 +890,3 @@ RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
 int     getnumPropertiesToDisplay(SWISH *);
-
-
-
-
-#include "no_better_place_module.h"			/* $$$ tmp module for reorg. !!! */

@@ -69,46 +69,54 @@ int configModule_DBNative (SWISH *sw, StringList *sl);
 
 void   *DB_Create_Native (char *dbname);
 void   *DB_Open_Native (char *dbname);
-void    DB_Close_Native(struct Handle_DBNative *DB);
-void    DB_Remove_Native(struct Handle_DBNative *DB);
-
-int     DB_InitWriteHeader_Native(struct Handle_DBNative *DB);
-int     DB_EndWriteHeader_Native(struct Handle_DBNative *DB);
-int     DB_WriteHeaderData_Native(int id, char *s, int len, struct Handle_DBNative *DB);
-
-int     DB_InitReadHeader_Native(struct Handle_DBNative *DB);
-int     DB_ReadHeaderData_Native(int *id, char **s, int *len, struct Handle_DBNative *DB);
-int     DB_EndReadHeader_Native(struct Handle_DBNative *DB);
-
-int     DB_InitWriteWords_Native(struct Handle_DBNative *DB);
-long    DB_GetWordID_Native(struct Handle_DBNative *DB);
-int     DB_WriteWord_Native(char *word, long wordID, struct Handle_DBNative *DB);
-int     DB_WriteWordHash_Native(char *word, long wordID, struct Handle_DBNative *DB);
-long    DB_WriteWordData_Native(long wordID, char *worddata, int lendata, struct Handle_DBNative *DB);
-int     DB_EndWriteWords_Native(struct Handle_DBNative *DB);
-
-int     DB_InitReadWords_Native(struct Handle_DBNative *DB);
-int     DB_ReadWordHash_Native(char *word, long *wordID, struct Handle_DBNative *DB);
-int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, struct Handle_DBNative *DB);
-int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, struct Handle_DBNative *DB);
-long    DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, struct Handle_DBNative *DB);
-int     DB_EndReadWords_Native(struct Handle_DBNative *DB);
+void    DB_Close_Native(void *db);
+void    DB_Remove_Native(void *db);
 
 
-int     DB_InitWriteFiles_Native(struct Handle_DBNative *DB);
-int     DB_EndWriteFiles_Native(struct Handle_DBNative *DB);
-int     DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, struct Handle_DBNative *DB);
-int     DB_InitReadFiles_Native(struct Handle_DBNative *DB);
-int     DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, struct Handle_DBNative *DB);
-int     DB_EndReadFiles_Native(struct Handle_DBNative *DB);
 
-int     DB_InitWriteSortedIndex_Native(struct Handle_DBNative *DB);
-int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,struct Handle_DBNative *DB);
-int     DB_EndWriteSortedIndex_Native(struct Handle_DBNative *DB);
+int     DB_InitWriteHeader_Native(void *db);
+int     DB_EndWriteHeader_Native(void *db);
+int     DB_WriteHeaderData_Native(int id, char *s, int len, void *db);
+
+int     DB_InitReadHeader_Native(void *db);
+int     DB_ReadHeaderData_Native(int *id, char **s, int *len, void *db);
+int     DB_EndReadHeader_Native(void *db);
+
+
+
+int     DB_InitWriteWords_Native(void *db);
+long    DB_GetWordID_Native(void *db);
+int     DB_WriteWord_Native(char *word, long wordID, void *db);
+int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
+long    DB_WriteWordData_Native(long wordID, char *worddata, int lendata, void *db);
+int     DB_EndWriteWords_Native(void *db);
+
+int     DB_InitReadWords_Native(void *db);
+int     DB_ReadWordHash_Native(char *word, long *wordID, void *db);
+int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
+int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
+long    DB_ReadWordData_Native(long wordID, char **worddata, int *lendata, void *db);
+int     DB_EndReadWords_Native(void *db);
+
+
+
+int     DB_InitWriteFiles_Native(void *db);
+int     DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, void *db);
+int     DB_EndWriteFiles_Native(void *db);
+
+int     DB_InitReadFiles_Native(void *db);
+int     DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, void *db);
+int     DB_EndReadFiles_Native(void *db);
+
+
+
+int     DB_InitWriteSortedIndex_Native(void *db);
+int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,void *db);
+int     DB_EndWriteSortedIndex_Native(void *db);
  
-int     DB_InitReadSortedIndex_Native(struct Handle_DBNative *DB);
-int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,struct Handle_DBNative *DB);
-int     DB_EndReadSortedIndex_Native(struct Handle_DBNative *DB);
+int     DB_InitReadSortedIndex_Native(void *db);
+int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,void *db);
+int     DB_EndReadSortedIndex_Native(void *db);
 
 
 #endif

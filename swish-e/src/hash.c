@@ -29,10 +29,10 @@
 */
 
 #include "swish.h"
+#include "string.h"
 #include "hash.h"
 #include "search.h"
 #include "mem.h"
-#include "string.h"
 
 /* Hashes a string.
 */
@@ -94,48 +94,48 @@ unsigned searchhash(s)
 /* Reads the internal list of default stopwords.
 */
 
-void    readdefaultstopwords(IndexFILE * indexf)
+void    readdefaultstopwords(INDEXDATAHEADER *header)
 {
     int     i;
 
     for (i = 0; defaultstopwords[i] != NULL; i++)
-        addstophash(indexf, defaultstopwords[i]);
+        addstophash(header, defaultstopwords[i]);
 }
 
 /* Adds a stop word to the list of removed common words */
-void    addStopList(IndexFILE * indexf, char *word)
+void    addStopList(INDEXDATAHEADER *header, char *word)
 {
     char   *arrayWord;
 
-    if (isstopword(indexf, word))
+    if (isstopword(header, word))
         return;
 
     /* Another BUG!!  Jose Ruiz 04/00
        The dimension of the array was not checked 
        Fixed */
-    if (indexf->stopPos == indexf->stopMaxSize)
+    if (header->stopPos == header->stopMaxSize)
     {
-        indexf->stopMaxSize += 100;
-        if (!indexf->stopList)
-            indexf->stopList = (char **) emalloc(indexf->stopMaxSize * sizeof(char *));
+        header->stopMaxSize += 100;
+        if (!header->stopList)
+            header->stopList = (char **) emalloc(header->stopMaxSize * sizeof(char *));
 
         else
-            indexf->stopList = (char **) erealloc(indexf->stopList, indexf->stopMaxSize * sizeof(char *));
+            header->stopList = (char **) erealloc(header->stopList, header->stopMaxSize * sizeof(char *));
     }
     arrayWord = (char *) estrdup(word);
-    indexf->stopList[indexf->stopPos++] = arrayWord;
+    header->stopList[header->stopPos++] = arrayWord;
 }
 
 
 /* Adds a stop word to a hash table.
 */
 
-void    addstophash(IndexFILE * indexf, char *word)
+void    addstophash(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
-    if (isstopword(indexf, word))
+    if (isstopword(header, word))
         return;
 
     sp = (struct swline *) emalloc(sizeof(struct swline));
@@ -143,20 +143,20 @@ void    addstophash(IndexFILE * indexf, char *word)
     sp->line = (char *) estrdup(word);
 
     hashval = hash(word);
-    sp->next = indexf->hashstoplist[hashval];
-    indexf->hashstoplist[hashval] = sp;
+    sp->next = header->hashstoplist[hashval];
+    header->hashstoplist[hashval] = sp;
 }
 
 /* Sees if a word is a stop word by looking it up in the hash table.
 */
 
-int     isstopword(IndexFILE * indexf, char *word)
+int     isstopword(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
     hashval = hash(word);
-    sp = indexf->hashstoplist[hashval];
+    sp = header->hashstoplist[hashval];
 
     while (sp != NULL)
     {
@@ -171,35 +171,35 @@ int     isstopword(IndexFILE * indexf, char *word)
 
 /* Adds a buzzword to a hash table.*/
 
-void    addbuzzwordhash(IndexFILE * indexf, char *word)
+void    addbuzzwordhash(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
-    if (isbuzzword(indexf, word))
+    if (isbuzzword(header, word))
         return;
 
-    indexf->buzzwords_used_flag++;
+    header->buzzwords_used_flag++;
 
     sp = (struct swline *) emalloc(sizeof(struct swline));
 
     sp->line = (char *) estrdup(word);
 
     hashval = hash(word);
-    sp->next = indexf->hashbuzzwordlist[hashval];
-    indexf->hashbuzzwordlist[hashval] = sp;
+    sp->next = header->hashbuzzwordlist[hashval];
+    header->hashbuzzwordlist[hashval] = sp;
 }
 
-void    freebuzzwordhash(IndexFILE * indexf)
+void    freebuzzwordhash(INDEXDATAHEADER *header)
 {
     int     i;
     struct swline *sp,
            *tmp;
 
     for (i = 0; i < HASHSIZE; i++)
-        if (indexf->hashbuzzwordlist[i])
+        if (header->hashbuzzwordlist[i])
         {
-            sp = (struct swline *) indexf->hashbuzzwordlist[i];
+            sp = (struct swline *) header->hashbuzzwordlist[i];
             while (sp)
             {
                 tmp = sp->next;
@@ -207,20 +207,20 @@ void    freebuzzwordhash(IndexFILE * indexf)
                 efree(sp);
                 sp = tmp;
             }
-            indexf->hashbuzzwordlist[i] = NULL;
+            header->hashbuzzwordlist[i] = NULL;
         }
 }
 
 
 /* Sees if a word is a buzzword by looking it up in the hash table. */
 
-int     isbuzzword(IndexFILE * indexf, char *word)
+int     isbuzzword(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
     hashval = hash(word);
-    sp = indexf->hashbuzzwordlist[hashval];
+    sp = header->hashbuzzwordlist[hashval];
 
     while (sp != NULL)
     {
@@ -329,16 +329,16 @@ void    initresulthashlist(SWISH * sw)
 }
 
 
-void    freestophash(IndexFILE * indexf)
+void    freestophash(INDEXDATAHEADER *header)
 {
     int     i;
     struct swline *sp,
            *tmp;
 
     for (i = 0; i < HASHSIZE; i++)
-        if (indexf->hashstoplist[i])
+        if (header->hashstoplist[i])
         {
-            sp = (struct swline *) indexf->hashstoplist[i];
+            sp = (struct swline *) header->hashstoplist[i];
             while (sp)
             {
                 tmp = sp->next;
@@ -346,31 +346,31 @@ void    freestophash(IndexFILE * indexf)
                 efree(sp);
                 sp = tmp;
             }
-            indexf->hashstoplist[i] = NULL;
+            header->hashstoplist[i] = NULL;
         }
 }
 
-void    freeStopList(IndexFILE * indexf)
+void    freeStopList(INDEXDATAHEADER *header)
 {
     int     i;
 
-    for (i = 0; i < indexf->stopPos; i++)
-        efree(indexf->stopList[i]);
-    if (indexf->stopList)
-        efree(indexf->stopList);
-    indexf->stopList = NULL;
-    indexf->stopPos = indexf->stopMaxSize = 0;
+    for (i = 0; i < header->stopPos; i++)
+        efree(header->stopList[i]);
+    if (header->stopList)
+        efree(header->stopList);
+    header->stopList = NULL;
+    header->stopPos = header->stopMaxSize = 0;
 }
 
 /* Adds a "use" word to a hash table.
 */
 
-void    addusehash(IndexFILE * indexf, char *word)
+void    addusehash(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
-    if (isuseword(indexf, word))
+    if (isuseword(header, word))
         return;
 
     sp = (struct swline *) emalloc(sizeof(struct swline));
@@ -378,20 +378,20 @@ void    addusehash(IndexFILE * indexf, char *word)
     sp->line = (char *) estrdup(word);
 
     hashval = hash(word);
-    sp->next = indexf->hashuselist[hashval];
-    indexf->hashuselist[hashval] = sp;
+    sp->next = header->hashuselist[hashval];
+    header->hashuselist[hashval] = sp;
 }
 
 /* Sees if a word is a "use" word by looking it up in the hash table.
 */
 
-int     isuseword(IndexFILE * indexf, char *word)
+int     isuseword(INDEXDATAHEADER *header, char *word)
 {
     unsigned hashval;
     struct swline *sp;
 
     hashval = hash(word);
-    sp = indexf->hashuselist[hashval];
+    sp = header->hashuselist[hashval];
 
     while (sp != NULL)
     {

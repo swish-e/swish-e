@@ -105,9 +105,9 @@ $Id$
 */
 
 #include "swish.h"
+#include "string.h"
 #include "search.h"
 #include "index.h"
-#include "string.h"
 #include "file.h"
 #include "list.h"
 #include "merge.h"
@@ -118,11 +118,108 @@ $Id$
 #include "soundex.h"
 #include "error.h"
 #include "compress.h"
+/* removed stuff 
 #include "deflate.h"
+*/
 #include "metanames.h"
 #include "result_sort.h"
 #include "result_output.h"
 #include "search_alt.h"
+#include "db.h"
+
+
+
+
+/* 
+  -- init structures for this module
+*/
+
+void initModule_Search (SWISH  *sw)
+
+{
+   struct MOD_Search *srch;
+
+   srch = (struct MOD_Search *) emalloc(sizeof(struct MOD_Search));
+   sw->Search = srch;
+
+   
+       /* Default variables for search */
+   srch->maxhits = -1;
+   srch->beginhits = 0;
+
+   srch->currentMaxPropertiesToDisplay = 0;
+   srch->numPropertiesToDisplay = 0;
+
+   srch->db_results = NULL;
+
+   srch->propNameToDisplay =NULL;
+
+   return;
+}
+
+
+/* 
+  -- release all wired memory for this module
+  -- 2001-04-11 rasc
+*/
+
+void freeModule_Search (SWISH *sw)
+
+{
+ struct DB_RESULTS *tmp,*tmp2;
+ struct MOD_Search *srch = sw->Search;
+
+       /* Default variables for search */
+  srch->maxhits = -1;
+  srch->beginhits = 0;
+
+ 		/* Free results from previous search if they exists */
+  for(tmp=srch->db_results;tmp;)
+  {
+      freeresultlist(sw,tmp);
+      tmp2=tmp->next;
+      efree(tmp);
+      tmp=tmp2;
+  }
+  srch->db_results=NULL;
+
+		/* Free dsiplay props arrays */
+  FreeOutputPropertiesVars(sw);
+
+  /* free module data */
+  efree (srch);
+  sw->Search = NULL;
+
+  return;
+}
+
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_Search (SWISH *sw, StringList *sl)
+
+{
+  //struct MOD_Search *srch = sw->Search;
+  //char *w0    = sl->word[0];
+  int  retval = 1;
+
+  return retval;
+}
+
 
 
 /* 01/2001 Jose Ruiz */
@@ -161,7 +258,7 @@ int     SwishAttach(SWISH * sw, int printflag)
 /* 06/00 Jose Ruiz
 ** Added to handle several index file headers */
     IndexFILE *tmplist;
-    FILE *fp;
+	int i;
  
     indexlist = sw->indexlist;
     sw->TotalWords = 0;
@@ -174,26 +271,22 @@ int     SwishAttach(SWISH * sw, int printflag)
     {
         sw->commonerror = RC_OK;
         sw->bigrank = 0;
-        if ((fp = openIndexFILEForRead(tmplist->line)) == NULL)
-        {
-            return (sw->lasterror = INDEX_FILE_NOT_FOUND);
-        }
-        tmplist->DB = (void *)fp;
-        if (!isokindexheader(fp))
-        {
-            return (sw->lasterror = UNKNOWN_INDEX_FILE_FORMAT);
-        }
-        readheader(tmplist);
-        readoffsets(tmplist);
-        readhashoffsets(tmplist);
-        readfileoffsets(tmplist);
-        readstopwords(tmplist);
-        readbuzzwords(tmplist);
-        readMetaNames(tmplist);
-        readlocationlookuptables(tmplist);
-        readpathlookuptable(tmplist);
+
+		/* Program exits in DB_Open if it fails */
+        tmplist->DB = (void *)DB_Open(sw, tmplist->line);
+
+        read_header(sw, &tmplist->header, tmplist->DB);
+
+		tmplist->filearray_cursize = tmplist->header.totalfiles;
+		tmplist->filearray_maxsize = tmplist->header.totalfiles;
+		tmplist->filearray = emalloc(tmplist->header.totalfiles * sizeof(struct file *));
+		for(i = 0; i < tmplist->header.totalfiles; i++)
+			tmplist->filearray[i] = NULL;
+
+		/* removed deflate stuff
         if (tmplist->header.applyFileInfoCompression)
             readdeflatepatterns(tmplist);
+			*/
 
         sw->TotalWords += tmplist->header.totalwords;
         sw->TotalFiles += tmplist->header.totalfiles;
@@ -258,7 +351,7 @@ int     search_2(SWISH * sw, char *words, int structure)
     PhraseDelimiter = (unsigned char) sw->PhraseDelimiter;
 
     indexlist = sw->indexlist;
-    sw->db_results = NULL;
+    sw->Search->db_results = NULL;
     j = 0;
     searchwordlist = NULL;
     metaID = 1;
@@ -331,8 +424,8 @@ int     search_2(SWISH * sw, char *words, int structure)
         resultPrintHeader(sw, 2, &indexlist->header, indexlist->header.savedasheader, 0);
 
         resultHeaderOut(sw, 3, "# StopWords:");
-        for (k = 0; k < indexlist->stopPos; k++)
-            resultHeaderOut(sw, 3, " %s", indexlist->stopList[k]);
+        for (k = 0; k < indexlist->header.stopPos; k++)
+            resultHeaderOut(sw, 3, " %s", indexlist->header.stopList[k]);
         resultHeaderOut(sw, 3, "\n");
 
         printheaderbuzzwords(sw,indexlist);
@@ -368,11 +461,11 @@ int     search_2(SWISH * sw, char *words, int structure)
         }
 
         /* add db_results to the list of results */
-        if (!sw->db_results)
-            sw->db_results = db_results;
+        if (!sw->Search->db_results)
+            sw->Search->db_results = db_results;
         else
         {
-            db_tmp = sw->db_results;
+            db_tmp = sw->Search->db_results;
             while (db_tmp)
             {
                 if (!db_tmp->next)
@@ -603,140 +696,6 @@ struct swline *expandphrase(struct swline *sp, char delimiter)
     return newp;
 }
 
-/*  getmatchword removed. Obsolete. Jose Ruiz 04/00 */
-
-/* Reads and prints the header of an index file.
-** Also reads the information in the header (wordchars, beginchars, etc)
-*/
-
-// $$$ to be rewritten as function = smaller code (rasc)
-
-#define ReadHeaderStr(buffer,bufferlen,len,fp)  uncompress1(len,fp); if(bufferlen<len) buffer=erealloc(buffer,(bufferlen=len+200)+1);  fread(buffer,len,1,fp);
-#define ReadHeaderInt(itmp,fp) uncompress1(itmp,fp); itmp--;
-
-void    readheader(IndexFILE * indexf)
-{
-    long    swish_magic;
-    int     id,
-            len,
-            itmp;
-    int     bufferlen;
-    char   *buffer;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    buffer = emalloc((bufferlen = MAXSTRLEN) + 1);
-    swish_magic = readlong(fp);
-    uncompress1(id, fp);
-    while (id)
-    {
-        switch (id)
-        {
-        case INDEXHEADER_ID:
-        case INDEXVERSION_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            break;
-        case MERGED_ID:
-        case DOCPROPENHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            break;
-        case WORDCHARSHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.wordchars = SafeStrCopy(indexf->header.wordchars, buffer, &indexf->header.lenwordchars);
-            sortstring(indexf->header.wordchars);
-            makelookuptable(indexf->header.wordchars, indexf->header.wordcharslookuptable);
-            break;
-        case BEGINCHARSHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.beginchars = SafeStrCopy(indexf->header.beginchars, buffer, &indexf->header.lenbeginchars);
-            sortstring(indexf->header.beginchars);
-            makelookuptable(indexf->header.beginchars, indexf->header.begincharslookuptable);
-            break;
-        case ENDCHARSHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.endchars = SafeStrCopy(indexf->header.endchars, buffer, &indexf->header.lenendchars);
-            sortstring(indexf->header.endchars);
-            makelookuptable(indexf->header.endchars, indexf->header.endcharslookuptable);
-            break;
-        case IGNOREFIRSTCHARHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.ignorefirstchar = SafeStrCopy(indexf->header.ignorefirstchar, buffer, &indexf->header.lenignorefirstchar);
-            sortstring(indexf->header.ignorefirstchar);
-            makelookuptable(indexf->header.ignorefirstchar, indexf->header.ignorefirstcharlookuptable);
-            break;
-        case IGNORELASTCHARHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.ignorelastchar = SafeStrCopy(indexf->header.ignorelastchar, buffer, &indexf->header.lenignorelastchar);
-            sortstring(indexf->header.ignorelastchar);
-            makelookuptable(indexf->header.ignorelastchar, indexf->header.ignorelastcharlookuptable);
-            break;
-        case STEMMINGHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.applyStemmingRules = itmp;
-            break;
-        case SOUNDEXHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.applySoundexRules = itmp;
-            break;
-        case IGNORETOTALWORDCOUNTWHENRANKING_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.ignoreTotalWordCountWhenRanking = itmp;
-            break;
-        case MINWORDLIMHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.minwordlimit = itmp;
-            break;
-        case MAXWORDLIMHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.maxwordlimit = itmp;
-            break;
-        case SAVEDASHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.savedasheader = SafeStrCopy(indexf->header.savedasheader, buffer, &indexf->header.lensavedasheader);
-            break;
-        case NAMEHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.indexn = SafeStrCopy(indexf->header.indexn, buffer, &indexf->header.lenindexn);
-            break;
-        case DESCRIPTIONHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.indexd = SafeStrCopy(indexf->header.indexd, buffer, &indexf->header.lenindexd);
-            break;
-        case POINTERHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.indexp = SafeStrCopy(indexf->header.indexp, buffer, &indexf->header.lenindexp);
-            break;
-        case MAINTAINEDBYHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.indexa = SafeStrCopy(indexf->header.indexa, buffer, &indexf->header.lenindexa);
-            break;
-        case INDEXEDONHEADER_ID:
-            ReadHeaderStr(buffer, bufferlen, len, fp);
-            indexf->header.indexedon = SafeStrCopy(indexf->header.indexedon, buffer, &indexf->header.lenindexedon);
-            break;
-        case COUNTSHEADER_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.totalwords = itmp;
-            ReadHeaderInt(itmp, fp);
-            indexf->header.totalfiles = itmp;
-            break;
-        case FILEINFOCOMPRESSION_ID:
-            ReadHeaderInt(itmp, fp);
-            indexf->header.applyFileInfoCompression = itmp;
-            break;
-
-        case TRANSLATECHARTABLE_ID:
-            ReadHeaderLookupTable(indexf->header.translatecharslookuptable, sizeof(indexf->header.translatecharslookuptable) / sizeof(int), fp);
-
-            break;
-
-        default:
-            progerr("Severe index error in header");
-            break;
-        }
-        uncompress1(id, fp);
-    }
-    efree(buffer);
-}
 
 
 /*
@@ -758,92 +717,7 @@ void    ReadHeaderLookupTable(int table[], int table_size, FILE * fp)
 
 
 
-/* Reads the offsets in the index file so word lookup is faster.
-The file pointer is set by readheader */
 
-
-void    readoffsets(IndexFILE * indexf)
-{
-    int     i;
-    FILE    *fp = (FILE *) indexf->DB;
-
-    for (i = 0; i < MAXCHARS; i++)
-    {
-        indexf->offsets[i] = readlong(fp);
-    }
-}
-
-/*Jose Ruiz 04/00
-Reads the hash index
-The file pointer is set by readoffsets */
-void    readhashoffsets(IndexFILE * indexf)
-{
-    int     i;
-    FILE    *fp = (FILE *) indexf->DB;
-
-    for (i = 0; i < SEARCHHASHSIZE; i++)
-        indexf->hashoffsets[i] = readlong(fp);
-    /* start of words in index file */
-    indexf->wordpos = ftell(fp);
-}
-
-/* Reads the stopwords in the index file.
-*/
-
-void    readstopwords(IndexFILE * indexf)
-{
-    int     len;
-    int     lenword = 0;
-    char   *word = NULL;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
-    fseek(fp, indexf->offsets[STOPWORDPOS], 0);
-
-    uncompress1(len, fp);
-    while (len)
-    {
-        if (len >= lenword)
-        {
-            lenword *= len + 200;
-            word = (char *) erealloc(word, lenword + 1);
-        }
-        fread(word, len, 1, fp);
-        word[len] = '\0';
-        addStopList(indexf, word);
-        addstophash(indexf, word);
-        uncompress1(len, fp);
-    }
-    efree(word);
-}
-
-/* read the buzzwords from the index file */
-
-void    readbuzzwords(IndexFILE * indexf)
-{
-    int     len;
-    int     lenword = 0;
-    char   *word = NULL;
-    FILE   *fp = (FILE *) indexf->DB;
-
-    word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
-    fseek(fp, indexf->offsets[BUZZWORDPOS], 0);
-
-    uncompress1(len, fp);
-    while (len)
-    {
-        if (len >= lenword)
-        {
-            lenword *= len + 200;
-            word = (char *) erealloc(word, lenword + 1);
-        }
-        fread(word, len, 1, fp);
-        word[len] = '\0';
-        addbuzzwordhash(indexf, word);
-        uncompress1(len, fp);
-    }
-    efree(word);
-}
 
 /* Print the buzzwords */
 void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
@@ -855,7 +729,7 @@ void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 
     for (hashval = 0; hashval < HASHSIZE; hashval++)
     {
-        sp = indexf->hashbuzzwordlist[hashval];
+        sp = indexf->header.hashbuzzwordlist[hashval];
         while (sp != NULL)
         {
             resultHeaderOut(sw, 3, " %s", sp->line);
@@ -867,149 +741,8 @@ void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 
 
 
-/* Reads the metaNames from the index
-*/
 
-void    readMetaNames(IndexFILE * indexf)
-{
-    int     len;
-    int     dummy;
-    int     wordlen,
-            metaType,
-            metaID;
-    char   *word;
-    long    sort_offset;
-    FILE   *fp = (FILE *)indexf->DB;
 
-    wordlen = MAXWORDLEN;
-    word = (char *) emalloc(MAXWORDLEN + 1);
-
-    fseek(fp, indexf->offsets[METANAMEPOS], 0);
-    uncompress1(len, fp);
-    while (len)
-    {
-        if (len >= wordlen)
-        {
-            wordlen = len + 200;
-            word = (char *) erealloc(word, wordlen + 1);
-        }
-        fread(word, len, 1, fp);
-        word[len] = '\0';
-        /* Read metaID */
-        uncompress1(metaID, fp);
-        /* metaType was saved as metaType+1 */
-        uncompress1(metaType, fp);
-        metaType--;
-        /* Read offset to sorted table of filenums */
-        sort_offset = readlong(fp);
-        /* add the meta tag */
-        addMetaEntry(indexf, word, metaType, metaID, sort_offset, &dummy);
-
-        uncompress1(len, fp);
-    }
-    efree(word);
-}
-
-/* Reads the file offset table in the index file.
-*/
-
-void    readfileoffsets(IndexFILE * indexf)
-{
-    long    pos,
-            totwords;
-    FILE   *fp = (FILE *) indexf->DB;
-
-    indexf->filearray_maxsize = indexf->fileoffsetarray_maxsize = indexf->header.totalfiles;
-    indexf->filearray = (struct file **) emalloc(indexf->filearray_maxsize * sizeof(struct file *));
-    indexf->fileoffsetarray = (long *) emalloc(indexf->fileoffsetarray_maxsize * sizeof(long));
-    indexf->filetotalwordsarray = (int *) emalloc(indexf->fileoffsetarray_maxsize * sizeof(int));
-
-    fseek(fp, indexf->offsets[FILEOFFSETPOS], 0);
-    for (indexf->filearray_cursize = 0, indexf->fileoffsetarray_cursize = 0, pos = 1L; (pos = readlong(fp));
-         indexf->filearray_cursize++, indexf->fileoffsetarray_cursize++)
-    {
-        if (indexf->filearray_cursize == indexf->filearray_maxsize)
-        {
-            indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
-        }
-        if (indexf->fileoffsetarray_cursize == indexf->fileoffsetarray_maxsize)
-        {
-            indexf->fileoffsetarray = (long *) erealloc(indexf->fileoffsetarray, (indexf->fileoffsetarray_maxsize += 1000) * sizeof(long));
-            indexf->filetotalwordsarray = (int *) erealloc(indexf->filetotalwordsarray, (indexf->fileoffsetarray_maxsize += 1000) * sizeof(int));
-        }
-        totwords = readlong(fp);
-        indexf->filearray[indexf->filearray_cursize] = NULL;
-        indexf->fileoffsetarray[indexf->fileoffsetarray_cursize] = pos;
-        indexf->filetotalwordsarray[indexf->fileoffsetarray_cursize] = totwords;
-    }
-}
-
-/* Read the lookuptables for structure, frequency */
-void    readlocationlookuptables(IndexFILE * indexf)
-{
-    FILE   *fp = (FILE *) indexf->DB;
-    int     i,
-            n,
-            tmp;
-
-    fseek(fp, indexf->offsets[LOCATIONLOOKUPTABLEPOS], 0);
-    uncompress1(n, fp);
-    if (!n)                     /* No words in file !!! */
-    {
-        indexf->structurelookup = NULL;
-        uncompress1(n, fp);     /* just to maintain file pointer */
-        indexf->structfreqlookup = NULL;
-        return;
-    }
-    indexf->structurelookup = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st) + sizeof(struct int_st *) * (n - 1));
-
-    indexf->structurelookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        indexf->structurelookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st));
-
-        uncompress1(tmp, fp);
-        indexf->structurelookup->all_entries[i]->val[0] = tmp - 1;
-    }
-    uncompress1(n, fp);
-    indexf->structfreqlookup = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st) + sizeof(struct int_st *) * (n - 1));
-
-    indexf->structfreqlookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        indexf->structfreqlookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st) + sizeof(int));
-
-        uncompress1(tmp, fp);
-        indexf->structfreqlookup->all_entries[i]->val[0] = tmp - 1;
-        uncompress1(tmp, fp);
-        indexf->structfreqlookup->all_entries[i]->val[1] = tmp - 1;
-    }
-}
-
-/* Read the lookuptable for paths/urls */
-void    readpathlookuptable(IndexFILE * indexf)
-{
-    FILE   *fp = (FILE *) indexf->DB;
-    int     i,
-            n,
-            len;
-    char   *tmp;
-
-    fseek(fp, indexf->offsets[PATHLOOKUPTABLEPOS], 0);
-    uncompress1(n, fp);
-    indexf->pathlookup = (struct char_lookup_st *) emalloc(sizeof(struct char_lookup_st) + sizeof(struct char_st *) * (n - 1));
-
-    indexf->pathlookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        indexf->pathlookup->all_entries[i] = (struct char_st *) emalloc(sizeof(struct char_st));
-
-        uncompress1(len, fp);
-        tmp = emalloc(len);
-        fread(tmp, len, 1, fp);
-        indexf->pathlookup->all_entries[i]->val = tmp;
-    }
-}
 
 /* The recursive parsing function.
 ** This was a headache to make but ended up being surprisingly easy. :)
@@ -1171,7 +904,7 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, FILE * fp, i
 
     newrp = returnrp = NULL;
 
-    if (isstopword(indexf, word) && !isrule(word))
+    if (isstopword(&indexf->header, word) && !isrule(word))
     {
         if (rulenum == OR_RULE && rp != NULL)
             return rp;
@@ -1225,36 +958,27 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             structure,
             frequency,
            *position,
-            tries,
             found,
             len,
             curmetaID,
             index_structure,
             index_structfreq;
-    int     filewordlen = 0;
-    char   *fileword = NULL;
     RESULT *rp,
            *rp2,
            *tmp;
-    int     res,
-            wordlen;
-    unsigned hashval;
-    long    offset,
-            dataoffset = 0L,
-            nextword = 0L,
+    long    wordID,
             nextposmetaname;
     char   *p,
            *q,
            *r;
-    struct file *fi = NULL;
     int     tfrequency = 0;
-    FILE   *fp = (FILE *) indexf->DB;
+	char   *s, *buffer, *resultword;
+	int     sz_buffer;
 
-    x = j = filenum = structure = frequency = tries = len = curmetaID = index_structure = index_structfreq = 0;
+    x = j = filenum = structure = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     position = NULL;
     nextposmetaname = 0L;
 
-    fileword = (char *) emalloc((filewordlen = MAXWORDLEN) + 1);
 
     rp = rp2 = NULL;
     /* First: Look for star at the end of the word */
@@ -1285,121 +1009,50 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             *q++ = *r;
     *q = '\0';
 
-    if (!p)
+    DB_InitReadWords(sw, indexf->DB);
+    if (!p)    /* No wildcard -> Direct hash search */
     {
-        /* If there is not a star use the hash approach ... */
-        res = 1;
-        tries = 0;
-        /* Get hash file offset */
-        hashval = searchhash(word);
-        if (!(offset = indexf->hashoffsets[hashval]))
-        {
-            efree(fileword);
-            sw->lasterror = WORD_NOT_FOUND;
-            return (NULL);
-        }
-        /* Search for word */
-        while (res)
-        {
-            /* tries is just to see how hash works and store hash tries */
-            tries++;
-            /* Position in file */
-            fseek(fp, offset, SEEK_SET);
-            /* Get word */
-            uncompress1(wordlen, fp);
-            if (wordlen > filewordlen)
-            {
-                filewordlen = wordlen + 100;
-                fileword = (char *) erealloc(fileword, filewordlen + 1);
-            }
-            fread(fileword, 1, wordlen, fp);
-            fileword[wordlen] = '\0';
-            offset = readlong(fp); /* Next hash */
-            dataoffset = readlong(fp); /* Offset to Word data */
-            if (!(res = strcmp(word, fileword)))
-                break;          /* Found !! */
-            else if (!offset)
-            {
-                efree(fileword);
-                sw->lasterror = WORD_NOT_FOUND;
-                return NULL;    /* No more entries if NULL */
-            }
-        }
-    }
+		DB_ReadWordHash(sw, word, &wordID, indexf->DB);
+		if(!wordID)
+		{	
+			DB_EndReadWords(sw, indexf->DB);
+                        sw->lasterror = WORD_NOT_FOUND;
+			return NULL;
+		}
+	}		
     else
-    {                           /* There is a star. So use the sequential approach */
-        if (!(len = strlen(word)))
+    {              /* There is a star. So use the sequential approach */
+        if (*word == '*')
         {
-            efree(fileword);
             sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
             return NULL;
         }
+		DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
 
-        i = (int) ((unsigned char) word[0]);
-
-        if (!indexf->offsets[i])
-        {
-            efree(fileword);
+		if (!wordID)
+		{
+			DB_EndReadWords(sw, indexf->DB);
             sw->lasterror = WORD_NOT_FOUND;
-            return NULL;
-        }
-        found = 1;
-        fseek(fp, indexf->offsets[i], 0);
-
-        /* Look for first occurrence */
-        uncompress1(wordlen, fp);
-        if (wordlen > filewordlen)
-        {
-            filewordlen = wordlen + 100;
-            fileword = (char *) erealloc(fileword, filewordlen + 1);
-        }
-        while (wordlen)
-        {
-            fread(fileword, 1, wordlen, fp);
-            fileword[wordlen] = '\0';
-            readlong(fp);       /* jump hash offset */
-            dataoffset = readlong(fp); /* Get offset to word's data */
-            if (!(res = strncmp(word, fileword, len))) /*Found!! */
-            {
-                nextword = ftell(fp); /* preserve next word pos */
-                break;
-            }
-            if (res < 0)
-            {
-                efree(fileword);
-                sw->lasterror = WORD_NOT_FOUND;
-                return NULL;    /* Not found */
-            }
-            /* Go to next value */
-            uncompress1(wordlen, fp); /* Next word */
-            if (!wordlen)
-            {
-                efree(fileword);
-                sw->lasterror = WORD_NOT_FOUND;
-                return NULL;    /* not found */
-            }
-            if (wordlen > filewordlen)
-            {
-                filewordlen = wordlen + 100;
-                fileword = (char *) erealloc(fileword, filewordlen + 1);
-            }
-        }
+			return NULL;
+		}
+		efree(resultword);   /* Do not need it */
     }
     /* If code is here we have found the word !! */
     do
     {
-        /* Get the data */
-        fseek(fp, dataoffset, SEEK_SET);
-        uncompress1(tfrequency, fp); /* tfrequency */
+	DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
+	s = buffer;
+        /* Get the data of the word */
+        uncompress2(tfrequency, s); /* tfrequency */
         /* Now look for a correct Metaname */
-        uncompress1(curmetaID, fp);
+        uncompress2(curmetaID, s);
         while (curmetaID)
         {
-            nextposmetaname = readlong(fp);
+            UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
             if (curmetaID >= metaID)
                 break;
-            fseek(fp, nextposmetaname, 0);
-            uncompress1(curmetaID, fp);
+            s = buffer + nextposmetaname;
+            uncompress2(curmetaID, s);
         }
         if (curmetaID == metaID)
             found = 1;
@@ -1409,37 +1062,26 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         {
             do
             {                   /* Read on all items */
-                uncompress1(filenum, fp);
-                uncompress1(index_structfreq, fp);
-                frequency = indexf->structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-                index_structure = indexf->structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-                structure = indexf->structurelookup->all_entries[index_structure - 1]->val[0];
+                uncompress2(filenum, s);
+                uncompress2(index_structfreq, s);
+                frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
+                index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
+                structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
                 position = (int *) emalloc(frequency * sizeof(int));
 
                 for (j = 0; j < frequency; j++)
                 {
-                    uncompress1(x, fp);
+                    uncompress2(x, s);
                     position[j] = x;
                 }
                 rp =
                     (RESULT *) addtoresultlist(rp, filenum,
-                                               getrank(sw, frequency, tfrequency, indexf->filetotalwordsarray[filenum - 1], structure,
+                                               getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
                                                        indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
-                if (sw->ResultOutput->headerOutVerbose >= 9)
-                {
-                    /* dump diagnostic info */
-                    long    curFilePos;
-
-                    curFilePos = ftell(fp); /* save */
-                    fi = readFileEntry(indexf, filenum);
-                    resultHeaderOut(sw, 9, "# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word,
-                                    getrank(sw, frequency, tfrequency, indexf->filetotalwordsarray[filenum - 1], structure,
-                                            indexf->header.ignoreTotalWordCountWhenRanking), frequency, tries);
-                    fseek(fp, curFilePos, 0); /* restore */
-                }
             }
-            while (ftell(fp) != nextposmetaname);
+            while ((s - buffer) != nextposmetaname);
         }
+		efree(buffer);
         if (!p)
             break;              /* direct access -> break */
         else
@@ -1449,27 +1091,13 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-            fseek(fp, nextword, SEEK_SET);
-            uncompress1(wordlen, fp);
-            if (!wordlen)
+			DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            if (! wordID)
                 break;          /* no more data */
-
-            if (wordlen > filewordlen)
-            {
-                filewordlen = wordlen + 100;
-                fileword = (char *) erealloc(fileword, filewordlen + 1);
-            }
-            fread(fileword, 1, wordlen, fp);
-            fileword[wordlen] = '\0';
-            res = strncmp(word, fileword, len);
-            if (res)
-                break;          /* No more data */
-            readlong(fp);       /* jump hash offset */
-            dataoffset = readlong(fp); /* Get data offset */
-            nextword = ftell(fp);
+			efree(resultword);  /* Do not need it */
         }
     }
-    while (1);
+	while(1);
     if (p)
     {
         /* Finally, if we are in an sequential search
@@ -1498,65 +1126,10 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         }
         rp = rp2;
     }
-    efree(fileword);
+	DB_EndReadWords(sw, indexf->DB);
     return rp;
 }
 
-/* 11/00 Function to read all words starting with a character */
-char   *getfilewords(SWISH * sw, char c, IndexFILE * indexf)
-{
-    int     i,
-            j;
-    int     wordlen;
-    char   *buffer;
-    int     bufferpos,
-            bufferlen;
-    FILE   *fp = (FILE *) indexf->DB;
-
-    if (!c)
-        return "";
-    /* Check if already read */
-    j = (int) ((unsigned char) c);
-    if (indexf->keywords[j])
-        return (indexf->keywords[j]);
-
-    i = (int) ((unsigned char) c);
-    if (!indexf->offsets[i])
-    {
-        sw->lasterror = WORD_NOT_FOUND;
-        return "";
-    }
-    fseek(fp, indexf->offsets[i], 0);
-
-    bufferlen = MAXSTRLEN * 10;
-    bufferpos = 0;
-    buffer = emalloc(bufferlen + 1);
-    buffer[0] = '\0';
-
-    /* Look for occurrences */
-    uncompress1(wordlen, fp);
-    while (wordlen)
-    {
-        if ((bufferpos + wordlen + 1) > bufferlen)
-        {
-            bufferlen += MAXSTRLEN + wordlen + 1;
-            buffer = (char *) erealloc(buffer, bufferlen + 1);
-        }
-        fread(buffer + bufferpos, 1, wordlen, fp);
-        if (c != buffer[bufferpos])
-        {
-            buffer[bufferpos] = '\0';
-            break;
-        }
-        buffer[bufferpos + wordlen] = '\0';
-        bufferpos += wordlen + 1;
-        readlong(fp);           /* jump hash offset */
-        readlong(fp);           /* jump offset to word's data */
-        uncompress1(wordlen, fp);
-    }
-    indexf->keywords[j] = buffer;
-    return (indexf->keywords[j]);
-}
 
 
 /*
@@ -1994,12 +1567,12 @@ RESULT *SwishNext(SWISH * sw)
         num = 1000.0f;
 
     /* Check for a unique index file */
-    if (!sw->db_results->next)
+    if (!sw->Search->db_results->next)
     {
-        if ((res = sw->db_results->currentresult))
+        if ((res = sw->Search->db_results->currentresult))
         {
             /* Increase Pointer */
-            sw->db_results->currentresult = res->nextsort;
+            sw->Search->db_results->currentresult = res->nextsort;
 
             /* 02/2001 jmruiz - Read file data here */
             /* Doing it here we get better performance if maxhits specified
@@ -2011,7 +1584,7 @@ RESULT *SwishNext(SWISH * sw)
     {
         /* We have more than one index file */
         /* Get the lower value */
-        db_results_winner = sw->db_results;
+        db_results_winner = sw->Search->db_results;
         if ((res = db_results_winner->currentresult))
         {
             res = getproperties(res);
@@ -2019,7 +1592,7 @@ RESULT *SwishNext(SWISH * sw)
                 res->PropSort = getResultSortProperties(res);
         }
 
-        for (db_results = sw->db_results->next; db_results; db_results = db_results->next)
+        for (db_results = sw->Search->db_results->next; db_results; db_results = db_results->next)
         {
             if (!(res2 = db_results->currentresult))
                 continue;
@@ -2063,23 +1636,7 @@ RESULT *SwishNext(SWISH * sw)
 }
 
 
-/* Does an index file have a readable format?
-*/
 
-int     isokindexheader(FILE * fp)
-{
-    long    swish_magic;
-
-    fseek(fp, 0, 0);
-    swish_magic = readlong(fp);
-    if (swish_magic != SWISH_MAGIC)
-    {
-        fseek(fp, 0, 0);
-        return 0;
-    }
-    fseek(fp, 0, 0);
-    return 1;
-}
 
 
 /* Checks if the next word is "="
@@ -2127,9 +1684,9 @@ void    freeresult(SWISH * sw, RESULT * rp)
             efree(rp->filename);
         if (rp->summary)
             efree(rp->summary);
-        if (sw->numPropertiesToDisplay && rp->Prop)
+        if (sw->Search->numPropertiesToDisplay && rp->Prop)
         {
-            for (i = 0; i < sw->numPropertiesToDisplay; i++)
+            for (i = 0; i < sw->Search->numPropertiesToDisplay; i++)
                 efree(rp->Prop[i]);
             efree(rp->Prop);
         }
@@ -2203,7 +1760,7 @@ RESULT *getproperties(RESULT * rp)
     if (rp->read)
         return rp;              /* Read it before */
 
-    fileInfo = readFileEntry(indexf, rp->filenum);
+    fileInfo = readFileEntry(sw, indexf, rp->filenum);
     rp->read = 1;
     rp->filename = estrdup(fileInfo->fi.filename);
 
@@ -2220,7 +1777,7 @@ RESULT *getproperties(RESULT * rp)
         rp->summary = estrdup(fileInfo->fi.summary);
     rp->start = fileInfo->fi.start;
     rp->size = fileInfo->fi.size;
-    if (sw->numPropertiesToDisplay)
+    if (sw->Search->numPropertiesToDisplay)
         rp->Prop = getResultProperties(rp);
 
     return rp;
@@ -2317,13 +1874,10 @@ void    freefileoffsets(SWISH * sw)
             tmp->filearray = NULL;
             tmp->filearray_maxsize = tmp->filearray_cursize = 0;
         }
-        if (tmp->fileoffsetarray)
+        if (tmp->header.filetotalwordsarray)
         {
-            efree(tmp->fileoffsetarray);
-            efree(tmp->filetotalwordsarray);
-            tmp->fileoffsetarray = NULL;
-            tmp->filetotalwordsarray = NULL;
-            tmp->fileoffsetarray_maxsize = tmp->fileoffsetarray_cursize = 0;
+            efree(tmp->header.filetotalwordsarray);
+            tmp->header.filetotalwordsarray = NULL;
         }
         tmp = tmp->next;
     }
@@ -2371,7 +1925,7 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
             break;
         if (u_isnotrule(sw, pointer1->line) || isMetaNameOpNext(pointer2))
             break;
-        if (!isstopword(indexf, pointer1->line) && !u_isrule(sw, pointer1->line))
+        if (!isstopword(&indexf->header, pointer1->line) && !u_isrule(sw, pointer1->line))
             break;
         searchwordlist = pointer2; /* move the head of the list */
 
@@ -2406,13 +1960,13 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
             ignore = 0;
             if (!inphrase)
             {
-                if ((isstopword(indexf, pointer2->line) && !u_isrule(sw, pointer2->line) && !isMetaNameOpNext(pointer2->next)) /* non-rule stopwords */
+                if ((isstopword(&indexf->header, pointer2->line) && !u_isrule(sw, pointer2->line) && !isMetaNameOpNext(pointer2->next)) /* non-rule stopwords */
                     || (u_isrule(sw, pointer1->line) && u_isrule(sw, pointer2->line))) /* two rules together */
                     ignore = 1;
             }
             else
             {
-                if (isstopword(indexf, pointer2->line))
+                if (isstopword(&indexf->header, pointer2->line))
                     ignore = 1;
             }
             if (ignore)

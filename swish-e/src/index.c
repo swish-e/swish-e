@@ -1,5 +1,4 @@
 /*
-$Id$
 **
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
@@ -120,7 +119,9 @@ $Id$
 #include "error.h"
 #include "file.h"
 #include "compress.h"
+/* Removed due to problems with patents
 #include "deflate.h"
+*/
 #include "html.h"
 #include "xml.h"
 #include "txt.h"
@@ -130,6 +131,7 @@ $Id$
 #include "result_output.h"
 #include "filter.h"
 #include "date_time.h"
+#include "db.h"
 
 
 /*
@@ -142,6 +144,7 @@ $Id$
    -- Checks if file has to be send thru filter (file stream)
    -- 2000-11-19 rasc
 */
+
 
 void    do_index_file(SWISH * sw, FileProp * fprop)
 {
@@ -278,6 +281,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     return;
 }
+
 
 
 
@@ -458,24 +462,16 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     if (!indexf->filearray || !indexf->filearray_maxsize)
     {
         indexf->filearray = (struct file **) emalloc((indexf->filearray_maxsize = BIGHASHSIZE) * sizeof(struct file *));
+        indexf->header.filetotalwordsarray = (int *) emalloc(indexf->filearray_maxsize * sizeof(int));
 
         indexf->filearray_cursize = 0;
     }
     if (indexf->filearray_maxsize == indexf->filearray_cursize)
+    {
         indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
-
-    if (!indexf->fileoffsetarray || !indexf->fileoffsetarray_maxsize)
-    {
-        indexf->fileoffsetarray = (long *) emalloc((indexf->fileoffsetarray_maxsize = BIGHASHSIZE) * sizeof(long));
-        indexf->filetotalwordsarray = (int *) emalloc(indexf->fileoffsetarray_maxsize * sizeof(int));
-
-        indexf->fileoffsetarray_cursize = 0;
+        indexf->header.filetotalwordsarray = (int *) erealloc(indexf->header.filetotalwordsarray, indexf->filearray_maxsize * sizeof(long));
     }
-    if (indexf->fileoffsetarray_maxsize == indexf->fileoffsetarray_cursize)
-    {
-        indexf->fileoffsetarray = (long *) erealloc(indexf->fileoffsetarray, (indexf->fileoffsetarray_maxsize += 10000) * sizeof(long));
-        indexf->filetotalwordsarray = (int *) erealloc(indexf->filetotalwordsarray, indexf->fileoffsetarray_maxsize * sizeof(long));
-    }
+
     newnode = (struct file *) emalloc(sizeof(struct file));
 
     if (newFileEntry != NULL)
@@ -501,18 +497,18 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         p3 = NULL;
     if (!p3)
     {
-        newnode->fi.lookup_path = get_lookup_path(&indexf->pathlookup, "");
+        newnode->fi.lookup_path = get_lookup_path(&indexf->header.pathlookup, "");
     }
     else
     {
         c = *++p3;
         *p3 = '\0';
-        newnode->fi.lookup_path = get_lookup_path(&indexf->pathlookup, ruleparsedfilename);
+        newnode->fi.lookup_path = get_lookup_path(&indexf->header.pathlookup, ruleparsedfilename);
         *p3 = c;
         ruleparsedfilename = p3;
     }
 
-    newnode->fi.filenum = indexf->fileoffsetarray_cursize + 1; /* filenum starts in 1 */
+    newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
     newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
     /* Not used in indexing mode - They are in properties */
     /* NULL must be set to not get a segfault in freefileinfo */
@@ -525,7 +521,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     if (filename)
     {
         /* Check if filename is internal swish metadata */
-        if ((q = getMetaNameData(indexf, AUTOPROPERTY_DOCPATH)))
+        if ((q = getMetaNameData(&indexf->header, AUTOPROPERTY_DOCPATH)))
         {
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
@@ -547,7 +543,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     if (title)
     {
         /* Check if title is internal swish metadata */
-        if ((q = indexf->titleProp))
+        if ((q = indexf->header.titleProp))
         {
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
@@ -569,7 +565,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     if (summary)
     {
         /* Check if summary is internal swish metadata */
-        if ((q = indexf->summaryProp))
+        if ((q = indexf->header.summaryProp))
         {
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
@@ -589,7 +585,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         }
     }
     /* Check if filedate is an internal swish metadata */
-    if ((q = indexf->filedateProp))
+    if ((q = indexf->header.filedateProp))
     {
         /* Check if it is also a property (META_PROP flag) */
         if (is_meta_property(q))
@@ -600,7 +596,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         }
     }
     /* Check if size is internal swish metadata */
-    if ((q = indexf->sizeProp))
+    if ((q = indexf->header.sizeProp))
     {
         /* Check if it is also a property (META_PROP flag) */
         if (is_meta_property(q))
@@ -612,7 +608,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     }
 
     /* Check if size is internal swish metadata */
-    if ((q = indexf->startProp))
+    if ((q = indexf->header.startProp))
     {
         /* Check if it is also a property (META_PROP flag) */
         if (is_meta_property(q))
@@ -624,7 +620,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     }
 /* #### */
     indexf->filearray[indexf->filearray_cursize++] = newnode;
-    indexf->fileoffsetarray_cursize++;
+	indexf->header.totalfiles++;
 
 }
 
@@ -634,7 +630,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
 int     getfilecount(IndexFILE * indexf)
 {
-    return indexf->fileoffsetarray_cursize;
+    return indexf->filearray_cursize;
 }
 
 
@@ -712,7 +708,7 @@ int     removestops(SWISH * sw)
      */
 
     for (stopwords = 0, hashval = 0; hashval < HASHSIZE; hashval++)
-        for (sp = indexf->hashstoplist[hashval]; sp; sp = sp->next)
+        for (sp = indexf->header.hashstoplist[hashval]; sp; sp = sp->next)
             stopwords++;
 
     totalwords = indexf->header.totalwords;
@@ -737,8 +733,8 @@ int     removestops(SWISH * sw)
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= sw->plimit && ep->tfrequency >= sw->flimit)
             {
-                addStopList(indexf, ep->word);
-                addstophash(indexf, ep->word);
+                addStopList(&indexf->header, ep->word);
+                addstophash(&indexf->header, ep->word);
                 stopwords++;
                 /* Remove entry from  the hash array */
                 if (ep2)
@@ -887,8 +883,6 @@ int     removestops(SWISH * sw)
                     }
                 }
             }
-            if (sw->verbose >= 3)
-                printf("\n");
         }
         /* Free the memory used by the table of files */
         for (i = 0; i < totalfiles; i++)
@@ -957,104 +951,36 @@ int     getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int i
 
 
 
-
-
-/* Prints the index information at the head of index files.
-** 06/00 - If fp==stdout ptints the header to screen
-** 2001-03-14 rasc   "screen" print moved to result_output.c
+/* -------------------------------------------- */
+/* -------------------------------------------- */
+/* Sorts the words and compress the last entry data
 */
 
-
-void    printheader(INDEXDATAHEADER * header, FILE * fp, char *filename, int totalwords, int totalfiles, int merged)
+void    sort_words(SWISH * sw, IndexFILE * indexf)
 {
-    char   *c,
-           *tmp;
-    long    itmp;
-
-    c = (char *) strrchr(filename, '/');
-    if (!c || (c && !*(c + 1)))
-        c = filename;
-    else
-        c += 1;
-
-    itmp = SWISH_MAGIC;
-    printlong(fp, itmp);
-    PrintHeaderStr(INDEXHEADER_ID, INDEXHEADER, fp);
-    PrintHeaderStr(INDEXVERSION_ID, INDEXVERSION, fp);
-    PrintHeaderInt(MERGED_ID, merged, fp);
-    PrintHeaderStr(NAMEHEADER_ID, header->indexn, fp);
-    PrintHeaderStr(SAVEDASHEADER_ID, c, fp);
-    PrintHeaderInt(COUNTSHEADER_ID, totalwords, fp);
-    itmp = totalfiles + 1;
-    compress1(itmp, fp);
-    tmp = getTheDateISO();
-    PrintHeaderStr(INDEXEDONHEADER_ID, tmp, fp);
-    efree(tmp);
-    PrintHeaderStr(DESCRIPTIONHEADER_ID, header->indexd, fp);
-    PrintHeaderStr(POINTERHEADER_ID, header->indexp, fp);
-    PrintHeaderStr(MAINTAINEDBYHEADER_ID, header->indexa, fp);
-    PrintHeaderInt(DOCPROPENHEADER_ID, 1, fp);
-    PrintHeaderInt(STEMMINGHEADER_ID, header->applyStemmingRules, fp);
-    PrintHeaderInt(SOUNDEXHEADER_ID, header->applySoundexRules, fp);
-    PrintHeaderInt(IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, fp);
-    PrintHeaderStr(WORDCHARSHEADER_ID, header->wordchars, fp);
-    PrintHeaderInt(MINWORDLIMHEADER_ID, header->minwordlimit, fp);
-    PrintHeaderInt(MAXWORDLIMHEADER_ID, header->maxwordlimit, fp);
-    PrintHeaderStr(BEGINCHARSHEADER_ID, header->beginchars, fp);
-    PrintHeaderStr(ENDCHARSHEADER_ID, header->endchars, fp);
-    PrintHeaderStr(IGNOREFIRSTCHARHEADER_ID, header->ignorefirstchar, fp);
-    PrintHeaderStr(IGNORELASTCHARHEADER_ID, header->ignorelastchar, fp);
-    PrintHeaderStr(IGNORELASTCHARHEADER_ID, header->ignorelastchar, fp);
-    PrintHeaderInt(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, fp);
-    /* Jose Ruiz 06/00 Added this line to delimite the header */
-    PrintHeaderLookupTable(TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), fp);
-
-    fputc(0, fp);
-
-}
+    int     i;
+    ENTRYARRAY *ep;
+    ENTRY  *epi;
+    int     totalwords;
 
 
-/*
- -- some support functions for "printing" the header information on file
- -- 2001-03-02  rasc   were former macros
-*/
-
-void    PrintHeaderStr(int id, char *s, FILE * fp)
-{
-    int     len;
-
-    compress1(id, fp);
-    len = strlen(s) + 1;
-    compress1(len, fp);
-    fwrite(s, len, sizeof(char), fp);
-}
-
-void    PrintHeaderInt(int id, int i, FILE * fp)
-{
-    long    itmp;
-
-    compress1(id, fp);
-    itmp = i + 1;
-    compress1(itmp, fp);
-}
-
-
-void    PrintHeaderLookupTable(int ID, int table[], int table_size, FILE * fp)
-{
-    int     id,
-            i;
-
-    id = ID;
-    compress1(id, fp);
-    for (i = 0; i < table_size; i++)
+    BuildSortedArrayOfWords(sw, indexf);
+    ep = sw->entryArray;
+    if (ep)
     {
-        compress1((table[i] + 1), fp);
+        totalwords = ep->numWords;
+        for (i = 0; i < totalwords; i++)
+        {
+            epi = ep->elist[i];
+            if (!isstopword(&indexf->header, epi->word))
+            {
+                /* Compress remaining data */
+                CompressCurrentLocEntry(sw, indexf, epi);
+            }
+        }
     }
 }
 
-
-
-/* -------------------------------------------- */
 
 
 /* Sort entry by MetaName, FileNum */
@@ -1091,7 +1017,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
         compressed_data = (char *) e->locationarray[k];
         uncompress2(num, compressed_data); /* index to lookuptable */
-        pi[0] = indexf->locationlookup->all_entries[num - 1]->val[0];
+        pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
         uncompress2(num, compressed_data); /* filenum */
         pi[1] = num;
         ptmp2 += 2 * sizeof(int);
@@ -1114,225 +1040,74 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 }
 
 
-/* Print the index entries that hold the word, rank, and other information.
+/* Write the index entries that hold the word, rank, and other information.
 */
 
-void    printindex(SWISH * sw, IndexFILE * indexf)
+void    write_index(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
     ENTRYARRAY *ep;
     ENTRY  *epi;
     int     totalwords;
-    FILE   *fp = (FILE *)indexf->DB;
 
-    BuildSortedArrayOfWords(sw, indexf);
+
     ep = sw->entryArray;
     if (ep)
     {
         totalwords = ep->numWords;
+
+        DB_InitWriteWords(sw, indexf->DB);
+
         for (i = 0; i < totalwords; i++)
         {
             epi = ep->elist[i];
-            if (!isstopword(indexf, epi->word))
-            {
-                /* Compress remaining data */
-                CompressCurrentLocEntry(sw, indexf, epi);
-            }
-        }
-        for (i = 0; i < totalwords; i++)
-        {
-            epi = ep->elist[i];
-            if (!isstopword(indexf, epi->word))
+            if (!isstopword(&indexf->header, epi->word))
             {
                 /* Sort locationlist by MetaName, Filenum
                    ** for faster search */
                 sortentry(sw, indexf, epi);
-                /* Write entry to file */
-                printword(sw, epi, indexf);
+                /* Write word to index file */
+                write_word(sw, epi, indexf);
             }
             else
                 epi->u1.fileoffset = -1L;
-        }
-        fputc(0, fp);   /* End of words mark */
-        printhash(sw->hashentries, indexf);
+        }	
+		
+		
+	    for (i = 0; i < SEARCHHASHSIZE; i++)
+		{
+			if ((epi = sw->hashentries[i]))
+			{
+				while (epi)
+				{
+						/* If it is not a stopword write it */
+					if (epi->u1.fileoffset >= 0L)  
+						DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
+					epi = epi->nexthash;
+				}
+			}
+		}
+
+
         for (i = 0; i < totalwords; i++)
         {
             epi = ep->elist[i];
             if (epi->u1.fileoffset >= 0L)
             {
-                printworddata(sw, epi, indexf);
+                write_worddata(sw, epi, indexf);
             }
             efree(epi->word);
             efree(epi);
         }
+		
+	DB_EndWriteWords(sw, indexf->DB);
+
     }
 }
 
-/* Jose Ruiz 11/00
-** Function to write a word to the index file
-*/
-void    printword(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
-{
-    int     i,
-            wordlen,
-            hashval;
-    long    f_offset;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    f_offset = ftell(fp);
-    i = (int) ((unsigned char) ep->word[0]);
-    /* if(isindexchar(indexf->header,i) && !indexf->offsets[i]) indexchars stuff removed */
-    if (!indexf->offsets[i])
-        indexf->offsets[i] = f_offset;
-
-    /* Get HashOffset for direct access */
-    hashval = searchhash(ep->word);
-    if (sw->hashentries[hashval] == ep)
-        indexf->hashoffsets[hashval] = f_offset;
-
-    /* Write word length, word and a NULL offset */
-    wordlen = strlen(ep->word);
-    compress1(wordlen, fp);
-    fwrite(ep->word, wordlen, 1, fp);
-
-    printlong(fp, (long) 0);    /* hash offset */
-    printlong(fp, (long) 0);    /* word's data pointer */
-    /* Store word offset for futher hash computing */
-    ep->u1.fileoffset = f_offset;
-}
-
-/* Jose Ruiz 11/00
-** Function to write all word's data to the index file
-*/
-void    printworddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
-{
-    int     i,
-            index,
-            wordlen,
-            curmetaID;
-    long    tmp,
-            curmetanamepos,
-            f_offset;
-    int     metaID,
-            filenum,
-            frequency,
-            position;
-    int     index_structfreq;
-    unsigned char *compressed_data,
-           *p;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    curmetaID = 0;
-    curmetanamepos = 0L;
-    fseek(fp, 0, SEEK_END);
-    f_offset = ftell(fp);
-
-    fseek(fp, ep->u1.fileoffset, SEEK_SET);
-    uncompress1(wordlen, fp);   /* Get Word length */
-    fseek(fp, (long) wordlen, SEEK_CUR); /* Jump Word */
-    fseek(fp, (long) sizeof(long), SEEK_CUR); /* Jump Hash pointer */
-
-    printlong(fp, f_offset);
-    fseek(fp, 0, SEEK_END);     /* Come back to the end */
-
-    /* Write tfrequency */
-    compress1(ep->tfrequency, fp);
-    /* Write location list */
-    for (i = 0; i < ep->u1.max_locations; i++)
-    {
-        p = compressed_data = (unsigned char *) ep->locationarray[i];
-        uncompress2(index, p);
-        metaID = indexf->locationlookup->all_entries[index - 1]->val[0];
-        if (curmetaID != metaID)
-        {
-            if (curmetaID)
-            {
-                /* Write in previous meta (curmetaID)
-                   ** file offset to next meta */
-                tmp = ftell(fp);
-                fseek(fp, curmetanamepos, 0);
-                printlong(fp, tmp);
-                fseek(fp, tmp, 0);
-            }
-            curmetaID = metaID;
-            compress1(curmetaID, fp);
-            curmetanamepos = ftell(fp);
-            printlong(fp, (long) 0);
-        }
-        /* Write filenum, structure and position information to index file */
-        uncompress2(filenum, p);
-        index_structfreq = indexf->locationlookup->all_entries[index - 1]->val[1];
-        frequency = indexf->structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-        compress1(filenum, fp);
-        compress1(index_structfreq, fp);
-        for (; frequency; frequency--)
-        {
-            uncompress2(position, p);
-            compress1(position, fp);
-        }
-        efree(compressed_data);
-    }
-    /* Write in previous meta (curmetaID)
-       ** file offset to end of metas */
-    tmp = ftell(fp);
-    fseek(fp, curmetanamepos, 0);
-    printlong(fp, tmp);
-    fseek(fp, tmp, 0);
-    /* A NULL byte to indicate end of word data */
-    fputc(0, fp);
-}
-
-/* Prints the list of stopwords into the index file.
-*/
-
-void    printstopwords(IndexFILE * indexf)
-{
-    int     hashval,
-            len;
-    struct swline *sp = NULL;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    indexf->offsets[STOPWORDPOS] = ftell(fp);
-    for (hashval = 0; hashval < HASHSIZE; hashval++)
-    {
-        sp = indexf->hashstoplist[hashval];
-        while (sp != NULL)
-        {
-            len = strlen(sp->line);
-            compress1(len, fp);
-            fwrite(sp->line, len, 1, fp);
-            sp = sp->next;
-        }
-    }
-    fputc(0, fp);
-}
-
-/* Prints the list of buzzwords into the index file. */
-
-void    printbuzzwords(IndexFILE * indexf)
-{
-    int     hashval,
-            len;
-    struct swline *sp = NULL;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    indexf->offsets[BUZZWORDPOS] = ftell(fp);
-    for (hashval = 0; hashval < HASHSIZE; hashval++)
-    {
-        sp = indexf->hashbuzzwordlist[hashval];
-        while (sp != NULL)
-        {
-            len = strlen(sp->line);
-            compress1(len, fp);
-            fwrite(sp->line, len, 1, fp);
-            sp = sp->next;
-        }
-    }
-    fputc(0, fp);
-}
 
 
-unsigned char *buildFileEntry(char *filename, FILE * fp, struct docPropertyEntry **docProperties, int lookup_path, int *sz_buffer)
+unsigned char *buildFileEntry(char *filename, struct docPropertyEntry **docProperties, int lookup_path, int *sz_buffer)
 {
     int     len_filename;
     unsigned char *buffer1,
@@ -1368,7 +1143,7 @@ unsigned char *buildFileEntry(char *filename, FILE * fp, struct docPropertyEntry
     return (buffer3);
 }
 
-struct file *readFileEntry(IndexFILE * indexf, int filenum)
+struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 {
     int     total_len,
             len1,
@@ -1378,11 +1153,8 @@ struct file *readFileEntry(IndexFILE * indexf, int filenum)
            *p;
     char   *buf1;
     struct file *fi;
-    long    foffset;
-    FILE   *fp = (FILE *)indexf->DB;
 
     fi = indexf->filearray[filenum - 1];
-    foffset = indexf->fileoffsetarray[filenum - 1];
     if (fi)
         return fi;              /* Read it previously */
 
@@ -1398,18 +1170,18 @@ struct file *readFileEntry(IndexFILE * indexf, int filenum)
     indexf->filearray[filenum - 1] = fi;
 
 
-    fseek(fp, foffset, 0);
 
+	/* Removed due to problems with patents
     if (indexf->header.applyFileInfoCompression)
     {
         buffer = p = zfread(indexf->dict, &total_len, fp);
     }
     else
     {
-        uncompress1(total_len, fp);
-        buffer = p = emalloc(total_len);
-        fread(buffer, total_len, 1, fp);
-    }
+	*/
+		DB_ReadFile(sw, filenum, &buffer, &total_len, indexf->DB);
+		p = buffer;
+	/* } */
 
     uncompress2(lookup_path, p); /* Index to lookup table of paths */
     lookup_path--;
@@ -1420,10 +1192,10 @@ struct file *readFileEntry(IndexFILE * indexf, int filenum)
 
     fi->fi.lookup_path = lookup_path;
     /* Add the path to filename */
-    len4 = strlen(indexf->pathlookup->all_entries[lookup_path]->val);
+    len4 = strlen(indexf->header.pathlookup->all_entries[lookup_path]->val);
     len1 = strlen(buf1);
     fi->fi.filename = emalloc(len4 + len1 + 1);
-    memcpy(fi->fi.filename, indexf->pathlookup->all_entries[lookup_path]->val, len4);
+    memcpy(fi->fi.filename, indexf->header.pathlookup->all_entries[lookup_path]->val, len4);
     memcpy(fi->fi.filename + len4, buf1, len1);
     fi->fi.filename[len1 + len4] = '\0';
     efree(buf1);
@@ -1453,19 +1225,23 @@ struct file *readFileEntry(IndexFILE * indexf, int filenum)
     return fi;
 }
 
-/* Prints the list of files, titles, and sizes into the index file.
+/* Writes the list of files, titles, and sizes into the DB index
+Also sorts properties
 */
 
-void    printfilelist(SWISH * sw, IndexFILE * indexf)
+void    write_file_list(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
     struct file *filep;
-    FILE   *fp = (FILE *)indexf->DB;
     unsigned char *buffer;
     int     sz_buffer;
-    struct buffer_pool *bp = NULL;
 
-    indexf->offsets[FILELISTPOS] = ftell(fp);
+    /* Deflate studd removed ...
+    struct buffer_pool *bp = NULL;
+    */
+
+	DB_InitWriteFiles(sw, indexf->DB);
+
     for (i = 0; i < indexf->filearray_cursize; i++)
     {
         if (sw->swap_flag)
@@ -1476,24 +1252,25 @@ void    printfilelist(SWISH * sw, IndexFILE * indexf)
         }
         else
             filep = indexf->filearray[i];
-        buffer = buildFileEntry(filep->fi.filename, fp, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
+        buffer = buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
+		/* Deflate stuff removed due to patents 
         if (indexf->header.applyFileInfoCompression)
         {
             bp = zfwrite(bp, buffer, sz_buffer, &indexf->fileoffsetarray[i], fp);
         }
         else
         {
-            indexf->fileoffsetarray[i] = ftell(fp);
-            compress1(sz_buffer, fp); /* Write length */
-            fwrite(buffer, sz_buffer, 1, fp); /* Write data */
-        }
+		*/
+			DB_WriteFile(sw, i, buffer, sz_buffer, indexf->DB);
+        /* } */
         efree(buffer);
     }
+	/* Deflate stuff removed due to patents 
     if (indexf->header.applyFileInfoCompression)
     {
         zfflush(bp, fp);
         printdeflatedictionary(bp, indexf);
-    }
+    } */
     /* Sort properties -> Better search performance */
     sortFileProperties(indexf);
     /* Free memory */
@@ -1502,357 +1279,40 @@ void    printfilelist(SWISH * sw, IndexFILE * indexf)
         freefileinfo(indexf->filearray[i]);
         indexf->filearray[i] = NULL;
     }
+	DB_EndWriteFiles(sw, indexf->DB);
 }
 
-/* Prints the list of metaNames into the file index
-*/
 
-void    printMetaNames(IndexFILE * indexf)
+/* Writes the sorted indexes to DB index */
+void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 {
-    struct metaEntry *entry = NULL;
-    int     i,
-            len;
-    FILE   *fp = (FILE *)indexf->DB;
+	int i,j,val;
+    struct metaEntry *m;
+	unsigned char  *CompressedSortFileProps , *s;
+	
+	CompressedSortFileProps = (unsigned char *)emalloc(5 * indexf->filearray_cursize);
 
-/* #### Use new metaType schema - see metanames.h */
-    /* Format of metaname is
-       <len><metaName><metaType>
-       len and metaType are compressed numbers
-       metaName is the ascii name of the metaname
-
-       The list of metanames is delimited by a 0
-     */
-    indexf->offsets[METANAMEPOS] = ftell(fp);
-    for (i = 0; i < indexf->metaCounter; i++)
+	DB_InitWriteSortedIndex(sw, indexf->DB);
+    /* Execute for each property */
+    for ( j = 0; j < indexf->header.metaCounter; j++)
     {
-        entry = indexf->metaEntryArray[i];
-        len = strlen(entry->metaName);
-        compress1(len, fp);
-        fwrite(entry->metaName, len, 1, fp);
-        compress1(entry->metaID, fp);
-        compress1(entry->metaType, fp);
-        printlong(fp, entry->sort_offset);
-    }
-    /* End of metanames */
-    fputc(0, fp);               /* write 0 delimiter */
-/* #### */
+		m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+		if (m->sorted_data)
+		{
+			s = CompressedSortFileProps;
+			for(i=0;i<indexf->filearray_cursize;i++)
+			{
+				val = m->sorted_data[i];
+				compress3(val,s);
+			}
+			DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
+		}
+	}
+	efree(CompressedSortFileProps);
+	DB_EndWriteSortedIndex(sw, indexf->DB);
+
 }
 
-
-/* Prints the list of file offsets into the index file.
- */
-
-void    printfileoffsets(IndexFILE * indexf)
-{
-    int     i;
-    long    offset,
-            totwords;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    indexf->offsets[FILEOFFSETPOS] = ftell(fp);
-    for (i = 0; i < indexf->filearray_cursize; i++)
-    {
-        offset = (long) indexf->fileoffsetarray[i];
-        totwords = (long) indexf->filetotalwordsarray[i];
-        printlong(fp, offset);
-        printlong(fp, totwords);
-    }
-    printlong(fp, (long) 0);
-}
-
-/* Print the info lookuptable of structures and frequency */
-/* These lookuptables make the file index small and decreases I/O op */
-void    printlocationlookuptables(IndexFILE * indexf)
-{
-    int     i,
-            n,
-            tmp;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    indexf->offsets[LOCATIONLOOKUPTABLEPOS] = ftell(fp);
-
-    /* Let us begin with structure lookuptable */
-    if (!indexf->structurelookup)
-    {
-        fputc(0, fp);
-        fputc(0, fp);
-        return;
-    }
-    n = indexf->structurelookup->n_entries;
-    compress1(n, fp);
-    for (i = 0; i < n; i++)
-    {
-        tmp = indexf->structurelookup->all_entries[i]->val[0] + 1;
-        compress1(tmp, fp);
-    }
-    /* Let us continue with structure_lookup,frequency lookuptable */
-    n = indexf->structfreqlookup->n_entries;
-    compress1(n, fp);
-    for (i = 0; i < n; i++)
-    {
-        /* frequency */
-        tmp = indexf->structfreqlookup->all_entries[i]->val[0] + 1;
-        compress1(tmp, fp);
-        /* structure lookup value */
-        tmp = indexf->structfreqlookup->all_entries[i]->val[1] + 1;
-        compress1(tmp, fp);
-    }
-    fputc(0, fp);
-}
-
-/* Print the info lookuptable of paths/urls */
-/* This lookuptable make the file index small and decreases I/O op */
-void    printpathlookuptable(IndexFILE * indexf)
-{
-    int     n,
-            i,
-            len;
-    char   *tmp;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    indexf->offsets[PATHLOOKUPTABLEPOS] = ftell(fp);
-    if (!indexf->pathlookup)
-    {
-        fclose(fp);             /* Close file */
-        remove(indexf->line);   /* Remove file: It is useless */
-        progerr("No valid documents have been found. Check your files, directories and/or urls. Index file removed");
-    }
-    n = indexf->pathlookup->n_entries;
-    compress1(n, fp);
-    for (i = 0; i < n; i++)
-    {
-        tmp = indexf->pathlookup->all_entries[i]->val;
-        len = strlen(tmp) + 1;
-        compress1(len, fp);
-        fwrite(tmp, len, 1, fp);
-    }
-    fputc(0, fp);
-}
-
-
-/* Prints out the decompressed values in an index file.*/
-
-void    decompress(SWISH * sw, IndexFILE * indexf)
-{
-    int     i,
-            c,
-            x,
-            wordlen,
-            fieldnum,
-            frequency,
-            metaname,
-            index_structure,
-            structure,
-            index_structfreq,
-            filenum;
-    long    pos;
-    long    num;
-    long    worddata,
-            nextword;
-    long    nextposmetaname;
-    FILE   *fp = (FILE *)indexf->DB;
-    struct file *fi = NULL;
-    struct docPropertyEntry *docProperties = NULL;
-    char    ISOTime[20];
-
-    metaname = 0;
-    nextposmetaname = 0L;
-
-    frequency = 0;
-
-
-    fseek(fp, 0, 0);
-    readheader(indexf);
-    readoffsets(indexf);
-    readMetaNames(indexf);
-
-    readlocationlookuptables(indexf);
-
-    if (indexf->header.applyFileInfoCompression)
-        readdeflatepatterns(indexf);
-
-    readpathlookuptable(indexf);
-    readfileoffsets(indexf);
-
-    fseek(fp, 0, 0);
-
-    readheader(indexf);
-    resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
-
-    fieldnum = 0;
-
-    printf("\n----> OFFSETS INFO. Hexadecimal Numbers <----\n");
-    for (i = 0; i < MAXCHARS; i++)
-    {
-        num = readlong(fp);
-        printf("%04lx ", num);
-    }
-
-    printf("\n----> HASH OFFSETS INFO. Hexadecimal Numbers <----\n");
-    for (i = 0; i < SEARCHHASHSIZE; i++)
-    {
-        num = readlong(fp);
-        printf("%04lx ", num);
-    }
-
-    printf("\n-----> WORD INFO <-----\n");
-    /* Decode word Info */
-    uncompress1(wordlen, fp);
-    if (!wordlen)
-        printf("WARNING!! NO unique index words in index file!!\n");
-    while (wordlen)
-    {
-        for (i = 0; i < wordlen; i++)
-            putchar(fgetc(fp));
-        putchar((int) ':');
-        /* Jump offset hash link */
-        readlong(fp);
-        /* Read offset to word data */
-        worddata = readlong(fp);
-        /* Get offset to next word */
-        nextword = ftell(fp);
-        /* Read data from word */
-        fseek(fp, worddata, SEEK_SET);
-        uncompress1(x, fp);     /* tfrequency */
-        uncompress1(x, fp);     /* metaname */
-        if ((metaname = x))
-        {
-            nextposmetaname = readlong(fp);
-            uncompress1(x, fp); /* First file */
-        }
-        while (x)
-        {
-            filenum = x;
-            uncompress1(index_structfreq, fp);
-            frequency = indexf->structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-            index_structure = indexf->structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-            structure = indexf->structurelookup->all_entries[index_structure - 1]->val[0];
-
-            if (sw->verbose >= 4)
-            {
-                struct file *fileInfo;
-
-                printf(" Meta:%d", metaname);
-                pos = ftell(fp);
-                fileInfo = readFileEntry(indexf, filenum);
-                printf(" %s", fileInfo->fi.filename);
-                fseek(fp, pos, 0);
-                printf(" Strct:%x", structure);
-                printf(" Freq:%d", frequency);
-                printf(" Pos:");
-            }
-            else
-            {
-                printf(" %d", metaname);
-                printf(" %d", filenum);
-                printf(" %d", structure);
-                printf(" %d", frequency);
-            }
-            for (i = 0; i < frequency; i++)
-            {
-                uncompress1(x, fp);
-                if (sw->verbose >= 4)
-                {
-                    if (i)
-                        printf(",%d", x);
-                    else
-                        printf("%d", x);
-                }
-                else
-                    printf(" %d", x);
-            }
-            if (ftell(fp) == nextposmetaname)
-            {
-                uncompress1(x, fp);
-                if ((metaname = x))
-                {
-                    nextposmetaname = readlong(fp);
-                    uncompress1(x, fp);
-                }
-                else
-                    nextposmetaname = 0L;
-            }
-            else
-                uncompress1(x, fp);
-        }
-        putchar((int) '\n');
-        /* Point to next word */
-        fseek(fp, nextword, SEEK_SET);
-        uncompress1(wordlen, fp);
-    }
-
-    /* Decode Stop Words: All them are in just one line */
-    printf("\n\n-----> STOP WORDS <-----\n");
-    fseek(fp, indexf->offsets[STOPWORDPOS], SEEK_SET);
-    uncompress1(wordlen, fp);
-    while (wordlen)
-    {
-        for (i = 0; i < wordlen; i++)
-            putchar(fgetc(fp));
-        putchar((int) ' ');
-        uncompress1(wordlen, fp);
-    }
-    putchar((int) '\n');
-
-    /* Decode File Info */
-    printf("\n\n-----> FILES <-----\n");
-    fflush(stdout);
-    for (i = 0; i < indexf->filearray_cursize; i++)
-    {
-        fi = readFileEntry(indexf, i + 1);
-
-        strftime(ISOTime, sizeof(ISOTime), "%Y/%m/%d %H:%M:%S", (struct tm *) localtime((time_t *) & fi->fi.mtime));
-
-        fflush(stdout);
-        if (fi->fi.summary)
-        {
-            printf("%s \"%s\" \"%s\" \"%s\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
-            fflush(stdout);     /* filename */
-        }
-        else
-        {
-            printf("%s \"%s\" \"%s\" \"\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
-            fflush(stdout);     /* filename */
-        }
-        for (docProperties = fi->docProperties; docProperties; docProperties = docProperties->next)
-        {
-            printf(" PROP_%d: \"%s\"", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
-        }
-        putchar((int) '\n');
-        fflush(stdout);
-        freefileinfo(fi);
-    }
-    printf("\nNumber of File Entries: %d\n", indexf->filearray_cursize);
-    fflush(stdout);
-    /* Jump File Offsets */
-    for (c = fgetc(fp); c != EOF && ftell(fp) != indexf->offsets[METANAMEPOS]; c = fgetc(fp));
-
-    if (c != EOF)
-    {
-        /* Meta Names */
-        printf("\n\n-----> METANAMES <-----\n");
-        uncompress1(wordlen, fp);
-        while (wordlen)
-        {
-            for (i = 0; i < wordlen; i++)
-                putchar(fgetc(fp));
-            putchar((int) '\"');
-            uncompress1(i, fp);
-/* #### Line modified */
-            printf("%d\"", i);
-/* #### */
-            uncompress1(i, fp);
-            printf("%d", i);
-            readlong(fp);       /* sort_offset -> ignored */
-            putchar((int) ' ');
-            uncompress1(wordlen, fp);
-        }
-        putchar((int) '\n');
-    }
-
-    if (sw->verbose != 4)
-        printf("\nUse -v 4 for a more complete info\n");
-}
 
 /* Parses lines according to the ReplaceRules directives.
 */
@@ -2086,42 +1546,6 @@ long    readlong(FILE * fp)
     return (num);
 }
 
-/* Jose Ruiz 04/00 */
-/* Function to print to the index file the hash table with all the words */
-void    printhash(ENTRY ** hashentries, IndexFILE * indexf)
-{
-    int     i,
-            wordlen;
-    ENTRY  *ep,
-           *epn;
-    FILE   *fp = (FILE *)indexf->DB;
-
-    for (i = 0; i < SEARCHHASHSIZE; i++)
-    {
-        if ((ep = hashentries[i]))
-        {
-            while (ep)
-            {
-                epn = ep->nexthash;
-                if (ep->u1.fileoffset >= 0L)
-                {
-                    fseek(fp, ep->u1.fileoffset, SEEK_SET);
-                    uncompress1(wordlen, fp);
-                    fseek(fp, (long) wordlen, SEEK_CUR);
-                    /* Get next non stopword */
-                    while (epn && epn->u1.fileoffset < 0L)
-                        epn = epn->nexthash;
-                    if (epn)
-                        printlong(fp, epn->u1.fileoffset);
-                    else
-                        printlong(fp, (long) 0);
-                }
-                ep = epn;
-            }
-        }
-    }
-}
-
 
 void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
@@ -2264,9 +1688,9 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         strtolower(word);
 
         /* is this a useful feature? */
-        if ( indexf->is_use_words_flag )
+        if ( indexf->header.is_use_words_flag )
         {
-            if  ( isuseword(indexf, word) )
+            if  ( isuseword(&indexf->header, word) )
             {
                 addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
@@ -2276,7 +1700,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         }
 
         /* Check for buzzwords */
-        if ( indexf->buzzwords_used_flag )
+        if ( indexf->header.buzzwords_used_flag )
         {
             /* only strip when buzzwords are being used since stripped again as a "swish word" */
             stripIgnoreLastChars(&indexf->header, word);
@@ -2285,7 +1709,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 continue;
 
         
-            if ( isbuzzword(indexf, word) )
+            if ( isbuzzword(&indexf->header, word) )
             {
                 addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
@@ -2337,16 +1761,16 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
 void    addtofwordtotals(IndexFILE * indexf, int filenum, int ftotalwords)
 {
-    if (filenum > indexf->fileoffsetarray_cursize)
+    if (filenum > indexf->filearray_cursize)
         progerr("Internal error in addtofwordtotals");
     else
-        indexf->filetotalwordsarray[filenum - 1] = ftotalwords;
+        indexf->header.filetotalwordsarray[filenum - 1] = ftotalwords;
 }
 
 
 void    addsummarytofile(IndexFILE * indexf, int filenum, char *summary)
 {
-    if (filenum > indexf->fileoffsetarray_cursize)
+    if (filenum > indexf->filearray_cursize)
         progerr("Internal error in addsummarytofile");
     else
         indexf->filearray[filenum - 1]->fi.summary = estrdup(summary);

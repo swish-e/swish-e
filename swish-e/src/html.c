@@ -409,7 +409,7 @@ struct metaEntry *e=NULL;
 	strtolower(word);
 
 	while(1) {
-		if((e=getMetaNameData(indexf,word)))
+		if((e=getMetaNameData(&indexf->header,word)))
 		{
 			if ((!is_meta_index(e)) && (*applyautomaticmetanames))
 				e->metaType |=META_INDEX;
@@ -423,7 +423,7 @@ struct metaEntry *e=NULL;
 		if(*applyautomaticmetanames) {
 			if (verbose) 
 				printf("\nAdding automatic MetaName %s\n",word);
-			addMetaEntry(indexf,word,0,0,0, applyautomaticmetanames); 
+			addMetaEntry(&indexf->header,word,0,0,0, applyautomaticmetanames); 
 		} else break;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */

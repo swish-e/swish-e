@@ -58,7 +58,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 	int     sz_worddata;
 	long    wordID;
 	
-	indexf->DB = DB_Open(indexf->line);
+	indexf->DB = DB_Open(sw, indexf->line);
 
     metaname = 0;
 
@@ -69,7 +69,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     frequency = 0;
 
 		/* Read header */
-    read_header(&indexf->header, indexf->DB);
+    read_header(sw, &indexf->header, indexf->DB);
 	
 		/* Allocate size for fileinfo */
 	indexf->filearray_cursize = indexf->header.totalfiles;
@@ -84,18 +84,18 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     printf("\n-----> WORD INFO <-----\n");
 
-	DB_InitReadWords(indexf->DB);
+	DB_InitReadWords(sw, indexf->DB);
 
 	for(j=0;j<256;j++)
 	{
 		word[0] = (unsigned char) j; word[1] = '\0';
-		DB_ReadFirstWordInvertedIndex(word,&resultword,&wordID,indexf->DB);
+		DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 		while(wordID)
 		{
 			printf("%s:",resultword);
 
 				/* Read Word's data */
-			DB_ReadWordData(wordID, &worddata, &sz_worddata, indexf->DB);
+			DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
 
 				/* parse and print word's data */
 			s = worddata;
@@ -121,7 +121,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 				    struct file *fileInfo;
 
 	                printf(" Meta:%d", metaname);
-			        fileInfo = readFileEntry(indexf, filenum);
+			        fileInfo = readFileEntry(sw, indexf, filenum);
 				    printf(" %s", fileInfo->fi.filename);
 	                printf(" Strct:%x", structure);
 		            printf(" Freq:%d", frequency);
@@ -166,10 +166,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
 			efree(worddata);
 			efree(resultword);
-			DB_ReadNextWordInvertedIndex(word,&resultword,&wordID,indexf->DB);
+			DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 		}
 	}
-	DB_EndReadWords(indexf->DB);
+	DB_EndReadWords(sw, indexf->DB);
 
     /* Decode Stop Words: All them are in just one line */
     printf("\n\n-----> STOP WORDS <-----\n");
@@ -182,7 +182,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     fflush(stdout);
     for (i = 0; i < indexf->header.totalfiles; i++)
     {
-        fi = readFileEntry(indexf, i + 1);
+        fi = readFileEntry(sw, indexf, i + 1);
 
         strftime(ISOTime, sizeof(ISOTime), "%Y/%m/%d %H:%M:%S", (struct tm *) localtime((time_t *) & fi->fi.mtime));
 
@@ -215,7 +215,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 	}
 	putchar((int) '\n');
 
-	DB_Close(indexf->DB);
+	DB_Close(sw, indexf->DB);
 
     if (sw->verbose != 4)
         printf("\nUse -v 4 for a more complete info\n");

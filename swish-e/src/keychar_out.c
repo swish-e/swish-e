@@ -22,10 +22,11 @@ $Id$
 */
 
 #include "swish.h"
+#include "string.h"
 #include "error.h"
 #include "search.h"
-#include "string.h"
 #include "result_output.h"
+#include "db.h"
 #include "keychar_out.h"
 
 

@@ -185,7 +185,7 @@ FILE   *openIndexFILEForReadAndWrite(char *filename)
     return fopen(filename, FILEMODE_READWRITE);
 }
 
-void    CreateEmptyFile(SWISH * sw, char *filename)
+void    CreateEmptyFile(char *filename)
 {
     FILE   *fp;
 

@@ -30,6 +30,7 @@ $Id$
 */
 
 #include "swish.h"
+#include "string.h"
 #include "mem.h"
 #include "merge.h"
 #include "docprop.h"
@@ -37,7 +38,7 @@ $Id$
 #include "compress.h"
 #include "search.h"
 #include "error.h"
-#include "string.h"
+#include "db.h"
 #include "result_sort.h"
 
 
@@ -129,8 +130,8 @@ void freeModule_ResultSort (SWISH *sw)
 void resetModule_ResultSort (SWISH *sw)
 
 {
-  struct MOD_ResultSort *md = sw->ResultSort;
-  int i;
+  //struct MOD_ResultSort *md = sw->ResultSort;
+  //int i;
  
 
    //$$$
@@ -164,8 +165,8 @@ void resetModule_ResultSort (SWISH *sw)
 int configModule_ResultSort  (SWISH *sw, StringList *sl)
 
 {
-  struct MOD_ResultSort *md = sw->ResultSort;
-  char *w0    = sl->word[0];
+  //struct MOD_ResultSort *md = sw->ResultSort;
+  //char *w0    = sl->word[0];
   int  retval = 1;
 
 
@@ -357,31 +358,16 @@ RESULT *addsortresult(sw, sphead, r)
     return r;
 }
 
-/* Routine to load from the index file the presorted data */
-int    *readSortedData(IndexFILE * indexf, struct metaEntry *m)
-{
-    FILE   *fp = (FILE *) indexf->DB;
-    int     j,
-            value;
-    int    *data = emalloc(indexf->filearray_cursize * sizeof(int));
-
-    fseek(fp, m->sort_offset, SEEK_SET);
-    for (j = 0; j < indexf->filearray_cursize; j++)
-    {
-        uncompress1(value, fp);
-        data[j] = value - 1;    /* It was stored as value + 1 */
-    }
-    return data;
-}
-
 /* Routine to get the presorted lookupdata for a result for all the specified properties */
 int    *getLookupResultSortedProperties(RESULT * r)
 {
-    int     i;
+    int     i,j,tmp;
     int    *props = NULL;       /* Array to Store properties Lookups */
     struct metaEntry *m = NULL;
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
+    char *buffer, *s;
+    int sz_buffer;
 
     props = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
 
@@ -407,12 +393,25 @@ int    *getLookupResultSortedProperties(RESULT * r)
         case AUTOPROP_ID__TITLE:
         case AUTOPROP_ID__SUMMARY:
         default:               /* User properties */
-            m = getMetaIDData(indexf, indexf->propIDToSort[i]);
+            m = getMetaIDData(&indexf->header, indexf->propIDToSort[i]);
             if (m)
             {
-                /* Read presorted data if not yet loaded (it will load only once */
-                if (!m->sorted_data)
-                    m->sorted_data = readSortedData(indexf, m);
+		if(!m->sorted_data)
+		{
+			DB_InitReadSortedIndex(sw, r->indexf->DB);
+				/* Get the sorted index of the property */
+			DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer,r->indexf->DB);
+			s = buffer;
+			m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
+				/* Unpack / decompress the numbers */
+			for( j = 0; j < r->indexf->header.totalfiles; j++)
+			{
+				uncompress2(tmp,s);
+				m->sorted_data[j] = tmp;
+			}
+			efree(buffer);
+			DB_EndReadSortedIndex(sw, r->indexf->DB);
+		}
                 props[i] = m->sorted_data[r->filenum - 1];
             }
             else
@@ -460,7 +459,7 @@ int     sortresults(SWISH * sw, int structure)
     int     (*compResults) (const void *, const void *);
 
     /* Sort each index file resultlist */
-    for (TotalResults = 0, db_results = sw->db_results; db_results; db_results = db_results->next)
+    for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)
     {
         db_results->sortresultlist = NULL;
         db_results->currentresult = NULL;
@@ -559,25 +558,24 @@ int     compFileProps(const void *s1, const void *s2)
     return rc;
 }
 
+
 /* 02/2001 jmruiz */
 /* Routine to sort properties at index time */
 void    sortFileProperties(IndexFILE * indexf)
 {
     int     i,
             j,
-            k,
-            val;
+            k;
     int    *sortFilenums;
     struct metaEntry *m;
-    FILE   *fp = (FILE *) indexf->DB;
 
-    /* Array of filenums to store the sorted docs (referenced by its filenum) */
-    sortFilenums = emalloc(indexf->fileoffsetarray_cursize * sizeof(int));
 
     /* Execute for each property */
-    for (j = 0; j < indexf->metaCounter; j++)
+    for (j = 0; j < indexf->header.metaCounter; j++)
     {
-        switch (indexf->metaEntryArray[j]->metaID)
+        m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+		m->sorted_data = NULL;
+        switch (indexf->header.metaEntryArray[j]->metaID)
         {
         case AUTOPROP_ID__REC_COUNT:
         case AUTOPROP_ID__RESULT_RANK:
@@ -591,14 +589,16 @@ void    sortFileProperties(IndexFILE * indexf)
         case AUTOPROP_ID__SUMMARY:
         case AUTOPROP_ID__STARTPOS:
         default:               /* User properties */
-            m = getMetaIDData(indexf, indexf->metaEntryArray[j]->metaID);
-            for (i = 0; i < indexf->fileoffsetarray_cursize; i++)
+			    /* Array of filenums to store the sorted docs (referenced by its filenum) */
+		    sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
+
+            for (i = 0; i < indexf->filearray_cursize; i++)
                 indexf->filearray[i]->currentSortProp = m;
             /* Sort them using qsort. The main work is done by compFileProps */
-            qsort(indexf->filearray, indexf->fileoffsetarray_cursize, sizeof(struct file *), &compFileProps);
+            qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
             /* Build the sorted table */
-            for (i = 0, k = 1; i < indexf->fileoffsetarray_cursize; i++)
+            for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
             {
                 /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
                 if (i)
@@ -610,20 +610,11 @@ void    sortFileProperties(IndexFILE * indexf)
                 sortFilenums[indexf->filearray[i]->fi.filenum - 1] = k;
             }
 
-            /* Write the sorted results to disk in compressed format */
-            /* Get the offset of the index file */
-            m->sort_offset = ftell(fp);
-            /* Write the sorted table */
-            for (i = 0; i < indexf->fileoffsetarray_cursize; i++)
-            {
-                val = sortFilenums[i];
-                compress1(val, fp);
-            }
-            break;
+            /* Store the integer array of presorted data */
+            m->sorted_data = sortFilenums;
+           break;
         }
     }
-    efree(sortFilenums);
-
 }
 
 

@@ -46,13 +46,6 @@ static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fp);
 static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop);
 
 
-/*
-** ----------------------------------------------
-** 
-**  Module management code starts here
-**
-** ----------------------------------------------
-*/
 
 
 /* 
@@ -105,13 +98,6 @@ void freeModule_Filter (SWISH *sw)
 }
 
 
-/*
-** ----------------------------------------------
-** 
-**  Module config code starts here
-**
-** ----------------------------------------------
-*/
 
 
 /*
@@ -153,15 +139,6 @@ int configModule_Filter  (SWISH *sw, StringList *sl)
 }
 
 
-
-
-/*
-** ----------------------------------------------
-** 
-**  Module code starts here
-**
-** ----------------------------------------------
-*/
 
 
 /*
