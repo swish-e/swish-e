@@ -205,6 +205,10 @@ SOURCE=..\ramdisk.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\rank.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\regex.c
 # End Source File
 # Begin Source File
@@ -406,6 +410,10 @@ SOURCE=..\proplimit.h
 # Begin Source File
 
 SOURCE=..\ramdisk.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\rank.h
 # End Source File
 # Begin Source File
 
