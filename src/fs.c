@@ -611,8 +611,8 @@ static void    printfile(SWISH * sw, char *filename)
 */
 int     compfilenames(const void *s1, const void *s2)
 {
-    unsigned char *r1 = *(unsigned char * const *) s1;
-    unsigned char *r2 = *(unsigned char * const *) s2;
+    char *r1 = *(char * const *) s1;
+    char *r2 = *(char * const *) s2;
 
     return strcmp(r1,r2);
 }

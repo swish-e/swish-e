@@ -717,7 +717,7 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
             hash_p = *hash_pp;
             while (hash_p)
             {
-                if (!strcmp(hash_p->ce->name, s_cmp))
+                if (!strcmp( (char *)hash_p->ce->name, s_cmp))
                 {
                     code = hash_p->ce->code;
                     if (last_p)

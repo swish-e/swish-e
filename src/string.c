@@ -853,7 +853,7 @@ int     BuildTranslateChars(int trlookup[], unsigned char *from, unsigned char *
         return 0;               /* No param! */
 
     /* special cases, one param  */
-    if (!strcmp(from, ":ascii7:"))
+    if (!strcmp( (char *)from, ":ascii7:"))
     {
         for (i = 0; i < 256; i++)
             trlookup[i] = (int) char_ISO_normalize((unsigned char) i);
