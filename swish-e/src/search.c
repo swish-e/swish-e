@@ -1403,7 +1403,12 @@ int     u_SelectDefaultRulenum(SWISH * sw, char *word)
 
 
 
-
+static void  make_db_res_and_free(SWISH *sw,RESULT *res) {
+   struct DB_RESULTS tmp;
+   memset (&tmp,0,sizeof(struct DB_RESULTS));
+   tmp.resultlist = res;
+   freeresultlist(sw,&tmp);
+}
 
 
 
@@ -1419,8 +1424,13 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
            *r2b;
     int     res = 0;
 
+    /* patch provided by Mukund Srinivasan */
     if (r1 == NULL || r2 == NULL)
+    {
+        make_db_res_and_free(sw,r1);
+        make_db_res_and_free(sw,r2);
         return NULL;
+    }
 
     newnode = NULL;
     if (andLevel < 1)
@@ -1739,6 +1749,7 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 
 /* Adds a file number and rank to a list of results.
 */
+
 
 RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int frequency, int *position, IndexFILE * indexf, SWISH * sw)
 {
