@@ -10,6 +10,17 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Configure script updates
+
+Running "make install" now installs the swish-e binary, and the
+libswish-e library and swish-e.h header files.   Directories will
+be created if they do not already exist.
+
+=item New Feature: MetaNamesRank
+
+MetaNamesRank can be used to adjust the ranking for words based on
+the word's MetaName.
+
 =item New Swish Library API and Perl Module
 
 The Swish-e C library interface was rewritten to provide
