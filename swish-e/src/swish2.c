@@ -211,6 +211,9 @@ if(sw) {
                         /* Free stopwords structures */
 			freestophash(tmpindexlist);
 			freeStopList(tmpindexlist);
+
+     		freebuzzwordhash(tmpindexlist);
+
 			free_header(&tmpindexlist->header);
 			/* Free compression lookup tables */
 			if(tmpindexlist->locationlookup)

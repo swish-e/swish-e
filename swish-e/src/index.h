@@ -44,7 +44,8 @@ void printpathlookuptable(IndexFILE *);
 void decompress(SWISH *, IndexFILE *);
 char *ruleparse(SWISH *, char *);
 void stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
-int stripIgnoreLastChars(INDEXDATAHEADER *, char *);
+void stripIgnoreLastChars(INDEXDATAHEADER *, char *);
+void printbuzzwords(IndexFILE *);
 
 #define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
