@@ -58,7 +58,7 @@ $Id$
 #endif
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "file.h"
 #include "error.h"
 #include "list.h"

@@ -22,7 +22,7 @@ $Id$
 
 #include <limits.h>     // for ULONG_MAX
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "error.h"
 #include "list.h"
@@ -35,7 +35,7 @@ $Id$
 #include "hash.h"
 #include "entities.h"
 #include "filter.h"
-#include "search_alt.h"
+/* #include "search_alt.h" */
 #include "result_output.h"
 #include "result_sort.h"
 #include "db.h"
@@ -51,7 +51,6 @@ $Id$
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
-#include "no_better_place_module.h"  /* $$$ move */
 #include "headers.h"
 
 /*
@@ -176,7 +175,6 @@ int     main(int argc, char **argv)
     CMDPARAMS *params;
 
     setlocale(LC_CTYPE, "");
-
 
 
     /* Start a session */
@@ -322,13 +320,13 @@ static void    usage()
     printf("         -k : Print words starting with a given char.\n");
     printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("\n");
-    printf("version: %s  docs: http://swish-e.org\n", SWISH_VERSION);
+    printf("version: %s  docs: http://swish-e.org\n", VERSION);
     exit(1);
 }
 
 static void    printversion()
 {
-    printf("SWISH-E %s\n", SWISH_VERSION );
+    printf("SWISH-E %s\n", VERSION );
     exit(0);
 }
 

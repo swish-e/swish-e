@@ -26,7 +26,7 @@
 #include "swish.h"
 #include "check.h"
 #include "hash.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 
 /* Check if a file with a particular suffix should be indexed

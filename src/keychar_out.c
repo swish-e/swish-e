@@ -22,7 +22,7 @@ $Id$
 */
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "error.h"
 #include "mem.h"
 #include "search.h"

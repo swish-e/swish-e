@@ -110,7 +110,7 @@ $Id$
 
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "search.h"
 #include "index.h"
 #include "file.h"
@@ -122,7 +122,6 @@ $Id$
 #include "compress.h"
 #include "metanames.h"
 #include "result_sort.h"
-#include "search_alt.h"
 #include "db.h"
 #include "swish_words.h"
 #include "swish_qsort.h"

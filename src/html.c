@@ -38,7 +38,7 @@ $Id$
 
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "index.h"
 #include "compress.h"
 #include "merge.h"

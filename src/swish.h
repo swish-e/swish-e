@@ -92,6 +92,7 @@
 #include <process.h>
 #endif
 
+/*  Include swish defaults (that's not autoconf's config.h) */
 #include "config.h"
 
 
@@ -100,30 +101,35 @@
 #endif
 
 
-// #ifdef _WIN32
-// #include "win32/config.h"
 
 #if defined(__VMS)
-#include "vms/regex.h"
-#include <dirent.h>
-#include <stdarg.h>
-extern int snprintf(char *, size_t, const char *, /*args */ ...);
-extern int vsnprintf(char *, size_t, const char *, va_list);
+# include "vms/regex.h"
+# include <dirent.h>
+# include <stdarg.h>
+  extern int ssnprintf(char *, size_t, const char *, /*args */ ...);
+  extern int vsnprintf(char *, size_t, const char *, va_list);
+
 #else
+
 #include <dirent.h>
+
 #ifdef HAVE_PCRE
 #include <pcreposix.h>
 #else
 #include <regex.h>
 #endif
+
+#ifndef HAVE_MKSTEMP
+# include <mkstemp.h>
 #endif
+
+#endif
+
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-
 
 
 #define SWISH_MAGIC 21076321L
@@ -132,9 +138,9 @@ extern "C" {
 
 
 #define BASEHEADER 1
-#define INDEXHEADER "# SWISH format: " SWISH_VERSION
+#define INDEXHEADER "# SWISH format: " VERSION
 #define INDEXHEADER_ID BASEHEADER + 1
-#define INDEXVERSION "# Swish-e format: " SWISH_VERSION
+#define INDEXVERSION "# Swish-e format: " VERSION
 #define INDEXVERSION_ID (BASEHEADER + 2)
 
 /* Admin header */

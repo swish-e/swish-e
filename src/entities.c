@@ -33,7 +33,7 @@ $Id$
 #include <stdlib.h>
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "parse_conffile.h"
 #include "config.h"
 #include "entities.h"

@@ -25,7 +25,7 @@
 #include "list.h"
 #include "mem.h"
 #include "metanames.h"
-#include "string.h"
+#include "swstring.h"
 #include "hash.h"
 
 

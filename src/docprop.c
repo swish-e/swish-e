@@ -36,7 +36,7 @@ $Id$
 
 #include <limits.h>     // for ULONG_MAX
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "file.h"
 #include "hash.h"
 #include "mem.h"

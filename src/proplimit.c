@@ -21,7 +21,7 @@ $Id$
 */
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "merge.h"      // why is this needed for docprop.h???
 #include "search.h"

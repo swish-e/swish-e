@@ -27,7 +27,7 @@
 #include "swish.h"
 #include "file.h"
 #include "error.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "compress.h"
 #include "hash.h"

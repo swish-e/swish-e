@@ -36,7 +36,7 @@ $Id$
 #include <limits.h>     // for ULONG_MAX
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "list.h"
 #include "file.h"
@@ -47,7 +47,7 @@ $Id$
 #include "filter.h"
 #include "index.h"
 #include "search.h"
-#include "search_alt.h"
+/* #include "search_alt.h" */
 #include "parse_conffile.h"
 #include "merge.h"   /* Argh, needed for docprop.h */
 #include "docprop.h"

@@ -25,7 +25,7 @@
 #include "mem.h"
 #include "file.h"
 #include "error.h"
-#include "string.h"
+#include "swstring.h"
 #include "compress.h"
 #include "hash.h"
 #include "db.h"
