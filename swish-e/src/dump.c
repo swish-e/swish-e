@@ -57,6 +57,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     unsigned char   *worddata, *s;
     int     sz_worddata;
     long    wordID;
+	propEntry *prop;
 
 
     
@@ -293,9 +294,15 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             else
                 printf("%d: %s \"%s\" \"%s\" \"\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
 
-            for (docProperties = fi->docProperties; docProperties; docProperties = docProperties->next)
-            {
-                printf(" PROP_%d: \"%s\"\n", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
+            for (j = 0; j < fi->docProperties->n; j++)
+			{ 
+				prop = fi->docProperties->propEntry[j];
+				     /* $$$$$ Mmm - this should be a while */
+				if(prop)
+				{
+						/* j is metaID */
+                    printf(" PROP_%d: \"%s\"\n", j, getDocPropAsString(indexf, fi, j));
+				}
             }
             printf("\n");
             freefileinfo(fi);

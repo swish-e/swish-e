@@ -223,14 +223,21 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define LST 	(BASEDOCTYPE+4)
 #define WML 	(BASEDOCTYPE+5)
 
-typedef struct docPropertyEntry
+typedef struct propEntry
 {
-    struct docPropertyEntry *next;
-    int     metaID;             /* meta field identifier; from getMetaName() */
+    struct propEntry *next;     /* It is possible to have more than 1 */
+								/* property for the same metaID */
     unsigned int propLen;       /* Length of buffer */
     unsigned char propValue[0]; /* Actual property value starts here */
 }
-docPropertyEntry;
+propEntry;
+
+typedef struct docProperties
+{
+	int n;                      /* Number of entries in the array */
+	struct propEntry *propEntry[0];  /* Array to hold properties */
+}
+docProperties;
 
 struct metaEntry
 {
@@ -261,8 +268,7 @@ struct file
 {
     FILEINFO fi;
     struct metaEntry *currentSortProp;
-    // int read;
-    struct docPropertyEntry *docProperties;
+    struct docProperties *docProperties;
 };
 
 

@@ -440,7 +440,7 @@ int sz_buffer;
 ** we find redundant file information.
 */
 
-void addindexfilelist(SWISH *sw, int num, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct docPropertyEntry *docProperties, int *totalfiles, int ftotalwords, struct metaMergeEntry *metaFile)
+void addindexfilelist(SWISH *sw, int num, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct docProperties *docProperties, int *totalfiles, int ftotalwords, struct metaMergeEntry *metaFile)
 {
 int i,hashval;
 struct file *thisFileEntry = NULL;

@@ -50,23 +50,24 @@
 
 
 
-void freeDocProperties(docProperties)
-     docPropertyEntry **docProperties;
+void freeDocProperties(docProperties *docProperties)
 {
 	/* delete the linked list of doc properties */
-	docPropertyEntry *prop = NULL;
+	struct propEntry *prop;
+	int i;
 
-	prop = *docProperties;
-	while (prop != NULL)
+	for(i=0;i<docProperties->n;i++)
 	{
-		docPropertyEntry *nextOne = prop->next;
-		efree(prop);
+		prop = docProperties->propEntry[i];
+		while (prop)
+		{
+			propEntry *nextOne = prop->next;
+			efree(prop);
 
-		prop = nextOne;
+			prop = nextOne;
+		}
 	}
-
-	/* replace the ptr to the head of the list with a NULL */
-	*docProperties = NULL;
+	efree(docProperties);
 }
 
 /*******************************************************************
@@ -176,9 +177,11 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *props
 
 
 /* Add the given file/metaName/propValue data to the File object */
-int addDocProperty( docPropertyEntry **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
 {
-    docPropertyEntry *docProp;
+	struct docProperties *dp = *docProperties; 
+    propEntry *docProp;
+	int i;
 
 
     if ( !preEncoded )
@@ -198,15 +201,33 @@ int addDocProperty( docPropertyEntry **docProperties, struct metaEntry *meta_ent
 
 	if(propLen)
 	{
-		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry) + propLen);
+		if( !dp)
+		{
+			dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+			*docProperties = dp;
+			dp->n = meta_entry->metaID + 1;
+			for(i=0;i<dp->n;i++)
+				dp->propEntry[i] = NULL;
+		}
+		else 
+		{
+			if(dp->n <= meta_entry->metaID)
+			{
+				dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+				*docProperties = dp;
+				for(i=dp->n;i<=meta_entry->metaID;i++)
+					dp->propEntry[i] = NULL;
+				dp->n = meta_entry->metaID + 1;
+			}
+		}
+
+		docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
 
 	    memcpy(docProp->propValue, propValue, propLen);
 		docProp->propLen=propLen;
-		docProp->metaID = meta_entry->metaID;
-			
-		/* insert at head of file objects list of properties */
-		docProp->next = *docProperties;	/* "*docProperties" is the ptr to the head of the list */
-		*docProperties = docProp;	/* update head-of-list ptr */
+		
+		docProp->next = dp->propEntry[meta_entry->metaID];	
+		dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
 	}
 
 	if ( !preEncoded )
@@ -229,37 +250,38 @@ int addDocProperty( docPropertyEntry **docProperties, struct metaEntry *meta_ent
 * The list is terminated with a PropID with a value of zero
 */
 /* #### Modified to use propLen */
-unsigned char *storeDocProperties(docProperties, datalen)
-docPropertyEntry *docProperties;
-int *datalen;
+unsigned char *storeDocProperties(docProperties *docProperties, int *datalen)
 {
 int propID;
 int len;
 char *buffer,*p,*q;
 int lenbuffer;
+propEntry *prop;
 	buffer=emalloc((lenbuffer=MAXSTRLEN));
 	*datalen=0;
-	while (docProperties != NULL)
+	for(propID=0;propID<docProperties->n;propID++)
 	{
-		/* the length of the property value */
-		len = docProperties->propLen;
-		/* Realloc buffer size if needed */
-		if(lenbuffer<(*datalen+len+8*2))
+		prop = docProperties->propEntry[propID];
+		while (prop)
 		{
-			lenbuffer +=(*datalen)+len+8*2+500;
-			buffer=erealloc(buffer,lenbuffer);
+			/* the length of the property value */
+			len = prop->propLen;
+			/* Realloc buffer size if needed */
+			if(lenbuffer<(*datalen+len+8*2))
+			{
+				lenbuffer +=(*datalen)+len+8*2+500;
+				buffer=erealloc(buffer,lenbuffer);
+			}
+			p= q = buffer + *datalen;
+			/* Do not store 0!! - compress does not like it */
+			propID++;
+			p = compress3(propID,p);
+			/* including the length will make retrieval faster */
+			p = compress3(len,p);
+			memcpy(p,prop->propValue, len);
+			*datalen += (p-q)+len;
+			prop = prop->next;
 		}
-		p= q = buffer + *datalen;
-		/* the ID of the property */
-		propID = docProperties->metaID;
-		/* Do not store 0!! - compress does not like it */
-		propID++;
-		p = compress3(propID,p);
-		/* including the length will make retrieval faster */
-		p = compress3(len,p);
-		memcpy(p,docProperties->propValue, len);
-		*datalen += (p-q)+len;
-		docProperties = docProperties->next;
 	}
 	return buffer;
 }
@@ -270,20 +292,18 @@ int lenbuffer;
  * currently pointing to.
  */
 /* #### Added support for propLen */
-docPropertyEntry *fetchDocProperties( char *buf)
+docProperties *fetchDocProperties( char *buf)
 {
-docPropertyEntry *docProperties=NULL;
+docProperties *docProperties=NULL;
 char* tempPropValue=NULL;
 int tempPropLen=0;
 int tempPropID;
 struct metaEntry meta_entry;
 
     meta_entry.metaName = "(default)";
-    
-
 
 	/* read all of the properties */
-        tempPropID = uncompress2((unsigned char **)&buf);
+    tempPropID = uncompress2((unsigned char **)&buf);
 	while(tempPropID > 0)
 	{
 		/* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
@@ -293,14 +313,14 @@ struct metaEntry meta_entry;
 		tempPropLen = uncompress2((unsigned char **)&buf);
 
 		/* BTW, len must no be 0 */
-	        tempPropValue=buf;
+	    tempPropValue=buf;
 		buf+=tempPropLen;
 
 		/* add the entry to the list of properties */
 		/* Flag as encoded, so won't encode again */
 		meta_entry.metaID = tempPropID;
 		addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
-        	tempPropID = uncompress2((unsigned char **)&buf);
+       	tempPropID = uncompress2((unsigned char **)&buf);
 	}
 	return docProperties;
 }
@@ -402,51 +422,81 @@ struct MOD_Search *srch = sw->Search;
 
 
 
-void swapDocPropertyMetaNames(docProperties, metaFile)
-     docPropertyEntry *docProperties;
-     struct metaMergeEntry* metaFile;
+docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntry *metaFile)
 {
-	/* swap metaName values for properties */
-	while (docProperties)
-	{
-		struct metaMergeEntry* metaFileTemp;
-		/* scan the metaFile list to get the new metaName value */
-		metaFileTemp = metaFile;
-		while (metaFileTemp)
-		{
-			if (docProperties->metaID == metaFileTemp->oldMetaID)
-			{
-				docProperties->metaID = metaFileTemp->newMetaID;
-				break;
-			}
+int metaID;
+propEntry *prop;
+struct docProperties *newDocProperties;
 
-			metaFileTemp = metaFileTemp->next;
+	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
+	newDocProperties->n = docProperties->n;
+
+	for(metaID=0;metaID<newDocProperties->n;metaID++)
+		newDocProperties->propEntry[metaID] = NULL;
+
+	/* swap metaName values for properties */
+	for(metaID=0;metaID<docProperties->n;metaID++)
+	{
+		prop = docProperties->propEntry[metaID];
+		while (prop)
+		{
+			struct metaMergeEntry* metaFileTemp;
+			propEntry *nextOne = prop->next;
+			/* scan the metaFile list to get the new metaName value */
+			metaFileTemp = metaFile;
+			while (metaFileTemp)
+			{
+				if (metaID == metaFileTemp->oldMetaID)
+				{
+					prop->next = newDocProperties->propEntry[metaFileTemp->newMetaID];
+					newDocProperties->propEntry[metaFileTemp->newMetaID] = prop;
+					break;
+				}
+
+				metaFileTemp = metaFileTemp->next;
+			}
+			prop = nextOne;
 		}
-		docProperties = docProperties->next;
 	}
+	efree(docProperties);
+	return newDocProperties;
 }
 
 
 
 /* Duplicates properties (used by merge) */
-docPropertyEntry *DupProps(docPropertyEntry *dp)
+docProperties *DupProps(docProperties *docProperties)
 {
-docPropertyEntry *new=NULL, *tmp=NULL, *last=NULL;
+struct docProperties *newDocProperties=NULL;
+int metaID;
+propEntry *prop = NULL, *tmp = NULL, *newProp = NULL;
 
-	if(!dp) return NULL;
-	while(dp)
+	if(!docProperties) return NULL;
+
+	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
+	newDocProperties->n = docProperties->n;
+
+	for(metaID=0;metaID<newDocProperties->n;metaID++)
 	{
-		tmp = emalloc(sizeof(docPropertyEntry) + dp->propLen);
-		memcpy(tmp->propValue, dp->propValue, dp->propLen);
-		tmp->propLen = dp->propLen;
-		tmp->metaID = dp->metaID;
-		tmp->next = NULL;
-		if(!new) new = tmp;
-		if(last) last->next = tmp;
-		last = tmp;
-		dp = dp->next;
+		newDocProperties->propEntry[metaID] = NULL;
+		prop = docProperties->propEntry[metaID];
+		newProp = NULL;
+		while(prop)
+		{
+			tmp = (propEntry *) emalloc(sizeof(propEntry) + prop->propLen);
+			if(!newProp)
+				newDocProperties->propEntry[metaID] = tmp;
+			else
+				newProp->next = tmp;
+	
+			memcpy(tmp->propValue, prop->propValue, prop->propLen);
+			tmp->propLen = prop->propLen;
+			tmp->next = NULL;
+			newProp = tmp;
+			prop = prop->next;
+		}
 	}
-	return new;
+	return newDocProperties;
 }
 
 
@@ -486,24 +536,25 @@ char *getDocPropAsString(IndexFILE *indexf, struct file *p, int ID)
 char *s=NULL;
 unsigned long i;
 struct metaEntry *q;
-docPropertyEntry *d;
+propEntry *prop;
 	if(!p) return estrdup("");
 	q=getMetaIDData(&indexf->header,ID); 
 	if(!q) return estrdup("");
-		/* Search the property */
-	for(d=p->docProperties;d;d=d->next)
-		if(d->metaID==ID) break;
+
+		/* Get the first property for the ID*/
+	prop = p->docProperties->propEntry[ID];
+
 		/* If not found return */
-	if(!d) return estrdup("");
+	if(!prop) return estrdup("");
 
 	if(is_meta_string(q))      /* check for ascii/string data */
 	{
-		s=bin2string(d->propValue,d->propLen);
+		s=bin2string(prop->propValue,prop->propLen);
 	} 
 	else if(is_meta_date(q))  /* check for a date */
 	{
 		s=emalloc(20);
-		i=*(unsigned long *)d->propValue;  /* read binary */
+		i=*(unsigned long *)prop->propValue;  /* read binary */
 									  /* as unsigned long */
 		i = UNPACKLONG(i);     /* Convert the portable number */
 			/* Convert to ISO datetime */
@@ -512,7 +563,7 @@ docPropertyEntry *d;
 	else if(is_meta_number(q))  /* check for a number */
 	{
 		s=emalloc(14);
-		i=*(unsigned long *)d->propValue;  /* read binary */
+		i=*(unsigned long *)prop->propValue;  /* read binary */
 						  /* as unsigned long */
 		i = UNPACKLONG(i);     /* Convert the portable number */
 				/* Convert to string */
@@ -531,7 +582,7 @@ unsigned long i;
 IndexFILE *indexf=p->indexf;
 SWISH *sw=(SWISH *)p->sw;
 struct metaEntry *q;
-docPropertyEntry *d;
+propEntry *prop;
 	if(!p) return estrdup("");
 	switch(ID)
 	{
@@ -599,19 +650,19 @@ docPropertyEntry *d;
 				/* Search the property */
 			if(indexf->filearray[p->filenum-1] == NULL)
 				indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
-			for(d=indexf->filearray[p->filenum-1]->docProperties;d;d=d->next)
-				if(d->metaID==ID) break;
+				/* Get the first property for this ID*/
+			prop = indexf->filearray[p->filenum-1]->docProperties->propEntry[ID];
 				/* If not found return */
-			if(!d) return estrdup("");
+			if(!prop) return estrdup("");
 
 			if(is_meta_string(q))      /* check for ascii/string data */
 			{
-				s=bin2string(d->propValue,d->propLen);
+				s=bin2string(prop->propValue,prop->propLen);
 			} 
 			else if(is_meta_date(q))  /* check for a date */
 			{
 				s=emalloc(20);
-				i=*(unsigned long *)d->propValue;  /* read binary */
+				i=*(unsigned long *)prop->propValue;  /* read binary */
 											  /* as unsigned long */
 				i = UNPACKLONG(i);     /* Convert the portable number */
 					/* Convert to ISO datetime */
@@ -620,7 +671,7 @@ docPropertyEntry *d;
 			else if(is_meta_number(q))  /* check for a number */
 			{
 				s=emalloc(14);
-				i=*(unsigned long *)d->propValue;  /* read binary */
+				i=*(unsigned long *)prop->propValue;  /* read binary */
 								  /* as unsigned long */
 				i = UNPACKLONG(i);     /* Convert the portable number */
 						/* Convert to string */
@@ -633,31 +684,35 @@ docPropertyEntry *d;
 
 void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
 {
-docPropertyEntry *p;
-	for(p=fi->docProperties;p;p=p->next)
+propEntry *p;
+
+	if((indexf->header.titleProp->metaID < fi->docProperties->n) 
+		&& (p = fi->docProperties->propEntry[indexf->header.titleProp->metaID]))
 	{
-		if(indexf->header.filenameProp->metaID==p->metaID) {}
-		else if(indexf->header.titleProp->metaID==p->metaID) 
-			fi->fi.title=bin2string(p->propValue,p->propLen);
-		else if(indexf->header.filedateProp->metaID==p->metaID) 
-		{
-			fi->fi.mtime = *(unsigned long *)p->propValue;
-			fi->fi.mtime = UNPACKLONG(fi->fi.mtime);
-		}
-		else if(indexf->header.startProp->metaID==p->metaID) 
-		{
-			fi->fi.start = *(unsigned long *)p->propValue;
-			fi->fi.start = UNPACKLONG(fi->fi.start);
-		}
-		else if(indexf->header.sizeProp->metaID==p->metaID) 
-		{
-			fi->fi.size = *(unsigned long *)p->propValue;
-			fi->fi.size = UNPACKLONG(fi->fi.size);
-		}
-		else if(indexf->header.summaryProp->metaID==p->metaID) 
-		{
-			fi->fi.summary=bin2string(p->propValue,p->propLen);
-		}
+		fi->fi.title=bin2string(p->propValue,p->propLen);
+	}
+	if((indexf->header.filedateProp->metaID < fi->docProperties->n) 
+		&& (p = fi->docProperties->propEntry[indexf->header.filedateProp->metaID]))
+	{
+		fi->fi.mtime = *(unsigned long *)p->propValue;
+		fi->fi.mtime = UNPACKLONG(fi->fi.mtime);
+	}
+	if((indexf->header.startProp->metaID < fi->docProperties->n) 
+		&& (p = fi->docProperties->propEntry[indexf->header.startProp->metaID]))
+	{
+		fi->fi.start = *(unsigned long *)p->propValue;
+		fi->fi.start = UNPACKLONG(fi->fi.start);
+	}
+	if((indexf->header.sizeProp->metaID < fi->docProperties->n) 
+		&& (p = fi->docProperties->propEntry[indexf->header.sizeProp->metaID]))
+	{
+		fi->fi.size = *(unsigned long *)p->propValue;
+		fi->fi.size = UNPACKLONG(fi->fi.size);
+	}
+	if((indexf->header.summaryProp->metaID < fi->docProperties->n) 
+		&& (p = fi->docProperties->propEntry[indexf->header.summaryProp->metaID]))
+	{
+		fi->fi.summary=bin2string(p->propValue,p->propLen);
 	}
 }
 
