@@ -13,6 +13,17 @@ BINARY_AGE=0
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
 
 
+dnl Provide an option for enabling btree/incremental indexing for development
+AC_ARG_ENABLE(daystamp,
+             AC_HELP_STRING([--enable-daystamp], [Adds today's date to version]),daystamp=yes,)
+
+if test x$daystamp = xyes; then
+        TODAY=`/bin/date +%Y-%m-%d`
+	VERSION="$VERSION-$TODAY"
+fi
+
+
+
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 AC_PROG_LIBTOOL
@@ -158,6 +169,9 @@ else
     AC_SUBST(LIBXML2_LIB)
     AC_SUBST(LIBXML2_CFLAGS)
 fi
+
+
+
 
 
 dnl Provide an option for enabling btree/incremental indexing for development
