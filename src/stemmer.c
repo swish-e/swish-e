@@ -36,7 +36,6 @@
 /* Copyright (c) CNIDR (see ../COPYRIGHT) */
 
 
-
 /* 
  * stems a word.
  * 
@@ -48,6 +47,7 @@
  */
 
 #include "swish.h"
+#include "error.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
@@ -497,7 +497,7 @@ int     ReplaceEnd(char *word, RuleList *rule)
         rule++;
     }
 
-    return 0;
+    return STEM_OK;
 
 }                               /* ReplaceEnd */
 
@@ -567,7 +567,7 @@ int     Stem(char **inword, int *lenword, void  *dummy)
     /*  Part 2: Run through the Porter algorithm */
 
 
-    for (i = 0; i < sizeof(all_steps)/sizeof(all_steps[0]); i++)
+    for (i = 0; i < (int)(sizeof(all_steps)/sizeof(all_steps[0])); i++)
     {
         rule_result = ReplaceEnd(word, all_steps[i]);
 
@@ -679,7 +679,7 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
     free_fuzzy_mode( fi );
 
 
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
@@ -719,8 +719,8 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
     /* Free existing structure */
     free_fuzzy_mode( fi );
 
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
-        if ( fuzzy == fuzzy_opts[i].fuzzy_mode ) 
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
+        if ( (FuzzyIndexType)fuzzy == fuzzy_opts[i].fuzzy_mode ) 
         {
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
             fi->fuzzy_routine = fuzzy_opts[i].routine;
@@ -758,7 +758,7 @@ void free_fuzzy_mode( FUZZY_INDEX *fi )
     STEMMING_OPTS *opts = (STEMMING_OPTS *)fi->fuzzy_args;
 #endif
 
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( fi->fuzzy_mode == fuzzy_opts[i].fuzzy_mode )
         {
             fi->fuzzy_mode = FUZZY_NONE;
@@ -780,7 +780,7 @@ void free_fuzzy_mode( FUZZY_INDEX *fi )
 char *fuzzy_mode_to_string( FuzzyIndexType mode )
 {
     int     i;
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( mode == fuzzy_opts[i].fuzzy_mode )
             return fuzzy_opts[i].name;
 
@@ -827,6 +827,8 @@ int     Stem_snowball(char **inword, int *lenword, void *args)
     }
     memcpy(*inword, snowball->p, snowball->l);
     (*inword)[snowball->l] = '\0';
+
+    return STEM_OK;
 }
 
 #endif

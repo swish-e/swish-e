@@ -68,25 +68,6 @@ void freeModule_DB (SWISH *sw)
 
 
 
-/*
- -- Config Directives
- -- Configuration directives for this Module
- -- return: 0/1 = none/config applied
-*/
-
-int configModule_DB  (SWISH *sw, StringList *sl)
-{
- //struct MOD_DB *DB = sw->Db;
- // char *w0    = sl->word[0];
- int  retval = 1;
-
-
-  retval = 0; // tmp due to empty routine
-
-  return retval;
-}
-
-
 
 
 static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer);
@@ -375,16 +356,24 @@ void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
 
 /* Used by rank.c */
 
+
+#ifdef USE_BTREE
 void getTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int *wordcount)
 {
-#ifdef USE_BTREE
         DB_ReadTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
-#else
-INDEXDATAHEADER *header = &indexf->header;
-        *wordcount = header->TotalWordsPerFile[idx];
-#endif
 }
 
+#else
+
+
+void getTotalWordsPerFile(IndexFILE *indexf, int idx,int *wordcount)
+{
+    INDEXDATAHEADER *header = &indexf->header;
+
+    *wordcount = header->TotalWordsPerFile[idx];
+}
+
+#endif
 
 /*------------------------------------------------------*/
 /*---------- General entry point of DB module ----------*/

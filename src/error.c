@@ -271,7 +271,7 @@ char *getErrorString(int number)
     int i;
     static char message[50];
     
-    for (i = 0; i < sizeof(swishErrors) / sizeof(swishErrors[0]); i++)
+    for (i = 0; i < (int)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
         if ( number == swishErrors[i].error_num )
             return swishErrors[i].message_string;
 
@@ -302,7 +302,7 @@ int SwishCriticalError(SWISH *sw)
     if ( !sw )
         return 1;
     
-    for (i = 0; i < sizeof(swishErrors) / sizeof(swishErrors[0]); i++)
+    for (i = 0; i < (int)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
         if ( sw->lasterror == swishErrors[i].error_num )
             return swishErrors[i].critical;
 

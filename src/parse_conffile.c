@@ -73,7 +73,7 @@ static int     getDocTypeOrAbort(StringList * sl, int n);
 static int parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
 
-static void readwordsfile(SWISH * sw, WORD_HASH_TABLE *table_ptr, char *stopw_file);
+static void readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file);
 static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_ptr );
 
 
@@ -1165,7 +1165,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
         else if (configModule_ResultSort(sw, sl)); /* jmruiz */
-        else if (configModule_DB(sw, sl)); /* jmruiz */
         else if (configModule_Index(sw, sl)); /* jmruiz */
         else if (configModule_Prog(sw, sl));
         else if (!parseconfline(sw, sl))
@@ -1413,7 +1412,7 @@ int	strtoDocType( char * s )
     };
     int i;
 
-    for (i = 0; i < sizeof(doc_map) / sizeof(doc_map[0]); i++)
+    for (i = 0; i < (int)(sizeof(doc_map) / sizeof(doc_map[0])); i++)
         if ( strcasecmp(doc_map[i].type, s) == 0 )
 		    return doc_map[i].id;
 
@@ -1486,7 +1485,7 @@ static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_
         if (sl->n == 3)
         {
             normalize_path( sl->word[2] );
-            readwordsfile(sw, table_ptr, sl->word[2]);
+            readwordsfile(table_ptr, sl->word[2]);
             return;
         }
         else
@@ -1500,7 +1499,7 @@ static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_
 
 
 
-static void    readwordsfile(SWISH * sw, WORD_HASH_TABLE *table_ptr, char *stopw_file)
+static void    readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file)
 {
     char    line[MAXSTRLEN];
     FILE   *fp;

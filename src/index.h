@@ -153,8 +153,7 @@ char   *ruleparse(SWISH *, char *);
 
 void    computehashentry(ENTRY **, ENTRY *);
 
-void    sort_words(SWISH *, IndexFILE *);
-void    sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
+void    sort_words(SWISH *);
 
 int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position);
 

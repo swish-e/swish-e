@@ -1,5 +1,6 @@
 
 #include "header.h"
+#include <stdlib.h>
 
 extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
 {   struct SN_env * z = (struct SN_env *) calloc(1, sizeof(struct SN_env));

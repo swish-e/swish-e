@@ -56,7 +56,6 @@ struct MOD_ResultSort
 
 
 void initModule_ResultSort (SWISH *);
-void resetModule_ResultSort (SWISH *);
 void freeModule_ResultSort (SWISH *);
 int configModule_ResultSort (SWISH *sw, StringList *sl);
 
@@ -70,7 +69,7 @@ int     sortresults(RESULTS_OBJECT *results);
 
 
 
-int *CreatePropSortArray( SWISH *sw, IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache );
+int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache );
 void sortFileProperties(SWISH *sw, IndexFILE *indexf);
 
 

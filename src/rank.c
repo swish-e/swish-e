@@ -252,7 +252,7 @@ static void build_struct_map( SWISH *sw )
     {
         int factor = 1;  /* All words are of value 1 */
         
-        for (i = 0; i < numRanks; i++)
+        for (i = 0; i < (int)numRanks; i++)
             if (ranks[i].mask & structure)
                 factor += ranks[i].rank;
 
@@ -395,7 +395,11 @@ getrank( RESULT *r )
     /* bias by total words in the file -- this is off by default */
 
     /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
+#ifdef USE_BTREE
     getTotalWordsPerFile(sw, indexf, r->filenum-1, &words);
+#else
+    getTotalWordsPerFile(indexf, r->filenum-1, &words);
+#endif
 
     if (words <= 10)
         reduction = 10000;    /* 10000 * log10(10) = 10000 */

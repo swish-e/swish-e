@@ -33,7 +33,6 @@ DB_OPEN_MODE;
 
 void initModule_DB (SWISH *);
 void freeModule_DB (SWISH *);
-int configModule_DB (SWISH *sw, StringList *sl);
 
 void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int, int);
 void    update_header(SWISH *, void *, int, int );
@@ -43,10 +42,10 @@ void    write_word(SWISH *, ENTRY *, IndexFILE *);
 void    update_wordID(SWISH *, ENTRY *, IndexFILE *);
 void    delete_worddata(SWISH *, long, IndexFILE *);
 #endif
-void    build_worddata(SWISH *, ENTRY *, IndexFILE *);
+void    build_worddata(SWISH *, ENTRY *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
 long    read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **bufer, int *sz_buffer);
-void    add_worddata(SWISH *sw, ENTRY *epi, IndexFILE *indexf, unsigned char *buffer, int sz_buffer);
+void    add_worddata(SWISH *sw, unsigned char *buffer, int sz_buffer);
 void    write_pathlookuptable_to_header(SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 void    write_MetaNames (SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 int     write_integer_table_to_header(SWISH *, int id, int table[], int table_size, void *DB);
@@ -57,9 +56,13 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_integer_table_from_buffer(int table[], int table_size, char *buffer);
 char    *getfilewords(SWISH *sw, int, IndexFILE *);
-void    setTotalWordsPerFile(SWISH *, IndexFILE *,int ,int );
-void    getTotalWordsPerFile(SWISH *, IndexFILE *, int ,int *);
+void    setTotalWordsPerFile(IndexFILE *,int ,int );
 
+#ifdef USE_BTREE
+void    getTotalWordsPerFile(SWISH *, IndexFILE *, int ,int *);
+#else
+void    getTotalWordsPerFile(IndexFILE *, int ,int *);
+#endif
 
 
 /* Common DB api */

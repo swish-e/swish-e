@@ -87,7 +87,7 @@ static void printExtResultEntry(SWISH * sw, FILE * f, char *fmt, RESULT * r);
 static char *printResultControlChar(FILE * f, char *s);
 static char *printTagAbbrevControl(SWISH * sw, FILE * f, char *s, RESULT * r);
 static char *parsePropertyResultControl(char *s, char **propertyname, char **subfmt);
-static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, char *subfmt, RESULT * r);
+static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, RESULT * r);
 static void printStandardResultProperties(FILE *f, RESULT *r);
 
 static struct ResultExtFmtStrList *addResultExtFormatStr(struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
@@ -236,22 +236,6 @@ int     configModule_ResultOutput(SWISH * sw, StringList * sl)
     return retval;
 }
 
-
-
-/*
-  -- cmdline settings
-  -- return:  # of args read
-*/
-
-int     cmdlineModule_ResultOutput(SWISH * sw, char opt, char **args)
-{
-
-    //$$$ still to do...
-    //$$$ move code from swish.c
-    return 0;                   /* quiet a warning */
-
-
-}
 
 
 
@@ -451,7 +435,7 @@ static void printExtResultEntry(SWISH * sw, FILE * f_out, char *fmt, RESULT * r)
         case '<':
             /* Property - Control: read and print Property Tag  <name> */
             fmt = parsePropertyResultControl(fmt, &propname, &subfmt);
-            printPropertyResultControl(sw, f, propname, subfmt, r);
+            printPropertyResultControl(f, propname, subfmt, r);
             efree(subfmt);
             efree(propname);
             break;
@@ -664,7 +648,7 @@ static char *parsePropertyResultControl(char *s, char **propertyname, char **sub
 */
 
 
-static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, char *subfmt, RESULT * r)
+static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, RESULT * r)
 {
     char   *fmt;
     PropValue *pv;

@@ -430,7 +430,7 @@ void compress_location_positions(unsigned char **buf,unsigned char *flag,int fre
     }
 }
 
-unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
+static unsigned char *compress_location(SWISH * sw, LOCATION * l)
 {
     unsigned char *p,
            *q;
@@ -598,44 +598,18 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
     *buf = p;
 }
 
-/* 09/00 Jose Ruiz 
-** Extract compressed location
-*/
-LOCATION *uncompress_location(SWISH * sw, IndexFILE * indexf, unsigned char *p)
-{
-    LOCATION *loc;
-    int     metaID,
-            filenum,
-            frequency;
-    unsigned char flag;
-
-    metaID = uncompress2(&p);
-
-    uncompress_location_values(&p,&flag,&filenum,&frequency);
-
-    loc = (LOCATION *) emalloc(sizeof(LOCATION) + (frequency - 1) * sizeof(int));
-
-    loc->metaID = metaID;
-    loc->filenum = filenum;
-    loc->frequency = frequency;
-
-    uncompress_location_positions(&p,flag,frequency,loc->posdata);
-
-    return loc;
-}
-
 
 /* 09/00 Jose Ruiz
 ** Compress all non yet compressed location data of an entry
 */
-void    CompressCurrentLocEntry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
+void    CompressCurrentLocEntry(SWISH * sw, ENTRY * e)
 {
     LOCATION *l, *prev, *next, *comp;
    
     for(l = e->currentChunkLocationList,prev = NULL ; l != e->currentlocation; )
     {
         next = l->next;
-        comp = (LOCATION *) compress_location(sw, indexf, l);
+        comp = (LOCATION *) compress_location(sw, l);
         if(l == e->currentChunkLocationList)
             e->currentChunkLocationList =comp;
         if(prev)
@@ -682,8 +656,8 @@ int compress_worddata(unsigned char *wdata,int wdata_size)
     if ( zlib_status != Z_OK )
         progerr("WordData Compression Error.  zlib compress2 returned: %d  Worddata size: %d compress buf size: %d", zlib_status, wdata_size, (int)dest_size);
 
-    /* Make sure it's compressed enough */
-    if ( dest_size < wdata_size )
+    /* Make sure it's compressed enough -- should check that destsize is not > MAXINT */
+    if ( (int)dest_size < wdata_size )
     {
         memcpy(wdata,WDataBuf,(int)dest_size);
     }

@@ -183,7 +183,7 @@ void    delete_worddata(SWISH * sw, long wordID, IndexFILE * indexf)
 ** Function to write all word's data to the index DB
 */
 
-void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
+void build_worddata(SWISH * sw, ENTRY * ep)
 {
     int     curmetaID,
             sz_worddata;
@@ -333,7 +333,7 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 /* 04/2002 jmruiz
 ** Routine to merge two buffers of worddata
 */
-void add_worddata(SWISH *sw, ENTRY *epi, IndexFILE *indexf, unsigned char *olddata, int sz_olddata)
+void add_worddata(SWISH *sw, unsigned char *olddata, int sz_olddata)
 {
 int maxtotsize;
 unsigned char stack_buffer[32000];  /* Just to try malloc/free fragmentation */
@@ -373,7 +373,7 @@ unsigned char *q;
     /* Preserve new data in a local copy - sw->Index->worddata_buffer is the final destination
     ** of data
     */
-    if(sw->Index->sz_worddata_buffer > sizeof(stack_buffer))
+    if(sw->Index->sz_worddata_buffer > (int)sizeof(stack_buffer))
         newdata = (unsigned char *) emalloc(sw->Index->sz_worddata_buffer);
     else
         newdata = stack_buffer;
@@ -736,7 +736,7 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 
 
 
-void setTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int wordcount)
+void setTotalWordsPerFile(IndexFILE *indexf, int idx,int wordcount)
 {
 #ifdef USE_BTREE
         DB_WriteTotalWordsPerFile(sw, idx, wordcount, indexf->DB);

@@ -140,7 +140,7 @@ static int getrulenum(char *);
 static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *r);
 
 static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist);
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf);
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf);
 static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID);
 static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
 static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
@@ -148,7 +148,7 @@ static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST *, IndexFI
 static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
 static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
 static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, DB_RESULTS * db_results);
+static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS * db_results);
 static void freeresultlist(DB_RESULTS *db_results);
 static void freeresult(RESULT *);
 static void  make_db_res_and_free(RESULT_LIST *l_res);
@@ -1272,7 +1272,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
         /* Finally, look up a word, and merge with previous results. */
 
-        l_rp = operate(db_results, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
+        l_rp = operate(db_results, l_rp, rulenum, word, metaID, andLevel, indexf);
 
         if (parseone)
         {
@@ -1294,7 +1294,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 ** it calls getfileinfo(), which does the real searching.
 */
 
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf)
 {
     RESULT_LIST     *new_l_rp;
     RESULT_LIST     *return_l_rp;
@@ -1576,7 +1576,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                     // frequency = number of times this words is in this document for this metaID
                     // metarank is the negative of the metaID - for use in getrank()
 
-                    addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, indexf, db_results);
+                    addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, db_results);
 
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
@@ -1730,7 +1730,7 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
             if(!new_results_list)
                 new_results_list = newResultsList(db_results);
 
-            addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, r1->db_results->indexf, db_results);
+            addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, db_results);
 
 
             /* Storing all positions could be useful in the future  */
@@ -1970,7 +1970,7 @@ static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST * l_rp, In
             if(!new_results_list)
                 new_results_list = newResultsList(db_results);
 
-            addtoresultlist(new_results_list, i, 1000, 0, 0, indexf, db_results);
+            addtoresultlist(new_results_list, i, 1000, 0, 0, db_results);
         }
     }
 
@@ -2039,7 +2039,7 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
                 if(!new_results_list)
                     new_results_list = newResultsList(db_results);
                 
-                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, r1->db_results->indexf, db_results);
+                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, db_results);
 
                 CopyPositions(new_results_list->tail->posdata, 0, allpositions, 0, found);
                 efree(allpositions);
@@ -2065,7 +2065,7 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
 */
 
 
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE *indexf, DB_RESULTS *db_results)
+static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS *db_results)
 {
     RESULT *newnode;
     int     result_size;

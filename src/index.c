@@ -998,12 +998,12 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Add the value pair (real_path, filenum) to the database */
     DB_WriteFileNum(sw,fi.filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
     /* We always need this value in USE_BTREE mode */
-    setTotalWordsPerFile(sw, indexf, fi.filenum - 1,wordcount);
+    setTotalWordsPerFile(indexf, fi.filenum - 1,wordcount);
 #else
     /* Save total words per file */
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
-        setTotalWordsPerFile(sw, indexf, fi.filenum - 1,wordcount);
+        setTotalWordsPerFile(indexf, fi.filenum - 1,wordcount);
     }
 
 #endif
@@ -1021,7 +1021,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             {
                 idx->hashentriesdirty[i] = 0;
                 for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                    CompressCurrentLocEntry(sw, indexf, ep);
+                    CompressCurrentLocEntry(sw, ep);
             }
         }
 
@@ -1771,7 +1771,7 @@ int     entrystructcmp(const void *e1, const void *e2)
 
 
 /* Sorts the words */
-void    sort_words(SWISH * sw, IndexFILE * indexf)
+void    sort_words(SWISH * sw)
 {
     int     i,
             j;
@@ -1803,7 +1803,7 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
 
 
 /* Sort chunk locations of entry e by metaID, filenum */
-void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
+static void    sortChunkLocations(ENTRY * e)
 {
     int     i,
             j,
@@ -2048,7 +2048,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 }
                 if (epi->u1.wordID > 0)   /* Not a stopword */
                 {
-                    build_worddata(sw, epi, indexf);
+                    build_worddata(sw, epi);
                     write_worddata(sw, epi, indexf);
                 }
                 epi = epi->next;
@@ -2133,13 +2133,13 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )
         {
             /* Build worddata buffer */
-            build_worddata(sw, epi, indexf);
+            build_worddata(sw, epi);
             /* let's see if word is already in the index */
             old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
             /* If exists, we have to add the new worddata buffer to the old one */
             if(old_wordid)
             {
-                 add_worddata(sw, epi, indexf, buffer, sz_buffer);
+                 add_worddata(indexf, buffer, sz_buffer);
                  efree(buffer);
                  buffer = NULL;
                  sz_buffer = 0;
@@ -2623,7 +2623,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
         return;
 
     /* Sort all pending word locations by metaID, filenum */
-    sortChunkLocations(sw, indexf, e);
+    sortChunkLocations(e);
 
     /* Init buffer to static buffer */
     buffer = static_buffer;
