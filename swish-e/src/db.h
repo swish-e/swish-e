@@ -58,11 +58,7 @@ void    parse_integer_table_from_buffer(int table[], int table_size, char *buffe
 char    *getfilewords(SWISH *sw, int, IndexFILE *);
 void    setTotalWordsPerFile(IndexFILE *,int ,int );
 
-#ifdef USE_BTREE
-void    getTotalWordsPerFile(SWISH *, IndexFILE *, int ,int *);
-#else
-void    getTotalWordsPerFile(IndexFILE *, int ,int *);
-#endif
+int     getTotalWordsInFile(IndexFILE *indexf, int filenum);
 
 
 /* Common DB api */
