@@ -59,6 +59,7 @@ struct MOD_ResultSort
 
 
 void initModule_ResultSort (SWISH *);
+void resetModule_ResultSort (SWISH *);
 void freeModule_ResultSort (SWISH *);
 int configModule_ResultSort (SWISH *sw, StringList *sl);
 
