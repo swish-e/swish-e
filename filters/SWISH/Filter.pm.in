@@ -659,7 +659,7 @@ sub use_modules {
         $self->mywarn(" ** Loaded $mod **");
 
         # Export back to caller
-        $mod->export_to_level( 1 );
+        $mod->export_to_level( 1 ) if $mod->can('export_to_level');
     }
     return 1;
 }
