@@ -102,6 +102,7 @@ $Id$
 ** 2001-03-14 rasc   resultHeaderOutput  -H n
 ** 2001-03-24 rasc   timeroutines rearranged
 ** 2001-06-08 wsm    Store word after ENTRY to save memory
+** 2001-08    jmruiz All locations stuff rewritten to save memory
 **
 */
 
@@ -196,6 +197,8 @@ void initModule_Index (SWISH  *sw)
 
     idx->plimit=PLIMIT;
     idx->flimit=FLIMIT;
+    idx->nIgnoreLimitWords = 0;
+    idx->IgnoreLimitPositionsArray = NULL;
 
        /* Swapping access file functions */
     idx->swap_tell = NULL;
@@ -412,11 +415,11 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 ** fact, most realloc function work this way. They asks for more memory
 ** to avoid the overhead of the sequence malloc, memcpy, free.
 ********************************************************************/
-LOCATION *Mem_ZoneNewLocation(MEM_ZONE *head)
+LOCATION *new_location(MEM_ZONE *head)
 {
         /* Round size to LOC_BLOCK_SIZE  (borrowed from mem.c) */
         int size = (sizeof(LOCATION) + LOC_BLOCK_SIZE - 1) & (~(LOC_BLOCK_SIZE - 1));
-		/* Asks for size */
+        /* Asks for size */
         return (LOCATION *)Mem_ZoneAlloc(head, size);
 }
 
@@ -426,25 +429,25 @@ LOCATION *Mem_ZoneNewLocation(MEM_ZONE *head)
 ** LOCATION (frequency > 1). 
 ** A new block is allocated only if the previous becomes full
 ********************************************************************/
-LOCATION *Mem_ZoneAddPositionToLocation(void *oldp, MEM_ZONE *head, int frequency)
+LOCATION *add_position_location(void *oldp, MEM_ZONE *head, int frequency)
 {
         LOCATION *newp;
         int oldsize; 
-		int newsize;
+        int newsize;
 
-		oldsize = sizeof(LOCATION) + (frequency - 1) * sizeof(int);
-		newsize = oldsize + sizeof(int);
+        oldsize = sizeof(LOCATION) + (frequency - 1) * sizeof(int);
+        newsize = oldsize + sizeof(int);
 
         /* Check for available size in block */
-		if(!(oldsize % LOC_BLOCK_SIZE))
+        if(!(oldsize % LOC_BLOCK_SIZE))
         {
             /* Not enough size - Allocate a new block. Size rounded to LOC_BLOCK_SIZE */
-			newp = (LOCATION *)Mem_ZoneAlloc(head, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
+            newp = (LOCATION *)Mem_ZoneAlloc(head, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
             memcpy((void *)newp,(void *)oldp,sizeof(LOCATION) + (frequency - 1) * sizeof(int));
         }
-		else
+        else
             /* Enough size */
-			newp = oldp;
+            newp = oldp;
 
         return newp;
 }
@@ -643,7 +646,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             for (ep = idx->hashentries[i]; ep; ep = ep->next)
                 CompressCurrentLocEntry(sw, indexf, ep);
         }
-	}
+    }
 
     /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
     if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
@@ -723,7 +726,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         idx->hashentries[hashval] = en;
 
         /* create a location record */
-        tp = (LOCATION *) Mem_ZoneNewLocation(idx->perDocTmpZone);
+        tp = (LOCATION *) new_location(idx->perDocTmpZone);
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
@@ -763,7 +766,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     if(!found)
     {
         /* create the new LOCATION entry */
-        tp = (LOCATION *) Mem_ZoneNewLocation(idx->perDocTmpZone);
+        tp = (LOCATION *) new_location(idx->perDocTmpZone);
         tp->filenum = filenum;
         tp->frequency = 1;            /* count of times this word in this file:metaID */
         tp->structure = structure;
@@ -791,7 +794,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     /* 2001/08 jmruiz - Much better memory usage occurs if we use MemZones */
     /* MemZone will be reset when the doc is completely proccesed */
 
-    newtp = Mem_ZoneAddPositionToLocation(tp, idx->perDocTmpZone, tp->frequency);
+    newtp = add_position_location(tp, idx->perDocTmpZone, tp->frequency);
 
     if(newtp != tp)
     {
@@ -1098,8 +1101,6 @@ int     countwordstr(SWISH * sw, char *s, int filenum)
     return indexstring(sw, s, filenum, structure, 1, &metaID, &position);
 }
 
-
-
 /* Removes words that occur in over _plimit_ percent of the files and
 ** that occur in over _flimit_ files (marks them as stopwords, that is).
 */
@@ -1113,46 +1114,56 @@ int     countwordstr(SWISH * sw, char *s, int filenum)
 ** looking at all word's positions for each automatic stop word
 ** and decrement its position
 */
-/* 2001/02 jose ruiz - rewritten - all the proccess is made in one pass to achieve
+/* 2001/02 jmruiz - rewritten - all the proccess is made in one pass to achieve
 better performance */
+/* 2001-08 jmruiz - rewritten - adapted to new locations and zone schema */
 
 
-int     removestops(SWISH * sw)
+int getNumberOfIgnoreLimitWords(SWISH *sw)
 {
-    struct filepos
-    {
-        int     n;              /* Number of entries per file */
-        int    *pos;            /* Store metaID1,position1, metaID2,position2 ..... */
-    };
+    return sw->Index->nIgnoreLimitWords;
+}
+
+void getPositionsFromIgnoreLimitWords(SWISH * sw)
+{
     int     i,
             j,
             k,
             m,
-            n,
+            stopwords,
             percent,
-            stopwords;
-    LOCATION *lp;
-    ENTRY  *e;
+            bytes_size,
+            chunk_size,
+            metaID,
+            frequency,
+            structure,
+            tmpval,
+            filenum;
+    int    *positions;
+    int     local_positions[MAX_STACK_POSITIONS];
+
+    LOCATION *l, *next;
     ENTRY  *ep,
            *ep2;
     ENTRY **estop = NULL;
     int     estopsz = 0,
             estopmsz = 0;
-    int     modified,
-            totalwords;
+    int     totalwords;
     IndexFILE *indexf = sw->indexlist;
     int     totalfiles = getfilecount(indexf);
-    struct filepos **filepos = NULL;
-    struct filepos *fpos;
+    struct IgnoreLimitPositions **filepos = NULL;
+    struct IgnoreLimitPositions *fpos;
     struct MOD_Index *idx = sw->Index;
+    unsigned char *p, *q, *compressed_data, flag;
 
-/* To be rewritten - JMRUIZ */
-return 0;
     stopwords = 0;
     totalwords = indexf->header.totalwords;
 
+    idx->nIgnoreLimitWords = 0;
+    idx->IgnoreLimitPositionsArray = NULL;
+
     if (!totalwords || idx->plimit >= NO_PLIMIT)
-        return stopwords;
+        return;
 
     if (sw->verbose)
         printf("Warning: This proccess can take some time.  For a faster one, use IgnoreWords instead of IgnoreLimit\n");
@@ -1209,80 +1220,90 @@ return 0;
     if (estopsz)
     {
         /* Build an array with all the files positions to be removed */
-        filepos = (struct filepos **) emalloc(totalfiles * sizeof(struct filepos *));
+        filepos = (struct IgnoreLimitPositions **) emalloc(totalfiles * sizeof(struct IgnoreLimitPositions *));
 
         for (i = 0; i < totalfiles; i++)
             filepos[i] = NULL;
 
+        /* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
+        for(bytes_size = 0, i = COALESCE_BUFFER_MAX_SIZE; i; i >>= 8)
+            bytes_size++;
 
         /* Process each automatic stop word */
         for (i = 0; i < estopsz; i++)
         {
-            e = estop[i];
+            ep = estop[i];
 
-//***JMRUIZ TODO            for (j = 0; j < e->u1.max_locations; j++)
-for(;;)
+            if(sw->Index->swap_locdata)
+                unSwapLocDataEntry(sw,ep);
+
+            /* Run through location list to get positions */
+            for(l=ep->allLocationList;l;)
             {
-                int free_lp = 0;
+                 compressed_data = (unsigned char *) l;
+                 /* Preserve next element */
+                 next = *(LOCATION **)compressed_data;
+                 /* Jump pointer to next element */
+                 p = compressed_data + sizeof(LOCATION *);
 
-                /* Locations are always compressed, unless running -e */
-                if ( j < e->currentlocation )
-                {
-                    free_lp++;
-//***JMRUIZ TODO                    lp = uncompress_location(sw, indexf, (unsigned char *) e->locationarray[j]);
-                }
-//***JMRUIZ TODO                else
-//***JMRUIZ TODO                    lp = e->locationarray[j];
-                
+                 metaID = uncompress2(&p);
 
+                 for(chunk_size = 0, k = 0, j = bytes_size - 1; k < bytes_size; k++, j--)
+                     chunk_size |= p[k] << (j * 8);
+                 p += bytes_size;
 
-                /* Now build the list by file name of meta/position info */
+                 filenum = 0;
+                 while(chunk_size)
+                 {                   /* Read on all items */
+                     q = p;
+                     uncompress_location_values(&p,&flag,&tmpval,&structure,&frequency);
+                     filenum += tmpval;
 
-                if (!filepos[lp->filenum - 1])
-                {
-                    fpos = (struct filepos *) emalloc(sizeof(struct filepos));
+                     if(frequency > MAX_STACK_POSITIONS)
+                         positions = (int *) emalloc(frequency * sizeof(int));
+                     else
+                         positions = local_positions;
 
-                    fpos->n = lp->frequency;
-                    fpos->pos = (int *) emalloc(fpos->n * 2 * sizeof(int));
+                     uncompress_location_positions(&p,flag,frequency,positions);
 
-                    for (k = 0; k < fpos->n; k++)
-                    {
-                        m = k * 2;
-                        fpos->pos[m++] = lp->metaID;
-                        fpos->pos[m] = lp->position[k];
+                     chunk_size -= (p-q);
+         
+                     /* Now build the list by file name of meta/position info */
+
+                     if (!filepos[filenum - 1])
+                     {
+                         fpos = (struct IgnoreLimitPositions *) emalloc(sizeof(struct IgnoreLimitPositions));
+                         fpos->pos = (int *) emalloc((fpos->n = frequency) * 2 * sizeof(int));
+
+                         for (k = 0; k < frequency; k++)
+                         {
+                             m = k * 2;
+                             fpos->pos[m++] = metaID;
+                             fpos->pos[m] = positions[k];
+                         }                        
+                         filepos[filenum - 1] = fpos;
+                     }
+                     else /* file exists in array.  just append the meta and position data */
+                     {
+                         fpos = filepos[filenum - 1];
+                         fpos->pos = (int *) erealloc(fpos->pos, (fpos->n + frequency) * 2 * sizeof(int));
+
+                         for (k = 0; k < frequency; k++)
+                         {
+                             m = (fpos->n + k) * 2;
+                             fpos->pos[m++] = metaID;
+                             fpos->pos[m] = positions[k];
+                         }
+                         fpos->n += frequency;
                     }
-                    filepos[lp->filenum - 1] = fpos;
+                    if(positions != local_positions)
+                         efree(positions);
                 }
-
-
-                else /* file exists in array.  just append the meta and position data */
-                {
-                    fpos = filepos[lp->filenum - 1];
-                    fpos->pos = (int *) erealloc(fpos->pos, (fpos->n + lp->frequency) * 2 * sizeof(int));
-
-                    for (k = 0; k < lp->frequency; k++)
-                    {
-                        m = (fpos->n + k) * 2;
-                        fpos->pos[m++] = lp->metaID;
-                        fpos->pos[m] = lp->position[k];
-                    }
-                    fpos->n += lp->frequency;
-                }
-
-                /* uncompress allocated some memory */
-                if ( free_lp )
-                    efree( lp );
+                l = next;
             }
-
-            /* Free location entries */
-            /* REMOVED: the word and locations (when not running -e) are stored in a memzone */
-//***JMRUIZ TODO            if (sw->Index->swap_locdata)
-//***JMRUIZ TODO                for (m = 0; m < e->u1.max_locations; m++)
-//***JMRUIZ TODO                    efree(e->locationarray[m]);
-
-            //efree(e);
+            if(sw->Index->swap_locdata)
+                Mem_ZoneReset(idx->totalLocZone);
         }
-
 
         /* sort each file entries by metaname/position */
         for (i = 0; i < totalfiles; i++)
@@ -1290,86 +1311,10 @@ for(;;)
             if (filepos[i])
                 swish_qsort(filepos[i]->pos, filepos[i]->n, 2 * sizeof(int), &icomp2);
         }
-
-        /* Now we need to recalculate all positions
-           ** of words because we have removed the
-           ** word in the index array */
-        /* Sorry for the code but it is the fastest
-           ** I could achieve!! */
-        for (i = 0; i < SEARCHHASHSIZE; i++)
-        {
-            for (ep = sw->Index->hashentries[i]; ep; ep = ep->next)
-            {
-                if (sw->verbose >= 3)
-                {
-//***JMRUIZ TODO                    printf("Computing new positions for %s (%d occurrences)                        \r", ep->word, ep->u1.max_locations);
-                    fflush(stdout);
-                }
-//***JMRUIZ TODO                for (j = 0, modified = 0; j < ep->u1.max_locations; j++)
-for(;;)
-                {
-//***JMRUIZ TODO                    if (j < ep->currentlocation)
-//***JMRUIZ TODO                        lp = uncompress_location(sw, indexf, (unsigned char *) ep->locationarray[j]);
-//***JMRUIZ TODO                    else
-//***JMRUIZ TODO                        lp = ep->locationarray[j];
-                    if (filepos[lp->filenum - 1])
-                    {
-                        fpos = filepos[lp->filenum - 1];
-                        for (m = 0, n = 0; m < lp->frequency; m++)
-                        {
-                            /* Search metaID */
-                            for (; n < fpos->n; n++)
-                            {
-                                if (fpos->pos[n * 2] >= lp->metaID)
-                                    break;
-                            }
-                            if (n == fpos->n || fpos->pos[n * 2] > lp->metaID)
-                                break; /* Not found */
-                            k = n;
-                            for (; n < fpos->n; n++)
-                            {
-                                if (fpos->pos[n * 2] != lp->metaID)
-                                    break;
-                                if (fpos->pos[n * 2 + 1] >= lp->position[m])
-                                    break;
-                            }
-                            if (n > k)
-                            {
-                                modified = 1;
-                                lp->position[m] -= (n - k);
-                            }
-                        }
-                    }
-
-                    /* Restore array of positions to its original state */
-                    if (j < ep->currentlocation)
-                    {
-//***JMRUIZ TODO                        if (modified)
-//***JMRUIZ TODO                        {
-                            // can't free a LOCATION, as it's in a memzone
-                            // efree(ep->locationarray[j]);
-//***JMRUIZ TODO                            ep->locationarray[j] = (LOCATION *) compress_location(sw, indexf, lp);
-//***JMRUIZ TODO                        }
-//***JMRUIZ TODO                        else
-                            efree(lp);
-                    }
-                }
-            }
-        }
-        /* Free the memory used by the table of files */
-        for (i = 0; i < totalfiles; i++)
-        {
-            if (filepos[i])
-            {
-                efree(filepos[i]->pos);
-                efree(filepos[i]);
-            }
-        }
-
     }
-    efree(estop);
 
-    return stopwords;
+    idx->nIgnoreLimitWords = estopsz;
+    idx->IgnoreLimitPositionsArray = filepos;
 }
 
 
@@ -2321,7 +2266,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
              bytes_size,
              worst_case_size;
     int      i, j, tmp;
-    unsigned char *p, *q, *size_p;
+    unsigned char *p, *q, *size_p = NULL;
     unsigned char uflag, *cflag;
     LOCATION *loc, *next;
     unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
