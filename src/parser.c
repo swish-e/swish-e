@@ -1245,7 +1245,13 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             is_html_tag = 0;   // flag that this might be a meta name
 
         else if ( !element->isinline )
-            append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
+        {
+            /* Used to just append a space to the buffer, 
+               but that didn't prevent phrase matches across tags
+            */
+            flush_buffer( parse_data, 1 );
+            parse_datra->word_pos++;
+        }
     }
 
 

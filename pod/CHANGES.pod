@@ -6,6 +6,41 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.3 - ????? ??, 2004
+
+=over 4
+
+=item Access MetaNames and PropertyNames from API
+
+Patch provided by Jamie Herre to access the MetaNames and PropertyNames
+via the C API and to test via the testlib program.  Swish::API also updated
+to access this data.
+
+=item SwishResultPropertyULong() bug fixed
+
+David Windmueller reported that SwishResultPropertyULong() was 
+returning ULONG_MAX on all calls.  This was fixed.
+
+=item Null written to wrong location in file.c
+
+Bill Schell with the help of valgrind found a null written past the end of a
+buffer in file.c in the code that supports the old parsers.  This resulted in a
+segfault while indexing a large set of XML documents.
+
+=item Fixed problem when indexing very large files
+
+Steve Harris reported a problem when indexing a very large document that 
+caused an integer overflow.  José Ruiz updated to used unsigned integers.
+
+=item Bump word position on block tags with HTML2 parser
+
+Peter Karman pointed out the the libxml2 HTML parser was allowing phrase
+matches across block level html elements.  Swish now bumps the word
+position on these elements.
+
+
+=back
+
 =head2 Version 2.4.2 - March 09, 2004
 
 =over 4
