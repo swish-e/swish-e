@@ -834,6 +834,7 @@ int initSearchResultProperties(SWISH *sw)
     IndexFILE *indexf;
     int i;
     struct MOD_Search *srch = sw->Search;
+    struct metaEntry *meta_entry;
 
 
 	/* lookup selected property names */
@@ -841,28 +842,28 @@ int initSearchResultProperties(SWISH *sw)
 	if (srch->numPropertiesToDisplay == 0)
 		return RC_OK;
 
-	for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-		indexf->propIDToDisplay=(int *)emalloc(srch->numPropertiesToDisplay*sizeof(int));
+	for( indexf = sw->indexlist; indexf; indexf = indexf->next )
+		indexf->propIDToDisplay=(int *) emalloc(srch->numPropertiesToDisplay*sizeof(int));
 
 	for (i = 0; i < srch->numPropertiesToDisplay; i++)
 	{
 		makeItLow(srch->propNameToDisplay[i]);
 
 		/* Get ID for each index file */
-		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+		for( indexf = sw->indexlist; indexf; indexf = indexf->next )
 		{
-			indexf->propIDToDisplay[i] = getMetaNameID(indexf, srch->propNameToDisplay[i]);
-
-			if (indexf->propIDToDisplay[i] == 1)
+		    if ( !(meta_entry = getMetaNameData( &indexf->header, srch->propNameToDisplay[i])))
 			{
 				progerr ("Unknown Display property name \"%s\"", srch->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
-			else
+			else if ( !( meta_entry->metaType & META_PROP) )
 			{
 				progerr ("Name \"%s\" is not a PropertyName", srch->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
+			else
+			    indexf->propIDToDisplay[i] = meta_entry->metaID;
 		}
 	}
 	return RC_OK;
