@@ -719,6 +719,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     char        strType[30];
     int         i;
     FileRec     fi;  /* place to hold doc properties */
+#ifdef USE_BTREE
+    int old_filenum;
+#endif
 
     memset( &fi, 0, sizeof( FileRec ) );
 
@@ -787,9 +790,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 #ifdef USE_BTREE
     /** Let's see if file already exits when in update mode */
-    if(sw->Index->update_mode)
+    switch(sw->Index->update_mode)
     {
-        int old_filenum;
+      case 1:      /* Update mode */
         DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
         /* If exits a previous file with the same real_path ... */
         if(old_filenum)
@@ -809,7 +812,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             fi.filenum = old_filenum;
             cp = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->modified_meta->metaID, 0 );
  
-            /* Crate a property based on mtime in order to use it
+            /* Create a property based on mtime in order to use it
             ** for comparing properties in Compare_Property routine */
             tmp = PACKLONG(fprop->mtime);
             wp = CreateProperty( cur_index->modified_meta, (unsigned char *)&tmp, sizeof( tmp ), 1, &error_flag );
@@ -835,6 +838,19 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
                 cur_index->header.removedfiles++;
             }
         }
+        break;
+      case 2:      /* Remove mode */
+        DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
+        /* If exits a previous file with the same real_path remove it */
+        if(old_filenum)
+        {
+            IndexFILE   *cur_index = sw->indexlist;
+            /* Remove old filenum and continue */
+            DB_RemoveFileNum(sw,old_filenum,indexf->DB);
+            cur_index->header.removedfiles++;
+        }
+        return;
+        break;
     }
 
 #endif
