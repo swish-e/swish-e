@@ -297,28 +297,180 @@ sort descending by title, ascending by name
 
     -s title desc name asc
 
-=item -x (extra output)
+=item -x formatstring (extended output format)
 
-The C<-x> switch causes SWISH-E to output extra information with each result.
+The C<-x> switch defines the output format string.
+The format string can contain plain text and property names (including swish-defined internal property names)
+and is used to generate the output for every result.
+In addition, the output format of the property name can be controlled with C-like printf format strings.
+This feature overrides the cmdline switches C<-d> and C<-p>,
+and a warning will be generated if C<-d> or C<-p> are used with C<-x>.
 
-Normally, swish reports on a single line (see the C<-d> delimiter switch):
+For example, to return just the title, one per line, in the search results:
 
-    rank
-    file name (or url)
-    title from document
-    file size
-    properties (if -p used)
+    swish-e  -w ...   -x '<swishtitle>\n' ...
 
-With C<-x> swish reports:
+Note: the C<\n> may need to be protected from your shell.
 
-    rank
-    the index file (useful when searching multiple indexes)
-    File Name (or url)
-    title from document
-    document summary (xxx to be announced)
-    offset into file (to handle multiple documents within a single file)
-    file size
-    properties (if -p used)
+See also the C<ResultExtFormatName> in L<SWISH-CONFIG|SWISH-CONFIG> for a way to define I<named>
+format strings in the swish configuration file.
+
+B<Format of "formatstring":>
+
+    "text<propertyname>text<propertyname fmt=subfmt>text..."
+
+
+Where B<propertyname> is:
+
+=over 4
+
+=item *
+
+the name of a user property as specified with the config file
+directive "PropertyNames"
+
+=item *
+
+the name of a swish Auto property (see below).  These properties are
+defined automatically by swish -- you do not need to specify them
+with PropertyNames directive.  (This may change in the future.)
+
+=back
+
+propertynames must be placed within "E<lt>" and "E<gt>".
+
+B<User properties:>
+
+SWISH-E allows you to specify certain META tags within your documents that can be used as B<document properties>.
+The contents of any META tag that has been identified as a document property can be returned as
+part of the search results.  Doucment properties must be defined while indexing using the B<PropertyNames>
+configuration directive (see L<SWISH-CONFIG|SWISH-CONFIG/"item_PropertyNames">).
+
+Examples of user-defined PropertyNames:
+
+    <keywords>
+    <author>
+    <deliveredby>
+    <reference>
+    <id>
+
+Note: In swish-e 2.2 all user properties are String type.
+This may change in future...
+
+
+B<Auto properties:>
+
+Swish defines a number of "Auto" properties for each document indexed.
+These are available for output when using the C<-x> format.
+
+    Name               Type     Contents
+    swishreccount      Integer  Result record counter
+    swishtitle         String   Document title (html only)
+    swishrank          Integer  Result rank for this hit
+    swishdocpath       String   URL or filepath to document
+    swishdocsize       Integer  Document size in bytes
+    swishlastmodified  Date     Last mod. date of document
+    swishdescription   String   Description of document (see:StoreDescription)
+    swishstartpos      Integer  [not yet used]
+    swishdbfile        String   Path of swish database indexfile
+
+The Auto properties can also be specified using shortcuts:    
+
+    %c     = <swishreccount>        (c-ount)
+    %d     = <swishdescription>
+    %D     = <swishlastmodified>    (D-ate)
+    %I     = <swishdbfile>          (I-ndex)
+    %p     = <swishdocpath>         (P-ath)
+    %r     = <swishrank>
+    %l     = <swishdocsize>         (lentgh)
+    %S     = <swishstartpos>
+    %t     = <swishtitle>
+    %%     = %
+
+
+B<Sub-formats of properties:>
+
+Properties listed in an C<-x> format string can include format control strings.
+These "sub-formats" are used to control how the contents of the associated property are printed.
+Sub-formats are used like C-language printf formats.
+The sub-format is specified by including the attribute "fmt" within the property tag.
+
+General syntax:
+
+    -x '<propertyname fmt="subfmt">'
+
+where C<subfmt> controls the output format of C<propertyname>.    
+
+Examples of sub-format strings:
+
+        date type:    ...fmt='%d.%m.%Y'
+        string type:  ...fmt='%-40.20s'
+        integer type: ...fmt=/%8.8d/
+
+Please see the manual pages for strftime(3) and sprintf(3) for an explanation of
+format strings.
+
+B<Rainer -- are strftime and sprintf formats fully implemented?>
+
+The first character of a subfmt string defines the delimiter for the sub-format string.
+For example,
+
+    swish -x  "<author  fmt=\"%20s\"> ...\n"
+    swish -x  "<author  fmt='%20s'> ...\n"
+    swish -x  "<author  fmt=/%20s/> ...\n"
+
+
+B<Standard predefined formats:>
+
+If you ommit the sub-format, the following formats are used:
+
+    String type:       "%s"  (like printf char *)
+    Integer type:      "%d"  (like printf int)
+    Date type:         "%Y-%m-%d %H:%M:%S" (like strftime)
+    Float type:        "%f"  (like printf double) 
+
+
+B<Text in "formatstring" or "subfmt":>
+
+Text will be output as-is in format strings (and sub-format strings).
+Special characters can be escaped with a backslash.
+To get a new line for each result hit, you have to include
+the Newline-Character "\n" at the end of "fmtstr".
+
+    -x "<swishreccount>|<swishrank>|<swishdocpath>\n"
+    -x "Count=<swishreccount>, Rank=<swishrank>\n"
+    -x "\<p\>Title=\<b\><swishtitle>\<p\>"
+    -x 'Date: <swishlastmodified fmt="%m/%d/%Y">\n'
+
+B<Control/Escape charcters:>
+
+you can use C-like control escapes in the format string:
+
+   known controls:      \a, \b, \f, \n, \r, \t, \v,
+   digit escapes:       \xhexdigits   \0octaldigits
+   character escapes:   \anychar  
+
+Example,
+
+    swish -x "%c\t%r\t%p\t\"<swishtitle fmt=/%40s/>\"\n"
+
+B<Examples of -x format strings:>
+
+    -x "%c|%r|%p|%t|%D|%d\n"
+    -x "%c|%r|%p|%t|<swishdate fmt=/%A, %d. %B %Y/>|%d\n"
+    -x "<swishrank>\t<swishdocpath>\t<swishtitle>\t<keywords>\n
+    -x "xml_out: \<title\><swishtitle>\>\</title\>\n"
+    -x "xml_out: <swishtitle fmt='<title>%s</title>'>\n"
+
+=item -X  (extended header output)
+
+The C<-X> switch generates extened I<header> output.  This is most useful when searching more than one
+index file at a time, either by specifying more than one index file with the C<-f> switch, or when searching
+a merged index file.  In these cases, -X will generate a combined set of headers followed by a set of
+headers specific to each index file.  This gives access to the settings used to generate each index file.
+
+Even when searching a single index file, C<-X> will provided additional information about the index file,
+how it was indexed, and how swish is interperting the query.
 
 =item -v 4 (verbosity level)
 
