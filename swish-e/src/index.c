@@ -920,9 +920,10 @@ IndexFILE *indexf;
 int i;
 ENTRYARRAY *ep;
 ENTRY *epi;
-int totalwords=indexf->header.totalwords;
+int totalwords;
 	BuildSortedArrayOfWords(sw,indexf);
 	ep=sw->entryArray;
+	totalwords=sw->entryArray->numWords;
 	if(ep)
 	{
 		for(i=0; i<totalwords; i++) 
@@ -944,25 +945,19 @@ int totalwords=indexf->header.totalwords;
 				sortentry(sw,indexf,epi);
 				/* Write entry to file */
 				printword(sw,epi,indexf);
-			}
-			else
-			{
-				/* Word content is not longer needed */
-				efree(epi->word);   
-				efree(epi);   
-				epi=NULL;
-			}
+			} else epi->u1.fileoffset=-1L;
 		}
 		fputc(0,indexf->fp);   /* End of words mark */
 		printhash(sw->hashentries, indexf);
 		for(i=0; i<totalwords; i++) 
 		{
 			epi=ep->elist[i];
-			if (epi)   /* Not a stopword */
+			if (epi->u1.fileoffset>=0L) 
 			{
 				printworddata(sw,epi,indexf);
-				efree(epi);   
 			}
+			efree(epi->word);
+			efree(epi);   
 		}
 	}
 }
@@ -993,9 +988,6 @@ FILE *fp=indexf->fp;
 	wordlen=strlen(ep->word);
 	compress1(wordlen,fp);
 	fwrite(ep->word, wordlen, 1, fp);
-
-		/* Word content is not longer needed */
-	efree(ep->word);   
 
 	printlong(fp,(long)0);     /* hash offset */
 	printlong(fp,(long)0);     /* word's data pointer */
@@ -1757,17 +1749,22 @@ ENTRY *ep, *epn;
 FILE *fp=indexf->fp;
 	for(i=0; i<SEARCHHASHSIZE; i++) {
 		if((ep = hashentries[i])) {
-			while(ep) {
-				fseek(fp,ep->u1.fileoffset,0);
-				uncompress1(wordlen,fp);
-				fseek(fp,(long)wordlen,SEEK_CUR);
-				if((epn = ep->nexthash)) {
-					printlong(fp,epn->u1.fileoffset);
-					ep = epn;
-				} else {
-					printlong(fp,(long)0);
-					break;
+			while(ep) 
+			{
+				epn=ep->nexthash;
+				if(ep->u1.fileoffset>=0L)
+				{
+					fseek(fp,ep->u1.fileoffset,SEEK_SET);
+					uncompress1(wordlen,fp);
+					fseek(fp,(long)wordlen,SEEK_CUR);
+					/* Get next non stopword */
+					while(epn && epn->u1.fileoffset<0L) epn=epn->nexthash;
+					if(epn)
+						printlong(fp,epn->u1.fileoffset);
+					else 
+						printlong(fp,(long)0);
 				}
+				ep = epn;
 			}
 		}
 	}
