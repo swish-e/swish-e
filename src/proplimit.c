@@ -148,6 +148,7 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
 
     /* Free up the input parameters */
     ClearLimitParams( srch->limit_params );
+    srch->limit_params = NULL;
 
             
 
@@ -156,16 +157,25 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
     {
         PROP_LIMITS *index_limits = srch->prop_limits[index_count++];
 
-        for ( metaID = 0; metaID < indexf->header.metaCounter; metaID++ )
+        for ( metaID = 0; metaID <= indexf->header.metaCounter; metaID++ )
         {
             if ( index_limits[metaID].inPropRange )
+            {
                 efree ( index_limits[metaID].inPropRange );
+                index_limits[metaID].inPropRange = NULL;
+            }
 
             if ( index_limits[metaID].loPropRange )
+            {
                 efree ( index_limits[metaID].loPropRange );
+                index_limits[metaID].loPropRange = NULL;
+            }
 
             if ( index_limits[metaID].hiPropRange )
+            {
                 efree ( index_limits[metaID].hiPropRange );
+                index_limits[metaID].hiPropRange = NULL;
+            }
         }
         
 
@@ -222,7 +232,7 @@ int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char
     
     if ( srch->limits_prepared )
     {
-        set_progerr( PROP_LIMIT_ERROR, srch->sw, "Limits have been prepared (and executed) -- call ResetLimitParameters() first" );
+        set_progerr( PROP_LIMIT_ERROR, srch->sw, "Limits have been prepared (and executed) -- call SwishResetSearchLimit() first" );
         return 0;
     }
 
@@ -772,6 +782,7 @@ static int load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS
 
         if ( !create_lookup_array( indexf, cur_prop_limits, meta_entry ) )
             return 0;
+
     }
 
     return 1;  // ** flag that it's ok to continue the search.
@@ -806,17 +817,13 @@ int Prepare_PropLookup(SEARCH_OBJECT *srch )
     IndexFILE      *indexf = sw->indexlist;
 
 
-    /* already prepared? */
-    if ( srch->limits_prepared++ )
-        return 1;
-
-
-
     /* nothing to limit by */
     if ( !params )
         return 1;
 
-
+    /* already prepared? */
+    if ( srch->limits_prepared++ )
+        return 1;
 
 
     /* process each index file */

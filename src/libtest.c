@@ -30,7 +30,7 @@ $Id$
 
 
 #include <stdio.h>
-#include "searchswish-e.h"
+#include "swish-e.h"  /* use locally for testing */
 
 #define MEM_TEST 1
 #ifdef MEM_TEST
@@ -86,8 +86,6 @@ int     main(int argc, char **argv)
         display_results( swish_handle, results );
         Free_Results_Object( results );
     }
-        
-
 
     /* Typical use of the library is to create a search object */
     /* and use the search object to make multiple queries */
@@ -101,7 +99,7 @@ int     main(int argc, char **argv)
 
 
     /* Adjust some of the search parameters if different than the defaults */
-    // SwishSetSort( search, "swishtitle desc" );
+    SwishSetSort( search, "swishtitle" );
 
     // SwishSetStructure( search, IN_TITLE );  /* limit to title only */
 

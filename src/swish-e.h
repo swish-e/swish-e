@@ -1,6 +1,8 @@
 #ifndef SEARCHSWISH_H
 #define SEARCHSWISH_H 1
 
+#include "time.h"  /* for time_t, which isn't really needed */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,7 +54,6 @@ SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEA
 #define IN_HEADER_BIT   5
 #define IN_EMPHASIZED_BIT   6
 #define IN_META_BIT     7
-#define STRUCTURE_END 7
 
 
 #define IN_FILE         (1<<IN_FILE_BIT)
@@ -74,6 +75,7 @@ SW_SEARCH New_Search_Object( SW_HANDLE, char *query );
 void SwishSetStructure( SW_SEARCH srch, int structure );
 void SwishPhraseDelimiter( SW_SEARCH srch, char delimiter );
 void SwishSetSort( SW_SEARCH srch, char *sort );
+void SwishSetQuery( SW_SEARCH srch, char *query );
 
 int SwishSetSearchLimit( SW_SEARCH srch, char *propertyname, char *low, char *hi);
 void SwishResetSearchLimit( SW_SEARCH srch );
@@ -111,8 +113,42 @@ void set_error_handle( FILE *where );
 void SwishErrorsToStderr( void );
 
 
+/* For low-level access to a property */
+
+typedef enum
+{                               /* Property Datatypes */
+    PROP_UNDEFINED = -1,
+    PROP_UNKNOWN = 0,
+    PROP_STRING,
+    PROP_INTEGER,
+    PROP_FLOAT,
+    PROP_DATE, 
+    PROP_ULONG
+}
+PropType;
 
 
+
+typedef union
+{                               /* storage of the PropertyValue */
+    char   *v_str;              /* strings */
+    int     v_int;              /* Integer */
+    time_t  v_date;             /* Date    */
+    double  v_float;            /* Double Float */
+    unsigned long v_ulong;      /* Unsigned long */
+}
+u_PropValue1;
+ 
+typedef struct
+{                               /* Propvalue with type info */
+    PropType datatype;
+    u_PropValue1 value;
+    int      destroy;           /* flag to destroy (free) any pointer type */
+} 
+PropValue;
+
+PropValue *getResultPropValue (SW_RESULT result, char *name, int ID);
+void    freeResultPropValue(PropValue *pv);
 
 #ifdef __cplusplus
 }

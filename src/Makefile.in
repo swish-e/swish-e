@@ -23,6 +23,7 @@ prefix      = @prefix@
 bindir      = $(prefix)/bin
 exec_prefix = @exec_prefix@
 libdir      = @libdir@
+includedir  = @includedir@
 cflags      = @CFLAGS@
 ldflags     = @LDFLAGS@
 
@@ -96,13 +97,12 @@ UTIL_OBJS           = check.o error.o list.o mem.o string.o \
 
 # Only for building the binary
 
-SWISH_BINARY_OBJS   = swish.o keychar_out.o dump.o result_output.o 
+SWISH_BINARY_OBJS   = swish.o keychar_out.o dump.o result_output.o  $(INDEXING_OBJS)
 
 
-# Collection of files for building swish libraries
+# Collection of files for building swish search library
 
-LIB_OBJS            = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS) $(INDEXING_OBJS) 
-SEARCH_LIB_OBJS     = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
+LIB_OBJS     = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 
 # All objects for make clean target
 OBJS                = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS) $(INDEXING_OBJS)  $(SWISH_BINARY_OBJS) 
@@ -168,27 +168,20 @@ test:	$(NAME)
 
 $(LIB_OBJS):	Makefile config.h swish.h
 
-install:
+install: $(NAME)
 	cp swish-e $(bindir)/swish-e
 
-install-lib:	
+install-lib: libswish-e.a	
 	cp libswish-e.a $(libdir)/libswish-e.a
+	cp swish-e.h $(includedir)/swish-e.h
 
 
-libtest: libsearchswish-e.a libtest.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libsearchswish-e.a $(SEARCHLIBS)
+libtest: libswish-e.a libtest.o
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(SEARCHLIBS)
 	chmod 755 $@
 
 
-libsearchswish-e.a: $(SEARCH_LIB_OBJS)
-	$(AR) $(ARFLAGS) $@ $(SEARCH_LIB_OBJS)
-	$(RANLIB) libsearchswish-e.a
 
-
-libsearchtest: libsearchswish-e.a libtest.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libsearchswish-e.a $(LIBS)
-	chmod 755 $@
-	
 
 
 #

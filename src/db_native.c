@@ -641,7 +641,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
 {
     if (!*fp)
-        progerr("Called close on non-opened file '%s'", *filename);
+        return;
 
     if (fclose(*fp))
         progerrno("Failed to close file '%s': ", *filename);

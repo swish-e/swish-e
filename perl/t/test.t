@@ -24,6 +24,8 @@ my $mem_test = 0;
     my @header_names = $swish->HeaderNames;
     is_ok( "header names " . join(':',@header_names), @header_names);
 
+    my $d = $swish->HeaderValue( 't/index.swish-e', 'Indexed on' );
+    print "found [$d]\n";
 
     my @index_names = $swish->IndexNames;
 
@@ -52,7 +54,7 @@ my $mem_test = 0;
     }
 
     # Or more typically
-    my $search = $swish->New_Search_Object("");
+    my $search = $swish->New_Search_Object;
     check_error('Call $swish->New_Search_Object', $swish);
 
     $search->SetSort("swishfilenum");
@@ -64,9 +66,6 @@ my $mem_test = 0;
     my $results = $search->Execute( $query );
     check_error('Call $swish->Execute', $swish);
 
-
-
-
     
     # Display a list of results
 
@@ -77,7 +76,6 @@ my $mem_test = 0;
 
     # Seek to a given page - should check for errors
     #$results->SeekResult( ($page-1) * $page_size );
-    #$results->SeekResult( 20 );
 
     my @props = qw/
         swishreccount

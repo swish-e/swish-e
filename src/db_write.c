@@ -52,7 +52,15 @@ static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline
 /* Header routines */
 
 #define write_header_int(sw,id,num,DB) {unsigned long itmp = (num); itmp = PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(long), (DB));}
-#define write_header_int2(sw,id,num1,num2,DB) {unsigned long itmp[2]; itmp[0] = (num1); itmp[1] = (num2); itmp[0]=  PACKLONG(itmp[0]); itmp[1] = PACKLONG(itmp[1]); DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB));}
+#define write_header_int2(sw,id,num1,num2,DB)\
+{  \
+        unsigned long itmp[2]; \
+        itmp[0] = (num1); \
+        itmp[1] = (num2); \
+        itmp[0] = PACKLONG(itmp[0]); \
+        itmp[1] = PACKLONG(itmp[1]); \
+        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB)); \
+}
 
 
 void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int merged)
