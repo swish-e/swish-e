@@ -1924,9 +1924,6 @@ void    freefileinfo(struct file *f)
     if ( !f )
         return;
 
-    if (f->filename)
-        efree(f->filename);
-
     if (f->docProperties)
         freeDocProperties(f->docProperties);
         

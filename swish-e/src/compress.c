@@ -650,12 +650,9 @@ void    SwapFileData(SWISH * sw, struct file *filep)
 struct file *unSwapFileData(SWISH * sw)
 {
     struct file *fi;
-    int     len,
-            len1,
-            lookup_path;
+    int     len;
     unsigned char *buffer,
            *p;
-    char   *buf1;
     struct MOD_Index *idx = sw->Index;
 
 
@@ -681,17 +678,6 @@ struct file *unSwapFileData(SWISH * sw)
     fread(buffer, len, 1, idx->fp_file_read); /* Read all data */
 
 
-    lookup_path = uncompress2(&p);
-    lookup_path--;
-    len1 = uncompress2(&p);     /* Read length of filename */
-    buf1 = emalloc(len1);
-    memcpy(buf1, p, len1);      /* Read filename */
-    p += len1;
-
-    fi->lookup_path = lookup_path;
-    fi->filename = buf1;
-
-
 #ifdef PROPFILE
     p = UnPackPropLocations(fi, p);
 #else
@@ -705,51 +691,4 @@ struct file *unSwapFileData(SWISH * sw)
 
 
 
-int     get_lookup_path(struct char_lookup_st **lst, char *path)
-{
-    unsigned int i,
-            hashval;
-    struct char_st *is = NULL,
-           *tmp = NULL;
 
-    hashval = hash(path);
-
-    if (!*lst)
-    {
-        *lst = (struct char_lookup_st *) emalloc(sizeof(struct char_lookup_st));
-
-        (*lst)->n_entries = 1;
-        for (i = 0; i < HASHSIZE; i++)
-            (*lst)->hash_entries[i] = NULL;
-        is = (struct char_st *) emalloc(sizeof(struct char_st));
-
-        is->index = 0;
-        is->next = NULL;
-        is->val = estrdup(path);
-        (*lst)->all_entries[0] = is;
-        (*lst)->hash_entries[hashval] = is;
-    }
-    else
-    {
-        for (tmp = (*lst)->hash_entries[hashval]; tmp; tmp = tmp->next)
-            if ((strlen(tmp->val) == strlen(path)) && (strcmp(tmp->val, path) == 0))
-                break;
-        if (tmp)
-        {
-            return tmp->index;
-        }
-        else
-        {
-            is = (struct char_st *) emalloc(sizeof(struct char_st));
-
-            is->index = (*lst)->n_entries;
-            is->val = estrdup(path);
-            is->next = (*lst)->hash_entries[hashval];
-            (*lst)->hash_entries[hashval] = is;
-            *lst = (struct char_lookup_st *) erealloc(*lst, sizeof(struct char_lookup_st) + (*lst)->n_entries * sizeof(struct char_st *));
-
-            (*lst)->all_entries[(*lst)->n_entries++] = is;
-        }
-    }
-    return ((*lst)->n_entries - 1);
-}

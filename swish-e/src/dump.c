@@ -45,7 +45,7 @@ void dump_memory_file_list( SWISH *sw, IndexFILE *indexf )
         fi = indexf->filearray[ i ];
 
         fflush(stdout);
-        printf("%d: %s\n", i+1, fi->filename);
+        printf("%d\n", i+1);
 
 
         dump_file_properties( indexf, fi );
@@ -69,7 +69,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         fi = readFileEntry(sw, indexf, i + 1);
 
         fflush(stdout);
-        printf("%d: %s\n", i+1, fi->filename);
+        printf("Dumping File Properties for File Number: %d\n", i+1);
 
 
         dump_file_properties( indexf, fi );
@@ -246,10 +246,33 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     // if (sw->verbose >= 4)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
-                        struct file *fileInfo;
+                        struct metaEntry    *m;
+                        struct file         *fileInfo;
+                        
                         printf("\n Meta:%d", metaname);
                         fileInfo = readFileEntry(sw, indexf, filenum);
-                        printf(" %s", fileInfo->filename);
+
+                        
+                        /* Get path from property list */
+                        if ( (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCPATH )) )
+                        {
+                            RESULT r;
+                            char  *s;
+
+                            r.indexf = indexf;
+                            r.sw = (struct SWISH *)sw;
+                            r.filenum = filenum;
+
+                            s = getResultPropAsString( &r, m->metaID);
+
+                            printf(" %s", s );
+                            efree( s );
+                            
+                        }
+                        else
+                            printf(" Failed to lookup meta entry");
+                            
+
                         printf(" Struct:%x", structure);
                         printf(" Freq:%d", frequency);
                         printf(" Pos:");

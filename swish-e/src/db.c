@@ -140,12 +140,6 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 		/* Metanames */
     write_MetaNames(sw, METANAMES_ID, header, DB);
 
-    if (!header->pathlookup)
-    {
-        DB_Remove(sw, DB);   /* Remove file: It is useless */
-        progerr("No valid documents have been found. Check your files, directories and/or urls. Index file removed");
-    }
-    write_pathlookuptable_to_header(sw, PATHLOOKUPTABLE_ID, header, DB);
 
 		/* BuzzWords */
     write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);	
@@ -411,44 +405,6 @@ return 0;
 }
 
 
-/* Print the info lookuptable of paths/urls */
-/* This lookuptable make the file index small and decreases I/O op */
-void    write_pathlookuptable_to_header(SWISH *sw, int id, INDEXDATAHEADER *header, void *DB)
-{
-    int     n,
-            i,
-            sz_buffer,
-            len;
-    char   *tmp;
-	char *s,*buffer;
-
-    n = header->pathlookup->n_entries;
-    for (sz_buffer = 0, i = 0; i < n; i++)
-    {
-        tmp = header->pathlookup->all_entries[i]->val;
-        len = strlen(tmp) + 1;
-        sz_buffer += 5 + len;
-    }
-
-    sz_buffer += 5;  /* For the number of elements */
-
-    s = buffer = emalloc(sz_buffer);
-
-    n = header->pathlookup->n_entries;
-    s = compress3(n, s);
-    for (i = 0; i < n; i++)
-    {
-        tmp = header->pathlookup->all_entries[i]->val;
-        len = strlen(tmp) + 1;
-        s = compress3(len, s);
-        memcpy(s,tmp,len); s += len;
-    }
-
-    DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
-
-    efree(buffer);
-}
-
 
 int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size, void *DB)
 {
@@ -597,9 +553,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case METANAMES_ID:
             parse_MetaNames_from_buffer(header, buffer);
             break;
-        case PATHLOOKUPTABLE_ID:
-            parse_pathlookuptable_from_buffer(header, buffer);
-            break;
         case BUZZWORDS_ID:
             parse_buzzwords_from_buffer(header, buffer);
             break;
@@ -712,30 +665,6 @@ void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
 }
 
 
-/* Read the lookuptable for paths/urls */
-void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer)
-{
-    int     i,
-            n,
-            len;
-    char   *tmp;
-
-    unsigned char   *s = (unsigned char *) buffer;
-
-    n = uncompress2(&s);
-    header->pathlookup = (struct char_lookup_st *) emalloc(sizeof(struct char_lookup_st) + sizeof(struct char_st *) * (n - 1));
-
-    header->pathlookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        header->pathlookup->all_entries[i] = (struct char_st *) emalloc(sizeof(struct char_st));
-
-        len = uncompress2(&s);
-        tmp = emalloc(len);
-        memcpy(tmp, s, len); s += len;
-        header->pathlookup->all_entries[i]->val = tmp;
-    }
-}
 
 
 void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
