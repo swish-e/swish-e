@@ -428,6 +428,8 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
                     "Property '%s' is not numeric", pname );
         value = ULONG_MAX;
     } 
+    else 
+        value = pv->value.v_ulong;
 
     freeResultPropValue( pv );
 
