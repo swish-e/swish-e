@@ -793,7 +793,6 @@ int     Stem_snowball(char **inword, int *lenword, void *args)
     STEMMING_OPTS *opts = (STEMMING_OPTS *)args;
     struct SN_env *snowball = opts->snowball;
 
-printf("%p\n",opts);
     SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
     opts->lang_stem(snowball);
 
