@@ -91,10 +91,10 @@
 ** ensure that searching consumes only so much CPU resources.
 */
 
-#define VERBOSE 3
+#define VERBOSE 1
 
 /* You can define VERBOSE to be a number from 0 to 4. 0 is totally
-** silent operation; 4 is very verbose.
+** silent operation.  The default before swish 2.2 was 3
 */
 
 #define _AND_WORD "and"
