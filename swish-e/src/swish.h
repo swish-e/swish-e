@@ -59,6 +59,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <time.h>
+#include "acconfig.h"  /* These are defines created by autoconf */
 #include "config.h"
 
 #ifdef NEXTSTEP
@@ -68,7 +69,7 @@
 
 #ifdef _WIN32
 #include "win32/dirent.h"
-#include "Win32/regex.h"
+#include "win32/regex.h"
 #define strcasecmp stricmp
 #else    
 #include <dirent.h>
