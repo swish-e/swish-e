@@ -369,7 +369,7 @@
 #define sw_fseek fseeko
 #define sw_ftell ftello
 #else
-#define sw_off_t unsigned long
+#define sw_off_t long
 #define sw_fseek fseek
 #define sw_ftell ftell
 #endif
