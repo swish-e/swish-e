@@ -280,7 +280,7 @@ IndexFILE *indexf;
                 	indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
                 	if (indexf->propIDToSort[i] == 1)
                 	{
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Sort property name \"%s\" in one of the index files\n.\n", sw->propNameToSort[i]);
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
                 	}
 		}
@@ -310,7 +310,7 @@ int i;
 			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
 			if (indexf->propIDToDisplay[i] == 1)
 			{
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Display property name \"%s\"\n.\n", sw->propNameToDisplay[i]);
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Unknown Display property name \"%s\"", sw->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 		}
