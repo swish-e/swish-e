@@ -62,6 +62,11 @@
 /* Includes for using SNOWBALL stemmer */
 #ifdef SNOWBALL
 #include "snowball/stem_es.h"
+#include "snowball/stem_fr.h"
+#include "snowball/stem_it.h"
+#include "snowball/stem_pt.h"
+#include "snowball/stem_de.h"
+#include "snowball/stem_nl.h"
 #include "snowball/api.h"
 #endif
 
@@ -631,11 +636,11 @@ static FUZZY_OPTS fuzzy_opts[] = {
     { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone", NULL, NULL, NULL }
 #ifdef SNOWBALL
     ,{ FUZZY_STEMMING_ES, "Stemming_es", Stem_es, spanish_create_env, spanish_close_env },
-    { FUZZY_STEMMING_FR, "Stemming_fr", NULL, NULL, NULL },
-    { FUZZY_STEMMING_IT, "Stemming_it", NULL, NULL, NULL },
-    { FUZZY_STEMMING_PT, "Stemming_pt", NULL, NULL, NULL },
-    { FUZZY_STEMMING_DE, "Stemming_de", NULL, NULL, NULL },
-    { FUZZY_STEMMING_NL, "Stemming_nl", NULL, NULL, NULL }
+    { FUZZY_STEMMING_FR, "Stemming_fr", Stem_fr, french_create_env, french_close_env },
+    { FUZZY_STEMMING_IT, "Stemming_it", Stem_it, italian_create_env, italian_close_env },
+    { FUZZY_STEMMING_PT, "Stemming_pt", Stem_pt, portuguese_create_env, portuguese_close_env },
+    { FUZZY_STEMMING_DE, "Stemming_de", Stem_de, german_create_env, german_close_env },
+    { FUZZY_STEMMING_NL, "Stemming_nl", Stem_nl, dutch_create_env, dutch_close_env }
 #endif
 };
 
@@ -647,7 +652,7 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
-            fi->fuzzy_routine = fuzzy_opts[i].routine;
+            fi->fuzzy_routine = &fuzzy_opts[i].routine;
 #ifdef SNOWBALL
             if(fuzzy_opts[i].init)
                 fi->snowball = fuzzy_opts[i].init();
@@ -755,4 +760,90 @@ int     Stem_es(char **inword, int *lenword, struct SN_env *snowball)
     memcpy(*inword, snowball->p, snowball->l);
     (*inword)[snowball->l] = '\0';
 }
+
+int     Stem_fr(char **inword, int *lenword, struct SN_env *snowball)
+{
+    int new_lenword;
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
+    french_stem(snowball);
+
+    if((*lenword) < snowball->l)
+    {
+        efree(*inword);
+        *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
+    }
+    memcpy(*inword, snowball->p, snowball->l);
+    (*inword)[snowball->l] = '\0';
+}
+
+int     Stem_it(char **inword, int *lenword, struct SN_env *snowball)
+{
+    int new_lenword;
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
+    italian_stem(snowball);
+
+    if((*lenword) < snowball->l)
+    {
+        efree(*inword);
+        *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
+    }
+    memcpy(*inword, snowball->p, snowball->l);
+    (*inword)[snowball->l] = '\0';
+}
+
+int     Stem_pt(char **inword, int *lenword, struct SN_env *snowball)
+{
+    int new_lenword;
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
+    portuguese_stem(snowball);
+
+    if((*lenword) < snowball->l)
+    {
+        efree(*inword);
+        *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
+    }
+    memcpy(*inword, snowball->p, snowball->l);
+    (*inword)[snowball->l] = '\0';
+}
+
+int     Stem_de(char **inword, int *lenword, struct SN_env *snowball)
+{
+    int new_lenword;
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
+    german_stem(snowball);
+
+    if((*lenword) < snowball->l)
+    {
+        efree(*inword);
+        *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
+    }
+    memcpy(*inword, snowball->p, snowball->l);
+    (*inword)[snowball->l] = '\0';
+}
+
+int     Stem_nl(char **inword, int *lenword, struct SN_env *snowball)
+{
+    int new_lenword;
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
+    dutch_stem(snowball);
+
+    if((*lenword) < snowball->l)
+    {
+        efree(*inword);
+        *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
+    }
+    memcpy(*inword, snowball->p, snowball->l);
+    (*inword)[snowball->l] = '\0';
+}
+
 #endif
