@@ -163,6 +163,12 @@ are a single item, but some headers (e.g. "Stopwords") return a list.
 
 The list of possible header names can be obtained from the SwishHeaderNames method.
 
+=item $swish->RankScheme( 0|1 );
+
+Similar to the -R option with the swish-e command line tool. The default
+ranking scheme is 0. Set it to 1 to experiment with other ranking features.
+See the SWISH-CONFIG documentation for more on ranking schemes.
+
 =back
 
 =head3 Error Handling
