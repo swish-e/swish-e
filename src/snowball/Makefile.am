@@ -3,13 +3,21 @@ AM_CPPFLAGS = -I"$(srcdir)"
 noinst_LTLIBRARIES = libsnowball.la
 libsnowball_la_SOURCES = \
 	api.c \
+	api.h \
 	utilities.c \
+	header.h \
 	stem_es.c \
+	stem_es.h \
 	stem_fr.c \
+	stem_fr.h \
 	stem_it.c \
+	stem_it.h \
 	stem_pt.c \
+	stem_pt.h \
 	stem_de.c \
-	stem_nl.c 
+	stem_de.h \
+	stem_nl.c \
+	stem_nl.h 
 
 
 
