@@ -34,7 +34,6 @@
 #include "string.h"
 #include "index.h"
 #include "html.h"
-#include "xml.h"
 /* #### Added metanames.h */
 #include "merge.h"
 #include "docprop.h"
@@ -405,7 +404,7 @@ int n;
 char *p, *newp, *tag, *endtag;
 int structure;
 struct file *thisFileEntry = NULL;
-int metaNameOld,metaNameXML;
+int metaNameOld;
 int i, docPropName;
 IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
@@ -498,38 +497,6 @@ char *title=parsetitle(buffer,fprop->real_path);
 				} /* Check for META TAG TYPE 2 */
 				else if((tag[0]!='!') && lstrstr(tag,"META") && lstrstr(tag,"NAME") && lstrstr(tag,"CONTENT")) { 
 					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,thisFileEntry);
-					p=endtag;
-				}  /* Check for XML field */
-				else if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
-					/* realloc memory if needed */
-					if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-					/* add netaname to array of current metanames */
-					metaName[currentmetanames]=metaNameXML;
-					/* Preserve position counter */
-					if(!currentmetanames) tmpposition=positionMeta[0];
-					/* Init word counter for the metaname */
-					positionMeta[currentmetanames++] = 1;
-					p=endtag;
-					/* If it is also a property doc store it
-					** Only store until a < is found */
-					if(docPropName) {
-					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
-					     if(endtag) *endtag='<';
-					} 
-				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf,tag+1,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
-					/* search for the metaname in the
-				        ** list of currentmetanames */
-					if(currentmetanames) {
-			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML) break;
-						if(i>=0) currentmetanames=i;
-						if(!currentmetanames) {
-						    metaName[0] = 1;
-							/* Restore position counter */
-						    positionMeta[0] = tmpposition;
-						}
-					}	
 					p=endtag;
 				}  /*  Check for COMMENT */
 				else if ((tag[0]=='!') && sw->indexComments) {
