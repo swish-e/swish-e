@@ -468,7 +468,7 @@ sub extract_links {
                 # Ignore duplicates on the same page
                 if ( $seen{$u}++ ) {
                     $server->{counts}{Duplicates}++;
-                    return;
+                    next;
                 }
 
                 unless ( $u->host ) {
