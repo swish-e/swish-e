@@ -36,7 +36,7 @@ File src\win32\*.lib
 File src\Win32\*.dll
 
 ; Expat, LibXML2, and ZLib
-File src\expat\bin\*.dll
+File ..\expat\bin\*.dll
 File ..\libxml2\win32\dsp\libxml2\*.dll
 File ..\zlib\zlib.dll
 File ..\pcre\bin\pcre.dll
