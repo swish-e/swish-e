@@ -55,7 +55,7 @@ $Id$
 */
 
 
-//$$$  gcc warnings are intended! will be corrected later
+//$$$  gcc warnings are intended! will be corrected later (rasc)
 /* #define  IS_EOE(a)  ((a)==';')                           /* W3C compliant */
 /* #define  IS_EOE(a)  ((a)==';'||isspace((int)(a)))        /* tolerant behavior */
 #define  IS_EOE(a)  (ispunct((int)(a))||isspace((int)(a)))  /* oh god, accept everything */
@@ -76,13 +76,13 @@ typedef struct {
   --                        ->next (chains all &q...;)
   -- lots of slots in the array will be empty because only [A-Z] and [a-z]
   -- is needed. But this cost hardly any memory, and is convenient...  (rasc)
-  -- Warning: don't change the ce_hasharray size, unless you know how this works!
+  -- The hash sequence list will be re-sequenced during(!) usage (dynamic re-chaining).
+  -- This brings down compares to mostly 1 strcmp per entity name. 
   --
-  -- $$$ TODO: Future optimize:
-  -- $$$   Hash can be futher optimized by a sorted insert of entity names.
-  -- $$$   and proper checking if entity name is gt cmp_name,
-  -- $$$   or do a hard reorg of the table (e.g. Uuml at the beginning of table...)
-  -- $$$   or a dynamic rechaining of found entities... (YES!....)
+  -- Warning: don't change this (ce_hasharray,etc) unless you know how this really works!
+  --
+  --   2001-05-14  Rainer.Scherg@rexroth.de (rasc)
+  --
  */
 
 struct CEHE {             /* CharEntityHashEntry*/
@@ -672,18 +672,28 @@ int charEntityDecode (unsigned char **buf)
          -- hash search block
          -- case sensitiv search  (hashvalue = 1 entity name char)
          -- (& 0x7F to prevent hashtable mem coredumps by illegal chars)
+         -- improve performance, by rechaining found elements
        */
 
       if (t) {
          struct CEHE  *hash_p;
+         struct CEHE  **hash_pp, *last_p;
 
-         hash_p = ce_hasharray[*(s+1) & 0x7F];
+         hash_pp = & ce_hasharray[*(s+1) & 0x7F];
+         last_p   = NULL;
+         hash_p  = *hash_pp;
          while (hash_p) {
-fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug
+             fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug
              if (!strcmp (hash_p->ce->name,s_cmp)) {
                  code = hash_p->ce->code;
+                 if (last_p) {  /* rechain hash sequence list (last found = first) */
+                    last_p->next = hash_p->next;   /* take elem out of seq  */
+                    hash_p->next = *hash_pp;       /* old 1. elem = 2. elem */
+                    *hash_pp     = hash_p;         /* found = 1st elem      */
+                 }
                  break;
              }
+             last_p = hash_p;
              hash_p = hash_p->next;
          }
 
@@ -760,6 +770,10 @@ void debugModule_Entities (void)
  }
  
 //--------
+
+
+
+
 
   return;
 }
