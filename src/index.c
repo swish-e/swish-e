@@ -2256,6 +2256,7 @@ void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesc
     LOCATION **tmploc, **tmploc2;
     unsigned char *tp;
 
+
     /* Check for economic mode (-e) and swap data to disk */
     if(sw->Index->swap_locdata)
     {
