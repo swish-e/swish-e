@@ -596,6 +596,49 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
     return docProp;	    
 }
 
+/*******************************************************************
+*   Appends a string onto a current property
+*
+*   Call with:
+*       *propEntry
+*       *string
+*       length of string
+*
+*******************************************************************/
+propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *str, int length )
+{
+    int         newlen = p->propLen + length;
+    char       *new_str = emalloc( newlen + 2 );
+    propEntry  *new_prop;
+    int         error_flag;
+    int         i,j;
+
+    /* Join the two strings */
+    for (i=0,j=0; i < p->propLen; i++ )
+        new_str[j++] = p->propValue[i];
+
+    new_str[j++] = ' ';
+
+    for (i=0; i < length; i++)
+        if ( !isspace( str[i] ) )
+            break;
+
+    for (; i < length; i++)
+        new_str[j++] = str[i];
+
+    new_str[j++] = '\0';
+
+    
+    new_prop = CreateProperty( meta_entry, new_str, j, 0, &error_flag );
+
+
+    freeProperty( p );
+    efree( new_str );
+    return new_prop;
+}
+    
+
+
 
 /*******************************************************************
 *   Adds a document property to the list of properties.
@@ -649,6 +692,21 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 				
 			dp->n = meta_entry->metaID + 1;
 		}
+	}
+
+	/* Un-encoded STRINGS get appended to existing properties */
+	if ( dp->propEntry[meta_entry->metaID] && !preEncoded )
+	{
+	    if ( is_meta_string(meta_entry) )
+	    {
+    	    dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], propValue, propLen );
+	        return 1;
+	    }
+	    else // Will this come back and bite me?
+	    {
+	        progwarn("Warning: Attempt to add duplicate property." );
+	        return 0;
+	    }
 	}
 
 

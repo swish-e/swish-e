@@ -2,390 +2,538 @@
 $Id$
 **
 **
+** This program and library is free software; you can redistribute it and/or
+** modify it under the terms of the GNU (Library) General Public License
+** as published by the Free Software Foundation; either version 2
+** of the License, or any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+** GNU (Library) General Public License for more details.
+**
+**
 ** 2001-03-17  rasc  save real_filename as title (instead full real_path)
 **                   was: compatibility issue to v 1.x.x
 ** 2001-05-09  rasc  entities changed (new module)
+**
+** 2001-07-25  moseley complete rewrite to use James Clark's Expat parser
 */
 
 #include "swish.h"
-#include "xml.h"
-#include "html.h"
 #include "merge.h"
 #include "mem.h"
 #include "string.h"
-#include "check.h"
 #include "docprop.h"
 #include "error.h"
-#include "compress.h"
 #include "index.h"
-#include "file.h"
 #include "metanames.h"
-#include "entities.h"
 
-struct metaEntry *getXMLField(IndexFILE * indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char **parsed_tag,
-                              char *filename)
-{
-    unsigned char *temp,
-           *temp2,
-            c;
-    int     isendtag;
-    struct metaEntry *e;
+#include "xmlparse.h"  // James Clark's Expat
 
-    temp = (unsigned char *) tag;
+typedef struct {
+    int        *metas;          // array of current metaIDs in use
+    int         meta_cnt;       // current end pointer + 1
+    int         metasize;
 
-    if (!temp)
-        return NULL;
+    int        *props;          // array of current propIDs in use
+    int         prop_cnt;
+    int         propsize;
+    
+    char       *buffer;         // text buffer for summary
+    int         buffmax;        // size of buffer
+    int         buffend;        // end of buffer.
+    struct metaEntry *summeta;  // summary metaEntry
 
-    /* Get to the beginning of the word disreguarding blanks */
-    while (*temp)
-    {
-        if (isspace((int) (*(unsigned char *) temp)))
-            temp++;
-        else
-            break;
-    }
-
-    /* Are we at the start or end tag ? */
-    if (*temp == '/')
-    {
-        temp++;
-        isendtag = 1;
-    }
-    else
-        isendtag = 0;
-
-    /* XML is case sensitive - Do not convert to lowercase !!! */
-    /* Jump spaces */
-    for (temp2 = temp; *temp2 && !isspace((int) (*(unsigned char *) temp2)); temp2++);
-
-    if (temp == temp2)
-        return NULL;
-
-    /* Check for empty xml tag . Eg:  <mytag/> */
-    if (!isendtag && (*(temp2 - 1)) == '/')
-        return NULL;
-
-    c = *temp2;
-    *temp2 = '\0';
-
-    /* Go lowercase as discussed even if we are in xml */
-    /* Use Rainer's routine */
-    strtolower(temp);
-
-    *parsed_tag = estrdup(temp);
-
-    if ((e = getMetaNameByName(&indexf->header, temp)))
-    {
-        *temp2 = c;
-        return e;
-    }
+    char       *ignore_tag;     // tag that triggered ignore (currently used for both)
+    int         total_words;
+    int         word_pos;
+    int         filenum;
+    XML_Parser *parser;
+    INDEXDATAHEADER *header;
+    SWISH      *sw;
+    FileProp   *fprop;
+    struct file *thisFileEntry;
+    
+} PARSE_DATA;
 
 
-    if (applyautomaticmetanames && temp && *temp)
-    {
-        if (verbose)
-            printf("Adding automatic MetaName '%s' found in file '%s'\n", temp, filename);
-
-        return addMetaEntry(&indexf->header, temp, META_INDEX, 0);
-    }
-
-
-    if (!OkNoMeta)
-        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", temp, filename);
-
-    *temp2 = c;
-    return NULL;
-
-}
+/* Prototypes */
+int     _countwords_XML(SWISH * sw, FileProp * fprop, char *buffer, int start, int size);
+static void start_hndl(void *data, const char *el, const char **attr);
+static void end_hndl(void *data, const char *el);
+static void char_hndl(void *data, const char *txt, int txtlen);
+static void comment_hndl(void *data, const char *txt);
+static char *isIgnoreMetaName(SWISH * sw, char *tag);
+static void add_meta( PARSE_DATA *parse_data, struct metaEntry *m );
+static void add_prop( PARSE_DATA *parse_data, struct metaEntry *m );
+static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len);
+static void write_summary( PARSE_DATA *parse_data );
 
 
-/* Indexes all the words in a XML file and adds the appropriate information
-** to the appropriate structures.
-*/
 
 int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     return _countwords_XML(sw, fprop, buffer, 0, fprop->fsize);
 }
 
-int     _countwords_XML(SWISH * sw, FileProp * fprop, char *buffer, int start, int size)
-{
-    int     ftotalwords;
-    int    *metaID;
-    int     metaIDlen;
-    int     positionMeta;       /* Position of word in file */
-    int     position_no_meta = 1; /* Counter for words in file (excluding metanames) */
-    int     position_meta = 1;  /* Counter for words in metanames */
-    int     currentmetanames;
-    unsigned char *newp,
-           *p,
-           *tag,
-           *endtag = NULL,
-           *tempprop;
-    int     structure;
-    struct file *thisFileEntry = NULL;
-    struct metaEntry *metaNameXML,
-           *metaNameXML2;
-    int     i;
-    IndexFILE *indexf = sw->indexlist;
-    struct MOD_Index *idx = sw->Index;
-    char   *summary = NULL;
-    int     in_junk = 0;
 
+/*********************************************************************
+*   Entry to index an XML file.
+*
+*   Creates an XML_Parser object and parses buffer
+*
+*   Returns:
+*       Count of words indexed
+*
+*
+*********************************************************************/
+
+int     _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int size)
+{
+    PARSE_DATA          parse_data;
+    XML_Parser          p = XML_ParserCreate(NULL);
+    IndexFILE          *indexf = sw->indexlist;
+    struct MOD_Index   *idx = sw->Index;
+
+    /* I have no idea why addtofilelist doesn't do this! */
     idx->filenum++;
 
-    if (fprop->stordesc)
-        summary = parseXmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size);
+    /* Set defaults  */
+    memset(&parse_data, 0, sizeof(parse_data));
 
-    addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry);
-    addCommonProperties(sw, indexf, fprop->mtime, "", summary, start, size);
-
-
-    /* Init meta info */
-    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
-
-    currentmetanames = ftotalwords = 0;
-    structure = IN_FILE | IN_META; /* Assume everything is within a meta tag for xml? */
-    metaID[0] = 1;
-    positionMeta = 1;
-
-    for (p = buffer; p && *p;)
-    {
-        if ((tag = strchr(p, '<')))
-        {                       /* Look for '<' */
-            /* Index up to the tag */
-            *tag++ = '\0';
-            if ((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
-            {
-
-                newp = sw_ConvHTMLEntities2ISO(sw, p);
-
-                ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-                if (newp != p)
-                    efree(newp);
-            }
-
-            /* Now let us look for '>' */
-            if ((endtag = strchr(tag, '>')))
-            {
-
-                *endtag++ = '\0';
-
-                if ((tag[0] != '!') && (tag[0] != '/'))
-                {
-                    char   *parsed_tag = NULL;
-
-                    if (
-                        (metaNameXML =
-                         getXMLField(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, &parsed_tag, fprop->real_path)))
-                    {
-                        /* If the data must be indexed add the metaName to the currentlist of metaNames */
-                        if (!in_junk)
-                        {
-                            /* realloc memory if needed */
-                            if (currentmetanames == metaIDlen)
-                            {
-                                metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
-                            }
-                            /* add netaname to array of current metanames */
-                            metaID[currentmetanames] = metaNameXML->metaID;
-                            /* Preserve position counter */
-                            if (!currentmetanames)
-                            {
-                                position_no_meta = positionMeta;
-                                positionMeta = position_meta;
-                            }
-
-                            /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                            if (!isDontBumpMetaName(sw, tag))
-                                positionMeta++;
-
-                            currentmetanames++;
-                            /* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
-
-                        }
-                        p = endtag;
+    parse_data.header = &indexf->header;
+    parse_data.parser = p;
+    parse_data.sw     = sw;
+    parse_data.fprop  = fprop;
+    parse_data.filenum = idx->filenum;
+    parse_data.word_pos= 1;  /* compress doesn't like zero */
 
 
-                        /* If it is also a property doc store it
-                           ** Only store until a < is found */
-                        if ((metaNameXML2 = getPropNameByName(&indexf->header, parsed_tag)))
-                        {
-                            char   *ending_tag = emalloc(strlen(parsed_tag) + strlen("</") + 1);
-
-                            strcpy(ending_tag, "</");
-                            strcat(ending_tag, parsed_tag);
-
-                            if ((endtag = strstr(endtag, ending_tag)))
-                            {
-                                *endtag = '\0';
-
-                                /* Remove tags and convert entities */
-                                tempprop = estrdup(p);
-                                remove_newlines(tempprop);  /** why isn't this just done for the entire doc? */
-                                remove_tags(tempprop);
-                                tempprop = sw_ConvHTMLEntities2ISO(sw, tempprop);
-
-                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameXML2, tempprop, strlen(tempprop), 0))
-                                    progwarn("property '%s' not added for document '%s'\n", metaNameXML->metaName, fprop->real_path);
-
-
-                                efree(tempprop);
-                                if (endtag)
-                                    *endtag = '<';
-                            }
-
-                            efree(ending_tag);
-                        }
-
-                    }
-                    else
-                    {
-                        /* Check for junk metaname */
-                        if (isJunkMetaName(sw, tag))
-                        {
-                            in_junk++;
-                        }
-                        /* continue */
-                        p = endtag;
-                    }
-                    if (parsed_tag)
-                        efree(parsed_tag);
-
-                }               /* Check for end of a XML field */
-
-                else if (tag[0] == '/')
-                {
-                    char   *parsed_tag;
-
-                    if (
-                        (metaNameXML =
-                         getXMLField(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, &parsed_tag, fprop->real_path)))
-                    {
-                        /* search for the metaname in the
-                           ** list of currentmetanames */
-                        if (currentmetanames)
-                        {
-                            for (i = currentmetanames - 1; i >= 0; i--)
-                                if (metaID[i] == metaNameXML->metaID)
-                                    break;
-                            if (i >= 0)
-                                currentmetanames = i;
-                            if (!currentmetanames)
-                            {
-                                metaID[0] = 1;
-                                position_meta = positionMeta;
-                                /* Restore position counter */
-                                positionMeta = position_no_meta;
-                            }
-                        }
-                    }
-                    else if (isJunkMetaName(sw, tag + 1))
-                    {
-                        if (in_junk > 0)
-                            in_junk--;
-                    }
-                    p = endtag;
-
-
-                    if (parsed_tag)
-                        efree(parsed_tag);
-
-
-                }               /*  Check for COMMENT */
-                else if ((tag[0] == '!') && sw->indexComments)
-                {
-                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
-                    p = endtag;
-                }               /* Default: Continue */
-                else
-                {
-                    p = endtag;
-                }
+    addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
+    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, start, size);
 
 
 
-            }
-            else
-                p = tag;        /* tag not closed: continue */
-        }
-        else
-        {                       /* No more '<' */
-            if ((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
-            {
+    if (!p)
+        progerr("Failed to create XML parser object for '%s'", fprop->real_path );
 
-                newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-                ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-                if (newp != p)
-                    efree(newp);
-            }
-            p = NULL;
-        }
-    }
-    efree(metaID);
-    addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
-    if (summary)
-        efree(summary);
+    /* allocate some space */
+    parse_data.propsize = parse_data.metasize = parse_data.header->metaCounter + 100;
+    parse_data.props  = (int *) emalloc( sizeof( int *) * parse_data.propsize );
+    parse_data.metas  = (int *) emalloc( sizeof( int *) * parse_data.metasize );
 
-    return ftotalwords;
+
+    /* Set event handlers */
+    XML_SetUserData( p, (void *)&parse_data );          // local data to pass around
+    XML_SetElementHandler(p, start_hndl, end_hndl);
+    XML_SetCharacterDataHandler(p, char_hndl);
+
+    if( sw->indexComments )
+        XML_SetCommentHandler( p, comment_hndl );
+
+    //XML_SetProcessingInstructionHandler(p, proc_hndl);
+
+    if ( !XML_Parse(p, buffer, size, 1) )
+        progwarn("XML parse error in file '%s' line %d.  Error: %s",
+                     fprop->real_path, XML_GetCurrentLineNumber(p),XML_ErrorString(XML_GetErrorCode(p))); 
+
+
+    /* clean up */
+    XML_ParserFree(p);
+
+    return parse_data.total_words;
 }
+    
+/*********************************************************************
+*   Start Tag Event Handler
+*
+*   These routines check to see if a given meta tag should be indexed
+*   and if the tags should be added as a property
+*
+*   To Do:
+*       deal with attributes!
+*
+*********************************************************************/
 
 
-char   *parseXmlSummary(char *buffer, char *field, int size)
+static void start_hndl(void *data, const char *el, const char **attr)
 {
-    char   *summary = NULL,
-           *tmp = NULL;
-    int     len;
+    PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    struct metaEntry *m;
+    SWISH *sw = parse_data->sw;
+    char  *tag = estrdup( (char *)el );
+    struct StoreDescription *stordesc = parse_data->fprop->stordesc;
 
-    /* Get the summary if no metaname/field is given */
-    if (!field && size)
+    strtolower( tag );
+
+
+    /* Check for store description */
+    if ( stordesc && !parse_data->buffer && ( strcmp(stordesc->field, tag) == 0)
+         && (parse_data->summeta = getPropNameByName(parse_data->header, AUTOPROPERTY_SUMMARY) ))
     {
-        tmp = estrdup(buffer);
-        remove_tags(tmp);
+        parse_data->buffmax = stordesc->size < RD_BUFFER_SIZE
+                             ? stordesc->size
+                             : RD_BUFFER_SIZE;
+
+        parse_data->buffer = (char *) emalloc( parse_data->buffmax + 1 );
+        parse_data->buffend = 0;
     }
-    else if (field)
+
+
+
+    /* return if within an ignore block */
+    if ( parse_data->ignore_tag )
+        return;
+
+    /* Bump on all meta names, unless overridden */
+    /* Done before the ignore tag check since still need to bump */
+
+    if (!isDontBumpMetaName(sw, tag))
+        parse_data->word_pos++;
+
+
+    /* check for ignore tag (should propably remove char handler for speed) */
+    if ( (parse_data->ignore_tag = isIgnoreMetaName( sw, tag )))
+        return;
+
+
+    
+
+    /* Check for metaNames */
+
+    if ( (m  = getMetaNameByName( parse_data->header, tag)) )
+        add_meta( parse_data, m );
+
+    else
     {
-        if ((tmp = parsetag(field, buffer, 0, CASE_SENSITIVE_ON)))
+        if (sw->applyautomaticmetanames)
         {
-            remove_tags(tmp);
+            if (sw->verbose)
+                printf("Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
+            add_meta( parse_data, addMetaEntry( parse_data->header, tag, META_INDEX, 0));
         }
+
+
+        /* If set to "error" on undefined meta tags, then error */
+        if (!sw->OkNoMeta)
+            progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
     }
-    if (tmp)
+
+
+    /* Check property names */
+
+    if ( (m  = getPropNameByName( parse_data->header, tag)) )
+        add_prop( parse_data, m );
+
+
+    /* Check for store description */
+    
+
+    efree( tag );
+}
+
+/* kind of ugly duplication */
+static void add_meta( PARSE_DATA *parse_data, struct metaEntry *m )
+{
+    if ( parse_data->meta_cnt >=  parse_data->metasize )
     {
-        remove_newlines(tmp);
-        len = strlen(tmp);
-        if (size && len > size)
-            len = size;
-        summary = emalloc(len + 1);
-        memcpy(summary, tmp, len);
-        summary[len] = '\0';
-        efree(tmp);
+        parse_data->metasize += 100;
+        parse_data->metas = (int *) erealloc( parse_data->metas, sizeof(int *) * parse_data->metasize);
     }
-    return summary;
+    parse_data->metas[ parse_data->meta_cnt++ ] = m->metaID;
+}
+
+static void add_prop( PARSE_DATA *parse_data, struct metaEntry *m )
+{
+    if ( parse_data->prop_cnt >= parse_data->propsize )
+    {
+        parse_data->propsize += 100;
+        parse_data->props = (int *) erealloc( parse_data->props, sizeof(int *) * parse_data->propsize);
+    }
+    parse_data->props[ parse_data->prop_cnt++ ] = m->metaID;
 }
 
 
-int     isJunkMetaName(SWISH * sw, char *tag)
+
+/*********************************************************************
+*   End Tag Event Handler
+*
+*   This routine will pop the meta/property tag off the stack
+*
+*
+*********************************************************************/
+
+
+static void end_hndl(void *data, const char *el)
+{
+    PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    char  *tag = estrdup( (char *)el );
+
+
+    strtolower( tag );
+
+    /* Check for store description */
+    if ( parse_data->buffer && ( strcmp(parse_data->fprop->stordesc->field, tag) == 0))
+        write_summary( parse_data );
+    
+
+    if ( parse_data->ignore_tag )
+    {
+        if  (strcmp( parse_data->ignore_tag, tag ) == 0)
+        {
+            efree( parse_data->ignore_tag );
+            parse_data->ignore_tag = NULL;
+        }
+        return;
+    }
+
+    /* Tags must be ballanced, of course. */
+
+    /* Exiting a metaID? */
+    if ( parse_data->meta_cnt &&  getMetaNameByName( parse_data->header, tag) )
+        parse_data->meta_cnt--;
+        
+
+    /* Exiting a propID? */
+    if ( parse_data->prop_cnt &&  getPropNameByName( parse_data->header, tag) )
+        parse_data->prop_cnt--;
+
+}
+
+/*********************************************************************
+*   Character Data Event Handler
+*
+*   This does the actual adding of text to the index and adding properties
+*   if any tags have been found to index
+*
+*
+*********************************************************************/
+
+static void char_hndl(void *data, const char *txt, int txtlen)
+{
+    PARSE_DATA         *parse_data = (PARSE_DATA *)data;
+    SWISH              *sw = parse_data->sw;
+    int                 i;
+    char *buf = (char *)emalloc( txtlen + 1 );
+
+    strncpy( buf, txt, txtlen );
+    buf[txtlen] = '\0';
+
+
+    /* Add text to summary */
+    if ( parse_data->buffer && parse_data->buffend < parse_data->fprop->stordesc->size )
+        append_summary_text( parse_data, buf, txtlen);
+
+
+        
+
+
+    /* If currently in an ignore block, then return */
+    if ( parse_data->ignore_tag )
+        return;
+
+
+    /* If outside all meta tags then add default */
+    if ( !parse_data->meta_cnt && sw->OkNoMeta )
+    {
+        struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
+        if ( m )
+            add_meta( parse_data, m );
+    }
+
+
+    /* Index the text */
+    if ( parse_data->meta_cnt )
+        parse_data->total_words +=
+            indexstring(
+                sw,
+                buf,
+                parse_data->filenum,
+                IN_FILE | IN_META,
+                parse_data->meta_cnt,
+                parse_data->metas,
+                &(parse_data->word_pos)
+             );
+
+    /* Now store the properties -- will concat any existing property */
+
+    for ( i = 0; i < parse_data->prop_cnt; i++ )
+    {
+        struct metaEntry *m = getPropNameByID( parse_data->header, parse_data->props[i]);
+        if (!addDocProperty(&(parse_data->thisFileEntry->docProperties), m, buf, txtlen, 0))
+            progwarn("property '%s' not added for document '%s'\n", m->metaName, parse_data->fprop->real_path);
+    }
+
+    efree( buf );
+
+}
+
+/*********************************************************************
+*   Add characters to summary
+*
+*   This REALLY shouldn't be here.
+*   Could do better with general purpose properties:size
+*
+*
+*********************************************************************/
+
+static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
+{
+    int j;
+    
+    /* trim trailing space */
+    while ( isspace( buf[len-1] && len > 0 ))
+        len--;
+        
+
+    /* skip leading space */
+    for ( j=0; j < len && isspace( buf[j] ); j++ );
+
+
+    if ( j >= len )
+        return;
+
+
+    /* Add space between */
+    if ( parse_data->buffend )
+        parse_data->buffer[parse_data->buffend++] = ' ';
+        
+
+    while ( j < len )
+    {
+        /* Check for max size reached */
+        if ( parse_data->buffend >= parse_data->fprop->stordesc->size )
+        {
+            if ( !isspace( buf[j] ) && !isspace( parse_data->buffer[parse_data->buffend-1] ))
+            {
+                while ( parse_data->buffend && !isspace( parse_data->buffer[--parse_data->buffend] ));
+                parse_data->buffer[parse_data->buffend] = '\0';
+            }
+
+            write_summary( parse_data );
+            return;
+        }
+
+        /* reallocate if needed */
+        if ( parse_data->buffend >= parse_data->buffmax )
+        {
+            parse_data->buffmax = parse_data->buffend + RD_BUFFER_SIZE;
+            if ( parse_data->buffmax > parse_data->fprop->stordesc->size )
+                parse_data->buffmax = parse_data->fprop->stordesc->size;
+
+            parse_data->buffer = erealloc( parse_data->buffer, parse_data->buffmax+1);
+        }
+
+               
+            
+
+        parse_data->buffer[parse_data->buffend++] = buf[j++];
+    }
+
+        
+    parse_data->buffer[parse_data->buffend] = '\0';
+}
+
+static void write_summary( PARSE_DATA *parse_data )
+{
+    if ( parse_data->buffend )
+        if ( !addDocProperty(
+            &(parse_data->thisFileEntry->docProperties),
+            parse_data->summeta,
+            parse_data->buffer,
+            parse_data->buffend,
+            0)
+        )
+            progwarn("property '%s' not added for document '%s'\n", parse_data->summeta->metaName, parse_data->fprop->real_path);
+
+
+    efree( parse_data->buffer );
+    parse_data->buffer = NULL;
+    
+}    
+
+
+/*********************************************************************
+*   Comments
+*
+*   Should be able to call the char_hndl
+*
+*   To Do:
+*       Can't use DontBump with comments.  Might need a config variable for that.
+*
+*********************************************************************/
+static void comment_hndl(void *data, const char *txt)
+{
+    PARSE_DATA         *parse_data = (PARSE_DATA *)data;
+    SWISH              *sw = parse_data->sw;
+    int                 added = 0;
+
+
+
+    /* If outside all meta tags then add default */
+    if ( !parse_data->meta_cnt )
+    {
+        struct metaEntry *m = getMetaNameByName( parse_data->header, AUTOPROPERTY_DEFAULT );
+        if ( m )
+        {
+            add_meta( parse_data, m );
+            added++;
+        }
+    }
+            
+
+   
+    if ( parse_data->meta_cnt )
+    {
+        /* Bump position around comments - hard coded */
+        parse_data->word_pos++;
+    
+        parse_data->total_words +=
+            indexstring(
+                sw,
+                (char *)txt,
+                parse_data->filenum,
+                IN_COMMENTS,
+                parse_data->meta_cnt,
+                parse_data->metas,
+                &(parse_data->word_pos)
+             );
+        parse_data->word_pos++;
+    }
+
+    if ( added )
+        parse_data->meta_cnt--;             
+
+}
+
+
+
+/*********************************************************************
+*   check if a tag is an IgnoreTag
+*
+*
+*********************************************************************/
+
+static char *isIgnoreMetaName(SWISH * sw, char *tag)
 {
     struct swline *tmplist = sw->ignoremetalist;
-    char   *tmptag;
 
     if (!tmplist)
         return 0;
-    tmptag = estrdup(tag);
-    tmptag = strtolower(tmptag);
+        
     while (tmplist)
     {
-        if (strcmp(tmptag, tmplist->line) == 0)
-        {
-            efree(tmptag);
-            return 1;
-        }
+        if (strcmp(tag, tmplist->line) == 0)
+            return tag;
+
         tmplist = tmplist->next;
     }
-    efree(tmptag);
-    return 0;
+
+    return NULL;
 }
+
+

@@ -145,6 +145,23 @@ See C<src/win32>.
 Jean-François Piéronne has provided the files required to build swish under OpenVMS.  See C<src/vms>
 for more information.
 
+=item * String properties are concatenated
+
+Multiple I<string> properties of the same name in a document are now
+concatenated into one property.  A space character is added between the strings
+if needed.  A warning will be generated if multiple numeric or date properties are
+found in the same document, and the additional properties will be ignored.
+
+Previously, properties of the same name were added to the index, but could not be
+retrieved.
+
+To do: removed the C<next> pointer, and allow user-defined character to place between
+properties.
+
+=item * New XML Parser
+
+Swish now uses James Clark's expat XML parser library.
+
 =back
 
 Changes to Configuration File Directives.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for
