@@ -661,7 +661,7 @@ sub extract_links {
 
     my $base = $response->base;
 
-    print "\nExtracting links from ", $response->request->uri, ":\n" if $server->{debug} & DEBUG_LINKS;
+    print STDERR "\nExtracting links from ", $response->request->uri, ":\n" if $server->{debug} & DEBUG_LINKS;
 
     my $p = HTML::LinkExtor->new;
     $p->parse( $$content );
@@ -919,7 +919,7 @@ sub default_urls {
             email           => 'swish@domain.invalid',
             delay_min       => .0001,
             link_tags       => [qw/ a frame /],
-            txest_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|.png)$/i },
+            test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
 
             test_response   => sub {
                 my $content_type = $_[2]->content_type;

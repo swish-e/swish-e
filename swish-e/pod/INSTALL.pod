@@ -14,6 +14,8 @@ and using Swish-e (and the important information you should provide when asking 
 Also, below is a basic overview of using Swish-e to index documents, with pointers to
 other more advanced examples.
 
+For those in a hurry, see L<"Quick Start for the Impatient">.
+
 =head1 SYSTEM REQUIREMENTS
 
 Swish-e 2.x is written in C, and, up to this time, it has been tested on
@@ -775,14 +777,191 @@ the F<conf> directory of the Swish-e distribution.
 
 The C<-S prog> access method can be used to index any type of document,
 such as documents stored in a database (RDBMS), or documents that need
-to be processed before they can be indexed.  Examples for using the C<-S
-prog> method are shown in the F<prog-bin> directory>.
+to be processed before they can be indexed.  Examples for using the
+C<-S prog> method are shown in the F<prog-bin> directory.
 
 Swish-e can also use I<filters> to convert documents as they are
 processed by Swish-e.  For example, MS-Word or PDF documents can be
 converted and indexed by Swish-e by using filters.  See the section on
 filters in L<SWISH-CONFIG|SWISH-CONFIG>, and the examples shown in the
 C<filter-bin> directory.
+
+=head1 Quick Start for the Impatient
+
+Here's I<one> example of the steps to install Swish-e, index documents by spidering, and
+how to search using the included CGI script.
+
+These steps are on Linux, and assume
+that you have the libraries libxml2 and zlib installed in the system, you have a current version of Perl
+and current versions of LWP, HTML:*, and HTTP:* modules installed, and Apache is installed and operating.
+
+If you have any trouble with these instructions please read the detailed installation instructions above,
+and see the documentation included with the F<swish.cgi> script and the F<spider.pl> programs.
+Please don't ask for help without reading the "real" documentation first.
+
+Not all output is included below.  You should carefully watch for errors while building Swish-e.
+
+=over 4
+
+=item 1 Download and build Swish-e
+
+    ~ $ wget http://swish-e.org/<path to current swish-e version>.tar.gz
+    ~ $ tar zxof <path to current swish-e version>.tar.gz
+    ~ $ cd swish-e-2.2  (this directory will depend on the version of Swish-e)
+    
+    ~/swish-e-2.2 $ ./configure --with-zlib --with-libxml2
+    ~/swish-e-2.2 $ make
+    ~/swish-e-2.2 $ make test
+    ...
+     ** All tests completed! **
+
+=item 2 Make a working directory and copy files
+
+    ~/swish-e-2.2 $ mkdir ~/swishtest
+    ~/swish-e-2.2 $ cd ~/swishtest
+
+    ~/swishtest $ cp ~/swish-e-2.2/src/swish-e .             
+    ~/swishtest $ cp ~/swish-e-2.2/prog-bin/spider.pl .
+    ~/swishtest $ cp ~/swish-e-2.2/example/swish.cgi .           
+    ~/swishtest $ cp -rp ~/swish-e-2.2/example/modules/ .
+    ~/swishtest $ chmod 755 swish.cgi spider.pl
+    ~/swishtest $ chmod 644 modules/*
+
+=item 3 Create the index
+
+You must create a swish configuration file and a spider configuration
+file.
+
+    ~/swishtest $ cat swish.conf
+    
+    # Program to read documents
+    IndexDir ./spider.pl
+
+    # Define the config file for the spider to use
+    SwishProgParameters spider.conf     
+
+    # Use libxm2 for parsing documents
+    DefaultContents HTML2
+    IndexContents TXT2 txt
+
+    # Cache document contents in the index for context display
+    StoreDescription HTML2 <body>
+
+
+    ~/swishtest $ cat spider.conf
+
+    # Example spider configuration file to index the 
+    # split version of the swish-e documentation
+
+    @servers = (
+        {
+
+            base_url        => 'http://swish-e.org/2.2/docs/split/index.html',
+            same_hosts      => [ qw/www.swish-e.org/ ],
+            email           => 'swish-impatient@domain.invalid',
+            delay_min       => .0001,
+
+            # Define call-back functions to fine-tune the spider
+
+            test_url        => sub {
+                my $uri = shift;
+
+                # Skip requesting files that are probably not text
+                return if $uri->path =~ m[\.(?:gif|jpeg|png)$]i;
+
+
+                # Limit spidering to the /2.2/docs/split/ path
+                return unless $uri->path =~ m[/2.2/docs/split/];
+
+                return 1;  # otherwise, ok to search
+            },
+
+
+            # Only index text/html or text/plain
+            test_response   => sub {
+                my ( $uri, $server, $response ) = @_;
+
+                return $response->content_type =~ m[(?:text/html|text/plain)];
+            },
+        },
+    );
+    1;
+
+Now begin indexing:    
+
+    ~/swishtest $ ./swish-e -S prog -c swish.conf -v 2
+    Indexing Data Source: "External-Program"
+    Indexing "./spider.pl"
+    ./spider.pl: Reading parameters from 'spider.conf'
+    Processing http://swish-e.org/2.2/docs/split/index.html...
+    Processing http://swish-e.org/2.2/docs/split/index_long.html...
+    Processing http://swish-e.org/2.2/docs/split/search.cgi..
+    ...
+    2566 unique words indexed.
+    5 properties sorted.                                              
+    155 files indexed.  609775 total bytes.  49962 total words.
+    Elapsed time: 00:00:33 CPU time: 00:00:01
+    Indexing done!
+
+=item 4 Test swish-e from the command line
+
+    ~/swishtest $  ./swish-e -w foo -m 1
+    # SWISH format: 2.1-dev-25
+    # Search words: foo
+    # Number of hits: 18
+    # Search time: 0.000 seconds
+    # Run time: 0.038 seconds
+    1000 http://swish-e.org/2.2/docs/split/SWISH-CONFIG/Document_Contents_Directives.html "SWISH-CONFIG/Document Contents Directives" 57466
+    .
+
+
+=item 5 Test the CGI script from the command line
+
+    ~/swishtest $ ./swish.cgi | head
+    Content-Type: text/html; charset=ISO-8859-1
+
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html>
+        <head>
+           <title>
+              Search our site
+           </title>
+        </head>
+        <body>
+
+Refer to the swish.cgi documentation if you have any problems with running the CGI script.
+
+=item 6 Configure Apache
+
+    ~/swishtest $ su -c "ln -s $HOME/swishtest /usr/local/apache/htdocs/swishdocs"
+    Password: *********
+
+    ~/swishtest $ cat .htaccess
+    # Deny everything by default
+    Deny From All
+
+    # But allow just the CGI script
+    <files swish.cgi>
+       Options ExecCGI
+       Allow From All
+       SetHandler cgi-script
+    </files>
+
+=item 7 Test from the command line
+
+    ~/swishtest $ GET http://localhost/swishdocs/swish.cgi?query=install | head 
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html>
+        <head>
+           <title>
+              43 Results for [install]
+           </title>
+        </head>
+        <body>
+
+=back
+
+Now you are ready to search.
 
 =head1 Document Info
 
