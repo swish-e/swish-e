@@ -84,16 +84,21 @@ void make_windows_path( char *path )
 #endif
 
 /* Win32 hack to get libexecdir at runtime */
+/* Caller should free memory returned */
 char *
 get_libexec(void){
 	char *fn;
-	#ifdef _WIN32
+#ifdef _WIN32
 	char *tr;
 	int pos;
-    fn = emalloc(MAX_PATH+1);
+
+	fn = emalloc(MAX_PATH+1);
 	/* get the full name of the executable */
 	if(!GetModuleFileNameA(NULL,fn,MAX_PATH))
+	{
+		efree( fn );
 		return(libexecdir);
+	}
 	
 	/* get the base directory */
 	tr = strrchr(fn, '\\');
@@ -103,6 +108,7 @@ get_libexec(void){
 	/* get the prefix directory */
 	tr = strrchr(fn, '\\');
 	pos = tr - fn;
+
 	/* if we're in bin we'll assume prefix is up one level */
 	if(!strncasecmp(&fn[pos+1], "bin\0", 4))
 		fn[pos]='\0';
@@ -110,16 +116,18 @@ get_libexec(void){
 	/* Tack on the libexecdir */
 	strcpy(fn+strlen(fn), "\\lib\\swish-e");
 	
-	#else /* !_WIN32 */
-	#ifdef libexecdir
+#else /* !_WIN32 */
+	
+#ifdef libexecdir
 	fn = emalloc(strlen(libexecdir)+1);
 	strcpy(fn,libexecdir);
-	#else 
+#else 
 	/* just in case we don't have libexecdir */
 	fn = emalloc(2);
 	strcpy(fn,".");
-	#endif /* !_WIN32 */
-	#endif /* _WIN32 */
+#endif /* libexecdir */
+
+#endif /* _WIN32 */
 	
 	return(fn);
 }

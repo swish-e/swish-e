@@ -132,6 +132,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     if ( prog[0] != '/' && prog[0] != '.' && prog[0] != '\\' && prog[1] != ':' )
     {
         strcat( cmd, execdir );
+        efree( execdir );
         if ( cmd[ strlen( cmd ) - 1 ]  != '/' ) 
            strcat( cmd, "/" );
     }
