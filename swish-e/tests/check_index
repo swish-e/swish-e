@@ -5,7 +5,7 @@
 
 # Common definitions
 if test -z "$srcdir"; then
-    srcdir=echo "$0" | sed 's,[^/]*$,,'
+    srcdir=`echo "$0" | sed 's,[^/]*$,,'`
     test "$srcdir" = "$0" && srcdir=.
     test -z "$srcdir" && srcdir=.
     test "${VERBOSE+set}" != set && VERBOSE=1
