@@ -60,6 +60,7 @@ void readmerge(char *file1, char *file2, char *outfile, int verbose)
 int i, indexfilenum1, indexfilenum2, wordsfilenum1, wordsfilenum2, result, totalfiles, totalwords, skipwords, skipfiles;
 long fileinfo1, fileinfo2, offsetstart, hashstart;
 ENTRY *ip1, *ip2, *ip3;
+int endip1,endip2;
 ENTRY *buffer1, *buffer2;
 struct metaMergeEntry *metaFile1, *metaFile2;
 int firstTime = 1;
@@ -157,6 +158,7 @@ struct file *fi;
 	indexf->header.applyFileInfoCompression=indexf1->header.applyFileInfoCompression && indexf2->header.applyFileInfoCompression;
 
 	ip1 = ip2 = ip3 = NULL;
+	endip1 = endip2 = 0;
 	buffer1 = buffer2 = NULL;
 
 	if (verbose) printf("Counting files... ");
@@ -212,9 +214,12 @@ struct file *fi;
 	skipwords = 0;
 	while (1) {
 		if (buffer1 == NULL) {
-			ip1 = (ENTRY *) 
+			if(endip1)
+				ip1 = NULL;
+			else ip1 = (ENTRY *) 
 				readindexline(indexf1, metaFile1);
 			if (ip1 == NULL) {
+				endip1 = 1;
 				if (ip2 == NULL && !firstTime) {
 					break;
 				}
@@ -223,14 +228,17 @@ struct file *fi;
 		}
 		firstTime =0;
 		if (buffer2 == NULL) {
-			ip2 = (ENTRY *) 
+			if(endip2)
+				ip2 = NULL;
+			else ip2 = (ENTRY *) 
 				readindexline(indexf2, metaFile2);
-			if (ip2 == NULL){
+			if (ip2 == NULL) {
+				endip2=1;
 				if (ip1 == NULL) {
 					break;
 				}
 			}
-			else 
+			else
 				addfilenums(ip2, indexfilenum1);
 			buffer2 = ip2;
 		}
@@ -238,7 +246,7 @@ struct file *fi;
 			result = 1;
 		else if (ip2 == NULL)
 			result = -1;
-		else 
+		else
 			result = strcmp(ip1->word, ip2->word);
 		if (!result) {
 			ip3 = (ENTRY *) mergeindexentries(ip1, ip2, indexfilenum1);
