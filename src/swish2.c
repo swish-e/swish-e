@@ -328,11 +328,7 @@ char *SwishStemWord( SWISH *sw, char *word )
     strcpy( sw->stemmed_word, word );
 
     /* set return value only if stem returns OK */
-#ifdef SNOWBALL
-    if ( sw->indexlist->header.fuzzy_data.fuzzy_routine(&sw->stemmed_word, &sw->stemmed_word_len,sw->indexlist->header.fuzzy_data.snowball,sw->indexlist->header.fuzzy_data.lang_stem) == STEM_OK )
-#else
-    if ( sw->indexlist->header.fuzzy_data.fuzzy_routine(&sw->stemmed_word, &sw->stemmed_word_len) == STEM_OK )
-#endif
+    if ( sw->indexlist->header.fuzzy_data.fuzzy_routine(&sw->stemmed_word, &sw->stemmed_word_len,sw->indexlist->header.fuzzy_data.fuzzy_args) == STEM_OK )
         return sw->stemmed_word;
 
     return NULL;

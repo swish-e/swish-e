@@ -11,12 +11,8 @@ typedef enum {
     
 } STEM_RETURNS;
     
-#ifdef SNOWBALL
-int Stem (char **, int *, struct SN_env *, int (*lang_stem)(struct SN_env *));
-int Stem_snowball (char **, int *, struct SN_env *, int (*lang_stem)(struct SN_env *));
-#else
-int Stem (char **, int *);
-#endif
+int Stem (char **, int *, void *);
+int Stem_snowball (char **, int *, void *);
 
 char *fuzzy_mode_to_string( FuzzyIndexType mode );
 void set_fuzzy_mode( FUZZY_INDEX *fi, char *param );
