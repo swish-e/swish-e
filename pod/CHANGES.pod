@@ -10,6 +10,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed bug when searching at end of inverted index
+
+Swish was not correctly detecting the end of the inverted index
+when searching a wildcard word that was past the last word in the index.
+Caught by Frank Heasley. [moseley]
+
+
 =item Increase sort key length from 50 to 100 characters
 
 The setting MAX_SORT_STRING_LEN in F<src/config.h> sets the max length used 
