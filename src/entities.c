@@ -441,8 +441,10 @@ void initModule_Entities (SWISH  *sw)
            --  process from end to start of entity_table, because most used
            --  entities are at the beginning (iso)
            --  this is due to "insert in hash sequence" behavior in hashtab (performance!)
+           --  The improvement is minimal, because the hash table re-chains during usage.
          */
         tab_len = sizeof(entity_table)/sizeof(entity_table[0]);
+/*        for (i=0; i<tab_len; i++) {      */
         for (i=tab_len-1; i>=0; i--) {
                ce_p = &entity_table[i];
                hash_pp = &ce_hasharray[(int)*(ce_p->name) & 0x7F];
@@ -456,6 +458,7 @@ void initModule_Entities (SWISH  *sw)
       } /* end init hash block */
 
 
+//$$$ debugModule_Entities ();
 }
 
 
@@ -595,6 +598,7 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
      }
   }
   *d = '\0';
+fprintf (stderr,"DBG: buffer after entity decoding: _%s_\n",buf); //$$$ DEBUG
 
   return buf;
 }
@@ -615,6 +619,7 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
 
 {
   unsigned char *s1,*t;
+  unsigned char *e_end;
   unsigned char s_cmp[MAX_ENTITY_LEN+1];
   int len;
   int code;
@@ -632,6 +637,7 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
 
   /* ok, seems valid entity starting char */
   code = 0;
+  e_end = NULL;
 
   if (*(s+1) == '#') {   /* numeric entity  "&#" */
 
@@ -646,7 +652,7 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
               code = (int) strtoul (s,(char **)&s,(int)10); 
               break;
       }
-      t = s;
+      e_end = s;
 
   } else {
 
@@ -662,7 +668,7 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
       while (*(++s1) && (len < MAX_ENTITY_LEN)) {
          s_cmp[len] = *s1;
          if (IS_EOE(*s1)) {
-             t = s1;
+             t = s1;      /* End of named entity */
              break;
          }
          len ++;
@@ -683,8 +689,9 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
          hash_pp = & ce_hasharray[*(s+1) & 0x7F];
          last_p   = NULL;
          hash_p  = *hash_pp;
+fprintf (stderr," DBG: entity: _%s_ --> \n",s_cmp); //$$$$ Debug
          while (hash_p) {
-/*             fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug */
+fprintf (stderr," DBG decoding:     --> _%s_\n",hash_p->ce->name); //$$$$ Debug 
              if (!strcmp (hash_p->ce->name,s_cmp)) {
                  code = hash_p->ce->code;
                  if (last_p) {  /* rechain hash sequence list (last found = first) */
@@ -692,25 +699,26 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
                     hash_p->next = *hash_pp;       /* old 1. = 2.          */
                     *hash_pp     = hash_p;         /* found = 1st          */
                  }
+                 e_end = t;                        /* found -> set end     */
                  break;
              }
              last_p = hash_p;
              hash_p = hash_p->next;
          }
 
-      } else {
-         t = s;
       }
   } /* end if */
 
 
-  if (! IS_EOE(*t) || !code) {   /* something illegal or not at EOE */
-     code = '&';
+  if (!(e_end && IS_EOE(*e_end))) code = *s;
+  if (! e_end) {
+     e_end = s+1;
   } else {
-     if (*t == ';') t++;    /* W3C closing char, pos at behind EOE */
-     if (end) *end = t;
-  }
+     if (*e_end == ';') e_end++;   /* W3C  EndOfEntity */
+  } 
 
+
+  if (end) *end = e_end;
   return code;
 }
 
@@ -766,6 +774,8 @@ void debugModule_Entities (void)
 
      i = charEntityDecode (s, &t );
      printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,t);
+
+     printf ("converted: _%s_\n\n", strConvHTMLEntities2ISO(buf));
   }
 
  }
