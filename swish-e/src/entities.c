@@ -27,7 +27,7 @@ $Id$
 */
 
 
-..... to be included into the other modules...
+// ..... to be included into the other modules...
 //  Hardhat  area!!!  (rasc) module not active yet
 //   ToDo:  Lookup/Hash missing */
 
