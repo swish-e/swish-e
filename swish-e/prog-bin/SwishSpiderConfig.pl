@@ -61,7 +61,7 @@ Please see C<perldoc spider.pl> for more information.
         
         base_url    => 'http://www.infopeople.org/index.html',
         same_hosts  => [ qw/infopeople.org/ ],
-        agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
+        agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
 
         # limit to only .html files
@@ -119,9 +119,9 @@ Please see C<perldoc spider.pl> for more information.
     {
         skip        => 1,         # Flag to disable spidering this host.
 
-        base_url    => 'http://sunsite.berkeley.edu/SWISH-E/index.html',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu/ ],
-        agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
+        base_url    => 'http://swish-e.org/index.html',
+        same_hosts  => [ qw/www.swish-e.org/ ],
+        agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
         delay_min   => .0001,     # Delay in minutes between requests
         max_time    => 10,        # Max time to spider in minutes
