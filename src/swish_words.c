@@ -453,8 +453,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
             if( !getMetaNameByName( header, temp->line ) )
             {
-                sw->lasterror = UNKNOWN_METANAME;
-                sw->lasterrstr = temp->line;
+                set_progerr( UNKNOWN_METANAME, sw, "'%s'", temp->line );
                 return NULL;
             }
 

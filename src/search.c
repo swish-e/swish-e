@@ -411,14 +411,16 @@ static void limit_result_list( SWISH *sw )
 
 
 
-
+/********************************************************************************
+*  Returns a negative number on error, zero or positive = number of results
+*
+********************************************************************************/
 
 int     search_2(SWISH * sw, char *words, int structure)
 {
     int     j,
             k,
             hassearch,
-            metaID,
             indexYes,
             totalResults;
     struct swline *searchwordlist,
@@ -444,7 +446,6 @@ int     search_2(SWISH * sw, char *words, int structure)
     
     j = 0;
     searchwordlist = NULL;
-    metaID = 1;
     indexYes = 0;
     totalResults = 0;
     hassearch = 0;
@@ -460,7 +461,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     /* This returns false when no files found within the limit */
     if ( !Prepare_PropLookup( sw ) )
-        return 0;
+        return sw->lasterror;  /* normally RC_OK (no results) */
 
     while (indexlist != NULL)
     {
@@ -470,13 +471,19 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         tmpwords = estrdup(words); /* copy of the string  (2001-03-13 rasc) */
 
+
+
+        /* Clean up from previous loop */
         if (searchwordlist)
         {
             freeswline(searchwordlist);
             searchwordlist = NULL;
         }
 
-        /* tokenize the query into swish words */
+
+
+        /* tokenize the query into swish words based on this current index */
+
         if (!(searchwordlist = tokenize_query_string(sw, tmpwords, &indexlist->header)))
         {
             indexlist = indexlist->next;
@@ -487,10 +494,12 @@ int     search_2(SWISH * sw, char *words, int structure)
         }
 
 
-        hassearch = 1;
+        hassearch = 1;  // Flag that we found some words to search form
 
         srch->bigrank = 0;
 
+
+        /* Is there an open index? */
         if (!indexlist->DB)
         {
             efree(tmpwords);
@@ -498,6 +507,9 @@ int     search_2(SWISH * sw, char *words, int structure)
                 freeswline(searchwordlist); /* 2001-03-13 rasc */
             return sw->lasterror;
         }
+
+
+        /* Any files in the index? */
 
         if (!indexlist->header.totalfiles)
         {
@@ -545,7 +557,7 @@ int     search_2(SWISH * sw, char *words, int structure)
         tmplist2 = searchwordlist;
 
         if ( !tmplist2 )
-            sw->commonerror++;
+            sw->commonerror++;  // Flag at the query (with this index) did no have any search words
         else
         {
             resultHeaderOut(sw, 2, "# Parsed Words: ");
@@ -571,14 +583,19 @@ int     search_2(SWISH * sw, char *words, int structure)
         memset( db_results, 0, sizeof(struct DB_RESULTS));
 
 
+        /* Now do the search */
+
         if (searchwordlist)
         {
+            int metaID = 1;  /* Default meta ID to search */
+            
             tmplist2 = searchwordlist;
             db_results->resultlist = (RESULT_LIST *) parseterm(sw, 0, metaID, indexlist, &tmplist2);
         }
 
 
         /* add db_results to the list of results */
+
         if ( !sw->Search->db_results)
             sw->Search->db_results = db_results;
         else
@@ -600,12 +617,15 @@ int     search_2(SWISH * sw, char *words, int structure)
         efree(tmpwords);
         indexlist = indexlist->next;
 
-    }                           /* while */
+    }  /* end process each index file */
+
+
+    /* Did any of the indexes have a query? */
 
     if (!hassearch)
-    {
         return (sw->lasterror = NO_WORDS_IN_SEARCH);
-    }
+
+
 
     if (searchwordlist)
     {
@@ -616,10 +636,12 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     /* Limit result list by -L parameter */
     // note -- this used to be in addtoresultlist, but that was checking every word
-    // placing here means that it only checks files once
+    // placing here means that it only checks for each file, instead of each word.
 
     if ( is_prop_limit_used( sw ) )
         limit_result_list( sw );
+
+
 
 #ifdef DUMP_RESULTS
     {
@@ -655,9 +677,9 @@ int     search_2(SWISH * sw, char *words, int structure)
     }
 #endif
 
-    /* 
-    04/00 Jose Ruiz - Sort results by rank or by properties
-    */
+    /* 04/00 Jose Ruiz - Sort results by rank or by properties */
+
+    // ??? Currently this does -t limits.  Wrong place, if you ask me.
     totalResults = sortresults(sw, structure);
 
 
@@ -927,6 +949,8 @@ void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 /* The recursive parsing function.
 ** This was a headache to make but ended up being surprisingly easy. :)
 ** parseone tells the function to only operate on one word or term.
+** parseone is needed so that with metaA=foo bar "bar" is searched
+** with the default metaname.
 */
 
 RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
@@ -960,20 +984,27 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
     rulenum = OR_RULE;
     while (*searchwordlist)
     {
+        
         word = SafeStrCopy(word, (*searchwordlist)->line, &lenword);
 
 
         if (rulenum == NO_RULE)
             rulenum = sw->SearchAlt->srch_op.defaultrule;
-        if (isunaryrule(word))
+
+
+        if (isunaryrule(word))  /* is it a NOT? */
         {
             *searchwordlist = (*searchwordlist)->next;
             l_rp = (RESULT_LIST *) parseterm(sw, 1, metaID, indexf, searchwordlist);
             l_rp = (RESULT_LIST *) notresultlist(sw, l_rp, indexf);
+
             /* Wild goose chase */
             rulenum = NO_RULE;
             continue;
         }
+
+
+        /* If it's an operator, set the current rulenum, and continue */
         else if (isbooleanrule(word))
         {
             rulenum = getrulenum(word);
@@ -981,23 +1012,36 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
             continue;
         }
 
+
+        /* Bump up the count of AND terms for this level */
+        
         if (rulenum != AND_RULE)
             andLevel = 0;       /* reset */
         else if (rulenum == AND_RULE)
             andLevel++;
 
+
+
+        /* Is this the start of a sub-query? */
+
         if (word[0] == '(')
         {
 
+            
+            /* Recurse */
             *searchwordlist = (*searchwordlist)->next;
             new_l_rp = (RESULT_LIST *) parseterm(sw, 0, metaID, indexf, searchwordlist);
 
+
             if (rulenum == AND_RULE)
                 l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
+
             else if (rulenum == OR_RULE)
                 l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
+
             else if (rulenum == PHRASE_RULE)
                 l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
+
             else if (rulenum == AND_NOT_RULE)
                 l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
 
@@ -1014,31 +1058,26 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
             break;
         }
 
+
+        /* Now down to checking for metanames and actual search words */
+
+
         /* Check if the next word is '=' */
         if (isMetaNameOpNext((*searchwordlist)->next))
         {
             struct metaEntry *m = getMetaNameByName(&indexf->header, word);
 
             /* shouldn't happen since already checked */
-            /* And really, should return the error, since might be running as a library */
             if ( !m )
-                progerr("Unknown metaname '%s'", word );
+                progerr("Unknown metaname '%s' -- swish_words failed to find.", word );
 
             metaID = m->metaID;
                 
-
-            /****
-          seems like that's ok....
-            if (metaID == 1)
-            {
-                sw->lasterror = UNKNOWN_METANAME;
-                return NULL;
-            }
-            ***/
-
             
             /* Skip both the metaName end the '=' */
             *searchwordlist = (*searchwordlist)->next->next;
+
+            
             if ((*searchwordlist) && ((*searchwordlist)->line[0] == '('))
             {
                 *searchwordlist = (*searchwordlist)->next;
@@ -1046,13 +1085,19 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
             }
             else
                 parseone = 1;
+
+            /* Now recursively process the next terms */
+            
             new_l_rp = (RESULT_LIST *) parseterm(sw, parseone, metaID, indexf, searchwordlist);
             if (rulenum == AND_RULE)
                 l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
+
             else if (rulenum == OR_RULE)
                 l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
+
             else if (rulenum == PHRASE_RULE)
                 l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
+
             else if (rulenum == AND_NOT_RULE)
                 l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
 
@@ -1063,6 +1108,9 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
             metaID = 1;
             continue;
         }
+
+
+        /* Finally, look up a word, and merge with previous results. */
 
         l_rp = (RESULT_LIST *) operate(sw, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
 
@@ -1078,6 +1126,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
 
     if (lenword)
         efree(word);
+
     return l_rp;
 }
 
@@ -1097,6 +1146,9 @@ RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, 
 
     new_l_rp = return_l_rp = NULL;
 
+
+    /* ??? Stopwords have already been removed at this point. */
+    /*****
     if (isstopword(&indexf->header, word) && !isrule(word))
     {
         if (rulenum == OR_RULE && l_rp != NULL)
@@ -1104,32 +1156,46 @@ RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, 
         else
             sw->commonerror = 1;
     }
+    ******/
+
+
+    /* ??? Ever a time when rulenum is not one of these? */
 
     if (rulenum == AND_RULE)
     {
         new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
         return_l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
     }
+
+
     else if (rulenum == OR_RULE)
     {
         new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
         return_l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
     }
+
+
     else if (rulenum == NOT_RULE)
     {
         new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
         return_l_rp = (RESULT_LIST *) notresultlist(sw, new_l_rp, indexf);
     }
+
+
     else if (rulenum == PHRASE_RULE)
     {
         new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
         return_l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
     }
+
+
     else if (rulenum == AND_NOT_RULE)
     {
         new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
         return_l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
     }
+
+
     efree(word);
     return return_l_rp;
 }
@@ -1186,7 +1252,6 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     char   *p;
     int     tfrequency = 0;
     unsigned char   *s, *buffer; 
-    char   *resultword;
     int     sz_buffer;
     unsigned char flag;
 
@@ -1195,6 +1260,8 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 
 
     l_rp = l_rp2 = NULL;
+
+
     /* First: Look for star at the end of the word */
     if ((p = strrchr(word, '*')))
     {
@@ -1217,32 +1284,33 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         }
     }
 
-    /* Remove escapes */
-/* ------ removed may 23, 2001 moseley -- done in new search parser
-    for (q = r = word; *r; r++)
-        if (*r != '\\')
-            *q++ = *r;
-    *q = '\0';
-*/    
+
+
 
     DB_InitReadWords(sw, indexf->DB);
     if (!p)    /* No wildcard -> Direct hash search */
     {
         DB_ReadWordHash(sw, word, &wordID, indexf->DB);
+
         if(!wordID)
         {    
             DB_EndReadWords(sw, indexf->DB);
-                        sw->lasterror = WORD_NOT_FOUND;
+            sw->lasterror = WORD_NOT_FOUND;
             return NULL;
         }
     }        
-    else
-    {              /* There is a star. So use the sequential approach */
+
+    else  /* There is a star. So use the sequential approach */
+    {       
+        char   *resultword;
+
         if (*word == '*')
         {
             sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
             return NULL;
         }
+
+        
         DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
 
         if (!wordID)
@@ -1253,54 +1321,83 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         }
         efree(resultword);   /* Do not need it */
     }
+
+
     /* If code is here we have found the word !! */
+
     do
     {
         DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
         s = buffer;
+
+        // buffer structure = <tfreq><metaID><delta to next meta>
+
         /* Get the data of the word */
-        tfrequency = uncompress2(&s); /* tfrequency */
+        tfrequency = uncompress2(&s); /* tfrequency - number of files with this word */
+
+
         /* Now look for a correct Metaname */
         curmetaID = uncompress2(&s);
+
         while (curmetaID)
         {
-            nextposmetaname = UNPACKLONG2(s);s += sizeof(long);
+            nextposmetaname = UNPACKLONG2(s);
+            s += sizeof(long);
+
+            
             if (curmetaID >= metaID)
                 break;
+
             s = buffer + nextposmetaname;
             if(nextposmetaname == (unsigned long)sz_buffer)
-                break;
+                break; // if no more meta data
+
             curmetaID = uncompress2(&s);
         }
+
         if (curmetaID == metaID)
             found = 1;
         else
             found = 0;
-        if (found)
+
+        // ??? why not just check curmetaID == metaID here
+            
+        if (found) /* found a matching meta value */
         {
             filenum = 0;
             do
-            {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                filenum += tmpval;
+            {
 
-                    /* Store -1 in rank - In this way, we can delay its computation */
-                    /* This is very useful if we sorted by other property */
+                /* Read on all items */
+                uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                filenum += tmpval;  
+
+                /* Store -1 in rank - In this way, we can delay its computation */
+                /* This is very useful if we sorted by other property */
                 if(!l_rp)
                     l_rp = newResultsList(sw);
-                addtoresultlist(
-                    l_rp, filenum,
-                    -1,
-                    tfrequency, frequency, indexf, sw);
+
+                // tfrequency = number of files with this word
+                // frequency = number of times this words is in this document for this metaID
+
+                addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, sw);
                 uncompress_location_positions(&s,flag,frequency,l_rp->tail->posdata);
-            }
-            while ((unsigned long)(s - buffer) != nextposmetaname);
+
+            } while ((unsigned long)(s - buffer) != nextposmetaname);
+
+
         }
+
         efree(buffer);
+
+
         if (!p)
-            break;              /* direct access -> break */
+            break;              /* direct access (no wild card) -> break */
+
         else
         {
+            char   *resultword;
+
             /* Jump to next word */
             /* No more data for this word but we
                are in sequential search because of
@@ -1309,16 +1406,20 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
-            efree(resultword);  /* Do not need it */
+
+            efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
         }
-    }
-    while(1);
+
+    } while(1);   /* continue on in loop for wildcard search */
+
+
+
     if (p)
     {
-        /* Finally, if we are in an sequential search
-           merge all results */
+        /* Finally, if we are in an sequential search merge all results */
         l_rp = mergeresulthashlist(sw, l_rp);
     }
+
     DB_EndReadWords(sw, indexf->DB);
     return l_rp;
 }
@@ -1517,7 +1618,7 @@ RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, 
 
 /* Takes two lists of results from searches and ORs them together.
 2001-11 jmruiz Completely rewritten. Older one was really
-               slow when the lists are vaery long
+               slow when the lists are very long
                On input, both result lists r1 and r2 must be sorted by filenum
                On output, the new result list remains sorted
 
@@ -2308,7 +2409,7 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
 
 
 /* Adds a file number to a hash table of results.
-** If the entry's alrady there, add the ranks,
+** If the entry's already there, add the ranks,
 ** else make a new entry.
 **
 ** Jose Ruiz 04/00

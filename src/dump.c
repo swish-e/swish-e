@@ -245,8 +245,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 metaname = uncompress2(&s);     /* metaname */
                 if (metaname)
                 {
-                    nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
+                    nextposmetaname = UNPACKLONG2(s);
+                    s += sizeof(long);
                 }
+
                 filenum = 0;
                 while(1)
                 {                   /* Read on all items */

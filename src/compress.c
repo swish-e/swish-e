@@ -193,6 +193,51 @@ unsigned long UNPACKLONG2(unsigned char *buffer)
 #define FREQ_AND_POS_EQ_1    0x20  /* Binary 00100000 */
 #define POS_4_BIT            0x10  /* Binary 00010000 */
 
+/************************************************************************
+
+From Jose on Feb 13, 2002
+
+IS_FLAG is to indicate that the byte is a flag. As far as I remember, I 
+needed it to avoid null values.
+
+When COMMON_STRUCTURE is on, this means that all the positions
+have the same structure value. This helps a lot with non html
+files and can save a lot of space.
+
+When FREQ_AND_POS_EQ_1 is on, this means that freq is 1 and
+pos[0]=1. Mmm, I am not sure if this is very useful now. Let me
+explain better. This was useful for xml files with fields that contains
+just one value. For example:
+<code>00001</code>
+<date>20001231</date>
+But, now, I am not sure if this is useful because long time ago I
+changed the position counter to not be reseted after a each field
+change.
+I need to check this.
+
+POS_4_BIT indicates that all positions are within 16 positions
+of each other and can thus be stored as 2 per byte.  Position numbers are
+stored as a delta from the previous position.
+
+Here's indexing /usr/doc:
+
+
+23840 files indexed.  177638538 total bytes.  19739102 total words.
+Elapsed time: 00:04:42 CPU time: 00:03:09
+Indexing done!
+      4 bit = 843,081 (total length = 10,630,425) 12 bytes/chunk
+  not 4 bit = 13,052,904 (length 83,811,498) 6 bytes/chunk
+
+I wonder if storing the initial postion would improve that much.
+
+
+
+
+*************************************************************************/
+
+
+
+
 
 void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *posdata)
 {
@@ -230,7 +275,7 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     else
     {
         if(frequency < 16)
-             (*flag) |= frequency; /* Store in flag - last 3 bit 00000xxx */
+             (*flag) |= frequency; /* Store in flag - low 4 bits */
         else
              p = compress3(frequency, p);
     }
@@ -256,13 +301,16 @@ void compress_location_positions(unsigned char **buf,unsigned char *flag,int fre
         if(GET_POSITION(posdata[0]) < 16)
             (*flag) |= POS_4_BIT;
         else
-            (*flag) &= ~POS_4_BIT; 
+            (*flag) &= ~POS_4_BIT;
+
+
         for(i = frequency - 1; i > 0 ; i--)
         {
             posdata[i] = SET_POSDATA(GET_POSITION(posdata[i]) - GET_POSITION(posdata[i-1]),GET_STRUCTURE(posdata[i]));
             if(GET_POSITION(posdata[i]) >= 16)
                 (*flag) &= ~POS_4_BIT; 
         }
+
         /* write the position data working from the end of the buffer */
         if((*flag) & POS_4_BIT)
         {
@@ -280,11 +328,15 @@ void compress_location_positions(unsigned char **buf,unsigned char *flag,int fre
             for (i = 0; i < frequency; i++)
                 p = compress3(GET_POSITION(posdata[i]), p);
         }
+
+
+        /* Write out the structure bytes */
         if(! (*flag & COMMON_STRUCTURE))
             for(i = 0; i < frequency; i++)
                 *p++ = (unsigned char) GET_STRUCTURE(posdata[i]);
 
     }
+
 
     *buf = p;
 }
@@ -373,6 +425,14 @@ void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *fi
     *buf = p;
 }
 
+unsigned long four_bit_count = 0;
+unsigned long four_bit_bytes = 0;
+unsigned long not_four = 0;
+unsigned long not_four_bytes = 0;
+unsigned long four_bit_called = 0;
+unsigned long not_four_called;
+
+
 void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *posdata)
 {
     int i, tmp;
@@ -427,6 +487,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 
         posdata[i] = SET_POSDATA(posdata[i],structure);
     }
+
 
     /* Update buffer pointer */
     *buf = p;

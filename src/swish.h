@@ -753,7 +753,7 @@ struct DB_RESULTS
     RESULT *currentresult;
 };
 
-
+#define MAX_ERROR_STRING_LEN 500
 
 typedef struct
 {
@@ -794,7 +794,7 @@ typedef struct
     /* Error vars */
     int     commonerror;
     int     lasterror;
-    char    *lasterrstr;
+    char    lasterrorstr[MAX_ERROR_STRING_LEN+1];
 
 
     /* 06/00 Jose Ruiz */
