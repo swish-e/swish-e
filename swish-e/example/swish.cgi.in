@@ -91,17 +91,18 @@ use vars '$speedy_config';  # Global for caching in persistent environment such 
 #   create a config file as:
 #
 #       # Example config file -- returns a hash reference
-#       {
+#       return {
 #           title           => 'Search Our Site',
 #           swish_index     => 'index.web',
 #
 #           template => {
-#            package         => 'SWISH::TemplateToolkit',
-#            file            => 'swish.tt',
-#            options         => {
-#                INCLUDE_PATH    => '/home/user/swish-e/example',
-#            },
-#       };
+#               package         => 'SWISH::TemplateToolkit',
+#               file            => 'swish.tt',
+#               options         => {
+#                   INCLUDE_PATH    => '/home/user/swish-e/example',
+#               },
+#           },
+#        };
 #
 #
 #-----------------------------------------------------------------------------------
