@@ -23,6 +23,6 @@
 struct filter *addfilter (struct filter *rp, char *FilterSuffix, char *FilterProg, char *FilterDir);
 char *hasfilter (char *filename, struct filter *filterlist);
 FILE *FilterOpen (FileProp *fprop);
-int FilterClose (FileProp *fprop);
+int FilterClose (FILE *fp);
 
 
