@@ -140,49 +140,51 @@
 
 void initModule_Index (SWISH  *sw)
 {
-	int i;
+    int i;
     struct MOD_Index *idx;
 
     idx = (struct MOD_Index *) emalloc(sizeof(struct MOD_Index));
     sw->Index = idx;
 
-	idx->filenum = 0;
-	idx->entryArray = NULL;
+    idx->filenum = 0;
+    idx->entryArray = NULL;
 
-   	idx->len_compression_buffer = MAXSTRLEN;  /* For example */
-	idx->compression_buffer=(unsigned char *)emalloc(idx->len_compression_buffer);
+       idx->len_compression_buffer = MAXSTRLEN;  /* For example */
+    idx->compression_buffer=(unsigned char *)emalloc(idx->len_compression_buffer);
 
-  	idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
-	idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
+    idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
+    idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
 
 
-		/* Init  entries hash table */
-	for (i=0; i<SEARCHHASHSIZE; i++) 
-		idx->hashentries[i] = NULL;
+        /* Init  entries hash table */
+    for (i=0; i<SEARCHHASHSIZE; i++) 
+        idx->hashentries[i] = NULL;
 
-	idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
+    idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
 
-	idx->lentmpdir=idx->lenspiderdirectory=MAXSTRLEN;
-	idx->tmpdir = (char *)emalloc(idx->lentmpdir + 1);idx->tmpdir[0]='\0';
-	idx->spiderdirectory = (char *)emalloc(idx->lenspiderdirectory + 1);idx->spiderdirectory[0]='\0';
+    idx->lentmpdir=idx->lenspiderdirectory=MAXSTRLEN;
+    idx->tmpdir = (char *)emalloc(idx->lentmpdir + 1);idx->tmpdir[0]='\0';
+    idx->spiderdirectory = (char *)emalloc(idx->lenspiderdirectory + 1);idx->spiderdirectory[0]='\0';
 
-	        /* Initialize tmpdir */
-	idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
+            /* Initialize tmpdir */
+    idx->tmpdir = SafeStrCopy(idx->tmpdir,TMPDIR,&idx->lentmpdir);
 
         /* Initialize spider directory */
     idx->spiderdirectory = SafeStrCopy(idx->spiderdirectory,SPIDERDIRECTORY,&idx->lenspiderdirectory);
 
 
-	if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
-	{
-		idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
-		idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
-	} else {
-		idx->swap_file_name=tempnam(NULL,"swfi");
-		idx->swap_location_name=tempnam(NULL,"swlo");
-	}
-   
-   return;
+    if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
+    {
+        idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
+        idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
+    } else {
+        idx->swap_file_name=tempnam(NULL,"swfi");
+        idx->swap_location_name=tempnam(NULL,"swlo");
+    }
+
+    for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
+
+    return;
 }
 
 
@@ -197,20 +199,20 @@ void freeModule_Index (SWISH *sw)
 
   if (isfile(idx->swap_file_name))
   {
-	  remove(idx->swap_file_name);
-	  efree(idx->swap_file_name);
+      remove(idx->swap_file_name);
+      efree(idx->swap_file_name);
   }
   if (isfile(idx->swap_location_name))
   {
-	  remove(idx->swap_location_name);
-	  efree(idx->swap_location_name);
+      remove(idx->swap_location_name);
+      efree(idx->swap_location_name);
   }
 
-  if(idx->lenspiderdirectory) efree(idx->spiderdirectory);		
-  if(idx->lentmpdir) efree(idx->tmpdir);		
+  if(idx->lenspiderdirectory) efree(idx->spiderdirectory);        
+  if(idx->lentmpdir) efree(idx->tmpdir);        
 
-  		/* Free compression info */	
-		/* Free compression buffer */	
+          /* Free compression info */    
+        /* Free compression buffer */    
   efree(idx->compression_buffer);
         /* free worddata buffer */
   efree(idx->worddata_buffer);
@@ -488,7 +490,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADER");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
-		if ( structure & IN_META ) printf(" META");
+        if ( structure & IN_META ) printf(" META");
         if ( structure & IN_BODY ) printf(" BODY");
         if ( structure & IN_HEAD ) printf(" HEAD");
         if ( structure & IN_TITLE ) printf(" TITLE");
@@ -746,7 +748,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     }
 /* #### */
     indexf->filearray[indexf->filearray_cursize++] = newnode;
-	indexf->header.totalfiles++;
+    indexf->header.totalfiles++;
 
 }
 
@@ -1040,7 +1042,7 @@ int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignor
     rank = (log((double) freq) + 10.0) * rank;
 
     if (ignoreTotalWordCountWhenRanking)
-		rank /= 100.0;
+        rank /= 100.0;
     else
         rank /= words;
 
@@ -1165,22 +1167,22 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             }
             else
                 epi->u1.fileoffset = -1L;
-        }	
-		
-		
-	    for (i = 0; i < SEARCHHASHSIZE; i++)
-		{
-			if ((epi = sw->Index->hashentries[i]))
-			{
-				while (epi)
-				{
-						/* If it is not a stopword write it */
-					if (epi->u1.fileoffset >= 0L)  
-						DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
-					epi = epi->nexthash;
-				}
-			}
-		}
+        }    
+        
+        
+        for (i = 0; i < SEARCHHASHSIZE; i++)
+        {
+            if ((epi = sw->Index->hashentries[i]))
+            {
+                while (epi)
+                {
+                        /* If it is not a stopword write it */
+                    if (epi->u1.fileoffset >= 0L)  
+                        DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
+                    epi = epi->nexthash;
+                }
+            }
+        }
 
 
         for (i = 0; i < totalwords; i++)
@@ -1193,8 +1195,8 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             efree(epi->word);
             efree(epi);
         }
-		
-	DB_EndWriteWords(sw, indexf->DB);
+        
+    DB_EndWriteWords(sw, indexf->DB);
 
     }
 }
@@ -1265,17 +1267,17 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
 
 
-	/* Removed due to problems with patents
+    /* Removed due to problems with patents
     if (indexf->header.applyFileInfoCompression)
     {
         buffer = p = zfread(indexf->dict, &total_len, fp);
     }
     else
     {
-	*/
-		DB_ReadFile(sw, filenum, &buffer, &total_len, indexf->DB);
-		p = buffer;
-	/* } */
+    */
+        DB_ReadFile(sw, filenum, &buffer, &total_len, indexf->DB);
+        p = buffer;
+    /* } */
 
     uncompress2(lookup_path, p); /* Index to lookup table of paths */
     lookup_path--;
@@ -1334,7 +1336,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
     struct buffer_pool *bp = NULL;
     */
 
-	DB_InitWriteFiles(sw, indexf->DB);
+    DB_InitWriteFiles(sw, indexf->DB);
 
     for (i = 0; i < indexf->filearray_cursize; i++)
     {
@@ -1347,19 +1349,19 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         else
             filep = indexf->filearray[i];
         buffer = buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
-		/* Deflate stuff removed due to patents 
+        /* Deflate stuff removed due to patents 
         if (indexf->header.applyFileInfoCompression)
         {
             bp = zfwrite(bp, buffer, sz_buffer, &indexf->fileoffsetarray[i], fp);
         }
         else
         {
-		*/
-			DB_WriteFile(sw, i, buffer, sz_buffer, indexf->DB);
+        */
+            DB_WriteFile(sw, i, buffer, sz_buffer, indexf->DB);
         /* } */
         efree(buffer);
     }
-	/* Deflate stuff removed due to patents 
+    /* Deflate stuff removed due to patents 
     if (indexf->header.applyFileInfoCompression)
     {
         zfflush(bp, fp);
@@ -1373,37 +1375,37 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         freefileinfo(indexf->filearray[i]);
         indexf->filearray[i] = NULL;
     }
-	DB_EndWriteFiles(sw, indexf->DB);
+    DB_EndWriteFiles(sw, indexf->DB);
 }
 
 
 /* Writes the sorted indexes to DB index */
 void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 {
-	int i,j,val;
+    int i,j,val;
     struct metaEntry *m;
-	unsigned char  *CompressedSortFileProps , *s;
-	
-	CompressedSortFileProps = (unsigned char *)emalloc(5 * indexf->filearray_cursize);
+    unsigned char  *CompressedSortFileProps , *s;
+    
+    CompressedSortFileProps = (unsigned char *)emalloc(5 * indexf->filearray_cursize);
 
-	DB_InitWriteSortedIndex(sw, indexf->DB);
+    DB_InitWriteSortedIndex(sw, indexf->DB);
     /* Execute for each property */
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
-		m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
-		if (m->sorted_data)
-		{
-			s = CompressedSortFileProps;
-			for(i=0;i<indexf->filearray_cursize;i++)
-			{
-				val = m->sorted_data[i];
-				compress3(val,s);
-			}
-			DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
-		}
-	}
-	efree(CompressedSortFileProps);
-	DB_EndWriteSortedIndex(sw, indexf->DB);
+        m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+        if (m->sorted_data)
+        {
+            s = CompressedSortFileProps;
+            for(i=0;i<indexf->filearray_cursize;i++)
+            {
+                val = m->sorted_data[i];
+                compress3(val,s);
+            }
+            DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
+        }
+    }
+    efree(CompressedSortFileProps);
+    DB_EndWriteSortedIndex(sw, indexf->DB);
 
 }
 
@@ -1535,7 +1537,7 @@ void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
         /* We must take care of the escaped characeters */
         /* Things like hello\c hello\\c hello\\\c can appear */
         for(j=0,k=i-1;k>=0 && word[k]=='\\';k--,j++);
-		
+        
         /* j contains the number of \ */
         if(j%2)   /* Remove the escape if even */
         {
@@ -1551,8 +1553,8 @@ void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
     int     i = 0;
 
     /* Keep going until a char not to ignore is found */
-	/* We must take care of the escaped characeters */
-	/* Things like \chello \\chello can appear */
+    /* We must take care of the escaped characeters */
+    /* Things like \chello \\chello can appear */
 
     while (word[i])
     {

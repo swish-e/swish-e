@@ -22,6 +22,13 @@ $Id$
 #ifndef __HasSeenModule_Index
 #define __HasSeenModule_Index       1
 
+struct dev_ino
+{
+    dev_t   dev;
+    ino_t   ino;
+    struct dev_ino *next;
+};
+
 
 /*
    -- module data
@@ -61,6 +68,7 @@ struct MOD_Index
     FILE   *fp_file_write;      /* File (writing) */
     FILE   *fp_file_read;       /* File (read) */
 
+    struct dev_ino *inode_hash[BIGHASHSIZE];
 };
 
 void initModule_Index (SWISH *);

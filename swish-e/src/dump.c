@@ -38,7 +38,7 @@
 void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 {
     int     i,
-			j,
+            j,
             c,
             x,
             fieldnum,
@@ -52,31 +52,31 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     struct  file *fi = NULL;
     struct  docPropertyEntry *docProperties = NULL;
     char    ISOTime[20];
-	unsigned char    word[2];
-	unsigned char   *resultword;
-	unsigned char   *worddata, *s;
-	int     sz_worddata;
-	long    wordID;
-	
-	indexf->DB = DB_Open(sw, indexf->line);
+    char    word[2];
+    char   *resultword;
+    unsigned char   *worddata, *s;
+    int     sz_worddata;
+    long    wordID;
+    
+    indexf->DB = DB_Open(sw, indexf->line);
 
     metaname = 0;
 
     nextposmetaname = 0L;
 
-	c = 0;
+    c = 0;
 
     frequency = 0;
 
-		/* Read header */
+        /* Read header */
     read_header(sw, &indexf->header, indexf->DB);
-	
-		/* Allocate size for fileinfo */
-	indexf->filearray_cursize = indexf->header.totalfiles;
-	indexf->filearray_maxsize = indexf->header.totalfiles;
-	indexf->filearray = emalloc(indexf->header.totalfiles * sizeof(struct file *));
-	for(i = 0; i < indexf->header.totalfiles; i++)
-		indexf->filearray[i] = NULL;
+    
+        /* Allocate size for fileinfo */
+    indexf->filearray_cursize = indexf->header.totalfiles;
+    indexf->filearray_maxsize = indexf->header.totalfiles;
+    indexf->filearray = emalloc(indexf->header.totalfiles * sizeof(struct file *));
+    for(i = 0; i < indexf->header.totalfiles; i++)
+        indexf->filearray[i] = NULL;
 
     resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
 
@@ -84,99 +84,99 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     printf("\n-----> WORD INFO <-----\n");
 
-	DB_InitReadWords(sw, indexf->DB);
+    DB_InitReadWords(sw, indexf->DB);
 
-	for(j=0;j<256;j++)
-	{
-		word[0] = (unsigned char) j; word[1] = '\0';
-		DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+    for(j=0;j<256;j++)
+    {
+        word[0] = (unsigned char) j; word[1] = '\0';
+        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-		while(wordID)
-		{
-			printf("%s:",resultword);
+        while(wordID)
+        {
+            printf("%s:",resultword);
 
-				/* Read Word's data */
-			DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
+                /* Read Word's data */
+            DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
 
-				/* parse and print word's data */
-			s = worddata;
+                /* parse and print word's data */
+            s = worddata;
 
-	        uncompress2(x, s);     /* tfrequency */
-		    uncompress2(x, s);     /* metaname */
-			metaname = x;
-			if (metaname)
-			{
-				UNPACKLONG2(nextposmetaname,s); s += sizeof(long);
-				uncompress2(x, s); /* First file */
-			}
-			while (x)
-			{
-	            filenum = x;
-		        uncompress2(index_structfreq, s);
-			    frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-				index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-	            structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+            uncompress2(x, s);     /* tfrequency */
+            uncompress2(x, s);     /* metaname */
+            metaname = x;
+            if (metaname)
+            {
+                UNPACKLONG2(nextposmetaname,s); s += sizeof(long);
+                uncompress2(x, s); /* First file */
+            }
+            while (x)
+            {
+                filenum = x;
+                uncompress2(index_structfreq, s);
+                frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
+                index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
+                structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
 
-		        if (sw->verbose >= 4)
-			    {
-				    struct file *fileInfo;
+                if (sw->verbose >= 4)
+                {
+                    struct file *fileInfo;
 
-	                printf(" Meta:%d", metaname);
-			        fileInfo = readFileEntry(sw, indexf, filenum);
-				    printf(" %s", fileInfo->fi.filename);
-	                printf(" Strct:%x", structure);
-		            printf(" Freq:%d", frequency);
-			        printf(" Pos:");
-				}
-				else
-				{
-					printf(" %d", metaname);
-					printf(" %d", filenum);
-					printf(" %d", structure);
-					printf(" %d", frequency);
-				}
-				for (i = 0; i < frequency; i++)
-				{
-					uncompress2(x, s);
-					if (sw->verbose >= 4)
-					{
-						if (i)
-							printf(",%d", x);
-						else
-	                        printf("%d", x);
-		            }
-			        else
-				        printf(" %d", x);
-				}
-				if ((s - worddata) == nextposmetaname)
-				{
-					uncompress2(x, s);
-					metaname = x;
-					if (metaname)
-					{
-						UNPACKLONG2(nextposmetaname,s); 
+                    printf(" Meta:%d", metaname);
+                    fileInfo = readFileEntry(sw, indexf, filenum);
+                    printf(" %s", fileInfo->fi.filename);
+                    printf(" Strct:%x", structure);
+                    printf(" Freq:%d", frequency);
+                    printf(" Pos:");
+                }
+                else
+                {
+                    printf(" %d", metaname);
+                    printf(" %d", filenum);
+                    printf(" %d", structure);
+                    printf(" %d", frequency);
+                }
+                for (i = 0; i < frequency; i++)
+                {
+                    uncompress2(x, s);
+                    if (sw->verbose >= 4)
+                    {
+                        if (i)
+                            printf(",%d", x);
+                        else
+                            printf("%d", x);
+                    }
+                    else
+                        printf(" %d", x);
+                }
+                if ((s - worddata) == nextposmetaname)
+                {
+                    uncompress2(x, s);
+                    metaname = x;
+                    if (metaname)
+                    {
+                        UNPACKLONG2(nextposmetaname,s); 
                         s += sizeof(long);
-						uncompress2(x, s);
-					}
-					else
-	                    nextposmetaname = 0L;
-		        }
-			    else
-				    uncompress2(x, s);
-	        }
-		    putchar((int) '\n');
+                        uncompress2(x, s);
+                    }
+                    else
+                        nextposmetaname = 0L;
+                }
+                else
+                    uncompress2(x, s);
+            }
+            putchar((int) '\n');
 
-			efree(worddata);
-			efree(resultword);
-			DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-		}
-	}
-	DB_EndReadWords(sw, indexf->DB);
+            efree(worddata);
+            efree(resultword);
+            DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+        }
+    }
+    DB_EndReadWords(sw, indexf->DB);
 
     /* Decode Stop Words: All them are in just one line */
     printf("\n\n-----> STOP WORDS <-----\n");
-	for(i=0;i<indexf->header.stopPos;i++)
-		printf("%s ",indexf->header.stopList[i]);
+    for(i=0;i<indexf->header.stopPos;i++)
+        printf("%s ",indexf->header.stopList[i]);
     putchar((int) '\n');
 
     /* Decode File Info */
@@ -211,13 +211,13 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     fflush(stdout);
 
     printf("\n\n-----> METANAMES <-----\n");
-	for(i = 0; i < indexf->header.metaCounter; i++)
-	{
-		printf("%s\"%d\"%d ",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
-	}
-	putchar((int) '\n');
+    for(i = 0; i < indexf->header.metaCounter; i++)
+    {
+        printf("%s\"%d\"%d ",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
+    }
+    putchar((int) '\n');
 
-	DB_Close(sw, indexf->DB);
+    DB_Close(sw, indexf->DB);
 
     if (sw->verbose != 4)
         printf("\nUse -v 4 for a more complete info\n");

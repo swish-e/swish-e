@@ -68,7 +68,7 @@ int     fs_already_indexed(SWISH * sw, char *path)
     sprintf(key, "%lx/%lx", (unsigned long) buf.st_dev, (unsigned long) buf.st_ino);
 
     hashval = bighash(key);     /* Search hash for this file. */
-    for (p = sw->inode_hash[hashval]; p != NULL; p = p->next)
+    for (p = sw->Index->inode_hash[hashval]; p != NULL; p = p->next)
         if (p->dev == buf.st_dev && p->ino == buf.st_ino)
         {                       /* We found it. */
             if (sw->verbose >= 3)
@@ -81,8 +81,8 @@ int     fs_already_indexed(SWISH * sw, char *path)
 
     p->dev = buf.st_dev;
     p->ino = buf.st_ino;
-    p->next = sw->inode_hash[hashval];
-    sw->inode_hash[hashval] = p;
+    p->next = sw->Index->inode_hash[hashval];
+    sw->Index->inode_hash[hashval] = p;
 #endif
 
     return 0;
