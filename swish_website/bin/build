@@ -408,7 +408,7 @@ sub get_swish_version {
         "$dir/../install/bin/swish-config",  # daily build location
     ) {
         if ( -x ) {
-            $ver = `$_ -`;
+            $ver = `$_ -version`;
             chomp $ver;
             warn "Found version [$ver] from program $_\n" if $self->config->verbose;
             return $ver if $ver;

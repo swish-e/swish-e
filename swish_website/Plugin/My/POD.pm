@@ -19,7 +19,6 @@ sub new {
     # How's this for a hack?
     return \@pod_toc if $content eq 'toc';
 
-
     # Grab pod index variable
     my $stash = $context->stash;
     my $page = $stash->get( ['page', 0, 'id', 0 ] );
