@@ -138,6 +138,10 @@ struct Handle_DBNative
    int      tmp_array;
    char    *cur_array_file;
 
+   FILE    *fp_hashfile;
+   int      tmp_hashfile;
+   char    *cur_hashfile_file;
+
    int      n_presorted_array;
    unsigned long *presorted_root_node;
    unsigned long *presorted_propid;

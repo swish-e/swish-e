@@ -336,12 +336,12 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     DB->unique_ID = (long) time(NULL); /* Ok, so if more than one index is created the second... */
 
 #ifdef USE_TEMPFILE_EXTENSION
-    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + strlen(HASHFILE_EXTENSION) + 1);
     strcpy(filename, dbname);
     strcat(filename, USE_TEMPFILE_EXTENSION);
     DB->tmp_index = 1;
 #else
-    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + +strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + +strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + strlen(HASHFILE_EXTENSION) + 1);
     strcpy(filename, dbname);
 #endif
 
@@ -437,6 +437,24 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 
     DB->cur_presorted_file = estrdup(filename);
     printlong(DB->fp_presorted, DB->unique_ID, fwrite);
+
+    /* Create HashFileIndex File */
+    strcpy(filename, dbname);
+    strcat(filename, HASHFILE_EXTENSION);
+
+#ifdef USE_TEMPFILE_EXTENSION
+    strcat(filename, USE_TEMPFILE_EXTENSION);
+    DB->tmp_hashfile = 1;
+#endif
+
+    CreateEmptyFile(filename);
+    if (!(DB->fp_hashfile = openIndexFILEForWrite(filename)))
+        progerrno("Couldn't create the hash-file index file \"%s\": ", filename)
+;
+
+    DB->cur_hashfile_file = estrdup(filename);
+    printlong(DB->fp_hashfile, DB->unique_ID, fwrite);
+
 
 #endif
 
@@ -571,6 +589,23 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 
     DB->fp_worddata = fp_tmp;
     DB->cur_worddata_file = s;
+
+
+    s = emalloc(strlen(dbname) + strlen(HASHFILE_EXTENSION) + 1);
+
+    strcpy(s, dbname);
+    strcat(s, HASHFILE_EXTENSION);
+
+    if (!(fp_tmp = openRoutine(s)))
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the hashfile file \"%s\": ", s);
+        return (void *) DB;
+    }
+        
+
+    DB->fp_hashfile = fp_tmp;
+    DB->cur_hashfile_file = s;
+
 
     s = emalloc(strlen(dbname) + strlen(ARRAY_EXTENSION) + 1);
 
@@ -747,6 +782,12 @@ void    DB_Close_Native(void *db)
         efree(DB->presorted_root_node);
     if(DB->presorted_propid)
         efree(DB->presorted_propid);
+
+    /* Close (and rename) hash-filr index file, if it's open */
+    if(DB->fp_hashfile)
+    {
+        DB_Close_File_Native(&DB->fp_hashfile, &DB->cur_hashfile_file, &DB->tmp_hashfile);
+    }
 #endif
 
     if (DB->mode == DB_CREATE)     /* If we are indexing update offsets to words and files */
