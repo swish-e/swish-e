@@ -1,0 +1,353 @@
+<html>
+<head>
+<title>ACC Index</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="styles/searchform.css">
+<script language="JavaScript1.1">
+<!--
+
+// if we find ourself outside the frameset, reload index.htm
+if (top.location.href == self.location.href) {
+	top.location.href = "Index.htm";
+}
+
+//-->
+</script>
+</head>
+<body bgcolor="#ffffff" onload="return LoadPage()"><!--
+--><form method="post" action="" name="ObjectForm" ><!--
+   --><OBJECT id=swishctl height=0 width=0 
+        classid=CLSID:9E204F2E-4F04-11D7-858F-8CA08FF5860C 
+        name=swish-e></OBJECT><!--
+--></form><!--
+--><form method="post" action="" name="QueryForm" 
+	  onsubmit="return MM_callJS('DoQuery()')"
+	  onreset="return MM_callJS('ResetForm()')">
+    Query: <!--
+   --><input name="textfield" >&nbsp;
+   <!--
+      from:&nbsp;
+   <input id="startyear" name="start year" size="4" maxlength="4">
+      to:&nbsp;
+   <input id="stopyear"  name="stop year"  size="4" maxlength="4">
+   sort by:&nbsp;
+   <select name="sortorder">
+        <option value="decisionid desc" selected>Year (most recent first)</option>
+        <option value="decisionid asc">Year (oldest first)</option>
+        <option value="swishrank desc">Best match first</option>
+      </select>
+   -->
+      <input type=hidden name="sortorder" value="swishrank desc">
+      <input type=submit value=Search name=Submit>
+      <input type="reset" value="Reset">
+      <input id="previousresults" name="previousresults" type="image" 
+        onclick="return MM_callJS('DoPrevious()')"
+        onmouseover="this.src='images/left-sel.gif';"  
+        onmouseout="this.src='images/left.gif';" 
+        src="images/left.gif" width="30" height="17">&nbsp;	
+   <input id="moreresults" name="moreresults" type="image" 
+        onclick="return MM_callJS('DoMore()')" 
+        onmouseover="this.src='images/right-sel.gif';"  
+        onmouseout="this.src='images/right.gif';"
+        src="images/right.gif" width="30" height="17">&nbsp;<!--
+   --><input id="helppage" name="helppage" type="image" 
+        onclick="return MM_callJS('DoHelp()')" 
+        onmouseover="this.src='images/help-sel.gif';"  
+        onmouseout="this.src='images/help.gif';"
+        src="images/help.gif" width="18" height="18">	<!--
+--></form>
+<script language="JavaScript">
+<!--
+
+var swishctl;
+var firstresult;
+var lastresult;
+var resultcount;
+var years; 
+
+// change this to change the number of results per page 
+var resultsperpage = 10;
+
+function MM_callJS(jsStr) { //v2.0
+  return eval(jsStr)
+}
+
+function ResetForm()
+{
+    // called when form is reset - reloads globals
+    // which as script is apprently reinitialised??
+	swishctl.Close();
+	swishctl.Init("docs.idx");
+	firstresult = 0;
+	lastresult = 0;
+	resultcount = 0;
+	parent.BodyFrame.navigate( "bodyframe.htm" );
+	document.QueryForm.textfield.focus();
+	return true;
+}
+
+function LoadPage()
+{
+    // loads global variables...
+	swishctl = document.ObjectForm.swishctl;
+	swishctl.Init("IndexFiles");
+	firstresult = 0;
+	lastresult = 0;
+	resultcount = 0;
+	years = "";
+	return true;
+}
+
+function ShowRank( rank )
+{
+	// returns HTML img tag with n stars 
+	// where n depends on rank (somehow) 
+    return "&nbsp;";
+    var starcount=0;
+    if ( rank > 950 ){
+	starcount=5;
+    } else if ( rank > 900 ) {
+	starcount=4;
+    } else if ( rank > 800 ) {
+        starcount=3;
+    } else if ( rank > 500 ) {
+        starcount=2;
+    } else if ( rank > 100 ) {
+        starcount=1;
+    } else {
+        starcount=0;
+    }
+    return "&nbsp;<img src=\"images/" + starcount 
+		+ "stars.gif\" alt=\"" + rank + "*\">&nbsp;";
+}
+
+
+function ShowResults( startresult, lastresult, resultcount, comments )
+{
+	// generates results from swishctl and writes html to BodyFrame
+	// inserts startresult, lastresult... in appropriate places 
+	var bodyFrame = parent.BodyFrame.document
+	var querystring = document.QueryForm.textfield.value;
+
+	bodyFrame.open();
+	bodyFrame.writeln(
+		"<html>\n<head>\n<title>Search Results</title>\n"
+		+ "<link rel=\"stylesheet\" href=\"styles/results.css\" media=\"screen\">" 
+		+ "</head>\n<body>\n"
+		+ "<p class=\"swquery\">Query [<b>" + querystring + "</b>] " 
+		+ comments + "\n returned: <b>" + resultcount  
+		+ "</b> hits.</p>\n<p class=\"swrescount\">Results <b>" 
+		+ startresult + "</b> to <b>" + lastresult  + "</b></p>");
+
+	swishctl.SeekResult( startresult - 1 );
+ 
+	for ( i = startresult; i <= lastresult; i++)
+	{
+		if (swishctl.NextResult()) {
+			bodyFrame.writeln(
+				"<p class=\"swres\">" + i 
+				// uncomment the following to get **** showing rank of result
+				//+ ShowRank( swishctl.ResultPropertyString( 
+				//	"swishrank" )) 
+				+ "&nbsp;<a href=\"" + 
+				swishctl.ResultPropertyString( "swishdocpath" ) 
+				+ "\" class=\"swref\">"
+				+ swishctl.ResultPropertyString( "swishtitle" ) 
+				+ "...</a><br>\n<span class=\"swdesc\">" 
+				+ swishctl.ResultPropertyString( "description" )  
+				+ "</span></p>\n" );
+		} else {
+			//alert("an error");
+		}
+	}
+	bodyFrame.writeln("</body>\n");
+	bodyFrame.close();
+	document.QueryForm.textfield.focus();
+
+	return true;
+}
+
+function ShowNoResults(comment)
+{
+	// Writes "no results found" to BodyFrame in HTML 
+	var bodyFrame = parent.BodyFrame.document;
+	var querystring = document.QueryForm.textfield.value;
+
+	bodyFrame.open();
+ 	bodyFrame.writeln(
+		"<html><head><title>Search Results</title>\n"
+		+ "<link rel=\"stylesheet\" href=\"styles/results.css\" media=\"screen\">\n" 
+		+ "</head>\n<p class=\"swquery\">Query [<b>" 
+		+ querystring + "</b>] " + comment 
+		+ " returned no results</p></body></html>");
+	bodyFrame.close();
+}
+
+function LTrim( strval ) // like VB LTRIM
+{
+	while ( strval.charAt(0) == " " ) {
+		strval = strval.substring( 1, strval.length );
+	}
+	return (strval);
+}
+
+function CheckYear( yr ) 
+{
+	// returns 4 digit year, or null if yr is bogus	
+	var intYear = parseInt( yr );
+
+	if (isNaN(intYear)) return null;
+
+	if ( intYear >= 1000 ) {
+		return yr;
+	} else if ( intYear >= 100 ) {
+		return null; // don't allow 3 digit years 
+	} else if ( intYear >= 10 ) {
+		return "19" + intYear;
+	} else if ( intYear >= 0 ) {
+		return "200" + intYear;
+	}
+	return null;
+}
+
+function DoQuery() 
+{
+	// called when form is submitted 
+	// gets variables from form, sets query parameters on swishctl 
+	// runs query and calls ShowResults...
+/* Sample code for limit handling requires 4 digit year meta-tag in documents
+	var startyr = document.QueryForm.startyear.value; 
+	var stopyr = document.QueryForm.stopyear.value;
+	years = " (in the years";
+	if ( startyr ) {
+		if ( !stopyr ) {
+			stopyr = "9999";
+		}
+		startyr = CheckYear( startyr );
+		if ( startyr ) {
+			document.QueryForm.startyear.value = startyr;		
+			years = years + " from " + startyr;
+		} else {
+			alert( '"From" field should be the year as a number (e.g. 1995).' );
+			document.QueryForm.startyear.focus();	
+			return false;
+		}
+	}
+	if ( stopyr ) {
+		if (!startyr) {
+			startyr = "0000";
+		}
+		stopyr = CheckYear( stopyr );
+		if ( stopyr ) {
+			document.QueryForm.stopyear.value = stopyr;		
+			years = years + " to " + stopyr;
+		} else {
+			alert( '"To" field should be the year as a number (e.g. 2003).' );
+			document.QueryForm.stopyear.focus();
+			return false;	
+		}
+	}
+	years = years + ") ";
+
+	if ( stopyr < startyr ) {
+		alert( 'The "To:" field should be greater than "From:"' );
+		document.QueryForm.stopyear.focus();
+		return false;	
+	}
+*/	
+	var querystring = document.QueryForm.textfield.value;
+	
+	//alert( querystring );
+	var res = swishctl.NewSearch( querystring );
+
+	var sort = document.QueryForm.sortorder.value;
+	swishctl.SetSort( sort );
+
+	if ( swishctl.Error() != 0 ) {
+		alert( "Swish-e returned error: " + swishctl.Error());
+	}
+/* Sample code for setting search limits 
+	if ( startyr && stopyr ) {
+		swishctl.SetSearchLimit( "year", startyr, stopyr );
+	} else {
+		years = "";
+	}	
+*/		
+	swishctl.Execute( querystring );
+	var i =1;
+	
+	if ( swishctl.Hits() > 0 ) 
+	{
+		resultcount = swishctl.Hits();
+		firstresult = 1;
+		if ( resultcount > resultsperpage ) {
+			lastresult = resultsperpage;
+		} else {
+			lastresult = resultcount;
+		}
+		ShowResults( firstresult, lastresult, resultcount, years );
+
+	} else {
+		resultcount = 0;
+		ShowNoResults(years);
+	}
+	return false;
+}
+
+function DoMore() 
+{
+	// goes to next set of ten records 
+	// (increment globals and call ShowResults
+	if ( resultcount == 0 ) {
+		ShowNoResults(years);
+		return false;
+	} 
+
+	if ( lastresult < resultcount ) {
+		lastresult = lastresult + resultsperpage;
+		firstresult = firstresult + resultsperpage;
+		if ( lastresult > resultcount ) {
+			lastresult = resultcount;
+		}
+		//alert ("Do more " + firstresult + " / " + lastresult + " / " + resultcount);
+		ShowResults( firstresult, lastresult, resultcount, years );
+	}
+	return false;
+}
+
+function DoPrevious()
+{
+	// goes to previous set of ten records 
+	// (decrement globals and call ShowResults
+	if ( resultcount == 0 ) {
+		ShowNoResults(years);
+		return false;
+	} 
+
+	if ( firstresult > 0  ) {
+		firstresult = firstresult - resultsperpage;
+		if ( firstresult < 0 ) {
+			firstresult = 1;
+		}
+		lastresult = firstresult + resultsperpage - 1;
+
+		if ( lastresult > resultcount ) {
+			lastresult = resultcount;
+		}
+		//alert ("Do previous " + firstresult + " / " + lastresult + " / " + resultcount);
+
+		ShowResults( firstresult, lastresult, resultcount, years );
+	}
+	return false;
+}
+
+function DoHelp()
+{
+	// called when help button is clicked 
+	parent.BodyFrame.navigate( "srchhelp.htm" );
+	return false;
+}
+//-->
+</script>
+</body>
+</html>
