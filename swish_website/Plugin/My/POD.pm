@@ -132,7 +132,7 @@ sub fetch_toc {
 sub render_toc_level {
     my( $node, $level) = @_;
     my $title = $node->title;
-    my $anchor = My::Pod::View::HTML->escape_uri( $title );
+    my $anchor = My::Pod::View::HTML->escape_name( $title );
 
     my %toc_entry = (
         title    => $title->present($view_mode), # run the formatting if any
@@ -185,8 +185,8 @@ sub view_head4 {
 sub anchor {
     my($self, $title) = @_;
     my $text = $title->present($self);
-    my $anchor = $self->escape_uri( $text );
-    return qq[<a name="$anchor"></a>$title];
+    $text = $self->escape_name( $text );
+    return qq[<a name="$text"></a>$title];
 }
 
 # This just adds a class attribute
@@ -217,6 +217,11 @@ sub escape_uri {
     return Template::Filters::uri_filter( $text );
 }
 
+sub escape_name {
+    my ($self, $text) = @_;
+    $text =~ s/\W+/_/g;
+    return $text;
+}
 
 
 # Pod::POM::View::HTML:
@@ -238,9 +243,9 @@ sub view_item {
 
     if (defined $title) {
         $title = $title->present($self) if ref $title;
-        $title =~ s/\Q*//;
+        $title =~ s/\*\s*//;
         if (length $title) {
-            my $anchor = $self->escape_uri( $title );
+            my $anchor = $self->escape_name( $title );
             $title = qq{<a name="$anchor"></a><b>$title</b>};
         }
     }

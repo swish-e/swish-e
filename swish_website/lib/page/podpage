@@ -17,7 +17,7 @@ Swish-e version [% swish.version %]
 
 
 
-<hr>
+<hr />
 
 [% FOREACH section = pom.podparts %]
     <div class="sub-section">
