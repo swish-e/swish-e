@@ -560,6 +560,17 @@ struct char_lookup_st
 };
 
 
+/* Place to store compiled regular expressions */
+
+typedef struct regex_list
+{
+    struct regex_list *next;
+    regex_t     re;
+    char       *replace;
+    int         replace_count;  /* number of pattern replacements - to estimate size of replacement string */
+    int         replace_length; /* newstr_max = replace_length + ( replace_count * search_str_len ) */
+    int         global;         /* /g flag to repeat sub */
+} regex_list;
 
 
 
@@ -648,10 +659,16 @@ typedef struct
 
     /* structure for handling replace config data while searching */
     struct swline *replacelist;
+    regex_list     *replaceRegexps;
+
+    
+
     /* structure for handling NoContents config data while searching */
     struct swline *nocontentslist;
+
     /* structure for handling all the directories while indexing  */
     struct swline *dirlist;
+
     /* structure for handling IndexOnly config data while indexing */
     struct swline *suffixlist;
 

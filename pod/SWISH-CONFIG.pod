@@ -105,7 +105,7 @@ L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [YES|no]
 
 =item *
 
-L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML|WML|LST]
+L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML|WML]
 
 =item *
 
@@ -178,7 +178,7 @@ L<IndexComments|/"item_IndexComments"> [YES|no]
 
 =item *
 
-L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|WML|LST]  *file extensions*
+L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|WML]  *file extensions*
 
 =item *
 
@@ -254,7 +254,7 @@ L<PropertyNamesNumeric|/"item_PropertyNamesNumeric"> *list of meta names*
 
 =item *
 
-L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append]
+L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append|regex]
 
 =item *
 
@@ -527,7 +527,7 @@ Note: This feature only works for files that would be indexed in absense of the
 C<NoContents> directive.  That is, if you use C<IndexOnly> then you must specify
 the same suffixes in C<IndexOnly> as in C<NoContents>.
 
-=item ReplaceRules [replace|remove|prepend|append]
+=item ReplaceRules [replace|remove|prepend|append|regex]
 
 ReplaceRules allows you to make changes to file pathnames before they're indexed.
 These changed file names or URLs will be returned in search results.
@@ -536,23 +536,31 @@ For example, you may index your files locally (with the File system indexing met
 yet return a URL in search results.  This directive can be used to map the file names to
 their respective URLs on your web server.
 
-There are four operations you can specify: B<replace>, B<append>, B<remove>, and B<prepend>.
+There are five operations you can specify: B<replace>, B<append>, B<remove>, B<prepend>, and B<regex>
 They will parse the pathname in the order you've typed these commands.
-More than one command and its arguments can appear on the same line,
-but it's easier to read when commands are broken up over a few lines.
-You can't put a command and its argument(s) on different lines, however.
 
 This directive uses C library regex.h regular expressions.
 
    replace "the string you want replaced" "what to change it to"
-        This replaces all occurrences of the old string
-        with the new one.
-
    remove "a string to remove"   
-
    prepend "a string to add before the result"
-
    append "a string to add after the result"
+   regex  "/search string/replace string/options"
+
+Regex is an Extended Regular Expression.  The first character found is is the delimiter
+(but it's not smart enough to use matched chars such as [], (), and {}).
+
+The B<replace> string may use substitution variables:
+
+    $0      the entire matched (sub)string
+    $1-$9   returns patterns captured in "(" ")" pairs
+    $`      the string before the matched pattern
+    $'      the string after the matched pattern
+
+The B<options> change the behavior of expression:
+
+    i       ignore the case when matching
+    g       repeat the substitution for the entire pattern
 
 Examples:
 
@@ -564,13 +572,21 @@ Examples:
     ReplaceRules prepend "http://localhost/"
     ReplaceRules append ".html"
 
-=item IndexContents [TXT|HTML|XML|LST|WML]  *file extensions*
+    ReplaceRules regex  "!^/web/(.+)/!http://$1.domain.com/!"
+    replaces a file path:
+        /web/search/foo/index.html
+    with
+        http://search.domain.com/foo/index.html
+
+    ReplaceRules regex  "#^#http://localhost/www#
+    ReplaceRules prepend "http://localhost/www"  (same thing)
+
+=item IndexContents [TXT|HTML|XML|WML]  *file extensions*
 
 The C<IndexContents> directive assigns one of Swish's document parsers to a document,
 based on the its extension.
 Swish currently knows how to parse TXT, HTML, and XML documents.
-LST are special multiple-document XML files, described below.
-WML uses the HTML parser.
+
 
 Documents that are not assigned a parser with C<IndexContents> will, by default,
 use the HTML parser.  The C<DefaultContents> directive may be used to assign
@@ -597,70 +613,11 @@ should be indexed by the internal HTML parser:
 
 See also L<Document Filter Directives|/"Document Filter Directives">.
 
-LST files are XML files that contain multiple documents.  The documents are separated by the first XML
-tag found in the document (each time that tag is found it is considered a new document).
-
-    <tag1>         <== First document
-        bla, bla
-    </tag1>
-    <tag2>
-        bla, bla
-    </tag2>
-    <tag1>         <== Second document
-    ...
-
-When reporting results from a query, swish will still return the document name, but will also return
-a document offset in the property C<swishstartpos>, and the length of the sub-document in C<swishdocsize>
-(these properties are available by using the C<-x> format option).
-
-For example, you could have text files that contain SQL queries, and the queries might generate quite a
-number of results (documents) from a database.  You can instruct swish to "index" these files, and use a
-filter to convert the SQL queries into documents.  In other words, Swish indexes a file, but a swish filter converts
-that file (which contains the SQL query statement) into a query and returns, perhaps, many documents.
-
-For example, the swish config file might look like this:
-
-    IndexDir ./test.sql
-    IndexFile ./test.index
-    MetaNames tag1 tag2 tag3
-    PropertyNames tag2 tag3
-    FilterDir ./
-    # Here is the main part
-    IndexContents LST .sql          
-    FileFilter .sql mysqlfilter.sh       
-    # If you also want a desc use XML not LST
-    StoreDescription XML <meta1> 
-
-
-Then, the *.sql files can contain the queries.  For example,
-
-    select tag1,tag2,tag3 from my_table
-
-The mysqlfilter.sh program should read the *.sql file, proccess the query/select, and 
-format the output in the "LST" style:
-
-    <tag1>
-        data
-    </tag1>
-    <tag2>
-        more data
-    </tag2>
-    <tag3>
-        even more data
-    </tag3>
-    <tag1>
-        start of a new document
-    ...
-
-Care must be taken when returning multiple document files to swish, as swish will load all data
-into memory for each file.  In other words, don't try to index thousands of documents as a single
-LST type of document.
-
 B<Note:> Some of this may be changed in the future to use content-types instead of file extensions.
 See L<SWISH-3.0|SWISH-3.0>
 
 
-=item DefaultContents [TXT|HTML|XML|LST|WML]
+=item DefaultContents [TXT|HTML|XML|WML]
 
 This sets the default parser for documents that are not specified in B<IndexContents>. If not specified the
 default is HTML.

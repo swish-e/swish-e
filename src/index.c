@@ -125,7 +125,6 @@ $Id$
 #include "html.h"
 #include "xml.h"
 #include "txt.h"
-// #include "lst.h"
 #include "metanames.h"
 #include "result_sort.h"
 #include "result_output.h"
@@ -485,13 +484,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = countwords_XML;
         break;
 
-    /*
-    case LST:
-        strcpy(strType,"LST");
-        countwords = countwords_LST;
-        break;
-    */
-
     case WML:
         strcpy(strType,"WML");
         countwords = countwords_HTML;
@@ -567,11 +559,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
     /* Swap file info if it set */
-    /* LST method is built on top of XML - it needs to issue several */
-    /* calls to SwapFileData - So let it do the job */
-
-
-    if(idx->swap_filedata && fprop->doctype != LST)
+    if(idx->swap_filedata)
         SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 
 
@@ -914,8 +902,7 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
     unsigned char c;
 
     /* Run ReplaceRules on file name */
-    ruleparsedfilename_tmp = ruleparsedfilename = ruleparse(sw, filename);
-
+    ruleparsedfilename_tmp = ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps );
 
     /* look for last DIRDELIMITER (FS) and last / (HTTP) */
     p1 = strrchr(ruleparsedfilename, DIRDELIMITER);
@@ -972,9 +959,7 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
     }
 
 
-    /* free string returned by ruleparse() */
-    if(ruleparsedfilename_tmp != (unsigned char *)filename)
-        efree(ruleparsedfilename_tmp);
+    efree(ruleparsedfilename_tmp);
 }
 
 /*******************************************************************
@@ -1889,131 +1874,6 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 }
 
 
-/* Parses lines according to the ReplaceRules directives.
-*/
-
-char   *ruleparse(SWISH * sw, char *line)
-{
-    int lenrule;
-    char *rule;
-    int lentmpline;
-    char *tmpline;
-    int lennewtmpline;
-    char *newtmpline;
-    int lenline1;
-    char *line1;
-    int lenline2;
-    char *line2;
-    struct swline *tmplist = NULL;
-    int     ilen1,
-            ilen2;
-
-    if (sw->replacelist == NULL)
-        return line;
-
-    rule = (char *) emalloc((lenrule = MAXSTRLEN) + 1);
-    tmpline = (char *) emalloc((lentmpline = MAXSTRLEN) + 1);
-    newtmpline = (char *) emalloc((lennewtmpline = MAXSTRLEN) + 1);
-    line1 = (char *) emalloc((lenline1 = MAXSTRLEN) + 1);
-    line2 = (char *) emalloc((lenline2 = MAXSTRLEN) + 1);
-
-    tmplist = sw->replacelist;
-    tmpline = SafeStrCopy(tmpline, line, &lentmpline);
-
-    while (1)
-    {
-        if (tmplist == NULL)
-        {
-            efree(rule);
-            efree(newtmpline);
-            efree(line1);
-            efree(line2);
-            return tmpline;
-        }
-
-        rule = SafeStrCopy(rule, tmplist->line, &lenrule);
-        tmplist = tmplist->next;
-
-        if (tmplist == NULL)
-        {
-            efree(rule);
-            efree(newtmpline);
-            efree(line1);
-            efree(line2);
-            return tmpline;
-        }
-
-        if (rule == NULL)
-        {
-            sw->replacelist = tmplist;
-            efree(rule);
-            efree(newtmpline);
-            efree(line1);
-            efree(line2);
-            return tmpline;
-        }
-
-        else
-        {
-            if (lstrstr(rule, "replace"))
-            {
-                line1 = SafeStrCopy(line1, tmplist->line, &lenline1);
-                tmplist = tmplist->next;
-                if (tmplist)
-                {
-                    line2 = SafeStrCopy(line2, tmplist->line, &lenline2);
-                    tmplist = tmplist->next;
-                }
-                else
-                {
-                    /* Handle case where 2nd part of replace rule
-                       ** is an empty string. Config-file parsing
-                       ** idiosyncrasies cause a replace of "x" to ""
-                       ** to incompletely represent the rule.
-                     */
-                    line2[0] = '\0';
-                }
-                newtmpline = SafeStrCopy(newtmpline, (char *) matchAndChange(tmpline, line1, line2), &lennewtmpline);
-            }
-
-            else if (lstrstr(rule, "append"))
-            {
-                ilen1 = strlen(tmpline);
-                ilen2 = strlen(tmplist->line);
-                if ((ilen1 + ilen2) >= lennewtmpline)
-                {
-                    lennewtmpline = ilen1 + ilen2 + 200;
-                    newtmpline = erealloc(newtmpline, lennewtmpline + 1);
-                }
-                memcpy(newtmpline, tmpline, ilen1);
-                memcpy(newtmpline + ilen1, tmplist->line, ilen2);
-                newtmpline[ilen1 + ilen2] = '\0';
-                tmplist = tmplist->next;
-            }
-
-            else if (lstrstr(rule, "prepend"))
-            {
-                ilen1 = strlen(tmpline);
-                ilen2 = strlen(tmplist->line);
-                if ((ilen1 + ilen2) >= lennewtmpline)
-                {
-                    lennewtmpline = ilen1 + ilen2 + 200;
-                    newtmpline = erealloc(newtmpline, lennewtmpline + 1);
-                }
-                memcpy(newtmpline, tmplist->line, ilen2);
-                memcpy(newtmpline + ilen2, tmpline, ilen1);
-                newtmpline[ilen1 + ilen2] = '\0';
-                tmplist = tmplist->next;
-            }
-
-            else if (lstrstr(rule, "remove"))
-            {
-                newtmpline = SafeStrCopy(newtmpline, (char *) matchAndChange(tmpline, tmplist->line, ""), &lennewtmpline);
-            }
-            tmpline = SafeStrCopy(tmpline, newtmpline, &lentmpline);
-        }
-    }
-}
 
 
 /*  These 2 routines fix the problem when a word ends with mutiple
