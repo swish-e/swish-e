@@ -1029,8 +1029,6 @@ to the "summary" meta name.
 
 =item MetaNamesRank integer *list of meta names*
 
-    * Not implemented yet *
-
 You can assign a bias to metanames that will affect how ranking is
 calculated.  The range of values is from -10 to +10, with zero being
 no bias.
@@ -1040,7 +1038,8 @@ no bias.
     MetaNamesRank 2 author publisher
     MetaNamesRank -5 wrongwords
 
-This feature is not implemented yet
+This feature is still considered experimental. If you use it, please send feedback
+to the discussion list.
 
 =item HTMLLinksMetaName *metaname*
 
