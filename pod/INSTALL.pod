@@ -36,7 +36,7 @@ All this may change in future releases.
 B<zlib compression>
 
 Swish can make use of zlib to compress document properties.  This is recommended
-if you are using C<StoreDescription|SWISH-CONFIG/"item_StoreDescription">
+if you are using L<StoreDescription|SWISH-CONFIG/"item_StoreDescription">
 
 B<Memory>
 

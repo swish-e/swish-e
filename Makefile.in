@@ -14,9 +14,10 @@ prefix      = @prefix@
 exec_prefix = @exec_prefix@
 bindir      = $(prefix)/bin
 mandir      = $(prefix)/man/man1
-perl        = @PERL@
 PERL        = @PERL@
 libdir      = @libdir@
+@SET_MAKE@ 
+
 
 #-- for making distribution --- (should let ./configure find these programs)
 DIST_DEFAULT= tardist
@@ -34,7 +35,7 @@ all:	swish-e swish-search
 	
 swish-e:	
 	@echo 'making swish-e'
-	(cd src; make)
+	(cd src; $(MAKE))
 	@echo 'swish-e done'
 
 swish-search: swish-e
@@ -45,10 +46,10 @@ swish-search: swish-e
 
 perllib:
 	@echo 'making Perl library for Swish-E'
-	(cd perl;$(perl) Makefile.PL PREFIX=$(libdir);make) 
+	(cd perl;$(PERL) Makefile.PL PREFIX=$(libdir);$(MAKE)) 
 
 test:
-	(cd src; make test)
+	(cd src; $(MAKE) test)
 
 install:
 	cp src/swish-e $(bindir)/swish-e
@@ -60,27 +61,27 @@ install-lib:
 #-- Cleanup tags --
 
 clean:
-	-(cd src; make clean)
-	-(cd perl; make clean)
-	-(cd doc; make clean)
+	-(cd src; $(MAKE) clean)
+	-(cd perl; $(MAKE) clean)
+	-(cd doc; $(MAKE) clean)
 
 realclean: clean
 	rm -f config.cache config.log config.status Makefile
-	-(cd src; make realclean)
-	-(cd perl; make realclean)
-	-(cd doc; make realclean)
+	-(cd src; $(MAKE) realclean)
+	-(cd perl; $(MAKE) realclean)
+	-(cd doc; $(MAKE) realclean)
 
 
 #-- Documentation --
 docs:
 	$(RM_RF) html
-	(cd doc; make all)
+	(cd doc; $(MAKE) all)
 	
 pdf:
-	(cd doc; make pdf)
+	(cd doc; $(MAKE) pdf)
 
 install-man:
-	(cd doc; make install-man)
+	(cd doc; $(MAKE) install-man)
 
 #---- Distribution --------
 
