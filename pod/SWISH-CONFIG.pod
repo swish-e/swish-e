@@ -292,15 +292,17 @@ This directive can be used to include configuration directives located in anothe
 
     IncludeConfigFile /usr/local/swish/conf/site_config.config
 
-=item IndexReport [0|1|2|3]
+=item IndexReport [0|1|2|3|4]
 
 This is how detailed you want reporting while indexing. You can specify numbers
-0 to 3 - 0 is totally silent, 3 is the most verbose.
-The default is 3, so you probably should define this.
+0 to 4 - 0 is totally silent, 3 is the most verbose, while 4 and above will generate
+debugging info. The default is 3, so you probably should define this.
 
     IndexReport 1
 
 This may be overridden from the command line via the C<-v> switch (see L<SWISH-RUN|SWISH-RUN>).
+
+IndexReport 4 will list all words indexed, so use caution when using this level.
 
 =item IndexFile *path*
 

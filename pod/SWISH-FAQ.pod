@@ -54,18 +54,60 @@ Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>)
 C<WordCharacters>, C<BeginCharacters>, C<EndCharacters>,
 C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
 
-Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues --
-index a single file that contains words that are or are not indexing as you expect and use -D -v 4 to out debugging information
-about the index.  A useful command might be:
+Use of the command line arguments C<-k>, C<-v> and C<-D> are useful when debugging these issues.
+Using C<-v 4> while indexing will display each word as it is indexed.  You should specify one file
+when using this feature since it can generate a lot of output.
+
+     ./swish-e -c my.conf -v 4 -i problem.file
+     
+You may also swish to index a single file that contains words that are or are not indexing as you expect
+and use -D -v 4 to out debugging information about the index.  A useful command might be:
 
     ./swish-e -f index.swish-e -D -v 4 | grep -v ^0
+
+The C<grep> command is used to filter out some of the output.
+
+=head2 How can I index documents on a web server?
+
+If possible, use the file system method C<-S fs> of indexing to index documents on your web server.
+This avoids the overhead of spidering a web server.
+
+If this is impossible (the web server is not local, or documents are dynamically generated), swish provides
+two methods of spidering.  First, swish includes the http method of indexing C<-S http>. A number of
+special configuration directives are available that control spidering
+(see L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access Method Only">).
+A perl helper script (swishspider.pl) is included in the C<src> directory to assist with spidering
+web servers.
+
+As of swish 2.2, there's a general purpose "prog" document source where a program can feed documents to
+swish for indexing.  A number of example programs can be found in the C<prog-bin> directory, including
+a program to spider web servers.  The provided spider.pl program is full-featured and is easily customized.
+
+The advantage of the "prog" document source feature over the "http" method is that the program is only executed
+one time, where the swishspider.pl program used in the "http" method is executed once for every document
+read from the web server.  The forking of swish and compiling of the perl script can take quite expensive, time-wise.
+
+The other advantage is that it's simple and efficient to add filtering (such as for PDF or MS Word docs)
+right into the spider.pl's configuration.
+
 
 =head2 How can I index all my compressed files?
 
 Swish can make use of "filters" that will convert files such as MS Word documents, PDF, or gzipped files into text, HTML
 or XML and can thus be indexed by SWISH-E.
-Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> for more information.
+Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> and the example in the filter-bin
+directory for more information.
 
+Another option to use the "prog" document source input method.
+You write a program (such as a perl script) that will convert your data as needed
+and then output one of the formats that swish understands (currently, HTML, XML, and text).  Swish can call
+this program and the program will pass on all documents to swish.
+
+
+=head2 How can I index data from a database?
+
+Use the "prog" document source method of indexing.  Write a program to extract out the data from your
+database, and format it as XML, HTML, or text.  See the examples in the C<prog-bin> directory.
 
 =head2 Can I index 8-bit text? 
 
@@ -87,6 +129,12 @@ Phrases are indexed automatically.  To search for a phrase simply place double q
 For example:
 
     swish-e -w 'free and "fast search engine"'
+
+=head2 How can I prevent phrases from matching across sentences?
+
+Use the L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> configuration
+directive.
+
 
 =head2 How can I implement keywords in my documents? 
 
@@ -124,7 +172,7 @@ Another option is use the C<-e> switch.  This will require less memory, but inde
 not all data will be stored in memory while indexing.  Please report back your findings as it seems C<-e>
 requires quite a bit less RAM, but often not that much more time.
 
-=head2 I can't limit search to title/body/comment.
+=head2 I can't limit searches to title/body/comment.
 
 Or, I<I can't search with meta names, all the names are indexed as "plain".>
 
@@ -137,7 +185,7 @@ Also, check for the C<UndefinedMetaTags> setting in your configuration file.
 
 =head2 Do I need to reindex my site each time I upgrade to a new Swish-e version? 
 
-Yes. At times it might not strictly be necessary, but since you don't really know if anything in the index has changed,
+At times it might not strictly be necessary, but since you don't really know if anything in the index has changed,
 it is a good rule to reindex anyway. 
 
 =head2 Can I index PDF or Winword documents with swish-e?
@@ -149,6 +197,16 @@ These filters have to translate a document into the swish-e known formats (e.g. 
 For details, please have a look on the filter configuration part, and look in the C<filter-bin> directory
 of the SWISH-E distribution.
 
+The other option, which may or may not be faster, is to use the "prog" document source method to supply filtered
+documents to swish while indexing.  See the example in the C<prog-bin> directory.
+
+=head2 Does swish include a CGI interface?
+
+An example CGI script is included in the C<example> directory.
+(Type C<perldoc swish.cgi> in the C<example> directory for instructions.)
+
+Please be careful when picking a CGI script to use with swish.  Quite a few of the scripts
+that have been available for swish are insecure and should not be used.
 
 =head2 How do I make swish highlight words in search results?
 
@@ -159,7 +217,7 @@ words.
 
 But, that will fail with all but the most simple source documents.  For HTML documents, for example,
 you must parse the doucment into words and tags (and comments).  A word you wish to highlight may span
-mutilple HTML tags, or be a word in a URL and you wish to highlight the entire <A> text.
+mutilple HTML tags, or be a word in a URL and you wish to highlight the entire link text.
 
 Perl modules such as HTML::Parser
 and XML::Parser make word extraction possible.  Next, you need to consider that swish uses settings such as
@@ -173,7 +231,7 @@ Throw phrase searches and stopwords into the equation
 and you can see that it's not a trivial problem to solve.
 
 All hope is not lost, thought, as swish does provide some help.
-Using the C<-H> option will return in the headers the current index (or indexes) settings
+Using the C<-H> option swish will return in the headers the current index (or indexes) settings
 for WordCharacters (and others) required to parse your source documents as swish parses them during indexing,
 and will return a "Parsed Words:" header that will show how swish parsed the query internally.
 If you use word stemming then you will also need to stem each word in your document before comparing

@@ -38,6 +38,12 @@ Use "filters" to index any type of file such as PDF, gzip, or Postscript
 
 =item *
 
+Use an external program to supply documents to swish, such as an advanced
+spider for your web server, or a program to read and format records from a relational
+database management system (RDBMS).
+
+=item *
+
 Document "properties" (some subset of the source document, usually
 defined as a META or XML elements) may be stored in the index and
 returned with search results
