@@ -706,9 +706,7 @@ typedef struct
     /* MetaName indexing options */
     int     ReqMetaName;
     int     OkNoMeta;
-    /* Flag to specify if HTML entities shouuld be converted */
-    int     ConvertHTMLEntities;
-    void   *EntitiesHashTable;
+
 
     /* file system specific configuration parameters */
     struct swline *pathconlist;
@@ -777,8 +775,6 @@ struct _indexing_data_source_def
 
 VAR struct _indexing_data_source_def *IndexingDataSource;
 
-/* VAR char *indexchars ="abcdefghijklmnopqrstuvwxyzÃÈ®«™Úœ½Îõ£¥Í¶ğÔÕØÛšƒÜÄêâ§›óú“ÑÌ¤‰‚„€…‡Š‹ˆŒıÊµÿ—üûºòù”¢ñ¹÷ŸËÖ†Ğ&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}"; indexchars stuff removed */
-
 VAR char *defaultstopwords[] = {
     "a", "above", "according", "across", "actually", "adj", "after",
     "afterwards", "again", "against", "all", "almost", "alone", "along",
@@ -828,7 +824,6 @@ VAR char *defaultstopwords[] = {
 #else
 VAR struct _indexing_data_source_def *IndexingDataSource;
 
-/* VAR char *indexchars; indexchars stuff removed */
 VAR char *defaultstopwords[];
 #endif
 

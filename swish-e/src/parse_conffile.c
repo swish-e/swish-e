@@ -40,6 +40,7 @@ $Id$
 #include "metanames.h"
 #include "hash.h"
 #include "error.h"
+#include "entities.h"
 #include "filter.h"
 #include "result_output.h"
 #include "search.h"
@@ -577,10 +578,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
         }
-        else if (strcasecmp(w0, "ConvertHTMLEntities") == 0)
-        {
-            sw->ConvertHTMLEntities = getYesNoOrAbort(sl, 1, 1);
-        }
         else if (strcasecmp(w0, "TruncateDocSize") == 0)
         {                       /* rasc 2001-03 */
             if (sl->n == 2 && isnumstring(sl->word[1]))
@@ -599,6 +596,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires at least one value", w0);
         }
+		else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
         else if (configModule_SearchAlt(sw, sl)); /* rasc */

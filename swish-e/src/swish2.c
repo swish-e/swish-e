@@ -137,10 +137,6 @@ void SwishDefaults(SWISH *sw)
 		/* MetaNames indexing options (default values from config.h)*/
 	sw->ReqMetaName=REQMETANAME;
 	sw->OkNoMeta=OKNOMETA;
-		/* CONVERTHTMLENTITIES indexing default option */
-	sw->ConvertHTMLEntities=CONVERTHTMLENTITIES;
-		/* Init Entities hash table to NULL */
-	sw->EntitiesHashTable=NULL;
 		/* http system parameters */
 	sw->maxdepth=5;
 	sw->delay=60;

@@ -35,6 +35,7 @@ $Id$
 #include "mem.h"
 #include "string.h"
 #include "parse_conffile.h"
+#include "config.h"
 #include "entities.h"
 
 
@@ -422,8 +423,7 @@ void initModule_Entities (SWISH  *sw)
       md = (struct MOD_Entities *) emalloc(sizeof(struct MOD_Entities));
       sw->Entities = md;
 
-      md->convertEntities = 1;	/* default = YES convert entities! */
-
+      md->convertEntities = CONVERTHTMLENTITIES;
 
       /* 
         -- init entity hash 
