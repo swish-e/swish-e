@@ -2,10 +2,10 @@
 #include "header.h"
 
 extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
-{   struct SN_env * z = (struct SN_env *) calloc(1, sizeof(struct SN_env));
+{   struct SN_env * z = (struct SN_env *) emalloc(1 * sizeof(struct SN_env));
     z->p = create_s();
     if (S_size)
-    {   z->S = (symbol * *) calloc(S_size, sizeof(symbol *));
+    {   z->S = (symbol * *) emalloc(S_size * sizeof(symbol *));
         {   int i;
             for (i = 0; i < S_size; i++) z->S[i] = create_s();
         }
@@ -13,12 +13,12 @@ extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
     }
 
     if (I_size)
-    {   z->I = (int *) calloc(I_size, sizeof(int));
+    {   z->I = (int *) emalloc(I_size * sizeof(int));
         z->I_size = I_size;
     }
 
     if (B_size)
-    {   z->B = (symbol *) calloc(B_size, sizeof(symbol));
+    {   z->B = (symbol *) emalloc(B_size * sizeof(symbol));
         z->B_size = B_size;
     }
 
@@ -32,12 +32,12 @@ extern void SN_close_env(struct SN_env * z)
         {   int i;
             for (i = 0; i < z->S_size; i++) lose_s(z->S[i]);
         }
-        free(z->S);
+        efree(z->S);
     }
-    if (z->I_size) free(z->I);
-    if (z->B_size) free(z->B);
+    if (z->I_size) efree(z->I);
+    if (z->B_size) efree(z->B);
     if (z->p) lose_s(z->p);
-    free(z);
+    efree(z);
 }
 
 extern void SN_set_current(struct SN_env * z, int size, const symbol * s)
