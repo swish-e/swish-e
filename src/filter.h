@@ -21,8 +21,8 @@ $Id$
 */
 
 
-#ifndef __HasSeenModule_FILTERS
-#define __HasSeenModule_FILTERS	1
+#ifndef __HasSeenModule_Filter
+#define __HasSeenModule_Filter	1
 
 
 /* Module data and structures */
@@ -38,13 +38,25 @@ struct FilterList {	/* Store filtersprogs and extension */
 
 
 
+
+/* Global module data */
+
+struct MOD_Filter {
+    struct FilterList *filterlist;  /* 1998-08-07 rasc */
+    char   *filterdir;              /* 1998-08-07 rasc */
+};
+
+
+
+
+
 /* exported Prototypes */
 
 void initModule_Filter   (SWISH *sw);
 void freeModule_Filter   (SWISH *sw);
 int  configModule_Filter (SWISH *sw, StringList *sl);
 
-struct FilterList *hasfilter (char *filename, struct FilterList *filterlist);
+struct FilterList *hasfilter (SWISH *sw, char *filename);
 FILE *FilterOpen (FileProp *fprop);
 int FilterClose (FILE *fp);
 

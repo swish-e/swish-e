@@ -26,16 +26,22 @@ $Id$
 
 
 
-/*
-   use the following methode/layout to access module data:
+//   use the following methode/layout to access global module data:
+//     sw->#modulname#->data
+//     in swish.h:
+//          ... SWISH structure {  
+//                ...
+//                struct MOD_#modulename# *#modulename#;
+//
 
-       sw->modulname->data
+/* Global module data */
 
-*/
-
-struct some-module-structures and types {	
-	.....
+struct MOD_#modulename# {
+   ....
 };
+
+
+
 
 
 void initModule_#modulename# (SWISH *sw);

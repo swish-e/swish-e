@@ -42,6 +42,7 @@
 #include "error.h"
 #include "compress.h"
 #include "metanames.h"
+#include "result_output.h"
 
 
 
@@ -245,8 +246,8 @@ int i;
 		char* propValue;
 		propValue = prop[i];
 		
-		if (sw->opt.stdResultFieldDelimiter)
-			fprintf(f, "%s", sw->opt.stdResultFieldDelimiter);
+		if (sw->ResultOutput->stdResultFieldDelimiter)
+			fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);
 		else
 			fprintf(f, " \"");	/* default is to quote the string, with leading space */
 
@@ -264,7 +265,7 @@ int i;
 		}
 		fprintf(f,"%s", propValue);
 
-		if (!sw->opt.stdResultFieldDelimiter)
+		if (!sw->ResultOutput->stdResultFieldDelimiter)
 			fprintf(f,"\"");	/* default is to quote the string */
 	}
 }

@@ -37,7 +37,7 @@ void readoffsets(IndexFILE *);
 void readhashoffsets(IndexFILE *);
 void readstopwords(IndexFILE *);
 void readbuzzwords(IndexFILE *);
-void printheaderbuzzwords(IndexFILE * indexf);
+void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 void readfileoffsets(IndexFILE *);
 void readMetaNames(IndexFILE *);
 void readlocationlookuptables(IndexFILE *);
