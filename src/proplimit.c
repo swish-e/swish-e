@@ -886,7 +886,11 @@ int LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, int filenum )
         /* If inPropRange is allocated then there is an array for limiting already created from the presorted data */
 
         if ( cur_limit->inPropRange )
-            return !cur_limit->inPropRange[filenum-1];
+        {
+            if ( !cur_limit->inPropRange[filenum-1] )
+                return 1;
+            continue;
+        }
 
 
 

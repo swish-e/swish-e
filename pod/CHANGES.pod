@@ -87,6 +87,11 @@ can improve search performance many times.
 
 =back
 
+=head2 Version 2.2.3 - December 11, 2002
+
+Multiple -L options were ORing instead of ANDing.
+Catch by Patrick Mouret. [moseley]
+
 =head2 Version 2.2.2 - November 14, 2002
 
 Pass non- text/* files onto indexing code IF there is a FileFilter
