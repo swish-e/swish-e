@@ -278,19 +278,26 @@ debian_dir = \
 	debian/swish-e.substvars
 
 
+bin_SCRIPTS = swish-config
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = swish-e.pc
+
 EXTRA_DIST = \
     $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
-    $(doc_DATA) \
+    $(doc_DATA) swish-config.in swish-e.pc.in\
     $(debian_dir)
 
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
-CONFIG_CLEAN_FILES = doc/Makefile rpm/swish-e.spec
+CONFIG_CLEAN_FILES = doc/Makefile rpm/swish-e.spec swish-e.pc \
+	swish-config
+SCRIPTS = $(bin_SCRIPTS)
+
 DIST_SOURCES =
-DATA = $(doc_DATA)
+DATA = $(doc_DATA) $(pkgconfig_DATA)
 
 
 RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
@@ -299,10 +306,11 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
 DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure INSTALL \
-	Makefile.am aclocal.m4 config/acinclude.m4 config/compile \
+	Makefile.am TODO aclocal.m4 config/acinclude.m4 config/compile \
 	config/config.guess config/config.sub config/depcomp \
 	config/install-sh config/ltmain.sh config/missing \
-	config/mkinstalldirs configure configure.in
+	config/mkinstalldirs configure configure.in swish-config.in \
+	swish-e.pc.in
 DIST_SUBDIRS = $(SUBDIRS)
 all: all-recursive
 
@@ -327,6 +335,30 @@ doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 rpm/swish-e.spec: $(top_builddir)/config.status $(top_srcdir)/rpm/swish-e.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+swish-e.pc: $(top_builddir)/config.status swish-e.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+swish-config: $(top_builddir)/config.status swish-config.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f"; \
+	    $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f; \
+	  else :; fi; \
+	done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f $(DESTDIR)$(bindir)/$$f"; \
+	  rm -f $(DESTDIR)$(bindir)/$$f; \
+	done
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -354,6 +386,24 @@ uninstall-docDATA:
 	  f="`echo $$p | sed -e 's|^.*/||'`"; \
 	  echo " rm -f $(DESTDIR)$(docdir)/$$f"; \
 	  rm -f $(DESTDIR)$(docdir)/$$f; \
+	done
+pkgconfigDATA_INSTALL = $(INSTALL_DATA)
+install-pkgconfigDATA: $(pkgconfig_DATA)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(pkgconfigdir)
+	@list='$(pkgconfig_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f="`echo $$p | sed -e 's|^.*/||'`"; \
+	  echo " $(pkgconfigDATA_INSTALL) $$d$$p $(DESTDIR)$(pkgconfigdir)/$$f"; \
+	  $(pkgconfigDATA_INSTALL) $$d$$p $(DESTDIR)$(pkgconfigdir)/$$f; \
+	done
+
+uninstall-pkgconfigDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkgconfig_DATA)'; for p in $$list; do \
+	  f="`echo $$p | sed -e 's|^.*/||'`"; \
+	  echo " rm -f $(DESTDIR)$(pkgconfigdir)/$$f"; \
+	  rm -f $(DESTDIR)$(pkgconfigdir)/$$f; \
 	done
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -496,7 +546,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/config $(distdir)/debian $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/win32
+	$(mkinstalldirs) $(distdir)/. $(distdir)/config $(distdir)/debian $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/win32
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -607,10 +657,10 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(DATA)
+all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs) $(DESTDIR)$(docdir)
+	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(docdir) $(DESTDIR)$(pkgconfigdir)
 
 install: install-recursive
 install-exec: install-exec-recursive
@@ -654,9 +704,9 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-docDATA
+install-data-am: install-docDATA install-pkgconfigDATA
 
-install-exec-am:
+install-exec-am: install-binSCRIPTS
 
 install-info: install-info-recursive
 
@@ -682,7 +732,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-docDATA uninstall-info-am
+uninstall-am: uninstall-binSCRIPTS uninstall-docDATA uninstall-info-am \
+	uninstall-pkgconfigDATA
 
 uninstall-info: uninstall-info-recursive
 
@@ -692,17 +743,19 @@ uninstall-info: uninstall-info-recursive
 	distclean-generic distclean-libtool distclean-recursive \
 	distclean-tags distcleancheck distdir distuninstallcheck dvi \
 	dvi-am dvi-recursive info info-am info-recursive install \
-	install-am install-data install-data-am install-data-recursive \
-	install-docDATA install-exec install-exec-am \
-	install-exec-recursive install-info install-info-am \
-	install-info-recursive install-man install-recursive \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am installdirs-recursive maintainer-clean \
-	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
-	mostlyclean-generic mostlyclean-libtool mostlyclean-recursive \
-	pdf pdf-am pdf-recursive ps ps-am ps-recursive tags \
-	tags-recursive uninstall uninstall-am uninstall-docDATA \
-	uninstall-info-am uninstall-info-recursive uninstall-recursive
+	install-am install-binSCRIPTS install-data install-data-am \
+	install-data-recursive install-docDATA install-exec \
+	install-exec-am install-exec-recursive install-info \
+	install-info-am install-info-recursive install-man \
+	install-pkgconfigDATA install-recursive install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	installdirs-recursive maintainer-clean maintainer-clean-generic \
+	maintainer-clean-recursive mostlyclean mostlyclean-generic \
+	mostlyclean-libtool mostlyclean-recursive pdf pdf-am \
+	pdf-recursive ps ps-am ps-recursive tags tags-recursive \
+	uninstall uninstall-am uninstall-binSCRIPTS uninstall-docDATA \
+	uninstall-info-am uninstall-info-recursive \
+	uninstall-pkgconfigDATA uninstall-recursive
 
 
 @BUILDDOCS_TRUE@$(srcdir)/INSTALL: $(top_srcdir)/pod/INSTALL.pod
