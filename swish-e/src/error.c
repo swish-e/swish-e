@@ -36,9 +36,37 @@ char *BuildErrorString(char *buffer,int *bufferlen,char *fmt,char *var)
 /* Whoops, something bad happened...
 */
 
-void progerr(errstring)
-char *errstring;
+void progerr(char *errstring)
 {
 	fprintf(stderr, "swish: %s\n", errstring);
 	exit(-1);
+}
+
+/* See errors.h to the correspondant numerical value */
+static char *swishErrors[]={
+"",                                                          /* RC_OK */
+"Index file not found",          /*INDEX_FILE_NOT_FOUND */
+"Unknown index file format",          /* UNKNOWN_INDEX_FILE_FORMAT */
+"No words in search",          /* NO_WORDS_IN_SEARCH */
+"Words too common",          /* WORDS_TOO_COMMON */
+"Index file is empty",          /* INDEX_FILE_IS_EMPTY */
+"Unknown property name in display properties", /* UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY */
+"Unknown property name to sort by",          /* UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT */
+"Unknown metaname",          /* UNKNOWN_METANAME */
+"Single wildcard not allowed as word", /* UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD */
+"Word not found",          /* WORD_NOT_FOUND */
+"No more results",          /* SWISH_LISTRESULTS_EOF */
+"Invalid swish handle",          /* INVALID_SWISH_HANDLE */
+NULL};
+
+char *getErrorString(int number)
+{
+char *s;
+int i;
+	number=abs(number);
+	/* To avoid buffer overruns lets count the strings */
+	for(i=0;swishErrors[i];i++);
+	if(number>=i) return(swishErrors[0]);
+
+	return(swishErrors[number]);
 }

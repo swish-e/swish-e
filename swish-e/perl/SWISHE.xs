@@ -157,3 +157,16 @@ SwishStem(word)
      RETVAL = newword;
      OUTPUT:
      RETVAL
+
+char *
+SwishErrorString(number)
+     int number
+     PREINIT:
+     char *value;
+     PPCODE:
+     PUSHMARK(SP);
+     value = (char *)SwishErrorString(number);
+     XPUSHs(sv_2mortal(newSVpv(value,0)));
+     PUTBACK;
+
+
