@@ -62,7 +62,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     if ( header->property_count == 0 )
     {
         /* Get the current seek position in the index, since will now write the file info */
-        DB_InitWriteFiles(sw, indexf->DB);
+        DB_InitWriteProperties(sw, indexf->DB);
 
         /* build a list of properties that are in use */
         /* And create the prop index to propID (metaID) mapping arrays */

@@ -23,19 +23,19 @@
 **           Adds a new entry pair (key,data) to the hash db file. Length of 
 **               key is key_len, length of data is data_len
 **
-** int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
+**       int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
 **           Searchs and returns the data for a given key of length key_len
 **           The data is returned in the data array that must be allocated by
 **               the caller. If data buffer is not long enough, data will
 **               be truncated
 **           Returns the copied length in data
 **
-** int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
+**       int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
 **           Updates data for a given key of length key_len
 **           Data must be of the same size of the original record
 **           Returns 0 (OK) or 1 (no OK)
 **
-** int FHASH_Delete(FHASH *f, unsigned char *key, int key_len);
+**       int FHASH_Delete(FHASH *f, unsigned char *key, int key_len);
 **           Deletes the entry for the given key of length key_len
 **           Returns 0 (OK) or 1 (no OK)
 **
@@ -92,7 +92,7 @@ unsigned long tmp;
     f = (FHASH *) emalloc(sizeof(FHASH));
     f->start = start;
     f->fp = fp;
-    
+
     /* put file pointer at start of hash table */
     fseek(fp,start,SEEK_SET);
 
@@ -156,19 +156,21 @@ unsigned int FHASH_hash(unsigned char *s, int len)
 int FHASH_Insert(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
 {
 unsigned int hashval = FHASH_hash(key,key_len);
-unsigned long next = f->hash_offsets[hashval];
+unsigned long new,next;
 FILE *fp = f->fp;
-unsigned long tmp;
 
     fseek(fp,0,SEEK_END);
-    tmp = PACKLONG(next);
+    new = ftell(fp);
 
-    fwrite((unsigned char *)&tmp,sizeof(unsigned long), 1, fp);
+    next = f->hash_offsets[hashval];
+    next = PACKLONG(next);
+
+    fwrite((unsigned char *)&next,sizeof(unsigned long), 1, fp);
     compress1(key_len,fp,fputc);
     fwrite((unsigned char *)key, key_len, 1, fp);
     compress1(data_len,fp,fputc);
     fwrite((unsigned char *)data, data_len, 1, fp);
-    f->hash_offsets[hashval] = next;
+    f->hash_offsets[hashval] = new;
     return 0;
 }
 
@@ -182,7 +184,7 @@ int read_key_len, read_data_len;
 unsigned long tmp;
     while(next)
     {
-        fseek(fp,next,SEEK_END);
+        fseek(fp,next,SEEK_SET);
         fread((unsigned char *)&tmp,sizeof(unsigned long),1,fp);
         next = UNPACKLONG(tmp);
 
@@ -206,7 +208,7 @@ unsigned long tmp;
         if(read_key != stack_buffer)
             efree(read_key);
     }
-    memset(data,'\0',data_len);
+    memset(data,0,data_len);
     return 0;
 }
 

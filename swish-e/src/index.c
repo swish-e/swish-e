@@ -232,6 +232,9 @@ void initModule_Index (SWISH  *sw)
     /* $$$ this is only a fix while http.c and httpserver.c still exist */
     idx->tmpdir = estrdup(".");
 
+    /* By default, we are not in update mode */
+    idx->update_mode = 0;
+
     return;
 }
 
@@ -763,8 +766,22 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         int     matched = 0;
         fprop->real_path = process_regex_list( fprop->real_path, sw->replaceRegexps, &matched );
     }
-        
 
+#ifdef USE_BTREE
+    /** Let's see if file already exits when in update mode */
+    if(sw->Index->update_mode)
+    {
+        int old_filenum;
+        DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
+        /* If exits a previous file with the same real_path ... */
+        if(old_filenum)
+        {
+printf("DEBUG: %d\n",old_filenum);
+
+        }
+    }
+
+#endif
 
     /** Read the buffer, if not a stream parser **/
     
@@ -921,13 +938,19 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     WritePropertiesToDisk( sw , &fi );
 
 
+#ifdef USE_BTREE
+    /* Add the value pair (real_path, filenum) to the database */
+    DB_WriteFileNum(sw,fi.filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
+    /* We always need this value in USE_BTREE mode */
+    setTotalWordsPerFile(sw, indexf, fi.filenum - 1,wordcount);
+#else
     /* Save total words per file */
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
-
         setTotalWordsPerFile(sw, indexf, fi.filenum - 1,wordcount);
     }
 
+#endif
     
 
 

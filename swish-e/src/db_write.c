@@ -814,21 +814,20 @@ int     DB_EndWriteWords(SWISH *sw, void *DB)
 }
 
 
-
-
-int     DB_InitWriteFiles(SWISH *sw, void *DB)
+int     DB_InitWriteProperties(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_InitWriteFiles(DB);
+   return sw->Db->DB_InitWriteProperties(DB);
 }
 
-int     DB_WriteFile(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB)
+
+int     DB_WriteFileNum(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB)
 {
-   return sw->Db->DB_WriteFile(filenum, filedata, sz_filedata, DB);
+   return sw->Db->DB_WriteFileNum(filenum, filedata, sz_filedata, DB);
 }
 
-int     DB_EndWriteFiles(SWISH *sw, void *DB)
+int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB)
 {
-   return sw->Db->DB_EndWriteFiles(DB);
+   return sw->Db->DB_RemoveFileNum(filenum, DB);
 }
 
 

@@ -109,14 +109,11 @@ int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB);
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 
-int     DB_InitWriteFiles(SWISH *sw, void *DB);
-int     DB_WriteFile(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
-int     DB_EndWriteFiles(SWISH *sw, void *DB);
+int     DB_WriteFileNum(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
+int     DB_ReadFileNum(SWISH *sw, int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB);
 
-int     DB_InitReadFiles(SWISH *sw, void *DB);
-int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
-int     DB_EndReadFiles(SWISH *sw, void *DB);
-
+int     DB_InitWriteProperties(SWISH *sw, void *DB);
 void    DB_WriteProperty( SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
 void    DB_WritePropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db);
 void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db);
@@ -165,13 +162,9 @@ struct MOD_DB
     int    (*DB_EndReadWords) (void *DB);
     
     
-    int    (*DB_InitWriteFiles) (void *DB);
-    int    (*DB_WriteFile) (int filenum, unsigned char *filedata,int sz_filedata, void *DB);
-    int    (*DB_EndWriteFiles) (void *DB);
-
-    int    (*DB_InitReadFiles) (void *DB);
-    int    (*DB_ReadFile) (int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
-    int    (*DB_EndReadFiles) (void *DB);
+    int    (*DB_WriteFileNum) (int filenum, unsigned char *filedata,int sz_filedata, void *DB);
+    int    (*DB_ReadFileNum) (int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+    int    (*DB_RemoveFileNum) (int filenum, void *DB);
 
 #ifdef USE_BTREE
     int    (*DB_InitWriteSortedIndex) (void *DB, int n_props);
@@ -186,6 +179,7 @@ struct MOD_DB
     int    (*DB_ReadSortedData) (int *data,int index, int *value, void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 
+    int    (*DB_InitWriteProperties) (void *DB);
     void   (*DB_WriteProperty)( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
     void   (*DB_WritePropPositions)(IndexFILE *indexf, FileRec *fi, void *db);
     void   (*DB_ReadPropPositions)(IndexFILE *indexf, FileRec *fi, void *db);
