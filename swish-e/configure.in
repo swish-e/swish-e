@@ -73,29 +73,69 @@ AC_CHECK_LIB(m,log)
 
 dnl Optional building with libxml2
 
+dnl Probably should be 2.4.5 + patches
+LIBXML_REQUIRED_VERSION=2.4.3
+
+
 AC_ARG_WITH(libxml2,[\
   --with-libxml2[=DIR]    use libxml2 in DIR],,withval=no)
 
-if test "$withval" = "yes"; then
-    AC_MSG_RESULT([** Enabling libxml2 support -- good choice! **])
-    LIBXML2_OBJS="parser.o"
-    LIBXML2_LIB="-lxml2"
-    AC_DEFINE(HAVE_LIBXML2)
-elif test "$withval" != "no"; then
-    AC_MSG_RESULT([** Enabling libxml2 support at '$withval': good choice! **])
-    LIBXML2_OBJS="parser.o"
-    LIBXML2_LIB="-L$withval/lib -lxml2"
-    LIBXML2_CFLAGS="-I$withval/include -I$withval/include/libxml2"
-    AC_DEFINE(HAVE_LIBXML2)
-else
+if test "$withval" = "no"; then
     AC_MSG_RESULT([Not building with libxml2 - use --with-libxml2 to enable])
+else
+
+    if test "$withval" != "yes"; then
+        XML2_CONFIG_PATH="$withval/bin"
+    else
+        XML2_CONFIG_PATH=$PATH
+    fi
+
+    XML2_CONFIG="no"
+    AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
+
+
+    if test "$XML2_CONFIG" = "no"; then
+    	AC_MSG_ERROR(Could not find xml2-config in '$XML2_CONFIG_PATH': check ftp://xmlsoft.org/.)
+    fi
+
+    dnl Much of this was copied from libxslt's configure.in
+    dnl
+    dnl find libxml
+    dnl
+
+    AC_SUBST(LIBXML_REQUIRED_VERSION)
+    AC_MSG_CHECKING(for libxml libraries >= $LIBXML_REQUIRED_VERSION) 
+
+
+    AC_DEFUN(VERSION_TO_NUMBER,
+    [`$1 | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
+
+    dnl
+    dnl test version and init our variables
+    dnl
+
+    vers=VERSION_TO_NUMBER($XML2_CONFIG --version)
+
+
+    if test "$vers" -ge VERSION_TO_NUMBER(echo $LIBXML_REQUIRED_VERSION);then
+    	LIBXML2_LIB="`$XML2_CONFIG --libs`"
+    	LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
+    	AC_MSG_RESULT(found version `$XML2_CONFIG --version`)
+    else
+    	AC_MSG_ERROR(You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish)
+    fi
+
+
+    AC_DEFINE(HAVE_LIBXML2)
+    AC_MSG_RESULT([** Enabling libxml2 support -- good choice! **])
+
+    LIBXML2_OBJS="parser.o"
+    AC_SUBST(LIBXML2_OBJS)
+    AC_SUBST(LIBXML2_LIB)
+    AC_SUBST(LIBXML2_CFLAGS)
 fi
 
-AC_SUBST(LIBXML2_OBJS)
-AC_SUBST(LIBXML2_LIB)
-AC_SUBST(LIBXML2_CFLAGS)
-
-
+    
 
 dnl Checks for zlib library. -- from libxml2 configure.in
 _cppflags="${CPPFLAGS}"

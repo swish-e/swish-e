@@ -2062,6 +2062,9 @@ fi
 
 
 
+LIBXML_REQUIRED_VERSION=2.4.3
+
+
 # Check whether --with-libxml2 or --without-libxml2 was given.
 if test "${with_libxml2+set}" = set; then
   withval="$with_libxml2"
@@ -2071,32 +2074,95 @@ else
 fi
 
 
-if test "$withval" = "yes"; then
-    echo "$ac_t""** Enabling libxml2 support -- good choice! **" 1>&6
-    LIBXML2_OBJS="parser.o"
-    LIBXML2_LIB="-lxml2"
-    cat >> confdefs.h <<\EOF
-#define HAVE_LIBXML2 1
-EOF
-
-elif test "$withval" != "no"; then
-    echo "$ac_t""** Enabling libxml2 support at '$withval': good choice! **" 1>&6
-    LIBXML2_OBJS="parser.o"
-    LIBXML2_LIB="-L$withval/lib -lxml2"
-    LIBXML2_CFLAGS="-I$withval/include -I$withval/include/libxml2"
-    cat >> confdefs.h <<\EOF
-#define HAVE_LIBXML2 1
-EOF
-
-else
+if test "$withval" = "no"; then
     echo "$ac_t""Not building with libxml2 - use --with-libxml2 to enable" 1>&6
+else
+
+    if test "$withval" != "yes"; then
+        XML2_CONFIG_PATH="$withval/bin"
+    else
+        XML2_CONFIG_PATH=$PATH
+    fi
+
+    XML2_CONFIG="no"
+    # Extract the first word of "xml2-config", so it can be a program name with args.
+set dummy xml2-config; ac_word=$2
+echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
+echo "configure:2092: checking for $ac_word" >&5
+if eval "test \"`echo '$''{'ac_cv_path_XML2_CONFIG'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  case "$XML2_CONFIG" in
+  /*)
+  ac_cv_path_XML2_CONFIG="$XML2_CONFIG" # Let the user override the test with a path.
+  ;;
+  ?:/*)			 
+  ac_cv_path_XML2_CONFIG="$XML2_CONFIG" # Let the user override the test with a dos path.
+  ;;
+  *)
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS=":"
+  ac_dummy="$XML2_CONFIG_PATH"
+  for ac_dir in $ac_dummy; do 
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      ac_cv_path_XML2_CONFIG="$ac_dir/$ac_word"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  test -z "$ac_cv_path_XML2_CONFIG" && ac_cv_path_XML2_CONFIG=""no""
+  ;;
+esac
+fi
+XML2_CONFIG="$ac_cv_path_XML2_CONFIG"
+if test -n "$XML2_CONFIG"; then
+  echo "$ac_t""$XML2_CONFIG" 1>&6
+else
+  echo "$ac_t""no" 1>&6
 fi
 
 
 
+    if test "$XML2_CONFIG" = "no"; then
+    	{ echo "configure: error: Could not find xml2-config in '$XML2_CONFIG_PATH': check ftp://xmlsoft.org/." 1>&2; exit 1; }
+    else
+        echo "$ac_t""Found at '$XML2_CONFIG'" 1>&6
+    fi
+
+                
+    
+    echo $ac_n "checking for libxml libraries >= $LIBXML_REQUIRED_VERSION""... $ac_c" 1>&6
+echo "configure:2136: checking for libxml libraries >= $LIBXML_REQUIRED_VERSION" >&5 
 
 
+    
 
+            
+    vers=`$XML2_CONFIG --version | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`
+
+
+    if test "$vers" -ge `echo $LIBXML_REQUIRED_VERSION | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`;then
+    	LIBXML2_LIB="`$XML2_CONFIG --libs`"
+    	LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
+    	echo "$ac_t""found version `$XML2_CONFIG --version`" 1>&6
+    else
+    	{ echo "configure: error: You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish" 1>&2; exit 1; }
+    fi
+
+
+    cat >> confdefs.h <<\EOF
+#define HAVE_LIBXML2 1
+EOF
+
+    echo "$ac_t""** Enabling libxml2 support -- good choice! **" 1>&6
+
+    LIBXML2_OBJS="parser.o"
+    
+    
+    
+fi
+
+    
 
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
@@ -2121,17 +2187,17 @@ if test "$withval" != "no"; then
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
-echo "configure:2125: checking for $ac_hdr" >&5
+echo "configure:2191: checking for $ac_hdr" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2130 "configure"
+#line 2196 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:2135: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:2201: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -2152,7 +2218,7 @@ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
 #define $ac_tr_hdr 1
 EOF
  echo $ac_n "checking for gzread in -lz""... $ac_c" 1>&6
-echo "configure:2156: checking for gzread in -lz" >&5
+echo "configure:2222: checking for gzread in -lz" >&5
 ac_lib_var=`echo z'_'gzread | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -2160,7 +2226,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lz  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 2164 "configure"
+#line 2230 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -2171,7 +2237,7 @@ int main() {
 gzread()
 ; return 0; }
 EOF
-if { (eval echo configure:2175: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:2241: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -2364,6 +2430,8 @@ s%@CC@%$CC%g
 s%@RANLIB@%$RANLIB%g
 s%@CPP@%$CPP%g
 s%@ALLOCA@%$ALLOCA%g
+s%@XML2_CONFIG@%$XML2_CONFIG%g
+s%@LIBXML_REQUIRED_VERSION@%$LIBXML_REQUIRED_VERSION%g
 s%@LIBXML2_OBJS@%$LIBXML2_OBJS%g
 s%@LIBXML2_LIB@%$LIBXML2_LIB%g
 s%@LIBXML2_CFLAGS@%$LIBXML2_CFLAGS%g
