@@ -31,6 +31,7 @@ $Id$
 #include "error.h"
 #include "db.h"
 #include "result_sort.h"
+#include "proplimit.h"
 
 /*==================== These should be in other modules ================*/
 
@@ -291,7 +292,6 @@ typedef struct
 struct MOD_PropLimit
 {
     PARAMS   *params;  /* parameter */
-    int     props_set;
 };
 
 
@@ -309,15 +309,12 @@ void initModule_PropLimit (SWISH  *sw)
 
 
     self->params = NULL;
-    self->props_set = 0;  // flag that props were set
 }
 
 
 void freeModule_PropLimit (SWISH *sw)
 {
-    IndexFILE *index;
     struct MOD_PropLimit *self = sw->PropLimit;
-    int        j;
     PARAMS  *tmp;
     PARAMS  *tmp2;
 
@@ -335,26 +332,6 @@ void freeModule_PropLimit (SWISH *sw)
 
     efree( sw->PropLimit );
     sw->PropLimit = NULL;
-
-
-    /* meta structures */
-    if ( self->props_set )
-    {
-        for( index = sw->indexlist; index; index = index->next)
-        {
-            for ( j = 0; j < index->header.metaCounter; j++)
-            {
-                struct metaEntry *meta_entry = 
-                    getMetaIDData( &index->header, index->header.metaEntryArray[j]->metaID );
-
-                if ( meta_entry->inPropRange )
-                {
-                    efree( meta_entry->inPropRange );
-                    meta_entry->inPropRange = NULL;
-                }
-            }
-        }
-    }
     
 }
 
@@ -838,28 +815,9 @@ int Prepare_PropLookup(SWISH *sw )
 {
     IndexFILE *indexf;
     struct MOD_PropLimit *self = sw->PropLimit;
-    int j;
     int total_indexes = 0;
     int total_no_docs = 0;
 
-
-
-    /* This needs a home!
-     * Need to NULL the inPropRange so that this setup can be
-     * cached because things like paged results would be requesting
-     * the same results
-     */
-    
-    /* NULL metaEntry arrays */
-    for( indexf = sw->indexlist; indexf; indexf = indexf->next)
-        for ( j = 0; j < indexf->header.metaCounter; j++)
-        {
-            struct metaEntry *meta_entry;
-
-            meta_entry = 
-                getMetaIDData( &indexf->header, indexf->header.metaEntryArray[j]->metaID );
-            meta_entry->inPropRange = NULL;
-        }
 
 
     /* nothing to limit by */
@@ -868,8 +826,6 @@ int Prepare_PropLookup(SWISH *sw )
 
 
 
-    self->props_set++;        
-    
 
     /* process each index file */
     for( indexf = sw->indexlist; indexf; indexf = indexf->next)
