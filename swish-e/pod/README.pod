@@ -8,21 +8,39 @@ Swish-e is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
 Swish-e can quickly and easily index directories of files or remote web sites
 and search the generated indexes.
 
-Swish-e it extremely fast in both indexing and searching, highly configurable,
-and can be seamlessly integrated with existing web sites to maintain a consistent design.
-Swish-e can index web pages, but can just as easily index text files, mailing list archives,
-or data stored in a relational database.
+Swish-e it extremely fast in both indexing and searching, highly
+configurable, and can be seamlessly integrated with existing web sites to
+maintain a consistent design. Swish-e can index web pages, but can just as
+easily index text files, mailing list archives, or data stored in a
+relational database.
 
-Swish-e version 2.2 represents a major rewrite of the code and the
-addition of many new features.  Memory requirements for indexing have
-been reduced, and indexing speed is significantly improved from previous versions.
-New features allow more control over indexing, better document parsing, improved indexing
-and searching logic, better filter code, and the ability to index from any data source.
+Swish is designed to index small to medium sized collection of documents,
+Although a few users are indexing over a million documents, typical usage
+is more often in the tens of thousands.  Currently, Swish-e only indexes
+eight bit character encodings.
 
-Swish-e is not a "turn-key" indexing and searching solution.  The Swish-e distribution contains
-most of the parts to create such a system, but you need to put the parts together as best meets your needs.
-This gives you the power to index and search your documents the way you wish and to seemlessly integrate
-a search engine into your web site or application.
+Swish-e version 2.2 was a major rewrite of the code and the addition of many
+new features.  Memory requirements for indexing have been reduced and
+indexing speed is significantly improved from previous versions. New
+features allow more control over indexing, better document parsing, improved
+indexing and searching logic, better filter code, and the ability to index
+from any data source.
+
+Swish-e version 2.4 includes a major rewrite of the C API and a new Perl
+module for accessing the swish-e C library.  In addition, Swish-e 2.4 uses
+the GNU Auto Tools.  The significant changes are where files are were files
+are installed, and the use of Libtool to create the swish-e library as a
+shared library on many platforms.
+
+Note: Due to the new build and installation system in Swish-e 2.4 some 
+documentation may incorrectly list the location of files.  Please report
+any documentation errors to the Swish-e Discussion list.
+
+Swish-e is not a "turn-key" indexing and searching solution.  The Swish-e
+distribution contains most of the parts to create such a system, but you
+need to put the parts together as best meets your needs. This gives you the
+power to index and search your documents the way you wish and to seamlessly
+integrate a search engine into your web site or application.
 
 You will need to configure Swish-e to index your documents, create an index by running Swish-e,
 and setup an interface such as a CGI script (a script is included).  Swish uses helper programs
@@ -175,12 +193,6 @@ A subset of the documentation is installed as system man pages as well.
 
 Documentation is also available on-line at http://swish-e.org.
 
-Documetation is provided in the Swish-e distribution package in two forms,
-POD (Plain Old Documentation), and in html format.  The POD documentation
-is in the F<pod> directory, and the HTML documentation is in the F<html>
-directory, of course.  The HTML documentation is generated from the POD
-files.
-
 If your system includes the required support files and programs, the
 distribution make files can also generate the documentation in these
 formats:
@@ -191,32 +203,14 @@ formats:
 See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
 versions of the documentation.
 
+Documentation is provided in the Swish-e distribution package in two forms,
+POD (Plain Old Documentation), and in HTML format.  The POD documentation
+is in the F<pod> directory, and the HTML documentation is in the F<html>
+directory, of course.  The HTML documentation is generated from the POD
+files.
+
 Patches or updates to the documentation should be done against the POD files 
 located in the pod directory.
-
-=head2 How do I read the Swish-e documentation?
-
-The Swish-e documentation included with the distribution is in POD and
-HTML formats.  The POD documentation can be found in the F<pod> directory,
-and the HTML documentation can be found in the F<html> directory.
-
-To view the HTML documentation point your browser to the
-F<html/index.html> file.
-
-The POD documentation is displayed by the "perldoc" command that is
-included with every Perl installation.  For example, to view the Swish-e
-installation documentation page called "INSTALL", type
-
-   perldoc pod/INSTALL
-
-or to make life easier,
-
-   cd pod
-   perldoc INSTALL
-   perldoc SWISH-RUN
-
-Complain to your system administrator if the C<perldoc> command is not
-available on your machine.
 
 =head1 Where do I get help with Swish-e?
 
@@ -225,8 +219,7 @@ the Swish-e mailing list.  Visit the Swish-e web site listed above
 for information on subscribing to the mailing list.
 
 Before posting any questions please read
-L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING">
-in the L<INSTALL|INSTALL> documentation page.
+L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING">.
 
 =head1 Speling mistakes
 
@@ -240,7 +233,7 @@ Any patches should be made against the .pod files, not the .html files.
 Swish-e is currently being developed as an open source project on
 SourceForge http://sourceforge.net.
 
-Contact the Swish-e list for questions.
+Contact the Swish-e list for questions about Swish-e development.
 
 =head1 Swish-e's History
 
