@@ -35,6 +35,8 @@ $Id$
 **                   have to be (unsigned char)!!
 **                   otherwise some chars may fail.
 **
+** 2001-03-08 rasc   rewritten and enhanced suffix routines
+**
 */
 
 #include <ctype.h>
@@ -307,13 +309,15 @@ int matchARegex( char *str, char *pattern)
 
 /*----------------------------------------------------*/
 
+
+//$$$$$$ to be deleted if new routine works >>>>>>
+
 /* Check if a file with a particular suffix should be indexed
 ** according to the settings in the configuration file.
 */
 
-int isoksuffix(filename, rulelist)
-char *filename;
-struct swline *rulelist;
+
+int OLD_isoksuffix(char *filename, struct swline *rulelist)
 {
 int badfile;
 char *c;
@@ -350,11 +354,46 @@ struct swline *tmplist;
 	efree(suffix);
 	return !(badfile);
 }
+//$$$$$ to be deleted <<<<
+
+
+/*
+  -- Check if a file with a particular suffix should be indexed
+  -- according to the settings in the configuration file.
+  -- 2001-03-08 rasc   rewritten (optimize and match also
+  --                   e.g. ".htm.de" or ".html.gz")
+*/
+
+int isoksuffix(char *filename, struct swline *rulelist)
+{
+ char *s, *fe;
+
+
+   if (!rulelist) return 1;      /* no suffixlist */
+ 
+   /* basically do a right to left compare */
+   fe = (filename + strlen(filename));
+   while (rulelist) {
+      s = fe - strlen (rulelist->line);
+      if (s >= filename) {   /* no negative overflow! */
+         if (! strcasecmp(rulelist->line, s)) {
+             return 1;
+         }
+      }
+      rulelist = rulelist->next;
+   }
+
+   return 0;
+}
+
+
+
 
 /* 05/00 Jose Ruiz
 ** Function to copy strings 
 ** Reallocate memory if needed
 ** Returns the string copied
+** [see als estrredup() and estrdup()]
 */
 char *SafeStrCopy(dest, orig, initialsize)
 char *dest;

@@ -167,7 +167,7 @@
 #define MAXSTRLEN 2000
 #define MAXWORDLEN 1000
 #define MAXTITLELEN 300
-#define MAXSUFFIXLEN 256
+#define MAXSUFFIXLEN 256    // $$$$ TO BE DELETED if string.c routines ok
 #define MAXENTLEN 10
 #define HASHSIZE 101
 #define BIGHASHSIZE 1009

@@ -1,7 +1,5 @@
 /*
 $Id$
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
-** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
