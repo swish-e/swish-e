@@ -1782,7 +1782,13 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
     int     stem_return;    /* return value of stem operation */
 
-    struct MOD_Index *idx = sw->Index;
+    struct  MOD_Index *idx = sw->Index;
+
+                            /* Assign word buffers */
+    char   *word = idx->word;
+    int     lenword = idx->lenword;
+    char   *swishword = idx->swishword;
+    int     lenswishword = idx->lenswishword;
 
     if (!numMetaNames)
         numMetaNames = 1;
@@ -1794,16 +1800,16 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
 
     /* get the next word as defined by whitespace */
-    while ( next_word( &buf_pos, &idx->word, &idx->lenword ) )
+    while ( next_word( &buf_pos, &word, &lenword ) )
     {
-        strtolower(idx->word);
+        strtolower(word);
 
         /* is this a useful feature? */
         if ( indexf->header.is_use_words_flag )
         {
-            if  ( isuseword(&indexf->header, idx->word) )
+            if  ( isuseword(&indexf->header, word) )
             {
-                addword(idx->word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
             }
 
@@ -1814,15 +1820,15 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         if ( indexf->header.buzzwords_used_flag )
         {
             /* only strip when buzzwords are being used since stripped again as a "swish word" */
-            stripIgnoreLastChars(&indexf->header, idx->word);
-            stripIgnoreFirstChars(&indexf->header, idx->word);
-            if ( !*idx->word ) /* stripped clean? */
+            stripIgnoreLastChars(&indexf->header, word);
+            stripIgnoreFirstChars(&indexf->header, word);
+            if ( !*word ) /* stripped clean? */
                 continue;
 
         
-            if ( isbuzzword(&indexf->header, idx->word) )
+            if ( isbuzzword(&indexf->header, word) )
             {
-                addword(idx->word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
                 continue;
             }
@@ -1830,37 +1836,37 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         
 
         /* Translate chars */
-        TranslateChars(indexf->header.translatecharslookuptable, idx->word);
+        TranslateChars(indexf->header.translatecharslookuptable, word);
 
-        cur_pos = idx->word;
+        cur_pos = word;
 
 
 
         /* Now split the word up into "swish words" */
 
-        while ( next_swish_word( sw, &cur_pos, &idx->swishword, &idx->lenswishword, &bump_position_flag ) )
+        while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, &bump_position_flag ) )
         {
             /* Check Begin & EndCharacters */
-            if (!indexf->header.begincharslookuptable[(int) ((unsigned char) idx->swishword[0])])
+            if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
                 continue;
 
-            if (!indexf->header.endcharslookuptable[(int) ((unsigned char) idx->swishword[strlen(idx->swishword) - 1])])
+            if (!indexf->header.endcharslookuptable[(int) ((unsigned char) swishword[strlen(swishword) - 1])])
                 continue;
 
 
             /* limit by stopwords, min/max length, max number of digits, ... */
-            if (!isokword(sw, idx->swishword, indexf))
+            if (!isokword(sw, swishword, indexf))
                 continue;
 
             if (indexf->header.applyStemmingRules)
             {
-                stem_return = Stem(&idx->swishword, &idx->lenswishword);
+                stem_return = Stem(&swishword, &lenswishword);
 
                 /* === 
 
-                if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", idx->swishword );
-                if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", idx->swishword );
-                if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", idx->swishword );
+                if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
+                if ( stem_return == STEM_TOO_SMALL ) printf("Stem: too small in '%s'\n", swishword );
+                if ( stem_return == STEM_WORD_TOO_BIG ) printf("Stem: too big to stem in '%s'\n", swishword );
                 if ( stem_return == STEM_TO_NOTHING ) printf("Stem: stems to nothing '%s'\n", swishword );
 
                 === */
@@ -1868,12 +1874,19 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
             /* This needs fixing, no?  The soundex could might be longer than the string */
             if (indexf->header.applySoundexRules)
-                soundex(idx->swishword);
+                soundex(swishword);
 
-            addword(idx->swishword, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+            addword(swishword, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
             wordcount++;            
         }
     }
+
+           /* Buffers can be reallocated - So, reasign them */
+    idx->word = word;
+    idx->lenword = lenword;
+    idx->swishword = swishword;
+    idx->lenswishword = lenswishword;
+
     return wordcount;
 }
 
