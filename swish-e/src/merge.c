@@ -833,7 +833,6 @@ IndexFILE *indexf=sw->indexlist;
 
         /* In merge there is no dup !!! */
     CompressCurrentLocEntry(sw,indexf,ip);
-    ip->currentlocation=ip->u1.max_locations; /* Avoid compress again in printindex */
 
 }
 

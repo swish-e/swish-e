@@ -31,15 +31,16 @@ void PACKLONG2(unsigned long num, unsigned char *buffer);
 unsigned long UNPACKLONG(unsigned long num);
 unsigned long UNPACKLONG2(unsigned char *buffer);
 
-
-
 unsigned char *compress_location(SWISH *,IndexFILE *, LOCATION *);
 LOCATION *uncompress_location(SWISH *,IndexFILE *,unsigned char *);
-void CompressPrevLocEntry(SWISH *,IndexFILE *,ENTRY *);
+
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
+
 void SwapFileData(SWISH *,struct file *);
 struct file *unSwapFileData(SWISH *);
+
 long SwapLocData(SWISH *,unsigned char *,int);
 unsigned char *unSwapLocData(SWISH *,long);
+
 int get_lookup_index(struct int_lookup_st **,int ,int *);
 int get_lookup_path(struct char_lookup_st **,char *);
