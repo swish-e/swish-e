@@ -572,13 +572,28 @@ int DB_EndWriteWords_Native(void *db)
    FILE *fp = (FILE *) DB->fp;
    int i, wordlen;
    long wordID,f_offset,word_pos;
-
+   struct numhash *numhash;
 
          /* Now update word's data offset into the list of words */
          /* Simple check  words and worddata must match */
 
    if(DB->num_words != DB->wordhash_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter: ");
+
+      /* Free numhash array */
+   for(i=0;i<BIGHASHSIZE;i++)
+   {
+       for(numhash = DB->hash[i]; numhash; )
+       {
+           struct numhash *tmp = numhash->next;
+           efree(numhash);
+           numhash = tmp;
+       }
+       DB->hash[i]=NULL;
+   }
+           
+      /* Sort wordhashdata to be writte to allow sequential writes */
+   swish_qsort(DB->wordhashdata,DB->num_words,2*sizeof(long), cmp_wordhashdata);
 
    if(WRITE_WORDS_RAMDISK)
    {
@@ -751,18 +766,19 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
 }
 
 
-
 int DB_WriteWordHash_Native(char *word, long wordID, void *db)
 {
     int     i,
-            j,
-            k,
-            isbigger = 0,
-            hashval;
+            hashval,
+            numhashval;
     struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    struct  numhash *numhash;
 
     if(!DB->wordhash_counter)
     {
+        /* Init hash array */
+        for(i=0;i<BIGHASHSIZE;i++)
+            DB->hash[i] = NULL; 
 		/* If we are here we have finished WriteWord_Native */
 		/* If using ramdisk - Reserve space upto the size of the ramdisk */
         if(WRITE_WORDS_RAMDISK)
@@ -780,44 +796,29 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
         DB->hashoffsets[hashval] = wordID;
     }
 
-    if(DB->wordhash_counter)
-    {
-        /* Look for the position to insert using a binary search */
-        i = DB->wordhash_counter - 1;
-        j = k = 0;
-        while (i >= j)
-        {
-            k = j + (i - j) / 2;
-            isbigger = wordID - DB->wordhashdata[2 * k];
-            if (!isbigger)
-                progerr("Internal error in db_native.c. Routine DB_WriteWordHashNative");
-            else if (isbigger > 0)
-                j = k + 1;
-            else
-                i = k - 1;
-        }
-
-        if (isbigger > 0)
-            k++;
-        memmove(&DB->wordhashdata[2 * (k + 1)], &DB->wordhashdata[2 * k], (DB->wordhash_counter - k) * 2 * sizeof(long));
-    }
-    else
-    {
-        k = 0;
-    }
-    DB->wordhashdata[2 * k] = wordID;
-    DB->wordhashdata[2 * k + 1] = (long)0;
+    DB->wordhashdata[2 * DB->wordhash_counter] = wordID;
+    DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
+         /* Should be a mem_zone -- > Todo */
+         /* Add to the hash */
+    numhash = (struct numhash *) emalloc(sizeof(struct numhash));
+    numhashval = bignumhash(wordID);
+    numhash->index = DB->wordhash_counter;
+    numhash->next = DB->hash[numhashval];
+    DB->hash[numhashval] = numhash;
+    
     DB->wordhash_counter++;
 
             /* Update previous word in hashlist */
     if(DB->lasthashval[hashval])
     {
-        // This must be a binary search - Use bsearch - To do !!
-		int *tmp = bsearch(&DB->lasthashval[hashval], DB->wordhashdata,  DB->wordhash_counter,2 *sizeof(long),cmp_wordhashdata);
-        if(! tmp)
+           /* Search for DB->lasthashval[hashval] */
+        numhashval = bignumhash(DB->lasthashval[hashval]);
+        for(numhash = DB->hash[numhashval]; numhash; numhash = numhash->next)
+            if(DB->wordhashdata[2 * numhash->index] == DB->lasthashval[hashval])
+               break;
+        if(! numhash)
               progerrno("Internal db_native.c error in DB_WriteWordHash_Native");
-
-        tmp[1] = (long)wordID;
+        DB->wordhashdata[2 * numhash->index + 1] = (long)wordID;
     }
     DB->lasthashval[hashval] = wordID;
 
