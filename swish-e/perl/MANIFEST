@@ -10,4 +10,4 @@ t/test.conf
 t/first.html
 t/second.html
 t/third.html
-
+t/dummy.t
