@@ -98,7 +98,7 @@ if (j==MAXMEMARRAY) progerr("Error freeing memory. Pointer not found");
 mem[j].p = NULL;
 }
 
-void checkmem()
+void checkmem(void)
 {
 int j,k,l;
 char *p;
@@ -115,6 +115,10 @@ for(j=0;j<MAXMEMARRAY;j++)
 
 #else
 
+void checkmem(void)
+{
+	return;
+}
 
 void *emalloc(size_t i)
 {
