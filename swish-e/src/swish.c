@@ -98,10 +98,10 @@ int keychar2;
 char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
-clock_t search_time, run_time;
+clock_t search_starttime, run_starttime;
 
 
-    run_time = clock();
+    run_starttime = clock();
 
 	starttime=0L;
 
@@ -774,7 +774,7 @@ clock_t search_time, run_time;
 			/* print out "original" search words */
 		printf("# Search words: %s\n#\n",wordlist);
 
-        search_time = clock();
+        search_starttime = clock();
 
 		rc=search(sw,wordlist, structure);
 
@@ -804,9 +804,9 @@ clock_t search_time, run_time;
                 	printf("# Number of hits: %d\n",rc);
 
                 	printf("# Search time: %0.3f seconds\n",
-                	     ((float)clock()-search_time)/CLOCKS_PER_SEC );
+                	     (double)(clock()-search_starttime)/CLOCKS_PER_SEC );
                 	printf("# Run time: %0.3f seconds\n",
-                	     ((float)clock()-run_time)/CLOCKS_PER_SEC );
+                	     (double)(clock()-run_starttime)/CLOCKS_PER_SEC );
 
                 	printSortedResults(sw);
 			printf(".\n");
