@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "tmp/libswishe_Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /I "..\expat\xmlparse" /I "..\expat\xmltok" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\expat\xmlparse" /I "..\expat\xmltok" /I "../../../libxml2/include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\..\..\zlib" /I "..\expat\xmlparse" /I "..\expat\xmltok" /I "../../../libxml2/include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
