@@ -69,8 +69,9 @@ The C<grep> command is used to filter out some of the output.
 
 =head2 How can I index documents on a web server?
 
-If possible, use the file system method C<-S fs> of indexing to index documents on your web server.
+If possible, use the file system method C<-S fs> of indexing to index documents on your web server. 
 This avoids the overhead of spidering a web server.
+(C<-S fs> is the default method if C<-S> is not specified).
 
 If this is impossible (the web server is not local, or documents are dynamically generated), swish provides
 two methods of spidering.  First, swish includes the http method of indexing C<-S http>. A number of
@@ -85,29 +86,128 @@ a program to spider web servers.  The provided spider.pl program is full-feature
 
 The advantage of the "prog" document source feature over the "http" method is that the program is only executed
 one time, where the swishspider.pl program used in the "http" method is executed once for every document
-read from the web server.  The forking of swish and compiling of the perl script can take quite expensive, time-wise.
+read from the web server.  The forking of swish and compiling of the perl script can be quite expensive, time-wise.
 
-The other advantage is that it's simple and efficient to add filtering (such as for PDF or MS Word docs)
+The other advantage of the C<spider.pl> program is that it's simple and efficient to add filtering (such as for PDF or MS Word docs)
 right into the spider.pl's configuration.
-
-
-=head2 How can I index all my compressed files?
-
-Swish can make use of "filters" that will convert files such as MS Word documents, PDF, or gzipped files into text, HTML
-or XML and can thus be indexed by SWISH-E.
-Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> and the example in the filter-bin
-directory for more information.
-
-Another option to use the "prog" document source input method.
-You write a program (such as a perl script) that will convert your data as needed
-and then output one of the formats that swish understands (currently, HTML, XML, and text).  Swish can call
-this program and the program will pass on all documents to swish.
-
 
 =head2 How can I index data from a database?
 
 Use the "prog" document source method of indexing.  Write a program to extract out the data from your
-database, and format it as XML, HTML, or text.  See the examples in the C<prog-bin> directory.
+database, and format it as XML, HTML, or text.  See the examples in the C<prog-bin> directory, and the next
+question.
+
+=head2 Can I index my PDF, Word, and compressed documents?
+
+Swish-e can internally only handle HTML, WML, XML and TXT (text) files by default, but
+can make use of I<filters> that will convert other types of files such as MS Word documents, PDF, or gzipped files into
+one of the file types that Swish-e understands.
+The B<FileFilter> config directive is used to define programs to use as filters, based
+on file extension.  For example, you can use the program C<catdoc> to convert MS-Word documents to text for indexing.
+Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> and the examples in the C<filter-bin>
+directory for more information.
+
+Another option is to use the C<prog> document source input method.
+In this case you write a program (such as a perl script) that will read and convert your data as needed
+and then output one of the formats that swish understands.  Examples of using the C<prog> input method for
+filtering are included in the C<prog-bin> directory of the Swish-e distribution.
+
+The disadvantage of using the C<prog> input method is that you must write a program that reads the documents
+from the source (e.g. from the file system or via a spider to read files on a web server), and also include
+the code to filter the documents.
+It's much easier to use the C<FileFilter> option since the filter can often be implemented with just a single
+configuration directive.
+
+On the other hand, the advantage of using the C<prog> input method for indexing is speed.  Filtering
+within a C<prog> input method program will be faster, especially if your filtering program is something
+like a Perl script (something that has a large start-up cost).  This may or may not be
+an issue for you, depending on how much time your indexing requires.
+
+You can also use a combination of methods.  For example, say you are indexing a directory that contains PDF
+files using a C<FileFilter> directive.  Now you want to index a MySQL database that also contains PDF files.
+You can write a C<prog> input method program to read your MySQL database and use the same C<FileFilter> configuration
+parameter (and filter program) to convert the PDF files into one of the native swish formats (TXT, HTML, XML).
+
+Do note that it will be slower to use the C<FileFilter> method instead of running the filter directly from the
+C<prog> input method program.  When C<FileFilter> is used with the C<prog> input method swish must create a temporary file
+containing the output from your C<prog> method program, and then execute the filter program.
+It will be faster to filter the documents within your C<prog> method program.
+
+In general, use the C<FileFilter> method to filter documents.  If indexing speed is an issue, consider writing a
+C<prog> input method program.  If you are already using the C<prog> method, then filtering will probably be best
+accomplished within that program.
+
+Here's two examples of how to run a filter program, one using swish's C<FileFilter> directive, another using
+a C<prog> input method program.
+These filters simply use the program C</bin/cat> as a filter and only indexes .html files.
+
+First, using the C<FileFilter> method, here's the entire configuration file (swish.conf):
+
+    IndexDir .
+    IndexOnly .html
+    FileFilter .html "/bin/cat"   "'%p'"
+
+and index with the command
+
+    swish-e -c swish.conf -v 1
+
+Now, the same thing with using the C<prog> document source input method and a Perl program called
+catfilter.pl.  You can see that's it's much more work than using the C<FileFilter> method above,
+but indexing should be faster.
+
+    #!/usr/local/bin/perl -w
+    use strict;
+    use File::Find;  # for recursing a directory tree
+
+    $/ = undef;
+    find(
+        { wanted => \&wanted, no_chdir => 1, },
+        '.',
+    );
+
+    sub wanted {
+        return if -d;
+        return unless /\.html$/;
+
+        my $mtime  = (stat)[9];
+
+        my $child = open( FH, '-|' );
+        die "Failed to fork $!" unless defined $child;
+        exec '/bin/cat', $_ unless $child;
+
+        my $content = <FH>;
+        my $size = length $content;
+
+        print <<EOF;
+    Content-Length: $size
+    Last-Mtime: $mtime
+    Path-Name: $_
+
+    EOF
+
+        print <FH>;
+    }
+
+And index with the command:
+
+    swish-e -S prog -i ./catfilter.pl -v 1
+
+This example will probably not work under Windows due to the '-|' open.  A simple piped
+open may work just as well:
+
+That is, replace:
+
+    my $child = open( FH, '-|' );
+    die "Failed to fork $!" unless defined $child;
+    exec '/bin/cat', $_ unless $child;
+
+with this:
+
+    open( FH, "/bin/cat $_ |" ) or die $!;
+
+Perl will try to avoid running the command through the shell if meta characters are not passed
+to the open.  See C<perldoc -f open> for more information.
+
 
 =head2 Can I index 8-bit text? 
 
@@ -170,7 +270,7 @@ the C<-f> switch to specify more than one index while searching.
 
 Another option is use the C<-e> switch.  This will require less memory, but indexing will take longer as
 not all data will be stored in memory while indexing.  Please report back your findings as it seems C<-e>
-requires quite a bit less RAM, but often not that much more time.
+requires quite a bit less RAM, but often not that much more indexing time.
 
 =head2 I can't limit searches to title/body/comment.
 
@@ -188,18 +288,6 @@ Also, check for the C<UndefinedMetaTags> setting in your configuration file.
 At times it might not strictly be necessary, but since you don't really know if anything in the index has changed,
 it is a good rule to reindex anyway. 
 
-=head2 Can I index PDF or Winword documents with swish-e?
-
-Swish-e can internally only handle HTML, WML, XML and TXT (text) files.
-To index other document types you have to install a filter into swish-e using the FileFilter config directive.
-These filters have to translate a document into the swish-e known formats (e.g. text or html). You can use
-"xpdf" or "ghostscript" to convert pdf to text or e.g. "catdoc" to convert winword documents on unix.  
-For details, please have a look on the filter configuration part, and look in the C<filter-bin> directory
-of the SWISH-E distribution.
-
-The other option, which may or may not be faster, is to use the "prog" document source method to supply filtered
-documents to swish while indexing.  See the example in the C<prog-bin> directory.
-
 =head2 Does swish include a CGI interface?
 
 An example CGI script is included in the C<example> directory.
@@ -207,6 +295,25 @@ An example CGI script is included in the C<example> directory.
 
 Please be careful when picking a CGI script to use with swish.  Quite a few of the scripts
 that have been available for swish are insecure and should not be used.
+
+The included example CGI script was designed with security in mind.  Regardless, you are encouraged
+to have your local Perl expert review it (and all other CGI scripts you use) before placing into production.
+This is just a good policy to follow.
+
+=head2 How secure is swish?
+
+We know of no security issues with using swish.  Careful attention has been made with regard to
+common security problems such as buffer overruns when programming swish.
+
+The most likely security issue with swish is when swish is run via a poorly written CGI interface.
+This is not limited to CGI scripts written in Perl, as it's just as easy to write an insecure CGI script in
+C, Java, PHP, or Python.  A good source of information is included with the Perl distribution.  Type
+C<perldoc perlsec> at your local prompt for more information.  Another must-read document is located at
+C<http://www.w3.org/Security/faq/wwwsf4.html>.
+
+Note that there are many I<free> yet insecure and poorly written CGI scripts available --
+even some designed for use with swish.
+Free is not such a good price when you get your server hacked...
 
 =head2 How do I make swish highlight words in search results?
 
@@ -216,8 +323,8 @@ source documents and then use regular expressions to replace search terms with h
 words.
 
 But, that will fail with all but the most simple source documents.  For HTML documents, for example,
-you must parse the doucment into words and tags (and comments).  A word you wish to highlight may span
-mutilple HTML tags, or be a word in a URL and you wish to highlight the entire link text.
+you must parse the document into words and tags (and comments).  A word you wish to highlight may span
+multiple HTML tags, or be a word in a URL and you wish to highlight the entire link text.
 
 Perl modules such as HTML::Parser
 and XML::Parser make word extraction possible.  Next, you need to consider that swish uses settings such as
