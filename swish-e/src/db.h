@@ -95,9 +95,11 @@ int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
+#ifdef PROPFILE
 long    DB_WriteProperty(SWISH *sw, int filenum, char *buffer, int datalen, int propID, void *DB );
 void    DB_ReadProperty(SWISH *sw, char *buf, long seek_pos, long length, int filenum, void *DB );
-
+void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB );
+#endif
 
 
 
@@ -149,8 +151,11 @@ struct MOD_DB
     int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 
+#if PROPFILE
     long   (*DB_WriteProperty) (int filenum, char *buffer, int datalen, int propID, void *DB );
     void   (*DB_ReadProperty) (char *buf, long seek_pos, long length, int filenum, void *DB );
+    void   (*DB_Reopen_PropertiesForRead) (void *DB);
+#endif    
 
 };
 

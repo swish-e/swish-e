@@ -1099,6 +1099,7 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 }
 
 
+#ifdef PROPFILE
 long DB_WriteProperty(SWISH *sw, int filenum, char *buffer, int datalen, int propID, void *DB )
 {
     return sw->Db->DB_WriteProperty( filenum, buffer, datalen, propID, DB );
@@ -1108,4 +1109,11 @@ void DB_ReadProperty(SWISH *sw, char *buf, long seek_pos, long length, int filen
 {
     sw->Db->DB_ReadProperty( buf, seek_pos, length, filenum, DB );
 }
+
+
+void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB )
+{
+    sw->Db->DB_Reopen_PropertiesForRead(DB);
+}
+#endif
 
