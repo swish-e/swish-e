@@ -475,7 +475,46 @@ unsigned long int tmp;
 	newnode->fi.size = size;
 	newnode->docProperties = NULL;
 
-/* #### Added summary and mtime as prperty if specified */
+/* #### Added summary,filename, title and mtime as properties if specified */
+
+	if(filename)
+	{
+                        /* Check if filename is internal swish metadata */
+		if((q=getMetaNameData(indexf,META_FILENAME)))
+		{
+                        /* Check if it is also a property (META_PROP flag) */
+			if(is_meta_property(q))
+			{
+				addDocProperty(&newnode->docProperties,q->index,filename,strlen(filename));
+			}
+			/* Perhaps we want it to be indexed ... */
+			if(is_meta_index(q))
+			{
+				int metaName[1],positionMeta[1];
+				metaName[0]=q->index; positionMeta[0]=1;
+				indexstring(sw, filename, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+			}
+		}
+	}
+	if(title)
+	{
+                        /* Check if title is internal swish metadata */
+		if((q=getMetaNameData(indexf,META_TITLE)))
+		{
+                        /* Check if it is also a property (META_PROP flag) */
+			if(is_meta_property(q))
+			{
+				addDocProperty(&newnode->docProperties,q->index,title,strlen(title));
+			}
+			/* Perhaps we want it to be indexed ... */
+			if(is_meta_index(q))
+			{
+				int metaName[1],positionMeta[1];
+				metaName[0]=q->index; positionMeta[0]=1;
+				indexstring(sw, title, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+			}
+		}
+	}
 	if(summary)
 	{
                         /* Check if summary is internal swish metadata */

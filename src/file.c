@@ -588,10 +588,38 @@ IndexFILE *indexf=NULL;
 				progerr(sw->errorstr);
 			}
 		}
+/* #### Added UndefinedMetaTags as defined by Bill Moseley */
+		else if ((StringValue=grabStringValueField(line, "UndefinedMetaTags")))	
+		{
+			if(strcasecmp(StringValue,"error")==0)
+			{
+				sw->OkNoMeta=0;  /* Error if meta name is found
+						that's not listed in MetaNames*/
+			} 
+			else if(strcasecmp(StringValue,"ignore")==0)	
+			{
+				sw->OkNoMeta=1;  /* Do not error */
+				sw->ReqMetaName=1;  /* but do not index */
+			} 
+			else if(strcasecmp(StringValue,"index")==0)	
+			{
+				sw->OkNoMeta=1;  /* Do not error */
+				sw->ReqMetaName=0;  /* place in main index, no
+						meta name associated */ 
+			}
+			else if(strcasecmp(StringValue,"auto")==0)	
+			{
+				sw->OkNoMeta=1;  /* Do not error */
+				sw->ReqMetaName=0;  /* do not ignore */
+				sw->applyautomaticmetanames=1;  /* act as if
+					all meta tags are listed in Metanames */	
+			}
+			else 
+				progerr("Error: Values for UndefinedMetaTags are error, ignore, index or auto\n.\n");
+		}
+/* #### */
 		else if (grabYesNoField(line, "FileInfoCompression", &indexf->header.applyFileInfoCompression))	{}
-		else if (grabYesNoField(line, "OkNoMeta", &sw->OkNoMeta))	{}
-		else if (grabYesNoField(line, "ReqMetaName", &sw->ReqMetaName))	{}
-		else if (grabYesNoField(line, "AsciiEntities", &sw->AsciiEntities))	{}
+		else if (grabYesNoField(line, "ConvertHTMLEntities", &sw->ConvertHTMLEntities))	{}
 		else if (!parseconfline(sw,line)) {
 			printf("Bad directive on line #%d: %s", linenumber, line );
 			baddirective = 1;

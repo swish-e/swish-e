@@ -106,15 +106,13 @@
 ** Do not change it here. Use MaxWordLimit in config file
 */
 
-#define ASCIIENTITIES 1
+#define CONVERTHTMLENTITIES 1
 
 /* If defined as 1, all entities in indexed
 ** words will be converted to an ASCII equivalent. For instance,
 ** with this feature you can index the word "resum&eacute;" or
 ** "resum&#233;" and it will be indexed as the word "resume".
-** If defined as 0, only numerical entities will be converted
-** to named entities, if they exist.
-** 2001-01 Do not change it here. Use AsciiEntities Yes/No in 
+** 2001-01 Do not change it here. Use ConvertHTMLEtities Yes/No in 
 ** config file
 */
 

@@ -427,7 +427,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 
 	if(fprop->stordesc)
 	{
-			summary=parseHtmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size,sw->AsciiEntities);
+			summary=parseHtmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size,sw->ConvertHTMLEntities);
 	}
 
 	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
@@ -443,7 +443,9 @@ char *title=parsetitle(buffer,fprop->real_path);
 		if((tag=strchr(p,'<')) && ((tag==p) || (*(tag-1)!='\\'))) {   /* Look for non escaped '<' */
 				/* Index up to the tag */
 			*tag++='\0';
-			newp=convertentities(p,sw->AsciiEntities);
+			if(sw->ConvertHTMLEntities)
+				newp=convertentities(p,sw->ConvertHTMLEntities);
+			else newp=p;
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 				/* Now let us look for a not escaped '>' */
@@ -535,7 +537,9 @@ char *title=parsetitle(buffer,fprop->real_path);
 				}
 			} else p=tag;    /* tag not closed: continue */
 		} else {    /* No more '<' */
-			newp=convertentities(p,sw->AsciiEntities);
+			if(sw->ConvertHTMLEntities)
+				newp=convertentities(p,sw->ConvertHTMLEntities);
+			else newp=p;
 			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 			if(newp!=p) efree(newp);
 			p=NULL;
@@ -807,13 +811,17 @@ int wordcount=0; /* Word count */
 			*temp = '\0';	/* terminate CONTENT, temporarily */
 			if(docPropName)
 				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart, strlen(tag+jstart));
-			convtag = (char *)convertentities(tag + jstart, sw->AsciiEntities);
+			if(sw->ConvertHTMLEntities)
+				convtag = (char *)convertentities(tag + jstart, sw->ConvertHTMLEntities);
+			else convtag = tag + jstart;
 			
 			wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);
 			if(convtag!=(tag + jstart)) efree(convtag);
 			*temp = '\"';	/* restore string */
 		} else {
-			convtag = (char *)convertentities(tag + jstart, sw->AsciiEntities);
+			if(sw->ConvertHTMLEntities)
+				convtag = (char *)convertentities(tag + jstart, sw->ConvertHTMLEntities);
+			else convtag = tag + jstart;
 			wordcount=indexstring(sw, convtag, filenum, structure, 1, &metaName, &position);
 			if(convtag!=(tag + jstart)) efree(convtag);
 		}
