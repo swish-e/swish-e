@@ -284,7 +284,7 @@ void freeModule_Index (SWISH *sw)
   {
 	  for(i=0; i<sw->indexlist->header.totalfiles; i++)
           if(idx->IgnoreLimitPositionsArray[i])
-              free(idx->IgnoreLimitPositionsArray[i]);
+              efree(idx->IgnoreLimitPositionsArray[i]);
       efree(idx->IgnoreLimitPositionsArray);
   }
 
