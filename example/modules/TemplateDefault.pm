@@ -10,9 +10,6 @@ use CGI;
 sub show_template {
     my ( $class, $template_params, $results ) = @_;
 
-    # Get the results list, if any.
-    my @results = $results->results;
-
 
     my $q = $results->CGI;
 
@@ -22,9 +19,9 @@ sub show_template {
     $output .= show_form( $results );
 
 
-    if ( @results ) {
+    if ( $results->results ) {
         $output .=  results_header( $results );
-        $output .=  show_result( $results, $_ ) for @results;
+        $output .=  show_result( $results, $_ ) for @{ $results->results };
     }
 
     # Form after results (or at top if no results)
@@ -48,16 +45,28 @@ sub page_header {
         ? qq[<br><font color=red>$message</font>]
         : '' ;
 
+
+    my $html_title = $results->results
+        ? ( $results->navigation('hits')
+            . ' Results for ['
+            . CGI::escapeHTML( $results->{query_simple} )
+            . ']'
+           )
+
+        : ( $results->errstr || $title );
+
     return <<EOF;
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
     <head>
        <title>
-          Search Page
+          $html_title
        </title>
     </head>
     <body>
         <h2>
-        <imgxx src="http://swish-e.org/Images/swish-e.gif"> $title $message
+        <a href="http://swish-e.org">
+        <img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> $title $message
         
         </h2>
 EOF
@@ -265,11 +274,6 @@ sub show_result {
     }
 
 
-    # Get the title link
-
-    my $PathPrePend = $results->config('prepend_path') || '';
-    
-
     my $description_prop = $results->config('description_prop');
     
     my $description = '';
@@ -277,12 +281,10 @@ sub show_result {
         $description = $this_result->{ $description_prop } || '';
     }
 
-    my $href = $PathPrePend . $this_result->{saved_swishdocpath};
-    $href =~ s/ /%20/g;
 
     return <<EOF;
     <dl>
-        <dt>$this_result->{swishreccount} <a href="$href">$title</a> <small>-- rank: <b>$this_result->{swishrank}</b></small></dt>
+        <dt>$this_result->{swishreccount} <a href="$this_result->{swishdocpath_href}">$title</a> <small>-- rank: <b>$this_result->{swishrank}</b></small></dt>
         <dd>$description
 
         $props
@@ -302,7 +304,7 @@ EOF
 sub footer {
 
     my $mod_perl = $ENV{MOD_PERL}
-               ? '<br><small>Response brought to you by <em>MOD_PERL</em> <a href="http://perl.apache.org">perl.apache.org</a></small>'
+               ? '<br><small>Response brought to you by <a href="http://perl.apache.org"><em>mod_perl</em></a></small>'
                : '';
 
     return <<EOF;
@@ -310,7 +312,13 @@ sub footer {
     <hr>
     <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
     $mod_perl
-  </body>
+
+    <p>
+        <a href="http://validator.w3.org/check/referer"><img border="0"
+            src="http://www.w3.org/Icons/valid-html401"
+            alt="Valid HTML 4.01!" height="31" width="88"></a>
+    </p>
+    </body>
 </html>
 EOF
 }

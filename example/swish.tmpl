@@ -1,14 +1,23 @@
+
 <html>
     <head>
        <title>
-          <TMPL_IF FILES>Results for: <TMPL_VAR QUERY_SIMPLE><TMPL_ELSE>Search Page</TMPL_IF>
+          <TMPL_IF RESULTS>Results for: <TMPL_VAR QUERY_SIMPLE><TMPL_ELSE><TMPL_VAR TITLE></TMPL_IF>
        </title>
     </head>
     <body>
-        <h2>
-        <img src="/images/swish.gif">
-        <TMPL_VAR MESSAGE>
-        </h2>
+        <table border="0" cellpadding="0" cellspacing="0">
+        <tr><td>
+            <a href="http://swish-e.org">
+            <img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a>
+        </td><td valign="middle">
+            <font size="+3"><TMPL_VAR TITLE></font>
+        </td></tr>
+        </table>
+
+        <TMPL_IF MESSAGE>
+            <font size="+2" color="red"><TMPL_VAR MESSAGE></font>
+        </TMPL_IF>
 
         <form method="post" action="<TMPL_VAR MY_URL>" enctype="application/x-www-form-urlencoded" class="form">
             <input type="text" name="query"  size=32 maxlength=200 />
@@ -46,35 +55,43 @@
                         &nbsp; <TMPL_VAR FROM> to <TMPL_VAR TO> of <TMPL_VAR HITS> results.
                         </font>
                     </td>
-                </tr>
-                <tr>
-                    <td height=20 bgcolor="#EEEEEE">
+                    <td align=right bgcolor="#FF9999">
                         <font size="-2" face="Geneva, Arial, Helvetica, San-Serif">
-                        Total time: <TMPL_VAR TOTAL_TIME> seconds |
                         Run time: <TMPL_VAR RUN_TIME> |
-                        Search time: <TMPL_VAR SEARCH_TIME>
+                        Search time: <TMPL_VAR SEARCH_TIME> &nbsp; &nbsp;
                         </font>
                     </td>
                 </tr>
-            </table>
-            
-            
-            <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
 
-            <TMPL_IF PREV_COUNT>
-                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
-            </TMPL_IF>
-            
-            <TMPL_IF NEXT>
-                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
-            </TMPL_IF>
+                <TMPL_IF PAGES>
+
+                <tr>
+                    <td colspan=2 bgcolor="#EEEEEE">
+                        <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">&nbsp;Page:</font>
+                        <TMPL_VAR PAGES>
+
+                        <TMPL_IF PREV_COUNT>
+                            <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">
+                            Previous <TMPL_VAR PREV_COUNT></a>
+                        </TMPL_IF>
+        
+                        <TMPL_IF NEXT_COUNT>
+                            <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">
+                            Next <TMPL_VAR NEXT_COUNT></a>
+                        </TMPL_IF>
+                    </td>
+                </tr>
+                </TMPL_IF>
+
+            </table>
+        
             <p>
 
 
 
             <TMPL_LOOP FILES>
                 <dl>
-                    <dt><a href="<TMPL_VAR swishdocpath>"><TMPL_VAR swishtitle></a> <small>-- rank: <b><TMPL_VAR swishrank></b></small></dt>
+                    <dt><a href="<TMPL_VAR swishdocpath_href>"><TMPL_VAR swishtitle></a> <small>-- rank: <b><TMPL_VAR swishrank></b></small></dt>
                     <dd><TMPL_VAR swishdescription>...<br>
 
                     <TMPL_IF PROPERTIES>
@@ -86,7 +103,7 @@
 
 
                     <small>
-                        <a href="<TMPL_VAR swishdocpath>"><TMPL_VAR swishdocpath></a>
+                        <TMPL_VAR swishdocpath>
                         <TMPL_VAR swishlastmodified>
                         <TMPL_VAR swishdocsize> bytes.
                     </small>
@@ -109,9 +126,16 @@
         </TMPL_IF>
 
         <hr>
+        <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
         <TMPL_IF MOD_PERL>
             Powered by: <img src="http://perl.apache.org/logos/mod_perl.gif">
         </TMPL_IF>
+        <p>
+          <a href="http://validator.w3.org/check/referer"><img border="0"
+              src="http://www.w3.org/Icons/valid-html401"
+              alt="Valid HTML 4.01!" height="31" width="88"></a>
+        </p>
+
         
         
     </body>
