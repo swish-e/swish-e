@@ -358,10 +358,6 @@
 
 /* If USE_BTREE then enable the ARRAY code for the pre-sorted indexes */
 
-#ifdef USE_BTREE
-// #define USE_PRESORT_ARRAY  /* comment out to use old integer arrays */
-#endif
-
 #define sw_fopen fopen
 #define sw_fclose fclose
 #define sw_fwrite fwrite
