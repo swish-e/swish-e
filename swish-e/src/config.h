@@ -34,6 +34,8 @@
 **
 ** 2001-03-13 rasc   moved search boolean words from swish.h
 **
+** 2001-05-23 wsm    added ranking weights
+**
 */
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
@@ -96,13 +98,6 @@
 ** attempt to find a <TITLE> tag.
 */
 
-#define EMPHASIZECOMMENTS 0
-
-/* Normally, words within HTML comments are not assigned a higher
-** relevance rank. If you're including keywords in comments
-** define this as 1 so matching results will rise to the top
-** of search results.
-*/
 
 #define MINWORDLIMIT 1
 
@@ -225,6 +220,20 @@
 ** NOTE: if you set it to 1 you will not be able to do context nor
 ** metaNames searches, as tags are just plain text with no specific
 ** meaning.
+*/
+
+#define RANK_TITLE		4.0
+#define RANK_HEADER		3.0
+#define RANK_META		3.0
+#define RANK_COMMENTS	1.0
+#define RANK_EMPHASIZED 0.0
+
+/* This symbols affect the weights applied during ranking. Note that they are added
+** together and added to a base rank of 1.0 -- thus defining a rank with a value of
+** 2.0 really means it is ranked (1.0 + 2.0) times greater than normal. 
+** A value of 0.0 applies no additional ranking boost. Note that RANK_COMMENTS only
+** applies if you are indexing comment. Be sure you understand how these interact
+** in getrank; don't just go changing these values!
 */
 
 #define SPIDERDIRECTORY "./"

@@ -1063,37 +1063,76 @@ int     removestops(SWISH * sw)
 }
 
 
-/* This is somewhat similar to the rank calculation algorithm
-** from WAIS (I think). Any suggestions for improvements?
-** Note that ranks can't be smaller than 1.
+typedef struct {
+	long	mask;
+	double	rank;
+} RankFactor;
+
+static RankFactor ranks[] = {
+	{IN_TITLE,		RANK_TITLE},
+	{IN_HEADER,		RANK_HEADER},
+	{IN_META,		RANK_META},
+	{IN_COMMENTS,	RANK_COMMENTS},
+	{IN_EMPHASIZED,	RANK_EMPHASIZED}
+};
+
+#define numRanks (sizeof(ranks)/sizeof(ranks[0]))
+
+/*
+** This is an all new ranking algorithm. I can't say it is based on anything,
+** but it does seem to be better than what was used before!
+** 2001/05 wsm
+**
+** Parameters:
+**	sw
+**		Pointer to SWISH structure
+**
+**	freq
+**		Number of times this word appeared in this file
+**
+**	tfreq
+**		Number of files this word appeared in this index (not used for ranking)
+**
+**	words
+**		Number of owrds in this file
+**
+**	structure
+**		Bit mask of context where this word appeared
+**
+**	ignoreTotalWordCount
+**		Ignore total word count when ranking (config file parameter)
 */
 
-int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCountWhenRanking)
+int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCount)
 {
+	double	factor;
     double  rank;
-    int     irank;
-    double  emphasized;
+	double	reduction;
+	int		i;
 
-    if ((EMPHASIZECOMMENTS && (structure & IN_COMMENTS)) || (structure & (IN_HEADER | IN_TITLE | IN_META)))
-        emphasized = 5.0;
-    else
-        emphasized = 1.0;
+	factor = 1.0;
 
-    rank = 1.0 / (double) tfreq;
-    rank = (log((double) freq) + 10.0) * rank;
+	/* add up the multiplier factor based on where the word occurs */
+	for (i = 0; i < numRanks; i++)
+		if (ranks[i].mask & structure)
+			factor += ranks[i].rank;
 
-    if (ignoreTotalWordCountWhenRanking)
-        rank /= 100.0;
-    else
-        rank /= words;
+    rank = log((double)freq) + 10.0;
 
-    rank = rank * 10000.0 * 100.0 * emphasized + 0.5;
+	/* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
+    if (!ignoreTotalWordCount)
+	{
+		if (words < 10) words = 10;
+		reduction = log10((double)words);
+		if (reduction > 5.0) reduction = 5.0;
+		rank /= reduction;
+	}
 
-    irank = (int) rank;
-    if (irank <= 0)
-        irank = 1;
+	/* multiply by the weighting factor, and scale to be sure we don't loose
+	   precision when converted to an integer. The rank will be normalized later */
+    rank = rank * factor * 100.0 + 0.5;
 
-    return irank;
+    return (int)rank;
 }
 
 
