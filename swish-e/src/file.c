@@ -67,7 +67,9 @@ $Id$
 #include "index.h"
 #include "filter.h"
 #include "metanames.h"
-
+#ifndef HAVE_MKSTEMP
+#include "mkstemp.h"
+#endif
 
 /* Cough, hack, cough - convert slash to backslash for programs that are run via the shell */
 #ifdef _WIN32
