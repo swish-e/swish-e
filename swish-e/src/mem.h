@@ -53,7 +53,7 @@ typedef struct _mem_zone {
 	char			*name;		/* name of zone */
 	size_t			size;		/* size to grow zone by */
 	int				attributes;	/* attributes of zone (not used yet) */
-	int				allocs;		/* count of allocations (for statistics) */
+	unsigned int	allocs;		/* count of allocations (for statistics) */
 } MEM_ZONE;
 
 

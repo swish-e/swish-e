@@ -265,6 +265,8 @@ void freeModule_Index (SWISH *sw)
   /* should be free by now!!! But just in case... */
   if (idx->entryZone)
 	  Mem_ZoneFree(&idx->entryZone);
+  if (idx->locZone)
+	  Mem_ZoneFree(&idx->locZone);
 
        /* free module data */
   efree (idx);
