@@ -28,6 +28,7 @@ my %config = (
         remove          => 1,   # remove tar and build dirs
         logs            => 1,   # write log files
         symlink         => 1,   # create symlink
+        htmldocs        => 'build_swish_docs',  # tool to build the swish docs
 );
 
 #--------------------------------------------------------------------
@@ -49,6 +50,7 @@ GetOptions( \%config,
        symlink!
        help man options
        config_options=s
+       htmldocs=s
     /
 ) or pod2usage(
     {
@@ -67,8 +69,9 @@ if ( $config{dump} ) {
 my @functions = (
     [ \&cvs_checkout, 'Check out from CVS' ],  # can be replaced by a LWP fetch with --fetchtarurl=<url>
     [ \&configure,    'Run configure' ],
+    [ \&builddocs,    'Build HTML docs' ],
     [ \&make_install, 'Run make install' ],
-    [ \&make_docs,    "Run make docs" ],
+    # (old docs)[ \&make_docs,    "Run make docs" ],
     [ \&make_dist,    "Run make dist and move tarball to $config{tardir}"  ],
     [ \&set_symlink,  "Make symlink $config{symlink} point to $config{day_dir}" ],
     [ \&remove_day_dir, "Remove old install and build directories" ],
@@ -163,6 +166,19 @@ sub configure {
     my $timestamp = $c->{timestamp} ? '--enable-daystamp'  : '';
     my $command = "$c->{srcdir}/configure $timestamp $options --prefix=$c->{installdir} $options";
     run_command( $command );
+}
+
+#======================================================================
+# This creates the HTML docs in the build directory
+
+sub builddocs {
+    my $c = shift;
+
+    my $html_dir = "$c->{builddir}/html";
+
+    log_message( "Build HTML docs in directory $html_dir" );
+
+    run_command( "$c->{htmldocs} -swishsrc=$c->{srcdir} -poddest=$html_dir" );
 }
 
 
@@ -485,6 +501,7 @@ Options:
     -options                list options
     -dump                   dump configuration and exit.  Good for seeing defaults
     -ask                    ask what tasks to run
+    -htmldocs=<program>     the location of the build script for the HTML docs
     -tardir=<path>          where to place tarball when finished
     -tar_keep_days=<int>    number of days to keep old tarballs (default 15 days)
     -build_keep_days=<int>  number of days to key old build directories (default 2 days)
@@ -494,6 +511,15 @@ Options:
     -[no]remove             remove old tar files or old build directories (default yes)
     -[no]symlink            create symlink pointing to created directory
     -[no]logs               don't create build and error log files
+
+
+
+    mkdir tardir
+    swish-daily.pl \
+        -cvsco='cvs -z3 -d:ext:moseley@cvs.sourceforge.net:/cvsroot/swishe' \
+        -htmldocs=$HOME/swish_website/bin/build \
+        -tardir=tardir
+
 
 =head1 DESCRIPTION
 
@@ -541,6 +567,17 @@ String for checking out from cvs.  Run -dump to see an example.
 =item B<-fetchtarurl>
 
 Specifies a URL where to fetch the tarball.  This will replace the use of cvs for fetching the source.
+
+=item B<-htmldocs>
+
+Lists the "bin/build" program from the "swish_website" cvs module -- used for building the
+html documentation.  This is needed because the html docs are not in cvs.
+
+The default is "build_swish_doc", which could be a shell script to bin/build.
+
+You could set this to "echo" to disable building docs.  You would also need to set
+config_options to include --disable-docs to say it's ok to build without docs.  But then
+you would end up with a broken distribution file.
 
 =item B<-[no]timestamp>
 
