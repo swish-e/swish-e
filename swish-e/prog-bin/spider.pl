@@ -20,6 +20,7 @@ $HTTP::URI_CLASS = "URI";   # prevent loading default URI::URL
                             # and eat up memory with >= URI 1.13
 use LWP::RobotUA;
 use HTML::LinkExtor;
+use HTML::Tagset;
 
 use vars '$VERSION';
 $VERSION = sprintf '%d.%02d', q$Revision$ =~ /: (\d+)\.(\d+)/;
@@ -106,8 +107,7 @@ sub process_server {
     die "max_size parameter '$server->{max_size}' must be a number\n" unless $server->{max_size} =~ /^\d+$/;
 
     $server->{link_tags} = ['a'] unless ref $server->{link_tags} eq 'ARRAY';
-    my %seen;
-    $server->{link_tags} = [ grep { !$seen{$_}++} map { lc } @{$server->{link_tags}} ];
+    $server->{link_tags_lookup} = { map { lc, 1 } @{$server->{link_tags}} };
 
     die "max_depth parameter '$server->{max_depth}' must be a number\n" if defined $server->{max_depth} && $server->{max_depth} !~ /^\d+/;
 
@@ -148,6 +148,10 @@ sub process_server {
     $server->{authority} = $uri->authority;
     $server->{same} = [ $uri->authority ];
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
+
+    $server->{same_host_lookup} = { map { $_, 1 } @{$server->{same}} };
+
+    
 
 
     # set time to end
@@ -225,9 +229,10 @@ sub process_server {
 sub spider {
     my ( $server, $uri ) = @_;
 
-    my @link_array = [ $uri, '', 0 ];
+    # Validate the first link, just in case
+    return unless check_link( $uri, $server, '', '(Base URL)' );
 
-    $visited{ $uri->canonical }++;  # so we don't extract this link again
+    my @link_array = [ $uri, '', 0 ];
 
     while ( @link_array ) {
 
@@ -287,7 +292,8 @@ sub process_link {
 
     my $response = $ua->simple_request( $request, $callback, 4096 );
 
-    
+
+    return if $server->{abort};
 
 
     # Log the response
@@ -317,10 +323,6 @@ sub process_link {
     }
 
 
-    if ( $server->{validate_links} && !$response->is_success ) {
-        validate_link( $server, $uri, $parent, $response );
-    }
-
 
     # skip excluded by robots.txt
     
@@ -329,6 +331,15 @@ sub process_link {
         $server->{counts}{'robots.txt'}++;
         return;
     }
+
+
+    # Report bad links (excluding those skipped by robots.txt
+
+    if ( $server->{validate_links} && !$response->is_success ) {
+        validate_link( $server, $uri, $parent, $response );
+    }
+
+
 
     # And check for meta robots tag
     # -- should probably be done in request sub to avoid fetching docs that are not needed
@@ -360,8 +371,7 @@ sub process_link {
                 return;
             }
 
-            $visited{ $u->canonical }++;  # say that we say this one.
-            return [$u];
+            return [$u] if check_link( $u, $server, $response->base, '(redirect)','Location' );
         }
         return;
     }
@@ -385,8 +395,12 @@ sub process_link {
         }
         $visited{ $digest } = $uri;
     }
-    
 
+
+    # Extract out links (if not too deep)
+
+    my $links_extracted = extract_links( $server, \$content, $response )
+        unless defined $server->{max_depth} && $depth >= $server->{max_depth};
 
 
     # Index the file
@@ -398,18 +412,19 @@ sub process_link {
     } else {
         return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
 
-        output_content( $server, \$content, $response )
+        output_content( $server, \$content, $uri, $response )
             unless $server->{no_index};
     }
 
 
-    # Allow skipping of this file for spidering.
 
-    return if defined $server->{max_depth} && $depth >= $server->{max_depth};
-
-    return extract_links( $server, \$content, $response );
+    return $links_extracted;
 }
 
+#===================================================================================================
+#  Calls a user-defined function
+#
+#---------------------------------------------------------------------------------------------------
 
 sub check_user_function {
     my ( $fn, $uri, $server ) = ( shift, shift, shift );
@@ -422,7 +437,7 @@ sub check_user_function {
 
     for my $sub ( @$tests ) {
         $cnt++;
-        print STDERR "?Testing '$fn' user supplied function #$cnt\n" if $server->{debug} & DEBUG_INFO;
+        print STDERR "?Testing '$fn' user supplied function #$cnt '$uri'\n" if $server->{debug} & DEBUG_INFO;
 
         my $ret;
         
@@ -444,18 +459,27 @@ sub check_user_function {
     return 1;
 }
 
+
+#==============================================================================================
+#  Extract links from a text/html page
+#
+#   Call with:
+#       $server - server object
+#       $content - ref to content
+#       $response - response object
+#
+#----------------------------------------------------------------------------------------------
     
 sub extract_links {
     my ( $server, $content, $response ) = @_;
 
-    return [] unless $response->header('content-type') &&
+    return unless $response->header('content-type') &&
                      $response->header('content-type') =~ m[^text/html];
-
 
     # allow skipping.
     if ( $server->{no_spider} ) {
         print STDERR '-Links not extracted: ', $response->request->uri->canonical, " some callback set 'no_spider' flag\n" if $server->{debug}&DEBUG_SKIPPED;
-        return [];
+        return;
     }
 
     $server->{Spidered}++;
@@ -465,26 +489,27 @@ sub extract_links {
 
     my $base = $response->base;
 
+    print "\nExtracting links from ", $response->request->uri, ":\n" if $server->{debug} & DEBUG_LINKS;
+
     my $p = HTML::LinkExtor->new;
     $p->parse( $$content );
 
     my %skipped_tags;
+
     for ( $p->links ) {
         my ( $tag, %attr ) = @$_;
 
         # which tags to use ( not reported in debug )
 
         print STDERR " ?? Looking at extracted tag '$tag'\n" if $server->{debug} & DEBUG_LINKS;
-        
-        unless ( grep { $tag eq $_ } @{$server->{link_tags}} ) {
 
+        unless ( $server->{link_tags_lookup}{$tag} ) {
+        
             # each tag is reported only once per page
             print STDERR
                 " ?? <$tag> skipped because not one of (",
                 join( ',', @{$server->{link_tags}} ),
-                ")\n"
-
-            if $server->{debug} & DEBUG_LINKS && !$skipped_tags{$tag}++;
+                ")\n" if $server->{debug} & DEBUG_LINKS && !$skipped_tags{$tag}++;
 
             if ( $server->{validate_links} && $tag eq 'img' && $attr{src} ) {
                 my $img = URI->new_abs( $attr{src}, $base );
@@ -494,62 +519,31 @@ sub extract_links {
             next;
         }
         
-
+        # Grab which attribute(s) which might contain links for this tag
         my $links = $HTML::Tagset::linkElements{$tag};
         $links = [$links] unless ref $links;
 
+
         my $found;
-        my %seen;
-        for ( @$links ) {
-            if ( $attr{ $_ } ) {  # ok tag
 
-                my $u = URI->new_abs( $attr{$_},$base );
 
-                $u->fragment( undef );
+        # Now, check each attribut to see if a link exists
+        
+        for my $attribute ( @$links ) {
+            if ( $attr{ $attribute } ) {  # ok tag
 
-                # Ignore duplicates on the same page
-                if ( $seen{$u}++ ) {
-                    $server->{counts}{Duplicates}++;
-                    next;
-                }
-
-                unless ( $u->host ) {
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because missing host name\n] if $server->{debug} & DEBUG_LINKS;
-                    next;
-                }
-
-                unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
-                    $server->{counts}{'Off-site links'}++;
-                    validate_link( $server, $u, $base ) if $server->{validate_links} && $u->scheme eq 'http';
-                    next;
-                }
+                # Create a URI object
                 
-                $u->authority( $server->{authority} );  # Force all the same host name
+                my $u = URI->new_abs( $attr{$attribute},$base );
 
-                next unless check_user_function( 'test_url', $u, $server );
-
-                # Don't add the link if already seen  - these are so common that we don't report
-                if ( $visited{ $u->canonical }++ ) {
-                    #$server->{counts}{Skipped}++;
-                    $server->{counts}{Duplicates}++;
-
-
-                    # Just so it's reported for all pages 
-                    if ( $server->{validate_links} && $validated{$u->canonical} ) {
-                        push @{$bad_links{ $base->canonical }}, $u->canonical;
-                    }
-                    
-                    next;
-                }
-
-
-
+                next unless check_link( $u, $server, $base, $tag, $attribute );
+                
                 push @links, $u;
-                print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
+                print STDERR qq[ ++ <$tag $attribute="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
             }
         }
+
 
         if ( !$found && $server->{debug} & DEBUG_LINKS ) {
             my $s = "<$tag";
@@ -561,16 +555,96 @@ sub extract_links {
         
     }
 
-    print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n" if $server->{debug} & DEBUG_INFO;
+    print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n\n" if $server->{debug} & DEBUG_INFO;
 
 
     return \@links;
 }
 
+
+
+
+#=============================================================================
+# This function check's if a link should be added to the list to spider
+#
+#   Pass:
+#       $u - URI object
+#       $server - the server hash
+#       $base - the base or parent of the link
+#
+#   Returns true if a valid link
+#
+#   Calls the user function "test_url".  Link rewriting before spider
+#   can be done here.
+#
+#------------------------------------------------------------------------------
+sub check_link {
+    my ( $u, $server, $base, $tag, $attribute ) = @_;
+    
+    $tag ||= '';
+    $attribute ||= '';
+
+
+    # Kill the fragment
+    $u->fragment( undef );
+
+
+    # This should not happen, but make sure we have a host to check against
+
+    unless ( $u->host ) {
+        print STDERR qq[ ?? <$tag $attribute="$u"> skipped because missing host name\n] if $server->{debug} & DEBUG_LINKS;
+        return;
+    }
+
+
+    # Here we make sure we are looking at a link pointing to the correct (or equivalent) host
+
+    unless ( $server->{same_host_lookup}{$u->authority} ) {
+
+        print STDERR qq[ ?? <$tag $attribute="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
+        $server->{counts}{'Off-site links'}++;
+        validate_link( $server, $u, $base ) if $server->{validate_links};
+        return;
+    }
+    
+    $u->authority( $server->{authority} );  # Force all the same host name
+
+    # Allow rejection of this URL by user function
+
+    return unless check_user_function( 'test_url', $u, $server );
+
+
+    # Don't add the link if already seen  - these are so common that we don't report
+
+    if ( $visited{ $u->canonical }++ ) {
+        #$server->{counts}{Skipped}++;
+        $server->{counts}{Duplicates}++;
+
+
+        # Just so it's reported for all pages 
+        if ( $server->{validate_links} && $validated{$u->canonical} ) {
+            push @{$bad_links{ $base->canonical }}, $u->canonical;
+        }
+
+        return;
+    }
+
+    return 1;
+}
+
+
+#=============================================================================
+# This function is used to validate links that are off-site.
+#
+#   It's just a very basic link check routine that lets you validate the
+#   off-site links at the same time as indexing.  Just because we can.
+#
+#------------------------------------------------------------------------------
 sub validate_link {
     my ($server, $uri, $base, $response ) = @_;
 
    # Already checked? 
+
     if ( exists $validated{ $uri->canonical } )
     {
         # Add it to the list of bad links on that page if it's a bad link.
@@ -616,7 +690,7 @@ sub validate_link {
     
 
 sub output_content {
-    my ( $server, $content, $response ) = @_;
+    my ( $server, $content, $uri, $response ) = @_;
 
     $server->{indexed}++;
 
@@ -631,7 +705,7 @@ sub output_content {
 
 
     my $headers = join "\n",
-        'Path-Name: ' .  $response->request->uri,
+        'Path-Name: ' .  $uri,
         'Content-Length: ' . length $$content,
         '';
 
@@ -732,7 +806,7 @@ into a format that swish-e can parse.  Some examples are provided.
 You define "servers" to spider, set a few parameters,
 create callback routines, and start indexing as the synopsis above shows.
 The spider requires its own configuration file (unless you want the default values).  This
-is not the same configuration file that swish-e uses.
+is NOT the same configuration file that swish-e uses.
 
 The example configuration file C<SwishSpiderConfig.pl> is
 included in the C<prog-bin> directory along with this script.  Please just use it as an
@@ -747,14 +821,25 @@ run the spider without using swish just to make sure it works.  Just run
     ./spider.pl default http://someserver.com/sometestdoc.html
 
 And you should see F<sometestdoc.html> dumped to your screen.  Get ready to kill the script
-if the file you request contains links!
+if the file you request contains links as the output from the fetched pages will be displayed.
 
-If the first parameter passed to the spider is the word "default" then the spider uses
-the default parameters, and the following parameter(s) are expected to be URL(s) to spider.
+    ./spider.pl default http://someserver.com/sometestdoc.html > output.file
+
+might be more friendly.    
+
+If the first parameter passed to the spider is the word "default" (as in the preceeding example)
+then the spider uses the default parameters,
+and the following parameter(s) are expected to be URL(s) to spider.
 Otherwise, the first parameter is considered to be the name of the configuration file (as described
 below).  When using C<-S prog>, the swish-e configuration setting
 C<SwishProgParameters> is used to pass parameters to the program specified
 with C<IndexDir> or the C<-i> switch.
+
+If you do not specify any parameters the program will look for the file
+
+    SwishSpiderConfig.pl
+
+in the current directory.    
 
 The spider does require Perl's LWP library and a few other reasonably common modules.
 Most well maintained systems should have these modules installed.  If not, start here:
@@ -762,7 +847,8 @@ Most well maintained systems should have these modules installed.  If not, start
     http://search.cpan.org/search?dist=libwww-perl
     http://search.cpan.org/search?dist=HTML-Parser
 
-See more below in C<REQUIREMENTS>.    
+See more below in C<REQUIREMENTS>.  It's a good idea to check that you are running
+a current version of these modules.
 
 =head2 Robots Exclusion Rules and being nice
 
@@ -845,6 +931,7 @@ Also required is the the HTML-Parser-x.xx bundle of modules also from CPAN
     http://search.cpan.org/search?dist=HTML-Parser
 
 You will also need Digest::MD5 if you wish to use the MD5 feature.
+HTML::Tagset is also required.
 Other modules may be required (for example, the pod2xml.pm module
 has its own requirementes -- see perldoc pod2xml for info).
 
@@ -904,6 +991,10 @@ Examples:
         base_url    => 'http://swish-e.org/',
         same_hosts  => [ qw/www.swish-e.org/ ],
         email       => 'my@email.address',
+    );
+    my %serverB = (
+        ...
+        ...
     );
     @servers = ( \%serverA, \%serverB, );
 
@@ -1108,6 +1199,11 @@ Obvious example is these two documents will only be indexed one time:
 This option requires the Digest::MD5 module.  Spidering with this option might
 be a tiny bit slower.
 
+=item validate_links
+
+Just a hack.  If you set this true the spider will do HEAD requests all links (e.g. off-site links), just
+to make sure that all your links work.
+
 =back
 
 =head1 CALLBACK FUNCTIONS
@@ -1116,37 +1212,239 @@ Three callback functions can be defined in your parameter hash.
 These optional settings are I<callback> subroutines that are called while
 processing URLs.
 
-The first routine allows you to skip processing of urls based on the url before the request
-to the server is made.  The second function allows you to filter based on the response from the
-remote server (such as by content-type).  And the third function allows you to filter the returned
-content from the remote server.
+A little perl discussion is in order:
+
+In perl, a scalar variable can contain a reference to a subroutine.  The config example above shows
+that the configuration parameters are stored in a perl I<hash>.
+
+    my %serverA = (
+        base_url    => 'http://sunsite.berkeley.edu:4444/',
+        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        email       => 'my@email.address',
+        link_tags   => [qw/ a frame /],
+    );
+
+There's two ways to add a reference to a subroutine to this hash:
+
+sub foo {
+    return 1;
+}
+
+    my %serverA = (
+        base_url    => 'http://sunsite.berkeley.edu:4444/',
+        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        email       => 'my@email.address',
+        link_tags   => [qw/ a frame /],
+        test_url    => \&foo,  # a reference to a named subroutine
+    );
+
+Or the subroutine can be coded right in place:    
+
+    my %serverA = (
+        base_url    => 'http://sunsite.berkeley.edu:4444/',
+        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        email       => 'my@email.address',
+        link_tags   => [qw/ a frame /],
+        test_url    => sub { reutrn 1; },
+    );
+
+The above example is not very useful as it just creates a user callback function that
+always returns a true value (the number 1).  But, it's just an example.
 
 The function calls are wrapped in an eval, so calling die (or doing something that dies) will just cause
 that URL to be skipped.  If you really want to stop processing you need to set $server->{abort} in your
-subroutine (or kill -HUP yourself).
+subroutine (or send a kill -HUP to the spider).
 
 The first two parameters passed are a URI object (to have access to the current URL), and
-a reference to the current server hash.  Other parameters may be passes, as described below.
+a reference to the current server hash.  The C<server> hash is just a global hash for holding data, and
+useful for setting flags as describe belwo.
 
-Note that you can create your own counters to display in the summary list when spidering
-is finished by adding a value to the hash pointed to by C<$server->{counts}>.  See the example below.
+Other parameters may be also passes, as described below.
+In perl parameters are passed in an array called "@_".  The first element (first parameter) of
+that array is $_[0], and the second is $_[1], and so on.  Depending on how complicated your
+function is you may wish to shift your parameters off of the @_ list to make working with them
+easier.  See the examples below.
 
-Each callback function B<must> return true to continue processing the URL.  Returning false will
-cause processing of I<the current> URL to be skipped.
-Setting flags in the passed in C<$server> hash can be used for finer
-control over the spidering.  Currently there are four flags:
+
+To make use of these routines you need to understand when they are called, and what changes
+you can make in your routines.  Each routine deals with a given step, and returning false from
+your routine will stop processing for the current URL.
+
+=over 4
+
+=item test_url
+
+C<test_url> allows you to skip processing of urls based on the url before the request
+to the server is made.  This function is called for the C<base_url> links (links you define in
+the spider configuration file) and for every link extracted from a fetched web page.
+
+This function is a good place to skip links that you are not interested in following.  For example,
+if you know there's no point in requesting images then you can exclude them like:
+
+    test_url => sub {
+        my $uri = shift;
+        return 0 if $uri->path =~ /\.(gif|jpeg|png)$/;
+        return 1;
+    },
+
+Or to write it another way:
+
+    test_url => sub { $_[0]->path !~ /\.(gif|jpeg|png)$/ },
+
+Another feature would be if you were using a web server where path names are
+NOT case sensitive (e.g. Windows).  You can normalize all links in this situation
+using something like
+
+    test_url => sub {
+        my $uri = shift;
+        return 0 if $uri->path =~ /\.(gif|jpeg|png)$/;
+
+        $uri->path( lc $uri->path ); # make all path names lowercase
+        return 1;
+    },
+
+The important thing about C<test_url> (compared to the other callback functions) is that
+it is called while I<extracting> links, not while actually fetching that page from the web
+server.  Returning false from C<test_url> simple says to not add the URL to the list of links to
+spider.
+
+You may set a flag in the server hash (second parameter) to tell the spider to abort processing.
+
+    test_url => sub {
+        my $server = $_[1];
+        $server->{abort}++ if $_[0]->path =~ /foo\.html/;
+        return 1;
+    },
+
+You cannot use the server flags:
+
+    no_contents
+    no_index
+    no_spider
+
+
+This is discussed below.
+
+=item test_response
+
+This function allows you to filter based on the response from the
+remote server (such as by content-type).  This function is called while the
+web pages is being fetched from the remote server, typically after just enought
+data has been returned to read the response from the web server.
+
+The spider requests a document in "chunks" of 4096 bytes.  4096 is only a suggestion
+of how many bytes to return in each chunk.  The C<test_response> routine is
+called when the first chunk is received only.  This allows ignoring (aborting)
+reading of a very large file, for example, without having to read the entire file.
+Although not much use, a reference to this chunk is passed as the forth parameter.
+
+Web servers use a Content-Type: header to define the type of data returned from the server.
+On a web server you could have a .jpeg file be a web page -- file extensions may not always
+indicate the type of the file.  The third parameter ($_[2]) returned is a reference to a
+HTTP::Response object:
+
+For example, to only index true HTML (text/html) pages:
+
+    test_response => sub {
+        my $content_type = $_[2]->content_type;
+        return $content_type =~ m!text/html!;
+    },
+
+You can also set flags in the server hash (the second parameter) to control indexing:
 
     no_contents -- index only the title (or file name), and not the contents
     no_index    -- do not index this file, but continue to spider if HTML
     no_spider   -- index, but do not spider this file for links to follow
     abort       -- stop spidering any more files
 
+For example, to avoid index the contents of "private.html", yet still follow any links
+in that file:
+
+    test_url => sub {
+        my $server = $_[1];
+        $server->{no_index}++ if $_[0]->path =~ /private\.html$/;
+        return 1;
+    },
+
+Note: Do not modify the URI object in this call back function.
+    
+
+=item filter_content
+
+This callback function is called right before sending the content to swish.
+Like the other callback function, returning false will cause the URL to be skipped.
+Setting the C<abort> server flag and returning false will abort spidering.
+
+You can also set the C<no_contents> flag.
+
+This callback function is passed four parameters.
+The URI object, server hash, the HTTP::Response object,
+and a reference to the content.
+
+You can modify the content as needed.  For example you might not like upper case:
+
+    filter_content => sub {
+        my $content_ref = $_[3];
+
+        $$content_ref = lc $$content_ref;
+        return 1;
+    },
+
+I more reasonable example would be converting PDF or MS Word documents for parsing by swish.
+Examples of this are provided in the F<prog-bin> directory of the swish-e distribution.
+
+You may also modify the URI object to change the path name passed to swish for indexing.
+
+    filter_content => sub {
+        my $uri = $_[0];
+        $uri->host('www.other.host') ;
+        return 1;
+    },
+
+Swish-e's ReplaceRules feature can also be used for modifying the path name indexed.
+
+Here's a bit more advanced example of indexing text/html and PDF files only:
+
+    use pdf2xml;  # included example pdf converter module
+    $server{filter_content} = sub {
+       my ( $uri, $server, $response, $content_ref ) = @_;
+
+       return 1 if $response->content_type eq 'text/html';
+       return 0 unless $response->content_type eq 'application/pdf';
+
+       # for logging counts
+       $server->{counts}{'PDF transformed'}++;
+
+       $$content_ref = ${pdf2xml( $content_ref )};
+       return 1;
+    }
+
+
+
+=back
+
+Note that you can create your own counters to display in the summary list when spidering
+is finished by adding a value to the hash pointed to by C<$server->{counts}>.
+
+    test_url => sub {
+        my $server = $_[1];
+        $server->{no_index}++ if $_[0]->path =~ /private\.html$/;
+        $server->{counts}{'Private Files'}++;
+        return 1;
+    },
+
+
+Each callback function B<must> return true to continue processing the URL.  Returning false will
+cause processing of I<the current> URL to be skipped.
+
+=head2 More on setting flags
+
 Swish (not this spider) has a configuration directive C<NoContents> that will instruct swish to
 index only the title (or file name), and not the contents.  This is often used when
 indexing binary files such as image files, but can also be used with html
 files to index only the document titles.
 
-You can turn this feature on for specific documents by setting a flag in
+As shown above, you can turn this feature on for specific documents by setting a flag in
 the server hash passed into the C<test_response> or C<filter_contents> subroutines.
 For example, in your configuration file you might have the C<test_response> callback set
 as:
@@ -1172,7 +1470,7 @@ to be ignored.  Therefore, it would be smart to use a C<filter_contents> callbac
 replace the contents with single character (you cannot use the empty string at this time).
 
 A similar flag may be set to prevent indexing a document at all, but still allow spidering.
-In general, if you want completely skip spidering a file you return false from one of the four
+In general, if you want completely skip spidering a file you return false from one of the 
 callback routines (C<test_url>, C<test_response>, or C<filter_content>).  Returning false from any of those
 three callbacks will stop processing of that file, and the file will B<not> be spidered.
 
@@ -1188,105 +1486,16 @@ the links to the PDF files.
 
 So, the difference between C<no_contents> and C<no_index> is that C<no_contents> will still index the file
 name, just not the contents.  C<no_index> will still spider the file (if it's C<text/html>) but the
-file will not be processed by swish.
+file will not be processed by swish at all.
 
 B<Note:> If C<no_index> is set in a C<test_response> callback function then
 the document I<will not be filtered>.  That is, your C<filter_content>
-callback function will not be called.  In general, this is what you want.
-The exception might be where you need to filter a C<text/html> file to
-fix up links before following links in that file (spidering that file).  In
-this case you would want to set the C<no_index> flag in the C<filter_content>
-function instead of the C<test_response> callback.
+callback function will not be called.
 
 The C<no_spider> flag can be set to avoid spiderering an HTML file.  The file will still be indexed unless
 C<no_index> is also set.  But if you do not want to index and spider, then simply return false from one of the three
 callback funtions.
 
-
-=over 4
-
-=item test_url
-
-This callback function is called for every link that is extracted while spidering.
-Your callback function is passed two parameters, a URI object and a reference
-to the server parameter hash.  If this function returns true the URL will be
-requested from the web server.  Returning false will cause the spider to skip this
-URL.
-
-This callback function allows you to filter out URLs before taking the time to
-request the resource (document, image, whatever) from the web server.  This might
-be a good place, for example, to filter out requests for images based on file name.
-
-For example:
-
-    $server{test_url} = sub {
-        my ( $uri, $server ) = @_;
-        return $uri->path !~ /\.(gif|jpeg|jpg|png)$/;
-    }
-
-This method is called right before adding the URL to the list of URLs to spider.  This
-means you can modify the URL. For example, to remove query strings:
-
-    $server{test_url} = sub {
-        $uri = shift;
-        $uri->query(undef);
-        return 1;
-    }
-
-=item test_response
-
-C<test_response> is similar to C<test_url>, but it is called I<after> the URI
-has been requested from the web server (and some content has been returned).
-In addition to the URI, and server hash passed, the HTTP::Response object is passed as
-a third parameter.
-Again, returning false will cause the spider to ignore this resource.
-
-The spider requests a document in "chunks" or 4096 bytes.  4096 is only a suggestion
-of how many bytes to return in each chunk.  The C<test_response> routine is
-called when the first chunk is received only.  This allows ignoring (aborting)
-reading of a very large file, for example, without having to read the entire file.
-Although not much use, a reference to this chunk is passed as the forth parameter.
-
-This subroutine is useful for filtering documents based on data returned in the
-headers of the response.  For example, if you have lots of large images on your
-web server, and they cannot be easily identified by the URL (as above), then
-you could use this callback subroutine to check the Content-Type: header.
-
-    $server{test_response} = sub {
-        my ( $uri, $server, $response ) = @_;
-        return $response->content_type !~ m[^image/];
-    }
-
-
-=item filter_content
-
-This callback subroutine can filter the contents before it gets
-passed to swish for indexing.  For example, you could add meta tags to HTML
-documents or convert PDF or Word documents into text, HTML, or XML.
-
-Again, your routine must return true to continue processing this resource.
-
-The HTTP::Response object is passed as the third parameter, and a reference to the
-content is passed as the forth parameter.
-
-For example:
-
-    use pdf2xml;  # included example pdf converter module
-    $server{filter_content} = sub {
-       my ( $uri, $server, $response, $content_ref ) = @_;
-
-       return 1 if $response->content_type eq 'text/html';
-       return 0 unless $response->content_type eq 'application/pdf';
-
-       # for logging counts
-       $server->{counts}{'PDF transformed'}++;
-
-       $$content_ref = ${pdf2xml( $content_ref )};
-       $$content_ref =~ tr/ / /s;  # squash extra space
-       return 1;
-    }
-
-=back
 
 =head1 SIGNALS
 
