@@ -165,14 +165,16 @@ char *w0;
 				indexf->header.ignorelastchar = SafeStrCopy(indexf->header.ignorelastchar,sl->word[1],&indexf->header.lenignorelastchar);
 				sortstring(indexf->header.ignorelastchar);
 				makelookuptable(indexf->header.ignorelastchar,indexf->header.ignorelastcharlookuptable);
-			} else progerr("%s: requires one value",w0);
+			}  /* Do nothing */
+			/* else progerr("%s: requires one value",w0); */
 		}
 		else if (strcasecmp(w0, "IgnoreFirstChar")==0)	{
 			if(sl->n==2) {
 				indexf->header.ignorefirstchar = SafeStrCopy(indexf->header.ignorefirstchar,sl->word[1],&indexf->header.lenignorefirstchar);
 				sortstring(indexf->header.ignorefirstchar);
 				makelookuptable(indexf->header.ignorefirstchar,indexf->header.ignorefirstcharlookuptable);
-			} else progerr("%s: requires one value",w0);
+			}  /* Do nothing */
+			/*  else progerr("%s: requires one value",w0); */
 		}
 		else if (strcasecmp(w0, "ReplaceRules")==0)	{
 			if(sl->n>1) {
