@@ -41,6 +41,8 @@ use constant MAX_WAIT_TIME  => 30;          # request time.
 #Can't locate object method "host" via package "URI::mailto" at ../prog-bin/spider.pl line 473.
 #sub URI::mailto::host { return '' };
 
+
+# This is not the right way to do this.
 sub UNIVERSAL::host { '' };
 sub UNIVERSAL::port { '' };
 sub UNIVERSAL::host_port { '' };
@@ -161,8 +163,18 @@ sub process_server {
 
     # set the starting server name (including port) -- will only spider on server:port
     
-    $server->{host_port} = $uri->host_port;
-    $server->{same} = [ $uri->host_port ];
+
+    # All URLs will end up with this host:port
+    $server->{authority} = $uri->canonical->authority;
+
+    # All URLs must match this scheme ( Jan 22, 2002 - spot by Darryl Friesen )
+    $server->{scheme} = $uri->scheme;
+
+
+
+    # Now, set the OK host:port names
+    $server->{same} = [ $uri->canonical->authority ];
+    
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
 
     $server->{same_host_lookup} = { map { $_, 1 } @{$server->{same}} };
@@ -253,7 +265,7 @@ sub process_server {
 # Thanks Gisle!
 sub get_basic_credentials {
     my($uri, $server, $realm ) = @_;
-    my $netloc = $uri->host_port;
+    my $netloc = $uri->canonical->host_port;
 
     my ($user, $password);
 
@@ -363,7 +375,7 @@ sub process_link {
 
         # Cache user/pass
         if ( $server->{cur_realm} && $uri->userinfo ) {
-             my $key = $uri->host_port . ':' . $server->{cur_realm};
+             my $key = $uri->canonical->host_port . ':' . $server->{cur_realm};
              $server->{auth_cache}{$key} =  $uri->userinfo;
         }
 
@@ -400,7 +412,7 @@ sub process_link {
         my $user_pass;
 
         # Do we have a cached user/pass for this realm?
-        my $key = $uri->host_port . ':' . $realm;
+        my $key = $uri->canonical->host_port . ':' . $realm;
 
         if ( $user_pass = $server->{auth_cache}{$key} ) {
 
@@ -545,7 +557,7 @@ sub process_link {
         print STDERR "-Skipped indexing $uri some callback set 'no_index' flag\n" if $server->{debug}&DEBUG_SKIPPED;
 
     } else {
-        return $links_extracted unless check_user_function( 'content', $uri, $server, $response, \$content );
+        return $links_extracted unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
 
         output_content( $server, \$content, $uri, $response )
             unless $server->{no_index};
@@ -732,15 +744,15 @@ sub check_link {
 
     # Here we make sure we are looking at a link pointing to the correct (or equivalent) host
 
-    unless ( $server->{same_host_lookup}{$u->host_port} ) {
+    unless ( $server->{scheme} eq $u->scheme && $server->{same_host_lookup}{$u->canonical->authority} ) {
 
-        print STDERR qq[ ?? <$tag $attribute="$u"> skipped because different host_port (server:port)\n] if $server->{debug} & DEBUG_LINKS;
+        print STDERR qq[ ?? <$tag $attribute="$u"> skipped because different host\n] if $server->{debug} & DEBUG_LINKS;
         $server->{counts}{'Off-site links'}++;
         validate_link( $server, $u, $base ) if $server->{validate_links};
         return;
     }
     
-    $u->host_port( $server->{host_port} );  # Force all the same host name
+    $u->host_port( $server->{authority} );  # Force all the same host name
 
     # Allow rejection of this URL by user function
 
@@ -1172,7 +1184,7 @@ See also C<credentials> below.
 
 =item same_hosts
 
-This optional key sets equivalent B<host_port> name(s) for the site you are spidering.
+This optional key sets equivalent B<authority> name(s) for the site you are spidering.
 For example, if your site is C<www.mysite.edu> but also can be reached by
 C<mysite.edu> (with or without C<www>) and also C<web.mysite.edu> then:
 
@@ -1191,9 +1203,9 @@ as:
 
     http://www.mysite.edu/path/to/file.html
 
-Note: This should probably be called B<same_host_port> because it compares the URI C<host_port>
+Note: This should probably be called B<same_host_port> because it compares the URI C<host:port>
 against the list of host names in C<same_hosts>.  So, if you specify a port name in you will
-probably want to specify the port name in the the list of hosts in C<same_hosts>:
+want to specify the port name in the the list of hosts in C<same_hosts>:
 
     my %serverA = (
         base_url    => 'http://sunsite.berkeley.edu:4444/',
@@ -1625,7 +1637,7 @@ indexing binary files such as image files, but can also be used with html
 files to index only the document titles.
 
 As shown above, you can turn this feature on for specific documents by setting a flag in
-the server hash passed into the C<test_response> or C<filter_contents> subroutines.
+the server hash passed into the C<test_response> or C<filter_content> subroutines.
 For example, in your configuration file you might have the C<test_response> callback set
 as:
 
@@ -1646,7 +1658,7 @@ type (as set by the swish configuration settings C<IndexContents> or C<DefaultCo
 HTML I<and> a title is found in the html document.
 
 Note: In most cases you probably would not want to send a large binary file to swish, just
-to be ignored.  Therefore, it would be smart to use a C<filter_contents> callback routine to
+to be ignored.  Therefore, it would be smart to use a C<filter_content> callback routine to
 replace the contents with single character (you cannot use the empty string at this time).
 
 A similar flag may be set to prevent indexing a document at all, but still allow spidering.
