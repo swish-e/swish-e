@@ -1,6 +1,6 @@
 =head1 NAME
 
-The SWISH-E FAQ
+The SWISH-E FAQ - Answers to Common Questions
 
 =head1 Frequently Asked Questions
 

@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
   <head>
-   <title>SWISH-Enhanced:  The SWISH-E FAQ </title>
+   <title>SWISH-Enhanced:  The SWISH-E FAQ - Answers to Common Questions </title>
    <link href="./style.css" rel=stylesheet type="text/css" title="refstyle">
   </head>
   <body>
@@ -10,7 +10,7 @@
         <img src="images/swish.gif" alt="Swish-E Logo"><br>
         <img src="images/swishbanner1.gif"><br>
         <img src="images/dotrule1.gif"><br>
-         The SWISH-E FAQ 
+         The SWISH-E FAQ - Answers to Common Questions 
     </h1>
 
     <hr>
@@ -87,7 +87,11 @@ rules, for instance, if swish-e encounters a word that has no vowels, it
 doesn't index it. You can change these rules by editing the conf.h file in
 the src directory of the swish-e distribution package. By editing the
 rules, you may be able to index quite a few more words, or less, depending
-on your preference. 
+on your preference.
+
+<P>
+Configuration file directives (<A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A>) <A HREF="#item_WordCharacters">WordCharacters</A>, <CODE>BeginCharactes</CODE>, <CODE>EndCharacters</CODE>,
+<A HREF="#item_IgnoreFirstChar">IgnoreFirstChar</A>, and <A HREF="#item_IgnoreLastChar">IgnoreLastChar</A> also control what words swish indexes. Use of the command line arguments <CODE>-k</CODE> and <CODE>-D</CODE> are useful when debugging these issues.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]

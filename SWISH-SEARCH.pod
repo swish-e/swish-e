@@ -137,6 +137,9 @@ Or under Windows:
 
     swish-e -w \"this is a pharase\" or (this and that)
 
+You can use the C<-P> switch to set the phrase delimiter character.
+See L<SWISH-RUN|SWISH-RUN> for examples.
+
   
 
 

@@ -1,6 +1,6 @@
 =head1 NAME
 
-Interface to the SWISH-E C library
+SWISH-LIBRARY - Interface to the SWISH-E C library
 
 =head1 What is the swish-e C library
 

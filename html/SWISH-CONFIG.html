@@ -167,6 +167,10 @@ index file.
 
 <P><LI>
 <P>
+<A HREF="#item_ConvertHTMLEntities">ConvertHTMLEntities</A> [yes|no]
+
+<P><LI>
+<P>
 <A HREF="#item_DefaultContents">DefaultContents</A> [TXT|HTML|XML] <CODE>*file</CODE> extensions*
 
 <P><LI>
@@ -281,19 +285,11 @@ index file.
 
 <P><LI>
 <P>
-<A HREF="#item_OkNoMeta">OkNoMeta</A> [yes|no]
-
-<P><LI>
-<P>
 <A HREF="#item_PropertyNames">PropertyNames</A> <CODE>*list</CODE> of meta names*
 
 <P><LI>
 <P>
 <A HREF="#item_ReplaceRules">ReplaceRules</A> [replace|remove|prepend|append]
-
-<P><LI>
-<P>
-<A HREF="#item_ReqMetaName">ReqMetaName</A> [yes|no]
 
 <P><LI>
 <P>
@@ -311,6 +307,7 @@ index file.
 <P>
 <A HREF="#item_TranslateCharacters">TranslateCharacters</A> <CODE>*string1</CODE> string2*
 
+<P><LI><STRONG><A NAME="item_UndefinedMetaTags">UndefinedMetaTags|/&quot;item_UndefinedMetaTags&quot; [error|ignore|index|auto]</A></STRONG>
 <P><LI>
 <P>
 <A HREF="#item_UseStemming">UseStemming</A> [yes|no]
@@ -762,12 +759,18 @@ Example:
 
 	<td>
 	  <pre>    IndexContents HTML .htm .html .shtml
-    IndexContents TXT  .txt .log .text</pre>
+    IndexContents TXT  .txt .log .text
+    IndexContents XML  .xml</pre>
         </td>
 	    
       </tr>
     </table>
     <P>
+HTML is the default type for all files, unless otherwise specified (and
+this default can be changed by the <STRONG>DefaultContents</STRONG> directive. Swish parses titles from HTML files, if available, and keeps
+track of the context of the text for context searching (see <CODE>-t</CODE> in <A HREF="././SWISH-RUN.html">SWISH-RUN</A>). HTML and XML files use different tag formats for <STRONG>MetaNames</STRONG> and <STRONG>PropertyNames</STRONG>.
+
+<P>
 If using filters to convert documents you should include those extensions,
 too. For example, if using a filter to conver .pdf to .html, you need to
 tell swish that .pdf should be indexed by the internal HTML parser:
@@ -783,9 +786,7 @@ See also <A HREF="#Document_Filter_Directives">Document Filter Directives</A>.
 
 <P><DT><STRONG><A NAME="item_DefaultContents">DefaultContents [TXT|HTML|XML]</A></STRONG><DD>
 <P>
-This sets the default parser for documents that are not specified in <STRONG>IndexContents</STRONG>
-
-
+This sets the default parser for documents that are not specified in <STRONG>IndexContents</STRONG>. If not specified the default is HTML.
 
 <P>
 Example:
@@ -823,12 +824,16 @@ These directives control what information is extracted from your source
 documents, and how that information is made available during searching.
 
 <DL>
+<P><DT><STRONG><A NAME="item_ConvertHTMLEntities">ConvertHTMLEntities [yes|no]</A></STRONG><DD>
+<P>
+ASCII <EM>entities</EM> can be converted automatically while indexing documents of type HTML. For
+performance reasons you may wish to set this to <CODE>no</CODE> if your documents contain no HTML entities. The default is <CODE>yes</CODE>.
+
 <P><DT><STRONG><A NAME="item_MetaNames">MetaNames *list of names*</A></STRONG><DD>
 <P>
-META names are a way to define ``fields'' in your documents. You can use
-the META names in your queries to limit the search to just the words
-contained in that META name of your document. (see also the <CODE>-t</CODE> switch below) For example, you might have a META tagged field in your
-documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
+META names are a way to define ``fields'' in your XML and HTML documents.
+You can use the META names in your queries to limit the search to just the
+words contained in that META name of your document. (see also the <CODE>-t</CODE> switch in <A HREF="././SWISH-RUN.html">SWISH-RUN</A>). For example, you might have a META tagged field in your documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
 documents where ``foo'' is within the <CODE>subjects</CODE> META tag.
 
 <P>
@@ -850,28 +855,11 @@ The <STRONG>MetaNames</STRONG> directive is a space separated list:
       </tr>
     </table>
     <P>
-If you use the special word <STRONG>automatic</STRONG> then SWISH-E will automatically locate any meta names in your document.
+You may also use <A HREF="#item_UndefinedMetaTags">UndefinedMetaTags</A> to specify automatic extraction of meta names from your HTML and XML
+documents.
 
 <P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    MetaNames automatic</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-This option should not be used in HTML documents.
-
-<P>
-META tags can have three formats in your source documents:
+META tags can have two formats in your <STRONG>HTML</STRONG> source documents:
 
 <P>
 
@@ -889,6 +877,9 @@ META tags can have three formats in your source documents:
       </tr>
     </table>
     <P>
+and
+
+<P>
 
     <table>
       <tr>
@@ -906,7 +897,7 @@ META tags can have three formats in your source documents:
       </tr>
     </table>
     <P>
-And in XML format
+And in <STRONG>XML</STRONG> documents, use the format:
 
 <P>
 
@@ -989,22 +980,21 @@ Then you can search in both tag2 and tag2 with:
     <P>
 MetaNames are case sensitive in XML documents.  
 
-<P><DT><STRONG><A NAME="item_OkNoMeta">OkNoMeta [yes|no]</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_UndefinedMetaTags">UndefinedMetaTags [error|ignore|index|auto]</A></STRONG><DD>
 <P>
-If <STRONG>OkNoMeta</STRONG> is set to <CODE>yes</CODE> (the default) then any meta tag contents found in the document that is not
-defined in the <STRONG>MetaNames</STRONG> directive will be indexed, but the tag contents will be added to the <EM>main index</EM> and not to any meta name. In other words, the words of the meta tag will be
-indexed as if the words were part of the body of the document, and not
-within a meta tag. If <STRONG>OkNoMeta</STRONG> is set to <CODE>no</CODE> then SWISH-E will halt indexing with an error if a META tag is detected
-that is not listed in the MetaNames directive. This can be helpful to catch
-misspelled Meta names or names that you did not anticipate.
+This directive defines the behavior of swish during indexing when a meta
+name is found but is <STRONG>not</STRONG> listed in <STRONG>MetaNames</STRONG>. There are four choices:
 
-<P><DT><STRONG><A NAME="item_ReqMetaName">ReqMetaName [yes|no]</A></STRONG><DD>
-<P>
-The above behavior of OkNoMeta can be modified by the <STRONG>ReqMetaName</STRONG> directive. If this setting is defined as <CODE>yes</CODE> then any META tag found in the document that is <EM>not</EM>
-listed in MetaNames will simply be ignored and not indexed. This is helpful
-if you have meta data in your source documents that you do not want to
-index. The default is <CODE>no</CODE>, so the entire document is indexed.
-
+<DL>
+<P><DT><STRONG><A NAME="item_error">error - If a meta name is found that is not listed in MetaNames then indexing will be halted and an
+error reported.</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_ignore">ignore - The contents of the meta tag are ignored and not indexed.</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_index">index - The contenst of the meta tag are indexed, but placed in the main index (the contents are not
+assinged a meta name and cannot be searched by meta name.  This is the default.</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_auto">auto - This method only applies to HTML and XML documents and will create meta tags automatically for
+HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
+MetaNames dirictive.</A></STRONG><DD>
+</DL>
 <P><DT><STRONG><A NAME="item_PropertyNames">PropertyNames *list of meta names*</A></STRONG><DD>
 <P>
 SWISH-E allows you to specify certain META tags that can be used as <STRONG>document properties</STRONG>. The contents of any META tag that has been identified as a document
@@ -1306,12 +1296,9 @@ Which means that you can search for <CODE>www.example.com</CODE> as a single wor
 Note: when indexing HTML documents HTML entities are converted to their
 character equivalents before being processed with these directives. This is
 a change from previous versions of SWISH-E where you were required to
-include the characters <CODE>0123456789&amp;#;</CODE> to index entities.
+include the characters <CODE>0123456789&amp;#;</CODE> to index entities. See also <A HREF="#item_ConvertHTMLEntities">ConvertHTMLEntities</A> 
 
-<P>
-<STRONG>XXX FIX -- 2.1.10-devel6 still required the &</STRONG>
-
-
+ 
 
 <P>
 If indexing any characters that have special meaning to SWISH ``*'' ``=''

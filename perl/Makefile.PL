@@ -1,8 +1,9 @@
 use ExtUtils::MakeMaker;
 $Verbose = 1;
+
 WriteMakefile(
 	NAME      => 'SWISHE',
-	LIBS      => ['-lswish-e -lm'],
-	VERSION   => '0.01',
+	LIBS      => ['-L../src -lswish-e -lm'],
+	VERSION_FROM    => 'SWISHE.pm',  # finds $VERSION
 );
 

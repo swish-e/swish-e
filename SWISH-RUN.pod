@@ -132,9 +132,10 @@ swish uses so much RAM that the computer begins to swap excessively.
 Specifying this option tells swish to follow symbolic links when indexing.
 The configuration file value B<FollowSymLinks> will override the command-line value.
 
+
 =item -v [0|1|2|3] (verbosity level)
 
-The -v option can take a numerical value from 0 to 3.
+The C<-v> option can take a numerical value from 0 to 3.
 Specify 0 for completely silent operation and 3 for detailed reports.
 If no value is given then 3 is assumed.  See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
 
@@ -217,7 +218,7 @@ Example:
 
 =item -t HBthec (context searching)
 
-The -t option allows you to search for words that exist only
+The C<-t> option allows you to search for words that exist only
 in specific HTML tags. Each character in the string you
 specify in the argument to this option represents a
 different tag in which to search for the word. H means all HEAD
@@ -248,6 +249,12 @@ The following control characters may also be specified: C<\t \r \n \f>.
 =item -P *character*
 
 Sets the delimiter used for phrase searches.  The default is double quotes C<">.
+
+Some examples under bash: (be careful about you shell metacharacters)
+
+    swish-e -P ^ -w 'title=^words in a phrase^'
+    swish-e -P \' -w "title='words in a pharse"'
+
 
 =item -p *property1 property2 ...*  (display properties)
 
@@ -312,7 +319,7 @@ With C<-x> swish reports:
     offset into file (to handle multiple documents within a single file)
     file size
     properties (if -p used)
-    
+
 =item -v 4 (verbosity level)
 
 If set to C<-v 4> while searching, SWISH-E will print additional diagnostic information
@@ -327,13 +334,6 @@ in the header of the results.
 
 =over 4
 
-=item -D *index file*  (debug index)
-
-This option is provided so you can check the word, file, and maintenance information in index files.
-You can specify multiple files to decode.  Use with C<-v 4> for even more output.
-
-A lot of information is printed, so use with caution.
-
 =item -V (version)
 
 Print the current version.
@@ -341,7 +341,58 @@ Print the current version.
 =item -k *letter* (print out keywords)
 
 The C<-k> switch is used for testing and will cause swish to print out all keywords
-in the index beginning with that letter.
+in the index beginning with that letter.  You may enter C<-k '*'> to generate a list of all words indexed
+by swish.
+
+=item -D *index file*  (debug index)
+
+This option is provided so you can check the word, file, and maintenance information in index files.
+You can specify multiple files to decode.  Use with C<-v 4> for even more output.  You must specify an
+index file with C<-f>, even if it's the default index file F<index.swish-e>.
+
+A lot of information is printed, so use with caution.
+
+For example here's a few of the interesting parts from C<-D> (with C<-v 4>):
+
+    swish-e -D -v 4 -f test.index
+
+    -----> WORD INFO <-----
+    apples: Meta:1 ./test.html Strct:25 Freq:1 Pos:54
+
+This tells you that the word C<apples> is found in F<./test.html>, and is *not* associated with
+any MetaNames (meta tag number one is the default index).  The C<Strct:25> is used to limit searches by
+context (see C<-t> above).  C<Freq:1> says the word was found one time in the document at position
+C<Pos:54>.  This position data is used for phrase searches.  If the word was found in other meta tags
+you will see other C<Meta:> items listed.  And the entire structure will be repeated, on the same line, for every
+file that contains this word.
+
+The next section:
+
+    <-----> FILES <----->
+
+Lists the files, and their associated properties (including last modified date, title and file size).
+
+    -----> METANAMES <-----
+    swishfilename"2 swishtitle"2 swishfiledate"10 swishstart"6 swishsize"6 swishsummary"2 meta1"3 meta2"3 meta3"3
+
+(The above will be all on one line.)
+
+The METANAME section lists the meta names and properties that are assigned internally within swish, and the names
+you specify in the configuration file with MetaNames and PropertyNames.  The number that follow is a decimal number
+where each bit represents an attribute of that meta name.  The bits are AND'ed together to make the attribute.
+
+       Bit            Bit Represents
+    ----------    --------------------------------------
+    0000000001    META_INDEX (it is indexed -- MetaNames)
+    0000000010    META_PROP (it is a property -- PropertyNames)
+    0000000100    META_NUMBER (it is binary number.Eg: swishsize)
+    0000001000    META_DATE(it is a binary date. Eg: swishfiledate)
+
+So, for swishfiledate value 10 means META_PROP+META_DATE, or 2
+(property and binary date).
+
+Currently, the indexing of numbers (searching by range) is not supported.
+
 
 =back
 
@@ -369,7 +420,7 @@ Merging removes all redundant file and word data. To estimate how much memory th
 sum up the sizes of the files to be merged and divide by two.
 That's about the maximum amount of memory that will be used.
 
-You can use the -v option to produce feedback while merging and the -c option with a
+You can use the C<-v> option to produce feedback while merging and the C<-c> option with a
 configuration file to include new administrative information in the new index file.
 
 =item -c *configuration file*
