@@ -34,6 +34,17 @@ use constant DEBUG_SKIPPED  => $bit <<= 1;  # didn't index for some reason
 use constant DEBUG_INFO     => $bit <<= 1;  # more verbose
 use constant DEBUG_LINKS    => $bit <<= 1;  # prints links as they are extracted
 
+my %DEBUG_MAP = (
+    errors  => DEBUG_ERRORS,
+    url     => DEBUG_URL,
+    headers => DEBUG_HEADERS,
+    failed  => DEBUG_FAILED,
+    skipped => DEBUG_SKIPPED,
+    info    => DEBUG_INFO,
+    links   => DEBUG_LINKS,
+);
+    
+
 
 use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
 use constant MAX_WAIT_TIME  => 30;          # request time.
@@ -62,7 +73,7 @@ sub UNIVERSAL::host_port { '' };
     }
 
 
-    print STDERR "$0: Reading parameters from '$config'\n";
+    print STDERR "$0: Reading parameters from '$config'\n" unless $ENV{SPIDER_QUIET};
 
     my $abort;
     local $SIG{HUP} = sub { warn "Caught SIGHUP\n"; $abort++ } unless $^O =~ /Win32/i;
@@ -103,8 +114,18 @@ sub process_server {
 
     # set defaults
 
-    $server->{debug} ||= 0;
-    die "debug parameter '$server->{debug}' must be a number\n" unless $server->{debug} =~ /^\d+$/;
+    if ( $ENV{SPIDER_DEBUG} ) {
+        $server->{debug} = 0;
+
+        $server->{debug} |= (exists $DEBUG_MAP{lc $_} ? $DEBUG_MAP{lc $_} : die "Bad debug setting passed in environment '$_'\nOptions are: " . join( ', ', keys %DEBUG_MAP) ."\n")
+            for split /\s*,\s*/, $ENV{SPIDER_DEBUG};
+
+    } else {
+        $server->{debug} ||= 0;
+        die "debug parameter '$server->{debug}' must be a number\n" unless $server->{debug} =~ /^\d+$/;
+    }
+
+    $server->{quiet} ||= $ENV{SPIDER_QUIET} || 0;
 
 
     $server->{max_size} ||= MAX_SIZE;
@@ -137,7 +158,7 @@ sub process_server {
     my $start = time;
 
     if ( $server->{skip} ) {
-        print STDERR "Skipping: $server->{base_url}\n";
+        print STDERR "Skipping: $server->{base_url}\n" unless $server->{quiet};
         return;
     }
 
@@ -235,6 +256,9 @@ sub process_server {
     eval { spider( $server, $uri ) };
     print STDERR $@ if $@;
 
+    return if $server->{quiet};
+
+
     $start = time - $start;
     $start++ unless $start;
 
@@ -245,6 +269,7 @@ sub process_server {
         my $val = commify( $server->{counts}{$_} );
         $max_num = length $val if length $val > $max_num;
     }
+
 
     printf STDERR "\nSummary for: $server->{base_url}\n";
 
@@ -468,7 +493,7 @@ sub process_link {
         return;
     }
 
-    $response->request->uri->userinfo( undef );
+    $response->request->uri->userinfo( undef ) if $response->request;
 
 
     # skip excluded by robots.txt
@@ -1339,6 +1364,21 @@ You can easily run the spider without using swish for debugging purposes:
 
 And you will see debugging info as it runs, and the fetched documents will be saved
 in the C<spider.out> file.
+
+Debugging can be also be set by an environment variable when running swish.  This will
+override any setting in the configuration file.  Set the variable SPIDER_DEBUG when running
+the spider.  You can specify any of the above debugging options, separated by a comma.
+
+For example with Bourne type shell:
+
+    SPIDER_DEBUG=url,links
+
+=item quiet
+
+If this is true then normal, non-error messages will be supressed.  Quiet mode can also
+be set by setting the environment variable SPIDER_QUIET to any true value.
+
+    SPIDER_QUIET=1
 
 =item max_depth
 
