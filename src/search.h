@@ -66,8 +66,10 @@ int SwishAttach(SWISH *, int);
 int search (SWISH *sw, char *str, int structure);
 int search_2 (SWISH *sw, char *words, int structure);
 RESULT *SwishNext(SWISH *);
-struct swline *fixnot(struct swline *);
 
+struct swline *fixmetanames(struct swline *);
+struct swline *fixnot1(struct swline *);
+struct swline *fixnot2(struct swline *);
 struct swline *expandphrase(struct swline *, char);
 
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
