@@ -154,6 +154,10 @@ void initModule_Search (SWISH  *sw)
 
    srch->propNameToDisplay =NULL;
 
+   srch->PhraseDelimiter=PHRASE_DELIMITER_CHAR;
+
+   srch->bigrank = 0;
+
    return;
 }
 
@@ -274,6 +278,7 @@ int     icomp2(const void *s1, const void *s2)
 
 int     SwishAttach(SWISH * sw, int printflag)
 {
+    struct MOD_Search *srch = sw->Search;
     IndexFILE *indexlist;
 
 /* 06/00 Jose Ruiz
@@ -291,7 +296,7 @@ int     SwishAttach(SWISH * sw, int printflag)
     for (tmplist = indexlist; tmplist;)
     {
         sw->commonerror = RC_OK;
-        sw->bigrank = 0;
+        srch->bigrank = 0;
 
         /* Program exits in DB_Open if it fails */
         tmplist->DB = (void *)DB_Open(sw, tmplist->line);
@@ -363,13 +368,14 @@ int     search_2(SWISH * sw, char *words, int structure)
     char   *tmpwords;
     struct DB_RESULTS *db_results,
            *db_tmp;
+    struct MOD_Search *srch = sw->Search;
 
 
     /* If not words - do nothing */
     if (!words || !*words)
         return (sw->lasterror = NO_WORDS_IN_SEARCH);
 
-    PhraseDelimiter = (unsigned char) sw->PhraseDelimiter;
+    PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
 
     indexlist = sw->indexlist;
     sw->Search->db_results = NULL;
@@ -406,7 +412,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         hassearch = 1;
 
-        sw->bigrank = 0;
+        srch->bigrank = 0;
 
         if (!indexlist->DB)
         {
@@ -1554,6 +1560,7 @@ int     countResults(RESULT * sp)
 
 RESULT *SwishNext(SWISH * sw)
 {
+    struct MOD_Search *srch = sw->Search;
     RESULT *res = NULL;
     RESULT *res2 = NULL;
     int     rc;
@@ -1561,8 +1568,8 @@ RESULT *SwishNext(SWISH * sw)
            *db_results_winner = NULL;
     double  num;
 
-    if (sw->bigrank)
-        num = 1000.0f / (float) sw->bigrank;
+    if (srch->bigrank)
+        num = 1000.0f / (float) srch->bigrank;
     else
         num = 1000.0f;
 
@@ -2102,10 +2109,11 @@ struct swline *parse_search_string(SWISH * sw, char *words, INDEXDATAHEADER head
     unsigned char *word,
             c,
             tmpstr[2];
+    struct MOD_Search *srch = sw->Search;
     unsigned char PhraseDelimiter;
     unsigned char PhraseDelimiterString[2];
 
-    PhraseDelimiter = (unsigned char) sw->PhraseDelimiter;
+    PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
     PhraseDelimiterString[0] = (unsigned char) PhraseDelimiter;
     PhraseDelimiterString[1] = '\0';
 

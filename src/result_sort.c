@@ -330,8 +330,10 @@ RESULT *addsortresult(sw, sphead, r)
      RESULT *sphead;
      RESULT *r;
 {
-    if (r->rank > sw->bigrank)
-        sw->bigrank = r->rank;
+    struct MOD_Search *srch = sw->Search;
+
+    if (r->rank > srch->bigrank)
+        srch->bigrank = r->rank;
     if (sphead == NULL)
     {
         r->nextsort = NULL;

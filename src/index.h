@@ -77,6 +77,9 @@ struct MOD_Index
     /* Save memory */
     int     economic_flag;
 
+    /* removestops limit values */
+    int plimit;
+    int flimit;
 };
 
 void initModule_Index (SWISH *);

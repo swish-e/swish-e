@@ -102,9 +102,6 @@ SWISH *SwishNew()
 void SwishDefaults(SWISH *sw)
 {
 
-    sw->plimit=PLIMIT;
-    sw->flimit=FLIMIT;
-    sw->PhraseDelimiter=PHRASE_DELIMITER_CHAR;
         /* MetaNames indexing options (default values from config.h)*/
     sw->ReqMetaName=REQMETANAME;
     sw->OkNoMeta=OKNOMETA;
