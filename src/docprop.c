@@ -1094,7 +1094,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
     if ( !(buffer = DB_ReadProperty( sw, fi, metaID, indexf->DB )))
         return NULL;
 
-	propbuf = buffer;  // save fro efree().
+	propbuf = buffer;  // save for efree().
 
        
 

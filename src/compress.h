@@ -49,4 +49,3 @@ unsigned char *unSwapLocData(SWISH *,long);
 void unSwapLocDataEntry(SWISH *,ENTRY *);
 
 
-int get_lookup_path(struct char_lookup_st **,char *);

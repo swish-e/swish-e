@@ -195,15 +195,6 @@ void SwishClose(SWISH *sw)
 
             free_header(&tmpindexlist->header);
 
-            if(tmpindexlist->header.pathlookup)
-            {
-                for(i=0;i<tmpindexlist->header.pathlookup->n_entries;i++)
-                {
-                    efree(tmpindexlist->header.pathlookup->all_entries[i]->val);
-                    efree(tmpindexlist->header.pathlookup->all_entries[i]);
-                }
-                efree(tmpindexlist->header.pathlookup);
-            }    
 /* Removed due to patents 
             if(tmpindexlist->header.applyFileInfoCompression && tmpindexlist->n_dict_entries)
             {

@@ -1131,16 +1131,6 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
 static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, char *filename )        
 {
     struct metaEntry *q;
-    unsigned char   *directory;
-    unsigned char   *file;
-
-
-    /* $$$ To be removed! */
-    split_path( filename, &directory, &file );
-    newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, directory);
-    efree( directory );
-    newnode->filename = file;  /* This isn't freed at this point */
-
 
     /* Check if filename is internal swish metadata -- should be! */
 
@@ -1946,78 +1936,38 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 }
 
 
+/* Oct 1, 2001 - removed filename and lookup_path from index, now use properties only */
+/* It's assume that there will ALWAYS be at least one property for a file. */
+
 
 unsigned char *buildFileEntry(struct file *filep, int *sz_buffer)
 {
-    int     len_filename;
-    unsigned char *buffer1,
-           *buffer2,
-           *buffer3,
-           *p;
-    int     lenbuffer1;
-    int     datalen1,
-            datalen2,
-            datalen3;
-    char    *filename = filep->filename;
-    int lookup_path = filep->lookup_path;
+    unsigned char  *buf;
 #ifndef PROPFILE    
+    int             len;
     docProperties **docProperties = &filep->docProperties;
-#endif    
 
-    len_filename = strlen(filename) + 1;
-    lenbuffer1 = len_filename + 2 * 6;
-    buffer1 = emalloc(lenbuffer1);
-    p = buffer1;
-    lookup_path++;              /* To avoid the 0 problem in compress increase 1 */
-    p = compress3(lookup_path, p);
+    buf = storeDocProperties(*docProperties, &len );
+    buf = erealloc( buf, len + 1);
+    buf[len] = '\0';
+    *sz_buffer = len+1;
+    return( buf );
 
-    /* We store length +1 to avoid problems with 0 length - So 
-       it also writes the null terminator */
+#else
 
-    p = compress3(len_filename, p);
-    memcpy(p, filename, len_filename);
-    p += len_filename;
-    datalen1 = p - buffer1;
+    buf = PackPropLocations( filep, sz_buffer );
+    return ( buf );
 
-
-#ifdef PROPFILE
-    buffer2 = PackPropLocations( filep, &datalen2 );
-    buffer3 = emalloc((datalen3 = datalen1 + datalen2));
-#else    
-    buffer2 = storeDocProperties(*docProperties, &datalen2);
-    buffer3 = emalloc((datalen3 = datalen1 + datalen2 + 1));
 #endif
 
-
-    memcpy(buffer3, buffer1, datalen1);
-
-    if (datalen2)
-    {
-        memcpy(buffer3 + datalen1, buffer2, datalen2);
-        efree(buffer2);
-    }
-
-#ifndef PROPFILE
-    buffer3[datalen1 + datalen2] = '\0';
-#endif    
-
-    efree(buffer1);
-
-    *sz_buffer = datalen3;
-    return (buffer3);
 }
 
 struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 {
-    int     total_len,
-            len1,
-            len4,
-            lookup_path;
+    int             total_len;
     unsigned char   *buffer,
-           *p;
-    char   *buf1;
-    struct file *fi;
-    char   stack_buffer[4096];
+                    *p;
+    struct file     *fi;
 
     fi = indexf->filearray[filenum - 1];
     if (fi)
@@ -2025,7 +1975,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
     fi = (struct file *) emalloc(sizeof(struct file));
 
-    fi->filename = NULL;
     fi->docProperties = NULL;
 
     indexf->filearray[filenum - 1] = fi;
@@ -2044,28 +1993,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
         p = buffer;
     /* } */
 
-
-    lookup_path = uncompress2(&p); /* Index to lookup table of paths */
-    lookup_path--;
-    len1 = uncompress2(&p);       /* Read length of filename */
-    if(len1 <= sizeof(stack_buffer))
-        buf1 = stack_buffer;
-    else
-        buf1 = emalloc(len1);       /* Includes NULL terminator */
-    memcpy(buf1, p, len1);      /* Read filename */
-    p += len1;
-
-    fi->lookup_path = lookup_path;
-
-    /* Add the path to filename */
-    len4 = strlen(indexf->header.pathlookup->all_entries[lookup_path]->val);
-    len1 = strlen(buf1);
-    fi->filename = emalloc(len4 + len1 + 1);
-    memcpy(fi->filename, indexf->header.pathlookup->all_entries[lookup_path]->val, len4);
-    memcpy(fi->filename + len4, buf1, len1);
-    fi->filename[len1 + len4] = '\0';
-    if(buf1 != stack_buffer)
-        efree(buf1);
 
 
     fi->filenum = filenum - 1;

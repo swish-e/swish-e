@@ -186,9 +186,8 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define STOPWORDS_ID (BASEHEADER + 26)
 #define METANAMES_ID (BASEHEADER + 27)
 #define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
-#define PATHLOOKUPTABLE_ID (BASEHEADER + 29)
-#define BUZZWORDS_ID (BASEHEADER + 30) /* 2001-04-24 moseley */
-#define WORDSPERDOC_ID (BASEHEADER + 31)
+#define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
+#define WORDSPERDOC_ID (BASEHEADER + 30)
 
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
@@ -271,8 +270,6 @@ struct metaEntry
 struct file
 {
     int     filenum;
-    int     lookup_path;
-    char   *filename;
     struct  docProperties *docProperties;
     struct  metaEntry *currentSortProp;
 #ifdef PROPFILE
@@ -428,9 +425,6 @@ typedef struct
 	    /* Values for fields (metanames) */
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
-
-    /* Lookup table for repetitive values of the path */
-    struct char_lookup_st *pathlookup;
 
 
     /* Array to handle the number of words per doc */
