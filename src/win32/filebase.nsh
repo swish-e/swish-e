@@ -34,7 +34,7 @@ SectionEnd ; end of default section
 
 Section "Documentation" SecDocs
     SectionIn 1
-    SetOutPath "$INSTDIR\share\doc\swish-e\examples"
+    SetOutPath "$INSTDIR\share\doc\swish-e"
     RMDIR /r "$INSTDIR\html"
     File /r ..\..\html
     
@@ -113,7 +113,7 @@ SubSection "PERL Support" SubSecPerlSupport
         SetOutPath "$INSTDIR"
         File ..\..\filters\swish-filter-test.in"
         
-        SetOutPath "$INSTDIR\share\doc\swish-e\examples\filter-bin"
+        SetOutPath "$INSTDIR\share\doc\swish-e\filter-bin"
         ; Example Filter Scripts
         File ..\..\filter-bin\_binfilter.sh
         File ..\..\filter-bin\_pdf2html.pl
@@ -130,19 +130,20 @@ SubSection "PERL Support" SubSecPerlSupport
     Section /o "PERL -S prog Examples" SecPerlMethod
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlMethods" "1"
-        SetOutPath "$INSTDIR\share\doc\swish-e\examples\prog-bin"
+        SetOutPath "$INSTDIR\share\doc\swish-e\prog-bin"
         File ..\..\prog-bin\*.pl
         File ..\..\prog-bin\*.in
         File ..\..\prog-bin\*.pm
     SectionEnd
-    
+SubSectionEnd
+ 
 Section "Examples" SecExample
-    SetOutPath "$INSTDIR\share\doc\swish-e\examples\"
+    SetOutPath "$INSTDIR\share\doc\swish-e\"
     File /r ..\..\conf
     File /r ..\..\example
 
     ; Rename text files so Windows has a clue
-    Rename "$INSTDIR\share\doc\swish-e\examples\conf\README" "$INSTDIR\conf\README.txt"
+    Rename "$INSTDIR\share\doc\swish-e\conf\README" "$INSTDIR\conf\README.txt"
 SectionEnd ; end of section 'Examples'
 
 Section "-post" ; (post install section, happens last after any optional sections)
@@ -222,7 +223,6 @@ Function .onInit
     !insertmacro SelectSection ${SecPerlFilter}
     !insertmacro SelectSection ${SecPerlApi}
     !insertmacro SelectSection ${SecPerlMethod}
-    !insertmacro SelectSection ${SecPerlCgi}
     
     end:
 FunctionEnd                                                                                                                                                                                                 
@@ -230,13 +230,13 @@ FunctionEnd
 Function DownloadActivePerl
 ; http://downloads.activestate.com/ActivePerl/Windows/5.8/ActivePerl-5.8.0.806-MSWin32-x86.msi    
     GetTempFileName $R0
-    File /oname=$R0 perlpage.ini
+;    File /oname=$R0 perlpage.ini
     InstallOptions::dialog $R0
     Pop $R1
     StrCmp $R1 "cancel" done
     StrCmp $R1 "back" done
     StrCmp $R1 "success" done
-    error: MessageBox MB_OK|MB_ICONSTOP "InstallOptions error:$\r$\n$R1"
+;    error: MessageBox MB_OK|MB_ICONSTOP "InstallOptions error:$\r$\n$R1"
     done:
 
     ; Is ActivePerl Installed?
