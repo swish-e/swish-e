@@ -1399,7 +1399,8 @@ sub set_index_file {
             $self->errstr('Invalid source selected');
             return $self;
         }
-        my @idx = @indexes[ @selected_indexes ];
+        my %dups;
+        my @idx = grep { !$dups{$_}++ } map { ref($_) ? @$_ : $_ } @indexes[ @selected_indexes ];
         $self->swish_command( '-f', \@idx );
 
 
