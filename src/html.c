@@ -449,7 +449,6 @@ struct metaEntry *e=NULL;
 			word= (char *) erealloc(word,lenword+1);
 		}
 		word[i] = *temp++;
-		word[i] = tolower(word[i]);
 		i++;
 	}
 	if (i==lenword) {
@@ -457,6 +456,9 @@ struct metaEntry *e=NULL;
 		word= (char *) erealloc(word,lenword+1);
 	}
 	word[i] = '\0';
+
+		/* Use Rainer's routine */
+	strtolower(word);
 
 	while(1) {
 		if((e=getMetaNameData(indexf,word)))
