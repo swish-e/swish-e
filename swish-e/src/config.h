@@ -70,7 +70,7 @@
 /* Defines the file extension to use on the property file.
 */
 
-#define MAX_SORT_STRING_LEN 50
+#define MAX_SORT_STRING_LEN 100
 
 /* MAX_SORT_STRING_LEN defines the max string length to use
 *  for sorting properties.  Should be long enough to sort ALL
