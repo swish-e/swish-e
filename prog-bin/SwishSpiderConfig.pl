@@ -114,7 +114,8 @@ Please see C<perldoc spider.pl> for more information.
 
 
     #=============================================================================
-    # This example just shows more settings.  See perldoc spider.pl for info
+    # This example just shows more settings, and makes use of the SWISH::Filter
+    # module for converting documents.
     
     {
         skip        => 1,         # Flag to disable spidering this host.
@@ -124,6 +125,7 @@ Please see C<perldoc spider.pl> for more information.
         agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
         delay_min   => .0001,     # Delay in minutes between requests
+        keep_alive  => 1,         # Try to keep the connection open
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 20,        # Max files to spider
         ignore_robots_file => 0,  # Don't set that to one, unless you are sure.
@@ -139,7 +141,7 @@ Please see C<perldoc spider.pl> for more information.
                                   # content.  Will trap / and /index.html,
                                   # for example.
 
-        debug       => DEBUG_URL | DEBUG_HEADERS,  # print some debugging info to STDERR                                  
+        debug       => DEBUG_URL | DEBUG_SKIPPED | DEBUG_HEADERS,  # print some debugging info to STDERR                                  
 
 
         # Here are hooks to callback routines to validate urls and responses
@@ -178,8 +180,8 @@ sub test_url {
     # return 1;  # Ok to index/spider
     # return 0;  # No, don't index or spider;
 
-    # ignore any .gif files
-    return $uri->path =~ /\.html?$/;
+    # ignore any common image files
+    return $uri->path !~ /\.(gif|jpg|jpeg|png)?$/;
     
 }
 
@@ -195,28 +197,62 @@ sub test_response {
     return 1;  # ok to index and spider
 }
 
-# This routine can be used to filter content
+# This is an example of how to use the SWISH::Filter module included
+# with the swish-e distribution.  Make sure that SWISH::Filter is
+# in the @INC path (e.g. set PERL5LIB before running swish).
+#
+# Returns:
+#      true if content-type is text/* or if the document was filtered
+#      false if document was not filtered
+#      aborts if module or filter object cannot be created.
+#
+
+my $filter;  # cache the object.
 
 sub filter_content {
-   my ( $uri, $server, $response, $content_ref ) = @_;
+    my ( $uri, $server, $response, $content_ref ) = @_;
 
-    # modify $content_ref
-    $$content_ref = modify_content( $content_ref );
-    return 1;  # make sure you return true!
+    my $content_type = $response->content_type;
 
-}
-
-# Maybe do something here ;)
-sub modify_content {
-    my $content_ref = shift;
-
-    
-    return $$content_ref;
-}
-
+    # Ignore text/* content type -- no need to filter
+    return 1 if !$content_type || $content_type =~ m!^text/!;
     
 
-# Here's some real examples
+    # Load the module - returns FALSE if cannot load module.
+    unless ( $filter ) {
+        eval { require SWISH::Filter };
+        if ( $@ ) {
+            $server->{abort} = $@;
+            return;
+        }
+        $filter = SWISH::Filter->new;
+        unless ( $filter ) {
+            $server->{abort} = "Failed to create filter object";
+            return;
+        }
+    }
+
+    # If not filtered return false and doc will be ignored (not indexed)
+    
+    return unless $filter->filter(
+        document => $content_ref,
+        name     => $response->base,
+        content_type => $content_type,
+    );
+
+    # nicer to use **char...
+    $$content_ref = ${$filter->fetch_doc};
+
+    # let's see if we can set the parser.
+    $server->{parser_type} = $filter->swish_parser_type || '';
+
+    return 1;
+}
+
+
+    
+
+# Here's othre ways to filter.
 
 # This converts PDF files into HTML.  The second parameter of
 # pdf2html tells which pfd info filed to set as <title>
@@ -252,3 +288,4 @@ sub doc {
 # Must return true...
 
 1;
+
