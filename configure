@@ -1019,7 +1019,7 @@ Optional Features:
                           (and sometimes confusing) to the casual installer
   --enable-incremental    ** developer use only **
   --enable-memdebug       (developers only) checks for memory consistency on
-                          alloc/free
+                          alloc/free using guards
   --enable-memtrace       (developers only) checks for unfreed memory, and
                           where it is allocated
   --enable-memstats       (developers only) gives memory statistics (bytes
@@ -11940,57 +11940,60 @@ echo "$as_me: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&6;}
 fi
 
 
-# Check whether --enable-memdebug or --disable-memdebug was given.
+ echo "$as_me:$LINENO: checking config option memdebug for setting MEM_DEBUG" >&5
+echo $ECHO_N "checking config option memdebug for setting MEM_DEBUG... $ECHO_C" >&6
+        # Check whether --enable-memdebug or --disable-memdebug was given.
 if test "${enable_memdebug+set}" = set; then
   enableval="$enable_memdebug"
 
 else
   enableval=no
 fi;
-
-if test "$enableval" != "no"; then
-	{ echo "$as_me:$LINENO: MEM_DEBUG enabled" >&5
-echo "$as_me: MEM_DEBUG enabled" >&6;}
+        echo "$as_me:$LINENO: result: $enableval" >&5
+echo "${ECHO_T}$enableval" >&6
+        if test x"$enableval" != xno ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define MEM_DEBUG 1
 _ACEOF
 
-fi
-# Check whether --enable-memtrace or --disable-memtrace was given.
+        fi
+ echo "$as_me:$LINENO: checking config option memtrace for setting MEM_TRACE" >&5
+echo $ECHO_N "checking config option memtrace for setting MEM_TRACE... $ECHO_C" >&6
+        # Check whether --enable-memtrace or --disable-memtrace was given.
 if test "${enable_memtrace+set}" = set; then
   enableval="$enable_memtrace"
 
 else
   enableval=no
 fi;
-
-if test "$enableval" != "no"; then
-	{ echo "$as_me:$LINENO: MEM_TRACE enabled" >&5
-echo "$as_me: MEM_TRACE enabled" >&6;}
+        echo "$as_me:$LINENO: result: $enableval" >&5
+echo "${ECHO_T}$enableval" >&6
+        if test x"$enableval" != xno ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define MEM_TRACE 1
 _ACEOF
 
-fi
-# Check whether --enable-memstats or --disable-memstats was given.
+        fi
+ echo "$as_me:$LINENO: checking config option memstats for setting MEM_STATISTICS" >&5
+echo $ECHO_N "checking config option memstats for setting MEM_STATISTICS... $ECHO_C" >&6
+        # Check whether --enable-memstats or --disable-memstats was given.
 if test "${enable_memstats+set}" = set; then
   enableval="$enable_memstats"
 
 else
   enableval=no
 fi;
-
-if test "$enableval" != "no"; then
-	{ echo "$as_me:$LINENO: MEM_STATISTICS enabled" >&5
-echo "$as_me: MEM_STATISTICS enabled" >&6;}
+        echo "$as_me:$LINENO: result: $enableval" >&5
+echo "${ECHO_T}$enableval" >&6
+        if test x"$enableval" != xno ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define MEM_STATISTICS 1
 _ACEOF
 
-fi
+        fi
 
 
 

@@ -119,6 +119,13 @@ static IndexFILE *free_index( IndexFILE *indexf )
         if ( indexf->keywords[i])
             efree(indexf->keywords[i]);
 
+
+    /* free the name of the index file */
+    efree( indexf->line );
+
+    /* finally free up the index itself */
+    efree( indexf );
+
     return next;
 }
 
@@ -326,6 +333,10 @@ char *SwishStemWord( SWISH *sw, char *word )
     }
 
     strcpy( sw->stemmed_word, word );
+
+    /* Default to english stemmer */
+    if ( ! sw->indexlist->header.fuzzy_data.fuzzy_routine )
+        set_fuzzy_mode( &sw->indexlist->header.fuzzy_data, "Stemming_en" );
 
     /* set return value only if stem returns OK */
     if ( sw->indexlist->header.fuzzy_data.fuzzy_routine(&sw->stemmed_word, &sw->stemmed_word_len,sw->indexlist->header.fuzzy_data.fuzzy_args) == STEM_OK )

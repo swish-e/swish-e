@@ -4,9 +4,9 @@
 #include "api.h"
 
 /* use SWISHE emalloc/efree schema */
-#define calloc(n,s) ecalloc((n),(s))
-#define malloc(s) emalloc((s))
-#define free(p) efree((p))
+// #define calloc(n,s) ecalloc((n),(s))
+// #define malloc(s) emalloc((s))
+// #define free(p) efree((p))
 
 #define MAXINT INT_MAX
 #define MININT INT_MIN

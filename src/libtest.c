@@ -24,7 +24,7 @@ $Id$
 *       ./libtest index.swish-e
 *       ./libtest 'index1 index2 index3'
 *
-*   See the perl/SWISHE.xs file for more detail
+*   See the perl/API.xs file for more detail
 *
 */
 
@@ -32,10 +32,15 @@ $Id$
 #include <stdio.h>
 #include "swish-e.h"  /* use locally for testing */
 
+
+
 #define MEM_TEST 1
+
 #ifdef MEM_TEST
-#  include "mem.h"   // for mem_summary only
+#include "mem.h"   // for mem_summary only
 #endif
+
+
 
 #define DISPLAY_COUNT 10  // max to display
 
@@ -157,6 +162,10 @@ int     main(int argc, char **argv)
         if ( SwishError( swish_handle ) )
         {
             print_error_or_abort( swish_handle );
+
+            if ( results ) /* probably always true */
+                Free_Results_Object( results );
+
             continue;
         }
 
@@ -164,6 +173,7 @@ int     main(int argc, char **argv)
         Free_Results_Object( results );
 
 #ifdef MEM_TEST
+        /* It's expected to see some memory used here since a swish_handle exists */
         Mem_Summary("End of loop", 1);
 #endif
 
@@ -173,7 +183,7 @@ int     main(int argc, char **argv)
     SwishClose( swish_handle );
         
 
-    /* Look for memory leaks -- must change settings in mem.h and recompile swish */
+    /* Look for memory leaks -- configure swish-e with --enable-memtrace to use */
 #ifdef MEM_TEST
     Mem_Summary("At end of program", 1);
 #endif

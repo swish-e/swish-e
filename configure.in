@@ -306,33 +306,9 @@ fi
 
 dnl Memory Debugging options
 
-AC_ARG_ENABLE([memdebug],
-	AC_HELP_STRING([--enable-memdebug], [(developers only) checks for memory consistency on alloc/free]),
-	,
-	enableval=no)
-
-if test "$enableval" != "no"; then
-	AC_MSG_NOTICE([MEM_DEBUG enabled])
-	AC_DEFINE(MEM_DEBUG,1,[checks for memory consistency on alloc/free])
-fi
-AC_ARG_ENABLE([memtrace],
-	AC_HELP_STRING([--enable-memtrace], [(developers only)  checks for unfreed memory, and where it is allocated]),
-	,
-	enableval=no)
-
-if test "$enableval" != "no"; then
-	AC_MSG_NOTICE([MEM_TRACE enabled])
-	AC_DEFINE(MEM_TRACE,1,[checks for unfreed memory, and where it is allocated])
-fi
-AC_ARG_ENABLE([memstats],
-	AC_HELP_STRING([--enable-memstats], [(developers only) gives memory statistics (bytes allocated, calls, etc)]),
-	,
-	enableval=no)
-
-if test "$enableval" != "no"; then
-	AC_MSG_NOTICE([MEM_STATISTICS enabled])
-	AC_DEFINE(MEM_STATISTICS,1,[gives memory statistics (bytes allocated, calls, etc)])
-fi
+ENABLE_DEFINE([memdebug], [MEM_DEBUG], [(developers only) checks for memory consistency on alloc/free using guards])
+ENABLE_DEFINE([memtrace], [MEM_TRACE], [(developers only)  checks for unfreed memory, and where it is allocated] )
+ENABLE_DEFINE([memstats], [MEM_STATISTICS], [(developers only) gives memory statistics (bytes allocated, calls, etc)])
 
 
 
