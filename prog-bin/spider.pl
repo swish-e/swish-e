@@ -18,15 +18,18 @@ use HTML::LinkExtor;
 use vars '$VERSION';
 $VERSION = sprintf '%d.%02d', q$Revision$ =~ /: (\d+)\.(\d+)/;
 
-use constant DEBUG_ERRORS   => 1;  # program errors
-use constant DEBUG_URL      => 2;  # print out every URL processes
-use constant DEBUG_FAILED   => 3;  # failed to return a 200
-use constant DEBUG_SKIPPED  => 4;  # didn't index for some reason
-use constant DEBUG_INFO     => 5;  # more verbose
-use constant DEBUG_LINKS    => 6;  # prints links as they are extracted
+use vars '$bit';
+use constant DEBUG_ERRORS   => $bit = 1;    # program errors
+use constant DEBUG_URL      => $bit <<= 1;  # print out every URL processes
+use constant DEBUG_HEADERS  => $bit <<= 1;  # prints the response headers
+use constant DEBUG_FAILED   => $bit <<= 1;  # failed to return a 200
+use constant DEBUG_SKIPPED  => $bit <<= 1;  # didn't index for some reason
+use constant DEBUG_INFO     => $bit <<= 1;  # more verbose
+use constant DEBUG_LINKS    => $bit <<= 1;  # prints links as they are extracted
 
 
 
+    
 
     
 #-----------------------------------------------------------------------
@@ -34,7 +37,8 @@ use constant DEBUG_LINKS    => 6;  # prints links as they are extracted
     use vars '@servers';
 
     my $config = shift || 'SwishSpiderConfig.pl';
-    do $config or die "Failed to read $0 configuration parameters '$config' $!";
+    do $config or die "Failed to read $0 configuration parameters '$config' $! $@";
+
 
     print STDERR "$0: Reading parameters from '$config'\n";
 
@@ -65,6 +69,22 @@ sub process_server {
     my %seen;
     $server->{link_tags} = [ grep { !$seen{$_}++} map { lc } @{$server->{link_tags}} ];
 
+
+    if ( $server->{keep_alive} ) {
+
+        eval 'require LWP::Protocol::http11;';
+        if ( $@ ) {
+            warn "Cannot use keep alives -- $@\n";
+        } else {
+            LWP::Protocol::implementor('http', 'LWP::Protocol::http11');
+        }
+    } else {
+        require LWP::Protocol::http;
+        LWP::Protocol::implementor('http', 'LWP::Protocol::http');
+    }
+
+
+
     for ( qw/ test_url test_response filter_content / ) {
         next unless $server->{$_};
         $server->{$_} = [ $server->{$_} ] unless ref $server->{$_} eq 'ARRAY';
@@ -90,6 +110,8 @@ sub process_server {
     # set starting URL, and remove any specified fragment
     my $uri = URI->new( $server->{base_url} );
     $uri->fragment(undef);
+
+    print STDERR "\n -- Starting to spider: $uri --\n" if $server->{debug};
 
     
 
@@ -128,7 +150,7 @@ sub process_server {
     }
         
     $server->{ua} = $ua;  # save it for fun.
-
+    $ua->parse_head(0);   # Don't parse the content
 
     $ua->cookie_jar( HTTP::Cookies->new ) if $server->{use_cookies};
 
@@ -193,6 +215,7 @@ sub process_link {
     my $ua = $server->{ua};
     my $request = HTTP::Request->new('GET', $uri );
 
+
     my $content = '';
 
     $server->{no_contents} = 0;
@@ -204,7 +227,7 @@ sub process_link {
         }
 
         if ( length( $content ) + length( $_[0] ) > $server->{max_size} ) {
-            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug} >= DEBUG_ERRORS;
+            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug}&DEBUG_ERRORS;
             die "too big!\n";
         }
 
@@ -219,14 +242,14 @@ sub process_link {
     # skip excluded by robots.txt
     
     if ( !$response->is_success && $response->status_line =~ 'robots.txt' ) {
-        print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug} >= DEBUG_SKIPPED;
+        print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug}&DEBUG_SKIPPED;
         $server->{counts}{'robots.txt'}++;
         return;
     }
 
 
 
-    if ( ( $server->{debug} >= DEBUG_URL ) || ( $server->{debug} >= DEBUG_FAILED && !$response->is_success)  ) {
+    if ( ( $server->{debug} & DEBUG_URL ) || ( $server->{debug} & DEBUG_FAILED && !$response->is_success)  ) {
         print STDERR '>> ',
           join( ' ',
                 ( $response->is_success ? '+Fetched' : '-Failed' ),
@@ -237,11 +260,16 @@ sub process_link {
                 $response->content_length,
            ),"\n";
 
+
         if ( !$response->is_success && $parent ) {
             print STDERR "   Found on page: ", $parent,"\n";
         }
            
     }
+
+    print STDERR "\n----HEADERS for $uri ---\n", $response->headers_as_string,"-----END HEADERS----\n\n"
+       if $server->{debug} & DEBUG_HEADERS;
+
 
     unless ( $response->is_success ) {
 
@@ -264,7 +292,7 @@ sub process_link {
         if ( $visited{ $digest } ) {
 
             print STDERR "-Skipped $uri has same digest as $visited{ $digest }\n"
-                if $server->{debug} >= DEBUG_SKIPPED;
+                if $server->{debug} & DEBUG_SKIPPED;
         
             $server->{counts}{Skipped}++;
             $server->{counts}{'MD5 Duplicates'}++;
@@ -304,25 +332,25 @@ sub check_user_function {
 
     for my $sub ( @$tests ) {
         $cnt++;
-        print STDERR "?Testing '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_INFO;
+        print STDERR "?Testing '$fn' user supplied function #$cnt\n" if $server->{debug} & DEBUG_INFO;
 
         my $ret;
         
         eval { $ret = $sub->( $uri, $server, @_ ) };
 
         if ( $@ ) {
-            print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt death '$@'\n" if $server->{debug} >= DEBUG_SKIPPED;
+            print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt death '$@'\n" if $server->{debug} & DEBUG_SKIPPED;
             $server->{counts}{Skipped}++;
             return;
         }
             
         next if $ret;
         
-        print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_SKIPPED;
+        print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} & DEBUG_SKIPPED;
         $server->{counts}{Skipped}++;
         return;
     }
-    print STDERR "+Passed all $cnt tests for '$fn' user supplied function\n" if $server->{debug} >= DEBUG_INFO;
+    print STDERR "+Passed all $cnt tests for '$fn' user supplied function\n" if $server->{debug} & DEBUG_INFO;
     return 1;
 }
 
@@ -347,7 +375,7 @@ sub extract_links {
 
         # which tags to use ( not reported in debug )
 
-        print STDERR " ?? Looking at extracted tag '$tag'\n" if $server->{debug} >= DEBUG_LINKS;
+        print STDERR " ?? Looking at extracted tag '$tag'\n" if $server->{debug} & DEBUG_LINKS;
         
         unless ( grep { $tag eq $_ } @{$server->{link_tags}} ) {
 
@@ -356,7 +384,7 @@ sub extract_links {
                 " ?? <$tag> skipped because not one of (",
                 join( ',', @{$server->{link_tags}} ),
                 ")\n"
-                     if $server->{debug} >= DEBUG_LINKS && !$skipped_tags{$tag}++;
+                     if $server->{debug} & DEBUG_LINKS && !$skipped_tags{$tag}++;
                      
             next;
         }
@@ -376,17 +404,17 @@ sub extract_links {
                 return if $seen{$u}++;  # this won't report duplicates
 
                 unless ( $u->scheme =~ /^http$/ ) {  # no https at this time.
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not http\n] if $server->{debug} >= DEBUG_LINKS;
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not http\n] if $server->{debug} & DEBUG_LINKS;
                     next;
                 }
 
                 unless ( $u->host ) {
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not no host name\n] if $server->{debug} >= DEBUG_LINKS;
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not no host name\n] if $server->{debug} & DEBUG_LINKS;
                     next;
                 }
 
                 unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} >= DEBUG_LINKS;
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
                     $server->{counts}{'Off-site links'}++;
                     next;
                 }
@@ -394,13 +422,13 @@ sub extract_links {
                 $u->authority( $server->{authority} );  # Force all the same host name
 
                 push @links, $u;
-                print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} >= DEBUG_LINKS;
+                print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
 
             }
         }
 
-        if ( !$found && $server->{debug} >= DEBUG_LINKS ) {
+        if ( !$found && $server->{debug} & DEBUG_LINKS ) {
             my $s = "<$tag";
             $s .= ' ' . qq[$_="$attr{$_}"] for sort keys %attr;
             $s .= '>';
@@ -410,7 +438,7 @@ sub extract_links {
         
     }
 
-    print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n" if $server->{debug} >= DEBUG_INFO;
+    print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n" if $server->{debug} & DEBUG_INFO;
 
 
     return \@links;
@@ -422,6 +450,7 @@ sub output_content {
     $server->{indexed}++;
 
     $server->{counts}{'Total Bytes'} += length $$content;
+    $server->{counts}{'Toatl Docs'}++;
 
 
     my $headers = join "\n",
@@ -441,7 +470,7 @@ sub output_content {
 # This is not very good...
 
 sub thin_dots {
-    my ( $uri, $server ) = shift;
+    my ( $uri, $server ) = @_;
 
 
     my $p = $uri->path;
@@ -464,7 +493,8 @@ sub thin_dots {
 
     $uri->path( $uri->path . '/' ) if $trailing_slash;  # cough, hack, cough.
 
-    if ( $server->{debug} >= DEBUG_INFO && $p ne $uri->path ) {
+
+    if ( $server->{debug} & DEBUG_INFO && $p ne $uri->path ) {
         print STDERR "thin_dots: $p -> ", $uri->path, "\n";
     }
 }
@@ -502,6 +532,9 @@ The available configuration parameters are discussed below.
 This script will not spider files blocked by robots.txt, unless
 explicitly overridden -- something you probably should not do.
 This script only spiders one file at a time, so load on the web server is not that great.
+And with libwww-perl-5.53_90 HTTP/1.1 keep alive requests can reduce the load on
+the server even more (and potentially reduce spidering time considerably!)
+
 Still, discuss spidering with a site's administrator before beginning.
 
 The spider program keeps track of URLs visited, so a file is only indexed
@@ -596,7 +629,7 @@ Examples:
 
 =head1 CONFIGURATION OPTIONS
 
-This describes the required and optional keys in the server configuration hash.
+This describes the required and optional keys in the server configuration hash, in random order...
 
 =over 4
 
@@ -678,13 +711,32 @@ next server, if any.  The default is to not limit by time.
 =item max_files
 
 This optional key sets the max number of files to spider before aborting.
-The default is to not limit by number of files.
+The default is to not limit by number of files.  This is the number of requests
+made to the remote server, not the total number of files to index.
 
 =item max_size
 
 This optional key sets the max size of a file read from the web server.
 This B<defaults> to 1,000,000 bytes.  If the size is exceeded the resource is
 skipped (and a message is written to STDERR if debug level is > 1.
+
+=item keep_alive
+
+This optional parameter will enable keep alive requests.  This can dramatically speed
+us searching and reduce the load on server being spidered.  The default is to not use
+keep alives, although enabling it will probably be the right thing to do.
+
+To get the most out of keep alives, you may want to set up your web server to
+allow a lot of requests per single connection (i.e MaxKeepAliveRequests on Apache).
+Apache's default is 100, which should be good.  (Note, that you probably do not want
+keep alives enable on a mod_perl-enabled server.)
+
+Also, try to filter as many documents as possible B<before> making the request to the server.  In
+other words, use C<test_url> to look for files ending in C<.html> instead of using C<test_response> to look
+for a content type of C<text/html> if possible -- aborting a request from C<test_response> will break the
+current keep alive connection.
+
+Note: you must have at least libwww-perl-5.53_90 installed to use this feature.
 
 =item skip
 
@@ -694,18 +746,35 @@ is to make it easy to disable a server in a configuration file.
 =item debug
 
 Set this to a number to display different amounts of info while spidering.  Writes info
-to STDOUT.  Zero is not debug output.  The higher the number, the more verbose the output.
-The levels are inclusive, so debug level 3 includes debug levels 1 and 2.
+to STDOUT.  Zero/undefined is no debug output.
+
+The following constants are defined for debugging.  They may be or'ed together to
+get the individual debugging of your choice.
 
 Here are basically the levels:
 
-    0   => no debug output
-    1   => program errors (not currently used)
-    2   => report every URL processed
-    3   => request failed from remote server (doesn't included skipped due to robots.txt)
-    4   => report when a URL is skipped
-    5   => report misc info
-    6   => report info on links as they are extracted
+    DEBUG_ERRORS   general program errors
+    DEBUG_URL      print out every URL processes
+    DEBUG_HEADERS  prints the response headers
+    DEBUG_FAILED   failed to return a 200
+    DEBUG_SKIPPED  didn't index for some reason
+    DEBUG_INFO     more verbose
+    DEBUG_LINKS    prints links as they are extracted
+
+For example, to display the urls, failed, and skipped use:
+
+    debug => DEBUG_URL | DEBUG_FAILED | DEBUG_SKIPPED,
+
+To display the returned headers
+
+    debug => DEBUG_HEADERS,
+
+You can easily run the spider without using swish for debugging purposes:
+
+    ./spider.pl test.config > spider.out
+
+And you will see debugging info as it runs, and the fetched documents will be saved
+in the C<spider.out> file.
 
 
 =item ignore_robots_file

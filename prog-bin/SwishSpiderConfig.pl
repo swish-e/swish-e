@@ -19,21 +19,28 @@ Please see C<perldoc spider.pl> for more information.
 #  in one run (or different parts of the same tree)
 #  The main program expects to use @SwishSpiderConfig::servers.
 
-
+  ### Please do not spider these examples -- spider your own servers, with permission ####
 
 @servers = (
 
+
     # This is a simple example, that includes a few limits
+    # Only files ending in .html will be spidered (probably a bit too restrictive)
     {
         skip        => 1,  # skip spidering this server
         
-        base_url    => 'http://www.infopeople.org/',
+        base_url    => 'http://www.infopeople.org/index.html',
         same_hosts  => [ qw/infopeople.org/ ],
         agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
         email       => 'swish@domain.invalid',
+
+        # limit to only .html files
+        test_url    => sub { $_[0]->path =~ /\.html?$/ },
+
         delay_min   => .0001,     # Delay in minutes between requests
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 10,        # Max files to spider
+        keep_alive  => 1,         # enable keep alives requests
     },
 
 
@@ -43,12 +50,16 @@ Please see C<perldoc spider.pl> for more information.
     # The call-back subroutines are explained a bit more below.
     {
         skip            => 1,
+
         base_url        => 'http://www.infopeople.org/',
         email           => 'swish@domain.invalid',
         delay_min       => .0001,
         link_tags       => [qw/ a frame /],
         max_files       => 50,
+        keep_alives     => 1,
+
         test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg)$/ },
+
         test_response   => sub {
             my $content_type = $_[2]->content_type;
             my $ok = grep { $_ eq $content_type } qw{ text/html text/plain application/pdf application/msword };
@@ -56,21 +67,23 @@ Please see C<perldoc spider.pl> for more information.
             print STDERR "$_[0] wrong content type ( $content_type )\n";
             return;
         },
+
         filter_content  => [ \&pdf, \&doc ],
     },
 
 
-    # This example just includes use of more features.
+    # This example just shows more features.  See perldoc spider.pl for info
+    
     {
-        base_url    => 'http://sunsite.berkeley.edu/SWISH-E/',
+        skip        => 1,         # Flag to disable spidering this host.
+
+        base_url    => 'http://sunsite.berkeley.edu/SWISH-E/index.html',
         same_hosts  => [ qw/www.sunsite.berkeley.edu/ ],
         agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
         email       => 'swish@domain.invalid',
         delay_min   => .0001,     # Delay in minutes between requests
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 20,        # Max files to spider
-        debug       => 1,         # Display URLs as indexing to STDERR
-        skip        => 1,         # Flag to disable spidering this host.
         ignore_robots_file => 0,  # Don't set that to one, unless you are sure.
 
         use_cookies => 0,         # True will keep cookie jar
@@ -85,6 +98,8 @@ Please see C<perldoc spider.pl> for more information.
                                   # with differet URLs that are the same
                                   # content.  Will trap / and /index.html,
                                   # for example.
+
+        debug       => DEBUG_URL | DEBUG_HEADERS,  # print some debugging info to STDERR                                  
 
 
         # Here are hooks to callback routines to validate urls and responses
@@ -121,7 +136,7 @@ sub test_url {
     # return 0;  # No, don't index or spider;
 
     # ignore any .gif files
-    return $uri->path =~ /\.gif$/;
+    return $uri->path =~ /\.html?$/;
     
 }
 
@@ -140,13 +155,23 @@ sub test_response {
 # This routine can be used to filter content
 
 sub filter_content {
-    my ( $response, $server, $content_ref ) = @_;
+   my ( $uri, $server, $response, $content_ref ) = @_;
 
     # modify $content_ref
     $$content_ref = modify_content( $content_ref );
     return 1;  # make sure you return true!
 
 }
+
+# Maybe do something here ;)
+sub modify_content {
+    my $content_ref = shift;
+
+    
+    return $$content_ref;
+}
+
+    
 
 # Here's some real examples
 
