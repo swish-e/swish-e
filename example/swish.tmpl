@@ -64,23 +64,47 @@
                 </tr>
 
                 <TMPL_IF PAGES>
+                    <tr>
+                        <td colspan=2 bgcolor="#EEEEEE">
 
-                <tr>
-                    <td colspan=2 bgcolor="#EEEEEE">
-                        <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">&nbsp;Page:</font>
-                        <TMPL_VAR PAGES>
+                    <TMPL_IF REPLACE_WITH_DEFINED_VAR_TO_USE>
+                            &nbsp;
+                            <TMPL_IF PREV_COUNT>
+                                <a style="text-decoration:none" href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">&lt;&lt;</a>
+                            </TMPL_IF>
+    
+                            <TMPL_LOOP NAME=PAGE_ARRAY>
+                                <TMPL_IF NAME=CUR_PAGE>
+                                    [<TMPL_VAR NAME=PAGE_NUMBER>]
+                                <TMPL_ELSE>
+                                    <a style="text-decoration:none" href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NAME=PAGE_START>">
+                                    <TMPL_VAR NAME=PAGE_NUMBER></a>
+                                </TMPL_IF>
 
-                        <TMPL_IF PREV_COUNT>
-                            <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">
-                            Previous <TMPL_VAR PREV_COUNT></a>
-                        </TMPL_IF>
-        
-                        <TMPL_IF NEXT_COUNT>
-                            <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">
-                            Next <TMPL_VAR NEXT_COUNT></a>
-                        </TMPL_IF>
-                    </td>
-                </tr>
+                            </TMPL_LOOP>
+
+                            <TMPL_IF NEXT_COUNT>
+                                <a style="text-decoration:none" href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">&gt;&gt;</a>
+                            </TMPL_IF>
+
+                    <TMPL_ELSE>
+                            <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">&nbsp;Page:</font>
+                            <TMPL_VAR PAGES>
+
+                            <TMPL_IF PREV_COUNT>
+                                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">
+                                Previous <TMPL_VAR PREV_COUNT></a>
+                            </TMPL_IF>
+    
+                            <TMPL_IF NEXT_COUNT>
+                                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">
+                                Next <TMPL_VAR NEXT_COUNT></a>
+                            </TMPL_IF>
+                    </TMPL_IF>
+
+
+                        </td>
+                    </tr>
                 </TMPL_IF>
 
             </table>

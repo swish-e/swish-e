@@ -125,24 +125,58 @@
 
         <tr>
             <td colspan=2 bgcolor="#EEEEEE">
-                <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">&nbsp;Page:</font>
-                [% search.navigation('pages') %]
-
-                [% IF search.navigation('prev_count') %]
-                    <a href="[% search.query_href %]&amp;start=[% search.navigation('prev') %]">
-                    Previous [% search.navigation('prev_count') %]</a>
-                [% END %]
-        
-                [% IF search.navigation('next_count') %]
-                    <a href="[% search.query_href %]&amp;start=[% search.navigation('next') %]">
-                    Next [% search.navigation('next_count') %]</a>
-                [% END %]
+                [%# PROCESS nav_bar_pages %]
+                [% PROCESS nav_bar_pages2 %]
             </td>
         </tr>
         [% END %]
 
     </table>
 [% END %]
+
+[% BLOCK nav_bar_pages %]                
+    <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">&nbsp;Page:</font>
+    [% search.navigation('pages') %]
+
+    [% IF search.navigation('prev_count') %]
+        <a href="[% search.query_href %]&amp;start=[% search.navigation('prev') %]">
+        Previous [% search.navigation('prev_count') %]</a>
+    [% END %]
+
+    [% IF search.navigation('next_count') %]
+        <a href="[% search.query_href %]&amp;start=[% search.navigation('next') %]">
+        Next [% search.navigation('next_count') %]</a>
+    [% END %]
+[% END %]
+
+[%#
+    Insead of pre-formatted numeric page links as above, you can use this
+    example to generate the pages individually.
+    For example, allows using images for page numbers.
+%]
+
+[% BLOCK nav_bar_pages2 %]
+    &nbsp;
+
+    [% IF search.navigation('prev_count') %]
+        <a style="text-decoration:none" href="[% search.query_href %]&amp;start=[% search.navigation('prev') %]">&lt;&lt;</a>
+    [% END %]
+
+
+    [% FOR page = search.navigation('page_array') %]
+        [% IF page.cur_page %]
+            [[% page.page_number %]]
+        [% ELSE %]
+            <a style="text-decoration:none" href="[% search.query_href %];start=[% page.page_start %]">[% page.page_number %]</a>
+        [% END %]
+    [% END %]
+
+    [% IF search.navigation('next_count') %]
+        <a style="text-decoration:none" href="[% search.query_href %]&amp;start=[% search.navigation('next') %]">&gt;&gt;</a>
+    [% END %]
+[% END %]
+
+
 
 
 [% BLOCK results_list %]

@@ -27,6 +27,13 @@ sub show_template {
 
     my $template = HTML::Template->new( %{$template_params->{options}} );
 
+    # I like scoping in Template Toolkit much better.
+    my $page_array = $results->navigation('page_array');
+    if ( ref $page_array ) {
+        $_->{QUERY_HREF} = $results->{query_href}
+            for @$page_array;
+    }
+
     my $params = {
         TITLE           => ($results->config('title') || 'Search Page'),
         QUERY_SIMPLE    => CGI::escapeHTML( $results->{query_simple} ),
@@ -40,6 +47,8 @@ sub show_template {
         SHOWING         => $results->navigation('showing'),
 
         PAGES           => $results->navigation('pages'),
+
+        PAGE_ARRAY      => $page_array,
         NEXT            => $results->navigation('next'),
         NEXT_COUNT      => $results->navigation('next_count'),
         PREV            => $results->navigation('prev'),
