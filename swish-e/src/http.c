@@ -89,11 +89,9 @@ void    initModule_HTTP(SWISH * sw)
 
     sw->HTTP = http;
 
-    http->lenspiderdirectory = MAXSTRLEN;
+    http->lenspiderdirectory = strlen(libexecdir); 
     http->spiderdirectory = (char *) emalloc(http->lenspiderdirectory + 1);
-    http->spiderdirectory[0] = '\0';
-    /* Initialize spider directory */
-    http->spiderdirectory = SafeStrCopy(http->spiderdirectory, SPIDERDIRECTORY, &http->lenspiderdirectory);
+    strcpy( http->spiderdirectory, libexecdir );
 
     for (i = 0; i < BIGHASHSIZE; i++)
         http->url_hash[i] = NULL;
@@ -101,8 +99,8 @@ void    initModule_HTTP(SWISH * sw)
     http->equivalentservers = NULL;
 
     /* http default system parameters */
-    http->maxdepth = 5;
-    http->delay = 60;
+    http->maxdepth = 0;
+    http->delay = 5;
 }
 
 void    freeModule_HTTP(SWISH * sw)
@@ -159,10 +157,6 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
             {
                 progerr("SpiderDirectory. %s is not a directory", http->spiderdirectory);
             }
-
-            if ( strlen( http->spiderdirectory ) != 1 || http->spiderdirectory[0] != '/' )
-                strcat(http->spiderdirectory, "/" );  /* In this case, we just add the delimiter */
-
         }
         else
             progerr("SpiderDirectory requires one value");
@@ -411,13 +405,14 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
 
     /* Build path to swishspider program */
     char   *spider_prog = emalloc( strlen(http->spiderdirectory) + strlen("swishspider+fill") );
-    sprintf(spider_prog, "%sswishspider", http->spiderdirectory ); // note that spiderdir MUST be set.  
+    sprintf(spider_prog, "%s/swishspider", http->spiderdirectory ); // note that spiderdir MUST be set.  
 
-    
     /* Sleep a little so we don't overwhelm the server */
-    if ((time(0) - *plastretrieval) < http->delay)
+    if (  *plastretrieval && (time(0) - *plastretrieval) < http->delay)
     {
         int     num_sec = http->delay - (time(0) - *plastretrieval);
+        if ( sw->verbose > 2 )
+            printf("sleeping %d seconds before fetching %s\n", num_sec, url);
         sleep(num_sec);
     }
 
@@ -454,6 +449,9 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
         efree( spider_prog );
     }
 #endif
+
+    /* Probably better to have Delay be time between requests since some docs may take more than Delay seconds to fetch */
+    *plastretrieval = time(0);
     
 
     /* NAUGHTY SIDE EFFECT */

@@ -2381,7 +2381,9 @@ Note, the environment variables of C<TMPDIR>, C<TMP>, and C<TEMP>
 
 The location of the Perl helper script called F<swishspider>.  If you
 use a relative directory, it is relative to your directory when you run
-Swish-e, not to the directory that Swish-e is in.  The default is C<./>
+Swish-e, not to the directory that Swish-e is in.
+The default is the location swishspider was installed.
+Normally this does not need to be set.
 
     SpiderDirectory /usr/local/swish
 

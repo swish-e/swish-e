@@ -10,6 +10,25 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Change to HTTP access defaults
+
+Defaults used with -S http access method were changed.
+
+
+Delay was reduced from one minute between start of each request to five seconds
+between requests. 
+
+MaxDepth was changed from five to zero, meaning there is no limit to depth indexed by
+default.
+
+=item swishspider location and SpiderDirectory
+
+The swishspider program is now installed in $prefix/lib/swish-e by default.  This can
+be changed by the --libexecdir option to configure.  The SpiderDirectory option now
+defaults to the value of libexecdir instead of the current directory.  This avoids
+the need to manually move the swishspider program to any specific location after
+installation.
+
 =item Added libtool and automake support
 
 Replaces the build system with Autotools.  Now builds libswish-e as

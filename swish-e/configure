@@ -1467,7 +1467,6 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"
 ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
 
 
-
 PACKAGE=swish-e
 
 MAJOR_VERSION=2
@@ -1476,6 +1475,7 @@ MICRO_VERSION=5
 INTERFACE_AGE=0
 BINARY_AGE=0
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
+
 
 
 am__api_version="1.7"
@@ -7756,6 +7756,7 @@ LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 
 
 
+
 echo "$as_me:$LINENO: checking whether to enable maintainer-specific portions of Makefiles" >&5
 echo $ECHO_N "checking whether to enable maintainer-specific portions of Makefiles... $ECHO_C" >&6
     # Check whether --enable-maintainer-mode or --disable-maintainer-mode was given.
@@ -7778,6 +7779,8 @@ else
 fi
 
   MAINT=$MAINTAINER_MODE_TRUE
+
+
 
 
 
@@ -11635,6 +11638,12 @@ fi
 
 CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
+
+libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
+if test "x$libexecdiropt" == "x"; then
+        export libexecdir='${exec_prefix}/lib/${PACKAGE}'
+fi
+
 
 
 

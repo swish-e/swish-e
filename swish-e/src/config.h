@@ -314,8 +314,6 @@
 ** in getrank; don't just go changing these values!
 */
 
-#define SPIDERDIRECTORY "./"
-
 #define SWAP_LOC_DEFAULT 0
 
 /* 2001/08 jmruiz -- Default chunk size - Index will work with blocks of files. This number specifies when to coalesce locations to save memory */
