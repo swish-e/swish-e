@@ -574,6 +574,7 @@ struct stat stat_buf;
 			sw->dirlist = sw->dirlist->next;
 		}
 
+		checkmem();
 			/* Create an empty File */
 		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
 		

@@ -26,6 +26,7 @@
 ** 2001-02    rasc    isAutoProperty
 **                    printSearchResultProperties changed
 ** 2001-03-15 rasc    Outputdelimiter var name changed
+** 2001-06-08 wsm     Store propValue at end of docPropertyEntry to save memory
 ** 
 */
 
@@ -57,7 +58,6 @@ void freeDocProperties(docProperties)
 	while (prop != NULL)
 	{
 		docPropertyEntry *nextOne = prop->next;
-		efree(prop->propValue);
 		efree(prop);
 
 		prop = nextOne;
@@ -67,26 +67,24 @@ void freeDocProperties(docProperties)
 	*docProperties = NULL;
 }
 
-/* #### Added propLen to allow binary data */
+/* Add the given file/metaName/propValue data to the File object */
 void addDocProperty(docPropertyEntry **docProperties, int metaID, unsigned char *propValue, int propLen)
 {
-	/* Add the given file/metaName/propValue data to the File object */
 docPropertyEntry *docProp;
-	/* new prop object */
+
 	if(propLen)
 	{
-		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
-		docProp->metaID = metaID;
-		docProp->propValue = propValue;
-		docProp->propValue = (char *)emalloc(propLen);
-		memcpy(docProp->propValue, propValue,propLen);
+		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry) + propLen);
+		memcpy(docProp->propValue, propValue, propLen);
 		docProp->propLen=propLen;
+		docProp->metaID = metaID;
 			
 		/* insert at head of file objects list of properties */
 		docProp->next = *docProperties;	/* "*docProperties" is the ptr to the head of the list */
 		*docProperties = docProp;	/* update head-of-list ptr */
 	}
 }
+
 /*#### */
 
 /*
@@ -296,20 +294,20 @@ void swapDocPropertyMetaNames(docProperties, metaFile)
 /* Duplicates properties (used by merge) */
 docPropertyEntry *DupProps(docPropertyEntry *dp)
 {
-docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
+docPropertyEntry *new=NULL, *tmp=NULL, *last=NULL;
+
 	if(!dp) return NULL;
 	while(dp)
 	{
-		tmp=emalloc(sizeof(docPropertyEntry));
-		tmp->metaID=dp->metaID;
-		tmp->propValue=emalloc(dp->propLen);
-		memcpy(tmp->propValue,dp->propValue,dp->propLen);
-		tmp->propLen=dp->propLen;
-		tmp->next=NULL;
-		if(!new) new=tmp;
-		if(last) last->next=tmp;
-		last=tmp;
-		dp=dp->next;
+		tmp = emalloc(sizeof(docPropertyEntry) + dp->propLen);
+		memcpy(tmp->propValue, dp->propValue, dp->propLen);
+		tmp->propLen = dp->propLen;
+		tmp->metaID = dp->metaID;
+		tmp->next = NULL;
+		if(!new) new = tmp;
+		if(last) last->next = tmp;
+		last = tmp;
+		dp = dp->next;
 	}
 	return new;
 }

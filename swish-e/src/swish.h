@@ -54,6 +54,8 @@
 ** 2001-03-16 rasc   truncateDocSize
 ** 2001-03-17 rasc   fprop enhanced by real_filename
 ** 2001-04-09 rasc   filters changed and enhanced
+** 2001-06-08 wsm    Add word to end of ENTRY and propValue to end of docPropertyEntry
+**                     to save memory and less malloc/free
 ** 
 */
 
@@ -223,11 +225,10 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 
 typedef struct docPropertyEntry
 {
-    int     metaID;             /* meta field identifier; from getMetaName() */
-    unsigned char *propValue;   /* buffer from META's CONTENTS attribute */
-    unsigned int propLen;       /* Length of buffer */
-
     struct docPropertyEntry *next;
+    int     metaID;             /* meta field identifier; from getMetaName() */
+    unsigned int propLen;       /* Length of buffer */
+    unsigned char propValue[0]; /* Actual property value starts here */
 }
 docPropertyEntry;
 
@@ -304,7 +305,7 @@ LOCATION;
 
 typedef struct ENTRY
 {
-    char   *word;
+    struct ENTRY *next;
     int     tfrequency;
     LOCATION **locationarray;
     /* this union is just for saving memory */
@@ -314,9 +315,9 @@ typedef struct ENTRY
         int     max_locations;
     }
     u1;
-    struct ENTRY *nexthash;
     /* this union is just for saving memory */
     int     currentlocation;
+	char	word[0];	/* actual word starts here */
 }
 ENTRY;
 
