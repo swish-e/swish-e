@@ -49,7 +49,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
 	soundex.o docprop.o compress.o deflate.o xml.o txt.o html.o\
 	metanames.o result_output.o parse_conffile.o result_sort.o\
-	filter.o\
+	filter.o lst.o\
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS)
 
 .SUFFIXES: 
@@ -160,3 +160,5 @@ metanames.o: metanames.c swish.h mem.h metanames.h
 result_output.o: result_output.c docprop.h swish.h mem.h config.h
 parse_conffile.o: parse_conffile.c string.h swish.h mem.h config.h
 result_sort.o: result_sort.h string.h swish.h mem.h config.h
+filter.o: filter.h string.h swish.h mem.h config.h
+lst.o: lst.h xml.h string.h swish.h mem.h config.h

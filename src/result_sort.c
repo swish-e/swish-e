@@ -22,10 +22,16 @@ IndexFILE *indexf;
 			use rank in descending mode */
 		addSearchResultSortProperty(sw,AUTOPROPERTY_RESULT_RANK,1);
 		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-			indexf->propIDToSort[0] = AUTOPROP_ID__RESULT_RANK;			
+		{
+			indexf->propIDToSort=(int *)emalloc(sizeof(int));
+			indexf->propIDToSort[0] = AUTOPROP_ID__RESULT_RANK;
+		}
 
 		return RC_OK;
 	}
+	for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+		indexf->propIDToSort=(int *)emalloc(sw->numPropertiesToSort*sizeof(int));
+
 	for (i = 0; i<sw->numPropertiesToSort; i++)
 	{
 		makeItLow(sw->propNameToSort[i]);

@@ -208,7 +208,7 @@
 #define TXT 	(BASEDOCTYPE+1)
 #define HTML 	(BASEDOCTYPE+2)
 #define XML 	(BASEDOCTYPE+3)
-#define MULTITXT 	(BASEDOCTYPE+4)
+#define LST 	(BASEDOCTYPE+4)
 #define WML 	(BASEDOCTYPE+5)
 
 typedef struct docPropertyEntry {
