@@ -1065,12 +1065,12 @@ static RankFactor ranks[] = {
 #define numRanks (sizeof(ranks)/sizeof(ranks[0]))
 
 
-static int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCount)
+static int getrank(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, int filenum )
 {
-    double    factor;
-    double  rank;
-    double    reduction;
-    int        i;
+    double          factor;
+    double          rank;
+    double          reduction;
+    int             i;
 
     factor = 1.0;
 
@@ -1082,8 +1082,11 @@ static int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, in
     rank = log((double)freq) + 10.0;
 
     /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
-    if (!ignoreTotalWordCount)
+    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
+        INDEXDATAHEADER *header = &indexf->header;
+        int             words = header->TotalWordsPerFile[filenum-1];
+
         if (words < 10) words = 10;
         reduction = log10((double)words);
         if (reduction > 5.0) reduction = 5.0;
@@ -1232,14 +1235,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 
                 rp = (RESULT *) addtoresultlist(
                     rp, filenum,
-                    getrank(
-                        sw,
-                        frequency,
-                        tfrequency,
-                        1, // ??? Don't forget to deal with totalwords
-                        structure,
-                        indexf->header.ignoreTotalWordCountWhenRanking
-                    ),
+                    getrank( sw, frequency, tfrequency, structure, indexf, filenum ),
                     structure, frequency, position, indexf, sw);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);

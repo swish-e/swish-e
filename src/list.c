@@ -195,6 +195,9 @@ void free_header(INDEXDATAHEADER *header)
     if ( header->metaID_to_PropIDX )
         efree( header->metaID_to_PropIDX );
 
+    if ( header->TotalWordsPerFile )
+        efree( header->TotalWordsPerFile );
+
 }
 
 
