@@ -136,7 +136,7 @@ $Id$
 #include "dump.h"
 #include "swish_qsort.h"
 
-static void index_path_parts( SWISH *sw, char *path, path_extract_list *list );
+static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
 
 
 
@@ -1162,7 +1162,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 
     /* This allows extracting out parts of a path and indexing as a separate meta name */
     if ( sw->pathExtractList )
-        index_path_parts( sw, fprop->orig_path, sw->pathExtractList );
+        index_path_parts( sw, fprop->orig_path, sw->pathExtractList, header, properties );
         
 
 
@@ -1235,7 +1235,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 *   extracts out parts from a path name and indexes that part
 *
 ********************************************************************/
-static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
+static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties )
 {
     int metaID;
     int positionMeta = 1;
@@ -1256,8 +1256,15 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
         }
         else
         {
+            struct metaEntry *q;
+
             metaID = list->meta_entry->metaID;
             indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+
+            if ((q = getPropNameByName(header, list->meta_entry->metaName )))
+                addDocProperty( properties, q, str, strlen(str),0);
+            
+
             efree( str );
         }
 
