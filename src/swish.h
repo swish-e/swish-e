@@ -59,7 +59,9 @@
 #include <ctype.h>
 #include <errno.h>
 #include <time.h>
+#ifdef HAVE_CONFIG_H
 #include "acconfig.h"  /* These are defines created by autoconf */
+#endif
 #include "config.h"
 
 #ifdef NEXTSTEP
