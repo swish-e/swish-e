@@ -524,20 +524,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
         
-        if (strcasecmp(w0, "IgnoreLimit") == 0)
-        {
-            if (sl->n == 3)
-            {
-                sw->plimit = atol(sl->word[1]);
-                sw->flimit = atol(sl->word[2]);
-            }
-            else
-                progerr("%s: requires two values", w0);
-
-            continue;
-        }
-
-        
         /* IndexVerbose is supported for backwards compatibility */
         if (strcasecmp(w0, "IndexVerbose") == 0)
         {
