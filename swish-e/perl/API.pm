@@ -62,7 +62,7 @@ SWISH::API - Perl interface to the Swish-e C Library
     # Seek to a given page - should check for errors
     $results->SeekResult( ($page-1) * $page_size );
 
-    while ( my $results = $results->NextResult ) {
+    while ( my $result = $results->NextResult ) {
         printf("Path: %s\n  Rank: %lu\n  Size: %lu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %lu\n  File   #: %lu\n\n",
             $result->Property( "swishdocpath" ),
             $result->Property( "swishrank" ),

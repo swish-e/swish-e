@@ -661,26 +661,28 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         /* replace all non-printing chars with a space -- this is questionable */
         // yep, sure is questionable -- isprint() kills 8859-1 chars.
 
-#ifdef FOOO
-        char *source, *dest;
-        dest = string;
-        for( source = string; *source; source++ )
+        if ( !is_meta_nostrip(meta_entry) )
         {
-            if ( (int)((unsigned char)*source) <= (int)' ' )
+            char *source, *dest;
+            dest = string;
+            for( source = string; *source; source++ )
             {
-                if ( dest > string && *(dest - 1) != ' ' )
+                if ( (int)((unsigned char)*source) <= (int)' ' )
                 {
-                    *dest = ' ';
-                    dest++;
+                    if ( dest > string && *(dest - 1) != ' ' )
+                    {
+                        *dest = ' ';
+                        dest++;
+                    }
+                    continue;
                 }
-                continue;
-            }
 
-            *dest = *source;
-            dest++;
+                *dest = *source;
+                dest++;
+            }
+            *dest = '\0';
         }
-        *dest = '\0';
-#endif            
+
         *encodedStr = string;
         return (int)strlen( string );
     }
