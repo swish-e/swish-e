@@ -94,7 +94,8 @@ SWISH_BINARY_OBJS   = swish.o keychar_out.o
 LIB_OBJS            =   $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 SEARCH_LIB_OBJS     =   $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 
-
+# All objects for make clean target
+OBJS                = $(SWISH_BINARY_OBJS) $(SEARCHING_OBJS) $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
  
 # Flags for C compiler
 CFLAGS      = -Wall -pedantic @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
@@ -123,7 +124,7 @@ swish-search: $(NAME)
 	cp -f $(NAME) swish-search
 
 clean:
-	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a
+	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a libtest.o
 
 realclean: clean
 	rm Makefile
