@@ -1,0 +1,135 @@
+# 
+# Makefile derived from the Makefile coming with swish-e 1.3.2
+# (original Makefile for SWISH Kevin Hughes, 3/12/95)
+#
+# The code has been tested to compile on Solaris and DEC 
+# G.Hill ghill@library.berkeley.edu 6/11/97
+# 
+# autoconf configuration by Bas Meijer, 1 June 2000
+# Cross Platform Compilation on Solaris, HP-UX, IRIX and Linux
+# Several ideas from a Makefile by Christian Lindig <lindig@ips.cs.tu-bs.de>  
+#
+NAME = swish-e
+# C compiler
+CC = @CC@
+
+SHELL = /bin/sh
+prefix = @prefix@
+bindir = $(prefix)/bin
+libdir = $(prefix)/lib
+mandir = $(prefix)/man
+man1dir = $(mandir)/man1
+
+# Flags for C compiler
+CFLAGS = @CFLAGS@
+
+LIBS=@LIBS@
+
+AR = ar
+RANLIB = @RANLIB@
+
+#
+# The objects for the different methods and
+# some common aliases
+#
+
+FILESYSTEM_OBJS=fs.o
+HTTP_OBJS=http.o httpserver.o 
+FS_OBJS=$(FILESYSTEM_OBJS)
+WEB_OBJS=$(HTTP_OBJS)
+
+OBJS=	check.o file.o index.o search.o error.o methods.o\
+	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
+	soundex.o docprop.o compress.o deflate.o xml.o txt.o \
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS)
+
+.SUFFIXES: 
+.SUFFIXES : .o .c
+.c.o :
+	$(CC) $(CFLAGS) -c $<
+
+all:	$(NAME) swish-search testlib
+
+$(NAME): $(OBJS) libswish-e.a swish.o
+	$(CC) -o $@ $(CFLAGS) swish.o libswish-e.a $(LIBS)
+	chmod 755 $@
+
+testlib: testlib.o libswish-e.a swish.o
+	$(CC) -o testlib $(CFLAGS) testlib.o libswish-e.a $(LIBS)
+	chmod 755 $@
+
+libswish-e.a: $(OBJS)
+	$(AR) cr libswish-e.a $(OBJS)
+	$(RANLIB) libswish-e.a
+
+swish-search: $(NAME)
+	cp -f $(NAME) swish-search
+
+clean:
+	rm -f ../tests/*.index ../tests/core ./core ./testlib ./swish-e ./swish-search ./*.o ./index.swish ./libswish-e.a
+
+realclean:
+	rm -f ../tests/*.index ../tests/core ./core ./testlib ./swish-e ./swish-search ./*.o ./index.swish Makefile ./libswish-e.a
+	rm -f config.cache config.log config.status
+
+test:	$(NAME)
+	(cd ../tests;\
+	../src/swish-e -c test.config; \
+	echo "\ntest 1 (Normal search) ..."; \
+	../src/swish-e -f ./test.index -w test | grep -v '^#'; \
+	echo "\ntest 1 (MetaTag search 1) ..."; \
+	../src/swish-e -f ./test.index -w meta1=metatest1 | grep -v '^#'; \
+	echo "\ntest 1 (MetaTag search 2) ..."; \
+	../src/swish-e -f ./test.index -w meta2=metatest2 | grep -v '^#'; \
+	echo "\ntest 1 (XML search) ..."; \
+	../src/swish-e -f ./test.index -w meta3=metatest3 | grep -v '^#'; \
+	echo "\ntest 1 (Phrase search) ..."; \
+	../src/swish-e -f ./test.index -w 'meta3="three little pigs"' | grep -v '^#'; )
+
+
+$(OBJS):	Makefile config.h swish.h
+
+install:	
+	cp libswish-e.a $(libdir)/libswish-e.a
+
+man:
+	cp swish-e.1 $(man1dir)
+
+#
+# dependencies
+# 
+check.o: check.c swish.h config.h check.h hash.h
+compress.o: compress.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h compress.h
+deflate.o: deflate.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h deflate.h
+docprop.o: docprop.c swish.h config.h file.h hash.h mem.h merge.h \
+ error.h search.h string.h docprop.h compress.h
+error.o: error.c swish.h config.h error.h
+file.o: file.c swish.h config.h file.h mem.h string.h error.h list.h \
+ hash.h index.h
+fs.o: fs.c swish.h config.h index.h hash.h mem.h file.h string.h \
+ list.h
+hash.o: hash.c swish.h config.h hash.h mem.h string.h
+http.o: http.c swish.h config.h index.h hash.h string.h mem.h file.h \
+ http.h httpserver.h
+httpserver.o: httpserver.c swish.h config.h string.h mem.h http.h \
+ httpserver.h
+index.o: index.c swish.h config.h index.h hash.h mem.h string.h \
+ check.h search.h docprop.h stemmer.h compress.h
+list.o: list.c swish.h config.h list.h mem.h string.h
+mem.o: mem.c swish.h config.h mem.h error.h
+merge.o: merge.c swish.h config.h merge.h error.h search.h index.h \
+ string.h hash.h mem.h docprop.h compress.h
+methods.o: methods.c swish.h config.h
+search.o: search.c swish.h config.h search.h file.h list.h string.h \
+ merge.h hash.h mem.h docprop.h stemmer.h compress.h
+stemmer.o: stemmer.c swish.h config.h stemmer.h
+soundex.o: soundex.c swish.h config.h stemmer.h
+string.o: string.c swish.h config.h string.h mem.h
+swish2.o: swish2.c swish.h config.h error.h list.h search.h index.h \
+ string.h file.h merge.h docprop.h
+swish.o: swish.c swish.h config.h error.h list.h search.h index.h \
+ string.h file.h merge.h docprop.h
+testlib.o: testlib.c swish.h config.h error.h list.h search.h index.h \
+ string.h file.h merge.h docprop.h
+txt.o: txt.c txt.h swish.h mem.h string.h index.h
+xml.o: xml.c txt.h swish.h mem.h string.h index.h

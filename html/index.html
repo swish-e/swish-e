@@ -1,0 +1,99 @@
+<html>
+<head>
+<title>SWISH-E 2</title>
+</head>
+<body bgcolor="ivory">
+<center>
+
+<table border=0 cellpadding=5 width="80%">
+<tr>
+<td colspan=2 align=center><img src="swish2.gif"></td>
+</tr>
+<td colspan=2 align=center>This page is also available in <a href="index_spa.html">Spanish/Espa&ntilde;ol</a></td>
+<tr>
+</tr>
+<tr>
+<td colspan=2><font face=Verdana>
+<img src="swish2b.gif"> is a new version of the indexer package SWISH-E built by Kevin Hughes. The original URL is <a href="http://sunsite.berkeley.edu/SWISH_E">http://sunsite.berkeley.edu/SWISH_E</a>. There, you can find the documentation, mail list, etc.<p>
+Swish-e 1.3.X is free software, so wish-e 2.x is also free software. You can use it wherever you want. More information about the license in the main site</b></font></td></tr>
+<tr>
+<td colspan=2><font face=Verdana>The last stable version is <a href="swish-e-2.0.4.tar.gz">2.0.4</a> This version includes the following addons:</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Phrase search. Use " to delimite the phrase</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: swish-e -w 'tit="this is a phrase"' -f index_file</td></tr>
+<tr><td>&nbsp;</td><td>Eg: swish-e -w 'tit="th* is a pra*"' -f index_file</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Limited support of XML documents. It supports tags like &lt;field&gt; &lt;/field&gt;. Nested tags are allowed</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: &lt;field1&gt; bla bla &lt;field2&gt; bla bla  &lt;/field2&gt; bla bla&lt;/field1&gt;</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Fixes several bugs and solves some memory leaks of 1.3.X</font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>New option for sorting results: Use relevance (the old one) or use field(s) (properties)</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: swish-e -w 'search' -f index_file -s title address</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Faster index proccess and search.</font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Automatic extraction of fields (metanames) including the reserved word automatic in the Metanames option of the config file (Do not use this feature with html documents. This documents include tags like &lt;p&gt; without their correspondent end tag) </p></font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Includes external fitering option from Rainer Scherg (it allows the parsing of PDF documents, WOrd documents, etc). <a href="filters.html">More information</a></font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Now, you can put your stopwords in an external file usind the <b>IgnoreWords File:path-to-file</b> in the config file. You can find some stopwords files in german (contributed by Rainer Scherg), english (taken from 1.3.X distribution), dutch (contributed by Bas Meier) and spanish (contributed by me). This option has been contributed by Rainer Scherg</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: IgnoreWords File:/path/german.txt</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>New option for the config file: <b>TranslateCharacters</b>. This option allows changing some characters for a different ones prior to index a word. This is very useful, for example, for changing accuted values by their correspondent non accuted ones. Well, this is really useful for non english languages</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: TranslateCharacters αινσϊ aeiou</td></tr>
+<tr><td>&nbsp;</td><td>With this configuration the word cami&oacute;n will be indexed as camion and the word &aacute;rbol as arbol</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>The old option -D now shows more information of the contents of the index file. If you also uses -v 4, the output is even richer</font></td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<td colspan=2><font face=Verdana>Now, the development of new addons go on. The last beta is <a href="alpha/swish-e-2.1.8.tar.gz">2.1.8</a>:</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>A C library. The code has been partly rewritten to get a C "thread-safe" library. This library is being used in the development of a <a href="perl.html">perl module</a> and a <a href="php.html">php extension</a> <a href="library.html">More information about the library</a></font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Example, and totally functional, <a href="perl.html">Perl module</a>, based on the C library. This helps the coding of perl CGI scripts</font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Now, you can define document types using DefaultContents and IndexContents in your config file. Uptoday there is only 3 types of documents: Text (TXT), html (HTML) and xml (XML) </font></td></tr>
+<tr><td>&nbsp;</td><td>Eg:</td><tr>
+<tr><td>&nbsp;</td><td>DefaultContents TXT</td><tr>
+<tr><td>&nbsp;</td><td>IndexContents XML .xml</td><tr>
+<tr><td>&nbsp;</td><td>IndexContents HTML .htm .html .php .php3</td><tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>As an option, the index proccess can use less memory using the economic mode (option -e). If set, the index proccess will write part of the information to temporal files. This option is very useful if your box do not have enough memory. You can detect this condition if your index proccess takes long time (look at your swap). By default (without -e) swish-e stores all data in memory in the index proccess</font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Extended search output using -x option. If your search uses more than one index file at the same time, it will display the header info of all the index files. Also, for each result line, a new value is added: the index file of the result. All the results are displayed in a mixed way, as if you have searched using just one index file.</font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Optional compression of the file data (File path, title and properites). The index proccess is slower but you will reduce input/output in the searchs. <a href="compression.html">More information</a></font></td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>Like in version 2.0.X it can sorts the result list by relevance or properties, but now, you can also use a combined especification of ascending and descending sorting (using <b>asc</b> and <b>desc</b>).</font></td></tr>
+<tr><td>&nbsp;</td><td>Eg: swish-e -w 'search' -f index_file -s title asc otherfiled desc</td></tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>New directive in config file: BumpPositionCounterCharacters. With this option, when one of those characters are found, the word's position counter is incremented. This is usefulfor separating phrases inside a document.</font><td><tr>
+<tr><td>&nbsp;</td><td>Eg:</td><tr>
+<tr><td>&nbsp;</td><td>BumpPositionCounterCharacters |</td><tr>
+<tr><td>&nbsp;</td><td>See this document: <b><i>this a phrase | this is another phrase</i></b>. With the option you cannot find the phrase "phrase this". Without it, you can because "phrase" and "this" have consecutive position counter</td><tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>New directive in config file: UseWords. With this option, only the words in the list are indexed. Like IgnoreWords, it can use a external file.</font><td><tr>
+<tr><td>&nbsp;</td><td>Eg:</td><tr>
+<tr><td>&nbsp;</td><td>UseWords word1 word2 word3</td><tr>
+<tr><td>&nbsp;</td><td>Eg:</td><tr>
+<tr><td>&nbsp;</td><td>UseWords File: path_to_external_file</td><tr>
+<tr>
+<td align=right><img src="item.gif"></td><td><font face=Verdana>New command line option -k. It returns all the words in the index file starting with the given character.</font><td><tr>
+<tr><td>&nbsp;</td><td>Eg:</td><tr>
+<tr><td>&nbsp;</td><td>swish-e -k t -f index_file</td><tr>
+
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr>
+<td colspan="2"><font face=Verdana>Swish-e 2.X has been entirely developed under Linux and it has been tested it in Solaris and Aix. <p>
+Although, not initially develped for Windows, Windows users can find binaries in <a href="http://www.webaugur.com/wares/swish">http://www.webaugur.com/wares/swish</a>. (Thanks to David Norris).</font></td></tr>
+</table>
+<hr>
+<a href="credits.html">Credits</a>
+<hr>
+<FONT SIZE="-1"><A HREF="mailto:jmruiz@boe.es?Subject=swish">jmruiz@boe.es</A></FONT>
+<hr>
+</center>
+</body>
+</html>

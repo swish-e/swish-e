@@ -1,0 +1,50 @@
+# Makefile for lookup.cgi and Date-Calc and swish-e
+#
+# Bas Meijer, bas@antraciet.com 1 June 2000
+
+SHELL = /bin/sh
+srcdir      = @srcdir@
+VPATH       = $(srcdir)
+prefix      = @prefix@
+bindir      = $(prefix)/bin
+mandir      = $(prefix)/man/man1
+perl		= @PERL@
+libdir		= @libdir@
+
+all:	swish-e swish-search
+	echo 'now make test'
+swish-e:	
+	echo 'making swish-e'
+	(cd src;./configure --quiet --prefix=$(prefix) ;make;cd ..)
+	echo 'swish-e done'
+swish-search: swish-e
+	echo 'making swish-search'
+	(cd src;cp -f swish-e swish-search;cd ..)
+	echo 'swish-search done'
+
+#
+clean:
+	rm -f src/swish-e src/swish-search src/*.o \
+	src/index.swish src/Makefile Makefile 
+
+realclean: 
+	rm -f config.cache config.log config.status
+	rm -f src/config.cache src/config.log \
+		 src/config.status
+	rm -f src/swish-e src/swish-search src/*.o \
+	src/index.swish src/Makefile Makefile 
+
+test:
+	(cd ./tests;\
+	../src/swish-e -c test.config; \
+	echo "\ntest 1 (Normal search) ..."; \
+	../src/swish-e -f ./test.index -w test | grep -v '^#'; \
+	echo "\ntest 1 (MetaTag search 1) ..."; \
+	../src/swish-e -f ./test.index -w meta1=metatest1 | grep -v '^#'; \
+	echo "\ntest 1 (MetaTag search 2) ..."; \
+	../src/swish-e -f ./test.index -w meta2=metatest2 | grep -v '^#'; \
+	echo "\ntest 1 (XML search) ..."; \
+	../src/swish-e -f ./test.index -w meta3=metatest3 | grep -v '^#'; \
+	echo "\ntest 1 (Phrase search) ..."; \
+	../src/swish-e -f ./test.index -w 'meta3="three little pigs"' | grep -v '^#'; )
+

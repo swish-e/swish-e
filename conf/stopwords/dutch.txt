@@ -1,0 +1,40 @@
+# Some Stopwords for the Dutch Language
+# -- for swish-e (V2.0 or higher)
+# -- Bas Meijer (bas@antraciet.nl)
+#
+
+aan achter af alle als
+
+behalve ben bent bij
+
+daar daardoor daarom dan dat de derhalve deze die
+
+echter een elk elke en enige
+
+haar had hadden heb hebben hebt heeft hen het hier hij hun
+
+ieder iedere iemand ik in is
+
+ja jij jouw jullie
+
+kan kunnen
+
+maak maakt maar maken met mijn mits moest moet moeten
+
+na nee niemand niet noch nog nu
+
+of omdat onder ons onze ook over overige
+
+sinds
+
+tot totdat tussen
+
+u uw
+
+van vanaf verder voor voorts
+
+waar waarom wanneer wat wederom weer welk welke werd werden wie wij 
+word worden wordt
+
+zal zich zij zijn zoals zou zouden zullen
+
