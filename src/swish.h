@@ -697,7 +697,6 @@ typedef struct
     int     maxdepth;
     int     delay;
     struct multiswline *equivalentservers;
-    struct url_info *url_hash[BIGHASHSIZE];
 
     /* prog system specific configuration parameters */
     struct swline *progparameterslist;
