@@ -16,6 +16,14 @@ The swish.cgi script was not correctly escaping HTML when searching by
 the right combination of metanames and highlighting module.  This could
 lead to cross-site scripting if indexing un-trusted documents. [moseley]
 
+=item * Added Support for building a Debian Package
+
+To build as a .deb unpack the distribution and chdir then run
+
+   $ fakeroot debian/build binary
+
+Then install the generated .deb file with dpkg -i
+
 =item * Use SWISH::Filter by default with spider.pl
 
 spider.pl is installed in the libexecdir directory as well as the SWISH::Filter modules. 
