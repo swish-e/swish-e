@@ -203,7 +203,7 @@ switches.
 
 =over 4
 
-=itme * New command line argument C<-H>
+=item * New command line argument C<-H>
 
 Controls the level (verbosity) of header information printed with search results.
 
