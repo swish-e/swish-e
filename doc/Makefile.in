@@ -123,8 +123,8 @@ install-docs-test:
 
 # This is to display the version in the documetation
 
-./Version.pm: ../configure
-	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
+./Version.pm: Makefile
+	@echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
 
 html: ./Version.pm
 	@bin/build
