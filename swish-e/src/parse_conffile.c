@@ -74,7 +74,7 @@ static int parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
 
 static void readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file);
-static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_ptr );
+static void word_hash_config(StringList *sl, WORD_HASH_TABLE *table_ptr );
 
 
 
@@ -938,19 +938,19 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
         if ( !strcasecmp(w0, "IgnoreWords") || !strcasecmp(w0, "StopWords"))
         {
-            word_hash_config( sw, sl, &indexf->header.hashstoplist );
+            word_hash_config( sl, &indexf->header.hashstoplist );
             continue;
         }
 
         if (strcasecmp(w0, "BuzzWords") == 0)  /* 2001-04-24 moseley */
         {
-            word_hash_config( sw, sl, &indexf->header.hashbuzzwordlist );
+            word_hash_config( sl, &indexf->header.hashbuzzwordlist );
             continue;
         }
 
         if (strcasecmp(w0, "UseWords") == 0)
         {
-            word_hash_config( sw, sl, &indexf->header.hashuselist );
+            word_hash_config( sl, &indexf->header.hashuselist );
             continue;
         }
         
@@ -1468,7 +1468,7 @@ void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
 */
 
 
-static void word_hash_config( SWISH *sw, StringList *sl, WORD_HASH_TABLE *table_ptr )
+static void word_hash_config( StringList *sl, WORD_HASH_TABLE *table_ptr )
 {
     int i;
     

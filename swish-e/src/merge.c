@@ -276,7 +276,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                 ** Because we are proccessing one word at a time we can
                 ** coalesce its data just once
                 */
-                coalesce_word_locations(sw_output,sw_output->indexlist,e);
+                coalesce_word_locations(sw_output,e);
 
                 if(!(word_count % 1000))
                 {

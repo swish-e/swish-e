@@ -2075,7 +2075,7 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
     
 
 
-    if ((written_bytes = fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
+    if ( (int)(written_bytes = fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
         progerrno("Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %Zu : ", fi->filenum, propID, buf_len,
                   written_bytes);
 
@@ -2340,7 +2340,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     buffer = emalloc(*buf_len);
 
 
-    if (fread(buffer, 1, *buf_len, DB->prop) != *buf_len)
+    if ( (int)fread(buffer, 1, *buf_len, DB->prop) != *buf_len)
         progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, fi->filenum);
 
     /* Restore previous seek_pos */

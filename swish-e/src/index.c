@@ -142,7 +142,7 @@ $Id$
 static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
 static void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
 static void unSwapLocData(SWISH *,int, ENTRY *);
-static void sortSwapLocData(SWISH * , ENTRY *);
+static void sortSwapLocData(ENTRY *);
 
 
 /* 
@@ -1030,7 +1030,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         {
             for (i = 0; i < VERYBIGHASHSIZE; i++)
                 for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                    coalesce_word_locations(sw, indexf, ep);
+                    coalesce_word_locations(sw, ep);
             /* Make zone available for reuse */
             Mem_ZoneReset(idx->currentChunkLocZone);
             idx->freeLocMemChain = NULL;
@@ -1890,7 +1890,7 @@ void    coalesce_all_word_locations(SWISH * sw, IndexFILE * indexf)
         {
             while (epi)
             {
-                coalesce_word_locations(sw, indexf, epi);
+                coalesce_word_locations(sw, epi);
                 epi = epi->next;
             }
         }
@@ -2033,7 +2033,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 /* If we are in economic mode -e we must sort locations by metaID, filenum */
                 if(sw->Index->swap_locdata)
                 {
-                    sortSwapLocData(sw, epi);
+                    sortSwapLocData(epi);
                 }
                 if ( sw->verbose && totalwords > 10000 )  // just some random guess
                 {
@@ -2599,7 +2599,7 @@ void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesc
 }
 
 
-void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
+void    coalesce_word_locations(SWISH * sw, ENTRY *e)
 {
     int      curmetaID, metaID,
              curfilenum, filenum,
@@ -2895,7 +2895,7 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
 }
 
 /* 2002-07 jmruiz - Sorts unswaped location data by metaname, filenum */
-static void sortSwapLocData(SWISH * sw, ENTRY *e)
+static void sortSwapLocData(ENTRY *e)
 {
     int i, j, k, metaID;
     int    *pi = NULL;
