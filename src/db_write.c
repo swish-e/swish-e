@@ -301,9 +301,15 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
 /* 04/2002 jmruiz
 ** New simpler routine to write worddata
+**
+** 10/2002 jmruiz
+** Add extra compression for worddata. Call to remove_worddata_longs
 */
 void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 {
+    /* Get some extra compression */
+    remove_worddata_longs(sw->Index->worddata_buffer,&sw->Index->sz_worddata_buffer);
+    /* Write worddata as usual */
     DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sw->Index->sz_worddata_buffer,indexf->DB);
 
 }

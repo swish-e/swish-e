@@ -618,19 +618,22 @@ void    CompressCurrentLocEntry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 **     long (this a waste of space).
 **   - The obvious one is that compressed numbers use less disk space
 **
-** BTW, Any change in worddata will also affect to dump.c and search.c
+** BTW, Any change in worddata will also affect to dump.c, merge.c and search.c
 ** (getfileinfo routine).
 **
-**  worddata has the following format
+**  worddata has the following format before entering the routine
 **  <tfreq><metaID><nextposmetaID><data><metaID><nextposmetaID><data>...
 **
 **  Entering this routine nextposmetaID is the offset to next metaid
 **  in bytes starting to count them from the begining of worddata.
-**  It is packed long (sizeof(long) bytes).
+**  It is a packed long number (sizeof(long) bytes).
 **
 **  Exiting this routine, nextposmetaID has changed to be the size of
-**  the data block.
-**  It is a compressed number.
+**  the data block and is stored as a compressed number.
+**
+**  In other words, worddata has the following format:
+**  <tfreq><metaID><data_len><data><metaID><data_len><data>...
+**
 */
 void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
 {
@@ -645,7 +648,7 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
     metaID = uncompress2(&src);     /* metaID */
     dst = src;
 
-    while(metaID)
+    while(1)
     {
         /* Get offset to next one */
         nextposmetaID = UNPACKLONG2(src);
@@ -661,11 +664,11 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
         if(dst > src)
             progerr("Internal error in remove_worddata_longs");
 
-        /* dst may be smaller tahn src. So move the data */
+        /* dst may be smaller than src. So move the data */
         memcpy(dst,src,data_len);
 
         /* Increase pointers */
-        src = worddata + nextposmetaID;
+        src += data_len;
         dst += data_len;
 
         /* Check if we are at the end of the buffer */
@@ -674,6 +677,7 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
 
         /* Get next metaID */
         metaID = uncompress2(&src);
+        dst = compress3(metaID,dst);
     }
     /* Adjust to new size */
     *sz_worddata = dst - worddata;

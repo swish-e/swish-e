@@ -73,9 +73,9 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  loc_count = 0,
                  word_count = 0;
     long         wordID;
-    unsigned long    nextposmetaID = 0L;
+    int          metadata_length = 0;
     unsigned char   *worddata;
-    unsigned char   *s;
+    unsigned char   *s, *start;
     unsigned char   flag;
     int          local_posdata[MAX_STACK_POSITIONS];
     int         *posdata;
@@ -206,11 +206,11 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
                         if (metaID)
                         {
-                            nextposmetaID = UNPACKLONG2(s);
-                            s += sizeof(long);
+                            metadata_length = uncompress2(&s);
                         }
 
                         filenum = 0;
+                        start = s;
 
                         while(1)
                         {                   /* Read on all items */
@@ -246,20 +246,17 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                             if(posdata != local_posdata)
                                 efree(posdata);
 
+                            /* Check for enf of worddata */
                             if ((s - worddata) == sz_worddata)
                                 break;   /* End of worddata */
 
-                            if ((unsigned long)(s - worddata) == nextposmetaID)
+                            /* Check for end of current metaID data */
+                            if ( metadata_length == (s - start))
                             {
                                 filenum = 0;
                                 metaID = uncompress2(&s);
-                                if (metaID)
-                                {
-                                    nextposmetaID = UNPACKLONG2(s); 
-                                    s += sizeof(long);
-                                }
-                                else
-                                    nextposmetaID = 0L;
+                                metadata_length = uncompress2(&s); 
+                                start = s;
                             }
                         }
 

@@ -1405,7 +1405,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             tmpval;
     RESULT_LIST *l_rp, *l_rp2;
     long    wordID;
-    unsigned long  nextposmetaname;
+    int     metadata_length;
     char   *p;
     int     tfrequency = 0;
     unsigned char   *s, *buffer; 
@@ -1416,9 +1416,10 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     IndexFILE  *indexf = db_results->indexf;
     SWISH  *sw = indexf->sw;
     int     structure = db_results->srch->structure;
+    unsigned char *start;
 
     x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
-    nextposmetaname = 0L;
+    metadata_length = 0;
 
 
     l_rp = l_rp2 = NULL;
@@ -1504,22 +1505,22 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         /* Get the data of the word */
         tfrequency = uncompress2(&s); /* tfrequency - number of files with this word */
 
-
         /* Now look for a correct Metaname */
         curmetaID = uncompress2(&s);
 
         while (curmetaID)
         {
-            nextposmetaname = UNPACKLONG2(s);
-            s += sizeof(long);
-
+            metadata_length = uncompress2(&s);
             
             if (curmetaID >= metaID)
                 break;
 
-            s = buffer + nextposmetaname;
-            if(nextposmetaname == (unsigned long)sz_buffer)
-                break; // if no more meta data
+            /* If this is not the searched metaID jump onto next one */
+            s += metadata_length;
+
+            /* Check if no more meta data */
+            if(s == (buffer + sz_buffer))
+                break; /* exit if no more meta data */
 
             curmetaID = uncompress2(&s);
         }
@@ -1527,6 +1528,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         if (curmetaID == metaID) /* found a matching meta value */
         {
             filenum = 0;
+            start = s;   /* points to the star of data */
             do
             {
                 /* Read on all items */
@@ -1574,7 +1576,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                     efree(posdata);
                     
 
-            } while ((unsigned long)(s - buffer) != nextposmetaname);
+            } while ((s - start) != metadata_length);
 
 
         }
