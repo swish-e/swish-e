@@ -81,7 +81,11 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         printf("ReadAllDocProperties:\n");
         fi->docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
         dump_file_properties( indexf, fi );
+        freeDocProperties( fi->docProperties );
+        fi->docProperties = NULL;
         printf("\n");
+
+
         printf("ReadSingleDocPropertiesFromDisk:\n");
 
 {

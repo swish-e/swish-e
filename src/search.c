@@ -1870,6 +1870,8 @@ void    freefileoffsets(SWISH * sw)
 
 void    freefileinfo(struct file *f)
 {
+    if ( !f )
+        return;
 
     if (f->filename)
         efree(f->filename);
