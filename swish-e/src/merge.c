@@ -907,7 +907,6 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
     thisFileEntry->docProperties = DupProps(docProperties);
 
 
-    return;
     /* swap meta values for properties */
     swapDocPropertyMetaNames(docProperties, metaFile);
 
