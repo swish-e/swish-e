@@ -89,7 +89,7 @@
         },
         {
             title   => 'Phrase Search',
-            query   => 'meta3="three little pigs"',
+            query   => '"three little pigs"',
             props   => 'meta1 meta2 meta3',
             sort    => '',
             context => 1,   # Search the entire file

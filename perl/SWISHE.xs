@@ -10,6 +10,9 @@ extern "C" {
 
 #include "../src/swish.h"
 #include "../src/stemmer.h"
+#include "../src/merge.h"
+#include "../src/docprop.h"
+
 
 MODULE = SWISHE  PACKAGE = SWISHE
 PROTOTYPES: DISABLE
@@ -21,6 +24,7 @@ SwishOpen(IndexFiles)
      RETVAL = (void *)SwishOpen(IndexFiles);
      OUTPUT:
      RETVAL
+
 
 void
 SwishClose(handle)
@@ -47,23 +51,100 @@ SwishNext(handle)
      RESULT *result;
      int i;
      int numPropertiesToDisplay;
+     int    *metaIDs;
+     PropValue *pv;
+     SWISH *sw;
+
+
      PPCODE:
      result = (RESULT *)SwishNext(handle);
-     if(result) {
-	numPropertiesToDisplay=getnumPropertiesToDisplay(handle);
+     if(result)
+     {
+        sw = (SWISH *) result->sw;
+
+        numPropertiesToDisplay = getnumPropertiesToDisplay(handle);
+
         PUSHMARK(SP);
-        XPUSHs(sv_2mortal(newSViv(result->rank)));
-        XPUSHs(sv_2mortal(newSVpv(result->indexf->line,0)));
-        XPUSHs(sv_2mortal(newSVpv(result->filename,0)));
-        XPUSHs(sv_2mortal(newSViv(result->last_modified)));
-        XPUSHs(sv_2mortal(newSVpv(result->title,0)));
-        XPUSHs(sv_2mortal(newSVpv(result->summary,0)));
-        XPUSHs(sv_2mortal(newSViv(result->start)));
-        XPUSHs(sv_2mortal(newSViv(result->size)));
-        for(i=0;i<numPropertiesToDisplay;i++)
-             XPUSHs(sv_2mortal(newSVpv(result->Prop[i],0)));
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__RESULT_RANK)) )
+            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__INDEXFILE)) )
+            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__DOCPATH)) )
+            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__LASTMODIFIED)) )
+            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__TITLE)) )
+            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__SUMMARY)) )
+            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__STARTPOS)) )
+            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__DOCSIZE)) )
+            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+        else
+            XPUSHs(&PL_sv_undef);
+
+        metaIDs = result->indexf->propIDToDisplay;
+
+        for( i=0; i < numPropertiesToDisplay; i++ )
+        {
+            if ( !(pv = getResultPropValue( sw, result, NULL, metaIDs[i])) )
+            {
+                XPUSHs(&PL_sv_undef);
+                continue;
+            }
+
+            switch (pv->datatype)
+            {
+                case INTEGER:
+                    XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+                    break;
+
+                case ULONG:
+                    XPUSHs(sv_2mortal(newSViv(pv->value.v_ulong)));
+                    break;
+
+                case STRING:
+                    XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+                    /* Free the string, if neede */
+                    if ( pv->destroy )
+                        efree( pv->value.v_str );
+                    break;
+
+                case DATE:
+                    XPUSHs(sv_2mortal(newSViv(pv->value.v_date)));
+                    break;
+
+                default:
+                    XPUSHs(&PL_sv_undef);
+                    break;
+            }
+            efree(pv);
+        }
         PUTBACK;
-     }
+    }
 
 int 
 SwishSeek(handle,number)
