@@ -16,7 +16,7 @@ my $perl_binary = get_perl_binary($active_key);
 
 # Our Registry keys that we need
 my $install_key = "LMachine/Software/SWISH-E Team/SWISH-E";
-my @config_options = qw/installdir libexecdir perlmoduledir pkgdatadir swishbinary /;
+my @config_options = qw/installdir mylibexecdir libexecdir perlmoduledir pkgdatadir swishbinary /;
 
 # Fetch data from registry
 my $config = get_registry_data( $install_key, @config_options );
