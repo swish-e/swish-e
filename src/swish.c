@@ -343,6 +343,9 @@ static void    printversion()
 * swish_new -- create a general purpose swish structure
 *
 *  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish2.c:SwishNew()
+*  This is called when using the binrary.
+*  Note that initModule_* code is called even when it's not going to be used
+*  (e.g. initModule_HTTP is called when searching).
 *
 *  SwishNew is search related only
 *
@@ -1726,19 +1729,24 @@ static void set_path( void )
 
     char pathbuf[1000];
     char *path = getenv("PATH");
-    char *execdir = get_libexec();
+    char *execdir = get_libexec();  /* Should free */
 	
     if ( !path )
     {
         setenv("PATH", execdir , 1 );
+        efree( execdir );
         return;
     }
 
     if ( (strlen( path ) + strlen( execdir ) + strlen( PATH_SEPARATOR ) + 1 ) > 1000 )
+    {
+        efree( execdir );
         return;
+    }
 
     sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, execdir );
     setenv( "PATH", pathbuf, 1 );
+    efree( execdir );
 
 #endif
 }

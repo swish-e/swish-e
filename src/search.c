@@ -151,7 +151,7 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
 static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS * db_results);
 static void freeresultlist(DB_RESULTS *db_results);
 static void freeresult(RESULT *);
-static void  make_db_res_and_free(RESULT_LIST *l_res);
+static void make_db_res_and_free(RESULT_LIST *l_res);
 
 
 /****************************************************************
@@ -2001,7 +2001,11 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
 
 
     if (l_r1 == NULL || l_r2 == NULL)
+    {
+        make_db_res_and_free(l_r1);
+        make_db_res_and_free(l_r2);
         return NULL;
+    }
 
     for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
     {
@@ -2101,7 +2105,9 @@ int     isMetaNameOpNext(struct swline *searchWord)
 }
 
 /* Free up a list of results that has not been assigned to a DB_RESULTS struct yet */
-
+/* July 03 - This is called by andresultlists() and phraseresultlists() */
+/*           isn't really needed because at this point in the search there's nothing  */
+/*           attached to the result that needs to be freed. */
 
 static void  make_db_res_and_free(RESULT_LIST *l_res)
 {
