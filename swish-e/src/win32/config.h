@@ -4,10 +4,12 @@
 #ifndef _SWISH_PORT
 #  include "win32/dirent.h"
 #  include "win32/regex.h"
+#  include "win32/mkstemp.h"
 #endif
 
 /* Special Inclusions  */
 #include <stdlib.h>		/* _sleep() */
+#include <process.h>	/* _getpid() */
 #include <io.h>			/* _umask(), _mktemp, etc */
 #include <fcntl.h>		/* Most io.h functions want this */
 #include <sys/types.h>	/* Most io.h functions want this */

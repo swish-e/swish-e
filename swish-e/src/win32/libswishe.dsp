@@ -40,8 +40,8 @@ RSC=rc.exe
 # PROP Output_Dir "tmp/libswishe_Release"
 # PROP Intermediate_Dir "tmp/libswishe_Release"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /I "..\expat\xmlparse" /I "..\expat\xmltok" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\expat\xmlparse" /I "..\expat\xmltok" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -49,7 +49,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"../../libswishe.lib"
+# ADD LIB32 /nologo /out:"libswish-e.lib"
 
 !ELSEIF  "$(CFG)" == "libswishe - Win32 Debug"
 
@@ -63,8 +63,8 @@ LIB32=link.exe -lib
 # PROP Output_Dir "tmp/libswishe_Debug"
 # PROP Intermediate_Dir "tmp/libswishe_Debug"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /D "_LIB" /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /GZ /c
+# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\expat\xmlparse" /I "..\expat/xmltok" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\expat\xmlparse" /I "..\expat/xmltok" /D "_LIB" /D "_DEBUG" /D "_MBCS" /YX /FD /D /GZ "WIN32" /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -72,7 +72,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"../../libswishe.lib"
+# ADD LIB32 /nologo /out:"libswish-e.lib"
 
 !ENDIF 
 
