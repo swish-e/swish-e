@@ -42,7 +42,7 @@ sub page_header {
     my $message = $results->errstr;
 
     $message = $message
-        ? qq[<br><font color=red>$message</font>]
+        ? qq[<br><font color="red">$message</font>]
         : '' ;
 
 
