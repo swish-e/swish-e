@@ -74,7 +74,9 @@ void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
     /* Trivial case: 0 */
     if(!_r)
     {
-        f_putc(0,fp);
+        if (f_putc(0,fp) == EOF )
+            progerrno("compress1 failed to write null: ");
+
         return;
     }
 
@@ -85,7 +87,8 @@ void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
         _r >>= 7;
     }
     while (--_i >= 0)
-        f_putc(_s[_i] | (_i ? 128 : 0), fp);
+        if ( f_putc(_s[_i] | (_i ? 128 : 0), fp) == EOF )
+            progerrno("compress1 failed to write: ");
 }
 
 /* Compress a number and writes it to a buffer */

@@ -130,7 +130,9 @@ unsigned int avail;
     }
     if(rd->cur_pos > rd->end_pos)
         rd->end_pos = rd->cur_pos;
-    return (int) tmplenbuf;
+
+    /* needs to return number of elements, not number of bytes */
+    return sz2;
 }
 
 /* Equivalent to fseek */

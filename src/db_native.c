@@ -856,7 +856,8 @@ int     DB_EndWriteHeader_Native(void *db)
     FILE   *fp = DB->fp;
 
     /* End of header delimiter */
-    putc(0, fp);
+    if ( putc(0, fp) == EOF )
+        progerrno("putc() failed: ");
 
     return 0;
 }
@@ -869,7 +870,9 @@ int     DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db)
 
     compress1(id, fp, fputc);
     compress1(len, fp, fputc);
-    fwrite(s, len, sizeof(char), fp);
+    if ( fwrite(s, len, sizeof(char), fp) != sizeof( char ) ) /* seems backward */
+        progerrno("Error writing to device while trying to write %d bytes: ", len );
+
 
     return 0;
 }
@@ -1030,7 +1033,9 @@ int     DB_EndWriteWords_Native(void *db)
         while (ramdisk_size)
         {
             read = ramdisk_read(buffer, 4096, 1, (FILE *) DB->rd);
-            fwrite(buffer, read, 1, DB->fp);
+            if ( fwrite(buffer, read, 1, DB->fp) != 1 )
+                progerrno("Error while flushing ramdisk to disk:");
+
             ramdisk_size -= read;
         }
         ramdisk_close((FILE *) DB->rd);
@@ -1044,7 +1049,8 @@ int     DB_EndWriteWords_Native(void *db)
 
     /* Restore file pointer at the end of file */
     fseek(DB->fp, 0, SEEK_END);
-    fputc(0, DB->fp);           /* End of words mark */
+    if ( fputc(0, DB->fp) == EOF )           /* End of words mark */
+        progerrno("fputc() failed writing null: ");
 
 #endif
 
@@ -1145,10 +1151,15 @@ long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int data_s
     /* If there is not any compression then saved_bytes is 0 */
     compress1(data_size, fp, fputc);
     compress1(saved_bytes, fp, fputc);
-    fwrite(worddata, data_size, 1, fp);
+    if ( fwrite(worddata, data_size, 1, fp) != 1 )
+        progerrno("Error writing to device while trying to write %d bytes: ", data_size );
+
 
     /* A NULL byte to indicate end of word data */
-    fputc(0, fp);
+    if ( fputc(0, fp) == EOF )
+        progerrno( "fputc() returned error writing null: ");
+
+
 
     return 0;
 }
@@ -1824,7 +1835,9 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
    compress1(sz_data,fp,putc);
 
    /* Write data */
-   fwrite(data,sz_data,1,fp);
+   if ( fwrite(data,sz_data,1,fp) != 1 )
+        progerrno("Error writing to device while trying to write %d bytes: ", sz_data );
+
 
    DB->next_sortedindex = tmp2 = ftell(fp);
 
@@ -1846,7 +1859,9 @@ int     DB_EndWriteSortedIndex_Native(void *db)
 
    printlong(fp,(long)0,fwrite);  /* No next table mark - Useful if no presorted indexes */
          /* NULL meta id- Only useful if no presorted indexes  */
-   fputc(0, fp);
+
+    if ( putc(0, fp) == EOF )
+        progerrno("putc() failed writing null: ");
 
    return 0;
 }
@@ -1921,8 +1936,11 @@ int     DB_EndReadSortedIndex_Native(void *db)
 */
 void    printlong(FILE * fp, unsigned long num, size_t(*f_write) (const void *, size_t, size_t, FILE *))
 {
+    size_t written;
+
     num = PACKLONG(num);        /* Make the number portable */
-    f_write(&num, sizeof(long), 1, fp);
+    if ( (written = f_write(&num, sizeof(long), 1, fp)) != 1 )
+        progerrno("Error writing %d of %d bytes: ", sizeof(long), written );
 }
 
 /* 
