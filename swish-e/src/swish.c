@@ -80,6 +80,7 @@ static DEBUG_MAP debug_map[] = {
     {"INDEX_WORDS_FULL", DEBUG_INDEX_WORDS_FULL, "List words stored in index (more verbose)"},
     {"INDEX_STOPWORDS", DEBUG_INDEX_STOPWORDS, "List stopwords stored in index"},
     {"INDEX_FILES", DEBUG_INDEX_FILES, "List file data stored in index"},
+    {"INDEX_WORD_COUNT", DEBUG_INDEX_WORD_COUNT, "List number of words in all files"},
     {"INDEX_METANAMES", DEBUG_INDEX_METANAMES, "List metaname table stored in index"},
     {"INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file"},
     {"LIST_FUZZY_MODES", DEBUG_LIST_FUZZY, "List fuzzy options available\n\n-- indexing --\n"},
@@ -265,7 +266,7 @@ static void    usage()
     printf("    swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
     printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
     printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
-    printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format]\n");
+    printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format] [-R rank_scheme]\n");
     printf("    swish -k (char|*) [-f file1 file2 ...]\n");
     printf("    swish -M index1 index2 ... outputfile\n");
     printf("    swish -N /path/to/compare/file\n");
@@ -317,6 +318,7 @@ static void    usage()
     printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
     printf("         -d : next param is delimiter.\n");
     printf("         -P : next param is Phrase delimiter.\n");
+    printf("         -R : next param is Rank Scheme number.\n");
     printf("         -V : prints the current version\n");
     printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
@@ -664,6 +666,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'p':  /* old-style display properties */
             case 'd':  /* old-style custom delimiter */
             case 'o':  /* don't use pre-sorted indexes */
+	    case 'R':  /* Ranking Scheme -- default is 1 */
                 argv = fetch_search_params( sw, argv, params, c );
                 break;
 
@@ -1199,6 +1202,10 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         }
 
 
+	/* Ranking Scheme */
+	case 'R':		
+	    sw->RankScheme = get_param_number( &argv, switch_char );
+	    break;
 
         /* Ignore sorted indexes */
 
@@ -1315,6 +1322,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         read_header(sw, &sw->indexlist->header, sw->indexlist->DB);
         sw->TotalWords = sw->indexlist->header.totalwords;
         sw->TotalFiles = sw->indexlist->header.totalfiles;
+	sw->TotalWordPos = sw->indexlist->header.total_word_positions;
 
         /* Adjust filenum to totalfiles */
         sw->Index->filenum = sw->TotalFiles;
@@ -1471,6 +1479,8 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
     srch->PhraseDelimiter = params->PhraseDelimiter;
     srch->structure       = params->structure;
+    
+    
     if ( params->sort_params )
     {
         srch->sort_params = params->sort_params;
@@ -1622,7 +1632,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
     fflush(stdout);
 
-    write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, sw->indexlist->header.removedfiles, merge);
+    write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, sw->indexlist->total_word_positions, sw->indexlist->header.removedfiles, merge);
 
     fflush(stdout);
 

@@ -992,8 +992,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* write properties to disk, and release docprop array (and the prop index array) */
     /* Currently this just passes sw, and assumes only one index file when indexing */
     WritePropertiesToDisk( sw , &fi );
-
-
+	
 #ifdef USE_BTREE
     /* Add the value pair (real_path, filenum) to the database */
     DB_WriteFileNum(sw,fi.filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
@@ -1648,6 +1647,10 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
     unsigned int     local_posdata[MAX_STACK_POSITIONS];
     unsigned char r_flag, *w_flag;
     unsigned char *p, *q;
+
+	/* TODO
+	total_word_pos count for index header -- should be adjusted to reflect any positions +/- */
+	
 
     p = worddata;
 

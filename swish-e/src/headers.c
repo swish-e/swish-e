@@ -56,6 +56,7 @@ static HEADER_MAP header_map[] = {
     {  "Saved as",          SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, savedasheader ) },
     {  "Total Words",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalwords ) },
     {  "Total Files",       SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, totalfiles ) },
+    {  "Total Word Pos",    SWISH_NUMBER, 2,  offsetof( INDEXDATAHEADER, total_word_positions ) },
     {  "Indexed on",        SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexedon ) },
     {  "Description",       SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexd ) },
     {  "Pointer",           SWISH_STRING, 2,  offsetof( INDEXDATAHEADER, indexp ) },

@@ -854,6 +854,7 @@ RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words)
 }
 
 
+
 /**************************************************************************
 *  limit_result_list -- removes results that are not within the limit
 *

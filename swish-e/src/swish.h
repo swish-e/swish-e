@@ -566,6 +566,7 @@ typedef struct
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
 
+    int	    total_word_positions;	/* IDF ranking */
 
 }
 INDEXDATAHEADER;
@@ -941,6 +942,11 @@ typedef struct SWISH
     int     structure_map[256];
 
 
+	/* karman Mon Aug 30 07:54:10 CDT 2004 */
+    int	    RankScheme;		/* Ranking Scheme */
+    int	    TotalWordPos;
+    
+    
     void *ref_count_ptr;  /* pointer for use with SWISH::API */
 
 
@@ -1025,6 +1031,7 @@ void free_swish_memory( SWISH *sw );  /* in swish2.c */
 #define DEBUG_INDEX_WORDS_ONLY	(1<<7)
 #define DEBUG_INDEX_WORDS_META	(1<<8)
 #define DEBUG_LIST_FUZZY	(1<<9)
+#define DEBUG_INDEX_WORD_COUNT (1<<10)
 
 
 /* These are only checked while indexing */

@@ -277,6 +277,8 @@ int     SwishAttach(SWISH * sw)
 
         sw->TotalWords += tmplist->header.totalwords;
         sw->TotalFiles += tmplist->header.totalfiles;
+	sw->TotalWordPos += tmplist->header.total_word_positions;
+	
         tmplist = tmplist->next;
     }
 

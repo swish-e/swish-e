@@ -122,13 +122,19 @@ int saved_bytes = 0;
 #define parse_int_from_buffer(num,s) (num) = UNPACKLONG2((s))
 #define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long)))
 #define parse_int3_from_buffer(num1,num2,num3,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long))); (num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long)))
-
+#define parse_int4_from_buffer(num1,num2,num3,num4,s) \
+{ \
+	(num1) = UNPACKLONG2((s));\
+	(num2) = UNPACKLONG2((s+sizeof(long)));\
+	(num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long))); \
+	(num4) = UNPACKLONG2((s+sizeof(long)+sizeof(long)+sizeof(long))); \
+}
 
 void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 {
     int     id,
             len;
-    unsigned long    tmp, tmp1, tmp2, tmp3;
+    unsigned long    tmp, tmp1, tmp2, tmp3, tmp4;
     unsigned char   *buffer;
 
     DB_InitReadHeader(sw, DB);
@@ -217,10 +223,11 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             header->indexedon = SafeStrCopy(header->indexedon, (char *)buffer, &header->lenindexedon);
             break;
         case COUNTSHEADER_ID:
-            parse_int3_from_buffer(tmp1,tmp2,tmp3,buffer);
+            parse_int4_from_buffer(tmp1,tmp2,tmp3,tmp4,buffer);
             header->totalwords = tmp1;
             header->totalfiles = tmp2;
-            header->removedfiles = tmp3;
+            header->total_word_positions = tmp3;
+	    header->removedfiles = tmp4;
             break;
 /* removed due to patents problems
         case FILEINFOCOMPRESSION_ID:
