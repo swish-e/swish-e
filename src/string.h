@@ -98,6 +98,6 @@ char *estrdup (char *str);
 char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
 
-char *process_regex_list( char *str, regex_list *regex );
-char *regex_replace( char *str, regex_list *regex, int offset );
+char *process_regex_list( char *str, regex_list *regex, int *matched );
+char *regex_replace( char *str, regex_list *regex, int offset, int *matched );
 

@@ -903,9 +903,10 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
            *p3;
     struct metaEntry *q;
     unsigned char c;
+    int     matched = 0;  /* flag if any patterns matched */
 
     /* Run ReplaceRules on file name */
-    ruleparsedfilename_tmp = ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps );
+    ruleparsedfilename_tmp = ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps, &matched );
 
     /* look for last DIRDELIMITER (FS) and last / (HTTP) */
     p1 = strrchr(ruleparsedfilename, DIRDELIMITER);
@@ -979,10 +980,14 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
 {
     int metaID;
     int positionMeta = 1;
+    int matched = 0;  /* flag if any patterns matched */
     
     while ( list )
     {
-        char *str = process_regex_list( estrdup(path), list->regex );
+        char *str = process_regex_list( estrdup(path), list->regex, &matched );
+
+        if ( !matched )  /* only index if the pattern matched */
+            return;
         
         metaID = list->meta_entry->metaID;
         indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
