@@ -223,6 +223,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
     truncate_doc_size = sw->truncateDocSize;
     sw->truncateDocSize = 0;    /* can't truncate -- prog should make sure doc is not too large */
+// $$$ This is no longer true with libxml push parser 
 
     /* loop on headers */
     while (fgets(ln, MAXSTRLEN, fp) != NULL)

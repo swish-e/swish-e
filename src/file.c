@@ -216,6 +216,34 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
     return (char *) buffer;
 }
 
+/* Sept 25, 2001 - moseley
+ * Flush the file -- for use with -S prog, when either Truncate is in use, or 
+ * the parser aborted for some reason (e.g. !isoktitle).
+ */
+
+void flush_stream( FileProp *fprop )
+{
+    char tmpbuf[4096];
+    int  read;
+
+    while ( fprop->bytes_read < fprop->fsize )
+    {
+        if ( ( fprop->fsize - fprop->bytes_read ) > 4096 )
+        {
+            if ( !(read = fread(tmpbuf, 1, 4096, fprop->fp)))
+                break;
+
+            fprop->bytes_read += read;
+        }
+        else
+        {
+            read = fread(tmpbuf, 1, fprop->fsize - fprop->bytes_read, fprop->fp);
+            break;
+        }
+    }
+}
+
+
 /* Mar 27, 2001 - moseley
  * Separate out the creation of the file properties
  *
@@ -228,18 +256,10 @@ FileProp *init_file_properties(SWISH * sw)
     fprop = (FileProp *) emalloc(sizeof(FileProp));
     /* emalloc checks fail and aborts... */
 
-    /* -- init -- */
-    fprop->fp = (FILE *) NULL;
-    fprop->real_path = (char *) NULL;  /* path to real file, or URL */
-    fprop->work_path = (char *) NULL;  /* path to work file (can be real file with fs, or local tmp file for http) */
-    fprop->real_filename = (char *) NULL;
-    fprop->fsize = 0;
-    fprop->mtime = (time_t) 0;
-    fprop->doctype = sw->DefaultDocType;
-    fprop->hasfilter = NULL;    /* Default = No Filter */
-    fprop->stordesc = NULL;     /* Default = No summary */
-    fprop->index_no_content = 0; /* former: was indextitleonly! */
+    memset( fprop, 0, sizeof(FileProp) );
 
+    /* -- init -- */
+    fprop->doctype = sw->DefaultDocType;
     return fprop;
 }
 
