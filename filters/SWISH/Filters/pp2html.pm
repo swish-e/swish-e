@@ -1,4 +1,4 @@
-package SWISH::Filters::ppt2html;
+package SWISH::Filters::pp2html;
 use strict;
 use vars qw/ $VERSION /;
 $VERSION = '0.01';
@@ -23,7 +23,7 @@ __END__
 
 =head1 NAME
 
-SWISH::Filters::ppt2html - Perl extension for filtering MS PowerPoint
+SWISH::Filters::pp2html - Perl extension for filtering MS PowerPoint
 documents with Swish-e
 
 =head1 DESCRIPTION
