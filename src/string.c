@@ -81,22 +81,27 @@ char   *lstrstr(char *s, char *t)
    -- 2001-11-09 moseley rewritten again - doesn't check for missing end quote
 */
 
-char   *getword(char *s, int *skiplen)
+char   *getword(char **in_buf)
 {
-    unsigned char quotechar;
-    unsigned char uc;
-    char   *start;
-    char   buf[MAXWORDLEN+1];
-    char   *cur_char = buf;
-    int    backslash = 0;
+    unsigned char   quotechar;
+    unsigned char   uc;
+    char           *s = *in_buf;
+    char           *start = *in_buf;
+    char            buf[MAXWORDLEN+1];
+    char           *cur_char = buf;
+    int             backslash = 0;
+    
 
-    start = s;
     quotechar = '\0';
 
     s = str_skip_ws(s);
-    
+
+    /* anything to read? */
     if (!*s)
+    {
+        *in_buf = s;
         return estrdup( "\0" );
+    }
 
         
     if (*s == '\"' || *s == '\'')
@@ -108,7 +113,6 @@ char   *getword(char *s, int *skiplen)
     {
         uc = (unsigned char) *s;
 
-
         if (uc == '\\' && !backslash )
         {
             s++;
@@ -118,16 +122,22 @@ char   *getword(char *s, int *skiplen)
 
         /* Can't see why we would need to escape these, can you? - always fed a single line */
         if ( uc == '\n' || uc == '\r' )
+        {
+            s++;
             break;
+        }
         
 
         if ( !backslash )
         {
-            if ( uc == quotechar )
+            /* break on ending quote or unquoted space */
+            
+            if ( uc == quotechar || (!quotechar && isspace((int) uc) ) )
+            {
+                s++;  // past quote or space char.
                 break;
+            }
 
-            if ( !quotechar && isspace((int) uc) )
-                break;
         }
         else
             backslash = 0;
@@ -145,7 +155,7 @@ char   *getword(char *s, int *skiplen)
 
     *cur_char = '\0';
 
-    *skiplen = s - start;
+    *in_buf = s;
 
     return estrdup( buf );
 
@@ -332,7 +342,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     int     last_offset = 0;
 
     if ( DEBUG_MASK & DEBUG_REGEX )
-        printf("replace %s =~ /%s/%s: %s\n", str + offset, regex->pattern, regex->replace,
+        printf("replace %s =~ /%s/%s/: %s\n", str + offset, regex->pattern, regex->replace,
                 regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) ? "No Match" : "Matched" );
     
     /* Run regex - return original string if no match (might be nice to print error msg? */
@@ -681,7 +691,6 @@ StringList *parse_line(char *line)
 {
     StringList *sl;
     int     cursize,
-            skiplen,
             maxsize;
     char   *p;
 
@@ -697,15 +706,13 @@ StringList *parse_line(char *line)
     sl->word = (char **) emalloc((maxsize = 2) * sizeof(char *));
 
     p = line;
-    skiplen = 1;
 
-    while (skiplen && *(p = (char *) getword(line, &skiplen)))
+    while (&line && *(p = (char *) getword(&line)))
     {
         if (cursize == maxsize)
             sl->word = (char **) erealloc(sl->word, (maxsize *= 2) * sizeof(char *));
 
         sl->word[cursize++] = (char *) p;
-        line += skiplen;
     }
     sl->n = cursize;
 
