@@ -83,7 +83,7 @@ int     isokword(sw, word, indexf)
             same = 0;
 
         /* Max number of consecutive digits */
-        if (isdigit((int) word[i]))
+        if (isdigit((int) ( (unsigned char) word[i])))
         {
             hasnumber = 1;
             numberrow++;
@@ -105,7 +105,7 @@ int     isokword(sw, word, indexf)
         }
 
         /* maximum number of consecutive consonants a word can have */
-        else if (!ispunct((int) word[i]))
+        else if (!ispunct((int) ( (unsigned char) word[i])))
         {
             hascons = 1;
             consrow++;
