@@ -75,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib libswish-e.lib ../expat/xmltok/Debug/xmltok.lib ../expat/xmlparse/Debug/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../pcre/lib/libpcre.a /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
+# ADD LINK32 kernel32.lib libswish-e.lib ../expat/xmltok/Debug/xmltok.lib ../expat/xmlparse/Debug/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
