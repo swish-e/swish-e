@@ -174,7 +174,8 @@ sub create_temp_file {
 
     my ( $fh, $file_name ) = File::Temp::tempfile( UNLINK => 1 );
 
-    print $fh, $$scalar_ref;
+    print $fh $$scalar_ref or die $!;
+
 
     close $fh or die "Failed to close '$file_name' $!";
 
