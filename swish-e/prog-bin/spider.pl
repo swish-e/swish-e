@@ -158,7 +158,7 @@ sub process_server {
     my $start = time;
 
     if ( $server->{skip} ) {
-        print STDERR "Skipping: $server->{base_url}\n" unless $server->{quiet};
+        print STDERR "Skipping Server Config: $server->{base_url}\n" unless $server->{quiet};
         return;
     }
 
@@ -348,7 +348,7 @@ sub spider {
 
     while ( @link_array ) {
 
-        die if $abort || $server->{abort};
+        die $server->{abort} if $abort || $server->{abort};
 
         my ( $uri, $parent, $depth ) = @{shift @link_array};
         
@@ -886,6 +886,11 @@ sub output_content {
 
     $headers .= 'Last-Mtime: ' . $response->last_modified . "\n"
         if $response->last_modified;
+
+    # Set the parser type if specified by filtering
+    if ( my $type = delete $server->{parser_type} ) {
+        $headers .= "Document-Type: $type\n";
+    }
 
 
     $headers .= "No-Contents: 1\n" if $server->{no_contents};
