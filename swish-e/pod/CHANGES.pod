@@ -32,16 +32,16 @@ and properties are pre-sorted during indexing to speed up sorting results by pro
 =item * Properties are written to a sepearte file
 
 Swish now stores document properties in a separate file.  This means there are now two
-files that make up a swish index.  The default files are C<index.swish-e> and C<index.swish-e.prop>.
+files that make up a swish index.
+The default files are C<index.swish-e> and C<index.swish-e.prop>.
 
 This change frees memory while indexing, allowing larger collections to be indexed in memory.
-
-The config directive C<PROPFILE> in C<config.h> can be used to disable this behavior.
 
 =item * Internal data stored as Properties
 
 Pre 2.2 some internal data was stored in fixed locations within the index, namely the
-file name, file size, and title.  2.2 introduced new internal data such as the last modified date, and
+file name, file size, and title.
+2.2 introduced new internal data such as the last modified date, and
 document summaries.
 This data is considered I<meta data> since it is data about a document.
 
@@ -179,6 +179,32 @@ properties.
 =item * LST type of document no longer supported
 
 LST allowed indexing of files that contained multiple documents.
+
+=item * Temporary files
+
+To improve security swish-e now uses the C<mkstemp(3)> function to create temporary files.
+Temporary files are used while indexing only.
+This may result in some portability issues, but the security issues were overriding.
+
+C<mkstemp> opens the temporary with O_EXCL|O_CREAT flags.  This prevents overwriting
+existing files.  In addition, the name of the file created is a lot harder to guess
+by attackers.  In addition, the temporary file is created with only owner permissions.
+
+Please report any portability issues on the swish-e discussion list.
+
+=item * Temporary file locations
+
+Swish now uses the environment variables C<TMPDIR>, C<TMP>, and C<TEMP> (in that order) to
+decide where to write temporary files.
+The configuration setting of L<TmpDir|SWISH-CONFIG/"item_TmpDir"> will be used if none of the
+environment variables are set.  Swish uses the current directory otherwise; there is no
+default temporary directory.
+
+Temporary files begin with the letters "swtmp" (which can be changed in F<config.h>), followed
+by two or more letters that indicate the type of temporary file, and some random characters to
+complete the file name.
+If indexing is aborted for some reason you may find these temporary files left behind.
+
 
 =back
 

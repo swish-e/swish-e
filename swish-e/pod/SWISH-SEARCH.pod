@@ -194,7 +194,7 @@ If nothing else, start every CGI program in perl as such:
     #!/usr/local/bin/perl -wT
     use strict;
 
-That alone won't make your script secure, but may help you fine insecure code.    
+That alone won't make your script secure, but may help you find insecure code.    
 
 =head2 CGI Danger!
 

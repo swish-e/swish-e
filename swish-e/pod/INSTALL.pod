@@ -262,6 +262,8 @@ You may need to superuser privileges:
    make install
    exit
 
+B<IMPORTANT:> Do not *run* swish as the superuser (root).
+
 The bin directory may be set when first running F<./configure>. For example:
 
    ./configure --bindir=$HOME/bin

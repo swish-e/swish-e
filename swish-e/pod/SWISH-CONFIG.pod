@@ -1846,12 +1846,14 @@ remote sites.  The default is 60 seconds.
 The location of a writable temp directory
 on your system.  The HTTP access method tells the Perl helper to place
 its files in this location, and the C<-e> switch causes swish to use this directory
-while indexing.  The default is /var/tmp.
-
+while indexing.  There is not default.
 
     TmpDir /tmp/swish/
 
-If this directory does not exist or is not writable SWISH-E will fail with an error during indexing.    
+If this directory does not exist or is not writable SWISH-E will fail with an error during indexing.
+
+Note, the environment variables of C<TMPDIR>, C<TMP>, and C<TEMP>
+(in that order) will B<override> this setting.
 
 =item SpiderDirectory *path*
 
@@ -2011,11 +2013,16 @@ Examples of strings passed:
 
 Important hint for security:
 
-    When using variable substitution, use quotes to ensure filename integrity.
-    e.g. "'%f'"  -->  'file name with spaces.doc'.
-    If you don't use this, your system security may be compromised, or filtering
-    may not work for these files.
+When using variable substitution, use quotes to ensure filename integrity.
 
+        e.g. "'%f'"  -->  'file name with spaces.doc'.
+
+If you don't use this, your system security may be compromised, or filtering
+may not work for these files.
+
+    Windows uses double quotes, so reverse.  e.g.
+
+        '"%f"' --> "file name with spaced.doc"
 
 Examples of filters:
 
@@ -2032,7 +2039,7 @@ and perl script.
     FileFilter .ps        ghostscript-filter.pl
 
 Using a scripting language (or any language that has a large startup cost)
-can greatly increase the indexing time.  For small indexing jobs, this may not be
+can B<greatly increase the indexing time>.  For small indexing jobs, this may not be
 an issue, but for large collections of files that require processing by a scripting language, you may
 be better off using the C<-S prog> access method where the script will only be compiled once, instead
 of for each document.
