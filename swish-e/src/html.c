@@ -137,10 +137,12 @@ static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyaut
            ** else break
          */
 
-        if (*applyautomaticmetanames)
+        if (*applyautomaticmetanames && word && *word )
         {
             if (verbose)
                 printf("\nAdding automatic MetaName %s\n", word);
+
+            /* $$$ addMetaEntry needs to return something here */    
             addMetaEntry(&indexf->header, word, 0, 0, 0, applyautomaticmetanames);
         }
         else

@@ -81,9 +81,11 @@ struct metaEntry* e;
         ** If automatic MetaNames enabled add the MetaName
         ** else break
         */
-        if(*applyautomaticmetanames) {
+        if(*applyautomaticmetanames && temp && *temp ) {
             if (verbose) 
                 printf("\nAdding automatic MetaName %s\n",temp);
+
+            /* $$$ addMetaEntry needs to return something here */    
             addMetaEntry(&indexf->header,temp,0,0,0, applyautomaticmetanames); 
         } else break;
     }
