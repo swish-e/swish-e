@@ -2083,7 +2083,7 @@ elif test "$withval" != "no"; then
     echo "$ac_t""** Enabling libxml2 support at '$withval': good choice! **" 1>&6
     LIBXML2_OBJS="parser.o"
     LIBXML2_LIB="-L$withval/lib -lxml2"
-    LIBXML2_CFLAGS="-I$withval/include"
+    LIBXML2_CFLAGS="-I$withval/include -I$withval/include/libxml2"
     cat >> confdefs.h <<\EOF
 #define HAVE_LIBXML2 1
 EOF

@@ -93,7 +93,7 @@ pdf: ./Version.pm
 clean:
 	rm -rf rel_ps
 	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
-	rm -f ../html
+	rm -rf ../html
 
 	rm -f ./*.1
 	-chmod 644 ../pod/*.pod
