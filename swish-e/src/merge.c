@@ -280,18 +280,16 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
         filenum += tmpval;
 
-        /* Adjust filenum based on map */
-        filenum = (int) getnew(filenum + num);
-
         loc = (LOCATION *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(LOCATION) + (frequency - 1) * sizeof(int));
 
-        loc->filenum = filenum;
+        /* Adjust filenum based on map */
+        loc->filenum = (int) getnew(filenum + num);;
 
         loc->structure = structure;
         loc->frequency = frequency;
         uncompress_location_positions(&s,flag,frequency,loc->position);
 
-        if(filenum)
+        if(loc->filenum)
         {
             /* we also need to modify metaID with new list */
             metaID2 = 1;
@@ -317,7 +315,7 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         }
 
         /* Add only if filenum is not null */
-        if(filenum)
+        if(loc->filenum)
         {
             if(!prev_loc)
                 ip->currentChunkLocationList = loc;
@@ -343,6 +341,7 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
                 nextposmetaname = 0L;
         }
     }
+
     return ip;
 }
 
@@ -354,9 +353,11 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
 
 
 /* This returns the file number corresponding to a pathname.
+** 2001-10 jmruiz size removed. Two files with same filename and start are 
+** considered the same file
 */
 
-static struct mergeindexfileinfo *lookupindexfilepath(char *path, int start, int size)
+static struct mergeindexfileinfo *lookupindexfilepath(char *path, int start)
 {
     unsigned hashval;
     struct mergeindexfileinfo *ip;
@@ -366,7 +367,7 @@ static struct mergeindexfileinfo *lookupindexfilepath(char *path, int start, int
 
     while (ip != NULL)
     {
-        if ((strcmp(ip->path, path) == 0) && ip->start == start && ip->size == size)
+        if ((strcmp(ip->path, path) == 0) && ip->start == start)
             return ip;
         ip = ip->next;
     }
@@ -415,18 +416,27 @@ void freemergeindexfileinfo()
 
 /* This simply concatenates two location lists that correspond
 ** to a word found in both index files.
+**
+** 2001-10 jmruiz Fixed the crash when an entry has no locations
+**                (The location list can be empty if a document
+**                was deleted while merging files)
 */
 
 static ENTRY  *mergeindexentries(ENTRY * ip1, ENTRY * ip2, int num)
 {
     LOCATION *lap;
 
+    /* Locations can be from discarted documents. So if ip1 does not have locations
+    ** we will discard it. ip2 will be checked later */
+
+    if(!ip1->currentChunkLocationList)
+        return ip2;
+
     for (lap = ip1->currentChunkLocationList; ; lap = lap->next)
         if(!lap->next)
              break;
 
     lap->next = ip2->currentChunkLocationList;
-    lap = lap->next;
 
     ip1->tfrequency += ip2->tfrequency;
 
@@ -884,7 +894,6 @@ static int merge_words(
             if (!result)
             {
                 ip3 = (ENTRY *) mergeindexentries(ip1, ip2, indexfilenum1);
-                /* ip1 and ip2 are freeded in mergeindexentries */
                 buffer1 = buffer2 = NULL;
                 skipwords++;
             }
@@ -899,8 +908,13 @@ static int merge_words(
                 buffer2 = NULL;
             }
 
-            addentryMerge(sw, ip3);
+            /* check for locations in ip3 - This is done because some of
+            ** the files may have been removed and, in the worst case, all
+            the locations may have been deleted */
+            if(ip3->currentChunkLocationList)
+               addentryMerge(sw, ip3);
 
+            /* Reset memzone when both ip1 and ip2 are used at the same tine */
             if(!result)
             {
                 /* Make zone available for reuse */
@@ -949,7 +963,7 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
     time_t  mtime;
     struct docProperties *docProperties = *dProps;
     char    *filename;
-    
+    int     prev_filenum;    
 
 
     /* Lookup the properties */
@@ -960,7 +974,7 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
 
 
     /* Do a hash lookup to find the file */
-    ip = lookupindexfilepath(filename, start, size);
+    ip = lookupindexfilepath(filename, start);
 
     if (ip)  /* If existing pathname */
     {
@@ -970,28 +984,34 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
 
         if(mtime > ip->mtime) /* Current one is newer */
         {
-            addtofwordtotals(sw->indexlist, ip->filenum, ftotalwords);
+            /* Modify word count */
+            addtofwordtotals(sw->indexlist, getnew(ip->filenum), ftotalwords);
 
             /* swap meta values for properties */
             swapDocPropertyMetaNames(&docProperties, metaFile);
+
+            /* Get the filenum previously assigned and update the content */
+            prev_filenum = getnew(ip->filenum);
 
 #ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
             *dProps = NULL;
 
-            sw->indexlist->filearray[ip->filenum - 1]->docProperties = NULL;
+            sw->indexlist->filearray[prev_filenum - 1]->docProperties = NULL;
 #else
-            sw->indexlist->filearray[ip->filenum - 1]->docProperties = docProperties;
+            sw->indexlist->filearray[prev_filenum - 1]->docProperties = docProperties;
 #endif
 
             /* Now save ip for later (so we can load the properties) */
             // Bill, here is the fix... ip->num and sw->Index->filenum are different
-            sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+            sw->indexlist->filearray[prev_filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
             
             ip->mtime = mtime;
             ip->indexf = indexf;
-            remap(ip->filenum, num);
+            remap(ip->filenum, 0);  /* Remap old filenum to 0 - word's data of this filenum will be removed later */
+            remap(num,prev_filenum);  /* Remap new one to old one */
+            ip->filenum = num;
         } 
 
 
@@ -1053,7 +1073,6 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         // Bill, here is the fix... ip->num and sw->Index->filenum are different
         sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
 
-
     }
     
     if (sw->Index->swap_filedata)
@@ -1094,8 +1113,6 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
            *indexf;
     struct file *fi;
     METAS   metas;
-
-    int     oldnum;
 
     if (verbose)
         printf("Opening and reading file 1 header...\n");
@@ -1238,28 +1255,29 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 #ifdef PROPFILE
         /* Attach properties from the old index file, and write them back to the new index file */
 
-        oldnum = getold(i);
 
         if(ip->indexf == indexf1)
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, oldnum );
+            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, ip->filenum );
         else
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, oldnum - indexfilenum1);
+            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, ip->filenum - indexfilenum1);
 
         /* write properties to disk, and release memory */
         WritePropertiesToDisk( sw , i );
 
         /* Now clean up the file entry */
+        /* ip->filenum contains the filenum in indexf1 */
+        /* ip->filenum contaons the filenum in indexf2 plus indexfilenum1 */
         if(ip->indexf == indexf1)
         {
-            indexf1->filearray[oldnum - 1]->docProperties = NULL;
-            freefileinfo(indexf1->filearray[oldnum - 1]);
-            indexf1->filearray[oldnum - 1] = NULL;
+            indexf1->filearray[ip->filenum - 1]->docProperties = NULL;
+            freefileinfo(indexf1->filearray[ip->filenum - 1]);
+            indexf1->filearray[ip->filenum - 1] = NULL;
         }
         else 
         {
-            indexf2->filearray[oldnum - indexfilenum1 - 1]->docProperties = NULL;
-            freefileinfo(indexf2->filearray[oldnum -indexfilenum1 - 1]); 
-            indexf2->filearray[oldnum - indexfilenum1 - 1] = NULL;
+            indexf2->filearray[ip->filenum - indexfilenum1 - 1]->docProperties = NULL;
+            freefileinfo(indexf2->filearray[ip->filenum - indexfilenum1 - 1]); 
+            indexf2->filearray[ip->filenum - indexfilenum1 - 1] = NULL;
         }
 #endif
     }
