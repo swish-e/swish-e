@@ -83,7 +83,7 @@ static int isSearchOperatorChar( int c, int phrase_delimiter )
 /* This simply tokenizes by whitespace and by the special characters "()=" */
 /* Funny how argv was joined into a string just to be split again... */
 
-static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int max_size )
+static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter )
 {
     int     i;
     int     backslash;
@@ -102,8 +102,9 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
     while ( **buf && !isspace( (unsigned char) **buf) )
     {
 
-        if ( i > max_size + 4 )   /* leave a little room for operators */
-            progerr( "Search word exceeded maxwordlimit setting." ); 
+        // This should be looking at swish words, not raw input
+        //if ( i > max_size + 4 )   /* leave a little room for operators */
+        //    progerr( "Search word exceeded maxwordlimit setting." ); 
 
     
         /* reallocate buffer, if needed -- only if maxwordlimit was set larger than MAXWORDLEN (1000) */
@@ -194,7 +195,7 @@ static int next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, int
 
 /* Convert a word into swish words */
 
-static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, char *word )
+static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, char *word, int max_size )
 {
     struct  swline  *swish_words = NULL;
     char   *curpos;
@@ -212,7 +213,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
     curpos = word;
     while( next_swish_word( header, &curpos, &self->word, &self->lenword ) )
     {
-
         /* Check Begin & EndCharacters */
         if (!header->begincharslookuptable[(int) ((unsigned char) self->word[0])])
             continue;
@@ -230,6 +230,9 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         - maxwordlen is checked when first tokenizing for security reasons
         - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
+        if ( strlen( self->word ) > max_size )
+            progerr( "Search word exceeded maxwordlimit setting." ); 
+
 
         if (header->applyStemmingRules)
             Stem(&self->word, &self->lenword);
@@ -400,7 +403,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
     curpos = words;  
 
     /* split into words by whitespace and by the swish operator characters */
-    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, max_size ) )
+    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter ) )
         tokens = (struct swline *) addswline( tokens, self->word );
 
 
@@ -489,7 +492,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
         /* query words left.  Turn into "swish_words" */
         swish_words = NULL;
-        swish_words = parse_swish_words( sw, header, temp->line);
+        swish_words = parse_swish_words( sw, header, temp->line, max_size);
         next_node = temp->next;
 
         /* move into list.c at some point */
