@@ -2,6 +2,8 @@
 
 The SWISH-E FAQ
 
+=head1 Frequently Asked Questions
+
 =head2 What is SWISH-E?
 
 SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
@@ -21,11 +23,12 @@ of rules, for instance, if swish-e encounters a word that has no vowels, it does
 file in the src directory of the swish-e distribution package. By editing the rules, you may be able to index quite a few more words, or less,
 depending on your preference. 
 
-=head2 How can I index all my compressed files? 
+=head2 How can I index all my compressed files?
 
-Swish doesn't currently have the capability to do on-the-fly filtering of files. In the meantime, first index the uncompressed data, compress it,
-and using a ReplaceRules operation, change the suffix of indexed files to .Z or whatever is appropriate. That way users can retrieve the
-compressed information.
+Swish can make use of "filters" that will convert files such as MS Word documents, PDF, or gzipped files into text, HTML
+or XML and can thus be indexed by SWISH-E.
+Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives"> for more information.
+
 
 =head2 Can I index 8-bit text? 
 
@@ -69,10 +72,10 @@ edit the line in your configuration file:
 One thing you can do is make a simple script to generate a configuration file full of IndexDir directives.
 For instance, make a separate file called files.conf and put something like this in it:
 
-IndexDir /this_is_file_1/file.html
-IndexDir /usr/local/www
-IndexDir file2.html /some/directory/
-...
+    IndexDir /this_is_file_1/file.html
+    IndexDir /usr/local/www
+    IndexDir file2.html /some/directory/
+    ...
 
 Then call swish-e like this (assuming you're using a main swish-e.conf file): 
 
@@ -84,8 +87,8 @@ It's true that indexing can take up a lot of memory!
 One thing you can do is make many indices of smaller content instead of trying to do
 everything at once. You can then merge all the smaller pieces together.
 
-Another option is use the c<-e> switch.  This will require less memory, but indexing will take longer as
-not all data will be stored in memory while indexing.  See L<SWISH-INDEX|SWISH-INDEX>.
+Another option is use the C<-e> switch.  This will require less memory, but indexing will take longer as
+not all data will be stored in memory while indexing.
 
 =head2 I can't limit search to title/body/comment. I can't search with meta names, all the names are indexed as "plain" 
 

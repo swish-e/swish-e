@@ -146,6 +146,10 @@ L<IndexComments|/"item_IndexComments"> [yes|no]
 
 =item *
 
+L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML]  *file extensions*
+
+=item *
+
 L<IndexDescription|/"item_IndexDescription"> *text*
 
 =item *
@@ -421,6 +425,16 @@ Example:
 
     IndexContents HTML .htm .html .shtml
     IndexContents TXT  .txt .log .text
+
+If using filters to convert documents you should include those extensions, too.
+For example, if using a filter to conver .pdf to .html, you need to tell swish that .pdf
+should be indexed by the internal HTML parser:
+    
+    FileFilter  .pdf   pdf2html
+    IndexContent  HTML  .pdf
+
+See also L<Document Filter Directives|/"Document Filter Directives">.
+
 
 B<Note:> This may be changed in the future to use content-types.  See L<SWISH-3.0|SWISH-3.0>
 
@@ -763,8 +777,7 @@ A filter is an external program that swish executes when processing a document o
 SWISH-E will execute the filter program for each file that matches the file extension set in the
 B<FileFilter> directive.
 
-SWISH-E calls the external program passing as arguments the file path
-that swish is about to index, and optionally, the URL from the http file source method.
+SWISH-E calls the external program passing as arguments:
 
 =over 4
 
