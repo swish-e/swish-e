@@ -24,7 +24,10 @@ rm -f config.cross.cache
         --with-zlib=$PWD/../zlib \
         --with-pcre=$PWD/../pcre
 
-make 
-make swish-search
+# Build Docs
 make docs
+# Build Binaries; pushd in case something else fails
+pushd src
+make
+popd
 
