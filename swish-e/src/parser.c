@@ -150,6 +150,7 @@ typedef struct {
     int                 parsing_html;
     struct metaEntry   *titleProp;
     struct metaEntry   *titleMeta;
+    struct metaEntry   *swishdefaultMeta;
     int                 flush_word;         // flag to flush buffer next time there's a white space.
     xmlSAXHandlerPtr    SAXHandler;         // for aborting, I guess.
     xmlParserCtxtPtr    ctxt;
@@ -243,6 +244,7 @@ int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
     parse_data.parsing_html = 1;
     parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
     parse_data.titleMeta    = getMetaNameByName( parse_data.header, AUTOPROPERTY_TITLE );
+    parse_data.swishdefaultMeta = getMetaNameByName( parse_data.header, AUTOPROPERTY_DEFAULT );
     
     /* Now parse the HTML file */
     return parse_chunks( &parse_data );
@@ -1083,7 +1085,10 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
         /* If title is a metaname, turn on the indexing flag */
         if ( parse_data->titleMeta )
+        {
             parse_data->titleMeta->in_tag = start ? 1 : 0;
+            parse_data->swishdefaultMeta->in_tag = start ? 1 : 0;
+        }
 
 
 

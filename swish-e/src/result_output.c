@@ -700,7 +700,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 
 
     case DATE:
-        fmt = (subfmt) ? subfmt : "%Y-%m-%d %H:%M:%S";
+        fmt = (subfmt) ? subfmt : "%Y-%m-%d %H:%M:%S %Z";
         if (!strcmp(fmt, "%ld"))
         {
             /* special: Print date as serial int (for Bill) */
