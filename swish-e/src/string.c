@@ -906,3 +906,68 @@ int len_s,len_w;
 	*(s+j)='\0';
 	return s;
 }
+
+
+
+
+/* ---------------------------------------------------------- */
+
+
+
+/* 
+  -- translate chars 
+  -- rewrite string itself via an character translation table
+  -- translation table is a int[256] 
+  -- return: ptr to string itself
+*/
+
+unsigned char *TranslateChars (int trlookup[], unsigned char *s)
+{
+  unsigned char *p;
+
+  p = s;
+  while (*p) {
+    *p = (unsigned char) trlookup[(int)*p];
+    p++;
+  }
+  return s;
+}
+
+
+
+/*
+   -- Build a character translation table
+   -- characters "from" will be converted in "to"
+   -- result is stored in a lookuptable fixed size
+   -- does also special translation rules like :ascii7:
+   -- return: 0/1 param fail/ok
+*/
+
+int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to)
+
+{
+  int i;
+
+  /* default init = 1:1 translation */
+  for (i=0; i<256; i++)
+     trlookup[i] = i;
+
+  if (! from) return 0; 	/* No param! */
+
+  /* special cases, one param  */
+  if (! strcmp (from,":ascii7:") ){
+     for (i=0; i<256; i++)  
+        trlookup[i] = (int) char_ISO_normalize (i);
+     return 1;
+  }
+
+  if (! to) return 0;		/* missing second param */
+
+  /* alter table for "non 1:1" translation... */ 
+  while (*from && *to)
+     trlookup[(int)*from++] = (int) *to++;
+  if (*to || *from) return 0; /* length the same? no? -> err */
+
+  return 1;
+}
+

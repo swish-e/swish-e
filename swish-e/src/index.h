@@ -53,7 +53,6 @@ unsigned char *buildFileEntry(char *, FILE *, struct docPropertyEntry **, int, i
 struct file *readFileEntry(IndexFILE *,int);
 
 void computehashentry(ENTRY **,ENTRY *);
-void TranslateChars(INDEXDATAHEADER, char *);
 
 void sortentry(SWISH *, IndexFILE *, ENTRY *);
 
@@ -63,3 +62,4 @@ void addtofwordtotals(IndexFILE *, int, int);
 void addsummarytofile(IndexFILE *, int, char *);
 
 void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
+

@@ -15,6 +15,9 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+**
+** 2001-02-22 rasc   fixed macros (unsigned char)
 */
 
 
@@ -48,8 +51,8 @@ void makeallstringlookuptables (SWISH *);
 /* 06/00 Jose Ruiz
 ** Macros iswordchar, isvowel
 */
-#define iswordchar(header,c) header.wordcharslookuptable[tolower(c)]
-#define isvowel(sw,c) sw->isvowellookuptable[tolower(c)]
+#define iswordchar(header,c) header.wordcharslookuptable[tolower((unsigned char)(c))]
+#define isvowel(sw,c) sw->isvowellookuptable[tolower((unsigned char)(c))]
 /* #define isindexchar(header,c) header.indexcharslookuptable[c] indexchars stuff removed */
 
 /* Functions for comparing integers for qsort */
@@ -93,3 +96,6 @@ unsigned char char_ISO_normalize (unsigned char c);
 char *str_ISO_normalize (char *s);
 
 unsigned char *StringListToString(StringList *sl,int n);
+
+int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to);
+unsigned char *TranslateChars (int trlookup[], unsigned char *s);

@@ -1719,19 +1719,6 @@ FILE *fp=indexf->fp;
 	}
 }
 
-void TranslateChars(INDEXDATAHEADER header, char *s)
-{
-char *p,*q;
-	if(!header.translatechars1 || !header.translatechars1[0]) return;
-        for(p=s;p;){
-                p=strpbrk(p,header.translatechars1);
-                if(p) {
-                        q=strchr(header.translatechars1,p[0]);
-                        *p++=header.translatechars2[q-header.translatechars1];
-                }
-        }
-}
-
 
 
 int indexstring(SWISH *sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
@@ -1773,12 +1760,8 @@ IndexFILE *indexf=sw->indexlist;
                                 stripIgnoreFirstChars(indexf->header,word);
 
 				/* Translate chars */
-				TranslateChars(indexf->header,word);
-
-				/* Call to ISO8 -> ISO7 (rasc) */
-				if(sw->applyAscii7)
-					word = str_ISO_normalize(word);
-				
+				TranslateChars(indexf->header.translatecharslookuptable,word);
+			
 
 				if (indexf->header.applyStemmingRules)
 				{
@@ -1874,4 +1857,5 @@ void addsummarytofile(IndexFILE *indexf, int filenum, char * summary)
         else
                 indexf->filearray[filenum-1]->fi.summary=estrdup(summary);
 }
+
 

@@ -79,3 +79,6 @@ void freefileinfo(struct file *);
 struct swline *ignore_words_in_query(SWISH *,IndexFILE *, struct swline *,unsigned char);
 struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
+struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
+
+

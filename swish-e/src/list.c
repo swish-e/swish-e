@@ -156,7 +156,7 @@ int ilen1,ilen2;
 
 void init_header(INDEXDATAHEADER *header)
 {
-	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lentranslatechars1=header->lentranslatechars2=header->lenbumpposchars=MAXCHARDEFINED;
+	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
 
 	header->wordchars = (char *)emalloc(header->lenwordchars + 1);
         header->wordchars = SafeStrCopy(header->wordchars,WORDCHARS,&header->lenwordchars);
@@ -183,11 +183,7 @@ void init_header(INDEXDATAHEADER *header)
         sortstring(header->ignorefirstchar);  /* Sort chars and remove dups */
         makelookuptable(header->ignorefirstchar,header->ignorefirstcharlookuptable);
 
-	header->translatechars1 = (char *)emalloc(header->lentranslatechars1 + 1);
-	header->translatechars1[0]='\0';
 
-	header->translatechars2 = (char *)emalloc(header->lentranslatechars2 + 1);
-	header->translatechars2[0]='\0';
 	header->bumpposchars = (char *)emalloc(header->lenbumpposchars + 1);
 	header->bumpposchars[0]='\0';
 
@@ -207,6 +203,8 @@ void init_header(INDEXDATAHEADER *header)
         header->maxwordlimit = MAXWORDLIMIT;
 		/* Init indexchars lookuptable */
 	/* makelookuptable(indexchars,header->indexcharslookuptable); indexchars stuff removed */
+
+      BuildTranslateChars(header->translatecharslookuptable,"",""); 
 }
 
 
@@ -223,7 +221,5 @@ void free_header(INDEXDATAHEADER *header)
         if(header->lenindexd) efree(header->indexd);
 	if(header->lenindexedon) efree(header->indexedon);		
 	if(header->lensavedasheader) efree(header->savedasheader);	
-	if(header->lentranslatechars1) efree(header->translatechars1);	
-	if(header->lentranslatechars2) efree(header->translatechars2);
 	if(header->lenbumpposchars) efree(header->bumpposchars);
 }

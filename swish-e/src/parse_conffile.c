@@ -255,20 +255,15 @@ char *w0;
 					addMetaEntry(indexf,sl->word[i], META_INDEX, 0, 0, &sw->applyautomaticmetanames);
 			} else progerr("MetaNames requires at least one value");
 		}
-		else if (strcasecmp(w0, "TranslateCharacters")== 0)  
-		{
-			if(sl->n==2 && strcasecmp(sl->word[1],":ascii7:")==0) {
-					/* Flag to use ISO8 -> ISO7 conversion as coded by rasc */ 
-				sw->applyAscii7=1;  
-			} else if(sl->n==3) {
-				indexf->header.translatechars1=SafeStrCopy(indexf->header.translatechars1,sl->word[1],&indexf->header.lentranslatechars1);
-				indexf->header.translatechars2=SafeStrCopy(indexf->header.translatechars2,sl->word[2],&indexf->header.lentranslatechars2);
-				if(strlen(indexf->header.translatechars1)!=strlen(indexf->header.translatechars2)) progerr("TranslateCharacters option requires two values of the same length");
-				
-			} else progerr("TranslateCharacters requires two values (like in tr) or the value :ascii7:");
+		else if (strcasecmp(w0, "TranslateCharacters")== 0) {
+			if (sl->n >= 2) {
+				if (! BuildTranslateChars(indexf->header.translatecharslookuptable,
+					sl->word[1],sl->word[2]) ) {
+				   progerr ("TranslateCharacters requires two values (same length) or one translation rule");
+				}
+			}
 		}
-		else if (strcasecmp(w0, "PropertyNames")== 0)
-		{
+		else if (strcasecmp(w0, "PropertyNames")== 0) {
 			if(sl->n>1) {
 				for(i=1;i<sl->n;i++)
 					addMetaEntry(indexf,sl->word[i], META_PROP, 0, 0, &sw->applyautomaticmetanames);
