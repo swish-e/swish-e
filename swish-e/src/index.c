@@ -895,6 +895,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if(newtp != tp)
     {
+        /* Memory has been reallocated - Update the linked list */
         if(efound->currentChunkLocationList == tp)
             efound->currentChunkLocationList = newtp;
         else
@@ -910,9 +911,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     }
 
     tp->position[tp->frequency++] = position;
-    tp->structure |= structure;  /* Just merged the structure elements! */
-
-    efound->currentChunkLocationList = tp;
+    tp->structure |= structure;  /* Just merge the structure elements! */
 
 }
 
