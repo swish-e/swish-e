@@ -226,6 +226,8 @@ src/swish_words.h
 src/swish.h
 src/swish2.c
 src/swishspider
+src/swregex.c
+src/swregex.h
 src/txt.c
 src/txt.h
 src/vms/acconfig.h_vms
