@@ -418,7 +418,7 @@ uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
 # run the "build_docs" program, and then update the timestamp
 
 @BUILDDOCS_TRUE@$(timestamp) : $(source_files)
-@BUILDDOCS_TRUE@	@(cd $(top_srcdir)/doc && bin/build)
+@BUILDDOCS_TRUE@	@(cd $(top_srcdir)/doc && bin/build -f)
 @BUILDDOCS_TRUE@	@touch $(timestamp)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

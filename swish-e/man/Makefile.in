@@ -138,11 +138,13 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 @BUILDDOCS_TRUE@man_MANS = \
-@BUILDDOCS_TRUE@    SWISH-CONFIG.1 \
-@BUILDDOCS_TRUE@    SWISH-FAQ.1 \
-@BUILDDOCS_TRUE@    SWISH-LIBRARY.1 \
-@BUILDDOCS_TRUE@    SWISH-RUN.1
+@BUILDDOCS_TRUE@    $(srcdir)/SWISH-CONFIG.1 \
+@BUILDDOCS_TRUE@    $(srcdir)/SWISH-FAQ.1 \
+@BUILDDOCS_TRUE@    $(srcdir)/SWISH-LIBRARY.1 \
+@BUILDDOCS_TRUE@    $(srcdir)/SWISH-RUN.1
 
+
+SUFFIXES = .1 .pod
 
 EXTRA_DIST = $(man_MANS)
 subdir = man
@@ -157,6 +159,7 @@ DIST_COMMON = Makefile.am Makefile.in
 all: all-am
 
 .SUFFIXES:
+.SUFFIXES: .1 .pod
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --foreign  man/Makefile
@@ -345,21 +348,21 @@ uninstall-man: uninstall-man1
 	uninstall-info-am uninstall-man uninstall-man1
 
 
-SWISH-CONFIG.1: $(srcdir)/../pod/SWISH-CONFIG.pod
+$(srcdir)/SWISH-CONFIG.1 : $(top_srcdir)/pod/SWISH-CONFIG.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-CONFIG.pod > $(top_srcdir)/man/SWISH-CONFIG.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-SWISH-FAQ.1: $(srcdir)/../pod/SWISH-FAQ.pod
+$(srcdir)/SWISH-FAQ.1 : $(top_srcdir)/pod/SWISH-FAQ.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-FAQ.pod > $(top_srcdir)/man/SWISH-FAQ.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-SWISH-LIBRARY.1: $(srcdir)/../pod/SWISH-LIBRARY.pod
+$(srcdir)/SWISH-LIBRARY.1 : $(top_srcdir)/pod/SWISH-LIBRARY.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-LIBRARY.pod > $(top_srcdir)/man/SWISH-LIBRARY.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-SWISH-RUN.1: $(srcdir)/../pod/SWISH-RUN.pod
+$(srcdir)/SWISH-RUN.1 : $(top_srcdir)/pod/SWISH-RUN.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-RUN.pod > $(top_srcdir)/man/SWISH-RUN.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
