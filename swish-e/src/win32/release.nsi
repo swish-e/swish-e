@@ -1,96 +1,37 @@
-;NSIS Modern User Interface version 1.63
-;SWISH-E Installer based on:
-;  Basic Example Script
-;  Written by Joost Verburg
+Name "SWISH-E"
+OutFile "swishsetup.exe"
 
-!define MUI_PRODUCT "SWISH-E" ;Define your own software name here
-!define MUI_VERSION "2.4.0" ;Define your own software version here
+; Some default compiler settings (uncomment and change at will):
+SetCompress auto ; (can be off or force)
+SetDatablockOptimize on ; (can be off)
+CRCCheck on ; (can be off)
+AutoCloseWindow false ; (can be true for the window go away automatically at end)
+ShowInstDetails hide ; (can be show to have them shown, or nevershow to disable)
+SetDateSave on ; (can be on to have files restored to their orginal date)
 
-; !define MUI_SPECIALBITMAP "${NSISDIR}\Contrib\Icons\modern-wizard.bmp"
-!include "MUI.nsh"
+LicenseText "You may redistribute SWISH-E under the following terms:"
+LicenseData "COPYING.txt"
+
+InstallDir "$PROGRAMFILES\SWISH-E"
+InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
+DirShow show ; (make this hide to not let the user change it)
+DirText "Select location where to install SWISH-E:"
+
+ComponentText "Which components do you require?"
+
+# defines SF_*, SECTION_OFF and some macros
+!include Sections.nsh
+
+Page license
+Page directory
+# Page custom InstallActivePerl ": ActivePerl Detection"
+Page components
+Page instfiles
+
 
 ;--------------------------------
-;Configuration
+; Installer Sections
 
-  ; Windows XP Manifest?
-  XPStyle on
-
-  ;General
-  OutFile "${MUI_PRODUCT}-${MUI_VERSION}.exe"
-
-  ;Folder selection page
-  InstallDir "$PROGRAMFILES\${MUI_PRODUCT}"
-  
-  ;Remember install folder
-  InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\${MUI_PRODUCT}" ""
-
-;--------------------------------
-;Modern UI Configuration
-  ; Configure page settings
-  !define MUI_COMPONENTSPAGE_SMALLDESC
-  ; Show these installer pages
-  !define MUI_LICENSEPAGE
-  !define MUI_COMPONENTSPAGE
-  !define MUI_DIRECTORYPAGE
-  
-  !define MUI_ABORTWARNING
-  
-  ; Show these uninstaller pages
-  !define MUI_UNINSTALLER
-  !define MUI_UNCONFIRMPAGE
-  
-;--------------------------------
-;Languages
- 
-  !insertmacro MUI_LANGUAGE "English"
-  
-;--------------------------------
-;Language Strings
-
-  ;Description
-  LangString DESC_SecProgram ${LANG_ENGLISH} "SWISH-E application and support files."
-  LangString DESC_SecDocs ${LANG_ENGLISH} "SWISH-E Documentation."
-  LangString DESC_SecExample ${LANG_ENGLISH} "SWISH-E example scripts and configuration files."
-  LangString DEST_SecSwishCtl ${LANG_ENGLISH} "SWISH-E ActiveX control and Searchable Documentation."
-;--------------------------------
-;Data
-  
-  LicenseData "COPYING.txt"
-
-; Basic file sections
+; Basic Sections
 !include filebase.nsh
 
-Section "-post" ; (post install section, happens last after any optional sections)
-    ; add any commands that need to happen after any optional sections here
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "" "$INSTDIR"
-    WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "DisplayName" "SWISH-E (remove only)"
-    WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
-    Exec "perl $INSTDIR\fixperl.pl $INSTDIR"
-    WriteUninstaller "uninst.exe"
-SectionEnd ; end of -post section
-
-
-;Display the Finish header
-;Insert this macro after the sections if you are not using a finish page
-!insertmacro MUI_SECTIONS_FINISHHEADER
-
-;--------------------------------
-;Descriptions
-
-!insertmacro MUI_FUNCTIONS_DESCRIPTION_BEGIN
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecProgram} $(DESC_SecProgram)
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecExample} $(DESC_SecExample)
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecDocs} $(DESC_SecDocs)
-  !insertmacro MUI_DESCRIPTION_TEXT ${SecSwishCtl} $(DESC_SecSwishCtl)
-!insertmacro MUI_FUNCTIONS_DESCRIPTION_END
- 
-;--------------------------------
-;Uninstaller Section
-
-Section Uninstall
-  Delete "$INSTDIR\uninst.exe"
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E"
-  DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E"
-  RMDir /r "$INSTDIR"
-  RMDir /r "$SMPROGRAMS\SWISH-E\"
-SectionEnd ; end of uninstall section
