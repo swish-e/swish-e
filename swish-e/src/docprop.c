@@ -70,15 +70,15 @@ char *ps1,*ps2;
 }
 
 void freeDocProperties(docProperties)
-     struct docPropertyEntry **docProperties;
+     docPropertyEntry **docProperties;
 {
 	/* delete the linked list of doc properties */
-	struct docPropertyEntry *prop = NULL;
+	docPropertyEntry *prop = NULL;
 
 	prop = *docProperties;
 	while (prop != NULL)
 	{
-		struct docPropertyEntry *nextOne = prop->next;
+		docPropertyEntry *nextOne = prop->next;
 		efree(prop->propValue);
 		efree(prop);
 
@@ -90,14 +90,14 @@ void freeDocProperties(docProperties)
 }
 
 void addDocProperty(docProperties, metaName, propValue)
-struct docPropertyEntry **docProperties;
+docPropertyEntry **docProperties;
 int metaName;
 char* propValue;
 {
 	/* Add the given file/metaName/propValue data to the File object */
-struct docPropertyEntry *docProp;
+docPropertyEntry *docProp;
 	/* new prop object */
-	docProp = (struct docPropertyEntry *) emalloc(sizeof(struct docPropertyEntry));
+	docProp = (docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
 	docProp->metaName = metaName;
 	docProp->propValue = (char *)estrdup(propValue);
 
@@ -118,7 +118,7 @@ struct docPropertyEntry *docProp;
 * The list is terminated with a PropID with a value of zero
 */
 char *storeDocProperties(docProperties, datalen)
-struct docPropertyEntry *docProperties;
+docPropertyEntry *docProperties;
 int *datalen;
 {
 int propID;
@@ -205,10 +205,10 @@ char *p=*buf;
  * Read the docProperties section that the buffer pointer is
  * currently pointing to.
  */
-struct docPropertyEntry *fetchDocProperties(buf)
+docPropertyEntry *fetchDocProperties(buf)
      char *buf;
 {
-struct docPropertyEntry *docProperties=NULL;
+docPropertyEntry *docProperties=NULL;
 char* tempPropValue=NULL;
 int tempMetaName=0;
 int targetMetaName = 0;	/* 0 = no target; return all data */
@@ -254,40 +254,46 @@ int getnumPropertiesToDisplay(SWISH *sw)
 
 void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
+IndexFILE *indexf;
 	/* add a property to the list of properties that will be displayed */
 	if (sw->numPropertiesToDisplay >= sw->currentMaxPropertiesToDisplay)
 	{
 		if(sw->currentMaxPropertiesToDisplay) {
 			sw->currentMaxPropertiesToDisplay+=2;
 			sw->propNameToDisplay=(char **)erealloc(sw->propNameToDisplay,sw->currentMaxPropertiesToDisplay*sizeof(char *));
-			sw->propIDToDisplay=(int *)erealloc(sw->propIDToDisplay,sw->currentMaxPropertiesToDisplay*sizeof(int));
+			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+				indexf->propIDToDisplay=(int *)erealloc(indexf->propIDToDisplay,sw->currentMaxPropertiesToDisplay*sizeof(int));
 		} else {
 			sw->currentMaxPropertiesToDisplay=5;
 			sw->propNameToDisplay=(char **)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(char *));
-			sw->propIDToDisplay=(int *)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(int));
+			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+				indexf->propIDToDisplay=(int *)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(int));
 		}
 	}
-	sw->propNameToDisplay[sw->numPropertiesToDisplay++] = propName;
+	sw->propNameToDisplay[sw->numPropertiesToDisplay++] = estrdup(propName);
 }
 
 void addSearchResultSortProperty(SWISH *sw, char *propName,int mode)
 {
+IndexFILE *indexf;
 	/* add a property to the list of properties that will be displayed */
 	if (sw->numPropertiesToSort >= sw->currentMaxPropertiesToSort)
 	{
 		if(sw->currentMaxPropertiesToSort) {
 			sw->currentMaxPropertiesToSort+=2;
 			sw->propNameToSort=(char **)erealloc(sw->propNameToSort,sw->currentMaxPropertiesToSort*sizeof(char *));
-			sw->propIDToSort=(int *)erealloc(sw->propIDToSort,sw->currentMaxPropertiesToSort*sizeof(int));
+			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+				indexf->propIDToSort=(int *)erealloc(indexf->propIDToSort,sw->currentMaxPropertiesToSort*sizeof(int));
 			sw->propModeToSort=(int *)erealloc(sw->propModeToSort,sw->currentMaxPropertiesToSort*sizeof(int));
 		} else {
 			sw->currentMaxPropertiesToSort=5;
 			sw->propNameToSort=(char **)emalloc(sw->currentMaxPropertiesToSort*sizeof(char *));
-			sw->propIDToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
+			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+				indexf->propIDToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
 			sw->propModeToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
 		}
 	}
-	sw->propNameToSort[sw->numPropertiesToSort] = propName;
+	sw->propNameToSort[sw->numPropertiesToSort] = estrdup(propName);
 	sw->propModeToSort[sw->numPropertiesToSort++] = mode;
 }
 
@@ -295,18 +301,22 @@ void addSearchResultSortProperty(SWISH *sw, char *propName,int mode)
 int initSortResultProperties(SWISH *sw)
 {
 int i;
+IndexFILE *indexf;
         if (sw->numPropertiesToSort == 0)
                 return RC_OK;
         for (i = 0; i<sw->numPropertiesToSort; i++)
         {
                 makeItLow(sw->propNameToSort[i]);
-		/* Use ID from file 1 */
-                sw->propIDToSort[i] = getMetaName(sw->indexlist, sw->propNameToSort[i]);
-                if (sw->propIDToSort[i] == 1)
-                {
-                        sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Sort property name \"%s\"\n.\n", sw->propNameToSort[i]);
-                        return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
-                }
+		/* Get ID for each index file */
+		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+		{
+                	indexf->propIDToSort[i] = getMetaName(indexf, sw->propNameToSort[i]);
+                	if (indexf->propIDToSort[i] == 1)
+                	{
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Sort property name \"%s\" in one of the index files\n.\n", sw->propNameToSort[i]);
+				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
+                	}
+		}
         }
 	return RC_OK;
 }
@@ -318,20 +328,24 @@ int isSortProp(SWISH *sw)
 
 int initSearchResultProperties(SWISH *sw)
 {
+IndexFILE *indexf;
+int i;
 	/* lookup selected property names */
-	int i;
 
 	if (sw->numPropertiesToDisplay == 0)
 		return RC_OK;
 	for (i = 0; i<sw->numPropertiesToDisplay; i++)
 	{
 		makeItLow(sw->propNameToDisplay[i]);
-		/* use ID from file 1 */
-		sw->propIDToDisplay[i] = getMetaName(sw->indexlist, sw->propNameToDisplay[i]);
-		if (sw->propIDToDisplay[i] == 1)
+		/* Get ID for each index file */
+		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		{
-                        sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Display property name \"%s\"\n.\n", sw->propNameToDisplay[i]);
-			return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
+			indexf->propIDToDisplay[i] = getMetaName(indexf, sw->propNameToDisplay[i]);
+			if (indexf->propIDToDisplay[i] == 1)
+			{
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Display property name \"%s\"\n.\n", sw->propNameToDisplay[i]);
+				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
+			}
 		}
 	}
 	return RC_OK;
@@ -372,13 +386,11 @@ int i;
 	}
 }
 
-char **getResultProperties(sw, docProperties)
-SWISH *sw;
-struct docPropertyEntry *docProperties;
+char **getResultProperties(SWISH *sw, IndexFILE *indexf, docPropertyEntry *docProperties)
 {
 int i;
 char **props;      /* Array to Store properties */
-struct docPropertyEntry *p;
+docPropertyEntry *p;
 
 	if (sw->numPropertiesToDisplay == 0)
 		return NULL;
@@ -388,7 +400,7 @@ struct docPropertyEntry *p;
 	{
 		for(p=docProperties;p;p=p->next)
 		{
-			if(sw->propIDToDisplay[i]==p->metaName) break;
+			if(indexf->propIDToDisplay[i]==p->metaName) break;
 		}
 		if(!p)
 			props[i] = estrdup("");
@@ -399,13 +411,11 @@ struct docPropertyEntry *p;
 }
 
 
-char **getResultSortProperties(sw, docProperties)
-SWISH *sw;
-struct docPropertyEntry *docProperties;
+char **getResultSortProperties(SWISH *sw, IndexFILE *indexf, docPropertyEntry *docProperties)
 {
 int i;
 char **props=NULL;      /* Array to Store properties */
-struct docPropertyEntry *p;
+docPropertyEntry *p;
 
         if (sw->numPropertiesToSort == 0)
                 return NULL;
@@ -415,7 +425,7 @@ struct docPropertyEntry *p;
 	{
 		for(p=docProperties;p;p=p->next)
 		{
-			if(sw->propIDToSort[i]==p->metaName) break;
+			if(indexf->propIDToSort[i]==p->metaName) break;
 		}
 		if(!p)
 			props[i] = estrdup("");
@@ -426,7 +436,7 @@ struct docPropertyEntry *p;
 }
 
 void swapDocPropertyMetaNames(docProperties, metaFile)
-     struct docPropertyEntry *docProperties;
+     docPropertyEntry *docProperties;
      struct metaMergeEntry* metaFile;
 {
 	/* swap metaName values for properties */
@@ -533,13 +543,13 @@ int MaxWide,*maxWide=NULL,len;
 }
 
 /* Duplicates properties (used by merge) */
-struct docPropertyEntry *DupProps(struct docPropertyEntry *dp)
+docPropertyEntry *DupProps(docPropertyEntry *dp)
 {
-struct docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
+docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
 	if(!dp) return NULL;
 	while(dp)
 	{
-		tmp=emalloc(sizeof(struct docPropertyEntry));
+		tmp=emalloc(sizeof(docPropertyEntry));
 		tmp->metaName=dp->metaName;
 		tmp->propValue=estrdup(dp->propValue);
 		tmp->next=NULL;
@@ -549,4 +559,62 @@ struct docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
 		dp=dp->next;
 	}
 	return new;
+}
+
+
+/* Frees memory of vars used by Ouutput properties configuration */
+void FreeOutputPropertiesVars(SWISH *sw)
+{
+int i;
+IndexFILE *tmpindexlist;
+		/* First the common part to all the index files */
+	if (sw->propNameToDisplay) 
+	{
+		for(i=0;i<sw->numPropertiesToDisplay;i++)
+			efree(sw->propNameToDisplay[i]);
+		efree(sw->propNameToDisplay);
+		sw->propNameToDisplay=NULL;
+	}
+	if (sw->propNameToSort) 
+	{
+		for(i=0;i<sw->numPropertiesToSort;i++)
+			efree(sw->propNameToSort[i]);
+		efree(sw->propNameToSort);
+		sw->propNameToSort=NULL;
+	}
+	if (sw->propModeToSort) efree(sw->propModeToSort);sw->propModeToSort=NULL;
+	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
+		/* Now the IDs of each index file */
+	for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
+	{
+		if (tmpindexlist->propIDToDisplay) efree(tmpindexlist->propIDToDisplay);tmpindexlist->propIDToDisplay=NULL;
+		if (tmpindexlist->propIDToSort) efree(tmpindexlist->propIDToSort);tmpindexlist->propIDToSort=NULL;
+	}
+}
+
+
+/* Returns the contents of the property "propertyname" of result r */
+/* Returns NULL if not found */
+char * getResultPropertyByName (SWISH *sw, char *propertyname, RESULT *r)
+{
+int i;
+char *p,*pname;
+char *propdata;  /* default value to NULL */
+
+		/* To avoid problems and for faster scan make propertyname */
+		/* to lowercase */
+	pname=estrdup(propertyname);     /* preserve original value */
+	for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
+		/* Search for the property name */
+	for(i=0;i<sw->numPropertiesToDisplay;i++)
+	{
+		if(!strcmp(sw->propNameToDisplay[i],pname)) break;
+	}
+
+	if(i!=sw->numPropertiesToDisplay)    
+		propdata = r->Prop[i];     /* found !! */
+	else
+		propdata = NULL;   /* not found */
+	efree(pname);
+	return propdata;
 }

@@ -35,6 +35,7 @@ while((r=SwishNext(sw)))
    printf("%d %s \"%s\" %d %d",r->rank,r->filename,r->title,r->start,r->size);
    for(j=0;j<numPropertiesToDisplay;j++) printf(" \"%s\"",r->Prop[j]);
    printf("\n");
+   printf("Rainer test meta1 %s\n",getResultPropertyByName (sw, "meta1", r));
 }
 
 printf("---->End iteration %d\n",i);

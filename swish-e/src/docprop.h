@@ -5,37 +5,35 @@
  *
  * File Created.
  * M. Gaulin 8/10/98
+ * Jose Ruiz 2000/10 many modifications
+ * Jose Ruiz 2001/01 many modifications
  */
 
-#ifndef _DOCPROP_H_
-#define _DOCPROP_H_
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
+void freeDocProperties (docPropertyEntry **);
+char *storeDocProperties (docPropertyEntry *, int *);
 
-void freeDocProperties _AP ((struct docPropertyEntry **docProperties));
-char *storeDocProperties _AP ((struct docPropertyEntry *, int *));
+void addDocProperty (docPropertyEntry **, int , char* );
 
-void addDocProperty _AP ((struct docPropertyEntry **, int , char* ));
+docPropertyEntry *fetchDocProperties (char * );
 
-struct docPropertyEntry *fetchDocProperties _AP ((char * ));
+int initSearchResultProperties (SWISH *);
+void addSearchResultDisplayProperty (SWISH *, char* );
+void addSearchResultSortProperty (SWISH *, char*, int );
+char* lookupDocPropertyValue (int , char *);
+void printSearchResultProperties (SWISH *, char **);
 
-int initSearchResultProperties _AP ((SWISH *));
-void addSearchResultDisplayProperty _AP ((SWISH *, char* ));
-void addSearchResultSortProperty _AP ((SWISH *, char*, int ));
-char* lookupDocPropertyValue _AP ((int , char *));
-void printSearchResultProperties _AP ((SWISH *, char **));
+void swapDocPropertyMetaNames (docPropertyEntry *, struct metaMergeEntry *);
 
-void swapDocPropertyMetaNames _AP ((struct docPropertyEntry *, struct metaMergeEntry *));
+char **getResultProperties (SWISH *, IndexFILE *, docPropertyEntry *);
+char **getResultSortProperties (SWISH *, IndexFILE *, docPropertyEntry *);
+int isSortProp (SWISH *);
+RESULT *sortresultsbyproperty (SWISH *, int );
 
-char **getResultProperties _AP ((SWISH *, struct docPropertyEntry *));
-char **getResultSortProperties _AP ((SWISH *, struct docPropertyEntry *));
-int isSortProp _AP ((SWISH *));
-RESULT *sortresultsbyproperty _AP ((SWISH *, int ));
+int initSortResultProperties (SWISH *);
 
-int initSortResultProperties _AP ((SWISH *));
+docPropertyEntry *DupProps (docPropertyEntry *);
 
-struct docPropertyEntry *DupProps _AP ((struct docPropertyEntry *));
-#endif 
+void FreeOutputPropertiesVars (SWISH *);
+
+char * getResultPropertyByName (SWISH *, char *, RESULT *);

@@ -77,9 +77,7 @@ int i;
 		/* Properties */
 	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
 	sw->propNameToDisplay=NULL;
-	sw->propIDToDisplay=NULL;
 	sw->propNameToSort=NULL;
-	sw->propIDToSort=NULL;
 	sw->propModeToSort=NULL;
 
 
@@ -144,12 +142,7 @@ void SwishResetSearch(SWISH *sw)
 	if(sw->resultlist) freeresultlist(sw);
 	if(sw->searchwordlist) freeswline(sw->searchwordlist); sw->searchwordlist=NULL;
 		/* Free props arrays */
-	if (sw->propNameToDisplay) efree(sw->propNameToDisplay);sw->propNameToDisplay=NULL;
-	if (sw->propIDToDisplay) efree(sw->propIDToDisplay);sw->propIDToDisplay=NULL;
-	if (sw->propNameToSort) efree(sw->propNameToSort);sw->propNameToSort=NULL;
-	if (sw->propIDToSort) efree(sw->propIDToSort);sw->propIDToSort=NULL;
-	if (sw->propModeToSort) efree(sw->propModeToSort);sw->propModeToSort=NULL;
-	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
+	FreeOutputPropertiesVars(sw);
 }
 
 void SwishClose(SWISH *sw)
