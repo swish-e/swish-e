@@ -222,7 +222,7 @@ int in_junk=0;
                             tempprop = sw_ConvHTMLEntities2ISO(sw, tempprop);
                             
                             if ( !addDocProperty(&thisFileEntry->docProperties,metaNameXML,tempprop,strlen(tempprop),0) )
-                                progwarn("prop not added for doc '%s'\n", fprop->real_path );
+                                progwarn("property '%s' not added for document '%s'\n", metaNameXML->metaName, fprop->real_path );
                                     
 
                             efree(tempprop);
