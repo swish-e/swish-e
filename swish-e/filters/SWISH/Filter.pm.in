@@ -15,23 +15,14 @@ $VERSION = '0.02';
 %extra_methods = map {$_ => 1} qw/name user_data /;
 
 
-# Map content types to swish-e parsers.
 
-my %swish_parser_types = (
-    'text/html'     => 'HTML*',
-    'text/xml'      => 'XML*',
-    'text/plain'    => 'TXT*',
-);
-
-
-
-# For testing only 
+# For testing only
 
 if ( $0 =~ 'Filter.pm' && @ARGV >= 2 && shift =~ /^test/i) {
     die "Please use the 'swish-filter-test' program.\n";
 }
 
-    
+
 
 
 =head1 NAME
@@ -87,7 +78,8 @@ The filters are automatically loaded when C<SWISH::Filters-E<gt>new()> is called
 define a type and priority that determines the processing order of the filter.  Filters are
 processed in this sort order until a filter accepts the document for filtering. The filter
 uses the document's content type to determine if the filter should handle the current
-document.
+document.  The content-type is determined by the files suffix if supplied by the calling
+program.
 
 The individual filters are not designed to be used as separate modules.  All access to
 the filters is through this SWISH::Filter module.
@@ -162,19 +154,19 @@ sub new {
     warn "Unknown SWISH::Filter->new() config setting '$_'\n"
         for keys %attr;
 
-    $self->get_filter_list;
+    $self->create_filter_list;
 
     eval { require MIME::Types };
     if ( $@ ) {
         $class->mywarn( "Failed to load MIME::Types\n$@\nInstall MIME::Types for more complete MIME support");
-   
+
         # handle the lookup for a small number of types locally
         $self->{mimetypes} = $self;
 
     } else {
         $self->{mimetypes} = MIME::Types->new;
     }
- 
+
 
     return $self;
 }
@@ -191,15 +183,15 @@ my %mime_types = (
     text  => 'text/plain',
     xml   => 'text/xml',
     mp3   => 'audio/mpeg',
-);    
+);
 
 sub mimeTypeOf {
     my ( $self, $file ) = @_;
     $file =~ s/.*\.//;
     return $mime_types{$file} || undef;
 }
-    
-    
+
+
 
 sub ignore_filters {
     my ( $self, $filters ) = @_;
@@ -210,48 +202,10 @@ sub ignore_filters {
     }
 
     @{$self->{ignore_filter_list}} = @$filters;
-    
+
 
     # create lookup hash for filters to skip
     $self->{skip_filters} = map { $_, 1 } @$filters;
-}
-
-=item $filtered = $filter->filter();
-
-B<Deprecated>: Use the convert() method instead.
-
-
-See $swish->convert for options.
-
-Returns true if the document was converted.
-
-=cut
-
-sub filter {
-    my $self = shift;
-
-    # Reset parameters stored locally
-    delete $self->{doc_ref};
-    delete $self->{doc_type};  # html|txt|xml
-    delete $self->{original_content_type};
-    $self->{content_type} = '';
-
-    # now call the convert method
-
-    my $doc_object = $self->convert( @_ );
-    return unless $doc_object;
-
-
-    # Save the reference to the doc (filtered or not)
-    # to make it easy for the caller to access
-    # may read doc off disk
-
-    $self->{doc_ref} = $doc_object->fetch_doc_reference;
-
-    $self->{content_type} = $doc_object->content_type;
-
-    # Return true if any filters were used
-    return $doc_object->was_filtered;
 }
 
 
@@ -259,10 +213,10 @@ sub filter {
 =item $doc_object = $filter->convert();
 
 This method filters a document.  Returns an object of the class SWISH::Filter::Document
-or undefined if passed in an empty document, a filename that cannot be read off disk, or 
+or undefined if passed in an empty document, a filename that cannot be read off disk, or
 if no filters have been loaded.
 
-Methods in SWISH::Filter::Document Methods below can be called on the object to, for
+SWISH::Filter::Document methods listed below can be called on the object to, for
 example, check if the document was filtered and to fetch the document content (filtered or
 not).
 
@@ -322,12 +276,10 @@ sub convert {
     my %attr = ref $_[0] ? %{$_[0]} : @_ if @_;
 
     # Any filters?
-    return unless $self->{filters};
+    return unless $self->filter_list;
 
 
-    my $doc = delete $attr{document};
-    die "Failed to supply document attribute 'document' when calling filter()\n"
-        unless $doc;
+    my $doc = delete $attr{document} || die "Failed to supply document attribute 'document' when calling filter()\n";
 
     my $content_type = delete $attr{content_type};
 
@@ -356,35 +308,32 @@ sub convert {
             return;
         }
 
-        $attr{name} ||= $doc;
+        $attr{name} ||= $doc;  # Set default name of document
     }
 
 
     $self->mywarn("\n>> Starting to process new document: $content_type");
 
-    # Deprecated
-    $self->{original_content_type} = $content_type;
-    
     ## Create a new document object
 
     my $doc_object = SWISH::Filter::document->new( $doc, $content_type );
     return unless $doc_object;  # fails on empty doc or doc not readable
 
     local $SIG{__DIE__};
-    local $SIG{__WARN__}; 
+    local $SIG{__WARN__};
 
 
     # Look for left over config settings that we do not know about
 
-    for ( keys %extra_methods ) {
-        next unless $attr{$_};
-        my $method = "set_" . $_;
-        $doc_object->$method(delete $attr{$_});
+    for my $setting ( keys %extra_methods ) {
+        next unless $attr{$setting};
+        my $method = "set_" . $setting;
+        $doc_object->$method(delete $attr{$setting});
 
 
-        # if given a name then use that in error messages
+        # if given a document name then use that in error messages
 
-        if ( $_ eq 'name' ) {
+        if ( $setting eq 'name' ) {
             $SIG{__DIE__} = sub { die "$$ Error- ", $doc_object->name, ": ", @_ };
             $SIG{__WARN__} = sub { warn "$$ Warning - ", $doc_object->name, ": ", @_ };
         }
@@ -394,40 +343,36 @@ sub convert {
         for keys %attr;
 
 
-    # Now run through the filters        
+    # Now run through the filters
 
-    my @filter_set =  @{$self->{filters}};
-    my @cur_filters;
 
     my $done;
-    for my $filter ( @filter_set )  {
-        if ( $done ) {
-            push @cur_filters, $filter;
-            next;
-        }
-            
-        $doc_object->continue( 0 );  # reset just in case a non-filtering filter set this
+    for my $filter ( $self->filter_list )  {
 
         $self->mywarn(" ++Checking filter [$filter] for $content_type" );
 
+        # can this filter handle this content type?
+        next unless $filter->can_filter_mimetype( $doc_object->content_type );
+
+
         my $start_content_type = $doc_object->content_type;
-        
         my $filtered_doc;
+
+        # run the filter
         eval {
             local $SIG{__DIE__};
             $filtered_doc = $filter->filter($doc_object);
         };
-        
+
         if ( $@ ) {
             $self->mywarn("Problems with filter '$filter'.  Filter disabled:\n -> $@");
+            $self->filter_list( [ grep { $_ != $filter } $self->filter_list ] );
             next;
         }
-        
-        $self->mywarn(" ++ $content_type " . ($filtered_doc ? '*WAS*' : 'was not') . " filtered by $filter\n");  
+
+        $self->mywarn(" ++ $content_type " . ($filtered_doc ? '*WAS*' : 'was not') . " filtered by $filter\n");
 
         # save the working filters in this list
-        
-        push @cur_filters, $filter;
 
         if ( $filtered_doc ) {  # either a file name or a reference to the doc
 
@@ -443,13 +388,10 @@ sub convert {
             $doc_object->cur_doc($filtered_doc);    # and save it (filename or reference)
 
             # All done?
-            $done++ unless $doc_object->continue( 0 );
+            last unless $doc_object->continue( 0 );
         }
     }
-    
-    
-    # Replace the list of filters with the current working ones
-    $self->{filters} = \@cur_filters;
+
 
     $doc_object->dump_filters_used  if $ENV{FILTER_DEBUG};
 
@@ -458,81 +400,10 @@ sub convert {
 }
 
 
-# deprecated
-sub original_content_type {
-   my $self = shift;
-   return $self->{original_content_type};
-}
-
-=item $doc_ref = $filter->fetch_doc;
-
-B<Deprecated>: Use $doc->fetch_doc instead.
-
-Returns a reference to a scalar that contains the document passed in.
-If the file is on disk it will be read from disk into memory.
-
-Deprecated example:  (don't use)
-
-    $filtered = $filter->filter( $doc_ref, 'application/pdf' );
-    if ( $filtered ) {
-        $doc_ref = $filter->fetch_doc;
-        print $$doc_ref;
-    }
-
-=cut
-
-sub fetch_doc {
-    my ( $self ) = @_;
-    return $self->{doc_ref} || undef;
-}
-
-=item $type = $filter->content_type
-
-B<Deprecated>
-
-Returns the content type of the document after filtering.
-Use $doc->content_type instead.
-
-=cut
-
-sub content_type {
-    return $_[0]->{content_type};
-}
 
 
-=item $type = $filter->swish_parser_type 
 
-B<Deprecated> use $doc->swish_parser_type instead.
-
-Returns the swish parser type for the document, or undefined.
-
-For example, in a -S prog program you can set the parser that swish-e will
-use:
-
-    if ( my $type = $filter->swish_parser_type ) {
-        print "Document-Type: $type\n";
-    }
-
-
-=cut
-
-# Deprecated as a SWISH::Filter method, but not as a SWISH::Filter::Document method -- leave
-
-sub swish_parser_type {
-    my $self = shift;
-
-    my $content_type = $self->content_type || return;
-
-    for ( keys %swish_parser_types ) {
-        return $swish_parser_types{$_} if 
-            $content_type =~ /^\Q$_/;
-    }
-
-    return;
-}
-
-
-=item $self->mywarn()
+=item $filter->mywarn()
 
 Internal function used for writing warning messages to STDERR if $ENV{FILTER_DEBUG} is set.
 Set the environment variable FILTER_DEBUG before running to see the verbose warning messages.
@@ -541,133 +412,31 @@ Set the environment variable FILTER_DEBUG before running to see the verbose warn
 
 sub mywarn {
     my $self = shift;
-    
+
     print STDERR @_,"\n" if $ENV{FILTER_DEBUG};
 }
 
+=item @filters = $filter->filter_list;
 
-=item $path = $self->find_binary( $prog );
-
-Use in a filter's new() method to test for a necesary program located in $PATH.
-Returns the path to the program or undefined if not found or does not pass the -x 
-file test.
+Returns a list of filter objects installed.
 
 =cut
 
-use Config;
-my @path_segments;
+sub filter_list {
+    my ( $self, $filter_ref ) = @_;
 
-sub find_binary {
-    my ( $self, $prog ) = @_;
-
-    unless ( @path_segments ) {
-        my $path_sep = $Config{path_sep} || ':';
-
-        @path_segments = split /\Q$path_sep/, $ENV{PATH};
-
-        if ( my $libexecdir = get_libexec() ) {
-            push @path_segments, $libexecdir;
-        }
+    unless ( $filter_ref ) {
+        return ref $self->{filters} ? @{ $self->{filters} } : ();
     }
 
-    $self->mywarn("Find path of [$prog] in " . join ':', @path_segments);
-
-    
-    for ( @path_segments ) {
-        my $path = "$_/$prog";
-
-        # For buggy Windows98 that accepts forward slashes if the filename isn't too long
-        $path =~ s[/][\\]g if $^O =~ /Win32/;
-
-        if ( -x $path ) {
-
-            $self->mywarn(" * Found program at: [$path]\n");
-            return $path;
-        }
-        $self->mywarn("  Not found at path [$path]" );
-
-
-        # ok, try Windows extenstions
-        if ( $^O =~ /Win32/ ) {
-            for my $extension ( qw/ exe bat / ) {
-                if ( -x "$path.$extension" ) {
-                    $self->mywarn(" * Found program at: [$path.$extension]\n");
-                    return "$path.$extension";
-                }
-                $self->mywarn("  Not found at path [$path.$extension]" );
-            }
-        }
-
-    }
-    return; 
+    $self->{filters} = $filter_ref;
 }
 
-# Try and return libexecdir in case programs are installed there (the case with Windows)
-# Assumes that we are running from libexecdir or bindir
-# The other option under Windows would be to fetch libexecdir from the Windows registry,
-# but that could break if a new (another) swish install was done since the registry
-# would then point to the new install location.
-
-sub get_libexec {
-
-   return '@@mylibexecdir@@';  # the below isn't robust, so set at install time
-
-   return unless $FindBin::Bin;
-
-   # Look for something we expect in libexecdir.
-
-   # Are we in $libexecdir already (like with swishspider or spider.pl)
-   return $FindBin::Bin if -e "$FindBin::Bin/spider.pl";
-   
-   # Are we in $prefix/bin? (swish-filter-test)
-   return "$FindBin::Bin/../lib/swish-e" if -e "$FindBin::Bin/../lib/swish-e/spider.pl";
 
 
-   return;
+# Creates the list of filters
 
-
-} 
-
-=item $bool = $self->use_modules( @module_list );
-
-Attempts to load each of the module listed and calls its import() method.
-
-Use to test and load required modules within a filter without aborting.
-
-    return unless $self->use_modules( qw/ Spreadsheet::ParseExcel  HTML::Entities / );
-
-A warning message is displayed if the FILTER_DEBUG environment variable is true.
-
-=back
-
-=cut
-
-sub use_modules {
-    my ( $self, @modules ) = @_;
-
-    for my $mod ( @modules ) {
-        $self->mywarn("trying to load [$mod]");
-
-        eval { eval "require $mod" or die "$!\n" };
-
-        if ( $@ ) {
-            my $caller = caller();
-            $self->mywarn("Can not use Filter $caller -- need to install $mod: $@");
-            return;
-        }
-
-        $self->mywarn(" ** Loaded $mod **");
-
-        # Export back to caller
-        $mod->export_to_level( 1 ) if $mod->can('export_to_level');
-    }
-    return 1;
-}
-                                
-
-# Fetches the list of filters installed
-
-sub get_filter_list {
+sub create_filter_list {
     my ( $self ) = @_;
 
     my @filters;
@@ -686,7 +455,6 @@ sub get_filter_list {
 
             my ($base,$path,$suffix) = fileparse( $full_path,"\.pm");
 
-
             next unless $suffix eq '.pm';
 
             # Should this filter be skipped?
@@ -695,6 +463,7 @@ sub get_filter_list {
             $self->mywarn("\n>> Loading filter: [SWISH/Filters/${base}$suffix]");
 
             eval { require "SWISH/Filters/${base}$suffix" };
+
             if ( $@ ) {
                 if ( $ENV{FILTER_DEBUG} ) {
                     print STDERR "Failed to load 'SWISH/Filters/${base}$suffix'\n",
@@ -706,12 +475,23 @@ sub get_filter_list {
             }
 
             my $package =  "SWISH::Filters::" . $base;
-            my $filter = $package->new( name => $full_path );
-	    $self->mywarn(":-( Filter [SWISH/Filters/${base}$suffix] not loaded\n")
-	    	unless $filter;
+
+            # Provide a base class for each filter
+            {
+                no strict 'refs';
+                push @{"$package\::ISA"}, 'SWISH::Filters::_BASE';
+            }
+
+            my $filter = $package->new;
+
+            $self->mywarn(":-( Filter [SWISH/Filters/${base}$suffix] not loaded\n")
+                unless $filter;
 
             next unless $filter;  # may not get installed
-            push @filters, $filter;
+
+
+
+            push @filters, $filter;  # save it in our list.
         }
     }
 
@@ -722,17 +502,39 @@ sub get_filter_list {
 
 
     # Now sort the filters in order.
-    $self->{filters} = [ sort { $a->type <=> $b->type || $a->priority <=> $b->priority } @filters ];
+    $self->filter_list( [ sort { $a->type <=> $b->type || $a->priority <=> $b->priority } @filters ] );
+}
+
+=item $filter = $filter->can_filter( $content_type );
+
+This is useful for testing to see if a mimetype might be handled by SWISH::Filter
+wihtout having to pass in a document.  Helpful if doing HEAD requests.
+
+Returns an array of filters that can handle this type of document
+
+=cut
+
+sub can_filter {
+    my ( $self, $content_type ) = @_;
+
+    my @filters;
+
+
+    unless ( $content_type ) {
+        warn "Failed to pass in a content type to can_filter() method";
+        return;
+    }
+
+    for my $filter ( $self->filter_list ) {
+        push @filters, $filter if $filter->can_filter_mimetype( $content_type );
+    }
+
+    return @filters;
 }
 
 
-# Set default method for name() type() and priority()
-
-sub name { $_[0]->{name} || "Filter did not set a name" }
-
-sub type { 2 }
-sub priority{ 50 }
-
+#------------------------------------------------------
+# converts a file name to a mimetype
 
 sub decode_content_type {
     my ( $self, $file ) = @_;
@@ -743,6 +545,181 @@ sub decode_content_type {
 }
 
 
+=head1 WRITING FILTERS
+
+Filters are standard perl modules that are installed into the SWISH::Filters name space.
+Filters are not complicated -- see the existing filters for examples.
+
+Each filter defines the content-types (or mimetypes) that it can handle.  These
+are specified as a list of regular expressions to match against the document's
+content-type.  If one of the mimetypes of a filter match the incoming
+document's content-type the filter is called.  The filter can then either
+filter the content or return undefined indicating that it decided not to
+filter the document for some reason.  If the document is converted the filter
+returns either a reference to a scalar of the content or a file name where the
+content is stored.  The filter also must change the content-type of the document
+to reflect the new document.
+
+Filters typically use external programs or modules to do that actual work of
+converting a document from one type to another.  For example, programs in the
+Xpdf packages are used for converting PDF files.  The filter can (and should)
+test for those programs in its new() method.
+
+Filters also can define a type and priority.  These attributes are used
+to set the order filters are tested for a content-type match.  This allows
+you to have more than one filter that can work on the same content-type.
+
+If a filter calls die() then the filter is removed from the chain and will not be
+called again I<during the same run>.  Calling die when running with -S http or
+-S fs has no effect since the program is run once per document.
+
+Once a filter returns something other than undef no more filters will be
+called.  If the filter calls $filter->set_continue then processing will
+continue as if the file was not filtered.  For example, a filter can uncompress
+data and then set $filter->set_continue and let other filters process the
+document.
+
+
+This is the list of methods the filter should or may define (as specificed):
+
+=over 4
+
+=item new()  * required *
+
+This method returns either an object which provides access to the filter, or undefined
+if the filter is not to be used.
+
+The new() method is a good place to check for required modules or helper programs.
+Returning undefined prevents the filter from being included in the filter chain.
+
+The new method must return a blessed hash reference.  The only required attribute
+is B<mimetypes>.  This attribute must contain a reference to an array of regular
+expressions used for matching the content-type of the document passed in.
+
+A has of parameters is passed in -- currently the only parameter is "path"
+which contains the path to the specific filter -- not much use.
+
+Example:
+
+    sub new {
+        my ( $class, %params ) = @_;
+
+        # List of regular expressions
+        my @mimetypes = (
+            qr[application/(x-)?msword],
+            qr[application/worddoc],
+        );
+
+        return bless {
+            mimetypes   => \@mimetypes,
+
+            # Optional settings
+            path        => $params{path} || $class,
+            priority    => 20,
+            type        => 2,
+        };
+    }
+
+The attribute "mimetypes" returns an array reference to a list of regular
+expressions.  Those patterns are matched against each document's content type.
+
+=item filter() * required *
+
+This is the function that does the work of converting a document from one content type
+to another.  The function is passed the document object.  See document object methods
+listed below for what methods may be called on a document.
+
+The function can return undefined (or any false value) to indicate that the
+filter did not want to process the document.  Other filters will then be tested for
+a content type match.
+
+If the document is filtered then the filter must set the new document's content
+type (if it changed) and return either a file name where the document can be found or
+a reference to a scalar containing the document.
+
+=item type()
+
+Returns a number. Filters are sorted (for processing in a specific order)
+and this number is simply the primary key used in sorting.  If not specified
+the filter's type used for sorting is 2.
+
+This is an optional method.  You can also set the type in your new() constructor
+as shown above.
+
+
+=item priority()
+
+Returns a number.  Filters are sorted (for processing in a specific order)
+and this number is simply the secondary key used in sorting.  If not specified
+the filter's priority is 50.
+
+This is an optional method.  You can also set the priority in your new() constructor
+as shown above.
+
+
+=back
+
+Again, the point of the type() and priority() methods is to allow setting the sort order
+of the filters.  Useful if you have two filters that for filtering similar content-types,
+but prefer to use one over the other.  Neither are required.
+
+Here's a module to index MS Word documents using the program "catdoc":
+
+    package SWISH::Filters::Doc2txt;
+    use vars qw/ @ISA $VERSION /;
+
+    $VERSION = '0.01';
+    @ISA = ('SWISH::Filter');
+
+    sub new {
+        my ( $pack, %params ) = @_;
+
+        my $self = bless {
+            name => $params{name} || $pack,
+        }, $pack;
+
+
+        # check for helpers
+        for my $prog ( qw/ catdoc / ) {
+            my $path = $SELF->find_binary( $prog );
+            unless ( $path ) {
+                $self->mywarn("Can not use Filter $pack -- need to install $prog");
+                return;
+            }
+            $self->{$prog} = $path;
+        }
+
+        return $self;
+
+    }
+
+
+
+    sub filter {
+    my ( $self, $document ) = @_;
+
+        # Do we care about this document?
+        return unless $document->content_type =~ m!application/msword!;
+
+        # We need a file name to pass to the catdoc program
+        my $file = $document->fetch_filename;
+
+
+        # Grab output from running program
+        my $content = $document->run_program( $self->{catdoc}, $file );
+
+        return unless $content;
+
+        # update the document's content type
+        $document->set_content_type( 'text/plain' );
+
+        # return the document
+        return \$content;
+    }
+    1;
+
+=cut
+
 
 #=========================================================================
 package SWISH::Filter::document;
@@ -750,9 +727,7 @@ use strict;
 use File::Temp;
 use Symbol;
 
-use vars '$AUTOLOAD', '@ISA';
-
-@ISA = 'SWISH::Filter';
+use vars '$AUTOLOAD';
 
 =head1 SWISH::Filter::Document Methods
 
@@ -783,17 +758,17 @@ sub new {
     return unless $doc && $content_type;
 
     my $self = bless {}, $class;
-    
+
     if ( ref $doc ) {
         unless ( length $$doc ) {
             warn "Empty document passed to filter\n";
             return;
-	}
+        }
 
         die "Must supply a content type when passing in a reference to a document\n"
             unless $content_type;
 
-        
+
     } else {
 
         unless ( -r $doc ) {
@@ -802,17 +777,20 @@ sub new {
         }
     }
 
-    $self->set_content_type( $content_type );            
+    $self->set_content_type( $content_type );
 
     $self->{cur_doc} = $doc;
 
     return $self;
-}    
+}
+
+# Clean up any temporary files
 
 sub DESTROY {
     my $self = shift;
     $self->remove_temp_file;
 }
+
 
 sub cur_doc {
     my ( $self, $doc_ref ) = @_;
@@ -839,19 +817,20 @@ sub dump_filters_used {
 
     local $SIG{__WARN__};
     warn "\nFinal Content type for ", $self->name, " is ", $self->content_type, "\n";
-    
+
     unless ( $used ) {
         warn "  *No filters were used\n";
         return;
     }
-    
+
     warn "  >Filter $_->{name} converted from [$_->{start_content_type}] to [$_->{end_content_type}]\n"
         for @$used;
-}    
+}
 
 =head2 Methods used by end-users and filter authors
 
 =over 4
+
 
 =item $doc_ref = $doc_object->fetch_doc_reference;
 
@@ -904,6 +883,34 @@ Example:
 
 sub content_type {
     return $_[0]->{content_type} || '';
+}
+
+=item $type = $doc_object->swish_parser_type
+
+Returns a parser type based on the content type
+
+=cut
+
+# Map content types to swish-e parsers.
+
+my %swish_parser_types = (
+    'text/html'     => 'HTML*',
+    'text/xml'      => 'XML*',
+    'text/plain'    => 'TXT*',
+);
+
+
+sub swish_parser_type {
+    my $self = shift;
+
+    my $content_type = $self->content_type || return;
+
+    for ( keys %swish_parser_types ) {
+        return $swish_parser_types{$_} if
+            $content_type =~ /^\Q$_/;
+    }
+
+    return;
 }
 
 =item $doc_object->is_binary
@@ -999,7 +1006,7 @@ sub read_file {
     # Remove the temporary file, if one was created.
     $self->remove_temp_file;
 
-    
+
     return $self->{cur_doc};
 }
 
@@ -1032,7 +1039,7 @@ sub create_temp_file {
 Fetches the name of the current file.  This is useful for printing out the
 name of the file in an error message.
 This is the name passed in to the SWISH::Filter->convert method.
-It is optional and thus may not always be set.  
+It is optional and thus may not always be set.
 
     my $name = $doc_object->name || 'Unknown name';
     warn "File '$name': failed to convert -- file may be corrupt\n";
@@ -1056,7 +1063,6 @@ Example:
 
 =cut
 
-
 sub AUTOLOAD {
     my ( $self, $newval ) = @_;
     no strict 'refs';
@@ -1074,16 +1080,266 @@ sub AUTOLOAD {
        my $attr_name=$1;
        *{$AUTOLOAD} = sub { return $_[0]->{$attr_name} };
        return $self->{$attr_name};
-    }  
+    }
 
     die "No such method: $AUTOLOAD\n";
 }
 
 
-# These methods really belong in SWISH::Filter, but geneally don't make sense without
-# a SWISH::Filter::Document object.
 
-=item $doc_ref = $filter->run_program( $program, @args );
+#======================================================================================
+# Default methods for the filters
+package SWISH::Filters::_BASE;
+use strict;
+
+
+=head1 SWISH::Filters::_BASE
+
+Each filter is a subclass of SWISH::Filters::_BASE.  A number of methods
+are available by default (and some can be overridden).  Others are useful
+when writing your new() constructor.
+
+=over 4
+
+=item $self->type
+
+This method fetches the type of the filter.  The value returned sets the
+primary sort key for sorting the filters.  You can override this in your
+filter, or just set it as an attribute in your object.  The default is 2.
+
+The idea of the "type" is to create groups of filters, if needed.
+For example, you might have a set of filters that are used for uncompressing
+some documents before passing on to another group for filtering.
+
+=cut
+
+sub type { 2 };
+
+=item $self->priority
+
+This method fetches the priority of the filter.  The value returned sets the
+secondary sort key for sorting the filters.  You can override this in your
+filter, or just set it as an attribute in your object.  The default method
+returns 50.
+
+The priority is useful if you have multiple filters for the same content type that
+use different methods for filtering (say one uses wvWare and another uses catdoc for
+filtering MS Word files).  You might give the wvWare filter a lower priority number
+so it runs before the catdoc filter if both wvWare AND catdoc happen to be installed
+at the same time.
+
+=cut
+
+sub priority { 50 };  # default priority
+
+=item @types = $self->mimetypes
+
+Returns the list of mimetypes (as regular expressions) set for the filter.
+
+=cut
+
+
+sub mimetypes {
+    my $self = shift;
+    die "Filter [$self] failed to set 'mimetypes' in new() constructor\n"
+        if ! $self->{mimetypes};
+
+    die "Filter [$self] 'mimetypes' entry is not an array reference\n"
+        unless ref $self->{mimetypes} eq 'ARRAY';
+
+    return @{ $self->{mimetypes} };
+}
+
+=item $pattern = $self->can_filter_mimetype( $content_type )
+
+Returns true if passed in content type matches one of the filter's mimetypes
+Returns the pattern that matched.
+
+=cut
+
+sub can_filter_mimetype {
+    my ( $self, $content_type ) = @_;
+
+    die "Must supply content_type to can_filter_mimetype()" unless $content_type;
+    for my $pattern ( $self->mimetypes ) {
+        return $pattern if $content_type =~ /$pattern/;
+    }
+    return;
+}
+
+=item mywarn( $message )
+
+method for printing out message if debugging is available
+
+=cut
+
+sub mywarn {
+    my $self = shift;
+
+    print STDERR "Filter: $self: ", @_,"\n" if $ENV{FILTER_DEBUG};
+}
+
+=item $boolean = $self->set_programs( @program_list );
+
+Returns true if all the programs listed in @program_list are found
+and can be executed as the current user.  Creates a method for each
+program with the "run_" prefix.  Returns false is ANY program cannot
+be found.
+
+Actually, it returns $self, so you can make it the last statement in
+your constructor.
+
+So in your constructor you might do:
+
+    return $self->set_programs( qw/ pdftotext pdfinfo / );
+
+Then in your filter() method:
+
+    my $content = $self->run_pdfinfo( $doc->fetch_filename, [options] );
+
+=cut
+
+sub set_programs {
+    my ($self, @progs ) = @_;
+
+    for my $prog ( @progs ) {
+        my $path = $self->find_binary( $prog );
+        unless ( $path ) {
+            $self->mywarn("Can not use Filter: failed to find $prog.  Maybe need to install?");
+            return;
+        }
+
+        no strict 'refs';
+        *{"run_$prog"} = sub { 
+            my $self = shift;
+            return $self->run_program( $path, @_ ); # closure
+        };
+    }
+
+    return $self;
+}
+
+
+=item $path = $self->find_binary( $prog );
+
+Use in a filter's new() method to test for a necesary program located in $PATH.
+Returns the path to the program or undefined if not found or does not pass the -x
+file test.
+
+=cut
+
+use Config;
+my @path_segments;
+
+sub find_binary {
+    my ( $self, $prog ) = @_;
+
+    unless ( @path_segments ) {
+        my $path_sep = $Config{path_sep} || ':';
+
+        @path_segments = split /\Q$path_sep/, $ENV{PATH};
+
+        if ( my $libexecdir = get_libexec() ) {
+            push @path_segments, $libexecdir;
+        }
+    }
+
+    $self->mywarn("Find path of [$prog] in " . join ':', @path_segments);
+
+
+    for ( @path_segments ) {
+        my $path = "$_/$prog";
+
+        # For buggy Windows98 that accepts forward slashes if the filename isn't too long
+        $path =~ s[/][\\]g if $^O =~ /Win32/;
+
+        if ( -x $path ) {
+
+            $self->mywarn(" * Found program at: [$path]\n");
+            return $path;
+        }
+        $self->mywarn("  Not found at path [$path]" );
+
+
+        # ok, try Windows extenstions
+        if ( $^O =~ /Win32/ ) {
+            for my $extension ( qw/ exe bat / ) {
+                if ( -x "$path.$extension" ) {
+                    $self->mywarn(" * Found program at: [$path.$extension]\n");
+                    return "$path.$extension";
+                }
+                $self->mywarn("  Not found at path [$path.$extension]" );
+            }
+        }
+
+    }
+    return;
+}
+
+# Try and return libexecdir in case programs are installed there (the case with Windows)
+# Assumes that we are running from libexecdir or bindir
+# The other option under Windows would be to fetch libexecdir from the Windows registry,
+# but that could break if a new (another) swish install was done since the registry
+# would then point to the new install location.
+
+sub get_libexec {
+
+   return '@@mylibexecdir@@';  # the below isn't robust, so set at install time
+
+   return unless $FindBin::Bin;
+
+   # Look for something we expect in libexecdir.
+
+   # Are we in $libexecdir already (like with swishspider or spider.pl)
+   return $FindBin::Bin if -e "$FindBin::Bin/spider.pl";
+
+   # Are we in $prefix/bin? (swish-filter-test)
+   return "$FindBin::Bin/../lib/swish-e" if -e "$FindBin::Bin/../lib/swish-e/spider.pl";
+
+
+   return;
+
+
+}
+
+=item $bool = $self->use_modules( @module_list );
+
+Attempts to load each of the module listed and calls its import() method.
+
+Use to test and load required modules within a filter without aborting.
+
+    return unless $self->use_modules( qw/ Spreadsheet::ParseExcel  HTML::Entities / );
+
+A warning message is displayed if the FILTER_DEBUG environment variable is true.
+Returns $self if no error.
+
+=back
+
+=cut
+
+sub use_modules {
+    my ( $self, @modules ) = @_;
+
+    for my $mod ( @modules ) {
+        $self->mywarn("trying to load [$mod]");
+
+        eval { eval "require $mod" or die "$!\n" };
+
+        if ( $@ ) {
+            my $caller = caller();
+            $self->mywarn("Can not use Filter $caller -- need to install $mod: $@");
+            return;
+        }
+
+        $self->mywarn(" ** Loaded $mod **");
+
+        # Export back to caller
+        $mod->export_to_level( 1 ) if $mod->can('export_to_level');
+    }
+    return $self;
+}
+
+=item $doc_ref = $self->run_program( $program, @args );
 
 Runs $program with @args.  Must pass in @args.
 
@@ -1095,7 +1351,7 @@ Returns a reference to a scalar containing the output from your program, or dies
 
 This method is intended to read output from a program that converts one format into text.
 The output is read back in text mode -- on systems like Windows this means \r\n (CRLF) will
-be convertet to \n. 
+be convertet to \n.
 
 =cut
 
@@ -1133,7 +1389,7 @@ sub real_fork {
     my ( $self, @args ) = @_;
 
 
-    # Run swish 
+    # Run swish
     my $fh = gensym;
     my $pid = open( $fh, '-|' );
 
@@ -1159,7 +1415,7 @@ sub windows_fork {
 
     my @command = map { s/"/\\"/g; qq["$_"] }  @args;
 
-     
+
     my $pid = IPC::Open2::open2($rdrfh, $wtrfh, @command );
 
     # IPC::Open3 uses binmode for some reason (5.6.1)
@@ -1173,126 +1429,13 @@ sub windows_fork {
     return $rdrfh;
 }
 
+
 =back
 
 =cut
 
 1;
 __END__
-
-=head1 WRITING FILTERS
-
-Filters are standard perl modules that are installed into the SWISH::Filters name space.
-Filters are not complicated -- see the existing filters for examples.
-
-Filters are linked together in a chain, and have a type and priority that set the order of the
-filter in the chain.  Filters check the content type of the document to see if they should process
-the document.  If the filter processes the document it returns either a file name or a reference to a scalar.
-Normally a reference to a scalar of the converted document should be returned.
-If the filter does not process the document then it returns undef and the next filter in the chain has a chance
-to process the document.
-
-If a filter calls die then the filter is removed from the chain and will not be
-called again I<during the same run>.  Calling die when running with -S http or -S fs has no effect since the
-program is run once per document.
-
-Once a filter returns something other than undef no more filters will be called.  If the filter calls $filter->set_continue
-then processing will continue as if the file was not filtered.  For example, a filter can uncompress data and then
-set $filter->set_continue and let other filters process the document.
-
-
-This is the list of methods the filter should or may define (as specificed):
-
-=over 4
-
-=item new()  * required *
-
-This method returns either an object which provides access to the filter, or undefined
-if the filter is not to be used.
-
-The new() method is a good place to check for required modules or helper programs.
-Returning undefined prevents the filter from being included in the filter chain.
-
-=item filter() * required *
-
-This is the function that does the work of converting a document from one content type
-to another.
-
-=item type()
-
-Returns a number from 1 to 10.  Filters are sorted (for processing in a specific order)
-and this number is simply the primary key used in sorting.  If not specified
-the filter's type used for sorting is 2.
-
-
-=item priority()
-
-Returns a number from 1 to 10.  Filters are sorted (for processing in a specific order)
-and this number is simply the primary key used in sorting.  If not specified
-the filter's priority is 50.
-
-=back
-
-Again, the point of the type() and priority() methods is to allow setting the sort order
-of the filters.  Useful if you have two filters that for filtering similar content-types,
-but prefer to use one over the other.
-
-Here's a module to index MS Word documents using the program "catdoc":
-
-    package SWISH::Filters::Doc2txt;
-    use vars qw/ @ISA $VERSION /;
-
-    $VERSION = '0.01';
-    @ISA = ('SWISH::Filter');
-
-    sub new {
-        my ( $pack, %params ) = @_;
-
-        my $self = bless {
-            name => $params{name} || $pack,
-        }, $pack;
-
-
-        # check for helpers
-        for my $prog ( qw/ catdoc / ) {
-            my $path = $SELF->find_binary( $prog );
-            unless ( $path ) {
-                $self->mywarn("Can not use Filter $pack -- need to install $prog");
-                return;
-            }
-            $self->{$prog} = $path;
-        }
-
-        return $self;
-
-    }
-
-
-
-    sub filter {
-    my ( $self, $document ) = @_;
-
-        # Do we care about this document?
-        return unless $document->content_type =~ m!application/msword!;
-
-        # We need a file name to pass to the catdoc program
-        my $file = $document->fetch_filename;
-
-
-        # Grab output from running program
-        my $content = $document->run_program( $self->{catdoc}, $file );
-
-        return unless $content;
-
-        # update the document's content type
-        $document->set_content_type( 'text/plain' );
-
-        # return the document
-        return \$content;
-    }
-    1;
-
-
 
 
 =head1 TESTING
@@ -1310,7 +1453,7 @@ Please contact the Swish-e discussion list.  http://swish-e.org
 =head1 Bugs, todo items, and other notes
 
 I wonder if the filters shouldn't just register the content types they handle
-instead of checking the content type.  Would want to be able to register regular 
+instead of checking the content type.  Would want to be able to register regular
 expressions.
 
 =head1 AUTHOR

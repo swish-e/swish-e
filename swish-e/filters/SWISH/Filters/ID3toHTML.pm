@@ -17,7 +17,7 @@ $VERSION = '0.03';
 my %id3v2_tags = (
     TIT2 => 'song',            # 4.2.1 TIT2 Title/songname/content description
     TYER => 'year',            # 4.2.1 TYER Year
-    TRCK => 'track',           # 4.2.1 TRCK Track number/Position in set 
+    TRCK => 'track',           # 4.2.1 TRCK Track number/Position in set
     TCOP => 'copyright',       # 4.2.1 TCOP Copyright message
                                # * WinAMP seems to prepend a (C) to this value.
 
@@ -41,37 +41,27 @@ my %id3v2_tags = (
 
 
 sub new {
-    my ( $pack, %params ) = @_;
+    my ( $class ) = @_;
 
     my $self = bless {
-        name => $params{name} || $pack,
-    }, $pack;
-
-
-    return unless $self->use_modules( qw/ MP3::Tag  HTML::Entities / );
-
-    return $self;
-
+        mimetypes   => [ qr!audio/mpeg!  ],
+    }, $class;
+    return $self->use_modules( qw/ MP3::Tag  HTML::Entities / );
 }
-
-sub name { $_->{name} || 'unknown' };
 
 
 sub filter {
-    my ( $self, $filter) = @_;
-
-    # Do we care about this document?
-    return unless $filter->content_type =~ m!audio/mpeg!;
+    my ( $self, $doc ) = @_;
 
     # We need a file name to pass to the conversion function
-    my $file = $filter->fetch_filename;
+    my $file = $doc->fetch_filename;
 
     my $content_ref = get_id3_content_ref( $file );
     return unless $content_ref;
 
     # update the document's content type
-    $filter->set_content_type( 'text/html' );
-    
+    $doc->set_content_type( 'text/html' );
+
     # If filtered must return either a reference to the doc or a pathname.
     return \$content_ref;
 }
@@ -80,7 +70,7 @@ sub filter {
 sub get_id3_content_ref {
     my $filename = shift;
     my $mp3 = MP3::Tag->new($filename);
-    
+
     # return unless we have a file with tags
     return format_empty_doc( $filename )
         unless ref $mp3 && $mp3->get_tags();
@@ -96,7 +86,7 @@ sub get_id3_content_ref {
         ? format_as_html( \%metadata )
         : format_empty_doc( $filename );
 }
-    
+
 sub get_id3v1_tags {
     my ($mp3, $metadata) = @_;
 
@@ -115,7 +105,7 @@ sub get_id3v2_tags {
     # Do we even have an ID3 v2 tag?
     return unless exists $mp3->{ID3v2};
 
-    
+
     # Get the tag and a hash of frame ids.
     my $id3v2 = $mp3->{ID3v2};
 
@@ -129,7 +119,7 @@ sub get_id3v2_tags {
 
 
         # We have a user defined frame
-        if (ref $info) { 
+        if (ref $info) {
             # $$$ We really only want COMM and WXXX
             while(my ($key,$val)=each %$info) {
 
@@ -152,7 +142,7 @@ sub get_id3v2_tags {
         }
     }
 }
-    
+
 sub format_as_html {
     my $metadata = shift;
 
@@ -191,7 +181,7 @@ sub format_empty_doc {
     my $filename = shift;
     require File::Basename;
     my $base = File::Basename::basename( $filename, '.mp3' );
-    
+
     return format_as_html( { song => $base, notag => 1 } );
 }
 
@@ -199,7 +189,7 @@ sub get_iso_lang {
     my $lang = shift;
     # Do we need to translate undocumented ID3 Lang codes to ISO?
     # 4.11.Comments
-    #   Language $xx xx xx 
+    #   Language $xx xx xx
     #   *  WinAMP may be mistaken for using "eng" instead of an ISO designator
 
     return $lang unless $lang == "eng";
@@ -227,7 +217,7 @@ Depends on two perl modules:
 
 =head1 SUPPORT
 
-Please contact the Swish-e discussion list.  
+Please contact the Swish-e discussion list.
 http://swish-e.org/
 
 =cut

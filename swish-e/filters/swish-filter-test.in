@@ -34,7 +34,7 @@ use constant ABORT => 0;
 use constant DEBUG => 1;
 use constant INFO  => 2;
 
-my ( $verbose, $show_content, @file, @url, $help, $man, $quiet, $headers, $path, $depreciated);
+my ( $verbose, $show_content, @file, @url, $help, $man, $quiet, $headers, $path, $depreciated, $mimetypes);
 
 my $skip_binary = 1;
 
@@ -43,7 +43,7 @@ my $max_chars = 1000;
 
 
 GetOptions(
-	'verbose!'   => \$verbose,  # turn on INFO messages
+        'verbose!'   => \$verbose,  # turn on INFO messages
         'content!'   => \$show_content,
         'quiet'      => \$quiet,
         'lines=i'    => \$lines,
@@ -52,7 +52,8 @@ GetOptions(
         'headers'    => \$headers,
         'skip_binary!' => \$skip_binary,
         'path'       => \$path,
-	'depreciated'=> \$depreciated,
+        'depreciated'=> \$depreciated,
+        'mimetypes'  => \$mimetypes,
 
 ) || pod2usage(2);
 pod2usage( -verbose => 1 ) if $help;
@@ -64,11 +65,12 @@ if ( $path ) {
 }
 
 
+
 pod2usage(
     -verbose => 0,
     -message => "Must specify a file or URL",
-    -exitvar => 1, 
-) unless @ARGV;
+    -exitvar => 1,
+) unless @ARGV or $mimetypes;
 
 
 
@@ -77,6 +79,18 @@ $ENV{FILTER_DEBUG} = 1 if $verbose;  # used by SWISH::Filter
 msg(INFO, "SWISH::Filter found at [%s]\n", $INC{'SWISH/Filter.pm'} );
 
 my $filter = SWISH::Filter->new;
+
+if ( $mimetypes ) {
+    my @filters = $filter->filter_list;
+    print "Mimetypes:\n\n";
+    for my $filter ( @filters ) {
+        print "  $filter:\n";
+        for my $pattern ( $filter->mimetypes ) {
+            print"     $pattern\n";
+        }
+        print "\n";
+    }
+}
 
 
 my $return = 0;
@@ -125,7 +139,7 @@ EOF
 
     if ( my $filters_used = $doc->filters_used ) {
         for my $filter ( @$filters_used ) {
-	    msg( DEBUG, "   >Filter used: $filter->{name} ( $filter->{start_content_type} -> $filter->{end_content_type} )" );
+            msg( DEBUG, "   >Filter used: $filter->{name} ( $filter->{start_content_type} -> $filter->{end_content_type} )" );
          }
     }
 
@@ -223,13 +237,13 @@ sub fetch_url {
 
     eval { require LWP::UserAgent };
     die "LWP::UserAgent is required to fetch a URL\n$@\n" if $@;
-    
+
     my $ua = LWP::UserAgent->new;
     my $request = HTTP::Request->new('GET', $url );
     my $response = $ua->request( $request );
     die sprintf "Error while getting '%s'.  Server returned %s.", $response->request->uri,$response->status_line
         unless $response->is_success;
-        
+
     my $content = $response->content;
     my $content_type = $response->content_type;
 
@@ -237,8 +251,8 @@ sub fetch_url {
         document => \$content,
         content_type => $content_type,
     );
-}                       
-                              
+}
+
 
 
 sub msg {
@@ -332,7 +346,7 @@ The default is to not output content from binary files.  -noskip_binary will dis
 Prints the headers used by swish-e when reading documents with -S prog.  This can be used to
 filter documents directly to swish-e:
 
- swish-filter-test -headers -content http://localhost/ test.pdf | swish-e -S prog -i stdin -v1  
+ swish-filter-test -headers -content http://localhost/ test.pdf | swish-e -S prog -i stdin -v1
 
 =item B<-path>
 
