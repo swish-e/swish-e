@@ -59,7 +59,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 
     /* this should probably be in file.c so filters.c can check, too */
     /* note this won't catch errors in a shebang line, of course */
-    
+
     if (stat(cmd, &stbuf))
         progerr("External program '%s': %s", cmd, strerror( errno ) );
 
@@ -218,8 +218,8 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
                 do_index_file(sw, fprop);
 
-                if ( has_filter )
-                    unlink( fprop->work_path );
+                if ( has_filter && remove( fprop->work_path ) )
+                    printf("Error removing temporary file '%s': %s\n", fprop->work_path, strerror( errno ) );
 
                 free_file_properties(fprop);
                 efree(real_path);
