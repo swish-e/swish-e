@@ -1058,7 +1058,7 @@ RESULT *rp, *rp2, *tmp;
 int res, wordlen;
 unsigned hashval;
 long offset,dataoffset=0L,nextword=0L,nextposmetaname;
-char *p;
+char *p,*q,*r;
 struct file *fi=NULL;
 int tfrequency=0;
 FILE *fp=indexf->fp;
@@ -1070,8 +1070,35 @@ FILE *fp=indexf->fp;
 	fileword = (char *) emalloc((filewordlen=MAXWORDLEN) + 1);
 
 	rp = rp2 = NULL;
-		/* First: Look for star */
-	if(!(p=strchr(word,'*'))) {
+		/* First: Look for star at the end of the word */
+	if((p=strrchr(word,'*')))
+	{
+		if(p!=word && *(p-1)=='\\')    /* Check for an escaped * */
+		{
+			p=NULL;     /* If escaped it is not a wildcard */
+		}
+		else
+		{
+				/* Check if it is at the end of the word */
+			if(p==(word+strlen(word)-1))
+			{
+				word[strlen(word)-1]='\0';
+				/* Remove the wildcard - p remains not NULL */
+			}
+			else
+			{
+				p=NULL;  /* Not at the end - Ignore */
+			}
+		}
+	}
+
+		/* Remove escapes */
+	for(q=r=word;*r;r++)
+		if(*r != '\\')
+			*q++=*r;
+    *q='\0';	
+
+	if(!p) {
 			/* If there is not a star use the hash approach ... */
 		res = 1;
 		tries = 0;
@@ -1108,15 +1135,14 @@ FILE *fp=indexf->fp;
 	}
 	else 
 	{	/* There is a star. So use the sequential approach */
-		if(p == word) 
+		if(!(len=strlen(word))) 
 		{
 			efree(fileword);
 			sw->lasterror=UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
 			return NULL;
 		}
-		len = p - word;
-		
-	        i=(int)((unsigned char)word[0]);
+
+        i=(int)((unsigned char)word[0]);
 
 		if(!indexf->offsets[i])  {
 			efree(fileword);
@@ -1132,7 +1158,7 @@ FILE *fp=indexf->fp;
 			filewordlen = wordlen + 100;
 			fileword = (char *) erealloc(fileword,filewordlen + 1);
 		}
-	        while (wordlen) {
+        while (wordlen) {
 			fread(fileword,1,wordlen,fp);
 			fileword[wordlen]='\0';
 			readlong(fp);    /* jump hash offset */
@@ -2159,13 +2185,14 @@ struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header
 {
 struct swline *searchwordlist=NULL,*temp=NULL;
 int i,j;
-char word[MAXWORDLEN];
+unsigned char *word,c,tmpstr[2];
 unsigned char PhraseDelimiter;
 unsigned char PhraseDelimiterString[2];
 	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
 	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
 	PhraseDelimiterString[1] = '\0';
 
+	word=(char *)emalloc(strlen(words)+1);   /* Jose Ruiz - Avoid possible buffer overrun */
 	for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++) 
 	{
 		/* 2000/06 Jose ruiz
@@ -2175,32 +2202,68 @@ unsigned char PhraseDelimiterString[2];
 		/* 2001/04 Jose Ruiz
 		** Added '_' . Quick fix to allow this character be present in metanames
 		*/
-		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || (words[i]=='_') || iswordchar(header,words[i]))) /* cast to int, 2/22/00 */
+		/* 2001/04  Jose Ruiz
+		** Rewritten to allow escaping characteres: \( \) \* \= \\
+		*/
+		c=(unsigned char)words[i];
+		switch(c)
 		{
-			if (words[i] == '=')
+		case '*':    /* Special case: WildCard */
+		case '_':    /* Special case: To allow '_' in metanames - Quick FIX. Must be rewritten */
+			word[j++] = c;
+			break;
+		case '(':
+		case ')':
+		case '=':    /* In the future we can also add <, > ... */
+			if (j) 
 			{
-				if (j != 0)
+				word[j] = '\0';
+					/* Convert chars ignored in words to spaces  */
+				stripIgnoreLastChars(&header,word);
+				stripIgnoreFirstChars(&header,word);
+				if(strlen(word))
 				{
-					if (words[i-1] != '\\')
-					{ 
-						word[j] = '\0';
-						searchwordlist = (struct swline *) addswline(searchwordlist, word);
-						j = 0;
-						searchwordlist = (struct swline *) addswline(searchwordlist, "=");
-					}
-					else
-					{
-						/* Needs to erase the '\' */
-						j--;
-						word[j] = tolower((unsigned char)words[i]);
-						j++;
-					}
+					searchwordlist = (struct swline *) addswline(searchwordlist, word);
+				}
+				j = 0;
+			}
+				/* Build a string with teh char */
+			tmpstr[0]=c;
+			tmpstr[1]='\0';
+			searchwordlist = (struct swline *) addswline(searchwordlist, tmpstr);
+			break;
+		case '\\':
+			if((c=(unsigned char)words[++i]))
+			{
+				if(iswordchar(header,c))
+				{
+					word[j++] = '\\';
+					word[j++] = tolower((int)((unsigned char)c));
 				}
 				else
 				{
-					searchwordlist = (struct swline *) addswline(searchwordlist, "=");
+					if (j) 
+					{
+						word[j] = '\0';
+							/* Convert chars ignored in words to spaces  */
+						stripIgnoreLastChars(&header,word);
+						stripIgnoreFirstChars(&header,word);
+						if(strlen(word))
+						{
+							searchwordlist = (struct swline *) addswline(searchwordlist, word);
+						}
+						j = 0;
+					}
 				}
 			}
+			break;
+		default: 
+				/* PhraseDelimiter must be escaped to be allowed */
+			if((c != ((unsigned char)PhraseDelimiter)) &&
+				iswordchar(header,c))
+			{
+				word[j++]=tolower((int)((unsigned char)c));
+			} 
 			else
 			{
 				if (j) 
@@ -2215,24 +2278,9 @@ unsigned char PhraseDelimiterString[2];
 					}
 					j = 0;
 				}
-				if (words[i] == '(') 
-				{
-					searchwordlist = (struct swline *) addswline(searchwordlist, "(");
-				}
-				if (words[i] == ')') 
-				{
-					searchwordlist = (struct swline *) addswline(searchwordlist, ")");
-				}
-				if (words[i] == (unsigned char)PhraseDelimiter) 
-				{
-					searchwordlist = (struct swline *) addswline(searchwordlist, PhraseDelimiterString);
-				}
+			
 			}
-		}
-		else 
-		{
-			word[j] = tolower((unsigned char)words[i]);
-			j++;
+
 		}
 	}
 	if (j) 
@@ -2257,5 +2305,6 @@ unsigned char PhraseDelimiterString[2];
 	}
 	/* End '_' fix */
 
+	efree(word);
 	return searchwordlist;
 }
