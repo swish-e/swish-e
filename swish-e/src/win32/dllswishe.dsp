@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /Yu"stdafx.h" /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "..\..\..\expat\xmlparse" /I "..\..\..\zlib" /I "..\..\..\expat\xmltok" /I "../../../pcre/include" /I "../../../libxml2/include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /D "HAVE_ZLIB" /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "." /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "..\..\..\expat\xmltok" /I "../../../pcre/include" /I "../../../zlib" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -53,7 +53,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ../../../expat/xmltok/Release/xmltok.lib ../../../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../zlib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /dll /machine:I386 /out:"dllswish-e.dll" /implib:"dllswish-e.lib"
+# ADD LINK32 kernel32.lib ../../../expat/xmltok/Debug/xmltok.lib ../../../expat/xmlparse/Debug/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../pcre/lib/libpcre.lib ../../../zlib/zlib.lib /nologo /dll /machine:I386 /out:"dllswish-e.dll" /implib:"dllswish-e.lib"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "dllswish - Win32 Debug"
@@ -70,7 +70,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "..\..\..\expat\xmlparse" /I "../../../pcre/include" /I "..\..\..\zlib" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /D "HAVE_ZLIB" /FD /GZ /c
+# ADD CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /I "." /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "..\..\..\expat\xmltok" /I "../../../pcre/include" /I "../../../zlib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "DLLSWISH_EXPORTS" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -80,7 +80,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib ../../../expat/xmltok/Release/xmltok.lib ../../../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../zlib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /dll /debug /machine:I386 /out:"tmp/dllswisheDebug/dllswish-e.dll" /pdbtype:sept
+# ADD LINK32 kernel32.lib ../../../expat/xmltok/Debug/xmltok.lib ../../../expat/xmlparse/Debug/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../pcre/lib/libpcre.lib ../../../zlib/zlib.lib /nologo /dll /debug /machine:I386 /out:"tmp/dllswisheDebug/dllswish-e.dll" /pdbtype:sept
 
 !ENDIF 
 
@@ -113,11 +113,15 @@ SOURCE=..\date_time.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\db.c
+SOURCE=..\db_native.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\db_native.c
+SOURCE=..\db_read.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_write.c
 # End Source File
 # Begin Source File
 
@@ -130,6 +134,10 @@ SOURCE=".\dllswish-e.def"
 # Begin Source File
 
 SOURCE=..\docprop.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\docprop_write.c
 # End Source File
 # Begin Source File
 
@@ -173,6 +181,10 @@ SOURCE=..\hash.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\headers.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\html.c
 # End Source File
 # Begin Source File
@@ -213,7 +225,7 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\mkstemp.c
+SOURCE=..\mkstemp.c
 # End Source File
 # Begin Source File
 
@@ -226,6 +238,10 @@ SOURCE=..\parse_conffile.c
 # Begin Source File
 
 SOURCE=..\parser.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\pre_sort.c
 # End Source File
 # Begin Source File
 
@@ -250,10 +266,6 @@ SOURCE=..\result_sort.c
 # Begin Source File
 
 SOURCE=..\search.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\search_alt.c
 # End Source File
 # Begin Source File
 
@@ -394,6 +406,10 @@ SOURCE=..\fs.h
 # Begin Source File
 
 SOURCE=..\hash.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\headers.h
 # End Source File
 # Begin Source File
 
