@@ -135,7 +135,7 @@ extern "C" {
 #define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
 #define STEMMINGPARAMNAME "Stemming"
 #define SOUNDEXPARAMNAME "Soundex"
-
+#define FILECOUNTPARAMNAME "FileCount"
 
 
 /* Headers for output, and their offsets */
