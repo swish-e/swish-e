@@ -330,7 +330,7 @@ unsigned long root_page = bt->root_page;
 int ARRAY_Put(ARRAY *b, int index, unsigned long value)
 {
 unsigned long next_page; 
-ARRAY_Page *root_page, *tmp, *prev; 
+ARRAY_Page *root_page, *tmp = NULL, *prev; 
 int i, hash, page_reads, page_index;
 
     page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
@@ -338,12 +338,12 @@ int i, hash, page_reads, page_index;
     page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
     page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
 
-	root_page = ARRAY_ReadPage(b, b->root_page);
+    root_page = ARRAY_ReadPage(b, b->root_page);
     next_page = UNPACKLONG(*(unsigned long *)ARRAY_Data(root_page, hash));
 
     prev = NULL;
     for(i = 0; i <= page_reads; i++)
-	{
+    {
         if(!next_page)
         {
             tmp = ARRAY_NewPage(b);
@@ -367,7 +367,7 @@ int i, hash, page_reads, page_index;
             ARRAY_FreePage(b,prev);
         prev = tmp;
         next_page = tmp->next;
-	}
+    }
     *(unsigned long *)ARRAY_Data(tmp,page_index) = PACKLONG(value);
     ARRAY_WritePage(b,tmp);
     ARRAY_FreePage(b,tmp);
@@ -388,12 +388,12 @@ int i, hash, page_reads, page_index;
     page_reads /= ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
     page_index = index % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeInt32);
 
-	root_page = ARRAY_ReadPage(b, b->root_page);
+    root_page = ARRAY_ReadPage(b, b->root_page);
     next_page = UNPACKLONG(*(unsigned long *)ARRAY_Data(root_page, hash));
 
     tmp = NULL;
     for(i = 0; i <= page_reads; i++)
-	{
+    {
         if(tmp)
             ARRAY_FreePage(b, tmp);
         if(!next_page)
@@ -406,7 +406,7 @@ int i, hash, page_reads, page_index;
             tmp = ARRAY_ReadPage(b, next_page);
         }
         next_page = tmp->next;
-	}
+    }
     value = UNPACKLONG(*(unsigned long *)ARRAY_Data(tmp,page_index));
     ARRAY_FreePage(b,tmp);
     ARRAY_FreePage(b,root_page);
