@@ -949,10 +949,10 @@ static unsigned long compress_property( propEntry *prop, int propID, SWISH *sw )
 
 static unsigned char *uncompress_property( SWISH *sw, PropIOBufPtr input_buf, unsigned long read_size )
 {
+    unsigned long compressed_len = read_size - sizeof( PropIOBufType ) + 1;
 #ifdef HAVE_ZLIB
     /* make sure buffer is big enough for the uncompressed data */
     PropIOBufPtr  PropBuf;
-    unsigned long compressed_len = read_size - sizeof( PropIOBufType ) + 1;
 
     if ( input_buf->propLen == 0 ) /* wasn't compressed */
     {
