@@ -1,0 +1,83 @@
+
+body {
+ /*   font-family: helvetica, arial, sans-serif; */
+	color: #000000; 
+	background-color: #ffffff;
+	margin: 1em 4em 0em 2em;
+}
+
+h1, h2, h3 {
+    color: #005A9C;
+}  
+
+
+h1.banner {
+    text-align: center;
+    color: blue;
+}
+
+
+pre { 
+     	font-family: courier new, courier, monospace;
+      	color: #000000;
+        /* these will screw up Netscape 4.08 */
+        /* 	border: solid; */
+        /*  border-color: white white white blue; */
+        /* border-left: dashed red; */
+    
+    }
+
+code { 
+     	font-family: courier new, courier, monospace;
+     	/* font-size: 100%; */
+    }
+
+div.footer { 
+	align: center;
+	padding: .25em;
+	font-size: 10pt;
+}
+    
+
+div.notice { 
+	align: center;
+	padding: .25em; 
+	border: dashed green;
+}
+
+div.ad { 
+	padding: .25em; 
+	margin: .25em;
+	border: dashed red;
+      	color: #000000;
+}
+
+div.navbar { 
+	align: center;
+	padding: .25em; 
+	border: thin dashed blue;
+      	color: blue;
+}
+
+div.navbar {
+    text-align: center;
+}
+
+div.navbar a {
+    text-decoration: none;
+    font-family: helvetica, arial, sans-serif;
+}
+
+
+div.toc a {
+    text-decoration: none;
+}
+
+
+div.search { 
+	text-align: center;
+	padding: .25em; 
+	#border: thin dashed blue;
+    #  	color: blue;
+}
+

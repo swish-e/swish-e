@@ -1,0 +1,440 @@
+=head1 NAME
+
+SWISH-RUN - Running Swish and Command Line Switches
+
+=head1 OVERVIEW
+
+The SWISH-E program is controlled by command line arguments (called I<switches>).  Often, SWISH-E
+is run manually from a shell (command prompt), or from a program such as a CGI script that passes
+the command line arguments to swish.
+
+Note: A number of the command line switches may be specified in the SWISH-E configuration file specified
+with the C<-c> command line argument.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for a complete description
+of available configuration file directives.
+
+There are two basic operating modes of SWISH-E: indexing and searching.  There are command line arguments
+that are unique to each mode, and others that apply to both (yet may have different meaning depending on
+the operating mode).  These command line arguments are listed below, grouped by:
+
+L<INDEXING|/"INDEXING> -- describes the command line arguments used while indexing.
+
+L<SEARCHING|/"SEARCHING> -- lists the command line arguments used while searching.
+
+L<OTHER SWITCHES|/"OTHER SWITCHES> -- lists switches that don't apply to searching or indexing.
+
+Beginning with SWISH-E version 2.1, you may embed the SWISH-E search engine into your applications.  Please
+see L<SWISH-LIBRARY|SWISH-LIBRARY>.
+
+
+=head1 INDEXING
+
+Swish indexing is initiated by passing I<command line arguments> to swish.
+The command line arguments used for I<searching> are described
+in L<SEARCHING|/"SEARCHING>.  Also, see L<SWISH-SEARCH|SWISH-SEARCH> for examples of searching with SWISH-E.
+
+SWISH-E usage:
+
+    swish-e [-i dir file ... ] [-c file] [-f file] [-l] [-v (num)] [-S method(fs)]
+
+The C<-h> switch (help) will list the available SWISH-E command line arguments:
+
+    swish-e -h
+
+Typically, most if not all indexing settings are placed in a configuration file
+(specified with the C<-c> switch).  Once the configuration file is setup indexing is
+initiated as:
+
+    swish-e -c /path/to/config/file
+
+See L<SWISH-CONFIG|SWISH-CONFIG> for information on the configuration file.
+
+Security Note: If the swish binary is named C<swish-search> then swish will not allow any operation that
+would cause swish to write to the index file.
+
+
+=head2 Indexing Command Line Arguments
+
+=over 4
+
+=item -i *directories and/or files* (input file)
+
+This specifies the directories and/or files to index. Directories will be indexed recursively.
+This is typically specified in the L<configuration file|SWISH-CONFIG> with the B<IndexDir> directive
+instead of on the command line.  Use of this switch overrides the configuration file settings.
+
+
+=item -S [fs|http] (indexing mode)
+
+This specifies the method to use for indexing. Can be either C<fs> for local indexing (the default),
+or C<http> for spidering.
+
+Currently, there are a number of special L<configuration file|SWISH-CONFIG> directives that
+control the HTTP indexing method.
+
+=item -f *indexfile* (index file)
+
+If you are indexing, this specifies the file to save the generated index in,
+and you can only specify one file.  See also B<IndexFile> in the L<configuration file|SWISH-CONFIG>.
+
+If you are searching, this specifies the index
+files (one or more) to search from. The default index file is index.swish-e in the current directory.
+
+=item -c *file ...* (configuration files)
+
+Specify the configuration file(s) to use for indexing.  This file contains many directives that
+control how SWISH-E proceeds.
+See L<SWISH-CONFIG|SWISH-CONFIG> for a complete listing of configuration file directives.
+
+
+
+Example:
+
+    swish-e -c docs.conf
+
+
+If you specify a directory to index, an index file, or the verbose option on the command-line,
+these values will override any specified in the configuration file.
+
+You can specify multiple configuration files.  For example, you may have one configuration file
+that has common site-wide settings, and another for a specific index.
+
+Examples:
+
+    1) swish-e -c swish-e.conf
+    2) swish-e -i /usr/local/www -f index.swish-e -v -c swish-e.conf
+    3) swish-e -c swish-e.conf stopwords.conf
+
+=over 3
+
+=item 1
+
+The settings in the configuration file will be used to index a site.
+
+=item 2
+
+These command-line options will override anything in the configuration file.
+
+=item 3
+
+The variables in swish-e.conf will be read, then the variable in stopwords.conf will be read.
+Note that if the same variables occur in both files, older values may be written over.
+
+=back
+
+=item -e (economy mode)
+
+For large sites indexing may require more RAM than is available.  The C<-e> switch tells swish to use
+disk space to store data structures while indexing, saving memory.  This option is recommended if
+swish uses so much RAM that the computer begins to swap excessively.
+
+=item -l (symbolic links)
+
+Specifying this option tells swish to follow symbolic links when indexing.
+The configuration file value B<FollowSymLinks> will override the command-line value.
+
+
+=item -v [0|1|2|3] (verbosity level)
+
+The C<-v> option can take a numerical value from 0 to 3.
+Specify 0 for completely silent operation and 3 for detailed reports.
+If no value is given then 3 is assumed.  See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
+
+=back
+
+=head1 SEARCHING
+
+The following command line arguments are available when searching with SWISH-E.  These switches are used
+to select the index to search, what fields to search, and how and what to print as results.
+
+This section just lists the available command line arguments and their usage.
+Please see L<SWISH-SEARCH|SWISH-SEARCH> for detailed searching instructions.
+
+B<Warning>: If using SWISH-E via a CGI interface, please see L<CGI Danger!|SWISH-SEARCH/"CGI Danger!">
+
+Security Note: If the swish binary is named C<swish-search> then swish will not allow any operation that
+would cause swish to write to the index file.
+
+=head2 Searching Command Line Arguments
+
+=over 4
+
+=item -w *word1 word2 ...*  (query words)
+
+This performs a case-insensitive search using a number of keywords.
+If no index file to search is specified (via the C<-f> switch), swish-e will try to search a file called
+index.swish-e in the current directory.
+
+    swish-e -w word
+
+Phrase searching is accomplished by placing the quote delimiter (a double-quote by default) around
+the search phrase.
+
+    swish-e -w 'word or "this phrase"'
+
+Search would should be protected from the shell by quotes.  Typically, this is single quotes when
+running under Unix.
+
+Under Windows F<command.com> you may not need to use quotes, but you will need to
+backslash the quotes used to delimit phrases:
+
+    swish-e -w \"a phrase\"
+
+The phrase delimiter can be set with the C<-P> switch.
+
+The search may be limited to a I<MetaName>.
+For example:
+
+    swish-e -w meta1=(foo or baz)
+
+will only search within the B<meta1> tag.
+
+Please see L<SWISH-SEARCH|SWISH-SEARCH> for a description of MetaNames.
+
+
+
+=item -f *file1 file2 ...* (index files)
+
+Specifies the index file(s) used while searching.  More than one file may be listed, and each
+file will be searched.  If no C<-f> switch is specified then the file F<index.swish-e> in the current
+directory will be used as the index file.
+
+=item -m *number* (max results)
+
+While searching, this specifies the maximum number of results to return.
+The default is to return all results.
+
+This switch is often used in conjunction with the C<-b> switch to return results one
+page at a time (strongly recommended for large indexes).
+
+=item -b *number* (beginning result)
+
+Sets the I<begining> search result to return (records are numbered from 1).  This switch can be used
+with the C<-m> switch to return results in groups or pages.
+
+Example:
+
+    swish-e -w 'word' -b 1 -m 20    # first 'page'
+    swish-e -w 'word' -b 21 -m 20   # second 'page'
+
+=item -t HBthec (context searching)
+
+The C<-t> option allows you to search for words that exist only
+in specific HTML tags. Each character in the string you
+specify in the argument to this option represents a
+different tag in which to search for the word. H means all HEAD
+tags, B stands for BODY tags, t is all TITLE tags, h is H1
+to H6 (header) tags, e is emphasized tags (this may be B, I,
+EM, or STRONG), and c is HTML comment tags
+
+search only in header (<H*>) tags
+
+    swish-c -w word -t h
+
+=item -d *string* (delimiter)
+
+Set the delimiter used when printing results.  By default, SWISH-E separates the output fields by a
+space, and places double-quotes around the document title.  This output may be hard to parse, so it
+is recommended to use C<-d> to specify a character or string used as a separator between fields.
+
+The string C<dq> means "double-quotes".
+
+    swish-e -w word -d ,    # single char
+    swish-e -w word -d ::   # string
+    swish-e -w word -d '"'  # double quotes under Unix
+    swish-e -w word -d \"   # double quotes under Windows
+    swish-e -w word -d dq   # double quotes
+
+The following control characters may also be specified: C<\t \r \n \f>.
+
+=item -P *character*
+
+Sets the delimiter used for phrase searches.  The default is double quotes C<">.
+
+Some examples under bash: (be careful about you shell metacharacters)
+
+    swish-e -P ^ -w 'title=^words in a phrase^'
+    swish-e -P \' -w "title='words in a pharse"'
+
+
+=item -p *property1 property2 ...*  (display properties)
+
+This causes swish to print the listed property in the search results.  The properties
+are returned in the order they are listed in the C<-p> argument.
+
+Properties are defined by the B<ProperNames> directive in the configuration file (see L<SWISH-CONFIG|SWISH-CONFIG>)
+and properties must also be defined in B<MetaNames>.  Swish stores the text of the meta name as a I<property>, and
+then will return this text while searching if this option is used.
+
+This feature is very useful for returning data included in a source documnet without having to re-read
+the source document while searching.  For example, this could be used to return a short document description.
+See also see B<Document Summeries> in L<SWISH-CONFIG|SWISH-CONFIG>.
+
+To return the subject and category properties while indexing.
+
+    swish-e -w word -p subject category
+
+NOTE: it is necessary to have indexed with the proper
+PropertyNames directive in the user config file in order to
+use this option.
+
+=item -s *property [asc|desc] ...*  (sort)
+
+Normally, search results are printed out in order of relevancy, with the most relevant listed first.
+The C<-s> sort switch allows you to sort results in order of a specified I<property>, where a I<property>
+was defined using the B<MetaNames> and B<PropertyNames> directives during indexing
+(see L<SWISH-CONFIG|SWISH-CONFIG>).
+
+The string passed can include the strings C<asc> and C<desc> to specify the sort order, and more than
+one property may be specified to sort on more than one key.
+
+Examples:
+
+sort by title property ascending order
+
+    -s title
+
+sort descending by title, ascending by name
+
+    -s title desc name asc
+
+=item -x (extra output)
+
+The C<-x> switch causes SWISH-E to output extra information with each result.
+
+Normally, swish reports on a single line (see the C<-d> delimiter switch):
+
+    rank
+    file name (or url)
+    title from document
+    file size
+    properties (if -p used)
+
+With C<-x> swish reports:
+
+    rank
+    the index file (useful when searching multiple indexes)
+    File Name (or url)
+    title from document
+    document summary (xxx to be announced)
+    offset into file (to handle multiple documents within a single file)
+    file size
+    properties (if -p used)
+
+=item -v 4 (verbosity level)
+
+If set to C<-v 4> while searching, SWISH-E will print additional diagnostic information
+in the header of the results.
+
+=back
+
+
+
+
+=head1 OTHER SWITCHES
+
+=over 4
+
+=item -V (version)
+
+Print the current version.
+
+=item -k *letter* (print out keywords)
+
+The C<-k> switch is used for testing and will cause swish to print out all keywords
+in the index beginning with that letter.  You may enter C<-k '*'> to generate a list of all words indexed
+by swish.
+
+=item -D *index file*  (debug index)
+
+This option is provided so you can check the word, file, and maintenance information in index files.
+You can specify multiple files to decode.  Use with C<-v 4> for even more output.  You must specify an
+index file with C<-f>, even if it's the default index file F<index.swish-e>.
+
+A lot of information is printed, so use with caution.
+
+For example here's a few of the interesting parts from C<-D> (with C<-v 4>):
+
+    swish-e -D -v 4 -f test.index
+
+    -----> WORD INFO <-----
+    apples: Meta:1 ./test.html Strct:25 Freq:1 Pos:54
+
+This tells you that the word C<apples> is found in F<./test.html>, and is *not* associated with
+any MetaNames (meta tag number one is the default index).  The C<Strct:25> is used to limit searches by
+context (see C<-t> above).  C<Freq:1> says the word was found one time in the document at position
+C<Pos:54>.  This position data is used for phrase searches.  If the word was found in other meta tags
+you will see other C<Meta:> items listed.  And the entire structure will be repeated, on the same line, for every
+file that contains this word.
+
+The next section:
+
+    <-----> FILES <----->
+
+Lists the files, and their associated properties (including last modified date, title and file size).
+
+    -----> METANAMES <-----
+    swishfilename"2 swishtitle"2 swishfiledate"10 swishstart"6 swishsize"6 swishsummary"2 meta1"3 meta2"3 meta3"3
+
+(The above will be all on one line.)
+
+The METANAME section lists the meta names and properties that are assigned internally within swish, and the names
+you specify in the configuration file with MetaNames and PropertyNames.  The number that follow is a decimal number
+where each bit represents an attribute of that meta name.  The bits are AND'ed together to make the attribute.
+
+       Bit            Bit Represents
+    ----------    --------------------------------------
+    0000000001    META_INDEX (it is indexed -- MetaNames)
+    0000000010    META_PROP (it is a property -- PropertyNames)
+    0000000100    META_NUMBER (it is binary number.Eg: swishsize)
+    0000001000    META_DATE(it is a binary date. Eg: swishfiledate)
+
+So, for swishfiledate value 10 means META_PROP+META_DATE, or 2
+(property and binary date).
+
+Currently, the indexing of numbers (searching by range) is not supported.
+
+
+=back
+
+
+=head1 Merging Index Files
+
+At times it can be useful to merge different index files into one file for searching.
+This could be because you want to keep separate site indexes and a common one for a global search, or
+because your site is very large and Swish-e runs out of memory if you try to index it directly.
+
+You should try to merge only indexes that were indexed with common settings.  Otherwise results may
+be confusing (e.g. don't mix stemming and non-stemming indexes, or indexes with different WordCharacter settings).
+
+  usage: swish-e [-v (num)] [-c file] -M index1 index2 ... outputfile
+
+
+=over 4
+
+=item -M *file file ...* (merge)
+
+This allows you to merge two or more index files - the last file you specify on the
+list will be the output file.
+
+Merging removes all redundant file and word data. To estimate how much memory the operation will need,
+sum up the sizes of the files to be merged and divide by two.
+That's about the maximum amount of memory that will be used.
+
+You can use the C<-v> option to produce feedback while merging and the C<-c> option with a
+configuration file to include new administrative information in the new index file.
+
+=item -c *configuration file*
+
+Specify a configuration file while indexing to add administrative information to the output index file.
+
+=back
+
+=head1 Document Info
+
+$Id$
+
+.
+
+
+
+
