@@ -51,6 +51,16 @@ can improve search performance many times.
 
 =back
 
+=head2 Version 2.2.2 - November 14, 2002
+
+Pass non- text/* files onto indexing code IF there is a FileFilter
+associated with the *extension* of the URL.  Fixes the problem of not
+being able to index, say, pdf files by using the FileFilter configuation
+option.
+
+Fixed bug where nulls were stripped when using FileFilter with -S prog.
+Catch by Greg Fenton. [moseley]
+
 =head2 Version 2.2.1 - September 26, 2002
 
 =over 4

@@ -35,7 +35,7 @@ int getsize(char *);
 
 void indexpath(SWISH *, char *);
 
-char *read_stream(SWISH *, char *name, FILE *fp, long len, long truncate_size);
+char *read_stream(SWISH *, char *name, FILE *fp, long len, long truncate_size, int is_text);
 void flush_stream( FileProp *fprop );
 
 

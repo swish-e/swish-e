@@ -75,6 +75,7 @@
 #include "txt.h"
 #include "html.h"
 
+#include "filter.h"
 /*
   -- init structures for this module
 */
@@ -652,6 +653,8 @@ void    http_indexpath(SWISH * sw, char *url)
 
         if ((code = get(sw, contenttype, &last_modified, &server->lastretrieval, file_prefix, item->url)) == 200)
         {
+            FilterList *filter_list = hasfilter(sw, item->url);  /* check to see if there's a filter */
+            
             /* Set the file_prefix to be the path to "contents" */
             strcpy( file_suffix, ".contents" );
 
@@ -681,11 +684,13 @@ void    http_indexpath(SWISH * sw, char *url)
             /* Two solutions: 1: set a flag that only should index the file if a filters is setup for it, or */
             /*                2: do filtering in swishspider.  That's a better option. */
 
-            if ( strncmp(contenttype, "text/", 5) == 0 )
-            {
-                if (sw->verbose >= 4)
-                    printf("Indexing %s:  Content type: %s.\n", item->url, contenttype);
+            /* Nov 14, 2002 - well, do both */
 
+            if ( filter_list || strncmp(contenttype, "text/", 5) == 0 )            {
+                if (sw->verbose >= 4)
+                    printf("Indexing %s:  Content type: %s. %s\n",
+                        item->url, contenttype, filter_list ? "(filtered)" : "");
+ 
                 
                 fprop = file_properties(item->url, file_prefix, sw);
                 fprop->mtime = last_modified;
