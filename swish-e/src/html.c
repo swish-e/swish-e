@@ -201,7 +201,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
 
 
         /* Convert entities, if requested, and remove newlines */
-        convtag = sw_ConvHTMLEntities2ISO(sw, start);
+        convtag = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)start);
         remove_newlines(convtag);  /** why isn't this just done for the entire doc? */
 
 
@@ -230,7 +230,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
         /* If it is a property store it */
 
         if ((metaNameEntry = getPropNameByName(&indexf->header, parsed_tag)))
-            if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag), 0))
+            if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char*)convtag, strlen(convtag), 0))
                 progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename);
 
         if (temp)
@@ -406,7 +406,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
 
         remove_tags(summary);
 
-        summary = sw_ConvHTMLEntities2ISO(sw, summary);
+        summary = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)summary);
 
 
         /* use only the required memory -save those not used */
@@ -557,7 +557,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     {
         remove_newlines(summary);
         remove_tags(summary);
-        summary = sw_ConvHTMLEntities2ISO(sw, summary);
+        summary = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)summary);
     }
 
     if (summary && size && ((int) strlen(summary)) > size)
@@ -759,7 +759,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
     char   *Content = NULL,
            *Name = NULL,
            *summary = NULL;
-    char   *title = sw_ConvHTMLEntities2ISO(sw, parseHTMLtitle(sw, buffer));
+    char   *title = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)parseHTMLtitle(sw, buffer));
 
     if (!isoktitle(sw, title))
         return -2;
@@ -789,7 +789,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
             /* Index up to the tag */
             *tag++ = '\0';
 
-            newp = sw_ConvHTMLEntities2ISO(sw, p);
+            newp = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)p);
 
             if ( ! currentmetanames )
                 currentmetanames++;
@@ -852,11 +852,11 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
                                     *endtag = '\0';
 
 
-                                p = sw_ConvHTMLEntities2ISO(sw, p);
+                                p = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)p);
 
                                 remove_newlines(p);  /** why isn't this just done for the entire doc? */
 
-                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0))
+                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char *)p, strlen(p), 0))
                                     progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, fprop->real_path);
 
 
@@ -909,7 +909,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
         else
         {                       /* No more '<' */
 
-            newp = sw_ConvHTMLEntities2ISO(sw, p);
+            newp = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)p);
 
             if ( ! currentmetanames )
                 currentmetanames++;

@@ -140,7 +140,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     unsigned long i;
     
     if  ( is_meta_string(meta_entry) )      /* check for ascii/string data */
-        return bin2string(prop->propValue,prop->propLen);
+        return (char *)bin2string(prop->propValue,prop->propLen);
 
 
     if ( is_meta_date(meta_entry) )
@@ -229,7 +229,7 @@ static propEntry *getDocProperty( SWISH *sw, RESULT *result, struct metaEntry **
 
             
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_INDEXFILE ) )
-            return CreateProperty( *meta_entry, result->indexf->line, strlen( result->indexf->line ), 0, &error_flag );
+            return CreateProperty( *meta_entry, (unsigned char *)result->indexf->line, strlen( result->indexf->line ), 0, &error_flag );
     }
                    
 
@@ -337,7 +337,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
     {
         pv->datatype = PROP_STRING;
         pv->destroy++;       // caller must free this
-        pv->value.v_str = bin2string(prop->propValue,prop->propLen);
+        pv->value.v_str = (char *)bin2string(prop->propValue,prop->propLen);
         freeProperty( prop );
         return pv;
     }
@@ -538,7 +538,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         }
         /* I'll bet there's an easier way */
         num = PACKLONG(num);
-        tmpnum = (unsigned char *)&num;
+        tmpnum = (char *)&num;
 
         for ( j=0; j <= sizeof(num)-1; j++ )
             newstr[j] = (unsigned char)tmpnum[j];
@@ -617,7 +617,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
     {
         char *tmp;
         
-        propLen = EncodeProperty( meta_entry, &tmp, propValue, error_flag );
+        propLen = EncodeProperty( meta_entry, &tmp, (char *)propValue, error_flag );
 
         if ( !propLen )  /* Error detected in encode */
             return NULL;
@@ -626,7 +626,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
         if ( is_meta_string(meta_entry) && meta_entry->max_len && propLen > meta_entry->max_len )
             propLen = meta_entry->max_len;
             
-        propValue = tmp;
+        propValue = (unsigned char *)tmp;
     }
 
     /* Now create the property $$ could be -1 */
@@ -791,7 +791,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 	{
 	    if ( is_meta_string(meta_entry) )
 	    {
-    	    dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], propValue, propLen );
+    	    dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], (char *)propValue, propLen );
 	        return 1;
 	    }
 	    else // Will this come back and bite me?
@@ -869,8 +869,8 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
         int len = Min( p1->propLen, p2->propLen );
 
         rc = is_meta_ignore_case( meta_entry)
-             ? strncasecmp( p1->propValue, p2->propValue, len )
-             : strncmp( p1->propValue, p2->propValue, len );
+             ? strncasecmp( (char *)p1->propValue, (char *)p2->propValue, len )
+             : strncmp( (char *)p1->propValue, (char *)p2->propValue, len );
              
         if ( rc != 0 )
             return rc;
@@ -1145,7 +1145,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 
         buf = compress_property( prop, propID, sw, &buf_len, &uncompressed_len );
 
-        DB_WriteProperty( sw, indexf, fi, propID, buf, buf_len, uncompressed_len, indexf->DB );
+        DB_WriteProperty( sw, indexf, fi, propID, (char *)buf, buf_len, uncompressed_len, indexf->DB );
     }
 
 
@@ -1218,7 +1218,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
 
     /* Otherwise, read from disk */
 
-    if ( !(buf = DB_ReadProperty( sw, indexf, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
+    if ( !(buf = (unsigned char*)DB_ReadProperty( sw, indexf, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
         return NULL;
 
 	propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len );
@@ -1233,7 +1233,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
     meta_entry.metaName = "(default)";  /* for error message, I think */
     meta_entry.metaID   = metaID;
 
-    docProp = CreateProperty( &meta_entry, (char *)propbuf, propLen, 1, &error_flag );
+    docProp = CreateProperty( &meta_entry, propbuf, propLen, 1, &error_flag );
 
 	efree( buf );
 	return docProp;

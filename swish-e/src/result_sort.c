@@ -224,11 +224,11 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
             w2 = (unsigned char *) sl->word[2];
             w3 = (unsigned char *) sl->word[3];
 
-            if (strlen(w1) != 1)
+            if (strlen( (char *)w1) != 1)
             {
                 progerr("%s: parameter 1 must be one char length", w0);
             }
-            if (strlen(w2) != 1)
+            if (strlen( (char *)w2 ) != 1)
             {
                 progerr("%s: parameter 2 must be one char length", w0);
             }
@@ -382,7 +382,7 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
     num_fields = ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
-        if ((rc = sw_strcasecmp(r1->PropSort[i], r2->PropSort[i], ResultSort->iSortCaseTranslationTable)))
+        if ((rc = sw_strcasecmp( (unsigned char*)r1->PropSort[i], (unsigned char*)r2->PropSort[i], ResultSort->iSortCaseTranslationTable)))
             return (rc * ResultSort->propModeToSort[i]);
     }
     return 0;

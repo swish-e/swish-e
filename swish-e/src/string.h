@@ -59,7 +59,6 @@ void freeStringList (StringList *);
 
 int isnumstring (unsigned char*);
 void remove_newlines (char*);
-void remove_controls (char*);
 void remove_tags (char*);
 
 unsigned char *bin2string(unsigned char *,int);
@@ -91,7 +90,6 @@ char *str_basename (char *path);
 char *cstr_basename (char *path);
 char *cstr_dirname (char *path);
 
-void split_path( unsigned char *path, unsigned char **directory, unsigned char **file );
 
 char *estrdup (char *str);
 char *estrndup (char *str, size_t n);

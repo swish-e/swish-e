@@ -107,29 +107,29 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 
     DB_InitWriteHeader(sw, DB);
 
-    DB_WriteHeaderData(sw, INDEXHEADER_ID, INDEXHEADER, strlen(INDEXHEADER) +1, DB);
-    DB_WriteHeaderData(sw, INDEXVERSION_ID, INDEXVERSION, strlen(INDEXVERSION) + 1, DB);
+    DB_WriteHeaderData(sw, INDEXHEADER_ID, (unsigned char *)INDEXHEADER, strlen(INDEXHEADER) +1, DB);
+    DB_WriteHeaderData(sw, INDEXVERSION_ID, (unsigned char *)INDEXVERSION, strlen(INDEXVERSION) + 1, DB);
     write_header_int(sw, MERGED_ID, merged, DB);
-    DB_WriteHeaderData(sw, NAMEHEADER_ID, header->indexn, strlen(header->indexn) + 1, DB);
-    DB_WriteHeaderData(sw, SAVEDASHEADER_ID, c, strlen(c) + 1, DB);
+    DB_WriteHeaderData(sw, NAMEHEADER_ID, (unsigned char *)header->indexn, strlen(header->indexn) + 1, DB);
+    DB_WriteHeaderData(sw, SAVEDASHEADER_ID, (unsigned char *)c, strlen(c) + 1, DB);
     write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
     tmp = getTheDateISO(); 
-	DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, tmp, strlen(tmp) + 1,DB); 
+	DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB); 
 	efree(tmp);
-    DB_WriteHeaderData(sw, DESCRIPTIONHEADER_ID, header->indexd, strlen(header->indexd) + 1, DB);
-    DB_WriteHeaderData(sw, POINTERHEADER_ID, header->indexp, strlen(header->indexp) + 1, DB);
-    DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, header->indexa, strlen(header->indexa) + 1,DB);
+    DB_WriteHeaderData(sw, DESCRIPTIONHEADER_ID, (unsigned char *)header->indexd, strlen(header->indexd) + 1, DB);
+    DB_WriteHeaderData(sw, POINTERHEADER_ID, (unsigned char *)header->indexp, strlen(header->indexp) + 1, DB);
+    DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, (unsigned char *)header->indexa, strlen(header->indexa) + 1,DB);
     write_header_int(sw, DOCPROPENHEADER_ID, 1, DB);
     write_header_int(sw, STEMMINGHEADER_ID, header->applyStemmingRules, DB);
     write_header_int(sw, SOUNDEXHEADER_ID, header->applySoundexRules, DB);
     write_header_int(sw, IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, DB);
-    DB_WriteHeaderData(sw, WORDCHARSHEADER_ID, header->wordchars, strlen(header->wordchars) + 1, DB);
+    DB_WriteHeaderData(sw, WORDCHARSHEADER_ID, (unsigned char *)header->wordchars, strlen(header->wordchars) + 1, DB);
     write_header_int(sw, MINWORDLIMHEADER_ID, header->minwordlimit, DB);
     write_header_int(sw, MAXWORDLIMHEADER_ID, header->maxwordlimit, DB);
-    DB_WriteHeaderData(sw, BEGINCHARSHEADER_ID, header->beginchars, strlen(header->beginchars) + 1, DB);
-    DB_WriteHeaderData(sw, ENDCHARSHEADER_ID, header->endchars, strlen(header->endchars) + 1, DB);
-    DB_WriteHeaderData(sw, IGNOREFIRSTCHARHEADER_ID, header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
-    DB_WriteHeaderData(sw, IGNORELASTCHARHEADER_ID, header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
+    DB_WriteHeaderData(sw, BEGINCHARSHEADER_ID, (unsigned char *)header->beginchars, strlen(header->beginchars) + 1, DB);
+    DB_WriteHeaderData(sw, ENDCHARSHEADER_ID, (unsigned char *)header->endchars, strlen(header->endchars) + 1, DB);
+    DB_WriteHeaderData(sw, IGNOREFIRSTCHARHEADER_ID, (unsigned char *)header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
+    DB_WriteHeaderData(sw, IGNORELASTCHARHEADER_ID, (unsigned char *)header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
 	/* Removed - Patents 
     write_header_int(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, DB);
 	*/
@@ -700,7 +700,7 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
 
         s = buffer = (char *)emalloc(sz_buffer);
 
-        s = compress3(num_words,s);
+        s = (char *)compress3(num_words, (unsigned char *)s);
 
         for (hashval = 0; hashval < HASHSIZE; hashval++)
         {
@@ -708,13 +708,13 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
             while (sp != NULL)
             {
                 len = strlen(sp->line);
-                s = compress3(len,s);
+                s = (char *)compress3(len,(unsigned char *)s);
                 memcpy(s,sp->line,len);
                 s +=len;
                 sp = sp->next;
             }
         }
-        DB_WriteHeaderData(sw, header_ID, buffer, s - buffer, DB);
+        DB_WriteHeaderData(sw, header_ID, (unsigned char *)buffer, s - buffer, DB);
         efree(buffer);
 }
 return 0;
@@ -731,14 +731,14 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 	
     s = buffer = (char *) emalloc((table_size + 1) * 5);
 
-    s = compress3(table_size,s);   /* Put the number of elements */
+    s = (char *)compress3(table_size,(unsigned char *)s);   /* Put the number of elements */
     for (i = 0; i < table_size; i++)
     {
         tmp = table[i] + 1;
-        s = compress3(tmp, s); /* Put all the elements */
+        s = (char *)compress3(tmp, (unsigned char *)s); /* Put all the elements */
     }
 
-    DB_WriteHeaderData(sw, id, buffer, s-buffer, DB);
+    DB_WriteHeaderData(sw, id, (unsigned char *)buffer, s-buffer, DB);
 
     efree(buffer);
     return 0;
@@ -787,27 +787,27 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case DOCPROPENHEADER_ID:
 			break;
         case WORDCHARSHEADER_ID:
-            header->wordchars = SafeStrCopy(header->wordchars, buffer, &header->lenwordchars);
+            header->wordchars = SafeStrCopy(header->wordchars, (char *)buffer, &header->lenwordchars);
             sortstring(header->wordchars);
             makelookuptable(header->wordchars, header->wordcharslookuptable);
             break;
         case BEGINCHARSHEADER_ID:
-            header->beginchars = SafeStrCopy(header->beginchars, buffer, &header->lenbeginchars);
+            header->beginchars = SafeStrCopy(header->beginchars, (char *)buffer, &header->lenbeginchars);
             sortstring(header->beginchars);
             makelookuptable(header->beginchars, header->begincharslookuptable);
             break;
         case ENDCHARSHEADER_ID:
-            header->endchars = SafeStrCopy(header->endchars, buffer, &header->lenendchars);
+            header->endchars = SafeStrCopy(header->endchars, (char *)buffer, &header->lenendchars);
             sortstring(header->endchars);
             makelookuptable(header->endchars, header->endcharslookuptable);
             break;
         case IGNOREFIRSTCHARHEADER_ID:
-            header->ignorefirstchar = SafeStrCopy(header->ignorefirstchar, buffer, &header->lenignorefirstchar);
+            header->ignorefirstchar = SafeStrCopy(header->ignorefirstchar, (char *)buffer, &header->lenignorefirstchar);
             sortstring(header->ignorefirstchar);
             makelookuptable(header->ignorefirstchar, header->ignorefirstcharlookuptable);
             break;
         case IGNORELASTCHARHEADER_ID:
-            header->ignorelastchar = SafeStrCopy(header->ignorelastchar, buffer, &header->lenignorelastchar);
+            header->ignorelastchar = SafeStrCopy(header->ignorelastchar, (char *)buffer, &header->lenignorelastchar);
             sortstring(header->ignorelastchar);
             makelookuptable(header->ignorelastchar, header->ignorelastcharlookuptable);
             break;
@@ -832,22 +832,22 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             header->maxwordlimit = tmp;
             break;
         case SAVEDASHEADER_ID:
-            header->savedasheader = SafeStrCopy(header->savedasheader, buffer, &header->lensavedasheader);
+            header->savedasheader = SafeStrCopy(header->savedasheader, (char *)buffer, &header->lensavedasheader);
             break;
         case NAMEHEADER_ID:
-            header->indexn = SafeStrCopy(header->indexn, buffer, &header->lenindexn);
+            header->indexn = SafeStrCopy(header->indexn, (char *)buffer, &header->lenindexn);
             break;
         case DESCRIPTIONHEADER_ID:
-            header->indexd = SafeStrCopy(header->indexd, buffer, &header->lenindexd);
+            header->indexd = SafeStrCopy(header->indexd, (char *)buffer, &header->lenindexd);
             break;
         case POINTERHEADER_ID:
-            header->indexp = SafeStrCopy(header->indexp, buffer, &header->lenindexp);
+            header->indexp = SafeStrCopy(header->indexp, (char *)buffer, &header->lenindexp);
             break;
         case MAINTAINEDBYHEADER_ID:
-            header->indexa = SafeStrCopy(header->indexa, buffer, &header->lenindexa);
+            header->indexa = SafeStrCopy(header->indexa, (char *)buffer, &header->lenindexa);
             break;
         case INDEXEDONHEADER_ID:
-            header->indexedon = SafeStrCopy(header->indexedon, buffer, &header->lenindexedon);
+            header->indexedon = SafeStrCopy(header->indexedon, (char *)buffer, &header->lenindexedon);
             break;
         case COUNTSHEADER_ID:
             parse_int2_from_buffer(tmp1,tmp2,buffer);
@@ -861,16 +861,16 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             break;
 */
         case TRANSLATECHARTABLE_ID:
-            parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), buffer);
+            parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), (char *)buffer);
             break;
         case STOPWORDS_ID:
-            parse_stopwords_from_buffer(header, buffer);
+            parse_stopwords_from_buffer(header, (char *)buffer);
             break;
         case METANAMES_ID:
-            parse_MetaNames_from_buffer(header, buffer);
+            parse_MetaNames_from_buffer(header, (char *)buffer);
             break;
         case BUZZWORDS_ID:
-            parse_buzzwords_from_buffer(header, buffer);
+            parse_buzzwords_from_buffer(header, (char *)buffer);
             break;
 
 #ifndef USE_BTREE
@@ -878,7 +878,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             if ( !header->ignoreTotalWordCountWhenRanking )
             {
                 header->TotalWordsPerFile = emalloc( header->totalfiles * sizeof(int) );
-                parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, buffer);
+                parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, (char *)buffer);
             }
             break;
 #endif
@@ -1034,7 +1034,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     word[0]=(unsigned char)c;
     word[1]='\0';
 
-    DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+    DB_ReadFirstWordInvertedIndex(sw, (char *)word, &resultword, &wordID, indexf->DB);
     i = (int) ((unsigned char) c);
     if (!wordID)
     {
@@ -1063,7 +1063,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     bufferpos += wordlen + 1;
 
     /* Look for occurrences */
-    DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+    DB_ReadNextWordInvertedIndex(sw, (char *)word, &resultword, &wordID, indexf->DB);
     while (wordID)
     {
         wordlen = strlen(resultword);
@@ -1079,9 +1079,10 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
             buffer[bufferpos] = '\0';
             break;
         }
+        
         buffer[bufferpos + wordlen] = '\0';
         bufferpos += wordlen + 1;
-        DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+        DB_ReadNextWordInvertedIndex(sw, (char *)word, &resultword, &wordID, indexf->DB);
     }
     buffer[bufferpos] = '\0';
     indexf->keywords[j] = buffer;

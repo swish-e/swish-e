@@ -168,7 +168,7 @@ void init_header(INDEXDATAHEADER *header)
 
 	makelookuptable("",header->bumpposcharslookuptable); 
 
-    BuildTranslateChars(header->translatecharslookuptable,"","");
+    BuildTranslateChars(header->translatecharslookuptable,(unsigned char *)"",(unsigned char *)"");
 
 
     /* this is to ignore numbers */

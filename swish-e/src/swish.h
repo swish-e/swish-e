@@ -399,11 +399,7 @@ typedef struct ENTRY
         int     last_filenum;
     }
     u1;
-#ifdef __VMS
-    char    word[];     /* actual word starts here */
-#else
-    char    word[0];    /* actual word starts here */
-#endif
+    char    word[1];    /* actual word starts here */
 }
 ENTRY;
 
@@ -587,7 +583,7 @@ typedef struct RESULT
 
     RESULT_LIST *reslist;
 
-    int     posdata[0];
+    int     posdata[1];
 }
 RESULT;
 

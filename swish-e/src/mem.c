@@ -616,6 +616,7 @@ void Mem_ZoneFree(MEM_ZONE **head)
 	*head = NULL;
 }
 
+#if MEM_STATISTICS
 void Mem_ZoneStatistics(MEM_ZONE *head)
 {
 	int		chunks = 0;
@@ -639,6 +640,7 @@ void Mem_ZoneStatistics(MEM_ZONE *head)
 	printf("Zone '%s':\n  Chunks:%d, Allocs:%u, Used:%u, Free:%u, Wasted:%u\n",
 		head->name, chunks, head->allocs, used, free, wasted);
 }
+#endif
 
 /* Frees all memory chunks but preserves head */
 /* 2001-17 jmruiz modified to avoid the document peak problem (one document can

@@ -53,13 +53,14 @@ DOCENTRYARRAY;
 
 
 static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist );
-static int check_FileTests( unsigned char *path, PATH_LIST *test );
+static int check_FileTests( char *path, PATH_LIST *test );
 static void indexadir(SWISH *, char *);
 static void indexafile(SWISH *, char *);
 static void printfile(SWISH *, char *);
 static void printfiles(SWISH *, DOCENTRYARRAY *);
 static void printdirs(SWISH *, DOCENTRYARRAY *);
 static DOCENTRYARRAY *adddocentry(DOCENTRYARRAY * e, char *filename);
+static void split_path(char *path, char **directory, char **file);
 
 /*
   -- init structures for this module
@@ -301,7 +302,7 @@ static void    indexadir(SWISH * sw, char *dir)
     struct dirent   *dp;
 #endif
     int             pathbuflen;
-    unsigned char   *pathname;
+    char            *pathname;
     DOCENTRYARRAY   *sortfilelist = NULL;
     DOCENTRYARRAY   *sortdirlist = NULL;
     int             dirlen = strlen( dir );
@@ -487,10 +488,10 @@ static void    indexafile(SWISH * sw, char *path)
 * Returns 1 = something matched
 *
 **********************************************************/
-static int check_FileTests( unsigned char *path, PATH_LIST *test )
+static int check_FileTests( char *path, PATH_LIST *test )
 {
-    unsigned char *dir;
-    unsigned char *file;
+    char *dir;
+    char *file;
 
 
     if ( match_regex_list( path, test->pathname  ) )
@@ -519,6 +520,57 @@ static int check_FileTests( unsigned char *path, PATH_LIST *test )
     efree( file );
     return 0;
 }
+
+/***************************************************
+*  Note that this is mostly a duplicate of above,
+*  but was designed to work with both path and URLs
+*
+*  Probably should settle on one
+*  Also, this returns "" on empty dirs, where above returns " "
+*  Mar 2002 -- and is only called by fs.c...
+*  May 2002, moved to fs.c.  Why isn't basename library used for this?
+***************************************************/
+
+static void    split_path(char *path, char **directory, char **file)
+{
+    char   *p1,
+           *p2,
+           *p3;
+
+    /* look for last DIRDELIMITER (FS) and last / (HTTP) */
+    //p1 = strrchr( path, DIRDELIMITER);
+    p1 = strrchr( path, '/');
+    p2 = strrchr( path, '/');
+
+    if (p1 && p2)
+    {                           /* if both are found, use the longest. */
+        if (p1 >= p2)
+            p3 = p1;
+        else
+            p3 = p2;
+    } else if (p1 && !p2)
+        p3 = p1;
+    else if (!p1 && p2)
+        p3 = p2;
+    else
+        p3 = NULL;
+
+    /* Set directory */
+    if (!p3)
+        *directory = (char *) estrdup((char *) "");
+    else
+    {
+        char c = *++p3;
+
+        *p3 = '\0';
+        *directory = (char *) estrdup((char *) path);
+        *p3 = c;
+        path = p3;
+    }
+
+    *file = (char *) estrdup((char *) path);
+}
+
 
 
 

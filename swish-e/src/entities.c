@@ -665,10 +665,10 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
         case 'x':
         case 'X':
             ++s;                /* skip x */
-            code = (int) strtoul(s, (char **) &e_end, (int) 16);
+            code = (int) strtoul((char *)s, (char **) &e_end, (int) 16);
             break;
         default:
-            code = (int) strtoul(s, (char **) &e_end, (int) 10);
+            code = (int) strtoul((char *)s, (char **) &e_end, (int) 10);
             break;
         }
 
