@@ -1,5 +1,5 @@
 /*
-$id$
+$Id$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
