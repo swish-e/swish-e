@@ -430,14 +430,17 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n != 2)
                 progerr("%s: requires one value", w0);
 
-            /* Fix to make "UseStemming yes" -> "UseStemming en" */
-            if( strcasecmp(sl->word[1],"yes") == 0 )
-                strcpy(sl->word[1],"en");
+            if( strcasecmp(sl->word[1],"no") != 0 )
+            {
+                /* Fix to make "UseStemming yes" -> "UseStemming en" */
+                if( strcasecmp(sl->word[1],"yes") == 0 )
+                    strcpy(sl->word[1],"en");
 
-            stem_tmp = (char *) emalloc(strlen("Stemming_") + strlen(sl->word[1]) + 1);
-            sprintf(stem_tmp,"Stemming_%s",sl->word[1]);
-            set_fuzzy_mode( &indexf->header.fuzzy_data, stem_tmp );
-            efree(stem_tmp);
+                stem_tmp = (char *) emalloc(strlen("Stemming_") + strlen(sl->word[1]) + 1);
+                sprintf(stem_tmp,"Stemming_%s",sl->word[1]);
+                set_fuzzy_mode( &indexf->header.fuzzy_data, stem_tmp );
+                efree(stem_tmp);
+            }
 #else
             if ( getYesNoOrAbort(sl, 1, 1) )
                 set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming_en" );
