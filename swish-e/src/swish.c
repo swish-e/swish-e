@@ -780,8 +780,8 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
         if (c == 'M')
         {
-            if ( !( is_another_param( argv ) && is_another_param( argv +1 ) && is_another_param( argv +2 )) )
-                progerr(" '-M' requires two input files, and one output file.");
+            if ( !is_another_param( argv )  )
+                progerr(" '-M' requires an output file name.");
                 
             params->run_mode = MODE_MERGE;
 
@@ -1108,7 +1108,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
         progerr("Failed to provide merge output file");
 
     if ( isfile(params->merge_out_file) )
-        progerr("Merge output file '%s' already exists.  Won't overwrite.\n");
+        progerr("Merge output file '%s' already exists.  Won't overwrite.\n", params->merge_out_file);
 
     /* create output */
     sw_out = SwishNew();
@@ -1123,9 +1123,12 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
     /* Create an empty File - before indexing to make sure can write to the index */
     sw_out->indexlist->DB = (void *) DB_Create(sw_out, params->merge_out_file);
 
+
     merge_indexes( sw_input, sw_out );
 
     write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
+
+    SwishClose( sw_out );
 }
 
 

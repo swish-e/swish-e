@@ -1028,12 +1028,13 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     /* Word found -- look for same metaID and filename */
     /* $$$ To do it right, should probably compare the structure, too */
     /* Note: filename not needed due to compress we are only looking at the current file */
+    /* Oct 18, 2001 -- filename is needed since merge adds words in non-filenum order */
 
     tp = efound->currentChunkLocationList;
     found = 0;
     while (tp != efound->currentlocation)
     {
-        if(tp->metaID == metaID)
+        if(tp->metaID == metaID && tp->filenum == filenum)
         {
             found =1;
             break;

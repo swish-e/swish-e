@@ -46,6 +46,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, 
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map );
 static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int structure, int position );
+static void compress_entries( SWISH *sw );
 
 
 // #define DEBUG_MERGE
@@ -128,7 +129,6 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     *
     ****************************************************************************/
 
-
     cur_index = sw_input->indexlist;
     while( cur_index )
     {
@@ -140,7 +140,8 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
         efree( file_num_map );
 
-        /* Compress the entries for this index?  */
+        /* Compress the entries ?  */
+        compress_entries( sw_output );
 
     }
 
@@ -201,7 +202,7 @@ static void compare_header( char *index, char *name, void *in, void *out )
     if ( in_item->len != out_item->len )
         progerr("Header %s in index %s doesn't match length in length with output header", name, index );
 
-    if ( memcmp( (const void *)in_item->str, (const void *)in_item->str, in_item->len ) )
+    if ( memcmp( (const void *)in_item->str, (const void *)out_item->str, in_item->len ) )
         progerr("Header %s in index %s doesn't match output header", name, index );
 }
 
@@ -421,6 +422,20 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 *
 *****************************************************************************/
 
+/* This isn't really accurate, as some other file may come and replace the newer */
+
+static void print_file_removed(IndexFILE *older, propEntry *op, IndexFILE *newer, propEntry *np )
+{
+    
+    char *p1, *d1, *p2, *d2;
+    p1 = DecodeDocProperty( older->path_meta, older->cur_prop );
+    d1 = DecodeDocProperty( older->modified_meta, op );
+    
+    p2 = DecodeDocProperty( newer->path_meta, newer->cur_prop );
+    d2 = DecodeDocProperty( newer->modified_meta, np );
+    
+    printf("Replaced file '%s %s' with '%s %s'\n", p1, d1, p2, d2);
+}
 
 
 static IndexFILE *get_next_file_in_order( SWISH *sw_input )
@@ -429,6 +444,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
     IndexFILE   *cur_index = sw_input->indexlist;
     FileRec     fi;
     int         ret;
+    propEntry   *wp, *cp;
 
     memset(&fi, 0, sizeof( FileRec ));
 
@@ -460,51 +476,58 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
 
         ret = Compare_Properties( cur_index->path_meta, cur_index->cur_prop, winner->cur_prop );
 
-        if ( ret < 0 )  /* take cur_index if it's smaller */
-            winner = cur_index;
+        if ( ret != 0 )  
+        {
+            if ( ret < 0 )  /* take cur_index if it's smaller */
+                winner = cur_index;
+
+            continue;
+        }
+
+
 
         /* if they are the same name, then take the newest, and increment the older one */
 
-        else if ( ret == 0 && cur_index->modified_meta && winner->modified_meta )
+
+        /* read the modified time for the current file */
+        cp = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->modified_meta->metaID, 0 );
+
+        /* read the modified time for the current winner */
+        if ( fi.prop_index )
+            efree( fi.prop_index );
+        memset(&fi, 0, sizeof( FileRec ));
+
+        fi.filenum = winner->path_order[winner->current_file];
+        wp = ReadSingleDocPropertiesFromDisk(sw_input, winner, &fi, cur_index->modified_meta->metaID, 0 );
+
+        ret = Compare_Properties( cur_index->modified_meta, cp, wp );
+
+
+
+        /* If current is greater (newer) then throw away winner */
+        if ( ret > 0 )
         {
-            propEntry *wp, *cp;
-
-            /* read the modified time for the current file */
-            cp = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->modified_meta->metaID, 0 );
-
-            /* read the modified time for the current winner */
-            if ( fi.prop_index )
-                efree( fi.prop_index );
-            memset(&fi, 0, sizeof( FileRec ));
-
-            fi.filenum = winner->path_order[winner->current_file];
-            wp = ReadSingleDocPropertiesFromDisk(sw_input, winner, &fi, cur_index->modified_meta->metaID, 0 );
-
-            ret = Compare_Properties( cur_index->modified_meta, cp, wp );
-
-            freeProperty( cp );
-            freeProperty( wp );
-
-
-            /* If current is greater (newer) then throw away winner */
-            if ( ret > 0 )
-            {
-                winner->current_file++;
-                if ( winner->cur_prop )
-                    efree( winner->cur_prop );
-                winner->cur_prop = NULL;
-                winner = cur_index;
-            }
-            /* else, keep winner, and throw away current */
-            else
-            {
-                cur_index->current_file++;
-                if ( cur_index->cur_prop )
-                    efree( cur_index->cur_prop );
-
-                cur_index->cur_prop = NULL;
-            }
+            print_file_removed( winner, wp, cur_index, cp);
+            winner->current_file++;
+            if ( winner->cur_prop )
+                efree( winner->cur_prop );
+            winner->cur_prop = NULL;
+            winner = cur_index;
         }
+        /* else, keep winner, and throw away current */
+        else
+        {
+            print_file_removed(cur_index, cp, winner, wp );
+            cur_index->current_file++;
+            if ( cur_index->cur_prop )
+                efree( cur_index->cur_prop );
+
+            cur_index->cur_prop = NULL;
+        }
+
+        freeProperty( cp );
+        freeProperty( wp );
+
     }
 
     if ( !winner )
@@ -624,7 +647,7 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
     int         filenum;
     int         new_filenum = 0;
 
-    memset( array, 0, cur_index->header.totalfiles * sizeof( int ) );
+    memset( array, 0, (cur_index->header.totalfiles+1) * sizeof( int ) );
 
     clearerr( filenum_map );
     fseek( filenum_map, 0, 0 );  /* start at beginning */
@@ -757,10 +780,11 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
 {
     int         new_file;
     int         new_meta;
-    IndexFILE   *out_index = sw_output->indexlist;
 
+#ifdef DEBUG_MERGE
     printf("\nindex %s '%s' Struct: %d Pos: %d",
     indexf->line, resultword, structure, position );
+
 
     if ( !(new_file = file_num_map[ filenum ]) )
     {
@@ -774,14 +798,71 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
         return;
     }
 
-    out_index->header.totalwords++;
     printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
 
     addentry( sw_output, resultword, new_file, structure, metaID, position );
 
+
+
     /* Compress the entries ?  */
+    //compress_entries( sw_output );  // maybe after every 1000 words or so?
+    // * but does this make it so addentry can't lookup a word?
+#else
+
+
+    if ( !(new_file = file_num_map[ filenum ]) )
+        return;
+
+    if ( !(new_meta = indexf->meta_map[ metaID ] ))
+        return;
+
+    addentry( sw_output, resultword, new_file, structure, metaID, position );
+
+
+
+    /* Compress the entries ?  */
+    //compress_entries( sw_output );  // maybe after every 1000 words or so?
+    // * but does this make it so addentry can't lookup a word?
+#endif
+
 
 }
 
-    
+/****************************************************************************
+*  Compress Entries - how often?  Is this the fix?
+*  This should be a common function used by index and merge
+*
+****************************************************************************/
+
+static void compress_entries( SWISH *sw )
+{
+    IndexFILE   *indexf = sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+    ENTRY       *ep;
+    int         i;
+
+    /* walk the hash list, and compress entries */
+    for (i = 0; i < SEARCHHASHSIZE; i++)
+    {
+        if (idx->hashentriesdirty[i])
+        {
+            idx->hashentriesdirty[i] = 0;
+            for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                CompressCurrentLocEntry(sw, indexf, ep);
+        }
+    }
+
+    /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
+    if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
+    {
+        for (i = 0; i < SEARCHHASHSIZE; i++)
+            for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                coalesce_word_locations(sw, indexf, ep);
+
+        /* Make zone available for reuse */
+        Mem_ZoneReset(idx->currentChunkLocZone);
+        idx->freeLocMemChain = NULL;
+
+    }
+}
 
