@@ -22,7 +22,7 @@ rm -f config.cross.cache
         --with-pcre=$PWD/../pcre
 
 # Build docs
-pushd docs
+pushd doc
 make
 popd
 
