@@ -1412,12 +1412,14 @@ sub process_puretext {
     my($text, $quote) = @_;
     my(@words, $result, $rest, $lead, $trail);
 
+=pod
     # convert double-quotes to single-quotes
     $text =~ s/\A([^"]*)"/$1''/s if $$quote;
     while ($text =~ s/\A([^"]*)["]([^"]*)["]/$1``$2''/sg) {}
 
     $$quote = ($text =~ m/"/ ? 1 : 0);
     $text =~ s/\A([^"]*)"/$1``/s if $$quote;
+=cut
 
     # keep track of leading and trailing white-space
     $lead  = ($text =~ /\A(\s*)/s ? $1 : "");

@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed metaname mapping problem in Merge
+
+Peter Karman found an error when merging indexes where the source indexes had the
+same metanames, but listed in a different order in their config files.  Words
+would then be indexed under the wrong metaID number in the output index.
+
 =item SWISH::Filters and spider.pl updates
 
 The web spider F<spider.pl> was updated to work better with SWISH::Filter

@@ -121,7 +121,7 @@ typedef struct
     int          structure;         /* Structure for limiting to HTML tags */
     struct swline *sort_params;     /* sort properties */
     LIMIT_PARAMS *limit_params;     /* for storing -L command line settings */
-    
+
     int         query_len;          /* length of buffer */
 
     struct swline *disp_props;      /* extra display props */
@@ -190,7 +190,7 @@ int     main(int argc, char **argv)
     /* I don't like this.   modules.c would fix this */
     IndexingDataSource = data_sources[0];
 
-    
+
 
     params = new_swish_params();
     get_command_line_params(sw, argv, params );
@@ -220,7 +220,7 @@ int     main(int argc, char **argv)
             cmd_keywords( sw ,params );  /* -k setting */
             break;
 
-            
+
         default:
             progerr("Invalid operation mode '%d'", (int)params->run_mode);
     }
@@ -534,7 +534,7 @@ static void free_command_line_params( CMDPARAMS *params )
 {
     if ( params->disp_props )
         freeswline( params->disp_props );
-        
+
     if ( params->conflist )
         freeswline( params->conflist );
 
@@ -563,11 +563,11 @@ static char *is_another_param( char **argv )
             ? *(argv + 1)
             : NULL;
 }
-    
+
 static char *next_param( char ***argv )
 {
     char *c;
-    
+
     if ( ( c = is_another_param( *argv ) ) )
     {
         (*argv)++;
@@ -588,7 +588,7 @@ static int get_param_number(char ***argv, char c )
         progerr(" '-%c' requires a positive integer.", c );
 
     num = strtol( string, &badchar, 10 ); // would base zero be more flexible?
-    
+
     if ( num == LONG_MAX || num == LONG_MIN )
         progerrno("Failed to convert '-%c %s' to a number: ", c, string );
 
@@ -625,7 +625,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
     char c;
     char *w;
 
-    
+
 
 
     params->index_read_only = check_readonly_mode( *argv );
@@ -655,7 +655,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
         {
 
             /* Search related options */
-            
+
             case 'w':  /* query string */
             case 'L':  /* Limit range */
             case 'P':  /* phrase char */
@@ -684,15 +684,15 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 argv = fetch_indexing_params( sw, argv, params, c );
                 break;
 
-            
+
 
             /* Index file(s) selection */
-        
+
             case 'f':
             {
                 if ( !is_another_param( argv ) )
                     progerr(" '-f' requires list of index files.");
-                
+
                 while ( (w = next_param( &argv )) )
                     addindexfile(sw, w);
 
@@ -719,7 +719,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
 
             /* print the version number */
-        
+
             case 'V':
                 printversion();
 
@@ -737,7 +737,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             {
                 if ( !is_another_param( argv )  )
                     progerr(" '-M' requires an output file name.");
-                
+
                 params->run_mode = MODE_MERGE;
 
                 while ( (w = next_param( &argv )) )
@@ -780,7 +780,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
 
             /* Set where errors go */
-        
+
             case 'E':
             {
                 if ( !is_another_param( argv ) )
@@ -834,7 +834,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char )
 {
     char *w;
-    
+
     switch (switch_char)
     {
 
@@ -867,7 +867,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             for (data_source = data_sources; *data_source != 0; data_source++)
                 if (strcmp(w, (*data_source)->IndexingDataSourceId) == 0)
                     break;
-                    
+
 
             if (!*data_source)
                 progerr("Unknown -S option \"%s\"", w);
@@ -899,7 +899,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 
 
         /* Follow symbolic links */
-        
+
         case 'l':
             sw->FS->followsymlinks = 1;
             break;
@@ -932,7 +932,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 
 
         /* verbose while indexing */
-        
+
         case 'v':
         {
             params->hasverbose = 1;
@@ -940,7 +940,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             break;
         }
 
-        
+
 
         default:
             progerr("Invalid index switch option '%s'", switch_char );
@@ -981,8 +981,8 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 params->query = (char *)emalloc( params->query_len + 1 );
                 params->query[0] = '\0';
             }
-                
-                
+
+
             while ( (w = next_param( &argv )) )
             {
                 /* don't add blank words */
@@ -1029,14 +1029,14 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             params->PhraseDelimiter = (int) w[0];
             break;
         }
-        
+
 
         /* limit by structure */
 
         case 't':
         {
             char * c;
-            
+
             if ( !(w = next_param( &argv )) )
                 progerr("Specify tag fields (HBtheca).");
 
@@ -1072,7 +1072,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 }
             break;
         }
-        
+
 
         /* sort properties */
 
@@ -1080,7 +1080,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         {
             if ( !is_another_param( argv ) )
                 progerr(" '-s' requires list of sort properties.");
-                
+
             while ( (w = next_param( &argv )) )
                 params->sort_params = addswline(params->sort_params, w);
 
@@ -1106,7 +1106,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         /* $$$ These need better error reporting */
 
         /* Extended format */
-        
+
         case 'x':
         {
             /* Jose Ruiz 09/00 */
@@ -1141,7 +1141,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         {
             if ( !is_another_param( argv ) )
                 progerr(" '-p' requires list of properties.");
-                
+
             while ( (w = next_param( &argv )) )
                 params->disp_props = addswline( params->disp_props, w);
 
@@ -1182,7 +1182,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                             continue;
                         }
                     }
-                        
+
 
                     switch ( w[i] )
                     {
@@ -1246,7 +1246,7 @@ static int check_readonly_mode( char *prog )
 
     if ( tmp < prog )
         return 0;
-    
+
     /* We must ignore case for WIN 32 */
     if (strcasecmp(tmp, "swish-search") == 0)
         return 1;
@@ -1326,7 +1326,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
         if ( sw->lasterror )
             SwishAbortLastError( sw );
-        
+
 
         /* Read the header and overwrite the '-c' option and default values -
         ** In other words, the header values are the good ones */
@@ -1426,10 +1426,13 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     /* create output */
     sw_out = swish_new();
+    sw_out->verbose = sw_input->verbose;
+    sw_out->headerOutVerbose = sw_input->headerOutVerbose;
+
 
     addindexfile(sw_out, params->merge_out_file);
 
-        
+
     /* Update Economic mode */
     sw_out->Index->swap_locdata = params->swap_mode;
 
@@ -1441,6 +1444,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
 
     merge_indexes( sw_input, sw_out );
+
 
     write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
 
@@ -1486,7 +1490,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
     if ( !SwishAttach(sw) ) 
         SwishAbortLastError( sw );
 
-    
+
     srch = New_Search_Object( sw, params->query );
     if ( sw->lasterror )
         SwishAbortLastError( sw );
@@ -1494,8 +1498,8 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
     srch->PhraseDelimiter = params->PhraseDelimiter;
     srch->structure       = params->structure;
-    
-    
+
+
     if ( params->sort_params )
     {
         srch->sort_params = params->sort_params;
@@ -1522,7 +1526,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
         initSearchResultProperties(sw);
     }
-    
+
 
 
 
@@ -1716,7 +1720,7 @@ static void display_result_headers( RESULTS_OBJECT *results )
     SWISH       *sw = results->sw;
     DB_RESULTS  *db_results = results->db_results;
 
-    
+
     resultHeaderOut(sw, 1, "%s\n", INDEXHEADER);  /* print # SWISH format: <version> */
 
     /* print out "original" search words */
@@ -1735,7 +1739,7 @@ static void display_result_headers( RESULTS_OBJECT *results )
 
         /* $$$ move to headers.c and fix as it's corrupting memory */
        // translatecharHeaderOut(sw, 2, &indexf->header);
-        
+
 
 
         /* Show parsed words */
