@@ -239,6 +239,8 @@ struct metaEntry
     int     metaType;           /* See metanames.h for values */
     /* If 0, files are not sorted by this metaName/property */
     int    *sorted_data;        /* Sorted data . NULL if not read/done */
+
+    int    *inPropRange;          /* Used for limiting to a range */
 };
 
 typedef struct
@@ -423,7 +425,11 @@ INDEXDATAHEADER;
 
 typedef struct IndexFILE
 {
+    struct IndexFILE *next;
+    struct IndexFILE *nodep;
+
     char   *line;               /*Name of the index file */
+
     /* file index info */
     struct file **filearray;
     int     filearray_cursize;
@@ -439,17 +445,16 @@ typedef struct IndexFILE
     /* Pointer to cache the keywords */
     char   *keywords[256];
 
-    struct IndexFILE *next;
-    struct IndexFILE *nodep;
 
 	/* Removed due to patents problems
     int     n_dict_entries;
     unsigned char **dict; */      /* Used to store the patterns when
                                    ** DEFLATE_FILES is enabled */
 
-        /* props IDs */
+    /* props IDs */
     int    *propIDToDisplay;
     int    *propIDToSort;
+
 }
 IndexFILE;
 
@@ -632,6 +637,9 @@ typedef struct
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
     struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
     struct MOD_Prog          *Prog;           /* For extprog.c */
+
+
+    struct MOD_PropLimit     *PropLimit;      /* For extprog.c */
 
 
     /* 08/00 Jose Ruiz Values for document type support */

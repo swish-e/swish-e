@@ -64,6 +64,8 @@ $Id$
 #include "fs.h"
 #include "dump.h"
 
+#include "proplimit.h"
+
 
 /*
 ** This array has pointers to all the indexing data source
@@ -167,6 +169,7 @@ char keychar=0;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 double search_starttime, run_starttime, endtime;
 struct stat stat_buf;
+
 
 
     run_starttime = TimeHiRes();
@@ -296,6 +299,7 @@ struct stat stat_buf;
 				argc--;
 			}
 		}
+
 		else if (c == 'p') {
 		  /* -p <property_to_display> [<property_to_display>]* */
 		  while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
@@ -304,6 +308,21 @@ struct stat stat_buf;
 				argc--;
 			}
 		}
+
+
+        /*** Fix this $$$ ***/
+		else if (c == 'L') {
+		  /* -L property_to_limit lowrange highrange  */
+		  if ( argc < 4 || *(argv + 1)[0] == '-' || *(argv + 2)[0] == '-')
+		    progerr("-L requires three parameters <propname> <lorange> <highrange>");
+
+		  SetLimitParameter(sw, argv[1], argv[2], argv[3] );
+		  argv += 3;
+		  argc -= 3;
+		}
+		
+
+		
 		else if (c == 'f') 
 		{
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
@@ -442,7 +461,7 @@ struct stat stat_buf;
 		}
 		else if (c == 'd')
 		{
-			/* added 11/24/98 MG */
+ 			/* added 11/24/98 MG */
 			if (((argv + 1)[0] != '\0') && (*(argv + 1)[0] != '-'))
 			{
 
