@@ -2,7 +2,7 @@
 
 SWISH-LIBRARY - Interface to the Swish-e C library
 
-=head1 What is the Swish-e C library?
+=head1 OVERVIEW
 
 The C library in an interface to the Swish-e search code.  It provides
 a way to embed Swish-e into your applications.

@@ -2,7 +2,7 @@
 
 CHANGES - List of revisions
 
-=head1 Revision History
+=head1 OVERVIEW
 
 This document contains list of bug fixes and feature additions to Swish-e.
 

@@ -8,6 +8,8 @@ This file contains a list of bugs reported or known in Swish-e.  If
 you find a bug listed here you do not need to report it as a bug.  But feel
 free to bug the developers about it on the Swish-e discussion list.
 
+Note that this list is imcomplete and may not be up to date.
+
 
 =head1 Bugs in Swish-e version 2.4
 

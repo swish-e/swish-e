@@ -2,7 +2,7 @@
 
 Proposed changes for Swish-e 3.0
 
-=head1 Overview
+=head1 OVERVIEW
 
 This pages is intended to give users of Swish-e an idea of the changes
 to come, to foster discussion of the direction of Swish-e, and a place
