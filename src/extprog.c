@@ -86,7 +86,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     fp = popen(cmd, FILEMODE_READ);
 
     if (!fp)
-        progerr("Failed to spawn external program '%s'", cmd);
+        progerr("Failed to spawn external program '%s': %s", cmd, strerror( errno ));
 
     efree(cmd);
     return fp;
@@ -94,7 +94,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 
 /* To make filters work with prog, need to write the file out to a temp file */
 /* It will be faster to do the filtering from within the "prog" program */
-/* This may not be save if running as a threaded app, and I'm not clear on how portable this is */
+/* This may not be safe if running as a threaded app, and I'm not clear on how portable this is */
 /* This also uses read_stream to read in the file -- so the entire file is read into memory instead of chunked to the temp file */
 
 static void    save_to_temp_file(FileProp *fprop)
@@ -109,7 +109,7 @@ static void    save_to_temp_file(FileProp *fprop)
 
 
     /* slirp entire file into memory -- yuck */
-    rd_buffer = read_stream(fprop->fp, fprop->fsize, 0);
+    rd_buffer = read_stream(fprop->real_path, fprop->fp, fprop->fsize, 0);
         
 
     out = fopen( fprop->work_path, "w" );  /* is "w" portable? */        

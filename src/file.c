@@ -213,12 +213,15 @@ void    indexpath(SWISH * sw, char *path)
   -- 2001-03-16 rasc    truncateDoc
 */
 
-char   *read_stream(FILE * fp, long filelen, long max_size)
+/* maybe some day this could be chunked reading? */
+
+char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
 {
     long    c,
             offset;
     long    bufferlen;
     unsigned char *buffer;
+    size_t  bytes_read;
 
 
     if (filelen)
@@ -232,7 +235,13 @@ char   *read_stream(FILE * fp, long filelen, long max_size)
 
         buffer = emalloc(filelen + 1);
         *buffer = '\0';
-        fread(buffer, 1, filelen, fp);
+        bytes_read = fread(buffer, 1, filelen, fp);
+
+
+        buffer[filelen] = '\0';
+
+        if ( strlen( buffer ) < bytes_read ) 
+            printf("\nWarning: possible embedded null in file '%s'\n", name );
 
     }
     else
@@ -256,8 +265,8 @@ char   *read_stream(FILE * fp, long filelen, long max_size)
         {
             filelen = max_size;
         }
+        buffer[filelen] = '\0';
     }
-    buffer[filelen] = '\0';
     return (char *) buffer;
 }
 
