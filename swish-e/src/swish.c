@@ -52,7 +52,7 @@ $Id$
 #include <zlib.h>
 #endif
 #include "headers.h"
-
+#include "stemmer.h"
 /*
 ** This array has pointers to all the indexing data source
 ** structures
@@ -81,7 +81,8 @@ static DEBUG_MAP debug_map[] = {
     {"INDEX_STOPWORDS", DEBUG_INDEX_STOPWORDS, "List stopwords stored in index"},
     {"INDEX_FILES", DEBUG_INDEX_FILES, "List file data stored in index"},
     {"INDEX_METANAMES", DEBUG_INDEX_METANAMES, "List metaname table stored in index"},
-    {"INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file\n\n-- indexing --\n"},
+    {"INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file"},
+    {"LIST_FUZZY_MODES", DEBUG_LIST_FUZZY, "List fuzzy options available\n\n-- indexing --\n"},
 
     /* These trace indexing */
     {"INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed"},
@@ -759,6 +760,12 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                     else
                         progerr("Invalid debugging option '%s'.  Use '-T help' for help.", w);
 
+                }
+
+                if ( DEBUG_MASK & DEBUG_LIST_FUZZY )
+                {
+                    dump_fuzzy_list();
+                    exit(1);
                 }
                 break;
             }

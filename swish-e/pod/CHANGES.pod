@@ -18,6 +18,15 @@ destroy, and fixed SwishStemWord to default to the Stemmer_en.
 Fixed libtest.c example program that was not cleaning up memory after an
 error condition.
 
+=item * Replaced Swish-e's Porter Stemmer with Snowball
+
+Swish-e now has support for Snowball stemmers (http://snowball.tartarus.org/).
+The stemmers are enabled for an index with FuzzyIndexingMode Stemming_* where "*" can be:
+
+  de, dk, en1, en2, es, fi, fr, it, nl, no, pt, ru, se
+
+In addition, UseStemming yes or FuzzyIndexingMode Stemming_en will use the old stemmer.
+
 =back
 
 =head2 Version 2.4.0 (Release Candidate 1)  May 21, 2003

@@ -664,6 +664,18 @@ typedef struct
 #endif
 
 
+void dump_fuzzy_list( void )
+{
+    int i;
+
+    printf("Options available for FuzzyIndexingMode:\n");
+
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
+        printf("    %s\n", fuzzy_opts[i].name );
+}
+
+
+
 /* Sets the fuzzy mode by passing in a string describing the fuzzy mode */
 /* Frees any existing fuzzy structure, so make sure "fi" is correctly initialized. */
 

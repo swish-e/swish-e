@@ -1028,6 +1028,8 @@ void free_swish_memory( SWISH *sw );  /* in swish2.c */
 #define DEBUG_INDEX_ALL			(1<<6)
 #define DEBUG_INDEX_WORDS_ONLY	(1<<7)
 #define DEBUG_INDEX_WORDS_META	(1<<8)
+#define DEBUG_LIST_FUZZY	(1<<9)
+
 
 /* These are only checked while indexing */
 #define DEBUG_WORDS				(1<<0)

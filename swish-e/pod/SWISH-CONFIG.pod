@@ -1646,7 +1646,11 @@ It's a good idea to create both a normal index and a fuzzy index and
 allow your search interface select which index to use.  Many people find the
 fuzzy searches to be too fuzzy.
 
-The available fuzzy indexing options are:
+The available fuzzy indexing options can be displayed by running
+
+   swish-e -T LIST_FUZZY_MODES
+
+Available options include:
 
 =over 4
 
@@ -1654,7 +1658,25 @@ The available fuzzy indexing options are:
 
 Words are stored in the index without any conversion.  This is the default.
 
-=item Stemming
+=item Stemming_*
+
+This options uses one of the installed Snowball stemmers (http://snowball.tartarus.org/).
+
+The installed stemmers can be viewed by running
+
+   swish-e -T LIST_FUZZY_MODES
+
+For example, to use the Spanish stemming module:
+
+   FuzzyIndexingMode Stemming_es
+
+
+=item Stem or Stemming_en
+
+Selects the legacy Swish-e English stemmer.
+
+This is depreciated in favor of the Snowball English stemmers (Stemming_en1, Stemming_en2). 
+Future versions of Swish-e will likely use the Stemming_en2 stemmer by default.
 
 Words are converted using the Porter stemming algorithm.
 
