@@ -243,7 +243,6 @@ urldepth *add_url(SWISH * sw, urldepth * list, char *url, int depth, char *baseu
     }
     else if (!http_already_indexed(sw, url))
     {
-printf("Adding URL '%s'\n", url );        
         item = (urldepth *) emalloc(sizeof(urldepth));
         item->url = estrdup(url);
         item->depth = depth;
