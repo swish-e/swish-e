@@ -41,13 +41,9 @@ RANLIB      = @RANLIB@
 # some common aliases
 #
 
-FILESYSTEM_OBJS=fs.o
-HTTP_OBJS   =http.o httpserver.o 
-FS_OBJS     =$(FILESYSTEM_OBJS)
-WEB_OBJS    =$(HTTP_OBJS)
 
 
-# James Clark's Expat
+#--- James Clark's Expat ----
 
 XPDIR       = expat
 
@@ -60,21 +56,51 @@ XP_INC = -I$(XPDIR)/xmltok -I$(XPDIR)/xmlparse
 XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
 
 
+#== Define groups of object files ==
+
+#--- Input methods ---
+FILESYSTEM_OBJS     = fs.o
+HTTP_OBJS           = http.o httpserver.o
+EXTPROG_OBJS        = extprog.o
+INPUT_METHODS_OBJS  = $(FILESYSTEM_OBJS) $(HTTP_OBJS) $(EXTPROG_OBJS) methods.o
+
+#--- Parsers ---
+PARSER_OBJS         = parser.o html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
+                      
+
+#--- Indexing modules ---
+INDEXING_OBJS       = $(INPUT_METHOD_OBJS) $(PARSER_OBJS) \
+                      index.o merge.o stemmer.o soundex.o \
+                      filter.o parse_conffile.o swregex.o
+
+#--- Logical Groups ---
+
+SEARCHING_OBJS      = swish2.o search.o swish_words.o proplimit.o \
+                      search_alt.o result_output.o rank.o
+
+DB_OBJS             = hash.o compress.o db.o db_native.o ramdisk.o btree.o array.o
+
+UTIL_OBJS           = check.o file.o error.o list.o mem.o string.o \
+                      docprop.o metanames.o result_sort.o \
+                      dump.o swish_qsort.o  date_time.o \
+                      no_better_place_module.o @LIBOBJS@
+
+# Only for building the binary
+SWISH_BINARY_OBJS   = swish.o keychar_out.o                     
+
+
+# Collection of files for building swish library
+# later, separate out indexing from searching
+LIB_OBJS            =   $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
+SEARCH_LIB_OBJS     =   $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
+
+
  
 # Flags for C compiler
 CFLAGS      = -Wall -pedantic @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
 LDFLAGS     = $(ldflags)
 
 
-OBJS=	@LIBXML2_OBJS@ check.o file.o index.o search.o error.o methods.o\
-	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
-	soundex.o docprop.o compress.o xml.o txt.o html.o\
-	metanames.o result_output.o parse_conffile.o result_sort.o\
-	filter.o search_alt.o keychar_out.o date_time.o \
-	extprog.o entities.o no_better_place_module.o \
-	db.o dump.o db_native.o swish_words.o proplimit.o swish_qsort.o \
-	ramdisk.o btree.o array.o rank.o swregex.o \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ) @LIBOBJS@
 
 
 #.SUFFIXES: 
@@ -85,12 +111,12 @@ OBJS=	@LIBXML2_OBJS@ check.o file.o index.o search.o error.o methods.o\
 	
 all:	$(NAME)
 
-$(NAME): libswish-e.a swish.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) swish.o libswish-e.a $(LIBS)
+$(NAME): libswish-e.a $(SWISH_BINARY_OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SWISH_BINARY_OBJS) libswish-e.a $(LIBS)
 	chmod 755 $@
 
-libswish-e.a: $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+libswish-e.a: $(LIB_OBJS)
+	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
 	$(RANLIB) libswish-e.a
 
 swish-search: $(NAME)
@@ -127,7 +153,7 @@ test:	$(NAME)
 	@echo -e "\n ** All tests completed! **\n"
 
 
-$(OBJS):	Makefile config.h swish.h
+$(LIB_OBJS):	Makefile config.h swish.h
 
 install:
 	cp swish-e $(bindir)/swish-e
@@ -135,8 +161,21 @@ install:
 install-lib:	
 	cp libswish-e.a $(libdir)/libswish-e.a
 
-libtest: libswish-e.a libtest.o
+
+libtest: libsearchswish-e.a libtest.o
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(LIBS)
+	chmod 755 $@
+
+
+# Just for searching - some day.
+
+libsearchswish-e.a: $(SEARCH_LIB_OBJS)
+	$(AR) $(ARFLAGS) $@ $(SEARCH_LIB_OBJS)
+	$(RANLIB) libsearchswish-e.a
+
+
+libsearchtest: libsearchswish-e.a libtest.o
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libsearchswish-e.a $(LIBS)
 	chmod 755 $@
 	
 
