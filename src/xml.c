@@ -138,6 +138,8 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     /* clean up */
     XML_ParserFree(p);
 
+    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
+
     return parse_data.total_words;
 }
     
@@ -310,10 +312,7 @@ static void end_hndl(void *data, const char *el)
     if ( parse_data->ignore_tag )
     {
         if  (strcmp( parse_data->ignore_tag, tag ) == 0)
-        {
-            efree( parse_data->ignore_tag );
             parse_data->ignore_tag = NULL;
-        }
         return;
     }
 

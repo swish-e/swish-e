@@ -1446,7 +1446,11 @@ char   *estrndup(char *s, size_t n)
         newlen = lens;
     else
         newlen = n;
-    news = emalloc(newlen + 1);
+
+    if(newlen < n)
+        news = emalloc(n + 1);
+    else
+        news = emalloc(newlen + 1);
     memcpy(news, s, newlen);
     news[newlen] = '\0';
     return news;
