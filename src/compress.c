@@ -215,7 +215,7 @@ unsigned long UNPACKLONG2(unsigned char *buffer)
 #define IS_FLAG              0x80  /* Binary 10000000 */   
 #define COMMON_STRUCTURE     0x60  /* Binary 01100000 */
 #define COMMON_IN_FILE       0x20  /* Binary 00100000 */
-#define COMMON_IN_RESERVED   0x40  /* Binary 01000000 */
+#define COMMON_IN_HTML_BODY  0x40  /* Binary 01000000 */
 #define POS_4_BIT            0x10  /* Binary 00010000 */
 /************************************************************************
 
@@ -316,11 +316,11 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
                 case IN_FILE:
                     *flag |= COMMON_IN_FILE; 
                      break;     
-/*
-                case IN_RESERVED:
-                    *flag |= COMMON_IN_RESERVED; 
+
+                case IN_BODY | IN_FILE:
+                    *flag |= COMMON_IN_HTML_BODY; 
                      break;     
-*/
+
                 default:         
                     *p++ = (unsigned char) structure;
                     *flag |= COMMON_STRUCTURE;
@@ -494,11 +494,11 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
                 case COMMON_IN_FILE:
                     structure = IN_FILE;
                     break;
-/*
-                case COMMON_IN_RESERVED:
-                    structure = IN_RESERVED;
+
+                case COMMON_IN_HTML_BODY:
+                    structure = IN_FILE | IN_BODY;
                     break;
-*/
+
                 default:
                     structure = (int)((unsigned char) *p++);
                     break;
