@@ -956,9 +956,8 @@ static unsigned char *uncompress_property( SWISH *sw, PropIOBufPtr input_buf, un
 
     if ( input_buf->propLen == 0 ) /* wasn't compressed */
     {
-        input_buf->propLen = read_size;
+        input_buf->propLen = compressed_len;
         return input_buf->buffer;
-printf("NOT COMPRESSED\n");        
     }
         
 
@@ -974,6 +973,10 @@ printf("NOT COMPRESSED\n");
 
 #else
 
+    if ( input_buf->propLen != 0 )
+        progerr("The index was created with zlib compression.\nThis version of swish was not compiled with zlib");
+
+    input_buf->propLen = compressed_len;
     return input_buf->buffer;
 
 #endif

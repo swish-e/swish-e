@@ -497,6 +497,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
         parse_data->summary.save_size = parse_data->summary.meta->max_len;
         parse_data->summary.meta->max_len = stordesc->size;
         parse_data->summary.tag = stordesc->field;
+        strtolower(parse_data->summary.tag);
     }
 
 
