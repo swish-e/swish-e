@@ -98,12 +98,14 @@ long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, in
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
-#ifdef USE_BTREE
+#ifdef USE_PRESORT_ARRAY
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB, int n_props );
+int     DB_WriteSortedIndex(SWISH *sw, int propID, int *data, int sz_data,void *DB);
 #else
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB );
-#endif
 int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB);
+#endif
+
 int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
  
 int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
@@ -183,12 +185,13 @@ struct MOD_DB
     int    (*DB_CheckFileNum) (int filenum, void *DB);
     int    (*DB_RemoveFileNum) (int filenum, void *DB);
 
-#ifdef USE_BTREE
+#ifdef USE_PRESORT_ARRAY
     int    (*DB_InitWriteSortedIndex) (void *DB, int n_props);
+    int    (*DB_WriteSortedIndex) (int propID, int *data, int sz_data,void *DB);
 #else
     int    (*DB_InitWriteSortedIndex) (void *DB);
-#endif
     int    (*DB_WriteSortedIndex) (int propID, unsigned char *data, int sz_data,void *DB);
+#endif
     int    (*DB_EndWriteSortedIndex) (void *DB);
      
     int    (*DB_InitReadSortedIndex) (void *DB);
