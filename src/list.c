@@ -182,6 +182,10 @@ void init_header(INDEXDATAHEADER *header)
 
     /* this is to ignore numbers */
     header->numberchars_used_flag = 0;  /* not used by default*/
+
+
+    /* initialize the stemmer/fuzzy structure to None */
+    header->fuzzy_data = set_fuzzy_mode( header->fuzzy_data, "None" );
 }
 
 
@@ -213,6 +217,10 @@ void free_header(INDEXDATAHEADER *header)
 
     if ( header->metaID_to_PropIDX )
         efree( header->metaID_to_PropIDX );
+
+    /* free up the stemmer */
+    free_fuzzy_mode( header->fuzzy_data );
+
 
 #ifndef USE_BTREE
     if ( header->TotalWordsPerFile )

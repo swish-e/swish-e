@@ -2578,7 +2578,8 @@ the Swish-e distribution; they must be downloaded and installed separately.
 The advantage of this method is that new filtering methods can be installed easily.
 
 This system is designed to work with the -S http and -prog methods, but may also be used
-with the C<FileFilter> feature and -S fs indexing method.  See F<filter-bin/swish_filter.pl> for
+with the C<FileFilter> feature and -S fs indexing method.  See 
+F<$prefix/share/doc/swish-e/examples/filter-bin/swish_filter.pl> for
 an example.
 
 See the F<filters/README> file for more information.

@@ -195,7 +195,6 @@ AC_ARG_ENABLE(incremental,
 
 if test x$btree = xyes; then
     AC_MSG_WARN([** Buidling with developer only incremental indexing code **])
-    dnl BTREE_OBJS="libswish_e_la-btree.lo libswish_e_la-array.lo libswish_e_la-worddata.lo libswish_e_la-fhash.lo"
     BTREE_OBJS="btree.lo array.lo worddata.lo fhash.lo"
     AC_SUBST(BTREE_OBJS)
     AC_DEFINE(USE_BTREE,[],[Experimental BTREE support])

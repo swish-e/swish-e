@@ -49,7 +49,7 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	soundex.obj docprop.obj compress.obj xml.obj txt.obj \
 	metanames.obj result_sort.obj html.obj \
 	filter.obj parse_conffile.obj result_output.obj date_time.obj \
-	keychar_out.obj extprog.obj bash.obj db_native.obj dump.obj \
+	keychar_out.obj extprog.obj db_native.obj dump.obj \
 	entities.obj swish_words.obj \
 	proplimit.obj swish_qsort.obj ramdisk.obj rank.obj \
 	xmlparse.obj xmltok.obj xmlrole.obj swregex.obj vsnprintf.obj \
@@ -167,7 +167,6 @@ result_output.obj : result_output.c
 date_time.obj : date_time.c
 keychar_out.obj : keychar_out.c
 extprog.obj : extprog.c
-bash.obj : bash.c
 db_native.obj : db_native.c
 dump.obj : dump.c
 entities.obj : entities.c

@@ -96,10 +96,10 @@ unsigned verybighash(char *s)
 *       address of an array of swline pointers
 *
 *   Returns:
-*       void;
+*       swline that was added
 *******************************************************************/
 
-void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
+struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
 {
     struct swline **hash_array = table_ptr->hash_array;
     unsigned hashval;
@@ -137,6 +137,8 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
     hash_array[hashval] = sp;
 
     table_ptr->count++;
+
+    return sp;
 }
 
 /******************************************************************

@@ -65,7 +65,7 @@ SwishIndexNames(self)
             XPUSHs(sv_2mortal(newSVpv( (char *)*index_name ,0 )));
             index_name++;
         }
-        
+
 
 
 void
@@ -115,7 +115,7 @@ decode_header_value( swish_handle, header_value, header_type )
         SV *header_type
 
 
-    PREINIT:        
+    PREINIT:
         const char **string_list;
         SWISH_HEADER_VALUE *head_value;
 
@@ -146,7 +146,7 @@ decode_header_value( swish_handle, header_value, header_type )
                 if ( !string_list ) /* Don't think this can happen */
                     XSRETURN_EMPTY;
 
-            
+
                 while ( *string_list )
                 {
                     XPUSHs(sv_2mortal(newSVpv( (char *)*string_list ,0 )));
@@ -203,12 +203,12 @@ New_Search_Object(swish_handle, query = NULL)
         char * CLASS = "SWISH::API::Search";
 
     CODE:
-	RETVAL = New_Search_Object( swish_handle, query );
+        RETVAL = New_Search_Object( swish_handle, query );
         if ( RETVAL )
-	    SvREFCNT_inc( (SV *)SwishSearch_parent( RETVAL ) );
+            SvREFCNT_inc( (SV *)SwishSearch_parent( RETVAL ) );
 
     OUTPUT:
-	RETVAL
+        RETVAL
 
 
 # Returns a SW_RESULTS object
@@ -223,10 +223,10 @@ SwishQuery( swish_handle, query = NULL )
         SW_RESULTS results;
 
     PPCODE:
-	results = SwishQuery( swish_handle, query );
+        results = SwishQuery( swish_handle, query );
         if ( results )
         {
-	    SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
+            SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
             ST(0) = sv_newmortal();
             sv_setref_pv( ST(0), CLASS, (void *)results );
             ResultsSetRefPtr( results, (void *)SvRV(ST(0)) );
@@ -241,7 +241,7 @@ SwishWordsByLetter(handle, filename, c)
      SW_HANDLE handle
      char *filename
      char c
-     
+
      PREINIT:
          char *Words,*tmp;
          int c2;
@@ -272,10 +272,10 @@ char *
 SwishStemWord(handle, word)
      SW_HANDLE handle
      char *word
-            
 
 
-        
+
+
 # **************************************************************
 # 
 #             SWISH::API::Search
@@ -295,7 +295,7 @@ DESTROY(search)
         {
             SV *parent = (SV *)SwishSearch_parent( search );
             Free_Search_Object( search );
-	    SvREFCNT_dec( parent );
+            SvREFCNT_dec( parent );
         }
 
 
@@ -303,7 +303,7 @@ void
 SwishSetQuery(search,query)
     SW_SEARCH search
     char * query
-    
+
 
 void
 SwishSetStructure(search, structure)
@@ -318,7 +318,7 @@ SwishPhraseDelimiter(search, delimiter)
 
     CODE:
         SwishPhraseDelimiter(search, delimiter[0] );
-    
+
 
 void
 SwishSetSearchLimit(search, property, low, high)
@@ -326,7 +326,7 @@ SwishSetSearchLimit(search, property, low, high)
     char * property
     char * low
     char * high
-    
+
 
 void
 SwishResetSearchLimit(search)
@@ -353,7 +353,7 @@ SwishExecute( search, query = NULL )
     PPCODE:
         results = SwishExecute( search, query );
         {
-	    SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
+            SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
             ST(0) = sv_newmortal();
             sv_setref_pv( ST(0), CLASS, (void *)results );
             ResultsSetRefPtr( results, (void *)SvRV(ST(0)) );
@@ -366,7 +366,7 @@ SwishExecute( search, query = NULL )
 #
 #            SWISH::API::Results
 #
-# ***************************************************************/
+# ***************************************************************
 
 
 MODULE = SWISH::API        PACKAGE = SWISH::API::Results    PREFIX = Swish
@@ -379,7 +379,7 @@ DESTROY(results)
 
     CODE:
         if ( results )
-    	{
+        {
             SV *parent = (SV *)SwishResults_parent( results );
             Free_Results_Object( results );
             SvREFCNT_dec( parent );
@@ -469,15 +469,15 @@ SwishParsedWords(results, index_name)
 
 
 
-        
-    
+
+
 
 # **************************************************************
 #
 #            SWISH::API::Result (single result)
 #
 #
-# ***************************************************************/
+# ***************************************************************
 
 
 MODULE = SWISH::API        PACKAGE = SWISH::API::Result    PREFIX = Swish
@@ -537,7 +537,7 @@ char *
 SwishResultPropertyStr( result, pname)
     SW_RESULT result
     char * pname
-        
+
 
 
 void
@@ -565,6 +565,82 @@ SwishResultIndexValue(self, header_name)
         SPAGAIN;
 #        PUTBACK;
 
+# This returns a fuzzy word object based on the result
+
+SW_FUZZYWORD
+SwishFuzzyWord(result, word)
+    SW_RESULT result
+    char *word
+
+    PREINIT:
+        char * CLASS = "SWISH::API::FuzzyWord";
+
+    CODE:
+        RETVAL = SwishFuzzyWord(result,word);
+
+    OUTPUT:
+        RETVAL
 
 
+# This returns the name of the stemmer used for this index
+
+const char*
+SwishFuzzyMode(result)
+    SW_RESULT result
+
+
+
+# **************************************************************
+#
+#            SWISH::API::FuzzyWord
+#
+# Methods for accessing a SW_FUZZYWORD structure
+#
+# ***************************************************************
+
+
+MODULE = SWISH::API        PACKAGE = SWISH::API::FuzzyWord    PREFIX = SwishFuzzy
+
+
+
+# method to automatically free memory when object goes out of scope
+void
+DESTROY(fw)
+    SW_FUZZYWORD fw
+
+    CODE:
+        if ( fw )
+            SwishFuzzyWordFree( fw );
+
+# returns number of words in the fuzzy structure
+
+int
+SwishFuzzyWordCount( fw )
+    SW_FUZZYWORD fw
+
+# returns return value from stemmer
+
+int
+SwishFuzzyWordError( fw )
+    SW_FUZZYWORD fw
+
+
+# returns an array of stemmed (or not) words.  
+# The "or not" is because the word might not have been stemmed.
+
+void
+SwishFuzzyWordList( fw )
+    SW_FUZZYWORD fw
+
+    PREINIT:
+        const char **list;
+
+    PPCODE:
+        list = SwishFuzzyWordList( fw );
+
+        while ( *list )
+        {
+            XPUSHs(sv_2mortal( newSVpv( (char *)*list, 0 ) ));
+            list++;
+        }
 

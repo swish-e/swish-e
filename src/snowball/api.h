@@ -1,3 +1,5 @@
+#ifndef STEMMER_API_H
+#define STEMMER_API_H 1
 
 typedef unsigned char symbol;
 
@@ -25,3 +27,4 @@ extern void SN_close_env(struct SN_env * z);
 
 extern void SN_set_current(struct SN_env * z, int size, const symbol * s);
 
+#endif

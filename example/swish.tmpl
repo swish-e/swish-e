@@ -144,12 +144,14 @@
                         </TMPL_LOOP>
                     </TMPL_IF>
 
-
+                <TMPL_IF JUST_A_COMMENT>
+                <!-- example of how to explicitly list display properties -->
                     <small>
                         <TMPL_VAR swishdocpath>
                         <TMPL_VAR swishlastmodified>
                         <TMPL_VAR swishdocsize> bytes.
                     </small>
+                 </TMPL_IF>
                     </dd>
                 </dl>
                     

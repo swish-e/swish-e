@@ -1,7 +1,7 @@
 Name "SWISH-E"
 OutFile "swishsetup.exe"
 
-!define VERSION "2.5.0"
+!define VERSION "2.4.1"
 
 ; Some default compiler settings (uncomment and change at will):
 SetCompress auto ; (can be off or force)
