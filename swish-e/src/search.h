@@ -27,7 +27,7 @@
 */
 
 int SwishAttach _AP ((SWISH *, int));
-int search _AP ((SWISH *, char *, int, int));
+int search (SWISH *, char *, int);
 RESULT *SwishNext _AP ((SWISH *));
 struct swline *fixnot _AP ((struct swline *));
 
@@ -68,7 +68,7 @@ RESULT *addsortresult _AP ((SWISH *, RESULT *sp, RESULT *));
 
 RESULT *sortresultsbyrank _AP ((SWISH *, int structure));
 RESULT *sortresultsbyfilenum _AP ((RESULT *rp));
-void printsortedresults _AP ((SWISH *,int ));
+void printsortedresults (SWISH *);
 
 void getrawindexline _AP ((FILE *));
 int isokindexheader _AP ((FILE *));

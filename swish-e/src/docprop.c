@@ -21,6 +21,8 @@
 ** Many modifications to make all functions thread safe
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
+**
+** 2001-01-27  rasc   getPropertyByName rewritten, datatypes for properties.
 */
 
 #include "swish.h"
@@ -511,31 +513,6 @@ IndexFILE *tmpindexlist;
 }
 
 
-/* Returns the contents of the property "propertyname" of result r */
-/* Returns NULL if not found */
-char * getResultPropertyByName (SWISH *sw, char *propertyname, RESULT *r)
-{
-int i;
-char *p,*pname;
-char *propdata;  /* default value to NULL */
-
-		/* To avoid problems and for faster scan make propertyname */
-		/* to lowercase */
-	pname=estrdup(propertyname);     /* preserve original value */
-	for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
-		/* Search for the property name */
-	for(i=0;i<sw->numPropertiesToDisplay;i++)
-	{
-		if(!strcmp(sw->propNameToDisplay[i],pname)) break;
-	}
-
-	if(i!=sw->numPropertiesToDisplay)    
-		propdata = r->Prop[i];     /* found !! */
-	else
-		propdata = NULL;   /* not found */
-	efree(pname);
-	return propdata;
-}
 
 /* #### Function to format the property as a string */
 char *getPropAsString(IndexFILE *indexf,docPropertyEntry *p)
@@ -600,3 +577,100 @@ docPropertyEntry *p;
 			fi->fi.summary=bin2string(p->propValue,p->propLen);
 	}
 }
+
+
+
+
+
+/* 
+  -- Returns the contents of the property "propertyname" of result r
+  -- This routines returns properties in their origin. representation.
+  -- This routines knows all internal (auto) and user properties!
+
+  -- Return: NULL if not found, or ptr to alloced structure
+             property value and type (structure has to be freed()!)..
+
+  -- 2000-12  jruiz -- inital coding
+  -- 2001-01  rasc  -- value and type structures, Auto(internal) properties, rewritten
+ */
+
+PropValue * getResultPropertyByName (SWISH *sw, char *propertyname, RESULT *r)
+{
+int       i;
+char      *p,*pname;
+char      *propdata;  /* default value to NULL */
+PropValue *pv;
+
+
+
+	/* To avoid problems and for faster scan make propertyname */
+	/* to lowercase */
+
+	pname=estrdup(propertyname);     /* preserve original value */
+	for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
+
+		/* Search for the property name */
+
+	pv = (PropValue *) emalloc (sizeof (PropValue));
+	pv->datatype = UNDEFINED;
+
+	/*
+	  -- check for auto properties ( == internal metanames)
+	 */
+
+	if (! strcmp (pname, AUTOPROPERTY_TITLE) ) {
+ 		pv->datatype = STRING;
+		pv->value.v_str = r->title;
+	} else if (! strcmp (pname, AUTOPROPERTY_DOCPATH)  ) {
+		pv->datatype = STRING;
+		pv->value.v_str = r->filename;
+	} else if (! strcmp (pname, AUTOPROPERTY_SUMMARY)  ) {
+		pv->datatype = STRING;
+		pv->value.v_str = r->summary;
+	} else if (! strcmp (pname, AUTOPROPERTY_DOCSIZE)  ) {
+		pv->datatype = INTEGER;
+		pv->value.v_int = r->size;
+	} else if (! strcmp (pname, AUTOPROPERTY_LASTMODIFIED)  ) {
+		pv->datatype = DATE;
+		pv->value.v_date = r->last_modified;
+	} else if (! strcmp (pname, AUTOPROPERTY_STARTPOS)  ) {
+		pv->datatype = INTEGER;
+		pv->value.v_int = r->start;
+	} else if (! strcmp (pname, AUTOPROPERTY_DOCSIZE)  ) {
+		pv->datatype = INTEGER;
+		pv->value.v_int = r->size;
+	} else if (! strcmp (pname, AUTOPROPERTY_INDEXFILE)  ) {
+		pv->datatype = STRING;
+		pv->value.v_str = r->indexf->line;
+	} else if (! strcmp (pname, AUTOPROPERTY_RESULT_RANK)  ) {
+		pv->datatype = INTEGER;
+		pv->value.v_int = r->rank;
+	} else if (! strcmp (pname, AUTOPROPERTY_REC_COUNT)  ) {
+		pv->datatype = INTEGER;
+		pv->value.v_int = r->count;
+	} else {
+
+		/* User defined Properties
+		   -- so far we only know STRING types as user properties
+		   -- $$$ ToDO: other types...
+		 */
+
+		for(i=0;i<sw->numPropertiesToDisplay;i++) {
+			if(!strcmp(pname,sw->propNameToDisplay[i])) {
+				pv->datatype = STRING;
+				pv->value.v_str = r->Prop[i];
+				break;
+			}
+		}
+	}
+ 
+	efree(pname);
+	if (pv->datatype == UNDEFINED) {	/* nothing found */
+	  efree (pv);
+	  pv = NULL;
+	}
+
+	return pv;
+}
+
+

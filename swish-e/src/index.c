@@ -439,7 +439,7 @@ unsigned long int tmp;
 	if(filename)
 	{
                         /* Check if filename is internal swish metadata */
-		if((q=getMetaNameData(indexf,META_FILENAME)))
+		if((q=getMetaNameData(indexf,AUTOPROPERTY_DOCPATH)))
 		{
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))

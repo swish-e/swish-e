@@ -40,6 +40,11 @@
 **
 ** 2001-01-01 Jose Ruiz Added ISOTime 
 **
+** 2001-01-xx Rainer Scherg (rasc) Added property type structures, etc.
+** 2001-01-xx Rainer Scherg (rasc) cmd-opt should be own structure in SWISH * (started)
+**
+** 2001-02-05 rasc replaced ISOTime by binary value
+**
 */
 
 #include <stdio.h>
@@ -50,6 +55,7 @@
 #include <locale.h>
 #include <ctype.h>
 #include <errno.h>
+#include <time.h>
 #include "config.h"
 
 #ifdef NEXTSTEP
@@ -76,10 +82,6 @@
 #include <time.h>
 #include <setjmp.h>
 
-
-/* -- moved to top-level configure.in
-#define SWISH_VERSION "2.1-dev19"
-*/
 
 #define SWISH_MAGIC 21076321L
 
@@ -417,6 +419,7 @@ typedef struct IndexFILE {
 } IndexFILE;
 
 typedef struct RESULT {
+	int count;		  /* result Entry-Counter */
 	int filenum;
 	int rank;
 	int structure;
@@ -426,7 +429,7 @@ typedef struct RESULT {
 	struct RESULT *head;
 	struct RESULT *nextsort;   /* Used while sorting results */
 	char *filename;
-	char ISOTime[20];
+	time_t last_modified;	/* former ISOTime */
 	char *title;
 	char *summary;
 	int start;
@@ -529,7 +532,54 @@ struct char_lookup_st
 #define VAR
 #endif
 
+
+/*
+   -- Structure CMDPARAM stores commandline parameters and
+   --   -options like -v -x "string" etc.
+   -- This structure is part of the global structure SWISH.
+   -- 2001-01-xx (rasc) 
+
+   $$$ ToDO:  move all cmd params to this structure 
+       (takes some time and code changes)
+*/
+
 typedef struct {
+      char *extendedformat;		/* -x "fmt", holds fmt or NULL */
+} CMDPARAM;
+
+
+
+/* -- Property data types 
+   -- Result handling structures, (types storage, values)
+   -- Warnung! Changing types inflicts outpur routines, etc 
+   -- 2001-01  rasc
+  
+   $$$ ToDO: data types are not yet fully supported by swish
+*/
+
+
+typedef enum {				/* Property Datatypes */
+    UNDEFINED=-1, UNKNOWN=0, STRING, INTEGER, FLOAT, DATE
+} PropType;
+ 
+typedef union {				/* storage of the PropertyValue */
+	char   *v_str;		/* strings */
+	int     v_int;		/* Integer */
+	time_t  v_date;		/* Date    */
+	double  v_float;	/* Double Float */
+} u_PropValue1; 
+
+typedef struct {			/* Propvalue with type info */
+	PropType     datatype;
+	u_PropValue1  value;
+} PropValue;
+
+
+
+typedef struct {
+
+    CMDPARAM  opt;
+
 	/* All files header info */
     INDEXDATAHEADER mergedheader;
 
@@ -680,7 +730,7 @@ struct _indexing_data_source_def
 #ifdef GLOBAL_VARS
 
 VAR struct _indexing_data_source_def *IndexingDataSource;
-VAR char *indexchars ="abcdefghijklmnopqrstuvwxyzÁÂÃÈıÊËÌ®Ğ×İŞÍğÎÏÒÓÔÕØÙÛîèãõš›œ–€ß‚ƒ„…†‡ˆ‰Š‹Œ±øŸ÷°£Ü·”“’²‘&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}";
+VAR char *indexchars ="abcdefghijklmnopqrstuvwxyzÃÈ®«™Úœ½Îõ£¥Í¶ğÔÕØÛšƒÜÄêâ§›óú“ÑÌ¤‰‚„€…‡Š‹ˆŒıÊµÿ—üûºòù”¢ñ¹÷ŸËÖ†Ğ&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}";
 
 VAR char *defaultstopwords[] = {
 "a", "above", "according", "across", "actually", "adj", "after", 
@@ -798,5 +848,4 @@ void SwishResetSearch _AP ((SWISH *));
 RESULT * SwishNext _AP ((SWISH *));
 int SwishSearch _AP ((SWISH *, char *, int , char *, char *));
 int getnumPropertiesToDisplay _AP ((SWISH *));
-
-
+char *BuildErrorString(char *,int *,char *,char *);
