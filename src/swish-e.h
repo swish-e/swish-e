@@ -48,6 +48,7 @@ SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEA
 /* Limit searches by structure */
 
 
+#define IN_FILE_BIT     0
 #define IN_TITLE_BIT    1
 #define IN_HEAD_BIT     2
 #define IN_BODY_BIT     3
