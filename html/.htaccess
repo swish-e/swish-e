@@ -1,0 +1,4 @@
+<files search.cgi>
+    SetHandler cgi-script
+    allow from all
+</files>

@@ -210,15 +210,24 @@ source_files = \
 	$(top_srcdir)/filters/SWISH/Filter.pm.in
 
 
+# Extra files for creating the search page for the docs:
+search_doc_files = \
+	.htaccess \
+	search.html \
+	.swishcgi.conf \
+	swish.conf \
+	split.pl
+
+
 
 # These are what get installed -- they will also be 
 # a dependency of the all-am target (because of _DATA)
-html_DATA = $(targets)
+html_DATA = $(targets) $(search_doc_files)
 image_DATA = $(image_targets)
 
 
 # These are all placed in the distribution
-EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp)
+EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp) $(search_doc_files)
 subdir = html
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -434,6 +443,15 @@ uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
 @BUILDDOCS_TRUE@$(timestamp) : $(source_files)
 @BUILDDOCS_TRUE@	@(cd $(top_srcdir)/doc && bin/build -f)
 @BUILDDOCS_TRUE@	@touch $(timestamp)
+
+#	@(cd $(htmldir) && $(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf -v0)
+
+# Target to build searchable HTML docs
+searchdoc :
+	cp $(libexecdir)/swish.cgi $(htmldir)
+	( cd $(htmldir) && \
+		$(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf && \
+		$(PERL) -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a target="_parent" href="search.html">Search The Documentation</a>]</center>}' index.html index_long.html)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
