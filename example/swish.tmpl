@@ -5,105 +5,117 @@
        </title>
     </head>
     <body>
-        <div align=center>
-            <h2>SWISH-E Searcher<small><sup>&copy;</sup></small></h2>
-            <TMPL_VAR MESSAGE><br>
+        <h2>
+        <img src="/swish.gif">
+        <TMPL_VAR MESSAGE>
+        </h2>
 
-            <form method="post" action="<TMPL_VAR MY_URL>" enctype="application/x-www-form-urlencoded" class="form">
-                <input type="text" name="query"  size=32 maxlength=200 />
-                <input type="submit" name="submit" value="Search!" /><br>
+        <form method="post" action="<TMPL_VAR MY_URL>" enctype="application/x-www-form-urlencoded" class="form">
+            <input type="text" name="query"  size=32 maxlength=200 />
+            <input type="submit" name="submit" value="Search!" /><br>
 
-                <TMPL_IF METANAMES>
-                    Limit search to:
-                    <TMPL_LOOP METANAMES>
-                        <input type="radio" name="metaname" value="<TMPL_VAR METANAME>"><TMPL_VAR METANAME>
+            <TMPL_IF METANAMES>
+                Limit search to:
+                <TMPL_LOOP METANAMES>
+                    <input type="radio" name="metaname" value="<TMPL_VAR METANAME>"><TMPL_VAR METANAME>
+                </TMPL_LOOP>
+                <TMPL_UNLESS ALL_META>
+                    <input type="radio" name="metaname" value=0>Do not limit
+                </TMPL_UNLESS>
+                <br>
+            </TMPL_IF>
+
+
+
+            <TMPL_IF SORTS>
+                Sort by:
+                <select name="sort">
+                    <TMPL_LOOP SORTS>
+                        <option  value="<TMPL_VAR SORT_BY>" ><TMPL_VAR SORT_BY_DESC></option>
                     </TMPL_LOOP>
-                    <TMPL_UNLESS ALL_META>
-                        <input type="radio" name="metaname" value=0>Do not limit
-                    </TMPL_UNLESS>
-                    <br>
-                </TMPL_IF>
+                </select>
+                <input type="checkbox" name="reverse" value=1>Reverse Sort
+            </TMPL_IF>                            
 
+        </form>
 
-
-                <TMPL_IF SORTS>
-                    Sort by:
-                    <select name="sort">
-                        <option  value="swishrank" >Rank</option>
-                        <TMPL_LOOP SORTS>
-                            <option  value="<TMPL_VAR SORT_BY>" ><TMPL_VAR SORT_BY></option>
-                        </TMPL_LOOP>
-                    </select>
-                    <input type="checkbox" name="reverse" value=1>Reverse Sort
-                </TMPL_IF>                            
-
-            </form>
-        </div>
 
         <TMPL_IF FILES>
-            <div align=center>
-                <small>
-                Total time: <TMPL_VAR TOTAL_TIME> seconds |
-                Run time: <TMPL_VAR RUN_TIME> |
-                Search time: <TMPL_VAR SEARCH_TIME>
-                </small>
-                <p>
-                <font size="+1">Results for [<font color=red><TMPL_VAR QUERY></font>]</font>
-                <p>
-                Showing <TMPL_VAR FROM> to <TMPL_VAR TO> of <TMPL_VAR HITS> results.
-                <br>
-                
-                <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
+            <table cellpadding=0 cellspacing=0 border=0 width="100%">
+                <tr>
+                    <td height=20 bgcolor="#FF9999">
+                        <font size="-1" face="Geneva, Arial, Helvetica, San-Serif">
+                        &nbsp;Results for <b><TMPL_VAR QUERY></b>
+                        &nbsp; <TMPL_VAR FROM> to <TMPL_VAR TO> of <TMPL_VAR HITS> results.
+                        </font>
+                    </td>
+                </tr>
+                <tr>
+                    <td height=20 bgcolor="#EEEEEE">
+                        <font size="-2" face="Geneva, Arial, Helvetica, San-Serif">
+                        Total time: <TMPL_VAR TOTAL_TIME> seconds |
+                        Run time: <TMPL_VAR RUN_TIME> |
+                        Search time: <TMPL_VAR SEARCH_TIME>
+                        </font>
+                    </td>
+                </tr>
+            </table>
+            
+            
+            <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
 
-                <TMPL_IF PREV_COUNT>
-                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
-                </TMPL_IF>
-                
-                <TMPL_IF NEXT>
-                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
-                </TMPL_IF>
-                <p>
+            <TMPL_IF PREV_COUNT>
+                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
+            </TMPL_IF>
+            
+            <TMPL_IF NEXT>
+                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
+            </TMPL_IF>
+            <p>
 
-                <table border=0 cellspacing=0>    
 
-                <TMPL_LOOP FILES>
-                    <tr <TMPL_IF __ODD__>bgcolor="#EEEEEE"</TMPL_IF>>
-                        <td valign=top><TMPL_VAR RECNUM>.</td>
-                        <td>
-                            <a href="<TMPL_VAR FILE>"><TMPL_VAR TITLE></a><br>
-                            <small><TMPL_VAR FILE></small>
 
-                            <TMPL_IF PROPERTIES>
-                                <blockquote>
-                                    <TMPL_LOOP PROPERTIES>
-                                        <b><TMPL_VAR PROP_NAME></b>: <TMPL_VAR PROP_VALUE><br>
-                                    </TMPL_LOOP>
-                                </blockquote>
-                            </TMPL_IF>
+            <TMPL_LOOP FILES>
+                <dl>
+                    <dt><a href="<TMPL_VAR swishdocpath>"><TMPL_VAR swishtitle></a> <small>-- rank: <b><TMPL_VAR swishrank></b></small></dt>
+                    <dd><TMPL_VAR swishdescription>...<br>
 
-                            
-                        </td>
-                        <td valign=top>
-                            <small>[<TMPL_VAR TIME>]</small><br>
-                            <small>[score: <TMPL_VAR RANK>]</small>
-                        </td>
-                    </tr>
-                </TMPL_LOOP>
-                </table>
-                <p>
-                <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
+                    <TMPL_IF PROPERTIES>
+                        <p>
+                        <TMPL_LOOP PROPERTIES>
+                            <b><TMPL_VAR PROP_NAME></b>: <TMPL_VAR PROP_VALUE><br>
+                        </TMPL_LOOP>
+                    </TMPL_IF>
 
-                <TMPL_IF PREV_COUNT>
-                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
-                </TMPL_IF>
-                
-                <TMPL_IF NEXT>
-                    <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
-                </TMPL_IF>
 
-                
-            </div>
+                    <small>
+                        <a href="<TMPL_VAR swishdocpath>"><TMPL_VAR swishdocpath></a>
+                        <TMPL_VAR swishlastmodified>
+                        <TMPL_VAR swishdocsize> bytes.
+                    </small>
+                    </dd>
+                </dl>
+                    
+            </TMPL_LOOP>
+
+            <p>
+            <TMPL_IF PAGES><br>Pages: <TMPL_VAR PAGES></TMPL_IF>
+
+            <TMPL_IF PREV_COUNT>
+                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR PREV>">Previous <TMPL_VAR PREV_COUNT></a>
+            </TMPL_IF>
+            
+            <TMPL_IF NEXT>
+                <a href="<TMPL_VAR QUERY_HREF>&amp;start=<TMPL_VAR NEXT>">Next <TMPL_VAR NEXT_COUNT></a>
+            </TMPL_IF>
+
         </TMPL_IF>
+
+        <hr>
+        <TMPL_IF MOD_PERL>
+            Powered by: <img src="http://perl.apache.org/logos/mod_perl.gif">
+        </TMPL_IF>
+        
         
     </body>
 </html>
