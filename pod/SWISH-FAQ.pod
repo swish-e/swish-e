@@ -346,7 +346,7 @@ For example:
 =head3 How can I prevent phrases from matching across sentences?
 
 Use the
-L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters">
+L<BumpPositionCounterCharacters|SWISH-CONFIG/"item_BumpPositionCounterCharacters">
 configuration directive.
 
 =head3 Swish-e isn't indexing a certain word or phrase.
@@ -1000,7 +1000,7 @@ system to the same metaname:
     # flag the marketing specific pages
     ExtractPath department regex !^/web/(marketing|sales)/.+$!marketing/
     ExtractPath department regex !^/internal/marketing/.+$!marketing/
-    
+
     # flag the technical departments pages
     ExtractPath department regex !^/web/(tech|bugs)/.+$!tech/
 

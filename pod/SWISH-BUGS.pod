@@ -13,7 +13,7 @@ free to bug the developers about it on the Swish-e discussion list.
 
 =over 4
 
-=item Stopwords not removed from query with Soundex
+=item * Stopwords not removed from query with Soundex
 
 In dev version 2.5.2 noticed that stopwords are not removed from the query
 when using Soundex.  The plan is to rewrite the parser soon... (July 2004)
