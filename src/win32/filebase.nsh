@@ -8,11 +8,12 @@ Section "Required Components" SecProgram
     File ..\..\..\libxml2\lib\*.dll
     File ..\..\..\zlib\bin\*.dll
     File ..\..\..\pcre\bin\*.dll
+    File ..\expat\bin\*.dll
     
     ; Local Files
     SetOutPath "$INSTDIR"
     File COPYING.txt
-    File ..\swish-e.exe
+    File swish-e.exe
     File fixperl.pl
     Delete /REBOOTOK "$INSTDIR\*.dll"
     
@@ -59,7 +60,7 @@ Section "ActiveX Control" SecSwishCtl
     SetOutPath "$SYSDIR"
     ; SWISH-E Control
     File ..\..\..\swishctl\swishctl.dll
-    Exec "regsvr32 /s $SYSDIR\swishctl.dll"
+    RegDLL $SYSDIR\swishctl.dll
     
     ; Local Files
     SetOutPath "$INSTDIR"
@@ -95,12 +96,14 @@ SubSectionEnd
     
 SubSection "PERL Support" SubSecPerlSupport
     Section /o "PERL API" SecPerlApi
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlApi" "1"
-        SetOutPath "$INSTDIR\lib\swish-e"
         
         ; SWISH::API Scripts
-        File /r ..\..\perl\blib\lib\SWISH
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
+        ; File /r ..\..\perl\blib\lib\SWISH
+        File ..\..\perl\API.pm
         
         ; SWISH::API Binaries go into $PERL\lib\auto\SWISH\API
         Call ActivePerlLocation
@@ -110,6 +113,7 @@ SubSection "PERL Support" SubSecPerlSupport
     SectionEnd
     
     Section /o "PERL Filters" SecPerlFilter
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlFilters" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
@@ -117,22 +121,28 @@ SubSection "PERL Support" SubSecPerlSupport
         File ..\..\filter-bin\swish_filter.pl.in
         File ..\..\filter-bin\_binfilter.sh
         File ..\..\filter-bin\_pdf2html.pl
+        
+        SetOutPath "$INSTDIR\lib\swish-e\perl"
         File /r ..\..\filters\SWISH
         
         ; CreateShortcut "$SMPROGRAMS\SWISH-E\Browse_Filters.lnk" "$INSTDIR\lib\swish-e"
     SectionEnd
     
     Section /o "PERL -S prog Methods" SecPerlMethod
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlMethods" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
         ; CGI Scripts
         File ..\..\prog-bin\*.pl
-        File ..\..\prog-bin\*.pm
         File ..\..\prog-bin\*.in
+        
+        SetOutPath "$INSTDIR\lib\swish-e\perl"
+        File ..\..\prog-bin\*.pm
     SectionEnd
     
     Section /o "PERL CGI" SecPerlCgi
+        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "perlmoduledir" "$INSTDIR\lib\swish-e\perl"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Options" "PerlCgi" "1"
         SetOutPath "$INSTDIR\lib\swish-e"
@@ -141,6 +151,8 @@ SubSection "PERL Support" SubSecPerlSupport
         File ..\..\example\search.tt
         File ..\..\example\swish.tmpl
         File ..\..\example\swish.gif
+        
+        SetOutPath "$INSTDIR\lib\swish-e\perl"
         File /r ..\..\example\modules\SWISH
     SectionEnd
 SubSectionEnd
@@ -195,6 +207,8 @@ Section Uninstall
     Call un.ActivePerlLocation
     Pop $R1
     RMDir /r "$R1\lib\auto\SWISH"
+    
+    UnRegDLL $SYSDIR\swishctl.dll
     
     ; Other files
     RMDir /r "$INSTDIR"
