@@ -710,6 +710,33 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        if (strcasecmp(w0, "PropertyNamesUseStrcoll") == 0)
+#ifndef HAVE_STRCOLL
+            progerr("Option %s is not available on this platform",w0);
+#else
+        {
+            struct metaEntry *m;
+
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( !(m = getPropNameByName( &indexf->header, sl->word[i])) )
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING|META_USE_STRCOLL, 0);
+                else
+                {
+                    if ( !is_meta_string( m ) )
+                        progerr("%s - name '%s' is not a STRING type of Property", w0, sl->word[i] );
+
+                    m->metaType |= META_USE_STRCOLL;
+                }
+            }
+
+            continue;
+        }
+#endif
+
         if (strcasecmp(w0, "PropertyNamesIgnoreCase") == 0)
         {
             struct metaEntry *m;

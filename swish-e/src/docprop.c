@@ -1,12 +1,12 @@
 /*
 $Id$
 **
-** Functions to manage the index's Document Properties 
+** Functions to manage the index's Document Properties
 **
 ** File Created.
 ** Mark Gaulin 11/24/98
 **
-** change sprintf to snprintf to avoid corruption, 
+** change sprintf to snprintf to avoid corruption,
 ** and use MAXSTRLEN from swish.h instead of literal "200"
 ** SRE 11/17/99
 **
@@ -28,10 +28,103 @@ $Id$
 ** 2001-03-15 rasc    Outputdelimiter var name changed
 ** 2001-06-08 wsm     Store propValue at end of docPropertyEntry to save memory
 ** 2001-06-14 moseley Most of the code rewritten, and propfile added
-** 
+**
 ** 2001-09 jmruiz - ReadAllDocPropertiesFromDisk rewriten to be used
 **                  by merge.c
 **
+*
+* Doc Properties:
+*
+*   Do not expec the properties to be null terminated.  There's an associated
+*   proplen with wach property.
+*
+*   When indexing:
+*       parser.c:flush_buffer calls addDocProperties()
+*
+*       addDocProperties() scans all metanames looking for the flag that
+*           indicates the text is inside that tag, and if so calls addDocProperty()
+*
+*       addDocProperty() then will either add or create a new property containing
+*           the text passed in.  If it's new (which is normally the case) then
+*           CreateProperty() is called.  That returns the actual property structure.
+*           addDocProperty() will create or extend the list of properties connected
+*           to the file, as needed.
+*
+*       After parsing is complete (all words indexed), index.c calls:
+*
+*       WritePropertiesToDisk() takes the list of properties assigned to the file (FileRec)
+*           struct and for each prop compresses with zlib and then call
+*           DB_WriteProperty() which writes the property to disk.
+*
+*       See db_native.c for how the data is written to disk.
+*
+*
+*
+*   Reading properties:
+*       There's a few ways props are read.  First the APIs:
+*
+*       SWISH::API provides SwishProperty()
+*           which calls a low-level function getResultPropValue() directly so
+*           that integers and strings can be created.  There's also
+*           SwishResultPropertyStr() which always returns a string.
+*
+*       The C library also provides two functions:
+*           SwishResultPropertyStr() (same as above) turns all props to strings.
+*           SwishResultPropertyULong() allow access numeric access to, well, numeric
+*           props.  You need to know ahead of time if the property is numeric/date
+*           before calling the ULong() function.  The ULong() function uses
+*           the getResultPropValue() (below) to get at the raw properyt.
+*
+*       SwishResultPropertyStr() calls  getDocProperty() which is a general interface
+*       to the properties:
+*
+*       getDocProperty() will return "internal" properties like rank, or
+*           read the disk for properties stored at indexing time.  For those
+*           "internal" properties getDocProperty() calls CreateProperty()
+*           directly.  CreateProperty() converts numbers or strings into a
+*           "propEntry" structure.
+*
+*           For on-disk properties getDocProperty() calls
+*           ReadSingleDocPropertiesFromDisk() which calls DB_ReadProperty() to
+*           read the raw data from disk, uncompresses if needed and then calls
+*           CreateProperty() to convert the data into a real proprty.
+*
+*       As noted above SWISH::API uses getResultPropValue() which calls
+*       getDocProperty() but returns a slightly different structure "PropValue"
+*       which is a union to hold the different types of properties in their raw form.
+*       This just allows the same return value to be used for both strings and integers.
+*
+*
+*   Properties created using CreateProperty() (and the functions that call it) need
+*   to be freed by calling freeProperty().
+*
+*   SwishResultPropertyStr() is a little odd in that it caches strings in the 
+*   db_results structure.  This is done so the caller doesn't have to worry
+*   about calling freeProperty().   Users of this function need to copy
+*   the strings locally as soon as possible.  For example, I think this would not work:
+*
+*       char *propA = SwishResultPropertyStr( resultA, "foo" );
+*       char *propB = SwishResultPropertyStr( resultB, "foo" );
+*       printf("The two props are %s and %s, propA, propB);  # Won't work!
+*
+*   Both propA and propB now point to the same place -- the place used to cache
+*   prop "foo".
+*
+*   Properties are read by swish in a number of places:
+*
+*   pre_sort.c calls ReadSingleDocPropertiesFromDisk() to build a sort array.
+*   It's only sorting on-disk properties.
+*
+*   result_sort.c calls getDocProperty() because it can be sorting both on-disk
+*   and "internal" properties.
+*
+*   proplimit.c also calls ReadSingleDocPropertiesFromDisk(), if needed.
+*
+*   merge.c calls ReadAllDocPropertiesFromDisk(), which is a wrapper around the
+*   ReadSingleDocPropertiesFromDisk() call.  Merge needs all the props loaded.
+*
+*
+*
 */
 
 #include <limits.h>     // for ULONG_MAX
@@ -61,7 +154,7 @@ $Id$
 
 
 /*******************************************************************
-*   Free a property entry 
+*   Free a property entry
 *
 ********************************************************************/
 
@@ -201,7 +294,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 
 propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size )
 {
-    IndexFILE *indexf = result->db_results->indexf; 
+    IndexFILE *indexf = result->db_results->indexf;
     int     error_flag;
     unsigned long num;
 
@@ -338,8 +431,8 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
     IndexFILE           *indexf;
     DB_RESULTS          *db_results;
 
-        if( !result )
-            progerr("SwishResultPropertyStr was called with a NULL result");
+    if( !result )
+        progerr("SwishResultPropertyStr was called with a NULL result");
 
 
     db_results = result->db_results;
@@ -369,16 +462,18 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
     freeProperty( prop );
 
-    if ( !*s )
+    if ( !*s )  /* blank string? */
     {
         efree( s );
         return "";
     }
-        if ( ! db_results->prop_string_cache )
-        {
-            db_results->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
-            memset( db_results->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
-        }
+
+
+    if ( ! db_results->prop_string_cache )
+    {
+        db_results->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
+        memset( db_results->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
+    }
 
     /* Free previous, if needed  -- note the metaIDs start at one */
 
@@ -402,7 +497,7 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 *       char * property name
 *
 *   Returns:
-*       unsigned long 
+*       unsigned long
 *       ULONG_MAX on error
 *
 *
@@ -424,11 +519,11 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
     if ( (PROP_ULONG != pv->datatype) && (PROP_DATE != pv->datatype) )
     {
         if ( PROP_UNDEFINED != pv->datatype )
-            set_progerr(INVALID_PROPERTY_TYPE, result->db_results->indexf->sw, 
+            set_progerr(INVALID_PROPERTY_TYPE, result->db_results->indexf->sw,
                     "Property '%s' is not numeric", pname );
         value = ULONG_MAX;
-    } 
-    else 
+    }
+    else
         value = pv->value.v_ulong;
 
     freeResultPropValue( pv );
@@ -448,7 +543,7 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
 *       *metaName -- String name of meta entry
 *       metaID    -- OR - meta ID number
 *
-*       Note that the ID is not really used anyplace, but 
+*       Note that the ID is not really used anyplace, but
 *       could be used to save the prop->id lookup.
 *
 *   Returns:
@@ -483,7 +578,7 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
     if ( pname )
         if ( !(meta_entry = getPropNameByName( &r->db_results->indexf->header, pname )) )
         {
-            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, r->db_results->indexf->sw, 
+            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, r->db_results->indexf->sw,
                     "Invalid property name '%s'", pname );
             return NULL;
         }
@@ -594,8 +689,8 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     char     *badchar;
     char     *tmpnum;
     char     *string;
-  
-    
+
+
     string = propstring;
 
     *error_flag = 0;
@@ -609,9 +704,9 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         // progwarn("Null string passed to EncodeProperty for meta '%s'", meta_entry->metaName);
 #ifdef BLANK_PROP_VALUE
         string = BLANK_PROP_VALUE;  // gets dup'ed below
-#else        
+#else
         return 0;
-#endif        
+#endif
     }
 
 
@@ -633,7 +728,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
         newstr = emalloc( sizeof( num ) + 1 );
         num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
-        
+
         if ( num == ULONG_MAX )
         {
             progwarnno("EncodeProperty - Attempted to convert '%s' to a number", string );
@@ -655,7 +750,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
         for ( j=0; j <= (int)sizeof(num)-1; j++ )
             newstr[j] = (unsigned char)tmpnum[j];
-        
+
         newstr[ sizeof(num) ] = '\0';
 
         *encodedStr = newstr;
@@ -664,7 +759,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
         return (int)sizeof(num);
     }
-        
+
 
     if ( is_meta_string(meta_entry) )
     {
@@ -704,7 +799,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 }
 
 /*******************************************************************
-*   Creates a document property 
+*   Creates a document property
 *
 *   Call with:
 *       *metaEntry
@@ -720,20 +815,17 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 *
 *
 ********************************************************************/
+
 propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag )
 {
     propEntry *docProp;
 
 
-    /* limit length */
-    if ( !preEncoded && meta_entry->max_len && propLen > meta_entry->max_len )
-        propLen = meta_entry->max_len;
-
     /* convert string to a document property, if not already encoded */
     if ( !preEncoded )
     {
         char *tmp;
-        
+
         propLen = EncodeProperty( meta_entry, &tmp, (char *)propValue, error_flag );
 
         if ( !propLen )  /* Error detected in encode */
@@ -742,22 +834,29 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
         /* Limit length */
         if ( is_meta_string(meta_entry) && meta_entry->max_len && propLen > meta_entry->max_len )
             propLen = meta_entry->max_len;
-            
+
         propValue = (unsigned char *)tmp;
     }
 
     /* Now create the property $$ could be -1 */
+    /* This is creating more memory than needed (4 extra bytes) */
     docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
 
     memcpy(docProp->propValue, propValue, propLen);
     docProp->propLen = propLen;
 
+    /* sizeof(propEntry) already contains space for part of the propLen, so throw a null in */
+    /* This *hack* should all compare of the properites using strcoll, which expects a null */
+    /* most places expect propValue to be exactly propLen long.  The null is not written to disk */
+    docProp->propValue[propLen] = '\0';
+
 
     /* EncodeProperty creates a new string */
-	if ( !preEncoded )
-	    efree( propValue );
+        if ( !preEncoded )
+            efree( propValue );
 
-    return docProp;	    
+
+    return docProp;
 }
 
 /*******************************************************************
@@ -793,7 +892,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
     {
         if ( str )
             efree( str );
-            
+
         return p;
     }
 
@@ -822,7 +921,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 
     return p;
 }
-    
+
 
 /*******************************************************************
 *   Scans the properties (metaEntry's), and adds a doc property to any that are flagged
@@ -854,7 +953,7 @@ void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, u
                 progwarn("Failed to add property '%s' in file '%s'", m->metaName, filename );
     }
 }
-    
+
 
 
 
@@ -879,54 +978,54 @@ void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, u
 
 int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
 {
-	struct docProperties *dp = *docProperties; 
+    struct docProperties *dp = *docProperties;
     propEntry *docProp;
-	int i;
-	int error_flag;
+    int i;
+    int error_flag;
 
 
     /* Allocate or extend the property array, if needed */
 
-	if( !dp )
-	{
-		dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
-		*docProperties = dp;
+    if( !dp )
+    {
+        dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+        *docProperties = dp;
 
-		dp->n = meta_entry->metaID + 1;
+        dp->n = meta_entry->metaID + 1;
 
-		for( i = 0; i < dp->n; i++ )
-			dp->propEntry[i] = NULL;
-	}
+        for( i = 0; i < dp->n; i++ )
+            dp->propEntry[i] = NULL;
+    }
 
-	else /* reallocate if needed */
-	{
-		if( dp->n <= meta_entry->metaID )
-		{
-			dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+    else /* reallocate if needed */
+    {
+        if( dp->n <= meta_entry->metaID )
+        {
+            dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
 
-			*docProperties = dp;
-			for( i = dp->n; i <= meta_entry->metaID; i++ )
-				dp->propEntry[i] = NULL;
-				
-			dp->n = meta_entry->metaID + 1;
-		}
-	}
+            *docProperties = dp;
+            for( i = dp->n; i <= meta_entry->metaID; i++ )
+                dp->propEntry[i] = NULL;
 
-	/* Un-encoded STRINGS get appended to existing properties */
-	/* Others generate a warning */
-	if ( dp->propEntry[meta_entry->metaID] )
-	{
-	    if ( is_meta_string(meta_entry) )
-	    {
-    	    dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], (char *)propValue, propLen );
-	        return 1;
-	    }
-	    else // Will this come back and bite me?
-	    {
-	        progwarn("Warning: Attempt to add duplicate property." );
-	        return 0;
-	    }
-	}
+            dp->n = meta_entry->metaID + 1;
+        }
+    }
+
+    /* Un-encoded STRINGS get appended to existing properties */
+    /* Others generate a warning */
+    if ( dp->propEntry[meta_entry->metaID] )
+    {
+        if ( is_meta_string(meta_entry) )
+        {
+            dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], (char *)propValue, propLen );
+            return 1;
+        }
+        else // Will this come back and bite me?
+        {
+            progwarn("Warning: Attempt to add duplicate property." );
+            return 0;
+        }
+    }
 
 
     /* create the document property */
@@ -934,10 +1033,10 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 
     if ( !(docProp = CreateProperty( meta_entry, propValue, propLen, preEncoded, &error_flag )) )
         return error_flag ? 0 : 1;
-    
-	dp->propEntry[meta_entry->metaID] = docProp;
 
-    return 1;	    
+    dp->propEntry[meta_entry->metaID] = docProp;
+
+    return 1;
 }
 
 /* #define DEBUGPROP 1 */
@@ -974,8 +1073,8 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
         insidecompare = 0;
     }
 #endif
-    
-    
+
+
     if ( !p1 && p2 )
         return -1;
 
@@ -996,17 +1095,29 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
         int rc;
         int len = Min( p1->propLen, p2->propLen );
 
+#ifdef HAVE_STRCOLL
+        /* note that the propValue should be null terminated.  See CreateProperty()  */
+        /* could use a strncoll() and one for case ignore */
+        if ( is_meta_use_strcoll(meta_entry) )
+            printf("using strcol %s <=> %s = %d\n",  (const char *)p1->propValue, (const char *)p2->propValue,strcoll( (const char *)p1->propValue, (const char *)p2->propValue ));
+        if ( is_meta_use_strcoll(meta_entry) )
+            return strcoll( (const char *)p1->propValue, (const char *)p2->propValue );
+#endif
+
         rc = is_meta_ignore_case( meta_entry)
              ? strncasecmp( (char *)p1->propValue, (char *)p2->propValue, len )
              : strncmp( (char *)p1->propValue, (char *)p2->propValue, len );
-             
+
+        printf("using %s  %s <=> %s = %d\n", (is_meta_ignore_case( meta_entry) ? "strncasecmp" : "strncmp"),  (const char *)p1->propValue, (const char *)p2->propValue, rc );
+
+
         if ( rc != 0 )
             return rc;
-            
+
         return p1->propLen - p2->propLen;
     }
 
-    return 0;
+    return 0;  /* This should be an error here */
 
 }
 
@@ -1076,7 +1187,7 @@ unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
         total_size = buf_needed > sw->PropIO_allocated + RD_BUFFER_SIZE
                     ? buf_needed
                     : sw->PropIO_allocated + RD_BUFFER_SIZE;
-            
+
         sw->Prop_IO_Buf = emalloc( total_size );
         sw->PropIO_allocated = total_size;  /* keep track of structure size */
     }
@@ -1084,7 +1195,7 @@ unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
 
     return sw->Prop_IO_Buf;
 }
-    
+
 #endif
 
 
@@ -1119,7 +1230,7 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
     unsigned char   *PropBuf;
     int             zlib_status = 0;
     uLongf          buf_size = (uLongf)*uncompressed_size;
-    
+
 
 
     if ( *uncompressed_size == 0 ) /* wasn't compressed */
@@ -1131,7 +1242,7 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
 
 
     /* make sure we have enough space */
-    
+
     PropBuf = allocatePropIOBuffer( sw, *uncompressed_size );
 
 
@@ -1210,7 +1321,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
     if ( max_size )
     {
         struct metaEntry *m = getPropNameByID(header, metaID); /* might be better if the caller passes the metaEntry */
-        
+
         /* Reset to zero if the property is not a string */
         if ( !is_meta_string( m ) )
             max_size = 0;
@@ -1232,10 +1343,10 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
     if ( !(buf = (unsigned char*)DB_ReadProperty( sw, indexf, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
         return NULL;
 
-	if ( !(propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len )) )
-	    return NULL;
+        if ( !(propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len )) )
+            return NULL;
 
-	propLen = uncompressed_len; /* just to be clear ;) */
+        propLen = uncompressed_len; /* just to be clear ;) */
 
     /* Limit size,if possible  */
     if ( max_size && (max_size < propLen ))
@@ -1247,10 +1358,10 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
 
     docProp = CreateProperty( &meta_entry, propbuf, propLen, 1, &error_flag );
 
-	efree( buf );
-	return docProp;
+        efree( buf );
+        return docProp;
 }
-	
+
 
 
 /*******************************************************************
@@ -1268,7 +1379,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
 *   ReadSingleDocPropertiesFromDisk for each prop.
 *
 *   Now, this is really just a way to populate the fi->docProperties structure.
-*   
+*
 *   2001-09 jmruiz Modified to be used by merge.c
 *********************************************************************/
 
@@ -1287,7 +1398,7 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
     /* Get a place to cache the pointers */
     memset(&fi,0, sizeof( FileRec ));
     fi.filenum = filenum;
-    
+
 
     meta_entry.metaName = "(default)";  /* for error message, I think */
 
@@ -1325,6 +1436,6 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
 }
 
 
- 
+
 
 

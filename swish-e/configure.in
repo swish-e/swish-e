@@ -26,7 +26,7 @@ AC_ARG_ENABLE(daystamp,
 
 if test x$daystamp = xyes; then
         TODAY=`/bin/date +%Y-%m-%d`
-	VERSION="$VERSION-$TODAY"
+        VERSION="$VERSION-$TODAY"
 fi
 
 
@@ -42,7 +42,7 @@ AM_CONFIG_HEADER(src/acconfig.h)
 
 dnl prevent automake from generating rules to auto-rebuild tools
 dnl see http://sources.redhat.com/automake/automake.html#maintainer-mode
-dnl developers: either run configure with --enable-maintainer-mode 
+dnl developers: either run configure with --enable-maintainer-mode
 dnl or simply rerun ./bootstrap && ./configure when needed
 
 AM_MAINTAINER_MODE
@@ -50,9 +50,9 @@ AM_MAINTAINER_MODE
 
 
 dnl Check for gettimeofday()
-AC_CHECK_FUNC(BSDgettimeofday, 
+AC_CHECK_FUNC(BSDgettimeofday,
               [AC_DEFINE(HAVE_BSDGETTIMEOFDAY,[],[Get time of day])],
-              [AC_CHECK_FUNC(gettimeofday, , 
+              [AC_CHECK_FUNC(gettimeofday, ,
                              [AC_DEFINE(NO_GETTOD,[],[Get time of day])])])
 
 
@@ -61,7 +61,7 @@ AC_CHECK_FUNC(BSDgettimeofday,
 dnl check for #! (shebang)
 AC_SYS_INTERPRETER
 
-dnl Set the @SET_MAKE@ variable=make if $(MAKE) not set 
+dnl Set the @SET_MAKE@ variable=make if $(MAKE) not set
 AC_PROG_MAKE_SET
 
 dnl Check for Perl - used for making the distribution
@@ -136,14 +136,14 @@ if test "$withval" != "no"; then
         XML2_CONFIG_PATH=$PATH
         AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
     fi
-    
+
     dnl we can't do anything without xml2-config
     if test "$XML2_CONFIG" = "no"; then
         withval="no"
-    else 
+    else
         withval=`$XML2_CONFIG --prefix`
     fi
-    
+
     dnl if withval still maybe then we have failed
     if test "$withval" = "maybe"; then
         withval = "no"
@@ -155,7 +155,7 @@ if test "$withval" = "no"; then
 else
 
     AC_SUBST(LIBXML_REQUIRED_VERSION)
-    AC_MSG_CHECKING(for libxml libraries >= $LIBXML_REQUIRED_VERSION) 
+    AC_MSG_CHECKING(for libxml libraries >= $LIBXML_REQUIRED_VERSION)
 
     AC_DEFUN(VERSION_TO_NUMBER,
     [`$1 | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
@@ -168,11 +168,11 @@ else
     XML2_VERSION=`$XML2_CONFIG --version`
 
     if test "$vers" -ge VERSION_TO_NUMBER(echo $LIBXML_REQUIRED_VERSION);then
-    	LIBXML2_LIB="`$XML2_CONFIG --libs`"
-    	LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
-    	AC_MSG_RESULT(found version $XML2_VERSION)
+        LIBXML2_LIB="`$XML2_CONFIG --libs`"
+        LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
+        AC_MSG_RESULT(found version $XML2_VERSION)
     else
-    	AC_MSG_ERROR(You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish)
+        AC_MSG_ERROR(You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish)
     fi
 
 
@@ -186,7 +186,8 @@ else
 fi
 
 
-
+dnl Allow use strcoll() instead of strncmp()/strncasecmp() to enable locale dependent collating
+AC_FUNC_STRCOLL
 
 
 dnl Provide an option for enabling btree/incremental indexing for development
@@ -206,7 +207,7 @@ _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
 
 dnl AC_ARG_WITH(zlib,AC_HELP_STRING([--with-zlib=DIR], [use zlib in DIR (YES if found)]),,withval=maybe)
-  
+
 AC_ARG_WITH(zlib,
 [  --with-zlib[[=DIR]]       use libz in DIR],[
   if test "$withval" != "no" -a "$withval" != "yes"; then
@@ -219,7 +220,7 @@ if test "$with_zlib" = "no"; then
     echo "Disabling compression support"
 else
     AC_CHECK_HEADERS(zlib.h,
-        AC_CHECK_LIB(z, gzread,[  
+        AC_CHECK_LIB(z, gzread,[
             AC_DEFINE(HAVE_ZLIB,[],[Do we have zlib])
             if test "x${Z_DIR}" != "x"; then
                 Z_CFLAGS="-I${Z_DIR}/include"
@@ -233,7 +234,7 @@ else
                 Z_LIBS="-lz"
             fi]))
 fi
-                
+
 AC_SUBST(Z_CFLAGS)
 AC_SUBST(Z_LIBS)
 
@@ -256,14 +257,14 @@ if test "$withval" != "no"; then
         PCRE_CONFIG_PATH=$PATH
         AC_PATH_PROG(PCRE_CONFIG, pcre-config,"no", $PCRE_CONFIG_PATH)
     fi
-    
+
     dnl we won't do anything without pcre-config
     if test "$PCRE_CONFIG" = "no"; then
         withval="no"
-    else 
+    else
         withval=`$PCRE_CONFIG --prefix`
     fi
-    
+
     dnl if withval still maybe then we have failed
     if test "$withval" = "maybe"; then
         withval = "no"
@@ -272,7 +273,7 @@ fi
 
 if test "$withval" != "no"; then
     AC_SUBST(PCRE_REQUIRED_VERSION)
-    AC_MSG_CHECKING(for libpcre libraries >= $PCRE_REQUIRED_VERSION) 
+    AC_MSG_CHECKING(for libpcre libraries >= $PCRE_REQUIRED_VERSION)
 
     AC_DEFUN(VERSION_TO_NUMBER,
     [`$1 | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
@@ -285,11 +286,11 @@ if test "$withval" != "no"; then
     PCRE_VERSION=`$PCRE_CONFIG --version`
 
     if test "$vers" -ge VERSION_TO_NUMBER(echo $PCRE_REQUIRED_VERSION);then
-    	PCRE_LIBS="`$PCRE_CONFIG --libs-posix`"
-    	PCRE_CFLAGS="`$PCRE_CONFIG --cflags-posix`"
-    	AC_MSG_RESULT(found version $PCRE_VERSION)
+        PCRE_LIBS="`$PCRE_CONFIG --libs-posix`"
+        PCRE_CFLAGS="`$PCRE_CONFIG --cflags-posix`"
+        AC_MSG_RESULT(found version $PCRE_VERSION)
     else
-    	AC_MSG_ERROR(You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish)
+        AC_MSG_ERROR(You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish)
     fi
 
     AC_SUBST(PCRE_CFLAGS)
@@ -306,7 +307,7 @@ dnl Set a better default for libexecdir -- Thanks to David Norris!
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
 if test "x$libexecdiropt" = "x"; then
         libexecdir='${exec_prefix}/lib/${PACKAGE}'
-	AC_MSG_NOTICE([Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}])
+        AC_MSG_NOTICE([Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}])
 fi
 
 dnl Memory Debugging options
@@ -318,13 +319,13 @@ ENABLE_DEFINE([memstats], [MEM_STATISTICS], [(developers only) gives memory stat
 
 
 
-AC_CONFIG_FILES( 
-       Makefile html/Makefile man/Makefile 
-       doc/Makefile src/Makefile src/expat/Makefile 
-       src/replace/Makefile src/snowball/Makefile 
-       rpm/swish-e.spec tests/Makefile 
-       example/Makefile prog-bin/Makefile 
-       filters/Makefile filters/SWISH/Makefile 
+AC_CONFIG_FILES(
+       Makefile html/Makefile man/Makefile
+       doc/Makefile src/Makefile src/expat/Makefile
+       src/replace/Makefile src/snowball/Makefile
+       rpm/swish-e.spec tests/Makefile
+       example/Makefile prog-bin/Makefile
+       filters/Makefile filters/SWISH/Makefile
        conf/Makefile filter-bin/Makefile
        swish-e.pc swish-config)
 AC_OUTPUT
