@@ -186,11 +186,7 @@ char *summary=NULL;
 					     tempprop=estrdup(p);
 					     remove_newlines(tempprop);
 					     remove_tags(tempprop);
-					     if(sw->ConvertHTMLEntities)
-					    	 tempprop2=convertentities(tempprop,sw);
-					     else tempprop2=tempprop;
-					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,tempprop2,strlen(tempprop2));
-					     if(tempprop2!=tempprop) efree(tempprop2);
+					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,tempprop,strlen(tempprop));
 					     efree(tempprop);
 					     if(endtag) *endtag='<';
 					} 
