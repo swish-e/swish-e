@@ -123,7 +123,7 @@ example) and *tag* it.  That will allow merging later updates into the HEAD
 branch without re-merging what was just merged.
 
   (in the .patches directory)
-  $ cvs tag rel-2.4.1
+  $ cvs tag rel-2-4-1
 
 that just tags the rel-2-4-0-patches branch.
 
