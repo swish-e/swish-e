@@ -46,12 +46,29 @@ directory.
     make test
 
 
-Note that running "perl Makefile.PL" will ask for the location of the swish-e binary.  Make
-sure you specify the location of the swish-e binary that matches the version of swish-e you
-are linking the module with (i.e. from the same package as the SWISH::API perl module).  Be
-aware that many ISPs have outdated versions of swish-e installed.
+Makefile.PL will attempt to find the swish-e binary in the path.  If swish-e cannot be
+found the the script will abort.  Be careful that the version found in the path is the
+version you are linking against.  Otherwise, update your PATH or use SWISHBIN.
 
+If swish-e is not in your path then you can specify at build time like this:
 
+    perl Makefile.PL SWISHBIN=$HOME/local/bin/swish-e
+
+SWISHBIN may also be an environment variable.  Bourne-type of shells can do:
+
+    SWISHBIN=$HOME/local/bin/swish-e perl Makefile.PL
+
+The first form (on the command line) will override environment variables.
+
+Other options are:
+
+    perl Makefile.PL SWISHSKIPTEST=1
+
+Will not run noraml test code when running "make test".
+
+    perl Makefile.PL SWISHHELP=1
+
+Display help.
 
 
 FAQ
@@ -63,23 +80,25 @@ When building the SWISH::API module the compiler and linker look in locations fo
 library files.  If swish was installed in a non-standard location you will need to specify
 that location when building the module.
 
-For example, to install swish in $HOME/local:
+For example, to install *swish* in $HOME/local:
 
    $ ./configure --prefix=$HOME/local
-
    $ make && make install
+
 
 Now to build the SWISH::API module:
 
    $ cd perl
 
    $ perl Makefile.PL PREFIX=$HOME/local \
-     CCFLAGS=-I$HOME/local/include \   
+     CCFLAGS=-I$HOME/local/include \
      LIBS="-L$HOME/local/lib -lswish-e"
 
    $ LD_RUN_PATH=$HOME/local/lib make
 
    $ make test && make install
+
+Remember, use SWISHBIN if your locally installed swish-e binary is not in your PATH.
 
 That last line above is bourne shell syntax.  Other shells may use a different syntax for
 setting the LD_RUN_PATH environment variable before running make.
@@ -108,6 +127,6 @@ PROBLEMS
 --------
 
 If you have problems or need help please contact the swish-e discussion list.  The list is
-low traffic and is the place to get help with this module or swish-e in general.   
+low traffic and is the place to get help with this module or swish-e in general.
 
 
