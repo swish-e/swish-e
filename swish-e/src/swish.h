@@ -627,10 +627,6 @@ typedef struct {
 	/* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
 
-
-	/* structure to store the parsed search string */
-    struct swline *searchwordlist;
-
     RESULT *resulthashlist[BIGHASHSIZE];
 
 	/* Compression Work buffer while compression locations in index

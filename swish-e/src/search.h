@@ -79,6 +79,4 @@ struct swline *ignore_words_in_query(SWISH *,IndexFILE *, struct swline *,unsign
 struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
-
-
-
+struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header);

@@ -319,115 +319,47 @@ int search(SWISH *sw, char *words, int structure)
 
 int search_2 (SWISH *sw, char *words, int structure)
 {
-int i, j, k, metaID, indexYes, totalResults;
-char word[MAXWORDLEN];
+int j,k, hassearch, metaID, indexYes, totalResults;
 RESULT *tmpresultlist,*tmpresultlist2;
-struct swline *tmplist, *tmplist2;
+struct swline *searchwordlist, *tmplist, *tmplist2;
 IndexFILE *indexlist;
 int rc=0;
 unsigned char PhraseDelimiter;
-unsigned char PhraseDelimiterString[2];
+			/* If not words - do nothing */
+	if (!words || !*words) 
+		return(sw->lasterror=NO_WORDS_IN_SEARCH);
+
 	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
-	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
-	PhraseDelimiterString[1] = '\0';
 
 	indexlist=sw->indexlist;
 	sw->sortresultlist=NULL;
 	j=0;
-	sw->searchwordlist = NULL;
+	searchwordlist = NULL;
 	metaID = 1;
 	indexYes =0;
 	totalResults=0;
+	hassearch=0;
 
 	sw->lasterror=RC_OK;
 	sw->commonerror = RC_OK;
-
-	if (words[0] == '\0')  return (sw->lasterror=NO_WORDS_IN_SEARCH);
-
-	for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++) 
-	{
-		/* 06/00 Jose ruiz
-		** Following line modified to extract words according
-		** to wordchars as suggested by Bill Moseley
-		*/
-		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || iswordchar(sw->mergedheader,words[i]))) /* cast to int, 2/22/00 */
-		{
-			if (words[i] == '=')
-			{
-				if (j != 0)
-				{
-					if (words[i-1] != '\\')
-					{ 
-						word[j] = '\0';
-						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
-						j = 0;
-						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, "=");
-					}
-					else
-					{
-						/* Needs to erase the '\' */
-						j--;
-						word[j] = tolower((unsigned char)words[i]);
-						j++;
-					}
-				}
-				else
-				{
-					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, "=");
-				}
-			}
-			else
-			{
-				if (j) 
-				{
-					word[j] = '\0';
-                               /* Convert chars ignored in words to spaces  */
-                                        stripIgnoreLastChars(sw->mergedheader,word);
-                                        stripIgnoreFirstChars(sw->mergedheader,word);
-					if(strlen(word))
-					{
-						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
-					}
-					j = 0;
-				}
-				if (words[i] == '(') 
-				{
-					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, "(");
-				}
-				if (words[i] == ')') 
-				{
-					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, ")");
-				}
-				if (words[i] == (unsigned char)PhraseDelimiter) 
-				{
-					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, PhraseDelimiterString);
-				}
-			}
-		}
-		else 
-		{
-			word[j] = tolower((unsigned char)words[i]);
-			j++;
-		}
-	}
-	if (j) 
-	{
-		word[j] = '\0';
-       /* Convert chars ignored in words to spaces  */
-                stripIgnoreLastChars(sw->mergedheader,word);
-                stripIgnoreFirstChars(sw->mergedheader,word);
-		if(strlen(word))
-		{
-			sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
-		}
-	}
-	
-	if (!sw->searchwordlist)  return (sw->lasterror=NO_WORDS_IN_SEARCH);
 
 	if ((rc=initSearchResultProperties(sw))) return rc;
 	if ((rc=initSortResultProperties(sw))) return rc;
 
 	while (indexlist != NULL) {
+		if(searchwordlist)
+		{
+			freeswline(searchwordlist);
+			searchwordlist=NULL;
+		}
+		if(!(searchwordlist = parse_search_string(sw,words,indexlist->header)))
+		{
+			indexlist=indexlist->next;
+			continue;
+		}
+
+		hassearch = 1;
+
 		sw->bigrank = 0;
 		
 		if (!indexlist->fp)
@@ -443,8 +375,8 @@ unsigned char PhraseDelimiterString[2];
 		tmpresultlist=NULL;
 		tmplist=NULL;
 
-		/* make a copy of sw->searchwordlist */
-		tmplist = dupswline(sw->searchwordlist);
+		/* make a copy of searchwordlist */
+		tmplist = dupswline(searchwordlist);
 		tmplist = (struct swline *)translatechars_words_in_query(sw,indexlist,tmplist);
 #ifdef IGNORE_STOPWORDS_IN_QUERY
 		tmplist = (struct swline *)ignore_words_in_query(sw,indexlist,tmplist,PhraseDelimiter);
@@ -497,6 +429,17 @@ unsigned char PhraseDelimiterString[2];
 
 		}
                 indexlist = indexlist->next;
+	}
+
+	if(!hassearch)
+	{
+		return(sw->lasterror=NO_WORDS_IN_SEARCH);
+	}
+
+	if(searchwordlist)
+	{
+		freeswline(searchwordlist);
+		searchwordlist=NULL;
 	}
 
 /* 
@@ -2200,3 +2143,94 @@ struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct 
 
 
 
+struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header)
+{
+struct swline *searchwordlist=NULL;
+int i,j;
+char word[MAXWORDLEN];
+unsigned char PhraseDelimiter;
+unsigned char PhraseDelimiterString[2];
+	PhraseDelimiter = (unsigned char)sw->PhraseDelimiter;
+	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
+	PhraseDelimiterString[1] = '\0';
+
+
+	for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++) 
+	{
+		/* 06/00 Jose ruiz
+		** Following line modified to extract words according
+		** to wordchars as suggested by Bill Moseley
+		*/
+		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || iswordchar(header,words[i]))) /* cast to int, 2/22/00 */
+		{
+			if (words[i] == '=')
+			{
+				if (j != 0)
+				{
+					if (words[i-1] != '\\')
+					{ 
+						word[j] = '\0';
+						searchwordlist = (struct swline *) addswline(searchwordlist, word);
+						j = 0;
+						searchwordlist = (struct swline *) addswline(searchwordlist, "=");
+					}
+					else
+					{
+						/* Needs to erase the '\' */
+						j--;
+						word[j] = tolower((unsigned char)words[i]);
+						j++;
+					}
+				}
+				else
+				{
+					searchwordlist = (struct swline *) addswline(searchwordlist, "=");
+				}
+			}
+			else
+			{
+				if (j) 
+				{
+					word[j] = '\0';
+						/* Convert chars ignored in words to spaces  */
+					stripIgnoreLastChars(header,word);
+					stripIgnoreFirstChars(header,word);
+					if(strlen(word))
+					{
+						searchwordlist = (struct swline *) addswline(searchwordlist, word);
+					}
+					j = 0;
+				}
+				if (words[i] == '(') 
+				{
+					searchwordlist = (struct swline *) addswline(searchwordlist, "(");
+				}
+				if (words[i] == ')') 
+				{
+					searchwordlist = (struct swline *) addswline(searchwordlist, ")");
+				}
+				if (words[i] == (unsigned char)PhraseDelimiter) 
+				{
+					searchwordlist = (struct swline *) addswline(searchwordlist, PhraseDelimiterString);
+				}
+			}
+		}
+		else 
+		{
+			word[j] = tolower((unsigned char)words[i]);
+			j++;
+		}
+	}
+	if (j) 
+	{
+		word[j] = '\0';
+       /* Convert chars ignored in words to spaces  */
+		stripIgnoreLastChars(header,word);
+		stripIgnoreFirstChars(header,word);
+		if(strlen(word))
+		{
+			searchwordlist = (struct swline *) addswline(searchwordlist, word);
+		}
+	}
+	return searchwordlist;
+}
