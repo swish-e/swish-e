@@ -17,7 +17,7 @@ sub get_version
 {
 
       my $e = shift;
-      return 0 if ! $e;
+      return unless $e && -x $e && $e =~ m!^/!;
       my $version = `$e -V`;
       $version =~ tr/[0-9].//cd;
       return $version;
