@@ -1661,6 +1661,29 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 /*--------------------------------------------*/
 
 #ifdef USE_BTREE
+
+/*******************************************************************************
+*  USE_BTREE Sorted data tables (presorted indexes)
+*
+*  DB->offsets[SORTEDINDEX]     points to start of presorted index tables
+*  DB->n_presorted_array        number of props in index
+*  DB->presorted_array          points to array[ # props ] of pointers to ARRAY
+*                               ARRAY is defined in array.h
+*  DB->presorted_root_node      points to array[ # props ] of unsigned longs
+*
+*  Index layout:
+*            +-------------------------------+
+*            |  Num props                    |  <<-- DB->offsets[SORTEDINEDEX]
+*            +-------------------------------+
+*            |  PropID                       |
+*            +-------------------------------+
+*            |  Array Pointer                |
+*            (to be completed)
+*
+*
+*******************************************************************************/
+
+
 int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -1675,10 +1698,13 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
    DB->n_presorted_array = n_props;
    DB->presorted_array = (ARRAY **)emalloc(n_props * sizeof(ARRAY *));
    DB->presorted_root_node = (unsigned long *)emalloc(n_props * sizeof(unsigned long));
+
+
    for(i = 0; i < n_props ; i++)
    {
        DB->presorted_array[i] = NULL;
        DB->presorted_root_node[i] = 0;
+
        /* Reserve space for propidx and Array Pointer */
        printfileoffset(fp,(sw_off_t) 0, sw_fwrite);
        printfileoffset(fp,(sw_off_t) 0, sw_fwrite);
@@ -1687,16 +1713,39 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
    return 0;
 }
 
+
+/***********************************************************************************
+* DB_WriteSortedIndex -
+*
+* Jose's ARRAY storage - a way to avoid reading the entire table into memory
+*
+* Input:
+*   propID      id of property to write
+*   *data       pointer to array of integers (total_files long)
+*   sz_data     size of array (i.e. total_files)
+*   *db         database
+*
+* Why pass *char and then cast to an *int?  *int is the
+* original data type in pre_sort.c.  Why not "int *data"?
+* 
+*
+*
+*
+*
+************************************************************************************/
+
+
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp_presorted;
    ARRAY *arr;
    int i;
-   int *num = (int *)data;
-   int n = sz_data/sizeof(int);
+   int *num = (int *)data;          /* Cast data back to a pointer to int */
+   int n = sz_data/sizeof(int);     /* This looks wrong to me. */
 
-   arr = ARRAY_Create(fp);
+   arr = ARRAY_Create(fp);          /* Initialize the ARRAY storage */
+
    for(i = 0 ; i < n ; i++)
    {
        ARRAY_Put(arr,i,num[i]);
@@ -1725,7 +1774,12 @@ int     DB_EndWriteSortedIndex_Native(void *db)
    return 0;
 }
 
- 
+/********************************************************************************
+*  BTREEE Read pre-sorted indexes
+*
+*********************************************************************************/
+
+
 int     DB_InitReadSortedIndex_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -1794,7 +1848,42 @@ int     DB_EndReadSortedIndex_Native(void *db)
    return 0;
 }
 
-#else
+#else /* NOT USE_BTREE */
+
+/********************************************************************************
+*
+*   DB->offsets[SORTEDINDEX] => first record in table There's a record for each
+*   property that was sorted (not all are sorted) The data passed in has
+*   already been compressed
+*
+*                 +------------------------------+
+*                 | Pointer to next table entry  | <<-- DB->last_sortedindex
+*                 |   (initially zero)           |
+*                 +------------------------------+
+*                 | PropID                       |
+*                 +------------------------------+
+*                 | Data Length in bytes         |
+*                 +------------------------------+
+*                 | Data [....]                  |
+*                 +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+*                 |                              | <<-- DB_next_sortedindex
+*                 +------------------------------+
+*
+*   Again, DB->offsets[SORTEDINDEX] points to the very first record in the
+*   index While writing, DB->next_sortedindex points to the next place to start
+*   writing.  DB->last_sortedindex points to the (initially zero) point to the
+*   next table.  So, when it is not null then last_sortedinex is used to update
+*   the pointer in the previous table to point to the next table.  A zero entry
+*   indicates that there are no more records.
+*
+* DB_InitWriteSortedIndex_Native should probably write a null for the first
+* record's "next table entry" and set next_ and last_ pointers.  Then
+* DB_EndWriteSortedIndex_Native call would not be needed.
+*
+*
+********************************************************************************/
+
+
 int     DB_InitWriteSortedIndex_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -1803,6 +1892,17 @@ int     DB_InitWriteSortedIndex_Native(void *db)
    DB->next_sortedindex = DB->offsets[SORTEDINDEX];
    return 0;
 }
+
+/********************************************************************************
+* DB_WriteSortedIndex
+*
+* Input:
+*   propID      property id of this table
+*   *data       pointer to char array compressed table
+*   sz_data     size of the char array in bytes
+*   db          where to write
+*
+*********************************************************************************/
 
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db)
 {
@@ -1813,7 +1913,7 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
 
    sw_fseek(fp, DB->next_sortedindex, SEEK_SET);
 
-
+    /* save start of this record so can update previous record's "next record" pointer */
    tmp1 = sw_ftell(fp);
 
    printfileoffset(fp,(sw_off_t)0,sw_fwrite);  /* Pointer to next table if any */
@@ -1856,11 +1956,23 @@ int     DB_EndWriteSortedIndex_Native(void *db)
    return 0;
 }
 
- 
+
+/* Non Btree read functions */
+
+
 int     DB_InitReadSortedIndex_Native(void *db)
 {
    return 0;
 }
+
+/***********************************************************************************
+*  DB_ReadSortedIndex_Native -
+*
+*  Searches through the sorted indexes looking for one that matches the propID
+*  passed in.  If found then malloc's a table and reads it in.
+*  The data is in compressed format and is not uncompressed here
+*
+***********************************************************************************/
 
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
 {
@@ -1869,17 +1981,21 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
+
+   /* seek to the first record */
    sw_fseek(fp,DB->offsets[SORTEDINDEX],SEEK_SET);
 
 
+   /* get seek position of the next record, if needed */
    next = readfileoffset(fp,sw_fread);
-        /* read propID */
+
+   /* read propID for this record */
    id = uncompress1(fp,sw_fgetc);
 
 
    while(1)
    {
-       if(id == propID)
+       if(id == propID)  /* this is the property we are looking for */
        {
            tmp = uncompress1(fp,sw_fgetc);
            *sz_data = tmp;
