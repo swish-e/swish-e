@@ -1203,13 +1203,12 @@ int     DB_InitWriteFiles_Native(void *db)
 *
 *****************************************************************************/
 
-void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
+void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     int             written_bytes;
     PROP_INDEX      *pindex = fi->prop_index;
     PROP_LOCATION   *prop_loc;
-    IndexFILE       *indexf = sw->indexlist;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
     int             index_size;
@@ -1282,11 +1281,10 @@ void    DB_WriteProperty_Native( SWISH *sw, FileRec *fi, int propID, char *buffe
 *
 *
 *****************************************************************************/
-void DB_WritePropPositions_Native(SWISH *sw, FileRec *fi, void *db)
+void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     PROP_INDEX      *pindex = fi->prop_index;
-    IndexFILE       *indexf = sw->indexlist;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
     int             index_size;
@@ -1323,11 +1321,10 @@ void DB_WritePropPositions_Native(SWISH *sw, FileRec *fi, void *db)
 *
 *
 *****************************************************************************/
-void DB_ReadPropPositions_Native(SWISH *sw, FileRec *fi, void *db)
+void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     PROP_INDEX      *pindex = fi->prop_index;
-    IndexFILE       *indexf = sw->indexlist;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
     int             index_size;
@@ -1375,19 +1372,20 @@ void DB_ReadPropPositions_Native(SWISH *sw, FileRec *fi, void *db)
 *       *char (buffer -- must be destoryed by caller)
 *
 *****************************************************************************/
-char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
+char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     PROP_INDEX      *pindex = fi->prop_index;
-    IndexFILE       *indexf = sw->indexlist;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
     long            seek_pos;
-    int             propIDX = header->metaID_to_PropIDX[propID];
+    int             propIDX;
     PROP_LOCATION   *prop_loc;
     char            *buffer;
     int             length;
 
+
+    propIDX = header->metaID_to_PropIDX[propID];
 
     if ( count <= 0 )
         return NULL;
@@ -1396,7 +1394,7 @@ char   *DB_ReadProperty_Native(SWISH *sw, FileRec *fi, int propID, int *buf_len,
     /* read in the index pointers if not already loaded */
     if ( !pindex )
     {
-        DB_ReadPropPositions_Native( sw, fi, db);
+        DB_ReadPropPositions_Native( indexf, fi, db);
         pindex = fi->prop_index;
     }
 

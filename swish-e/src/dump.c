@@ -111,7 +111,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
                     int     uncompressed_len;
                     int     buf_len;
 
-                    if ( (buffer = DB_ReadProperty( sw, &fi, meta_entry->metaID, &buf_len, &uncompressed_len, indexf->DB )))
+                    if ( (buffer = DB_ReadProperty( sw, indexf, &fi, meta_entry->metaID, &buf_len, &uncompressed_len, indexf->DB )))
                     {
                         if ( uncompressed_len )
                             printf("  %20s: %d -> %d (%4.2f%%)\n", "**Compressed**", uncompressed_len , buf_len, (float)buf_len/(float)uncompressed_len * 100.00f );

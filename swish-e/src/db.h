@@ -93,10 +93,10 @@ int     DB_InitReadFiles(SWISH *sw, void *DB);
 int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
 int     DB_EndReadFiles(SWISH *sw, void *DB);
 
-void    DB_WriteProperty( SWISH *sw, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
-void    DB_WritePropPositions(SWISH *sw, FileRec *fi, void *db);
-void    DB_ReadPropPositions(SWISH *sw, FileRec *fi, void *db);
-char *DB_ReadProperty(SWISH *sw, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
+void    DB_WriteProperty( SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
+void    DB_WritePropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db);
+void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db);
+char   *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
 void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB);
 
 
@@ -149,10 +149,10 @@ struct MOD_DB
     int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 
-    void   (*DB_WriteProperty)( SWISH *sw, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
-    void   (*DB_WritePropPositions)(SWISH *sw, FileRec *fi, void *db);
-    void   (*DB_ReadPropPositions)(SWISH *sw, FileRec *fi, void *db);
-    char  *(*DB_ReadProperty)(SWISH *sw, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
+    void   (*DB_WriteProperty)( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
+    void   (*DB_WritePropPositions)(IndexFILE *indexf, FileRec *fi, void *db);
+    void   (*DB_ReadPropPositions)(IndexFILE *indexf, FileRec *fi, void *db);
+    char  *(*DB_ReadProperty)(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
     void   (*DB_Reopen_PropertiesForRead)(void *DB);
 
 };
