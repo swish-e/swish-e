@@ -1,11 +1,10 @@
-%define name    @PROJECT@
-%define version @VERSION@
+%define	name	@PACKAGE@
+%define	version	@VERSION@
 %define release 1
 
-Summary:        Simple Web Indexing System for Humans - Enhanced
+Summary:        SWISH-E - Simple Web Indexing System for Humans - Enhanced
 Name:           %{name}
-# Version:        %{version}
-Version:        2.3
+Version:        %{version}
 Release:        %{release}
 License:        GPL
 Group:          Networking/Other
@@ -13,14 +12,12 @@ Source:         http://swish-e.org/Download/%{name}-%{version}.tar.gz
 URL:            http://swish-e.org/
 BuildRoot:      %{_tmppath}/%name-root
 Packager:       David L Norris <dave@webaugur.com>
-# Icon:           %{_tmppath}/%name-root/rpm/swish-e.xpm
+Icon:           swish-e.xpm
 Vendor:         SWISH-E Team
 Provides:       %{name}
-Requires:       libxml2
-Requires:       pcre
-Requires:       zlib
+Obsoletes:	swish
+Requires:       libxml2, pcre, zlib
 Prefix:         /usr
-# Patch:          rpm/swish-e-fhs.patch
 
 %description
 Swish-e is Simple Web Indexing System for Humans - Enhanced
@@ -28,11 +25,21 @@ Swish-e is Simple Web Indexing System for Humans - Enhanced
 Swish-e can quickly and easily index directories of files or remote 
 web sites and search the generated indexes.
 
-Swish-e it extremely fast in both indexing and searching, highly
+Swish-e is extremely fast in both indexing and searching, highly
 configurable, and can be seamlessly integrated with existing web sites
 to maintain a consistent design. Swish-e can index web pages, but can
 just as easily index text files, mailing list archives, or data stored
 in a relational database.
+
+%package	devel
+Summary:	SWISH-E - Static libraries and header files.
+Group:		Networking/Other
+Obsoletes:	swish-devel
+Provides:       %{name}-devel
+Requires:	%{name} = %{version}, libxml2-devel, pcre-devel, zlib-devel
+
+%description	devel
+Libraries and header files required for compiling applications based on the SWISH-E API.
 
 %prep
 %setup -q
@@ -40,28 +47,64 @@ in a relational database.
 %build
 %configure --with-pcre=/usr --with-libxml2=/usr --with-zlib=/usr
 make
-make test
 
 %install
-install -d $RPM_BUILD_ROOT/usr/bin
-install src/swish-e $RPM_BUILD_ROOT/usr/bin/swish-e
-install src/swish-search $RPM_BUILD_ROOT/usr/bin/swish-search
-#mkdir -p $RPM_BUILD_ROOT/{%_datadir/%name,%_bindir}
-#install -m755 src/swish-e $RPM_BUILD_ROOT/%_bindir
-#install -m755 src/swish-search $RPM_BUILD_ROOT/%_bindir
+make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 
-#%post
+%post	-p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
-#%postun
+%clean
+[ "${RPM_BUILD_ROOT}" != "/" ] && [ -d ${RPM_BUILD_ROOT} ] && rm -rf ${RPM_BUILD_ROOT};
 
 %files
-%defattr(-,root,root)
+%defattr(-, root, root)
+%{_datadir}/doc/swish-e/html/CHANGES.html
+%{_datadir}/doc/swish-e/html/INSTALL.html
+%{_datadir}/doc/swish-e/html/README.html
+%{_datadir}/doc/swish-e/html/SWISH-3.0.html
+%{_datadir}/doc/swish-e/html/SWISH-BUGS.html
+%{_datadir}/doc/swish-e/html/SWISH-CONFIG.html
+%{_datadir}/doc/swish-e/html/SWISH-FAQ.html
+%{_datadir}/doc/swish-e/html/SWISH-LIBRARY.html
+%{_datadir}/doc/swish-e/html/SWISH-PERL.html
+%{_datadir}/doc/swish-e/html/SWISH-RUN.html
+%{_datadir}/doc/swish-e/html/SWISH-SEARCH.html
+%{_datadir}/doc/swish-e/html/API.html
+%{_datadir}/doc/swish-e/html/spider.html
+%{_datadir}/doc/swish-e/html/swish.html
+%{_datadir}/doc/swish-e/html/Filter.html
+%{_datadir}/doc/swish-e/html/index.html
+%{_datadir}/doc/swish-e/html/index_long.html
+%{_datadir}/doc/swish-e/html/style.css
+%{_datadir}/doc/swish-e/html/images
+%{_datadir}/doc/swish-e/html/images/dotrule1.gif
+%{_datadir}/doc/swish-e/html/images/swish2b.gif
+%{_datadir}/doc/swish-e/html/images/swish2.gif
+%{_datadir}/doc/swish-e/html/images/swishbanner1.gif
+%{_datadir}/doc/swish-e/html/images/swish.gif
+%{_datadir}/doc/swish-e/INSTALL
+%{_datadir}/doc/swish-e/README
+%{_mandir}/man1/SWISH-CONFIG.1.gz
+%{_mandir}/man1/SWISH-FAQ.1.gz
+%{_mandir}/man1/SWISH-LIBRARY.1.gz
+%{_mandir}/man1/SWISH-PERL.1.gz
+%{_mandir}/man1/SWISH-RUN.1.gz
+%{_libdir}/libswish-e.so.2.0.0
+%{_libdir}/libswish-e.so.2
 %{_bindir}/swish-e
-%{_bindir}/swish-search
-%doc README* conf/example1.config
-# %_datadir/*
+%{_bindir}/swishspider
+
+%files devel
+%defattr(-, root, root)
+%{_libdir}/libswish-e.so
+%{_libdir}/libswish-e.la
+%{_libdir}/libswish-e.a
+%{_includedir}/swish-e.h
 
 %changelog
+* Fri Mar 28 2003 David L Norris <dave@webaugur.com> 2.3.5
+- Updated RPM for the new libtool-based 2.3.5 build system.
 * Wed Dec 04 2002 David L Norris <dave@webaugur.com> 2.3-dev04
 - Created RPM spec file
 
