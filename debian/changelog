@@ -1,4 +1,4 @@
-swish-e (2.3.6-1) unstable; urgency=low
+swish-e (2.4.0-0) unstable; urgency=low
 
   * Addition of Debian build system into swish-e
 

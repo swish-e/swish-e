@@ -146,7 +146,8 @@ Download swish-e using your favorite web browser or a utility like wget, lynx, o
 lwp-download.  Unpack and build using the following steps:
 
 Note: "swish-e-2.4.0" is used as an example.  Download the most current version
-available and adjust the commands below!
+available and adjust the commands below!  Also, if running Debian, see notes below on
+building a .deb package.
 
 The "$" symbol indicates steps run as an unprivileged user.  The "#" 
 indicates steps run as the superuser (root).
@@ -215,6 +216,18 @@ Now configure and build Swish-e:
 
 In this case you would likely want to add $HOME/swish-e/bin to your shell's 
 PATH setting.
+
+=head2 Building a Debian Package
+
+The Swish-e distribution includes the files requires to build a Debian pakcage.
+
+    $ tar zxof swish-e-2.4.0.tar.gz  (GNU tar with "z" option)
+    $ cd swish-e-2.4.0
+    $ fakeroot debian/rules binary
+    [lots of output]
+    dpkg-deb: building package `swish-e' in `../swish-e_2.4.0-0_i386.deb'.
+    $ su
+    # dpkg -i ../swish-e_2.4.0-0_i386.deb
 
 
 =head2 What's installed
