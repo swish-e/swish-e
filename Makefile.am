@@ -143,7 +143,7 @@ pkgconfig_DATA = swish-e.pc
 EXTRA_DIST = \
     $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
-    $(doc_DATA) $(pkgconfig_DATA) $(bin_SCRIPTS)\
+    $(doc_DATA) swish-config.in swish-e.pc.in\
     $(debian_dir)
 
 
