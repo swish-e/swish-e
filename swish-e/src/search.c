@@ -345,6 +345,48 @@ int     search(SWISH * sw, char *words, int structure)
 }
 
 
+static void limit_result_list( SWISH *sw )
+{
+    RESULT *rtmp;
+    RESULT *rp;
+    RESULT *last;
+    struct DB_RESULTS *db_results = sw->Search->db_results;
+
+        
+    /* Process each index */
+    while ( db_results )
+    {
+        rp = db_results->resultlist;
+
+        last = NULL;
+
+        while (rp)
+        {
+            rtmp = rp->next;
+            
+            if ( LimitByProperty( sw, rp->indexf, rp->filenum ) )
+            {
+                freeresult( sw, rp );
+
+                if ( !last )  /* if first in list */
+                    db_results->resultlist = rtmp;
+                else
+                    last->next = rtmp;
+            }
+            else
+                last = rp;  /* move the last pointer to current one */
+
+            rp = rtmp;                
+        }
+                    
+        db_results = db_results->next;
+        
+    }
+}
+
+
+
+
 
 
 int     search_2(SWISH * sw, char *words, int structure)
@@ -522,6 +564,16 @@ int     search_2(SWISH * sw, char *words, int structure)
         freeswline(searchwordlist);
         searchwordlist = NULL;
     }
+
+
+    /* Limit result list by -L parameter */
+    // note -- this used to be in addtoresultlist, but that was checking every word
+    // placing here means that it only checks files once
+
+    if ( is_prop_limit_used( sw ) )
+        limit_result_list( sw );
+
+
 
     /* 
     04/00 Jose Ruiz - Sort results by rank or by properties
@@ -1694,11 +1746,6 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
 {
     RESULT *newnode;
 
-//$$$??? THIS IS THE WRONG PLACE because it's not the final results list -- it's just a word hit.
-//$$$??? and and or and not will change the list.
-
-    if ( LimitByProperty( sw, indexf, filenum ) )
-        return rp;
 
     newnode = (RESULT *) emalloc(sizeof(RESULT));
     memset( newnode, 0, sizeof(RESULT));

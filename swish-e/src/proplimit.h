@@ -5,6 +5,7 @@ void freeModule_PropLimit (SWISH *sw);
 int Prepare_PropLookup(SWISH *sw );
 void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi);
 int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum );
+int is_prop_limit_used( SWISH *sw );
 #endif
 
 

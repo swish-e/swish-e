@@ -88,7 +88,18 @@
 *  This has two important uses when an index file already exists (and is in use):
 *    1) the old index can be used while indexing is running
 *    2) a failure during indexing will not destroy the existing index
+*
+*   Note: This is used instead of a normal temporary file because possible limitation
+*   in renaming across file systems.  Therefore, the temporary index files are
+*   stored in the same directory as the final index files.
 */
+
+#define TEMP_FILE_PREFIX "swtmp"
+
+/* TEMP_FILE_PREFIX is prepended to all temporary files.  Makes them
+*  easier to find.
+*/
+
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
 #define ALLOW_FILESYSTEM_INDEXING_DATA_SOURCE	1

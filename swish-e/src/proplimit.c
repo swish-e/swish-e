@@ -758,8 +758,6 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
 {
     int j;
     struct metaEntry  *meta_entry;
-
-
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
         /* Look at all the properties */
@@ -773,7 +771,6 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
         if ( meta_entry->inPropRange )
             return !meta_entry->inPropRange[filenum-1];
 
-
         /* Otherwise, if either range is set, then use a manual lookup of the property */
         
         if ( meta_entry->loPropRange || meta_entry->hiPropRange )
@@ -781,6 +778,7 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
             int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
 
+printf("checking manually\n");            
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */
             if (
@@ -798,4 +796,17 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
 
     return 0;  /* don't limit by default */
 }    
+
+/*******************************************************************
+*   Checks to see if ANY -L parameters were set
+*
+*   This is just to avoid processing each result in the result list.
+*
+********************************************************************/
+int is_prop_limit_used( SWISH *sw )
+{
+    struct MOD_PropLimit *self = sw->PropLimit;
+
+    return self->params ? 1 : 0;
+}
 

@@ -184,8 +184,14 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
 
         buffer[filelen] = '\0';
 
-        if ( strlen( buffer ) < bytes_read ) 
-            progwarn("Possible embedded null in file '%s'\n", name );
+        /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
+        if ( strlen( buffer ) < bytes_read )
+        {
+            int i;
+            progwarn("Substitute possible embedded null character(s) in file '%s'\n", name);
+            for (i = 0; i < bytes_read; ++i)
+                if (buffer[i] == '\0') buffer[i] = '\n';
+        }
 
     }
     else
@@ -413,7 +419,7 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
     int         file_name_len;
     struct MOD_Index *idx = sw->Index;
     char        *tmpdir = NULL;
-    file_name_len = (prefix ? strlen(prefix) : 0) + strlen( temp_file_template );
+    file_name_len = (prefix ? strlen(prefix) : 0) + strlen( temp_file_template ) + strlen( TEMP_FILE_PREFIX );
 
     
 
@@ -441,6 +447,8 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
             file_name[ strlen(tmpdir)+1]   = '\0';
         }
     }
+
+    strcat( file_name, TEMP_FILE_PREFIX );
     
     if ( prefix )
         strcat( file_name, prefix );
