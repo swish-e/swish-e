@@ -11,7 +11,6 @@ use Pod::HtmlPsPdf::Chapter ();
 
 my $config = Pod::HtmlPsPdf::Config->new();
 
-my %some_modified;  # ugly quick hack by moseley...
 
 ########
 sub new{
@@ -54,6 +53,8 @@ sub new{
     my $self = bless {
         rh_valid_anchors  => {},
         rh_links_to_check => {},
+        some_modified     => {}, # keep track of which type (html, split, ps) was modified.
+        
         rh_main_toc       => $rh_main_toc, # Main Table of Contents for index.html
     }, ref($class)||$class;
 
@@ -77,7 +78,8 @@ sub get_param{
 } # end of sub get_param
 
 ###################
-# check if the pod is newer than the destination.
+
+# These are used to check last modified times and determine when an action is required
 
 sub pod_newer {
     my ( $file, $dir_root ) = @_;
@@ -94,7 +96,7 @@ sub pod_newer {
 }
 
 sub pod_newer_split {
-    my ( $file ) = @_;
+    my $file = shift;
     
     my $src  = $config->get_param('src_root') . "/$file.pod";
     my $split_root  = $config->get_param('split_root');
@@ -110,6 +112,29 @@ sub pod_newer_split {
     return;
     
 }    
+
+sub index_out_of_date {
+    my ($self, $type, $root ) = @_;
+
+    # Index file(s) get created if any pod file was built
+    return 'Pod created: Updating' if $self->{some_modified}{$type};
+
+
+
+    # or if the destination doesn't exist
+    my $rel_root = $config->get_param( $root );
+    return 'Create' if !-e "$rel_root/index.html";
+    return 'Create' if $type ne 'ps' && !-e "$rel_root/index_long.html";
+
+
+    # or if the version file is newer than the index file(s)
+    # since the index file can print [VERSION]
+    my $version_file = $config->get_param('version_file');
+    return 'Version changed: Updating' if -M $version_file < -M "$rel_root/index.html";
+    return 'Version changed: Updating' if $type ne 'ps' && -M $version_file < -M "$rel_root/index_long.html";
+
+    return;
+}
 
 
 ####################
@@ -135,6 +160,7 @@ sub create_html_version {
 
         my $generate_ps    = pod_newer( $basenames[$i], 'ps_root' ) if $Pod::HtmlPsPdf::RunTime::options{generate_ps};
         my $generate_html  = pod_newer( $basenames[$i], 'rel_root' );
+
         my $generate_split = pod_newer_split( $basenames[$i] ) if $Pod::HtmlPsPdf::RunTime::options{split_html};
 
 
@@ -144,9 +170,9 @@ sub create_html_version {
         }
 
 
-        $some_modified{html}++ if $generate_html;  # to know if index needs to be rebuilt.
-        $some_modified{ps}++ if $generate_ps;
-        $some_modified{split}++ if $generate_split;
+        $self->{some_modified}{html}++  if $generate_html;  # to know if index needs to be rebuilt.
+        $self->{some_modified}{ps}++    if $generate_ps;
+        $self->{some_modified}{split}++ if $generate_split;
 
 
 
@@ -230,11 +256,8 @@ sub create_html_version {
     my $rel_root = $config->get_param('rel_root');
 
     # create the index.html files based on the toc from each pod file.
-    # might be better to pass $some_modified and let it check...
 
-    $self->write_index_html_file()
-        if $some_modified{html} || !-e "$rel_root/index.html" || !-e "$rel_root/index_long.html";
-
+    $self->write_index_html_file();
 
 
     # copy non-pod files like images and stylesheets (if any are modified)
@@ -345,7 +368,6 @@ sub create_split_html_version{
     $self->copy_the_rest($split_root);
 
     $self->write_split_index_html_file()
-        if $some_modified{split} || !-e "$split_root/index.html" || !-e "$split_root/index_long.html";
 
 } # end of sub create_split_html_version
 
@@ -355,6 +377,15 @@ sub create_split_html_version{
 ###################
 sub write_index_html_file{
     my $self = shift;
+
+    # Make sure there's something to do
+
+    my $update_reason = $self->index_out_of_date( 'html', 'rel_root' );
+    unless ( $update_reason ) {
+        print "--- HTML index files: (not modified)\n";
+        return;
+    }
+
 
     my $ra_ordered_srcs  = $config->get_param('pod_files');
     my @ordered_srcs  = @$ra_ordered_srcs;
@@ -427,7 +458,7 @@ sub write_index_html_file{
             s/\[(\w+)\]/$replace_map{$1}/g;
         }
 
-        print "+++ Creating $file{$_}\n";
+        print "+++ $update_reason $file{$_}\n";
         Pod::HtmlPsPdf::Common::write_file($file{$_},\@content);
     } # end of for (qw(short long))
 
@@ -438,6 +469,14 @@ sub write_index_html_file{
 ###################
 sub write_split_index_html_file{
     my $self = shift;
+
+    my $update_reason = $self->index_out_of_date( 'split', 'split_root' );
+    unless ( $update_reason ) {
+        print "--- SPLIT index files: (not modified)\n";
+        return;
+    }
+
+
 
     my $rel_root   = $config->get_param('rel_root');
     my $split_root = $config->get_param('split_root');
@@ -457,7 +496,7 @@ sub write_split_index_html_file{
         }
 
         $index_file = "$split_root/$_.html";
-        print "+++ Creating $index_file\n";
+        print "+++ $update_reason $index_file\n";
         Pod::HtmlPsPdf::Common::write_file($index_file,\@content);
 
     } # end of for (qw(index index_long))
@@ -469,6 +508,13 @@ sub write_split_index_html_file{
 ######################
 sub make_indexps_file{
     my $self = shift;
+
+    my $update_reason = $self->index_out_of_date( 'ps', 'ps_root' );
+    unless ( $update_reason ) {
+        print "--- PS index file: (not modified)\n";
+        return;
+    }
+    
 
     use vars qw($VERSION);
     my $version_file = $config->get_param('version_file');
@@ -500,7 +546,7 @@ sub make_indexps_file{
     }
   
     my $ps_root = $config->get_param('ps_root');
-    print "+++ Creating $ps_root/index.html\n";
+    print "+++ $update_reason $ps_root/index.html\n";
     Pod::HtmlPsPdf::Common::write_file("$ps_root/index.html",\@content);
 
 } # end of sub make_indexps_file

@@ -55,8 +55,8 @@ div.ad {
 div.navbar { 
 	align: center;
 	padding: .25em; 
-	border: thin dashed blue;
-      	color: blue;
+  /* border: thin dashed blue;
+      	color: blue; */
 }
 
 div.navbar {
