@@ -208,6 +208,8 @@ void initModule_Index (SWISH  *sw)
 	else
 		idx->locZone = Mem_ZoneCreate(4096*64);
 
+	idx->entryZone = Mem_ZoneCreate(4096*64);
+
     return;
 }
 
@@ -262,6 +264,10 @@ void freeModule_Index (SWISH *sw)
     /* free word buffers used by indexstring */
   efree(idx->word);
   efree(idx->swishword);
+
+  /* should be free by now!!! But just in case... */
+  if (idx->entryZone)
+	  Mem_ZoneFree(&idx->entryZone);
 
        /* free module data */
   efree (idx);
@@ -637,7 +643,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if (!efound)
     {
-        en = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(word) + 1);
+        en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word) + 1);
         strcpy(en->word, word);
         en->tfrequency = 1;
         en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
@@ -1486,12 +1492,15 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 write_worddata(sw, epi, indexf);
             }
             efree(epi->locationarray);
-            efree(epi);
         }
         
         DB_EndWriteWords(sw, indexf->DB);
 
-		Mem_ZoneFree(sw->Index->locZone);
+		/* free all ENTRY structs at once */
+		Mem_ZoneFree(&sw->Index->entryZone);
+
+		/* free all location compressed data */
+		Mem_ZoneFree(&sw->Index->locZone);
 
         efree(ep->elist);
 

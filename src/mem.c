@@ -533,7 +533,8 @@ void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size)
 
 	/* If not enough free in this chunk, allocate a new one. Don't worry about the
 	   small amount of unused space at the end. If we are asking for a really big
-	   chunk be sure we allocate enough for that! */
+	   chunk allocate a new buffer just for that!
+	*/
 
 	if (zone->free < size)
 	{
@@ -552,15 +553,15 @@ void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size)
 }
 
 
-void Mem_ZoneFree(MEM_ZONE_HEAD *head)
+void Mem_ZoneFree(MEM_ZONE_HEAD **head)
 {
 	MEM_ZONE *next;
 	MEM_ZONE *tmp;
 
-	if (!head)
+	if (!*head)
 		return;
 
-	next = head->next;
+	next = (*head)->next;
 	while (next)
 	{
 		efree(next->alloc);
@@ -569,6 +570,7 @@ void Mem_ZoneFree(MEM_ZONE_HEAD *head)
 		next = tmp;
 	}
 
-	efree(head);
+	efree(*head);
+	*head = NULL;
 }
 

@@ -90,7 +90,8 @@ struct MOD_Index
     int		plimit;
     int		flimit;
 
-	struct _mem_zone_head	*locZone;
+	MEM_ZONE_HEAD	*locZone;
+	MEM_ZONE_HEAD	*entryZone;
 
 };
 

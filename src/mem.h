@@ -45,7 +45,7 @@ $Id$
 #define MEM_TRACE 0
 
 /* MEM_STATISTICS gives memory statistics (bytes allocated, calls, etc */
-#define MEM_STATISTICS 0
+#define MEM_STATISTICS 1
 
 
 /* The following are the basic malloc/realloc/free replacements */
@@ -79,7 +79,7 @@ MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size);
 void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size);
 
 /* free all memory in a zone */
-void Mem_ZoneFree(MEM_ZONE_HEAD *head); 
+void Mem_ZoneFree(MEM_ZONE_HEAD **head); 
 
 
 /* Don't let people use the regular C calls */
