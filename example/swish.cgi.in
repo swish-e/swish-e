@@ -140,7 +140,7 @@ sub default_config {
 
     return {
         title           => 'Search our site',  # Title of your choice.  Displays on the search page
-        swish_binary    => '@@swishbindir@@/swish-e',        # Location of swish-e binary
+        swish_binary    => '@@swishbinary@@',  # Location of swish-e binary
 
 
         # By default, this script tries to read a config file.  You should probably
