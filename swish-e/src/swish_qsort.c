@@ -46,7 +46,9 @@ typedef int		 cmp_t (const void *, const void *);
 static inline char	*med3 (char *, char *, char *, cmp_t *);
 static inline void	 swapfunc (char *, char *, int, int);
 
+#ifndef min
 #define min(a, b)	(a) < (b) ? a : b
+#endif
 
 /*
  * Qsort routine from Bentley & McIlroy's "Engineering a Sort Function".
