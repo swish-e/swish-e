@@ -41,7 +41,26 @@
                     </TMPL_LOOP>
                 </select>
                 <input type="checkbox" name="reverse" value=1>Reverse Sort
-            </TMPL_IF>                            
+            </TMPL_IF>
+
+
+            <TMPL_IF INDEX_SELECT>
+                <!-- not implemented -- see Template Tool kit example -->
+            </TMPL_IF>
+
+
+            <TMPL_IF LIMITS>
+                <!-- not really implemented -->
+                <br><TMPL_VAR LIMIT_TITLE>
+                <TMPL_LOOP LIMITS>
+                    <input type="checkbox" name="sbm" value="<TMPL_VAR VALUE>" /><TMPL_VAR LABEL>
+                </TMPL_LOOP>
+            </TMPL_IF>
+
+
+            <TMPL_VAR DATE_RANGES>
+
+            
 
         </form>
 

@@ -34,35 +34,42 @@ sub show_template {
             for @$page_array;
     }
 
-    my $params = {
+#suse Data::Dumper;  print STDERR Dumper $results;
+    my %params = (
         TITLE           => ($results->config('title') || 'Search Page'),
         QUERY_SIMPLE    => CGI::escapeHTML( $results->{query_simple} ),
         MESSAGE         => CGI::escapeHTML( $results->errstr ),
         QUERY_HREF      => $results->{query_href},
         MY_URL          => $cgi->script_name,
+        MOD_PERL        => $ENV{MOD_PERL},
+        DATE_RANGES     => $results->get_date_ranges,
+    );
 
-        HITS            => $results->navigation('hits'),
-        FROM            => $results->navigation('from'),
-        TO              => $results->navigation('to'),
-        SHOWING         => $results->navigation('showing'),
+    if ( $results->results ) {
 
-        PAGES           => $results->navigation('pages'),
+        %params = ( %params,
+            FILES           => $results->results,
+            HITS            => $results->navigation('hits'),
+            FROM            => $results->navigation('from'),
+            TO              => $results->navigation('to'),
+            SHOWING         => $results->navigation('showing'),
 
-        PAGE_ARRAY      => $page_array,
-        NEXT            => $results->navigation('next'),
-        NEXT_COUNT      => $results->navigation('next_count'),
-        PREV            => $results->navigation('prev'),
-        PREV_COUNT      => $results->navigation('prev_count'),
+            PAGES           => $results->navigation('pages'),
+
+            PAGE_ARRAY      => $page_array,
+            NEXT            => $results->navigation('next'),
+            NEXT_COUNT      => $results->navigation('next_count'),
+            PREV            => $results->navigation('prev'),
+            PREV_COUNT      => $results->navigation('prev_count'),
         
 
-        RUN_TIME        => $results->header('run time') ||  'unknown',
-        SEARCH_TIME     => $results->header('search time') ||  'unknown',
-        MOD_PERL        => $ENV{MOD_PERL},
+            RUN_TIME        => $results->navigation('run_time'),
+            SEARCH_TIME     => $results->navigation('search_time'),
+        );
+            
     };
 
-    $params->{FILES} =  $results->results if $results->results;
-
-
+    my $params = \%params;
 
     my $MapNames  = $results->config('name_labels') || {};
     my $Sorts     = $results->config('sorts');
@@ -76,6 +83,18 @@ sub show_template {
 
     $params->{SORTS} = [ map { { NAME => $_, LABEL => ($MapNames->{$_} || $_) } } @$Sorts ] if $Sorts;
     $params->{METANAMES} = [ map { { NAME => $_, LABEL => ($MapNames->{$_} || $_) } } @$MetaNames ] if $MetaNames;
+
+
+
+    # Limit Select
+    my $Limit = $results->config('select_by_meta');
+    if ( $Limit ) {
+        $params->{LIMIT_TITLE} = $Limit->{description} || 'Limit By';
+        my $labels = $Limit->{labels} || {};
+        
+        $params->{LIMITS} = [ map { { VALUE => $_, LABEL => ($labels->{$_} || $_) } } @{$Limit->{values}} ] if $Limit;
+    }
+
 
 
     $template->param( $params );

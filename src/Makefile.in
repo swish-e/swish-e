@@ -18,16 +18,21 @@ VERSION     = @VERSION@
 # C compiler
 CC          = @CC@
 
-SHELL       = /bin/sh
-INSTALL     = @INSTALL@
+SHELL       = @SHELL@
+top_srcdir  = @top_srcdir@
 prefix      = @prefix@
-bindir      = $(prefix)/bin
+bindir      = @bindir@
 exec_prefix = @exec_prefix@
 libdir      = @libdir@
 includedir  = @includedir@
 cflags      = @CFLAGS@
 ldflags     = @LDFLAGS@
 
+INSTALL         = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT  = @INSTALL_SCRIPT@
+INSTALL_DATA    = @INSTALL_DATA@
+MKINSTALLDIRS   = $(SHELL) $(top_srcdir)/mkinstalldirs
 
 
 
@@ -171,12 +176,14 @@ test:	$(NAME)
 
 $(LIB_OBJS):	Makefile config.h swish.h
 
-install: $(NAME)
-	@INSTALL_PROGRAM@ $(SWISH_BIN) $(bindir)/$(SWISH_BIN)
+install: $(NAME) install-lib
+	$(MKINSTALLDIRS) $(bindir)
+	$(INSTALL_PROGRAM) $(SWISH_BIN) $(bindir)/$(SWISH_BIN)
 
-install-lib: libswish-e.a	
-	@INSTALL_PROGRAM@ libswish-e.a $(libdir)/libswish-e.a
-	@INSTALL_DATA@ swish-e.h $(includedir)/swish-e.h
+install-lib: libswish-e.a
+	$(MKINSTALLDIRS) $(libdir) $(includedir)
+	$(INSTALL_PROGRAM) libswish-e.a $(libdir)/libswish-e.a
+	$(INSTALL_DATA) swish-e.h $(includedir)/swish-e.h
 
 
 libtest: libswish-e.a libtest.o

@@ -97,6 +97,7 @@
         [% search.get_sort_select_list %]
         [% search.get_index_select_list %]
         [% search.get_limit_select %]
+        [% search.get_date_ranges %]
         
     [% CGI.end_form.join('') %]
 
