@@ -1401,7 +1401,7 @@ static void addResultToList(RESULT_LIST *l_r, RESULT *r)
 
 /* Routine to test structure in a result */
 /* Also removes posdata that do not fit with structure field */
-static int test_structure(int structure, int frequency, int *posdata)
+static int test_structure(int structure, int frequency, unsigned int *posdata)
 {
     int i, j;    /* i -> counter upto frequency, j -> new frequency */
     int *p,*q;   /* Use pointers to ints instead of arrays for
@@ -1454,8 +1454,8 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     unsigned char   *s, *buffer; 
     int     sz_buffer;
     unsigned char flag;
-    int     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
-    int    *posdata;
+    unsigned int     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
+    unsigned int    *posdata;
     IndexFILE  *indexf = db_results->indexf;
     SWISH  *sw = indexf->sw;
     int     structure = db_results->srch->structure;
@@ -1585,7 +1585,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 /* stack_posdata is just to avoid calling emalloc */
                 /* it should be enough for most cases */
                 if(frequency > MAX_POSDATA_STACK)
-                    posdata = (int *)emalloc(frequency * sizeof(int));
+                    posdata = (unsigned int *)emalloc(frequency * sizeof(int));
                 else
                     posdata = stack_posdata;
 
@@ -2313,7 +2313,7 @@ static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 /* This routine is used by qsort */
 static int     icomp_posdata(const void *s1, const void *s2)
 {
-    return (GET_POSITION(*(int *) s1) - GET_POSITION(*(int *) s2));
+    return (GET_POSITION(*(unsigned int *) s1) - GET_POSITION(*(unsigned int *) s2));
 }
 
 

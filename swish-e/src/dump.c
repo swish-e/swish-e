@@ -149,8 +149,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             frequency,
             metaID,
             tmpval,
-            filenum,
-           *posdata;
+            filenum;
+    unsigned int       *posdata;
     int     metadata_length;
     char    word[2];
     char   *resultword;
@@ -259,7 +259,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 {                   /* Read on all items */
                     uncompress_location_values(&s,&flag,&tmpval,&frequency);
                     filenum += tmpval;
-                    posdata = (int *) emalloc(frequency * sizeof(int));
+                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                     uncompress_location_positions(&s,flag,frequency,posdata);
 
 

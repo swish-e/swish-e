@@ -322,7 +322,12 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 
     /* Get some extra compression */
     remove_worddata_longs(sw->Index->worddata_buffer,&sw->Index->sz_worddata_buffer);
-    zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer);
+
+    if(sw->compressPositions)
+        zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer);
+    else
+        zlib_size = sw->Index->sz_worddata_buffer;
+
     /* Write worddata */
     DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,zlib_size, sw->Index->sz_worddata_buffer - zlib_size ,indexf->DB);
 
@@ -343,9 +348,10 @@ int tfreq1, tfreq2;
 unsigned char *p1, *p2, *p;
 int curmetaID_1,curmetaID_2,metadata_length_1,num_metaids1;
 unsigned long nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
-int last_filenum, filenum, tmpval, frequency, *posdata;
+int last_filenum, filenum, tmpval, frequency;
+unsigned int *posdata;
 #define POSDATA_STACK 2000
-int stack_posdata[POSDATA_STACK];  /* Just to avoid the overhead of malloc/free */
+unsigned int stack_posdata[POSDATA_STACK];  /* Just to avoid the overhead of malloc/free */
 unsigned char r_flag, *w_flag;
 unsigned char *q;
 
@@ -429,7 +435,7 @@ unsigned char *q;
                 last_filenum += tmpval;  
 
                 if(frequency > POSDATA_STACK)
-                    posdata = (int *) emalloc(frequency * sizeof(int));
+                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                 else
                     posdata = stack_posdata;
     
@@ -466,7 +472,7 @@ unsigned char *q;
             uncompress_location_values(&p2,&r_flag,&tmpval,&frequency);
             filenum = tmpval;  /* First filenum in chunk */
             if(frequency > POSDATA_STACK)
-                posdata = (int *) emalloc(frequency * sizeof(int));
+                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
             else
                 posdata = stack_posdata;
 
