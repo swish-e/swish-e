@@ -146,37 +146,27 @@ int rc,*p1,*p2;
 int SwishAttach(SWISH *sw,int printflag)
 {
 IndexFILE *indexlist;
-int merge;
 /* 06/00 Jose Ruiz
 ** Added to handle several index file headers */
-char *wordchars1,*beginchars1,*endchars1,*ignorelastchar1,*ignorefirstchar1,*indexn1,*indexp1,*indexa1,*indexd1;
-char *wordcharsM,*begincharsM,*endcharsM,*ignorelastcharM,*ignorefirstcharM;
-char *filenames;
-int applyStemmingRules1,applySoundexRules1,minwordlimit1,maxwordlimit1;
 IndexFILE *tmplist;
 
 	indexlist=sw->indexlist;	
-	filenames=NULL;
-	merge=0;
 	sw->TotalWords=0;
 	sw->TotalFiles=0;
 	
-        wordchars1=beginchars1=endchars1=ignorelastchar1=ignorefirstchar1=indexn1=indexp1=indexa1=indexd1=NULL;
-        applyStemmingRules1=applySoundexRules1=minwordlimit1=maxwordlimit1=0;
 
 	/* First of all . Read header default values from all index fileis */
 	/* With this, we read wordchars, stripchars, ... */
-	/* Also merge them */
-        for (tmplist=indexlist;tmplist;) {
-                sw->commonerror = RC_OK;
+	for (tmplist=indexlist;tmplist;) {
+		sw->commonerror = RC_OK;
 		sw->bigrank = 0;
-                if ((tmplist->fp = openIndexFILEForRead(tmplist->line)) == NULL)
+		if ((tmplist->fp = openIndexFILEForRead(tmplist->line)) == NULL)
 		{
 			return (sw->lasterror=INDEX_FILE_NOT_FOUND);
-                }
-                if (!isokindexheader(tmplist->fp)) {
+		}
+		if (!isokindexheader(tmplist->fp)) {
 			return (sw->lasterror=UNKNOWN_INDEX_FILE_FORMAT);
-                }
+		}
 		readheader(tmplist);
 		readoffsets(tmplist);
 		readhashoffsets(tmplist);
@@ -187,107 +177,13 @@ IndexFILE *tmplist;
 		readpathlookuptable(tmplist);
 		if(tmplist->header.applyFileInfoCompression)
 			readdeflatepatterns(tmplist);
-		if(merge) {
-			if(strcmp(wordchars1,tmplist->header.wordchars)) {
-				wordcharsM=mergestrings(wordchars1,tmplist->header.wordchars);
-				sw->mergedheader.wordchars=SafeStrCopy(sw->mergedheader.wordchars,wordcharsM,&sw->mergedheader.lenwordchars);
-				efree(wordcharsM);
-			}
-			if(strcmp(beginchars1,tmplist->header.beginchars)) {
-				begincharsM=mergestrings(beginchars1,tmplist->header.beginchars);
-				sw->mergedheader.beginchars=SafeStrCopy(sw->mergedheader.beginchars,begincharsM,&sw->mergedheader.lenbeginchars);
-				efree(begincharsM);
-			}
-			if(strcmp(endchars1,tmplist->header.endchars)) {
-				endcharsM=mergestrings(endchars1,tmplist->header.endchars);
-				sw->mergedheader.endchars=SafeStrCopy(sw->mergedheader.endchars,endcharsM,&sw->mergedheader.lenendchars);
-				efree(endcharsM);
-			}
-			if(strcmp(ignorelastchar1,tmplist->header.ignorelastchar)) {
-				ignorelastcharM=mergestrings(ignorelastchar1,tmplist->header.ignorelastchar);
-				sw->mergedheader.ignorelastchar=SafeStrCopy(sw->mergedheader.ignorelastchar,ignorelastcharM,&sw->mergedheader.lenignorelastchar);
-				efree(ignorelastcharM);
-			}
-			if(strcmp(ignorefirstchar1,tmplist->header.ignorefirstchar)) {
-				ignorefirstcharM=mergestrings(ignorefirstchar1,tmplist->header.ignorefirstchar);
-				sw->mergedheader.ignorefirstchar=SafeStrCopy(sw->mergedheader.ignorefirstchar,ignorefirstcharM,&sw->mergedheader.lenignorefirstchar);
-				efree(ignorefirstcharM);
-			}
-			sw->mergedheader.applyStemmingRules=applyStemmingRules1 && tmplist->header.applyStemmingRules;
-			sw->mergedheader.applySoundexRules=applySoundexRules1 && tmplist->header.applySoundexRules;
-			if(minwordlimit1<sw->mergedheader.minwordlimit) sw->mergedheader.minwordlimit=minwordlimit1;
-			if(maxwordlimit1<sw->mergedheader.maxwordlimit) sw->mergedheader.maxwordlimit=maxwordlimit1;
-			if(strcmp(indexp1,tmplist->header.indexp)) sw->mergedheader.indexp=SafeStrCopy(sw->mergedheader.indexp,"(several)",&sw->mergedheader.lenindexp);
-			if(strcmp(indexa1,tmplist->header.indexa)) sw->mergedheader.indexa=SafeStrCopy(sw->mergedheader.indexa,"(several)",&sw->mergedheader.lenindexa);
-			if(strcmp(indexd1,tmplist->header.indexd)) sw->mergedheader.indexd=SafeStrCopy(sw->mergedheader.indexd,"(several)",&sw->mergedheader.lenindexd);
-			if(strcmp(indexn1,tmplist->header.indexn)) sw->mergedheader.indexn=SafeStrCopy(sw->mergedheader.indexn,"(several)",&sw->mergedheader.lenindexn);
 
-			sw->mergedheader.savedasheader=SafeStrCopy(sw->mergedheader.savedasheader,"(several)",&sw->mergedheader.lensavedasheader);
-			sw->mergedheader.indexedon=SafeStrCopy(sw->mergedheader.indexedon,"(several)",&sw->mergedheader.lenindexedon);
-			efree(wordchars1);
-			efree(beginchars1);
-			efree(endchars1);
-			efree(ignorelastchar1);
-			efree(ignorefirstchar1);
-			efree(indexn1);
-			efree(indexd1);
-			efree(indexa1);
-			efree(indexp1);
-		} else {    /* Merged header and header are the same if just one file is used */
-			sw->mergedheader.wordchars=SafeStrCopy(sw->mergedheader.wordchars,tmplist->header.wordchars,&sw->mergedheader.lenwordchars);
-			sw->mergedheader.beginchars=SafeStrCopy(sw->mergedheader.beginchars,tmplist->header.beginchars,&sw->mergedheader.lenbeginchars);
-			sw->mergedheader.endchars=SafeStrCopy(sw->mergedheader.endchars,tmplist->header.endchars,&sw->mergedheader.lenendchars);
-			sw->mergedheader.ignorelastchar=SafeStrCopy(sw->mergedheader.ignorelastchar,tmplist->header.ignorelastchar,&sw->mergedheader.lenignorelastchar);
-			sw->mergedheader.ignorefirstchar=SafeStrCopy(sw->mergedheader.ignorefirstchar,tmplist->header.ignorefirstchar,&sw->mergedheader.lenignorefirstchar);
-			sw->mergedheader.applyStemmingRules=tmplist->header.applyStemmingRules;
-			sw->mergedheader.applySoundexRules=tmplist->header.applySoundexRules;
-			sw->mergedheader.minwordlimit=tmplist->header.minwordlimit;
-			sw->mergedheader.maxwordlimit=tmplist->header.maxwordlimit;
-			sw->mergedheader.indexp=SafeStrCopy(sw->mergedheader.indexp,tmplist->header.indexp,&sw->mergedheader.lenindexp);
-			sw->mergedheader.indexa=SafeStrCopy(sw->mergedheader.indexa,tmplist->header.indexa,&sw->mergedheader.lenindexa);
-			sw->mergedheader.indexd=SafeStrCopy(sw->mergedheader.indexd,tmplist->header.indexd,&sw->mergedheader.lenindexd);
-			sw->mergedheader.indexn=SafeStrCopy(sw->mergedheader.indexn,tmplist->header.indexn,&sw->mergedheader.lenindexn);
-			sw->mergedheader.savedasheader=SafeStrCopy(sw->mergedheader.savedasheader,tmplist->header.savedasheader,&sw->mergedheader.lensavedasheader);
-			sw->mergedheader.indexedon=SafeStrCopy(sw->mergedheader.indexedon,tmplist->header.indexedon,&sw->mergedheader.lenindexedon);
-		}
 		sw->TotalWords+=tmplist->header.totalwords;
 		sw->TotalFiles+=tmplist->header.totalfiles;
 		tmplist=tmplist->next;
-		if(tmplist) {  /* If there are more index file we need
-				 ** to preserve header values */
-		
-			wordchars1=estrdup(sw->mergedheader.wordchars);sortstring(wordchars1);
-			beginchars1=estrdup(sw->mergedheader.beginchars);sortstring(beginchars1);
-			endchars1=estrdup(sw->mergedheader.endchars);sortstring(endchars1);
-			ignorelastchar1=estrdup(sw->mergedheader.ignorelastchar);sortstring(ignorelastchar1);
-			ignorefirstchar1=estrdup(sw->mergedheader.ignorefirstchar);sortstring(ignorefirstchar1);
-			indexn1=estrdup(sw->mergedheader.indexn);
-			indexp1=estrdup(sw->mergedheader.indexp);
-			indexa1=estrdup(sw->mergedheader.indexa);
-			indexd1=estrdup(sw->mergedheader.indexd);
-			applyStemmingRules1=sw->mergedheader.applyStemmingRules;
-			applySoundexRules1=sw->mergedheader.applySoundexRules;
-			minwordlimit1=sw->mergedheader.minwordlimit;
-			maxwordlimit1=sw->mergedheader.maxwordlimit;
-			merge=1;
-		}
-		if(!filenames) 
-		{
-			filenames=estrdup(sw->mergedheader.savedasheader);
-		} else {
-			filenames=erealloc(filenames,strlen(filenames)+strlen(sw->mergedheader.savedasheader)+2);
-			sprintf(filenames,"%s %s",filenames,sw->mergedheader.savedasheader);
-		}
 	}
-	if (printflag) printheader(&sw->mergedheader, stdout, filenames, sw->TotalWords, sw->TotalFiles, 0);
-	efree(filenames);
 	
 	/* Make lookuptables for char processing */
-	makelookuptable(sw->mergedheader.wordchars,sw->mergedheader.wordcharslookuptable);
-	makelookuptable(sw->mergedheader.beginchars,sw->mergedheader.begincharslookuptable);
-	makelookuptable(sw->mergedheader.endchars,sw->mergedheader.endcharslookuptable);
-	makelookuptable(sw->mergedheader.ignorefirstchar,sw->mergedheader.ignorefirstcharlookuptable);
-	makelookuptable(sw->mergedheader.ignorelastchar,sw->mergedheader.ignorelastcharlookuptable);
 	return (sw->lasterror=RC_OK);
 }
 
@@ -1151,7 +1047,7 @@ FILE *fp=indexf->fp;
 	position=NULL;
 	nextposmetaname=0L;
 
-        fileword = (char *) emalloc((filewordlen=MAXWORDLEN) + 1);
+	fileword = (char *) emalloc((filewordlen=MAXWORDLEN) + 1);
 
 	rp = rp2 = NULL;
 		/* First: Look for star */
@@ -1271,14 +1167,14 @@ FILE *fp=indexf->fp;
 					uncompress1(x,fp);
 					position[j] = x;
 				}
-				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure), structure,frequency,position,indexf,sw);
+				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), structure,frequency,position,indexf,sw);
 				if (sw->verbose == 4)
 				{
 					/* dump diagnostic info */
 					long curFilePos;
 					curFilePos = ftell(fp);	/* save */
 					fi = readFileEntry(indexf, filenum);
-					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure), frequency, tries);
+					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), frequency, tries);
 					fseek(fp, curFilePos, 0); /* restore */
 				}
 			} while(ftell(fp)!=nextposmetaname);

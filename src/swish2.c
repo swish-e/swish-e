@@ -71,7 +71,6 @@ int i;
 	sw->applyautomaticmetanames = 0;
 	sw->len_compression_buffer = MAXSTRLEN;  /* For example */
 	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
-	init_header(&sw->mergedheader);
 
 	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
 	sw->filterdir = NULL;
@@ -125,10 +124,8 @@ int i;
 
 void SwishDefaults(SWISH *sw)
 {
-	init_header(&sw->mergedheader);
-
         /* Initialize tmpdir */
-        sw->tmpdir = SafeStrCopy(sw->tmpdir,TMPDIR,&sw->lentmpdir);
+	sw->tmpdir = SafeStrCopy(sw->tmpdir,TMPDIR,&sw->lentmpdir);
 
         /* Initialize spider directory */
         sw->spiderdirectory = SafeStrCopy(sw->spiderdirectory,SPIDERDIRECTORY,&sw->lenspiderdirectory);
@@ -168,8 +165,7 @@ if(sw) {
 		/* Free search results and imput parameters */
 		SwishResetSearch(sw);
 
-		free_header(&sw->mergedheader);
-                if(sw->lencustomOutputDelimiter)efree(sw->customOutputDelimiter);
+		if(sw->lencustomOutputDelimiter)efree(sw->customOutputDelimiter);
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
 		efree(sw->filterdir);		

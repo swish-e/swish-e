@@ -220,6 +220,9 @@ char *summary=NULL;
 										{   /* found */
 											p=endjunktag2;
 											break;
+										} else {
+											*(endjunktag2-1)='>';
+											endjunktag=endjunktag2;
 										}
 									} else {
 										endjunktag+=2;
@@ -227,9 +230,7 @@ char *summary=NULL;
 								} else {
 									p=NULL;
 								}
-
-							}
-								
+							}	
 						}
 					}
 				}  /* Check for end of a XML field */

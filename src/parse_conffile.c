@@ -58,6 +58,7 @@ struct IndexContents *ic;
 struct StoreDescription *sd;
 IndexFILE *indexf=NULL;
 unsigned char *StringValue=NULL;
+struct swline *tmplist;
 char *w0;
 	
 	gotdir = gotindex = 0;
@@ -104,10 +105,13 @@ char *w0;
 			} else progerr("NoContents requires at least one value");
 		}
 		else if (strcasecmp(w0, "IndexFile")==0) {
-			if(sl->n==2) {
-				if(indexf->line) efree(indexf->line);
-				indexf->line=estrdup(sl->word[1]);
-			} else progerr("Indexfile requires one value");
+			if(!(*hasindex)) {
+				if(sl->n==2) {
+					gotindex=1;
+					if(indexf->line) efree(indexf->line);
+					indexf->line=estrdup(sl->word[1]);
+				} else progerr("Indexfile requires one value");
+			}
 		}
 		else if (strcasecmp(w0,"IndexReport")==0){
 			if(sl->n==2) {
@@ -357,6 +361,12 @@ char *w0;
 				sw->tmpdir = SafeStrCopy(sw->tmpdir,sl->word[1],&sw->lentmpdir);
 				if(!isdirectory(sw->tmpdir)) {
 					progerr("TempDir. %s is not a directory",sw->tmpdir);
+				} else {
+						/* New names for temporal files */
+					if(sw->swap_file_name) efree(sw->swap_file_name);
+					if(sw->swap_location_name) efree(sw->swap_location_name);
+					sw->swap_file_name=tempnam(sw->tmpdir,"swfi");
+					sw->swap_location_name=tempnam(sw->tmpdir,"swlo");
 				}
 			} else progerr("TmpDir requires one value");
 		}
@@ -392,9 +402,12 @@ char *w0;
 		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
 			indexf->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
 		}
-		else if (strcasecmp(w0,"IgnoreMeta")==0) {
+		else if (strcasecmp(w0,"IgnoreTag")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->ignoremetalist);
+					/* Go lowercase*/
+				for(tmplist=sw->ignoremetalist;tmplist;tmplist=tmplist->next)
+					tmplist->line=strtolower(tmplist->line);
 			} else progerr("IgnoreMeta requires at least one value");
 		}
 		else if (strcasecmp(w0,"DontBumpPositionOnMetaTags")==0) {

@@ -790,7 +790,7 @@ printf("DBG: End removestops\n");fflush(stdout);
 ** work). Fudging with the ranks doesn't seem to make much difference.
 */
 
-int getrank(SWISH *sw, int freq, int tfreq, int words, int structure)
+int getrank(SWISH *sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCountWhenRanking)
 {
 double d, e, f;
 int tmprank;
@@ -802,7 +802,7 @@ int emphasized;
 		freq = 5;
 	d = 1.0 / (double) tfreq;
 	e = (log((double) freq) + 10.0) * d;
-	if (!sw->mergedheader.ignoreTotalWordCountWhenRanking)
+	if (ignoreTotalWordCountWhenRanking)
 	{
 		e /= words;
 	}
