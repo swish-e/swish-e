@@ -121,6 +121,7 @@ void SwishResetSearch(SWISH *sw)
 
                 /* Free sort stuff */
     resetModule_ResultSort (sw);
+    resetModule_Search (sw);
 }
 
 void SwishClose(SWISH *sw)
@@ -149,6 +150,7 @@ void SwishClose(SWISH *sw)
         freeModule_Index (sw);
         freeModule_ResultSort (sw);
         freeModule_FS (sw);
+        freeModule_Search (sw);
 
                         /* Free file structures */
         freefileoffsets(sw);

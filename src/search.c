@@ -157,34 +157,55 @@ void initModule_Search (SWISH  *sw)
    return;
 }
 
+/* Resets memory of vars used by ResultSortt properties configuration */
+void resetModule_Search (SWISH *sw)
+
+{
+ struct DB_RESULTS *tmp,*tmp2;
+ struct MOD_Search *srch = sw->Search;
+ int i;
+ IndexFILE *tmpindexlist;
+
+       /* Default variables for search */
+   srch->maxhits = -1;
+   srch->beginhits = 0;
+
+        /* Free results from search if they exists */
+   for(tmp=srch->db_results;tmp;)
+   {
+      freeresultlist(sw,tmp);
+      tmp2=tmp->next;
+      efree(tmp);
+      tmp=tmp2;
+   }
+        /* Free display props arrays */
+        /* First the common part to all the index files */
+   if (srch->propNameToDisplay)
+   {
+      for(i=0;i<srch->numPropertiesToDisplay;i++)
+         efree(srch->propNameToDisplay[i]);
+      efree(srch->propNameToDisplay);
+   }
+   srch->propNameToDisplay=NULL;
+   srch->numPropertiesToDisplay=0;
+   srch->currentMaxPropertiesToDisplay=0;
+                /* Now the IDs of each index file */
+   for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
+   {
+      if (tmpindexlist->propIDToDisplay)
+         efree(tmpindexlist->propIDToDisplay);
+      tmpindexlist->propIDToDisplay=NULL;
+   }
+}
 
 /* 
   -- release all wired memory for this module
-  -- 2001-04-11 rasc
 */
 
 void freeModule_Search (SWISH *sw)
 
 {
- struct DB_RESULTS *tmp,*tmp2;
  struct MOD_Search *srch = sw->Search;
-
-       /* Default variables for search */
-  srch->maxhits = -1;
-  srch->beginhits = 0;
-
- 		/* Free results from previous search if they exists */
-  for(tmp=srch->db_results;tmp;)
-  {
-      freeresultlist(sw,tmp);
-      tmp2=tmp->next;
-      efree(tmp);
-      tmp=tmp2;
-  }
-  srch->db_results=NULL;
-
-		/* Free dsiplay props arrays */
-  FreeOutputPropertiesVars(sw);
 
   /* free module data */
   efree (srch);
@@ -258,7 +279,7 @@ int     SwishAttach(SWISH * sw, int printflag)
 /* 06/00 Jose Ruiz
 ** Added to handle several index file headers */
     IndexFILE *tmplist;
-	int i;
+    int i;
  
     indexlist = sw->indexlist;
     sw->TotalWords = 0;
@@ -272,21 +293,21 @@ int     SwishAttach(SWISH * sw, int printflag)
         sw->commonerror = RC_OK;
         sw->bigrank = 0;
 
-		/* Program exits in DB_Open if it fails */
+        /* Program exits in DB_Open if it fails */
         tmplist->DB = (void *)DB_Open(sw, tmplist->line);
 
         read_header(sw, &tmplist->header, tmplist->DB);
 
-		tmplist->filearray_cursize = tmplist->header.totalfiles;
-		tmplist->filearray_maxsize = tmplist->header.totalfiles;
-		tmplist->filearray = emalloc(tmplist->header.totalfiles * sizeof(struct file *));
-		for(i = 0; i < tmplist->header.totalfiles; i++)
-			tmplist->filearray[i] = NULL;
+        tmplist->filearray_cursize = tmplist->header.totalfiles;
+        tmplist->filearray_maxsize = tmplist->header.totalfiles;
+        tmplist->filearray = emalloc(tmplist->header.totalfiles * sizeof(struct file *));
+        for(i = 0; i < tmplist->header.totalfiles; i++)
+            tmplist->filearray[i] = NULL;
 
-		/* removed deflate stuff
+        /* removed deflate stuff
         if (tmplist->header.applyFileInfoCompression)
             readdeflatepatterns(tmplist);
-			*/
+            */
 
         sw->TotalWords += tmplist->header.totalwords;
         sw->TotalFiles += tmplist->header.totalfiles;
@@ -991,14 +1012,14 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     DB_InitReadWords(sw, indexf->DB);
     if (!p)    /* No wildcard -> Direct hash search */
     {
-		DB_ReadWordHash(sw, word, &wordID, indexf->DB);
-		if(!wordID)
-		{	
-			DB_EndReadWords(sw, indexf->DB);
+        DB_ReadWordHash(sw, word, &wordID, indexf->DB);
+        if(!wordID)
+        {    
+            DB_EndReadWords(sw, indexf->DB);
                         sw->lasterror = WORD_NOT_FOUND;
-			return NULL;
-		}
-	}		
+            return NULL;
+        }
+    }        
     else
     {              /* There is a star. So use the sequential approach */
         if (*word == '*')
@@ -1006,21 +1027,21 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
             return NULL;
         }
-		DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+    DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
 
-		if (!wordID)
-		{
-			DB_EndReadWords(sw, indexf->DB);
+    if (!wordID)
+    {
+       DB_EndReadWords(sw, indexf->DB);
             sw->lasterror = WORD_NOT_FOUND;
-			return NULL;
-		}
-		efree(resultword);   /* Do not need it */
+            return NULL;
+        }
+        efree(resultword);   /* Do not need it */
     }
     /* If code is here we have found the word !! */
     do
     {
         DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
-	    s = buffer;
+        s = buffer;
         /* Get the data of the word */
         uncompress2(tfrequency, s); /* tfrequency */
         /* Now look for a correct Metaname */
@@ -1060,7 +1081,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             }
             while ((s - buffer) != nextposmetaname);
         }
-		efree(buffer);
+        efree(buffer);
         if (!p)
             break;              /* direct access -> break */
         else
@@ -1070,13 +1091,13 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-			DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
-			efree(resultword);  /* Do not need it */
+            efree(resultword);  /* Do not need it */
         }
     }
-	while(1);
+    while(1);
     if (p)
     {
         /* Finally, if we are in an sequential search
@@ -1105,7 +1126,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         }
         rp = rp2;
     }
-	DB_EndReadWords(sw, indexf->DB);
+    DB_EndReadWords(sw, indexf->DB);
     return rp;
 }
 
@@ -2173,7 +2194,7 @@ struct swline *parse_search_string(SWISH * sw, char *words, INDEXDATAHEADER head
                     }
                     j = 0;
                 }
-		if (c == ((unsigned char) PhraseDelimiter))
+                if (c == ((unsigned char) PhraseDelimiter))
                 {
                         searchwordlist = (struct swline *) addswline(searchwordlist, PhraseDelimiterString);
                 }

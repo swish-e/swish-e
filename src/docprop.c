@@ -315,31 +315,6 @@ docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
 }
 
 
-/* Frees memory of vars used by Ouutput properties configuration */
-void FreeOutputPropertiesVars(SWISH *sw)
-{
-int i;
-IndexFILE *tmpindexlist;
-struct MOD_Search *srch = sw->Search;
-		/* First the common part to all the index files */
-	if (srch->propNameToDisplay) 
-	{
-		for(i=0;i<srch->numPropertiesToDisplay;i++)
-			efree(srch->propNameToDisplay[i]);
-		efree(srch->propNameToDisplay);
-	}
-	srch->propNameToDisplay=NULL;
-	srch->numPropertiesToDisplay=0;
-    srch->currentMaxPropertiesToDisplay=0;
-		/* Now the IDs of each index file */
-	for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
-	{
-		if (tmpindexlist->propIDToDisplay) 
-			efree(tmpindexlist->propIDToDisplay);
-		tmpindexlist->propIDToDisplay=NULL;
-	}
-}
-
 /* For faster proccess, get de ID of the properties to sort */
 int initSearchResultProperties(SWISH *sw)
 {

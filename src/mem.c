@@ -27,6 +27,8 @@
 /* Error-checking malloc()...
 */
 
+#define DEBUGMEMORY 1
+
 #ifdef DEBUGMEMORY
 
 struct memory {
