@@ -20,6 +20,12 @@
 /* New file created from file.c 02/2001 jmruiz */
 /* Contains routines for parsing the configuration file */
 
+/*
+** 2001-02-15 rasc    ResultExtFormatName 
+**
+*/
+
+
 #include "swish.h"
 #include "mem.h"
 #include "list.h"
@@ -57,6 +63,7 @@ struct IndexContents *ic;
 struct StoreDescription *sd;
 IndexFILE *indexf=NULL;
 unsigned char *StringValue=NULL;
+char *w0;
 	
 	gotdir = gotindex = 0;
 	
@@ -78,10 +85,11 @@ unsigned char *StringValue=NULL;
 			freeStringList(sl);
 			continue;
 		}
+		w0 = sl->word[0];				/* Config Direct. = 1. word */
 		
-		if (sl->word[0][0] == '#') continue;
+		if (w0[0] == '#') continue;		/* comment */
 
-		if (strcasecmp(sl->word[0],"IndexDir")==0) {
+		if (strcasecmp(w0,"IndexDir")==0) {
 			if(sl->n>1) {
 				if(!*hasdir)
 				{
@@ -90,23 +98,23 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("IndexDir requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IncludeConfigFile")==0) {
+		else if (strcasecmp(w0, "IncludeConfigFile")==0) {
 			if(sl->n==2) {
 				getdefaults(sw,sl->word[1],hasdir,hasindex,hasverbose);
 			} else progerr("IncludeConfigfile requires one value");
 		}
-		else if (strcasecmp(sl->word[0],"NoContents")==0) {
+		else if (strcasecmp(w0,"NoContents")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->nocontentslist);
 			} else progerr("NoContents requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexFile")==0) {
+		else if (strcasecmp(w0, "IndexFile")==0) {
 			if(sl->n==2) {
 				if(indexf->line) efree(indexf->line);
 				indexf->line=estrdup(sl->word[1]);
 			} else progerr("Indexfile requires one value");
 		}
-		else if (strcasecmp(sl->word[0],"IndexReport")==0){
+		else if (strcasecmp(w0,"IndexReport")==0){
 			if(sl->n==2) {
 				if(!hasverbose)
 				{
@@ -114,111 +122,111 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("IndexReport requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "MinWordLimit")==0){
+		else if (strcasecmp(w0, "MinWordLimit")==0){
 			if(sl->n==2) {
 				indexf->header.minwordlimit=atoi(sl->word[1]);
 			} else progerr("MinWordLimit requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "MaxWordLimit")==0){
+		else if (strcasecmp(w0, "MaxWordLimit")==0){
 			if(sl->n==2) {
 				indexf->header.maxwordlimit=atoi(sl->word[1]);
 			} else progerr("MaxWordLimit requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexComments")==0){
+		else if (strcasecmp(w0, "IndexComments")==0){
 			if(sl->n==2) {
 				sw->indexComments=atoi(sl->word[1]);
 			} else progerr("IndexComments requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "WordCharacters")==0)	{
+		else if (strcasecmp(w0, "WordCharacters")==0)	{
 			if(sl->n==2) {
 				indexf->header.wordchars = SafeStrCopy(indexf->header.wordchars,sl->word[1],&indexf->header.lenwordchars);
 				sortstring(indexf->header.wordchars);
 				makelookuptable(indexf->header.wordchars,indexf->header.wordcharslookuptable);
 			} else progerr("WordCharacters requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "BeginCharacters")==0)	{
+		else if (strcasecmp(w0, "BeginCharacters")==0)	{
 			if(sl->n==2) {
 				indexf->header.beginchars = SafeStrCopy(indexf->header.beginchars,sl->word[1],&indexf->header.lenbeginchars);
 				sortstring(indexf->header.beginchars);
 				makelookuptable(indexf->header.beginchars,indexf->header.begincharslookuptable);
 			} else progerr("BeginCharacters requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "EndCharacters")==0)	{
+		else if (strcasecmp(w0, "EndCharacters")==0)	{
 			if(sl->n==2) {
 				indexf->header.endchars = SafeStrCopy(indexf->header.endchars,sl->word[1],&indexf->header.lenendchars);
 				sortstring(indexf->header.endchars);
 				makelookuptable(indexf->header.endchars,indexf->header.endcharslookuptable);
 			} else progerr("EndCharacters requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IgnoreLastChar")==0)	{
+		else if (strcasecmp(w0, "IgnoreLastChar")==0)	{
 			if(sl->n==2) {
 				indexf->header.ignorelastchar = SafeStrCopy(indexf->header.ignorelastchar,sl->word[1],&indexf->header.lenignorelastchar);
 				sortstring(indexf->header.ignorelastchar);
 				makelookuptable(indexf->header.ignorelastchar,indexf->header.ignorelastcharlookuptable);
 			} else progerr("IgnoreLastChar requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IgnoreFirstChar")==0)	{
+		else if (strcasecmp(w0, "IgnoreFirstChar")==0)	{
 			if(sl->n==2) {
 				indexf->header.ignorefirstchar = SafeStrCopy(indexf->header.ignorefirstchar,sl->word[1],&indexf->header.lenignorefirstchar);
 				sortstring(indexf->header.ignorefirstchar);
 				makelookuptable(indexf->header.ignorefirstchar,indexf->header.ignorefirstcharlookuptable);
 			} else progerr("IgnoreFirstChar requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "ReplaceRules")==0)	{
+		else if (strcasecmp(w0, "ReplaceRules")==0)	{
 			if(sl->n>1) {
 				grabCmdOptions(sl,1, &sw->replacelist);
 				checkReplaceList(sw);
 			} else progerr("ReplaceRules requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "FollowSymLinks")==0)	{
+		else if (strcasecmp(w0, "FollowSymLinks")==0)	{
 			if(sl->n==2) {
 				sw->followsymlinks = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("FollowSymLinks requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexName")==0)	{
+		else if (strcasecmp(w0, "IndexName")==0)	{
 			if(sl->n>1) {
 				StringValue=StringListToString(sl,1);
 				indexf->header.indexn = SafeStrCopy(indexf->header.indexn,StringValue,&indexf->header.lenindexn);
 				efree(StringValue);
 			} else progerr("IndexName requires a value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexDescription")==0)	{
+		else if (strcasecmp(w0, "IndexDescription")==0)	{
 			if(sl->n>1) {
 				StringValue=StringListToString(sl,1);
 				indexf->header.indexd = SafeStrCopy(indexf->header.indexd,StringValue,&indexf->header.lenindexd);
 				efree(StringValue);
 			} else progerr("IndexDescription requires a value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexPointer")==0)	{
+		else if (strcasecmp(w0, "IndexPointer")==0)	{
 			if(sl->n>1) {
 				StringValue=StringListToString(sl,1);
 				indexf->header.indexp = SafeStrCopy(indexf->header.indexp,StringValue,&indexf->header.lenindexp);
 				efree(StringValue);
 			} else progerr("IndexPointer requires a value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexAdmin")==0)	{
+		else if (strcasecmp(w0, "IndexAdmin")==0)	{
 			if(sl->n>1) {
 				StringValue=StringListToString(sl,1);
 				indexf->header.indexa = SafeStrCopy(indexf->header.indexa,StringValue,&indexf->header.lenindexa);
 				efree(StringValue);
 			} else progerr("IndexAdmin requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "UseStemming")==0)	{
+		else if (strcasecmp(w0, "UseStemming")==0)	{
 			if(sl->n==2) {
 				indexf->header.applyStemmingRules = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("UseStemming requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IgnoreTotalWordCountWhenRanking")==0)	{
+		else if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking")==0)	{
 			if(sl->n==2) {
 				indexf->header.ignoreTotalWordCountWhenRanking = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("IgnoreTotalWordCountWhenRanking requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "UseSoundex")==0)	{
+		else if (strcasecmp(w0, "UseSoundex")==0)	{
 			if(sl->n==2) {
 				indexf->header.applySoundexRules = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("UseSoundex requires one value");
 		}
-                else if (strcasecmp(sl->word[0], "FilterDir")==0)    {      /* 1999-05-05 rasc */
+                else if (strcasecmp(w0, "FilterDir")==0)    {      /* 1999-05-05 rasc */
 			if(sl->n==2) {
 				sw->filterdir = SafeStrCopy(sw->filterdir,sl->word[1],&sw->lenfilterdir);
 				if(!isdirectory(sw->filterdir)) {
@@ -226,21 +234,27 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("FilterDir requires one value");
 		}
-                else if (strcasecmp(sl->word[0], "FileFilter")==0) {
-        /* 1999-05-05 rasc */
+                else if (strcasecmp(w0, "FileFilter")==0) {  /* 1999-05-05 rasc */
                                      /* FileFilter fileextension  filerprog */
 			if(sl->n==3) {
 				sw->filterlist = (struct filter *) addfilter(sw->filterlist,sl->word[1],sl->word[2],sw->filterdir);
 			} else progerr("FileFilter requires two values");
                 }
-		else if (strcasecmp(sl->word[0], "MetaNames")== 0) 
+                else if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
+                                     /* ResultExt...   name  fmtstring */
+			if(sl->n==3) {
+			   sw->resultextfmtlist = (struct ResultExtFmtStrList *)
+				 addResultExtFormatStr(sw->resultextfmtlist,sl->word[1],sl->word[2]);
+			} else progerr("ResultExtFormatName requires \"name\" \"fmtstr\"");
+                }
+		else if (strcasecmp(w0, "MetaNames")== 0) 
 		{
 			if(sl->n>1) {
 				for(i=1;i<sl->n;i++)
 					addMetaEntry(indexf,sl->word[i], META_INDEX, &sw->applyautomaticmetanames);
 			} else progerr("MetaNames requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "TranslateCharacters")== 0)  
+		else if (strcasecmp(w0, "TranslateCharacters")== 0)  
 		{
 			if(sl->n==2 && strcasecmp(sl->word[1],":ascii7:")==0) {
 					/* Flag to use ISO8 -> ISO7 conversion as coded by rasc */ 
@@ -252,14 +266,14 @@ unsigned char *StringValue=NULL;
 				
 			} else progerr("TranslateCharacters requires two values (like in tr) or the value :ascii7:");
 		}
-		else if (strcasecmp(sl->word[0], "PropertyNames")== 0)
+		else if (strcasecmp(w0, "PropertyNames")== 0)
 		{
 			if(sl->n>1) {
 				for(i=1;i<sl->n;i++)
 					addMetaEntry(indexf,sl->word[i], META_PROP, &sw->applyautomaticmetanames);
 			} else progerr("PropertyNames requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "IgnoreWords")== 0) {
+		else if (strcasecmp(w0, "IgnoreWords")== 0) {
 			if(sl->n>1) {
 				if (lstrstr(sl->word[1], "SwishDefault")) {
 						readdefaultstopwords(indexf);
@@ -272,7 +286,7 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("IgnoreWords requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "UseWords")== 0) {  /* 11/00 Jmruiz */
+		else if (strcasecmp(w0, "UseWords")== 0) {  /* 11/00 Jmruiz */
 			indexf->is_use_words_flag=1;
 			if(sl->n>1) {
 				if (lstrstr(sl->word[1], "File:")) {  /* 2000-06-15 rasc */
@@ -284,25 +298,25 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("UseWords requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "IgnoreLimit")==0) {
+		else if (strcasecmp(w0, "IgnoreLimit")==0) {
 			if(sl->n==3) {
 				sw->plimit = atol(sl->word[1]);
 				sw->flimit = atol(sl->word[2]);
 			} else progerr("IgnoreLimit requires two values");
 		}
 		/* IndexVerbose is supported for backwards compatibility */
-		else if (strcasecmp(sl->word[0], "IndexVerbose")==0) { 
+		else if (strcasecmp(w0, "IndexVerbose")==0) { 
 			if(sl->n==2) {
 				sw->verbose = (lstrstr(sl->word[1], "yes")) ? 3 : 0;
 			} else progerr("IndexVerbose requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "IndexOnly")==0)
+		else if (strcasecmp(w0, "IndexOnly")==0)
 		{
 			if(sl->n>1) {
 				grabCmdOptions(sl,1, &sw->suffixlist);
 			} else progerr("IndexOnly requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0],"IndexContents")==0) {
+		else if (strcasecmp(w0,"IndexContents")==0) {
 			if(sl->n>2) {
 				if(strcasecmp(sl->word[1],"TXT")==0) {
 					DocType=TXT;
@@ -331,7 +345,7 @@ unsigned char *StringValue=NULL;
 				sw->indexcontents=ic;
 			} else progerr("IndexContents requires at least two values");
 		}
-		else if (strcasecmp(sl->word[0],"StoreDescription")==0) {
+		else if (strcasecmp(w0,"StoreDescription")==0) {
 			if(sl->n==3 || sl->n==4) {
 				if(strcasecmp(sl->word[1],"TXT")==0) {
 					DocType=TXT;
@@ -375,7 +389,7 @@ unsigned char *StringValue=NULL;
 				sw->storedescription=sd;
 			} else progerr("StoreDescription requires two or three values");
 		}
-		else if (strcasecmp(sl->word[0],"DefaultContents")==0) {
+		else if (strcasecmp(w0,"DefaultContents")==0) {
 			if(sl->n>1) {
 				if(strcasecmp(sl->word[1],"TXT")==0) {
 					DocType=TXT;
@@ -395,14 +409,14 @@ unsigned char *StringValue=NULL;
 				sw->DefaultDocType=DocType;
 			} else progerr("IndexContents requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0],"BumpPositionCounterCharacters")==0) {
+		else if (strcasecmp(w0,"BumpPositionCounterCharacters")==0) {
 			if(sl->n>1) {
 				indexf->header.bumpposchars = SafeStrCopy(indexf->header.bumpposchars,sl->word[1],&indexf->header.lenbumpposchars);
 				sortstring(indexf->header.bumpposchars);
 				makelookuptable(indexf->header.bumpposchars,indexf->header.bumpposcharslookuptable);
 			} else progerr("BumpPositionCounterCharacters requires at least one value");
 		}
-		else if (strcasecmp(sl->word[0], "tmpdir")==0) {
+		else if (strcasecmp(w0, "tmpdir")==0) {
 			if(sl->n==2) {
 				sw->tmpdir = SafeStrCopy(sw->tmpdir,sl->word[1],&sw->lentmpdir);
 				if(!isdirectory(sw->tmpdir)) {
@@ -411,7 +425,7 @@ unsigned char *StringValue=NULL;
 			} else progerr("TmpDir requires one value");
 		}
 /* #### Added UndefinedMetaTags as defined by Bill Moseley */
-		else if (strcasecmp(sl->word[0], "UndefinedMetaTags")==0)	
+		else if (strcasecmp(w0, "UndefinedMetaTags")==0)	
 		{
 			if(sl->n==2) {
 				if(strcasecmp(sl->word[1],"error")==0)
@@ -439,12 +453,12 @@ unsigned char *StringValue=NULL;
 					progerr("Error: Values for UndefinedMetaTags are error, ignore, index or auto");
 			} else progerr("UndefinedMetaTags requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "FileInfoCompression")==0)	{
+		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
 			if(sl->n==2) {
 				indexf->header.applyFileInfoCompression = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("FileInfoCompression requires one value");
 		}
-		else if (strcasecmp(sl->word[0], "ConvertHTMLEntities")==0)	{
+		else if (strcasecmp(w0, "ConvertHTMLEntities")==0)	{
 			if(sl->n==2) {
 				sw->ConvertHTMLEntities = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
 			} else progerr("ConvertHTMLEntities requires one value");

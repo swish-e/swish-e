@@ -20,4 +20,7 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 				 char *subfmt, RESULT *r);
 
 
+struct ResultExtFmtStrList *addResultExtFormatStr (
+             struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
+char *hasResultExtFmtStr (SWISH *sw, char *name);
 

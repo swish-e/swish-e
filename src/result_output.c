@@ -69,9 +69,9 @@ void initPrintExtResult (SWISH *sw, char *fmt)
   FILE   *f;
   char   *propname;
   char   *subfmt;
-  
 
-  f = (FILE *) NULL;		/* no output, just parsing!!! */
+   f = (FILE *) NULL;		/* no output, just parsing!!! */
+
 
    while (*fmt) {			/* loop fmt string */
 
@@ -452,5 +452,74 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 /*
   -------------------------------------------
 */
+
+
+
+/*
+  -- some code for  -x fmtByName:
+  -- e.g.  ResultExtendedFormat   myformat   "<swishtitle>|....\n"
+  --       ResultExtendedFormat   yourformat "%c|%t|%p|<author fmt=/%20s/>\n"
+  --
+  --    swish -w ... -x myformat ...
+  --
+  --  2001-02-15 rasc
+*/
+
+
+/*
+   -- add name and string to list 
+*/
+
+struct ResultExtFmtStrList *addResultExtFormatStr (
+              struct ResultExtFmtStrList *rp, char *name, char *fmtstr)
+
+
+{
+struct ResultExtFmtStrList *newnode;
+char *buf;
+int len1,len2;
+
+
+   newnode = (struct ResultExtFmtStrList *) 
+              emalloc(sizeof(struct ResultExtFmtStrList));
+   newnode->name   = (char *) estrdup(name);
+   newnode->fmtstr = (char *) estrdup(fmtstr);
+   
+   newnode->next = NULL;
+
+   if (rp == NULL)
+       rp = newnode;
+   else
+       rp->nodep->next = newnode;
+
+   rp->nodep = newnode;
+   return rp;
+}
+
+
+
+/* 
+   -- check if name is a predefined format
+   -- case sensitive
+*/
+
+
+char *hasResultExtFmtStr (SWISH *sw, char *name)
+{
+  struct ResultExtFmtStrList *rfl;
+
+  rfl = sw->resultextfmtlist;
+  if (! rfl) return (char *)NULL;
+
+  while (rfl) {
+    if (!strcmp (name,rfl->name))
+       return rfl->fmtstr;
+    rfl = rfl->next;
+  }
+
+  return (char *)NULL;
+}
+
+
 
 

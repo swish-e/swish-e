@@ -50,9 +50,10 @@
 #include "merge.h"
 #include "docprop.h"
 #include "mem.h"
-/* #### Added metaNames */
 #include "metanames.h"
-/* #### */
+#include "parse_conffile.h"
+#include "result_output.h"
+
 
 
 /*
@@ -366,11 +367,16 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		else if (c == 'x') {
 					/* Jose Ruiz 09/00 */
 					/* Search proc will show more info */
-					/* rasc 2001-02 */
-			/*$$$ ToDo: better check if arg exists... Test only */
-			sw->opt.extendedformat = *(++argv);
-			argc--;
-                        initPrintExtResult (sw, sw->opt.extendedformat);
+					/* rasc 2001-02  extended  -x fmtstr */
+
+			if (*(argv+1)) {
+			   char *s;
+			   s = hasResultExtFmtStr (sw, *(argv+1));
+			   sw->opt.extendedformat = (s) ? s : *(argv+1);
+			   initPrintExtResult (sw, sw->opt.extendedformat);
+			   argc--;
+			}
+			/* $$$ progerror todo... */
                 }
                 else if (c == 'X') {
                                         /* rasc 2001-02 */
