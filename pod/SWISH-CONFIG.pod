@@ -270,6 +270,10 @@ L<PreSortedIndex|/"item_PreSortedIndex"> *list of property names*
 
 =item *
 
+L<PropCompressionLevel|/"item_PropCompressionLevel"> [0-9]
+
+=item *
+
 L<PropertyNameAlias|/"item_PropertyNameAliase"> *property name* *list of aliases*
 
 =item *
@@ -1191,6 +1195,22 @@ the entire contents of the tag.
 
 Note that documents must be assigned a document type with C<IndexContents> or
 C<DefaultContents> to use this feature.
+
+=item PropCompressionLevel [0-9]
+
+This directive sets the compression level used when storing properties to disk.
+A setting of zero is no compression, and a setting of nine is the most compression.
+
+The default depends on the default setting compiled with zlib, but is typicaly six.
+
+This option is useful when using C<StoreDescription> to store a large amount text
+in properties (or if using C<PropertyNames> with large property sizes).
+
+Properties must be over a value defined in F<config.h> (100 is the default) before
+compression will be attempted.  Swish will never store the results of the compression
+if the compressed data is larger than the original data.
+
+This option is only available when swish is compiled with zlib support.
 
 
 =item TruncateDocSize *number of characters*
