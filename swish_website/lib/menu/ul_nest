@@ -16,12 +16,14 @@ FOREACH item = menu.items;
       };
 
     IF item.subs;
-        "<li>";
+        
         INCLUDE menu/ul_nest
           menu = item
           class = 'submenu';
-        "</li>";
+        
     END;
+
+    "</li>";
 
 END;
 
@@ -36,5 +38,5 @@ END;
 <li class="[% class %]">
     <a class="[% link.class %]" href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
     [% IF item.here; "&#187;"; ELSIF item.hot;  "&#172;"; END; -%]
-</li>
+
 [% END -%]
