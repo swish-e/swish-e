@@ -871,11 +871,20 @@ void usage()
 	if (!*defaultIndexingSystem)
 		defaultIndexingSystem = "fs";
 	#endif
+
 	#ifdef ALLOW_HTTP_INDEXING_DATA_SOURCE
 	printf("              \"http\" - index web site files using a web crawler\n");
 	if (!*defaultIndexingSystem)
 		defaultIndexingSystem = "http";
 	#endif
+
+	#ifdef ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE
+	printf("              \"prog\" - index files supplied by an external program\n");
+
+	if (!*defaultIndexingSystem)
+		defaultIndexingSystem = "http";
+	#endif
+
 	printf("              The default value is: \"%s\"\n", defaultIndexingSystem);
 
 	printf("         -i : create an index from the specified files\n");

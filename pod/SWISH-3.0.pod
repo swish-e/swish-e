@@ -7,7 +7,9 @@ Proposed changes for SWISH-E 3.0
 This pages is intended to give users of SWISH-E an idea of the changes to come, to foster
 discussion of the direction of SWISH-E, and a place where developers can map out new ideas.
 
-Most of this is just random notes that should be cleaned up!
+None of this is written in stone.  Any of the developers can write their ideas in
+this document, but that doesn't mean it will actually happen ;).
+
 
 =head1 Move from inverted index to a data base
 
@@ -93,47 +95,6 @@ And word-to-text would convert to text and return one of the
 three content-types that Swish knows how to parse,
 or a different content type if were to chain filters.
 
-
-=head1 Document Source Feature
-
-Moseley: Dec 28, 2000
-
-First, I'd like to see the http part of swish moved out of the program, and instead design
-a fast way for external programs to provide documents to swish.  Spidering is too complicated
-to be done internally, and is not really what swish does at its core.  No doubt that the swish package
-should provide spidering, but in a different, more modular way.
-
-So, I'd like to be able to specify to swish a program, and that program returns the documents to swish to index,
-just as if swish was accessing the documents via http.  For example, the program would return headers followed by
-the document content.
-
-    File-Name: docs/index.html
-    Last-Modified: Fri, 22 Dec 2000 01:07:19 GMT
-    Content-Length: 10483
-    Content-Type: text/html
-    <blank line>
-    <document contents>
-
-This could be any program -- one that spiders a number of servers at the same time, or one that uncompresses
-local files before passing to swish.
-
-Then the IndexDir command would list directories and/or files, and if a file is an exectable program then
-swish runs and accepts documents from that program.
-
-    # Index /usr/doc and spider our other server
-    IndexDir /usr/doc /usr/local/bin/swish-spider
-
-The program could be passed the path to the current configuration file swish is using so the program
-could read the same config information.
-
-(BTW -- It might be nice to be able to say don't recurse directories: /usr/doc recurses where
-/usr/doc/ doesn't recurse.  Now that would be confusing!)
-
-Also B<NoContents> could use content-types and not be limited to just the file
-system indexing mode.
-
-    NoContents image/gif
-    
 
 =head1 Fast Filters
 
