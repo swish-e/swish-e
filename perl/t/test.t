@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 110;
+my $lastcase = 115;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -110,6 +110,7 @@ my $mem_test = 0;
         swishreccount
         swishfilenum
         age
+        blankdate
         swishdocpath
         swishrank
         swishdocsize
@@ -132,7 +133,7 @@ my $mem_test = 0;
             unless $seen;
 
         my %props;
-        
+
         $props{$_} = $result->Property( $_ ) for @props;
         check_error('Call $result->Property', $swish)
             unless $seen;
@@ -146,7 +147,8 @@ my $mem_test = 0;
 
         for ( @props ) {
             my $propstr = $result->ResultPropertyStr( $_ );
-            is_ok(" ResultPropertyStr($_) = " . $propstr || '??', $propstr );
+            # I don't like this method '
+            is_ok(" ResultPropertyStr($_) = " . $propstr || '??', defined $propstr );
         }
 
         unless ( $seen++ ) {
@@ -157,6 +159,21 @@ my $mem_test = 0;
 
         last if $seen >= 20;
     }
+
+    # Check for catching invalid property name
+    is_ok("Seek to start of results", $results->SeekResult(0) == 0 );
+
+    eval { $results->NextResult->Property('badpropname') };
+    is_ok( "Croak on bad property: " . ($@ || "nope!"), $@ );
+
+    my $strnull = $results->NextResult->ResultPropertyStr('blankdate');
+    # check on blank props using the Str method
+    is_ok( "Returns empty string for ResultPropertyStr: [$strnull]", $strnull eq '' );
+
+    $strnull = $results->NextResult->ResultPropertyStr('badpropname');
+    # check on blank props using the Str method
+    is_ok( "Returns '(null)' string for ResultPropertyStr: [$strnull]", $strnull eq '(null)' );
+
 
 
     $results = $search->Execute('firstbody or secondbody');
@@ -208,7 +225,7 @@ my $mem_test = 0;
         my $flags = 'v';
         my $ttl;
         while ( 1 ) {
-            my $results = $search->Execute("apache");
+            my $results = $search->Execute("not dkdk");
             while ( my $result = $results->NextResult ) {
                 my $path = $result->Property('swishdocpath');
                 $ttl ++;

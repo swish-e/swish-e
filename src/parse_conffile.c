@@ -431,31 +431,9 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "UseStemming") == 0)
         {
-#ifdef SNOWBALL
-            char *stem_tmp;
-            if (sl->n != 2)
-                progerr("%s: requires one value", w0);
-
-            /* Fix. "no" should default to norvegian
-            if( strcasecmp(sl->word[1],"no") != 0 )
-            {
-            */
-                /* Fix to make "UseStemming yes" -> "UseStemming en" */
-                if( strcasecmp(sl->word[1],"yes") == 0 )
-                    strcpy(sl->word[1],"en");
-
-                stem_tmp = (char *) emalloc(strlen("Stemming_") + strlen(sl->word[1]) + 1);
-                sprintf(stem_tmp,"Stemming_%s",sl->word[1]);
-                fuzzy_or_die( indexf, stem_tmp );
-
-                efree(stem_tmp);
-            /*
-            }
-            */
-#else
+            progwarn("UseStemming is deprecated.  See FuzzyIndexingMode in the docs");
             if ( getYesNoOrAbort(sl, 1, 1) )
                 fuzzy_or_die( indexf, "Stemming_en" );
-#endif
                     
             continue;
         }

@@ -2,6 +2,12 @@
 
 The Swish-e README File
 
+=head1 Upgrading?
+
+If you are upgrading Swish-e please review the CHANGES file before installation.
+The index format may change and existing indexes may need to be re-created before
+use.
+
 =head1 What is Swish-e?
 
 Swish-e is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.

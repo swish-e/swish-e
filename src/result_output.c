@@ -136,7 +136,7 @@ void    freeModule_ResultOutput(SWISH * sw)
     struct MOD_ResultOutput *md = sw->ResultOutput;
     struct ResultExtFmtStrList *l,
            *ln;
-    
+
 
     if (md->stdResultFieldDelimiter)
         efree(md->stdResultFieldDelimiter); /* -d :free swish 1.x delimiter */
@@ -161,14 +161,14 @@ void    freeModule_ResultOutput(SWISH * sw)
     if (md->propNameToDisplay)
     {
         int i;
-        
+
         for( i=0; i < md->numPropertiesToDisplay; i++ )
             efree(md->propNameToDisplay[i]);
-        
+
         efree(md->propNameToDisplay);
     }
     md->propNameToDisplay=NULL;
-    
+
     if (md->propIDToDisplay)
     {
         int i;
@@ -326,16 +326,13 @@ void    printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits)
     SWISH  *sw = results->sw;
     struct MOD_ResultOutput *md = sw->ResultOutput;
     RESULT *r = NULL;
-    FileRec *fi;
-    char   *delimiter;
     FILE   *f_out;
 
 
 
     f_out = stdout;
 
-    delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
-
+    /* -b is begin +1 */
     if ( begin )
     {
         begin--;
@@ -345,57 +342,56 @@ void    printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits)
 
 
     /* Seek, and report errors if trying to seek past eof */
-    
+
     if ( SwishSeekResult(results, begin) < 0 )
         SwishAbortLastError( results->sw );
 
-    
 
 
+    /* If maxhits = 0 then display all */
     if (maxhits <= 0)
         maxhits = -1;
 
 
-    /* -- resultmaxhits: >0 or -1 (all hits) */
-
-    while ( (r = SwishNextResult(results)) && maxhits )
+    if ( md->extendedformat ) /* are we using -x for output? */
     {
-        fi = &r->fi;  /* get address of FileRec to store properties and pointers */
-        
-
-        /* This may or may not be an optimization */
-        // not really any more -- used to be able to read all the props, now this just reads them using ReadSingle... 
-        // ReadAllDocPropertiesFromDisk( r->indexf, r->filenum);
-        
-
-        if (md->extendedformat)
-            printExtResultEntry(sw, f_out, md->extendedformat, r);
-
-        else 
+        while ( (r = SwishNextResult(results)) && maxhits )
         {
-            char *format;
+            printExtResultEntry(sw, f_out, md->extendedformat, r);
+            freefileinfo( &r->fi );
+            if ( maxhits > 0)
+                maxhits--;
+        }
+    }
 
-            if ((delimiter = (md->stdResultFieldDelimiter)) )
-            {
-                format = emalloc( (3* strlen( delimiter )) + 100 );
-                sprintf( format, "%%r%s%%p%s%%t%s%%l", delimiter, delimiter, delimiter );
-            }
-            else
-                format = estrdup( "%r %p \"%t\" %l" );
 
+    else /* not using -x and maybe -p (old style) */
+    {
+        char *format;
+        char *delimiter;
+
+        if ((delimiter = (md->stdResultFieldDelimiter)) )
+        {
+            format = emalloc( (3* strlen( delimiter )) + 100 );
+            /* warning -- user data in a sprintf format string */
+            sprintf( format, "%%r%s%%p%s%%t%s%%l", delimiter, delimiter, delimiter );
+        }
+        else
+            format = estrdup( "%r %p \"%t\" %l" );
+
+
+        while ( (r = SwishNextResult(results)) && maxhits )
+        {
             printExtResultEntry(sw, f_out, format, r);
-            printStandardResultProperties(f_out, r);
-
+            printStandardResultProperties(f_out, r);  /* print any -p properties */
+            freefileinfo( &r->fi );
             fprintf(f_out, "\n");
-            efree( format );
+
+            if ( maxhits > 0)
+                maxhits--;
         }
 
-
-        /* might as well free the memory as we go */
-        freefileinfo( fi );
-
-        if (maxhits > 0)
-            maxhits--;
+        efree( format );
     }
 
 }
@@ -658,30 +654,38 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
 
     pv = getResultPropValue(r, propname, 0);
 
+    /* If returning NULL then it's an invalid property name */
     if (!pv)
     {
-        if (f)
-            fprintf(f, "(NULL)"); /* Null value, no propname */
-        return;
+	printf("(null)");
+	return;
+        /* or could just abort, but that's ugly in the middle of output */
+        /* it would be nice to check the format strings (and cache the meta name lookups) */
+        /* before generating resuls, but need to do that for each index */
+        printf("\n"); /* might be in the middle of some text */
+        SwishAbortLastError( r->db_results->indexf->sw );
     }
 
+
 #ifdef USE_DOCPATH_AS_TITLE
-    if ( strcmp( AUTOPROPERTY_TITLE, propname ) == 0 && strcmp( "", pv->value.v_str ) == 0 )
+    if ( ( PROP_UNDEFINED == pv->datatype ) && strcmp( AUTOPROPERTY_TITLE, propname ) == 0 )
     {
-        char *c;
-        efree( pv );
+        freeResultPropValue( pv );
+
         pv = getResultPropValue(r, AUTOPROPERTY_DOCPATH, 0);
 
+        if ( !pv )  /* in this case, let it slide */
+            return;
+
         /* Just display the base name */
-        if ( pv )
+        if ( PROP_STRING == pv->datatype )
         {
-            c = estrdup( str_basename( pv->value.v_str ) );
+            char *c = estrdup( str_basename( pv->value.v_str ) );
             efree( pv->value.v_str );
             pv->value.v_str = c;
         }
     }
-#endif        
-
+#endif
 
 
 
@@ -695,13 +699,13 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
             fprintf(f, fmt, pv->value.v_int);
         break;
 
+
     case PROP_ULONG:
         fmt = (subfmt) ? subfmt : "%lu";
         if (f)
             fprintf(f, fmt, pv->value.v_ulong);
         break;
 
-        
 
     case PROP_STRING:
         fmt = (subfmt) ? subfmt : "%s";
@@ -723,7 +727,7 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
 
 
     case PROP_DATE:
-        fmt = (subfmt) ? subfmt : "%Y-%m-%d %H:%M:%S %Z";
+        fmt = (subfmt) ? subfmt : DATE_FORMAT_STRING;
         if (!strcmp(fmt, "%ld"))
         {
             /* special: Print date as serial int (for Bill) */
@@ -747,12 +751,16 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
             fprintf(f, fmt, (double) pv->value.v_float);
         break;
 
+    case PROP_UNDEFINED:
+        break;  /* Do nothing */
+
     default:
-        fprintf(stdout, "err:(unknown datatype <%s>)\n", propname);
+        progerr("Swish-e database error.  Unknown property type accessing property '%s'", propname);
         break;
 
-
     }
+
+
     freeResultPropValue(pv);
 }
 
@@ -880,7 +888,8 @@ int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
 *       *RESULT
 *
 *   I think this could be done in result_output.c by creating a standard
-*   -x format (plus properites) for use when there isn't one already.
+*   -x format (plus properites) for use when there isn't one already,
+xxxx
 *
 *
 ********************************************************************/

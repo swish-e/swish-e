@@ -146,7 +146,6 @@ int compare_results(const void *s1, const void *s2)
     int       num_fields      = r1->db_results->num_sort_props;
     SortData  *sort_data1;
     SortData  *sort_data2;
-    propEntry *prop_entry;
 
     for (i = 0; i < num_fields; i++)
     {

@@ -1813,6 +1813,7 @@ sub run_swish {
 
 # Filters in place
 sub html_escape {
+    $_[0] = '' unless defined $_[0];
     for ($_[0]) {
         s/&/&amp;/g;
         s/</&lt;/g;
@@ -1861,6 +1862,8 @@ sub add_result_to_list {
     my $highlighted = $self->highlight_props( $props ) || {};
 
     my $trim_prop = $self->config('description_prop') || '';
+    $props->{$trim_prop} ||= ''
+        if $trim_prop;
 
     # HTML escape all properties that were not highlighted
     for my $prop (keys %$props) {

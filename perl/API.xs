@@ -503,9 +503,18 @@ SwishProperty(result, property)
 
 
     PPCODE:
+        # This will abort swish-e if result is NULL
         pv = getResultPropValue( result, property, 0 );
+
         if ( !pv )
+        {
+            # this is always the case
+            SW_HANDLE h = SW_ResultToSW_HANDLE( result );
+            if ( SwishError( h ) )
+                croak("%s %s", SwishErrorString( h ), SwishLastErrorMsg( h ) );
+
             XSRETURN_UNDEF;
+        }
 
 
         switch (pv->datatype)
@@ -524,6 +533,11 @@ SwishProperty(result, property)
 
             case PROP_DATE:
                 PUSHs(sv_2mortal(newSViv(pv->value.v_date)));
+                break;
+
+            case PROP_UNDEFINED:
+                freeResultPropValue(pv);
+                XSRETURN_UNDEF;
                 break;
 
             default:

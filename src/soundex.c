@@ -50,7 +50,6 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
    {
         FUZZY_WORD *fw = create_fuzzy_word( inword, 1 ); /* create place to store stemmed word */
         char word[MAXWORDLEN+1];
-        int length;
 	/* Misc Stuff  */
 	char u, l ;
 	int i, j, n;

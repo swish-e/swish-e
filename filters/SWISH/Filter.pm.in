@@ -218,7 +218,7 @@ sub ignore_filters {
 
 =item $filtered = $filter->filter();
 
-B<Depreciated>: Use the convert() method instead.
+B<Deprecated>: Use the convert() method instead.
 
 
 See $swish->convert for options.
@@ -362,7 +362,7 @@ sub convert {
 
     $self->mywarn("\n>> Starting to process new document: $content_type");
 
-    # Depreciated
+    # Deprecated
     $self->{original_content_type} = $content_type;
     
     ## Create a new document object
@@ -458,7 +458,7 @@ sub convert {
 }
 
 
-# deprecitated
+# deprecated
 sub original_content_type {
    my $self = shift;
    return $self->{original_content_type};
@@ -466,12 +466,12 @@ sub original_content_type {
 
 =item $doc_ref = $filter->fetch_doc;
 
-B<Depreciated>: Use $doc->fetch_doc instead.
+B<Deprecated>: Use $doc->fetch_doc instead.
 
 Returns a reference to a scalar that contains the document passed in.
 If the file is on disk it will be read from disk into memory.
 
-Depreciated example:  (don't use)
+Deprecated example:  (don't use)
 
     $filtered = $filter->filter( $doc_ref, 'application/pdf' );
     if ( $filtered ) {
@@ -488,7 +488,7 @@ sub fetch_doc {
 
 =item $type = $filter->content_type
 
-B<Depreciated>
+B<Deprecated>
 
 Returns the content type of the document after filtering.
 Use $doc->content_type instead.
@@ -502,7 +502,7 @@ sub content_type {
 
 =item $type = $filter->swish_parser_type 
 
-B<Depreciated> use $doc->swish_parser_type instead.
+B<Deprecated> use $doc->swish_parser_type instead.
 
 Returns the swish parser type for the document, or undefined.
 
@@ -516,7 +516,7 @@ use:
 
 =cut
 
-# Depreciated as a SWISH::Filter method, but not as a SWISH::Filter::Document method -- leave
+# Deprecated as a SWISH::Filter method, but not as a SWISH::Filter::Document method -- leave
 
 sub swish_parser_type {
     my $self = shift;

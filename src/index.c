@@ -141,8 +141,9 @@ $Id$
 static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
 static void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
 static void unSwapLocData(SWISH *,int, ENTRY *);
+#ifndef USE_BTREE
 static void sortSwapLocData(ENTRY *);
-
+#endif
 
 /* 
   -- init structures for this module
@@ -2894,6 +2895,7 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     }
 }
 
+#ifndef USE_BTREE
 /* 2002-07 jmruiz - Sorts unswaped location data by metaname, filenum */
 static void sortSwapLocData(ENTRY *e)
 {
@@ -2972,5 +2974,6 @@ static void sortSwapLocData(ENTRY *e)
 
     /* Free the memory of the sorting array */
     efree(ptmp);
-                 
+
 }
+#endif

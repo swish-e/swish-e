@@ -224,7 +224,7 @@ MetaphAdd(metastring * s, char *new_str)
 
 
 void
-DoubleMetaphone(char *str, char **codes)
+DoubleMetaphone(const char *str, char **codes)
 {
     int        length;
     metastring *original;
@@ -237,7 +237,7 @@ DoubleMetaphone(char *str, char **codes)
     /* we need the real length and last prior to padding */
     length  = strlen(str); 
     last    = length - 1; 
-    original = NewMetaString(str);
+    original = NewMetaString((char *)str);
     /* Pad original so we can index beyond end */
     MetaphAdd(original, "     ");
 

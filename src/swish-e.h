@@ -143,12 +143,12 @@ const char *SwishFuzzyMode( SW_RESULT r );
 
 typedef enum
 {                               /* Property Datatypes */
-    PROP_UNDEFINED = -1,
-    PROP_UNKNOWN = 0,
+    PROP_UNDEFINED = -1,        /* a result does not have a value for that prop */
+    PROP_UNKNOWN = 0,           /* invalid property requested (not really used anyplace) */
     PROP_STRING,
     PROP_INTEGER,
     PROP_FLOAT,
-    PROP_DATE, 
+    PROP_DATE,
     PROP_ULONG
 }
 PropType;
