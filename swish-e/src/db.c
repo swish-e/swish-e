@@ -634,7 +634,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             parse_pathlookuptable_from_buffer(header, buffer);
             break;
         case BUZZWORDS_ID:
-            parse_stopwords_from_buffer(header, buffer);
+            parse_buzzwords_from_buffer(header, buffer);
             break;
         case WORDSPERDOC_ID:
             header->filetotalwordsarray = emalloc(sizeof(int) * header->totalfiles);
