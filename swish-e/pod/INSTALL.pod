@@ -16,6 +16,9 @@ other more advanced examples.
 
 For those in a hurry, see L<"Quick Start for the Impatient">.
 
+Also, please read the Swish-e FAQ L<SWISH-FAQ|SWISH-FAQ> as it answers
+many frequently asked questoins.
+
 =head1 SYSTEM REQUIREMENTS
 
 Swish-e is written in C, and, up to this time, it has been tested on
@@ -26,7 +29,7 @@ Swish-e has also been used on these platforms:
     Intel - FreeBSD 4.6-STABLE
     gcc version 2.95.4 20020320 [FreeBSD]
 
-    UltraSPARC - Solaris 8
+    Sun Enterprise 220R UltraSPARC-based server - loaded with Solaris 8
     gcc version 2.95.3 20010315 (release)
 
     Sun Enterprise 3500 - Solaris 2.6
@@ -35,14 +38,20 @@ Swish-e has also been used on these platforms:
     IBM RS/6000 43P-150 - Debian 3.0
     gcc version 2.95.4 20011002 (Debian prerelease)
 
-    Apple Dual G4 QuickSilver - MacOS X 10.1.4
+    Apple Dual G4 QuickSilver - MacOS X 10.1.4  
     Apple Computer, Inc. version gcc-932.1, based on gcc version 2.95.2 19991024 (release)
+
+    Mac OS X 10.1.2 on an iBook.
     
     DEC Alpha - Debian 3.0
     gcc version 2.95.4 20011002 (Debian prerelease)
 
-    OpenVMS 7.2-1 AXP
+    Sun Ultra 60 UltraSPARC II workstation - Debian GNU/Linux 3.0
+    gcc version 2.95.4 20011002 (Debian prerelease)
 
+    OpenVMS  VAX or Alpha version 7.1 or later
+    DECC compiler version 6.0 or later
+    
     Win32 platforms
 
 Unless you are using the Win32 binary distribution, a C compiler is needed.
@@ -301,7 +310,8 @@ Uncompressing should create the following directories:
    swish-e-x.x/src/        source code
    swish-e-x.x/conf/       example configuration files and stopword files
    swish-e-x.x/example/    working example CGI scripts
-   swish-e-x.x/filter-bin/ filter samples
+   swish-e-x.x/filters/    perl module(s) to make filtering documents easy
+   swish-e-x.x/filter-bin/ filter samples for use with FileFilter feature
    swish-e-x.x/prog-bin/   -S prog a web spider and other examples
    swish-e-x.x/perl/       perl interface to the Swish-e C library
    swish-e-x.x/src/expat/  James Clark's Expat XML parser
@@ -811,12 +821,144 @@ Swish-e can also use I<filters> to convert documents as they are
 processed by Swish-e.  For example, MS-Word or PDF documents can be
 converted and indexed by Swish-e by using filters.  See the section on
 filters in L<SWISH-CONFIG|SWISH-CONFIG>, and the examples shown in the
-C<filter-bin> directory.
+F<filters> and F<filter-bin> directories.
 
 =head1 QUICK START FOR THE IMPATIENT
 
-Here's I<one> example of the steps to install Swish-e, index documents by spidering, and
-how to search using the included CGI script.
+=head2 Installation
+
+Here's the steps required on most platforms for downloading and installing swish-e.
+
+    ~ $ wget http://swish-e.org/<path to current swish-e version>.tar.gz
+    ~ $ gzip -dc <path to current swish-e version>.tar.gz | tar xof -
+    ~ $ cd swish-e-2.2  (this directory will depend on the version of Swish-e)
+    
+    ~/swish-e-2.2 $ ./configure
+    ~/swish-e-2.2 $ make
+    ~/swish-e-2.2 $ make test
+    ...
+     ** All tests completed! **
+
+Not required, but once built you can install the F<src/swish-e> program.
+
+    ~/swish-e-2.2 $ su root
+    (password)
+    ~/swish-e-2.2 # make install
+    ~/swish-e-2.2 # exit
+
+This installs to F</usr/local/bin> by default.
+
+=head2 Indexing Examples
+
+Here's I<three> examples of using swish.
+The first example shows how to use a very
+simple configuration file to index the Swish-e documentation.
+The second example
+shows spidering using the built-in HTTP method.
+The third example uses an external program for indexing and shows use of a CGI script for searching.
+
+=head3 Example 1 - simple file system indexing
+
+First, create a configuration file off your home directory:
+
+    ~ $ mkdir test
+    ~ $ cd test
+    ~/test $ cat conf
+    IndexDir ../swish-e/html
+    IndexOnly .html
+
+Now create the index:    
+
+    ~/test $ swish-e -c conf
+    Indexing Data Source: "File-System"
+    Indexing "../swish-e/html"
+    Removing very common words...
+    no words removed.
+    Writing main index...
+    Sorting words ...
+    Sorting 2764 words alphabetically
+    Writing header ...
+    Writing index entries ...
+      Writing word text: Complete
+      Writing word hash: Complete
+      Writing word data: Complete
+    2764 unique words indexed.
+    4 properties sorted.                                              
+    13 files indexed.  430611 total bytes.  42343 total words.
+    Elapsed time: 00:00:00 CPU time: 00:00:00
+    Indexing done!
+
+And search:
+
+    ~/test $ swish-e -w IndexDir
+    # SWISH format: 2.2rc1-dev
+    # Search words: IndexDir
+    # Number of hits: 4
+    # Search time: 0.001 seconds
+    # Run time: 0.043 seconds
+    1000 ../swish-e/html/SWISH-CONFIG.html "SWISH-Enhanced: SWISH-CONFIG - Configuration File Directives" 132887
+    898 ../swish-e/html/SWISH-RUN.html "SWISH-Enhanced: SWISH-RUN - Running Swish-e and Command Line Switches" 48037
+    856 ../swish-e/html/SWISH-FAQ.html "SWISH-Enhanced: The Swish-e FAQ - Answers to Common Questions" 69709
+    834 ../swish-e/html/INSTALL.html "SWISH-Enhanced: INSTALL - Swish-e Installation Instructions" 58647
+    .
+
+
+=head3 Example 2 - spidering
+
+This example uses Swish-e's "HTTP" method of spidering.  This method is depreciated due to it's lack
+of features.  Spidering uses a perl helper script.  You must have the Perl package LWP (libwww-perl)
+installed on your system.
+
+    ~/test $ cat config.http
+    Delay 1
+
+    # Only index.html and top-level docs
+    MaxDepth 2
+
+    # Location of the "swishspider" helper program
+    SpiderDirectory ../swish-e/src
+
+    EquivalentServer http://swish-e.org http://www.swish-e.org
+
+Index:    
+
+    ~/test $ swish-e -c config.http -S http -i http://swish-e.org/2.2/docs/
+    Indexing Data Source: "HTTP-Crawler"
+    Indexing "http://swish-e.org/2.2/docs/"
+    Removing very common words...
+    no words removed.
+    Writing main index...
+    Sorting words ...
+    Sorting 2915 words alphabetically
+    Writing header ...
+    Writing index entries ...
+      Writing word text: Complete
+      Writing word hash: Complete
+      Writing word data: Complete
+    2915 unique words indexed.
+    4 properties sorted.                                              
+    16 files indexed.  468568 total bytes.  45051 total words.
+    Elapsed time: 00:00:18 CPU time: 00:00:00
+    Indexing done!
+
+And search:
+
+    ~/test $ swish-e -w IndexDir
+    # SWISH format: 2.2rc1-dev
+    # Search words: IndexDir
+    # Number of hits: 4
+    # Search time: 0.001 seconds
+    # Run time: 0.043 seconds
+    1000 http://swish-e.org/2.2/docs/SWISH-CONFIG.html "SWISH-Enhanced: SWISH-CONFIG - Configuration File Directives" 132887
+    898 http://swish-e.org/2.2/docs/SWISH-RUN.html "SWISH-Enhanced: SWISH-RUN - Running Swish-e and Command Line Switches" 48037
+    856 http://swish-e.org/2.2/docs/SWISH-FAQ.html "SWISH-Enhanced: The Swish-e FAQ - Answers to Common Questions" 69709
+    834 http://swish-e.org/2.2/docs/INSTALL.html "SWISH-Enhanced: INSTALL - Swish-e Installation Instructions" 58647
+    .
+
+=head3 Example 3 - using an external program    
+
+This is a more advanced example that spiders a web site using the included F<prog-bin/spider.pl>
+program and uses the included F<example/swish.cgi> script for searching the index via a web interface.
 
 These steps are on Linux, and assume
 that you have the libraries libxml2 and zlib installed in the system, you have a current version of Perl
@@ -826,26 +968,12 @@ If you have any trouble with these instructions please read the detailed install
 and see the documentation included with the F<swish.cgi> script and the F<spider.pl> programs.
 Please don't ask for help without reading the "real" documentation first.
 
-Not all output is included below.  You should carefully watch for errors while building Swish-e.
-
 =over 4
 
-=item 1 Download and build Swish-e
+=item 1 Make a working directory and copy files:
 
-    ~ $ wget http://swish-e.org/<path to current swish-e version>.tar.gz
-    ~ $ tar zxof <path to current swish-e version>.tar.gz
-    ~ $ cd swish-e-2.2  (this directory will depend on the version of Swish-e)
-    
-    ~/swish-e-2.2 $ ./configure
-    ~/swish-e-2.2 $ make
-    ~/swish-e-2.2 $ make test
-    ...
-     ** All tests completed! **
-
-=item 2 Make a working directory and copy files
-
-    ~/swish-e-2.2 $ mkdir ~/swishtest
-    ~/swish-e-2.2 $ cd ~/swishtest
+    ~ $ mkdir ~/swishtest
+    ~ $ cd ~/swishtest
 
     ~/swishtest $ cp ~/swish-e-2.2/src/swish-e .             
     ~/swishtest $ cp ~/swish-e-2.2/prog-bin/spider.pl .
@@ -854,10 +982,10 @@ Not all output is included below.  You should carefully watch for errors while b
     ~/swishtest $ chmod 755 swish.cgi spider.pl
     ~/swishtest $ chmod 644 modules/*
 
-=item 3 Create the index
+=item 2 Create the index:
 
 You must create a swish configuration file and a spider configuration
-file.
+file.  Here's the Swish-e configuration file:
 
     ~/swishtest $ cat swish.conf
     
@@ -874,6 +1002,8 @@ file.
     # Cache document contents in the index for context display
     StoreDescription HTML2 <body>
 
+Here's the configuration file for the spider program.
+Perldoc F<prog-bin/spider.pl> for details.
 
     ~/swishtest $ cat spider.conf
 
@@ -914,7 +1044,7 @@ file.
     );
     1;
 
-Now begin indexing:    
+=item 3 Begin indexing:    
 
     ~/swishtest $ ./swish-e -S prog -c swish.conf -v 2
     Indexing Data Source: "External-Program"
@@ -975,6 +1105,9 @@ Refer to the swish.cgi documentation if you have any problems with running the C
     </files>
 
 =item 7 Test from the command line
+
+This uses the GET program that is part of the LWP perl library.  You may also test
+with the "wget" program, for example.
 
     ~/swishtest $ GET http://localhost/swishdocs/swish.cgi?query=install | head 
     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">

@@ -11,6 +11,26 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Default parser
+
+Swish-e will now use the HTML2 (libxml2) parser by default if libxml2 is
+installed and DefaultContents or IndexContents is not used.
+
+=item Selecting parsers
+
+Allow HTML*, XML*, and TXT* to automatically select the libxml2-based parsers
+if libxml2 is linked with Swish-e, otherwise fallback to the built-in parsers.
+
+=item SwishSpider and Filters
+
+Filters (FileFilter directive) did not work correctly when spidering
+with the -S http method.  A new filter system was developed and now
+filtering of documents (e.g. pdf->html or MSWord->text) is handled
+by the src/SwishSpider program.
+
+When indexing with the -S http method only documents of content-type "text/*"
+are indexed.  Other documents must be converted to text by using the filter system.
+
 =item Buffer overflow in xml.c
 
 Fixed bug in xml.c reported by Rodney Barnett when very long words
@@ -24,6 +44,19 @@ Updated from _WIN32 checks to feature checks using autoconf [moseley, norris]
 
 Fixed a cast error when calling zlib, and the calls to read/write a packed longs
 to disk. [jmruiz, moseley]
+
+=item COALESCE_BUFFER_MAX_SIZE
+
+Some people were seeing the following error:
+
+    err: Buffer too short in coalesce_word_locations.
+    Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.
+
+This was due to indexing binary data or files with very large number of words.
+The best solution is to not index binary data or files with a very large number
+of words.
+
+Swish-e will now automatically reallocate the buffer as needed.  [jmruiz]
 
 
 =back

@@ -143,7 +143,7 @@ This is done so that existing indexes remain untouched until it completes
 indexing.
 
 Swish-e also writes temporary files in some cases during indexing
-(e.g. C<-s http>, C<-s prog> with filters>, when merging, and when
+(e.g. C<-s http>, C<-s prog> with filters), when merging, and when
 using C<-e>).  Temporary files are created with the mkstemp(3) function
 (with 0600 permission on unix-like operating systems).
 
@@ -322,7 +322,7 @@ are atomic.  But, since Swish-e also generates more than one file during
 indexing there will be a very short period of time between renaming the
 various files when the index is out of sync.
 
-Settings in F<config.h> control some options related to temporary files,
+Settings in F<src/config.h> control some options related to temporary files,
 and their use during indexing.
 
 =head3 Can I index phrases? 
@@ -387,7 +387,7 @@ Swish-e indexes words as defined by the C<WordCharacters> setting, as
 described above.  So to avoid indexing numbers you simply remove digits
 from the C<WordCharacters> setting.
 
-There are also some settings in F<config.h> that control what "words"
+There are also some settings in F<src/config.h> that control what "words"
 are indexed.  You can configure swish to never index words that are all
 digits, vowels, or consonants, or that contain more than some consecutive
 number of digits, vowels, or consonants.  In general, you won't need to
@@ -480,11 +480,13 @@ default, but can make use of I<filters> that will convert other types
 of files such as MS Word documents, PDF, or gzipped files into one of
 the file types that Swish-e understands.
 
-The B<FileFilter> config directive is used to define programs to use
-as filters, based on file extension.  For example, you can use the
-program C<catdoc> to convert MS-Word documents to text for indexing.
 Please see L<SWISH-CONFIG|SWISH-CONFIG/"Document Filter Directives">
-and the examples in the C<filter-bin> directory for more information.
+and the examples in the C<filters> and C<filter-bin> directory for more information.
+
+The FileFilter directive can be used in any of the input methods, but the -S http method
+(spidering with the SwishSpider program) only indexes documents of content-type
+text/* (e.g. text/plain, text/html, text/xml, ...) so filter programs can not
+be used to convert documents such as PDF files.
 
 Another option is to use the C<prog> document source input method.
 In this case you write a program (such as a perl script) that will read
@@ -770,21 +772,6 @@ time, and that often times many pages of the same query will be requested,
 you may be smart to request all the documents on the first request, and
 then cache the results to a temporary file.  The perl module File::Cache
 makes this very simple to accomplish.
-
-=head3 Why do I get an error about COALESCE_BUFFER_MAX_SIZE?
-
-If you are indexing a document with a huge number of words (or perhaps a binary file)
-you may see this message:
-
-    err: Buffer too short in coalesce_word_locations.
-    Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.
-
-Check to make sure you not indexing a binary file.  If you are truly indexing
-a text document with a huge number of words consider breaking up the document into
-smaller chunks -- this will make search results more helpful.
-
-Otherwise, you can follow the suggestion above to increase the
-COALESCE_BUFFER_MAX_SIZE setting.
 
 
 =head2 Spidering

@@ -13,7 +13,9 @@ free to bug the developers about it on the Swish-e discussion list.
 
 =over 4
 
-=item Does not index on Sparc64
+=item *
+
+Does not index on Sparc64
 
 SIGBUS reported on Sparc64 Debian 3.0 (compile farm at sourceforge).
 gdb reports the following, although I'm not sure I believe gdb.
@@ -33,7 +35,9 @@ History:
     Reported: September 3, 2002 - moseley
 
 
-=item Phrase search failes with DoubleMetaphone
+=item *
+
+Phrase search failes with DoubleMetaphone
 
 DoubleMetaphone searching can produce two search words for a single query
 word.  The words are expanded to (word1 OR word2), but that fails in a
@@ -43,11 +47,11 @@ swish-e query parser is due for a rewrite, and this could be resolved then.
 
     Reported: August 20, 2002 - moseley
 
-
-
 =back
 
-=item COALESCE_BUFFER_MAX_SIZE
+=item *
+
+COALESCE_BUFFER_MAX_SIZE
 
 Every so often someone see the error:
 
@@ -58,7 +62,9 @@ This happens when trying to index a document with a huge number of words.
 
 This number should be increased or the buffer allocated dynamically.
 
-=item Merging
+=item *
+
+Merging
 
 merge.c does not check for matching stopwords or buzzwords in each index.
 
@@ -67,7 +73,9 @@ History:
     Reported: September 3, 2002 - moseley
 
 
-=item ResultSortOrder
+=item *
+
+ResultSortOrder
 
 ResultSort order is not used (and is not documented).  The problem is that
 the data passed to Compare_Properties() does not have access to the
