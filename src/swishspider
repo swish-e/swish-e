@@ -1,8 +1,7 @@
-#!/usr/local/bin/perl
+#!/usr/local/bin/perl -w
+use strict;
 
 use LWP::UserAgent;
-use LWP::RobotUA;
-use HTTP::Request;
 use HTTP::Status;
 use HTML::LinkExtor;
 
@@ -12,8 +11,7 @@ if (scalar(@ARGV) != 2) {
 }
 
 my $ua = new LWP::UserAgent;
-$ua->agent( "SwishSpider" );
-$ua->from( "ron\@ckm.ucsf.edu" );
+$ua->agent( "SwishSpider http://swish-e.org" );
 
 my $localpath = shift;
 my $url = shift;
@@ -27,6 +25,7 @@ my $response = $ua->simple_request( $request );
 # else gets the content-type.
 #
 open( RESP, ">$localpath.response" ) || die( "Could not open response file $localpath.response" );
+
 print RESP $response->code() . "\n";
 if( $response->code() == RC_OK ) {
     print RESP $response->header( "content-type" ) . "\n";
@@ -49,7 +48,7 @@ if( $response->code() == RC_OK ) {
 
     if( $response->header("content-type") =~ "text/html" ) {
 	open( LINKS, ">$localpath.links" ) || die( "Could not open links file $localpath.links\n" );
-	$p = HTML::LinkExtor->new( \&linkcb, $url );
+	my $p = HTML::LinkExtor->new( \&linkcb, $url );
 	$p->parse( $contents );
 
 	close( LINKS );
@@ -72,6 +71,9 @@ sub linkcb {
 	# can leave these in and cause never ending loops.
 	#
 	$link =~ s/\.\.\///g;
+
+	# hack for apostrophe -- changes URL, but should work for most clients.
+	$link =~ s/'/%27/g;
 	
 	print LINKS "$link\n";
     }

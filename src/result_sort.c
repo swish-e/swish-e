@@ -832,6 +832,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         /* put the file array back in order */
         /* This is done so that the property file can be read sequentially */
+        /* It might be faster to just create a mem zone for this instead of sorting each time */
         swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFilenums);
     }
 
