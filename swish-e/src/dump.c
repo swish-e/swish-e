@@ -118,7 +118,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
             while(wordID)
             {
-                printf("%s:",resultword);
+                printf("\n%s:",resultword);
 
                 /* Read Word's data */
                 DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
@@ -147,20 +147,21 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     {
                         struct file *fileInfo;
 
-                        printf(" Meta:%d", metaname);
+                        printf("\n Meta:%d", metaname);
                         fileInfo = readFileEntry(sw, indexf, filenum);
                         printf(" %s", fileInfo->fi.filename);
-                        printf(" Strct:%x", structure);
+                        printf(" Struct:%x", structure);
                         printf(" Freq:%d", frequency);
                         printf(" Pos:");
                     }
                     else
                     {
-                        printf(" %d", metaname);
+                        printf(" [%d", metaname);
                         printf(" %d", filenum);
-                        printf(" %d", structure);
-                        printf(" %d", frequency);
+                        printf(" %x", structure);
+                        printf(" %d (", frequency);
                     }
+
                     for (i = 0; i < frequency; i++)
                     {
                         x = uncompress2(&s);
@@ -174,8 +175,17 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                                 printf("%d", x);
                         }
                         else
-                            printf(" %d", x);
+						{
+							if (i)
+								printf(" %d", x);
+							else
+								printf("%d", x);
+						}
                     }
+                    if ( !(DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL)))
+						printf(")]");
+
+
                     if ((unsigned long)(s - worddata) == nextposmetaname)
                     {
                         x = uncompress2(&s);
@@ -192,7 +202,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     else
                         x = uncompress2(&s);
                 }
-                putchar((int) '\n');
+                printf("\n");
 
                 efree(worddata);
                 efree(resultword);
@@ -210,7 +220,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
         printf("\n\n-----> STOP WORDS <-----\n");
         for(i=0;i<indexf->header.stopPos;i++)
             printf("%s ",indexf->header.stopList[i]);
-        putchar((int) '\n');
+        printf("\n");
     }
 
 
@@ -219,7 +229,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
     {
         printf("\n\n-----> FILES <-----\n");
-        fflush(stdout);
         for (i = 0; i < indexf->header.totalfiles; i++)
         {
             fi = readFileEntry(sw, indexf, i + 1);
@@ -228,21 +237,15 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
             fflush(stdout);
             if (fi->fi.summary)
-            {
-                printf("%s \"%s\" \"%s\" \"%s\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
-                fflush(stdout);     /* filename */
-            }
+                printf("%d: %s \"%s\" \"%s\" \"%s\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
             else
-            {
-                printf("%s \"%s\" \"%s\" \"\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
-                fflush(stdout);     /* filename */
-            }
+                printf("%d: %s \"%s\" \"%s\" \"\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
+
             for (docProperties = fi->docProperties; docProperties; docProperties = docProperties->next)
             {
-                printf(" PROP_%d: \"%s\"", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
+                printf(" PROP_%d: \"%s\"\n", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
             }
-            putchar((int) '\n');
-            fflush(stdout);
+            printf("\n");
             freefileinfo(fi);
         }
         printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
@@ -254,9 +257,9 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
         printf("\n\n-----> METANAMES <-----\n");
         for(i = 0; i < indexf->header.metaCounter; i++)
         {
-            printf("%s\"%d\"%d ",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
+            printf("%s id:%d type:%d\n",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
         }
-        putchar((int) '\n');
+        printf("\n");
     }
 
     DB_Close(sw, indexf->DB);
