@@ -414,11 +414,11 @@ double search_starttime, run_starttime, endtime;
 			   argc--;
 			}
 			/* $$$ progerror todo... */
-                }
-                else if (c == 'X') {
-                                        /* rasc 2001-02 */
-                        sw->opt.extendedheader = 1;
-                }    
+		}
+		else if (c == 'X') {
+			sw->opt.X_headerOut = atoi(&((*argv)[1]));
+                                        /* rasc 2001-02, 2001-03-13 */
+		}    
 		else
 			usage();
 		if (argc == 0)

@@ -597,7 +597,7 @@ int totalfiles = getfilecount(indexf);
 struct filepos **filepos=NULL;
 struct filepos *fpos;
 
-printf("DBG: In removestops\n");fflush(stdout);
+
         /* Now let's count the current number of stopwords!!
         */
 
@@ -775,8 +775,6 @@ printf("DBG: In removestops\n");fflush(stdout);
 	}
 	efree(estop);
 
-printf("DBG: End removestops\n");fflush(stdout);
-
 	return stopwords;
 }
 
@@ -902,7 +900,7 @@ long itmp;
 
 
 /*
- -- some support functions for printing the header information
+ -- some support functions for "printing" the header information on file
  -- 2001-03-02  rasc   were former macros
 */
 
@@ -937,6 +935,9 @@ void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp)
  }
 }
 
+
+
+/* -------------------------------------------- */
 
 
 /* Sort entry by MetaName, FileNum */

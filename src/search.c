@@ -118,6 +118,7 @@
 #include "deflate.h"
 #include "metanames.h"
 #include "result_sort.h"
+#include "result_output.h"
 #include "altavista.h"
 
 

@@ -89,8 +89,10 @@ int i;
 	sw->propModeToSort=NULL;
 
 
+		/* cmd options */
+
 	sw->opt.extendedformat = NULL;
-	sw->opt.extendedheader = 0;
+	sw->opt.X_headerOut  = 1;		/* default -X1 = standard header */
 
 
 		/* File system parameters */
