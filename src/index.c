@@ -399,7 +399,7 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
 
 
     /* Should be removed */
-    if(idx->filenum == 0 || indexf->header.totalfiles == 0) 
+    if(idx->filenum == 0 || indexf->header.totalfiles == 0)
         progerr("Internal error in remove_last_file_from_list");
 
 
@@ -411,41 +411,62 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
             idx->hashentriesdirty[i] = 0;
             for (ep = idx->hashentries[i], prev_ep =NULL; ep; ep = ep->next)
             {
-                if(ep->currentChunkLocationList)
+                if(ep->currentChunkLocationList && (ep->currentChunkLocationList != ep->currentlocation))
                 {
                     if(ep->currentChunkLocationList->filenum == idx->filenum)
                     {
-                        /* First of all - Adjust tfrequency */
-                        ep->tfrequency--;
                         /* Now remove locations */
+                        /* Go until filenum changes or reach the compressed
+                        ** area (currentlocation)
+                        */
                         for(l = ep->currentChunkLocationList; l; l = l->next)
                         {
-                            if(ep->currentlocation == l || l->filenum != idx->filenum)
+                            if(ep->currentlocation == l || (l->filenum != idx->filenum))
                                 break;
                         }
-                        /* Remove locations */                 
-                        /* Do not use efree, locations uses a MemZone (currentChunkLocZone) */
-                        /* Will be freed later */
-                        ep->currentChunkLocationList = l;
+                        /* Adjust tfrequency if entry is in file */
+                        if(l != ep->currentChunkLocationList)
+                        {
+                            /* Remove last filenum chunks */
+                            ep->currentChunkLocationList = l;
+
+                            /* Decrease word frequency */
+                            ep->tfrequency--;
+
+                            /* Reset last_filenum. At this moment
+                            ** ep->u1.last_filenum point contains idx->filenum
+                            ** and, after removing the last file it should
+                            ** point to the previous one but we do not know
+                            ** its value because the previous chunks can bei
+                            ** compressed. Fortunately, we are only using
+                            ** this value in add_entry routine to ensure
+                            ** that we are in a new file. So, resetting
+                            ** the value to 0 should be enough
+                            */
+                            ep->u1.last_filenum = 0;
+                        }
                     }
                     /* If there is no locations we must also remove the word */
                     /* Do not call efree to remove the entry, entries use
                     ** a MemZone (perDocTmpZone) - Will be freed later */
-                    if(!ep->currentChunkLocationList && !ep->allLocationList)
+                    if(!ep->currentChunkLocationList)
                     {
-                        if(!prev_ep)
+                        if(!ep->allLocationList)
                         {
-                            idx->hashentries[i] = ep->next;
+                            if(!prev_ep)
+                            {
+                                idx->hashentries[i] = ep->next;
+                            }
+                            else
+                            {
+                                prev_ep->next = ep->next;
+                            }
+                            /* Adjust word counters */
+                            idx->entryArray->numWords--;
+                            indexf->header.totalwords--;
                         }
-                        else
-                        {
-                            prev_ep->next = ep->next;
-                        }
-                        /* Adjust word counters */
-                        idx->entryArray->numWords--;
-                        indexf->header.totalwords--;
                     }
-                } 
+                }
                 else
                 {
                     prev_ep = ep;
@@ -453,12 +474,10 @@ static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
             }
         }
     }
-    /* Decrease filenum */
+    /* Decrease index filenum iand totalfiles counter*/
     idx->filenum--;
     indexf->header.totalfiles--;
-
 }
-
 
 
 /**************************************************************************
