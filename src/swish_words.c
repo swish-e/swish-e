@@ -196,7 +196,8 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
                     return UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
 
                 if ( (*buf)[1] && !inphrase && !isspace( (unsigned char) (*buf)[1]))
-                    return WILDCARD_NOT_ALLOWED_WITHIN_WORD;
+                    if ( !isSearchOperatorChar( (unsigned char) (*buf)[1], phrase_delimiter, inphrase ) )
+                        return WILDCARD_NOT_ALLOWED_WITHIN_WORD;
 
             }
 
