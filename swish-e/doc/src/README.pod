@@ -1,0 +1,161 @@
+=head1 NAME
+
+The SWISH-E README File
+
+=head1 What is SWISH-E?
+
+SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
+With it, you can quickly and easily index directories of files or remote web sites and search the generated
+indexes.
+
+SWISH was created by Kevin Hughes to fill the need of the growing number of Web administrators on the
+Internet - many of the indexing systems were not well documented, were hard to use and install,
+and were too complex for their own good. The system was widely used for several years,
+long enough to collect some bug fixes and requests for enhancements.
+
+In Fall 1996, The Library of UC Berkeley received permission from Kevin Hughes to implement bug fixes and
+enhancements to the original binary. The result is SWISH-Enhanced or SWISH-E, brought to you by the
+SWISH-E Development Team.
+
+=head2 Key features
+
+=over 4
+
+=item *
+
+Quickly index a large number of documents in different formats
+including text, html, and XML
+
+=item *
+
+Includes a web spider for indexing remote documents over HTTP
+
+=item *
+
+Use "filters" to index any type of file such as PDF, gzip, or Postscript
+
+=item *
+
+Document "properties" (some subset of the source document, usually
+defined as a META or XML elements) may be stored in the index and
+returned with search results
+
+=item *
+
+Document summaries can be returned with each search
+
+=item *
+
+Word stemming and soundex indexing
+
+=item *
+
+Phrase searching and wildcard searching
+
+=item *
+
+Results can be sorted by relevance or by any number of properties
+in ascending or decending order
+
+=item *
+
+Limit searches to parts of documents such as certain HTML tags
+(META, TITLE, comments, etc.) or to XML elements.
+
+=item *
+
+It's open source and FREE!  You can customize SWISH-E and you
+can contribute your fancy new features to the project.
+
+=back
+
+
+=head1 Where do I get SWISH-E?
+
+The current version of SWISH-E can be found at:
+
+C<http://sunsite.berkeley.edu/SWISH-E/>
+
+Please make sure you use a current version of swish-e.
+
+Information about Windows binary distributions can also be
+found at this site.
+
+
+
+=head1 How do I read the SWISH-E documentation?
+
+The SWISH-E documentation is in POD format.  POD documentation is displayed by
+the `perldoc' command that is included with every Perl installation.
+For example, to view the installation documentation for swish-e, type
+
+   perldoc INSTALL
+
+Check with your system administrator if this command is not available.
+
+Online documentation can be found at the SWISH-E web site listed above.
+Optionally, if you have the pod2html utility on your system you can convert
+the documentation into HTML format for viewing with a web browser.  Instructions
+for converting the documentation can be found in INSTALL.
+
+=head2  Included Documentation
+
+The following documentation is included in this SWISH-E distribution:
+
+=over 4
+
+=item *
+
+L<README|README> --  this file
+
+=item *
+
+L<INSTALL|INSTALL>  -- Installation and basic usage instructions
+
+=item *
+
+L<SWISH-INDEX|SWISH-INDEX> -- All about creating a SWISH-E index
+
+=item *
+
+L<SWISH-SEARCH|SWISH-SEARCH> --All about searching with SWISH-E
+
+=item *
+
+L<SWISH-FAQ|SWISH-FAQ> -- Common questions, and some answers
+
+=item *
+
+L<SWISH-FILTERS|SWISH-FILTERS> -- Using filters to index non-standard documents
+
+=item *
+
+L<SWISH-LIBRARY|SWISH-LIBRARY> -- Interface to the SWISH-E C library
+
+=item *
+
+L<SWISH-PERL|SWISH-PERL> -- Instructions for using the Perl library
+
+=item *
+
+L<CHANGES|CHANGES> -- List of feature changes and bug fixes
+
+=back
+
+
+=head1 Where do I get help with SWISH-E?
+
+If you need help with installing or using SWISH-E please subscribe to
+the SWISH-E mailing list.  See visit the SWISH-E web site listed above
+for information on subscribing to the SWISH-E list.
+
+
+=head1 Document revision
+
+$Id$
+
+
+
+
+
+

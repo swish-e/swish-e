@@ -1,0 +1,10 @@
+#!/usr/bin/perl -w
+
+# this file is used to simplify the use of pod2hpp so you don't have to
+# specify the path to the config file on every execution
+
+# you call this script just like pod2hpp but without the -c argument.
+use FindBin qw($Bin);
+
+# forward the @ARGV
+system "pod2hpp @ARGV $Bin/../swish.conf";

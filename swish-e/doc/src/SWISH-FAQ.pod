@@ -1,0 +1,102 @@
+=head1 NAME
+
+The SWISH-E FAQ
+
+=head2 What is SWISH-E?
+
+SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
+With it, you can quickly and easily index directories of files or remote web sites and search the generated
+indexes.
+
+=head2 Swish crashes and burns on a certain file. What can I do? 
+
+You can use a FileRules operation to exclude the particular file name, or pathname, or its title. If there are serious problems in indexing
+certain types of files, they may not have valid text in them (they may be binary files, for instance). You can use NoContents to exclude that
+type of file.
+
+=head2 Swish isn't indexing a certain word or phrase. 
+
+By default, swish-e tries to make it best guesses as to what it thinks are reasonable words and filters out "garbage" words according to a set
+of rules, for instance, if swish-e encounters a word that has no vowels, it doesn't index it. You can change these rules by editing the conf.h
+file in the src directory of the swish-e distribution package. By editing the rules, you may be able to index quite a few more words, or less,
+depending on your preference. 
+
+=head2 How can I index all my compressed files? 
+
+Swish doesn't currently have the capability to do on-the-fly filtering of files. In the meantime, first index the uncompressed data, compress it,
+and using a ReplaceRules operation, change the suffix of indexed files to .Z or whatever is appropriate. That way users can retrieve the
+compressed information.
+
+=head2 Can I index 8-bit text? 
+
+Yes, you can. Just remember that swish-e retains capitalization for all characters other than [a-z A-Z], so the word "Çelik" is not retrieved by
+"çelik", "Celik", or "celik". You can index and use words containing any entity from ! (#033) to ÿ (#255). 
+
+=head2 How can I index phrases? 
+
+Phrases are indexed automatically.  To search for a phrase simply place double quotes around the phrase.
+
+For example:
+
+    swish-e -w 'free and "fast search engine"'
+
+=head2 How can I implement keywords in my documents? 
+
+In your HTML files you can put keywords in HTML META tags or in XML blocks.
+
+META tags can have three formats in your source documents:
+
+    <META NAME="DC.subject" CONTENT="digital libraries">
+
+    <!-- META START NAME="meta1" -->
+        some content
+    <!-- META END -->
+
+And in XML format
+
+    <meta2>
+        Some Content
+    </meta2>
+
+
+Then, to inform SWISH-E about the existence of the meta name in your documents,
+edit the line in your configuration file:
+
+    MetaNames DC.subject meta1 meta2
+
+=head2 I want to generate a list of files to be indexed and pass it to swish-e. 
+
+One thing you can do is make a simple script to generate a configuration file full of IndexDir directives.
+For instance, make a separate file called files.conf and put something like this in it:
+
+IndexDir /this_is_file_1/file.html
+IndexDir /usr/local/www
+IndexDir file2.html /some/directory/
+...
+
+Then call swish-e like this (assuming you're using a main swish-e.conf file): 
+
+swish-e -c swish-e.conf files.conf
+
+=head2 I run out of memory trying to index my files. 
+
+It's true that indexing can take up a lot of memory!
+One thing you can do is make many indices of smaller content instead of trying to do
+everything at once. You can then merge all the smaller pieces together.
+
+Another option is use the c<-e> switch.  This will require less memory, but indexing will take longer as
+not all data will be stored in memory while indexing.  See L<SWISH-INDEX|SWISH-INDEX>.
+
+=head2 I can't limit search to title/body/comment. I can't search with meta names, all the names are indexed as "plain" 
+
+Check in the config.h file if #define INDEXTAGS is set to 1. If it is, change it to 0, recompile, and index again. When INDEXTAGS is 1,
+ALL the tags are indexed as plain text, that is you index "title", "h1", and so on, AND they loose their indexing meaning. If INDEXTAGS is
+set to 0, you will still index meta tags and comments, unless you have indicated otherwise in the user config file with the IndexComments
+directive. 
+
+=head2 Do I need to reindex my site each time I upgrade to a new Swish-e version? 
+
+Yes. At times it might not strictly necessary, but since you don't really know if anything in the index has changed,
+it is a good rule to reindex
+anyway. 
+
