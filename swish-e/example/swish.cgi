@@ -46,7 +46,7 @@ use vars qw/$NotAWord/;
 
 #==================================================================================
 
-# This is written this was so the script can be used as a CGI script or a mod_perl
+# This is written this way so the script can be used as a CGI script or a mod_perl
 # module without any code changes.
 
 sub handler {
@@ -60,81 +60,127 @@ sub handler {
     ##### Configuration Parameters #########
     
     my %CONFIG = (
-        title           => 'Search the Swish-e list',   # Title of your choice.
+        title           => 'Search our site',           # Title of your choice.
         swish_binary    => './swish-e',                 # Location of swish-e binary
         swish_index     => './index.swish-e',           # Location of your index file
         page_size       => 15,                          # Number of results per page
 
 
         # Property name to use as the main link text to the indexed document.
-        # Typically, this will be 'swishtitle' if have indexed html documents.
+        # Typically, this will be 'swishtitle' if have indexed html documents,
+        # But you can specify any PropertyName defined in your document.
+        # By default, swish will return the pathname for documents that do not
+        # have a title.  Default is 'swishtitle' if not used.
 
-        # title_property => 'swishtitle',
-        title_property  => 'subject',                   
+        title_property => 'swishtitle',
+
+
 
         # prepend this path to the filename returned by swish.  This is used to
-        # make the href link back to the original document.
+        # make the href link back to the original document.  Comment out to disable.
 
-        prepend_path    => 'http://swish-e.org/archive/',
+        #prepend_path    => 'http://localhost/mydocs',
+
 
 
         # Swish has a configuration directive "StoreDescription" that will save part or
         # all of a document's contents in the index file.  This can then be displayed
         # along with results.  If you are indexing a lot of files this can use a lot of disk
         # space, so test carefully before indexing your entire site.
+        # Building swish with zlib can greatly reduce the space used by StoreDescription
         #
-        # These settings tell this script to display this description.
-        # Normally, this should be 'swishdescription', but you can specify any property name.
+        # This settings tell this script to display this description.
+        # Normally, this should be 'swishdescription', but you can specify another property name.
+        # There is no default.
+       
+        description_prop    => 'swishdescription',
 
-        description_prop=> 'swishdescription',
-        max_chars       => 500,   # If highlight is off, then just truncate the description to this many chars.
-                                  # If you want to go by words, enable highlighting,
-                                  # and then comment-out show_words.  It will be a little slower.
+
+
+        # Property names listed here will be displayed in a table below each result
+        # You may wish to modify this list if you are using document properties (PropertyNames)
+        # in your swish-e index configuration
+        # There is no default.
+        
+        display_props   => [qw/swishlastmodified swishdocsize swishdocpath/],
+
+
+
+        # Results can be be sorted by any of the properties listed here
+        # They will be displayed in a drop-down list
+        # Again, you may modify this list if you are using document properties of your own creation
+        # Swish uses the rank as the default sort
+
+        sorts           => [qw/swishrank swishlastmodified swishtitle/],
+
+
+
+        # Secondary_sort is used to sort within a sort
+        # You may enter a property name followed by a direction (asc|desc)
+
+        secondary_sort  => [qw/swishlastmodified desc/],
+
+
+
+
+        # You can limit by MetaNames here.  Names listed here will be displayed in
+        # a line of radio buttons.
+        # The special case of "ALL" means do not do a metaname search.
+        # By default this is commented out.
+
+        # For example, if you indexed an email archive
+        # that defined the metanames subject name email (as in the swish-e discussion archive)
+        # you might use:
+        #metanames       => [qw/ALL subject name email/],
+
+        # To see how this might work, add "MetaNames swishtitle swishdocpath" to your config file
+        # and try:
+        #metanames       => [qw/ALL swishtitle swishdocpath/],
+
+        # "ALL" is probably a bad description, as it's really selecting where to search, and "ALL"
+        # doesn't mean it searches all, just the "swishdefault" text, which is any text that's
+        # not assigned a metaname.  Therefore, this is probably more correct:
+        #metanames       => [qw/swishdefault swishtitle swishdocpath/],
+
+        # Note that you can do a real "all" search if you use nested metanames in your source documents.
+        
+
+        # These are used to map MetaNames and PropertyNames to user-friendly names.
+        name_labels => {
+            swishdefault        => 'Default content',
+            swishtitle          => 'Title',
+            swishrank           => 'Rank',
+            swishlastmodified   => 'Last Modified Date',
+            swishdocpath        => 'Document Path',
+            swishdocsize        => 'Document Size',
+            subject             => 'Message Subject',
+            name                => "Poster's Name",
+            email               => "Poster's Email",
+            sent                => 'Message Date',
+            ALL                 => 'Message text',
+        },
+
+
 
         # These settings will use some crude highlighting code to highlight search terms in the
         # property specified above as the description_prop (normally, 'swishdescription').
 
 
+        max_chars       => 500,   # If highlight is off, then just truncate the description to this many *chars*.
+                                  # If you want to go by *words*, enable highlighting,
+                                  # and then comment-out show_words.  It will be a little slower.
+
+
         highlight_words => 1,     # enable highlighting
+
         show_words      => 12,    # Number of swish words+non-swish words to show around highlighted word
         max_words       => 100,   # If no words are found to highlighted then show this many words
         occurrences     => 6,     # Limit number of occurrences of highlighted words
-        #highlight_on => '<b>', # HTML highlighting codes
-        #highlight_off   => '</b>',
+        #highlight_on   => '<b>', # HTML highlighting codes
+        #highlight_off  => '</b>',
         highlight_on    => '<font style="background:#FFFF99">',
         highlight_off   => '</font>',
 
-
-        # Property names listed here will be displayed in a table below each result
-        display_props   => [qw/name email sent/],          # properties to display
-
-
-        # Results can be be sorted by any of the properties listed here
-        # They will be displayed in a drop-down list
-        sorts           => [qw/swishrank subject name email sent/],
-
-        # Secondary_sort is used to sort within a sort
-        # You may enter a property name followed by a direction (asc|desc)
-        secondary_sort  => [qw/sent desc/],
-
-
-        # You can limit by MetaNames here.  Names listed here will be displayed in
-        # a line of radio buttons.
-        # The special case of "ALL" means do not do a metaname search. In otherwords
-        # search in metaID 1 (e.g. the body of an html document)
-        # For XML, you might ONLY have metaname searches available.
-        metanames       => [qw/ALL subject name email/],
-
-
-        # These are used to map MetaNames and PropertyNames to user-friendly names.
-        name_labels     => {
-            swishrank   =>  'Rank',
-            subject     =>  'Message Subject',
-            name        =>  "Poster's Name",
-            email       =>  "Poster's Email",
-            sent        =>  'Message Date',
-            ALL         =>  'Message text',
-        },
 
 
         # This adds in the date_range limiting options
@@ -171,7 +217,7 @@ sub handler {
 
 
 
-
+    # Used to get all documents, yet limit by a date range.
     $NotAWord = 'not skaisikdeekk';
 
 
@@ -265,7 +311,7 @@ sub header {
     </head>
     <body>
         <h2>
-        <img src="/images/swish.gif"> $title $message
+        <img src="http://swish-e.org/Images/swish-e.gif"> $title $message
         
         </h2>
 
@@ -470,7 +516,6 @@ sub setup_form {
         }
     }
     
-    $checked->{ALL} = 'checked' unless $q->param('metaname');            
 
     if ( $conf->{sorts} ) {
         for ( @{$conf->{sorts}} ) {
@@ -487,6 +532,9 @@ sub setup_form {
     
     my $limits = '';
     if ( $conf->{metanames} ) {
+
+        $checked->{$conf->{metanames}[0]} = 'checked' unless join '', values %$checked;
+            
         $limits = join "\n",
             'Limit search to:',
             map( {
@@ -1303,14 +1351,13 @@ on your shell account, your DocumentRoot might be C<~yourname/public_html>.
 For the sake of this example we will assume the following:
 
     /usr/local/apache/htdocs        - Document root
-    /usr/local/apache/htdocs/images - images directory
     /usr/local/apache/cgi-bin       - CGI directory
 
 =head2 Move the files to their locations
 
 =over 4
 
-=item 1 Copy the swish.cgi file to your CGI directory
+=item Copy the swish.cgi file to your CGI directory
 
 Most web servers have a directory where CGI programs are kept.  If this is the case on your
 server copy the C<swish.cgi> perl script into that directory.  You will need to provide read
@@ -1334,14 +1381,6 @@ enable it as a CGI script with something like the following
 
 Using this method you don't even need to use the C<.cgi> extension.  For example, rename
 the script to "search" and then use that in the C<Files> directive.
-
-=item 2 Copy the swish.gif file to your images directory.
-
-The C<swish.cgi> script expects the C<swish.gif> file to be located in the web path
-C</images/swish.gif>.  If this is not the case on your server you will need to adjust the
-script.
-
-=back
 
 =head1 CONFIGURATION
 
@@ -1448,14 +1487,17 @@ Here's an expanded C<swish.cgi> configuration to make use of the above settings 
         title           => 'Search the Apache documentation',
         swish_binary    => './swish-e',
         swish_index     => ['../index.swish-e', '../index2'],
-        metanames       => [qw/ALL swishdocpath swishtitle/],
-        display_props   => [qw/swishlastmodified/],
+        metanames       => [qw/swishdefault swishdocpath swishtitle/],
+        display_props   => [qw/swishlastmodified swishdocsize swishdocpath/],
 
-        name_labels     => {
-            swishdocpath        => 'URL path',
-            swishtitle          => 'Document title',
-            ALL                 => 'Document text',
-            swishlastmodified   => 'Document last modified',
+        name_labels => {
+            swishdefault        => 'Default content',
+            swishtitle          => 'Title',
+            swishrank           => 'Rank',
+            swishlastmodified   => 'Last Modified Date',
+            swishdocpath        => 'Document Path',
+            swishdocsize        => 'Document Size',
+            ALL                 => 'Message text',
         },
 
     );
@@ -1483,12 +1525,13 @@ use the follow configuration in C<swish.cgi>:
         title           => 'Search the Apache documentation',
         swish_binary    => './swish-e',
         swish_index     => ['../index.swish-e', '../index2'],
-        metanames       => [qw/ALL swishdocpath swishtitle/],
-        display_props   => [qw/swishlastmodified/],
+        metanames       => [qw/swishdefault swishdocpath swishtitle/],
+        display_props   => [qw/swishlastmodified swishdocsize swishdocpath/],
 
         name_labels     => {
             swishdocpath        => 'URL path',
             swishtitle          => 'Document title',
+            swishdefault        => '
             ALL                 => 'Document text',
             swishlastmodified   => 'Document last modified',
         },
