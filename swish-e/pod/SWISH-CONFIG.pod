@@ -218,6 +218,10 @@ L<MaxWordLimit|/"item_MaxWordLimit"> *integer*
 
 =item *
 
+L<MetaNameAlias|/"item_MetaNameAliase"> *meta name* *list of aliases*
+
+=item *
+
 L<MetaNames|/"item_MetaNames"> *list of names*
 
 =item *
@@ -231,6 +235,10 @@ L<NoContents|/"item_NoContents"> *list of file suffixes*
 =item *
 
 L<PreSortedIndex|/"item_PreSortedIndex"> *list of property names*
+
+=item *
+
+L<PropertyNameAlias|/"item_PropertyNameAliase"> *property name* *list of aliases*
 
 =item *
 
@@ -732,7 +740,28 @@ Then you can search in both tag2 and tag2 with:
 
   swish-e -w 'keywords=(query words)'
 
-MetaNames are case sensitive in XML documents.  
+MetaNames are case sensitive in XML documents.
+
+=item MetaNameAlias *meta name* *list of aliases*
+
+MetaNameAlias assigns aliases for a meta name.  For example, if your documents contain
+meta tags "description", "summary", and "overview" that all give a summary of your
+documents you could do this:
+
+    MetaNames summary
+    MetaNameAlias summary description overview
+
+Then all three tags will get indexed as meta tag "summary".  You can then search
+all the fields as:
+
+    -w summary=foo
+
+The Alias work at search time, too.  So these will also limit the searh to the
+"summary" meta name.
+
+    -w description=foo
+    -w overview=foo
+
 
 =item UndefinedMetaTags [error|ignore|index|auto]
 
@@ -775,6 +804,11 @@ Property names are case sensitive in XML documents.
 
 Use of PropertyNames will increase the size of your index file, sometimes significantly.
 
+Currently, only ONE property can be returned for each property name in search results.
+That is, if you have more than one meta tag in your document of the same tag name, only one
+will be returned with search results.
+
+
 =item PropertyNamesNumeric
 
 This directive is similar to C<PropertyNames>, but it flags the property as
@@ -796,6 +830,18 @@ number as a machine timestamp (seconds since epoch), and will print a formatted
 date when returning this property.  See C<-x> in L<SWISH-RUN|SWISH-RUN>.
 
 Swish will not parse dates when indexing; you must use a timestamp.
+
+=item PropertyNameAlias  *property name* *list of aliases*
+
+This allows aliases for a property name.  For example,
+if you are indexing HTML files, plus XML files that are written in
+English, German, and Spanish and thus use the tags "title", "titel", and "título" you can
+use:
+
+    PropertyNameAlias swishtitle title titel título titulo
+
+Not that "swishtitle" is the built-in property used to store the title of a document, and
+therefore you do not need to specify it as a PropertyName before use.
 
 
 =item PreSortedIndex *list of property names*
@@ -1068,7 +1114,7 @@ This automatically omits words that appear too often in the files
 (these words are called stopwords). Specify a whole percentage
 and a number, such as "80 256". This omits words that occur in
 over 80% of the files and appear in over 256 files. Comment out
-to turn of auto-stopwording.
+to turn off auto-stopwording.
 
     IgnoreLimit 50 1000
 
