@@ -114,8 +114,9 @@ void freeModule_ResultSort (SWISH *sw)
         }
 
       /* Free Module Data Structure */
-      efree (sw->ResultSort);
-      sw->ResultSort = NULL;
+      /* should not be freed here */
+      //efree (sw->ResultSort);
+      //sw->ResultSort = NULL;
 
   return;
 }
