@@ -198,11 +198,10 @@ BTREE_Page *tmp, *next;
                 if(tmp->modified)
                 {
                     BTREE_WritePageToDisk(b->fp, tmp);
-                    if(tmp != b->cache[i])
-                        efree(tmp);
-                    else
-                        tmp->modified = 0;
+                    tmp->modified = 0;
                 }
+                if(tmp != b->cache[i])
+                    efree(tmp);
                 tmp = next;
             }
             b->cache[i]->next_cache = NULL;
