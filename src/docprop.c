@@ -35,6 +35,7 @@
 #include "docprop.h"
 #include "error.h"
 #include "compress.h"
+#include "metanames.h"
 
 
 /* 08/00 Jose Ruiz */
@@ -89,22 +90,26 @@ void freeDocProperties(docProperties)
 	*docProperties = NULL;
 }
 
-void addDocProperty(docProperties, metaName, propValue)
-docPropertyEntry **docProperties;
-int metaName;
-char* propValue;
+/* #### Added propLen to allow binary data */
+void addDocProperty(docPropertyEntry **docProperties, int metaName, unsigned char *propValue, int propLen)
 {
 	/* Add the given file/metaName/propValue data to the File object */
 docPropertyEntry *docProp;
 	/* new prop object */
-	docProp = (docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
-	docProp->metaName = metaName;
-	docProp->propValue = (char *)estrdup(propValue);
-
-	/* insert at head of file objects list of properties */
-	docProp->next = *docProperties;	/* "*docProperties" is the ptr to the head of the list */
-	*docProperties = docProp;	/* update head-of-list ptr */
+	if(propLen)
+	{
+		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
+		docProp->metaName = metaName;
+		docProp->propValue = (char *)emalloc(propLen);
+		memcpy(docProp->propValue, propValue,propLen);
+		docProp->propLen=propLen;
+			
+		/* insert at head of file objects list of properties */
+		docProp->next = *docProperties;	/* "*docProperties" is the ptr to the head of the list */
+		*docProperties = docProp;	/* update head-of-list ptr */
+	}
 }
+/*#### */
 
 /*
 * Dump the document properties into the index file 
@@ -117,7 +122,8 @@ docPropertyEntry *docProp;
 *
 * The list is terminated with a PropID with a value of zero
 */
-char *storeDocProperties(docProperties, datalen)
+/* #### Modified to use propLen */
+unsigned char *storeDocProperties(docProperties, datalen)
 docPropertyEntry *docProperties;
 int *datalen;
 {
@@ -130,120 +136,86 @@ int lenbuffer;
 	while (docProperties != NULL)
 	{
 		/* the length of the property value */
-		len = strlen(docProperties->propValue);
+		len = docProperties->propLen;
 		/* Realloc buffer size if needed */
 		if(lenbuffer<(*datalen+len+8*2))
 		{
 			lenbuffer +=(*datalen)+len+8*2+500;
 			buffer=erealloc(buffer,lenbuffer);
 		}
-		if (len > 0)
-		{
-			p= q = buffer + *datalen;
-			/* the ID of the property */
-			propID = docProperties->metaName;
-			/* Do not store 0!! - compress does not like it */
-			propID++;
-			compress3(propID,p);
-			/* including the length will make retrieval faster */
-			compress3(len,p);
-			memcpy(p,docProperties->propValue, len);
-			*datalen += (p-q)+len;
-		}
+		p= q = buffer + *datalen;
+		/* the ID of the property */
+		propID = docProperties->metaName;
+		/* Do not store 0!! - compress does not like it */
+		propID++;
+		compress3(propID,p);
+		/* including the length will make retrieval faster */
+		compress3(len,p);
+		memcpy(p,docProperties->propValue, len);
+		*datalen += (p-q)+len;
 		docProperties = docProperties->next;
 	}
 	return buffer;
 }
+/* #### */
 
+/* #### Added propLen support and simplify it */
 /* Read one entry and return it; also set the metaName.
- * if targetMetaName is zero then return values for all entries.
- * if targetMetaName is non-zero then only return the value
- * for the property matching that value.
  * In all cases, metaName will be zero when the end of the
  * set is reached.
  */
-char* readNextDocPropEntry(buf, metaName, targetMetaName)
-      char **buf;
-      int *metaName;
-      int targetMetaName;
+unsigned char* readNextDocPropEntry(char **buf, int *metaName, int *propLen)
 {
 char* propValueBuf=NULL;
 int tempPropID;
 int len;
 char *p=*buf;
 	uncompress2(tempPropID,p);
-	if(tempPropID) tempPropID--;
+	if (!tempPropID) return NULL;		/* end of list */
 
-	*metaName = tempPropID;
+	*metaName = --tempPropID;
 
-	if (tempPropID == 0)
-		return NULL;		/* end of list */
-
-	/* grab the string length */
+	/* grab the data length */
 	uncompress2(len,p);
 
-	if ((targetMetaName != 0) && (tempPropID != (short int) targetMetaName))
-	{
-		/* we were looking for something specific, and this is not it */
-		/* move to the next property */
-		p+=len;
-		propValueBuf=(char *)estrdup("");;
-	}
-	else
-	{
-		/* allocate buffer for prop value */
-		propValueBuf=(char *)emalloc(len+1);
-		memcpy(propValueBuf, p, len);
-		p+=len;
-		propValueBuf[len]='\0';
-	}
+	/* allocate buffer for prop value */
+	/* BTW, len must no be 0 */
+	propValueBuf=(char *)emalloc(len);
+	memcpy(propValueBuf, p, len);
+	p+=len;
+	*propLen=len;
 	*buf=p;
 	return propValueBuf;
 }
+/* #### */
 
 /*
  * Read the docProperties section that the buffer pointer is
  * currently pointing to.
  */
-docPropertyEntry *fetchDocProperties(buf)
-     char *buf;
+/* #### Added support for propLen */
+docPropertyEntry *fetchDocProperties(char *buf)
 {
 docPropertyEntry *docProperties=NULL;
 char* tempPropValue=NULL;
+int tempPropLen=0;
 int tempMetaName=0;
-int targetMetaName = 0;	/* 0 = no target; return all data */
 
 	/* read all of the properties */
-	while((tempPropValue = readNextDocPropEntry(&buf, &tempMetaName, targetMetaName)) && tempMetaName > 0)
+	while((tempPropValue = readNextDocPropEntry(&buf, &tempMetaName, &tempPropLen)) && tempMetaName > 0)
 	{
 			/* add the entry to the list of properties */
-		addDocProperty(&docProperties, tempMetaName, tempPropValue);
+		addDocProperty(&docProperties, tempMetaName, tempPropValue, tempPropLen );
 		efree(tempPropValue);
 	}
 	return docProperties;
 }
+/* #### */
 
 
-char* lookupDocPropertyValue(metaName, buf)
-     int metaName;
-     char *buf;
-{
-	/*
-	 * Returns the string containing the document's
-	 * property value, or an empty string if it was not found.
-	 */
-	char* tempPropValue=NULL;
-	int tempMetaName=0;
-
-	while((tempPropValue = readNextDocPropEntry(&buf, &tempMetaName, metaName)) && tempMetaName > 0)
-	{
-		/* a match? */
-		if (tempMetaName == metaName)
-			return tempPropValue;
-		efree(tempPropValue);
-	}
-	return estrdup("");
-}
+/* #### Added propLen support */
+/* removed lookupDocPropertyValue. Not used */
+/* #### */
 
 int getnumPropertiesToDisplay(SWISH *sw)
 {
@@ -405,7 +377,7 @@ docPropertyEntry *p;
 		if(!p)
 			props[i] = estrdup("");
 		else
-                	props[i] = estrdup(p->propValue);
+                	props[i] = getPropAsString(indexf,p);
 	}
 	return props;
 }
@@ -430,7 +402,7 @@ docPropertyEntry *p;
 		if(!p)
 			props[i] = estrdup("");
 		else
-                	props[i] = estrdup(p->propValue);
+                	props[i] = getPropAsString(indexf,p);
 	}
 	return props;
 }
@@ -551,7 +523,9 @@ docPropertyEntry *new=NULL,*tmp=NULL,*last=NULL;
 	{
 		tmp=emalloc(sizeof(docPropertyEntry));
 		tmp->metaName=dp->metaName;
-		tmp->propValue=estrdup(dp->propValue);
+		tmp->propValue=emalloc(dp->propLen);
+		memcpy(tmp->propValue,dp->propValue,dp->propLen);
+		tmp->propLen=dp->propLen;
 		tmp->next=NULL;
 		if(!new) new=tmp;
 		if(last) last->next=tmp;
@@ -617,4 +591,36 @@ char *propdata;  /* default value to NULL */
 		propdata = NULL;   /* not found */
 	efree(pname);
 	return propdata;
+}
+
+/* #### Function to format the property as a string */
+char *getPropAsString(IndexFILE *indexf,docPropertyEntry *p)
+{
+char *s=NULL;
+unsigned long i;
+struct metaEntry *q;
+	q=getMetaIDData(indexf,p->metaName); /* BTW metaName is de ID !!!*/
+	if(!q) return estrdup("");
+
+	if(is_meta_string(q))      /* check for ascii/string data */
+	{
+		s=bin2string(p->propValue,p->propLen);
+	} else if(is_meta_date(q))  /* check for a date */
+	{
+		s=emalloc(20);
+		i=*(unsigned long *)p->propValue;  /* read binary */
+						  /* as unsigned long */
+		UNPACKLONG(i);     /* Convert the portable number */
+				/* Conver to ISO datetime */
+		strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+	} else if(is_meta_number(q))  /* check for a number */
+	{
+		s=emalloc(14);
+		i=*(unsigned long *)p->propValue;  /* read binary */
+						  /* as unsigned long */
+		UNPACKLONG(i);     /* Convert the portable number */
+				/* Conver to ISO datetime */
+		sprintf(s,"%.013lu",i);
+	} else s=estrdup("");
+	return s;
 }

@@ -116,6 +116,7 @@
 #include "deflate.h"
 #include "xml.h"
 #include "txt.h"
+#include "metanames.h"
 
 
 /*
@@ -409,6 +410,8 @@ struct file *newnode;
 FILEOFFSET *newnode2;
 unsigned char *ruleparsedfilename,*p1,*p2,*p3;
 unsigned char c;
+struct metaEntry *q;
+unsigned long int tmp;
 	
 	if(!indexf->filearray || !indexf->filearray_maxsize) 
 	{
@@ -471,6 +474,50 @@ unsigned char c;
 	newnode->fi.start = start;
 	newnode->fi.size = size;
 	newnode->docProperties = NULL;
+
+/* #### Added summary and mtime as prperty if specified */
+	if(summary)
+	{
+                        /* Check if summary is internal swish metadata */
+		if((q=getMetaNameData(indexf,META_SUMMARY)))
+		{
+                        /* Check if it is also a property (META_PROP flag) */
+			if(is_meta_property(q))
+			{
+				addDocProperty(&newnode->docProperties,q->index,summary,strlen(summary));
+			}
+			/* Perhaps we want it to be indexed ... */
+			if(is_meta_index(q))
+			{
+				int metaName[1],positionMeta[1];
+				metaName[0]=q->index; positionMeta[0]=1;
+				indexstring(sw, summary, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+			}
+		}
+	}
+                        /* Check if mtime is internal swish metadata */
+	if((q=getMetaNameData(indexf,META_FILEDATE)))
+	{
+                        /* Check if it is also a property (META_PROP flag) */
+		if(is_meta_property(q))
+		{
+			tmp=mtime;
+			PACKLONG(tmp);    /* make it portable */
+			addDocProperty(&newnode->docProperties,q->index,(unsigned char *)&tmp,sizeof(tmp));
+		}
+	}
+                        /* Check if mtime is internal swish metadata */
+	if((q=getMetaNameData(indexf,META_SIZE)))
+	{
+                        /* Check if it is also a property (META_PROP flag) */
+		if(is_meta_property(q))
+		{
+			tmp=size;
+			PACKLONG(tmp);    /* make it portable */
+			addDocProperty(&newnode->docProperties,q->index,(unsigned char *)&tmp,sizeof(tmp));
+		}
+	}
+/* #### */
 	indexf->filearray[indexf->filearray_cursize++]=newnode;
 
 	newnode2 = (FILEOFFSET *) emalloc(sizeof(FILEOFFSET));
@@ -1252,28 +1299,31 @@ void printMetaNames(indexf)
 IndexFILE *indexf;
 {
 struct metaEntry* entry=NULL;
+/* #### style removed 
 int len, style;
+### */
+int len;
 FILE *fp=indexf->fp;
 	
+/* #### Use new metaType schema - see metanames.h */
+	/* Format of metaname is
+        <len><metaName><metaType>
+	len and metaType are compressed numbers
+	metaName is the ascii name of the metaname
+	
+	The list of metanames is delimited by a 0
+	*/
 	indexf->offsets[METANAMEPOS] = ftell(fp);
 	for (entry = indexf->metaEntryList; entry; entry = entry->next)
-    {
+	{
 		len = strlen(entry->metaName);
 		compress1(len,fp);
 		fwrite(entry->metaName,len,1,fp);
-		if (entry->isDocProperty)
-		{
-			/* write the meta name style:
-			 * <name>"0   -> normal meta name [default, so does not have to be written]
-			 * <name>"1   -> doc property name
-			 * <name>"2   -> both
-			 */
-			/* Add one to compress non 0 value */
-			style = (entry->isOnlyDocProperty) ? 2 : 3;
-		} else style=1;
-		compress1(style,fp);
-    }
-	fputc(0,fp);
+		compress1(entry->metaType,fp);
+	}
+	/* End of metanames */
+	fputc(0,fp);   /* write 0 delimiter */
+/* #### */
 }
 
 /* Prints the list of file offsets into the index file.
@@ -1381,6 +1431,8 @@ char ISOTime[20];
 	fseek(fp, 0, 0);
 	readheader(indexf);
 	readoffsets(indexf);
+	readMetaNames(indexf);
+
 	readlocationlookuptables(indexf);
 
 	if(indexf->header.applyFileInfoCompression)
@@ -1509,7 +1561,7 @@ char ISOTime[20];
 			printf("%s \"%s\" \"%s\" \"\" %d %d",fi->fi.filename,ISOTime, fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
 		}
 		for(docProperties=fi->docProperties;docProperties;docProperties=docProperties->next) {
-			printf(" PROP_%d:\"%s\"",docProperties->metaName,docProperties->propValue); 
+			printf(" PROP_%d: \"%s\"",docProperties->metaName, getPropAsString(indexf,docProperties)); 
 		}
 		putchar((int)'\n');fflush(stdout);
 		freefileinfo(fi);
@@ -1526,7 +1578,9 @@ char ISOTime[20];
 			for(i=0;i<wordlen;i++)putchar(fgetc(fp));
 			putchar((int)'\"');
 			uncompress1(i,fp);
-			putchar((int)(i-1+(int)'0'));
+/* #### Line modified */
+			printf("%d",i);
+/* #### */
 			putchar((int)' ');
 			uncompress1(wordlen,fp);
 		}

@@ -35,6 +35,11 @@
 #include "index.h"
 #include "html.h"
 #include "xml.h"
+/* #### Added metanames.h */
+#include "merge.h"
+#include "docprop.h"
+#include "metanames.h"
+/* #### */
 
 /* The well known html entities */
 
@@ -466,7 +471,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 							/* If it is also a property store it until a < is found */
 							if(docPropName) {
 					     			if((endtag=strchr(p,'<'))) *endtag='\0';
-					    			 addDocProperty(&thisFileEntry->docProperties,docPropName,p);
+					    			 addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
 					     			if(endtag) *endtag='<';
 							} 
 						}
@@ -503,7 +508,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 					** Only store until a < is found */
 					if(docPropName) {
 					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,docPropName,p);
+					     addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */
@@ -709,17 +714,20 @@ struct metaEntry* list=NULL;
 		{
 			if (!strcmp(list->metaName, word) )
 			{
-				if ((docPropName != NULL) && (list->isDocProperty))
+				if ((docPropName != NULL) && is_meta_property(list))
 				{
 					*docPropName = list->index;
 				}
-				if (list->isOnlyDocProperty)
+/* #### Use metaType */
+				if (!is_meta_index(list) && is_meta_property(list))
 				{
-					if (*applyautomaticmetanames) list->isOnlyDocProperty=0;
+					if (*applyautomaticmetanames) 
+						list->metaType |= META_INDEX;
 					else 
 					/* property is not for indexing, so return generic metaName value */
 						return 1;
 				}
+/* #### */
 				return list->index;
 			}
 		}
@@ -798,7 +806,7 @@ int wordcount=0; /* Word count */
 		if (temp != NULL) {
 			*temp = '\0';	/* terminate CONTENT, temporarily */
 			if(docPropName)
-				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart);
+				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart, strlen(tag+jstart));
 			convtag = (char *)convertentities(tag + jstart, sw->AsciiEntities);
 			
 			wordcount = indexstring(sw, convtag , filenum, structure, 1, &metaName, &position);

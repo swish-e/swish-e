@@ -11,16 +11,19 @@
 
 
 void freeDocProperties (docPropertyEntry **);
-char *storeDocProperties (docPropertyEntry *, int *);
+unsigned char *storeDocProperties (docPropertyEntry *, int *);
 
-void addDocProperty (docPropertyEntry **, int , char* );
+unsigned char* readNextDocPropEntry(char **, int *, int *);
+
+
+void addDocProperty (docPropertyEntry **, int , unsigned char* ,int );
 
 docPropertyEntry *fetchDocProperties (char * );
 
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
-char* lookupDocPropertyValue (int , char *);
+unsigned char* lookupDocPropertyValue (int , char *, int *);
 void printSearchResultProperties (SWISH *, char **);
 
 void swapDocPropertyMetaNames (docPropertyEntry *, struct metaMergeEntry *);
@@ -37,3 +40,5 @@ docPropertyEntry *DupProps (docPropertyEntry *);
 void FreeOutputPropertiesVars (SWISH *);
 
 char * getResultPropertyByName (SWISH *, char *, RESULT *);
+
+char *getPropAsString(IndexFILE *, docPropertyEntry *);

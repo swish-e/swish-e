@@ -76,6 +76,8 @@ int isnumstring _AP ((unsigned char*));
 void remove_newlines _AP ((char*));
 void remove_tags _AP ((char*));
 
+unsigned char *bin2string(unsigned char *,int);
+
 #ifdef _WIN32
 #define strncasecmp	strnicmp
 #endif

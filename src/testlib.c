@@ -17,7 +17,7 @@ if(!(sw=SwishOpen("../tests/test.index ../tests/test.index")))
 }
 
 
-for(i=0;i<2;i++) {
+for(i=0;i<10;i++) {
 
 printf("---->Begin iteration %d\n",i);
 

@@ -51,10 +51,13 @@ struct metaMergeEntry {
 	int oldIndex;
 	int newIndex;
 
+/* #### Lines removed to use metaType */
 	/* is this meta field a Document Property? */
-	char isDocProperty;		/* true is doc property */
-	char isOnlyDocProperty;	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
+	/* char isDocProperty;*/		/* true is doc property */
+	/* char isOnlyDocProperty;*/	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
 
+	int metaType;
+/* #### */
 	struct metaMergeEntry* next;
 };
 

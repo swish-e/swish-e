@@ -105,6 +105,10 @@ int i;
 
 	newnode->next = NULL;
 
+/* #### Add default metanames */
+	add_default_metanames(newnode);
+/* #### */
+
 	if (rp == NULL)
 		rp = newnode;
 	else

@@ -75,7 +75,7 @@
 #include <setjmp.h>
 
 
-#define SWISH_VERSION "2.1.10-devel13"
+#define SWISH_VERSION "2.1"
 
 #define SWISH_MAGIC 21076321L
 
@@ -200,21 +200,27 @@
 #define MULTITXT BASEDOCTYPE+4
 #define WML BASEDOCTYPE+5
 
+/* #### Added propLen  to allow binary data */
 typedef struct docPropertyEntry {
 	int metaName;		/* meta field identifier; from getMetaName() */
-	char *propValue;	/* string from META's CONTENTS attribute */
+	unsigned char *propValue;  /* buffer from META's CONTENTS attribute */
+	char propLen;	/* Length of buffer */
 
 	struct docPropertyEntry *next;
 } docPropertyEntry;
+/* #### */
 
 struct metaEntry {
 	char* metaName;
 	int index;
 	
+	/* #### Commented - Use metaType instead */
 	/* is this meta field a Document Property? */
-	int isDocProperty;		/* true is doc property */
-	int isOnlyDocProperty;	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
+	/* int isDocProperty;*/		/* true is doc property */
+	/*int isOnlyDocProperty;*/	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
 	
+	int metaType;    /* See metanames.h for values */
+	/* #### */
 	struct metaEntry* next;
 };
 
@@ -248,6 +254,7 @@ struct file {
 
  -- (2000-12 Jose Ruiz)
  -- Added StoreDescription
+  
 */
 
 typedef struct  {
@@ -519,7 +526,6 @@ struct char_lookup_st
 #else
 #define VAR
 #endif
-
 
 typedef struct {
 	/* All files header info */
