@@ -10,6 +10,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Added libtool and automake support
+
+Replaces the build system with Autotools.  Now builds libswish-e as
+a shared library on systems that support shared libraries.
+The swish-e binary links against this shared library.
+Can also build outside the source tree on platforms with GNU make. [moseley]
+
 =item Fixed bug when searching at end of inverted index
 
 Swish was not correctly detecting the end of the inverted index

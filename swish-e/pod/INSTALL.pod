@@ -28,6 +28,10 @@ many frequently asked questoins.
 
 =head1 SYSTEM REQUIREMENTS
 
+These are the system requirements when building Swish-e from source.
+
+=head2 Software Requirements
+
 Swish-e is written in C, and, up to this time, it has been tested on
 a number of platforms.
 Any current Linux distribution should have no problem building Swish-e.
@@ -113,7 +117,8 @@ Swish needs quite a bit of memory while indexing.  How much depends
 on what you are indexing.  The index is portable between platforms
 (that use the same basic data type sizes),
 so you can index on a machine that has lots of memory available and
-move the index files to another machine for searching.  Use the C<-e>
+move the index files to another machine for searching, or index on Windows
+and move the index to your Linux web server.  Use the C<-e>
 switch if you are short on memory.
 
 B<Perl modules>
@@ -162,6 +167,8 @@ section.
 
 =head2 Brief Instructions
 
+Most of the time all you need to do is unpack the distribution and run:
+
     ./configure
     make
     make test
@@ -170,7 +177,8 @@ section.
 
 By default, this will install the swish-e binary in F</usr/local/bin>, the Swish-e
 search library in F</urs/local/lib>, the swish-e.h header file in </usr/local/include>,
-and the documentation in F</usr/local/share/swish-e>.
+and the documentation in F</usr/local/share/swish-e>.  In addition, some of the
+documentation is installed as system manual pages.
 
 Swish uses a F<configure> script to generate a Makefile for your platform.
 The F<configure> script should detect and use optional libraries if found on
@@ -197,7 +205,7 @@ Uncompressing, building, and installation of libxml2 is very similar to
 the way Swish-e is built.
 
 Many Linux distributions provide libxml2 packages directly via RPM or
-the Debian pacakage system.  Check with your distributions web site for
+the Debian pacakage system.  Check with your distribution's web site for
 more information, as this is a very easy way to install this library.
 
 If libxml2 complains during compilation that it can not find zlib then
@@ -217,7 +225,7 @@ B<libxml2>:
     # building libxml2 (not swish)
     ./configure --with-zlib=/usr/local
 
-Swish-e doesn't use libxml2 uncompression features, so you *should*
+Swish-e doesn't use libxml2 uncompression features, so you should
 be able to disable zlib when building B<libxml2>:
 
     ./configure --without-zlib
@@ -248,12 +256,14 @@ If libxml2 is installed in your system and you do B<not> want to build with libx
 
     ./configure --without-libxml2
 
+but don't do that.
+
 If libxml2 was installed in a non-standard location then specify the
 path where libxml2 was installed.  For example,
 
     ./configure --with-libxml2=$HOME/local
 
-If libxml2 is installed in a non-standard location Swish-e needs to know
+If libxml2 is installed in a non-standard location Swish-e may need to know
 where that library is at run time.  There seems to be a number of ways
 to do this.  First, you can set the environment variable C<LD_RUN_PATH>
 *before* running make to create Swish-e.  This will add the path directly
@@ -310,11 +320,13 @@ wget are all common methods.
 =item 1 Uncompress the distribution file
 
 
-   gzip -dc swish-e.x.x.tar.gz | tar xof -
+   gzip -dc swish-e-x.x.x.tar.gz | tar xof -
 
 or on some versions of tar, simply
 
-   tar -zxof swish-e.x.x.tar.gz
+   tar -zxof swish-e-x.x.x.tar.gz
+
+(where x.x.x is the current version number such as "2.4.0")
 
 Uncompressing should create the following directories:   
 
@@ -337,21 +349,24 @@ Uncompressing should create the following directories:
 
 =item 2 Make any needed changes in F<src/config.h>
 
+You probably will B<not> need to change this file, but it's helpful
+to become familiar with the default compiled-in settings.
+
 Compile-time configuration settings are adjusted in the file
 F<src/config.h>.  Most of the settings may also be specified in the
 configuration file used during indexing.
 
-You probably will B<not> need to change this file, but it's helpful
-to become familiar with the default compiled-in settings.
-
 =item 3 Build Swish-e
 
 Building Swish-e on most systems is a simple procedure.  In the
-Swish-e-x.x/ top level directory type the following commands
+Swish-e-x.x.x/ top level directory type the following commands
 
    ./configure
    make
    make test
+
+Note that on some systems with a reasonable "make" program you may build swish
+in a separate build tree.
 
 You should build swish as a normal user (i.e. not as "root").
 
@@ -414,9 +429,9 @@ If you do not have root access you can install Swish-e in a local directory.
 Then running "make install" will install the following files:
 
     $HOME/local/bin/swish-e       -- the Swish-e program
-    $HOME/local/lib/libswish-e.a  -- the Swish-e search library
+    $HOME/local/lib/libswish-e.*  -- the Swish-e search library
     $HOME/local/include           -- header file for the library
-    $HOME/local/share/swish-e     -- documentation
+    $HOME/local/share/doc/swish-e -- documentation
 
 =back
 
@@ -435,13 +450,18 @@ it can be added to the list of sites that use Swish-e!
 Please review L<QUESTIONS AND TROUBLESHOOTING|QUESTIONS AND TROUBLESHOOTING> before posting
 a question to the Swish-e list.
 
-=head2 The Swish-e C Search Library - libswish-e.a
+=head2 The Swish-e C Search Library - libswish-e
 
-Swish creates the C library F<libswish-e.a> during the build process.
+Swish creates the C library F<libswish-e> during the build process.
+Programs can link against this library to gain fast and direct search
+access to your index files.
+
+The build process makes a static library (libswish-e.a) and/or a
+shared library (libswish-e.so), depending on your platform.
 Running "make install" installs the library and header file
 in addition to the swish-e program.
 
-By default the library in /usr/local/lib, but this
+By default the library is installed /usr/local/lib, but this
 directory can be set when running ./configure with the --libdir option.
 For example:
 
@@ -458,11 +478,11 @@ For more information about the Swish-e C library see L<SWISH-LIBRARY|SWISH-LIBRA
 The Swish-e distribution includes a module that provides a Perl
 interface to the Swish-e C library.  This module provides a way
 to search a Swish-e index without running the swish-e program.
-Searching an index will me many times faster when running under a
+Searching an index will be many times faster when running under a
 persistent environment such as Apache/mod_perl with the SWISH::API
 module.
 
-See the F<perl/README> file  for information on installing and
+See the F<perl/README> file for information on installing and
 using the SWISH::API Perl module.
 
 
@@ -477,7 +497,7 @@ include with the Swish-e distribution and used for building the HTML.
 If your system has the B<necessary tools> to build Postscript and the
 converter ps2pdf installed, you may be able to build the Postscript
 and PDF versions of the documentation.  After you have run ./configure,
-type from the top-level directory of the distribution:
+type from the F<doc> directory of the distribution:
 
     make pdf
 
@@ -488,16 +508,15 @@ And with any luck you will end up with the these two files in the top-level dire
 
 Most people find reading the documentation in HTML most convenient.
 
-=head2 Installing the Swish-e documentation as man(1) pages
+=head2 The Swish-e documentation as man(1) pages
 
-Running make install installs some of the Swish-e documentation as man pages.
+Running "make install" installs some of the Swish-e documentation as man pages.
 The following man pages are installed:
 
     SWISH-FAQ(1)
     SWISH-CONFIG(1)
     SWISH-RUN(1)
     SWISH-LIBRARY(1)
-    SWISH-PERL(1)
 
 The man pages are installed in the system man directory.  This directory
 is determined by running ./configure and can be set by passing the
