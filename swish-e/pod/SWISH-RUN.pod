@@ -462,20 +462,22 @@ B<Examples of -x format strings:>
     -x "xml_out: \<title\><swishtitle>\>\</title\>\n"
     -x "xml_out: <swishtitle fmt='<title>%s</title>'>\n"
 
-=item -X  (extended header output)
+=item -X[0|1|2|3|<n>]  (extended header output)
 
-The C<-X> switch generates extened I<header> output.  This is most useful when searching more than one
+The C<-Xn> switch generates extened I<header> output.  This is most useful when searching more than one
 index file at a time, either by specifying more than one index file with the C<-f> switch, or when searching
 a merged index file.  In these cases, -X will generate a combined set of headers followed by a set of
 headers specific to each index file.  This gives access to the settings used to generate each index file.
 
-Even when searching a single index file, C<-X> will provided additional information about the index file,
+Even when searching a single index file, C<-Xn> will provided additional information about the index file,
 how it was indexed, and how swish is interperting the query.
 
-=item -v 4 (verbosity level)
+    -X0 :  print no header information, output only search result entries.
+    -X1 :  print standard result header (default).
+    -X2 :  print add. header information for each searched index file.
+    -X3 :  enhance header output.
+    -X9 :  print add. diagnostic information in the header of the results (changed from: C<-v 4>)
 
-If set to C<-v 4> while searching, SWISH-E will print additional diagnostic information
-in the header of the results.
 
 =back
 
