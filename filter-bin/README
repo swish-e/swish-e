@@ -4,3 +4,14 @@ The converter programs are not included in the swish-e
 distribution. Please get the lastest version of these
 programs from the internet.
 
+pdf filter:
+  - ghostscript
+  - xpdf
+
+
+winword filter:
+  - catdoc
+
+
+
+

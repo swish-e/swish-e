@@ -40,7 +40,7 @@
 **
 ** 2001-02-12 rasc   errormsg "print" changed...
 ** 2001-03-16 rasc   truncateDoc [read_stream] (if doc to large, truncate... )
-**
+** 2001-03-17 rasc   fprop enhanced by "real_filename"
 **
 */
 
@@ -259,6 +259,7 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
 {
   FileProp     *fprop; 
   struct stat  stbuf;
+  char         *x;
 
 
   fprop = (FileProp *)emalloc(sizeof(FileProp));
@@ -277,6 +278,11 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
 
   fprop->real_path = real_path;
   fprop->work_path = (work_file) ? work_file : real_path;
+
+  /* Basename of document path => document filename */
+  x = strrchr (fprop->real_path,'/');
+  fprop->real_filename = (x) ? x+1 : fprop->real_path;  
+                                   
 
   /* -- Get Properties of File
      --  return if error or file not exists

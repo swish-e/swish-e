@@ -1,3 +1,11 @@
+/*
+**
+**
+** 2001-03-17  rasc  save real_filename as title (instead full real_path)
+**                   was: compatibility issue to v 1.x.x
+*/
+
+
 #include "swish.h"
 #include "txt.h"
 #include "mem.h"
@@ -37,7 +45,7 @@ char *summary=NULL;
 		remove_newlines(summary);			/* 2001-03-13 rasc */
 	}
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_filename, summary, 0, fprop->fsize, &thisFileEntry);
 		/* Init meta info */
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
