@@ -20,7 +20,7 @@ Fixed segfault caused by trying to print null dates while merging [moseley]
 
 =back
 
-=head2 Version 2.1 - September 19, 2002
+=head2 Version 2.2 - September 19, 2002
 
 =over 4
 
