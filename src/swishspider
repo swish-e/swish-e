@@ -47,7 +47,7 @@ if( $response->code() == RC_OK ) {
     print CONTENTS $contents;
     close( CONTENTS );
 
-    if( $response->header("content-type") eq "text/html" ) {
+    if( $response->header("content-type") =~ "text/html" ) {
 	open( LINKS, ">$localpath.links" ) || die( "Could not open links file $localpath.links\n" );
 	$p = HTML::LinkExtor->new( \&linkcb, $url );
 	$p->parse( $contents );
