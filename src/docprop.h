@@ -35,8 +35,8 @@ char *getResultPropAsString(RESULT *, int);
 void getSwishInternalProperties(struct file *, IndexFILE *);
 
 
-PropValue * getResultPropertyByName (SWISH *sw, char *name, RESULT *r);
-PropValue * getResultPropertyByName_CS (SWISH *sw, char *name, RESULT *r);
+PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *name, int ID);
+
 int isAutoProperty (char *propname);
 
 void dump_file_properties(IndexFILE * indexf, struct  file *fi );

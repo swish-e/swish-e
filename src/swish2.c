@@ -46,9 +46,15 @@
 #include "metanames.h"
 #include "proplimit.h"
 
+
+/* Moved here so it's in the library */
+unsigned int DEBUG_MASK = 0;
+
 /* 
   -- init swish structure 
 */
+
+
 
 SWISH *SwishNew()
 {

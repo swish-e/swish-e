@@ -620,7 +620,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
     int     n;
 
 
-    pv = getResultPropertyByName(sw, propname, r);
+    pv = getResultPropValue(sw, r, propname, 0);
 
     if (!pv)
     {

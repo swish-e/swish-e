@@ -237,11 +237,13 @@ char *getResultPropAsString(RESULT *result, int ID)
 /*******************************************************************
 *   Returns a property as a *propValue, which is a union of different
 *   data types, with a flag to indicate the type
+*   Can be called with either a metaname, or a metaID.
 *
 *   Call with:
 *       *SWISH
-*       *metaName
 *       *RESULT
+*       *metaName -- String name of meta entry
+*       metaID    -- OR - meta ID number
 *
 *   Returns:
 *       pointer to a propValue structure if found -- caller MUST free
@@ -249,11 +251,10 @@ char *getResultPropAsString(RESULT *result, int ID)
 *
 ********************************************************************/
 
-PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
+PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 {
     PropValue *pv;
     struct metaEntry *meta_entry;
-    int       ID;
 
 
     /* create a propvalue to return to caller */
@@ -261,7 +262,8 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
     pv->datatype = UNDEFINED;
     pv->destroy = 0;
 
-    ID = isAutoProperty ( pname );  // I'd rather that everything had a metaEntry!
+    if ( pname )
+        ID = isAutoProperty ( pname );  // I'd rather that everything had a metaEntry!
             
     if ( ID == AUTOPROP_ID__REC_COUNT )
     {
@@ -286,8 +288,14 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
 
 
     /* meta name exists? */
-    if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname ) ))
-        return NULL;
+    if ( pname )
+    {
+        if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname )) )
+            return NULL;
+    }
+    else
+        if ( !(meta_entry = getMetaIDData(&r->indexf->header, ID)) )
+            return NULL;
 
 
     /* Now return a "real" property */
