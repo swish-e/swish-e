@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Added SwishFuzzy function
+
+SwishFuzzy function (SWISH::API::Fuzzy) lets you stem a word without first searching.
+This might be helpful for playing with queries prior to the search.
+
+
 =item Fixed translate character table
 
 Michael Levy found an error in the table used to translate 8859-1 to
