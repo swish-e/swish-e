@@ -136,7 +136,7 @@ STDMETHODIMP CCSwishCtl::Init(BSTR IndexFiles)
 
 
 
-	const char registrykey[] = "Software\\Kauranga\\ACCIndex\\1.0\\Options";
+	const char registrykey[] = "Software\\SWISH-E Team\\SwishCtl\\Options";
 
 
 
