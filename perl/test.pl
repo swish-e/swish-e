@@ -145,14 +145,14 @@
 
         print "# Number of results = $num_results\n\n";
 
-        unless ( $num_results ) {
-            print "No Results\n";
+    if ( $num_results <= 0 ) {
+        print ($num_results ? SwishErrorString( $num_results ) : 'No Results');
 
-            my $error = SwishError( $handle );
-            print "Error number: $error\n" if $error;
+        my $error = SwishError( $handle );
+        print "\nError number: $error\n" if $error;
 
-            next;
-        }
+        next;
+    }
 
         my %result;
         my @properties = split /\s+/, $search->{props};
