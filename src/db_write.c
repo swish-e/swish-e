@@ -330,7 +330,7 @@ unsigned char *newdata;
 int sz_newdata;
 int tfreq1, tfreq2;
 unsigned char *p1, *p2, *p;
-int curmetaID_1,curmetaID_2,metadata_length_1;
+int curmetaID_1,curmetaID_2,metadata_length_1,num_metaids1;
 unsigned long nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
 int last_filenum, filenum, tmpval, frequency, *posdata;
 #define POSDATA_STACK 2000
@@ -339,7 +339,21 @@ unsigned char r_flag, *w_flag;
 unsigned char *q;
 
     /* First of all, ckeck for size in buffer */
-    maxtotsize = sw->Index->sz_worddata_buffer + sz_olddata;
+    /* Olddata is extra compressed. longs offsets where stored as compressed
+    ** numbers to save space. So, we need to compute how many meta_ID
+    ** are presents to calculate a safe size for olddata with packedlongs */
+    p1=olddata;
+    num_metaids1=0;
+    uncompress2(&p1);   /* Jump tfreq */
+    do
+    {
+        num_metaids1++;
+        uncompress2(&p1);   /* Jump metaid */
+        metadata_length_1 = uncompress2(&p1);
+        p1 += metadata_length_1;
+    } while ((p1 - olddata) != sz_olddata);
+    maxtotsize = sw->Index->sz_worddata_buffer + (sz_olddata + num_metaids1 * sizeof(long));
+
     if(maxtotsize > sw->Index->len_worddata_buffer)
     {
          sw->Index->len_worddata_buffer = maxtotsize + 2000;
@@ -370,7 +384,7 @@ unsigned char *q;
     curmetaID_1 = uncompress2(&p1);
     curmetaID_2 = uncompress2(&p2);
    
-    /* Old data is compressed in a different schema */ 
+    /* Old data is compressed in a different more optimized schema */ 
     metadata_length_1 = uncompress2(&p1); 
     nextposmetaname_1 = p1 - olddata + metadata_length_1;
     
