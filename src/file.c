@@ -120,6 +120,8 @@ int lenpatt;
 char *patt;
 regex_t re;
 int status;
+
+/*$$$ lstrstr is certainly wrong...  check if strcasecmp should be used */
 	
 	patt = (char *) emalloc((lenpatt=MAXSTRLEN) + 1);
 	tmpReplace = sw->replacelist;

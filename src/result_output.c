@@ -618,7 +618,7 @@ void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h,
 	resultHeaderOut (sw,v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
 	resultHeaderOut (sw,v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
 	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
-//$$$ todo: write translatecharstable  (table or string?)
+/*$$$ todo: write translatecharstable  (table or string or no output?) */
 
 	return;
 }

@@ -1,4 +1,6 @@
 /*
+$Id$
+**
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -331,16 +333,6 @@ char *field;
 	return i;
 }
 
-/* Gets the current time in seconds since the epoch.
-*/
-
-long getthetime()
-{
-long thetime;
-time_t tp;
-        thetime = (long) time(&tp);
-        return thetime;
-}
 
 int SwishSeek(SWISH *sw,int pos)
 {

@@ -1,4 +1,6 @@
 /*
+$Id$
+**
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -98,7 +100,7 @@
 ** 2001-03-03 rasc  altavista search, translatechar in headers
 ** 2001-03-13 rasc  definable logical operators via  sw->srch_op.[and|or|nor]
 **                  bugfix in parse_search_string handling...
-** 2001-03-14 rasc  resultHeaderOutput  -X?
+** 2001-03-14 rasc  resultHeaderOutput  -H <n>
 **
 */
 
@@ -1005,7 +1007,7 @@ int lenword;
 			sw->commonerror = 1;
 	}
 
-/*
+/*>>>>
         i=(int)((unsigned char)word[0]);
         found=isindexchar(indexf->header,i);
 	
@@ -1016,7 +1018,8 @@ int lenword;
 		else if (rulenum == OR_RULE)
 			return rp;
 	}
-indexchars stuff removed */
+indexchars stuff removed
+<<<< */
 	
 	if (rulenum == AND_RULE) {
 		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);

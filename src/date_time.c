@@ -24,10 +24,16 @@ $Id$
 
 #include <time.h>
 #include "swish.h"
+#include "mem.h"
 #include "date_time.h"
 
 
 
+
+/*
+  -- TimeHiRes returns a ClockTick value (double)
+  -- in seconds.fractions
+*/
 
 #ifdef HAVE_BSDGETTIMEOFDAY
 #define gettimeofday BSDgettimeofday
@@ -58,5 +64,37 @@ double TimeHiRes(void)
 
 
 
+
+
+
+/*
+  Returns the nicely formatted date.
+  Returns ISO like char
+*/
+
+char *getTheDateISO()
+{
+char *date;
+time_t time;
+
+	date=emalloc(MAXSTRLEN);
+	
+	time = (time_t) getTheTime();
+	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
+	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&time)); 
+	
+	return date;
+}
+
+
+
+/* Gets the current time in seconds since the epoch.
+*/
+
+time_t getTheTime()
+{
+ time_t tp;
+        return time(&tp);
+}
 
 

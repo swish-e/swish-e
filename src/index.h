@@ -1,4 +1,6 @@
 /*
+$Id$
+**
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -25,7 +27,6 @@ DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 void addentry (SWISH *, char*, int, int, int, int );
 void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
 int getfilecount (IndexFILE *);
-char *getthedate(void);
 int countwordstr (SWISH *, char *, int);
 int parsecomment (SWISH *, char *, int, int, int, int *);
 int removestops (SWISH *);
