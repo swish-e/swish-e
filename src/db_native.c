@@ -439,6 +439,7 @@ void DB_Close_Native(void *db)
 
 
    if(DB->fileoffsetarray) efree(DB->fileoffsetarray);
+   if(DB->dbname) efree(DB->dbname);
    efree(DB);
 }
 

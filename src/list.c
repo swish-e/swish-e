@@ -66,8 +66,9 @@ struct swline *newnode;
 
 IndexFILE *addindexfile(IndexFILE *rp, char *line)
 {
-IndexFILE *newnode;
-int i;
+    IndexFILE *newnode;
+    int i;
+
 	newnode = (IndexFILE *) emalloc(sizeof(IndexFILE));
 	newnode->line = (char *) estrdup(line);
 	newnode->filearray = NULL;

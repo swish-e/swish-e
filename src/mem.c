@@ -107,12 +107,16 @@ void Mem_Summary(char *title, int final)
 
 #if MEM_TRACE
 
+size_t memory_trace_counter = 0;
+
 typedef struct
 {
 	char	*File;
 	int		Line;
 //	void	*Ptr;	// only needed for extra special debugging
 	size_t	Size;
+	size_t  Count;
+	
 } TraceBlock;
 
 #endif
@@ -206,6 +210,7 @@ static TraceBlock *AllocTrace(char *file, int line, void *ptr, size_t size)
 	Block->Line = line;
 //	Block->Ptr = ptr;		// only needed for extra special debugging
 	Block->Size = size;
+	Block->Count = memory_trace_counter++;
 
 	return Block;
 }
@@ -370,26 +375,26 @@ void  Mem_Free (void *Address, char *file, int line)
     MemTail *Tail;
 
 	if ( (long)Address & (~(longSize-1)) != 0 )
-		MEM_ERROR(("Address %08X not longword aligned\n", Address));
+		MEM_ERROR(("Address %08X not longword aligned\n", (unsigned int)Address));
 
     if (Address != Header->Start)
-		MEM_ERROR(("Already free: %08X\n", Address)); 
+		MEM_ERROR(("Already free: %08X\n", (unsigned int)Address)); 
 		// Err_Signal (PWRK$_BUGMEMFREE, 1, Address);
 
     if (Header->Guard1 != GUARD)
-		MEM_ERROR(("Head Guard 1 overwritten: %08X\n", &Header->Guard1));
+		MEM_ERROR(("Head Guard 1 overwritten: %08X\n", (unsigned int)&Header->Guard1));
 		// Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
 		//	Header->Guard1, 4, &Header->Guard1);
 
     if (Header->Guard2 != GUARD)
-		MEM_ERROR(("Head Guard 2 overwritten: %08X\n", &Header->Guard2));
+		MEM_ERROR(("Head Guard 2 overwritten: %08X\n", (unsigned int)&Header->Guard2));
 		// Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
 		//	Header->Guard2, 4, &Header->Guard2);
 
     Tail = (MemTail *)((unsigned char *)Address + Header->Size);
 
     if (Tail->Guard != GUARD)
-		MEM_ERROR(("Tail Guard overwritten: %08X\n", &Tail->Guard));
+		MEM_ERROR(("Tail Guard overwritten: %08X\n", (unsigned int)&Tail->Guard));
 		// Err_Signal (PWRK$_BUGMEMGUARD2, 4, Address,
 		//	Tail->Guard, 4, &Tail->Guard);
 
@@ -480,8 +485,8 @@ void Mem_Summary(char *title, int final)
 		printf("\nUnfreed memory: %s\n\n", title);
 		for (i = 0; i < MAX_TRACE; i++)
 			if (TraceData[i].File)
-				printf("Unfreed: %s line %d: Size: %d\n", 
-					TraceData[i].File, TraceData[i].Line, TraceData[i].Size);
+				printf("Unfreed: %s line %d: Size: %d Counter: %d\n", 
+					TraceData[i].File, TraceData[i].Line, TraceData[i].Size, TraceData[i].Count);
 	}
 #endif
 

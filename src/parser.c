@@ -336,12 +336,14 @@ static int parse_chunks( PARSE_DATA *parse_data )
     /* Tell the parser we are done, and free it */
     if ( parse_data->parsing_html )
     {
-        htmlParseChunk( (htmlParserCtxtPtr)ctxt, chars, 0, 1 );
+        if ( !parse_data->abort ) // bug in libxml
+            htmlParseChunk( (htmlParserCtxtPtr)ctxt, chars, 0, 1 );
         htmlFreeParserCtxt( (htmlParserCtxtPtr)ctxt);
     }
     else
     {
-        xmlParseChunk(ctxt, chars, 0, 1);
+        if ( !parse_data->abort ) // bug in libxml
+            xmlParseChunk(ctxt, chars, 0, 1);
         xmlFreeParserCtxt(ctxt);
     }
 
@@ -1578,9 +1580,9 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
 {
     parse_data->abort = abort_code;  /* Flag that the we are all done */
     /* Disable parser */
-//    parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
-//    parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
-//    parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
+    parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
+    parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
+    parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
 
     // if ( abort_code < 0 )
     // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
