@@ -56,7 +56,6 @@ sub show_template {
 
             PAGES           => $results->navigation('pages'),
 
-            PAGE_ARRAY      => $page_array,
             NEXT            => $results->navigation('next'),
             NEXT_COUNT      => $results->navigation('next_count'),
             PREV            => $results->navigation('prev'),
@@ -66,6 +65,8 @@ sub show_template {
             RUN_TIME        => $results->navigation('run_time'),
             SEARCH_TIME     => $results->navigation('search_time'),
         );
+
+        $params{PAGE_ARRAY} = $page_array if $results->navigation('pages');
             
     };
 
