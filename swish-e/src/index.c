@@ -848,7 +848,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
         DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
         /* If exits a previous file with the same real_path remove it */
-        if(old_filenum)
+        if(old_filenum && ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,old_filenum,indexf->DB)))
         {
             IndexFILE   *cur_index = sw->indexlist;
             /* Remove old filenum and continue */
