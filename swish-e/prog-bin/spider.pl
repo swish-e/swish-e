@@ -1,6 +1,7 @@
 #!/usr/local/bin/perl -w
 use strict;
 
+
 # $Id$
 #
 # "prog" document source for spidering web servers
@@ -11,6 +12,9 @@ use strict;
 #
 # Apr 7, 2001 -- added quite a bit of bulk for easier debugging
 
+$HTTP::URI_CLASS = "URI";   # prevent loading default URI::URL
+                            # so we don't store long list of base items
+                            # and eat up memory with >= URI 1.13
 use LWP::RobotUA;
 use HTML::LinkExtor;
 
@@ -408,7 +412,6 @@ sub extract_links {
         return [];
     }
 
-
     $server->{Spidered}++;
 
     my @links;
@@ -450,7 +453,6 @@ sub extract_links {
 
                 my $u = URI->new_abs( $attr{$_},$base );
                 $u->fragment( undef );
-
                 return if $seen{$u}++;  # this won't report duplicates
 
                 unless ( $u->scheme =~ /^http$/ ) {  # no https at this time.
@@ -478,11 +480,9 @@ sub extract_links {
                     next;
                 }
 
-
                 push @links, $u;
                 print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
-
             }
         }
 
@@ -577,7 +577,6 @@ sub default_urls {
             email           => 'swish@domain.invalid',
             delay_min       => .0001,
             link_tags       => [qw/ a frame /],
-
             test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|.png)$/i },
 
             test_response   => sub {
