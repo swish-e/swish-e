@@ -4,7 +4,7 @@
 ; NOTE: this NSI script is designed for NSIS v1.3+
 
 Name "SWISH-E"
-OutFile "InstallSWISH-E.exe"
+OutFile "swish-e-src.exe"
 
 ; Some default compiler settings (uncomment and change at will):
 SetCompress auto ; (can be off or force)
@@ -17,93 +17,49 @@ SetDateSave on ; (can be on to have files restored to their orginal date)
 LicenseText "You may redistribute SWISH-E under the following terms:"
 LicenseData "COPYING"
 
-InstallDir "$PROGRAMFILES\SWISH-E"
-InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
+InstallDir "C:\Projects\SWISH-E"
+InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Developer" ""
 DirShow show ; (make this hide to not let the user change it)
-DirText "Select location where to install SWISH-E:"
+DirText "Select location where to install SWISH-E (Must not contain spaces):"
 
-InstType "Full"
-InstType "Typical"
-InstType "Minimal"
-InstType "Everything"
+InstType "Developer"
 
 ComponentText "Which components do you require?"
 
 Section "Program" ; (default, required section)
-SetOutPath "$INSTDIR"
-File COPYING
-File src\win32\*.exe
-File src\expat\bin\*.dll
-File ..\libxml2\win32\dsp\libxml2\*.dll
-File src\swishspider
-File /r filter-bin
-File /r prog-bin
+
+; Copy swish-e snapshot
+SetOutPath "$INSTDIR\swish-e"
+File /r .\*
+
+; Copy libxml2 used to build binary
+SetOutPath "$INSTDIR\libxml2"
+File /r ..\libxml2\*
 
 ; Rename a bunch of text files so Windows has a clue
 Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"
 Rename "$INSTDIR\swishspider" "$INSTDIR\swishspider.pl"
 Rename "$INSTDIR\filter-bin\README" "$INSTDIR\filter-bin\README.txt"
 Rename "$INSTDIR\prog-bin\README" "$INSTDIR\prog-bin\README.txt"
-
-; Create shorcuts on the Start Menu
-SetOutPath "$SMPROGRAMS\SWISH-E\"
-CreateShortcut "$SMPROGRAMS\SWISH-E\Browse Files.lnk" "$INSTDIR\"
-WriteINIStr "$SMPROGRAMS\SWISH-E\Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
-CreateShortcut "$SMPROGRAMS\SWISH-E\License.lnk" "$INSTDIR\COPYING.txt"
-SectionEnd ; end of default section
-
-Section "Documentation"
-SectionIn 1234
-SetOutPath "$INSTDIR"
-RMDIR /r "$INSTDIR\html"
-File /r html
-
-; Create shorcuts on the Start Menu
-SetOutPath "$SMPROGRAMS\SWISH-E\"
-WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR\html\index.html"
-WriteINIStr "$SMPROGRAMS\SWISH-E\Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR\html\INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
-SectionEnd ; end of section 'Documentation'
-
-Section "PERL Module"
-SectionIn 4
-SetOutPath "$INSTDIR"
-RMDIR /r "$INSTDIR\perl"
-File /r perl
-SectionEnd ; end of section 'Examples'
-
-Section "Examples"
-SectionIn 124
-SetOutPath "$INSTDIR"
-RMDIR /r "$INSTDIR\example"
-RMDIR /r "$INSTDIR\conf"
-File /r example
-File /r conf
-
-; Rename text files so Windows has a clue
 Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
 Rename "$INSTDIR\example\README" "$INSTDIR\example\README.txt"
-SectionEnd ; end of section 'Examples'
 
-;Section "Development"
-;SectionIn 14
-;SetOutPath "$INSTDIR"
-;File src\win32\*.lib
-;File src\expat\
-;File src\*.h
-;File src\win32\*.h
-;SectionEnd ; end of section 'Development'
+; Create shorcuts on the Start Menu
+SetOutPath "$SMPROGRAMS\SWISH-E\Developer"
+CreateShortcut "$SMPROGRAMS\SWISH-E\Developer\SWISH-E Workspace (Press F7 to Compile).lnk" "$INSTDIR\swish-e\src\win32\swishe.dsw"
+CreateShortcut "$SMPROGRAMS\SWISH-E\Developer\Browse Files.lnk" "$INSTDIR\"
+WriteINIStr "$SMPROGRAMS\SWISH-E\Developer\Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
+CreateShortcut "$SMPROGRAMS\SWISH-E\Developer\License.lnk" "$INSTDIR\COPYING.txt"
+WriteINIStr "$SMPROGRAMS\SWISH-E\Developer\Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR\html\index.html"
+WriteINIStr "$SMPROGRAMS\SWISH-E\Developer\Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR\html\INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
 
-;Section "Source"
-;SectionIn 4
-;SetOutPath "$INSTDIR\source"
-;File /r .
-;File /r ../libxml2
-;SectionEnd ; end of section 'Source'
+SectionEnd ; end of default section
+
 
 
 Section "-post" ; (post install section, happens last after any optional sections)
 ; add any commands that need to happen after any optional sections here
-WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "" "$INSTDIR"
+WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\Developer" "" "$INSTDIR"
 WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "DisplayName" "SWISH-E (remove only)"
 WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
 
