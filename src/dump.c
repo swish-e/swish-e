@@ -20,14 +20,14 @@
 **
 */
 
-#include "mem.h"
+
 #include "swish.h"
+#include "mem.h"
 #include "merge.h"
 #include "search.h"
 #include "docprop.h"
 #include "hash.h"
 #include "swstring.h"
-#include "mem.h"
 #include "db.h"
 #include "compress.h"
 #include "index.h"
