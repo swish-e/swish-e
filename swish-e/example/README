@@ -1,0 +1,5 @@
+These are example scripts that can be used with SWISH-E.
+
+swish.cgi  -- example search script that allows displaying results
+              page-by-page.
+swish.tmpl -- HTML template file for use with swish.cgi
