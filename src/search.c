@@ -445,7 +445,7 @@ unsigned char PhraseDelimiterString[2];
 				printf(" %s",indexlist->stopList[k]);
 			printf("\n");
 			printf("# Search Words: %s\n",words);
-			printf("# Parsed Words:");
+			printf("# Parsed Words: ");
 			tmplist2=tmplist; 
 			while(tmplist2)
 			{
