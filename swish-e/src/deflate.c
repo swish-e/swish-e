@@ -490,7 +490,7 @@ char *data;
 void printdeflatedictionary(struct buffer_pool *bp,IndexFILE *indexf)
 {
 int i,n,dict_id,length;
-FILE *fp=indexf->fp;
+FILE *fp = (FILE *) indexf->DB;
 	indexf->offsets[DEFLATEDICTPOS] = ftell(fp);
 	if(!bp->lookup)		/* Empty dictionary */
 	{			
@@ -512,7 +512,7 @@ FILE *fp=indexf->fp;
 void readdeflatepatterns(IndexFILE *indexf)
 {
 int i,n,len;
-FILE *fp=indexf->fp;
+FILE *fp = (FILE *) indexf->DB;
 unsigned char **dict;
 	fseek(fp,0,0);
 	fseek(fp,indexf->offsets[DEFLATEDICTPOS],0);

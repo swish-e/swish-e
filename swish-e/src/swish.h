@@ -419,8 +419,8 @@ typedef struct IndexFILE
     int     is_use_words_flag;
     struct swline *hashuselist[HASHSIZE];
 
-    /* File handle */
-    FILE   *fp;
+    /* DB handle */
+    void   *DB;
 
     /* Header Info */
     INDEXDATAHEADER header;

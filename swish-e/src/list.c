@@ -81,7 +81,7 @@ int i;
 	newnode->filearray_cursize=newnode->filearray_maxsize=0;
 	newnode->fileoffsetarray = NULL;
 	newnode->fileoffsetarray_cursize=newnode->fileoffsetarray_maxsize=0;
-	newnode->fp=NULL;
+	newnode->DB=NULL;
 	newnode->metaEntryArray=NULL;
 	newnode->metaCounter=0;
 

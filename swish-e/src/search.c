@@ -161,7 +161,8 @@ int     SwishAttach(SWISH * sw, int printflag)
 /* 06/00 Jose Ruiz
 ** Added to handle several index file headers */
     IndexFILE *tmplist;
-
+    FILE *fp;
+ 
     indexlist = sw->indexlist;
     sw->TotalWords = 0;
     sw->TotalFiles = 0;
@@ -173,11 +174,12 @@ int     SwishAttach(SWISH * sw, int printflag)
     {
         sw->commonerror = RC_OK;
         sw->bigrank = 0;
-        if ((tmplist->fp = openIndexFILEForRead(tmplist->line)) == NULL)
+        if ((fp = openIndexFILEForRead(tmplist->line)) == NULL)
         {
             return (sw->lasterror = INDEX_FILE_NOT_FOUND);
         }
-        if (!isokindexheader(tmplist->fp))
+        tmplist->DB = (void *)fp;
+        if (!isokindexheader(fp))
         {
             return (sw->lasterror = UNKNOWN_INDEX_FILE_FORMAT);
         }
@@ -248,6 +250,7 @@ int     search_2(SWISH * sw, char *words, int structure)
     struct DB_RESULTS *db_results,
            *db_tmp;
 
+
     /* If not words - do nothing */
     if (!words || !*words)
         return (sw->lasterror = NO_WORDS_IN_SEARCH);
@@ -291,7 +294,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         sw->bigrank = 0;
 
-        if (!indexlist->fp)
+        if (!indexlist->DB)
         {
             efree(tmpwords);
             if (searchwordlist)
@@ -619,7 +622,7 @@ void    readheader(IndexFILE * indexf)
             itmp;
     int     bufferlen;
     char   *buffer;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     buffer = emalloc((bufferlen = MAXSTRLEN) + 1);
     swish_magic = readlong(fp);
@@ -762,10 +765,11 @@ The file pointer is set by readheader */
 void    readoffsets(IndexFILE * indexf)
 {
     int     i;
+    FILE    *fp = (FILE *) indexf->DB;
 
     for (i = 0; i < MAXCHARS; i++)
     {
-        indexf->offsets[i] = readlong(indexf->fp);
+        indexf->offsets[i] = readlong(fp);
     }
 }
 
@@ -775,11 +779,12 @@ The file pointer is set by readoffsets */
 void    readhashoffsets(IndexFILE * indexf)
 {
     int     i;
+    FILE    *fp = (FILE *) indexf->DB;
 
     for (i = 0; i < SEARCHHASHSIZE; i++)
-        indexf->hashoffsets[i] = readlong(indexf->fp);
+        indexf->hashoffsets[i] = readlong(fp);
     /* start of words in index file */
-    indexf->wordpos = ftell(indexf->fp);
+    indexf->wordpos = ftell(fp);
 }
 
 /* Reads the stopwords in the index file.
@@ -790,7 +795,7 @@ void    readstopwords(IndexFILE * indexf)
     int     len;
     int     lenword = 0;
     char   *word = NULL;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
     fseek(fp, indexf->offsets[STOPWORDPOS], 0);
@@ -819,7 +824,7 @@ void    readbuzzwords(IndexFILE * indexf)
     int     len;
     int     lenword = 0;
     char   *word = NULL;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
     fseek(fp, indexf->offsets[BUZZWORDPOS], 0);
@@ -874,7 +879,7 @@ void    readMetaNames(IndexFILE * indexf)
             metaID;
     char   *word;
     long    sort_offset;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     wordlen = MAXWORDLEN;
     word = (char *) emalloc(MAXWORDLEN + 1);
@@ -912,7 +917,7 @@ void    readfileoffsets(IndexFILE * indexf)
 {
     long    pos,
             totwords;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     indexf->filearray_maxsize = indexf->fileoffsetarray_maxsize = indexf->header.totalfiles;
     indexf->filearray = (struct file **) emalloc(indexf->filearray_maxsize * sizeof(struct file *));
@@ -942,7 +947,7 @@ void    readfileoffsets(IndexFILE * indexf)
 /* Read the lookuptables for structure, frequency */
 void    readlocationlookuptables(IndexFILE * indexf)
 {
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
     int     i,
             n,
             tmp;
@@ -984,7 +989,7 @@ void    readlocationlookuptables(IndexFILE * indexf)
 /* Read the lookuptable for paths/urls */
 void    readpathlookuptable(IndexFILE * indexf)
 {
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
     int     i,
             n,
             len;
@@ -1018,7 +1023,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
     int     lenword;
     RESULT *rp,
            *newrp;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     /*
      * The andLevel is used to help keep the ranking function honest
@@ -1174,20 +1179,6 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, FILE * fp, i
             sw->commonerror = 1;
     }
 
-/*>>>>
-        i=(int)((unsigned char)word[0]);
-        found=isindexchar(indexf->header,i);
-	
-	if (!found) 
-	{
-		if (rulenum == AND_RULE || rulenum == PHRASE_RULE)
-			return NULL;
-		else if (rulenum == OR_RULE)
-			return rp;
-	}
-indexchars stuff removed
-<<<< */
-
     if (rulenum == AND_RULE)
     {
         newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
@@ -1257,7 +1248,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
            *r;
     struct file *fi = NULL;
     int     tfrequency = 0;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     x = j = filenum = structure = frequency = tries = len = curmetaID = index_structure = index_structfreq = 0;
     position = NULL;
@@ -1520,7 +1511,7 @@ char   *getfilewords(SWISH * sw, char c, IndexFILE * indexf)
     char   *buffer;
     int     bufferpos,
             bufferlen;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     if (!c)
         return "";
