@@ -10,6 +10,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Remove &quot; entity from -p output
+
+The -p option to print properties was escaping double quotes in properties 
+with the &amp;quot; entity.  -x does not do that, so inconsistent.  -p no longer
+converts double quotes.  The user should pick a good delimiter with -d or better use
+the -x method for generating output.
+
 =item XML parser and Windows
 
 The XML parser was being passed the incorrect buffer length when used on Windows
