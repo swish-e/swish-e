@@ -64,9 +64,11 @@ char *x;
 char *real_path;
 long fsize;
 time_t mtime;
+int  index_no_content;
 
     mtime = 0;
     fsize = 0;
+    index_no_content = 0;
     real_path = NULL;
 
     fp = open_external_program( sw, prog );
@@ -75,9 +77,11 @@ time_t mtime;
 
     /* loop on headers */
     while (fgets(ln, MAXSTRLEN, fp) != NULL) {
+
         line = str_skip_ws(ln);      /* skip leading white space */
         x = strrchr( line, '\n' );    /* replace \n with null -- better to remove trailing white space */
         if ( x ) x[0] = '\0';
+
 
         if ( strlen( line ) == 0 ) {  /* blank line indicates body */
 
@@ -91,6 +95,7 @@ time_t mtime;
                 fprop->fp = fp;         /* stream to read from */
                 fprop->fsize = fsize;   /* how much to read */
                 fprop->mtime = mtime;
+                fprop->index_no_content = index_no_content;
 
                 fprop->filterprog = NULL; /* Filter programs will not work, but not really needed */
 
@@ -119,6 +124,11 @@ time_t mtime;
                 x = strrchr(line,':');
                 if ( !x ) progerr("Failed to parse Last-Mtime header");
                 mtime = strtol( ++x, NULL, 10 );
+                continue;
+            }
+            
+            if ( strncasecmp( line, "No-Contents:", 12 ) == 0) {
+                index_no_content++;
                 continue;
             }
             
