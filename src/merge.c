@@ -75,7 +75,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  frequency,
                  loc_count = 0,
                  word_count = 0;
-    long         wordID;
+    sw_off_t     wordID;
     int          metadata_length = 0;
     unsigned char   *worddata;
     unsigned char   *s, *start;
@@ -930,7 +930,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
     int         word_count = 0;
     char        word[2];
     char       *resultword;
-    long        wordID;
+    sw_off_t    wordID;
 
     DB_InitReadWords(sw, indexf->DB);
 

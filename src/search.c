@@ -1447,7 +1447,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             index_structfreq,
             tmpval;
     RESULT_LIST *l_rp, *l_rp2;
-    long    wordID;
+    sw_off_t    wordID;
     int     metadata_length;
     char   *p;
     int     tfrequency = 0;

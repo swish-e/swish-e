@@ -156,7 +156,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     char   *resultword;
     unsigned char   *worddata, *s, *start, flag;
     int     sz_worddata, saved_bytes;
-    long    wordID;
+    sw_off_t    wordID;
 
 
     
