@@ -332,6 +332,8 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
         SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
 
     efree(title);
+    if(summary)
+        efree(summary);
     return ftotalwords;
 }
 
