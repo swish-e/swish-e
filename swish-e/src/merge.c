@@ -74,6 +74,13 @@ struct mergeindexfileinfo
     char    path[0];
 };
 
+typedef struct {
+    struct metaEntry *filename;
+    struct metaEntry *size;
+    struct metaEntry *mtime;
+    struct metaEntry *start;
+} METAS;
+
 struct mergeindexfileinfo *indexfilehashlist[BIGHASHSIZE];
 
 
@@ -170,6 +177,9 @@ static int get_numeric_prop(struct docProperties *docProperties, struct metaEntr
     unsigned long i;
     propEntry *p;
 
+    if ( !meta_entry )
+        return 0;
+
     if ((meta_entry->metaID < docProperties->n) && (p = docProperties->propEntry[meta_entry->metaID]))
     {
         i = *(unsigned long *) p->propValue;
@@ -182,6 +192,9 @@ static int get_numeric_prop(struct docProperties *docProperties, struct metaEntr
 static char *get_string_prop(struct docProperties *docProperties, struct metaEntry *meta_entry)
 {
     propEntry *p;
+
+    if ( !meta_entry )
+        return NULL;
 
     if ((meta_entry->metaID < docProperties->n) && (p = docProperties->propEntry[meta_entry->metaID]))
         return DecodeDocProperty( meta_entry, p );
@@ -894,6 +907,23 @@ static int merge_words(
     return skipwords;
 }
 
+/***********************************************************************
+*  Cache the meta name lookups, so only are done once per index
+*
+*
+************************************************************************/
+
+static void init_metas( METAS *metas, INDEXDATAHEADER *header )
+{
+    
+    /* Get path from property list */
+    metas->filename = getPropNameByName( header, AUTOPROPERTY_DOCPATH );
+    metas->start    = getPropNameByName( header, AUTOPROPERTY_STARTPOS );
+    metas->size     = getPropNameByName( header, AUTOPROPERTY_DOCSIZE );
+    metas->mtime    = getPropNameByName( header, AUTOPROPERTY_LASTMODIFIED );
+}
+
+
 
 /***********************************************************************
 *  adds a file and it's associated properties to the output index
@@ -901,7 +931,7 @@ static int merge_words(
 *
 ************************************************************************/
 
-static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps, int *totalfiles, int ftotalwords,
+static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docProperties **dProps, int *totalfiles, int ftotalwords,
                              struct metaMergeEntry *metaFile, IndexFILE *indexf)
 {
     int     hashval;
@@ -910,37 +940,24 @@ static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps,
     int     start,
             size;
     time_t  mtime;
-    struct metaEntry *m;
-    struct metaEntry *filenameMeta;
     struct docProperties *docProperties = *dProps;
     char    *filename;
     
 
 
-    /* Get path from property list */
-    filename = (filenameMeta = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCPATH ))
-            ? get_string_prop(docProperties, filenameMeta )
-            : NULL;
+    /* Lookup the properties */
+    filename = get_string_prop(docProperties, metas->filename );
+    start    = get_numeric_prop(docProperties, metas->start );
+    size     = get_numeric_prop(docProperties, metas->size );
+    mtime    = get_numeric_prop(docProperties, metas->mtime );
 
 
-    /* $$$ These property name lookups should be cached */
-    /* but I'm not clear why they are needed at all */
-    start = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_STARTPOS ))
-            ? get_numeric_prop(docProperties, m )
-            : 0;
-
-    size = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCSIZE ))
-            ? get_numeric_prop(docProperties, m )
-            : 0;
-
-    mtime = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_LASTMODIFIED ))
-            ? get_numeric_prop(docProperties, m )
-            : 0;
-
+    /* Do a hash lookup to find the file */
     ip = lookupindexfilepath(filename, start, size);
 
     if (ip)  /* If existing pathname */
     {
+
         /* Use mtime to map to the newest entry */
         *totalfiles = *totalfiles - 1;
 
@@ -956,13 +973,14 @@ static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps,
             freeDocProperties(docProperties);
             *dProps = NULL;
 
-            /* Now save ip for later (there's no filename to lookup the ip) */
-            sw->indexlist->filearray[ip->filenum - 1]->docProperties = (struct  docProperties *)ip;
+            sw->indexlist->filearray[ip->filenum - 1]->docProperties = NULL;
 #else
-            /* Need a way to lookup the filename, so save the metaEntry for filename */
-            sw->indexlist->filearray[ip->filenum - 1]->currentSortProp = filenameMeta;
             sw->indexlist->filearray[ip->filenum - 1]->docProperties = docProperties;
 #endif
+
+            /* Now save ip for later (so we can load the properties) */
+            sw->indexlist->filearray[ip->filenum - 1]->currentSortProp = (struct metaEntry *)ip;
+
 
             ip->mtime = mtime;
             ip->indexf = indexf;
@@ -973,6 +991,7 @@ static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps,
         else  /* Flag that this one should not be merged */
         {
             remap(num, 0);   /* Remap to 0 - word's data of this filenum will be removed later */
+
 #ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
@@ -984,7 +1003,9 @@ static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps,
         }
     }
 
+
     /* New path name */
+
     else
     {
         sw->Index->filenum++;
@@ -1016,15 +1037,15 @@ static void addindexfilelist(SWISH * sw, int num, struct docProperties **dProps,
         /* Save memory */
         freeDocProperties(docProperties);
         *dProps =NULL;
-
-        /* Now save ip for later (there's no filename to lookup the ip) */
-        thisFileEntry->docProperties = (struct docProperties *)ip;
+        thisFileEntry->docProperties = NULL;
 #else
-        /* Need a way to lookup the filename, so save the metaEntry for filename */
-        thisFileEntry->currentSortProp = filenameMeta;
-
         thisFileEntry->docProperties = docProperties;
 #endif
+
+        /* Now save ip for later (so we can load the properties) */
+        sw->indexlist->filearray[ip->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+
+
     }
     
     if (sw->Index->swap_filedata)
@@ -1064,22 +1085,21 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
            *indexf2,
            *indexf;
     struct file *fi;
+    METAS   metas;
 
     if (verbose)
         printf("Opening and reading file 1 header...\n");
 
     if (!(sw1 = SwishOpen(file1)))
-    {
         progerr("Couldn't read the index file \"%s\".", file1);
-    }
 
     if (verbose)
         printf("Opening and reading file 2 header...\n");
 
     if (!(sw2 = SwishOpen(file2)))
-    {
         progerr("Couldn't read the index file \"%s\".", file2);
-    }
+
+
 
     indexf1 = sw1->indexlist;
     indexf2 = sw2->indexlist;
@@ -1143,6 +1163,10 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     fflush(stdout);
 
 
+    /* Cache metaname lookups */
+    init_metas( &metas, &sw1->indexlist->header );
+
+
     for (i = 1; i <= indexfilenum1; i++)
     {
         fi = readFileEntry(sw1, indexf1, i);
@@ -1151,7 +1175,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
 #endif
         
-        addindexfilelist(sw, i, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
+        addindexfilelist(sw, i, &metas, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
 
         freefileinfo(fi);
         indexf1->filearray[i-1] = NULL;
@@ -1161,6 +1185,12 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     if (verbose)
         printf("\nReading file 2 info ...");
 
+
+
+    /* Cache metaname lookups for index2 */
+    init_metas( &metas, &sw2->indexlist->header );
+
+
     for (i = 1; i <= indexfilenum2; i++)
     {
         fi = readFileEntry(sw2, indexf2, i);
@@ -1168,7 +1198,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 #ifdef PROPFILE
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
 #endif
-        addindexfilelist(sw, i + indexfilenum1, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
+        addindexfilelist(sw, i + indexfilenum1, &metas, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
 
         freefileinfo(fi);
         indexf2->filearray[i-1] = NULL;
@@ -1184,24 +1214,8 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     {
         struct mergeindexfileinfo *ip;
 
+        ip = (struct mergeindexfileinfo *)indexf->filearray[i - 1]->currentSortProp;
 
-#ifndef PROPFILE
-        /* Lookup the file name in the attached document properties */
-        if ( indexf->filearray[i - 1]->currentSortProp )
-        {
-            char  *filename;
-            filename = get_string_prop(indexf->filearray[i - 1]->docProperties, indexf->filearray[i - 1]->currentSortProp );
-            ip = lookupindexfilepath2(filename, i);
-            efree( filename );
-        }
-        else
-            ip = NULL;
-
-#else
-        /* The *mergeindexfileinfo was saved in docProperties in addindexfilelist() */
-        ip = (struct mergeindexfileinfo *) indexf->filearray[i - 1]->docProperties;
-        
-#endif
         if(!ip)
             progerr("Internal merge error. File not found while merge");
 
@@ -1211,12 +1225,14 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 // If not PROPFILE then docProperites are already attached to the file entry, right?
 
 
+
 #ifdef PROPFILE
         /* Attach properties from the old index file, and write them back to the new index file */
+
         if(ip->indexf == indexf1)
             indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, getold(i) );
         else
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, getold(i) - indexfilenum1);
+            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, getold(i) - indexfilenum1 );
 
         /* write properties to disk, and release memory */
         WritePropertiesToDisk( sw , i );
