@@ -589,7 +589,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
         
-    if ( !LoadSortedProps( sw, cur_index, path_meta ) )
+    if ( !LoadSortedProps( cur_index, path_meta ) )
     {
         FileRec fi;
         memset( &fi, 0, sizeof( FileRec ));
