@@ -765,7 +765,7 @@ void    fs_indexpath(SWISH * sw, char *path)
         indexafile(sw, path);
     }
     else
-        progwarn("Invalid path '%s'\n", path);
+        progwarnno("Invalid path '%s': ", path);
 }
 
 
