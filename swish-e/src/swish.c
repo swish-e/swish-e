@@ -194,7 +194,6 @@ int     main(int argc, char **argv)
 
     SwishClose(sw);
 
-
     Mem_Summary("At end of program", 1);
 
     exit(0);
@@ -1085,7 +1084,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     totalfiles = getfilecount(sw->indexlist);
 
     stopwords = 0;
-    stopwords = removestops(sw);
+    stopwords = getNumberOfIgnoreLimitWords(sw);
 
 
     if (sw->verbose)

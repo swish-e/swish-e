@@ -26,6 +26,12 @@ struct dev_ino
     struct dev_ino *next;
 };
 
+struct IgnoreLimitPositions
+{
+        int     n;              /* Number of entries per file */
+        int    *pos;            /* Store metaID1,position1, metaID2,position2 ..... */
+};
+
 
 /*
    -- module data
@@ -83,9 +89,13 @@ struct MOD_Index
     int     (*swap_putc)(int , FILE *);
     int     (*swap_getc)(FILE *);
 
-    /* removestops limit values */
+    /* IgnoreLimit option values */
     int		plimit;
     int		flimit;
+    /* Number of words from IgnoreLimit */
+    int     nIgnoreLimitWords;
+    /* Positions from stopwords from IgnoreLimit */
+    struct  IgnoreLimitPositions **IgnoreLimitPositionsArray;
 
     /* Index in blocks of chunk_size files */
     int chunk_size;
@@ -115,7 +125,10 @@ void addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file 
 
 int getfilecount (IndexFILE *);
 int countwordstr (SWISH *, char *, int);
-int removestops (SWISH *);
+
+int getNumberOfIgnoreLimitWords (SWISH *);
+void getPositionsFromIgnoreLimitWords(SWISH * sw);
+
 int getrank(SWISH *, int, int, int, int, int);
 void write_file_list(SWISH *, IndexFILE *);
 void write_sorted_index(SWISH *, IndexFILE *);
