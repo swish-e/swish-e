@@ -31,9 +31,7 @@
 #include "index.h"
 #include "search.h"
 #include "result_output.h"
-#ifdef PROPFILE
 #include "metanames.h"
-#endif
 
 void dump_memory_file_list( SWISH *sw, IndexFILE *indexf ) 
 {
