@@ -273,7 +273,7 @@ int     isoktitle(SWISH * sw, char *title)
 {
     struct MOD_FS *fs = sw->FS;
 
-    return !match_regex_list(title, fs->filerules.title);
+    return !match_regex_list(title, fs->filerules.title, "FileRules title");
 }
 
 
