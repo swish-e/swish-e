@@ -158,9 +158,13 @@ sub highlight_text {
 
                 my $cur_word = $words[ ($word_pos + $end_pos) * 2 ];
                 $cur_word =~ /$extract_regexp/ or
-                    die "Why didn't '$cur_word' =~ /$extract_regexp/? word_pos:$word_pos end_pos:$end_pos total:" . scalar @words
-                    . "\n"
-                    . join( "\n", map { "$_ '$words[$_]'" } 0..$#words );
+                    die "Why didn't '" . (defined $cur_word ? $cur_word : '*undef') . "' =~ /$extract_regexp/? word_pos:$word_pos end_pos:$end_pos total:" . scalar @words
+                    . "\n-pharse words-\n"
+                    . join( "\n", map { "$_ '$phrase->[$_]'" } 0..@$phrase -1 )
+                    . "\n-Words-\n"
+                    . join( "\n", map { "$_ '$words[$_]'" } 0..$#words )
+                    . "\n";
+
 
 
                 # Strip ignorefirst and ignorelast
@@ -171,7 +175,10 @@ sub highlight_text {
                 if ( $end_pos && exists $self->{stopwords}{$check_word} ) {
                     $end_pos++;
                     print STDERR " Found stopword '$check_word' in the middle of phrase - * MATCH *\n" if DEBUG_HIGHLIGHT;
-                    redo;
+                    redo if  ( $word_pos + $end_pos ) * 2 < @words;  # go on to check this match word with the next word.
+
+                    # No more words to match with, so go on to next pharse.
+                    next PHRASE;
                 }
 
                 if ( $stemmer_function ) {
