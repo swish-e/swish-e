@@ -244,14 +244,17 @@ int     sortresults(SWISH * sw, int structure)
         db_results->sortresultlist = NULL;
         db_results->currentresult = NULL;
         rp = db_results->resultlist;
+
         /* Asign comparison routine to be used by qsort */
         compResults = compResultsBySortedProps;
+
         /* As we are sorting a unique index file, we can use the presorted data in the index file */
         for (tmp = rp; tmp; tmp = tmp->next)
         {
             /* Load the presorted data */
             tmp->iPropSort = getLookupResultSortedProperties(tmp);
         }
+
         /* Compute number of results */
         for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
         {
@@ -264,13 +267,13 @@ int     sortresults(SWISH * sw, int structure)
         {
             /* Compute array size */
             ptmp = (RESULT **) emalloc(i * sizeof(RESULT *));
-            /* Build an array with the elements to compare
-               and pointers to data */
-            for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next, j++)
+
+            /* Build an array with the elements to compare and pointers to data */
+            for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
             {
                 if (rtmp->structure & structure)
                 {
-                    ptmp[j] = rtmp;
+                    ptmp[j++] = rtmp;
                 }
             }
 
