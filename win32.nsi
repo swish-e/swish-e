@@ -23,9 +23,6 @@ DirShow show ; (make this hide to not let the user change it)
 DirText "Select location where to install SWISH-E:"
 
 InstType "Full"
-InstType "Typical"
-InstType "Minimal"
-InstType "Everything"
 
 ComponentText "Which components do you require?"
 
@@ -53,7 +50,7 @@ CreateShortcut "$SMPROGRAMS\SWISH-E\License.lnk" "$INSTDIR\COPYING.txt"
 SectionEnd ; end of default section
 
 Section "Documentation"
-SectionIn 1234
+SectionIn 1
 SetOutPath "$INSTDIR"
 RMDIR /r "$INSTDIR\html"
 File /r html
@@ -64,15 +61,8 @@ WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation.url" "InternetShortcut" "URL" "fi
 WriteINIStr "$SMPROGRAMS\SWISH-E\Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR\html\INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
 SectionEnd ; end of section 'Documentation'
 
-Section "PERL Module"
-SectionIn 4
-SetOutPath "$INSTDIR"
-RMDIR /r "$INSTDIR\perl"
-File /r perl
-SectionEnd ; end of section 'Examples'
-
 Section "Examples"
-SectionIn 124
+SectionIn 1
 SetOutPath "$INSTDIR"
 RMDIR /r "$INSTDIR\example"
 RMDIR /r "$INSTDIR\conf"
@@ -83,23 +73,6 @@ File /r conf
 Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
 Rename "$INSTDIR\example\README" "$INSTDIR\example\README.txt"
 SectionEnd ; end of section 'Examples'
-
-;Section "Development"
-;SectionIn 14
-;SetOutPath "$INSTDIR"
-;File src\win32\*.lib
-;File src\expat\
-;File src\*.h
-;File src\win32\*.h
-;SectionEnd ; end of section 'Development'
-
-;Section "Source"
-;SectionIn 4
-;SetOutPath "$INSTDIR\source"
-;File /r .
-;File /r ../libxml2
-;SectionEnd ; end of section 'Source'
-
 
 Section "-post" ; (post install section, happens last after any optional sections)
 ; add any commands that need to happen after any optional sections here
