@@ -778,7 +778,7 @@ void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEnt
 				{
 					if (tmpDocProperties->n <= metaFileTemp->newMetaID )
 					{
-						tmpDocProperties = realloc(tmpDocProperties,sizeof(struct docProperties) + (metaFileTemp->newMetaID + 1) * sizeof(propEntry *));
+						tmpDocProperties = erealloc(tmpDocProperties,sizeof(struct docProperties) + (metaFileTemp->newMetaID + 1) * sizeof(propEntry *));
 						for(i=tmpDocProperties->n; i<= metaFileTemp->newMetaID; i++)
 							tmpDocProperties->propEntry[i] = NULL;
 						tmpDocProperties->n = metaFileTemp->newMetaID + 1;
