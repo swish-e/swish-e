@@ -42,7 +42,7 @@ $Id$
 #define MEM_DEBUG 0
 
 /* MEM_TRACE checks for unfreed memory, and where it is allocated */
-#define MEM_TRACE 1
+#define MEM_TRACE 0
 
 /* MEM_STATISTICS gives memory statistics (bytes allocated, calls, etc */
 #define MEM_STATISTICS 0
