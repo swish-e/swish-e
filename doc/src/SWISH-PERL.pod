@@ -1,6 +1,6 @@
 =head1 NAME
 
-Perl interface to the swish-e library
+Perl Interface to the SWISH-E Library
 
 =head1 SYNOPSIS
 
@@ -83,7 +83,7 @@ the SWISHE archive library.  This is done while in the top-level directory of th
 
 B<Jose: What's the best way to install if the user doesn't have root access? Set LD_LIBRARY_PATH??>
 
-This will install the archive library (libswish-e.a) into /usr/local/lib by default.
+This will install the archive library (F<libswish-e.a>) into /usr/local/lib by default.
 
 Next, build the perl module.
 
@@ -147,9 +147,11 @@ The values passed are:
 =over 2
 
 =item *
+
 $handle is the handle returned by SwishOpen
 
 =item *
+
 $search is the search string.
 
 Examples:
@@ -157,13 +159,15 @@ Examples:
     my $query = '(title="this phrase") or (description=(these words))';
 
 =item *
+
 $structure is an integer value only applicable for an html search.  It defines
 where in an html search to look.
 It can be IN_FILE, IN_TITLE, IN_HEAD, IN_BODY, IN_COMMENTS, IN_HEADER or IN_EMPHASIZED or
 or'ed combinations of them (e.g.: IN_HEAD | IN_BODY).
-Use IN_FILE (1) if your documents are not html. The numerical values for IN_FILE, IN_HEAD are in src/swish.h
+Use IN_FILE (a value of 1) if your documents are not html. The numerical values for IN_FILE, IN_HEAD are in src/swish.h
 
 =item *
+
 $properties is a string with the properties to be returned separated by spaces.  Properties must
 be defined during indexing.  See B<README-SWISHE> for more information.
 
@@ -171,6 +175,7 @@ Example:
     my $properties = 'subject description';
 
 =item *
+
 $sortspec is the sort spec if different from relevance.
 
 Examples:
@@ -193,21 +198,27 @@ This function returns the next hit of a search. Must be executed after SwishSear
 =over 2
 
 =item *
+
 $rank - An integer from 1 to 1000 indicating the relevance of the result
 
 =item *
+
 $filename - The source filename
 
 =item *
+
 $title - The title as indexed (as found in the HTML E<lt>TITLEE<gt> section)
 
 =item *
+
 $start * - The starting position in the file of the record
 
 =item *
+
 $size - The length of the source document
 
 =item *
+
 @properties - The list of properties returned for this result.
 
 =back
@@ -318,3 +329,4 @@ $Revision$
 http://sunsite.berkeley.edu/SWISH-E/
 
 SWISH, SWISH::Library at your local CPAN site.
+
