@@ -55,7 +55,6 @@ doc/src/images/swish2.gif
 doc/src/images/swish2b.gif
 doc/src/images/swishbanner1.gif
 doc/src/search.cgi
-doc/src/search.cgi.old
 doc/src/style.css
 doc/swish.conf
 doc/tmpl/index.tmpl
@@ -87,7 +86,6 @@ html/index_long.html
 html/style.css
 install-sh
 perl/Makefile.PL
-perl/Makefile.old
 perl/SWISHE.pm
 perl/SWISHE.xs
 perl/test.pl
