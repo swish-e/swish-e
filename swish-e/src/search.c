@@ -102,6 +102,8 @@ $Id$
 **                  bugfix in parse_search_string handling...
 ** 2001-03-14 rasc  resultHeaderOutput  -H <n>
 **
+** 2001-05-23 moseley - replace parse_search_string with new parser
+**
 */
 
 #include "swish.h"
@@ -126,7 +128,7 @@ $Id$
 #include "result_output.h"
 #include "search_alt.h"
 #include "db.h"
-
+#include "swish_words.h"
 
 
 
@@ -352,6 +354,7 @@ int     search(SWISH * sw, char *words, int structure)
 
 
 
+
 int     search_2(SWISH * sw, char *words, int structure)
 {
     int     j,
@@ -403,7 +406,10 @@ int     search_2(SWISH * sw, char *words, int structure)
             freeswline(searchwordlist);
             searchwordlist = NULL;
         }
-        if (!(searchwordlist = parse_search_string(sw, tmpwords, indexlist->header)))
+
+
+        /* tokenize the query into swish words */
+        if (!(searchwordlist = tokenize_query_string(sw, tmpwords, indexlist->header)))
         {
             indexlist = indexlist->next;
             efree(tmpwords);
@@ -436,14 +442,9 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         resultHeaderOut(sw, 2, "#\n# Index File: %s\n", indexlist->line);
 
-        searchwordlist = (struct swline *) translatechars_words_in_query(sw, indexlist, searchwordlist);
-#ifdef IGNORE_STOPWORDS_IN_QUERY
         searchwordlist = (struct swline *) ignore_words_in_query(sw, indexlist, searchwordlist, PhraseDelimiter);
-#endif /* IGNORE_STOPWORDS_IN_QUERY */
-        if (indexlist->header.applyStemmingRules)
-            searchwordlist = stem_words_in_query(sw, indexlist, searchwordlist);
-        if (indexlist->header.applySoundexRules)
-            searchwordlist = soundex_words_in_query(sw, indexlist, searchwordlist);
+
+
         /* Echo index file, fixed search, stopwords */
 
         /* Result Header Output  (2001-03-14 rasc,  rewritten) */
@@ -973,9 +974,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
            *tmp;
     long    wordID,
             nextposmetaname;
-    char   *p,
-           *q,
-           *r;
+    char   *p;
     int     tfrequency = 0;
     unsigned char   *s, *buffer; 
     char   *resultword;
@@ -1010,10 +1009,12 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     }
 
     /* Remove escapes */
+/* ------ removed may 23, 2001 moseley -- done in new search parser
     for (q = r = word; *r; r++)
         if (*r != '\\')
             *q++ = *r;
     *q = '\0';
+*/    
 
     DB_InitReadWords(sw, indexf->DB);
     if (!p)    /* No wildcard -> Direct hash search */
@@ -1067,10 +1068,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         if (found)
         {
             do
-            {
-				int rank;
-
-				/* Read on all items */
+            {                   /* Read on all items */
                 uncompress2(filenum, s);
                 uncompress2(index_structfreq, s);
                 frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
@@ -1083,11 +1081,10 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                     uncompress2(x, s);
                     position[j] = x;
                 }
-				rank = getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
-                                                       indexf->header.ignoreTotalWordCountWhenRanking);
-				/* printf("Word: %s, file: %d, rank: %d\n", word, filenum, rank); */
                 rp =
-                    (RESULT *) addtoresultlist(rp, filenum, rank, structure, frequency, position, indexf, sw);
+                    (RESULT *) addtoresultlist(rp, filenum,
+                                               getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
+                                                       indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
             }
             while ((s - buffer) != nextposmetaname);
         }
@@ -2001,254 +1998,15 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
 
 
 
-struct swline *stem_words_in_query(SWISH * sw, IndexFILE * indexf, struct swline *searchwordlist)
-{
-    struct swline *tmplist;
-    int     len,
-            lenword;
-    char   *word,
-           *tmp;
-
-    tmplist = searchwordlist;
-    while (tmplist != NULL)
-    {
-        if (!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next))
-        {
-            lenword = strlen(tmplist->line) + 50;
-            word = emalloc(lenword + 1);
-            strcpy(word, tmplist->line);
-            len = strlen(word) - 1;
-            /* apply stemming algorithm to the search term */
-            len = strlen(word) - 1;
-            if (len && word[len] == '*')
-                word[len] = '\0';
-            else
-                len = 0;        /* No star */
-            Stem(&word, &lenword);
-            if (len)
-            {
-                tmp = emalloc(strlen(word) + 2);
-                strcpy(tmp, word);
-                strcat(tmp, "*");
-                efree(word);
-                word = tmp;
-            }
-            efree(tmplist->line);
-            tmplist->line = word;
-        }
-        tmplist = tmplist->next;
-    }
-    return searchwordlist;
-}
-
-struct swline *soundex_words_in_query(SWISH * sw, IndexFILE * indexf, struct swline *searchwordlist)
-{
-    struct swline *tmplist;
-    int     len,
-            lenword;
-    char   *word;
-
-    tmplist = searchwordlist;
-    while (tmplist != NULL)
-    {
-        if (!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next))
-        {
-            /* apply soundex algorithm to the search term */
-            /* Need to fix word length ? */
-            lenword = strlen(tmplist->line) + 50;
-            word = emalloc(lenword + 1);
-            strcpy(word, tmplist->line);
-            len = strlen(word) - 1;
-            if (len && word[len] == '*')
-                word[len] = '\0';
-            else
-                len = 0;        /* No star */
-            soundex(word);      /* Need to fix word length ? */
-            if (len && (strlen(word) - 1) < MAXWORDLEN)
-                strcat(word, "*");
-            efree(tmplist->line);
-            tmplist->line = word;
-        }
-        tmplist = tmplist->next;
-    }
-    return searchwordlist;
-}
-
-
-/*
-  -- do TranslateCharacters on SearchWords
-  -- (to match translation of search words to indexed words)
-  -- Words in searchwordlist itself are changed!
-  -- 2001-02-22 rasc
-*/
-
-struct swline *translatechars_words_in_query(SWISH * sw, IndexFILE * indexf, struct swline *searchwordlist)
-{
-    struct swline *tmplist;
-    int    *tr_lookup;
-
-
-    tmplist = searchwordlist;
-    tr_lookup = indexf->header.translatecharslookuptable;
-
-    while (tmplist != NULL)
-    {
-        if (!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next))
-        {
-            TranslateChars(tr_lookup, tmplist->line);
-        }
-        tmplist = tmplist->next;
-    }
-    return searchwordlist;
-}
-
-
-
-struct swline *parse_search_string(SWISH * sw, char *words, INDEXDATAHEADER header)
-{
-    struct swline *searchwordlist = NULL,
-           *temp = NULL;
-    int     i,
-            j;
-    unsigned char *word,
-            c,
-            tmpstr[2];
-    struct MOD_Search *srch = sw->Search;
-    unsigned char PhraseDelimiter;
-    unsigned char PhraseDelimiterString[2];
-
-    PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
-    PhraseDelimiterString[0] = (unsigned char) PhraseDelimiter;
-    PhraseDelimiterString[1] = '\0';
-
-    word = (char *) emalloc(strlen(words) + 1); /* Jose Ruiz - Avoid possible buffer overrun */
-    for (i = j = 0; words[i] != '\0' && words[i] != '\n'; i++)
-    {
-        /* 2000/06 Jose ruiz
-           ** Following line modified to extract words according
-           ** to wordchars as suggested by Bill Moseley
-         */
-        /* 2001/04 Jose Ruiz
-           ** Added '_' . Quick fix to allow this character be present in metanames
-         */
-        /* 2001/04  Jose Ruiz
-           ** Rewritten to allow escaping characteres: \( \) \* \= \\
-         */
-        c = (unsigned char) words[i];
-        switch (c)
-        {
-        case '*':              /* Special case: WildCard */
-        case '_':              /* Special case: To allow '_' in metanames - Quick FIX. Must be rewritten */
-            word[j++] = c;
-            break;
-        case '(':
-        case ')':
-        case '=':              /* In the future we can also add <, > ... */
-            if (j)
-            {
-                word[j] = '\0';
-                /* Convert chars ignored in words to spaces  */
-                stripIgnoreLastChars(&header, word);
-                stripIgnoreFirstChars(&header, word);
-                if (strlen(word))
-                {
-                    searchwordlist = (struct swline *) addswline(searchwordlist, word);
-                }
-                j = 0;
-            }
-            /* Build a string with teh char */
-            tmpstr[0] = c;
-            tmpstr[1] = '\0';
-            searchwordlist = (struct swline *) addswline(searchwordlist, tmpstr);
-            break;
-        case '\\':
-            if ((c = (unsigned char) words[++i]))
-            {
-                if (iswordchar(header, c))
-                {
-                    word[j++] = '\\';
-                    word[j++] = tolower((int) ((unsigned char) c));
-                }
-                else
-                {
-                    if (j)
-                    {
-                        word[j] = '\0';
-                        /* Convert chars ignored in words to spaces  */
-                        stripIgnoreLastChars(&header, word);
-                        stripIgnoreFirstChars(&header, word);
-                        if (strlen(word))
-                        {
-                            searchwordlist = (struct swline *) addswline(searchwordlist, word);
-                        }
-                        j = 0;
-                    }
-                }
-            }
-            break;
-        default:
-            /* PhraseDelimiter must be escaped to be allowed */
-            if ((c != ((unsigned char) PhraseDelimiter)) && iswordchar(header, c))
-            {
-                word[j++] = tolower((int) ((unsigned char) c));
-            }
-            else
-            {
-                if (j)
-                {
-                    word[j] = '\0';
-                    /* Convert chars ignored in words to spaces  */
-                    stripIgnoreLastChars(&header, word);
-                    stripIgnoreFirstChars(&header, word);
-                    if (strlen(word))
-                    {
-                        searchwordlist = (struct swline *) addswline(searchwordlist, word);
-                    }
-                    j = 0;
-                }
-                if (c == ((unsigned char) PhraseDelimiter))
-                {
-                        searchwordlist = (struct swline *) addswline(searchwordlist, PhraseDelimiterString);
-                }
-
-            }
-
-        }
-    }
-    if (j)
-    {
-        word[j] = '\0';
-        /* Convert chars ignored in words to spaces  */
-        stripIgnoreLastChars(&header, word);
-        stripIgnoreFirstChars(&header, word);
-        if (strlen(word))
-        {
-            searchwordlist = (struct swline *) addswline(searchwordlist, word);
-        }
-    }
-    /* The '_' quick fix - To be rewritten in a new parser */
-    /* For those words wich are not metanames it may be splitted */
-    if (!iswordchar(header, '_')) /* If '_' is a valid char do nothing */
-    {
-        for (temp = searchwordlist; temp; temp = temp->next)
-            if (!isMetaNameOpNext(temp->next)) /* split only searchwords , not metanames */
-                splitswline(temp, '_');
-
-    }
-    /* End '_' fix */
-
-    efree(word);
-    return searchwordlist;
-}
 
 
 /* Initializes the result hash list.
 */
-
+           
 void    initresulthashlist(SWISH * sw)
 {
     int     i;
-
+        
     for (i = 0; i < BIGHASHSIZE; i++)
         sw->Search->resulthashlist[i] = NULL;
 }
