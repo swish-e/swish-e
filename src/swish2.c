@@ -127,6 +127,8 @@ void SwishDefaults(SWISH *sw)
 	sw->OkNoMeta=OKNOMETA;
 		/* CONVERTHTMLENTITIES indexing default option */
 	sw->ConvertHTMLEntities=CONVERTHTMLENTITIES;
+		/* Init Entities hash table to NULL */
+	sw->EntitiesHashTable=NULL;
 		/* http system parameters */
 	sw->maxdepth=5;
 	sw->delay=60;

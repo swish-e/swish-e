@@ -75,7 +75,7 @@
 #include <setjmp.h>
 
 
-#define SWISH_VERSION "2.1-dev16"
+#define SWISH_VERSION "2.1-dev17"
 
 #define SWISH_MAGIC 21076321L
 
@@ -83,9 +83,9 @@
 
 #define BASEHEADER 1
 
-#define INDEXHEADER "# SWISH format: 2.1-dev16"
+#define INDEXHEADER "# SWISH format: 2.1-dev17"
 #define INDEXHEADER_ID BASEHEADER + 1 
-#define INDEXVERSION "# Swish-e format: 2.1-dev16"
+#define INDEXVERSION "# Swish-e format: 2.1-dev17"
 #define INDEXVERSION_ID BASEHEADER + 2
 
 
@@ -623,10 +623,11 @@ typedef struct {
     RESULT *currentresult;
 
 	/* MetaName indexing options */
-	int ReqMetaName;
-	int OkNoMeta;
+    int ReqMetaName;
+    int OkNoMeta;
         /* Flag to specify if HTML entities shouuld be converted */
-	int ConvertHTMLEntities;
+    int ConvertHTMLEntities;
+    void *EntitiesHashTable;
 
     /* file system specific configuration parameters */
     struct swline *pathconlist;
