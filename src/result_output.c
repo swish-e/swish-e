@@ -929,11 +929,10 @@ static void printStandardResultProperties(FILE *f, RESULT *r)
         /* print value, handling newlines and quotes */
         while (*propValue)
         {
+            /* no longer check for double-quote.  User should pick a good value for -d or use -x */
+
             if (*propValue == '\n')
                 fprintf(f, " ");
-
-            else if (*propValue == '\"')	/* should not happen */
-                fprintf(f,"&quot;");
 
             else
                 fprintf(f,"%c", *propValue);
