@@ -275,8 +275,8 @@ int     SwishAttach(SWISH * sw)
         read_header(sw, &tmplist->header, tmplist->DB);
 
 
-        sw->TotalWords += tmplist->header.totalwords;
-        sw->TotalFiles += tmplist->header.totalfiles;
+        sw->TotalWords += tmplist->header.totalwords - tmplist->header.removedwords;
+        sw->TotalFiles += tmplist->header.totalfiles - tmplist->header.removedfiles;
 	sw->TotalWordPos += tmplist->header.total_word_positions;
 	
         tmplist = tmplist->next;

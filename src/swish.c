@@ -1677,7 +1677,10 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
 
     if (sw->verbose)
-        printf("%s unique word%s indexed.\n", comma_long( sw->indexlist->header.totalwords ), (sw->indexlist->header.totalwords == 1) ? "" : "s");
+    {
+        int totalwords = sw->indexlist->header.totalwords - sw->indexlist->header.removedwords;
+        printf("%s unique word%s indexed.\n", comma_long( totalwords ), (totalwords == 1) ? "" : "s");
+    }
 
 
     /* Sort properties -> Better search performance */
