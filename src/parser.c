@@ -349,8 +349,9 @@ static int parse_chunks( PARSE_DATA *parse_data )
         xmlFreeParserCtxt(ctxt);
     }
 
-    /* Not sure if this is needed */
-    xmlCleanupParser();
+    /* Daniel Veillard on Nov 21, 2001 says this should not be called for every doc. */
+    // But, it probably should be called when done parsing.
+    // xmlCleanupParser();
 
     /* Check for abort condition set while parsing (isoktitle, NoContents) */
 
@@ -1004,8 +1005,10 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 
 /*********************************************************************
 *   Checks the HTML tag, and sets the "structure"
+*   Also deals with FileRules title
+*   In general, flushes the character buffer due to the change in structure.
 *
-*   returns false if not a valid HTML tag (which might be a metaname)
+*   returns false if not a valid HTML tag (which might be a "fake" metaname)
 *
 *********************************************************************/
 
@@ -1034,6 +1037,11 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
 
     /** TITLE **/
+
+    // Note: I think storing the title words by default should be optional.
+    // Someone might not want to search title tags, if if they don't they are
+    // screwed since title by default ranks higher than body words.
+ 
     
     else if ( strcmp( tag, "title" ) == 0 )
     {
@@ -1050,12 +1058,12 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
                 return 1;
             }
 
-            /* Check for NoContents */
+            /* Check for NoContents - abort since all we need is the title text */
             if ( parse_data->fprop->index_no_content )
                 abort_parsing( parse_data, 1 );
         }
         else
-            /* In start tag, allow capture of text */
+            /* In start tag, allow capture of text (NoContents sets ignore_flag at start) */
             if ( parse_data->fprop->index_no_content )
                 parse_data->meta_stack.ignore_flag--;
         
@@ -1100,6 +1108,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     /** EMPHASIZED **/
 
     /* These should not be hard coded */
+    
     else if ( !strcmp( tag, "em" ) || !strcmp( tag, "b" ) || !strcmp( tag, "strong" ) || !strcmp( tag, "i" ) )
     {
         /* This is hard.  The idea is to not break up words.  But messes up the structure

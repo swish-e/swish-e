@@ -412,6 +412,10 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
         if ( meta->hiPropRange )
             freeProperty( meta->hiPropRange );
 
+        if ( meta->extractpath_default )
+            efree( meta->extractpath_default );
+            
+
         efree( meta );
     }
 
