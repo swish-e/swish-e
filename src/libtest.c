@@ -126,7 +126,7 @@ int     main(int argc, char **argv)
 
 
     /* Adjust some of the search parameters if different than the defaults */
-    SwishSetSort( search, "swishtitle" );
+    SwishSetSort( search, "swishrank desc" );
 
     // SwishSetStructure( search, IN_TITLE );  /* limit to title only */
 
@@ -169,6 +169,8 @@ int     main(int argc, char **argv)
             continue;
         }
 
+        display_results( swish_handle, results );
+printf("seek to start\n");
         display_results( swish_handle, results );
         Free_Results_Object( results );
 
