@@ -5,8 +5,9 @@ Section "Required Components" SecProgram
     ; System Files
     SetOutPath "$SYSDIR"
     ; Expat, LibXML2, and ZLib
+    File ..\..\..\iconv\lib\*.dll
     File ..\..\..\libxml2\lib\*.dll
-    File ..\..\..\zlib\bin\*.dll
+    File ..\..\..\zlib\lib\*.dll
     File ..\..\..\pcre\bin\*.dll
     File ..\expat\bin\*.dll
     
