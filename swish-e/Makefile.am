@@ -141,9 +141,7 @@ EXTRA_DIST = \
     $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
-    $(debian_dir) \
-    win32src.nsi
-
+    $(debian_dir)
 
 .PHONEY: test
 
