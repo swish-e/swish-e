@@ -85,7 +85,6 @@ int lenindex3=0;
 char *index3=NULL;
 int lenindex4=0;
 char *index4=NULL;
-ENTRYARRAY *entryp;
 int INDEX_READ_ONLY;
 char *tmp;
 int swap_mode=0; /* No swap */
@@ -463,8 +462,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 
 		totalfiles = getfilecount(sw->indexlist);
 
-		entryp = sw->entryArray;
-		stopwords = removestops(sw, entryp, totalfiles);
+		stopwords = removestops(sw, totalfiles);
 		
 		if (sw->verbose) {
 			if (stopwords) {
