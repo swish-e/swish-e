@@ -10,6 +10,24 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Swish.cgi now kills swish-e on time out
+
+The example script F<swish.cgi> uses an alarm (on platforms that support
+alarm) to abort processing after some number of seconds, but it was not
+killing the child process, swish-e.  Bill Schell submitted a patch to kill
+the child when the alarm triggers.
+
+=item The template search.tt was renamed to swish.tt
+
+The template was renamed because it's used by F<swish.cgi>, not by
+F<search.cgi>, which was confusing.
+
+=item Updates to the search.cgi
+
+The example script F<search.cgi> was updated to work better with mod_perl
+and to use external template files and style sheets.
+
+
 =item New MS Word Filter
 
 James Job provided the SWISH::Filter::Doc2html filter that uses
