@@ -128,11 +128,14 @@ char *summary=NULL;
 		if((tag=strchr(p,'<'))) {   /* Look for '<' */
 				/* Index up to the tag */
 			*tag++='\0';
-			if(sw->ConvertHTMLEntities)
-				newp=convertentities(p,sw);
-			else newp=p;
-			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
-			if(newp!=p) efree(newp);
+			if(currentmetanames || (!currentmetanames && !sw->ReqMetaName))
+			{
+				if(sw->ConvertHTMLEntities)
+					newp=convertentities(p,sw);
+				else newp=p;
+				ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
+				if(newp!=p) efree(newp);
+			}
 				/* Now let us look for '>' */
 			if((endtag=strchr(tag,'>'))) {  
 				*endtag++='\0';
@@ -212,11 +215,14 @@ char *summary=NULL;
 				}
 			} else p=tag;    /* tag not closed: continue */
 		} else {    /* No more '<' */
-			if(sw->ConvertHTMLEntities)
-				newp=convertentities(p,sw);
-			else newp=p;
-			ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
-			if(newp!=p) efree(newp);
+			if(currentmetanames || (!currentmetanames && !sw->ReqMetaName))
+			{
+				if(sw->ConvertHTMLEntities)
+					newp=convertentities(p,sw);
+				else newp=p;
+				ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
+				if(newp!=p) efree(newp);
+			}
 			p=NULL;
 		}
 	}

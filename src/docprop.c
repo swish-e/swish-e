@@ -38,34 +38,20 @@
 #include "metanames.h"
 
 
-/* 08/00 Jose Ruiz */
+/* 01/01 Jose Ruiz */
 /* function for comparing data in order to
 get sorted results with qsort (including combinations of asc and descending
 fields */
-/* The data in each pointer is as follows
-<num_fileds><len_filed1><data_1><len_field_2><data_2> ....
-the length of the fields  can be positive or negative depending
-on ascending or descending sort */
-int scompasc(const void *s1,const void *s2)
+int compResultsBySortProps(const void *s1,const void *s2)
 {
-int i,rc,num_fields,len_field,sortmode;
-char *ps1,*ps2;
-	ps1=(char *) s1;
-	ps2=(char *) s2;
-	memcpy((char *)&num_fields,ps1,sizeof(int));
-	ps1+=sizeof(int);
-	ps2+=sizeof(int);
+RESULT *r1=*(RESULT* const *)s1;
+RESULT *r2=*(RESULT* const *)s2;
+int i,rc,num_fields,sortmode;
+SWISH *sw=(SWISH *)r1->sw;
+	num_fields=sw->numPropertiesToSort;
 	for(i=0;i<num_fields;i++){
-		memcpy((char *)&len_field,ps1,sizeof(int));
-		ps1+=sizeof(int);	
-		ps2+=sizeof(int);	
-		if(len_field<0){
-			len_field=-len_field;
-			sortmode=-1;
-		} else sortmode=1;
-		if((rc=sortmode*memcmp(ps1,ps2,len_field)))return rc;
-		ps1+=len_field;
-		ps2+=len_field;
+		sortmode=sw->propModeToSort[i];
+		if((rc=sortmode*strcmp(r1->PropSort[i],r2->PropSort[i])))return rc;
 	}
         return 0;
 }
@@ -432,79 +418,43 @@ RESULT *sortresultsbyproperty(sw, structure)
 SWISH *sw;
 int structure;
 { 
-int i, j, k, l;
-unsigned char *ptmp,*ptmp2;
-char *ps;
+int i, j;
+RESULT **ptmp;
 int tmp;
-RESULT *pv;
 RESULT *rtmp;
 RESULT *sortresultlist;
 RESULT *rp;
-int MaxWide,*maxWide=NULL,len;
 	rp=sw->resultlist;
 		/* Trivial case */
 	if (!rp) return NULL;
-	if(sw->numPropertiesToSort) maxWide=(int *)emalloc(sw->numPropertiesToSort * sizeof(int));
-	for (i = 0; i<sw->numPropertiesToSort; i++) maxWide[i] = 0;
 	sortresultlist = NULL;
-		/* Compute results */
+		/* Compute number of results */
 	for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next) {
 		if (rtmp->structure & structure) {
 			i++;
-			for (l = 0; l<sw->numPropertiesToSort; l++){
-				len=strlen(rtmp->PropSort[l]);
-				if(len > maxWide[l]) maxWide[l] = len;
-			}
 		}
 	}
 		/* Another trivial case */
-	if (!i) {
-		if(maxWide) efree(maxWide);
-		return NULL;
-	}
+	if (!i) return NULL;
 
-	for (k = 0,MaxWide=0; k<sw->numPropertiesToSort; k++) MaxWide+=maxWide[k];
-		/* We need to compute array wide 
-		** including field number and each field size */
-	MaxWide+=((sw->numPropertiesToSort+1)*sizeof(int));
-	j=MaxWide+sizeof(void *);
 		/* Compute array size */
-	ptmp=(void *)emalloc((j*i));
+	ptmp=(RESULT **)emalloc(i*sizeof(RESULT *));
 		/* Build an array with the elements to compare
 			 and pointers to data */
-	for(ptmp2=ptmp,rtmp=rp;rtmp;rtmp = rtmp->next) {
+	for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next,j++) {
 		if (rtmp->structure & structure) {
-			ps=(char *)ptmp2;
-			memcpy((char *)ps,(char *)&sw->numPropertiesToSort,sizeof(int));
-			ps+=sizeof(int);
-			for(l=0;l<sw->numPropertiesToSort; l++){
-				tmp=maxWide[l]*sw->propModeToSort[l];
-				memcpy((char *)ps,(char *)&tmp,sizeof(int));
-				ps+=sizeof(int);
-				memset(ps,0,maxWide[l]); /* padded with 0 */
-				len=strlen(rtmp->PropSort[l]);
-				if(len)memcpy(ps,rtmp->PropSort[l],len);
-				ps+=maxWide[l];
-			}
-			ptmp2+=MaxWide;
-			memcpy((char *)ptmp2,(char *)&rtmp,sizeof(RESULT *));
-			ptmp2+=sizeof(void *);
+			ptmp[j]=rtmp;
 		}
 	}
 		/* Sort them */
-	qsort(ptmp,i,j,&scompasc);
+	qsort(ptmp,i,sizeof(RESULT *),&compResultsBySortProps);
 		/* Build the list */
-	for(j=0,ptmp2=ptmp;j<i;j++){
-		ps=(char *)ptmp2;
-		ptmp2+=MaxWide;
-		memcpy((char *)&pv,(char *)ptmp2,sizeof(RESULT *));
-		ptmp2+=sizeof(void *);
-		sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, pv);
+	for(j=0;j<i;j++){
+		sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);
 	}
 		/* Free the memory of the array */
 	efree(ptmp);
 
-	efree(maxWide);
 	return sortresultlist;
 }
 

@@ -60,7 +60,7 @@ RESULT *orresultlists _AP ((SWISH *, RESULT *, RESULT *));
 RESULT *notresultlist _AP ((SWISH *, RESULT *, IndexFILE *));
 RESULT *notresultlists _AP ((SWISH *, RESULT *, RESULT *));
 RESULT *phraseresultlists _AP ((SWISH *, RESULT *, RESULT *, int));
-RESULT *addtoresultlist _AP ((RESULT *, int, int, int, int, int *, IndexFILE *));
+RESULT *addtoresultlist _AP ((RESULT *, int, int, int, int, int *, IndexFILE *,SWISH *));
 
 RESULT *getproperties _AP ((SWISH *, IndexFILE *, RESULT *));
 
@@ -80,3 +80,5 @@ void freefileoffsets _AP ((SWISH *));
 void freeresult _AP ((SWISH *,RESULT *));
 void freefileinfo _AP ((struct file *));
 struct swline *ignore_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
+struct swline *stem_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
+struct swline *soundex_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));

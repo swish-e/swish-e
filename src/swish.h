@@ -435,6 +435,7 @@ typedef struct RESULT {
 	char **Prop;
 	char **PropSort;
 	IndexFILE *indexf;
+	struct SWISH *sw;
 } RESULT;
 
 struct multiswline {
