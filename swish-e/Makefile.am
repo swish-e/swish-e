@@ -109,12 +109,18 @@ vms_dir = \
 
 
 win32_dir = \
+    src/win32/acconfig.h \
     src/win32/dirent.c \
     src/win32/dirent.h \
     src/win32/libswishe.dsp \
+    src/win32/libswishindex.dsp \
     src/win32/swishe.dsp \
     src/win32/swishe.dsw \
     src/win32/installer.nsi \
+    src/win32/release.nsi \
+    src/win32/filebase.nsh \
+    src/win32/fixperl.pl \
+    src/win32/build-perl.bat \
     src/win32/build.sh \
     src/win32/dist.sh \
     src/worddata.c \
