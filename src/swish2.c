@@ -47,7 +47,7 @@
 #include "proplimit.h"
 #include "parse_conffile.h"
 #ifdef HAVE_ZLIB
-#include "zlib.h"
+#include <zlib.h>
 #endif
 
 
