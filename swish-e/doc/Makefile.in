@@ -25,7 +25,8 @@ SOURCEPODS = ../pod/CHANGES.pod    ../pod/README.pod   ../pod/SWISH-CONFIG.pod  
              ../pod/SWISH-RUN.pod  ../pod/INSTALL.pod  ../pod/SWISH-3.0.pod     ../pod/SWISH-FAQ.pod \
              ../pod/SWISH-PERL.pod ../pod/SWISH-SEARCH.pod
 
-MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
+MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1 SWISH-LIBRARY.1
+
 HTMLDOCS = ../html/API.html          ../html/CHANGES.html     ../html/Filter.html \
            ../html/index.html        ../html/index_long.html  ../html/INSTALL.html \
            ../html/README.html       ../html/search.cgi       ../html/spider.html \
