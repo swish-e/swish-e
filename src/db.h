@@ -21,7 +21,7 @@
 */
 
 #ifndef __HasSeenModule_DB
-#define __HasSeenModule_DB	1
+#define __HasSeenModule_DB    1
 
 void initModule_DB (SWISH *);
 void freeModule_DB (SWISH *);
@@ -76,12 +76,17 @@ long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *l
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
+#ifdef USE_BTREE
+int     DB_InitWriteSortedIndex(SWISH *sw, void *DB, int n_props );
+#else
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB );
+#endif
 int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB);
 int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
  
 int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
+int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB);
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 
@@ -140,13 +145,18 @@ struct MOD_DB
     int    (*DB_InitReadFiles) (void *DB);
     int    (*DB_ReadFile) (int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
     int    (*DB_EndReadFiles) (void *DB);
-    
+
+#ifdef USE_BTREE
+    int    (*DB_InitWriteSortedIndex) (void *DB, int n_props);
+#else
     int    (*DB_InitWriteSortedIndex) (void *DB);
+#endif
     int    (*DB_WriteSortedIndex) (int propID, unsigned char *data, int sz_data,void *DB);
     int    (*DB_EndWriteSortedIndex) (void *DB);
      
     int    (*DB_InitReadSortedIndex) (void *DB);
     int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
+    int    (*DB_ReadSortedData) (int *data,int index, int *value, void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 
     void   (*DB_WriteProperty)( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);

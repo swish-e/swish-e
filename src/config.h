@@ -42,9 +42,11 @@
 #ifdef __VMS
 #define PROPFILE_EXTENSION "_prop"
 #define WORDDATA_EXTENSION "_wdat"
+#define PRESORTED_EXTENSION "_psort"
 #else
 #define PROPFILE_EXTENSION ".prop"
 #define WORDDATA_EXTENSION ".wdat"
+#define PRESORTED_EXTENSION ".psort"
 #endif
 
 /* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 

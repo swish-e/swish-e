@@ -922,12 +922,17 @@ int     DB_EndReadFiles(SWISH *sw, void *DB)
    return sw->Db->DB_EndReadFiles(DB);
 }
 
-
+#ifdef USE_BTREE
+int     DB_InitWriteSortedIndex(SWISH *sw, void *DB, int n_props)
+{
+   return sw->Db->DB_InitWriteSortedIndex(DB, n_props);
+}
+#else
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitWriteSortedIndex(DB);
 }
-
+#endif
 int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB)
 {
    return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
@@ -947,6 +952,11 @@ int     DB_InitReadSortedIndex(SWISH *sw, void *DB)
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB)
 {
    return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
+}
+
+int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB)
+{
+   return sw->Db->DB_ReadSortedData(data,index,value,DB);
 }
 
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB)

@@ -459,6 +459,7 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
            *s;
     int     sz_buffer;
     int     j;
+    int     propIDX;
     INDEXDATAHEADER *header = &indexf->header;
 
 
@@ -467,8 +468,10 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
     /* Get the sorted index of the property */
 
     /* Convert to a property index */
+//    propIDX = header->metaID_to_PropIDX[m->metaID];
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
+#ifndef USE_BTREE
     /* Table doesn't exist */
     if (!sz_buffer)
     {
@@ -485,6 +488,9 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
         m->sorted_data[j] = uncompress2(&s);
 
     efree(buffer);
+#else
+    m->sorted_data = (int *)buffer;
+#endif
     DB_EndReadSortedIndex(sw, indexf->DB);
 
     return m->sorted_data;
@@ -552,7 +558,8 @@ int    *getLookupResultSortedProperties(RESULT * r)
 
 
         /* Now store the sort value in the array */
-        props[i] = m->sorted_data[r->filenum - 1];
+        DB_ReadSortedData_Native(m->sorted_data,r->filenum - 1, &props[i], sw->Db);
+
     }
 
     return props;
@@ -857,7 +864,9 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
     int             i;
     int             *out_array = NULL;     /* array that gets sorted */
     unsigned char   *out_buffer  = NULL;
+#ifndef USE_BTREE
     unsigned char   *cur;
+#endif
     struct metaEntry *m;
     int             props_sorted = 0;
     int             total_files = indexf->header.totalfiles;
@@ -867,8 +876,11 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
     memset( &fi, 0, sizeof( FileRec ) );
     
-
+#ifdef USE_BTREE
+    DB_InitWriteSortedIndex(sw, indexf->DB ,header->property_count);
+#else
     DB_InitWriteSortedIndex(sw, indexf->DB );
+#endif
 
     /* Any properties to check? */
     if ( header->property_count <= 0 )
@@ -908,6 +920,9 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         out_array = CreatePropSortArray( sw, indexf, m, &fi, 0 );
 
 
+#ifdef USE_BTREE
+        DB_WriteSortedIndex(sw, metaID, out_array, total_files, indexf->DB);
+#else
         out_buffer = emalloc( total_files * 5 ); 
 
 
@@ -926,8 +941,10 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         DB_WriteSortedIndex(sw, metaID, out_buffer, cur - out_buffer, indexf->DB);
 
-        efree( out_array );
         efree( out_buffer );
+
+#endif
+        efree( out_array );
 
         props_sorted++;
     }
