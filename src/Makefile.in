@@ -79,7 +79,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 .c.o:
 	$(CC) $(CFLAGS) -c -o $@ $<
 	
-all:	$(NAME) swish-search
+all:	$(NAME)
 
 $(NAME): libswish-e.a swish.o
 	$(CC) -o $@ $(CFLAGS) swish.o libswish-e.a $(LIBS)
