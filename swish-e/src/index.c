@@ -433,6 +433,9 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 ** only true for the current document because the MemZone is reset
 ** onces the document is processed. Then, the space is recovered
 ** after a MemZoneReset is issued
+**
+** 2001-09 jmruiz Improved. Now unused space is recovered when asking
+** for space. Free nlocks are maintained using a linked list
 ********************************************************************/
 
 #define LOC_BLOCK_SIZE 32  /* Must be greater than sizeof(LOCATION) and a power of 2 */
@@ -458,6 +461,8 @@ LOCATION *alloc_location(struct MOD_Index *idx,int size)
     struct loc_chain *tmp = (struct loc_chain *) idx->freeLocMemChain;
     struct loc_chain *big = NULL;
     LOCATION *tmp2 = NULL;
+    int avail = 0;
+    struct loc_chain *p_avail = NULL;
 
     /* Search for a previously freed location of the same size */
     while(tmp)
@@ -471,7 +476,36 @@ LOCATION *alloc_location(struct MOD_Index *idx,int size)
             return (LOCATION *)tmp;
         }
         else if(tmp->size > size)
+        {
+            /* Just reserve it to be used if we do not find a match */
             big = tmp;
+        }
+        else
+        {
+            p_avail = tmp;
+            avail = tmp->size;
+            /* Check consecutive for consecutive blocks */
+            while(((unsigned char *)tmp + tmp->size) == (unsigned char *)tmp->next)
+            {
+                avail += tmp->next->size;
+                if(avail == size)
+                {
+                    if(!tmp2)
+                       idx->freeLocMemChain = (LOCATION *)tmp->next->next;
+                    else
+                       tmp2->next = (LOCATION *)tmp->next->next;
+                    return (LOCATION *)p_avail;
+                }
+                else if(avail > size)
+                {
+                    break;
+                }
+                else
+                {
+                    tmp = tmp->next;
+                }
+            }
+        }
         tmp2 = (LOCATION *)tmp;
         tmp = tmp->next;
     }
@@ -1452,7 +1486,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
     tmpval = uncompress2(&p);     /* tfrequency */
     metaID = uncompress2(&p);     /* metaID */
     r_nextposmeta =  UNPACKLONG2(p); 
-	w_nextposmeta = p;
+    w_nextposmeta = p;
     p += sizeof(long);
 
     q = p;
@@ -1493,12 +1527,12 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
         }
                /* Store the filenum incrementally to save space */
         compress_location_values(&q,&w_flag,r_filenum - w_filenum,structure,frequency, positions[0]);
-		w_filenum = r_filenum;
+        w_filenum = r_filenum;
 
                /* store positions */
         compress_location_positions(&q,w_flag,frequency,positions);
 
-		if(positions != local_positions)
+        if(positions != local_positions)
             efree(positions);
 
         if(!p[0])       /* End of chunk mark */
@@ -1515,13 +1549,13 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
                 PACKLONG2(q - worddata, w_nextposmeta);
 
             metaID = uncompress2(&p);
-			q = compress3(metaID,q);
+            q = compress3(metaID,q);
 
             r_nextposmeta = UNPACKLONG2(p); 
             p += sizeof(long);
 
-			w_nextposmeta = q;
-			q += sizeof(long);
+            w_nextposmeta = q;
+            q += sizeof(long);
 
             w_filenum = 0;
         }
@@ -2550,7 +2584,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     unsigned char *p, *q, *size_p = NULL;
     unsigned char uflag, *cflag;
     LOCATION *loc, *next;
-    unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
+    static unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
     unsigned char *coalesced_buffer;
     int     *positions;
     int      local_positions[MAX_STACK_POSITIONS];
