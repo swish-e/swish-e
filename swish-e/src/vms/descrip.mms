@@ -21,7 +21,7 @@ man1dir = $(mandir)/man1
 
 # Flags for C compiler
 #CWARN=
-CWARN=/warning=disable=(PROMOTMATCHW,IMPLICITFUNC,IGNOREEXTRA,PTRMISMATCH,PTRMISMATCH1,ARGLISGTR255,QUESTCOMPARE)
+CWARN=/warning=disable=(PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,ARGLISGTR255,QUESTCOMPARE)
 #CDEBUG= /debug/noopt
 CDEBUG=
 CFLAGS = /prefix=all/def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-20""")$(CWARN)$(CDEBUG)
@@ -39,17 +39,17 @@ FILESYSTEM_OBJS=fs.obj
 HTTP_OBJS=http.obj httpserver.obj
 FS_OBJS=$(FILESYSTEM_OBJS)
 WEB_OBJS=$(HTTP_OBJS)
-VMS_OBJS = regex.obj snprintf.obj
+VMS_OBJS = regex.obj
 
 OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	hash.obj list.obj mem.obj string.obj merge.obj swish2.obj stemmer.obj \
 	soundex.obj docprop.obj compress.obj deflate.obj xml.obj txt.obj \
-	metanames.obj result_sort.obj altavista.obj html.obj lst.obj \
+	metanames.obj result_sort.obj html.obj lst.obj search_alt.obj \
 	filter.obj parse_conffile.obj result_output.obj date_time.obj \
 	keychar_out.obj extprog.obj \
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
 
-all :	acconfig.h $(NAME) swish-search.exe testlib fetch_http.exe
+all :	acconfig.h $(NAME) swish-search.exe testlib
 	!
 
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
@@ -67,15 +67,9 @@ libswish-e.olb : $(OBJS)
 swish-search.exe : $(NAME)
 	copy $(NAME) swish-search.exe
 
-regex.obj : [.vms]regex.c Descrip.mms
+regex.obj : [.vms]regex.c [.vms]descrip.mms
 
-snprintf.obj : [.vms.snprintf_2_2]snprintf.c Descrip.mms
-
-fetch_http.exe : fetch_http.obj
-
-fetch_http.obj : [.vms]fetch_http.c
-
-acconfig.h : acconfig.h_vms
+acconfig.h : [.vms]acconfig.h_vms
 	copy $(MMS$SOURCE) $(MMS$TARGET)
 
 clean :
@@ -83,7 +77,7 @@ clean :
 
 realclean :
 	pur [-...]
-	delete [...]*.exe;*, [...]*.obj;*, [...]*.olb;*, index.swish;*, [-.tests]*.index;*
+	delete [...]*.exe;*, [...]*.obj;*, [...]*.olb;*, index.swish;*, acconfig.h;*, [-.tests]*.index;*
 
 test :	$(NAME)
 	set def [-.tests]
@@ -100,9 +94,9 @@ test :	$(NAME)
 	mc [-.src]swish-e -f test.index -w """three little pigs"""
 
 
-$(OBJS) :	Descrip.mms config.h swish.h acconfig.h
+$(OBJS) :	[.vms]descrip.mms config.h swish.h acconfig.h
 
-swish.obj :	Descrip.mms config.h swish.h acconfig.h
+swish.obj :	[.vms]descrip.mms config.h swish.h acconfig.h
 
 install :	
 	!
