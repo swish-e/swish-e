@@ -114,8 +114,8 @@ void SwishResetSearch(SWISH *sw)
 {
 
                 /* Free sort stuff */
-    resetModule_ResultSort (sw);
     resetModule_Search (sw);
+    resetModule_ResultSort (sw);
 }
 
 void SwishClose(SWISH *sw)
