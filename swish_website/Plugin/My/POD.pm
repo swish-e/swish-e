@@ -133,19 +133,11 @@ sub fetch_toc {
 sub render_toc_level {
     my( $node, $level) = @_;
     my $title = $node->title;
-=pod
-    my $link = "$title";     # must stringify to get the raw string
-    $link =~ s/^\s*|\s*$//g; # strip leading and closing spaces
-    $link =~ s/\W/_/g;       # META: put into a sub? see Doc::Common::pod_pom_html_anchor
-    # prepand '#' for internal links
-    my $toc_link = "toc_$link"; # self referring toc entry
-    $link = "#$link";
-=cut
-
+    my $anchor = My::Pod::View::HTML->escape_uri( $title );
 
     my %toc_entry = (
         title    => $title->present($view_mode), # run the formatting if any
-        link     => "#$title",
+        link     => "#$anchor",
     );
 
     my @sub = ();
@@ -194,20 +186,8 @@ sub view_head4 {
 sub anchor {
     my($self, $title) = @_;
     my $text = $title->present($self);
-    return qq[<a name="$title"></a>$title];
-
-
-    my $anchor = "$title";
-    $anchor =~ s/^\s*|\s*$//g; # strip leading and closing spaces
-    my $anchor_with_spaces = $anchor;
-    $anchor =~ s/\W/_/g;
-    my $link = $title->present($self);
-
-    # Stas/DocSet checks for duplicate anchors.  Probably a good idea.
-
-    # die on duplicated anchors
-    #return qq{<a name="$anchor"></a><a href="#toc_$anchor">$link</a>};
-    return qq{<a name="$anchor_with_spaces"></a><a name="$anchor"></a>$link};
+    my $anchor = $self->escape_uri( $text );
+    return qq[<a name="$anchor"></a>$title];
 }
 
 # This just adds a class attribute
@@ -224,11 +204,18 @@ sub view_verbatim {
 }
 
 
-# This needs work
+# This needs work -- Pod::POM doesn't uri escape the href, for one thing.
 
 sub view_seq_link_transform_path {
     my ( $self, $link ) = @_;
-    return "$link.html";
+    return lc($link) . '.html';
+}
+
+# Returns $text as uri-escaped string
+sub escape_uri {
+    my ($self, $text) = @_;
+    $text =~ s/\n/ /g;
+    return Template::Filters::uri_filter( $text );
 }
 
 
@@ -254,10 +241,7 @@ sub view_item {
         $title = $title->present($self) if ref $title;
         $title =~ s/\Q*//;
         if (length $title) {
-            my $anchor = $title;
-            $anchor =~ s/^\s*|\s*$//g; # strip leading and closing spaces
-            $anchor =~ s/^(\S+).*$/$1/;
-            #$anchor =~ s/\W/_/g;
+            my $anchor = $self->escape_uri( $title );
             $title = qq{<a name="$anchor"></a><b>$title</b>};
         }
     }
