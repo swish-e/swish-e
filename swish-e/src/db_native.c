@@ -800,7 +800,7 @@ void    DB_Close_Native(void *db)
     }
 #endif
 
-    if (DB->mode == DB_CREATE)     /* If we are indexing update offsets to words and files */
+    if (DB->mode == DB_CREATE || DB->mode == DB_READWRITE)     /* If we are indexing update offsets to words and files */
     {
         /* Update internal pointers */
 
