@@ -1116,10 +1116,10 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     }
 
     if ( !sw->indexlist->header.totalwords )
-    {
-        printf("No unique words indexed!\n");
-        /* $$$ To Do - flag to not reaname the indexes so existing indexes are left as is */
-    }    
+        /* Would be better to flag so db_native would know not to rename the (empty) index file */
+        // printf("No unique words indexed!\n");
+        progerr("No unique words indexed!");
+
     else
     {
     
