@@ -41,7 +41,8 @@ my $file = shift || die "Usage: $0 <filename>\n";
 
 my %metadata;
 
-open F, "pdfinfo $file |" || die "$0: Failed to open $file $!";
+open F, "pdfinfo $file |" || 
+die "$0: Failed to open $file $!";
 
 while (<F>) {
     if ( /^\s*([^:]+):\s+(.+)$/ ) {

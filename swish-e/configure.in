@@ -172,7 +172,8 @@ else
 
     AC_DEFINE(HAVE_LIBXML2,[],[Libxml2 support included])
 
-    LIBXML2_OBJS="libswishindex_la-parser.lo"
+    dnl LIBXML2_OBJS="libswishindex_la-parser.lo"
+    LIBXML2_OBJS="parser.lo"
     AC_SUBST(LIBXML2_OBJS)
     AC_SUBST(LIBXML2_LIB)
     AC_SUBST(LIBXML2_CFLAGS)

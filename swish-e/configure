@@ -11255,7 +11255,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-    LIBXML2_OBJS="libswishindex_la-parser.lo"
+        LIBXML2_OBJS="parser.lo"
 
 
 

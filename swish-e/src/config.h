@@ -124,6 +124,11 @@
 ** be sure to leave at least one option.
 */
 
+#define DEFAULT_HTTP_DELAY 5
+
+/* DEFAULT_HTTP_DELAY is the default delay when using swishspider -S http */
+
+
 #define INDEXPERMS 0644
 
 /* After SWISH generates an index file, it changes the permissions

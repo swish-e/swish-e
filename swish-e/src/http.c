@@ -100,7 +100,7 @@ void    initModule_HTTP(SWISH * sw)
 
     /* http default system parameters */
     http->maxdepth = 0;
-    http->delay = 5;
+    http->delay = DEFAULT_HTTP_DELAY;
 }
 
 void    freeModule_HTTP(SWISH * sw)
