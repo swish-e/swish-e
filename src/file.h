@@ -24,6 +24,7 @@ $Id$
 #ifdef _WIN32
 void make_windows_path( char *path );
 #endif
+char *get_libexec(void);
 
 void normalize_path(char *path);
 
@@ -31,7 +32,6 @@ int isdirectory(char *);
 int isfile(char *);
 int islink(char *);
 int getsize(char *);
-
 
 void indexpath(SWISH *, char *);
 

@@ -106,7 +106,8 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     size_t  total_len;
     struct  stat stbuf;
     struct swline *progparameterslist = sw->Prog->progparameterslist;
-
+    char *execdir = get_libexec();
+	
     if ( ! strcmp( prog, "stdin") )
         return stdin;
 
@@ -119,26 +120,19 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
         progparameterslist = progparameterslist->next;
     }
 
-
-#ifdef libexecdir
-    total_len += strlen( libexecdir ) + 1;
-#endif
-
+    total_len += strlen( execdir ) + 1;
     total_len += strlen(prog);
 
     cmd = emalloc(total_len + 20);
     cmd[0] = '\0';
 
 /* Prefix libexecdir if path does not start with a "." or "/" */
-#ifdef libexecdir
     if ( prog[0] != '/' && prog[0] != '.' )
     {
-        strcat( cmd, libexecdir );
+        strcat( cmd, execdir );
         if ( cmd[ strlen( cmd ) - 1 ]  != '/' ) 
            strcat( cmd, "/" );
     }
-#endif
-
 
     strcat(cmd, prog);
 
