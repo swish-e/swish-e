@@ -26,3 +26,4 @@ int isokword _AP ((SWISH *,char *,IndexFILE *));
 int hasokchars _AP ((IndexFILE *, char *));
 char *hasfilter _AP((char *filename, struct filter *filterlist));
 int getdoctype _AP((char *filename, struct IndexContents *indexcontents));
+struct StoreDescription *hasdescription _AP ((int, struct StoreDescription *));

@@ -55,6 +55,7 @@
 
 #include "xml.h"
 #include "txt.h"
+#include "html.h"
 
 typedef struct urldepth {
     char *url;
@@ -452,7 +453,7 @@ FILE *fp;
 			  /* $$ Jose: to discuss... and eventually be removed... */
 
 
-			do_index_file(sw,fprop,fprop->real_path);
+			do_index_file(sw,fprop);
 	
 
 

@@ -295,7 +295,6 @@ int extended_info;
 {
 int i, j, k, metaName, indexYes, totalResults;
 char word[MAXWORDLEN];
-char *wordconv;
 RESULT *tmpresultlist,*tmpresultlist2;
 struct swline *tmplist, *tmplist2;
 IndexFILE *indexlist;
@@ -329,9 +328,7 @@ int rc=0;
 					if (words[i-1] != '\\')
 					{ 
 						word[j] = '\0';
-						wordconv=convertentities(word);
-						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, wordconv);
-						if(wordconv!=word) efree(wordconv);
+						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
 						j = 0;
 						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, "=");
 					}
@@ -358,9 +355,7 @@ int rc=0;
                                         stripIgnoreFirstChars(sw->mergedheader,word);
 					if(strlen(word))
 					{
-						wordconv=convertentities(word);
-						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, wordconv);
-						if(wordconv!=word) efree(wordconv);
+						sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
 					}
 					j = 0;
 				}
@@ -392,9 +387,7 @@ int rc=0;
                 stripIgnoreFirstChars(sw->mergedheader,word);
 		if(strlen(word))
 		{
-			wordconv=convertentities(word);
-			sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, wordconv);
-			if(wordconv!=word)efree(wordconv);
+			sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, word);
 		}
 	}
 	
@@ -896,6 +889,7 @@ FILE *fp=indexf->fp;
 		filep=(struct file *) emalloc(sizeof(struct file));
 		filep->fi.filename=NULL;
 		filep->fi.title=NULL;
+		filep->fi.summary=NULL;
 		filep->fi.start=0;
 		filep->fi.size=0;
 		filep->docProperties=NULL;
@@ -1783,6 +1777,7 @@ RESULT *newnode;
 	newnode->filenum = filenum;
 	newnode->filename = NULL;
 	newnode->title = NULL;
+	newnode->summary = NULL;
 	newnode->start = 0;
 	newnode->size = 0;
 	newnode->rank = rank;
@@ -1885,14 +1880,14 @@ int resultmaxhits;
 				if (sw->useCustomOutputDelimiter)
 				{
 					if(extended_info)
-						printf("%d%s%s%s%s%s%s%s%d%s%d", sp->rank, sw->customOutputDelimiter, sp->indexf->line, sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sp->start, sw->customOutputDelimiter, sp->size);
+						printf("%d%s%s%s%s%s%s%s%s%s%s%d%s%d", sp->rank, sw->customOutputDelimiter, sp->indexf->line, sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sw->customOutputDelimiter,sp->summary, sw->customOutputDelimiter, sp->start, sw->customOutputDelimiter, sp->size);
 					else
 						printf("%d%s%s%s%s%s%d", sp->rank,  sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sp->size);
 				}
 				else
 				{
 					if(extended_info)
-						printf("%d %s %s \"%s\" %d %d", sp->rank, sp->indexf->line, sp->filename,sp->title,sp->start,sp->size);
+						printf("%d %s %s \"%s\" \"%s\" %d %d", sp->rank, sp->indexf->line, sp->filename,sp->title,sp->summary,sp->start,sp->size);
 					else
 						printf("%d %s \"%s\" %d", sp->rank, sp->filename,sp->title,sp->size);
 				}
@@ -1976,8 +1971,9 @@ int i;
 	if(rp) 
 	{
 		if(rp->position) efree(rp->position);
+		if(rp->title && rp->title!=rp->filename) efree(rp->title); 
 		if(rp->filename) efree(rp->filename); 
-		if(rp->title) efree(rp->title); 
+		if(rp->summary) efree(rp->summary); 
 		if(sw->numPropertiesToDisplay && rp->Prop) {
 			for(i=0;i<sw->numPropertiesToDisplay;i++) 
 				efree(rp->Prop[i]);
@@ -2112,7 +2108,15 @@ struct file *fileInfo;
 		else
 			fileInfo = readFileEntry(indexf, tmp->filenum, 0);
 		tmp->filename=estrdup(fileInfo->fi.filename);
-		tmp->title=estrdup(fileInfo->fi.title);
+			/* Just to save some little memory */
+		if(fileInfo->fi.filename==fileInfo->fi.title)
+			tmp->title=tmp->filename;
+		else
+			tmp->title=estrdup(fileInfo->fi.title);
+		if(!fileInfo->fi.summary) 
+			tmp->summary=estrdup("");
+		else 
+			tmp->summary=estrdup(fileInfo->fi.summary);
 		tmp->start=fileInfo->fi.start;
 		tmp->size=fileInfo->fi.size;
 		if (sw->numPropertiesToDisplay)
@@ -2216,8 +2220,9 @@ IndexFILE *tmp=sw->indexlist;
 
 void freefileinfo(struct file *f)
 {
+	if(f->fi.title && f->fi.title!=f->fi.filename) efree(f->fi.title);
 	if(f->fi.filename) efree(f->fi.filename);
-	if(f->fi.title) efree(f->fi.title);
+	if(f->fi.summary) efree(f->fi.summary);
 	if(f->docProperties) freeDocProperties(&f->docProperties);
 	efree(f);
 }

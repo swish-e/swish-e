@@ -102,8 +102,6 @@ struct dirent *dp;
 #endif
 int lens;
 char *s,*p;
-int lentitle;
-char *title,*tmptitle;
 DOCENTRYARRAY *sortfilelist, *sortdirlist;
 struct swline *tmplist;
 int ilen1,ilen2;
@@ -138,7 +136,6 @@ int ilen1,ilen2;
 	closedir(dfd);
 
 	s=(char *)emalloc((lens=MAXFILELEN) + 1);
-	title=(char *)emalloc((lentitle=MAXTITLELEN) + 1);
 
 	dfd = opendir(dir);
 	
@@ -204,30 +201,15 @@ int ilen1,ilen2;
 			if (!isoksuffix(dp->d_name, sw->suffixlist))
 				continue; 
 			
-/* $$$--- should the following be better in "html.c or whatever" (countwords_html) routine?
-*/
-			if (ishtml(sw,s)) {
-				title=SafeStrCopy(title, (char *) (tmptitle=parsetitle(s, s)),&lentitle);
-				efree(tmptitle);
-				if (!isoktitle(sw,title))
-					continue;
-			}
-			else {
-				if ((p=strrchr(s, '/')))
-					{ title=SafeStrCopy(title,p + 1,&lentitle); }
-				else
-					{ title=SafeStrCopy(title, s,&lentitle); }
-			}
 			sortfilelist = (DOCENTRYARRAY *)
-				addsortentry(sortfilelist, s, title);
+				addsortentry(sortfilelist, s);
 		}
 		else {
 			sortdirlist = (DOCENTRYARRAY *)
-				addsortentry(sortdirlist, s, s);
+				addsortentry(sortdirlist, s);
 		}
 	}
 	
-	efree(title);
 	efree(s);
 
 	closedir(dfd);
@@ -243,9 +225,7 @@ void indexafile(SWISH *sw, char *path)
 {
 int badfile;
 char *t;
-int lentitle;
-char *title,*tmptitle;
-DOCENTRY *fileentry;
+char *filename;
 struct swline *tmplist;
 	
 	if (islink(path) && !sw->followsymlinks)
@@ -297,63 +277,37 @@ struct swline *tmplist;
 		return; 
 	
 
-/* $$$--- should the following be better in html.c (countwords_html) routine?
-*/
+	filename = (char *) estrdup(path);
 
-	title=(char *) emalloc((lentitle=MAXSTRLEN)+1);
-	if (ishtml(sw,path)) {
-		title = SafeStrCopy(title, (char *) (tmptitle=parsetitle(path, path)),&lentitle);
-		efree(tmptitle);
-		if (!isoktitle(sw,title)) {
-			efree(title);
-			return;
-		}
-	}
-	else {
-		if ((t = strrchr(path, '/')) != NULL)
-			{ title=SafeStrCopy(title, t + 1,&lentitle); }
-		else
-			{ title=SafeStrCopy(title, path, &lentitle); }
-	}
-	
-	fileentry = (DOCENTRY *) emalloc(sizeof(DOCENTRY));
-	fileentry->filename = (char *) estrdup(path);
-		/* Dup title to not to waste memory */
-	fileentry->title = (char *) estrdup(title);
-
-	efree(title);
-
-	printfile(sw,fileentry);
+	printfile(sw,filename);
 }
 
 
 /* Indexes the words in the file
 */
 
-void printfile(SWISH *sw, DOCENTRY *e)
+void printfile(SWISH *sw, char *filename)
 {
 char     *s;
 FileProp *fprop;
 	
 
-	if (e != NULL) {
+	if (filename) {
 		if (sw->verbose == 3) {
-			if ((s = (char *) strrchr(e->filename, '/')) == NULL)
-				printf("  %s", e->filename);
+			if ((s = (char *) strrchr(filename, '/')) == NULL)
+				printf("  %s", filename);
 			else
 				printf("  %s", s + 1);
 			fflush(stdout);
 		}
 
 
-		fprop = file_properties (e->filename, e->filename, sw);
-		do_index_file(sw,fprop,e->title);
+		fprop = file_properties (filename, filename, sw);
+		do_index_file(sw,fprop);
 
 
 		free_file_properties (fprop);
-		efree(e->filename);
-		efree(e->title);
-		efree(e);
+		efree(filename);
 	}
 }
 
@@ -366,9 +320,9 @@ void printfiles(SWISH *sw, DOCENTRYARRAY *e)
 int i;
 	if(e) {
 		for(i=0;i<e->currentsize;i++) 
-			printfile(sw, e->dlist[i]);
-	/* free the array and dlist */
-		efree(e->dlist);
+			printfile(sw, e->filenames[i]);
+	/* free the array and filenames */
+		efree(e->filenames);
 		efree(e);
 	}	
 }
@@ -384,80 +338,18 @@ int i;
 	if (e) {
 		for(i=0;i<e->currentsize;i++) {
 			if (sw->verbose == 3)
-				printf("\nIn dir \"%s\":\n", e->dlist[i]->filename);
+				printf("\nIn dir \"%s\":\n", e->filenames[i]);
 			else if (sw->verbose == 2)
-				printf("Checking dir \"%s\"...\n",e->dlist[i]->filename);
-			indexadir(sw,e->dlist[i]->filename);
-			efree(e->dlist[i]->filename);
-			efree(e->dlist[i]->title);
-			efree(e->dlist[i]);
+				printf("Checking dir \"%s\"...\n",e->filenames[i]);
+			indexadir(sw,e->filenames[i]);
+			efree(e->filenames[i]);
 		}
-		efree(e->dlist);
+		efree(e->filenames);
 		efree(e);
 	}
 }
 
 
-
-/* This checks is a filename has one of the following suffixes:
-** "htm", "HTM", "html", "HTML", "shtml", "SHTML".
-*/
-/* 09/00 Jose Ruiz
-** Modified to handle IndexContents and DefaultContents directives */
-int ishtml(sw,filename)
-SWISH *sw;
-char *filename;
-{
-char *c,*suffix;
-int DocType;
-	if(!filename) return 0;
-
-	c = (char *) strrchr(filename, '.');
-	
-	if (!c || c[1]=='\0') return 0;
-	
-	suffix=c+1;
-		/* 09/00 Jose Ruiz */
-		/* get DocType based in IndexContents or Defaultcontents */
-	if((DocType=getdoctype(filename,sw->indexcontents))==NODOCTYPE && sw->DefaultDocType!=NODOCTYPE)
-		DocType=sw->DefaultDocType;
-	if(DocType==HTML) return 1;
-	else if(DocType==NODOCTYPE) {
-			/* IndexContents and DefaultContents not specified */
-			/* So, use the old method for compatibility reasons */
-		if (!strncmp(suffix, "htm", 3)) return 1;
-		else if (!strncmp(suffix, "HTM", 3)) return 1;
-		else if (!strncmp(suffix, "shtml", 5)) return 1;
-		else if (!strncmp(suffix, "SHTML", 5)) return 1;
-	}
-	return 0;
-}
-
-/* Check if a particular title (read: file!) should be ignored
-** according to the settings in the configuration file.
-*/
-
-int isoktitle(sw,title)
-SWISH *sw;
-char *title;
-{
-	int badfile;
-	struct swline *tmplist;
-	
-	badfile = 0;
-	tmplist = sw->titconlist;
-	while (tmplist != NULL) {
-		if (matchARegex(title, tmplist->line)) {
-			badfile = 1;
-			break;
-		}
-		tmplist = tmplist->next;
-	}
-	if (badfile)
-		return 0;
-	else
-		return 1;
-}
 
 /********************************************************/
 /*					"Public" functions					*/

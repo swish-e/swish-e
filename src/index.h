@@ -18,19 +18,15 @@
 */
 
 
-void do_index_file (SWISH *sw, FileProp *fprop, char *title);
+void do_index_file (SWISH *sw, FileProp *fprop);
 
-int getMeta (IndexFILE *, char *tag, int* docPropName, int *, int);
-int parseMetaData (SWISH *, IndexFILE *, char *, int, int, struct file*);
 void printMetaNames (IndexFILE *);
-DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*, char*);
+DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 ENTRYARRAY *addentry (SWISH *, ENTRYARRAY *, char*, int, int, int, int );
-void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, char *title, int start, int size, struct file ** newFileEntry);
+void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, char *title, char *summary, int start, int size, struct file ** newFileEntry);
 int getfilecount (IndexFILE *);
-char *getthedate (void);
-int countwords (SWISH *, FileProp *, char *title, char *buffer);
+char *getthedate(void);
 int countwordstr (SWISH *, char *, int);
-int getstructure (char *, int);
 int parsecomment (SWISH *, char *, int, int, int, int *);
 int removestops (SWISH *, ENTRYARRAY *, int);
 int getrank _AP ((SWISH *, int, int, int, int));
@@ -53,7 +49,7 @@ int stripIgnoreLastChars _AP ((INDEXDATAHEADER, char *));
 #define isIgnoreLastChar(header,c) header.ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) header.bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry _AP ((char *,char *,int, int, FILE *, struct docPropertyEntry **, int, int *));
+unsigned char *buildFileEntry _AP ((char *,char *,char *,int, int, FILE *, struct docPropertyEntry **, int, int *));
 struct file *readFileEntry _AP ((IndexFILE *,int, int));
 
 void computehashentry _AP ((ENTRY **,ENTRY *));
@@ -64,4 +60,6 @@ void sortentry _AP ((SWISH *, IndexFILE *, ENTRY *));
 int indexstring _AP ((SWISH*, char *, int, int, int, int *, int *));
 
 void addtofwordtotals _AP ((IndexFILE *, int, int));
+void addsummarytofile _AP ((IndexFILE *, int, char *));
+
 

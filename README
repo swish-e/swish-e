@@ -1,0 +1,45 @@
+The SWISH-E README File
+
+SWISH-Enhanced is a fast, powerful, flexible, free, and easy to use system for
+indexing collections of Web pages or other text files. Key features include the
+ability to limit searches to certain HTML tags (META, TITLE, comments, etc.).
+
+The current version of SWISH-E can be found at:
+    http://sunsite.berkeley.edu/SWISH-E/
+Please make sure you use a current version of swish.    
+    
+The SWISH-E documentation is in POD format.  POD documentation is displayed by
+the `perldoc' command that is included with every Perl installation.
+For example, to view the installation documentation for swish-e, type
+
+   perldoc INSTALL
+
+Check with your system adminstrator if this command is not available.
+
+Online documentation can be found at the SWISH-E web site listed above.
+Additional documentation can be found in the html directory.
+
+The following documentation is included in this SWISH-E distribution:
+
+   README           -- this file
+   INSTALL          -- Installation and basic usage instructions
+   SWISH-INDEX      -- All about creating a SWISH-E index
+   SWISH-SEARCH     -- All about searching with SWISH-E
+   SWISH-FAQ        -- Common questions, and some answers
+   SWISH-FILTERS    -- Using filters to index non-standard documents
+   SWISH-LIBRARY    -- Interface to the SWISH-E C library
+   SWISH-PERL       -- Instructions for using the Perl library
+   CHANGES          -- List of feature changes and bug fixes
+
+
+   README-SWISH-E   -- General configuration and features documentation
+   html/index.html  -- HTML-based documentation.
+
+
+If you need help with installing or using SWISH-E please subscribe to
+the SWISH-E mailing list.  See visit the SWISH-E web site listed above
+for informatation on subscribing to the SWISH-E list.
+
+
+$Id$
+

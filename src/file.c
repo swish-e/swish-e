@@ -316,6 +316,7 @@ int baddirective = 0;
 StringList *sl;
 int DocType=0;
 struct IndexContents *ic;
+struct StoreDescription *sd;
 IndexFILE *indexf=NULL;
 	
 	gotdir = gotindex = 0;
@@ -526,6 +527,52 @@ IndexFILE *indexf=NULL;
 					ic->next=NULL;
 				sw->indexcontents=ic;
 			} else progerr("IndexContents requires at least two values");
+		}
+		else if ((c = (char *)lstrstr(line,"StoreDescription")) !=0) {
+			c += strlen("StoreDescription");
+			sl=parse_line(c);
+			if(sl && (sl->n==2 || sl->n==3)) {
+				if(strcasecmp(sl->word[0],"TXT")==0) {
+					DocType=TXT;
+				}
+				else if(strcasecmp(sl->word[0],"HTML")==0) {
+					DocType=HTML;
+				}
+				else if(strcasecmp(sl->word[0],"XML")==0) {
+					DocType=XML;
+				}
+				else if(strcasecmp(sl->word[0],"MULTITXT")==0) {
+					DocType=MULTITXT;
+				}
+				else if(strcasecmp(sl->word[0],"WML")==0) {
+					DocType=WML;
+				} else progerr("Unknown document type in StoreDescription");
+				sd=(struct StoreDescription *)emalloc(sizeof(struct StoreDescription));
+				sd->DocType=DocType;
+				sd->size=0;
+				sd->field=NULL;
+				i=1;
+
+				if(sl->word[i][0]=='<' && sl->word[i][strlen(sl->word[i])-1]=='>')
+				{
+					sl->word[i][strlen(sl->word[i])-1]='\0';
+					sd->field=estrdup(sl->word[i]+1);
+					i++;
+				} 
+				if(i<sl->n && isnumstring(sl->word[i]))
+				{
+					sd->size=atoi(sl->word[i]);
+				}
+				if(sl->n==2 && !sd->field && !sd->size)
+					progerr("Second parameter of StoreDescription must be <fieldname> or a number");
+				if(sl->n==3 && sd->field && !sd->size)
+					progerr("Third parameter of StoreDescription must be empty or a number");
+				if(sw->storedescription)
+					sd->next=sw->storedescription;
+				else
+					sd->next=NULL;
+				sw->storedescription=sd;
+			} else progerr("StoreDescription requires two or three values");
 		}
 		else if ((c = (char *)lstrstr(line,"DefaultContents")) !=0) {
 			c += strlen("DefaultContents");
@@ -857,6 +904,9 @@ int   i;
   -- 2000-11-15 rasc
   -- return: (FileProp *)
   -- A failed stat returns an empty (default) structure
+
+  -- 2000-12
+  -- Added StoreDescription
 */
 
 FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
@@ -877,13 +927,10 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
   fprop->doctype = sw->DefaultDocType;  
   fprop->index_no_content = 0;	      /* former: was indextitleonly! */
   fprop->filterprog = NULL; 	      /* Default = No Filter */
+  fprop->stordesc = NULL; 	      /* Default = No summary */
 
   fprop->real_path = real_path;
   fprop->work_path = (work_file) ? work_file : real_path;
-  /* -- also possible: a save copy of pathes using estrdup(),
-     -- but IMO not necessarry [to discuss...] $$
-   */
-
 
   /* -- Get Properties of File
      --  return if error or file not exists
@@ -891,8 +938,6 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
   if ( stat(fprop->work_path, &stbuf) ) return fprop;
   fprop->fsize = (long) stbuf.st_size;
   fprop->mtime = stbuf.st_mtime;
-
-
 
   /* -- get Doc Type as is in IndexContents or Defaultcontents
      -- doctypes by jruiz
@@ -916,6 +961,7 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
 
   fprop->filterprog = hasfilter (fprop->real_path,sw->filterlist);
 
+  fprop->stordesc = hasdescription (fprop->doctype,sw->storedescription);
 
 
 #ifdef DEBUG

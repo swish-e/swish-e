@@ -1,0 +1,139 @@
+=head1 NAME
+
+INSTALL - SWISH-E installation instructions
+
+=head1 SYSTEM REQUIREMENTS
+
+SWISH-E 2.0 is written in C, and, up to this time, it has been tested on
+Solaris 2.6, AIX 4.3.2, RedHat Linux 6.2 and Win32 platforms (thanks to 
+David Norris for his work).  To compile, a C compiler is needed. Pretty 
+much any standard compiler should do.  Tested compilers include:
+
+  gcc version 2.8.1 (Solaris 2.6)
+  gcc version 2.95.2 (AIX)
+  gcc version egcs-2.91.66 (Linux)
+  
+David Norris has built a Win32 version with Ms Visual C 6.0.  Please see
+http://www.webaugur.com/wares/swish.
+
+The HTTP file access method uses a Perl helper script that requires
+the LWP,HTTP,HTML modules. (Note: depending on your perl installation, you might need to
+install additional modules required by LWP; for requirements and
+downloads check http://www.cpan.org or http://theory.uwinnipeg.ca/search/cpan-search.html).
+It was tested with Perl 5.005 although should probably work with any version 5 release.
+
+A tip from Wil Vree about compiling with a Sun C compiler:
+In the Makefile the following two opions need to be modified
+CC = /opt/SUNWspro/bin/cc
+CFLAGS= -xO2
+
+=head1 INSTALLATION
+
+If you are reading this INSTALL document then you probably already have
+downloaded and unpacked the distribution.
+
+=head2 Downloading and unpacking and building
+
+Make sure you are using the current
+stable release from http://sunsite.berkeley.edu/SWISH-E/.  How you download is up to you:
+lynx, lwp-download, wget are all common methods.
+
+=over 3
+
+=item 1) Uncompress the distribution file
+
+   gzip -dc swish-e.x.x.tar.gz | tar xof -
+
+or on some versions of tar, simply
+
+   tar zxof swish-e.x.x.tar.gz
+
+Uncompressing should create the following directories:   
+
+   swish-e-x.x/       (Location of the README* and INSTALL files)
+   swish-e-x.x/src/   (source code)
+   swish-e-x.x/conf/  (sample configuration file and stopword files)
+   swish-e-x.x/test/  (test.html sample)
+   swish-e-x.x/perl/  (perl interface to the SWISH-E library)
+   swish-e-x.x/filter-bin/  (filter samples form Rainer Scherg)
+
+
+=item 2) Make any needed changes in config.h
+
+Compile-time configuration settings are adjusted in the file src/config.h.
+You probably do not need to change this file.  See the src/config.h file
+for instructions.
+
+=item 3) Build SWISH-E
+
+In the swish-e-x.x/ top level directory type the following commands
+
+   ./configure
+   make
+   make test
+
+This will create the swish-e executable src/swish-e and test that the
+executable is working correctly.
+
+You may optionally "build" the swish-search executable.  This is a
+version of swish-e that cannot write to the index file.  This version
+may provide improved security in a CGI environment.  The binaries swish-e and
+swish-search are the same files -- the additional security is enabled when the
+binary is named swish-search.
+
+Again, this is an optional step:
+
+   make swish-search
+
+This simply copies swish-e to swish-search.   
+ 
+=item 4) Install swish-e
+
+Move the swish-e and/or swish-search executable to its final location
+(normally /usr/local/bin).  You may need to su root.
+
+   su root
+   make install
+   exit
+
+The bin directory may be set when running ./configure. For example:
+
+   ./configure --bindir=$HOME/bin
+
+=back   
+ 
+=head2 Installing the SWISH-E C Library
+
+Swish 2.1 creates the C library libswish-e.a during the build.  This library is
+required if you wish to embed SWISH-E into another application.  For example,
+the library should be installed before using the high level Perl SWISH modules located
+on CPAN. http://search.cpan.org/search?mode=module&query=SWISH
+
+To install the library issue the following commands (you may need to su root)
+
+   su root
+   make install-lib
+   exit
+
+By default this will install the library in /usr/local/lib, but can be set when
+running ./configure with the --libdir option.  For example:
+
+   ./configure --bindir=$HOME/bin --libdir=$HOME/lib
+
+=over 3
+
+=head1 BASIC CONFIGURATION AND USAGE
+
+Basic examples to get you up and running...
+
+
+
+=head1 QUESTIONS AND TROUBLESHOOTING
+
+Support for installation, configuration and usage is available via the SWISH-E
+discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
+Please search the SWISH-E list archive before posting.
+
+
+
+

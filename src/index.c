@@ -90,7 +90,11 @@
 ** $$ there has still to be some resesign to be done.
 ** $$ swish-e was originally designed to index html only. So the routines
 ** $$ are for historically reasons scattered
-** $$ (e.g. isoktitle (), is okhtml() etc.)
+** $$ (e.g. isoktitle (), is ishtml() etc.)
+**
+** 2000-12 Jose Ruiz
+** obsolete routine ishtml removed
+** isoktitle moved to html.c
 **
 */
 
@@ -114,11 +118,6 @@
 #include "txt.h"
 
 
-
-
-
-
-
 /*
    -- Start the real indexing process for a file.
    -- This routine will be called by the different indexing methods
@@ -130,23 +129,14 @@
    -- 2000-11-19 rasc
 */
 
-void do_index_file (SWISH *sw, FileProp *fprop, char *title)
+void do_index_file (SWISH *sw, FileProp *fprop)
 {
 int      wordcount;
 char     *filtercmd;
 char     *rd_buffer=NULL;	/* complete file read into buffer */
 
-
-/* $$  title is obsolete and has to be removed form all parent subroutines!
-   $$  title has to retrieved from the countwordsroutines if necessary
-   $$  also DocEntry is not needed in parent subroutines.... (IMO) - rasc 2000-11
-   $$ to be discussed... (Jose should we remove this?)
- */	
-printf ("obsolete title (same as fprop path information?): %s\n",title);
-
 	wordcount = -1;
 	filtercmd = NULL;
-	
 
 	if (fprop->work_path) {
 
@@ -185,32 +175,32 @@ printf ("obsolete title (same as fprop path information?): %s\n",title);
 
 		      case TXT:
 			if(sw->verbose == 3) printf(" - Using TXT filter - ");
-			wordcount = countwords_TXT(sw, fprop,title, rd_buffer); 
+			wordcount = countwords_TXT(sw, fprop, rd_buffer); 
 			break;
 
 		      case HTML:
 			if(sw->verbose == 3) printf(" - Using HTML filter - ");
-			wordcount = countwords(sw, fprop, title, rd_buffer); 
+			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 
 		      case XML:
 			if(sw->verbose == 3) printf(" - Using XML filter - ");
-			wordcount = countwords_XML(sw, fprop, title,rd_buffer); 
+			wordcount = countwords_XML(sw, fprop, rd_buffer); 
 			break;
 
 		      case MULTITXT:
 			if(sw->verbose == 3) printf(" - Using MULTITXT filter - ");
-			wordcount = countwords(sw, fprop, title, rd_buffer); 
+			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 
 		      case WML:
 			if(sw->verbose == 3) printf(" - Using WML filter - ");
-			wordcount = countwords(sw, fprop, title, rd_buffer); 
+			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 
 		      default:
 			if(sw->verbose == 3) printf(" - Using DEFAULT filter - ");
-			wordcount = countwords(sw, fprop, title, rd_buffer); 
+			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
 			break;
 		    }
 
@@ -229,8 +219,10 @@ printf ("obsolete title (same as fprop path information?): %s\n",title);
 				printf(" (%d words)\n", wordcount);
 			else if (wordcount == 0) 
 				printf(" (no words)\n");
-			else
+			else if (wordcount == -1)
 				printf(" (not opened)\n");
+			else if (wordcount == -2)
+				printf(" (title is not ok)\n");
 			fflush(stdout);
 		}
 	}
@@ -246,24 +238,19 @@ printf ("obsolete title (same as fprop path information?): %s\n",title);
 ** indexed alphabetically. No big whoop.
 */
 
-DOCENTRYARRAY *addsortentry(e, filename, title)
+DOCENTRYARRAY *addsortentry(e, filename)
 DOCENTRYARRAY *e;
 char *filename;
-char *title;
 {
 int i,j,k,isbigger;
-DOCENTRY *en;
 	
 	isbigger=0;
 	if (e == NULL) {
 		e = (DOCENTRYARRAY *) emalloc(sizeof(DOCENTRYARRAY));
 		e->maxsize = SEARCHHASHSIZE;   /* Put what you like */
-		e->dlist = (DOCENTRY **) emalloc(e->maxsize*sizeof(DOCENTRY *));
+		e->filenames = (char **) emalloc(e->maxsize*sizeof(char *));
 		e->currentsize = 1;
-		en = (DOCENTRY *) emalloc(sizeof(DOCENTRY));
-		en->filename = (char *) estrdup(filename);
-		en->title = (char *) estrdup(title);
-		e->dlist[0]=en;
+		e->filenames[0] = (char *) estrdup(filename);
 	}
 	else {
 		/* Look for the position to insert using a binary search */
@@ -271,24 +258,21 @@ DOCENTRY *en;
 		j=k=0;
 		while(i>=j) {
 			k=j+(i-j)/2;
-			isbigger = strcmp(filename,e->dlist[k]->filename);
+			isbigger = strcmp(filename,e->filenames[k]);
 			if(!isbigger) 
 				progerr("SWISHE: Congratulations. You have found a bug!! Contact the author");
 			else if(isbigger > 0) j=k+1;
 			else i=k-1;
 		}
-		en = (DOCENTRY *) emalloc(sizeof(DOCENTRY));
-		en->filename = (char *) estrdup(filename);
-		en->title = (char *) estrdup(title);
 
 		if (isbigger > 0) k++;
 		e->currentsize++;
 		if(e->currentsize==e->maxsize) {
 			e->maxsize +=1000;
-			e->dlist=(DOCENTRY **) erealloc(e->dlist,e->maxsize*sizeof(DOCENTRY *)); 
+			e->filenames=(char **) erealloc(e->filenames,e->maxsize*sizeof(char *)); 
 		}
-		for(i=e->currentsize;i>k;i--) e->dlist[i]=e->dlist[i-1];
-		e->dlist[k] = en;
+		for(i=e->currentsize;i>k;i--) e->filenames[i]=e->filenames[i-1];
+		e->filenames[k] = (char *)estrdup(filename);
 	}
 	return e;
 }
@@ -410,11 +394,12 @@ IndexFILE *indexf=sw->indexlist;
 /* Adds a file to the master list of files and file numbers.
 */
 
-void addtofilelist(sw,indexf,filename, title, start, size,  newFileEntry)
+void addtofilelist(sw,indexf,filename, title, summary, start, size,  newFileEntry)
 SWISH *sw;
 IndexFILE *indexf;
 char *filename;
 char *title;
+char *summary;
 int start;
 int size;
 struct file ** newFileEntry;
@@ -467,7 +452,15 @@ unsigned char c;
 		ruleparsedfilename=p3;
 	}
 	newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
-	newnode->fi.title = (char *) estrdup(title);
+			/* Just to save a little memory */
+	if(strcmp(title,newnode->fi.filename)==0)
+		newnode->fi.title = newnode->fi.filename;
+	else
+		newnode->fi.title = (char *) estrdup(title);
+	if(summary)
+		newnode->fi.summary= (char *) estrdup(summary);
+	else
+		newnode->fi.summary=NULL;
 	newnode->fi.start = start;
 	newnode->fi.size = size;
 	newnode->docProperties = NULL;
@@ -505,150 +498,6 @@ time_t time;
 	return date;
 }
 
-/* Indexes all the words in a file and adds the appropriate information
-** to the appropriate structures.
-*/
-
-int countwords(SWISH *sw, FileProp *fprop, char *title, char *buffer)
-
-{
-int ftotalwords;
-int *metaName;
-int metaNamelen;
-int *positionMeta;    /* Position of word in file */
-int tmpposition=1;    /* Position of word in file */
-int currentmetanames;
-char *p, *tag, *endtag;
-int structure;
-struct file *thisFileEntry = NULL;
-int metaNameOld,metaNameXML;
-int i, docPropName;
-IndexFILE *indexf=sw->indexlist;
-
-	sw->filenum++;
-	
-	if (fprop->index_no_content) {
-		addtofilelist(sw,indexf, fprop->real_path, title, 0, fprop->fsize, NULL);
-		addtofwordtotals(indexf, sw->filenum, 100);
-		if(sw->swap_flag)
-			SwapFileData(sw, indexf->filearray[sw->filenum-1]);
-		return (countwordstr(sw, title, sw->filenum));
-	}
-
-	addtofilelist(sw,indexf, fprop->real_path, title, 0, fprop->fsize, &thisFileEntry);
-		/* Init meta info */
-	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
-	positionMeta =(int *)emalloc(metaNamelen*sizeof(int));
-	currentmetanames=ftotalwords=0;
-	structure=IN_FILE;
-	metaName[0]=1; positionMeta[0]=1;
-
-	for(p=buffer;p && *p;) {
-		if((tag=strchr(p,'<')) && ((tag==p) || (*(tag-1)!='\\'))) {   /* Look for non escaped '<' */
-				/* Index up to the tag */
-			*tag++='\0';
-			ftotalwords +=indexstring(sw, p, sw->filenum, structure, currentmetanames, metaName, positionMeta);
-				/* Now let us look for a not escaped '>' */
-			for(endtag=tag;;) 
-				if((endtag=strchr(endtag,'>'))) 
-				{
-					if (*(endtag-1)!='\\') break; 
-					else endtag++; 
-				} else break;
-			if(endtag) {  
-				*endtag++='\0';
-				structure = getstructure(tag,structure);
-				if((tag[0]=='!') && lstrstr(tag,"META") && (lstrstr(tag,"START") || lstrstr(tag,"END"))) {    /* Check for META TAG TYPE 1 */
-					if(lstrstr(tag,"START")) {
-						if((metaNameOld=getMeta(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1) {
-							/* realloc memory if needed */
-							if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen*=2)*sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-							/* add netaname to array of current metanames */
-							metaName[currentmetanames]=metaNameOld;
-							/* Preserve position */
-							if(!currentmetanames) tmpposition=positionMeta[0];
-							/* Init word counter for the metaname */
-							positionMeta[currentmetanames++] = 1;
-							p=endtag;
-							/* If it is also a property store it until a < is found */
-							if(docPropName) {
-					     			if((endtag=strchr(p,'<'))) *endtag='\0';
-					    			 addDocProperty(&thisFileEntry->docProperties,docPropName,p);
-					     			if(endtag) *endtag='<';
-							} 
-						}
-
-					}
-					else if(lstrstr(tag,"END")) {
-						/* this will close the last metaname */
-						if(currentmetanames) {
-							currentmetanames--;
-							if(!currentmetanames) {
-						    		metaName[0] = 1;
-								/* Restore position counter */
-						    		positionMeta[0] = tmpposition;
-							}
-						}	
-						p=endtag;
-					}
-				} /* Check for META TAG TYPE 2 */
-				else if((tag[0]!='!') && lstrstr(tag,"META") && lstrstr(tag,"NAME") && lstrstr(tag,"CONTENT")) { 
-					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,thisFileEntry);
-					p=endtag;
-				}  /* Check for XML field */
-				else if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1)) {
-					/* realloc memory if needed */
-					if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
-					/* add netaname to array of current metanames */
-					metaName[currentmetanames]=metaNameXML;
-					/* Preserve position counter */
-					if(!currentmetanames) tmpposition=positionMeta[0];
-					/* Init word counter for the metaname */
-					positionMeta[currentmetanames++] = 1;
-					p=endtag;
-					/* If it is also a property doc store it
-					** Only store until a < is found */
-					if(docPropName) {
-					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,docPropName,p);
-					     if(endtag) *endtag='<';
-					} 
-				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf,tag+1,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1)) {
-					/* search for the metaname in the
-				        ** list of currentmetanames */
-					if(currentmetanames) {
-			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML) break;
-						if(i>=0) currentmetanames=i;
-						if(!currentmetanames) {
-						    metaName[0] = 1;
-							/* Restore position counter */
-						    positionMeta[0] = tmpposition;
-						}
-					}	
-					p=endtag;
-				}  /*  Check for COMMENT */
-				else if ((tag[0]=='!') && sw->indexComments) {
-					ftotalwords +=parsecomment(sw,tag,sw->filenum,structure,1,positionMeta);
-					p=endtag;
-				}    /* Default: Continue */
-				else {    
-					p=endtag;
-				}
-			} else p=tag;    /* tag not closed: continue */
-		} else {    /* No more '<' */
-			ftotalwords +=indexstring(sw, p, sw->filenum, structure, currentmetanames, metaName, positionMeta);
-			p=NULL;
-		}
-	}
-	efree(metaName);
-	efree(positionMeta);
-	addtofwordtotals(indexf, sw->filenum, ftotalwords);
-	if(sw->swap_flag)
-		SwapFileData(sw, indexf->filearray[sw->filenum-1]);
-	return ftotalwords;
-}
-
 
 /* Indexes the words in a string, such as a file name or an
 ** HTML title.
@@ -663,76 +512,6 @@ int position=1;    /* Position of word */
 int metaName=1;
 int structure=IN_FILE;
 	return indexstring(sw, s, filenum, structure, 1, &metaName, &position);
-}
-
-/* This returns the value corresponding to the HTML structures
-** a word is in.
-*/
-
-int getstructure(tag, structure)
-char *tag;
-int structure;
-{
-
-        /* int len; */ /* not used - 2/22/00 */
-        char oldChar = 0;
-        char* endOfTag = NULL;
-        char* pos;
-
-	pos = tag;
-        while (*pos)
-	  {
-                if (isspace((int)((unsigned char)*pos)))
-		  {
-                        endOfTag = pos; /* remember where we are... */
-                        oldChar = *pos; /* ...and what we saw */
-                        *pos = '\0';    /* truncate string, for now */
-		      }
-		else 
-		  pos++;
-	      }
-       /*      Store Word Context
-       **      Modified DLN 1999-10-24 - Comments and Cleaning
-       **  TODO: Make sure that these allow for HTML attributes
-       **/
-
-       /* HEAD  */
-        if (strcasecmp(tag, "/head") == 0)
-                structure &= ~IN_HEAD;                        /* Out  */
-        else if (strcasecmp(tag, "head") == 0)
-                structure |= IN_HEAD;                 /* In  */
-       /* TITLE  */
-        else if (strcasecmp(tag, "/title") == 0)
-                structure &= ~IN_TITLE;
-        else if (strcasecmp(tag, "title") == 0)
-                structure |= IN_TITLE;
-	/* BODY */
-        else if (strcasecmp(tag, "/body") == 0)
-                structure &= ~IN_BODY;			/* In */
-        else if (strcasecmp(tag, "body") == 0)
-                structure |= IN_BODY;			/* Out */
-	/* H1, H2, H3, H4, H5, H6  */
-        else if (tag[0] == '/' && tolower(tag[1]) == 'h' && isdigit((int)tag[2])) /* cast to int - 2/22/00 */
-                structure &= ~IN_HEADER;              /* In */
-        else if (tolower(tag[0]) == 'h' && isdigit((int)tag[1])) /* cast to int - 2/22/00 */
-                structure |= IN_HEADER;			/* Out */
-	/* EM, STRONG  */
-        else if ((strcasecmp(tag, "/em") == 0) || (strcasecmp(tag, "/strong") == 0))
-                structure &= ~IN_EMPHASIZED; 		/* Out */
-        else if ((strcasecmp(tag, "em") == 0) || (strcasecmp(tag, "strong") == 0))
-                structure |= IN_EMPHASIZED;		/* In */
-	/* B, I are seperate for semantics  */
-        else if ((strcasecmp(tag, "/b") == 0) || (strcasecmp(tag, "/i") == 0))
-                structure &= ~IN_EMPHASIZED;		/* Out */
-        else if ((strcasecmp(tag, "b") == 0) || (strcasecmp(tag, "i") == 0))
-                structure |= IN_EMPHASIZED;		/* In */
-	/* The End  */	
-
-        if (endOfTag != NULL)
-	  {
-                *endOfTag = oldChar;
-	      }
-        return structure;
 }
 
 /* Parses the words in a comment.
@@ -1259,9 +1038,10 @@ FILE *fp=indexf->fp;
 	fputc(0,fp);
 }
 
-unsigned char *buildFileEntry(filename, title, start, size, fp, docProperties,lookup_path,sz_buffer)
+unsigned char *buildFileEntry(filename, title, summary, start, size, fp, docProperties,lookup_path,sz_buffer)
 char *filename;
 char *title;
+char *summary;
 int start;     
 int size;     
 FILE *fp;
@@ -1269,13 +1049,17 @@ struct docPropertyEntry **docProperties;
 int *sz_buffer;
 int lookup_path;
 {
-int len,len_filename,len_title;
+int len,len_filename,lentitle,lensummary;
 unsigned char *buffer1,*buffer2,*buffer3,*p;
 int lenbuffer1;
 int datalen1, datalen2,datalen3;
 	len_filename = strlen(filename)+1;
-	len_title = strlen(title)+1;
-	lenbuffer1=len_filename+len_title+5*5;
+	lentitle = strlen(title)+1;
+	if(summary)
+		lensummary=strlen(summary)+1;
+	else
+		lensummary=0;
+	lenbuffer1=len_filename+lentitle+lensummary+6*6;
 	buffer1=emalloc(lenbuffer1);
 	p=buffer1;
 	lookup_path++;   /* To avoid the 0 problem in compress increase 1 */
@@ -1284,18 +1068,23 @@ int datalen1, datalen2,datalen3;
 		it also writes the null terminator */
 	compress3(len_filename,p);
 	memcpy(p,filename,len_filename);p+=len_filename;
-	if(len_title==len_filename)
+	if(lentitle==len_filename)
 	{
-		if(memcmp(filename,title,len_title)==0)
+		if(memcmp(filename,title,lentitle)==0)
 		{
-			len_title=0;  /* Flag to indicate that filename
+			lentitle=0;  /* Flag to indicate that filename
 					** and title are identical */
 		}
 	}
-	if(len_title)
+	if(lentitle)
 	{
-		compress3(len_title,p);
-		memcpy(p,title,len_title);p+=len_title;
+		compress3(lentitle,p);
+		memcpy(p,title,lentitle);p+=lentitle;
+	} else *p++='\0';
+	if(summary)
+	{
+		compress3(lensummary,p);
+		memcpy(p,summary,lensummary);p+=lensummary;
 	} else *p++='\0';
 	len = start +1;    /* We store start + 1 to avoid problems with
 			  * files with start 0 */
@@ -1321,10 +1110,11 @@ int filenum;
 int readdocproperties;
 {
 long pos;
-int total_len,len1,len2,bytes,begin,lookup_path;
+int total_len,len1,len2,len3,bytes,begin,lookup_path;
 char *buffer,*p;
 char *buf1;
 char *buf2;
+char *buf3;
 struct file *fi;
 FILEOFFSET *fo;
 FILE *fp=indexf->fp;
@@ -1357,11 +1147,19 @@ FILE *fp=indexf->fp;
 	uncompress3(len2,p);   /* Read length of title */
 		/* If 0 then filename == title */
 	if(!len2)
-		buf2=estrdup(buf1);
+		buf2=buf1;
 	else {
 		buf2 = emalloc(len2);
 		memcpy(buf2,p,len2);   /* Read title */
 		p+=len2;
+	}
+	uncompress3(len3,p);   /* Read length of summary */
+	if(!len3)
+		buf3=NULL;
+	else {
+		buf3 = emalloc(len3);
+		memcpy(buf3,p,len3);   /* Read summary */
+		p+=len3;
 	}
 	uncompress3(begin,p);           /* Read start */
 	begin--;
@@ -1378,6 +1176,7 @@ FILE *fp=indexf->fp;
 	fi->fi.filename[len1+len2]='\0';
 	efree(buf1);
 	fi->fi.title = buf2;
+	fi->fi.summary = buf3;
 	fi->fi.start = begin;
 	fi->fi.size = bytes;
 	fi->read=1;
@@ -1413,7 +1212,7 @@ struct buffer_pool *bp=NULL;
 		else
 			filep=indexf->filearray[i];
 		fileo=indexf->fileoffsetarray[i];
-		buffer=buildFileEntry(filep->fi.filename, filep->fi.title, filep->fi.start, filep->fi.size, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
+		buffer=buildFileEntry(filep->fi.filename, filep->fi.title, filep->fi.summary, filep->fi.start, filep->fi.size, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
 		if(indexf->header.applyFileInfoCompression)
 		{
 			bp=zfwrite(bp,buffer,sz_buffer,&fileo->filelong,fp);
@@ -1688,7 +1487,13 @@ struct docPropertyEntry *docProperties=NULL;
 	for (i=0; i<indexf->filearray_cursize; i++)
 	{
 		fi=readFileEntry(indexf,i+1,1);
-		fflush(stdout);printf("%s \"%s\" %d %d",fi->fi.filename,fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
+		fflush(stdout);
+		if(fi->fi.summary)
+		{
+			printf("%s \"%s\" \"%s\" %d %d",fi->fi.filename,fi->fi.title,fi->fi.summary,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
+		} else {
+			printf("%s \"%s\" \"\" %d %d",fi->fi.filename,fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
+		}
 		for(docProperties=fi->docProperties;docProperties;docProperties=docProperties->next) {
 			printf(" PROP_%d:\"%s\"",docProperties->metaName,docProperties->propValue); 
 		}
@@ -1813,192 +1618,6 @@ int ilen1,ilen2;
 	}
 }
 
-
-/* Get the MetaData index when the whole tag is passed */
-
-/* Patch by Tom Brown */
-/* TAB, this routine is/was somewhat pathetic... but it was pathetic in
- 1.2.4 too ... someone needed a course in defensive programming... there are
- lots of tests below for temp != NULL, but what is desired is *temp != '\0'
- (e.g. simply *temp) ... I'm going to remove some strncmp(temp,constant,1)
- which are must faster as *temp != constant ...
-
- Anyhow, the test case I've got that's core dumping is:
-    <META content=3D"MSHTML 5.00.2614.3401" name=3DGENERATOR>
- no trailing quote, no trailing space... and with the missing/broken check for+  end of string it scribbles over the stack...
-
-*/
-
-int getMeta(indexf, tag, docPropName, applyautomaticmetanames, verbose)
-IndexFILE *indexf;
-char* tag;
-int* docPropName;
-int *applyautomaticmetanames;
-int verbose;
-{
-char* temp;
-static int lenword=0;
-static char *word=NULL;
-int i;
-struct metaEntry* list=NULL;
-	
-	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
-
-	if (docPropName != NULL)
-	{
-		*docPropName = 0;
-	}
-	
-	temp = (char*) lstrstr((char*)tag,(char*) "NAME");
-	if (temp == NULL)
-		return 1;
-	
-	temp += strlen("NAME");
-	
-	/* Get to the '=' sign disreguarding blanks */
-	while (temp != NULL && *temp) {
-		if (*temp && (*temp != '='))  /* TAB */
-			temp++;
-		else {
-			temp++;
-			break;
-		}
-	}
-	
-	/* Get to the beginning of the word disreguarding blanks and quotes */
-	/* TAB */
-	while (temp != NULL && *temp) {
-		if (*temp == ' ' || *temp == '"' )
-			temp++;
-		else
-			break;
-	}
-	
-	/* Copy the word and convert to lowercase */
-	/* TAB */
-	/* while (temp !=NULL && strncmp(temp," ",1) */
-	/*	&& strncmp(temp,"\"",1) && i<= MAXWORDLEN ) { */
-
-	/* and the above <= was wrong, should be < which caused the
-	   null insertion below to be off by two bytes */
-
-	for (i=0;temp !=NULL && *temp && *temp != ' '
-		&& *temp != '"' ;) {
-		if (i==lenword) {
-			lenword *=2;
-			word= (char *) erealloc(word,lenword+1);
-		}
-		word[i] = *temp++;
-		word[i] = tolower(word[i]);
-		i++;
-	}
-	if (i==lenword) {
-		lenword *=2;
-		word= (char *) erealloc(word,lenword+1);
-	}
-	word[i] = '\0';
-
-	while(1) {
-		for (list = indexf->metaEntryList; list != NULL; list = list->next)
-		{
-			if (!strcmp(list->metaName, word) )
-			{
-				if ((docPropName != NULL) && (list->isDocProperty))
-				{
-					*docPropName = list->index;
-				}
-				if (list->isOnlyDocProperty)
-				{
-					if (*applyautomaticmetanames) list->isOnlyDocProperty=0;
-					else 
-					/* property is not for indexing, so return generic metaName value */
-						return 1;
-				}
-				return list->index;
-			}
-		}
-		/* 06/00 Jose Ruiz
-		** If automatic MetaNames enabled add the metaName
-		** else break
-		*/
-		if(*applyautomaticmetanames) {
-			if (verbose) 
-				printf("\nAdding automatic MetaName %s\n",word);
-			addMetaEntry(indexf,word,0,applyautomaticmetanames); 
-		} else break;
-	}
-	/* If it is ok not to have the name listed, just index as no-name */
-	if (OKNOMETA) {
-		/*    printf ("\nwarning: metaName %s does not exiest in the user config file", word); */
-		return 1;
-	}
-	else {
-		printf ("\nerr: INDEXING FAILURE\n");
-		printf ("err: The metaName %s does not exist in the user config file\n", word);
-		exit(0);
-	}
-	
-}
-
-/* Parses the Meta tag */
-int parseMetaData(sw, indexf, tag, filenum, structure, thisFileEntry)
-SWISH *sw;
-IndexFILE *indexf;
-char* tag;
-int filenum;
-int structure;
-struct file* thisFileEntry;
-{
-int metaName, jstart;
-char* temp;
-int docPropName = 0;
-int position=1; /* position of word */
-int wordcount=0; /* Word count */
-	temp = NULL;
-	metaName= getMeta(indexf, tag, &docPropName, &sw->applyautomaticmetanames,sw->verbose);
-
-	/* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
-	if ( REQMETANAME && metaName == 1 ) return 0;
-
-	temp = (char*) lstrstr((char*) tag,(char*) "CONTENT");
-	
-	/* if there is no  CONTENT is another tag so just ignore the whole thing
-	* the check is done here istead of before because META tags do not have
-	* a fixed length that can be checked
-	*/
-	if (temp != NULL && *temp) {
-		temp += strlen("CONTENT");
-		
-		/* Get to the " sign disreguarding other characters */
-		while (temp != NULL && *temp) {
-			if (*temp != '"')
-				temp++;
-			else {
-				temp++;
-				break;
-			}
-		}
-		
-		jstart = strlen(tag) - strlen(temp);
-		
-		structure |= IN_COMMENTS;
-
-		/* Locate the end of MetaTag */
-		temp = strchr(tag + jstart, '\"'); /* first quote after start of CONTENT */
-		/* Jump escaped \" */
-		while(temp && *temp) 
-			if(*(temp-1)=='\\') temp=strchr(temp+1,'\"');
-			else break;
-		if (temp != NULL) {
-			*temp = '\0';	/* terminate CONTENT, temporarily */
-			if(docPropName)
-				addDocProperty(&thisFileEntry->docProperties, docPropName, tag+jstart);
-			wordcount = indexstring(sw, tag + jstart, filenum, structure, 1, &metaName, &position);
-			*temp = '\"';	/* restore string */
-		} else wordcount=indexstring(sw, tag + jstart, filenum, structure, 1, &metaName, &position);
-	}
-	return wordcount;
-}
 
 /*  These 2 routines fix the problem when a word ends with mutiple
 **  IGNORELASTCHAR's (eg, qwerty'. ).  The old code correctly deleted
@@ -2154,7 +1773,6 @@ int i, j, k, inword, wordcount;
 int c;
 static int lenword=0;
 static char *word=NULL;
-char *wordconv=NULL;
 int bump_position_flag=0;
 IndexFILE *indexf=sw->indexlist;
 	
@@ -2178,15 +1796,7 @@ IndexFILE *indexf=sw->indexlist;
 					word =erealloc(word,lenword +1);
 				}
 				word[i] = '\0';
-				if (isokword(sw,word,indexf))
-				{
-					wordconv = (char *)convertentities(word);
-					if(word!=wordconv) 
-					{
-						word = SafeStrCopy(word, wordconv,&lenword);
-						efree(wordconv);
-					}
-				}
+
 				/* Now go to lowercase */
 				for (i = 0; word[i]; i++)
 					word[i] = tolower(word[i]);
@@ -2286,5 +1896,17 @@ int ftotalwords;
                 progerr("Internal error in addtofwordtotals");
         else
                 indexf->fileoffsetarray[filenum-1]->ftotalwords=ftotalwords;
+}
+
+
+void addsummarytofile(indexf, filenum, summary)
+IndexFILE *indexf;
+int filenum;
+char *summary;
+{
+        if(filenum>indexf->fileoffsetarray_cursize)
+                progerr("Internal error in addsummarytofile");
+        else
+                indexf->filearray[filenum-1]->fi.summary=estrdup(summary);
 }
 

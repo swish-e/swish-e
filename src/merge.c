@@ -190,14 +190,14 @@ struct file *fi;
 	fseek(indexf1->fp, fileinfo1, 0);
 	for (i = 1; i <= indexfilenum1; i++) {
 		fi = readFileEntry(indexf1,i, 1);
-		addindexfilelist(sw, i, fi->fi.filename, fi->fi.title, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->fileoffsetarray[i-1]->ftotalwords, metaFile1);
+		addindexfilelist(sw, i, fi->fi.filename, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->fileoffsetarray[i-1]->ftotalwords, metaFile1);
 	}
 	if (verbose) printf("\nReading file 2 info ...");
 
 	fseek(indexf2->fp, fileinfo2, 0);
 	for (i = 1; i <= indexfilenum2; i++) {
 		fi = readFileEntry(indexf2,i, 1);
-		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.title, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->fileoffsetarray[i-1]->ftotalwords, metaFile2);
+		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->fileoffsetarray[i-1]->ftotalwords, metaFile2);
 	}
 	
 	if (verbose) printf("\nCreating output file ... ");
@@ -462,11 +462,12 @@ FILE *fp=indexf->fp;
 ** we find redundant file information.
 */
 
-void addindexfilelist(sw, num, filename, title, start, size, docProperties, totalfiles, ftotalwords, metaFile)
+void addindexfilelist(sw, num, filename, title, summary, start, size, docProperties, totalfiles, ftotalwords, metaFile)
 SWISH *sw;
 int num;
 char *filename;
 char *title;
+char *summary;
 int start;
 int size;
 struct docPropertyEntry *docProperties;
@@ -498,7 +499,7 @@ struct mergeindexfileinfo *ip;
 	ip->next = indexfilehashlist[hashval];
 	indexfilehashlist[hashval] = ip;
 
-	addtofilelist(sw,sw->indexlist, filename, title, start, size, &thisFileEntry);
+	addtofilelist(sw,sw->indexlist, filename, title, summary, start, size, &thisFileEntry);
 	addtofwordtotals(sw->indexlist, sw->filenum, ftotalwords);
 	thisFileEntry->docProperties = DupProps(docProperties);
 

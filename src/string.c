@@ -140,138 +140,6 @@ char *tmpvalue,*p;
 		return NULL;
 }
 
-/* Extracts anything in <title> tags from an HTML file and returns it.
-** Otherwise, only the file name without its path is returned.
-*/
-
-char *parsetitle(filename, alttitle)
-char *filename;
-char *alttitle;
-{
-register int c, d;
-register char *p,*q;
-char *tag;
-int lentitle;
-char *title;
-char *shorttitle;
-int i, j, lines, status, tagbuflen, totaltaglen, curlentitle;
-FILE *fp;
-	
-	title = (char *) emalloc((lentitle=MAXTITLELEN) +1);
-	tag = (char *) emalloc(1);
-	tag[0] = '\0';
-	lines = status = 0;
-	p = title;
-	*p = '\0';
-	
-	if ((q=strrchr(alttitle, '/'))) 
-		q++;
-	else
-		q=alttitle;
-	shorttitle = estrdup(q);
-	
-	fp = fopen(filename, "r");
-	if (fp == NULL) {
-		efree(tag);
-		efree(title);
-		return shorttitle;
-	}
-	for (; lines < TITLETOPLINES ; ) {
-		c = getc(fp);
-		if (c == '\n')
-			lines++;
-		if (feof(fp)) {
-			fclose(fp);
-			efree(tag);
-			efree(title);
-			return shorttitle;
-		}
-		switch(c) {
-		case '<':
-			tag = (char *) erealloc(tag,(tagbuflen=MAXSTRLEN)+1);
-			totaltaglen = 0;
-			tag[totaltaglen++] = '<';
-			status = TI_OPEN;
-			
-			while (1) {
-				d = getc(fp);
-				if (d == EOF) {
-					fclose(fp);
-					efree(tag);
-					efree(title);
-					return shorttitle;
-				}
-				if(totaltaglen==tagbuflen) {
-					tagbuflen+=200;
-					tag=erealloc(tag,tagbuflen+1);
-				}
-				tag[totaltaglen++] = d;
-				if (d == '>') {
-					tag[totaltaglen]='\0';	
-					break;
-				}
-			}
-			
-			if (lstrstr(tag, "</title>")) {
-				status = TI_CLOSE;
-				*p = '\0';
-				fclose(fp);
-				for (i = 0; title[i]; i++)
-					if (title[i] == '\n')
-					title[i] = ' ';
-				for (i = 0; isspace((int)((unsigned char)title[i])) ||
-					title[i] == '\"'; i++)
-					;
-				for (j = 0; title[i]; j++)
-					title[j] = title[i++];
-				title[j] = '\0';
-				for (j = strlen(title) - 1;
-				(j && isspace((int)((unsigned char)title[j])))
-					|| title[j] == '\0' || title[j] == '\"'; j--)
-					title[j] = '\0';
-				for (j = 0; title[j]; j++)
-					if (title[j] == '\"')
-					title[j] = '\'';
-				efree(tag);
-				if (*title) {
-					efree(shorttitle);
-					return(title);
-				} else {
-					efree(title);
-					return(shorttitle);
-				}
-			}
-			else {
-				if (lstrstr(tag, "<title>"))
-					status = TI_FOUND;
-			}
-			break;
-		default:
-			if (status == TI_FOUND) {
-				curlentitle=p-title;
-				if(curlentitle==lentitle) {
-					lentitle +=200;
-					title = (char *)erealloc(title,lentitle +1);
-					p = title + curlentitle;
-				}
-				*p = c;
-				p++;
-			}
-			else {
-				if (status == TI_CLOSE) {
-					fclose(fp);
-					efree(tag);
-					efree(title);
-					return shorttitle;
-				}
-			}
-		}
-	}
-	fclose(fp);
-	efree(tag);
-	efree(title);
-	return shorttitle;
-}
 
 /* In a string, replaces all occurrences of "oldpiece" with "newpiece".
 ** This is not really bulletproof yet.
@@ -363,219 +231,6 @@ int wordcompare(s1, s2)
 }
 */
 
-/* This converts HTML numbered entities (such as &#169;)
-** to strings (like &copy;). Much is this function is
-** simply adding semicolons in the right places.
-** This and the functions it calls are not very fast
-** and could be made faster.
-*/
-
-char *convertentities(s)
-char *s;
-{
-int lens, skip;
-char *ent;
-char *newword;
-char *p,*q;
-
-	if (!(p=strchr(s, '&'))) return s;
-	lens = (int)strlen(s);
-
-		/* Allocate enough memory */
-	newword = (char *) emalloc(lens*2+1);
-
-	q=newword;
-	memcpy(q,s,p-s);
-	q +=(p-s);
-
-	for (s=p; *s != '\0'; ) {
-		if (*s == '&') {
-			ent = getent(s, &skip);
-			if (ent[0] == '\0') {
-				*q++=*s++;			
-			} else {
-				s += skip;
-				if (*s == ';') s++;
-				memcpy(q,ent,skip);
-				q+=skip;
-				*q++=';';
-			}
-			efree(ent);
-		}
-		else
-			*q++=*s++;
-	}
-	*q='\0';
-	if (ASCIIENTITIES) { 
-			/* Jose Ruiz 06/00 Do not call to converttonamed
-			** here. convertoascii do all the work 
-			*/
-		newword = (char *) converttoascii(newword);
-	} else {
-		newword = (char *) converttonamed(newword);
-	}
-	return newword;
-}
-
-/* Returns a matching entity that matches the beginning of a string, if any.
-*/
-
-char *getent(s, skip)
-char *s;
-int *skip;
-{
-int i;
-int lenent;
-char *ent;
-int lentestent;
-char *testent=NULL;
-
-	ent = (char *)emalloc((lenent=MAXENTLEN) +1);
-
-	*skip = 0;
-	ent = SafeStrCopy(ent,s,&lenent);
-	if (ent[1] == '#') {
-		if (isdigit((int)ent[5])) {
-			ent[0]='\0';
-			return ent;
-		}
-		for (i = 2; ent[i] != '\0' && isdigit((int)ent[i]); i++);
-
-		while (ent[i] != '\0' && !isdigit((int)ent[i])) ent[i++] = '\0';
-
-		*skip = strlen(ent);
-		return ent;
-	}
-	else {
-		testent = (char *)emalloc((lentestent=MAXENTLEN) +1);
-		for (i = 0; entities[i] != NULL; i += 3) {
-			testent = SafeStrCopy(testent, entities[i],&lentestent);
-			if (testent[0] != '\0') {
-				if (!strncmp(testent, ent, strlen(testent))) {
-					ent = SafeStrCopy(ent, testent,&lenent);
-					*skip = strlen(ent);
-					efree(testent);
-					return ent;
-				}
-			}
-		}
-		efree(testent);
-	}
-	
-	ent = SafeStrCopy(ent,"\0",&lenent);
-	return ent;
-}
-
-/* This is the real function called by convertentities() that
-** changes numbered to named entities.
-*/
-
-char *converttonamed(str)
-char *str;
-{
-int i, hasnumbered, ilen;
-int lentestent;
-char *testent;
-int lennewent;
-char *newent;
-char *newword;
-	
-	newword = (char *) estrdup(str);
-	efree(str);
-	testent = (char *) emalloc((lentestent=MAXENTLEN) + 1);
-	newent = (char *) emalloc((lennewent=MAXENTLEN) + 1);
-	
-	do {
-	   for (i = 0, hasnumbered = 0; entities[i] != NULL; i += 3) {
-		ilen=strlen(entities[i+1]);
-		if((ilen+1)>=lentestent) {
-			lentestent=ilen+1+100;
-			testent=erealloc(testent,lentestent+1);
-		}
-		memcpy(testent, entities[i + 1],ilen);
-		testent[ilen]=';';
-		testent[ilen+1]='\0';
-		if (strstr(newword, testent) != NULL &&
-			(entities[i])[0] != '\0') {
-			hasnumbered=1;
-			ilen=strlen(entities[i]);
-			if((ilen+1)>=lennewent) {
-				lennewent=ilen+1+100;
-				newent=erealloc(newent,lennewent+1);
-			}
-			memcpy(newent,entities[i],ilen);
-			newent[ilen]=';';
-			newent[ilen+1]='\0';
-			newword = (char *) replace(newword, testent, newent);
-		}
-	   }
-	} while (hasnumbered);
-	efree(testent);
-	efree(newent);
-	return newword;
-}
-
-/* This function converts all convertable named and numbered
-** entities to their ASCII equivalents, if they exist.
-*/
-
-char *converttoascii(str)
-char *str;
-{
-int i, hasnonascii,ilen;
-char *c, *d;
-int lenwrdent;
-char *wrdent;
-int lennument;
-char *nument;
-char *newword;
-
-	newword = (char *) estrdup(str);
-	efree(str);
-	wrdent = (char *) emalloc((lenwrdent=MAXENTLEN) + 1);
-	nument = (char *) emalloc((lennument=MAXENTLEN) + 1);
-	
-	do {
-	   for (i = 0, hasnonascii = 0; entities[i] != NULL; i += 3) {
-		ilen=strlen(entities[i]);
-		if((ilen+1)>=lenwrdent) {
-			lenwrdent=ilen+1+200;
-			wrdent=erealloc(wrdent,lenwrdent+1);
-		}
-		memcpy(wrdent,entities[i],ilen);
-		wrdent[ilen]=';';
-		wrdent[ilen+1]='\0';
-		ilen=strlen(entities[i+1]);
-		if((ilen+1)>=lennument) {
-			lennument=ilen+1+200;
-			nument=erealloc(nument,lennument+1);
-		}
-		memcpy(nument,entities[i+1],ilen);
-		nument[ilen]=';';
-		nument[ilen+1]='\0';
-		
-		c = d = NULL;
-		if ((entities[i])[0] != '\0')
-			c = (char *) strstr(newword, wrdent);
-		if ((entities[i + 1])[0] != '\0')
-			d = (char *) strstr(newword, nument);
-		if ((entities[i + 2])[0] != '\0' && (c!=NULL || d!=NULL)) {
-			hasnonascii=1;
-			if (c != NULL && d==NULL) { 
-				newword = (char *) replace(newword, wrdent, entities[i + 2]); 
-			} else if (d != NULL && c==NULL) { 
-				newword = (char *) replace(newword, nument, entities[i + 2]); 
-			} else {
-				newword = (char *) replace(newword, wrdent, entities[i + 2]); 
-				newword = (char *) replace(newword, nument, entities[i + 2]); 
-			}
-		}
-	   }
-	} while (hasnonascii);
-	efree(wrdent);
-	efree(nument);
-	return newword;
-}
 
 /* That regular expression matching and replacing thing */
 char * matchAndChange (char *str, char *pattern, char *subs) 
@@ -844,3 +499,169 @@ int len;
         return(dest);
 }
 
+#define TAG_OPEN 1
+#define TAG_CLOSE 2
+#define TAG_FOUND 4
+
+/* Gets the content between "<parsetag>" and "</parsetag>" from buffer
+limiting the scan to the first max_lines lines (0 means all lines) */
+char *parsetag(char *parsetag, char *buffer, int max_lines)
+{
+register int c, d;
+register char *p,*q,*r;
+char *tag;
+int lencontent;
+char *content;
+int i, j, lines, status, tagbuflen, totaltaglen, curlencontent;
+char *begintag;
+char *endtag;
+
+	lencontent=strlen(parsetag);
+	begintag=emalloc(lencontent+3);
+	endtag=emalloc(lencontent+4);
+	sprintf(begintag,"<%s>",parsetag);
+	sprintf(endtag,"</%s>",parsetag);
+
+	tag = (char *) emalloc(1);
+	tag[0] = '\0';
+
+	content = (char *) emalloc((lencontent=MAXTITLELEN) +1);
+	lines = status = 0;
+	p = content;
+	*p = '\0';
+
+	for (r=buffer; ; ) {
+		c = *r++;
+		if (c == '\n')
+		{
+			lines++;
+			if(max_lines && lines==max_lines) break;
+		}
+		if (!c) {
+			efree(tag); efree(content); efree(endtag); efree(begintag);
+			return NULL;
+		}
+		switch(c) {
+		case '<':
+			tag = (char *) erealloc(tag,(tagbuflen=MAXSTRLEN)+1);
+			totaltaglen = 0;
+			tag[totaltaglen++] = '<';
+			status = TAG_OPEN;
+			
+			while (1) {
+				d = *r++;
+				if (!d) {
+					efree(tag); efree(content); efree(endtag); efree(begintag);
+					return NULL;
+				}
+				if(totaltaglen==tagbuflen) {
+					tagbuflen+=200;
+					tag=erealloc(tag,tagbuflen+1);
+				}
+				tag[totaltaglen++] = d;
+				if (d == '>') {
+					tag[totaltaglen]='\0';	
+					break;
+				}
+			}
+			
+			if (lstrstr(tag, endtag)) {
+				status = TAG_CLOSE;
+				*p = '\0';
+				for (i = 0; content[i]; i++)
+					if (content[i] == '\n')
+					content[i] = ' ';
+				for (i = 0; isspace((int)((unsigned char)content[i])) ||
+					content[i] == '\"'; i++)
+					;
+				for (j = 0; content[i]; j++)
+					content[j] = content[i++];
+				content[j] = '\0';
+				for (j = strlen(content) - 1;
+				(j && isspace((int)((unsigned char)content[j])))
+					|| content[j] == '\0' || content[j] == '\"'; j--)
+					content[j] = '\0';
+				for (j = 0; content[j]; j++)
+					if (content[j] == '\"')
+					content[j] = '\'';
+				efree(tag); efree(endtag); efree(begintag); 
+				if (*content) {
+					return(content);
+				} else {
+					efree(content);
+					return NULL;
+				}
+			}
+			else {
+				if (lstrstr(tag, begintag))
+					status = TAG_FOUND;
+			}
+			break;
+		default:
+			if (status == TAG_FOUND) {
+				curlencontent=p-content;
+				if(curlencontent==lencontent) {
+					lencontent +=200;
+					content = (char *)erealloc(content,lencontent +1);
+					p = content + curlencontent;
+				}
+				*p = c;
+				p++;
+			}
+			else {
+				if (status == TAG_CLOSE) {
+					efree(tag); efree(content); efree(endtag); efree(begintag);
+					return NULL;
+				}
+			}
+		}
+	}
+	efree(tag); efree(content); efree(endtag); efree(begintag);
+	return NULL;
+}
+
+/* Routine to check if a string contains only numbers */
+int isnumstring(unsigned char *s)
+{
+	if(!s || !*s) return 0;
+	for(;*s;s++)
+		if(!isdigit((int)(*s))) break;
+	if(*s) return 0;
+	return 1;
+}
+
+void remove_newlines(char *s)
+{
+char *p;
+	if(!s || !*s) return;
+	for(p=s;p;) if(p=strchr(p,'\n')) *p++=' ';
+	for(p=s;p;) if(p=strchr(p,'\r')) *p++=' ';
+}
+
+
+void remove_tags(char *s)
+{
+int intag;
+char *p,*q;
+
+	if(!s || !*s) return;
+	for(p=q=s,intag=0;*q;q++)
+	{
+		switch(*q)
+		{
+			case '<':
+				intag=1;
+				break;
+			case '>':
+				intag=0;
+				break;
+			default:
+				if(!intag)
+				{
+					*p++=*q;
+				}
+				break;
+		}
+	}
+	*p='\0';
+}

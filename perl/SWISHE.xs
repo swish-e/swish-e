@@ -55,6 +55,7 @@ SwishNext(handle)
         XPUSHs(sv_2mortal(newSVpv(result->indexf->line,0)));
         XPUSHs(sv_2mortal(newSVpv(result->filename,0)));
         XPUSHs(sv_2mortal(newSVpv(result->title,0)));
+        XPUSHs(sv_2mortal(newSVpv(result->summary,0)));
         XPUSHs(sv_2mortal(newSViv(result->start)));
         XPUSHs(sv_2mortal(newSViv(result->size)));
         for(i=0;i<numPropertiesToDisplay;i++)

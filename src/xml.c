@@ -104,7 +104,7 @@ struct metaEntry* list;
 ** to the appropriate structures.
 */
 
-int countwords_XML(SWISH *sw, FileProp *fprop, char *title, char *buffer)
+int countwords_XML(SWISH *sw, FileProp *fprop, char *buffer)
 
 {
 int ftotalwords;
@@ -119,15 +119,14 @@ struct file *thisFileEntry = NULL;
 int metaNameXML;
 int i, docPropName;
 IndexFILE *indexf=sw->indexlist;
+char *summary=NULL;
 	
-/*
-$$-- Q:What about title? == fprop->real_path and what about fprop->index_no_content?
-$$-- has to be checked and to be implemented!
-*/
-
 	sw->filenum++;
-	
-	addtofilelist(sw,indexf, fprop->real_path, title, 0, fprop->fsize, &thisFileEntry);
+
+	if(fprop->stordesc)
+		summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
+
+	addtofilelist(sw,indexf, fprop->real_path, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
 	positionMeta =(int *)emalloc(metaNamelen*sizeof(int));
@@ -195,4 +194,35 @@ $$-- has to be checked and to be implemented!
 	if(sw->swap_flag)
 		SwapFileData(sw, indexf->filearray[sw->filenum-1]);
 	return ftotalwords;
+}
+
+
+char *parseXmlSummary(char *buffer,char *field,int size)
+{
+char *summary=NULL,*tmp=NULL;
+int len;
+
+       /* Get the summary if no metaname/field is given */
+	if(!field && size)
+	{
+		tmp=estrdup(buffer);
+		remove_tags(tmp);
+	}
+	else if(field)
+	{
+		if((tmp=parsetag(field, buffer, 0)))
+		{
+			remove_tags(tmp);
+		}
+	}
+	if(tmp)
+	{
+		remove_newlines(tmp);
+		if(size && (len=strlen(tmp))>size) len=size;
+		summary=emalloc(len+1);
+		memcpy(summary,tmp,len);
+		summary[len]='\0';
+		efree(tmp);
+	}
+	return summary;
 }
