@@ -272,6 +272,18 @@ Creates aliases for a PropertyName.
 Defines a metaname to use for indexing href links in HTML documents.
 Available only with libxml2 parser.
 
+=item * New directive: ImageLinksMetaName
+
+Defines a metaname to use for indexing src links in <img> tags.
+Allow you to search image pathnames within HTML pages.
+Available only with libxml2 parser.
+
+=item * New directive: AbsoluteLinks
+
+Attempts to convert relative links indexed with HTMLLinksMetaName and ImageLinksMetaName
+to absolute links.
+Available only with libxml2 parser.
+
 =item * New directive: ExtractPath
 
 Allows you to use a regular expression to extract out part of the path of each file

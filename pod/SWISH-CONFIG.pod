@@ -88,6 +88,10 @@ This is a special section that describes using document filters with Swish-e.
 
 =item *
 
+L<AbsoluteLinks|/"item_AbsoluteLinks"> [yes|NO]
+
+=item *
+
 L<BeginCharacters|/"item_BeginCharacters"> *string of characters*
 
 =item *
@@ -182,6 +186,9 @@ L<IgnoreWords|/"item_IgnoreWords"> [*list of stop words*|File: path]
 
 =item *
 
+L<ImageLinksMetaName|/"item_ImageLinksMetaName"> *metaname*
+
+=item *
 L<IncludeConfigFile|/"item_IncludeConfigFile">
 
 =item *
@@ -819,6 +826,55 @@ To make swish-e index links as normal text, you may use:
 
 This feature is only available with the libxml2 HTML parser.    
 
+=item ImageLinksMetaName *metaname*
+
+Allows indexing of image links under a metaname.  Normally, image URLs are not
+indexed.
+
+Example:
+
+    ImagesLinksMetaName images
+
+Now, if you would like to find pages that include a nice image of a beach:
+
+    -w images='"beach"'
+
+To make swish-e index links as normal text, you may use:
+
+    ImageLinksMetaName swishdefault
+
+This feature is only available with the libxml2 HTML parser.    
+
+=item AbsoluteLinks [yes|NO]
+
+If this is set true then swish-e will attempt to convert relative URIs extracted
+from HTML documents for use with C<HTMLLinksMetaName> and C<ImageLinksMetaName>
+into absolute URIs.  Swish will use any <BASE> tag found in the document, otherwise
+swish will use the file's pathname.  The pathname used will be the pathname *after*
+C<ReplaceRules> has been applied to the document's pathname.
+
+For example, say you wish to index image links under the metaname "images".
+
+    ImageLinksMetaName images
+
+if an image is located in http://localhost/vacations/france/index.html
+and C<AbsoluteLinks> is set to no, then a image within that document:
+
+     <img src="beach.jpeg">
+
+will only index "beach.jpeg".
+
+But, if you want more deatil when searching, you can enable C<AbsoluteLinks>
+and swish-e will index "http://localhost/vacations/france/beach.jpeg".  You can then look for
+images of beaches, but only in France:
+
+    -w images=(beach and france)
+
+This also means you can search for any images within France:
+
+    -w images=(france)
+
+This feature is only available with the libxml2 HTML parser.    
 
 =item UndefinedMetaTags [error|ignore|index|auto]
 
@@ -1390,6 +1446,12 @@ and directories to index.  Since, by default, swish indexes all files and recurs
 all directories you will typically only use C<FileRules>.
 C<FileMatch> is useful, for example, to override the behavior of C<IndexOnly>.
 Some examples are included below.
+
+Except for C<FileRules title ...>, this feature is only available for file access
+method (-S fs), which is the default.  Also, any pathname modification with C<ReplaceRules>
+happens after the check for C<FileRules>.
+(it's unlikly that you would exclude files with C<FileRules> based on text you added with
+C<ReplaceRules>!)
 
 The regular expression is a C regex.h extended regular expression.
 You may supply more than one regular expression per line, or use separate directives.
