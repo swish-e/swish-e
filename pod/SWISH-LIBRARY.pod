@@ -59,11 +59,12 @@ they are destroyed when no longer needed.
 
 =head1 Installing the Swish-e library
 
-The Swish-e library is installed when you run "make install-lib".
-You may need to be root or superuser to install the library in the standard location.
+The Swish-e library is installed when you run "make install" when building 
+Swish-e.  No extra installation steps are required.
 
-The library consists of a header file "swish-e.h" and a library "libswish-e.a".  Currently
-only a static library is created.
+The library consists of a header file "swish-e.h" and a library
+"libswish-e.*" that can either be a static or shared library depending on 
+your platform.
 
 =head1 Library Overview
 
