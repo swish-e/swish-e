@@ -39,7 +39,7 @@ $Id$
 
 /* Alignment size in bytes */
 
-#ifdef __sparc__
+#if defined(__sparc__) || defined(IRIX)
 /* This is not exactly correct because not all sparc machines require 8, but minor difference in memory usage */
 #define PointerAlignmentSize 8
 
