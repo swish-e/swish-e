@@ -2275,11 +2275,21 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         }
 
         /* Check for buzzwords */
-        if ( isbuzzword(indexf, word) )
+        if ( indexf->buzzwords_used_flag )
         {
-            addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
-            wordcount++;
-            continue;
+            /* only strip when buzzwords are being used since stripped again as a "swish word" */
+            stripIgnoreLastChars(&indexf->header, word);
+            stripIgnoreFirstChars(&indexf->header, word);
+            if ( !*word ) /* stripped clean? */
+                continue;
+
+        
+            if ( isbuzzword(indexf, word) )
+            {
+                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                wordcount++;
+                continue;
+            }
         }
         
 

@@ -96,7 +96,9 @@ int i;
         newnode->hashuselist[i] = NULL;
     }
 
-	newnode->is_use_words_flag=0;
+	newnode->is_use_words_flag = 0;
+	newnode->buzzwords_used_flag = 0;
+
 	for (i=0; i<256; i++) newnode->keywords[i] = NULL;
 
 	newnode->locationlookup=NULL;

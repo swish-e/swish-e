@@ -420,6 +420,7 @@ typedef struct IndexFILE
     int     stopPos;
 
     /* Buzzwords hash */
+    int    buzzwords_used_flag; /* flag to indicate that buzzwords are being used */
     struct swline *hashbuzzwordlist[HASHSIZE];
     
 
