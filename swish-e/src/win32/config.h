@@ -3,7 +3,7 @@
 /* We define this in OS-specific code which include's config.h  */
 #ifndef _SWISH_PORT
 #  include "win32/dirent.h"
-#  include "win32/regex.h"
+#  include "pcreposix.h"
 #  include "win32/mkstemp.h"
 #endif
 
