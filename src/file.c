@@ -46,7 +46,7 @@ $Id$
 **
 */
 
-#include <unistd.h>
+#include <stdlib.h>
 #include "swish.h"
 #include "mem.h"
 #include "string.h"
