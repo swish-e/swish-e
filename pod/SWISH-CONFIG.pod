@@ -311,7 +311,7 @@ L<obeyRobotsNoIndex|/"item_obeyRobotsNoIndex"> [yes|NO]
 
 =item *
 
-L<ParserWarnLevel|/"item_ParserWarnLevel"> 0|1|2|3
+L<ParserWarnLevel|/"item_ParserWarnLevel"> [0|1|2|3]
 
 =item *
 
@@ -430,18 +430,16 @@ in another file.
 
     IncludeConfigFile /usr/local/swish/conf/site_config.config
 
-=item IndexReport [0|1|2|3|4]
+=item IndexReport [0|1|2|3]
 
 This is how detailed you want reporting while indexing. You can specify
-numbers 0 to 3 - 0 is totally silent, 3 is the most verbose.   The default
-is 3, so you probably should define this.
-
-    IndexReport 1
+numbers 0 to 3.  0 is totally silent, 3 is the most verbose.   The default
+is 1.
 
 This may be overridden from the command line via the C<-v> switch (see
 L<SWISH-RUN|SWISH-RUN>).
 
-=item ParserWarnLevel 0|1|2|3
+=item ParserWarnLevel [0|1|2|3]
 
 Sets the error level when using the libxml2 parser for XML and HTML.
 libxml2 will point out structural errors in your documents.
@@ -1453,23 +1451,31 @@ C<title>:
 =item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
 
 B<StoreDescription> allows you to store a document description in the
-index file, and this description is returned in your search results
+index file, and this description can be returned in your search results
 when the C<-x> switch is used to include the I<swishdescription> for
 extended results.
 
-For text documents you specify the type C<TXT> and the number of characters to capture.
+For text documents you specify the type C<TXT> and the number of I<characters> to capture.
 
     StoreDescription TXT 20
+
+The above stores only the first twenty characters from the text file in the Swish-e index
+file.
 
 For HTML, and XML file types, specify the the tag to use for the
 description, and optionally the number of characters to capture.  If not
 specified will capture the entire contents of the tag.
 
-    StoreDescription HTML <body> 20
+    StoreDescription HTML <body> 20000
     StoreDescription XML  <desc> 40
 
 Note that documents must be assigned a document type with C<IndexContents>
 or C<DefaultContents> to use this feature.
+
+Swish-e will compress the descriptions (or any other large property)
+if compiled to use zlib (see L<INSTALL|INSTALL>).  This is recommended when using
+StoreDescription and a large number of documents.  Compression of 30% to 50% is
+not uncomon with HTML files.
 
 =item PropCompressionLevel [0-9]
 
@@ -1997,7 +2003,7 @@ These all need quotes due to the included space character
     FileRules title regex "!^hello there$!"
 
 These show how the backslash must be doubled inside of quotes.
-Swish-e converts a double-backslahs into a single backslash, and then
+Swish-e converts a double-backslash into a single backslash, and then
 passes that single onto the regular expression compiler.
 
     FileRules filename regex /\.pdf/
@@ -2304,11 +2310,8 @@ and run indexing with the command:
     swish-e -c swish.cfg -S prog -v 9
 
 The C<IndexDir> command tells Swish-e the name of the program to run.
-(Under unix you can just specify the name of the script, since unix will
-figure out the program from the first line of the script.)  The double
-backslash characters are required since Swish-e uses the backslash to
-escape the next character.  A double backslash will end up as a single
-one after being parsed from the config file.
+Under unix you can just specify the name of the script, since unix will
+figure out the program from the first line of the script.
 
 The C<SwishProgParameters> are the parameters passed to the program
 specified by C<IndexDir> (perl.exe in this case).  The first parameter
