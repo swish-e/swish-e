@@ -1,6 +1,5 @@
-<div class="box">
     Common footer text here
-</div>
+
 <pre>
 [% USE Dumper %]
 ** config **

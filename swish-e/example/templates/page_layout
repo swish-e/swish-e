@@ -3,15 +3,53 @@
 [% # This template defines the layout of the site %]
 <head>
     <style type="text/css">
+        [% # Normally you would @import "style.css" %]
         [% INSERT style.css %]
+        [% INSERT markup.css %]
     </style>
 
     <title>[% config.title %]</title>
 </head>
 <body>
-    [% PROCESS common_header %]
-    [% content %]
-    [% PROCESS common_footer %]
+
+<div id="overall">
+    <div class="header">
+        [% PROCESS common_header %]
+    </div>
+
+    <div class="content">
+        <div class="leftcolumn">
+            <div class="node">
+                <h1>Menu Items here</h1>
+                <a href="http://swish-e.org">Swish-e</a>
+            </div>
+            <div class="node">
+                <h1>Documentation</h1>
+                <a href="http://swish-e.org/current/docs">Docs</a>
+            </div>
+        </div>
+
+        <div class="rightcolumn">
+            <div class="node">
+                <h1>Interesting Stories</h1>
+                Some content here
+            </div>
+            <div class="node">
+                <h1>Other News</h1>
+                Some news contnet here
+            </div>
+        </div>
+
+        <div class="centercolumn">
+            [% content %]
+        </div>
+    </div>
+
+    <div class="footer">
+        [% PROCESS common_footer %]
+    <div>
+</div>
+
 </body>
 </html>
 

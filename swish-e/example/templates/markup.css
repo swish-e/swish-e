@@ -1,0 +1,144 @@
+/*-General-----------------------------------------------*/
+
+a:hover { background: #CCC; }
+
+
+body {
+        background-color:#000000;
+        color:#ffffff;
+        font-family : verdana,arial,helvetica,sans-serif;
+        font-weight:normal;
+        text-decoration:none; 
+        font-size:x-small;
+        voice-family:"\"}\"";
+        voice-family:inherit;
+        font-size:small;
+}
+html>body {
+        font-size:small;
+}
+
+.strong {
+        font-weight:bold;
+}
+
+/*-Main Markup-------------------------------------------*/
+
+#overall {
+        background-color: #ffffff;
+        color:#000000;
+}
+
+/*-Left Column--------*/
+
+
+
+.leftcolumn .node h1 {
+        font-weight:normal;
+        font-size:1.0em;
+        color:#ffffff;
+        background-color:#009;
+}
+
+
+/*-Center Column------*/
+
+
+/*-Right Column-------*/
+
+.rightcolumn .node {
+        color:#000000;
+        background-color:#cccccc;
+}
+
+.rightcolumn .node a {
+        color:#006666;
+        background-color:transparent;
+}
+
+.rightcolumn .node h1 {
+        font-family:Arial, Helvetica, serif;
+        font-weight:bold;
+        font-size:1.38em;
+        color:#ffffff;
+        background-color:#009;
+}
+
+.rightcolumn .node h1 a {
+        color:#ffffff;
+        background-color:transparent;
+}
+
+.rightcolumn .node h2 {
+        font-weight:bold;
+        font-size:.95em;
+}
+
+.rightcolumn .node ul.none {
+        list-style-type:none;
+}
+
+.rightcolumn .node ul.dot {
+        list-style-type:none;
+        list-style-image:url('../images/listdot.gif');
+}
+
+.rightcolumn .node ul.books {
+        list-style-type:disc;
+}
+
+.header {
+    background-color: #DDDDDD;
+}
+
+/* - Swish-e results styles ----------------------------------------------- */
+
+
+.search-form {
+    text-align: center;
+}
+
+.showing-header {
+    background-color: #EEEEEE;
+    padding-left: 5px;
+}
+
+.title {
+    font-size: 1.2em;
+    margin-top: 1em;
+}
+
+.rank  {
+    color: red;
+    font-size: 0.8em;
+}
+.description {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    margin-left: 2em;
+    max-width: 700px; /* not supported by IE */
+    width:expression(document.body.clientWidth > 600? "600px": "auto" );
+}
+.metadata { 
+    margin-left: 2em;
+    font-size: 0.8em;
+    color: green;
+}
+.metadata a { 
+    text-decoration: none; 
+    color: green;
+}
+.highlight { 
+    background : #FFFF99;
+    font-weight: bold;
+}
+.reference { 
+    text-align: right;
+}
+.message {
+    color: red;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+

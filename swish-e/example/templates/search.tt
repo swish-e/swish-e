@@ -1,12 +1,5 @@
 [% WRAPPER page_layout %]
 
-    [% IF result %]
-        [% IF result.message %]
-            <span class="message">[% result.message %]</span>
-        [% ELSIF ! result.hits %]
-            <span class="message">No Results Found</span>
-        [% END %]
-    [% END %]
 
 
     [% PROCESS form %]
@@ -18,9 +11,18 @@
         [% PROCESS next_links %]
     [% END %]
 
+    [% IF result %]
+        [% IF result.message %]
+            <div class="message">[% result.message %]</div>
+        [% ELSIF ! result.hits %]
+            <div class="message">No Results Found</div>
+        [% END %]
+    [% END %]
+
 [% END %]
 
 [% BLOCK form %]
+<div class="search-form">
     <form method="get" action="[% request.myself %]" enctype="application/x-www-form-urlencoded">
         <input type="text" name="query" value="" size="40" maxlength="200" />
         <input type="submit" name="submit" value="Search!" /><br>
@@ -29,14 +31,15 @@
         <input type="radio" name="metaname" value="swishtitle" />Just Title
         <input type="radio" name="metaname" value="swishdocpath" />Path
     </form>
+</div>
 [% END %]
 
 
 [% BLOCK results_header %]
-<div class="header">
+<div class="showing-header">
+    Results for <b>[% request.query | html %]</b><br>
     Showing page [% result.page %] 
     ([% result.start +1 %] - [% (result.start + result.shown) %] of [% result.hits %] hits) 
-    for <b>[% request.query | html %]</b><br>
 
     [% USE myurl = url( request.myself, query=request.query, metaname=request.metaname, size=request.pagesize ) %]
 

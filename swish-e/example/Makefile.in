@@ -165,7 +165,8 @@ template_DATA = \
     templates/page_layout \
     templates/common_header \
     templates/common_footer \
-    templates/style.css
+    templates/style.css \
+    templates/markup.css
 
 
 perlmodule_SCRIPTS = \
