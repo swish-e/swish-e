@@ -23,6 +23,7 @@
 #include "swish.h"
 
 #include "string.h"
+#include "mem.h"
 #include "error.h"
 #include "list.h"
 #include "search.h"
@@ -31,7 +32,6 @@
 #include "http.h"
 #include "merge.h"
 #include "docprop.h"
-#include "mem.h"
 #include "hash.h"
 #include "entities.h"
 #include "filter.h"

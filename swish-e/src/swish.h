@@ -700,20 +700,6 @@ typedef struct
 SWISH;
 
 
-typedef struct _mem_zone_head {
-	struct _mem_zone	*next;
-	size_t				size;
-} MEM_ZONE_HEAD;
-
-
-typedef struct _mem_zone {
-	struct _mem_zone	*next;
-	size_t				free;
-	void				*alloc;
-	unsigned char		*ptr;
-} MEM_ZONE;
-
-
 /* 06/00 Jose Ruiz
 ** Structure  StringList. Stores words up to a number of n
 */

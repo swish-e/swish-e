@@ -43,7 +43,7 @@ $Id$
 #define MAIN_FILE
 
 #include "swish.h"
-
+#include "mem.h"
 #include "string.h"
 #include "error.h"
 #include "list.h"
@@ -53,7 +53,6 @@ $Id$
 #include "http.h"
 #include "merge.h"
 #include "docprop.h"
-#include "mem.h"
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"

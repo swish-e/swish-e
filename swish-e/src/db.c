@@ -21,10 +21,10 @@
 */
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "index.h"
 #include "hash.h"
-#include "mem.h"
 #include "date_time.h"
 #include "compress.h"
 #include "error.h"

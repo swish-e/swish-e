@@ -107,6 +107,7 @@ $Id$
 */
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "search.h"
 #include "index.h"
@@ -114,7 +115,6 @@ $Id$
 #include "list.h"
 #include "merge.h"
 #include "hash.h"
-#include "mem.h"
 #include "docprop.h"
 #include "stemmer.h"
 #include "soundex.h"

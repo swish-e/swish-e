@@ -40,9 +40,9 @@ $Id$
 #include <stdarg.h>
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "index.h"
-#include "mem.h"
 
 #include "http.h"
 #include "httpserver.h"

@@ -28,10 +28,10 @@
 */
 
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "index.h"
 #include "hash.h"
-#include "mem.h"
 #include "file.h"
 #include "list.h"
 #include "fs.h"

@@ -48,6 +48,12 @@ $Id$
 #define MEM_STATISTICS 0
 
 
+typedef struct _mem_zone {
+	struct _zone	*next;
+	size_t			size;
+} MEM_ZONE;
+
+
 /* The following are the basic malloc/realloc/free replacements */
 #if MEM_DEBUG | MEM_TRACE | MEM_STATISTICS
 
@@ -73,13 +79,13 @@ void Mem_Summary(char *title, int final);
 /* Memory zone routines */
 
 /* create a zone -- size should be some reasonable number */
-MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size);
+MEM_ZONE *Mem_ZoneCreate(size_t size);
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
-void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size);
+void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size);
 
 /* free all memory in a zone */
-void Mem_ZoneFree(MEM_ZONE_HEAD **head); 
+void Mem_ZoneFree(MEM_ZONE **head); 
 
 
 /* Don't let people use the regular C calls */
