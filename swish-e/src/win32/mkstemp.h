@@ -21,4 +21,4 @@
    The last six characters of TEMPLATE must be "XXXXXX";
    they are replaced with a string that makes the filename unique.
    Returns a file descriptor open on the file for reading and writing.  */
-int mkstemp (char *template);
+int mkstemp (char *Template);

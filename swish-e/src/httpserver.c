@@ -46,6 +46,7 @@ $Id$
 
 #include "http.h"
 #include "httpserver.h"
+#include "file.h"
 
 
 /* The list of servers that we are acting on.
@@ -53,7 +54,7 @@ $Id$
 static httpserverinfo *servers = 0;
 
 
-static void parserobotstxt(FILE *fp, httpserverinfo *server);
+static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *server);
 static char *isolatevalue(char *line, char *keyword, int *plen);
 static int serverinlist(char *url, struct swline *list);
 
@@ -148,15 +149,31 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 			buffer=erealloc(buffer,lenbuffer+1);
 		}
 		sprintf(buffer, "%srobots.txt", server->baseurl);
-		if (get(sw,contenttype, &server->lastretrieval, buffer) == 200) {
+		if (get(sw,contenttype, &server->lastretrieval, buffer) == 200)
+		{
+		    char   *robots_buffer;
+		    int     filelen;
+		    int     bytes_read;
+		    
 			if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
 				lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+30+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
 			sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
 			fp = fopen(buffer, F_READ_TEXT);
-			parserobotstxt(fp, server);
-			fclose(fp);
+
+			filelen = getsize(buffer);
+
+            robots_buffer = emalloc( filelen + 1 );
+            *robots_buffer = '\0';
+            bytes_read = fread(robots_buffer, 1, filelen, fp);
+            robots_buffer[bytes_read] = '\0';
+            parserobotstxt( robots_buffer, bytes_read, server );
+
+			efree( robots_buffer );
+
+			//parserobotstxt(fp, server);
+			//fclose(fp);
 		}
 		
 		cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
@@ -191,14 +208,50 @@ int urldisallowed(SWISH *sw, char *url)
     return 0;
 }
 
+// quick fix to parse from Mac and Windows.
+// Pass in:
+//      char **next_start == pointer to a *char that has where the next string starts.
+//      char *last_char   == pointer to last char in buffer.  Buffer MUST have room for one more char
+// 
+// returns NULL on no more strings
+
+static char *next_line( char **next_start, char *last_char  )
+{
+    char *buffer = *next_start;
+    char *start;
+
+
+    // skip over any leading new lines or cr.
+    while ( buffer <= last_char && ( *buffer == '\0' || *buffer == '\n' || *buffer == '\r' ) )
+        buffer++;
+
+    if ( buffer > last_char )
+        return NULL;
+
+    start = buffer;  // start of this word
+
+    // Now find the end of this string
+    while ( buffer <= last_char && ( *buffer != '\0' && *buffer != '\n' && *buffer != '\r' ) )
+        buffer++;
+
+    *buffer = '\0';  // mark the end of the string
+
+    buffer++;
+    *next_start = buffer;
+
+    return start;
+}
 
 static char useragent[] = "user-agent:";
 static char disallow[] = "disallow:";
 static char swishspider[] = "swishspider";
 
-static void parserobotstxt(FILE *fp, httpserverinfo *server)
+static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *server)
 {
-    char buffer[MAXSTRLEN];
+    char *buffer;
+    char *bufend = robots_buffer + buflen -1;  // last char of string
+    char *next_start = robots_buffer;
+    
     enum {START, USERAGENT, DISALLOW} state = START;
     enum {SPECIFIC, GENERIC, SKIPPING} useragentstate = SKIPPING;
     char *p;
@@ -207,17 +260,14 @@ static void parserobotstxt(FILE *fp, httpserverinfo *server)
     robotrules *entry2;
 	
     server->useragent = 0;
-    
-    while (fgets(buffer, sizeof buffer, fp) != 0) {
-	/* Remove end of line indicators
-		**/
-		while ((*(buffer + strlen(buffer) - 1) == '\r') ||
-			(*(buffer + strlen(buffer) - 1) == '\n')) {
-			*(buffer + strlen(buffer) - 1) = '\0';
-		}
-		
+
+    buffer = NULL;
+
+    while ( (buffer = next_line( &next_start, bufend ) ) )
+    {
 		if ((*buffer == '#') || (*buffer == '\0'))
 			continue;
+
 		
 		if (strncasecmp(buffer, useragent, sizeof(useragent) - 1) == 0) {
 			switch (state) {
