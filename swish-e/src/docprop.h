@@ -29,7 +29,6 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 
 unsigned char *fetchDocProperties ( FileRec *, char * );
 
-int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
 void printStandardResultProperties(FILE *, RESULT *);
@@ -45,8 +44,6 @@ PropValue *getResultPropValue (RESULT *r, char *name, int ID);
 void    freeResultPropValue(PropValue *pv);
 
 
-void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
-void dump_file_properties(IndexFILE * indexf, FileRec *fi );
 
 void     WritePropertiesToDisk( SWISH *sw , FileRec *fi);
 propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size );

@@ -35,7 +35,6 @@
 #include "hash.h"
 #include "entities.h"
 #include "filter.h"
-#include "result_output.h"
 #include "search_alt.h"
 #include "result_output.h"
 #include "result_sort.h"
@@ -70,46 +69,28 @@ SWISH  *SwishNew()
     sw = emalloc(sizeof(SWISH));
     memset(sw, 0, sizeof(SWISH));
 
-    initModule_Filter(sw);
-    initModule_ResultOutput(sw);
+    initModule_DB(sw);
     initModule_SearchAlt(sw);
     initModule_ResultSort(sw);
+    initModule_Swish_Words(sw);  /* allocate a buffer */
+
+    initModule_Filter(sw);
     initModule_Entities(sw);
-    initModule_DB(sw);
-    initModule_Search(sw);
     initModule_Index(sw);
     initModule_FS(sw);
     initModule_HTTP(sw);
-    initModule_Swish_Words(sw);
     initModule_Prog(sw);
-    initModule_PropLimit(sw);
 
-    sw->TotalWords = 0;
-    sw->TotalFiles = 0;
-    sw->dirlist = NULL;
-    sw->indexlist = NULL;
-    sw->replaceRegexps = NULL;
-    sw->pathExtractList = NULL;
+
     sw->lasterror = RC_OK;
     sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
-    sw->parser_warn_level = 0;
-    sw->indexComments = 0;      /* change default 5/01 wsm */
-    sw->nocontentslist = NULL;
     sw->DefaultDocType = NODOCTYPE;
-    sw->indexcontents = NULL;
-    sw->storedescription = NULL;
-    sw->suffixlist = NULL;
-    sw->ignoremetalist = NULL;
-    sw->dontbumpstarttagslist = NULL;
-    sw->dontbumpendtagslist = NULL;
-    sw->mtime_limit = 0;
 
 #ifdef HAVE_ZLIB
     sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
 #endif
 
-    sw->truncateDocSize = 0;    /* default: no truncation of docs    */
 
 
     /* Make rest of lookup tables */
@@ -125,7 +106,6 @@ void    SwishResetSearch(SWISH * sw)
 {
 
     /* Free sort stuff */
-    resetModule_Search(sw);
     resetModule_ResultSort(sw);
 
     sw->lasterror = RC_OK;
@@ -149,8 +129,8 @@ void    SwishClose(SWISH * sw)
             tmpindexlist = tmpindexlist->next;
         }
 
+        freeModule_Swish_Words(sw);
         freeModule_Filter(sw);
-        freeModule_ResultOutput(sw);
         freeModule_SearchAlt(sw);
         freeModule_Entities(sw);
         freeModule_DB(sw);
@@ -158,11 +138,8 @@ void    SwishClose(SWISH * sw)
         freeModule_ResultSort(sw);
         freeModule_FS(sw);
         freeModule_HTTP(sw);
-        freeModule_Search(sw);
-        freeModule_Swish_Words(sw);
         freeModule_Prog(sw);
 
-        freeModule_PropLimit(sw);
 
 
         /* Free MetaNames and close files */
@@ -212,13 +189,6 @@ void    SwishClose(SWISH * sw)
 
             free_header(&tmpindexlist->header);
 
-/* Removed due to patents 
-            if(tmpindexlist->header.applyFileInfoCompression && tmpindexlist->n_dict_entries)
-            {
-                for(i=0;i<tmpindexlist->n_dict_entries;i++)
-                    efree(tmpindexlist->dict[i]);
-            }
-*/
             for (i = 0; i < 256; i++)
                 if (tmpindexlist->keywords[i])
                     efree(tmpindexlist->keywords[i]);
@@ -318,7 +288,6 @@ SWISH  *SwishOpen(char *indexfiles)
 
 int     SwishAttach(SWISH * sw)
 {
-    struct MOD_Search *srch = sw->Search;
     IndexFILE *indexlist;
 
     IndexFILE *tmplist;
@@ -332,8 +301,6 @@ int     SwishAttach(SWISH * sw)
     /* With this, we read wordchars, stripchars, ... */
     for (tmplist = indexlist; tmplist;)
     {
-        sw->commonerror = RC_OK;
-        srch->bigrank = 0;
 
         tmplist->DB = (void *)DB_Open(sw, tmplist->line, DB_READ);
         if ( sw->lasterror )
@@ -402,7 +369,7 @@ int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *s
     header_level = sw->ResultOutput->headerOutVerbose;
     sw->ResultOutput->headerOutVerbose = 0;
 
-    i = search(sw, words, structure); /* search with no eco */
+//    i = search(sw, words, structure); /* search with no eco */
 
     sw->ResultOutput->headerOutVerbose = header_level;
     if (slsort)
@@ -413,42 +380,6 @@ int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *s
 }
 
 
-int     SwishSeek(SWISH * sw, int pos)
-{
-    int     i;
-    RESULT *sp = NULL;
-
-    if (!sw)
-        return INVALID_SWISH_HANDLE;
-
-    if ( !sw->Search->db_results )
-    {
-        set_progerr(SWISH_LISTRESULTS_EOF, sw, "Attempted to SwishSeek before searching");
-        return SWISH_LISTRESULTS_EOF;
-    }
-
-    /* Check if only one index file -> Faster SwishSeek */
-
-    if (!sw->Search->db_results->next) {
-        for (i = 0, sp = sw->Search->db_results->sortresultlist; sp && i < pos; i++)
-            sp = sp->next;
-
-        sw->Search->db_results->currentresult = sp;
-    } else {
-        /* Well, we finally have more than one file */
-        /* In this case we have no choice - We need to read the data from disk */
-        /* The easy way: Let SwishNext do the job */
-
-        for (i = 0; i < pos; i++)
-            if (!(sp = SwishNext(sw)))
-                break;
-    }
-
-    if (!sp)
-        return ((sw->lasterror = SWISH_LISTRESULTS_EOF));
-
-    return pos;
-}
 
 
 char    tmp_header_buffer[50];  /*  Not thread safe $$$ */

@@ -1010,3 +1010,27 @@ char   *estrredup(char *s1, char *s2)
         efree(s1);
     return estrdup(s2);
 }
+
+
+/* 04/00 Jose Ruiz */
+/* Simple routing for comparing pointers to integers in order to
+get an ascending sort with qsort */
+/* Identical to previous one but use two integers per array */
+int     icomp2(const void *s1, const void *s2)
+{
+    int     rc,
+           *p1,
+           *p2;
+
+    rc = (*(int *) s1 - *(int *) s2);
+    if (rc)
+        return (rc);
+    else
+    {
+        p1 = (int *) s1;
+        p2 = (int *) s2;
+        return (*(++p1) - *(++p2));
+    }
+}
+
+

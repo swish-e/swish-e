@@ -36,6 +36,7 @@ struct ResultExtFmtStrList
     char   *fmtstr;
     struct ResultExtFmtStrList *next;
     struct ResultExtFmtStrList *nodep;
+
 };
 
 
@@ -56,6 +57,10 @@ struct MOD_ResultOutput {
 
     /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList *resultextfmtlist;
+
+    int     numPropertiesToDisplay;
+    int     currentMaxPropertiesToDisplay;
+    char  **propNameToDisplay;
 };
 
 
@@ -67,9 +72,9 @@ int configModule_ResultOutput (SWISH *sw, StringList *sl);
 
 
 void initPrintExtResult (SWISH *sw, char *fmt);
-void printResultOutput (SWISH *sw);
-void printSortedResults (SWISH *sw);
 
+void printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits);
+int initSearchResultProperties(SWISH *sw);
 
 char *hasResultExtFmtStr (SWISH *sw, char *name);
 

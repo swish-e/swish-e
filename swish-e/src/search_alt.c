@@ -105,6 +105,22 @@ void freeModule_SearchAlt (SWISH *sw)
 ** ----------------------------------------------
 */
 
+/* 
+  -- Return selected RuleNumber for default rule.
+  -- defined via current Swish Search Boolean OP Settings for user.  
+*/
+
+static int     u_SelectDefaultRulenum(SWISH * sw, char *word)
+{
+    if (!strcasecmp(word, sw->SearchAlt->srch_op.and))
+        return AND_RULE;
+    else if (!strcasecmp(word, sw->SearchAlt->srch_op.or))
+        return OR_RULE;
+    return NO_RULE;
+}
+
+
+
 
 
 /*

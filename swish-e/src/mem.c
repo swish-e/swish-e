@@ -118,7 +118,16 @@ void Mem_Summary(char *title, int final)
 
 #if MEM_TRACE
 
+
+
 size_t memory_trace_counter = 0;
+
+
+// mem break point: helps a little to track down unfreed memory 
+// Say if you see 
+//      Unfreed: string.c line 958: Size: 11 Counter: 402
+// in gdb: watch memory_trace_counter == 402
+
 
 typedef struct
 {
@@ -131,17 +140,6 @@ typedef struct
 } TraceBlock;
 
 
-// mem break point: helps a little to track down unfreed memory 
-// Say if you see 
-//      Unfreed: string.c line 958: Size: 11 Counter: 402
-// you can then add above line 958:  Mem_bp( 402 )
-// and then set a breakpoint for progwarn, and backtrace to find the allocation
-
-void Mem_bp(int n)
-{
-    if ( n == memory_trace_counter )
-        progwarn("At counter position %d", n );
-}
 
 #endif
 
@@ -234,7 +232,7 @@ static TraceBlock *AllocTrace(char *file, int line, void *ptr, size_t size)
 	Block->Line = line;
 //	Block->Ptr = ptr;		// only needed for extra special debugging
 	Block->Size = size;
-	Block->Count = memory_trace_counter++;
+	Block->Count = ++memory_trace_counter;
 
 	return Block;
 }

@@ -1,6 +1,20 @@
-struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *header );
-char *isBooleanOperatorWord( char * word );
+#ifndef SWISH_WORDS_H
+#define  SWISH_WORDS_H 1
 
-void initModule_Swish_Words (SWISH  *sw);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+char *isBooleanOperatorWord( char * word );
+struct swline *parse_swish_query( DB_RESULTS *db_results );
+
+void initModule_Swish_Words (SWISH *sw);
 void freeModule_Swish_Words (SWISH *sw);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif
 

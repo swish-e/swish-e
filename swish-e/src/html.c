@@ -42,6 +42,7 @@ $Id$
 #include "index.h"
 #include "compress.h"
 #include "merge.h"
+#include "search.h"
 #include "docprop.h"
 #include "metanames.h"
 #include "html.h"

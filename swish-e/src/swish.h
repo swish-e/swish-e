@@ -62,7 +62,22 @@
 */
 
 
+#ifndef SWISH_H
+#define SWISH_H 1
+
+#ifdef __cplusplus
+#  define BEGIN_C_DECLS extern "C" {
+#  define END_C_DECLS   }
+#else
+#  define BEGIN_C_DECLS
+#  define END_C_DECLS
+#endif
+
+
+
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <sys/types.h>
@@ -71,18 +86,27 @@
 #include <ctype.h>
 #include <errno.h>
 #include <time.h>
+#include <ctype.h>
+#include <time.h>
+#include <setjmp.h>
+
 #ifdef HAVE_CONFIG_H
 #include "acconfig.h"           /* These are defines created by autoconf */
 #endif
+
 #include "config.h"
+
+
+
 
 #ifdef NEXTSTEP
 #include <sys/dir.h>
-#else
+#endif
 
 
 #ifdef _WIN32
 #include "win32/config.h"
+
 #elif defined(__VMS)
 #include "vms/regex.h"
 #include <dirent.h>
@@ -94,16 +118,10 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #include <regex.h>
 #endif
 
-#endif
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <time.h>
-#include <setjmp.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C_DECLS
+
 
 #define SWISH_MAGIC 21076321L
 
@@ -301,16 +319,19 @@ struct metaEntry
     char       *metaName;           /* MetaName string */
     int         metaID;             /* Meta ID */
     int         metaType;           /* See metanames.h for values */
-    int        *inPropRange;        /* Used for limiting to a range */
     int         in_tag;             /* Flag to indicate that we are within this tag */
     int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
     char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
-    propEntry  *loPropRange;
-    propEntry  *hiPropRange;
     int         alias;              /* if non-zero, this is an alias to the listed metaID */
     int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
     int        *sorted_data;        /* Sorted data . NULL if not read/done */
                                     /* If 0, files are not sorted by this metaName/property */
+
+    /* $$$ Thses are search related and should not be here */
+    int        *inPropRange;        /* Used for limiting to a range */
+    propEntry  *loPropRange;
+    propEntry  *hiPropRange;
+
 };
 
 
@@ -560,7 +581,7 @@ typedef struct IndexFILE
 
 
     /* props IDs */
-    int    *propIDToDisplay;
+    int    *propIDToDisplay;  /* $$$ This is only for -p style printing */
     int    *propIDToSort;
 
 
@@ -579,55 +600,13 @@ typedef struct IndexFILE
 }
 IndexFILE;
 
-/* Search Results */
 
 
 
 
+    
 
-typedef struct RESULT_LIST
-{
-    struct RESULT *head;
-    struct RESULT *tail;
-    struct SWISH  *sw;           // ** This is a waste of memory, it's only here because
-                                 // ** qsort only passes two values.  This can be fixed.
-}
-RESULT_LIST;
 
-typedef struct RESULT
-{
-    struct RESULT *next;
-
-    int     count;              /* result Entry-Counter */
-    int     filenum;            /* there's an extra four bytes we don't need */
-    FileRec fi;                 /* This is used to cache the properties and the seek index */
-    int     rank;
-    int     frequency;
-    int     tfrequency;         /* Total frequency of result */
-
-    /* file position where this document's properties are stored */
-    char  **PropSort;
-    int    *iPropSort;          /* Used for presorted data */
-    IndexFILE *indexf;
-
-    RESULT_LIST *reslist;       //* this is probably not needed, too.
-
-    int     posdata[1];
-}
-RESULT;
-
-/* Structure to hold all results per index */
-struct DB_RESULTS
-{
-    struct DB_RESULTS   *next;
-
-    IndexFILE   *indexf;           /* parent object */
-    RESULT_LIST *resultlist;       /* pointer to list of results (indirectly) */
-    RESULT      *sortresultlist;   /* linked list of RESULT  in sort order */
-    RESULT      *currentresult;    /* pointer to the current seek position */
-    struct swline *parsed_words;   /* parsed search query */
-    struct swline *removed_stopwords; /* stopwords that were removed from the query */
-};
 
 
 struct multiswline
@@ -797,13 +776,11 @@ typedef struct SWISH
     struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
     struct MOD_Entities      *Entities;       /* html entities module data */
     struct MOD_DB            *Db;             /* DB module data */
-    struct MOD_Search        *Search;         /* Search module data */
     struct MOD_Index         *Index;          /* Index module data */
     struct MOD_FS            *FS;             /* FileSystem Index module data */
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
     struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
     struct MOD_Prog          *Prog;           /* For extprog.c */
-    struct MOD_PropLimit     *PropLimit;      /* For proplimit.c */
 
 
     /** General Purpose **/
@@ -825,7 +802,6 @@ typedef struct SWISH
     int     verbose;
 
     /* Error vars */
-    int     commonerror;
     int     lasterror;
     char    lasterrorstr[MAX_ERROR_STRING_LEN+1];
 
@@ -1002,11 +978,8 @@ SWISH  *SwishOpen(char *);  // depreciated
 SWISH  *SwishInit(char *);
 void    SwishClose(SWISH *);
 void    SwishResetSearch(SWISH *);
-RESULT *SwishNext(SWISH *);
-int     SwishSearch(SWISH *, char *, int, char *, char *);
-int     SwishSeek(SWISH * sw, int pos);
-char   *SwishResultPropertyStr(RESULT *result, char *pname);
-unsigned long SwishResultPropertyULong(RESULT *result, char *pname);
+// char   *SwishResultPropertyStr(RESULT *result, char *pname);
+// unsigned long SwishResultPropertyULong(RESULT *result, char *pname);
 
 char  **SwishStopWords(SWISH * sw, char *filename, int *numstops);
 char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name);
@@ -1042,7 +1015,9 @@ char   *SwishWords(SWISH * sw, char *filename, char c);
 
 extern unsigned int DEBUG_MASK;
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+
+
+END_C_DECLS
+
+#endif /* !SWISH_H */
 

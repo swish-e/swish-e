@@ -34,10 +34,10 @@ $Id$
 #include "mem.h"
 #include "merge.h"
 #include "list.h"
+#include "search.h"
 #include "docprop.h"
 #include "metanames.h"
 #include "compress.h"
-#include "search.h"
 #include "error.h"
 #include "db.h"
 #include "parse_conffile.h"
@@ -344,7 +344,12 @@ int     initSortResultProperties(SWISH * sw)
     /* Allocate list of sort properites per index file */
 
     for (indexf = sw->indexlist; indexf; indexf = indexf->next)
+    {
+        if ( indexf->propIDToSort )
+            efree( indexf->propIDToSort );
+            
         indexf->propIDToSort = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
+    }
 
 
 
@@ -379,7 +384,7 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
     int     i,
             rc,
             num_fields;
-    SWISH  *sw = (SWISH *) r1->reslist->sw;
+    SWISH  *sw = r1->indexf->sw;
     struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
     num_fields = ResultSort->numPropertiesToSort;
@@ -403,7 +408,7 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
     int i,
             num_fields;
     int     rc;
-    SWISH  *sw = (SWISH *) r1->reslist->sw;
+    SWISH  *sw = r1->indexf->sw;
     struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
     num_fields = ResultSort->numPropertiesToSort;
@@ -569,7 +574,7 @@ char  **getResultSortProperties(SWISH *sw, RESULT * r)
 /* Jose Ruiz 04/00
 ** Sort results by property
 */
-int     sortresults(SWISH * sw, int structure)
+int     sortresults(SEARCH_OBJECT *srch)
 {
     int     i,
             j,
@@ -578,8 +583,9 @@ int     sortresults(SWISH * sw, int structure)
     RESULT *rtmp;
     RESULT *rp,
            *tmp;
-    struct DB_RESULTS *db_results;
+    DB_RESULTS *db_results;
     int     (*compResults) (const void *, const void *) = NULL;
+    SWISH  *sw = srch->sw;
     struct MOD_ResultSort *rs = sw->ResultSort;
     int     presorted_data_not_available = 0;
 
@@ -587,7 +593,7 @@ int     sortresults(SWISH * sw, int structure)
 
 
     /* Sort each index file's resultlist */
-    for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)
+    for (TotalResults = 0, db_results = srch->db_results; db_results; db_results = db_results->next)
     {
         db_results->sortresultlist = NULL;
         db_results->currentresult = NULL;
@@ -655,7 +661,6 @@ int     sortresults(SWISH * sw, int structure)
 
             /* Build the list -- the list is in reverse order, so build the list backwards */
             {
-                struct MOD_Search *srch = sw->Search;
                 tmp = NULL;
 
                 for (j = 0; j < i; j++)

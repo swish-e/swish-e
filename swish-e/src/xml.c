@@ -27,6 +27,7 @@ $Id$
 #include "merge.h"
 #include "mem.h"
 #include "string.h"
+#include "search.h"
 #include "docprop.h"
 #include "error.h"
 #include "index.h"

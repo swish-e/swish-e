@@ -13,6 +13,7 @@ $Id$
 #include "string.h"
 #include "check.h"
 #include "merge.h"
+#include "search.h"
 #include "docprop.h"
 #include "error.h"
 #include "compress.h"

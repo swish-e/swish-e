@@ -73,9 +73,10 @@ $Id$
 #include "mem.h"
 #include "string.h"
 #include "merge.h"
+#include "metanames.h"
+#include "search.h"
 #include "docprop.h"
 #include "error.h"
-#include "search.h"
 #include "result_output.h"
 #include "no_better_place_module.h"
 #include "parse_conffile.h"  // for the fuzzy to string function
@@ -120,6 +121,39 @@ void    initModule_ResultOutput(SWISH * sw)
     md->extendedformat = NULL;  /* -x :cmd param  */
     md->headerOutVerbose = 1;   /* default = standard header */
     md->stdResultFieldDelimiter = NULL; /* -d :old 1.x result output delimiter */
+
+
+    /* Free display props arrays -- only used for -p list */
+
+    /* First the common part to all the index files */
+    if (md->propNameToDisplay)
+    {
+        int i;
+        
+        for( i=0; i < md->numPropertiesToDisplay; i++ )
+            efree(md->propNameToDisplay[i]);
+        
+        efree(md->propNameToDisplay);
+    }
+     
+    md->propNameToDisplay=NULL;
+    md->numPropertiesToDisplay=0;
+    md->currentMaxPropertiesToDisplay=0;
+
+
+    /* Now the prop IDs stored in each index file */
+    {
+        IndexFILE *tmpindexlist;
+        for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
+            if (tmpindexlist->propIDToDisplay)
+            {
+                efree(tmpindexlist->propIDToDisplay);
+                tmpindexlist->propIDToDisplay=NULL;
+            }
+    }
+
+
+
 
     return;
 }
@@ -306,36 +340,48 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
   This frees memory as it goes along, so this can't be called from the library.
 */
 
-void    printSortedResults(SWISH * sw)
+void    printSortedResults(SEARCH_OBJECT *srch, int begin, int maxhits)
 {
+    SWISH  *sw = srch->sw;
     struct MOD_ResultOutput *md = sw->ResultOutput;
     RESULT *r = NULL;
     FileRec *fi;
-    int     resultmaxhits;
-    int     resultbeginhits;
-    int     counter;
     char   *delimiter;
     FILE   *f_out;
 
 
+
     f_out = stdout;
-    resultmaxhits = sw->Search->maxhits;
-    resultbeginhits = (sw->Search->beginhits > 0) ? sw->Search->beginhits - 1 : 0;
+
     delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
-    counter = resultbeginhits;
+
+    if ( begin )
+    {
+        begin--;
+        if ( begin < 0 )
+            begin = 0;
+    }
 
 
-    /* jmruiz 02/2001 SwishSeek is faster because it does not read the
-    ** unused data */
-    SwishSeek(sw, resultbeginhits);
+    /* Seek, and report errors if trying to seek past eof */
+    
+    if ( SwishSeekResult(srch, begin) < 0 )
+        SwishAbortLastError( srch->sw );
+
+    
+
+
+    if (maxhits <= 0)
+        maxhits = -1;
 
 
     /* -- resultmaxhits: >0 or -1 (all hits) */
-    while ((r = SwishNext(sw)) && (resultmaxhits != 0))
+
+    while ( (r = SwishNextResult(srch)) && maxhits )
     {
         fi = &r->fi;  /* get address of FileRec to store properties and pointers */
         
-        r->count = ++counter;   /* set rec. counter for output */
+        r->count = ++begin;   /* set rec. counter for output */
 
 
         /* This may or may not be an optimization */
@@ -369,8 +415,8 @@ void    printSortedResults(SWISH * sw)
         /* might as well free the memory as we go */
         freefileinfo( fi );
 
-        if (resultmaxhits > 0)
-            resultmaxhits--;
+        if (maxhits > 0)
+            maxhits--;
     }
 
 }
@@ -813,6 +859,7 @@ char   *hasResultExtFmtStr(SWISH * sw, char *name)
   -------------------------------------------
 */
 
+/* $$$ result header stuff should be moved to swish.c (or a module that is not part of the library). */
 
 
 
@@ -847,6 +894,7 @@ int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
   -- print a standard result header (according to -H <n>)
   -- for the header of an index file
 */
+
 
 void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char *pathname, int merged)
 {
@@ -890,3 +938,128 @@ void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char
 
     return;
 }
+
+
+
+
+/*******************************************************************
+*   Displays the "old" style properties for -p
+*
+*   Call with:
+*       *RESULT
+*
+*   I think this could be done in result_output.c by creating a standard
+*   -x format (plus properites) for use when there isn't one already.
+*
+*
+********************************************************************/
+void printStandardResultProperties(FILE *f, RESULT *r)
+{
+    int     i;
+    SWISH  *sw = r->indexf->sw;
+    struct  MOD_ResultOutput *md = sw->ResultOutput;
+    char   *s;
+    char   *propValue;
+    int    *metaIDs;
+
+    metaIDs = r->indexf->propIDToDisplay;
+
+    if (md->numPropertiesToDisplay == 0)
+        return;
+
+    for ( i = 0; i < md->numPropertiesToDisplay; i++ )
+    {
+        propValue = s = getResultPropAsString( r, metaIDs[ i ] );
+
+        if (sw->ResultOutput->stdResultFieldDelimiter)
+            fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);
+        else
+            fprintf(f, " \"");	/* default is to quote the string, with leading space */
+
+        /* print value, handling newlines and quotes */
+        while (*propValue)
+        {
+            if (*propValue == '\n')
+                fprintf(f, " ");
+
+            else if (*propValue == '\"')	/* should not happen */
+                fprintf(f,"&quot;");
+
+            else
+                fprintf(f,"%c", *propValue);
+
+            propValue++;
+        }
+
+        //fprintf(f,"%s", propValue);
+
+        if (!sw->ResultOutput->stdResultFieldDelimiter)
+            fprintf(f,"\"");	/* default is to quote the string */
+
+        efree( s );            
+    }
+}
+
+
+
+
+void addSearchResultDisplayProperty(SWISH *sw, char *propName)
+{
+    struct  MOD_ResultOutput *md = sw->ResultOutput;
+
+	/* add a property to the list of properties that will be displayed */
+	if (md->numPropertiesToDisplay >= md->currentMaxPropertiesToDisplay)
+	{
+		if(md->currentMaxPropertiesToDisplay) {
+			md->currentMaxPropertiesToDisplay+=2;
+			md->propNameToDisplay=(char **)erealloc(md->propNameToDisplay,md->currentMaxPropertiesToDisplay*sizeof(char *));
+		} else {
+			md->currentMaxPropertiesToDisplay=5;
+			md->propNameToDisplay=(char **)emalloc(md->currentMaxPropertiesToDisplay*sizeof(char *));
+		}
+	}
+	md->propNameToDisplay[md->numPropertiesToDisplay++] = estrdup(propName);
+}
+
+
+
+
+
+/* For faster proccess, get de ID of the properties to sort */
+int initSearchResultProperties(SWISH *sw)
+{
+    IndexFILE *indexf;
+    int i;
+    struct MOD_ResultOutput *md = sw->ResultOutput;
+    struct metaEntry *meta_entry;
+
+
+	/* lookup selected property names */
+
+	if (md->numPropertiesToDisplay == 0)
+		return RC_OK;
+
+	for( indexf = sw->indexlist; indexf; indexf = indexf->next )
+		indexf->propIDToDisplay=(int *) emalloc(md->numPropertiesToDisplay*sizeof(int));
+
+	for (i = 0; i < md->numPropertiesToDisplay; i++)
+	{
+		makeItLow(md->propNameToDisplay[i]);
+
+		/* Get ID for each index file */
+		for( indexf = sw->indexlist; indexf; indexf = indexf->next )
+		{
+		    if ( !(meta_entry = getPropNameByName( &indexf->header, md->propNameToDisplay[i])))
+			{
+				progerr ("Unknown Display property name \"%s\"", md->propNameToDisplay[i]);
+				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
+			}
+			else
+			    indexf->propIDToDisplay[i] = meta_entry->metaID;
+		}
+	}
+	return RC_OK;
+}
+
+
+

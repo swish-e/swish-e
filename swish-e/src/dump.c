@@ -20,8 +20,10 @@
 **
 */
 
+#include "mem.h"
 #include "swish.h"
 #include "merge.h"
+#include "search.h"
 #include "docprop.h"
 #include "hash.h"
 #include "string.h"
@@ -37,12 +39,12 @@
 
 
 
-void dump_index_file_list( SWISH *sw, IndexFILE *indexf ) 
+void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) 
 {
     int     i;
     int     end = indexf->header.totalfiles;
 
-    i = sw->Search->beginhits ? sw->Search->beginhits - 1 : 0;
+    i = begin ? begin - 1 : 0;
 
     if ( i >= indexf->header.totalfiles )
     {
@@ -52,9 +54,9 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
     end = indexf->header.totalfiles;
 
-    if ( sw->Search->maxhits > 0 )
+    if ( maxhits > 0 )
     {
-        end = i + sw->Search->maxhits;
+        end = i + maxhits;
         if ( end > indexf->header.totalfiles )
             end = indexf->header.totalfiles;
     }
@@ -138,7 +140,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
 
 /* Prints out the data in an index DB */
-void    DB_decompress(SWISH * sw, IndexFILE * indexf)
+void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 {
     int     i,
             j,
@@ -381,7 +383,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     /* Decode File Info */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
-        dump_index_file_list( sw, indexf );
+        dump_index_file_list( sw, indexf, begin, maxhits );
 
 
     DB_Close(sw, indexf->DB);
@@ -464,6 +466,91 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
         
     }
     printf("\n");
+}
+
+/***************************************************************
+* Dumps what's currently in the fi->docProperties structure
+*
+**************************************************************/
+
+void dump_file_properties(IndexFILE * indexf, FileRec *fi )
+{
+    int j;
+	propEntry *prop;
+    struct metaEntry *meta_entry;
+
+	if ( !fi->docProperties )  /* may not be any properties */
+	{
+	    printf(" (No Properties)\n");
+	    return;
+	}
+
+    for (j = 0; j < fi->docProperties->n; j++)
+    {
+        if ( !fi->docProperties->propEntry[j] )
+            continue;
+
+        meta_entry = getPropNameByID( &indexf->header, j );
+        prop = fi->docProperties->propEntry[j];
+        
+        dump_single_property( prop, meta_entry );
+    }
+}
+
+
+void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
+{
+    char *propstr;
+    char proptype = '?';
+    int  i;
+
+
+    if  ( is_meta_string(meta_entry) )
+        proptype = 'S';
+
+    else if ( is_meta_date(meta_entry) )
+        proptype = 'D';
+
+    else if ( is_meta_number(meta_entry) )
+        proptype = 'N';
+
+
+    i = prop ? prop->propLen : 0;
+
+    printf("  %20s:%2d (%3d) %c:", meta_entry->metaName, meta_entry->metaID, i, proptype );
+    
+
+    if ( !prop )
+    {
+        printf(" propEntry=NULL\n");
+        return;
+    }
+
+    propstr = DecodeDocProperty( meta_entry, prop );
+    i = 0;
+    printf(" \"");
+
+    while ( i < strlen( propstr ) )
+    {
+        if ( 1 ) // ( isprint( (int)propstr[i] ))
+            printf("%c", propstr[i] );
+            
+        else if ( propstr[i] == '\n' )
+            printf("\n");
+
+        else
+            printf("..");
+
+        i++;
+        if ( i > 300 )
+        {
+            printf(" ...");
+            break;
+        }
+    }
+    printf("\"\n");
+            
+    efree( propstr );
 }
 
 

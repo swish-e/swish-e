@@ -45,13 +45,13 @@ $Id$
 #include "error.h"
 #include "entities.h"
 #include "filter.h"
-#include "result_output.h"
 #include "index.h"
 #include "search.h"
 #include "search_alt.h"
 #include "parse_conffile.h"
 #include "merge.h"   /* Argh, needed for docprop.h */
 #include "docprop.h"
+#include "result_output.h"
 /* removed stuff 
 #include "deflate.h"
 */
@@ -1164,7 +1164,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Deflate(sw, sl));*/ /* jmruiz */
         else if (configModule_ResultSort(sw, sl)); /* jmruiz */
         else if (configModule_DB(sw, sl)); /* jmruiz */
-        else if (configModule_Search(sw, sl)); /* jmruiz */
         else if (configModule_Index(sw, sl)); /* jmruiz */
         else if (configModule_Prog(sw, sl));
         else if (!parseconfline(sw, sl))
