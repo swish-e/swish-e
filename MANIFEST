@@ -78,6 +78,8 @@ pod/images/swishbanner1.gif
 pod/search.cgi
 pod/style.css
 src/Makefile.in
+src/altavista.c
+src/altavista.h
 src/check.c
 src/check.h
 src/check.sh

@@ -22,6 +22,8 @@
 
 /*
 ** 2001-02-15 rasc    ResultExtFormatName 
+** 2001-03-03 rasc    EnableAltaVistaSyntax
+**                    code optimize: getYesNoOrAbort 
 **
 */
 
@@ -180,9 +182,7 @@ char *w0;
 			} else progerr("ReplaceRules requires at least one value");
 		}
 		else if (strcasecmp(w0, "FollowSymLinks")==0)	{
-			if(sl->n==2) {
-				sw->followsymlinks = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("FollowSymLinks requires one value");
+			sw->followsymlinks = getYesNoOrAbort (sl, 1, 1);
 		}
 		else if (strcasecmp(w0, "IndexName")==0)	{
 			if(sl->n>1) {
@@ -212,20 +212,14 @@ char *w0;
 				efree(StringValue);
 			} else progerr("IndexAdmin requires one value");
 		}
-		else if (strcasecmp(w0, "UseStemming")==0)	{
-			if(sl->n==2) {
-				indexf->header.applyStemmingRules = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("UseStemming requires one value");
+		else if (strcasecmp(w0, "UseStemming")==0) {
+			indexf->header.applyStemmingRules = getYesNoOrAbort (sl, 1,1);
 		}
 		else if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking")==0)	{
-			if(sl->n==2) {
-				indexf->header.ignoreTotalWordCountWhenRanking = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("IgnoreTotalWordCountWhenRanking requires one value");
+			indexf->header.ignoreTotalWordCountWhenRanking = getYesNoOrAbort (sl, 1,1);
 		}
 		else if (strcasecmp(w0, "UseSoundex")==0)	{
-			if(sl->n==2) {
-				indexf->header.applySoundexRules = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("UseSoundex requires one value");
+			indexf->header.applySoundexRules = getYesNoOrAbort (sl, 1,1);
 		}
                 else if (strcasecmp(w0, "FilterDir")==0)    {      /* 1999-05-05 rasc */
 			if(sl->n==2) {
@@ -302,13 +296,11 @@ char *w0;
 			} else progerr("IgnoreLimit requires two values");
 		}
 		/* IndexVerbose is supported for backwards compatibility */
-		else if (strcasecmp(w0, "IndexVerbose")==0) { 
-			if(sl->n==2) {
-				sw->verbose = (lstrstr(sl->word[1], "yes")) ? 3 : 0;
-			} else progerr("IndexVerbose requires one value");
+		else if (strcasecmp(w0, "IndexVerbose")==0) {
+			sw->verbose = getYesNoOrAbort (sl, 1,1);
+			if (sw->verbose) sw->verbose = 3; 
 		}
-		else if (strcasecmp(w0, "IndexOnly")==0)
-		{
+		else if (strcasecmp(w0, "IndexOnly")==0)	{
 			if(sl->n>1) {
 				grabCmdOptions(sl,1, &sw->suffixlist);
 			} else progerr("IndexOnly requires at least one value");
@@ -451,14 +443,13 @@ char *w0;
 			} else progerr("UndefinedMetaTags requires one value");
 		}
 		else if (strcasecmp(w0, "FileInfoCompression")==0)	{
-			if(sl->n==2) {
-				indexf->header.applyFileInfoCompression = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("FileInfoCompression requires one value");
+			indexf->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
 		}
 		else if (strcasecmp(w0, "ConvertHTMLEntities")==0)	{
-			if(sl->n==2) {
-				sw->ConvertHTMLEntities = (lstrstr(sl->word[1], "yes")) ? 1 : 0;
-			} else progerr("ConvertHTMLEntities requires one value");
+			sw->ConvertHTMLEntities = getYesNoOrAbort (sl, 1,1);
+		}
+		else if (strcasecmp(w0, "EnableAltaVistaSyntax")==0)	{
+			sw->enableAVSearchSyntax = getYesNoOrAbort (sl, 1,1);
 		}
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s", linenumber, line );
@@ -475,6 +466,43 @@ char *w0;
 	if (gotindex && !(*hasindex))
 		*hasindex = 1;
 }
+
+
+
+/*
+  -- some config helper routines
+*/
+
+/*
+  --  check if word "n" in StringList  is yes/no
+  --  "lastparam": 0/1 = is param last one for config directive?
+  --  returns 1 (yes) or 0 (no)
+  --  aborts if not "yes" or "no" (and prints first word of array)
+  --  aborts if lastparam set and is not last param...
+  --  2001-03-04 rasc
+*/
+
+int getYesNoOrAbort (StringList *sl, int n, int lastparam)
+{
+   if (lastparam && n < (sl->n-1)) {
+     progerr ("%s has too many paramter",sl->word[0],n);
+     return 0;
+   }
+
+   if (n < sl->n) {
+      if (!strcasecmp (sl->word[n], "yes")) return 1;
+      if (!strcasecmp (sl->word[n], "no"))  return 0;
+   }
+   progerr ("%s requires as %d. parameter \"Yes\" or \"No\" value",
+        sl->word[0],n);
+   return 0;
+}
+
+
+/* --------------------------------------------------------- */
+
+
+
 
 /*
   read stop words from file

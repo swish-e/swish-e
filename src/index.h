@@ -63,3 +63,9 @@ void addsummarytofile(IndexFILE *, int, char *);
 
 void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
 
+
+
+void PrintHeaderStr(int id, char *s, FILE *fp);
+void PrintHeaderInt(int id, int i, FILE *fp);
+void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
+
