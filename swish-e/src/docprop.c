@@ -54,7 +54,7 @@ $Id$
 #include "entities.h"
 #include "db.h"
 #ifdef HAVE_ZLIB
-#include "zlib.h"
+#include <zlib.h>
 #endif
 
 

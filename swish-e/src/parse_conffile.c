@@ -59,7 +59,7 @@ $Id$
 #include "db.h"
 #include "extprog.h"
 #ifdef HAVE_ZLIB
-#include "zlib.h"
+#include <zlib.h>
 #endif
 
 
