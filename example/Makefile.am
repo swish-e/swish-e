@@ -32,6 +32,11 @@ perlmodule_SCRIPTS = \
 
 CLEANFILES = swish.cgi search.cgi
 
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
+
 swish.cgi: swish.cgi.in
 	@rm -f swish.cgi
 	@sed \

@@ -4,6 +4,11 @@ perlmodule_SCRIPTS = Filter.pm
 
 CLEANFILES = Filter.pm
 
+
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
 Filter.pm: Filter.pm.in
 	@rm -f Filter.pm
 	@sed \

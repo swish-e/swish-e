@@ -13,6 +13,11 @@ perlmodule_SCRIPTS = \
 
 CLEANFILES = spider.pl DirTree.pl
 
+
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
 spider.pl: spider.pl.in
 	@rm -f spider.pl
 	@sed \

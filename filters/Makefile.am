@@ -8,6 +8,10 @@ example_DATA = README
 
 CLEANFILES = swish-filter-test
 
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
 swish-filter-test: swish-filter-test.in
 	@rm -f swish-filter-test
 	@sed \

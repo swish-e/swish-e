@@ -69,6 +69,12 @@ These can be installed with ActiveState's PPM utility.
    HTML-Template - formatting output from swish.cgi (optional)
    HTML-FillInForm (if HTML-Template is used)
 
+=head2 Building from CVS
+
+Please refer to the F<README.cvs> file found in the documentation directory
+F<$prefix/share/doc/swish-e>.
+
+
 =head1 SYSTEM REQUIREMENTS
 
 Swish-e makes use of a number of libraries and tools
@@ -428,7 +434,8 @@ and C<$prefix/lib/swish-e/perl> to the C<PERL5LIB> environment variable.
 =head2 Documentation
 
 Documentation can be found in the C<$prefix/share/doc/swish-e> directory.
-Documentation can also be read on-line at the Swish-e web site:
+Documentation is in html format at C<$prefix/share/doc/swish-e/html> and
+can also be read on-line at the Swish-e web site:
 
     http://swish-e.org/
 
@@ -610,36 +617,6 @@ such as Apache/mod_perl with the C<SWISH::API> module.
 
 See the F<perl/README> file for information
 on installing and using the C<SWISH::API> Perl module.
-
-
-=head2 Creating PDF and Postscript documentation
-
-The HTML version of the Swish-e documentation
-was created with C<Pod::HtmlPsPdf>,
-a package of Perl modules written and/or modified by Stas Bekman
-to automate the conversion of documents in POD format
-(see C<perldoc perlpod>) to HTML, PostScript, and PDF.
-A slightly modified version of this package
-is included with the Swish-e distribution
-and used for building the HTML.
-
-If your system has the B<necessary tools> to build PostScript
-and the converter C<ps2pdf> is installed,
-you may be able to build the PostScript and PDF versions of the documentation.
-After you have run F<configure>,
-go to the C<doc> directory of the distribution and type:
-
-    make pdf
-
-With any luck,
-you will end up with the these two files in the top-level directory:
-
-    swish-e_documentation.pdf
-    swish-e_documentation.ps
-
-Most people, however,
-find reading the documentation in HTML
-to be the most convenient approach.
 
 =head1 GENERAL CONFIGURATION AND USAGE
 
