@@ -770,7 +770,7 @@ static int load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS
         /* load the sorted_data array, if not already done */
 
         if ( !meta_entry->sorted_data )
-            if( !LoadSortedProps( sw, indexf, meta_entry ) )
+            if( !LoadSortedProps( indexf, meta_entry ) )
                 continue;  /* thus it will sort manually without pre-sorted index */
 
 

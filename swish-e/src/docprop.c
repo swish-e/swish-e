@@ -185,6 +185,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *       *RESULT
 *       *metaEntry - pointer to related meta entry
 *       metaID - OR, if metaEntry is NULL uses this to lookup metaEntry
+*       max_size - limit size of property loaded
 *
 *   Returns:
 *       *propEntry
@@ -198,7 +199,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *
 ********************************************************************/
 
-static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID )
+propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size )
 {
     IndexFILE *indexf = result->db_results->indexf; 
     int     error_flag;
@@ -256,7 +257,7 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     }
                    
 
-    return ReadSingleDocPropertiesFromDisk(indexf, &result->fi, metaID, 0 );
+    return ReadSingleDocPropertiesFromDisk(indexf, &result->fi, metaID, max_size );
 }
 
 
@@ -289,7 +290,7 @@ char *getResultPropAsString(RESULT *result, int ID)
 
 
 
-    if ( !(prop = getDocProperty(result, &meta_entry, ID )) )
+    if ( !(prop = getDocProperty(result, &meta_entry, ID, 0 )) )
         return estrdup("");
 
     /* $$$ Ignores possible other properties that are linked to this one */
@@ -346,7 +347,7 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
     /* Does this results have this property? */
     
-    if ( !(prop = getDocProperty(result, &meta_entry, 0 )) )
+    if ( !(prop = getDocProperty(result, &meta_entry, 0, 0 )) )
         return "";
 
     s = DecodeDocProperty( meta_entry, prop );
@@ -482,7 +483,7 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
 
     /* This may return false */
-    prop = getDocProperty( r, &meta_entry, ID );
+    prop = getDocProperty( r, &meta_entry, ID, 0 );
 
     if ( !prop )
     {

@@ -111,6 +111,7 @@ $Id$
 #include "swish.h"
 #include "mem.h"
 #include "swstring.h"
+#include "metanames.h"
 #include "search.h"
 #include "index.h"
 #include "file.h"
@@ -120,7 +121,6 @@ $Id$
 #include "docprop.h"
 #include "error.h"
 #include "compress.h"
-#include "metanames.h"
 #include "result_sort.h"
 #include "db.h"
 #include "swish_words.h"
@@ -132,7 +132,7 @@ $Id$
 
 
 /* ------ static fucntions ----------- */
-static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word );
+static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
 static void query_index( DB_RESULTS *db_results );
 static int isbooleanrule(char *);
 static int isunaryrule(char *);
@@ -407,12 +407,12 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
         else
             last->next = db_results;
 
-        last = db_results;
-
         /* memory allocations after linking the db_results into the list */
         
-        if ( !init_sort_propIDs( db_results, srch->sort_params ) )
+        if ( !init_sort_propIDs( db_results, srch->sort_params, last ) )
             return results;
+
+        last = db_results;
     }
 
 
@@ -430,9 +430,12 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
 /**************************************************************************
 *  init_sort_propIDs -- load the prop ids for a single index file
 *
+*  Creates an array of metaEntry's that are the sort keys
+*  also creates an associated array that indicates sort direction
+*
 ***************************************************************************/
 
-static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
+static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last )
 {
     int cur_length = 0;    /* array size */
     struct metaEntry *m;
@@ -444,15 +447,17 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
     if ( !sort_word )  /* set the default */
     {
         db_results->num_sort_props = 1;
-        db_results->sort_directions = (int *)emalloc( sizeof(int) );
-        db_results->propIDToSort = (int *)emalloc( sizeof(int) );
-        
+
+        /* create the array */
+        db_results->sort_data = (SortData *)emalloc( sizeof( SortData ) );
+        memset( db_results->sort_data, 0, sizeof( SortData ) );
+
         m = getPropNameByName(&db_results->indexf->header, AUTOPROPERTY_RESULT_RANK);
         if ( !m )
             progerr("Rank is not defined as an auto property - must specify sort parameters");
 
-        db_results->propIDToSort[0] = m->metaID;
-        db_results->sort_directions[0] = 1;
+        db_results->sort_data[0].property = m;
+        db_results->sort_data[0].direction = 1;
 
         return 1;
     }
@@ -485,8 +490,9 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
         if ( db_results->num_sort_props > cur_length )
         {
             cur_length += 20;
-            db_results->sort_directions = (int *)erealloc(db_results->sort_directions, sizeof(int) * cur_length );
-            db_results->propIDToSort = (int *)erealloc(db_results->propIDToSort, sizeof(int) * cur_length );
+
+            db_results->sort_data = (SortData *)erealloc( db_results->sort_data, cur_length * sizeof( SortData ) );
+            memset( db_results->sort_data, 0, cur_length * sizeof( SortData ) );
         }
 
 
@@ -498,8 +504,18 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
             return 0;
         }
 
-        db_results->propIDToSort[db_results->num_sort_props-1] = m->metaID;
-        db_results->sort_directions[db_results->num_sort_props-1] = sortmode;
+        /* make sure the properties are compatible for sorting */
+        if ( last )
+           if ( !properties_compatible( last->sort_data[db_results->num_sort_props-1].property, m ) )
+           {
+                set_progerr(INVALID_PROPERTY_TYPE, db_results->results->sw, 
+                    "Property '%s' in index '%s' is not compatible with index '%s'", field, db_results->indexf->line, last->indexf->line);
+                return 0;
+            }
+
+
+        db_results->sort_data[db_results->num_sort_props-1].property = m;
+        db_results->sort_data[db_results->num_sort_props-1].direction = sortmode;
 
 
         sort_word = sort_word->next;
@@ -545,6 +561,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
 {
     DB_RESULTS *next;
     DB_RESULTS *cur;
+    int         i;
 
     if ( !results )
         return;
@@ -559,11 +576,22 @@ void Free_Results_Object( RESULTS_OBJECT *results )
         freeswline( cur->parsed_words );
         freeswline( cur->removed_stopwords );
 
-        if ( cur->propIDToSort )
-            efree(cur->propIDToSort);
+        if ( cur->sort_data )
+        {
+            /* free the property pointer arrays -- */
+            for ( i = 0; i < cur->num_sort_props; i++ )
+                if ( cur->sort_data[i].key )
+                {
+                    int j;
+                    for ( j = 0; j < cur->result_count; j++ )
+                        if ( cur->sort_data[i].key[j] )
+                           efree( cur->sort_data[i].key[j] ); /** double loop! -- memzone please */
 
-        if ( cur->sort_directions )
-            efree(cur->sort_directions);
+                    efree( cur->sort_data[i].key );
+                }
+
+            efree(cur->sort_data);
+         }
 
 
         /* free the property string cache, if used */
@@ -1039,30 +1067,18 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
     {
         /* We have more than one index file - can't use pre-sorted index */
         /* Get the lower value */
-        db_results_winner = results->db_results;
+        db_results_winner = results->db_results;  /* get the first index */
+        res = db_results_winner->currentresult;   /* and current result from first index */
 
-        if ((res = db_results_winner->currentresult))
-        {
-            if ( !res->PropSort )
-                res->PropSort = getResultSortProperties(res);
-        }
-
+        /* now loop through indexes looking for the lowest one */
 
         for (db_results = results->db_results->next; db_results; db_results = db_results->next)
         {
-            /* Any more results for this index? */
+            /* Any more results for this index? If not skip and move to next index */
             if (!(res2 = db_results->currentresult))
                 continue;
 
 
-            /* Load the sort properties for this results */
-
-            if ( !res2->PropSort )
-                res2->PropSort = getResultSortProperties(res2);
-
-                
-            /* Compare the properties */
-            
             if (!res)  /* first one doesn't exist, so second wins */
             {
                 res = res2;
@@ -1070,7 +1086,11 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
                 continue;
             }
 
-            rc = (int) compResultsByNonSortedProps(&res, &res2);
+            /* Finally, compare the properties */
+
+            rc = compare_results(&res, &res2);
+
+            /* If first is more than second then take second */
             if (rc < 0)
             {
                 res = res2;
@@ -2155,11 +2175,7 @@ static void    freeresult(RESULT * rp)
 
     
     db_results = rp->db_results;
-    
-        
-    if (db_results && rp->PropSort)
-        for (i = 0; i < db_results->num_sort_props; i++)
-            efree(rp->PropSort[i]);
+
 }
 
 

@@ -450,5 +450,15 @@ char *tmptag;
 
 }
 
-
+/*************************************************
+* int properties_compatible -
+*
+*  checks to see if two properties can be compared
+*
+**************************************************/
+int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 )
+{
+    int mask = META_STRING | META_NUMBER | META_DATE | META_IGNORE_CASE;
+    return (m1->metaType & mask ) == ( m2->metaType & mask);
+} 
 

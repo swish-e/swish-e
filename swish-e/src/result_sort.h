@@ -60,10 +60,8 @@ void freeModule_ResultSort (SWISH *);
 int configModule_ResultSort (SWISH *sw, StringList *sl);
 
 
-int compResultsByNonSortedProps(const void *,const void *);
-int compResultsBySortedProps(const void *,const void *);
+int compare_results(const void *s1, const void *s2);
 
-char **getResultSortProperties(RESULT *);
 
 int     sortresults(RESULTS_OBJECT *results);
 
@@ -79,7 +77,7 @@ void initStrCaseCmpTranslationTable(int *);
 int sw_strcasecmp(unsigned char *,unsigned char *, int *);
 int sw_strcmp(unsigned char *,unsigned char *, int *);
 
-int *LoadSortedProps( SWISH *sw, IndexFILE *indexf, struct metaEntry *m );
+int *LoadSortedProps( IndexFILE *indexf, struct metaEntry *m );
 
 #ifdef __cplusplus
 }

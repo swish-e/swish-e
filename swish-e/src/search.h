@@ -101,10 +101,6 @@ struct s_RESULT
     int         rank;
     int         frequency;
     int         tfrequency;     /* Total frequency of result */
-
-    char      **PropSort;       /* array of property strings for sorting */
-    int        *iPropSort;      /* array of pre-sorted index numbers */
-
     int         posdata[1];     /* used for phrase searches */
 };
 
@@ -125,6 +121,13 @@ typedef struct RESULT_LIST
 RESULT_LIST;
 
 
+typedef struct
+{
+    int              direction;  /* -1 for asc and 1 for desc */
+    propEntry        **key;      /* pointer to an array of PropEntry's indexed by filenum - 1 */
+    struct metaEntry *property;  /* pointer to the metaEntry for this key */
+    int              checked_presorted; /* flag to track if attempted to load presorted array */
+} SortData;
 
 /* Structure to hold all results per index */
 
@@ -146,10 +149,13 @@ struct s_DB_RESULTS
     struct swline *parsed_words;        /* parsed search query */
     struct swline *removed_stopwords;   /* stopwords that were removed from the query */
 
-    int         *propIDToSort;          /* cache of Property ID numbers for this index to use for generating the sort key */
-    int         *sort_directions;       /* -1 for asc and 1 for desc */
     int          num_sort_props;        /* number of sort properties */
-    char       **prop_string_cache;     /* place to cache a result's string properties  $$$ I think this may be a mistake */
+    SortData     *sort_data;            /* an array num_sort_props of SortData */
+
+    char         **prop_string_cache;   /* place to cache a result's string properties  $$$ I think this may be a mistake */
+
+    int          result_count;          /* number of results in set */
+
 
 };
 

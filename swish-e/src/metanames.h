@@ -22,6 +22,7 @@
 #define is_meta_nostrip(x)      ((x)->metaType & META_NOSTRIP)
 
 
+int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 );
 
 void add_default_metanames(IndexFILE *);
 
