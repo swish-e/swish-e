@@ -1,0 +1,40 @@
+# Makefile for swish-e Documentation
+#
+# $Id$
+#
+# Need to add a install_man: tag to convert and install docs as man pages
+
+SHELL       = /bin/sh
+srcdir      = @srcdir@
+VPATH       = $(srcdir)
+prefix      = @prefix@
+exec_prefix = @exec_prefix@
+bindir      = $(prefix)/bin
+mandir      = $(prefix)/man/man1
+perl		= @PERL@
+libdir		= @libdir@
+
+all:	html pod
+
+html:
+	echo "Building HTML srcdir=$(srcdir)"
+	bin/build
+
+pod:
+	chmod 644 src/*.pod
+	cp src/*.pod ..
+	pod2text src/README.pod > ../README
+
+pdf:
+	bin/build -d
+	cp -f rel_ps/swish-e_documentation.pdf ..
+	cp -f rel_ps/swish-e_documentation.ps ..
+	rm -rf rel_ps
+	echo "swish-e_documentation.pdf"
+
+clean:
+	rm -rf rel_ps
+	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
+
+realclean: clean
+	rm Makefile
