@@ -259,12 +259,12 @@ char   *parsetitle(char *buffer)
 
 
     if (!buffer)
-        return "";
+        return estrdup("");
 
     if ((title = parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
         return title;
 
-    return "";
+    return estrdup("");
 }
 
 
