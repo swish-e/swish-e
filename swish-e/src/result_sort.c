@@ -592,7 +592,11 @@ char  **getResultSortProperties(SWISH *sw, RESULT * r)
 /* Routine to test structure in a result */
 int test_structure(RESULT *r,int structure)
 {
-int i;
+    int i;
+
+    if ( !r->frequency )
+        return 1;
+    
     for(i = 0; i < r->frequency; i++)
     {
         if(GET_STRUCTURE(r->posdata[i]) & structure)
