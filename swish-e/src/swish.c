@@ -382,6 +382,7 @@ static SWISH  *swish_new()
 
 
 
+
     /* Make rest of lookup tables */
     makeallstringlookuptables(sw);
     return (sw);

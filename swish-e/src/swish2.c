@@ -57,6 +57,7 @@ unsigned int DEBUG_MASK = 0;
 
 /* 
   -- init swish structure 
+            indexf->header.fuzzy_data = set_fuzzy_mode( indexf->header.fuzzy_data, sl->word[1] );
 */
 
 SWISH  *SwishNew()
@@ -107,7 +108,7 @@ static IndexFILE *free_index( IndexFILE *indexf )
 
 
     /* free and close all stemmed related stuff */
-    free_fuzzy_mode(&indexf->header.fuzzy_data);
+    free_fuzzy_mode(indexf->header.fuzzy_data);
 
     
     /* free data loaded into header */
@@ -125,7 +126,7 @@ static IndexFILE *free_index( IndexFILE *indexf )
 
     /* free the stem cache if any */
     free_word_hash_table( &indexf->hashstemcache);
-  
+
     /* finally free up the index itself */
     efree( indexf );
 
@@ -315,36 +316,6 @@ const char *SwishWordsByLetter(SWISH * sw, char *filename, char c)
     return NULL;
 }
 
-/*************************************************************************
-* SwishStemWord -- utility function to stem a word
-*
-* This stores the stemmed word locally so it can be freed
-*
-**************************************************************************/
 
-char *SwishStemWord( SWISH *sw, char *word )
-{
-    int  length = strlen( word ) + 100;
 
-    if ( !word )
-        return NULL;
-
-    if ( length > sw->stemmed_word_len )
-    {
-        sw->stemmed_word_len = length+1;
-        sw->stemmed_word = erealloc( sw->stemmed_word, sw->stemmed_word_len );
-    }
-
-    strcpy( sw->stemmed_word, word );
-
-    /* Default to english stemmer */
-    if ( ! sw->indexlist->header.fuzzy_data.fuzzy_routine )
-        set_fuzzy_mode( &sw->indexlist->header.fuzzy_data, "Stemming_en" );
-
-    /* set return value only if stem returns OK */
-    if ( sw->indexlist->header.fuzzy_data.fuzzy_routine(&sw->stemmed_word, &sw->stemmed_word_len,sw->indexlist->header.fuzzy_data.fuzzy_args) == STEM_OK )
-        return sw->stemmed_word;
-
-    return NULL;
-}
 

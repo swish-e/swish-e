@@ -36,7 +36,6 @@ $Id$
 #include "list.h"
 #include "hash.h"
 #include "stemmer.h"
-#include "soundex.h"
 #include "double_metaphone.h"
 #include "error.h"
 #include "metanames.h"
@@ -302,6 +301,30 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         if (!*self->word)
             continue;
 
+
+        /* Now stem word, if set to setm */
+        {
+            FUZZY_WORD *fw = fuzzy_convert( header->fuzzy_data, self->word );
+            if ( fw->list_size != 2 )
+            {
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[0] );
+            }
+            else
+            {
+                /* yuck! */
+                swish_words = (struct swline *) addswline( swish_words, "(" );
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[0] );
+                swish_words = (struct swline *) addswline( swish_words, "or" );
+                swish_words = (struct swline *) addswline( swish_words, fw->string_list[1] );
+                swish_words = (struct swline *) addswline( swish_words, ")" );
+            }
+
+            fuzzy_free_word( fw );
+        }
+
+
+#ifdef skip_section
+        
         switch ( header->fuzzy_data.fuzzy_mode )
         {
             case FUZZY_NONE:
@@ -309,6 +332,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
                 break;
 
             case FUZZY_STEMMING_EN:
+            case FUZZY_SOUNDEX:
 #ifdef SNOWBALL
             case FUZZY_STEMMING_ES:
             case FUZZY_STEMMING_FR:
@@ -330,12 +354,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
                 break;
 
                 
-            case FUZZY_SOUNDEX:
-                soundex(self->word);
-                if ( *self->word )
-                    swish_words = (struct swline *) addswline( swish_words, self->word );
-                break;
-
             case FUZZY_METAPHONE:
             case FUZZY_DOUBLE_METAPHONE:
                 {
@@ -375,6 +393,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
             default:
                 progerr("Invalid FuzzyMode '%d'", (int)header->fuzzy_data.fuzzy_mode );
         }
+#endif
     }
 
     return swish_words;

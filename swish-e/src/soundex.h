@@ -2,6 +2,4 @@
 ** soundex.h
 */
 
-
-int soundex (char *word);
-int soundXit (void);
+FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword);

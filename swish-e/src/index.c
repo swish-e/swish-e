@@ -116,7 +116,6 @@ $Id$
 #include "merge.h"
 #include "docprop.h"
 #include "stemmer.h"
-#include "soundex.h"
 #include "double_metaphone.h"
 #include "error.h"
 #include "file.h"
@@ -2350,8 +2349,6 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     char   *buf_pos;        /* pointer to current position */
     char   *cur_pos;        /* pointer to position with a word */
 
-    int     stem_return;    /* return value of stem operation */
-
     struct  MOD_Index *idx = sw->Index;
 
                             /* Assign word buffers */
@@ -2448,7 +2445,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     continue; /* skip this word */
             }
 
-            
+
             /* Check Begin & EndCharacters */
             if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
                 continue;
@@ -2461,7 +2458,38 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
             if (!isokword(sw, swishword, indexf))
                 continue;
 
-            /* Now translate word if fuzzy mode */                    
+            /* Now translate word if fuzzy mode */
+            {
+                char **current_word;
+                int  not_first = 0;
+                FUZZY_WORD *fw = fuzzy_convert( indexf->header.fuzzy_data, swishword );
+
+                current_word = fw->word_list;
+                while ( *current_word )
+                {
+                    /* when a word stems to more than one word all words should have the same position number */
+                    /* currently, that's only a rare case with double metaphone */
+
+                    if ( not_first++ )
+                         (*position)--;
+
+                    addword(*current_word, sw, filenum, structure, numMetaNames, metaID, position );
+                    wordcount++;
+                    current_word++; /* move to next word in list */
+                }
+
+                fuzzy_free_word( fw );
+            }
+
+#ifdef commented_out
+            else
+            {
+                Fuzzy_Return
+                int     stem_return;    /* return value of stem operation */
+                int     word_count;     /* number of words in list */
+                char **stemmed_words;   /* List of stemmed words */
+
+                stem_return = Fuzzy_convert( &stemmed_words, &word_count, indexf, swishword );
 
             switch ( indexf->header.fuzzy_data.fuzzy_mode )
             {
@@ -2471,6 +2499,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     break;
 
                 case FUZZY_STEMMING_EN:
+                case FUZZY_SOUNDEX:
 #ifdef SNOWBALL
                 case FUZZY_STEMMING_ES:
                 case FUZZY_STEMMING_FR:
@@ -2535,11 +2564,6 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     break;
 
                     
-                case FUZZY_SOUNDEX:
-                    soundex(swishword);
-                    addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
-                    wordcount++;
-                    break;
 
                 case FUZZY_METAPHONE:
                 case FUZZY_DOUBLE_METAPHONE:
@@ -2575,6 +2599,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 default:
                    progerr("Invalid FuzzyMode '%d'", (int)indexf->header.fuzzy_data.fuzzy_mode );
             }
+#endif
         }
     }
 
