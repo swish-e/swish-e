@@ -1771,6 +1771,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
     int i;
     char indent_buf[1000];
     int  last_newline = 0;
+    int  col = 0;
 
 
     indent_buf[0] = '\0';
@@ -1783,6 +1784,8 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
     while ( i < len )
     {
         printf("%s", indent_buf );
+        col = 0;
+        last_newline = 0;
 
         /* skip leading space */
         while ( i < len && isspace((int)txt[i] ) )
@@ -1791,12 +1794,13 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
         /* print text */
         while ( i < len )
         {
+            col++;
+
+            
             if ( txt[i] == '\n' )
             {
-                printf("\n");
-                i++;
-                last_newline=1;
-                continue;
+                while ( i < len && isspace((int)txt[i] ))
+                    i++;
             }
 
             if ( !isprint((int)txt[i] ))
@@ -1808,11 +1812,11 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
             printf("%c", txt[i] );
             i++;
 
-            if ( i + strlen( indent_buf ) > 65 )
+            if ( (col + strlen( indent_buf ) > 60 && isspace((int)txt[i])) || col + strlen( indent_buf ) > 78 )
             {
                 printf("\n");
                 last_newline=1;
-                continue;
+                break;
             }
         }
     }
