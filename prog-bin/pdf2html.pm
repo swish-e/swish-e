@@ -96,7 +96,10 @@ $$content_ref
 </html>
 EOF
 
-    return \$txt if ref $file_or_content;
+    if ( ref $file_or_content ) {
+        unlink $file;
+        return \$txt if ref;
+    }
 
     my $mtime  = (stat $file )[9];
 
@@ -135,7 +138,7 @@ sub get_pdf_headers {
             $metadata{$metaname} = $value;
         }
     }
-    close $sym or die "$0: Failed close on pipe to pdfinfo for $file: $?";
+    close $sym or warn "$0: Failed close on pipe to pdfinfo for $file: $?";
 
     my $metas = join "\n", map { qq[<meta name="$_" content="$metadata{$_}">] } sort keys %metadata;
 
@@ -156,7 +159,7 @@ sub get_pdf_content_ref {
     local $/ = undef;
     my $content = escapeXML(<$sym>);
 
-    close $sym or die "$0: Failed close on pipe to pdftotext for $file: $?";
+    close $sym or warn "$0: Failed close on pipe to pdftotext for $file: $?";
 
     return \$content;
 }
@@ -186,7 +189,7 @@ sub create_temp_file {
 
     require "File/Temp.pm";
 
-    my ( $fh, $file_name ) = File::Temp::tempfile( UNLINK => 1 );
+    my ( $fh, $file_name ) = File::Temp::tempfile();
 
     print $fh $$scalar_ref or die $!;
 
