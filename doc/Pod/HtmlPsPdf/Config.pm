@@ -77,7 +77,6 @@ sub _init{
 
     $self->{out_name} = $c{out_name} || cnf_err('$c{out_name}');
 
-    $self->{last_modified} = $c{file}{last_modified} || cnf_err('$c{file}{last_modified}');
     $self->{toc_file} = $c{file}{toc_file}           || cnf_err('$c{file}{toc_file}');
     
     $self->{version_file} = $c{file}{version_file}   || cnf_err('$c{file}{version_file}');

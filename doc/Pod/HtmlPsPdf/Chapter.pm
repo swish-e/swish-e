@@ -20,7 +20,8 @@ sub new{
         $curr_page, $curr_page_index, $prev_page, $next_page) = @_;
 
     # extract the base name
-    my ($base_name) = ($file_name =~ /([^.]+)/);
+    # Note that this must match Book.pm pod_newer_split()
+    my ($base_name) = ($file_name =~ /^(.+)\.pod$/);
 
     # make it html ext if it was a pod
     $file_name =~ s/\.pod$/.html/;

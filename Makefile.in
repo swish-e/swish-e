@@ -73,6 +73,7 @@ realclean: clean
 
 #-- Documentation --
 docs:
+	$(RM_RF) html
 	(cd doc; make all)
 	
 pdf:

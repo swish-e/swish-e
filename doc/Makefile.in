@@ -23,6 +23,14 @@ EXTRAFILES = ../pod/images/dotrule1.gif        ../pod/images/swish2.gif \
              ../pod/images/swish2b.gif         ../pod/style.css
 
 
+HTMLFILES = ../html/CHANGES.html    ../html/SWISH-CONFIG.html   ../html/SWISH-RUN.html     ../html/search.cgi \
+            ../html/INSTALL.html    ../html/SWISH-FAQ.html      ../html/SWISH-SEARCH.html  ../html/style.css \
+            ../html/README.html     ../html/SWISH-LIBRARY.html  ../html/index.html \
+            ../html/SWISH-3.0.html  ../html/SWISH-PERL.html     ../html/index_long.html \
+            ../html/images/dotrule1.gif  ../html/images/swish2.gif   ../html/images/swishbanner1.gif \
+            ../html/images/swish.gif     ../html/images/swish2b.gif \
+
+
 MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
 
 
@@ -60,25 +68,29 @@ install-man: man
 #--- create html pages ------
 
 
-../html/index.html: $(SOURCEPODS) $(EXTRAFILES) ./Version.pm
-	@echo "Building HTML"
-	@bin/build
+#$(HTMLFILES): $(SOURCEPODS) $(EXTRAFILES) ./Version.pm
+#	@echo "Building HTML"
+#	@bin/build
 #	@rm -f ../html/.htaccess ../html/search.cgi
 
 
 ./Version.pm: ../configure
 	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
 
-html: ../html/index.html
+$(SOURCEPODS): ./Version.pm
+	touch $@
+
+html: ./Version.pm $(SOURCEPODS)
+	@bin/build
 
 
 #--- split version (for searchable version of documentation ) ---
 
-split: ./Version.pm
+split: html
 	@echo "Checking for swish binary..."
 	test -x ../src/swish-e
 
-	bin/build -fs
+	bin/build -s
 
 	cp ../src/swish-e ../html/split/swish-e
 	../html/split/swish-e -c split.conf
@@ -108,11 +120,7 @@ pdf: ./Version.pm
 clean:
 	rm -rf rel_ps
 	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
-
-	-test -e ../html/index.html.orig      && cp ../html/index.html.orig       ../html/index.html
-	-test -e ../html/index_long.html.orig && cp ../html/index_long.html.orig  ../html/index_long.html
-	rm -rf ../html/split ../html/.htaccess ../html/search.cgi
-	rm -f ../html/index.html.orig ../html/index_long.html.orig
+	rm -f ../html
 
 	rm -f ./*.1
 	-chmod 644 ../pod/*.pod
