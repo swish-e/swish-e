@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 #include "../src/swish.h"
+#include "../src/stemmer.h"
 
 MODULE = SWISHE  PACKAGE = SWISHE
 PROTOTYPES: DISABLE
@@ -147,16 +148,25 @@ SwishWords(handle, filename, c)
      PUTBACK;
 
 
-char *
+SV *
 SwishStem(word)
-     char *word
-     CODE:
-     char *newword;
-     newword=(char *)estrdup(word);
-     Stem_it(&newword);
-     RETVAL = newword;
-     OUTPUT:
-     RETVAL
+        char *word
+    PREINIT:
+        char *newword;
+        int   length;
+    CODE:
+        /* default to undefined */
+        ST(0) = sv_newmortal();
+        
+        length = strlen( word ) + 100;
+        newword = (char *)emalloc( length+1 ); /* leak! */
+        strcpy( newword, word );
+
+        /* set return value only if stem returns OK */
+        if ( Stem(&newword, &length) == STEM_OK )
+            sv_setpv( ST(0), newword );
+        efree( newword );
+            
 
 char *
 SwishErrorString(number)

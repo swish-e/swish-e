@@ -43,15 +43,16 @@
 
     # Get a few headers from the index files for display
 
-    my @headers = qw/WordCharacters BeginCharacters EndCharacters/;
-    push @headers, 'Indexed on';
+    my @headers = ( qw/WordCharacters BeginCharacters EndCharacters/, 'Indexed on');
   
-    for ( @headers ) {
-        print_header("Header '$_'");
+    for my $header ( @headers ) {
+        print_header("Header '$header'");
 
-        my @h =  SwishHeaderParameter( $handle, $_ );
-        print "$_ for index 0 is $h[0]\n";
+        my @h =  SwishHeaderParameter( $handle, $header );
+
+        print "$header for index $_ is $h[$_]\n" for 0..$#h;
     }
+
 
     # Now, let's run a few queries...
 
@@ -147,14 +148,14 @@
         my @properties;
 
         while ( ( @result{ @labels }, @properties ) = SwishNext( $handle )) {
-            print join( ' ',
-                  @result{qw/ rank file_name index_file_name/},
-                  qq[ "$result{title}" ],
-                  qq["$result{document_summary}"],
-                  $result{document_offset},
-                  $result{content_length},
-                  map{ qq["$_"] } @properties,
-                  ),"\n";
+
+            for ( @labels ) {
+                printf("  %20s -> '%s'\n", $_ ,$result{$_});
+            }
+            for ( @properties ) {
+                printf("  %20s -> '%s'\n", 'Propertiy', $_ );
+            }
+            print "-----------\n";
         }
     }
 
@@ -165,8 +166,9 @@
 
     my @stemwords = qw/parking libaries library librarians money monies running runs is/;
     print "\nStemming:\n";
-    print "    '$_' => '" . SwishStem( $_ ) . "'\n" for @stemwords;
+    print "    '$_' => '" . ( SwishStem( $_ ) || 'returned undefined: Word not stemmed for some reason' ) . "'\n" for @stemwords;
     print "\n";
+
 
     
     # Grab the stop words from the header
