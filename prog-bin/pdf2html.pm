@@ -98,7 +98,7 @@ EOF
 
     if ( ref $file_or_content ) {
         unlink $file;
-        return \$txt if ref;
+        return \$txt;
     }
 
     my $mtime  = (stat $file )[9];
