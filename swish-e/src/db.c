@@ -257,7 +257,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 ** 1 is for the trailing '\0';
                 */
         tmp=q - sw->Index->worddata_buffer;  
-        if((tmp + 5 *(2+frequency) + 1) >= (long)sw->Index->len_worddata_buffer)
+        if((long)(tmp + 5 *(2+frequency) + 1) >= (long)sw->Index->len_worddata_buffer)
         {
             sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5*(2+frequency)+1;
             sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
