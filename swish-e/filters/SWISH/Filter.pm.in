@@ -520,6 +520,8 @@ wihtout having to pass in a document.  Helpful if doing HEAD requests.
 
 Returns an array of filters that can handle this type of document
 
+=back
+
 =cut
 
 sub can_filter {
@@ -1060,6 +1062,8 @@ Example:
        ...
     }
 
+=back
+
 =cut
 
 sub AUTOLOAD {
@@ -1312,7 +1316,6 @@ Use to test and load required modules within a filter without aborting.
 A warning message is displayed if the FILTER_DEBUG environment variable is true.
 Returns $self if no error.
 
-=back
 
 =cut
 
