@@ -1,0 +1,306 @@
+=head1 NAME
+
+SWISH-SEARCH - SWISH-E Searching Instructions
+
+=head1 OVERVIEW
+
+This page describes the process of searching with SWISH-E.
+Please see the L<SWISH-CONFIG|SWISH-CONFIG> page for information the SWISH-E configuration file directives,
+and L<SWISH-RUN|SWISH-RUN> for a complete list of command line arguments.
+
+Searching a SWISH-E index involves passing L<command line arguments|SWISH-RUN>
+to SWISH-E that specify the index file to use, and the L<query|/"Searching Syntax and Operations">
+(or search words) to locate in the index.  SWISH-E returns a list of file names (or URLs) that contain
+the matched search words.  L<Perl|/"Searching with Perl"> is often used as a front-end to SWISH-E
+such as in CGI applications, and L<perl modules|/"Perl Modules"> exist to for accessing SWISH-E.
+
+=head1 Searching Syntax and Operations
+
+The C<-w> command line argument (switch) is used specify the search query
+to SWISH-E.  When running swish from a shell prompt, be careful to protect your query from shell
+metacharacters and shell expansions.  This often means placing single or double quotes around your
+query.  See L<Searching with Perl> if you plan to use Perl as a front end to SWISH-E.
+
+The following section describes various aspects of searching with SWISH-E.
+
+=head2 Boolean Operators
+
+You can use the Boolean operators B<and>, B<or>, or B<not> in searching.
+Without these Boolean operators, SWISH-E will assume you're B<and>ing the words together.
+The operators are not case sensitive.
+
+[Note: you can change the default to B<or>ing by changing the variable DEFAULT_RULE
+in the config.h file and recompiling SWISH-E.]
+
+Evaluation takes place from B<left to right> only, although you can use parentheses to
+force the order of evaluation.
+
+Examples:
+
+     swish-e -w "smilla or snow" -f myIndex
+
+retrieves files containing either the words "smilla" or "snow"
+
+     swish-e -w "smilla and snow not sense" -f myIndex 
+
+retrieves first the files that contain both the words "smilla" and "snow";
+then among those the ones that do not contain the word "sense"
+
+=head2 Truncation
+
+The wildcard (*) is available, however it can only be used at the end of a word.
+Usage at the beginning or in the middle of the word will
+yield no results.
+
+     swish-e -w "librarian" -f myIndex
+
+this query only retrieves files which contain the given word.
+
+On the other hand:
+
+     swish-e -w "librarian*" -f myIndex
+
+retrieves "librarians", "librarianship", etc. along with "librarian".
+
+Note that wildcard searches combined with word stemming can lead to unexpected results.
+If stemming is enabled, a search term with a wildcard will be stemmed
+internally before searching.  So searching for C<running*> will actually be a search for C<run*>, so
+C<running*> would find C<runway>.  Also, searching for C<runn*> will not find C<running> as you might expect, since
+C<running> stems to C<run> in the index, and thus C<runn*> will not find C<run>.
+
+
+=head2 Order of Evaluation
+
+Expressions are always evaluated left to right: 
+
+    swish -w "juliet not ophelia and pac" -f myIndex 
+
+retrieves files which contain "juliet" and "pac" but not "ophelia" 
+
+However it is always possible to force the order of evaluation by using parenthesis. 
+For example: 
+
+    swish-e -w "juliet not (ophelia and pac)" -f myIndex 
+
+retrieves files with "juliet" and containing neither "ophelia" nor "pac".
+
+=head2 Meta Tags
+
+MetaNames are used to represent I<fields> (or columns in a database) and provide a way to search in
+only parts of a document.
+See L<SWISH-CONFIG|SWISH-CONFIG/"Document Contents Directives"> for a description of MetaNames, and how they
+are specified in the source document.
+
+To limit a search to words found in a meta tag you prefix the keywords with the name of the meta tag,
+followed by the equal sign:
+
+    metaname = word
+    metaname = (this or that)
+    metatname = ( (this or that) or "this phrase" )
+
+It is not necessary to have spaces at either side of the "=", consequently the following are equivalent:
+
+    swish-e -w "metaName=word"
+    swish-e -w "metaName=word" 
+    swish-e -w "metaName= word" 
+
+To search on a word that contains a "=", precede the "=" with a "\" (backslash).
+
+    swish-e -w "test\=3 = x\=4 or y\=5" -f <index.file> 
+
+this query returns the files where the word "x=4" is associated with the metaName "test=3" or
+that contains the word "y=5" not associated with any metaName.
+
+Queries can be also constructed using any of the usual search features, moreover metaName and
+plain search can be mixed in a single query.
+
+     swish-e -w "metaName1 = (a1 or a4) not (a3 and a7)" -f index.swish-e
+
+This query will retrieve all the files in which the "metaName1" is associated either with
+"a1" or "a4" and that do not contain the words "a3" and "a7",
+where "a3" and "a7" are not associated to any meta name.
+
+=head2 Phrase Searching
+
+To search for a phrase in a document use double-quotes to delimit your search terms.
+(The phrase delimiter is set in src/swish.h.)
+
+You must protect the quotes from the shell.
+
+For example, under Unix:
+
+    swish-e -w '"this is a pharase" or (this and that)'
+    swish-e -w 'meta1=("this is a pharase") or (this and that)'
+
+Or under Windows:
+
+    swish-e -w \"this is a pharase\" or (this and that)
+
+  
+
+
+=head2 Context
+
+At times you might not want to search for a word in every part of your
+files since you know that the word(s) are present in a particular tag. The ability
+to seach according to context greatly increases the chances that your hits will be relevant,
+and SWISH-E provides a mechanism to do just that. 
+
+The -t option in the search command line allows you to search for words that exist
+only in specific HTML tags. Each character in the string you specify
+in the argument to this option represents a different tag in which the word is searched;
+that is you can use any combinations of the following characters:
+
+    H means all<HEAD> tags 
+    B stands for <BODY> tags 
+    t is all <TITLE> tags 
+    h is <H1> to <H6> (header) tags 
+    e is emphasized tags (this may be <B>, <I>, <EM>, or <STRONG>) 
+    c is HTML comment tags (<!-- ... -->)
+
+    # This search will look for files with these two words in their titles only.
+    swish-e -w "apples oranges" -t t -f myIndex
+
+    # This search will look for files with these words in comments only.
+    swish-e -w "keywords draft release" -t c -f myIndex
+
+    This search will look for words in titles, headers, and emphasized tags.
+    swish-e -w "world wide web" -t the -f myIndex
+
+=head1 Searching with Perl
+
+Perl ( http://www.perl.com/ ) is probably the most common programming language used with SWISH-E, especially
+in CGI interfaces.  Perl makes searching and parsing results with SWISH-E easy, but if not
+done properly can leave your server vulnerable to attacks.
+
+When designing your CGI scripts you should carefully screen user input, and
+include features such as paged results and a timer
+to limit time required for a search to complete.  These are to protect your web site against
+a denial of service (DoS) attack.
+
+Included with every distribution of Perl is a document called perlsec -- Perl Security.
+I<Please> take time to read and understand that document before writing CGI scripts in perl.
+
+Type at your shell/command prompt:
+
+    perldoc perlsec
+
+If nothing else, start every CGI program in perl as such:
+
+    #!/usr/local/bin/perl -wT
+    use strict;
+
+That alone won't make your script secure, but may help you fine insecure code.    
+
+=head2 CGI Danger!
+
+There are many examples of CGI scripts on the Internet.  Many are poorly written and
+insecure.  A commonly seen way to execute SWISH-E from a perl CGI script is with a
+I<piped open>.  For example, it is common to see this type of C<open()>:
+
+    open(SWISH, "$swish -w $query -f $index|");
+
+This C<open()> gives shell access to the entire Internet!  Often an attempt is made
+to strip C<$query> of I<bad> characters.  But, this often fails since it's hard to
+guess what every I<bad> character is.  Would you have thought about a null?
+A better approach is to only allow I<in> known safe characters.
+
+Even if you can be sure that any user supplied data is safe,
+this I<piped open> still passes the command parameters through the shell.  If nothing else, it's
+just an extra unnecessary step to running SWISH-E.
+
+Therefore, the recommended approach is to fork and exec SWISH-E directly without passing through the shell.
+This process is described in the perl man page C<perlipc> under the appropriate heading
+B<Safe Pipe Opens>.
+
+Type:
+
+    perldoc perlipc
+
+If all this sounds complicated you may wish to use a Perl module that does all the hard work
+for you.
+
+=head2 Perl Modules
+
+There are a couple of Perl modules for accessing SWISH-E.  Hopefully, they make using
+SWISH-E easier.  One of the modules requires the use of the SWISH-E C library, and the other option just
+requires that your operating system knows how to fork.
+
+B<The Included SWISH Perl Module>
+
+When compiling SWISH-E from source the build process creates a C library
+(see the L<SWISH-E INSTALL|INSTALL/"Installing_the_SWISH_E_C_Library"> documentation).
+The SWISH-E distribution includes a F<perl> directory with files required to create
+the F<SWISHE.pm> module.  This module will I<embed> SWISH-E into your perl program so that searching
+does not require running an external program.  Embedding the SWISH-E program into your perl program
+results in faster SWISH-E searches since it avoids the cost of forking and exec'ing a separate program.
+
+Building and usage instructions for the F<SWISHE.pm> module can be found in the
+L<SWISH-PERL|SWISH-PERL> man page.
+
+Here's an edited snip from that man page:
+
+
+    my $handle = SwishOpen( $indexfiles )
+        or die "Failed to open '$indexfiles'";
+
+    my $num_results = SwishSearch($handle, $query, 1, $props, $sort);
+
+    unless ( $num_results ) {
+        print "No Results\n";
+
+        my $error = SwishError( $handle );
+        print "Error number: $error\n" if $error;
+
+        return;  # or next.
+    }
+
+    while( my($rank,$index,$file,$title,$start,$size,@props)
+        = SwishNext( $handle ))
+    {
+        print join( ' ',
+              $rank,
+              $index,
+              $file,
+              qq["$title"],
+              $start,
+              $size,
+              map{ qq["$_"] } @props,
+              ),"\n";
+    }
+
+
+B<SWISH Modules on CPAN>
+
+The Comprehensive Perl Archive Network, or CPAN, is a collection of modules for use with Perl.
+Always search CPAN (http://search.cpan.org/) before starting any new program.  Chances are someone
+has written just what you need.
+
+On CPAN are also modules for searching with SWISH-E.  They can be found at
+http://search.cpan.org/search?mode=module&query=SWISH  The main SWISH module (different from the
+SWISHB<E> module included with the SWISH-E distribution) provides a high-level Object Oriented
+interface to SWISH-E,
+and the same can interface can be used to used to either fork and exec the swish-e binary,
+or use the SWISH-E C Library if installed by just changing one line of code.
+
+Here's an example of SWISH module usage from the synopsis:
+
+    use SWISH;
+
+    $sh = SWISH->connect('Fork',
+       prog     => '/usr/local/bin/swish-e',
+       indexes  => 'index.swish-e',
+       results  => sub { print $_[1]->as_string,"\n" },
+    ) or die $SWISH::errstr unless $sh;
+
+    $hits = $sh->query('metaname=(foo or bar)');
+
+
+=head1 Document Info
+
+$Id$
+
+.
+
+
+
