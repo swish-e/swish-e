@@ -621,10 +621,10 @@ int     compFileProps(const void *s1, const void *s2)
         return 0;
 
     if (!p1 && p2)
-        return 1;
+        return -1;
 
     if (p1 && !p2)
-        return -1;
+        return 1;
 
     if (is_meta_number(r1->currentSortProp) || is_meta_date(r1->currentSortProp))
     {
