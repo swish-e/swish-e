@@ -885,9 +885,27 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         dump_file_properties( indexf, &fi );
 
 
-    // ??? $$$ !!!don't forget to save wordcount either as a property or maybe in the prop index -- see where we need it first
     /* write properties to disk, and release docprop array (and the prop index array) */
+    /* Currently this just passes sw, and assumes only one index file when indexing */
     WritePropertiesToDisk( sw , &fi );
+
+
+    /* Save total words per file */
+    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
+    {
+        INDEXDATAHEADER *header = &indexf->header;
+        int idx = fi.filenum - 1;
+
+        if ( !header->TotalWordsPerFile || idx >= header->TotalWordsPerFileMax )
+        {
+            header->TotalWordsPerFileMax += 20000;  /* random guess -- could be a config setting */
+            header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(int) );
+        }
+
+        header->TotalWordsPerFile[idx] = wordcount;
+    }
+
+    
 
 
     /* Compress the entries */

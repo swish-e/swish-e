@@ -188,6 +188,8 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
 #define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
 
+#define TOTALWORDSPERFILE_ID (BASEHEADER + 30)  /* total words per file array */
+
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
 #define MAXWORDLEN 1000
@@ -409,8 +411,14 @@ typedef struct
     /* Total files and words in index file */
     int     totalwords;
     int     totalfiles;
+
     /* var to specify how to ranking while indexing */
     int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
+
+    int     *TotalWordsPerFile;
+    int     TotalWordsPerFileMax;  /* max size of array */
+
+
     /* Lookup tables for fast access */
     int     wordcharslookuptable[256];
     int     begincharslookuptable[256];

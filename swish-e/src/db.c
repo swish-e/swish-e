@@ -131,6 +131,8 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     write_header_int(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, DB);
 	*/
 
+
+
     /* Jose Ruiz 06/00 Added this line to delimite the header */
     write_integer_table_to_header(sw, TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), DB);
 	
@@ -142,7 +144,13 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 
 
 		/* BuzzWords */
-    write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);	
+    write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);
+
+
+    /* Write the total words per file array, if used */
+    if ( !header->ignoreTotalWordCountWhenRanking )
+        write_integer_table_to_header(sw, TOTALWORDSPERFILE_ID, header->TotalWordsPerFile, totalfiles, DB);
+
 
     DB_EndWriteHeader(sw, DB);
 }
@@ -553,6 +561,14 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             break;
         case BUZZWORDS_ID:
             parse_buzzwords_from_buffer(header, buffer);
+            break;
+
+        case TOTALWORDSPERFILE_ID:
+            if ( !header->ignoreTotalWordCountWhenRanking )
+            {
+                header->TotalWordsPerFile = emalloc( header->totalfiles * sizeof(int) );
+                parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, buffer);
+            }
             break;
         default:
             progerr("Severe index error in header");
