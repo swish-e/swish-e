@@ -90,14 +90,23 @@ split into indexing and searching code (volunteers welcome).
 
 =head3 Does Swish-e include a CGI interface?
 
-An example CGI script is included in the C<example> directory.
-(Type C<perldoc swish.cgi> in the C<example> directory for instructions.)
+Yes.  Kind of.
 
-Please be careful when picking a CGI script to use with Swish-e.  Quite a
-few of the scripts that have been available for it are insecure and
-should not be used.
+There's two example CGI scripts included, swish.cgi and search.cgi.
+Both are installed at F<$prefix/lib/swish-e>.
 
-The included example CGI script was designed with security in mind.
+Both require a bit of work to setup and use.  Swish.cgi is probably what most
+people will want to use as it contains more features.  Search.cgi is for those
+that want to start with a small script and customize it to fit their needs.
+
+An example of using swish.cgi is given in
+the L<INSTALL|INSTALL> man page, and it the swish.cgi documentation.
+Like often is the case, it will be easier to use if you first read the documentation.
+
+Please use caution about CGI scripts found on the Internet for use with Swish-e.
+Some are not secure.
+
+The included example CGI scripts were designed with security in mind.
 Regardless, you are encouraged to have your local Perl expert review it
 (and all other CGI scripts you use) before placing it into production.
 This is just a good policy to follow.

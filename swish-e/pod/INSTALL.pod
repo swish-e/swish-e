@@ -1116,6 +1116,9 @@ The spider program F<spider.pl> also has a large number of configuration options
 Documentation is also available in the directory $prefix/share/doc/swish-e or at
 http://swish-e.org.
 
+Note: Also check out the search.cgi script found at the same location as the swish.cgi script.
+This is more of a skeleton script for those that want to create a custom search script.
+
 =back
 
 Now you are ready to search.
