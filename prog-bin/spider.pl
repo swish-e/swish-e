@@ -134,25 +134,26 @@ sub process_server {
 
 
 
-    eval {
-        process_link( $server, $uri );
-    };
+    eval { process_link( $server, $uri ) };
     print STDERR $@ if $@;
 
     $start = time - $start;
     $start++ unless $start;
 
     my $max_width = 0;
+    my $max_num = 0;
     for ( keys %{$server->{counts}} ) {
         $max_width = length if length > $max_width;
+        my $val = commify( $server->{counts}{$_} );
+        $max_num = length $val if length $val > $max_num;
     }
 
     printf STDERR "\n$0: Summary for: $server->{base_url}\n";
 
     for ( sort keys %{$server->{counts}} ) {
-        printf STDERR "%${max_width}s: %6d  (%0.1f/sec)\n",
+        printf STDERR "%${max_width}s: %${max_num}s  (%0.1f/sec)\n",
             $_,
-            $server->{counts}{$_},
+            commify( $server->{counts}{$_} ),
             $server->{counts}{$_}/$start;
     }
 }    
@@ -163,7 +164,7 @@ my $parent;
 sub process_link {
     my ( $server, $uri ) = @_;
 
-    die if $abort;
+    die if $abort || $server->{abort};
 
 
     thin_dots( $uri, $server ) if $server->{thin_dots};
@@ -305,7 +306,16 @@ sub check_user_function {
         $cnt++;
         print STDERR "?Testing '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_INFO;
 
-        my $ret = $sub->( $uri, $server, @_ );
+        my $ret;
+        
+        eval { $ret = $sub->( $uri, $server, @_ ) };
+
+        if ( $@ ) {
+            print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt death '$@'\n" if $server->{debug} >= DEBUG_SKIPPED;
+            $server->{counts}{Skipped}++;
+            return;
+        }
+            
         next if $ret;
         
         print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_SKIPPED;
@@ -411,6 +421,8 @@ sub output_content {
 
     $server->{indexed}++;
 
+    $server->{counts}{'Total Bytes'} += length $$content;
+
 
     my $headers = join "\n",
         'Path-Name: ' .  $response->request->uri,
@@ -455,6 +467,12 @@ sub thin_dots {
     if ( $server->{debug} >= DEBUG_INFO && $p ne $uri->path ) {
         print STDERR "thin_dots: $p -> ", $uri->path, "\n";
     }
+}
+
+sub commify {
+    local $_  = shift;
+    1 while s/^([-+]?\d+)(\d{3})/$1,$2/;
+    return $_;
 }
 
 __END__
@@ -744,6 +762,9 @@ to the server is made.  The second function allows you to filter based on the re
 remote server (such as by content-type).  And the third function allows you to filter the returned
 content from the remote server.
 
+The function calls are wrapped in an eval, so calling die (or doing something that dies) will just cause
+that URL to be skipped.  If you really want to stop processing you need to set $server->{abort} in your
+subroutine (or kill -HUP yourself).
 
 The first two parameters passed are a URI object (to have access to the current URL), and
 a reference to the current server hash.  Other parameters may be passes, as described below.
@@ -850,6 +871,11 @@ For example:
     }
 
 =back
+
+=head1 SIGNALS
+
+Sending a SIGHUP to the running spider will cause it to stop spidering.  This is a good way to abort spidering, but
+let swish index the documents retrieved so far.
 
 =head1 SEE ALSO
 
