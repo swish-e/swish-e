@@ -125,6 +125,7 @@ $Id$
 */
 #include "html.h"
 #include "xml.h"
+#include "parser.h"
 #include "txt.h"
 #include "metanames.h"
 #include "result_sort.h"
@@ -700,6 +701,19 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         strcpy(strType,"XML");
         countwords = countwords_XML;
         break;
+
+#ifdef LIBXML2
+    case XML2:
+        strcpy(strType,"XML2");
+        countwords = parse_XML;
+        break;
+
+    case HTML2:
+        strcpy(strType,"HTML2");
+        countwords = parse_HTML;
+        break;
+
+#endif
 
     case WML:
         strcpy(strType,"WML");
