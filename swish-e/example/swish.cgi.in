@@ -751,6 +751,10 @@ sub process_request {
     load_module( $template->{package} );
 
 
+    # Allow fixup within the config file
+    if ( $conf->{request_fixup} && ref $conf->{request_fixup} eq 'CODE' ) {
+        &{$conf->{request_fixup}}( $request_object, $conf );
+    }
 
 
     set_debug_input( $conf, $request_object )
@@ -762,6 +766,8 @@ sub process_request {
         config    => $conf,
         request   => $request_object,
     );
+
+   
 
 
     # run the query (run if there's a query)
@@ -1183,9 +1189,17 @@ sub set_navigation {
 
     # Single string
     
+    # default fields
+    my @std_fields = qw/query metaname sort reverse/;
+
+    # Extra fields could be added in the config file
+    if ( my $extra = $self->config('extra_fields') ) {
+        push @std_fields, @$extra;
+    }
+
     my @query_string =
          map { "$_=" . $q->escape( $q->param($_) ) }
-            grep { $q->param($_) }  qw/query metaname sort reverse/;
+            grep { $q->param($_) }  @std_fields;
 
 
 

@@ -55,10 +55,12 @@ sub page_header {
 
         : ( $results->errstr || $title );
 
+    my $default_logo = '<a href="http://swish-e.org"><img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> ' ;
+
 
     my $logo = $results->config('on_intranet')
                ? ''
-               : '<a href="http://swish-e.org"><img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> ' ;
+               : $results->config('logo') || $default_logo;
 
     return <<EOF;
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
@@ -101,19 +103,33 @@ sub show_form {
     
     my $date_ranges_select  = $results->get_date_ranges;
 
-
     my $form = $q->script_name;
-    
-    return <<EOF;
-    <form method="get" action="$form" enctype="application/x-www-form-urlencoded" class="form">
-        <input maxlength="200" value="$query" size="32" type="text" name="query"/>
-        <input value="Search!" type="submit" name="submit"/><br>
 
+    my $advanced_link = qq[<small><a href="$form">advanced form</a></small>]; 
+
+    my $advanced_form = $q->param('brief')
+                        ? $advanced_link
+                        : <<EOF;
         $meta_select_list
         $sorts
         $select_index
         $limit_select
         $date_ranges_select
+EOF
+
+    my $extra = $results->config('extra_fields');
+    my $hidden = !$extra ? ''
+                 : join "\n", map { $q->hidden($_) } @$extra; 
+
+
+    
+    return <<EOF;
+    <form method="get" action="$form" enctype="application/x-www-form-urlencoded" class="form">
+        <input maxlength="200" value="$query" size="32" type="text" name="query"/>
+        $hidden
+        <input value="Search!" type="submit" name="submit"/><br>
+
+        $advanced_form
     </form>
 EOF
 }
@@ -267,10 +283,10 @@ sub show_result {
                 . ( $name_labels->{$_} || $_ )
                 . ':</small></td><td><small> '
                 . '<b>'
-                . $this_result->{$_}
+                . ( defined $this_result->{$_} ?  $this_result->{$_} : '' ) 
                 . '</b>'
                 . '</small></td></tr>'
-                 }  @$display_props
+                 }   @$display_props
             ),
             '</table>';
     }
