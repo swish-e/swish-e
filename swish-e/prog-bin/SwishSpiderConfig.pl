@@ -21,7 +21,26 @@ Please see C<perldoc spider.pl> for more information.
 #  in one run (or different parts of the same tree)
 #  The main program expects to use @SwishSpiderConfig::servers.
 
+
+
 @servers = (
+    {
+        base_url        => 'http://www.infopeople.org/',
+        email           => 'moseley@hank.org',
+        delay_min       => .0001,
+        link_tags       => [qw/ a frame /],
+        max_files       => 50,
+        test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg)$/ },
+        test_response   => sub {
+            my $content_type = $_[2]->content_type;
+            my $ok = grep { $_ eq $content_type } qw{ text/html text/plain application/pdf application/msword };
+            return 1 if $ok;
+            print STDERR "$_[0] wrong content type ( $content_type )\n";
+            return;
+        },
+        filter_content  => [ \&pdf, \&doc ],
+    },
+
     {
         base_url    => 'http://sunsite.berkeley.edu/SWISH-E/',
         same_hosts  => [ qw/www.sunsite.berkeley.edu/ ],
@@ -31,7 +50,7 @@ Please see C<perldoc spider.pl> for more information.
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 20,        # Max files to spider
         debug       => 1,         # Display URLs as indexing to STDERR
-        skip        => 0,         # Flag to disable spidering this host.
+        skip        => 1,         # Flag to disable spidering this host.
         ignore_robots_file => 0,  # Don't set that to one, unless you are sure.
 
         use_cookies => 0,         # True will keep cookie jar
@@ -62,6 +81,7 @@ Please see C<perldoc spider.pl> for more information.
     # Each is just a hash reference.
 
     {
+skip => 1,
         base_url    => 'http://www.infopeople.org/',
         same_hosts  => [ qw/infopeople.org/ ],
         agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
@@ -90,10 +110,12 @@ Please see C<perldoc spider.pl> for more information.
 # return false to skip the link
 
 sub test_url {
-    my ( $URI_object, $server ) = @_;
-    return 1;  # Ok to index/spider
+    my ( $uri, $server ) = @_;
+    # return 1;  # Ok to index/spider
+    # return 0;  # No, don't index or spider;
 
-    return 0;  # No, don't index or spider;
+    # ignore any .gif files
+    return $uri->path =~ /\.gif$/;
     
 }
 
@@ -103,25 +125,52 @@ sub test_url {
 
 
 sub test_response {
-    my ( $response, $server ) = @_;
+    my ( $uri, $server, $response ) = @_;
 
-    # note that the URI object is in response->request->uri
-    
-
-    unless ( $response->header('content-type') =~ m!^text/html! ) {
-        $server->{no_contents}++;
-        return 1;  # ok to spider, but pass the index_no_contents to swish
-    }
-
-
+    $server->{no_contents}++ unless $response->content_type =~ m[^text/html];
     return 1;  # ok to index and spider
 }
+
+# This routine can be used to filter content
 
 sub filter_content {
     my ( $response, $server, $content_ref ) = @_;
 
     # modify $content_ref
+    $$content_ref = modify_content( $content_ref );
+    return 1;  # make sure you return true!
 
 }
+
+# Here's some more real examples
+
+use pdf2xml;  # included example pdf converter module
+sub pdf {
+   my ( $uri, $server, $response, $content_ref ) = @_;
+
+   return 1 unless $response->content_type eq 'application/pdf';
+
+   # for logging counts
+   $server->{counts}{'PDF transformed'}++;
+
+   $$content_ref = ${pdf2xml( $content_ref )};
+   $$content_ref =~ tr/ / /s;
+   return 1;
+}
+
+use doc2txt;  # included example pdf converter module
+sub doc {
+   my ( $uri, $server, $response, $content_ref ) = @_;
+
+   return 1 unless $response->content_type eq 'application/msword';
+
+   # for logging counts
+   $server->{counts}{'DOC transformed'}++;
+
+   $$content_ref = ${doc2txt( $content_ref )};
+   $$content_ref =~ tr/ / /s;
+   return 1;
+}
+
 
 1;

@@ -9,6 +9,7 @@ use strict;
 #
 #       perldoc spider.pl
 #
+# Apr 7, 2001 -- added quite a bit of bulk for easier debugging
 
 
 use LWP::RobotUA;
@@ -16,6 +17,14 @@ use HTML::LinkExtor;
 
 use vars '$VERSION';
 $VERSION = sprintf '%d.%02d', q$Revision$ =~ /: (\d+)\.(\d+)/;
+
+use constant DEBUG_ERRORS   => 1;  # program errors
+use constant DEBUG_URL      => 2;  # print out every URL processes
+use constant DEBUG_FAILED   => 3;  # failed to return a 200
+use constant DEBUG_SKIPPED  => 4;  # didn't index for some reason
+use constant DEBUG_INFO     => 5;  # more verbose
+use constant DEBUG_LINKS    => 6;  # prints links as they are extracted
+
 
 
 
@@ -44,6 +53,29 @@ $VERSION = sprintf '%d.%02d', q$Revision$ =~ /: (\d+)\.(\d+)/;
 sub process_server {
     my $server = shift;
 
+    # set defaults
+
+    $server->{debug} ||= 0;
+    $server->{debug} = 0 unless $server->{debug} =~ /^\d+$/;
+
+    $server->{max_size} ||= 1_000_000;
+    $server->{max_size} = 1_000_000 unless $server->{max_size} =~ /^\d+$/;
+
+    $server->{link_tags} = ['a'] unless ref $server->{link_tags} eq 'ARRAY';
+    my %seen;
+    $server->{link_tags} = [ grep { !$seen{$_}++} map { lc } @{$server->{link_tags}} ];
+
+    for ( qw/ test_url test_response filter_content / ) {
+        next unless $server->{$_};
+        $server->{$_} = [ $server->{$_} ] unless ref $server->{$_} eq 'ARRAY';
+        my $n;
+        for my $sub ( @{$server->{$_}} ) {
+            $n++;
+            die "Entry number $n in $_ is not a code reference\n" unless ref $sub eq 'CODE';
+        }
+    }
+    
+
     my $start = time;
 
     if ( $server->{skip} ) {
@@ -55,18 +87,33 @@ sub process_server {
     require "Digest/MD5.pm" if $server->{use_md5};
             
 
+    # set starting URL, and remove any specified fragment
     my $uri = URI->new( $server->{base_url} );
     $uri->fragment(undef);
 
+    
+
+    # set the starting server name (including port) -- will only spider on server:port
+    
     $server->{authority} = $uri->authority;
     $server->{same} = [ $uri->authority ];
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
 
+
+    # set time to end
+    
     $server->{max_time} = $server->{max_time} * 60 + time
         if $server->{max_time};
 
+
+    # set default agent for log files
+
     $server->{agent} ||= 'swish-e spider 2.2 http://sunsite.berkeley.edu/SWISH-E/';
 
+
+
+    # get a user agent object
+    
     my $ua;
     if ( $server->{ignore_robots_file} ) {
         $ua = LWP::UserAgent->new();
@@ -87,8 +134,6 @@ sub process_server {
 
 
 
-    $server->{$_} = 0 for qw/urls count duplicate md5_duplicate skipped indexed spidered/;
-    
     eval {
         process_link( $server, $uri );
     };
@@ -96,21 +141,22 @@ sub process_server {
 
     $start = time - $start;
     $start++ unless $start;
-    my $rate = sprintf( '%0.1f' ,$server->{urls}/$start  );
 
+    my $max_width = 0;
+    for ( keys %{$server->{counts}} ) {
+        $max_width = length if length > $max_width;
+    }
 
-    print STDERR join "\n",
-                 "$0: $server->{base_url}",
-                 "       URLs : $server->{urls}  ($rate/sec)",
-                 "   Spidered : $server->{spidered}",
-                 "    Indexed : $server->{indexed}",
-                 "  Duplicats : $server->{duplicate}",
-                 "    Skipped : $server->{skipped}",
-                 "   MD5 Dups : $server->{md5_duplicate}",
-                 '','';
+    printf STDERR "\n$0: Summary for: $server->{base_url}\n";
 
-}
-
+    for ( sort keys %{$server->{counts}} ) {
+        printf STDERR "%${max_width}s: %6d  (%0.1f/sec)\n",
+            $_,
+            $server->{counts}{$_},
+            $server->{counts}{$_}/$start;
+    }
+}    
+        
 
 my $parent;
 #----------- Process a url and recurse -----------------------
@@ -124,20 +170,26 @@ sub process_link {
 
 
     if ( $visited{ $uri->canonical }++ ) {
-        $server->{skipped}++;
-        $server->{duplicate}++;
+        $server->{counts}{Skipped}++;
+        $server->{counts}{Duplicates}++;
         return;
     }
 
+    $server->{counts}{'Unique URLs'}++;
+
     die "$0: Max files Reached\n"
-        if $server->{max_files} && ++$server->{urls} > $server->{max_files};
+        if $server->{max_files} && $server->{counts}{'Unique URLs'} > $server->{max_files};
 
     die "$0: Time Limit Exceeded\n"
         if $server->{max_time} && $server->{max_time} < time;
 
-    my $ua = $server->{ua};
-    return if $server->{test_url} && ! $server->{test_url}->( $uri, $server );
 
+    return unless check_user_function( 'test_url', $uri, $server );
+
+    
+
+    # make request
+    my $ua = $server->{ua};
     my $request = HTTP::Request->new('GET', $uri );
 
     my $content = '';
@@ -147,10 +199,12 @@ sub process_link {
     my $first;
     my $callback = sub {
         unless ( $first++ ) {
-            if ( $server->{test_response} && ! $server->{test_response}->( $_[1], $server ) ) {
-                $server->{skipped}++;
-                die "skipped\n";
-            }
+            die "skipped\n" unless check_user_function( 'test_response', $uri, $server, $_[1], \$_[0]  );
+        }
+
+        if ( length( $content ) + length( $_[0] ) > $server->{max_size} ) {
+            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug} >= DEBUG_ERRORS;
+            die "too big!\n";
         }
 
         $content .= $_[0];
@@ -160,73 +214,108 @@ sub process_link {
     my $response = $ua->simple_request( $request, $callback, 4096 );
 
 
+
+    # skip excluded by robots.txt
+    
     if ( !$response->is_success && $response->status_line =~ 'robots.txt' ) {
-        print STDERR "-- $depth $uri skipped: ", $response->status_line,"\n" if $server->{debug};
+        print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug} >= DEBUG_SKIPPED;
+        $server->{counts}{'robots.txt'}++;
         return;
     }
 
 
 
-    if ( $server->{debug} && $response->status_line !~ 'robots.txt' ) {
+    if ( ( $server->{debug} >= DEBUG_URL ) || ( $server->{debug} >= DEBUG_FAILED && !$response->is_success)  ) {
         print STDERR '>> ',
           join( ' ',
+                ( $response->is_success ? '+Fetched' : '-Failed' ),
                 $depth,
                 $response->request->uri->canonical,
                 $response->code,
-                $response->header('content-type'),
-                $response->header('content-length'),
+                $response->content_type,
+                $response->content_length,
            ),"\n";
 
-        if ( $response->code ne 200 && $parent ) {
-            print STDERR "   on page: ", $parent,"\n";
+        if ( !$response->is_success && $parent ) {
+            print STDERR "   Found on page: ", $parent,"\n";
         }
            
     }
 
+    unless ( $response->is_success ) {
 
-    if ( $response->is_success && $content ) {
-
-        # make sure content is unique - probably better to chunk into an MD5 object above
-
-        if ( $server->{use_md5} ) {
-            my $digest =  Digest::MD5::md5($content);
-
-            if ( $visited{ $digest } ) {
-
-                print STDERR "-- page $uri has same digest as $visited{ $digest }\n"
-                    if $server->{debug};
-            
-                $server->{skipped}++;
-                $server->{md5_duplicate}++;
-                return;
-            }
-            $visited{ $digest } = $uri;
+        # look for redirect
+        if ( $response->is_redirect && $response->header('location') ) {
+            my $u = URI->new_abs( $response->header('location'), $response->base );
+            process_link( $server, $u );
         }
-        
-
-        $server->{filter_content} && $server->{filter_content}->( $response, $server, \$content );
-
-        output_content( $server, \$content, $response );
-
-        $server->{spidered}++;
-        my $links = extract_links( $server, \$content, $response );
-
-        # Now spider
-        my $last_page = $parent || '';
-        $parent = $uri;
-        $depth++;
-        process_link( $server, $_ ) for @$links;
-        $depth--;
-        $parent = $last_page;
-
-
-    } elsif ( $response->is_redirect && $response->header('location') ) {
-        my $u = URI->new_abs( $response->header('location'), $response->base );
-        process_link( $server, $u );
+        return;
     }
+
+    return unless $content;  # $$$ any reason to index empty files?
+    
+
+    # make sure content is unique - probably better to chunk into an MD5 object above
+
+    if ( $server->{use_md5} ) {
+        my $digest =  Digest::MD5::md5($content);
+
+        if ( $visited{ $digest } ) {
+
+            print STDERR "-Skipped $uri has same digest as $visited{ $digest }\n"
+                if $server->{debug} >= DEBUG_SKIPPED;
         
+            $server->{counts}{Skipped}++;
+            $server->{counts}{'MD5 Duplicates'}++;
+            return;
+        }
+        $visited{ $digest } = $uri;
+    }
+    
+
+
+    return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
+
+    output_content( $server, \$content, $response );
+
+    $server->{Spidered}++;
+    my $links = extract_links( $server, \$content, $response );
+
+    # Now spider
+    my $last_page = $parent || '';
+    $parent = $uri;
+    $depth++;
+    process_link( $server, $_ ) for @$links;
+    $depth--;
+    $parent = $last_page;
 
 }
+
+
+sub check_user_function {
+    my ( $fn, $uri, $server ) = ( shift, shift, shift );
+    
+    return 1 unless $server->{$fn};
+
+    my $tests = ref $server->{$fn} eq 'ARRAY' ? $server->{$fn} : [ $server->{$fn} ];
+
+    my $cnt;
+
+    for my $sub ( @$tests ) {
+        $cnt++;
+        print STDERR "?Testing '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_INFO;
+
+        my $ret = $sub->( $uri, $server, @_ );
+        next if $ret;
+        
+        print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} >= DEBUG_SKIPPED;
+        $server->{counts}{Skipped}++;
+        return;
+    }
+    print STDERR "+Passed all $cnt tests for '$fn' user supplied function\n" if $server->{debug} >= DEBUG_INFO;
+    return 1;
+}
+
     
 sub extract_links {
     my ( $server, $content, $response ) = @_;
@@ -242,26 +331,76 @@ sub extract_links {
     my $p = HTML::LinkExtor->new;
     $p->parse( $$content );
 
+    my %skipped_tags;
     for ( $p->links ) {
         my ( $tag, %attr ) = @$_;
-        next unless $tag eq 'a';
-        next unless $attr{href};
 
-        my $u = URI->new_abs( $attr{href},$base );
-        $u->fragment( undef );
+        # which tags to use ( not reported in debug )
 
-        next unless $u->scheme =~ /^http/;  # no https at this time.
+        print STDERR " ?? Looking at extracted tag '$tag'\n" if $server->{debug} >= DEBUG_LINKS;
+        
+        unless ( grep { $tag eq $_ } @{$server->{link_tags}} ) {
 
-        unless ( $u->host ) {
-            warn "Bad link?? $u in $base\n";
+            # each tag is reported only once per page
+            print STDERR
+                " ?? <$tag> skipped because not one of (",
+                join( ',', @{$server->{link_tags}} ),
+                ")\n"
+                     if $server->{debug} >= DEBUG_LINKS && !$skipped_tags{$tag}++;
+                     
             next;
         }
+        
 
-        next unless grep { $u->authority eq $_ } @{$server->{same}};
-        $u->authority( $server->{authority} );  # Force all the same host name
+        my $links = $HTML::Tagset::linkElements{$tag};
+        $links = [$links] unless ref $links;
 
-        push @links, $u;
+        my $found;
+        my %seen;
+        for ( @$links ) {
+            if ( $attr{ $_ } ) {  # ok tag
+
+                my $u = URI->new_abs( $attr{$_},$base );
+                $u->fragment( undef );
+
+                return if $seen{$u}++;  # this won't report duplicates
+
+                unless ( $u->scheme =~ /^http$/ ) {  # no https at this time.
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not http\n] if $server->{debug} >= DEBUG_LINKS;
+                    next;
+                }
+
+                unless ( $u->host ) {
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not no host name\n] if $server->{debug} >= DEBUG_LINKS;
+                    next;
+                }
+
+                unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} >= DEBUG_LINKS;
+                    $server->{counts}{'Off-site links'}++;
+                    next;
+                }
+                
+                $u->authority( $server->{authority} );  # Force all the same host name
+
+                push @links, $u;
+                print STDERR qq[ ++ <$tag $_="$u"> Added to list of links to follow\n] if $server->{debug} >= DEBUG_LINKS;
+                $found++;
+
+            }
+        }
+
+        if ( !$found && $server->{debug} >= DEBUG_LINKS ) {
+            my $s = "<$tag";
+            $s .= ' ' . qq[$_="$attr{$_}"] for sort keys %attr;
+            $s .= '>';
+                
+            print STDERR " ?? tag $s did not include any links to follow\n";
+        }
+        
     }
+
+    print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n" if $server->{debug} >= DEBUG_INFO;
 
 
     return \@links;
@@ -313,7 +452,7 @@ sub thin_dots {
 
     $uri->path( $uri->path . '/' ) if $trailing_slash;  # cough, hack, cough.
 
-    if ( $server->{debug} && $p ne $uri->path ) {
+    if ( $server->{debug} >= DEBUG_INFO && $p ne $uri->path ) {
         print STDERR "thin_dots: $p -> ", $uri->path, "\n";
     }
 }
@@ -402,8 +541,8 @@ You will also need Digest::MD5 if you wish to use the MD5 feature.
 
 =head1 CONFIGURATION FILE
 
-Configuration is not very fancy.  The spider.pl program simple does a
-C<do 'path';> to read in the parameters and create the callback subroutines.
+Configuration is not very fancy.  The spider.pl program simply does a
+C<do "path";> to read in the parameters and create the callback subroutines.
 The C<path> is the first parameter passed to the script, which is set
 by the Swish-e configuration setting C<SwishProgParameters>.
 
@@ -422,10 +561,11 @@ spider.pl will read C</path/to/config.pl> to get the spider configuration
 settings.  If C<SwishProgParameters> is not set, the program will try to
 use C<SwishSpiderConfig.pl>.
 
-The configuration file sets a variable C<@servers> (in package main).
+The configuration file must set a global variable C<@servers> (in package main).
 Each element in C<@servers> is a reference to a hash.  The elements of the has
 are described next.  More than one server hash may be defined -- each server
-will be spidered in order listed in C<@servers>.
+will be spidered in order listed in C<@servers>, although currently a I<global> hash is
+used to prevent spidering the same URL twice.
 
 Examples:
 
@@ -487,6 +627,21 @@ your email address.
 
 This optional key sets the name of the spider.
 
+=item link_tags
+
+This optional tag is a reference to an array of tags.  Only links found in these tags will be extracted.
+The default is to only extract links from C<a> tags.
+
+For example, to extract tags from C<a> tags and from C<frame> tags:
+
+    my %serverA = (
+        base_url    => 'http://sunsite.berkeley.edu:4444/',
+        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        email       => 'my@email.address',
+        link_tags   => [qw/ a frame /],
+    );
+
+
 =item delay_min
 
 This optional key sets the delay in minutes to wait between requests.  See the
@@ -507,6 +662,12 @@ next server, if any.  The default is to not limit by time.
 This optional key sets the max number of files to spider before aborting.
 The default is to not limit by number of files.
 
+=item max_size
+
+This optional key sets the max size of a file read from the web server.
+This B<defaults> to 1,000,000 bytes.  If the size is exceeded the resource is
+skipped (and a message is written to STDERR if debug level is > 1.
+
 =item skip
 
 This optional key can be used to skip the current server.  It's only purpose
@@ -514,19 +675,25 @@ is to make it easy to disable a server in a configuration file.
 
 =item debug
 
-Set this to true for a bunch of (boring|interesting) output sent to STDERR.
+Set this to a number to display different amounts of info while spidering.  Writes info
+to STDOUT.  Zero is not debug output.  The higher the number, the more verbose the output.
+The levels are inclusive, so debug level 3 includes debug levels 1 and 2.
+
+Here are basically the levels:
+
+    0   => no debug output
+    1   => program errors (not currently used)
+    2   => report every URL processed
+    3   => request failed from remote server (doesn't included skipped due to robots.txt)
+    4   => report when a URL is skipped
+    5   => report misc info
+    6   => report info on links as they are extracted
+
 
 =item ignore_robots_file
 
 If this is set to true then the robots.txt file will not be checked when spidering
 this server.  Don't use this option unless you know what you are doing.
-
-=item use_cookies
-
-If this is set then a "cookie jar" will be maintained while spidering.  Some
-(poorly written ;) sites require cookies to be enabled on clients.
-
-This requires the HTTP::Cookies module.
 
 =item thin_dots
 
@@ -541,6 +708,13 @@ will be indexed and spidered as:
 
 This should prevent relative URLs in A href tags from looking like different
 pages, when they point to the same document.
+
+=item use_cookies
+
+If this is set then a "cookie jar" will be maintained while spidering.  Some
+(poorly written ;) sites require cookies to be enabled on clients.
+
+This requires the HTTP::Cookies module.
 
 =item use_md5
 
@@ -563,8 +737,22 @@ be a tiny bit slower.
 
 Three callback functions can be defined in your parameter hash.
 These optional settings are I<callback> subroutines that are called while
-processing URLs.  These allow you to filter URLs and/or filter the content
-before it is passed onto swish for indexing.
+processing URLs.
+
+The first routine allows you to skip processing of urls based on the url before the request
+to the server is made.  The second function allows you to filter based on the response from the
+remote server (such as by content-type).  And the third function allows you to filter the returned
+content from the remote server.
+
+
+The first two parameters passed are a URI object (to have access to the current URL), and
+a reference to the current server hash.  Other parameters may be passes, as described below.
+
+Each callback function B<must> return true to continue processing the URL.  Returning false will
+cause processing of this URL to be skipped.
+
+Note that you can create your own counters to display when processing is done by adding a value to
+the hash pointed to by C<$server->{counts}>.  See the example below.
 
 =over 4
 
@@ -584,21 +772,22 @@ For example:
 
     $server{test_url} = sub {
         my ( $uri, $server ) = @_;
-        return if $uri->path =~ /\.(gif|jpeg|jpg|png)$/;
-        return 1;
+        return $uri->path !~ /\.(gif|jpeg|jpg|png)$/;
     }
 
 =item test_response
 
 C<test_response> is similar to C<test_url>, but it is called I<after> the URI
-has been requested from the web server.  The subroutine is passed a HTTP::Response
-object, and a reference the server parameter hash.  Again, returning false will
-cause the spider to ignore this resource.
+has been requested from the web server (and some content has been returned).
+In addition to the URI, and server hash passed, the HTTP::Response object is passed as
+a third parameter.
+Again, returning false will cause the spider to ignore this resource.
 
 The spider requests a document in "chunks" or 4096 bytes.  4096 is only a suggestion
 of how many bytes to return in each chunk.  The C<test_response> routine is
 called when the first chunk is received only.  This allows ignoring (aborting)
 reading of a very large file, for example, without having to read the entire file.
+Although not much use, a reference to this chunk is passed as the forth parameter.
 
 This subroutine is useful for filtering documents based on data returned in the
 headers of the response.  For example, if you have lots of large images on your
@@ -606,8 +795,8 @@ web server, and they cannot be easily identified by the URL (as above), then
 you could use this callback subroutine to check the Content-Type: header.
 
     $server{test_response} = sub {
-        my ( $response, $server ) = @_;
-        return $response->header('content-type') !~ m[^image/];
+        my ( $uri, $server, $response ) = @_;
+        return $response->content_type !~ m[^image/];
     }
 
 Swish has a configuration directive C<NoContents> that will instruct swish to
@@ -619,15 +808,17 @@ You can turn this feature on for specific documents by setting a flag in
 the server hash passed into the C<test_response> subroutine:
 
     $server{test_response} = sub {
-        my ( $response, $server ) = @_;
+        my ( $uri, $server, $response ) = @_;
         $server->{no_contents} =
-            $response->header('content-type') =~ m[^image/];
+            $response->content_type =~ m[^image/];
         return 1;  # ok to spider, but pass the index_no_contents to swish
     }
 
 The entire contents of the resource is still read from the web server, and passed
 on to swish, but swish will also be passed a C<No-Contents> header which tells
 swish to enable the NoContents feature for this document only.
+
+NoContents only works with HTML type of files (IndexContents) in swish 2.2.
 
 
 =item filter_content
@@ -636,12 +827,26 @@ This callback subroutine can filter the contents before it gets
 passed to swish for indexing.  For example, you could add meta tags to HTML
 documents or convert PDF or Word documents into text, HTML, or XML.
 
+Again, your routine must return true to continue processing this resource.
+
+The HTTP::Response object is passed as the third parameter, and a reference to the
+content is passed as the forth parameter.
+
 For example:
 
     use pdf2xml;  # included example pdf converter module
     $server{filter_content} = sub {
-        my ( $response, $server, $content_ref ) = @_;
-        $$content_ref = pdf2xml( $content_ref );
+       my ( $uri, $server, $response, $content_ref ) = @_;
+
+       return 1 if $response->content_type eq 'text/html';
+       return 0 unless $response->content_type eq 'application/pdf';
+
+       # for logging counts
+       $server->{counts}{'PDF transformed'}++;
+
+       $$content_ref = ${pdf2xml( $content_ref )};
+       $$content_ref =~ tr/ / /s;  # squash extra space
+       return 1;
     }
 
 =back
