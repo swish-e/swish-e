@@ -156,6 +156,14 @@ L<ExtractPath|/"item_ExtractPath"> *metaname* [replace|remove|prepend|append|reg
 
 =item *
 
+L<FileFilter|/"item_FileFilter"> *suffix* *program* [options]
+
+=item *
+
+L<FileFilterMatch|/"item_FileFilterMatch"> *program* *options* *regex* [*regex* ...]
+
+=item *
+
 L<FileInfoCompression|/"item_FileInfoCompression"> [yes|NO]
 
 =item *
@@ -2164,8 +2172,9 @@ index other types of documents.  For example, if all your
 web pages are in gzip format a filter can uncompress these on the fly for indexing.
 
 A filter is an external program that swish executes while processing a document of a given type.
-SWISH-E will execute the filter program for each file that matches the file extension set in the
-B<FileFilter> directive.
+SWISH-E will execute the filter program for each file that matches the file suffix (extension) set in the
+B<FileFilter> or B<FileFilterMatch> directives.
+B<FileFilterMatch> matches using regular expressions and is described below.
 
 SWISH-E calls the external program passing as B<default> arguments:
 
@@ -2187,8 +2196,8 @@ indexing under the http method this will be the URL of the source document.
 
 =back
 
-SWISH-E can also pass other parameters to the filter program. These parameters can be defined using the 
-B<FileFilter> directive.  See Filter Options below.
+SWISH-E can also pass other parameters to the filter program.  These parameters can be defined using the 
+B<FileFilter> or B<FileFilterMatch> directives.  See Filter Options below.
 
 The filter program must open the file, process its contents, and return it to SWISH-E by printing to STDOUT.
 
@@ -2204,13 +2213,15 @@ This is the path to a directory where the filter programs are stored.  SWISH-E l
 the filter specified in the B<FileFilter> directive. If this directive is omitted, you have to specify the
 full path to the filterscript on each FileFilter directive.
 
+This feature does *not* apply to the C<FileFilterMatch> directive.
+
 Example:
 
     FilterDir /usr/local/swish/filters
 
-=item FileFilter   *extension*   "filter-prog"   ["filter-options"]
+=item FileFilter   *suffix*   "filter-prog"   ["filter-options"]
 
-This maps file extensions to a filter program.
+This maps file suffixe (extension) to a filter program.
 If I<filter-prog> starts with a directory delimiter (absolute path), SWISH-E doesn't use
 the FilterDir settings, but uses the given I<filter-prog> path directly.
 
@@ -2289,6 +2300,35 @@ Filters are probably easier to write than a C<-S prog> program.  Which you decid
 your requirements.  Examples of filter scripts can be found in the F<filter-bin> directory, and examples
 of C<-S prog> programs can be found in the F<prog-bin> directory.
 
+=item FileFilterMatch   *filter-prog*   *filter-options*  *regular expression(s)*
+
+This is simliar to C<FileMatch> except uses regular expressions to match against the file name.
+The *filter-prog* should be the path the the program.  Unlike C<FileFilter> this does B<not> use
+the C<FilterDir> option.  Also unlike C<FileFilter> you B<must> specify the *filter-options*.
+
+Examples:
+
+    FileFilterMatch ./pdftotext "'%p' -" /\.pdf$/
+
+Or to specify more than one extension:
+
+    FileFilterMatch ./check_title.pl "%p" /\.html$/  /\.htm$/
+    
+Or a few ways to do the same thing:
+
+    FileFilterMatch ./check_title.pl %p /\.(html|html)$/
+    FileFilterMatch ./check_title.pl %p /\.html?$/
+
+And to ignore case:    
+
+    FileFilterMatch ./check_title.pl %p /\.html?$/i
+
+You may also preceed an expression with "not" to negate regular expression that follows.
+For example, to match files that do not have an extension:
+
+    FileFilterMatch ./convert "%p %P" not /\..+$/
+
+   
 
 =back
 
