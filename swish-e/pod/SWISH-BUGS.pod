@@ -9,9 +9,37 @@ you find a bug listed here you do not need to report it as a bug.  But feel
 free to bug the developers about it on the Swish-e discussion list.
 
 
-=head1 Bugs in Swish-e version 2.2
+=head1 Bugs in Swish-e version 2.4
 
 =over 4
+
+=item * Wild card searching can be very slow
+
+Wild card searching needs to be optimized.
+
+Here's a three letter search:
+
+  $ swish-e -w 'tra*' -m1
+  # Number of hits: 99952
+  # Search time: 5.424 seconds
+
+Two letters:
+
+  $ swish-e -w 'tr*' -m1
+  # Number of hits: 100000
+  # Search time: 10.563 seconds
+
+Single letter search:
+
+  $ swish-e -w 't*' -m1
+  # Number of hits: 100000
+  # Search time: 510.939 seconds
+
+and used about 280MB or RAM.
+
+This is a potential for a DoS attack.  If you have a large index you may wish to filter
+out single character wild cards.
+
 
 =item * Character Encodings
 

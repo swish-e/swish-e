@@ -132,12 +132,17 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
 {
     int     i;
     int     backslash;
+    int     leading_space = 0;
 
     **word = '\0';
 
     /* skip any leading whitespace */
     while ( **buf && isspace( (unsigned char) **buf) )
+    {
         (*buf)++;
+        leading_space = 1; /* for catching single wild cards */
+                           /* current parsing will joing "foo" and "*" into "foo*" */
+    }
 
 
 
@@ -183,6 +188,9 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
             if ( **word )  /* break if characters already found - end of this token */
                 break;
 
+            if ( leading_space && **buf == '*' )
+                return UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+
             (*word)[i++] = **buf;  /* save the search operator char as it's own token, and end. */
             (*buf)++;
             break;
@@ -197,6 +205,7 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
         (*word)[i] = '\0';
         return 1;
     }
+
 
     return 0;
 }
@@ -503,6 +512,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     unsigned char PhraseDelimiter;
     int     max_size;
     int     inphrase = 0;
+    int     rc;
 
 
 
@@ -513,8 +523,16 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 
     /* split into words by whitespace and by the swish operator characters */
     
-    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, inphrase ) )
+    while ( (rc = next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, inphrase )) )
     {
+        /* catch single wild card early */
+        if ( rc < 0 )
+        {
+            sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+            return NULL;
+        }
+
+
         tokens = (struct swline *) addswline( tokens, self->word );
 
         if ( self->word[0] == PhraseDelimiter && !self->word[1] )
