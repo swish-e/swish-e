@@ -347,6 +347,10 @@ L<PropertyNamesIgnoreCase|/"item_PropertyNamesIgnoreCase"> *list of meta names*
 
 =item *
 
+L<PropertyNamesNoStripChars|/"item_PropertyNoStripChars"> *list of meta names*
+
+=item *
+
 L<PropertyNamesDate|/"item_PropertyNamesDate"> *list of meta names*
 
 =item *
@@ -1448,6 +1452,16 @@ compiled with zlib as described in the L<INSTALL|INSTALL> manual page.
 If Swish-e finds more than one property of the same name in a document
 the property's contents will be concatinated for strings, and a warning
 issues for numeric (or date) properties.
+
+=item PropertyNamesNoStripChars
+
+PropertyNamesNoStripChars specifies that the listed properties should not
+have strings of low ASCII characters replaced with a space character.
+Properties will be stored as found in the document.
+
+When printing properties with the swish-e binary newlines are replaced with
+a space character.  Use the swish-e library (or SWISH::API perl module) to
+fetch properties without newlines replaced.
 
 
 =item PropertyNamesNumeric

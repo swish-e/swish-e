@@ -7,7 +7,7 @@ set_swish_version();
 WriteMakefile(
     'NAME'          => 'SWISH::API',
     'VERSION_FROM'  => 'API.pm',
-    'LIBS'          => ['-lswish-e @LIBS@ @Z_LIBS@'],
+    'LIBS'          => ['-lswish-e'],
     'NORECURS'      => 1,          # keep it from recursing into subdirectories
     'DIR'           => [],
     'XSPROTOARG'    => '-noprototypes',

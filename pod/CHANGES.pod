@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item New Directive: PropertyNamesNoStripChars
+
+Swish replaces all series of low ASCII chars with a single space
+character.  This option instructs swish to store all chars in the property.
+
 =item Change to HTTP access defaults
 
 Defaults used with -S http access method were changed.

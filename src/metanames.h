@@ -7,7 +7,8 @@
 #define META_NUMBER   (1<<3)      /* Data is binary number */
 #define META_DATE     (1<<4)      /* Data is binary date */
 #define META_INTERNAL (1<<5)      /* flag saying this is an internal metaname */
-#define META_IGNORE_CASE (1<<6)  /* flag to say ignore case when comparing/sorting */
+#define META_IGNORE_CASE (1<<6)   /* flag to say ignore case when comparing/sorting */
+#define META_NOSTRIP  (1<<7)      /* Do not strip low ascii chars when indexing */
 
 
 /* Macros to test the type of a MetaName */
@@ -18,6 +19,7 @@
 #define is_meta_date(x)         ((x)->metaType & META_DATE)
 #define is_meta_string(x)       ((x)->metaType & META_STRING)
 #define is_meta_ignore_case(x)  ((x)->metaType & META_IGNORE_CASE)
+#define is_meta_nostrip(x)      ((x)->metaType & META_NOSTRIP)
 
 
 
