@@ -30,7 +30,6 @@ char *getconfvalue (char *, char *);
 int isoksuffix (char *filename, struct swline *rulelist);
 char *replace (char *, char *, char *);
 
-int matchARegex (char *str, char *pattern);
 char *SafeStrCopy (char *,char *, int *);
 void sortstring (char *);
 char *mergestrings (char *,char *);
@@ -94,10 +93,16 @@ char *str_basename (char *path);
 char *cstr_basename (char *path);
 char *cstr_dirname (char *path);
 
+void split_path( unsigned char *path, unsigned char **directory, unsigned char **file );
+
 char *estrdup (char *str);
 char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
 
+
+int match_regex_list( char *str, regex_list *regex );
 char *process_regex_list( char *str, regex_list *regex, int *matched );
-char *regex_replace( char *str, regex_list *regex, int offset, int *matched );
+
+void free_regex_list( regex_list **reg_list );
+void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global, int negate );
 

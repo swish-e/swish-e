@@ -587,60 +587,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
 
-/* Stores file names in alphabetical order so they can be
-** indexed alphabetically. No big whoop.
-*/
-
-DOCENTRYARRAY *addsortentry(DOCENTRYARRAY * e, char *filename)
-{
-    int     i,
-            j,
-            k,
-            isbigger;
-
-    isbigger = 0;
-    if (e == NULL)
-    {
-        e = (DOCENTRYARRAY *) emalloc(sizeof(DOCENTRYARRAY));
-        e->maxsize = SEARCHHASHSIZE; /* Put what you like */
-        e->filenames = (char **) emalloc(e->maxsize * sizeof(char *));
-
-        e->currentsize = 1;
-        e->filenames[0] = (char *) estrdup(filename);
-    }
-    else
-    {
-        /* Look for the position to insert using a binary search */
-        i = e->currentsize - 1;
-        j = k = 0;
-        while (i >= j)
-        {
-            k = j + (i - j) / 2;
-            isbigger = strcmp(filename, e->filenames[k]);
-            if (!isbigger)
-                progerr("SWISHE: Congratulations. You have found a bug!! Contact the author");
-            else if (isbigger > 0)
-                j = k + 1;
-            else
-                i = k - 1;
-        }
-
-        if (isbigger > 0)
-            k++;
-        e->currentsize++;
-        if (e->currentsize == e->maxsize)
-        {
-            e->maxsize += 1000;
-            e->filenames = (char **) erealloc(e->filenames, e->maxsize * sizeof(char *));
-        }
-        /* for(i=e->currentsize;i>k;i--) e->filenames[i]=e->filenames[i-1]; */
-        /* faster!! */
-        memmove(e->filenames + k + 1, e->filenames + k, (e->currentsize - 1 - k) * sizeof(char *));
-
-        e->filenames[k] = (char *) estrdup(filename);
-    }
-    return e;
-}
 
 /* Adds a word to the master index tree.
 */
@@ -891,64 +837,35 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
 *   Returns:
 *       void
 *
+*   ToDo:
+*       still saves hash value and file name, which is not currently used
+*       and a waste of space
 *
 ********************************************************************/
 
 static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, char *filename )        
 {
-    unsigned char *ruleparsedfilename,
-           *ruleparsedfilename_tmp,
-           *p1,
-           *p2,
-           *p3;
+    unsigned char *ruleparsedfilename;
     struct metaEntry *q;
-    unsigned char c;
     int     matched = 0;  /* flag if any patterns matched */
+    unsigned char   *directory;
+    unsigned char   *file;
 
     /* Run ReplaceRules on file name */
-    ruleparsedfilename_tmp = ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps, &matched );
-
-    /* look for last DIRDELIMITER (FS) and last / (HTTP) */
-    p1 = strrchr(ruleparsedfilename, DIRDELIMITER);
-    p2 = strrchr(ruleparsedfilename, '/');
-
-    if (p1 && p2)
-    {
-        if (p1 >= p2)
-            p3 = p1;
-        else
-            p3 = p2;
-    }
-    else if (p1 && !p2)
-        p3 = p1;
-    else if (!p1 && p2)
-        p3 = p2;
-    else
-        p3 = NULL;
-
-    /* Hash everything up to the last delimiter */
-    if (!p3)
-    {
-        newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, "");
-    }
-    else
-    {
-        c = *++p3;
-        *p3 = '\0';
-        newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, ruleparsedfilename);
-        *p3 = c;
-        ruleparsedfilename = p3;
-    }
+    ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps, &matched );
 
 
-    newnode->filename = (char *) estrdup(ruleparsedfilename);
-
+    /* $$$ To be removed! */
+    split_path( ruleparsedfilename, &directory, &file );
+    newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, directory);
+    efree( directory );
+    newnode->filename = file;  /* This isn't freed at this point */
 
 
     /* Check if filename is internal swish metadata -- should be! */
 
     if ((q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
-        addDocProperty(&newnode->docProperties, q, ruleparsedfilename_tmp, strlen(ruleparsedfilename_tmp),0);
+        addDocProperty(&newnode->docProperties, q, ruleparsedfilename, strlen(ruleparsedfilename),0);
 
 
     /* Perhaps we want it to be indexed ... */
@@ -959,11 +876,11 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
 
         metaID = q->metaID;
         positionMeta = 1;
-        indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+        indexstring(sw, ruleparsedfilename, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
     }
 
 
-    efree(ruleparsedfilename_tmp);
+    efree(ruleparsedfilename);
 
 
     /* This allows extracting out parts of a path and indexing as a separate meta name */

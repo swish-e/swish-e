@@ -8,15 +8,22 @@ fs.h
    -- module data
 */
 
+typedef struct
+{
+    regex_list  *pathname;
+    regex_list  *dirname;
+    regex_list  *filename;
+    regex_list  *dircontains;
+    regex_list  *title;
+    
+}
+PATH_LIST;
+
 struct MOD_FS
 {
-    struct swline *pathconlist;
-    struct swline *dirconlist;
-    struct swline *fileconlist;
-    struct swline *titconlist;
-    struct swline *fileislist;
-
-    int     followsymlinks;
+    PATH_LIST   filerules;
+    PATH_LIST   filematch;
+    int         followsymlinks;
 
 };
 
@@ -25,10 +32,6 @@ void initModule_FS (SWISH *);
 void freeModule_FS (SWISH *);
 int  configModule_FS (SWISH *, StringList *);
 
-void indexadir(SWISH *, char *);
-void indexafile(SWISH *, char *);
-void printfile(SWISH *, char *);
-void printfiles(SWISH *, DOCENTRYARRAY *);
-void printdirs(SWISH *, DOCENTRYARRAY *);
+
 
 #endif

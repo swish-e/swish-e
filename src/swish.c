@@ -81,6 +81,7 @@ static DEBUG_MAP debug_map[] = {
     {"INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed"},
     {"PARSED_WORDS", DEBUG_PARSED_WORDS, "Display words as they are parsed from source"},
     {"PROPERTIES", DEBUG_PROPERTIES, "Display properties associted with each file as they are indexed"},
+    {"REGEX", DEBUG_REGEX, "Debug regular expression processing"},
 };
 
 
@@ -1057,7 +1058,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     {
         if (sw->verbose)
         {
-            printf("Indexing %s..\n", sw->dirlist->line);
+            printf("Indexing \"%s\"\n", sw->dirlist->line);
             fflush(stdout);
         }
         indexpath(sw, sw->dirlist->line);

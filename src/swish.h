@@ -494,13 +494,6 @@ typedef struct
 ENTRYARRAY;
 
 
-typedef struct
-{
-    int     currentsize;
-    int     maxsize;
-    char  **filenames;
-}
-DOCENTRYARRAY;
 
 struct url_info
 {
@@ -570,6 +563,8 @@ typedef struct regex_list
     int         replace_count;  /* number of pattern replacements - to estimate size of replacement string */
     int         replace_length; /* newstr_max = replace_length + ( replace_count * search_str_len ) */
     int         global;         /* /g flag to repeat sub */
+    int         negate;         /* Flag for matches if the match should be negated */
+    char       *pattern;        /* keep string pattern around for debugging */
 } regex_list;
 
 typedef struct path_extract_list
@@ -815,6 +810,7 @@ int     getnumPropertiesToDisplay(SWISH *);
 #define DEBUG_WORDS				(1<<0)
 #define DEBUG_PARSED_WORDS		(1<<1)
 #define DEBUG_PROPERTIES		(1<<2)
+#define DEBUG_REGEX 	    	(1<<3)
 
 /* These are only checked while searching */
 

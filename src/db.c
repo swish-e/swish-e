@@ -96,7 +96,7 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     char   *c,
            *tmp;
 
-    c = (char *) strrchr(filename, '/');
+    c = (char *) strrchr(filename, DIRDELIMITER);
     if (!c || (c && !*(c + 1)))
         c = filename;
     else

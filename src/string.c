@@ -45,6 +45,9 @@ $Id$
 #include "swish_qsort.h"
 #include "mem.h"
 #include "string.h"
+#include "error.h"
+
+static char *regex_replace( char *str, regex_list *regex, int offset, int *matched );
 
 
 
@@ -244,16 +247,53 @@ char   *replace(string, oldpiece, newpiece)
 }
 
 /*********************************************************************
+*   Match regular expressions
+*   Works on a list of expressions, and returns true if *ANY* match
+*   
+*
+**********************************************************************/
+int match_regex_list( char *str, regex_list *regex )
+{
+    regmatch_t pmatch[1];
+    int        matched;
+
+    while ( regex )
+    {
+        matched = regex->negate
+            ? regexec(&regex->re, str, (size_t) 1, pmatch, 0) != 0
+            : regexec(&regex->re, str, (size_t) 1, pmatch, 0) == 0;
+
+        if ( DEBUG_MASK & DEBUG_REGEX )
+            printf("match %s %c~ /%s/ : %s\n", str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
+
+        if ( matched )
+            return 1;
+
+        regex = regex->next;            
+    }
+
+    return 0;
+}
+
+
+/*********************************************************************
 *   Process all the regular expressions in a regex_list
 *
 *
 **********************************************************************/
 char *process_regex_list( char *str, regex_list *regex, int *matched )
 {
+    if ( DEBUG_MASK & DEBUG_REGEX && regex )
+        printf("\nOriginal String: '%s'\n", str );
+
     while ( regex )
     {
         str = regex_replace( str, regex, 0, matched );
         regex = regex->next;
+
+        if ( DEBUG_MASK & DEBUG_REGEX )
+            printf("  Result String: '%s'\n", str );
+
     }
 
     return str;
@@ -272,7 +312,7 @@ char *process_regex_list( char *str, regex_list *regex, int *matched )
 *
 *
 **********************************************************************/
-char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
+static char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
 {
     regmatch_t pmatch[MAXPAR];
     char   *c;
@@ -281,7 +321,10 @@ char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
     int     pos = 0;
     int     j;
     int     last_offset = 0;
-    
+
+    if ( DEBUG_MASK & DEBUG_REGEX )
+        printf("replace %s =~ /%s/%s: %s\n", str + offset, regex->pattern, regex->replace,
+                regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) ? "No Match" : "Matched" );
     
     /* Run regex - return original string if no match (might be nice to print error msg? */
     if ( regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) )
@@ -394,33 +437,96 @@ char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
     return newstr;
 }
 
+/*********************************************************
+*  Free a regular express list
+*
+*********************************************************/
 
-
-/*---------------------------------------------------------*/
-/* Match a regex and a string */
-
-int     matchARegex(char *str, char *pattern)
+void free_regex_list( regex_list **reg_list )
 {
-    int     status;
-    regex_t re;
-
-    status = regcomp(&re, pattern, REG_EXTENDED);
-    if (status != 0)
+    regex_list *list = *reg_list;
+    regex_list *next;
+    while ( list )
     {
-        regfree(&re);           /* Richard Beebe */
-        return 0;
+        if ( list->replace )
+            efree( list->replace );
+
+        if ( list->pattern )
+            efree( list->pattern );
+
+        regfree(&list->re);
+
+        next = list->next;
+        efree( list );
+        list = next;
+    }
+    *reg_list = NULL;
+}
+        
+/****************************************************************************
+*  Create or Add a regular expression to a list
+*  pre-compiles expression to check for errors and for speed
+*
+*  Pattern and replace string passed in are duplicated
+*
+*
+*****************************************************************************/
+
+void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global, int negate )
+{
+    regex_list *new_node = emalloc( sizeof( regex_list ) );
+    regex_list *last;
+    char       *c;
+    int         status;
+    int         escape = 0;
+
+    if ( (status = regcomp( &new_node->re, pattern, cflags )))
+        progerr("Failed to complie regular expression '%s', pattern. Error: %d", pattern, status );
+
+
+
+    new_node->pattern = pattern ? estrdup(pattern) : estrdup("");  /* only used for -T debugging */
+    new_node->replace = replace ? estrdup(replace) : estrdup("");
+    new_node->negate  = negate;
+
+    new_node->global = global;  /* repeat flag */
+
+    new_node->replace_length = strlen( new_node->replace );
+
+    new_node->replace_count = 0;
+    for ( c = new_node->replace; *c; c++ )
+    {
+        if ( escape )
+        {
+            escape = 0;
+            continue;
+        }
+        
+        if ( *c == '\\' )
+        {
+            escape = 1;
+            continue;
+        }
+
+        if ( *c == '$' && *(c+1) )
+            new_node->replace_count++;
+    }
+         
+            
+    new_node->next = NULL;
+
+
+    if ( *reg_list == NULL )
+        *reg_list = new_node;
+    else
+    {
+        /* get end of list */
+        for ( last = *reg_list; last->next; last = last->next );
+
+        last->next = new_node;
     }
 
-    status = regexec(&re, str, (size_t) 0, NULL, 0);
-    regfree(&re);
-               /** Marc Perrin ## 18Jan99 **/
-    if (status != 0)
-        return 0;
-
-    return 1;
 }
-
-
 
 
 
@@ -572,14 +678,18 @@ StringList *parse_line(char *line)
 
     if (!line)
         return (NULL);
+
     if ((p = strchr(line, '\n')))
         *p = '\0';
+
     cursize = 0;
     sl = (StringList *) emalloc(sizeof(StringList));
+
     sl->word = (char **) emalloc((maxsize = 2) * sizeof(char *));
 
     p = line;
     skiplen = 1;
+
     while (skiplen && *(p = (char *) getword(line, &skiplen)))
     {
         if (cursize == maxsize)
@@ -589,6 +699,7 @@ StringList *parse_line(char *line)
         line += skiplen;
     }
     sl->n = cursize;
+
     /* Add an extra NULL */
     if (cursize == maxsize)
         sl->word = (char **) erealloc(sl->word, (maxsize += 1) * sizeof(char *));
@@ -1276,6 +1387,52 @@ char   *cstr_dirname(char *path)
 
     return dir;
 }
+
+/***************************************************
+*  Note that this is mostly a duplicate of above,
+*  but was designed to work with both path and URLs
+*
+*  Probably should settle on one
+*  Also, this returns "" on empty dirs, where above returns " "
+***************************************************/
+
+void split_path( unsigned char *path, unsigned char **directory, unsigned char **file )
+{
+unsigned char  *p1, *p2, *p3;
+
+    /* look for last DIRDELIMITER (FS) and last / (HTTP) */
+    p1 = strrchr( path, DIRDELIMITER);
+    p2 = strrchr( path, '/');
+
+    if (p1 && p2)  /* if both are found, use the longest. */
+    {
+        if (p1 >= p2)
+            p3 = p1;
+        else
+            p3 = p2;
+    }
+    else if (p1 && !p2)
+        p3 = p1;
+    else if (!p1 && p2)
+        p3 = p2;
+    else
+        p3 = NULL;
+
+    /* Set directory */
+    if (!p3)
+        *directory = estrdup("");
+    else
+    {
+        unsigned char  c = *++p3;
+        *p3 = '\0';
+        *directory = estrdup( path );
+        *p3 = c;
+        path = p3;
+    }
+
+    *file = estrdup( path );
+}
+
 
 /* estrdup - like strdup except we call our emalloc routine explicitly
 ** as it does better memory management and tracking 
