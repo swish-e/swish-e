@@ -839,26 +839,56 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
             sw->ResultOutput->stdResultFieldDelimiter = estrredup(sw->ResultOutput->stdResultFieldDelimiter, w );
 
+            /* This really doesn't work as is probably expected since it's a delimiter and not quoting the fields */
             if (strcmp(sw->ResultOutput->stdResultFieldDelimiter, "dq") == 0)
-                sw->ResultOutput->stdResultFieldDelimiter = estrredup(sw->ResultOutput->stdResultFieldDelimiter, "\"");
+                strcpy( sw->ResultOutput->stdResultFieldDelimiter, "\"" );
+            else
+            {
+                int     i,j;
+                int     backslash = 0;
 
-            if (sw->ResultOutput->stdResultFieldDelimiter[0] == '\\')
-                switch (sw->ResultOutput->stdResultFieldDelimiter[1])
+                for ( j=0, i=0; i < strlen( w ); i++ )
                 {
-                case 'f':
-                    sw->ResultOutput->stdResultFieldDelimiter[0] = '\f';
-                    break;
-                case 'n':
-                    sw->ResultOutput->stdResultFieldDelimiter[0] = '\n';
-                    break;
-                case 'r':
-                    sw->ResultOutput->stdResultFieldDelimiter[0] = '\r';
-                    break;
-                case 't':
-                    sw->ResultOutput->stdResultFieldDelimiter[0] = '\t';
-                    break;
+                    if ( !backslash )
+                    {
+                        if ( w[i] == '\\' )
+                        {
+                            backslash++;
+                            continue;
+                        }
+                        else
+                        {
+                            sw->ResultOutput->stdResultFieldDelimiter[j++] = w[i];
+                            continue;
+                        }
+                    }
+                        
+
+                    switch ( w[i] )
+                    {
+                    case 'f':
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\f';
+                        break;
+                    case 'n':
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\n';
+                        break;
+                    case 'r':
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\r';
+                        break;
+                    case 't':
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\t';
+                        break;
+                    case '\\':
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\\';
+                        sw->ResultOutput->stdResultFieldDelimiter[j++] = '\\';
+                        break;
+                    default:
+                        progerr("Unknown escape sequence '\\%c'.  Must be one of \\f \\n \\r \\t \\\\", w[i]);
+                    }
+                    backslash = 0;
                 }
-                sw->ResultOutput->stdResultFieldDelimiter[1] = '\0';
+                sw->ResultOutput->stdResultFieldDelimiter[j] = '\0';
+            }
             continue;
         }
 
