@@ -465,6 +465,14 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
         idx->swap_read = fread;
         idx->swap_getc = fgetc;
         idx->swap_putc = fputc;
+        /* 2001-09 jmruiz - FIX- Write one byte to avoid starting at 0 */
+		/* If not, This can cause problems with pointers to NULL in allLocationlist */
+
+    }
+
+    if (idx->swap_write("", 1, 1, idx->fp_loc_write) != (unsigned int) 1)
+    {
+        progerr("Cannot write location to swap file");
     }
 
     pos = idx->swap_tell(idx->fp_loc_write);

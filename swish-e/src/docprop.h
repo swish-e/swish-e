@@ -43,7 +43,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
 void dump_file_properties(IndexFILE * indexf, struct  file *fi );
 
 #ifdef PROPFILE
-void     WritePropertiesToDisk( SWISH *sw );
+void     WritePropertiesToDisk( SWISH *sw , int filenum);
 docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum );
 propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum, int metaID, int max_size );
 unsigned char *PackPropLocations( struct file *fi, int *propbuflen );
