@@ -519,7 +519,6 @@ static struct metaMergeEntry *readMergeMeta(SWISH * sw, int metaCounter, struct 
 static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, struct metaMergeEntry *metaFileEntry, int *count)
 {
     int     newMetaID;
-    struct metaEntry *newEntry;
     struct metaEntry *tmpEntry;
     char   *metaWord;
     int     metaType = 0;
@@ -574,35 +573,15 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
         }
         else
         {
-            metaEntryArray = (struct metaEntry **) erealloc(metaEntryArray, ((*count) + 1) * sizeof(struct metaEntry *));
-            newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
-
-            newEntry->metaName = (char *) estrdup(metaWord);
-            newEntry->metaID = (*count) + AUTOPROP_ID__DOCPATH;
-            newEntry->metaType = metaType;
-            newEntry->sorted_data = NULL;
-			newEntry->inPropRange = NULL;
-            newEntry->loPropRange = NULL;
-            newEntry->hiPropRange = NULL;
             metaFileEntry->newMetaID = (*count) + AUTOPROP_ID__DOCPATH;;
-            metaEntryArray[(*count)++] = newEntry;
+            metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
         }
     }
     else //   if (!metaEntryArray)
     {
-        metaEntryArray = (struct metaEntry **) emalloc(sizeof(struct metaEntry *));
-        newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
-
-        newEntry->metaName = (char *) estrdup(metaWord);
-        newEntry->metaID = AUTOPROP_ID__DOCPATH;
-        newEntry->metaType = metaType;
-        newEntry->sorted_data = NULL;
-		newEntry->inPropRange = NULL;
-        newEntry->loPropRange = NULL;
-        newEntry->hiPropRange = NULL;
+                *count = 0;
         metaFileEntry->newMetaID = AUTOPROP_ID__DOCPATH;;
-        *count = 1;
-        metaEntryArray[0] = newEntry;
+        metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
     }
 
 

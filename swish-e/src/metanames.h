@@ -24,3 +24,5 @@ void addMetaEntry(INDEXDATAHEADER *, char *, int, int, int *, int *);
 void freeMetaEntries( INDEXDATAHEADER * );
 int getMetaNameID(IndexFILE *, char *);
 int isDontBumpMetaName(SWISH *sw,char *tag);
+struct metaEntry **addNewMetaEntry(struct metaEntry **metaEntryArray, int *metaCounter, int metaID, char *metaWord, int metaType, int *sort_array);
+
