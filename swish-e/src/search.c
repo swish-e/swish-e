@@ -2178,7 +2178,6 @@ int inphrase=0,ignore=0;
 			pointer2 = pointer2->next;
 		} else {
 			ignore=0;
-printf("%s %d \n",pointer2->line,inphrase);
 			if(!inphrase)
 			{
 				if((isstopword(indexf,pointer2->line) && !_isrule(pointer2->line) && !isMetaName(pointer2->next))    /* non-rule stopwords */
@@ -2187,7 +2186,6 @@ printf("%s %d \n",pointer2->line,inphrase);
 			} else {
 				if(isstopword(indexf,pointer2->line)) 
 					ignore=1;
-printf("%s\n",pointer2->line);
 			}
 			if(ignore)
 			{
