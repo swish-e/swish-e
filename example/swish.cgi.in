@@ -50,15 +50,19 @@ my $DEFAULT_CONFIG_FILE = '.swishcgi.conf';
 #=================================================================================
 
 
+use vars '$speedy_config';  # Global for caching in persistent environment such as SpeedyCGI
 
 # Run the script -- entry point if running as a CGI script
 
     unless ( $ENV{MOD_PERL} ) {
-        my $config = default_config();
+        if ( !$speedy_config ) {
+            $speedy_config = default_config();
 
-        # Merge with disk config file.
-        $config = merge_read_config( $config );
-        process_request( $config );
+            # Merge with disk config file.
+            $speedy_config = merge_read_config( $speedy_config );
+        }
+
+        process_request( $speedy_config );
     }
 
 
@@ -3116,6 +3120,25 @@ Here's some general request/second on an Athlon XP 1800+ with 1/2GB RAM, Linux 2
 
 As you can see the highlighting code is a limiting factor.
 
+=head1 SpeedyCGI
+
+SpeedyCGI (also called PersistentPerl) is another way to run Perl scripts persistently.
+SpeedyCGI is good if you do not have mod_perl available or do not have root access.
+SpeedyCGI works on Unix systems by loading the script into a "back end" process and keeping
+it in memory between requests.  New requests are passed to the back end processes which avoids
+the startup time required by a Perl CGI script.
+
+Install SpeedyCGI from http://daemoninc.com/ (your OS may provide a packaged version of
+SpeedyCGI) and then change the first line of swish.cgi.  For example, if the speedy binary is
+installed in /usr/bin/speedy, use the line:
+
+    #! /usr/bin/speedy -w -- -t60
+
+The -w option is passed to Perl, and all options following the double-dash are SpeedyCGI options.
+
+Note that when using SpeedyCGI configuration data is cached in memory.  If you change the swish.cgi
+configuration file (.swishcgi.conf) then touch the main swish.cgi script to force reloading of
+configuration data.
 
 =head1 Spidering
 
