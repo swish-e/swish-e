@@ -65,16 +65,16 @@ Section "ActiveX Control" SecSwishCtl
     ; Local Files
     SetOutPath "$INSTDIR"
     ; JavaScript ActiveX Search Example
-    RmDir /r example
+;    RmDir /r example
     File /r ..\..\..\swishctl\example
-    RmDir /r search
-    Rename example search
+;    RmDir /r search
+;    Rename example search
     
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Search_Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR\search\index.htm"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Search_Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR\example\index.htm"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "DLLVersion" "1007"
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "IndexLocation" "$INSTDIR\search"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "IndexLocation" "$INSTDIR\example"
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SwishCtl\Options" "swishdocs" "docs.idx"
 SectionEnd ; end of ActiveX section
 
@@ -115,6 +115,9 @@ SubSection "PERL Support" SubSecPerlSupport
     Section /o "PERL Filters" SecPerlFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlFilters" "1"
+        SetOutPath "$INSTDIR"
+        File ..\..\filters\swish-filter-test.in"
+        
         SetOutPath "$INSTDIR\lib\swish-e"
         ; Filter Scripts
         File ..\..\filter-bin\swish_filter.pl.in
@@ -156,12 +159,12 @@ SubSectionEnd
 
 Section "Examples" SecExample
     SetOutPath "$INSTDIR"
-    File /r ..\..\example
+;    File /r ..\..\example
     File /r ..\..\conf
     
     ; Rename text files so Windows has a clue
     Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
-    Rename "$INSTDIR\example\README" "$INSTDIR\example\README.txt"
+;    Rename "$INSTDIR\example\README" "$INSTDIR\example\README.txt"
 SectionEnd ; end of section 'Examples'
 
 Section "-post" ; (post install section, happens last after any optional sections)
@@ -199,7 +202,7 @@ Section "-post" ; (post install section, happens last after any optional section
     ; If both were true we'll run fixperl.pl
     Call ActivePerlLocation
     Pop $R1
-    Exec "$R1\bin\perl.exe $INSTDIR\fixperl.pl"
+    Exec "$R1bin\perl.exe $INSTDIR\fixperl.pl"
     
     endofpost:
 SectionEnd ; end of -post section
