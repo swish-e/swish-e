@@ -680,7 +680,8 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
             dest = string;
             for( source = string; *source; source++ )
             {
-                if ( (int)((unsigned char)*source) <= (int)' ' )
+                /* Used to replace (<=' ') even spaces with a single space */
+                if ( (int)((unsigned char)*source) < (int)' ' )
                 {
                     if ( dest > string && *(dest - 1) != ' ' )
                     {
