@@ -43,8 +43,16 @@ void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
 {
     int     _i = 0,
             _r = num;
-    unsigned char _s[5];
+    unsigned char _s[MAXINTCOMPSIZE];
 
+    /* Trivial case: 0 */
+    if(!_r)
+    {
+        f_putc(0,fp);
+        return;
+    }
+
+    /* Any other case ... */
     while (_r)
     {
         _s[_i++] = _r & 127;
@@ -61,6 +69,14 @@ unsigned char *SW_compress2(int num, unsigned char *buffer)
 {
     int     _i = num;
 
+    /* Trivial case: 0 */
+    if(!_i)
+    {
+        *buffer-- = 0; 
+        return 0;
+    }
+
+    /* Any other case ... */
     while (_i)
     {
         *buffer = _i & 127;
@@ -80,8 +96,16 @@ unsigned char *compress3(int num, unsigned char *buffer)
 {
     int     _i = 0,
             _r = num;
-    unsigned char _s[5];
+    unsigned char _s[MAXINTCOMPSIZE];
 
+    /* Trivial case: 0 */
+    if(!_r)
+    {
+        *buffer++ = 0;
+        return buffer;
+    }
+
+    /* Any other case ... */
     while (_r)
     {
         _s[_i++] = _r & 127;
@@ -364,7 +388,7 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
 
     /* check if the work buffer is long enough */
     /* just to avoid bufferoverruns */
-    /* In the worst case and integer will need 5 bytes */
+    /* In the worst case and integer will need MAXINTCOMPSIZE bytes */
     /* but fortunatelly this is very uncommon */
 
 /* 2002/01 JMRUIZ
@@ -619,7 +643,7 @@ void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     if(!idx->fp_loc_write[idx_swap_file] && !idx->fp_loc_read[idx_swap_file])
        return;
 
-	/* Check if the file is opened for write and close it */
+    /* Check if the file is opened for write and close it */
     if(idx->fp_loc_write[idx_swap_file])
     {
         /* Write a 0 to mark the end of locations */
@@ -638,7 +662,7 @@ void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     {
         /* File already opened for read -> reset pointer */
         fseek(idx->fp_loc_read[idx_swap_file],0,SEEK_SET);
-	}
+    }
 
     fp = idx->fp_loc_read[idx_swap_file];
     while((lenbuf = uncompress1(fp, idx->swap_getc)))
@@ -649,7 +673,7 @@ void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
             idx->swap_read(buf, lenbuf, 1, fp);
             e = *(ENTRY **)buf;
             /* Store the locations in reverse order - Faster. They will be
-			** sorted later */
+            ** sorted later */
             l = (LOCATION *) buf;
             l->next = e->allLocationList;
             e->allLocationList = l;
@@ -670,7 +694,7 @@ void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
             }
             else
             {
-				/* Just advance file pointer */
+                /* Just advance file pointer */
                 idx->swap_seek(fp,lenbuf - sizeof(ENTRY *),SEEK_CUR);
             }
         }
