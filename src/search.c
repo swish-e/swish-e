@@ -1876,6 +1876,14 @@ void    freefileinfo(struct file *f)
 
     if (f->docProperties)
         freeDocProperties(f->docProperties);
+        
+#ifdef PROPFILE
+    if (f->propLocations)
+        efree( f->propLocations );
+
+    if (f->propSize)
+        efree( f->propSize );
+#endif        
     efree(f);
 }
 
