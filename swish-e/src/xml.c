@@ -57,6 +57,10 @@ struct metaEntry* e;
 	c=*temp2;
 	*temp2='\0';
 
+		/* Go lowercase as discussed even if we are in xml */
+                /* Use Rainer's routine */
+        strtolower(temp);
+
 	while(1) {
 		if((e=getMetaNameData(indexf,temp)))
 		{
