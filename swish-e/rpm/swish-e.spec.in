@@ -3,8 +3,8 @@
 %define release 0
 
 # SWISH::API definitions
-%define filelist %{pkgname}-%{version}-filelist
-%define NVR %{pkgname}-%{version}-%{release}
+%define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
+%define NVR %{name}-%{version}-%{release}
 %define maketest 0
 
 Summary:        SWISH-E - Simple Web Indexing System for Humans - Enhanced
@@ -96,10 +96,8 @@ pushd perl
 grep -rsl '^#!.*perl' . |
 grep -v '.bak$' |xargs --no-run-if-empty \
 %__perl -MExtUtils::MakeMaker -e 'MY->fixin(@ARGV)'
-CFLAGS="$RPM_OPT_FLAGS"
-SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e"
 
-%{__perl} Makefile.PL `%{__perl} -MExtUtils::MakeMaker -e ' print qq|PREFIX=%{buildroot}%{_prefix}| if \$ExtUtils::MakeMaker::VERSION =~ /5\.9[1-6]|6\.0[0-5]/ '` 
+CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" %{__perl} Makefile.PL `%{__perl} -MExtUtils::MakeMaker -e ' print qq|PREFIX=%{buildroot}%{_prefix}| if \$ExtUtils::MakeMaker::VERSION =~ /5\.9[1-6]|6\.0[0-5]/ '` 
 
 %{__make} PREFIX=%{buildroot}%{_prefix} LIB='%{_libdir}' LIBS='-L%{_libdir} -L%{buildroot}/src/.libs -lswish-e -lz' 'LDFLAGS=-L%{_libdir} -L%{_builddir}/%{name}-%{version}/src/.libs' 'CCFLAGS=-I%{_builddir}/%{name}-%{version}/src'
 
@@ -132,11 +130,26 @@ find %{buildroot} -name "perllocal.pod" \
     -o -name "*.bs"                     \
     |xargs -i rm -f {}
 
+# fix permissions
+find %{buildroot} | xargs -i chmod u+w {}
+
 # no empty directories
 find %{buildroot}%{_prefix}             \
     -type d -depth                      \
     -exec rmdir {} \; 2>/dev/null
 
+# misc docs
+echo "%doc  perl/Changes perl/README" > %{filelist}
+# perl modules
+find `%{__perl} -MConfig -le 'print "%{buildroot}".$Config{sitelib};'` -type f | cut -c `echo %{buildroot} | wc -c`- >> %{filelist}
+# perl man3 pages
+find `%{__perl} -MConfig -le 'print "%{buildroot}".$Config{installman3dir};'` -type f -name '*.3pm*' | cut -c `echo %{buildroot} | wc -c`- >> %{filelist}
+
+
+[ -z %filelist ] && {
+    echo "ERROR: empty %files listing"
+    exit -1
+    } 
 popd
 # end install SWISH::API
 
@@ -161,11 +174,8 @@ popd
 %{_libdir}/swish-e/*
 %{_datadir}/swish-e/*
 
-%files perl-api
+%files perl-api -f %filelist
 %defattr(-,root,root)
-%{_libdir}/perl5/site_perl/5.8.3/i386-linux-thread-multi/SWISH/API.pm
-%{_libdir}/perl5/site_perl/5.8.3/i386-linux-thread-multi/auto/SWISH/API/API.so
-%{_mandir}/man3/*
 
 %files devel
 %defattr(-, root, root)
