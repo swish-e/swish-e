@@ -346,6 +346,7 @@ L<PropertyNamesNumeric|/"item_PropertyNamesNumeric"> *list of meta names*
 =item *
 
 L<PropertyNamesMaxLength|/"item_PropertyNamesMaxLength"> integer *list of meta names*
+
 =item *
 
 L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append|regex]
@@ -1413,19 +1414,23 @@ with the libxml2 parser.
 
 For example:
 
-    PropertyNamesMaxLength 1000 body
+    PropertyNamesMaxLength 1000 swishdescription
+    PropertyNameAlias swishdescription body
 
 Is somewhat like
 
+    StoreDescription HTML <body> 1000
+    StoreDescription XML <body> 1000
     StoreDescription HTML2 <body> 1000
+    StoreDescription XML2 <body> 1000
 
-except StoreDescription uses the property name "swishdescription"
-(and a few other differences).
+but StoreDescription allows setting the tag for each parser type.
 
     PropertyNamesMaxLength 1000 headings
     PropertyNameAlias headings h1 h2 h3 h4
 
-collects all the heading text into a single property called "headings".
+collects all the heading text into a single property called "headings", not
+to exceed 1000 characters.
 
 
 =item PreSortedIndex *list of property names*

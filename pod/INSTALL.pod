@@ -51,7 +51,7 @@ Use libxml2 if possible for parsing HTML and XML.
 Currently, setting a content type
 (L<IndexContents|SWISH-CONFIG/"item_IndeContents"> or L<DefaultContents|"SWISH-CONFIG/"DefaultContents">)
 of "HTML" uses Swish-e's html.c parser, where a setting of "HTML2" uses libxml2's HTML parser.
-Likewise, a setting of "XML" uses the included Expat library, where "XML"2
+Likewise, a setting of "XML" uses the included Expat library, where "XML2"
 uses libxml2 for parsing XML.  All this may change in future releases.
 
 B<zlib compression>
@@ -60,6 +60,12 @@ http://www.gzip.org/zlib/
 
 Swish-e can make use of zlib to compress document properties.  This is recommended
 if you are using L<StoreDescription|SWISH-CONFIG/"item_StoreDescription">.
+
+A Swish-e program built with zlib will read an index from a version of Swish-e that
+was not built with zlib.  But, if you are searching an index that was compressed with
+zlib then you will need to use a version of Swish-e built with zlib.  Therefore, it's
+recommended to always include zlib support.
+
 
 B<Memory>
 
@@ -117,16 +123,8 @@ Windows binary distributions are available from the Swish-e site.
     make install
 
 Swish uses a F<configure> script to generate a Makefile for your platform.
-You will probably want to specify options to the F<configure> script.
-These options are described in detail below.  But, to be brief:
-
-    ./configure --with-libxml2 --with-zlib
-    make
-    make test
-    su root
-    make install
-
-You will need to be sure zlib and libxml2 are installed first.    
+The F<configure> script should detect and use optional libraries if found on
+your system.
 
 =head2 Using libxml2 parser library  (optional, but recommended)
 
@@ -166,6 +164,7 @@ In this case, try specifying where zlib can be found.  For example,
 if libz was located in /usr/local/lib you would use this when building
 B<libxml2>:
 
+    # building libxml2 (not swish)
     ./configure --with-zlib=/usr/local
 
 Swish-e doesn't use libxml2 uncompression features, so you *should*
@@ -193,9 +192,11 @@ as the libxml2 F<INSTALL> page instructs:
 
 B<Building Swish-e with libxml2>
 
-To enable Swish-e to use libxml2 you must run Swish-e's configure script as:
+Swish will try to detect if libxml2 is installed in the standard library locations.
 
-    ./configure --with-libxml2
+If libxml2 is installed in your system and you do B<not> want to build with libxml2:
+
+    ./configure --without-libxml2
 
 If libxml2 was installed in a non-standard location then specify the
 path where libxml2 was installed.  For example,
@@ -221,16 +222,15 @@ Another option is to use the C<LD_LIBRARY_PATH> environment variable.
 This is a list of directories to search for libraries when a program
 is run.  See the ld(8) man page for more info.
 
-Note that libxml2 will be linked as a shared library, so once you
+Note that libxml2 will be linked as a shared library on many platforms, so once you
 compile Swish-e to use the library, the libxml2 library must not be
 deleted or moved.
 
 =head2 Building Swish-e with zlib
 
 Building with zlib is similar to the instructions for building Swish-e
-with libxml2 above.  To select support for zlib run configure with:
-
-    ./configure --with-zlib
+with libxml2 above.  The F<configure> script will attempt to detect if zlib is
+installed in your system and if found link Swish-e with the zlib library.
 
 zlib is common on many systems, but may be out of date, and versions prior to 1.1.4
 have a know security issue.  You should run
@@ -239,7 +239,7 @@ for example:
 
     ./configure --with-zlib=$HOME/zlib
 
-Again, as with compiling libxml2, you may need to munge the C<LD_RUN_PATH>
+Again, as with compiling libxml2, you may need to use the C<LD_RUN_PATH>
 or C<LD_LIBRARY_PATH> variables.  See above for more details.
 
 
@@ -786,7 +786,7 @@ converted and indexed by Swish-e by using filters.  See the section on
 filters in L<SWISH-CONFIG|SWISH-CONFIG>, and the examples shown in the
 C<filter-bin> directory.
 
-=head1 Quick Start for the Impatient
+=head1 QUICK START FOR THE IMPATIENT
 
 Here's I<one> example of the steps to install Swish-e, index documents by spidering, and
 how to search using the included CGI script.
@@ -809,7 +809,7 @@ Not all output is included below.  You should carefully watch for errors while b
     ~ $ tar zxof <path to current swish-e version>.tar.gz
     ~ $ cd swish-e-2.2  (this directory will depend on the version of Swish-e)
     
-    ~/swish-e-2.2 $ ./configure --with-zlib --with-libxml2
+    ~/swish-e-2.2 $ ./configure
     ~/swish-e-2.2 $ make
     ~/swish-e-2.2 $ make test
     ...
