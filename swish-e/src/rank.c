@@ -328,7 +328,7 @@ getrank( RESULT *r )
     /*  this word.  If the word is not found in many files then it should be ranked higher */
 
     rank = 1;
-    freq - r->frequency;
+    freq = r->frequency;
     if ( freq > 100 ) 
         freq = 100;
 
