@@ -50,7 +50,7 @@ double-backslashes.
 Swish-e will convert the double backslash into a single backslash before
 passing the parameter to the regular expression compiler.
 
-Commented example configuration files are included in the F<config>
+Commented example configuration files are included in the F<conf>
 directory of the Swish-e distribution.
 
 Some command line arguments can override directives specified in the
@@ -299,7 +299,7 @@ L<MaxWordLimit|/"item_MaxWordLimit"> *integer*
 
 =item *
 
-L<MetaNameAlias|/"item_MetaNameAliase"> *meta name* *list of aliases*
+L<MetaNameAlias|/"item_MetaNameAlias"> *meta name* *list of aliases*
 
 =item *
 
