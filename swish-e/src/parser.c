@@ -603,16 +603,23 @@ static int set_structure( PARSE_DATA *parse_data, char * tag, int start )
          * and </b> would not flush anything.  The PROBLEM is that then will make the next words
          * have a IN_EMPHASIZED structure.  To "fix", I set a flag to flush at next word boundry.
         */
-        flush_buffer( parse_data, 0 );
-        parse_data->flush_word++;
-        structure = IN_EMPHASIZED;
+        flush_buffer( parse_data, 0 );  // flush up to current word
+
+        if ( start )
+            structure = IN_EMPHASIZED;
+        else
+            parse_data->flush_word = IN_EMPHASIZED;
+        
+        
     }
 
 
     /* Now, look for reasons to add whitespace */
-    
-    else if ( !strcmp( tag, "p" ) )
-        append_buffer( &parse_data->text_buffer, " ", 1 );
+    {
+        const htmlElemDesc *element = htmlTagLookup( tag );
+        if ( !element || !element->isinline )
+            append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
+    }
 
     if ( structure )
     {
@@ -703,8 +710,9 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     CHAR_BUFFER *buf = &parse_data->text_buffer;
     SWISH       *sw = parse_data->sw;
     int         structure = parse_data->parsing_html ? parse_data->structure : IN_FILE;
-    int         orig_end = buf->cur;
-    char        save_char;
+    int         orig_end  = buf->cur;
+    char        save_char = '?';
+
 
     /* anything to do? */
     if ( !buf->cur )
@@ -724,8 +732,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
         }
 
         save_char =  buf->buffer[buf->cur];
-
-        parse_data->flush_word = 0;
     }
             
 
@@ -762,6 +768,13 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     }
     else
         buf->cur = 0;
+
+    if ( parse_data->flush_word )
+    {
+        parse_data->structure &= ~parse_data->flush_word;
+        parse_data->flush_word = 0;
+    }
+
 }
 
 
