@@ -1,4 +1,5 @@
 /*
+$id:$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -41,9 +42,9 @@ void progerr(char *msgfmt,...)
   va_list args;
 
   va_start (args,msgfmt);
-  fprintf  (stderr, "err: ");
-  vfprintf (stderr, msgfmt, args);
-  fprintf  (stderr, "\n.\n");
+  fprintf  (stdout, "err: ");
+  vfprintf (stdout, msgfmt, args);
+  fprintf  (stdout, "\n.\n");
   va_end   (args);
   exit(1);
  }

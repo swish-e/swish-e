@@ -1,4 +1,5 @@
 /*
+$id:$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -456,7 +457,7 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 		break;
 
 	default:
-		fprintf (stderr,"(unknown datatype <%s>)\n",propname);
+		fprintf (stdout,"err:(unknown datatype <%s>)\n",propname);
 		break;
 
 
