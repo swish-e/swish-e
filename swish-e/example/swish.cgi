@@ -36,6 +36,8 @@ use lib '.';
 use CGI;
 use Symbol;
 
+
+
 use vars qw/$NotAWord/;
 
 
@@ -281,7 +283,7 @@ sub header {
     my $query = $q->param('query') || '';
     $query = '' if $query eq $NotAWord;
 
-    $query = CGI->escapeHTML( $query );  # May contain quotes
+    $query = CGI::escapeHTML( $query );  # May contain quotes
 
     my $title = $conf->{title};
 
@@ -379,7 +381,7 @@ EOF
 
     $links = qq[<tr><td colspan=2 bgcolor="#EEEEEE">$links</td></tr>] if $links;
     
-    my $user_query = CGI->escapeHTML( $results->{QUERY_SIMPLE} );
+    my $user_query = CGI::escapeHTML( $results->{QUERY_SIMPLE} );
     $user_query = 'All' if $results->{QUERY_SIMPLE} eq $NotAWord;
 
     return <<EOF;
