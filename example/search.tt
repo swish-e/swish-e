@@ -61,7 +61,9 @@
 
 [% END %]    
 
-[% BLOCK swish_footer %]
+[% BLOCK swish_footer %] 
+
+    [% PROCESS nav_bar_pages2 %]
     <hr>
     <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
     [% IF search.MOD_PERL %]

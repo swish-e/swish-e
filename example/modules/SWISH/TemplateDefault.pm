@@ -2,7 +2,7 @@
 # These routines format the HTML output.
 #    $Id$
 #=====================================================================
-package TemplateDefault;
+package SWISH::TemplateDefault;
 use strict;
 
 use CGI;
@@ -171,16 +171,16 @@ EOF
     my $prev_count  = $results->navigation('prev_count');
     my $next        = $results->navigation('next');
     my $next_count  = $results->navigation('next_count');
-    
+
     my $hits        = $results->navigation('hits');
     my $from        = $results->navigation('from');
     my $to          = $results->navigation('to');
-    
+
     my $run_time    = $results->navigation('run_time');
     my $search_time = $results->navigation('search_time');
 
-    
-    
+
+
 
 
     my $links = '';
@@ -198,13 +198,13 @@ EOF
     # Save for the bottom of the screen.
     $results->{LINKS} = $links;
 
-    $links = qq[<tr><td colspan=2 bgcolor="#EEEEEE">$links</td></tr>] if $links;
+    $links = qq[<tr><td colspan="2" bgcolor="#EEEEEE">$links</td></tr>] if $links;
 
     $query_simple = $query_simple
         ? "&nbsp;Results for <b>$query_simple</b>"
         : '';
-        
-    
+
+
 
     return <<EOF;
 
@@ -251,16 +251,15 @@ sub show_result {
     my $name_labels = $results->config('name_labels');
 
 
-                
 
     # The the properties to display
-    
+
     my $props = '';
 
     my $display_props = $results->config('display_props');
     if ( $display_props ) {
 
-        
+
         $props = join "\n",
             '<br><table cellpadding=0 cellspacing=0>',
             map ( {
@@ -278,7 +277,7 @@ sub show_result {
 
 
     my $description_prop = $results->config('description_prop');
-    
+
     my $description = '';
     if ( $description_prop ) {
         $description = $this_result->{ $description_prop } || '';
@@ -314,10 +313,13 @@ sub footer {
     my $valid_html_logo = $results->config('on_intranet')
                ? ''
                : '<p><a href="http://validator.w3.org/check/referer"><img border="0" src="http://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01!" height="31" width="88"></a></p>';
-               
 
+
+    my $links = $results->{LINKS} || '';
     return <<EOF;
 
+
+    $links
     <hr>
     <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
     $mod_perl
@@ -343,7 +345,7 @@ sub get_meta_name_limits {
     my $metanames = $results->config('metanames');
     return '' unless $metanames;
 
-    
+
     my $name_labels = $results->config('name_labels');
     my $q = $results->CGI;
 

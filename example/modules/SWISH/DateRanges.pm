@@ -1,6 +1,6 @@
 # $Id$
 
-package DateRanges;
+package SWISH::DateRanges;
 use strict;
 
 =head1 NAME
