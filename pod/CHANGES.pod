@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Increase sort key length from 50 to 100 characters
+
+The setting MAX_SORT_STRING_LEN in F<src/config.h> sets the max length used 
+when sorting in swish-e.  You may reduce this number to save memory while 
+sorting, or increase it if you have very long properties to sort.
+
 =item Remove &quot; entity from -p output
 
 The -p option to print properties was escaping double quotes in properties 
