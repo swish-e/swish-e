@@ -202,26 +202,24 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
 
-#define IN_FILE 1
-#define IN_TITLE 2
-#define IN_HEAD 4
-#define IN_BODY 8
-#define IN_COMMENTS 16
-#define IN_HEADER 32
-#define IN_EMPHASIZED 64
-#define IN_META 128
+#define IN_FILE		(1<<0)
+#define IN_TITLE	(1<<1)
+#define IN_HEAD		(1<<2)
+#define IN_BODY		(1<<3)
+#define IN_COMMENTS	(1<<4)
+#define IN_HEADER	(1<<5)
+#define IN_EMPHASIZED (1<<6)
+#define IN_META		(1<<7)
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED|IN_META)
 
 #define MAXLONGLEN 4
 
 /* Document Types */
-#define BASEDOCTYPE 0
-#define NODOCTYPE	(BASEDOCTYPE)
-#define TXT 	(BASEDOCTYPE+1)
-#define HTML 	(BASEDOCTYPE+2)
-#define XML 	(BASEDOCTYPE+3)
-#define LST 	(BASEDOCTYPE+4)
-#define WML 	(BASEDOCTYPE+5)
+enum {
+	BASEDOCTYPE = 0, TXT, HTML, XML, LST, WML
+};
+
+#define NODOCTYPE BASEDOCTYPE
 
 typedef struct propEntry
 {
@@ -329,9 +327,9 @@ ENTRY;
 
 struct swline
 {
-    char   *line;
     struct swline *next;
     struct swline *nodep;
+    char   *line;
 };
 
 typedef struct
@@ -464,15 +462,15 @@ IndexFILE;
 
 typedef struct RESULT
 {
+    struct RESULT *next;
+    struct RESULT *head;
+    struct RESULT *nextsort;    /* Used while sorting results */
     int     count;              /* result Entry-Counter */
     int     filenum;
     int     rank;
     int     structure;
     int     frequency;
     int    *position;
-    struct RESULT *next;
-    struct RESULT *head;
-    struct RESULT *nextsort;    /* Used while sorting results */
 
     /* file position where this document's properties are stored */
     char  **PropSort;
@@ -485,11 +483,9 @@ RESULT;
 
 struct multiswline
 {
-    struct swline *list;
     struct multiswline *next;
+    struct swline *list;
 };
-
-
 
 
 typedef struct
@@ -510,23 +506,23 @@ DOCENTRYARRAY;
 
 struct url_info
 {
-    char   *url;
     struct url_info *next;
+    char   *url;
 };
 
 struct IndexContents
 {
+    struct IndexContents *next;
     int     DocType;
     struct swline *patt;
-    struct IndexContents *next;
 };
 
 struct StoreDescription
 {
+    struct StoreDescription *next;
     int     DocType;
     char   *field;
     int     size;
-    struct StoreDescription *next;
 };
 
 /* These two structs are used for lookuptables in order to save memory */
@@ -536,8 +532,8 @@ struct StoreDescription
 /* Structure itself can use its own lookuptable */
 struct int_st
 {
-    int     index;
     struct int_st *next;
+    int     index;
     int     val[1];
 };
 
@@ -553,8 +549,8 @@ struct int_lookup_st
 /* and usually have also low values */
 struct char_st
 {
-    int     index;
     struct char_st *next;
+    int     index;
     char   *val;
 };
 
@@ -619,11 +615,11 @@ PropValue;
 /* Structure to hold all results per index */
 struct DB_RESULTS
 {
+    struct DB_RESULTS *next;
     /* Values for handling results */
     RESULT *resultlist;
     RESULT *sortresultlist;
     RESULT *currentresult;
-    struct DB_RESULTS *next;
 };
 
 
@@ -643,8 +639,6 @@ typedef struct
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
     struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
     struct MOD_Prog          *Prog;           /* For extprog.c */
-
-
     struct MOD_PropLimit     *PropLimit;      /* For extprog.c */
 
 
@@ -739,12 +733,9 @@ VAR struct _indexing_data_source_def *IndexingDataSource;
 
 #ifdef MAIN_FILE
 
-
-
 int     main(int, char **);
 void    usage(void);
 void    printversion(void);
-void    printrunning(long, long);
 
 #endif
 
@@ -775,7 +766,7 @@ void    SwishFree(SWISH *);
 
 
 /* Min macro */
-#define Min(a,b) ((a)<(b)?(a):(b))
+#define Min(a,b) ((a) < (b) ? (a) : (b))
 
 
 
@@ -790,20 +781,20 @@ int     getnumPropertiesToDisplay(SWISH *);
 
 
 /* These are only checked in dump.c */
-#define DEBUG_INDEX_HEADER 1<<0
-#define DEBUG_INDEX_WORDS 1<<1
-#define DEBUG_INDEX_WORDS_FULL 1<<2
-#define DEBUG_INDEX_STOPWORDS 1<<3
-#define DEBUG_INDEX_FILES 1<<4
-#define DEBUG_INDEX_METANAMES 1<<5
-#define DEBUG_INDEX_ALL 1<<6
-#define DEBUG_INDEX_WORDS_ONLY 1<<7
-#define DEBUG_INDEX_WORDS_META 1<<8
+#define DEBUG_INDEX_HEADER		(1<<0)
+#define DEBUG_INDEX_WORDS		(1<<1)
+#define DEBUG_INDEX_WORDS_FULL	(1<<2)
+#define DEBUG_INDEX_STOPWORDS	(1<<3)
+#define DEBUG_INDEX_FILES		(1<<4)
+#define DEBUG_INDEX_METANAMES	(1<<5)
+#define DEBUG_INDEX_ALL			(1<<6)
+#define DEBUG_INDEX_WORDS_ONLY	(1<<7)
+#define DEBUG_INDEX_WORDS_META	(1<<8)
 
 /* These are only checked while indexing */
-#define DEBUG_WORDS 1<<0
-#define DEBUG_PARSED_WORDS 1<<1
-#define DEBUG_PROPERTIES 1<<2
+#define DEBUG_WORDS				(1<<0)
+#define DEBUG_PARSED_WORDS		(1<<1)
+#define DEBUG_PROPERTIES		(1<<2)
 
 /* These are only checked while searching */
 

@@ -41,16 +41,28 @@ $Id$
 
 #ifdef NO_GETTOD
 
-double TimeHiRes(void)
+double TimeElapsed(void)
 {
+#ifdef WIN32
+#include <sys/timeb.h>
+
+	struct _timeb ftimebuf;
+	
+	_ftime(&ftimebuf);
+	return (double)ftimebuf.time + (double)ftimebuf.millitm/1000.0;
+
+#else
+
     return  ((double) clock()) / CLOCKS_PER_SEC;
+
+#endif
 }
     
 #else
 
 #include <sys/time.h>
 
-double TimeHiRes(void)
+double TimeElapsed(void)
 {
  struct timeval t;
  int i;
@@ -62,6 +74,11 @@ double TimeHiRes(void)
 }
 #endif
 
+/* return CPU time used */
+double TimeCPU(void)
+{
+    return  ((double) clock()) / CLOCKS_PER_SEC;
+}
 
 
 
@@ -75,26 +92,13 @@ double TimeHiRes(void)
 char *getTheDateISO()
 {
 char *date;
-time_t time;
+time_t now;
 
 	date=emalloc(MAXSTRLEN);
 	
-	time = (time_t) getTheTime();
+	now = time(NULL);
 	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
-	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&time)); 
+	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&now)); 
 	
 	return date;
 }
-
-
-
-/* Gets the current time in seconds since the epoch.
-*/
-
-time_t getTheTime()
-{
- time_t tp;
-        return time(&tp);
-}
-
-

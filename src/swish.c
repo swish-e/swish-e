@@ -134,7 +134,7 @@ unsigned int isDebugWord( char *word )
 
 /* ^^^^^^^^^^ example only ^^^^^^^^^^^^^*/
 
-
+static void printTime(double time);
 
 int main(int argc, char **argv)
 {
@@ -148,7 +148,6 @@ SWISH *sw;
 int rc=0,sortmode;
 char *field;
 int totalfiles, pos, j;
-long starttime, stoptime;
 int lentmpindex1=0;
 char *tmpindex1=NULL;
 int lentmpindex2=0;
@@ -166,14 +165,14 @@ char *tmp;
 int swap_mode=0; /* No swap */
 char keychar=0;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
-double search_starttime, run_starttime, endtime;
 struct stat stat_buf;
 
+double elapsedStart, elapsedSearchStart, cpuStart;
+double elapsedEnd;
 
 
-    run_starttime = TimeHiRes();
-
-	starttime=0L;
+    elapsedStart = TimeElapsed();
+	cpuStart = TimeCPU();
 
 	if(!lenindex1)index1=emalloc((lenindex1=MAXSTRLEN)+1);index1[0]='\0';
 	if(!lenindex2)index2=emalloc((lenindex2=MAXSTRLEN)+1);index2[0]='\0';
@@ -577,8 +576,6 @@ struct stat stat_buf;
 			sw->verbose = 0;
 		if (sw->verbose > 4)
 			sw->verbose = 4;
-		if (sw->verbose)
-			starttime = getTheTime();
 
 			/* Update Economic mode */
 		sw->Index->swap_locdata = swap_mode;
@@ -681,9 +678,11 @@ struct stat stat_buf;
 			else
 				printf("no files indexed.\n");
 			
-			stoptime = getTheTime();
-			printrunning(starttime, stoptime);
-			printf("Indexing done!\n");
+			printf("Elapsed time: ");
+			printTime(TimeElapsed() - elapsedStart);
+			printf(" CPU time: ");
+			printTime(TimeCPU() - cpuStart);
+			printf("\nIndexing done!\n");
 		}
 #ifdef INDEXPERMS
 		chmod(sw->indexlist->line, INDEXPERMS);
@@ -854,7 +853,7 @@ struct stat stat_buf;
 			/* print out "original" search words */
 		resultHeaderOut(sw,1, "# Search words: %s\n",wordlist);
 
-        search_starttime = TimeHiRes();
+        elapsedSearchStart = TimeElapsed();
 
 		rc=search(sw,wordlist, structure);
 
@@ -884,9 +883,9 @@ struct stat stat_buf;
 		if(rc>0) {
 			resultHeaderOut(sw,1, "# Number of hits: %d\n",rc);
 
-			endtime = TimeHiRes();
-			resultHeaderOut(sw,1, "# Search time: %0.3f seconds\n", endtime - search_starttime );
-			resultHeaderOut(sw,1, "# Run time: %0.3f seconds\n", endtime - run_starttime );
+			elapsedEnd = TimeElapsed();
+			resultHeaderOut(sw,1, "# Search time: %0.3f seconds\n", elapsedEnd - elapsedSearchStart );
+			resultHeaderOut(sw,1, "# Run time: %0.3f seconds\n", elapsedEnd - elapsedStart );
 			printSortedResults(sw);
 			resultHeaderOut(sw,1, ".\n");
 		} else if(!rc) {
@@ -917,7 +916,7 @@ struct stat stat_buf;
 	if(structstr) efree(structstr);
 
 	Mem_Summary("At end of program", 1);
-	
+
 	exit(0);
 
 	return 0;
@@ -926,24 +925,19 @@ struct stat stat_buf;
 /* Prints the running time (the time it took for indexing).
 */
 
-void printrunning(starttime, stoptime)
-     long starttime;
-     long stoptime;
+static void printTime(double time)
 {
-	int minutes, seconds;
+	int hh, mm, ss;
+	int delta;
+
+	delta = (int)(time + 0.5);
 	
-	minutes = (stoptime - starttime) / SECSPERMIN;
-	seconds = (stoptime - starttime) % SECSPERMIN;
-	printf("Running time: ");
-	if (minutes)
-		printf("%d minute%s", minutes, (minutes == 1) ? "" : "s");
-	if (minutes && seconds)
-		printf(", ");
-	if (seconds)
-		printf("%d second%s", seconds, (seconds == 1) ? "" : "s");
-	if (!minutes && !seconds)
-		printf("Less than a second");
-	printf(".\n");
+	ss = delta % 60;
+	delta /= 60;
+	hh = delta / 60;
+	mm = delta % 60;
+
+	printf("%02d:%02d:%02d", hh, mm, ss);
 }
 
 /* Prints the SWISH usage.
