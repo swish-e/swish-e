@@ -11,7 +11,7 @@ $ENV{PATH} = "$Bin:$ENV{PATH}";  # to use local version of pod2html
 
 
 # forward the @ARGV
-system "$Bin/pod2hpp -f @ARGV $Bin/../swish.conf";
-unlink "$Bin/../pod2html-dircache";
-unlink "$Bin/../pod2html-itemcache";
+system "$Bin/pod2hpp @ARGV $Bin/../swish.conf";
+#unlink "$Bin/../pod2html-dircache";
+#unlink "$Bin/../pod2html-itemcache";
 
