@@ -6,7 +6,7 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.1 - November ??, 2003
+=head2 Version 2.4.1 - December 17, 2003
 
 =over 4
 
