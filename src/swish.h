@@ -544,7 +544,8 @@ struct char_lookup_st
 */
 
 typedef struct {
-      char *extendedformat;		/* -x "fmt", holds fmt or NULL */
+    char *extendedformat;		/* -x "fmt", holds fmt or NULL */
+    int   extendedheader;      /* -X print extended header info */
 } CMDPARAM;
 
 

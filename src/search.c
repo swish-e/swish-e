@@ -438,7 +438,7 @@ unsigned char PhraseDelimiterString[2];
 		if(indexlist->header.applySoundexRules)
 			tmplist = soundex_words_in_query(sw,indexlist,tmplist);
 			/* Echo index file, fixed search, stopwords */
-		if (sw->opt.extendedformat)
+		if (sw->opt.extendedheader)
 		{
 			printf("# Index File: %s\n",indexlist->line);
 			printheader(&indexlist->header,stdout,indexlist->header.savedasheader, indexlist->header.totalwords, indexlist->header.totalfiles,0);
@@ -2242,3 +2242,4 @@ char *word,*tmp;
 	}
 	return searchwordlist;
 }
+

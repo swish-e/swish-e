@@ -369,7 +369,12 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			/*$$$ ToDo: better check if arg exists... Test only */
 			sw->opt.extendedformat = *(++argv);
 			argc--;
-		}
+                        initPrintExtResult (sw, sw->opt.extendedformat);
+                }
+                else if (c == 'X') {
+                                        /* rasc 2001-02 */
+                        sw->opt.extendedheader = 1;
+                }    
 		else
 			usage();
 		if (argc == 0)
@@ -784,7 +789,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		}
 		if(rc>0) {
                 	printf("# Number of hits: %d\n",rc);
-                	printsortedresults(sw);
+                	printSortedResults(sw);
 			printf(".\n");
 		} else if(!rc) {
 			printf("err: no results\n.\n");
@@ -895,5 +900,6 @@ void printversion()
 	printf("SWISH-E %s\n", SWISH_VERSION);
 	exit(0);
 }
+
 
 
