@@ -727,7 +727,7 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
                        if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
                            k++;
 				   }
-                   sortFilenums[indexf->filearray[i]->fi.filenum - 1] = k;
+                   sortFilenums[indexf->filearray[i]->filenum - 1] = k;
 			   }
                /* Store the integer array of presorted data */
                m->sorted_data = sortFilenums;

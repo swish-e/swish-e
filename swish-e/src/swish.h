@@ -250,18 +250,12 @@ struct metaEntry
     int    *inPropRange;          /* Used for limiting to a range */
 };
 
-typedef struct
+
+struct file
 {
     int     filenum;
     int     lookup_path;
     char   *filename;
-}
-FILEINFO;
-
-
-struct file
-{
-    FILEINFO fi;
     struct metaEntry *currentSortProp;
     struct docProperties *docProperties;
 };

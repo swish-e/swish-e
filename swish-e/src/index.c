@@ -817,19 +817,19 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
     /* Hash everything up to the last delimiter */
     if (!p3)
     {
-        newnode->fi.lookup_path = get_lookup_path(&indexf->header.pathlookup, "");
+        newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, "");
     }
     else
     {
         c = *++p3;
         *p3 = '\0';
-        newnode->fi.lookup_path = get_lookup_path(&indexf->header.pathlookup, ruleparsedfilename);
+        newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, ruleparsedfilename);
         *p3 = c;
         ruleparsedfilename = p3;
     }
 
 
-    newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
+    newnode->filename = (char *) estrdup(ruleparsedfilename);
 
 
 
@@ -914,7 +914,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct fi
     /* Init structure elements */
     newnode->docProperties   = NULL;
     newnode->currentSortProp = NULL;
-    newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
+    newnode->filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
 
 
     /* And save it in the file array */
@@ -1481,7 +1481,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
     fi = (struct file *) emalloc(sizeof(struct file));
 
-    fi->fi.filename = NULL;
+    fi->filename = NULL;
     fi->docProperties = NULL;
 
     indexf->filearray[filenum - 1] = fi;
@@ -1507,18 +1507,18 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     memcpy(buf1, p, len1);      /* Read filename */
     p += len1;
 
-    fi->fi.lookup_path = lookup_path;
+    fi->lookup_path = lookup_path;
 
     /* Add the path to filename */
     len4 = strlen(indexf->header.pathlookup->all_entries[lookup_path]->val);
     len1 = strlen(buf1);
-    fi->fi.filename = emalloc(len4 + len1 + 1);
-    memcpy(fi->fi.filename, indexf->header.pathlookup->all_entries[lookup_path]->val, len4);
-    memcpy(fi->fi.filename + len4, buf1, len1);
-    fi->fi.filename[len1 + len4] = '\0';
+    fi->filename = emalloc(len4 + len1 + 1);
+    memcpy(fi->filename, indexf->header.pathlookup->all_entries[lookup_path]->val, len4);
+    memcpy(fi->filename + len4, buf1, len1);
+    fi->filename[len1 + len4] = '\0';
     efree(buf1);
 
-    fi->fi.filenum = filenum - 1;
+    fi->filenum = filenum - 1;
 
     /* read the document properties section  */
     fi->docProperties = fetchDocProperties(p);
@@ -1551,7 +1551,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         if (idx->economic_flag)
         {
             filep = unSwapFileData(sw);
-            filep->fi.filenum = i + 1;
+            filep->filenum = i + 1;
             indexf->filearray[i] = filep;
         }
         else
@@ -1559,7 +1559,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
 
 
-        buffer = buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
+        buffer = buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path, &sz_buffer);
 
         /* Deflate stuff removed due to patents 
         if (indexf->header.applyFileInfoCompression)
