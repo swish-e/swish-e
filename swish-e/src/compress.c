@@ -602,7 +602,11 @@ void SwapLocData(SWISH * sw, ENTRY *e, unsigned char *buf, int lenbuf)
     }
 }
 
-void unSwapLocData(SWISH * sw, int idx_swap_file)
+/* 2002-07 jmruiz - New -e schema */
+/* Get location data from swap file */
+/* If e is null, all data will be restored */
+/* If e si not null, only the location for this data will be readed */
+void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
 {
     unsigned char *buf;
     int     lenbuf;
@@ -611,28 +615,65 @@ void unSwapLocData(SWISH * sw, int idx_swap_file)
     LOCATION *l;
     FILE *fp;
 
-    /* Chaeck if some swap file is being used */
-    if(!idx->fp_loc_write[idx_swap_file])
+    /* Check if some swap file is being used */
+    if(!idx->fp_loc_write[idx_swap_file] && !idx->fp_loc_read[idx_swap_file])
        return;
 
+	/* Check if the file is opened for write and close it */
+    if(idx->fp_loc_write[idx_swap_file])
+    {
+        /* Write a 0 to mark the end of locations */
+        idx->swap_putc(0,idx->fp_loc_write[idx_swap_file]);
+        idx->swap_close(idx->fp_loc_write[idx_swap_file]);
+        idx->fp_loc_write[idx_swap_file] = NULL;
+    }
+
     /* Reopen in read mode for (for faster reads, I suppose) */
-    /* Write a 0 to mark the end of locations */
-    idx->swap_putc(0,idx->fp_loc_write[idx_swap_file]);
-    idx->swap_close(idx->fp_loc_write[idx_swap_file]);
-    idx->fp_loc_write[idx_swap_file] = NULL;
-    if (!(idx->fp_loc_read[idx_swap_file] = fopen(idx->swap_location_name[idx_swap_file], F_READ_BINARY)))
-        progerrno("Could not open temp file %s: ", idx->swap_location_name[idx_swap_file]);
-    
+    if(!idx->fp_loc_read[idx_swap_file])
+    {
+        if (!(idx->fp_loc_read[idx_swap_file] = fopen(idx->swap_location_name[idx_swap_file], F_READ_BINARY)))
+            progerrno("Could not open temp file %s: ", idx->swap_location_name[idx_swap_file]);
+    }
+    else
+    {
+        /* File already opened for read -> reset pointer */
+        fseek(idx->fp_loc_read[idx_swap_file],0,SEEK_SET);
+	}
+
     fp = idx->fp_loc_read[idx_swap_file];
     while((lenbuf = uncompress1(fp, idx->swap_getc)))
     {
-        buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
-        idx->swap_read(buf, lenbuf, 1, fp);
-        e = *(ENTRY **)buf;
-        /* Store the locations in reverse order - Faster */
-        l = (LOCATION *) buf;
-        l->next = e->allLocationList;
-        e->allLocationList = l;
+        if(ep == NULL)
+        {
+            buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
+            idx->swap_read(buf, lenbuf, 1, fp);
+            e = *(ENTRY **)buf;
+            /* Store the locations in reverse order - Faster. They will be
+			** sorted later */
+            l = (LOCATION *) buf;
+            l->next = e->allLocationList;
+            e->allLocationList = l;
+        }
+        else
+        {
+            idx->swap_read(&e,sizeof(ENTRY *),1,fp);
+            if(ep == e)
+            {
+                buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);             
+                memcpy(buf,&e,sizeof(ENTRY *));
+                idx->swap_read(buf + sizeof(ENTRY *),lenbuf - sizeof(ENTRY *),1,fp);
+                /* Store the locations in reverse order - Faster. They will be
+                ** sorted later */
+                l = (LOCATION *) buf;
+                l->next = e->allLocationList;
+                e->allLocationList = l;
+            }
+            else
+            {
+				/* Just advance file pointer */
+                idx->swap_seek(fp,lenbuf - sizeof(ENTRY *),SEEK_CUR);
+            }
+        }
     }
 }
 
@@ -717,141 +758,7 @@ void sortSwapLocData(SWISH * sw, ENTRY *e)
                  
 }
 
-/* 09/00 Jose Ruiz
-** Gets the location data from the swap file
-** Returns a memory compressed location data
-*/
-unsigned char *unSwapLocData_old(SWISH * sw, ENTRY *e, long pos)
-{
-    unsigned char *buf;
-    int     i,lenbuf;
-    struct MOD_Index *idx = sw->Index;
 
-
-    /* Reopen in read mode for (for faster reads, I suppose) */
-    if (!idx->fp_loc_read[0])
-    {
-        for( i = 0; i < MAX_LOC_SWAP_FILES ; i++)
-        {
-            idx->swap_close(idx->fp_loc_write[i]);
-            idx->fp_loc_write[i] = NULL;
-            if (!(idx->fp_loc_read[i] = fopen(idx->swap_location_name[i], F_READ_BINARY)))
-                progerrno("Could not open temp file %s: ", idx->swap_location_name[i]);
-        }
-    }
-
-    i = (int) (((int) e) % MAX_LOC_SWAP_FILES);
-
-    idx->swap_seek(idx->fp_loc_read[i], pos, SEEK_SET);
-    lenbuf = uncompress1(idx->fp_loc_read[i], idx->swap_getc);
-    buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
-    idx->swap_read(buf, lenbuf, 1, idx->fp_loc_read[i]);
-    return buf;
-}
-
-
-/* Gets all LOCATIONs for an entry and puts them in memory */
-void unSwapLocDataEntry_old(SWISH *sw,ENTRY *e)
-{
-    int     i,
-            j,
-            k,
-            metaID;
-    unsigned char *ptmp,
-           *ptmp2,
-           *compressed_data;
-    int    *pi = NULL;
-    LOCATION *l, *prev=NULL, **lp;
-    LOCATION **tmploc;
-    LOCATION **p_array,*array[MAX_STACK_POSITIONS];
-    int array_size;
-    long fileoffset;
-
-    if(!e->allLocationList)
-        return;
-
-    p_array = array;
-    array_size = sizeof(array)/sizeof(LOCATION *);
-
-    /* Read all locations */
-    for(i = 0, l = e->allLocationList; l; i++)
-    {
-        if(i == MAX_STACK_POSITIONS)
-        {
-            p_array = (LOCATION **)emalloc((array_size *=2) * sizeof(LOCATION *));
-            memcpy(p_array,array,MAX_STACK_POSITIONS * sizeof(LOCATION *));
-        }
-        if(array_size==i)
-        {
-            p_array = (LOCATION **) erealloc(p_array,(array_size *=2) * sizeof(LOCATION *));
-        }
-        fileoffset = (long)l;
-        p_array[i] = (LOCATION *)unSwapLocData_old(sw,e,fileoffset);
-        l=*(LOCATION **)p_array[i];    /* Get fileoffset to next location */
-        /* store current file offset for later sort */
-        tmploc = (LOCATION **) p_array[i];
-        *tmploc = (LOCATION *) fileoffset;
-    }
-
-    /* Now, let's sort by metanum, offset in file */
-
-    /* Compute array wide for sort */
-    j = 2 * sizeof(int) + sizeof(void *);
-
-    /* Compute array size */
-    ptmp = (void *) emalloc(j * i);
-
-    /* Build an array with the elements to compare
-       and pointers to data */
-
-    for(k=0, ptmp2 = ptmp ; k < i; k++)
-    {
-        pi = (int *) ptmp2;
-
-        compressed_data = (unsigned char *)p_array[k];
-        tmploc = (LOCATION **) p_array[k];
-        fileoffset = (long) *tmploc;
-        /* Jump fileoffset */
-        compressed_data += sizeof(LOCATION *);
-
-        metaID = uncompress2(&compressed_data);
-        pi[0] = metaID;
-        pi[1] = fileoffset;
-        ptmp2 += 2 * sizeof(int);
-
-        lp = (LOCATION **)ptmp2;
-        *lp = p_array[k];
-        ptmp2 += sizeof(void *);
-    }
-
-    /* Sort them */
-    swish_qsort(ptmp, i, j, &icomp2);
-
-    /* Store results */
-    for (k = 0, ptmp2 = ptmp; k < i; k++)
-    {
-        ptmp2 += 2 * sizeof(int);
-
-        l = *(LOCATION **)ptmp2;
-        if(!k)
-            e->allLocationList = l;
-        else
-        {
-            tmploc = (LOCATION **)prev;
-            *tmploc = l;
-        }
-        ptmp2 += sizeof(void *);
-        prev = l;
-    }
-    tmploc = (LOCATION **)l;
-    *tmploc = NULL;
-
-    /* Free the memory of the sorting array */
-    efree(ptmp);
-
-    if(p_array != array)
-        efree(p_array);
-}
 
 
 
