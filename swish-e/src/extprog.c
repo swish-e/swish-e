@@ -126,8 +126,8 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     cmd = emalloc(total_len + 20);
     cmd[0] = '\0';
 
-/* Prefix libexecdir if path does not start with a "." or "/" */
-    if ( prog[0] != '/' && prog[0] != '.' )
+/* Prefix libexecdir if path does not start with a ".", "/", "\", nor "X:"  */
+    if ( prog[0] != '/' && prog[0] != '.' && prog[0] != '\\' && prog[1] != ':' )
     {
         strcat( cmd, execdir );
         if ( cmd[ strlen( cmd ) - 1 ]  != '/' ) 
