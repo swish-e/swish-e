@@ -4,6 +4,7 @@ $Id$
 **
 ** 2001-03-17  rasc  save real_filename as title (instead full real_path)
 **                   was: compatibility issue to v 1.x.x
+** 2001-05-09  rasc  entities changed (new module)
 */
 
 #include "swish.h"
@@ -18,9 +19,8 @@ $Id$
 #include "compress.h"
 #include "index.h"
 #include "file.h"
-/* #### Added metanames.h */
 #include "metanames.h"
-/* #### */
+#include "entities.h"
 
 struct metaEntry *getXMLField(indexf, tag, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
@@ -147,9 +147,9 @@ int in_junk=0;
 			*tag++='\0';
 			if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
 			{
-				if(sw->ConvertHTMLEntities)
-					newp=convertentities(p,sw);
-				else newp=p;
+
+				newp = sw_ConvHTMLEntities2ISO(sw, p);
+
 				ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 				if(newp!=p) efree(newp);
 			}
@@ -265,9 +265,9 @@ int in_junk=0;
 		} else {    /* No more '<' */
 			if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
 			{
-				if(sw->ConvertHTMLEntities)
-					newp=convertentities(p,sw);
-				else newp=p;
+
+				newp = sw_ConvHTMLEntities2ISO(sw, p);
+
 				ftotalwords +=indexstring(sw, newp, sw->filenum, structure, currentmetanames, metaName, positionMeta);
 				if(newp!=p) efree(newp);
 			}
