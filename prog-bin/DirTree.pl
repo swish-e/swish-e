@@ -65,6 +65,7 @@ Path-Name: $File::Find::name
 EOF
     local $/ = undef;
     $content .= <FH>;
+    $content = '' unless defined $content;
     return \$content;
 }
 
