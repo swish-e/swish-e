@@ -59,18 +59,10 @@ static void compress_entries( SWISH *sw );
 
 void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 {
-    IndexFILE   *cur_index = sw_input->indexlist;
+    IndexFILE   *cur_index;
     FILE        *filenum_map;
     char        *tmpfilename;
 
-
-    /* Duplicate the first index's header into the output index */
-    dup_header( sw_input, sw_output );
-
-#ifdef DEBUG_MERGE
-    printf("----- Output Header ----------\n");
-    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
-#endif
 
 
 
@@ -82,11 +74,20 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     *   - set some initial defaults.
     *********************************************************************************/
 
-    while( cur_index )
+    cur_index = sw_input->indexlist;
+    while( cur_index  )
     {
         printf("Input index '%s' has %d files and %d words\n", cur_index->line, cur_index->header.totalfiles, cur_index->header.totalwords);
-        check_header_match( cur_index, sw_output );  // errors if headers don't match - don't really need to check first one since it was the one that was dupped 
+
+        if ( cur_index == sw_input->indexlist )
+            /* Duplicate the first index's header into the output index */
+            dup_header( sw_input, sw_output );
+        else
+            check_header_match( cur_index, sw_output );  // errors if headers don't match - don't really need to check first one since it was the one that was dupped 
+
+
         make_meta_map( cur_index, sw_output);        // add metas to new index, and create map
+
         load_filename_sort( sw_input, cur_index );   // so can read in filename order
 
         cur_index->current_file = 0;  
@@ -99,6 +100,13 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
         cur_index = cur_index->next;
     }
+
+
+#ifdef DEBUG_MERGE
+    printf("----- Output Header ----------\n");
+    resultPrintHeader(sw_output, 0, &sw_output->indexlist->header, sw_output->indexlist->line, 0);
+#endif
+
 
 
     /****************************************************************************
@@ -146,7 +154,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
         dump_index(sw_input, cur_index, sw_output, file_num_map );
 
         /* Compress the entries ?  */
-        compress_entries( sw_output );
+//        compress_entries( sw_output );
 
 
         /* free the maps */
@@ -157,6 +165,9 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
         cur_index = cur_index->next;
 
     }
+
+    /* if I compress after each index I get a segfault in some cases */
+    compress_entries( sw_output );    
 
 #ifdef DEBUG_MERGE
     printf("----- Final Output Header ----------\n");
@@ -392,6 +403,10 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     /* Save for looking up pathname when sorting */
     cur_index->path_meta = path_meta;
 
+    /* Case is important for most OS when comparing file names */
+    cur_index->path_meta->metaType &= ~META_IGNORE_CASE;
+
+
 
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
@@ -467,14 +482,13 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
         /* don't use cached props, as they belong to a different index! */
         if ( fi.prop_index )
             efree( fi.prop_index );
+        memset(&fi, 0, sizeof( FileRec ));
 
         /* still some to read in this index? */
         if ( cur_index->current_file >= cur_index->header.totalfiles )
             continue;
 
 
-
-        memset(&fi, 0, sizeof( FileRec ));
 
         /* get file number from lookup table */
         fi.filenum = cur_index->path_order[cur_index->current_file];
@@ -599,8 +613,20 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, 
 
     memset( &fi, 0, sizeof( FileRec ));
 
+
+#ifdef DEBUG_MERGE
+    printf("Reading Properties from input index '%s' file %d\n", cur_index->line, cur_index->filenum);
+#endif
+
     /* read the properties and map them as needed */
     d = ReadAllDocPropertiesFromDisk( sw_input, cur_index, cur_index->filenum );
+
+
+#ifdef DEBUG_MERGE
+    fi.docProperties = d;
+    dump_file_properties( cur_index, &fi );
+#endif
+    
 
 
     /* all this off-by-one things are a mess */
@@ -612,6 +638,13 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, 
             meta_entry.metaID = cur_index->meta_map[ i ];
             addDocProperty(&docProperties, &meta_entry, tmp->propValue, tmp->propLen, 1 );
         }
+
+#ifdef DEBUG_MERGE
+    printf(" after mapping file %s\n", indexf->line);
+    fi.docProperties = docProperties;
+    dump_file_properties( cur_index, &fi );
+    printf("\n");
+#endif
 
    
     /* Now bump the file counter  */
@@ -707,35 +740,44 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
    
 static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map )
 {
-    int     i,
-            j,
-            frequency,
-            metaname,
-            structure,
-            tmpval,
-            filenum,
-           *position;
-    unsigned long    nextposmetaname;
-    char    word[2];
-    char   *resultword;
-    unsigned char   *worddata, *s, flag;
-    int     sz_worddata;
-    long    wordID;
-    metaname = 0;
+    int         i;
+    int         j;
+    int         frequency = 0;
+    int         structure;
+    int         tmpval;
+    int         filenum;
+    int        *position;
+    int         sz_worddata;
+    int         metaname = 0;
+    int         word_count = 0;
+    char        word[2];
+    char       *resultword;
+    long        wordID;
+    unsigned long    nextposmetaname = 0L;
+    unsigned char   *worddata;
+    unsigned char   *s;
+    unsigned char   flag;
 
-    nextposmetaname = 0L;
-    frequency = 0;
     
 
     DB_InitReadWords(sw, indexf->DB);
 
+
+
+    
     for(j=0;j<256;j++)
     {
+        printf("Processing words in index '%s': %3d%%\r", indexf->line, (word_count * 100)/indexf->header.totalwords);
+        fflush(stdout);
+
+        
         word[0] = (unsigned char) j; word[1] = '\0';
         DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
         while(wordID)
         {
+            word_count++;
+            
             /* Read Word's data */
             DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
 
@@ -743,10 +785,13 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
             s = worddata;
 
             tmpval = uncompress2(&s);     /* tfrequency */
+
             metaname = uncompress2(&s);     /* metaID */
+
             if (metaname)
             {
-                nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
+                nextposmetaname = UNPACKLONG2(s);
+                s += sizeof(long);
             }
 
             filenum = 0;
@@ -787,6 +832,8 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
             DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
         }
     }
+    printf("Processing words in index '%s': %3d words\n", indexf->line, word_count);
+
     DB_EndReadWords(sw, indexf->DB);
 }
 

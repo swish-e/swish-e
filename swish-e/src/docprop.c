@@ -839,7 +839,10 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
         int rc;
         int len = Min( p1->propLen, p2->propLen );
 
-        rc = strncasecmp(p1->propValue, p2->propValue, len);
+        rc = is_meta_ignore_case( meta_entry)
+             ? strncasecmp( p1->propValue, p2->propValue, len )
+             : strncmp( p1->propValue, p2->propValue, len );
+             
         if ( rc != 0 )
             return rc;
             
