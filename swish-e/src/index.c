@@ -1,4 +1,6 @@
 /*
+$Id$
+**
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -97,7 +99,8 @@
 ** isoktitle moved to html.c
 **
 ** 2001-03-02 rasc   Header: write translatecharacters
-** 2001-03-14 rasc   resultHeaderOutput  -X?
+** 2001-03-14 rasc   resultHeaderOutput  -H n
+** 2001-03-24 rasc   timeroutines rearranged
 **
 **
 */
@@ -126,6 +129,7 @@
 #include "result_sort.h"
 #include "result_output.h"
 #include "filter.h"
+#include "date_time.h"
 
 
 /*
@@ -522,23 +526,6 @@ int getfilecount(IndexFILE *indexf)
 	return indexf->fileoffsetarray_cursize;
 }
 
-/* Returns the nicely formatted date.
-*/
-
-char *getthedate()
-{
-char *date;
-time_t time;
-
-	date=emalloc(MAXSTRLEN);
-	
-	time = (time_t) getthetime();
-	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
-	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&time)); 
-	
-	return date;
-}
-
 
 /* Indexes the words in a string, such as a file name or an
 ** HTML title.
@@ -853,7 +840,7 @@ long itmp;
 	PrintHeaderStr(SAVEDASHEADER_ID,c,fp);
 	PrintHeaderInt(COUNTSHEADER_ID,totalwords,fp);
 	itmp=totalfiles+1; compress1(itmp,fp);
-	tmp=getthedate();PrintHeaderStr(INDEXEDONHEADER_ID,tmp,fp); efree(tmp);
+	tmp=getTheDateISO();PrintHeaderStr(INDEXEDONHEADER_ID,tmp,fp); efree(tmp);
 	PrintHeaderStr(DESCRIPTIONHEADER_ID,header->indexd,fp);
 	PrintHeaderStr(POINTERHEADER_ID,header->indexp,fp);
 	PrintHeaderStr(MAINTAINEDBYHEADER_ID,header->indexa,fp);

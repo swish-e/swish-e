@@ -863,7 +863,7 @@ void printrunning (long, long);
 
 #endif
 
-long getthetime (void);
+
 
 void allocatedefaults (void);
 

@@ -1,5 +1,8 @@
 /*
+$Id$
+**
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
+**
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
 ** This program and library is free software; you can redistribute it and/or
@@ -454,7 +457,7 @@ double search_starttime, run_starttime, endtime;
 		if (sw->verbose > 4)
 			sw->verbose = 4;
 		if (sw->verbose)
-			starttime = getthetime();
+			starttime = getTheTime();
 
 			/* Update Swap mode */
 		sw->swap_flag=swap_mode;
@@ -569,7 +572,7 @@ double search_starttime, run_starttime, endtime;
 			else
 				printf("no files indexed.\n");
 			
-			stoptime = getthetime();
+			stoptime = getTheTime();
 			printrunning(starttime, stoptime);
 			printf("Indexing done!\n");
 		}

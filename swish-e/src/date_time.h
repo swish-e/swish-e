@@ -23,4 +23,7 @@ $Id$
 
 
 
-double TimeHiRes(void);
+double  TimeHiRes(void);
+char    *getTheDateISO(void);
+time_t  getTheTime (void);
+
