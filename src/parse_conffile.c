@@ -1143,7 +1143,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 grabCmdOptions(sl, 1, &sw->ignoremetalist);
                 /* Go lowercase */
                 for (tmplist = sw->ignoremetalist; tmplist; tmplist = tmplist->next)
-                    tmplist->line = strtolower(tmplist->line);
+                    (void)strtolower(tmplist->line);
             }
             else
                 progerr("%s: requires at least one value", w0);
@@ -1159,7 +1159,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 grabCmdOptions(sl, 1, &sw->XMLClassAttributes);
                 /* Go lowercase */
                 for (tmplist = sw->XMLClassAttributes; tmplist; tmplist = tmplist->next)
-                    tmplist->line = strtolower(tmplist->line);
+                    (void)strtolower(tmplist->line);
             }
             else
                 progerr("%s: requires at least one value", w0);

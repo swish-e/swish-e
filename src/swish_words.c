@@ -387,7 +387,6 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
 {
     struct swline *temp;
 
-
     temp = *original;
 
 
@@ -421,6 +420,9 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
 
         if ( new_words )
         {
+            if(!entry->next)   /* Adding at the end. So, fix the last one */
+                (*original)->other.nodep = new_words->other.nodep;
+
             /* set the previous record to point to the start of the new entry (or entries) */
             temp->next = new_words;
 
@@ -428,15 +430,15 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
             new_words->other.nodep->next = entry->next;
         }
         else /* delete the entry */
+        {
             temp->next = temp->next->next;
+            if(!temp->next)   /* Adding at the end. So, fix the last one */
+                (*original)->other.nodep = temp;
+        }
     }
     
-
     /* now free the removed item */
-    efree( entry->line );
     efree( entry );
-
-
 }
 
 
@@ -461,30 +463,20 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
 
 static void fudge_wildcard( struct swline **original, struct swline *entry )
 {
-    char    *tmp;
-    struct swline *wild_card;
+    struct swline *wild_card, *new;
 
     wild_card = entry->next;        
 
-    /* reallocate a string */
-    tmp = entry->line;
-    entry->line = emalloc( strlen( entry->line ) + 2 );
-    strcpy( entry->line, tmp);
-    efree( tmp );
-    strcat( entry->line, "*");
+    /* New entry */
+    new = newswline_n(entry->line, strlen( entry->line ) + strlen(wild_card->line)); 
+    strcat( new->line, wild_card->line);
 
-    efree( wild_card->line );
+    /* Change entry by new */
+    new->other.nodep = new;  // Group of 1 node (last is itself)
+    replace_swline(original,entry,new);
 
-
-    /* removing last entry - set pointer to new end */
-    if ( (*original)->other.nodep == wild_card )
-        (*original)->other.nodep = entry;
-
-    /* and point next to the one after next */
-    entry->next = wild_card->next;
-
-
-    efree( wild_card );
+    /* remove wild_card */
+    replace_swline(original,wild_card,(struct swline *)NULL);
 }
 
     
@@ -514,6 +506,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     char   *curpos;               /* current position in the words string */
     struct  swline *tokens = NULL;
     struct  swline *temp;
+    struct  swline *new;
     struct  swline *swish_words;
     struct  swline *next_node;
     SWISH  *sw = srch->sw;
@@ -619,25 +612,19 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
                 ) {
                     struct swline *andword = temp; /* save position of entry to remove */
                     temp = temp->next;  /* now point to "not" word */
+                    operator = nextoperator;
 
-                    /* Replace the string with the operator string */
-                    efree( temp->line );
-                    temp->line = estrdup( nextoperator );
-
+                    /* Remove the "and" word */
                     replace_swline( &tokens, andword, (struct swline *)NULL ); /* cut it out */
-
-                    temp = temp->next;  /* past the "not" */
-                    continue;
                 }
 
-                /* otherwise, just replace it */
-
                 /* Replace the string with the operator string */
-                efree( temp->line );
-                temp->line = estrdup( operator );
+                new = newswline(operator);
+                new->other.nodep = new;  // Group of 1 node (last is itself)
 
+                replace_swline( &tokens, temp, new ); /* change it */
 
-                temp = temp->next;
+                temp = new->next;
                 continue;
             }
         }
@@ -649,7 +636,6 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
             temp = temp->next;
             continue;
         }
-
 
         /* query words left.  Turn into "swish_words" */
         swish_words = NULL;
@@ -667,15 +653,19 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
         
     }
 
-
     /* fudge wild cards back onto preceeding word */
     /* $$$ This is broken because a query of "foo *" ends up "foo*" */
     /* Also doesn't check for an operator followed by "*" */
-
     
-    for ( temp = tokens ; temp; temp = temp->next )
+    for ( temp = tokens ; temp; )
         if ( temp->next && strcmp( temp->next->line, "*") == 0 )
+        {
+            next_node = (temp->next)->next;
             fudge_wildcard( &tokens, temp );
+            temp = next_node;
+        }
+        else
+            temp = temp->next;
 
     return tokens;
 }
@@ -935,8 +925,6 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
                 cur_token = prev_token;  // save if remove == 2
             }
 
-
-            efree( tmp->line );
             efree( tmp );
 
             if ( remove == 2 )
@@ -948,7 +936,6 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
                 else
                     prev_prev_token->next = cur_token->next; // remove one in the middle
                 
-                efree( tmp->line );
                 efree( tmp );
             }
 
@@ -1065,7 +1052,8 @@ static struct swline *fixmetanames(struct swline *sp)
 static struct swline *fixnot1(struct swline *sp)
 {
     struct swline *tmpp,
-           *prev;
+           *prev, *new;
+    int len;
 
     if (!sp)
         return NULL;
@@ -1079,8 +1067,10 @@ static struct swline *fixnot1(struct swline *sp)
         {
             if(prev && prev->line[0]!='=' && prev->line[0]!='(')
             {
-                efree(tmpp->line);
-                tmpp->line = estrdup(AND_NOT_WORD);
+                new = newswline(AND_NOT_WORD);
+                new->other.nodep = new;  // group of 1 node
+                replace_swline(&sp, tmpp, new);
+                tmpp = new;
             }
         }
     }
@@ -1093,7 +1083,7 @@ static struct swline *fixnot2(struct swline *sp)
 {
     int     openparen, found;
     struct swline *tmpp, *newp;
-    char    *magic = "<__not__>";  /* magic avoids parsing the
+    char    *magic = MAGIC_NOT_WORD;  /* magic avoids parsing the
                                    ** "not" operator twice
                                    ** and put the code in an 
                                    ** endless loop */                            
@@ -1143,8 +1133,7 @@ static struct swline *fixnot2(struct swline *sp)
     {
         if(!strcmp(tmpp->line,magic))
         {
-            efree(tmpp->line);
-            tmpp->line = estrdup(NOT_WORD);
+            strcpy(tmpp->line, NOT_WORD);
         }
     }
 

@@ -162,7 +162,7 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
             /* Go lowercase  and check with properties */
             for (tmplist = md->presortedindexlist; tmplist; tmplist = tmplist->next)
             {
-                tmplist->line = strtolower(tmplist->line);
+                (void)strtolower(tmplist->line);
 
                 /* Check if it is in metanames list */
                 if (!(m = getPropNameByName(&sw->indexlist->header, tmplist->line)))

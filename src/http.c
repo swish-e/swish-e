@@ -125,6 +125,7 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
     int     i;
     struct multiswline *list;
     struct swline *slist;
+    int     len;
 
     if (strcasecmp(w0, "maxdepth") == 0)
     {
@@ -179,9 +180,7 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
             for (i = 1; i < sl->n; i++)
             {
                 /* Add a new entry to this list */
-                slist = (struct swline *) emalloc(sizeof(struct swline));
-
-                slist->line = estrdup( sl->word[i] );
+                slist = newswline(sl->word[i]);
                 slist->next = list->list;
                 list->list = slist;
             }

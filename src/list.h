@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+struct swline *newswline_n(char *line, int size);
+struct swline *newswline(char *line);
 struct swline *addswline (struct swline *rp, char *line);
 struct swline *dupswline (struct swline *rp);
 void addindexfile(struct SWISH *sw, char *line);

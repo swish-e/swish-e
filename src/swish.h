@@ -440,7 +440,7 @@ struct swline
 {
     struct swline *next;
     swline_other other;
-    char   *line;
+    char   line[1];
 };
 
 
