@@ -136,12 +136,16 @@ debian_dir = \
 	debian/swish-e.doc-base \
 	debian/swish-e.substvars
 
+bin_SCRIPTS = swish-config
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = swish-e.pc
 
 EXTRA_DIST = \
     $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
-    $(doc_DATA) \
+    $(doc_DATA) $(pkgconfig_DATA) $(bin_SCRIPTS)\
     $(debian_dir)
+
 
 .PHONEY: test
 
