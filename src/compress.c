@@ -37,7 +37,7 @@
 /* Routines for compressing numbers - Macros converted to routines */
 
 /* Compress a number and writes it to a file */
-void compress1(int num,FILE *fp)
+void compress1(int num,FILE *fp,int (*f_putc)(int , FILE *))
 {
    int _i=0,_r=num;
    unsigned char _s[5];
@@ -47,7 +47,7 @@ void compress1(int num,FILE *fp)
       _r >>= 7;
    }
    while(--_i >=0)
-     fputc(_s[_i] | (_i ?  128 : 0), fp);
+     f_putc(_s[_i] | (_i ?  128 : 0), fp);
 }
 
 /* Compress a number and writes it to a buffer */
@@ -87,13 +87,13 @@ unsigned char *compress3(int num,unsigned char *buffer)
 }
 
 /* Uncompress a number from a file */
-int uncompress1(FILE *fp)
+int uncompress1(FILE *fp,int (*f_getc)(FILE *))
 {
     int _c;
     int num = 0; 
     do
     {
-        _c=(int)fgetc(fp); 
+        _c=(int)f_getc(fp); 
         num <<= 7; 
         num |= _c & 127; 
         if(!num) 
@@ -376,7 +376,7 @@ struct MOD_Index *idx = sw->Index;
         
     buffer=buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path,&sz_buffer);
     tmp=sz_buffer+1;
-    compress1(tmp,idx->fp_file_write);   /* Write len */
+    compress1(tmp,idx->fp_file_write,fputc);   /* Write len */
     fwrite(buffer,sz_buffer,1,idx->fp_file_write);
     fputc(0,idx->fp_file_write);    /* Important delimiter -> No more props */
     efree(buffer);
@@ -407,7 +407,7 @@ struct MOD_Index *idx = sw->Index;
            progerr("Could not open temp file %s",idx->swap_file_name);
         }
     }
-    len = uncompress1(idx->fp_file_read);
+    len = uncompress1(idx->fp_file_read,fgetc);
     p=buffer=emalloc(len);
     fread(buffer,len,1,idx->fp_file_read);   /* Read all data */
     lookup_path = uncompress2(&p);
