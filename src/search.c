@@ -584,7 +584,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
                 {
                     int j;
                     for ( j = 0; j < cur->result_count; j++ )
-                        if ( cur->sort_data[i].key[j] )
+                        if ( cur->sort_data[i].key[j] &&  cur->sort_data[i].key[j] != (propEntry *)-1 )
                            efree( cur->sort_data[i].key[j] ); /** double loop! -- memzone please */
 
                     efree( cur->sort_data[i].key );
