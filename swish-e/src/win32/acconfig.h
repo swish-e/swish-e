@@ -33,6 +33,13 @@
 #define HAVE_PROCESS_H  /* _getpid is here  */
 #define HAVE_VARARGS_H  /* va_list, vsnprintf, etc */
 #define HAVE_LIBXML2 1  /* enable libxml2 XML parser */
+#define HAVE_MEMCPY  1  /* sys.h explodes without this */
+#define STDC_HEADERS 1  /* We have Standard C Headers, I think */
+
+/* Environment Stuff */
+#define HAVE_SETENV     /* Enable PATH setting */
+#define PATH_SEPARATOR ";" /* PATH separator string */
+#define setenv(a,b,c) _putenv("a=b"); /* Translate to MicroSpeak */
 
 #define HAVE_STRING_H   /* For mkstemp from libiberty  */
 
@@ -54,6 +61,16 @@
 #define O_EXCL _O_EXCL
 #define O_BINARY _O_BINARY
 
+/* Stat Stuff; borrowed from linux/stat.h */
+#define S_ISLNK(m)      (((m) & S_IFMT) == S_IFLNK)
+#define S_ISREG(m)      (((m) & S_IFMT) == S_IFREG)
+#define S_ISDIR(m)      (((m) & S_IFMT) == S_IFDIR)
+#define S_ISCHR(m)      (((m) & S_IFMT) == S_IFCHR)
+#define S_ISBLK(m)      (((m) & S_IFMT) == S_IFBLK)
+#define S_ISFIFO(m)     (((m) & S_IFMT) == S_IFIFO)
+#define S_ISSOCK(m)     (((m) & S_IFMT) == S_IFSOCK)
+
+
 /* Win32 filename lengths  */
 #define SW_MAXPATHNAME 4096
 #define SW_MAXFILENAME 256
@@ -61,6 +78,12 @@
 /* Type definitions */
 typedef int pid_t;			/* process ID */
 typedef int mode_t;         /* file permission mode ID */
+
+/* Fake some group functions... */
+#define GETGROUPS_T int
+#define getegid() 0
+#define geteuid() 0
+#define getgid()  0
 
 /* Rewrite ANSI functions to Win32 equivalents */
 #define popen		_popen
