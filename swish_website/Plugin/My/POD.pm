@@ -32,8 +32,8 @@ sub new {
     my $page = $stash->get( 'page.id' );
     my $template_name = $stash->get( 'template.name' );
 
-    my $warn = sub { warn "[$template_name]: @_\n" };
-    # $warn = 0;  # disable warnings
+    my $warn = sub { warn "[$template_name]: @_\n" }
+        if $stash->get( 'self.config.verbose' );
 
     my $parser = Pod::POM->new( warn => $warn );    # Make this a coderef to report name
     my $pom = $parser->parse_text( $content );
