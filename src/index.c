@@ -1131,6 +1131,7 @@ void    printindex(SWISH * sw, IndexFILE * indexf)
     ENTRYARRAY *ep;
     ENTRY  *epi;
     int     totalwords;
+    FILE   *fp = (FILE *)indexf->DB;
 
     BuildSortedArrayOfWords(sw, indexf);
     ep = sw->entryArray;
@@ -1160,7 +1161,7 @@ void    printindex(SWISH * sw, IndexFILE * indexf)
             else
                 epi->u1.fileoffset = -1L;
         }
-        fputc(0, indexf->fp);   /* End of words mark */
+        fputc(0, fp);   /* End of words mark */
         printhash(sw->hashentries, indexf);
         for (i = 0; i < totalwords; i++)
         {
@@ -1184,7 +1185,7 @@ void    printword(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             wordlen,
             hashval;
     long    f_offset;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     f_offset = ftell(fp);
     i = (int) ((unsigned char) ep->word[0]);
@@ -1227,7 +1228,7 @@ void    printworddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     int     index_structfreq;
     unsigned char *compressed_data,
            *p;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     curmetaID = 0;
     curmetanamepos = 0L;
@@ -1297,7 +1298,7 @@ void    printstopwords(IndexFILE * indexf)
     int     hashval,
             len;
     struct swline *sp = NULL;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     indexf->offsets[STOPWORDPOS] = ftell(fp);
     for (hashval = 0; hashval < HASHSIZE; hashval++)
@@ -1321,7 +1322,7 @@ void    printbuzzwords(IndexFILE * indexf)
     int     hashval,
             len;
     struct swline *sp = NULL;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     indexf->offsets[BUZZWORDPOS] = ftell(fp);
     for (hashval = 0; hashval < HASHSIZE; hashval++)
@@ -1386,7 +1387,7 @@ struct file *readFileEntry(IndexFILE * indexf, int filenum)
     char   *buf1;
     struct file *fi;
     long    foffset;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     fi = indexf->filearray[filenum - 1];
     foffset = indexf->fileoffsetarray[filenum - 1];
@@ -1467,7 +1468,7 @@ void    printfilelist(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
     struct file *filep;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
     unsigned char *buffer;
     int     sz_buffer;
     struct buffer_pool *bp = NULL;
@@ -1519,7 +1520,7 @@ void    printMetaNames(IndexFILE * indexf)
     struct metaEntry *entry = NULL;
     int     i,
             len;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
 /* #### Use new metaType schema - see metanames.h */
     /* Format of metaname is
@@ -1554,7 +1555,7 @@ void    printfileoffsets(IndexFILE * indexf)
     int     i;
     long    offset,
             totwords;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     indexf->offsets[FILEOFFSETPOS] = ftell(fp);
     for (i = 0; i < indexf->filearray_cursize; i++)
@@ -1574,7 +1575,7 @@ void    printlocationlookuptables(IndexFILE * indexf)
     int     i,
             n,
             tmp;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     indexf->offsets[LOCATIONLOOKUPTABLEPOS] = ftell(fp);
 
@@ -1615,7 +1616,7 @@ void    printpathlookuptable(IndexFILE * indexf)
             i,
             len;
     char   *tmp;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     indexf->offsets[PATHLOOKUPTABLEPOS] = ftell(fp);
     if (!indexf->pathlookup)
@@ -1657,7 +1658,7 @@ void    decompress(SWISH * sw, IndexFILE * indexf)
     long    worddata,
             nextword;
     long    nextposmetaname;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
     struct file *fi = NULL;
     struct docPropertyEntry *docProperties = NULL;
     char    ISOTime[20];
@@ -2101,7 +2102,7 @@ void    printhash(ENTRY ** hashentries, IndexFILE * indexf)
             wordlen;
     ENTRY  *ep,
            *epn;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *)indexf->DB;
 
     for (i = 0; i < SEARCHHASHSIZE; i++)
     {

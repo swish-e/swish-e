@@ -213,8 +213,8 @@ if(sw) {
 				}
                 		efree(tmpindexlist->metaEntryArray);
 			}
-			if (tmpindexlist->fp) 
-				fclose(tmpindexlist->fp);
+			if (tmpindexlist->DB) 
+				fclose((FILE *)tmpindexlist->DB);
                         /* Free stopwords structures */
 			freestophash(tmpindexlist);
 			freeStopList(tmpindexlist);

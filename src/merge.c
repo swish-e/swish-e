@@ -67,6 +67,7 @@ int firstTime = 1;
 SWISH *sw1, *sw2, *sw;
 IndexFILE *indexf1, *indexf2, *indexf;
 struct file *fi;
+FILE *fp,*fp1,*fp2;
 
 	if (verbose) printf("Opening and reading file 1 header...\n");
 
@@ -81,7 +82,9 @@ struct file *fi;
 	}
 	
 	indexf1=sw1->indexlist;
+	fp1=(FILE *)indexf1->DB;
 	indexf2=sw2->indexlist;
+	fp2=(FILE *)indexf2->DB;
 		/* Output data */
 	sw = SwishNew();
 	indexf = sw->indexlist= addindexfile(sw->indexlist, outfile);
@@ -89,7 +92,7 @@ struct file *fi;
 		/* Create and empty outfile */
 	CreateEmptyFile(sw,outfile);
 		/* and open it for read/write */
-	if ((indexf->fp = openIndexFILEForReadAndWrite(outfile)) == NULL) {
+	if ((fp = openIndexFILEForReadAndWrite(outfile)) == NULL) {
 		progerr("Couldn't write the merged index file \"%s\".", outfile);
 	}
 		/* Force the economic mode to save memory */
@@ -186,14 +189,14 @@ struct file *fi;
 	if (verbose) printf("\nReading file 1 info ...");
 	fflush(stdout);
 
-	fseek(indexf1->fp, fileinfo1, 0);
+	fseek(fp1, fileinfo1, 0);
 	for (i = 1; i <= indexfilenum1; i++) {
 		fi = readFileEntry(indexf1,i);
 		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->filetotalwordsarray[i-1], metaFile1);
 	}
 	if (verbose) printf("\nReading file 2 info ...");
 
-	fseek(indexf2->fp, fileinfo2, 0);
+	fseek(fp2, fileinfo2, 0);
 	for (i = 1; i <= indexfilenum2; i++) {
 		fi = readFileEntry(indexf2,i);
 		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->filetotalwordsarray[i-1], metaFile2);
@@ -204,8 +207,8 @@ struct file *fi;
 	if (verbose) printf("\nMerging words... "); 
 	
 		/* Adjust file pointer to start of word info */
-	fseek(indexf1->fp,indexf1->wordpos,0);
-	fseek(indexf2->fp,indexf2->wordpos,0);
+	fseek(fp1,indexf1->wordpos,0);
+	fseek(fp2,indexf2->wordpos,0);
 	
 	for (i = 0; i < MAXCHARS; i++)
 		indexf->offsets[i] = 0;
@@ -275,15 +278,15 @@ struct file *fi;
 
 	if (verbose) printf("\nPrinting header... ");
 
-	printheader(&indexf->header,indexf->fp, outfile, (totalwords-skipwords), totalfiles,1);
+	printheader(&indexf->header,fp, outfile, (totalwords-skipwords), totalfiles,1);
 
-	offsetstart = ftell(indexf->fp);
+	offsetstart = ftell(fp);
 	for (i = 0; i < MAXCHARS; i++)
-		printlong(indexf->fp,(long) 0);
+		printlong(fp,(long) 0);
 	
-	hashstart = ftell(indexf->fp);
+	hashstart = ftell(fp);
 	for (i = 0; i < SEARCHHASHSIZE; i++)
-		printlong(indexf->fp,(long) 0);
+		printlong(fp,(long) 0);
 	
 	if(verbose) printf("\nPrinting words... \n");
 
@@ -302,7 +305,7 @@ struct file *fi;
 	
 	if (verbose) printf("\nMerging file info... ");
 	
-	indexf->offsets[FILELISTPOS] = ftell(indexf->fp);
+	indexf->offsets[FILELISTPOS] = ftell(fp);
 	printfilelist(sw,indexf);
 	
 	skipfiles = (indexfilenum1 + indexfilenum2) - totalfiles;
@@ -326,17 +329,17 @@ struct file *fi;
 	printlocationlookuptables(indexf);
 	printpathlookuptable(indexf);
 
-	fclose(indexf->fp);
+	fclose(fp);
 
-	indexf->fp = openIndexFILEForReadAndWrite(outfile);
-	fseek(indexf->fp, offsetstart, 0);
+	fp = openIndexFILEForReadAndWrite(outfile);
+	fseek(fp, offsetstart, 0);
 	for (i = 0; i < MAXCHARS; i++)
-		printlong(indexf->fp,indexf->offsets[i]);
+		printlong(fp,indexf->offsets[i]);
 
-	fseek(indexf->fp, hashstart, 0);
+	fseek(fp, hashstart, 0);
 	for (i = 0; i < SEARCHHASHSIZE; i++)
-		printlong(indexf->fp,indexf->hashoffsets[i]);
-	fclose(indexf->fp);indexf->fp=NULL;
+		printlong(fp,indexf->hashoffsets[i]);
+	fclose(fp);
 	
 	SwishClose(sw1);
 	SwishClose(sw2);
@@ -381,7 +384,7 @@ ENTRY *ip;
 struct metaMergeEntry* tmp=NULL;
 long nextposmetaname;
 long nextword,worddata;
-FILE *fp=indexf->fp;
+FILE *fp = (FILE *) indexf->DB;
 	
 	j=tfrequency=filenum=structure=metaID=frequency=0;
 	position=NULL;

@@ -298,7 +298,7 @@ RESULT *addsortresult(sw, sphead, r)
 /* Routine to load from the index file the presorted data */
 int    *readSortedData(IndexFILE * indexf, struct metaEntry *m)
 {
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
     int     j,
             value;
     int    *data = emalloc(indexf->filearray_cursize * sizeof(int));
@@ -507,7 +507,7 @@ void    sortFileProperties(IndexFILE * indexf)
             val;
     int    *sortFilenums;
     struct metaEntry *m;
-    FILE   *fp = indexf->fp;
+    FILE   *fp = (FILE *) indexf->DB;
 
     /* Array of filenums to store the sorted docs (referenced by its filenum) */
     sortFilenums = emalloc(indexf->fileoffsetarray_cursize * sizeof(int));

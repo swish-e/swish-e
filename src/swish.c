@@ -101,6 +101,7 @@ char keychar=0;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 double search_starttime, run_starttime, endtime;
 struct stat stat_buf;
+FILE *fp;
 
     run_starttime = TimeHiRes();
 
@@ -427,10 +428,11 @@ struct stat stat_buf;
 		
 		while (sw->indexlist != NULL) {
 			
-			if ((sw->indexlist->fp = openIndexFILEForRead(sw->indexlist->line)) == NULL) {
+			if ((fp = openIndexFILEForRead(sw->indexlist->line)) == NULL) {
 				progerr("Couldn't open the index file \"%s\".", sw->indexlist->line);
 			}
-			if (!isokindexheader(sw->indexlist->fp)) {
+			sw->indexlist->DB = (void *) fp;
+			if (!isokindexheader(fp)) {
 				progerr("File \"%s\" has an unknown format.", sw->indexlist->line);
 			}
 			
@@ -488,7 +490,8 @@ struct stat stat_buf;
 			/* Create an empty File */
 		CreateEmptyFile(sw,sw->indexlist->line);
 			/* Open it for Read/Write */
-		sw->indexlist->fp = openIndexFILEForReadAndWrite(sw->indexlist->line);
+		fp = openIndexFILEForReadAndWrite(sw->indexlist->line);
+		sw->indexlist->DB = (void *) fp;
 
 		if (sw->verbose > 1)
 			putchar('\n');
@@ -522,16 +525,16 @@ struct stat stat_buf;
 		if (sw->verbose)
 			printf("Writing header ...\n");
 		fflush(stdout);
-		printheader(&sw->indexlist->header,sw->indexlist->fp, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
+		printheader(&sw->indexlist->header,fp, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, 0);
 		fflush(stdout);
 		
-		offsetstart = ftell(sw->indexlist->fp);
+		offsetstart = ftell(fp);
 		for (i = 0; i < MAXCHARS; i++)
-			printlong(sw->indexlist->fp,(long)0);
+			printlong(fp,(long)0);
 		
-		hashstart = ftell(sw->indexlist->fp);
+		hashstart = ftell(fp);
 		for (i = 0; i < SEARCHHASHSIZE; i++)
-			printlong(sw->indexlist->fp,(long)0);
+			printlong(fp,(long)0);
 
 		if (sw->verbose)
 			printf("Writing index entries ...\n");
@@ -573,15 +576,15 @@ struct stat stat_buf;
 
 		if(sw->verbose)
 			printf("Writing offsets (2)...\n");
-		fseek(sw->indexlist->fp, offsetstart, 0);
+		fseek(fp, offsetstart, 0);
 		for (i = 0; i < MAXCHARS; i++)
-			printlong(sw->indexlist->fp,sw->indexlist->offsets[i]);
+			printlong(fp,sw->indexlist->offsets[i]);
 
-		fseek(sw->indexlist->fp, hashstart, 0);
+		fseek(fp, hashstart, 0);
 		for (i = 0; i < SEARCHHASHSIZE; i++)
-			printlong(sw->indexlist->fp,sw->indexlist->hashoffsets[i]);
-		fclose(sw->indexlist->fp);
-		sw->indexlist->fp=NULL;
+			printlong(fp,sw->indexlist->hashoffsets[i]);
+		fclose(fp);
+		sw->indexlist->DB=NULL;
 	
 		if (sw->verbose) 
 		{
