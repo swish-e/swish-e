@@ -233,6 +233,7 @@ void initModule_Index (SWISH  *sw)
 void freeModule_Index (SWISH *sw)
 {
   struct MOD_Index *idx = sw->Index;
+  int i;
 
 /* we need to call the real free here */
 #undef free
@@ -275,6 +276,15 @@ void freeModule_Index (SWISH *sw)
     /* free word buffers used by indexstring */
   efree(idx->word);
   efree(idx->swishword);
+
+  /* free IgnoreLimit stuff */
+  if(idx->IgnoreLimitPositionsArray)
+  {
+	  for(i=0; i<sw->indexlist->header.totalfiles; i++)
+          if(idx->IgnoreLimitPositionsArray[i])
+              free(idx->IgnoreLimitPositionsArray[i]);
+      efree(idx->IgnoreLimitPositionsArray);
+  }
 
   /* should be free by now!!! But just in case... */
   if (idx->entryZone)
@@ -1166,7 +1176,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         return;
 
     if (sw->verbose)
-        printf("Warning: This proccess can take some time.  For a faster one, use IgnoreWords instead of IgnoreLimit\n");
+        printf("Proccesing IgnoreLimit option\n");
 
     if (!estopmsz)
     {
@@ -1315,6 +1325,107 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
     idx->nIgnoreLimitWords = estopsz;
     idx->IgnoreLimitPositionsArray = filepos;
+}
+
+
+void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp)
+{
+    int     frequency,
+            metaID,
+            structure,
+            tmpval,
+            r_filenum, 
+            w_filenum,
+           *positions;
+    int     i,j,pos;
+    unsigned long    r_nextposmeta;
+    unsigned char   *w_nextposmeta;
+    int     local_positions[MAX_STACK_POSITIONS];
+    unsigned char r_flag, *w_flag;
+    unsigned char *p, *q;
+
+    p = worddata;
+
+    tmpval = uncompress2(&p);     /* tfrequency */
+    metaID = uncompress2(&p);     /* metaID */
+    r_nextposmeta =  UNPACKLONG2(p); 
+	w_nextposmeta = p;
+    p += sizeof(long);
+
+    q = p;
+    r_filenum = w_filenum = 0;
+    while(1)
+    {                   /* Read on all items */
+        uncompress_location_values(&p,&r_flag,&tmpval,&structure,&frequency);
+        r_filenum += tmpval;
+       
+        if(frequency <= MAX_STACK_POSITIONS)
+            positions = local_positions;
+        else
+            positions = (int *) emalloc(frequency * sizeof(int));
+
+        uncompress_location_positions(&p,r_flag,frequency,positions);
+
+                /* Store the filenum incrementally to save space */
+        compress_location_values(&q,&w_flag,r_filenum - w_filenum,structure,frequency, positions[0]);
+
+        w_filenum = r_filenum;
+
+        if(n_files && ilp && ilp[r_filenum - 1])
+        {
+            for(i = 0; i < ilp[r_filenum - 1]->n; i++)
+            {
+                tmpval = ilp[r_filenum - 1]->pos[2 * i];
+                if( tmpval == metaID)
+                {
+                    pos = ilp[r_filenum - 1]->pos[2 * i + 1];
+                    if(pos > positions[frequency - 1])
+                        break;  /* Nothing to do */
+                    for(j = frequency - 1; j >=0 ; j--)
+                    {
+                        if(positions[j] > pos)
+                        {
+                            positions[j]--;
+                        }
+                        else
+                            break;
+                    }
+                } else if(tmpval > metaID)
+                    break;
+            }
+        }
+        compress_location_positions(&q,w_flag,frequency,positions);
+
+		if(positions != local_positions)
+            efree(positions);
+
+        if(!p[0])       /* End of chunk mark */
+        {
+            r_filenum = 0;  /* reset filenum */
+            p++;
+        }
+        if ((p - worddata) == *sz_worddata)
+             break;   /* End of worddata */
+
+        if ((unsigned long)(p - worddata) == r_nextposmeta)
+        {
+            if(q != p)
+                PACKLONG2(q - worddata, w_nextposmeta);
+
+            metaID = uncompress2(&p);
+			q = compress3(metaID,q);
+
+            r_nextposmeta = UNPACKLONG2(p); 
+            p += sizeof(long);
+
+			w_nextposmeta = q;
+			q += sizeof(long);
+
+            w_filenum = 0;
+        }
+    }
+    *sz_worddata = q - worddata;
+    PACKLONG2(*sz_worddata, w_nextposmeta);
 }
 
 
@@ -1551,6 +1662,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     /* If we are swaping locs to file, reset memory zone */
     if(sw->Index->swap_locdata)
         Mem_ZoneReset(sw->Index->totalLocZone);
+
+    /* Proccess IgnoreLimit option */
+    getPositionsFromIgnoreLimitWords(sw);
 
     n = lastPercent = 0;
     for (i = 0; i < totalwords; i++)
@@ -2319,7 +2433,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
                 /* Add to the linked list keeping the data sorted by metaname, filenum */
                 /* Allocate memory space */
                 coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
-        /* Copy content to it */
+               /* Copy content to it */
                 memcpy(coalesced_buffer,buffer,q-buffer);
                 /* Add to the linked list */
                 add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
