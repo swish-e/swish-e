@@ -516,13 +516,13 @@ FILE *fp = (FILE *) indexf->DB;
 unsigned char **dict;
 	fseek(fp,0,0);
 	fseek(fp,indexf->offsets[DEFLATEDICTPOS],0);
-        uncompress1(n,fp);
+        n = uncompress1(fp);
 	if(n)
 	{
 		dict=(unsigned char **)emalloc(n*sizeof(unsigned char *));
 		for(i=0;i<n;i++)
 		{
-			uncompress1(len,fp);
+			len = uncompress1(fp);
 			if(len>0xFF)
 				progerr("Internal error in readdeflatepatterns");
 			dict[i]=emalloc(len+1);

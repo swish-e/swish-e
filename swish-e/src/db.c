@@ -190,12 +190,12 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
         /* Write tfrequency */
-    compress3(ep->tfrequency,q);
+    q = compress3(ep->tfrequency,q);
         /* Write location list */
     for(i=0;i<ep->u1.max_locations;i++) 
     {
         p = compressed_data = (unsigned char *)ep->locationarray[i];
-        uncompress2(index,p);
+        index = uncompress2(&p);
         metaID=indexf->header.locationlookup->all_entries[index-1]->val[0];
         if(curmetaID!=metaID) 
         {
@@ -228,7 +228,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             }
                 /* store metaID in buffer */
             curmetaID=metaID;
-            compress3(curmetaID,q);
+            q = compress3(curmetaID,q);
                 /* preserve position for offset to next
                 ** metaname. We do not know its size
                 ** so store it as a packed long */ 
@@ -240,7 +240,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             q+=sizeof(long);
         }
             /* Write filenum,structure and position information to index file */
-        uncompress2(filenum,p);
+        filenum = uncompress2(&p);
         index_structfreq=indexf->header.locationlookup->all_entries[index-1]->val[1];
         frequency=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[0];
                 /* Check for enough memory */
@@ -263,12 +263,12 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
             q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
         }
-        compress3(filenum,q);
-        compress3(index_structfreq,q);
+        q = compress3(filenum,q);
+        q = compress3(index_structfreq,q);
         for(;frequency;frequency--)
         {
-            uncompress2(position,p);
-            compress3(position,q);
+            position = uncompress2(&p);
+            q = compress3(position,q);
         }
         efree(compressed_data);
     }
@@ -316,17 +316,17 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
 
     s = buffer = (unsigned char *) emalloc(sz_buffer);
 
-    compress3(header->metaCounter,s);   /* store the number of metanames */
+    s = compress3(header->metaCounter,s);   /* store the number of metanames */
 
     for (i = 0; i < header->metaCounter; i++)
     {
         entry = header->metaEntryArray[i];
         len = strlen(entry->metaName);
-        compress3(len, s);
+        s = compress3(len, s);
         memcpy(s,entry->metaName,len);
         s += len;
-        compress3(entry->metaID, s);
-        compress3(entry->metaType, s);
+        s = compress3(entry->metaID, s);
+        s = compress3(entry->metaType, s);
     }
     DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
     efree(buffer);
@@ -365,7 +365,7 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
 
         s = buffer = (char *)emalloc(sz_buffer);
 
-        compress3(num_words,s);
+        s = compress3(num_words,s);
 
         for (hashval = 0; hashval < HASHSIZE; hashval++)
         {
@@ -373,7 +373,7 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
             while (sp != NULL)
             {
                 len = strlen(sp->line);
-                compress3(len,s);
+                s = compress3(len,s);
                 memcpy(s,sp->line,len);
                 s +=len;
                 sp = sp->next;
@@ -416,24 +416,24 @@ void    write_locationlookuptables_to_header(SWISH *sw, int id, INDEXDATAHEADER 
 
     n = header->structurelookup->n_entries;
 
-    compress3(n, s);
+    s = compress3(n, s);
     for (i = 0; i < n; i++)
     {
         tmp = header->structurelookup->all_entries[i]->val[0] + 1;
-        compress3(tmp, s);
+        s = compress3(tmp, s);
     }
     /* Let us continue with structure_lookup,frequency lookuptable */
 
     n = header->structfreqlookup->n_entries;
-    compress3(n, s);
+    s = compress3(n, s);
     for (i = 0; i < n; i++)
     {
         /* frequency */
         tmp = header->structfreqlookup->all_entries[i]->val[0] + 1;
-        compress3(tmp, s);
+        s = compress3(tmp, s);
         /* structure lookup value */
         tmp = header->structfreqlookup->all_entries[i]->val[1] + 1;
-        compress3(tmp, s);
+        s = compress3(tmp, s);
     }
 
     DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
@@ -465,12 +465,12 @@ void    write_pathlookuptable_to_header(SWISH *sw, int id, INDEXDATAHEADER *head
     s = buffer = emalloc(sz_buffer);
 
     n = header->pathlookup->n_entries;
-    compress3(n, s);
+    s = compress3(n, s);
     for (i = 0; i < n; i++)
     {
         tmp = header->pathlookup->all_entries[i]->val;
         len = strlen(tmp) + 1;
-        compress3(len, s);
+        s = compress3(len, s);
         memcpy(s,tmp,len); s += len;
     }
 
@@ -489,11 +489,11 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 	
     s = buffer = (char *) emalloc((table_size + 1) * 5);
 
-    compress3(table_size,s);   /* Put the number of elements */
+    s = compress3(table_size,s);   /* Put the number of elements */
     for (i = 0; i < table_size; i++)
     {
         tmp = table[i] + 1;
-        compress3(tmp, s); /* Put all the elements */
+        s = compress3(tmp, s); /* Put all the elements */
     }
 
     DB_WriteHeaderData(sw, id, buffer, s-buffer, DB);
@@ -662,21 +662,21 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
             i,
             metaID;
     char   *word;
-    char   *s = buffer;
+    unsigned char   *s = (unsigned char *)buffer;
 
 
-    uncompress2(num_metanames, s);
+    num_metanames = uncompress2(&s);
 
     for (i = 0; i < num_metanames; i++)
     {
-        uncompress2(len,s);
+        len = uncompress2(&s);
         word = emalloc(len +1);
         memcpy(word,s,len); s += len;
         word[len] = '\0';
         /* Read metaID */
-        uncompress2(metaID, s);
+        metaID = uncompress2(&s);
         /* metaType was saved as metaType+1 */
-        uncompress2(metaType, s);
+        metaType = uncompress2(&s);
 
         /* add the meta tag */
         addMetaEntry(header, word, metaType, metaID, NULL, &dummy);
@@ -695,13 +695,13 @@ void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
     int     i;
     char   *word = NULL;
 
-    char   *s = buffer;
+    unsigned char   *s = (unsigned char *)buffer;
 
-    uncompress2(num_words, s);
+    num_words = uncompress2(&s);
 	
     for (i=0; i < num_words ; i++)   
     {
-        uncompress2(len, s);
+        len = uncompress2(&s);
         word = emalloc(len+1);
         memcpy(word,s,len); s += len;
         word[len] = '\0';
@@ -720,12 +720,12 @@ void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
     int     i;
     char   *word = NULL;
 
-    char   *s = buffer;
+    unsigned char   *s = (unsigned char *)buffer;
 
-    uncompress2(num_words, s);
+    num_words = uncompress2(&s);
     for (i=0; i < num_words ; i++)
     {
-        uncompress2(len, s);
+        len = uncompress2(&s);
         word = emalloc(len+1);
 	memcpy(word,s,len); s += len;
         word[len] = '\0';
@@ -744,13 +744,13 @@ void    parse_locationlookuptables_from_buffer(INDEXDATAHEADER *header, char *bu
             n,
             tmp;
 
-    char   *s =buffer;
+    unsigned char   *s = (unsigned char *) buffer;
 
-    uncompress2(n, s);
+    n = uncompress2(&s);
     if (!n)                     /* No words in file !!! */
     {
         header->structurelookup = NULL;
-        uncompress2(n, s);     /* just to maintain file pointer */
+        n = uncompress2(&s);     /* just to maintain file pointer */
         header->structfreqlookup = NULL;
         return;
     }
@@ -761,10 +761,10 @@ void    parse_locationlookuptables_from_buffer(INDEXDATAHEADER *header, char *bu
     {
         header->structurelookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st));
 
-        uncompress2(tmp, s);
+        tmp = uncompress2(&s);
         header->structurelookup->all_entries[i]->val[0] = tmp - 1;
     }
-    uncompress2(n, s);
+    n = uncompress2(&s);
     header->structfreqlookup = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st) + sizeof(struct int_st *) * (n - 1));
 
     header->structfreqlookup->n_entries = n;
@@ -772,9 +772,9 @@ void    parse_locationlookuptables_from_buffer(INDEXDATAHEADER *header, char *bu
     {
         header->structfreqlookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st) + sizeof(int));
 
-        uncompress2(tmp, s);
+        tmp = uncompress2(&s);
         header->structfreqlookup->all_entries[i]->val[0] = tmp - 1;
-        uncompress2(tmp, s);
+        tmp = uncompress2(&s);
         header->structfreqlookup->all_entries[i]->val[1] = tmp - 1;
     }
 }
@@ -787,9 +787,9 @@ void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer)
             len;
     char   *tmp;
 
-    char   *s = buffer;
+    unsigned char   *s = (unsigned char *) buffer;
 
-    uncompress2(n, s);
+    n = uncompress2(&s);
     header->pathlookup = (struct char_lookup_st *) emalloc(sizeof(struct char_lookup_st) + sizeof(struct char_st *) * (n - 1));
 
     header->pathlookup->n_entries = n;
@@ -797,7 +797,7 @@ void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer)
     {
         header->pathlookup->all_entries[i] = (struct char_st *) emalloc(sizeof(struct char_st));
 
-        uncompress2(len, s);
+        len = uncompress2(&s);
         tmp = emalloc(len);
         memcpy(tmp, s, len); s += len;
         header->pathlookup->all_entries[i]->val = tmp;
@@ -808,12 +808,12 @@ void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer)
 void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
 {
     int     tmp,i;
-    char    *s = buffer;
+    unsigned char    *s = (unsigned char *)buffer;
 
-    uncompress2(tmp,s);   /* Jump the number of elements */
+    tmp = uncompress2(&s);   /* Jump the number of elements */
     for (i = 0; i < table_size; i++)
     {
-        uncompress2(tmp, s); /* Gut all the elements */
+        tmp = uncompress2(&s); /* Gut all the elements */
         table[i] = tmp - 1;
     }
 }
