@@ -2840,7 +2840,9 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     if(idx->fp_loc_write[idx_swap_file])
     {
         /* Write a 0 to mark the end of locations */
-        idx->swap_putc(0,idx->fp_loc_write[idx_swap_file]);
+        if ( idx->swap_putc(0,idx->fp_loc_write[idx_swap_file]) == EOF )
+            progerrno("Failed to write locaton mark to index: ");
+
         idx->swap_close(idx->fp_loc_write[idx_swap_file]);
         idx->fp_loc_write[idx_swap_file] = NULL;
     }
