@@ -299,6 +299,7 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
 
         if ((unsigned long)(s - worddata) == nextposmetaname)
         {
+            filenum = 0;
             metaID = uncompress2(&s);
             if (metaID)
             {
