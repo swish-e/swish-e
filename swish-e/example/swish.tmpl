@@ -11,7 +11,20 @@
 
             <form method="post" action="<TMPL_VAR MY_URL>" enctype="application/x-www-form-urlencoded" class="form">
                 <input type="text" name="query"  size=32 maxlength=200 />
-                <input type="submit" name="Search" value="Search" /><br>
+                <input type="submit" name="submit" value="Search!" /><br>
+
+                <TMPL_IF METANAMES>
+                    Limit search to:
+                    <TMPL_LOOP METANAMES>
+                        <input type="radio" name="metaname" value="<TMPL_VAR METANAME>"><TMPL_VAR METANAME>
+                    </TMPL_LOOP>
+                    <TMPL_UNLESS ALL_META>
+                        <input type="radio" name="metaname" value=0>Do not limit
+                    </TMPL_UNLESS>
+                    <br>
+                </TMPL_IF>
+
+
 
                 <TMPL_IF SORTS>
                     Sort by:
