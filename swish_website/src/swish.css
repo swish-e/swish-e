@@ -100,14 +100,6 @@ dd {
 }
 
 
-/* 
-.smallCaps {
-  font-size: 117%;
-  font-variant: small-caps;
-}
-
-*/
-
 /* #### search form #### */
 
 .srchform
@@ -256,9 +248,10 @@ input.button:hover
 }
 
 
-[id="side-bar"] {
-  position: fixed !important;  /* Makes the side menu scroll with the page. Doesn't work in MSIE */
-}
+/* floating turned off for documentation pages */
+/* NOTE this doesn't work in MSIE */
+.floating { position: fixed !important; }
+
 
 #side-bar a {
   text-decoration: none;
@@ -304,69 +297,42 @@ input.button:hover
   
 }
 
+/* documentation submenu */
 
-/* ### no float side-bar  #### */
-/* if we want the menu not to float, use 'nofloat-bar' ID value
-on the enclosing <ul> tagset. */
+ul.submenu {
 
-#nofloat-bar {
-  color: rgb(204,204,204);
-  background-color: transparent;
-  list-style-type: square;
-  list-style-position: inside;
-  width: 12em;
+  font-size: 80%;
+  padding: 0 0 0 0;
   margin: 0;
-  padding: 1ex 0;
-  border: 1px solid rgb(204,204,204);
-  position: absolute;
-  left: 1.5ex;
-  top: 12em;
-  /* top: 9em; */
+  list-style-type: circle;
 }
 
-#nofloat-bar a {
+li.submenu {
+
+  font-size: 80%;
+  padding: 0 0 0 0;
+  margin: 0;
+}
+
+/* TOC at top of each POD page */
+ul.toc li {
+  padding: 0 0 0 0;
+  line-height: 0;
+}
+
+/* must be a better way to do leading than line-height
+(thus necessitating turning it off and on) */
+
+ul.toc div, p, blockquote { line-height: 1; }
+
+ul.toc li a {
   text-decoration: none;
 }
 
-#nofloat-bar:hover {
-  color: rgb(117,144,174);
-  background-color: transparent;
-  border-color: rgb(117,144,174);
-}
-
-#nofloat-bar li {
-  margin: 0;
-  /* padding: 0.75ex 0 1ex 1.75ex; */
-  /* esp with documentation sublinks, this gets too long */
-  padding: 0 0 0 1ex;
-  
-}
-
-#nofloat-bar li:hover {
-  color: rgb(61,92,122);
-  background-color: transparent;
-}
-
-
-#nofloat-bar li a:hover {
+ul.toc li a:hover {
   text-decoration: underline;
 }
 
-/* turn 'off' link for current page */
-
-#nofloat-bar li a.thisfile {
-
-  text-decoration: none;
-  color: black;
-  
-}
-
-#nofloat-bar li a.thisfile:hover {
-
-  text-decoration: none;
-  color: black;
-  
-}
 
 /* ##### Documentation #### */
 /* the Doc defs were originally for a new 'make html'
@@ -385,21 +351,6 @@ div.navbar {
 
  text-align: center;
  
-}
-
-ul.submenu {
-
-  font-size: 80%;
-  padding: 0 0 0 0;
-  margin: 0;
-  list-style-type: circle;
-}
-
-li.submenu {
-
-  font-size: 80%;
-  padding: 0 0 0 0;
-  margin: 0;
 }
 
 

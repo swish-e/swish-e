@@ -3,7 +3,11 @@
 [% PROCESS page/header.html %]
 [% PROCESS page/searchform.html %]
 
-<div id="side-bar">
+[% IF page.podfile %]
+    <div id="side-bar">
+[% ELSE %]
+    <div id="side-bar" class="floating">
+[% END %]
     [% INCLUDE menu/ul_nest  menu = site.map %]
 </div>
 
