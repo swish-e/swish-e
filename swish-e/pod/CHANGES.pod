@@ -10,6 +10,16 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed bug when using old parsers with zero length input
+
+Thomas Angst reported swish consuming memory when using -S prog
+to process large number of empty documents.
+
+When -S prog generated a zero length file the old parsers (e.g. TXT) would
+attempt to read in *all* content from the -S prog program into a buffer.
+The old parser incorrectly assumed it was reading from a filter and tried to
+read to eof().
+
 =item Change to default ParserWarnLevel
 
 The default value for ParserWarnLevel was changed form zero to two.  This was to report
