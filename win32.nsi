@@ -48,6 +48,7 @@ File "C:\Program Files\Common Files\Microsoft Shared\VSA\7.0\VsaEnv\msvcr70.dll"
 File src\swishspider
 File /r filter-bin
 File /r prog-bin
+File /r filters
 
 ; Rename a bunch of text files so Windows has a clue
 Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"
@@ -60,6 +61,9 @@ SetOutPath "$SMPROGRAMS\SWISH-E\"
 CreateShortcut "$SMPROGRAMS\SWISH-E\Browse Files.lnk" "$INSTDIR\"
 WriteINIStr "$SMPROGRAMS\SWISH-E\Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
 CreateShortcut "$SMPROGRAMS\SWISH-E\License.lnk" "$INSTDIR\COPYING.txt"
+SetOutPath "$SMPROGRAMS\SWISH-E\PERL_Resources"
+WriteINIStr "$SMPROGRAMS\SWISH-E\PERL_Resources\Install_ActivePerl.url" "InternetShortcut" "URL" "http://www.activestate.com/Products/Download/Download.plex?id=ActivePerl"
+WriteINIStr "$SMPROGRAMS\SWISH-E\PERL_Resources\CPAN_PERL_Modules.url" "InternetShortcut" "URL" "http://search.cpan.org/"
 SectionEnd ; end of default section
 
 Section "Documentation"
