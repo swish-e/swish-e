@@ -1964,7 +1964,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             write_word(sw, epi, indexf);
         }
         else
-            epi->u1.wordID = -1;  /* flag as a stop word */
+            epi->u1.wordID = (sw_off_t)-1;  /* flag as a stop word */
     }    
 
     if (sw->verbose)
@@ -1997,7 +1997,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             while (epi)
             {
                 /* If it is not a stopword write it */
-                if (epi->u1.wordID > 0)  
+                if (epi->u1.wordID > (sw_off_t)0)  
                     DB_WriteWordHash(sw, epi->word,epi->u1.wordID,indexf->DB);
                 epi = epi->next;
             }
@@ -2046,7 +2046,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                         lastPercent = percent;
                     }
                 }
-                if (epi->u1.wordID > 0)   /* Not a stopword */
+                if (epi->u1.wordID > (sw_off_t)0)   /* Not a stopword */
                 {
                     build_worddata(sw, epi);
                     write_worddata(sw, epi, indexf);

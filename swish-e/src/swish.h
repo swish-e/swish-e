@@ -425,7 +425,7 @@ typedef struct ENTRY
     /* this union is just for saving memory */
     struct
     {
-        long    wordID;
+        sw_off_t    wordID;
         int     last_filenum;
     }
     u1;
