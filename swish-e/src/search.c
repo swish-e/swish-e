@@ -130,6 +130,8 @@ $Id$
 #include "db.h"
 #include "swish_words.h"
 
+#include "proplimit.h"
+
 
 
 /* 
@@ -397,6 +399,10 @@ int     search_2(SWISH * sw, char *words, int structure)
     if ((rc = initSortResultProperties(sw)))
         return rc;
 
+    /* This returns false when no files found within the limit */
+    if ( !Prepare_PropLookup( sw ) )
+        return 0;
+
     while (indexlist != NULL)
     {
         tmpwords = estrdup(words); /* copy of the string  (2001-03-13 rasc) */
@@ -523,9 +529,9 @@ int     search_2(SWISH * sw, char *words, int structure)
         searchwordlist = NULL;
     }
 
-/* 
-04/00 Jose Ruiz - Sort results by rank or by properties
-*/
+    /* 
+    04/00 Jose Ruiz - Sort results by rank or by properties
+    */
     totalResults = sortresults(sw, structure);
 
     if (!totalResults && sw->commonerror)
@@ -1505,6 +1511,10 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int frequency, int *position, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
+
+
+    if ( LimitByProperty( indexf, filenum ) )
+        return rp;
 
     newnode = (RESULT *) emalloc(sizeof(RESULT));
     newnode->filenum = filenum;

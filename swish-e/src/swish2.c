@@ -44,6 +44,8 @@
 #include "swish_words.h"
 #include "extprog.h"
 
+#include "proplimit.h"
+
 /* 
   -- init swish structure 
 */
@@ -67,6 +69,7 @@ SWISH *SwishNew()
     initModule_Swish_Words (sw);
     initModule_Prog (sw);
 
+initModule_PropLimit(sw);
 
     sw->TotalWords = 0;
     sw->TotalFiles = 0;
@@ -149,6 +152,7 @@ void SwishClose(SWISH *sw)
         freeModule_Swish_Words (sw);
         freeModule_Prog (sw);
 
+freeModule_PropLimit(sw);
                         /* Free file structures */
         freefileoffsets(sw);
             /* Free MetaNames and close files */

@@ -55,8 +55,7 @@ void initModule_FS (SWISH  *sw)
     fs = (struct MOD_FS *) emalloc(sizeof(struct MOD_FS));
     sw->FS = fs;
             /* File system parameters */
-    fs->pathconlist=fs->dirconlist=fs->fileconlist=fs->titconlist=fs->fileislist
-=NULL;
+    fs->pathconlist=fs->dirconlist=fs->fileconlist=fs->titconlist=fs->fileislist=NULL;
     fs->followsymlinks = 0;
 
 }
