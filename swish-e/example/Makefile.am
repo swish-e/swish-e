@@ -24,7 +24,7 @@ swish.cgi: swish.cgi.in
 	@rm -f swish.cgi
 	@sed \
 		-e 's,@@perlmoduledir@@,$(libexecdir)/perl,' \
-		-e 's,@@swishbindir@@,$(bindir),' \
+		-e 's,@@swishbinary@@,$(bindir)/swish-e$(EXEEXT),' \
 		-e 's,@@perlbinary@@,$(PERL),' \
 		-e 's,@@pkgdatadir@@,$(pkgdatadir),' \
 			 $(srcdir)/swish.cgi.in > swish.cgi
