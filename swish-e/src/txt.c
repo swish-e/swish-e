@@ -1,5 +1,5 @@
 /*
-$ID $
+$ID: $
 **
 **
 ** 2001-03-17  rasc  save real_filename as title (instead full real_path)
