@@ -4,13 +4,13 @@
 
 typedef struct WORDDATA_Reusable_Page
 {
-    unsigned long      page_number;
+    sw_off_t           page_number;
     int                page_size;
 } WORDDATA_Reusable_Page;
 
 typedef struct WORDDATA_Page
 {
-    unsigned long      page_number;
+    sw_off_t           page_number;
     int                used_blocks;
     int                n;
     int                modified;

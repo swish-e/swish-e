@@ -928,10 +928,13 @@ int     DB_InitWriteWords_Native(void *db)
 
 int     cmp_wordhashdata(const void *s1, const void *s2)
 {
-    int    *i = (int *) s1;
-    int    *j = (int *) s2;
+    sw_off_t    *i = (sw_off_t *) s1;
+    sw_off_t    *j = (sw_off_t *) s2;
+    sw_off_t     d = (*i - *j);
 
-    return (*i - *j);
+    if(d == (sw_off_t)0) return 0;
+    else if(d > (sw_off_t)0) return 1;
+    else return -1;
 }
 
 int     DB_EndWriteWords_Native(void *db)
@@ -978,7 +981,7 @@ int     DB_EndWriteWords_Native(void *db)
     if (DB->num_words != DB->worddata_counter)
         progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter: ");
 
-    /* Sort wordhashdata to be writte to allow sequential writes */
+    /* Sort wordhashdata to be written to allow sequential writes */
     swish_qsort(DB->wordhashdata, DB->num_words, 3 * sizeof(sw_off_t), cmp_wordhashdata);
 
     if (WRITE_WORDS_RAMDISK)
@@ -1015,21 +1018,21 @@ int     DB_EndWriteWords_Native(void *db)
     if (WRITE_WORDS_RAMDISK)
     {
         unsigned char buffer[4096];
-        long    ramdisk_size;
+        sw_off_t    ramdisk_size;
         long    read = 0;
 
-        ramdisk_seek((FILE *) DB->rd, 0, SEEK_END);
+        ramdisk_seek((FILE *) DB->rd, (sw_off_t)0, SEEK_END);
         ramdisk_size = ramdisk_tell((FILE *) DB->rd);
         /* Write ramdisk to fp end free it */
         sw_fseek((FILE *) DB->fp, DB->offsets[WORDPOS], SEEK_SET);
-        ramdisk_seek((FILE *) DB->rd, 0, SEEK_SET);
+        ramdisk_seek((FILE *) DB->rd, (sw_off_t)0, SEEK_SET);
         while (ramdisk_size)
         {
             read = ramdisk_read(buffer, 4096, 1, (FILE *) DB->rd);
             if ( sw_fwrite(buffer, read, 1, DB->fp) != 1 )
                 progerrno("Error while flushing ramdisk to disk:");
 
-            ramdisk_size -= read;
+            ramdisk_size -= (sw_off_t)read;
         }
         ramdisk_close((FILE *) DB->rd);
     }
@@ -1124,13 +1127,13 @@ long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int da
         /* If inside a ramdisk we must preserve its space */
         if (WRITE_WORDS_RAMDISK)
         {
-            long    ramdisk_size;
+            sw_off_t    ramdisk_size;
 
-            ramdisk_seek((FILE *) DB->rd, 0, SEEK_END);
+            ramdisk_seek((FILE *) DB->rd, (sw_off_t)0, SEEK_END);
             ramdisk_size = ramdisk_tell((FILE *) DB->rd);
             /* Preserve ramdisk size in DB file  */
             /* it will be written later */
-            sw_fseek((FILE *) DB->fp, (sw_off_t)ramdisk_size, SEEK_END);
+            sw_fseek((FILE *) DB->fp, ramdisk_size, SEEK_END);
         }
     }
     /* Search for word's ID */
@@ -1962,8 +1965,8 @@ void    printfileoffset(FILE * fp, sw_off_t num, size_t(*f_write) (const void *,
     size_t written;
 
     num = PACKFILEOFFSET(num);        /* Make the number portable */
-    if ( (written = f_write(&num, sizeof(sw_off_t), 1, fp)) != 1 )
-        progerrno("Error writing %d of %d bytes: ", sizeof(sw_off_t), written );
+    if ( (written = f_write(&num, sizeof(num), 1, fp)) != 1 )
+        progerrno("Error writing %d of %d bytes: ", sizeof(num), written );
 }
 
 /* 
@@ -2175,7 +2178,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 #ifdef USE_BTREE
     /* now calculate index */
-    seek_pos = (sw_off_t((swish_off_t)(fi->filenum - 1) * (swish_off_t)count));
+    seek_pos = (sw_off_t)((sw_off_t)(fi->filenum - 1) * (sw_off_t)count);
 #endif
 
 #ifdef DEBUG_PROP

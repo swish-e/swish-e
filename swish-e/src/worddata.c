@@ -43,7 +43,7 @@ int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
 {
     WORDDATA_SetBlocksInUse(pg,pg->used_blocks);
     WORDDATA_SetNumRecords(pg,pg->n);
-    sw_fseek(fp,(sw_off_t)((sw_off_t)pg->page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
+    sw_fseek(fp,(sw_off_t)(pg->page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
     if ( sw_fwrite(pg->data,WORDDATA_PageSize,1,fp) != 1 )
         progerrno("Failed to write page to disk: "); 
     return 1;
@@ -51,7 +51,7 @@ int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
 
 int WORDDATA_WritePage(WORDDATA *b, WORDDATA_Page *pg)
 {
-int hash = pg->page_number % WORDDATA_CACHE_SIZE;
+int hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
     pg->modified =1;
     if((tmp = b->cache[hash]))
@@ -117,11 +117,11 @@ WORDDATA_Page *tmp,*next;
     return 0;
 }
 
-WORDDATA_Page *WORDDATA_ReadPageFromDisk(FILE *fp, unsigned long page_number)
+WORDDATA_Page *WORDDATA_ReadPageFromDisk(FILE *fp, sw_off_t page_number)
 {
 WORDDATA_Page *pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + WORDDATA_PageSize);
 
-    sw_fseek(fp,(sw_off_t)((sw_off_t)page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
+    sw_fseek(fp,(sw_off_t)(page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
     sw_fread(pg->data,WORDDATA_PageSize, 1, fp);
 
     WORDDATA_GetBlocksInUse(pg,pg->used_blocks);
@@ -132,9 +132,9 @@ WORDDATA_Page *pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + WORDDATA_Pa
     return pg;
 }
 
-WORDDATA_Page *WORDDATA_ReadPage(WORDDATA *b, unsigned long page_number)
+WORDDATA_Page *WORDDATA_ReadPage(WORDDATA *b, sw_off_t page_number)
 {
-int hash = page_number % WORDDATA_CACHE_SIZE;
+int hash = (int)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
     if((tmp = b->cache[hash]))
     {
@@ -163,16 +163,16 @@ WORDDATA_Page *pg;
 sw_off_t offset;
 FILE *fp = b->fp;
 int hash;
-int size = WORDDATA_PageSize;
 int i;
-unsigned long page_number =0;
+sw_off_t page_number = (sw_off_t)0;
+unsigned char empty_buffer[WORDDATA_PageSize];
     /* Let's see if we have a previous available page */
     if(b->num_Reusable_Pages)
     {
         /* First, look for a page of the same size */
         for(i = 0; i < b->num_Reusable_Pages ; i++)
         {
-            if(size == b->Reusable_Pages[i].page_size)
+            if(WORDDATA_PageSize == b->Reusable_Pages[i].page_size)
                 break;
         }
         /* If not found, let's try with a bigger one if exits */
@@ -180,7 +180,7 @@ unsigned long page_number =0;
         {
             for(i = 0; i < b->num_Reusable_Pages ; i++)
             {
-                if(size < b->Reusable_Pages[i].page_size)
+                if(WORDDATA_PageSize < b->Reusable_Pages[i].page_size)
                     break;
             }
         }
@@ -188,7 +188,7 @@ unsigned long page_number =0;
         if(i != b->num_Reusable_Pages)
         {
             page_number = b->Reusable_Pages[i].page_number;
-            if(size == b->Reusable_Pages[i].page_size)
+            if(WORDDATA_PageSize == b->Reusable_Pages[i].page_size)
             {
                 for(++i;i<b->num_Reusable_Pages;i++)
                 {
@@ -200,8 +200,8 @@ unsigned long page_number =0;
             }
             else
             {
-                b->Reusable_Pages[i].page_number += size/WORDDATA_PageSize;
-                b->Reusable_Pages[i].page_size -= size;
+                b->Reusable_Pages[i].page_number ++;
+                b->Reusable_Pages[i].page_size -= WORDDATA_PageSize;
             }
         }
     }
@@ -221,14 +221,17 @@ unsigned long page_number =0;
         if(sw_fseek(fp,offset, SEEK_SET)!=0 || offset != sw_ftell(fp))
             progerrno("Internal error seeking: "); 
 
-        if(sw_fwrite("\0",1,size,fp)!=size || ((sw_off_t)size + offset) != sw_ftell(fp))
+        /* Reserve space in file */
+        memset(empty_buffer,'0',WORDDATA_PageSize);
+
+        if(sw_fwrite(empty_buffer,1,WORDDATA_PageSize,fp)!=WORDDATA_PageSize || ((sw_off_t)WORDDATA_PageSize + offset) != sw_ftell(fp))
             progerrno("Faild to write page data: ");
 
-        page_number = (unsigned long)((sw_off_t)offset/(sw_off_t)WORDDATA_PageSize);
+        page_number = offset / (sw_off_t)WORDDATA_PageSize;
     }
 
-    pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + size);
-    memset(pg,0,sizeof(WORDDATA_Page) + size);
+    pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + WORDDATA_PageSize);
+    memset(pg,0,sizeof(WORDDATA_Page) + WORDDATA_PageSize);
         /* Reserve space in file */
 
     pg->used_blocks = 0;
@@ -239,7 +242,7 @@ unsigned long page_number =0;
     /* add to cache */
     pg->modified = 1;
     pg->in_use = 1;
-    hash = pg->page_number % WORDDATA_CACHE_SIZE;
+    hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
     pg->next_cache = b->cache[hash];
     b->cache[hash] = pg;
     return pg;
@@ -247,7 +250,8 @@ unsigned long page_number =0;
 
 void WORDDATA_FreePage(WORDDATA *b, WORDDATA_Page *pg)
 {
-int hash = pg->page_number % WORDDATA_CACHE_SIZE;
+int hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+
 WORDDATA_Page *tmp;
 
     tmp = b->cache[hash];
@@ -269,26 +273,15 @@ WORDDATA *WORDDATA_New(FILE *fp)
 WORDDATA *b;
 int i;
     b = (WORDDATA *) emalloc(sizeof(WORDDATA));
+    memset(b,0,sizeof(WORDDATA));
     b->fp = fp;
-    b->last_put_page = 0;
-    b->last_del_page = 0;
-    b->last_get_page = 0;
-    b->page_counter = 0;
-    for(i = 0; i < WORDDATA_CACHE_SIZE; i++)
-        b->cache[i] = NULL;
-
-    b->num_Reusable_Pages = 0;
     return b;
 }
 
 
 WORDDATA *WORDDATA_Open(FILE *fp)
 {
-WORDDATA *b;
-
-    b = WORDDATA_New(fp);
-
-    return b;
+    return WORDDATA_New(fp);
 }
 
 void WORDDATA_Close(WORDDATA *bt)
@@ -306,7 +299,7 @@ unsigned long p_len = (unsigned long)PACKLONG((unsigned long)len);
 int size = WORDDATA_RoundPageSize(sizeof(p_len) + len);
 FILE *fp = b->fp;
 sw_off_t id;
-unsigned long page_number = 0;
+sw_off_t page_number = (sw_off_t)0;
 int i;
     /* Let's see if we have a previous available page */
     if(b->num_Reusable_Pages)
@@ -359,7 +352,7 @@ int i;
     }
     else
     {
-        offset = (sw_off_t)((sw_off_t)page_number * (sw_off_t)WORDDATA_PageSize);
+        offset = page_number * (sw_off_t)WORDDATA_PageSize;
     }
     /* Set new file pointer - data will be aligned */
     if(sw_fseek(fp,offset, SEEK_SET)!=0 || offset != sw_ftell(fp))
@@ -491,12 +484,12 @@ WORDDATA_Page *last_page=NULL;
     last_page->n++;
     last_page->used_blocks += required_length / WORDDATA_BlockSize;
     WORDDATA_WritePage(b,last_page);
-    return (b->lastid=(sw_off_t)((sw_off_t)((sw_off_t)last_page->page_number << (sw_off_t)8) + (sw_off_t)free_id));
+    return (b->lastid=(sw_off_t)((sw_off_t)(last_page->page_number << (sw_off_t)8) + (sw_off_t)free_id));
 }
 
-unsigned char *WORDDATA_GetBig(WORDDATA *b, unsigned long page_number, unsigned int *len)
+unsigned char *WORDDATA_GetBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
 {
-sw_off_t offset = (sw_off_t) ((sw_off_t)page_number * (sw_off_t)WORDDATA_PageSize);
+sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
 unsigned long p_len;
 unsigned char *data;
     sw_fseek(b->fp, offset, SEEK_SET);
@@ -509,7 +502,7 @@ unsigned char *data;
 
 unsigned char *WORDDATA_Get(WORDDATA *b, sw_off_t global_id, unsigned int *len)
 {
-unsigned long page_number = (unsigned long)(global_id >> (sw_off_t)8);
+sw_off_t page_number = global_id >> (sw_off_t)8;
 int id = (int)(global_id & (sw_off_t)0xff);
 int r_id=-1,r_len=-1;
 int i;
@@ -551,9 +544,9 @@ unsigned char *data;
     return data;
 }
 
-void WORDDATA_DelBig(WORDDATA *b, unsigned long page_number, unsigned int *len)
+void WORDDATA_DelBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
 {
-long offset = (long) (page_number * WORDDATA_PageSize);
+sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
 unsigned long p_len;
     sw_fseek(b->fp, offset, SEEK_SET);
     sw_fread(&p_len,1,sizeof(p_len),b->fp);
@@ -568,7 +561,7 @@ unsigned long p_len;
 
 void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, unsigned int *len)
 {
-unsigned long page_number = (unsigned long)(global_id >> (sw_off_t)8);
+sw_off_t page_number = global_id >> (sw_off_t)8;
 int id = (int)(global_id & (sw_off_t)0xff);
 int r_id=-1,r_len=-1,tmp;
 int i;
