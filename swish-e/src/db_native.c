@@ -179,7 +179,7 @@ void *DB_Create_Native (char *dbname)
         strcat( s, ".prop" );
 
         CreateEmptyFile(s);
-        if( !(DB->prop = openIndexFILEForReadAndWrite(s)) )
+        if( !(DB->prop = openIndexFILEForWrite(s)) )
             progerrno("Couldn't create the property file \"%s\".", s);
 
         efree(s);         
