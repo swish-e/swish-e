@@ -138,12 +138,18 @@ extern "C" {
 #endif
 
 
-/* $$$ THESE NEED TO BE UPGRADED WHEN THE INDEX FORMAT CHANGES */
+/* $$$ THESE NEED TO BE UPGRADED WHEN THE INDEX FORMAT CHANGES
+
+the numerical value is not important; it just needs to differ
+from the last version. This is to prevent mismatches between the swish-e
+binary and the index.
+
+checked in db_native.c (DB_CheckHeader routine) */
 
 #ifdef USE_BTREE
-#define SWISH_MAGIC 11076322L
+#define SWISH_MAGIC 29031972L
 #else
-#define SWISH_MAGIC 21076322L
+#define SWISH_MAGIC 39031972L
 #endif
 
 #define INDEXFILE "index.swish-e"
