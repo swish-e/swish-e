@@ -98,14 +98,10 @@ SWISH *SwishNew()
     sw->dontbumpendtagslist = NULL;
     sw->mtime_limit = 0;
 
-    sw->applyautomaticmetanames = 0;
-
 
     sw->truncateDocSize = 0;      /* default: no truncation of docs    */
     
 
-        /* Load Default Values */
-    SwishDefaults(sw);
         /* Make rest of lookup tables */
     makeallstringlookuptables(sw);
     return(sw);
@@ -113,14 +109,6 @@ SWISH *SwishNew()
 
 
 
-void SwishDefaults(SWISH *sw)
-{
-
-        /* MetaNames indexing options (default values from config.h)*/
-    sw->ReqMetaName=REQMETANAME;
-    sw->OkNoMeta=OKNOMETA;
-
-}
 
 /* Free memory for search results and parameters (properties ...) */
 void SwishResetSearch(SWISH *sw)

@@ -609,6 +609,18 @@ typedef enum
 }
 PropType;
 
+/* For undefined meta names */
+typedef enum
+{
+    UNDEF_META_DISABLE = 0, // Only for XMLAtrributes - don't even try with attributes
+    UNDEF_META_INDEX,       // index as plain text
+    UNDEF_META_AUTO,        // create metaname if doesn't exist
+    UNDEF_META_ERROR,       // throw a nasty error
+    UNDEF_META_IGNORE       // don't index
+}
+UndefMetaFlag;
+    
+
 typedef union
 {                               /* storage of the PropertyValue */
     char   *v_str;              /* strings */
@@ -691,6 +703,8 @@ typedef struct
     /* structure to handle Ignoremeta metanames */
     struct swline *ignoremetalist;
 
+
+
     /* Structure for handling metatags from DontBumpPositionOnMetaTags */
     struct swline *dontbumpstarttagslist;
     struct swline *dontbumpendtagslist;
@@ -728,16 +742,19 @@ typedef struct
     long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
 
     /* 06/00 Jose Ruiz */
-    int     applyautomaticmetanames;
     int     isvowellookuptable[256];
 
     /* Limit indexing by a file date */
     time_t  mtime_limit;
 
 
-    /* MetaName indexing options */
-    int     ReqMetaName;
-    int     OkNoMeta;
+    /* Undefined MetaName indexing options */
+    UndefMetaFlag   UndefinedMetaTags;
+    UndefMetaFlag   UndefinedXMLAttributes;  // What to do with attributes
+
+    /* structure to handle XMLClassAttributes - list of attributes to use content to make a metaname*/
+    /* <foo class="bar"> => generates a metaname foo.bar */
+    struct swline *XMLClassAttributes;
 
 }
 SWISH;
@@ -784,7 +801,6 @@ VAR struct _indexing_data_source_def *IndexingDataSource;
 void    allocatedefaults(void);
 
 SWISH  *SwishNew(void);
-void    SwishDefaults(SWISH *);
 void    SwishFree(SWISH *);
 
 /* strcpy doesn't check for overflow in the 'to' string */

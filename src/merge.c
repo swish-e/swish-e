@@ -487,27 +487,6 @@ static int     getnew(int num)
     return num;
 }
 
-#ifdef PROPFILE
-static int     getold(int num)
-{
-    unsigned hashval;
-    struct mapentry *mp;
-
-    hashval = bignumhash(num);
-    mp = mapentrylist2[hashval];
-
-    while (mp != NULL)
-    {
-        if (mp->newnum == num)
-            return mp->oldnum;
-        mp = mp->next;
-    }
-    return num;
-}
-#endif
-
-
-
 
 /* TAB */
 /* gprof suggests that this is a major CPU eater  :-(, that's

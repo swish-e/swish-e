@@ -51,7 +51,7 @@ $Id$
 
 /* #### */
 
-static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char *name,
+static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, SWISH *sw, char *name,
                                      char **parsed_tag, char *filename)
 {
     char   *temp;
@@ -136,16 +136,16 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyaut
     if ((e = getMetaNameByName(&indexf->header, word)))
         return e;
 
-    if (applyautomaticmetanames && word && *word)
+    if ( (sw->UndefinedMetaTags == UNDEF_META_AUTO) && word && *word)
     {
-        if (verbose)
+        if (sw->verbose)
             printf("Adding automatic MetaName '%s' found in file '%s'\n", word, filename);
 
         return addMetaEntry(&indexf->header, word, META_INDEX, 0);
     }
 
     /* If it is ok not to have the name listed, just index as no-name */
-    if (!OkNoMeta)
+    if (sw->UndefinedMetaTags == UNDEF_META_ERROR)
         progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", word, filename);
 
     if(word != buffer)
@@ -171,7 +171,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
 
     /* Lookup (or add if "auto") meta name for tag */
 
-    metaNameEntry = getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, name, &parsed_tag, filename);
+    metaNameEntry = getHTMLMeta(indexf, tag, sw, name, &parsed_tag, filename);
     metaName = metaNameEntry ? metaNameEntry->metaID : 1;
 
 
@@ -205,7 +205,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
 
 
         /* Index only if a metaEntry was found, or if not not ReqMetaName */
-        if (!sw->ReqMetaName || metaNameEntry)
+        if ( sw->UndefinedMetaTags != UNDEF_META_ERROR || metaNameEntry)
         {
             /* Meta tags get bummped */
             /* I'm not clear this works as well as I'd like because it always bumps on a new Meta tag, 
@@ -657,7 +657,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
                         if (
                             (metaNameEntry =
-                             getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL, &parsed_tag, fprop->real_path)))
+                             getHTMLMeta(indexf, tag, sw, NULL, &parsed_tag, fprop->real_path)))
                         {
                             /* realloc memory if needed */
                             if (currentmetanames == metaIDlen)

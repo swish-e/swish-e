@@ -18,6 +18,9 @@ $Id$
 ** 2001-05-09  rasc  entities changed (new module)
 **
 ** 2001-07-25  moseley complete rewrite to use James Clark's Expat parser
+**
+** BUGS:
+**      UndefinedMetaTags ignore is not coded
 */
 
 #include "swish.h"
@@ -234,7 +237,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     else
     {
-        if (sw->applyautomaticmetanames)
+        if (sw->UndefinedMetaTags == UNDEF_META_AUTO)
         {
             if (sw->verbose)
                 printf("!!!Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
@@ -244,7 +247,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
 
         /* If set to "error" on undefined meta tags, then error */
-        if (!sw->OkNoMeta)
+        if (sw->UndefinedMetaTags == UNDEF_META_ERROR)
             progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
     }
 
