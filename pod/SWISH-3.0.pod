@@ -12,6 +12,16 @@ None of this is written in stone.  Any of the developers can write their
 ideas in this document, but that doesn't mean it will actually happen ;).
 
 
+=head1 UTF-8 support
+
+Supporting Unicode basically requires a full re-write of all the code.
+
+
+=head1 drop expat-based parsers, require libxml2
+
+This might simplify the code somewhat as well.
+
+
 =head1 Support Incremental Indexing
 
 The Swish-e index structure currently makes it difficult to do incremental
@@ -23,6 +33,12 @@ Swish-e has been linked with Berkeley DB.  Although much slower in
 indexing, this may allow incremental indexing.  Currently, the idea is
 to offer both database backends.
 
+UPDATE: Mon Nov  8 15:07:59 CST 2004 (karman@cray.com)
+
+This feature is in the 2.5 branch already. What kind of requirements do we
+have to label it 'stable'?
+
+
 =head1 Split code into Search and Indexing code
 
 There may be a small benefit from creating a smaller search-only program.
@@ -33,10 +49,9 @@ Currently, linking libswish-e into a program adds about 720K.  Not real
 significant, but it could be if a number of processes are running with
 Swish-e.  Another option is to build libswish-e as a shared library.
 
-=head1 Swish Server
+UPDATE: Mon Nov  8 15:09:12 CST 2004 (karman@cray.com)
 
-Somone needs to write a threaded Swish-e server.  Or maybe just a
-pre-forking server in perl, to see how it works...
+This seems done in the 2.4 release. Is that true?
 
 =head1 Switch to Content-Types
 
@@ -124,6 +139,11 @@ The metaname structure could have flags for properties:
 Oct 9, 2001 - The code is now in Swish-e to limit a string property to
 a length.  The stripping of HTML is an issue for discussion.  And encoding
 entities on output should be a result_outpu.c issue.
+
+
+UPDATE: Mon Nov  8 15:13:26 CST 2004 (karman@cray.com)
+
+Is this fully supported in 2.4?
 
 =head1 Apache/XML style configuration
 
