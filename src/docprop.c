@@ -620,7 +620,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *st
     new_str[j++] = ' ';
 
     for (i=0; i < length; i++)
-        if ( !isspace( str[i] ) )
+        if ( !isspace( (int)str[i] ) )
             break;
 
     for (; i < length; i++)

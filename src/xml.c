@@ -396,7 +396,7 @@ static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
         
 
     /* skip leading space */
-    for ( j=0; j < len && isspace( buf[j] ); j++ );
+    for ( j=0; j < len && isspace( (int)buf[j] ); j++ );
 
 
     if ( j >= len )
@@ -413,9 +413,9 @@ static void append_summary_text( PARSE_DATA *parse_data, char *buf, int len)
         /* Check for max size reached */
         if ( parse_data->buffend >= parse_data->fprop->stordesc->size )
         {
-            if ( !isspace( buf[j] ) && !isspace( parse_data->buffer[parse_data->buffend-1] ))
+            if ( !isspace( (int)buf[j] ) && !isspace( (int)parse_data->buffer[parse_data->buffend-1] ))
             {
-                while ( parse_data->buffend && !isspace( parse_data->buffer[--parse_data->buffend] ));
+                while ( parse_data->buffend && !isspace( (int)parse_data->buffer[--parse_data->buffend] ));
                 parse_data->buffer[parse_data->buffend] = '\0';
             }
 
