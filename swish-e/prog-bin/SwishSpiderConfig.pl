@@ -12,9 +12,13 @@ with the swish-e distribution.
 It contains settings for spidering three servers (two are the same server).
 All are disabled (skip => 1) to prevent every new swish user from spidering these sites.
 
-These are just examples.  Please spider your own web site.  Also, please don't use this exact
-file as your configuration file.  Trim your file down to just the content you need, especially
-if posting your config to the Swish-e list requesting for help.
+These are just examples.  Please spider your own web site.
+
+**Also, please don't use this exact file as your configuration file.**
+
+Trim your file down to just the content you need, especially
+if posting your config to the Swish-e list requesting for help.  Remove these comments
+and remove everything below that you are not using.
 
 The first example is relativly simple.  It just spiders any URL that
 ends in C<.html>.
@@ -43,13 +47,13 @@ Please see C<perldoc spider.pl> for more information.
 
 #  @servers is a list of hashes -- so you can spider more than one site
 #  in one run (or different parts of the same tree)
-#  The main program expects to use @SwishSpiderConfig::servers.
+#  The main program expects to use this array (@SwishSpiderConfig::servers).
 
   ### Please do not spider these examples -- spider your own servers, with permission ####
 
 @servers = (
 
-
+    #=============================================================================
     # This is a simple example, that includes a few limits
     # Only files ending in .html will be spidered (probably a bit too restrictive)
     {
@@ -71,12 +75,14 @@ Please see C<perldoc spider.pl> for more information.
     },
 
 
+    #=============================================================================
     # This is a more advanced example that uses more features,
     # such as ignoring some file extensions, and only indexing
     # some content-types, plus filters PDF and MS Word docs.
     # The call-back subroutines are explained a bit more below.
     {
-        skip            => 0,
+        skip        => 1,  # skip spidering this server
+        debug       => DEBUG_URL,  # print some debugging info to STDERR                                  
 
         base_url        => 'http://www.infopeople.org/',
         email           => 'swish@domain.invalid',
@@ -107,7 +113,8 @@ Please see C<perldoc spider.pl> for more information.
     },
 
 
-    # This example just shows more features.  See perldoc spider.pl for info
+    #=============================================================================
+    # This example just shows more settings.  See perldoc spider.pl for info
     
     {
         skip        => 1,         # Flag to disable spidering this host.
@@ -153,6 +160,9 @@ Please see C<perldoc spider.pl> for more information.
     
 
 #---------------------- Public Functions ------------------------------
+#  Here are some examples of callback functions
+#
+#
 #  Use these to adjust skip/ignore based on filename/content-type
 #  Or to filter content (pdf -> text, for example)
 #
@@ -210,7 +220,10 @@ sub modify_content {
 
 # Here's some real examples
 
-use pdf2xml;  # included example pdf converter module
+# This converts PDF files into HTML.  The second parameter of
+# pdf2html tells which pfd info filed to set as <title>
+
+use pdf2html;  # included example pdf converter module
 sub pdf {
    my ( $uri, $server, $response, $content_ref ) = @_;
 
@@ -219,7 +232,7 @@ sub pdf {
    # for logging counts
    $server->{counts}{'PDF transformed'}++;
 
-   $$content_ref = ${pdf2xml( $content_ref )};
+   $$content_ref = ${pdf2html( $content_ref, 'title' )};
    $$content_ref =~ tr/ / /s;
    return 1;
 }
