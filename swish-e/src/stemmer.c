@@ -663,12 +663,21 @@ typedef struct
 } STEMMING_OPTS;
 #endif
 
+
+/* Sets the fuzzy mode by passing in a string describing the fuzzy mode */
+/* Frees any existing fuzzy structure, so make sure "fi" is correctly initialized. */
+
+
 void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
 {
     int     i;
 #ifdef SNOWBALL
     STEMMING_OPTS *opts;
 #endif
+
+    /* Free existing structure */
+    free_fuzzy_mode( fi );
+
 
     for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
@@ -696,12 +705,19 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
     progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
 }
 
+/* Sets FUZZY_INDEX struc (fi) based on the integer mode passed in */
+/* Used to set the fuzzy data structure based on the value stored in the index header */
+/* Frees any existing fuzzy structure, so make sure "fi" is correctly initialized. */
+
 void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
 {
     int     i;
 #ifdef SNOWBALL
     STEMMING_OPTS *opts;
 #endif
+
+    /* Free existing structure */
+    free_fuzzy_mode( fi );
 
     for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
         if ( fuzzy == fuzzy_opts[i].fuzzy_mode ) 
@@ -729,6 +745,12 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
     progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
 }
 
+
+
+/* Free up memory used by a fuzzy options, and call any "free" function, if needed */
+/* Note, this depends on fi->fuzzy_mode == 0 to be FUZZY_NONE (because fi is memset to null when created) */
+
+
 void free_fuzzy_mode( FUZZY_INDEX *fi )
 {
     int     i;
@@ -743,6 +765,7 @@ void free_fuzzy_mode( FUZZY_INDEX *fi )
 #ifdef SNOWBALL
             if(fuzzy_opts[i].free)
                 fuzzy_opts[i].free(opts->snowball);
+
             if(opts)
                 efree(opts);
 #endif
