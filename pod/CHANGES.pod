@@ -27,7 +27,7 @@ The indexing process has been imporoved.  Depending on a number of factors, you 
 a significant improvement in indexing speed, especially if upgrading from version 1.x.
 
 Searching speed has also been improved.  Properties are not loaded until results are displayed,
-and properties are pre-sorted during indexing to speed up sorting results by properties.
+and properties are pre-sorted during indexing to speed up sorting results by properties while searching.
 
 =item * Properties are written to a sepearte file
 
@@ -273,6 +273,10 @@ For example, this allows searches to be limited to parts of your file tree.
 
 FileMatch is similar to FileRules.  Where FileRules is used to exclude
 files and directoires, FileMatch is used to I<include> files.
+
+=item * New directive: PreSortedIndex
+
+Controls which properties are pre-sorted while indexing.  All properties are sorted by default.
 
 =back
 
