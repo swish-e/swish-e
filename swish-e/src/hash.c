@@ -120,8 +120,8 @@ struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, i
         table_ptr->count = 0;
     }
     else
-        if ( is_word_in_hash_table( *table_ptr, word ) )
-            return;
+        if ( (sp = is_word_in_hash_table( *table_ptr, word )) )
+            return sp;
 
     hashval = string_hash(word,hash_size);
 
@@ -186,10 +186,6 @@ struct swline * is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
 void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
 {
     struct swline **hash_array = table_ptr->hash_array;
-    int             hash_size = table_ptr->hash_size;
-    int     i;
-    struct swline *sp,
-           *tmp;
 
     if ( !hash_array )
         return;

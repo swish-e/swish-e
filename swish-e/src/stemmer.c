@@ -77,6 +77,8 @@
 #define FALSE	0
 #define TRUE	1
 
+#include "double_metaphone.h"
+
 /* Includes for using SNOWBALL stemmer */
 #include "snowball/stem_es.h"
 #include "snowball/stem_fr.h"
@@ -285,6 +287,7 @@ FUZZY_OBJECT *get_fuzzy_mode( FUZZY_OBJECT *fi, int fuzzy )
         }
 
     progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
+    return NULL;
 }
 
 
@@ -324,7 +327,7 @@ static FUZZY_WORD *Stem_snowball( FUZZY_OBJECT *fi, const char *inword)
     struct SN_env *snowball = fi->snowball_options;
     FUZZY_WORD *fw = create_fuzzy_word( inword, 1 ); /* create place to store stemmed word */
 
-    SN_set_current(snowball,strlen(inword),inword); /* Set Word to Stem */
+    SN_set_current(snowball,strlen(inword),(const symbol *)inword); /* Set Word to Stem */
 
     fi->stemmer->lang_stem(snowball); /* Stem the word */
 

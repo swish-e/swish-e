@@ -104,7 +104,7 @@ size_t ramdisk_write(const void *buffer,size_t sz1, size_t sz2, FILE *fp)
 unsigned int lenbuf=(unsigned int)(sz1 *sz2);
 struct ramdisk *rd = (struct ramdisk *)fp;
 unsigned char *buf = (unsigned char *)buffer;
-unsigned int num_buffer,start_pos,tmplenbuf = lenbuf;
+unsigned int num_buffer,start_pos;
 unsigned int avail;
 
     num_buffer = rd->cur_pos / rd->buf_size;
