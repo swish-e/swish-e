@@ -21,19 +21,17 @@ The HTTP file access method uses a Perl helper script that requires
 the LWP, HTTP, and HTML modules. (Note: depending on your perl installation, you might need to
 install additional modules required by LWP; for requirements and
 downloads check http://www.cpan.org or http://theory.uwinnipeg.ca/search/cpan-search.html).
-It was tested with Perl 5.005 although should probably work with any version 5 release.
+The Perl helper script was tested with perl 5.005 although should probably work with any version 5 release.
+Do note that the LWP, HTTP, and HTML modules are updated often for bug fixes and such -- do check for upgrades.
 
 =head2 Platform Specific Information
 
-A tip from Wil Vree about compiling with a Sun C compiler:
-In the Makefile the following two options need to be modified
-
-    CC = /opt/SUNWspro/bin/cc
-    CFLAGS= -xO2
+A C<configure> script is used to determine platform specific details for building swish.  Please contact
+the SWISH-E discussion list if you notice any platform specify problems while building SWISH-E.
 
 =head1 INSTALLATION
 
-If you are reading this INSTALL document then you probably already have
+If you are reading this INSTALL document, then you probably already have
 downloaded and unpacked the distribution.  But just in case...
 
 =head2 Downloading and unpacking and building
@@ -202,7 +200,7 @@ use the *.html files in this directory when creating the test index.  You may wi
 =head2 Step 1: Create a Configuration File
 
 The configuration file controls what and how SWISH-E indexes.  The configuration file
-consists of directives, comments and blank lines.  The configuration file can be
+consists of directives, comments, and blank lines.  The configuration file can be
 any name you like, but swish-e.conf is commonly used.
 
 This example will work with the documents in the F<tests> directory.  You may wish to
@@ -339,7 +337,7 @@ See L<SWISH-SEARCH|SWISH-SEARCH> for more information.
 
 The C<-t> option in the search command line allows you to search for words that exist only in specific HTML tags.
 Each character in the string you specify in the argument to this option represents a different tag in which
-the word is searched; that is you can use any combinations of the following charactes:
+the word is searched; that is you can use any combinations of the following characters:
 
     H means all <HEAD> tags
     B stands for <BODY> tags
@@ -403,10 +401,42 @@ documentation of the various indexing and searching options.
 
 =head1 QUESTIONS AND TROUBLESHOOTING
 
-Support for installation, configuration and usage is available via the SWISH-E
-discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
 Please search the SWISH-E list archive before posting, and check the L<SWISH-FAQ|SWISH-FAQ> to
 see if your question hasn't already been asked.
+
+Support for installation, configuration and usage is available via the SWISH-E
+discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
+
+When posting please provide the following information:
+
+=over 4
+
+=item *
+
+The exact version of SWISH-E that you are using.  Running swish-e with the C<-V> switch will print the
+version number.
+
+=item *
+
+A summary of the problem, including a copy of the configuration file, the command you are using
+to index and search your index, and a small copy of a source document.
+Please copy and paste exact commands to avoid typos in your message.
+You will receive better help if you make it easy for others to duplicate your problem.
+
+=item *
+
+If you are having trouble building SWISH-E please cut-n-paste the output from make (or from ./configure if
+that's where the problem is).
+
+=item *
+
+Use tools available to narrow down the problem.  SWISH-E has the -D, -v, and -k switches that may help
+resolve issues.  You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
+programs like C<truss> or C<strace> can often provide interesting informataion.
+
+=back
+
+
 
 
 =head1 Document Info

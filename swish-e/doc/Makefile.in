@@ -43,23 +43,38 @@ pdf:
 	@echo "swish-e_documentation.pdf"
 
 
+# This cleans split and pdf/ps and man pages
 clean:
 	rm -rf rel_ps
 	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
+	-test -e ../html/index.html.orig      && cp ../html/index.html.orig       ../html/index.html
+	
+	-test -e ../html/index_long.html.orig && cp ../html/index_long.html.orig  ../html/index_long.html
 	rm -rf ../html/split
-
+	rm -f ../html/index.html.orig ../html/index_long.html.orig ../.htaccess
+	rm -f src/*.1
+	
 realclean: clean
-	rm Makefile
+	rm -f Makefile
 
+distclean: realclean
+
+# this is to clean all the docs ans start from scratch
 ultraclean: realclean
-	rm -rf ../*.pod readme src/*.1 ../html
+	rm -rf ../*.pod readme ../html
 
 split:
+	@echo "Testing if already created..."
+	test ! -d ../html/split
+	
 	@echo "Checking for swish binary..."
 	test -x ../src/swish-e
 	bin/build -s
 	cp ../src/swish-e ../html/split/swish-e
 	../html/split/swish-e -c split.conf
 	chmod 755 ../html/split/search.cgi
+	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="split/search.cgi">Search The Documentation</a>]</center>}' ../html/index.html ../html/index_long.html
+	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="search.cgi">Search</a>] [<a href="../index.html">Back to Non-Split Documentation</a>]</center>}' ../html/split/index.html ../html/split/index_long.html
+	@echo -e "\n** Don't forget to refresh in your browser to see the new pages! **\n"
 
 
