@@ -15,28 +15,6 @@ free to bug the developers about it on the Swish-e discussion list.
 
 =item *
 
-Does not index on Sparc64
-
-SIGBUS reported on Sparc64 Debian 3.0 (compile farm at sourceforge).
-gdb reports the following, although I'm not sure I believe gdb.
-
-    Program received signal SIGBUS, Bus error.
-    fs_already_indexed (sw=0xa7dc8, path=0xc0720 "btree.c") at fs.c:280
-    280         p->dev = buf.st_dev;
-    (gdb) bt
-    #0  fs_already_indexed (sw=0xa7dc8, path=0xc0720 "btree.c") at fs.c:280
-    #1  0x00031ecc in indexafile (sw=0xa7dc8, path=0xc0720 "btree.c") at fs.c:462
-    #2  0x000323bc in fs_indexpath (sw=0xa7dc8, path=0xc0720 "btree.c") at fs.c:740
-    ...
-
-
-History:
-
-    Reported: September 3, 2002 - moseley
-
-
-=item *
-
 Phrase search failes with DoubleMetaphone
 
 DoubleMetaphone searching can produce two search words for a single query
@@ -46,21 +24,6 @@ phrase query:   "some phrase (word1 or word2) here"
 swish-e query parser is due for a rewrite, and this could be resolved then.
 
     Reported: August 20, 2002 - moseley
-
-=back
-
-=item *
-
-COALESCE_BUFFER_MAX_SIZE
-
-Every so often someone see the error:
-
-    err: Buffer too short in coalesce_word_locations.
-    Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.
-
-This happens when trying to index a document with a huge number of words.
-
-This number should be increased or the buffer allocated dynamically.
 
 =item *
 
@@ -80,6 +43,8 @@ ResultSortOrder
 ResultSort order is not used (and is not documented).  The problem is that
 the data passed to Compare_Properties() does not have access to the
 ResultSortOrder table.
+
+=back
 
 History:
 

@@ -297,7 +297,7 @@ int     http_already_indexed(SWISH * sw, char *url)
         if ((strcmp(url, p->url) == 0) || (equivalentserver(sw, url, p->url) && (strcmp(url_uri(url, &len), url_uri(p->url, &len)) == 0)))
         {                       /* We found it. */
             if (sw->verbose >= 3)
-                printf("Skipping %s:  %s\n", url, "Already indexed.");
+                printf("Skipping %s:  %s\n", url, "Link already processed.");
             return 1;
         }
 
@@ -683,8 +683,14 @@ void    http_indexpath(SWISH * sw, char *url)
 
             if ( strncmp(contenttype, "text/", 5) == 0 )
             {
+                if (sw->verbose >= 4)
+                    printf("Indexing %s:  Content type: %s.\n", item->url, contenttype);
+
+                
                 fprop = file_properties(item->url, file_prefix, sw);
                 fprop->mtime = last_modified;
+
+                
 
                 /* only index contents of text docs */
                 // this would just index the path name
@@ -695,7 +701,7 @@ void    http_indexpath(SWISH * sw, char *url)
                 free_file_properties(fprop);
             }
             else if (sw->verbose >= 3)
-                printf("Skipping %s:  Wrong content type: %s.\n", url, contenttype);
+                printf("Skipping %s:  Wrong content type: %s.\n", item->url, contenttype);
             
 
 

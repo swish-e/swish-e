@@ -756,8 +756,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
     /** Read the buffer, if not a stream parser **/
+    
 #ifdef HAVE_LIBXML2
-    if ( fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
+    if ( !fprop->doctype || fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
         rd_buffer = NULL;
     else
 #endif
@@ -789,6 +790,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = countwords_XML;
         break;
 
+    case WML:
+        strcpy(strType,"WML");
+        countwords = countwords_HTML;
+        break;
+
 #ifdef HAVE_LIBXML2
     case XML2:
         strcpy(strType,"XML2");
@@ -804,18 +810,23 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         strcpy(strType,"TXT2");
         countwords = parse_TXT;
         break;
-#endif
 
-    case WML:
-        strcpy(strType,"WML");
-        countwords = countwords_HTML;
+    default:
+        strcpy(strType,"DEFAULT (HTML2)");
+        countwords = parse_HTML;
         break;
 
+#else
+
+    /* Default if libxml not installed */
     default:
         strcpy(strType,"DEFAULT (HTML)");
         countwords = countwords_HTML;
         break;
+#endif
+        
     }
+
 
     if (sw->verbose >= 3)
         printf(" - Using %s parser - ",strType);

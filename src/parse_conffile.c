@@ -1394,13 +1394,20 @@ int	strtoDocType( char * s )
     {
         {"TXT", TXT},
         {"HTML", HTML},
+        {"XML", XML},
+        {"WML", WML},
 #ifdef HAVE_LIBXML2        
         {"XML2", XML2 },
         {"HTML2", HTML2 },
         {"TXT2", TXT2 },
+        {"XML*", XML2 },
+        {"HTML*", HTML2 },
+        {"TXT*", TXT2 },
+#else
+        {"XML*", XML },
+        {"HTML*", HTML },
+        {"TXT*", TXT }
 #endif
-        {"XML", XML},
-        {"WML", WML}
     };
     int i;
 
