@@ -168,6 +168,11 @@ int     DB_EndReadHeader_Native(void *db);
 int     DB_InitWriteWords_Native(void *db);
 long    DB_GetWordID_Native(void *db);
 int     DB_WriteWord_Native(char *word, long wordID, void *db);
+
+#ifdef USE_BTREE
+int     DB_UpdateWordID_Native(char *word, long new_wordID, void *db);
+#endif
+
 int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
 long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db);
 int     DB_EndWriteWords_Native(void *db);

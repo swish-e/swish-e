@@ -70,6 +70,8 @@ void    initModule_DBNative(SWISH * sw)
 
 #ifndef USE_BTREE
     Db->DB_WriteWordHash = DB_WriteWordHash_Native;
+#else
+    Db->DB_UpdateWordID = DB_UpdateWordID_Native;
 #endif
 
     Db->DB_WriteWordData = DB_WriteWordData_Native;
@@ -966,6 +968,15 @@ int     DB_WriteWord_Native(char *word, long wordID, void *db)
     BTREE_Insert(DB->bt, (unsigned char *)word, strlen(word), (unsigned long) wordID);
 
     DB->num_words++;
+
+    return 0;
+}
+
+int     DB_UpdateWordID_Native(char *word, long new_wordID, void *db)
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    BTREE_Update(DB->bt, (unsigned char *)word, strlen(word), (unsigned long) new_wordID);
 
     return 0;
 }

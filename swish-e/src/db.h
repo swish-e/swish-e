@@ -39,7 +39,13 @@ void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int);
 void    update_header(SWISH *, void *, int, int );
 void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
+#ifdef USE_BTREE
+void    update_wordID(SWISH *, ENTRY *, IndexFILE *);
+#endif
+void    build_worddata(SWISH *, ENTRY *, IndexFILE *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
+long    read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **bufer, int *sz_buffer);
+void    add_worddata(SWISH *sw, ENTRY *epi, IndexFILE *indexf, unsigned char *buffer, int sz_buffer);
 int     write_words_to_header(SWISH *, int header_ID, struct swline **hash, void *DB);
 void    write_pathlookuptable_to_header(SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 void    write_MetaNames (SWISH *, int id, INDEXDATAHEADER *header, void *DB);
@@ -52,7 +58,7 @@ void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_integer_table_from_buffer(int table[], int table_size, char *buffer);
-char *getfilewords(SWISH *sw, int, IndexFILE *);
+char    *getfilewords(SWISH *sw, int, IndexFILE *);
 
 
 
@@ -73,6 +79,9 @@ int     DB_EndReadHeader(SWISH *sw, void *DB);
 int     DB_InitWriteWords(SWISH *sw, void *DB);
 long    DB_GetWordID(SWISH *sw, void *DB);
 int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB);
+#ifdef USE_BTREE
+int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB);
+#endif
 int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB);
 long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int lendata, void *DB);
 int     DB_EndWriteWords(SWISH *sw, void *DB);
@@ -145,6 +154,9 @@ struct MOD_DB
     int    (*DB_InitWriteWords) (void *DB);
     long   (*DB_GetWordID) (void *DB);
     int    (*DB_WriteWord) (char *word, long wordID, void *DB);
+#ifdef USE_BTREE
+    int    (*DB_UpdateWordID)(char *word, long new_wordID, void *DB);
+#endif
     int    (*DB_WriteWordHash) (char *word, long wordID, void *DB);
     long   (*DB_WriteWordData) (long wordID, unsigned char *worddata, int lendata, void *DB);
     int    (*DB_EndWriteWords) (void *DB);

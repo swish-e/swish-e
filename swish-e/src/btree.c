@@ -846,6 +846,41 @@ BTREE_Page *pg = BTREE_Walk(b,key,key_len);
     return BTREE_InsertInPage(b, pg, key, key_len, data_pointer, b->levels - 1, 0);
 }
 
+int BTREE_Update(BTREE *b, unsigned char *key, int key_len, unsigned long new_data_pointer)
+{
+int comp, k, key_len_k;
+unsigned char *key_k;
+BTREE_Page *pg = BTREE_Walk(b,key,key_len);
+
+
+    /* Pack pointer */
+    new_data_pointer = PACKLONG(new_data_pointer);
+
+    /* Get key position */
+    k = BTREE_GetPositionForKey(pg, key, key_len, &comp);
+
+    if(comp)
+    {
+        return -1;  /*Key not found */
+    }
+
+    key_k = BTREE_KeyData(pg,k);
+
+    key_len_k = uncompress2(&key_k);
+
+    if ( key_len_k != key_len)
+        return -1;   /* Error - Should never happen */
+
+    key_k += key_len_k;
+
+    memcpy(key_k, &new_data_pointer, SizeInt32);
+
+    BTREE_WritePage(b, pg);
+    BTREE_FreePage(b, pg);
+
+    return 0;
+}
+
 
 long BTREE_Search(BTREE *b, unsigned char *key, int key_len, unsigned char **found, int *found_len, int exact_match)
 {

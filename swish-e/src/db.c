@@ -33,6 +33,9 @@
 #include "db_native.h"
 // #include "db_berkeley_db.h"
 
+#ifndef min
+#define min(a, b)	(a) < (b) ? a : b
+#endif
 
 /*
   -- init structures for this module
@@ -208,12 +211,28 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
 }
 
+#ifdef USE_BTREE
+/* 04/2002 jmruiz
+** Routine to update wordID
+*/
+void    update_wordID(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
+{
+    long    wordID;
+
+    wordID = DB_GetWordID(sw, indexf->DB);
+
+    DB_UpdateWordID(sw, ep->word,wordID,indexf->DB);
+	    /* Store word offset for futher hash computing */
+    ep->u1.wordID = wordID;
+}
+#endif
+
 /* Jose Ruiz 11/00
 ** Function to write all word's data to the index DB
 */
 
 
-void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
+void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
     int     i, j,
             curmetaID,
@@ -334,17 +353,322 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     sz_worddata = q - sw->Index->worddata_buffer;
 
     /* Adjust word positions. 
-    ** if ignorelimit was set and some new stopwords weer found, positions
+    ** if ignorelimit was set and some new stopwords weee found, positions
     ** are recalculated
     ** Also call it even if we have not set IgnoreLimit to calesce word chunks
     ** and remove trailing 0 from chunks to save some bytes
     */
     adjustWordPositions(sw->Index->worddata_buffer, &sz_worddata, sw->indexlist->header.totalfiles, sw->Index->IgnoreLimitPositionsArray);
 
-    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sz_worddata,indexf->DB);
+    sw->Index->sz_worddata_buffer = sz_worddata;
+}
+
+/* 04/2002 jmruiz
+** New simpler routine to write worddata
+*/
+void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
+{
+    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sw->Index->sz_worddata_buffer,indexf->DB);
 
     if(sw->Index->swap_locdata)
         Mem_ZoneReset(sw->Index->totalLocZone);
+}
+
+
+/* 04/2002 jmruiz
+** Function to read all word's data from the index DB
+*/
+
+
+long read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
+{
+long wordID;
+char *word = ep->word;
+
+    DB_InitReadWords(sw, indexf->DB);
+    DB_ReadWordHash(sw, word, &wordID, indexf->DB);
+
+    if(!wordID)
+    {    
+        DB_EndReadWords(sw, indexf->DB);
+        sw->lasterror = WORD_NOT_FOUND;
+        *buffer = NULL;
+        *sz_buffer = 0;
+        return 0L;
+   } 
+   DB_ReadWordData(sw, wordID, buffer, sz_buffer, indexf->DB);
+   DB_EndReadWords(sw, indexf->DB);
+   return wordID;
+}
+
+/* 04/2002 jmruiz
+** Routine to merge two buffers of worddata
+*/
+void add_worddata(SWISH *sw, ENTRY *epi, IndexFILE *indexf, unsigned char *olddata, int sz_olddata)
+{
+int maxtotsize;
+unsigned char stack_buffer[32000];  /* Just to try malloc/free fragmentation */
+unsigned char *newdata;
+int sz_newdata;
+int tfreq1, tfreq2;
+unsigned char *p1, *p2, *p;
+int curmetaID_1,curmetaID_2;
+unsigned long nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
+int last_filenum, filenum, tmpval, frequency, *posdata;
+#define POSDATA_STACK 2000
+int stack_posdata[POSDATA_STACK];  /* Just to avoid the overhead of malloc/free */
+unsigned char r_flag, *w_flag;
+
+    /* First of all, ckeck for size in buffer */
+    maxtotsize = sw->Index->sz_worddata_buffer + sz_olddata;
+    if(maxtotsize > sw->Index->len_worddata_buffer)
+    {
+         sw->Index->len_worddata_buffer = maxtotsize + 2000;
+         sw->Index->worddata_buffer = (unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer); 
+    }
+    /* Preserve new data in a local copy - sw->Index->worddata_buffer is thefinal destination
+    ** of data
+    */
+    if(sw->Index->sz_worddata_buffer > sizeof(stack_buffer))
+        newdata = (unsigned char *) emalloc(sw->Index->sz_worddata_buffer);
+    else
+        newdata = stack_buffer;
+    sz_newdata = sw->Index->sz_worddata_buffer;
+    memcpy(newdata,sw->Index->worddata_buffer, sz_newdata);
+
+    /* Set pointers to all buffers */
+    p1 = olddata;
+    p2 = newdata; 
+    p = sw->Index->worddata_buffer;
+
+    /* Now read tfrequency */
+    tfreq1 = uncompress2(&p1); /* tfrequency - number of files with this word */
+    tfreq2 = uncompress2(&p2); /* tfrequency - number of files with this word */
+    /* Write tfrequency */
+    p = compress3(tfreq1 + tfreq2, p);
+
+    /* Now look for MetaIDs */
+    curmetaID_1 = uncompress2(&p1);
+    curmetaID_2 = uncompress2(&p2);
+    nextposmetaname_1 = UNPACKLONG2(p1); 
+    p1 += sizeof(long);
+    curmetanamepos_1 = p1 - olddata;
+    nextposmetaname_2 = UNPACKLONG2(p2); 
+    p2 += sizeof(long);
+    curmetanamepos_2 = p2 - newdata;
+
+
+
+    while(curmetaID_1 && curmetaID_2)
+    {            
+        p = compress3(min(curmetaID_1,curmetaID_1),p);
+
+        curmetanamepos = p - sw->Index->worddata_buffer;
+                /* Store 0 and increase pointer */
+        tmp=0L;
+        PACKLONG2(tmp,p);
+        p+=sizeof(unsigned long);
+        if(curmetaID_1 == curmetaID_2)
+        {
+            /* Both buffers have the same metaID - In this case I have to know
+            the number of the filenum of the last hit of the original buffer to adjust the
+            filenum counter in the second buffer */
+            last_filenum = 0;
+            do
+            {
+                /* Read on all items */
+                uncompress_location_values(&p1,&r_flag,&tmpval,&frequency);
+                last_filenum += tmpval;  
+                if(frequency > POSDATA_STACK)
+                    posdata = (int *) emalloc(frequency * sizeof(int));
+                else
+                    posdata = stack_posdata;
+    
+                /* Read and discard positions just to advance pointer */
+                uncompress_location_positions(&p1,r_flag,frequency,posdata);
+                if(posdata!=stack_posdata)
+                    efree(posdata);
+
+                if ((p1 - olddata) == sz_olddata)
+                {
+                    curmetaID_1 = 0;   /* No more metaIDs for olddata */
+                    break;   /* End of olddata */
+                }
+
+                if ((unsigned long)(p1 - olddata) == nextposmetaname_1)
+                {
+                    curmetaID_1 = uncompress2(&p1);  /* Next metaID */
+                    break;
+                }
+            } while(1);
+            memcpy(p,olddata + curmetanamepos_1, p1 - (olddata + curmetanamepos_1));
+            p += p1 - (olddata + curmetanamepos_1);
+            /* Values for next metaID if exists */
+            if(curmetaID_1)
+            {
+                nextposmetaname_1 = UNPACKLONG2(p1); 
+                p1 += sizeof(long);
+                curmetanamepos_1 = p1 - olddata;
+            }
+
+            /* Now add the new values adjusting with last_filenum of olddata*/
+            filenum = 0;
+            do
+            {
+                /* Read on all items */
+                uncompress_location_values(&p2,&r_flag,&tmpval,&frequency);
+                filenum += tmpval;  
+                if(frequency > POSDATA_STACK)
+                    posdata = (int *) emalloc(frequency * sizeof(int));
+                else
+                    posdata = stack_posdata;
+
+                /* Read positions */
+                uncompress_location_positions(&p2,r_flag,frequency,posdata);
+
+                compress_location_values(&p,&w_flag,filenum - last_filenum,frequency,posdata);
+                compress_location_positions(&p,w_flag,frequency,posdata);
+
+                if(posdata!=stack_posdata)
+                    efree(posdata);
+
+                if ((p2 - newdata) == sz_newdata)
+                {
+                    curmetaID_2 = 0;   /* No more metaIDs for newdata */
+                    break;   /* End of newdata */
+                }
+
+                if ((unsigned long)(p2 - newdata) == nextposmetaname_2)
+                {
+                    curmetaID_2 = uncompress2(&p2);  /* Next metaID */
+                    break;
+                }
+            } while(1);
+            /* Values for next metaID if exists */
+            if(curmetaID_2)
+            {
+                nextposmetaname_2 = UNPACKLONG2(p2); 
+                p2 += sizeof(long);
+                curmetanamepos_2 = p2 - newdata;
+            }
+            /* Put nextmetaname offset in result if there is a next one */
+            if(curmetaID_1 || curmetaID_2)
+                PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+        }
+        else if (curmetaID_1 < curmetaID_2)
+        {
+            if(nextposmetaname_1)
+            {
+                memcpy(p,p1,nextposmetaname_1 - (p1 - olddata));
+                p += nextposmetaname_1 - (p1 - olddata);
+                p1 = olddata + nextposmetaname_1;
+                curmetaID_1 = uncompress2(&p1);  /* Next metaID */
+                nextposmetaname_1 = UNPACKLONG2(p1); 
+                p1 += sizeof(long);
+                curmetanamepos_1 = p1 - olddata;
+            }
+            else
+            {
+                memcpy(p,p1,sz_olddata- (p1 - olddata));
+                p += sz_olddata - (p1 - olddata);
+                curmetaID_1 = 0;
+            }
+            PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+        }
+        else  /* curmetaID_1 > curmetaID_2 */
+        {
+            if(nextposmetaname_2)
+            {
+                memcpy(p,p2,nextposmetaname_2 - (p2 - newdata));
+                p += nextposmetaname_2 - (p2 - newdata);
+                p2 = newdata + nextposmetaname_2;
+                curmetaID_2 = uncompress2(&p2);  /* Next metaID */
+                nextposmetaname_2 = UNPACKLONG2(p2); 
+                p2 += sizeof(long);
+                curmetanamepos_2 = p2 - newdata;
+            }
+            else
+            {
+                memcpy(p,p2,sz_newdata- (p1 - newdata));
+                p += sz_newdata - (p2 - newdata);
+                curmetaID_2 = 0;
+            }
+
+            PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+        }
+        
+    } /* while */
+  
+    /* Add the rest of the data if exists */
+    if(curmetaID_1)
+    {
+        while(1)
+        {
+            p = compress3(curmetaID_1,p);
+
+            curmetanamepos = p - sw->Index->worddata_buffer;
+                /* Store 0 and increase pointer */
+            tmp=0L;
+            PACKLONG2(tmp,p);
+            p += sizeof(unsigned long);
+
+            if(nextposmetaname_1)
+            {
+                memcpy(p,p1,nextposmetaname_1 - (p1 - olddata));
+                p += nextposmetaname_1 - (p1 - olddata);
+                p1 = olddata + nextposmetaname_1;
+                curmetaID_1 = uncompress2(&p1);  /* Next metaID */
+                nextposmetaname_1 = UNPACKLONG2(p1); 
+                p1 += sizeof(long);
+                curmetanamepos_1 = p1 - olddata;
+            }
+            else
+            {
+                memcpy(p,p1,sz_olddata- (p1 - olddata));
+                p += sz_olddata - (p1 - olddata);
+                curmetaID_1 = 0;
+                break;
+            }
+            PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+        }
+   }
+
+    if(curmetaID_2)
+    {
+        while(1)
+        {
+            p = compress3(curmetaID_1,p);
+
+            curmetanamepos = p - sw->Index->worddata_buffer;
+                /* Store 0 and increase pointer */
+            tmp=0L;
+            PACKLONG2(tmp,p);
+            p += sizeof(unsigned long);
+
+            if(nextposmetaname_2)
+            {
+                memcpy(p,p2,nextposmetaname_2 - (p2 - newdata));
+                p += nextposmetaname_2 - (p2 - newdata);
+                p2 = newdata + nextposmetaname_2;
+                curmetaID_2 = uncompress2(&p2);  /* Next metaID */
+                nextposmetaname_2 = UNPACKLONG2(p2); 
+                p2+= sizeof(long);
+                curmetanamepos_2= p2 - newdata;
+            }
+            else
+            {
+                memcpy(p,p2,sz_newdata - (p2 - newdata));
+                p += sz_newdata - (p2 - newdata);
+                curmetaID_2 = 0;
+                break;
+            }
+            PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+        }
+   }
+
+
+    if(newdata != stack_buffer)
+        efree(newdata);
 }
 
 /* Writes the list of metaNames into the DB index
@@ -903,6 +1227,13 @@ int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB)
 {
    return sw->Db->DB_WriteWord(word, wordID, DB);
 }
+
+#ifdef USE_BTREE
+int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB)
+{
+   return sw->Db->DB_UpdateWordID(word, wordID, DB);
+}
+#endif
 
 int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)
 {
