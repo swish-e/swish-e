@@ -2851,27 +2851,34 @@ Here's some common questions and answers.
 
 =head2 How do I change the way the output looks?
 
-The script uses a module to generate output.  By default it uses the SWISH::TemplateDefault.pm module.
-The module used can be selected in the configuration file.  Modules are located in the example/modules/SWISH
-directory in the distribution.  See the previous section for information on how Perl locates modules.
+The script uses a module to generate output.  By default it uses the
+SWISH::TemplateDefault.pm module. The module used is selected in the
+swish.cgi configuration file.  Modules are located in the
+example/modules/SWISH directory in the distribution, but are installed in
+the $prefix/lib/swish-e/perl/SWISH/ directory.
 
-If you want to make simple changes you can edit the SWISH::TemplatDefault module directly.  If you want to
-copy a module, you must also change the "package" statement at the top of the module.  For example:
+To make simple changes you can edit the installed SWISH::TemplatDefault
+module directly, otherwise make a copy of the module and modify its package 
+name.  For example, change directories to the location of the installed 
+module and copy the module to a new name:
 
-    cd modules/SWISH
-    cp TempateDefault.pm MyTemplateDefault.pm
+    $ cp TemplateDefault.pm MyTemplateDefault.pm
 
 Then at the top of the module adjust the "package" line to:
 
     package SWISH::MyTemplateDefault;
 
-To use this modules you need to adjust the configuration settings (either at the top of F<swish.cgi> or in
-a configuration file:
+To use this modules you need to adjust the configuration settings (either at
+the top of F<swish.cgi> or in a configuration file:
 
 
         template => {
             package     => 'SWISH::MyTemplateDefault',
         },
+
+The module does not need to be in the SWISH namespace, and can be stored in 
+any location as long as the module can be found via the @INC array (i.e. 
+modify the "use lib" statement in swish.cgi if needed).
 
 
 =head2 How do I use a templating system with swish.cgi?
