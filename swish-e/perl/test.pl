@@ -43,7 +43,7 @@
 
     # Get a few headers from the index files for display
 
-    my @headers = ( qw/WordCharacters BeginCharacters EndCharacters/, 'Indexed on');
+    my @headers = ( qw/WordCharacters BeginCharacters EndCharacters IndexedOn / );
   
     for my $header ( @headers ) {
         print_header("Header '$header'");
