@@ -25,6 +25,7 @@ $Id$
 #include <stdlib.h>
 #include <memory.h>
 #include "error.h"
+#include "swish.h"
 
 #include "mem.h"
 
@@ -86,6 +87,11 @@ void Mem_Summary(char *title, int final)
 ** Now we get into the debugging/trace memory allocator. I apologize for the
 ** conditionals in this code, but it does work :-)
 */
+
+/* parameters of typical allocators (just for statistics) */
+#define MIN_CHUNK 16
+#define CHUNK_ROUNDOFF (sizeof(long) - 1)
+
 
 /* Random value for a GUARD at beginning and end of allocated memory */
 #define GUARD 0x14739182
@@ -152,7 +158,18 @@ static unsigned long MAllocCurrentOverhead = 0;
 static unsigned long MAllocMaximumOverhead = 0;
 static unsigned long MAllocCurrent = 0;
 static unsigned long MAllocMaximum = 0;
+static unsigned long MAllocCurrentEstimated = 0;
+static unsigned long MAllocMaximumEstimated = 0;
 
+
+#if MEM_DEBUG
+#define MEM_ERROR(str)											\
+{																\
+	printf("\nMemory free error! At %s line %d\n", file, line);	\
+	printf str;													\
+	fflush(stdout);												\
+}
+#endif
 
 #if MEM_TRACE
 
@@ -186,6 +203,13 @@ static TraceBlock *AllocTrace(char *file, int line, void *ptr, size_t size)
 
 #endif
 
+static size_t Estimated(size_t size)
+{
+	if (size <= MIN_CHUNK)
+		return MIN_CHUNK;
+
+	return (size + CHUNK_ROUNDOFF) & (~CHUNK_ROUNDOFF);
+}
 
 /* Mem_Alloc - Allocate a chunk of memory */
 
@@ -247,9 +271,14 @@ void * Mem_Alloc (size_t Size, char *file, int line)
 		MAllocMaximumOverhead = MAllocCurrentOverhead;
 
     MAllocCurrent += Size;
+    MAllocCurrentEstimated += Estimated(Size);
+
 
     if (MAllocCurrent > MAllocMaximum)
 		MAllocMaximum = MAllocCurrent;
+
+    if (MAllocCurrentEstimated > MAllocMaximumEstimated)
+		MAllocMaximumEstimated = MAllocCurrentEstimated;
 
     Header = (MemHeader *)MemPtr;
     Header->Size = Size;
@@ -328,24 +357,27 @@ void  Mem_Free (void *Address, char *file, int line)
     {
     MemTail *Tail;
 
+	if (Address == (void *)0xAAAAAAAA)
+		MEM_ERROR(("Address %08X is uninitialized memory\n", Address));
+
     if (Address != Header->Start)
-		printf("\nAlready free: %0X\n", Address); 
+		MEM_ERROR(("Already free: %0X\n", Address)); 
 		// Err_Signal (PWRK$_BUGMEMFREE, 1, Address);
 
     if (Header->Guard1 != GUARD)
-		printf("\nGuard 1: %0X\n", &Header->Guard1);
+		MEM_ERROR(("Head Guard 1 overwritten: %08X\n", &Header->Guard1));
 		// Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
 		//	Header->Guard1, 4, &Header->Guard1);
 
     if (Header->Guard2 != GUARD)
-		printf("\nGuard 2: %0X\n", &Header->Guard2);
+		MEM_ERROR(("Head Guard 2 overwritten: %08X\n", &Header->Guard2));
 		// Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
 		//	Header->Guard2, 4, &Header->Guard2);
 
     Tail = (MemTail *)((unsigned char *)Address + Header->Size);
 
     if (Tail->Guard != GUARD)
-		printf("\nTail Guard: %0X\n", &Tail->Guard);
+		MEM_ERROR(("Tail Guard overwritten: %08X\n", &Tail->Guard));
 		// Err_Signal (PWRK$_BUGMEMGUARD2, 4, Address,
 		//	Tail->Guard, 4, &Tail->Guard);
 
@@ -373,6 +405,8 @@ void  Mem_Free (void *Address, char *file, int line)
     /* Subtract chunk size from running total */
  
     MAllocCurrent -= UserSize;
+    MAllocCurrentEstimated -= Estimated(UserSize);
+
     MAllocCurrentOverhead -= MEM_OVERHEAD_SIZE;
 
 
@@ -392,6 +426,8 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
 	size_t		OldSize;
 
 	MReallocCalls++;
+	MAllocCalls--;
+	MFreeCalls--;
 
 	MemPtr =  Mem_Alloc(Size, file, line);
 
@@ -415,9 +451,10 @@ void Mem_Summary(char *title, int final)
 
 #if MEM_STATISTICS
 	printf("\nMemory usage summary: %s\n\n", title);
-	printf("Alloc calls: %d, Free calls: %d\n",  MAllocCalls,  MFreeCalls);
-	printf("Realloc calls: %d (included in above counts)\n",  MReallocCalls);
-	printf("Maximum memory usage: %d, Current usage: %d\n",  MAllocMaximum,  MAllocCurrent);
+	printf("Alloc calls: %d, Realloc calls: %d, Free calls: %d\n",  MAllocCalls, MReallocCalls, MFreeCalls);
+	printf("Requested: Maximum usage: %d, Current usage: %d\n",  MAllocMaximum,  MAllocCurrent);
+	printf("Estimated: Maximum usage: %d, Current usage: %d\n",  MAllocMaximumEstimated,  MAllocCurrentEstimated);
+
 #endif
 
 #if MEM_TRACE
@@ -433,6 +470,100 @@ void Mem_Summary(char *title, int final)
 	}
 #endif
 
+}
+
+#define longSize (sizeof(long))
+
+/* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
+#define pageSize (1<<12)
+
+/* round up to a long word */
+#define ROUND_LONG(n) (((n) + longSize - 1) & (~(longSize - 1)))
+
+/* round up to a page */
+#define ROUND_PAGE(n) (((n) + pageSize - 1) & (~(pageSize - 1)))
+
+/*
+** Mem Zone routines -- efficient memory allocation if you don't need
+** realloc and free...
+*/
+
+/* allocate a chunk of memory from the OS */
+static MEM_ZONE *allocChunk(size_t size)
+{
+	MEM_ZONE	*zone;
+
+	zone = emalloc(sizeof(MEM_ZONE));
+	zone->alloc = emalloc(size);
+	zone->ptr = zone->alloc;
+	zone->free = size;
+	zone->next = NULL;
+
+	return zone;
+}
+
+/* create a memory zone */
+MEM_ZONE_HEAD *Mem_ZoneCreate(size_t size)
+{
+	MEM_ZONE_HEAD	*head;
+
+	head = emalloc(sizeof(MEM_ZONE_HEAD));
+	head->size = ROUND_PAGE(size);
+	head->next = allocChunk(size);
+
+	return head;
+}
+
+/* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
+void *Mem_ZoneAlloc(MEM_ZONE_HEAD *head, size_t size)
+{
+	MEM_ZONE	*zone;
+	MEM_ZONE	*newzone;
+	unsigned char *ptr;
+
+	size = ROUND_LONG(size);
+
+	zone = head->next;
+
+	/* If not enough free in this chunk, allocate a new one. Don't worry about the
+	   small amount of unused space at the end. If we are asking for a really big
+	   chunk be sure we allocate enough for that! */
+
+	if (zone->free < size)
+	{
+		newzone = allocChunk(size > head->size ? size : head->size);
+		head->next = newzone;
+		newzone->next = zone;
+		zone = newzone;
+	}
+
+	/* decrement free, advance pointer, and return allocation to the user */
+	zone->free -= size;
+	ptr = zone->ptr;
+	zone->ptr += size;
+
+	return ptr;
+}
+
+
+void Mem_ZoneFree(MEM_ZONE_HEAD *head)
+{
+	MEM_ZONE *next;
+	MEM_ZONE *tmp;
+
+	if (!head)
+		return;
+
+	next = head->next;
+	while (next)
+	{
+		efree(next->alloc);
+		tmp = next->next;
+		efree(next);
+		next = tmp;
+	}
+
+	efree(head);
 }
 
 

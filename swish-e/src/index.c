@@ -157,7 +157,6 @@ void initModule_Index (SWISH  *sw)
     idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
     idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
 
-
         /* Init  entries hash table */
 	for (i=0; i<SEARCHHASHSIZE; i++)
 	{
@@ -194,12 +193,20 @@ void initModule_Index (SWISH  *sw)
 
     idx->plimit=PLIMIT;
     idx->flimit=FLIMIT;
-       /* Swaping access file functions */
+
+       /* Swapping access file functions */
     idx->swap_tell = NULL;
     idx->swap_write = NULL;
     idx->swap_seek = NULL;
     idx->swap_read = NULL;
     idx->swap_close = NULL;
+    idx->swap_getc = NULL;
+    idx->swap_putc = NULL;
+
+	if (RAM_DISK)
+		idx->locZone = NULL;
+	else
+		idx->locZone = Mem_ZoneCreate(4096*64);
 
     return;
 }
@@ -1483,6 +1490,8 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         
         DB_EndWriteWords(sw, indexf->DB);
 
+		Mem_ZoneFree(sw->Index->locZone);
+
         efree(ep->elist);
 
     }
@@ -1608,7 +1617,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     fi->filenum = filenum - 1;
 
 
-
 #ifdef PROPFILE
     p = UnPackPropLocations( fi, p );
 #else    
@@ -1650,7 +1658,6 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         }
         else
             filep = indexf->filearray[i];
-
 
         buffer = buildFileEntry(filep, &sz_buffer);
 

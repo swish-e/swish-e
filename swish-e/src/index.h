@@ -90,6 +90,8 @@ struct MOD_Index
     int		plimit;
     int		flimit;
 
+	struct _mem_zone_head	*locZone;
+
 };
 
 void initModule_Index (SWISH *);

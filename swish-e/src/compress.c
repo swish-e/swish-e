@@ -216,7 +216,7 @@ struct MOD_Index *idx = sw->Index;
 		q=(unsigned char *)SwapLocData(sw,++p,i);
 	}
 	else {
-		q=(unsigned char *)emalloc(i);
+		q=(unsigned char *)Mem_ZoneAlloc(idx->locZone, i);
 		memcpy(q,++p,i);
 	}
     efree(l);
