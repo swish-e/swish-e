@@ -34,6 +34,10 @@
 #include "file.h"
 #include "error.h"
 #include "parse_conffile.h"
+#include "bash.h" /* for locating a program */
+
+static char *find_command_in_path(const char *name, const char *path_list, int *path_index);
+
 
 struct MOD_Prog
 {
@@ -102,14 +106,22 @@ int configModule_Prog (SWISH *sw, StringList *sl)
 static FILE   *open_external_program(SWISH * sw, char *prog)
 {
     char   *cmd;
+    char   *full_path;
     FILE   *fp;
     size_t  total_len;
-    struct  stat stbuf;
     struct swline *progparameterslist = sw->Prog->progparameterslist;
-    char *execdir = get_libexec();
+    int    path_index = 0;  /* index into $PATH */
 	
     if ( ! strcmp( prog, "stdin") )
         return stdin;
+
+    full_path = find_command_in_path( (const char *)prog, getenv("PATH"), &path_index );
+    if ( !full_path )
+        progerr("Failed to find program '%s' in PATH: ", prog );
+
+    if ( sw->verbose )
+        printf("External Program found: %s\n", full_path );
+
 
 
     /* get total length of configuration parameters */
@@ -120,54 +132,16 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
         progparameterslist = progparameterslist->next;
     }
 
-    total_len += strlen( execdir ) + 1;
-    total_len += strlen(prog);
+    cmd = emalloc(total_len + strlen( full_path ) + 1);
+    strcpy(cmd, full_path);
+    efree( full_path );
 
-    cmd = emalloc(total_len + 20);
-    cmd[0] = '\0';
-
-/* Prefix libexecdir if path does not start with a ".", "/", "\", nor "X:"  */
-/* $$$ the "." check is a bug, need to check for "./"  */
-
-    if ( prog[0] != '/' && prog[0] != '.' && prog[0] != '\\' && prog[1] != ':' )
-    {
-        strcat( cmd, execdir );
-        efree( execdir );
-        if ( cmd[ strlen( cmd ) - 1 ]  != '/' ) 
-           strcat( cmd, "/" );
-    }
-
-    strcat(cmd, prog);
-
-    normalize_path( cmd );  /* for stat calls */
-
-
-#ifndef NO_PROG_CHECK
-    /* this should probably be in file.c so filters.c can check, too */
-    /* note this won't catch errors in a shebang line, of course */
-
-    if (stat(cmd, &stbuf))
-        progerrno("External program '%s': ", cmd);
-
-    if ( stbuf.st_mode & S_IFDIR)
-        progerr("External program '%s' is a directory.", cmd);
-
-#ifdef HAVE_ACCESS
-
-    if ( access( cmd, R_OK|X_OK ) )
-        progerrno("Cannot execute '%s': ", cmd);
-
-#endif
-
-#endif /* NO_PROG_CHECK */
 
 #ifdef _WIN32
 
     make_windows_path( cmd );
 
 #endif
-
-        
 
 
     progparameterslist = sw->Prog->progparameterslist;
@@ -449,3 +423,103 @@ struct _indexing_data_source_def ExternalProgramDataSource = {
     extprog_indexpath,
     extprog_parseconfline
 };
+
+
+/* From GNU Which */
+static char *find_command_in_path(const char *name, const char *path_list, int *path_index)
+{
+  char *found = NULL, *full_path;
+  int status, name_len;
+  int absolute_path_given = 0;
+  char *abs_path = NULL;
+  name_len = strlen(name);
+
+  if (!absolute_program(name))
+    absolute_path_given = 0;
+  else
+  {
+    char *p;
+    absolute_path_given = 1;
+
+    if (abs_path)
+      xfree(abs_path);
+
+    if (*name != '.' && *name != '/' && *name != '~')
+    {
+      abs_path = (char *)xmalloc(3 + name_len);
+      strcpy(abs_path, "./");
+      strcat(abs_path, name);
+    }
+    else
+    {
+      abs_path = (char *)xmalloc(1 + name_len);
+      strcpy(abs_path, name);
+    }
+
+    path_list = abs_path;
+    p = strrchr(abs_path, '/');
+    *p++ = 0;
+    name = p;
+  }
+
+  while (path_list && path_list[*path_index])
+  {
+    char *path;
+
+    if (absolute_path_given)
+    {
+      path = savestring(path_list);
+      *path_index = strlen(path);
+    }
+    else
+      path = get_next_path_element(path_list, path_index);
+
+    if (!path)
+      break;
+
+#ifdef SKIPTHIS
+    if (*path == '~')
+    {
+      char *t = tilde_expand(path);
+      xfree(path);
+      path = t;
+
+      if (skip_tilde)
+      {
+        xfree(path);
+        continue;
+      }
+    }
+
+    if (skip_dot && *path != '/')
+    {
+      xfree(path);
+      continue;
+    }
+
+    found_path_starts_with_dot = (*path == '.');
+#endif
+
+    full_path = make_full_pathname(path, name, name_len);
+    xfree(path);
+
+    status = file_status(full_path);
+
+    /* This is different from "where" because it stops at the first found file */
+    /* but where (and shells) continue to find first executable program in path */
+    if (status & FS_EXISTS) 
+    {
+      if (status & FS_EXECABLE)
+      {
+        found = full_path;
+        break;
+      }
+      else
+          progerr("Found '%s' but is not executable", full_path);
+    }
+    xfree(full_path);
+  }
+
+  return (found);
+}
+

@@ -206,6 +206,7 @@ libswishindex_la_SOURCES = \
 	http.c http.h \
 	httpserver.c httpserver.h \
 	extprog.c extprog.h \
+        bash.c bash.h \
 	methods.c \
 	html.c html.h \
 	txt.c txt.h \
@@ -243,9 +244,9 @@ am_libswish_e_la_OBJECTS = search.lo swish2.lo swish_words.lo \
 	soundex.lo
 libswish_e_la_OBJECTS = $(am_libswish_e_la_OBJECTS)
 am_libswishindex_la_OBJECTS = fs.lo http.lo httpserver.lo extprog.lo \
-	methods.lo html.lo txt.lo xml.lo entities.lo index.lo merge.lo \
-	pre_sort.lo file.lo filter.lo parse_conffile.lo swregex.lo \
-	db_write.lo docprop_write.lo getruntime.lo
+	bash.lo methods.lo html.lo txt.lo xml.lo entities.lo index.lo \
+	merge.lo pre_sort.lo file.lo filter.lo parse_conffile.lo \
+	swregex.lo db_write.lo docprop_write.lo getruntime.lo
 libswishindex_la_OBJECTS = $(am_libswishindex_la_OBJECTS)
 EXTRA_PROGRAMS = libtest$(EXEEXT)
 bin_PROGRAMS = swish-e$(EXEEXT)
@@ -265,11 +266,11 @@ SCRIPTS = $(libexec_SCRIPTS)
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/array.Plo ./$(DEPDIR)/btree.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/check.Plo ./$(DEPDIR)/compress.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/date_time.Plo ./$(DEPDIR)/db_native.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/db_read.Plo ./$(DEPDIR)/db_write.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/docprop.Plo \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/array.Plo ./$(DEPDIR)/bash.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/btree.Plo ./$(DEPDIR)/check.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/compress.Plo ./$(DEPDIR)/date_time.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/db_native.Plo ./$(DEPDIR)/db_read.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/db_write.Plo ./$(DEPDIR)/docprop.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/docprop_write.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/double_metaphone.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/dump.Po ./$(DEPDIR)/entities.Plo \
@@ -447,6 +448,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/array.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/btree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/compress.Plo@am__quote@

@@ -85,10 +85,9 @@ dnl Checks for header files.
 dnl looks for dirent.h and sets HAVE_DIRENT_H -- do we use?
 AC_HEADER_DIRENT
 
-dnl Looks for standard C headers
-dnl which we need and don't do anything abut if we don't have them
-dnl so why bother?
-dnl AC_HEADER_STDC
+AC_HEADER_STAT
+AC_HEADER_STDC
+
 
 dnl Check for some headers
 AC_CHECK_HEADERS(unistd.h stdlib.h string.h sys/timeb.h windows.h)
@@ -108,8 +107,14 @@ AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_FUNC_FORK
 AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat setenv access)
+AC_CHECK_FUNCS(strchr memcpy)
 AC_CHECK_FUNCS(clock times getrusage)
 AC_CHECK_LIB(m,log)
+
+AC_FUNC_GETGROUPS
+
+AC_TYPE_GETGROUPS
+AC_DEFINE([GETGROUPS_T],GETGROUPS_T,[Check for groups with AC_TYPE_GETGROUPS])
 
 AC_REPLACE_FUNCS(vsnprintf mkstemp)
 

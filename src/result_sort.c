@@ -63,7 +63,6 @@ static int compare_results_single_index(const void *s1, const void *s2)
     int       rc;
     int       num_fields      = r1->db_results->num_sort_props;
     SortData  *sort_data;
-    propEntry *prop_entry;
     int       *presorted;
 
     for (i = 0; i < num_fields; i++)
@@ -148,7 +147,6 @@ int compare_results(const void *s1, const void *s2)
     SortData  *sort_data1;
     SortData  *sort_data2;
     propEntry *prop_entry;
-    int       *presorted;
 
     for (i = 0; i < num_fields; i++)
     {
@@ -287,7 +285,6 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     int results_in_index = 0;
     RESULT  *cur_result;
     RESULT **sort_array;
-    propEntry *prop_entry;              
     SortData *sort_data;  
 
     /* Any results to process? */

@@ -76,6 +76,7 @@ libswishindex_la_SOURCES = \
 	http.c http.h \
 	httpserver.c httpserver.h \
 	extprog.c extprog.h \
+        bash.c bash.h \
 	methods.c \
 	html.c html.h \
 	txt.c txt.h \

@@ -67,6 +67,7 @@
 #include "file.h"
 #include "check.h"
 #include "error.h"
+#include "list.h"
 
 #include "http.h"
 #include "httpserver.h"
@@ -125,7 +126,6 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
     int     i;
     struct multiswline *list;
     struct swline *slist;
-    int     len;
 
     if (strcasecmp(w0, "maxdepth") == 0)
     {

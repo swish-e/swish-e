@@ -54,7 +54,7 @@ static struct swline *expandphrase(struct swline *, char);
 
 static char *isBooleanOperatorWord( char * word );
 
-static print_swline( char *msg, struct swline *word_list )
+static void print_swline( char *msg, struct swline *word_list )
 {
 #ifdef SWISH_WORDS_DEBUG
     struct swline *sl = word_list;
@@ -520,7 +520,7 @@ static char *isBooleanOperator( char * word )
 /* Simply replace <and> with "and" */
 /* it's required that the replacement string is <= to inital string. */
 
-switch_back_operators( struct swline *sl )
+static void switch_back_operators( struct swline *sl )
 {
     char *operator;
 
@@ -693,7 +693,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 
     /* fudge wild cards back onto preceeding word */
     /* $$$ This is broken because a query of "foo *" ends up "foo*" */
-    /*     Now almost fixed "foo *" is an error, but 
+    /*     Now almost fixed "foo *" is an error, but */
     /* Also doesn't check for an operator followed by "*" */
     
     for ( temp = tokens ; temp; )
@@ -1093,7 +1093,6 @@ static struct swline *fixnot1(struct swline *sp)
 {
     struct swline *tmpp,
            *prev, *new;
-    int len;
 
     if (!sp)
         return NULL;
