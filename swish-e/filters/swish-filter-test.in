@@ -1,4 +1,4 @@
-#!@@perlbinary@@ -w
+#!/@@perlbinary@@ -w
 use strict;
 
 # This is set to where Swish-e's "make install" installed the helper modules.
@@ -6,7 +6,7 @@ use lib qw( @@perlmoduledir@@ );
 
 ###################################################################################
 #
-#    swish.cgi $Revision$ Copyright (C) 2001 Bill Moseley swishscript@hank.org
+#    Copyright (C) 2001 Bill Moseley swishscript@hank.org
 #    Program to test the SWISH::Filter module
 #
 #    This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ use constant ABORT => 0;
 use constant DEBUG => 1;
 use constant INFO  => 2;
 
-my ( $verbose, $show_content, @file, @url, $help, $man, $quiet, $headers);
+my ( $verbose, $show_content, @file, @url, $help, $man, $quiet, $headers, $path, $depreciated);
 
 my $skip_binary = 1;
 
@@ -51,10 +51,17 @@ GetOptions(
         'man'        => \$man,
         'headers'    => \$headers,
         'skip_binary!' => \$skip_binary,
+        'path'       => \$path,
+	'depreciated'=> \$depreciated,
 
 ) || pod2usage(2);
 pod2usage( -verbose => 1 ) if $help;
 pod2usage( -verbose => 2 ) if $man;
+
+if ( $path ) {
+    print "/home/moseley/swish_test/lib/swish-e/perl\n";
+    exit;
+}
 
 
 pod2usage(
@@ -75,7 +82,7 @@ my $filter = SWISH::Filter->new;
 my $return = 0;
 
 for my $doc ( @ARGV ) {
-    eval { process_doc( $doc ) };
+    eval { $depreciated ? process_doc_old( $doc ) : process_doc( $doc ) };
     $return = 1 if $@;
     warn "** $0:\n  $@\n" if $@;  # always warn on die
 }
@@ -83,6 +90,69 @@ for my $doc ( @ARGV ) {
 exit $return;
 
 sub process_doc {
+    my ($file) = @_;
+
+
+    my $uri;
+    eval { $uri = URI->new( $file ) };
+    my %config = !$@ && $uri->scheme  ? fetch_url( $file ) : fetch_file( $file);
+
+
+    my $doc = $filter->convert(
+        %config,
+        name => $file,
+    );
+
+    die "Failed to process document [$file]\n" unless $doc;
+
+    my $content_type = $doc->content_type || "unknown";
+    my $parser_type = $doc->swish_parser_type || '';
+
+    my $binary = $doc->is_binary;
+
+    my $msg = $doc->was_filtered ? '' : 'not';
+
+my $name = $doc->name;
+
+
+    msg(DEBUG, <<EOF );
+
+Document $file was $msg filtered.
+   Document:     $file  ($name)
+   Content-Type: $content_type
+   Parser type:  $parser_type
+EOF
+
+    if ( my $filters_used = $doc->filters_used ) {
+        for my $filter ( @$filters_used ) {
+	    msg( DEBUG, "   >Filter used: $filter->{name} ( $filter->{start_content_type} -> $filter->{end_content_type} )" );
+         }
+    }
+
+
+    if ( !$binary ) {
+        my @doc = split /\n/, substr( ${$doc->fetch_doc}, 0, $max_chars );
+        $lines = @doc-1 if $lines >= @doc;
+        msg(INFO, join "\n", '-- Output Content Sample --', @doc[0..$lines],'','-- end --','' );
+    }
+
+
+    die "Skipping binary [$file]\n" if $binary && $skip_binary;
+
+    if ($headers ) {
+        my $len = length ${$doc->fetch_doc};
+
+        print "Path-Name: $file\nContent-Length: $len\n";
+        print "Document-Type: $parser_type\n" if $parser_type;
+        print "\n";
+    }
+
+
+    print ${$doc->fetch_doc} if $show_content;
+}
+
+
+sub process_doc_old {
     my ($file) = @_;
 
 
@@ -196,6 +266,7 @@ swish-filter-test [options] <file or url>  <...>
    -(no)skip_binary skip output of binary files (default)
    -lines <num>     Number of lines of content to display to stderr if verbose
    -headers         output with headers for swish-e -S prog method 
+   -path            output @INC path to SWISH::Filter module
    -help            brief help message
    -man             full documentation
 
@@ -261,7 +332,15 @@ filter documents directly to swish-e:
 
  swish-filter-test -headers -content http://localhost/ test.pdf | swish-e -S prog -i stdin -v1  
 
-  
+=item B<-path>
+
+Prints the installed location of the SWISH::Filter parent directory for use in PERL5LIB,
+Allows using SWISH::Filter in other programs, or with the Swish-e -S http method with
+swishspider.
+
+For example:
+
+   PERL5LIB=`swish-filter-test -path` swish-e -S http -i http://localhost
 
 
 =item B<-help>

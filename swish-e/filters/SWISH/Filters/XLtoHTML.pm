@@ -102,7 +102,7 @@ EOF
             $oWkC = $oWkS->{Cells}[$iR][$iC];
             
             my $CellData = encode_entities($oWkC->Value) if($oWkC);
-            $ExcelWorkSheet .= "\t<td>" . $CellData . "</td>\n";
+            $ExcelWorkSheet .= "\t<td>" . $CellData . "</td>\n" if $CellData;
         }
         $ExcelWorkSheet .= "</tr>\n";
         
