@@ -14,10 +14,13 @@ use File::Basename;
 
     # Look for possible redirects
 
-    if ( $_ = $ENV{REDIRECT_SCRIPT_URI} ) {
+    if ( $_ = $ENV{REDIRECT_SCRIPT_URI} || $ENV{REDIRECT_URL} ) {
         redirect($_) if s[/Download][/download];
-        redirect($_) if s[/Discussion/archive][/archve];
-        redirect($_) if s[/Discussion/?.+$][/discuss.html];
+        redirect($_) if s[/Discussion/archive][/archive];
+        redirect($_) if s[/Discussion/search/][/search_archive];
+        redirect($_) if s[/Discussion/?.*$][/discuss.html];
+
+        redirect("/docs/" . lc( $1 ) . $2) if m[/current/docs/(.+)(\.html.*)$];
         redirect($_) if s[/current/docs][/docs];
         redirect($_) if s[/dev/docs/?][/devel/devel_docs/];
         redirect($_) if s[/dev/swish-daily/?][/devel/daily.html];
@@ -39,6 +42,8 @@ use File::Basename;
         rooturl => dirname( $ENV{SCRIPT_NAME} ), # for .css file
         env     => \%ENV,
     };
+
+    $vars->{rooturl} = '' if $vars->{rooturl} eq '/';
 
 
     my $template = Template->new( $tt_options ) || die Template->error;
