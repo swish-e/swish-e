@@ -87,6 +87,11 @@ unsigned char *StringValue=NULL;
 				}
 			} else progerr("IndexDir requires one value");
 		}
+		else if (strcasecmp(sl->word[0], "IncludeConfigFile")==0) {
+			if(sl->n==2) {
+				getdefaults(sw,sl->word[1],hasdir,hasindex,hasverbose);
+			} else progerr("IncludeConfigfile requires one value");
+		}
 		else if (strcasecmp(sl->word[0],"NoContents")==0) {
 			if(sl->n>1) {
 				grabCmdOptions(sl,1,&sw->nocontentslist);
