@@ -100,10 +100,13 @@ struct metaEntry *getMetaIDData(INDEXDATAHEADER *header, int number)
 
 
 
+
+
 /* Add an entry to the metaEntryArray with the given value and the
 ** appropriate index
 */
 /* #### Changed the name isDocProp by metaType */
+
 void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID, int *sort_array, int *applyautomaticmetanames)
 {
     struct metaEntry *tmpEntry;
@@ -153,6 +156,7 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
 
         newEntry->metaType = 0;
         newEntry->sorted_data = NULL;
+        newEntry->inPropRange = NULL;  /* for limiting by this property - moseley */
         newEntry->metaName = (char *) estrdup(metaWord);
 
         if (metaID)
@@ -182,7 +186,7 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
     tmpEntry->metaType |= metaType;
 
 
-    /* Asign internal metanames if found */
+    /* Assign internal metanames if found */
     if (strcmp(metaWord, AUTOPROPERTY_DOCPATH) == 0)
         header->filenameProp = tmpEntry;
     else if (strcmp(metaWord, AUTOPROPERTY_TITLE) == 0)
@@ -197,6 +201,36 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
         header->summaryProp = tmpEntry;
 
     /* #### */
+}
+
+/* Free meta entries for an index file */
+
+void   freeMetaEntries( INDEXDATAHEADER *header )
+{
+    int i;
+
+    /* Make sure there are meta names assigned */
+    if ( !header->metaCounter )
+        return; 
+
+
+    for( i = 0; i < header->metaCounter; i++ )
+    {
+        struct metaEntry *meta = header->metaEntryArray[i];
+
+        efree( meta->metaName );
+
+        if( meta->sorted_data)
+            efree( meta->sorted_data );
+
+        if( meta->inPropRange )
+            efree( meta->inPropRange);
+
+        efree( meta );
+    }
+
+    /* And free the pointer to the list */
+    efree( header->metaEntryArray);
 }
 
 

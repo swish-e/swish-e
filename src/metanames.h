@@ -21,5 +21,6 @@ void add_default_metanames(IndexFILE *);
 struct metaEntry * getMetaNameData(INDEXDATAHEADER *, char *);
 struct metaEntry * getMetaIDData(INDEXDATAHEADER *, int);
 void addMetaEntry(INDEXDATAHEADER *, char *, int, int, int *, int *);
+void freeMetaEntries( INDEXDATAHEADER * );
 int getMetaNameID(IndexFILE *, char *);
 int isDontBumpMetaName(SWISH *sw,char *tag);
