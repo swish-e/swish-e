@@ -205,7 +205,14 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 progerr("%s: requires one value", w0);
             continue;
         }
-        
+
+
+        if (strcasecmp(w0, "obeyRobotsNoIndex") == 0)
+        {
+            sw->obeyRobotsNoIndex = getYesNoOrAbort(sl, 1, 1);
+            continue;
+        }
+
 
         if (strcasecmp(w0, "MinWordLimit") == 0)
         {

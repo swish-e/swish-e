@@ -291,6 +291,12 @@ Controls which properties are pre-sorted while indexing.  All properties are sor
 
 Sets the level of warning printed when using libxml2.
 
+=item * New directive: obeyRobotsNoIndex [yes|NO]
+
+When using libxml2 to parse HTML, swish-e will skip files marked as NOINDEX.
+
+    <meta name="robots" content="noindex">
+
 =back
 
 Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for documentation on these

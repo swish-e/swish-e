@@ -250,6 +250,10 @@ L<NoContents|/"item_NoContents"> *list of file suffixes*
 
 =item *
 
+L<obeyRobotsNoIndex|/"item_obeyRobotsNoIndex"> [yes|NO]
+
+=item *
+
 L<ParserWarnLevel|/"item_ParserWarnLevel"> 0|1|2|3
 
 =item *
@@ -376,6 +380,17 @@ Index file specifies the location of the generated index file.  If not specified
 the file F<index.swish-e> in the current directory.
 
     IndexFile /usr/local/swish/site.index
+
+=item obeyRobotsNoIndex [yes|NO]
+
+When enabled, swish will not index any HTML file that contains:
+
+    <meta name="robots" content="noindex">
+
+The default is to ignore these meta tags and index the document.
+This tag is described at http://www.robotstxt.org/wc/exclusion.html.
+
+Note: This feature is only available with the libxml2 HTML parser.
 
 
 =back
@@ -729,9 +744,11 @@ META tags can have two formats in your B<HTML> source documents:
 
 and
 
-    <!-- META START NAME="meta1" -->
+    <meta1>
         some content
-    <!-- META END -->
+    </meta1>
+
+But this second version is invalid HTML, and will generate a warning if ParserWarningLevel is set.    
 
 And in B<XML> documents, use the format:
 
@@ -812,6 +829,7 @@ There are four choices:
 error reported.
 
 =item ignore - The contents of the meta tag are ignored and B<not> indexed.
+This only applies to HTML <meta name="...> tags.
 
 =item index - The contenst of the meta tag are indexed, but placed in the main index (the contents are not
 assinged a meta name and cannot be searched by meta name.  This is the default.
@@ -1206,8 +1224,13 @@ from the configuration file.
 
 =item IgnoreMetaTags *list of names*
 
-C<IgnoreMetaTags> defines a list of metanames to ignore while indexing XML files.
-This is useful to avoid indexing specific data from a file.  For example:
+C<IgnoreMetaTags> defines a list of metantags to ignore while indexing XML files (and HTML
+files if using libxml2 for parsing HTML).  All text within the tags will be ignored --
+both for indexing (C<MetaNames>) and properties (C<PropertyNames>).  To still parse
+properties, yet do not index the text, see L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
+
+
+This option is useful to avoid indexing specific data from a file.  For example:
 
     <person>
         <first_name>
@@ -1230,7 +1253,6 @@ This is solved by:
 
     IgnoreMetaTags updated_date
 
-Warning: Any data listed in C<IgnoreMetaTags> will not be indexed.  
 
 See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
 

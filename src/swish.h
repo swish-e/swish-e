@@ -205,14 +205,25 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
 
-#define IN_FILE		(1<<0)
-#define IN_TITLE	(1<<1)
-#define IN_HEAD		(1<<2)
-#define IN_BODY		(1<<3)
-#define IN_COMMENTS	(1<<4)
-#define IN_HEADER	(1<<5)
-#define IN_EMPHASIZED (1<<6)
-#define IN_META		(1<<7)
+#define IN_FILE_BIT     0
+#define IN_TITLE_BIT    1
+#define IN_HEAD_BIT     2
+#define IN_BODY_BIT     3
+#define IN_COMMENTS_BIT 4
+#define IN_HEADER_BIT   5
+#define IN_EMPHASIZED_BIT   6
+#define IN_META_BIT     7
+#define STRUCTURE_END 7
+
+
+#define IN_FILE		(1<<IN_FILE_BIT)
+#define IN_TITLE	(1<<IN_TITLE_BIT)
+#define IN_HEAD		(1<<IN_HEAD_BIT)
+#define IN_BODY		(1<<IN_BODY_BIT)
+#define IN_COMMENTS	(1<<IN_COMMENTS_BIT)
+#define IN_HEADER	(1<<IN_HEADER_BIT)
+#define IN_EMPHASIZED (1<<IN_EMPHASIZED_BIT)
+#define IN_META		(1<<IN_META_BIT)
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED|IN_META)
 
 #define MAXLONGLEN 4
@@ -702,6 +713,8 @@ typedef struct
 
     /* parser error warning level */
     int     parser_warn_level;
+
+    int     obeyRobotsNoIndex;
 
     /* for extracting links into a metaEntry */
     struct metaEntry *links_meta;

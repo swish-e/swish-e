@@ -2411,7 +2411,7 @@ static int build_metaID_list( SWISH *sw )
     }
 
     /* If no metas found to index, then add default metaID */
-    if ( !metas->num && !sw->ReqMetaName && metas->defaultID  )
+    if ( !metas->num && metas->defaultID  )
         metas->array[metas->num++] = metas->defaultID;
 
     return metas->num;

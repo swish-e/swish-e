@@ -33,7 +33,8 @@ use constant DEBUG_LINKS    => $bit <<= 1;  # prints links as they are extracted
 
 use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
 
-    
+#Can't locate object method "host" via package "URI::mailto" at ../prog-bin/spider.pl line 473.
+sub URI::mailto::host { return '' };    
 
     
 #-----------------------------------------------------------------------
