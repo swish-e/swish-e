@@ -36,9 +36,19 @@ use Template;               # Template-Toolkit: http://tt2.org or see http://sea
 #-------------------- Defaults/Parameters --------------------------
 # Default config settings
 #
-# The expand_metas maps nested meta names -- that is, meta names that represent
-# multiple metanames (search -w all=foo might really search title=foo and
-# author=foo This expansion is only needed for highlighting
+# prop_to_meta defines the metas that are used for searching the text displayed
+# by the give property.  This is only needed when the property name and metaname
+# do not match up.
+# prop_to_meta => {
+#   swishdescription => [ qw/ swishdefault / ],
+#   swishtitle => [ qw/ swishdefault swishtitle / ],
+# },
+# Which says when displaying the swishdescription property use the search words
+# from the swishdefault metaname (if any) for searching.  And when displaying the
+# swishtitle property use words form both swishdefault and swishtitle (when
+# indexing HTML swish indexes the <title> along with the body under the swishdefault
+# metaname).
+
 
 use vars qw/ %config %highlight_settings %site_cache /;
 
@@ -48,9 +58,10 @@ use vars qw/ %config %highlight_settings %site_cache /;
     page_size    => 10,                          # numbe of results/page
     title        => 'Swish Example Search Page',
     template     => 'search.tt',
-    expand_metas => {
-        swishdefault => [ qw/ swishtitle swishdefault / ],
-    }
+    prop_to_meta => {
+        swishdescription => [ qw/ swishdefault / ],
+        swishtitle => [ qw/ swishdefault swishtitle / ],
+    },
 );
 
 
@@ -199,7 +210,9 @@ sub run_query {
         my %headers = map { lc($_) => ($swish->HeaderValue( $config->{index}, $_ )||'') } $swish->HeaderNames;
 
         # and cache the highlighting object
-        $instance->{highlight_object} = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers );
+        # Note if searching more than one index with differing settings then need one
+        # highlight object for each index
+        $instance->{highlight_object} = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers, { swish => $swish } );
     }
 
 
@@ -302,26 +315,8 @@ sub create_highlight_filter {
 
     my $parsed_query = parse_query( join ' ', $result->{results_obj}->ParsedWords( $config->{index} ) );
 
-    # Expand nested queries
-    # A search for swishdefault or all might really include multiple tags
-    # So expand the keywords to the extra fields
-    #
-
-    my $expand_metas = $config->{expand_metas};
-
-    for my $meta ( keys %$expand_metas ) {
-        next unless $parsed_query->{$meta};
-
-        # Now duplicate
-        # Push to merge any existing, for example is there was a query like:
-        # -w all=foo AND title=bar  then title would end up with both
-        # Not perfect
 
 
-        for my $real_meta ( @{$expand_metas->{$meta}} ) {
-            push @{ $parsed_query->{$real_meta} }, @{$parsed_query->{$meta}};
-        }
-    }
 
     # save for Data::Dumper
     $result->{parsed_query} = $parsed_query;
@@ -330,15 +325,29 @@ sub create_highlight_filter {
 
     $instance->{template_object}->context->define_filter( 'highlight',
         sub {
-            my ( $context,  $metaname ) = @_;
+            my ( $context,  $property_name, $result_object ) = @_;
 
-            # Grap parsed phrases based on metaname
-            my $phrases = $parsed_query->{$metaname};
+            my @phrases;
+
+            # Do we need to map the property name to a metaname?
+            my $metas = $config->{prop_to_meta}{$property_name} || [ $property_name ];
 
 
+            # Now collect the query words used, if any
+            # Might also check for duplicate phrases for a small optimization
+
+            for ( @$metas ) {
+                push @phrases,  @{$parsed_query->{$_}} if $parsed_query->{$_};
+            }
+
+            # Longest phrases first
+            @phrases = sort { @$b <=> @$a } @phrases;
+
+
+            # Here's the filter factory
             return sub {
                 my $text = shift;
-                $instance->{highlight_object}->highlight( \$text, $phrases);
+                $instance->{highlight_object}->highlight( \$text, \@phrases, $result_object );
                 return $text;
             }
         }, 

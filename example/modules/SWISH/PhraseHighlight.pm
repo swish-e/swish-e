@@ -10,23 +10,29 @@ use strict;
 use constant DEBUG_HIGHLIGHT => 0;
 
 sub new {
-    my ( $class, $settings, $headers ) = @_;
+    my ( $class, $settings, $headers, $options ) = @_;
 
 
 
     my $self = bless {
         settings => $settings,
         headers  => $headers,
+        options  => $options,
     }, $class;
 
 
 
     if ( $self->header('stemming applied') =~ /^(?:1|yes)$/i ) {
-        eval { require SWISH::Stemmer };
-        if ( $@ ) {
-            warn('Stemmed index needs Stemmer.pm to highlight: ' . $@);
-        } else {
-            $self->{stemmer_function} = \&SWISH::Stemmer::SwishStem;
+        $self->{stemming_applied}++;  # flag that stemming is used
+
+        unless ( $options && $options->{swish} ) {  # are we running under SWISH::API?
+            # if not, then try to load SWISH::Stemmer
+            eval { require SWISH::Stemmer };
+            if ( $@ ) {
+                warn('Stemmed index needs Stemmer.pm to highlight: ' . $@);
+            } else {
+                $self->{stemmer_function} = \&SWISH::Stemmer::SwishStem;
+            }
         }
     }
 
@@ -55,7 +61,8 @@ sub header {
 
 sub highlight {
 
-    my ( $self, $text_ref, $phrase_list ) = @_;
+
+    my ( $self, $text_ref, $phrase_list, $result_object ) = @_;
     # $phrase_list is an array of arrays of phrases (where a phrase might be a single word)
     # and should be sorted by longest to shortest phrase.
 
@@ -83,7 +90,17 @@ sub highlight {
     my $off_flag = 'sw' . time . 'off'; # can't use $On/$Off because of html escaping needs to be done later
 
 
-    my $stemmer_function = $self->{stemmer_function};
+    my $stemmer_function; 
+
+    # Now check for running under SWISH::API and check for stemming
+    if ( $result_object && $result_object->FuzzyMode ne 'None' ) {
+        # This doesn't work with double-metaphone which might return more than one stem
+        $stemmer_function = sub {
+            ($result_object->FuzzyWord( shift )->WordList)[0] 
+        };
+    } else {
+        $stemmer_function = $self->{stemmer_function};
+    }
 
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
 
@@ -101,16 +118,21 @@ sub highlight {
     # $word_pos is current pointer into @words/2 (it indexes just the "swish words") -- where to start looking for a phrase match.
     my $word_pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
 
+    # These try and cache the last stemmed word.
+    my $last_stemmed_word;
+    my $last_word_pos;
+
+
 
 
     # Remember, that the swish words are every other in @words.
-
 
     WORD:
     while ( $Show_Words && $word_pos * 2 < @words ) {
 
         PHRASE:
         foreach my $phrase ( @$phrase_list ) {
+
 
             print STDERR "  Search phrase '@$phrase'\n" if DEBUG_HIGHLIGHT;
             next PHRASE if ($word_pos + @$phrase -1) * 2 > @words;  # phrase is longer than what's left
@@ -129,7 +151,12 @@ sub highlight {
                 # get the current word from the property and convert it into a "swish word" for comparing with the phrase
                 # by stripping out the ignorefirst and ignore last chars
 
-                my $cur_word = $words[ ($word_pos + $end_pos) * 2 ];
+                my $word_pos_idx = $word_pos + $end_pos;  # offset for this word of this phrase.
+
+                my $cur_word = $words[ $word_pos_idx * 2 ];
+
+
+
                 unless ( $cur_word =~ /$extract_regexp/ ) {  # something fishy is going on
 
                     my $idx = ($word_pos + $end_pos) * 2;
@@ -157,24 +184,41 @@ sub highlight {
                 ( $begin, $word, $end ) = ( $1, $2, $3 );  # this is a waste, as it can operate on the same word over and over
 
                 my $check_word = lc $word;
+                my $unstemmed = $check_word;
 
-                if ( $end_pos && exists $self->{stopwords}{$check_word} ) {
+                # Is the word a stop word?  If so, then just ignore unless in the middle of a phrase
+
+                if ( exists $self->{stopwords}{$check_word} ) {
+                    next WORD unless $end_pos;  # skip work unless in the middle of a phrase
+
                     $end_pos++;
                     print STDERR " Found stopword '$check_word' in the middle of phrase - * MATCH *\n" if DEBUG_HIGHLIGHT;
-                    redo if  ( $word_pos + $end_pos ) * 2 < @words;  # go on to check this match word with the next word.
+                    redo if  $word_pos_idx * 2 < @words;  # go on to check this match word with the next word.
 
                     # No more words to match with, so go on to next pharse.
                     next PHRASE;
                 }
 
+
+
+                # Now stem the word.
+                # Note that this can end up stemming the same word more than once
+                # when there's more than one phrase in the query
+                # A small attempt is made to cache.
                 if ( $stemmer_function ) {
-                    my $w = $stemmer_function->($check_word);
-                    $check_word = $w if $w;
+                    if ( $last_stemmed_word && $last_word_pos == $word_pos_idx) {
+                        $check_word = $last_stemmed_word;
+                    } else {
+                        my $w = $stemmer_function->($check_word);
+                        $check_word = $w if $w;
+                        $last_word_pos = $word_pos_idx;
+                        $last_stemmed_word = $check_word;
+                    }
                 }
 
 
 
-                print STDERR "     comparing source # (word:$word_pos offset:$end_pos) '$check_word' == '$match_word'\n" if DEBUG_HIGHLIGHT;
+                print STDERR "     comparing source # (word:$word_pos offset:$end_pos) '$check_word ($unstemmed)' == '$match_word'\n" if DEBUG_HIGHLIGHT;
 
                 if ( substr( $match_word, -1 ) eq '*' ) {
                     next PHRASE if index( $check_word, substr($match_word, 0, length( $match_word ) - 1) ) != 0;
@@ -294,8 +338,6 @@ sub highlight {
             }
 
             $first = 0;
-
-
         }
 
         push @output, $dotdotdot if !$printing;
