@@ -589,6 +589,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 {
     struct file *newnode;
     unsigned char *ruleparsedfilename,
+           *ruleparsedfilename_tmp,
            *p1,
            *p2,
            *p3;
@@ -615,7 +616,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     {
         *newFileEntry = newnode; /* pass object pointer up to caller */
     }
-    ruleparsedfilename = ruleparse(sw, filename);
+    ruleparsedfilename_tmp = ruleparsedfilename = ruleparse(sw, filename);
     /* look for last DIRDELIMITER (FS) and last / (HTTP) */
     p1 = strrchr(ruleparsedfilename, DIRDELIMITER);
     p2 = strrchr(ruleparsedfilename, '/');
@@ -647,6 +648,11 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
     newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
     newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
+
+          /* free string returned by ruleparse() */
+    if(ruleparsedfilename_tmp != (unsigned char *)filename)
+        efree(ruleparsedfilename_tmp);
+
     /* Not used in indexing mode - They are in properties */
     /* NULL must be set to not get a segfault in freefileinfo */
     newnode->fi.title = newnode->fi.summary = NULL;
@@ -755,7 +761,6 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
-/* #### */
     indexf->filearray[indexf->filearray_cursize++] = newnode;
     indexf->header.totalfiles++;
 
@@ -1424,47 +1429,58 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 
 char   *ruleparse(SWISH * sw, char *line)
 {
-    static int lenrule = 0;
-    static char *rule = NULL;
-    static int lentmpline = 0;
-    static char *tmpline = NULL;
-    static int lennewtmpline = 0;
-    static char *newtmpline = NULL;
-    static int lenline1 = 0;
-    static char *line1 = NULL;
-    static int lenline2 = 0;
-    static char *line2 = NULL;
+    int lenrule;
+    char *rule;
+    int lentmpline;
+    char *tmpline;
+    int lennewtmpline;
+    char *newtmpline;
+    int lenline1;
+    char *line1;
+    int lenline2;
+    char *line2;
     struct swline *tmplist = NULL;
     int     ilen1,
             ilen2;
 
-    if (!lenrule)
-        rule = (char *) emalloc((lenrule = MAXSTRLEN) + 1);
-    if (!lentmpline)
-        tmpline = (char *) emalloc((lentmpline = MAXSTRLEN) + 1);
-    if (!lennewtmpline)
-        newtmpline = (char *) emalloc((lennewtmpline = MAXSTRLEN) + 1);
-    if (!lenline1)
-        line1 = (char *) emalloc((lenline1 = MAXSTRLEN) + 1);
-    if (!lenline2)
-        line2 = (char *) emalloc((lenline2 = MAXSTRLEN) + 1);
-
     if (sw->replacelist == NULL)
         return line;
+
+    rule = (char *) emalloc((lenrule = MAXSTRLEN) + 1);
+    tmpline = (char *) emalloc((lentmpline = MAXSTRLEN) + 1);
+    newtmpline = (char *) emalloc((lennewtmpline = MAXSTRLEN) + 1);
+    line1 = (char *) emalloc((lenline1 = MAXSTRLEN) + 1);
+    line2 = (char *) emalloc((lenline2 = MAXSTRLEN) + 1);
 
     tmplist = sw->replacelist;
     tmpline = SafeStrCopy(tmpline, line, &lentmpline);
     while (1)
     {
         if (tmplist == NULL)
+        {
+            efree(rule);
+            efree(newtmpline);
+            efree(line1);
+            efree(line2);
             return tmpline;
+        }
         rule = SafeStrCopy(rule, tmplist->line, &lenrule);
         tmplist = tmplist->next;
         if (tmplist == NULL)
+        {
+            efree(rule);
+            efree(newtmpline);
+            efree(line1);
+            efree(line2);
             return tmpline;
+        }
         if (rule == NULL)
         {
             sw->replacelist = tmplist;
+            efree(rule);
+            efree(newtmpline);
+            efree(line1);
+            efree(line2);
             return tmpline;
         }
         else
