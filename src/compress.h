@@ -18,7 +18,7 @@
 */
 
 void compress1(int num, FILE *fp, int (*f_putc)(int , FILE *));
-// unsigned char *compress2(int num, unsigned char *buffer);
+/* unsigned char *compress2(int num, unsigned char *buffer);*/
 unsigned char *compress3(int num, unsigned char *buffer);
 
 int uncompress1(FILE *fp, int (*f_getc)(FILE *fp));
@@ -41,9 +41,10 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
 
-long SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
-unsigned char *unSwapLocData(SWISH *,ENTRY *,long);
-void unSwapLocDataEntry(SWISH *,ENTRY *);
+void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
+void unSwapLocData(SWISH *,int);
+void sortSwapLocData(SWISH * , ENTRY *);
+void unSwapLocDataEntry_old(SWISH *,ENTRY *);
 
 
 #define MAXINTCOMPSIZE 5

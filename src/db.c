@@ -215,9 +215,6 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     LOCATION *l, *next;
 
 
-    if(sw->Index->swap_locdata)
-        unSwapLocDataEntry(sw,ep);
-
     curmetaID=0;
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
@@ -338,8 +335,6 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 {
     DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sw->Index->sz_worddata_buffer,indexf->DB);
 
-    if(sw->Index->swap_locdata)
-        Mem_ZoneReset(sw->Index->totalLocZone);
 }
 
 
