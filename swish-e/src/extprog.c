@@ -202,15 +202,14 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 {
     FileProp *fprop;
     FILE   *fp;
-    char   *line;
     char   *ln;
-    char   *x;
     char   *real_path;
     long    fsize;
     time_t  mtime;
     int     index_no_content;
     long    truncate_doc_size;
     int     has_filter = 0;
+    int     docType = 0;
 
     mtime = 0;
     fsize = 0;
@@ -223,89 +222,93 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
     truncate_doc_size = sw->truncateDocSize;
     sw->truncateDocSize = 0;    /* can't truncate -- prog should make sure doc is not too large */
-// $$$ This is no longer true with libxml push parser 
+// $$$ This is no longer true with libxml push parser
+
+    // $$$ next time, break out the header parsing in its own function, please
 
     /* loop on headers */
     while (fgets(ln, MAXSTRLEN, fp) != NULL)
     {
-
+        char *end;
+        char *line;
+        
         line = str_skip_ws(ln); /* skip leading white space */
-        x = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
-        if (x)
-            x[0] = '\0';
+        end = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
 
-
-        if (strlen(line) == 0)
-        {                       /* blank line indicates body */
-
-            if (fsize && real_path)
-            {
-
-                fprop = init_file_properties(sw);
-                fprop->real_path = real_path;
-                fprop->work_path = real_path;
-
-                /* set real_path, doctype, index_no_content, filter, stordesc */
-                init_file_prop_settings(sw, fprop);
-
-                fprop->fp = fp; /* stream to read from */
-                fprop->fsize = fsize; /* how much to read */
-                fprop->mtime = mtime;
-
-                /* header can force index_no_content */
-                if (index_no_content)
-                    fprop->index_no_content++;
-
-
-                /*  the quick hack to make filters work is for FilterOpen
-                 *  to see that fprop->fp is set, read it into a buffer
-                 *  write it to a temporary file, then call the filter
-                 *  program as noramlly is done.  But much smarter to
-                 *  simply filter in the prog, after all.  Faster, too.
-                 */
-
-                if (fprop->hasfilter)
-                {
-                    save_to_temp_file( sw , fprop );
-                    has_filter++; /* save locally, in case it gets reset somewhere else */
-                }
-
-                if (sw->verbose >= 3)
-                {
-                    printf("%s", real_path);
-                }
-                else if (sw->verbose >= 2)
-                {
-                    printf("Processing %s...\n", real_path);
-                }
-
-                do_index_file(sw, fprop);
-
-                if ( has_filter && remove( fprop->work_path ) )
-                    progwarnno("Error removing temporary file '%s': ", fprop->work_path);
-
-                free_file_properties(fprop);
-                efree(real_path);
-                real_path = NULL;
-                mtime = 0;
-                fsize = 0;
-                index_no_content = 0;
-
-            }
-            else
-            {
-                /* now this could be more helpful */
-                progerr("External program failed to return required headers");
-            }
-
-        }
-        else
+        /* trim white space */
+        if (end)
         {
+            while ( end > line && isspace( (int)*(end-1) ) )
+                end--;
+
+            *end = '\0';
+        }
+
+        if (strlen(line) == 0) /* blank line indicates body */
+        {
+            if (!fsize || !real_path)
+                progerr("External program failed to return required headers Path-Name: & Content-Length:");
 
 
+            /* Create the FileProp entry to describe this "file" */
+
+            fprop = init_file_properties(sw);
+            fprop->real_path = real_path;
+            fprop->work_path = real_path;
+
+
+            /* set real_path, doctype, index_no_content, filter, stordesc */
+            init_file_prop_settings(sw, fprop);
+
+            fprop->fp = fp; /* stream to read from */
+            fprop->fsize = fsize; /* how much to read */
+            fprop->mtime = mtime;
+            if ( docType )
+                fprop->doctype   = docType;
+
+            /* header can force index_no_content */
+            if (index_no_content)
+                fprop->index_no_content++;
+
+
+            /*  the quick hack to make filters work is for FilterOpen
+             *  to see that fprop->fp is set, read it into a buffer
+             *  write it to a temporary file, then call the filter
+             *  program as noramlly is done.  But much smarter to
+             *  simply filter in the prog, after all.  Faster, too.
+             */
+
+            if (fprop->hasfilter)
+            {
+                save_to_temp_file( sw , fprop );
+                has_filter++; /* save locally, in case it gets reset somewhere else */
+            }
+
+            if (sw->verbose >= 3)
+                printf("%s", real_path);
+            else if (sw->verbose >= 2)
+                printf("Processing %s...\n", real_path);
+
+
+            do_index_file(sw, fprop);
+
+            if ( has_filter && remove( fprop->work_path ) )
+                progwarnno("Error removing temporary file '%s': ", fprop->work_path);
+
+            free_file_properties(fprop);
+            efree(real_path);
+            real_path = NULL;
+            mtime = 0;
+            fsize = 0;
+            index_no_content = 0;
+        }
+
+
+        else /* we are reading headers */
+        {
             if (strncasecmp(line, "Content-Length", 14) == 0)
             {
-                x = strchr(line, ':');
+                char *x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Content-Length header '%s'", line);
                 fsize = strtol(++x, NULL, 10);
@@ -314,7 +317,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             if (strncasecmp(line, "Last-Mtime", 10) == 0)
             {
-                x = strchr(line, ':');
+                char *x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Last-Mtime header '%s'", line);
                 mtime = strtol(++x, NULL, 10);
@@ -330,7 +333,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             if (strncasecmp(line, "Path-Name", 9) == 0)
             {
-                x = strchr(line, ':');
+                char *x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Path-Name header '%s'", line);
 
@@ -343,7 +346,23 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 continue;
             }
 
-            progwarn("Failed to parse header line: '%s' from program %s", line, prog);
+            if (strncasecmp(line, "Document-Type", 13) == 0)
+            {
+                char *x = strchr(line, ':');
+                if (!x)
+                    progerr("Failed to parse Document-Type '%s'", line);
+
+                x = str_skip_ws(++x);
+                if (!*x)
+                    progerr("Failed to documnet type in Document-Type header '%s'", line);
+
+                if ( !(docType = strtoDocType( x )) )
+                    progerr("documnet type '%s' not a valid Swish-e document type in Document-Type header '%s'", x, line);
+
+                continue;
+            }
+
+            progwarn("Unknown header line: '%s' from program %s", line, prog);
 
         }
     }

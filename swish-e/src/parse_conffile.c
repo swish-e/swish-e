@@ -57,6 +57,12 @@ $Id$
 
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
 static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
+static int     getDocTypeOrAbort(StringList * sl, int n);
+static void readstopwordsfile(SWISH *, IndexFILE *, char *);
+static void readusewordsfile(SWISH *, IndexFILE *, char *);
+static void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
+static int parseconfline(SWISH *, StringList *);
+
 
 
 
@@ -680,12 +686,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
                 ic->DocType = getDocTypeOrAbort(sl, 1);
                 ic->patt = NULL;
+
                 for (i = 2; i < sl->n; i++)
                     ic->patt = addswline(ic->patt, sl->word[i]);
+
                 if (sw->indexcontents)
                     ic->next = sw->indexcontents;
                 else
                     ic->next = NULL;
+
                 sw->indexcontents = ic;
             }
             else
@@ -1069,14 +1078,15 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
   --  2001-03-04 rasc
 */
 
-int     getDocTypeOrAbort(StringList * sl, int n)
+
+int	strtoDocType( char * s )
 {
     static struct
     {
-        char   *type;
-        int     id;
+        char    *type;
+        int      id;
     }
-           *d, doc[] =
+    doc_map[] =
     {
         {"TXT", TXT},
         {"HTML", HTML},
@@ -1085,23 +1095,28 @@ int     getDocTypeOrAbort(StringList * sl, int n)
         {"XML2", XML2 },
         {"HTML2", HTML2 },
         {"TXT2", TXT2 },
-        {NULL, NODOCTYPE}
     };
+    int i;
 
+    for (i = 0; i < sizeof(doc_map) / sizeof(doc_map[0]); i++)
+        if ( strcasecmp(doc_map[i].type, s) == 0 )
+		    return doc_map[i].id;
+
+    return 0;
+}
+
+static int     getDocTypeOrAbort(StringList * sl, int n)
+{
+    int doctype;
 
     if (n < sl->n)
     {
-        d = doc;
-        while (d->type)
-        {
-            if (!strcasecmp(d->type, sl->word[n]))
-                break;
-            d++;
-        }
-        if (!d->type)
+        doctype = strtoDocType( sl->word[n] );
+
+        if (!doctype )
             progerr("%s: Unknown document type \"%s\"", sl->word[0], sl->word[n]);
         else
-            return d->id;
+            return doctype;
     }
 
     progerr("%s: missing %d. parameter", sl->word[0], n);
@@ -1138,7 +1153,7 @@ void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
 
 */
 
-void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
+static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
 {
     char    line[MAXSTRLEN];
     FILE   *fp;
@@ -1178,7 +1193,7 @@ void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
 /* Might be nice to combine all these routines that do the same thing */
 
 
-void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
+static void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
 {
     char    line[MAXSTRLEN];
     FILE   *fp;
@@ -1215,7 +1230,7 @@ void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_file)
 }
 
 
-int     parseconfline(SWISH * sw, StringList * sl)
+static int     parseconfline(SWISH * sw, StringList * sl)
 {
     /* invoke routine to parse config file lines */
     return (*IndexingDataSource->parseconfline_fn) (sw, (void *) sl);
@@ -1231,7 +1246,7 @@ int     parseconfline(SWISH * sw, StringList * sl)
 
 */
 
-void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
+static void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
 {
     char    line[MAXSTRLEN];
     FILE   *fp;

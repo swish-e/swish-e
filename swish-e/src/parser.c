@@ -17,7 +17,7 @@ $Id$
 **
 ** TODO:
 **
-**  - FileRules title
+**  - FileRules title (and all abort_parsing calls - define some constants)
 **
 **  - There are two buffers that are created for every file, but these could be done once
 **    and only expanded when needed.  If that would make any difference in indexing speed.
@@ -85,7 +85,6 @@ typedef struct {
     FileProp           *fprop;
     struct file        *thisFileEntry;
     int                 structure;
-    int                 in_html_meta;       // flag that we are in a <meta name=...> tag
     int                 in_meta;            // counter of nested metas, so structure will work
     int                 parsing_html;
     struct metaEntry   *titleProp;
@@ -118,6 +117,7 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
 static int parse_chunks( PARSE_DATA *parse_data );
 static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
+static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
 
 
 /*********************************************************************
@@ -193,7 +193,7 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     /* Document Summary */
-    if ( parse_data.summary.meta->max_len )
+    if ( parse_data.summary.meta && parse_data.summary.meta->max_len )
         parse_data.summary.active++;
 
     
@@ -203,7 +203,7 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
         flush_buffer( &parse_data, 0 );  // flush upto whitespace
 
         /* turn off summary when we exceed size */
-        if ( parse_data.summary.meta->max_len && fprop->bytes_read > parse_data.summary.meta->max_len )
+        if ( parse_data.summary.meta && parse_data.summary.meta->max_len && fprop->bytes_read > parse_data.summary.meta->max_len )
             parse_data.summary.active = 0;
 
     }
@@ -806,13 +806,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         /* Check for NoContents - can quit looking now once out of <head> block */
 
         if ( !start && parse_data->fprop->index_no_content )
-        {
-            parse_data->abort = 1;  /* Flag that the title is not ok */
-            /* Disable parser */
-            parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
-            parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
-            parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
-        }
+            abort_parsing( parse_data, 1 );
+
     }
 
 
@@ -825,27 +820,13 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             /* Check isoktitle */
             if ( match_regex_list( parse_data->text_buffer.buffer, fs->filerules.title) )
             {
-                parse_data->abort = -2;  /* Flag that the title is not ok */
-                // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
-
-                /* Disable parser */
-                parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
-                parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
-                parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
+                abort_parsing( parse_data, -2 );
                 return 1;
             }
 
             /* Check for NoContents */
             if ( parse_data->fprop->index_no_content )
-            {
-                parse_data->abort = 1;
-
-               
-                /* Disable parser */
-                parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
-                parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
-                parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
-            }
+                abort_parsing( parse_data, 1 );
         }
     
         flush_buffer( parse_data, 11 );
@@ -919,8 +900,8 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
 {
     char *metatag = NULL;
     char *content = NULL;
-    int  i;
 
+    int  i;
 
     /* Don't add any meta data while looking for just the title */
     if ( parse_data->fprop->index_no_content )
@@ -937,11 +918,22 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
 
     if ( metatag && content )
     {
-        parse_data->in_html_meta++;
+
+        /* Robots exclusion: http://www.robotstxt.org/wc/exclusion.html#meta */
+        if ( !strcasecmp( metatag, "ROBOTS") && lstrstr( content, "NOINDEX" ) )
+        {
+            abort_parsing( parse_data, -3 );
+            return;
+        }
+
+        /* Process meta tag */
+
+        flush_buffer( parse_data, 99 );  /* just in case it's not a MetaName */
         start_metaTag( parse_data, metatag );
         char_hndl( parse_data, content, strlen( content ) );
         end_metaTag( parse_data, metatag );
-        parse_data->in_html_meta--;
+        flush_buffer( parse_data, 99 );  /* just in case it's not a MetaName */
+        
     }
 
 }
@@ -1016,7 +1008,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
             buf->cur = orig_end;
             if ( buf->cur < BUFFER_CHUNK_SIZE )  // should reall look at indexf->header.maxwordlimit 
                 return;                          // but just trying to keep the buffer from growing too large
-printf("File %s has a really long word found\n", parse_data->fprop->real_path );
+printf("Warning: File %s has a really long word found\n", parse_data->fprop->real_path );
         }
 
         save_char =  buf->buffer[buf->cur];
@@ -1180,5 +1172,18 @@ static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struc
     /* Index the text */
     parse_data->total_words +=
         indexstring( parse_data->sw, href, parse_data->filenum, parse_data->structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
+}
+
+/* This doesn't look like the best method */
+static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
+{
+    parse_data->abort = abort_code;  /* Flag that the we are all done */
+    /* Disable parser */
+    parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
+    parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
+    parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
+
+    // if ( abort_code < 0 )
+    // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
 }
 
