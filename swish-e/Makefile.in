@@ -1,6 +1,6 @@
-# Makefile for lookup.cgi and Date-Calc and swish-e
+# Makefile for swish-e 2.1
 #
-# Bas Meijer, bas@antraciet.com 1 June 2000
+# Bas Meijer, bas@antraciet.com 11 Dec 2000
 
 SHELL = /bin/sh
 srcdir      = @srcdir@
