@@ -101,6 +101,7 @@ void freeModule_DBNative (SWISH *sw)
 {
    efree(sw->Db->DB_name);
    efree(sw->Db);
+   sw->Db = NULL;
    return;
 }
 
