@@ -862,11 +862,11 @@ FILE *fp=indexf->fp;
 void readfileoffsets(IndexFILE *indexf)
 {
 long pos, totwords;
-struct file *filep;
-FILEOFFSET *fileo;
 FILE *fp=indexf->fp;
-	indexf->filearray=(struct file **)emalloc((indexf->filearray_maxsize=BIGHASHSIZE)*sizeof(struct file *));
-	indexf->fileoffsetarray=(FILEOFFSET **)emalloc((indexf->fileoffsetarray_maxsize=BIGHASHSIZE)*sizeof(FILEOFFSET *));
+	indexf->filearray_maxsize = indexf->fileoffsetarray_maxsize = indexf->header.totalfiles;
+	indexf->filearray=(struct file **)emalloc(indexf->filearray_maxsize*sizeof(struct file *));
+	indexf->fileoffsetarray=(long *)emalloc(indexf->fileoffsetarray_maxsize*sizeof(long));
+	indexf->filetotalwordsarray=(int *)emalloc(indexf->fileoffsetarray_maxsize*sizeof(int));
 	fseek(fp,indexf->offsets[FILEOFFSETPOS], 0);
 	for (indexf->filearray_cursize=0,indexf->fileoffsetarray_cursize=0,pos=1L;(pos = readlong(fp));indexf->filearray_cursize++,indexf->fileoffsetarray_cursize++) {
 		if(indexf->filearray_cursize==indexf->filearray_maxsize) 
@@ -875,22 +875,13 @@ FILE *fp=indexf->fp;
 		}
 		if(indexf->fileoffsetarray_cursize==indexf->fileoffsetarray_maxsize) 
 		{
-			indexf->fileoffsetarray=(FILEOFFSET **)erealloc(indexf->fileoffsetarray,(indexf->fileoffsetarray_maxsize+=1000)*sizeof(FILEOFFSET *));
+			indexf->fileoffsetarray=(long *)erealloc(indexf->fileoffsetarray,(indexf->fileoffsetarray_maxsize+=1000)*sizeof(long));
+			indexf->filetotalwordsarray=(int *)erealloc(indexf->filetotalwordsarray,(indexf->fileoffsetarray_maxsize+=1000)*sizeof(int));
 		}
 		totwords= readlong(fp);
-		filep=(struct file *) emalloc(sizeof(struct file));
-		filep->fi.filename=NULL;
-		filep->fi.title=NULL;
-		filep->fi.summary=NULL;
-		filep->fi.start=0;
-		filep->fi.size=0;
-		filep->docProperties=NULL;
-		filep->read=0;
-		indexf->filearray[indexf->filearray_cursize]=filep;
-		fileo=(FILEOFFSET *) emalloc(sizeof(FILEOFFSET));
-		fileo->filelong=pos;
-		fileo->ftotalwords=totwords;
-		indexf->fileoffsetarray[indexf->fileoffsetarray_cursize]=fileo;
+		indexf->filearray[indexf->filearray_cursize]=NULL;
+		indexf->fileoffsetarray[indexf->fileoffsetarray_cursize]=pos;
+		indexf->filetotalwordsarray[indexf->fileoffsetarray_cursize]=totwords;
 	}
 }
 
@@ -1286,14 +1277,14 @@ FILE *fp=indexf->fp;
 					uncompress1(x,fp);
 					position[j] = x;
 				}
-				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->fileoffsetarray[filenum-1]->ftotalwords,structure), structure,frequency,position,indexf,sw);
+				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure), structure,frequency,position,indexf,sw);
 				if (sw->verbose == 4)
 				{
 					/* dump diagnostic info */
 					long curFilePos;
 					curFilePos = ftell(fp);	/* save */
 					fi = readFileEntry(indexf, filenum);
-					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->fileoffsetarray[filenum-1]->ftotalwords,structure), frequency, tries);
+					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure), frequency, tries);
 					fseek(fp, curFilePos, 0); /* restore */
 				}
 			} while(ftell(fp)!=nextposmetaname);
@@ -1975,14 +1966,11 @@ IndexFILE *tmp=sw->indexlist;
                		tmp->filearray_maxsize=tmp->filearray_cursize=0;
         	}
 	        if(tmp->fileoffsetarray) {
-       		        for(i=0;i<tmp->fileoffsetarray_cursize;i++) 
-			{
-				if(tmp->fileoffsetarray[i])
-					efree(tmp->fileoffsetarray[i]);
-			}
-                	efree(tmp->fileoffsetarray);
-               		tmp->fileoffsetarray=NULL;
-                        tmp->fileoffsetarray_maxsize=tmp->fileoffsetarray_cursize=0;
+               		efree(tmp->fileoffsetarray);
+               		efree(tmp->filetotalwordsarray);
+           		tmp->fileoffsetarray=NULL;
+			tmp->filetotalwordsarray=NULL;
+                	tmp->fileoffsetarray_maxsize=tmp->fileoffsetarray_cursize=0;
 		}
 		tmp=tmp->next;
         }

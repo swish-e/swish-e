@@ -363,7 +363,6 @@ IndexFILE *indexf=sw->indexlist;
 void addtofilelist(SWISH *sw,IndexFILE *indexf,char *filename, time_t mtime, char *title, char *summary, int start, int size,  struct file ** newFileEntry)
 {
 struct file *newnode;
-FILEOFFSET *newnode2;
 unsigned char *ruleparsedfilename,*p1,*p2,*p3;
 unsigned char c;
 struct metaEntry *q;
@@ -379,12 +378,15 @@ unsigned long int tmp;
 
 	if(!indexf->fileoffsetarray || !indexf->fileoffsetarray_maxsize) 
 	{
-		indexf->fileoffsetarray=(FILEOFFSET **) emalloc((indexf->fileoffsetarray_maxsize=BIGHASHSIZE)*sizeof(FILEOFFSET *));
+		indexf->fileoffsetarray=(long *) emalloc((indexf->fileoffsetarray_maxsize=BIGHASHSIZE)*sizeof(long));
+		indexf->filetotalwordsarray=(int *) emalloc(indexf->fileoffsetarray_maxsize*sizeof(int));
 		indexf->fileoffsetarray_cursize=0;
 	}
 	if(indexf->fileoffsetarray_maxsize==indexf->fileoffsetarray_cursize)
-		indexf->fileoffsetarray=(FILEOFFSET **) erealloc(indexf->fileoffsetarray,(indexf->fileoffsetarray_maxsize+=1000)*sizeof(FILEOFFSET *));
-
+	{
+		indexf->fileoffsetarray=(long *) erealloc(indexf->fileoffsetarray,(indexf->fileoffsetarray_maxsize+=10000)*sizeof(long));
+		indexf->filetotalwordsarray=(int *) erealloc(indexf->filetotalwordsarray,indexf->fileoffsetarray_maxsize*sizeof(long));
+	}
 	newnode = (struct file *) emalloc(sizeof(struct file));
 	if (newFileEntry != NULL)
 	{
@@ -503,9 +505,8 @@ unsigned long int tmp;
 	}
 /* #### */
 	indexf->filearray[indexf->filearray_cursize++]=newnode;
+	indexf->fileoffsetarray_cursize++;
 
-	newnode2 = (FILEOFFSET *) emalloc(sizeof(FILEOFFSET));
-	indexf->fileoffsetarray[indexf->fileoffsetarray_cursize++]=newnode2;
 }
 
 /* Just goes through the master list of files and
@@ -1075,19 +1076,28 @@ int datalen1, datalen2,datalen3;
 
 struct file *readFileEntry(IndexFILE *indexf, int filenum)
 {
-long pos;
 int total_len,len1,len4,lookup_path;
 char *buffer,*p;
 char *buf1;
 struct file *fi;
-FILEOFFSET *fo;
+long foffset;
 FILE *fp=indexf->fp;
 	fi=indexf->filearray[filenum-1];
-	fo=indexf->fileoffsetarray[filenum-1];
-	if(fi->read) return fi;   /* Read it previously */
-	pos=fo->filelong;
+	foffset=indexf->fileoffsetarray[filenum-1];
+	if(fi) return fi;   /* Read it previously */
 
-	fseek(fp, pos, 0);
+	fi=(struct file *) emalloc(sizeof(struct file));
+	fi->fi.filename=NULL;
+	fi->fi.title=NULL;
+	fi->fi.summary=NULL;
+	fi->fi.start=0;
+	fi->fi.size=0;
+	fi->docProperties=NULL;
+
+	indexf->filearray[filenum-1]=fi;
+
+
+	fseek(fp, foffset, 0);
 
 	if(indexf->header.applyFileInfoCompression)
 	{
@@ -1135,8 +1145,6 @@ FILE *fp=indexf->fp;
 	/* Add empty strings if NULL */
 	if(!fi->fi.title) fi->fi.title=estrdup("");
 	if(!fi->fi.summary) fi->fi.summary=estrdup("");
-	fi->read=1;
-
 
 	efree(buffer);
 	return fi;
@@ -1149,7 +1157,6 @@ void printfilelist(SWISH *sw, IndexFILE *indexf)
 {
 int i;
 struct file *filep;
-FILEOFFSET *fileo;
 FILE *fp=indexf->fp;
 unsigned char *buffer;
 int sz_buffer;
@@ -1164,19 +1171,17 @@ struct buffer_pool *bp=NULL;
 			indexf->filearray[i]=filep;
 		} else
 			filep=indexf->filearray[i];
-		fileo=indexf->fileoffsetarray[i];
 		buffer=buildFileEntry(filep->fi.filename, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
 		if(indexf->header.applyFileInfoCompression)
 		{
-			bp=zfwrite(bp,buffer,sz_buffer,&fileo->filelong,fp);
+			bp=zfwrite(bp,buffer,sz_buffer,&indexf->fileoffsetarray[i],fp);
 		}
 		else
 		{
-			fileo->filelong=ftell(fp);
+			indexf->fileoffsetarray[i]=ftell(fp);
 			compress1(sz_buffer,fp);   /* Write length */
 			fwrite(buffer,sz_buffer,1,fp);  /* Write data */
 		}
-
 		efree(buffer);
 	}
 	if(indexf->header.applyFileInfoCompression)
@@ -1239,8 +1244,8 @@ FILE *fp=indexf->fp;
 	
 	indexf->offsets[FILEOFFSETPOS] = ftell(fp);
 	for (i = 0; i<indexf->filearray_cursize;i++ ){
-		offset=(long)indexf->fileoffsetarray[i]->filelong;
-		totwords=(long)indexf->fileoffsetarray[i]->ftotalwords;
+		offset=(long)indexf->fileoffsetarray[i];
+		totwords=(long)indexf->filetotalwordsarray[i];
 		printlong(fp, offset);
 		printlong(fp, totwords);
 	}
@@ -1847,7 +1852,7 @@ void addtofwordtotals(IndexFILE *indexf, int filenum, int ftotalwords)
         if(filenum>indexf->fileoffsetarray_cursize)
                 progerr("Internal error in addtofwordtotals");
         else
-                indexf->fileoffsetarray[filenum-1]->ftotalwords=ftotalwords;
+                indexf->filetotalwordsarray[filenum-1]=ftotalwords;
 }
 
 
