@@ -6,7 +6,7 @@ use lib qw( modules );  ### This may need to be adjusted!
                         ### It should point to the location of the
                         ### associated script modules directory
 
-
+my $DEFAULT_CONFIG_FILE = '.swishcgi.conf';
 
 ###################################################################################
 #
@@ -139,7 +139,7 @@ sub default_config {
 
         # By default, this script tries to read a config file.  You should probably
         # comment this out if not used save a disk stat
-        config_file     => '.swishcgi.conf',    # Default config file
+        config_file     => $DEFAULT_CONFIG_FILE,    # Default config file
 
 
         # The location of your index file.  Typically, this would not be in
@@ -564,17 +564,31 @@ sub handler {
 sub merge_read_config {
     my $config = shift;
 
+
     set_default_debug_flags();
 
     set_debug($config);  # get from config or from %ENV
 
+
     return $config unless $config->{config_file};
 
-    my $return = do $config->{config_file};
+    my $return = do $config->{config_file};  # load the config file
 
-    die "Failed to compile swish.cgi config file: $@\n" if !defined $return && $@;
+    unless ( ref $return eq 'HASH' ) {
 
-    return $config unless ref $return eq 'HASH';
+        # First, let's check for file not found for the default config, which we can ignore
+
+        my $error = $@ || $!;
+
+        if ( $config->{config_file} eq $DEFAULT_CONFIG_FILE && !-e $config->{config_file} ) {
+            warn "Config file '$config->{config_file}': $!" if $config->{debug};
+            return $config;
+        }
+
+        die "Config file '$config->{config_file}': $error";
+    }
+
+
 
     if ( $config->{debug} || $return->{debug} ) {
         require Data::Dumper;
