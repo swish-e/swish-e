@@ -51,18 +51,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libswishsearch"=".\libswishsearch.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "libxml2"="..\..\..\libxml2\win32\dsp\libxml2.dsp" - Package Owner=<4>
 
 Package=<5>
