@@ -113,7 +113,11 @@ L<Delay|/"item_Delay"> *seconds*
 
 =item *
 
-L<DontBumpPositionOnMetaTags|/"item_DontBumpPositionOnMetaTags"> *list of names*
+L<DontBumpPositionOnEndTags|/"item_DontBumpPositionOnEndTags"> *list of names*
+
+=item *
+
+L<DontBumpPositionOnStartTags|/"item_DontBumpPositionOnStartTags"> *list of names*
 
 =item *
 
@@ -1232,11 +1236,15 @@ You might want to prevent matching "programming apple" in that meta name.
 
 There is no default, and you may list a string of characters.
 
-=item DontBumpPositionOnMetaTags *list of names*
+=item DontBumpPositionOnEndTags *list of names*
+
+=item DontBumpPositionOnStartTags *list of names*
 
 Since metatags are typically separate data fields, the word position counter is automatically bumped
-between metatags.  This prevents matching a phrase that spans more than one metaname.
-C<DontBumpPositionOnMetaTags> disables this feature for the listed metanames.
+between metatags (actally, bumpted when a start tag is found and when an end tag is found).
+This prevents matching a phrase that spans more than one metaname.
+C<DontBumpPositionOnEndTags> and C<DontBumpPositionOnStartTags> disables this feature
+for the listed metanames.
 
 For example,
 
@@ -1254,7 +1262,8 @@ For example,
 
 In the conifuration file:
 
-    DontBumpPositionOnMetaTags last_name
+    DontBumpPositionOnEndTags first_name
+    DontBumpPositionOnStartTags last_name
 
 This configuration allows this phrase search
 

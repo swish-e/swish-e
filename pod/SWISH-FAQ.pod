@@ -121,7 +121,6 @@ Yes.  Starting with version 2.2 swish indexes to temporary files, and then renam
 the files when indexing is complete.  On most systems renames are atomic.  But, since
 swish also generates more than one file during indexing there will be a very short
 period of time between renaming the various files when the index is out of sync.
-Probably not enough time to worry about, though.
 
 Settings in F<config.h> control some options related to temporary files, and their
 use during indexing.
@@ -206,7 +205,7 @@ of these paths will match:
 This can be solved by searching with a phrase (assuming "/" is not a WordCharacter):
 
     swish-e -w 'foo AND swishdocpath=("/web/sales/")'
-    swish-e -w 'foo AND swishdocpath=("web sales")'
+    swish-e -w 'foo AND swishdocpath=("web sales")'  (same thing)
 
 
 The second option is a bit more powerful.
