@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = html man src tests 
+SUBDIRS = example html man src tests
 
 
 docdir = $(datadir)/doc/$(PACKAGE)
@@ -69,22 +69,6 @@ doc_dir = \
     doc/tmpl/pageps.tmpl \
     doc/tmpl/splitpage.tmpl
 
-example_dir = \
-    example/README \
-    example/SWISH-Stemmer-0.05.tar.gz \
-    example/search.tt \
-    example/swish.cgi \
-    example/swish.gif \
-    example/swish.tmpl \
-    example/modules/SWISH/DateRanges.pm \
-    example/modules/SWISH/DefaultHighlight.pm \
-    example/modules/SWISH/PhraseHighlight.pm \
-    example/modules/SWISH/SimpleHighlight.pm \
-    example/modules/SWISH/TemplateDefault.pm \
-    example/modules/SWISH/TemplateDumper.pm \
-    example/modules/SWISH/TemplateHTMLTemplate.pm \
-    example/modules/SWISH/TemplateToolkit.pm \
-    example/modules/SWISH/ParseQuery.pm
 
 filter_dir = \
     filter-bin/README \
@@ -114,6 +98,8 @@ perl_dir = \
     perl/t/second.html \
     perl/t/third.html
 
+
+libexec_SCRIPTS = prog-bin/spider.pl
 
 prog_bin_dir = \
     prog-bin/README \
@@ -187,7 +173,7 @@ rpm_dir = \
 
 
 EXTRA_DIST = \
-    $(config_dir) $(conf_dir) $(doc_dir) $(example_dir) $(filter_dir) $(perl_dir) \
+    $(config_dir) $(conf_dir) $(doc_dir) $(filter_dir) $(perl_dir) \
     $(prog_bin_dir) $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
     win32.nsi \

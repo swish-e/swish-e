@@ -10839,7 +10839,9 @@ fi
 
 
 
-for ac_func in re_comp regcomp strdup strstr lstat
+
+
+for ac_func in re_comp regcomp strdup strstr lstat setenv access
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -11641,13 +11643,11 @@ LDFLAGS=${_ldflags}
 
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
 if test "x$libexecdiropt" == "x"; then
-        export libexecdir='${exec_prefix}/lib/${PACKAGE}'
+        libexecdir='${exec_prefix}/lib/${PACKAGE}'
 fi
 
 
-
-
-                                                                                                    ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile"
+                                                                                                              ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -12221,6 +12221,7 @@ do
   "perl/Makefile.PL" ) CONFIG_FILES="$CONFIG_FILES perl/Makefile.PL" ;;
   "rpm/swish-e.spec" ) CONFIG_FILES="$CONFIG_FILES rpm/swish-e.spec" ;;
   "tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
+  "example/Makefile" ) CONFIG_FILES="$CONFIG_FILES example/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "src/acconfig.h" ) CONFIG_HEADERS="$CONFIG_HEADERS src/acconfig.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5

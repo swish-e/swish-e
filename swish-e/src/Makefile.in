@@ -140,6 +140,7 @@ SUBDIRS = expat replace
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
 swish_e_LDADD = libswishindex.la libswish-e.la
+swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
 
 EXTRA_PROGRAMS = libtest
 libtest_SOURCES = libtest.c 
@@ -190,7 +191,7 @@ EXTRA_libswish_e_la_SOURCES = \
 noinst_LTLIBRARIES = libswishindex.la
 libswishindex_la_LIBADD = expat/libswexpat.la $(LIBXML2_OBJS)
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
 
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
 
@@ -261,8 +262,9 @@ am_libtest_OBJECTS = libtest.$(OBJEXT)
 libtest_OBJECTS = $(am_libtest_OBJECTS)
 libtest_DEPENDENCIES = libswish-e.la
 libtest_LDFLAGS =
-am_swish_e_OBJECTS = swish.$(OBJEXT) keychar_out.$(OBJEXT) \
-	dump.$(OBJEXT) result_output.$(OBJEXT)
+am_swish_e_OBJECTS = swish_e-swish.$(OBJEXT) \
+	swish_e-keychar_out.$(OBJEXT) swish_e-dump.$(OBJEXT) \
+	swish_e-result_output.$(OBJEXT)
 swish_e_OBJECTS = $(am_swish_e_OBJECTS)
 swish_e_DEPENDENCIES = libswishindex.la libswish-e.la
 swish_e_LDFLAGS =
@@ -272,8 +274,7 @@ SCRIPTS = $(libexec_SCRIPTS)
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/dump.Po ./$(DEPDIR)/keychar_out.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libswish_e_la-array.Plo \
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libswish_e_la-array.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libswish_e_la-btree.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libswish_e_la-check.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libswish_e_la-compress.Plo \
@@ -320,8 +321,10 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/libswishindex_la-swregex.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libswishindex_la-txt.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libswishindex_la-xml.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/libtest.Po ./$(DEPDIR)/result_output.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/swish.Po
+@AMDEP_TRUE@	./$(DEPDIR)/libtest.Po ./$(DEPDIR)/swish_e-dump.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/swish_e-keychar_out.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/swish_e-result_output.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/swish_e-swish.Po
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -474,8 +477,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dump.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keychar_out.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libswish_e_la-array.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libswish_e_la-btree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libswish_e_la-check.Plo@am__quote@
@@ -524,8 +525,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libswishindex_la-txt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libswishindex_la-xml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libtest.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/result_output.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish_e-dump.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish_e-keychar_out.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish_e-result_output.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish_e-swish.Po@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -2113,6 +2116,138 @@ libswishindex_la-parser.lo: parser.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libswishindex_la-parser.Plo' tmpdepfile='$(DEPDIR)/libswishindex_la-parser.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libswishindex_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libswishindex_la-parser.lo `test -f 'parser.c' || echo '$(srcdir)/'`parser.c
+
+swish_e-swish.o: swish.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-swish.o -MD -MP -MF "$(DEPDIR)/swish_e-swish.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-swish.o `test -f 'swish.c' || echo '$(srcdir)/'`swish.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-swish.Tpo" "$(DEPDIR)/swish_e-swish.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-swish.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='swish.c' object='swish_e-swish.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-swish.Po' tmpdepfile='$(DEPDIR)/swish_e-swish.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-swish.o `test -f 'swish.c' || echo '$(srcdir)/'`swish.c
+
+swish_e-swish.obj: swish.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-swish.obj -MD -MP -MF "$(DEPDIR)/swish_e-swish.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-swish.obj `if test -f 'swish.c'; then $(CYGPATH_W) 'swish.c'; else $(CYGPATH_W) '$(srcdir)/swish.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-swish.Tpo" "$(DEPDIR)/swish_e-swish.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-swish.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='swish.c' object='swish_e-swish.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-swish.Po' tmpdepfile='$(DEPDIR)/swish_e-swish.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-swish.obj `if test -f 'swish.c'; then $(CYGPATH_W) 'swish.c'; else $(CYGPATH_W) '$(srcdir)/swish.c'; fi`
+
+swish_e-swish.lo: swish.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-swish.lo -MD -MP -MF "$(DEPDIR)/swish_e-swish.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-swish.lo `test -f 'swish.c' || echo '$(srcdir)/'`swish.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-swish.Tpo" "$(DEPDIR)/swish_e-swish.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-swish.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='swish.c' object='swish_e-swish.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-swish.Plo' tmpdepfile='$(DEPDIR)/swish_e-swish.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-swish.lo `test -f 'swish.c' || echo '$(srcdir)/'`swish.c
+
+swish_e-keychar_out.o: keychar_out.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-keychar_out.o -MD -MP -MF "$(DEPDIR)/swish_e-keychar_out.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-keychar_out.o `test -f 'keychar_out.c' || echo '$(srcdir)/'`keychar_out.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-keychar_out.Tpo" "$(DEPDIR)/swish_e-keychar_out.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-keychar_out.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='keychar_out.c' object='swish_e-keychar_out.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-keychar_out.Po' tmpdepfile='$(DEPDIR)/swish_e-keychar_out.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-keychar_out.o `test -f 'keychar_out.c' || echo '$(srcdir)/'`keychar_out.c
+
+swish_e-keychar_out.obj: keychar_out.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-keychar_out.obj -MD -MP -MF "$(DEPDIR)/swish_e-keychar_out.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-keychar_out.obj `if test -f 'keychar_out.c'; then $(CYGPATH_W) 'keychar_out.c'; else $(CYGPATH_W) '$(srcdir)/keychar_out.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-keychar_out.Tpo" "$(DEPDIR)/swish_e-keychar_out.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-keychar_out.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='keychar_out.c' object='swish_e-keychar_out.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-keychar_out.Po' tmpdepfile='$(DEPDIR)/swish_e-keychar_out.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-keychar_out.obj `if test -f 'keychar_out.c'; then $(CYGPATH_W) 'keychar_out.c'; else $(CYGPATH_W) '$(srcdir)/keychar_out.c'; fi`
+
+swish_e-keychar_out.lo: keychar_out.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-keychar_out.lo -MD -MP -MF "$(DEPDIR)/swish_e-keychar_out.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-keychar_out.lo `test -f 'keychar_out.c' || echo '$(srcdir)/'`keychar_out.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-keychar_out.Tpo" "$(DEPDIR)/swish_e-keychar_out.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-keychar_out.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='keychar_out.c' object='swish_e-keychar_out.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-keychar_out.Plo' tmpdepfile='$(DEPDIR)/swish_e-keychar_out.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-keychar_out.lo `test -f 'keychar_out.c' || echo '$(srcdir)/'`keychar_out.c
+
+swish_e-dump.o: dump.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-dump.o -MD -MP -MF "$(DEPDIR)/swish_e-dump.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-dump.o `test -f 'dump.c' || echo '$(srcdir)/'`dump.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-dump.Tpo" "$(DEPDIR)/swish_e-dump.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-dump.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dump.c' object='swish_e-dump.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-dump.Po' tmpdepfile='$(DEPDIR)/swish_e-dump.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-dump.o `test -f 'dump.c' || echo '$(srcdir)/'`dump.c
+
+swish_e-dump.obj: dump.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-dump.obj -MD -MP -MF "$(DEPDIR)/swish_e-dump.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-dump.obj `if test -f 'dump.c'; then $(CYGPATH_W) 'dump.c'; else $(CYGPATH_W) '$(srcdir)/dump.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-dump.Tpo" "$(DEPDIR)/swish_e-dump.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-dump.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dump.c' object='swish_e-dump.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-dump.Po' tmpdepfile='$(DEPDIR)/swish_e-dump.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-dump.obj `if test -f 'dump.c'; then $(CYGPATH_W) 'dump.c'; else $(CYGPATH_W) '$(srcdir)/dump.c'; fi`
+
+swish_e-dump.lo: dump.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-dump.lo -MD -MP -MF "$(DEPDIR)/swish_e-dump.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-dump.lo `test -f 'dump.c' || echo '$(srcdir)/'`dump.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-dump.Tpo" "$(DEPDIR)/swish_e-dump.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-dump.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dump.c' object='swish_e-dump.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-dump.Plo' tmpdepfile='$(DEPDIR)/swish_e-dump.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-dump.lo `test -f 'dump.c' || echo '$(srcdir)/'`dump.c
+
+swish_e-result_output.o: result_output.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-result_output.o -MD -MP -MF "$(DEPDIR)/swish_e-result_output.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-result_output.o `test -f 'result_output.c' || echo '$(srcdir)/'`result_output.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-result_output.Tpo" "$(DEPDIR)/swish_e-result_output.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-result_output.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='result_output.c' object='swish_e-result_output.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-result_output.Po' tmpdepfile='$(DEPDIR)/swish_e-result_output.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-result_output.o `test -f 'result_output.c' || echo '$(srcdir)/'`result_output.c
+
+swish_e-result_output.obj: result_output.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-result_output.obj -MD -MP -MF "$(DEPDIR)/swish_e-result_output.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-result_output.obj `if test -f 'result_output.c'; then $(CYGPATH_W) 'result_output.c'; else $(CYGPATH_W) '$(srcdir)/result_output.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-result_output.Tpo" "$(DEPDIR)/swish_e-result_output.Po"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-result_output.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='result_output.c' object='swish_e-result_output.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-result_output.Po' tmpdepfile='$(DEPDIR)/swish_e-result_output.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-result_output.obj `if test -f 'result_output.c'; then $(CYGPATH_W) 'result_output.c'; else $(CYGPATH_W) '$(srcdir)/result_output.c'; fi`
+
+swish_e-result_output.lo: result_output.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT swish_e-result_output.lo -MD -MP -MF "$(DEPDIR)/swish_e-result_output.Tpo" \
+@am__fastdepCC_TRUE@	  -c -o swish_e-result_output.lo `test -f 'result_output.c' || echo '$(srcdir)/'`result_output.c; \
+@am__fastdepCC_TRUE@	then mv "$(DEPDIR)/swish_e-result_output.Tpo" "$(DEPDIR)/swish_e-result_output.Plo"; \
+@am__fastdepCC_TRUE@	else rm -f "$(DEPDIR)/swish_e-result_output.Tpo"; exit 1; \
+@am__fastdepCC_TRUE@	fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='result_output.c' object='swish_e-result_output.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/swish_e-result_output.Plo' tmpdepfile='$(DEPDIR)/swish_e-result_output.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(swish_e_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o swish_e-result_output.lo `test -f 'result_output.c' || echo '$(srcdir)/'`result_output.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
