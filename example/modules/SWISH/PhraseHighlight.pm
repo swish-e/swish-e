@@ -2,6 +2,7 @@
 #  Phrase Highlighting Code
 #
 #    $Id$
+#    This code is slow, slow, SLOW!
 #=======================================================================
 package SWISH::PhraseHighlight;
 use strict;
@@ -55,18 +56,21 @@ sub header {
 sub highlight {
 
     my ( $self, $text_ref, $phrase_list ) = @_;
+    # $phrase_list is an array of arrays of phrases (where a phrase might be a single word)
+    # and should be sorted by longest to shortest phrase.
 
-    my $wc_regexp = $self->{wc_regexp};
-    my $extract_regexp = $self->{extract_regexp};
+    my $wc_regexp = $self->{wc_regexp};  # used to split text into words and non-word tokens
+    my $extract_regexp = $self->{extract_regexp};  # used to strip out the ignore chars at begin and end of word
 
 
     my $last = 0;
 
-    my $found_phrase = 0;
+    my $found_phrase = 0;  # count of number of phrases found in the text
+    my $show_all_words = 0;  # true (in some cases) when every word will be displayed
 
     my $settings = $self->{settings};
 
-    my $Show_Words = $settings->{show_words} || 10;
+    my $Show_Words = $settings->{show_words} || 10;  # These define how the final output will display
     my $Occurrences = $settings->{occurrences} || 5;
     my $Max_Words = $settings->{max_words} || 100;
 
@@ -75,8 +79,8 @@ sub highlight {
     my $On = $settings->{highlight_on} || '<b>';
     my $Off = $settings->{highlight_off} || '</b>';
 
-    my $on_flag  = 'sw' . time . 'on';
-    my $off_flag = 'sw' . time . 'off';
+    my $on_flag  = 'sw' . time . 'on';  # used to flag where to turn on highlighting
+    my $off_flag = 'sw' . time . 'off'; # can't use $On/$Off because of html escaping needs to be done later
 
 
     my $stemmer_function = $self->{stemmer_function};
@@ -84,22 +88,23 @@ sub highlight {
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
 
 
-
-    # Split into "swish" words.  For speed, should work on a stream method.
+    # Split into "swish" words.  For speed, should work on a stream method instead.  TODO:
     my @words = split /$wc_regexp/, $$text_ref;
     return unless @words;
 
-    my @flags;  # This marks where to start and stop display.
+    my @flags;  # This marks where to start and stop display -- maps to @words.
     $flags[$#words] = 0;  # Extend array.
 
     my $occurrences = $Occurrences;
 
 
+    # $word_pos is current pointer into @words/2 (it indexes just the "swish words") -- where to start looking for a phrase match.
     my $word_pos = $words[0] eq '' ? 2 : 0;  # Start depends on if first word was wordcharacters or not
 
 
 
     # Remember, that the swish words are every other in @words.
+
 
     WORD:
     while ( $Show_Words && $word_pos * 2 < @words ) {
@@ -111,7 +116,9 @@ sub highlight {
             next PHRASE if ($word_pos + @$phrase -1) * 2 > @words;  # phrase is longer than what's left
 
 
-            my $end_pos = 0;  # end offset of the current phrase
+            my $end_pos = 0;  # end offset of the current phrase, that is if looking at second word
+                              # in a phrase, then $end_pos = 1 and $end_pos is used to index into the
+                              # text starting at $word_pos.
 
             # now compare all the words in the phrase
 
@@ -119,8 +126,11 @@ sub highlight {
 
             for my $match_word ( @$phrase ) {
 
+                # get the current word from the property and convert it into a "swish word" for comparing with the phrase
+                # by stripping out the ignorefirst and ignore last chars
+
                 my $cur_word = $words[ ($word_pos + $end_pos) * 2 ];
-                unless ( $cur_word =~ /$extract_regexp/ ) {
+                unless ( $cur_word =~ /$extract_regexp/ ) {  # something fishy is going on
 
                     my $idx = ($word_pos + $end_pos) * 2;
                     my ( $s, $e ) = ( $idx - 10, $idx + 10 );
@@ -180,10 +190,12 @@ sub highlight {
 
             print STDERR "      *** PHRASE MATCHED (word:$word_pos offset:$end_pos) *** \n" if DEBUG_HIGHLIGHT;
 
-	    $found_phrase++;
+            $found_phrase++;
 
 
             # We are currently at the end word, so it's easy to set that highlight
+            # we just modify the word with a (I hope) unique bit of text that can be substitued later with
+            # the HTML to enable highlighting
 
             $end_pos--;
 
@@ -200,17 +212,26 @@ sub highlight {
             }
 
 
-            # Now, flag the words around to be shown
-            my $start = ($word_pos - $Show_Words + 1) * 2;
-            my $stop   = ($word_pos + $end_pos + $Show_Words - 2) * 2;
-            if ( $start < 0 ) {
-                $stop = $stop - $start;
-                $start = 0;
+            # Now, flag the words around to be shown by using the @flags array.
+
+            my $start = ($word_pos - $Show_Words) * 2;
+            my $stop   = ($word_pos + $end_pos + $Show_Words) * 2;
+            $start = 0 if $start < 0;
+            $stop = $#words if $stop > $#words;  # shift back if went too far
+
+
+
+            # Here's Bill Schell's optimization -- if $Show_Words is huge this avoids setting @flags when not needed
+            #
+            unless ( $show_all_words ) {
+
+                if ( $start == 0 && $stop == $#words ) {
+                    $show_all_words = 1;
+                    $Max_Words = $stop;  # and to make code simpler below
+                } else {
+                    $flags[$_]++ for $start .. $stop;
+                }
             }
-
-            $stop = $#words if $stop > $#words;
-
-            $flags[$_]++ for $start .. $stop;
 
 
             # All done, and mark where to stop looking
@@ -236,11 +257,25 @@ sub highlight {
 
     my @output;
 
-    my $printing;
     my $first = 1;
-    my $some_printed;
 
-    if ( $Show_Words && @words > 50 ) {  # don't limit context if a small number of words
+
+    # Print context based on the @flags array
+    # If $show_all_words was flagged (i.e. everything in @flags is marked then skip this
+    # Now, there's the case when the property doesn't contain the search word, so @flags will be empty
+    # in that case print $Max_Words.  $found_phrase catches this.
+
+    if ( $show_all_words || !$found_phrase) {
+        $Max_Words = $#words if $Max_Words > $#words;
+        $$text_ref  = join '', @words[0..$Max_Words];
+        $$text_ref .= $dotdotdot if $Max_Words < $#words;  # Add dots if there's more text
+
+    } else {
+
+        # walk the @flags array looking for words to display
+
+        my $printing;  # flag if there's more text.
+
         for my $i ( 0 ..$#words ) {
 
 
@@ -253,33 +288,24 @@ sub highlight {
 
                 push @output, $dotdotdot if !$printing++ && !$first;
                 push @output, $words[$i];
-                $some_printed++;
 
             } else {
                 $printing = 0;
             }
 
-	    $first = 0;
+            $first = 0;
 
 
         }
-    }
 
-    if ( !$some_printed ) {
-        for my $i ( 0 .. $Max_Words ) {
-            if ( $i > $#words ) {
-                $printing++;
-                last;
-            }
-            push @output, $words[$i];
-        }
+        push @output, $dotdotdot if !$printing;
+        $$text_ref = join '', @output;
     }
 
 
 
-    push @output, $dotdotdot if !$printing;
 
-    $$text_ref = join '', @output;
+
     my %entities = (
         '&' => '&amp;',
         '>' => '&gt;',
@@ -297,9 +323,6 @@ sub highlight {
     $$text_ref =~ s/($on_flag|$off_flag)/$highlight{$1}/ge;
 
     return 1;  # Means that prop was processed AND was html escaped.
-    return $found_phrase;
-
-    # $$text_ref = join '', @words;  # interesting that this seems reasonably faster
 
 
 
