@@ -65,8 +65,13 @@ use HTML::LinkExtor;
 
 
     # Now write the content -- really only need to do this on text/* types since that's all swish processes
+    # No, that's not true.  Can use FileFilter inside of swish-e on binary data.
 
     open( CONTENTS, ">$localpath.contents" ) || die( "Could not open contents file $localpath.contents: $!\n" );
+
+    # Enable binmode if the contents is not text/*
+    binmode CONTENTS unless $content_type =~ m[^text/]i;
+
     print CONTENTS $$content_ref;
     close( CONTENTS );
 
@@ -77,6 +82,10 @@ use HTML::LinkExtor;
 
     open( LINKS, ">$localpath.links" ) || die( "Could not open links file $localpath.links: $!\n" );
     my $p = HTML::LinkExtor->new( \&linkcb, $url );
+
+    # Don't allow links above the base
+    $URI::ABS_REMOTE_LEADING_DOTS = 1;
+
     $p->parse( $$content_ref );
     close( LINKS );
 
@@ -92,10 +101,6 @@ sub linkcb {
 
     # Remove fragments
     $link =~ s/(.*)#.*/$1/;
-
-    # Remove ../  This is important because the abs() function
-    # can leave these in and cause never ending loops.
-    $link =~ s/\.\.\///g;
 
     print LINKS "$link\n";
 }
