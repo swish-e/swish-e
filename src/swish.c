@@ -472,8 +472,8 @@ struct stat stat_buf;
 		if (sw->verbose)
 			starttime = getTheTime();
 
-			/* Update Swap mode */
-		sw->swap_flag=swap_mode;
+			/* Update Economic mode */
+		sw->Index->economic_flag=swap_mode;
 
 		while (sw->dirlist != NULL) {
 			if (sw->verbose) {

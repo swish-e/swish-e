@@ -278,7 +278,7 @@ int in_junk=0;
 	efree(metaName);
 	efree(positionMeta);
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
-	if(sw->swap_flag)
+	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 	return ftotalwords;
 }

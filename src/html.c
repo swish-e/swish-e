@@ -139,7 +139,7 @@ char *title=parsetitle(buffer,fprop->real_filename);
 	if (fprop->index_no_content) {
 		addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
 		addtofwordtotals(indexf, idx->filenum, 100);
-		if(sw->swap_flag)
+		if(idx->economic_flag)
 			SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 		n=countwordstr(sw, title, idx->filenum);
 		efree(title);
@@ -249,7 +249,7 @@ char *title=parsetitle(buffer,fprop->real_filename);
 	efree(metaName);
 	efree(positionMeta);
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
-	if(sw->swap_flag)
+	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 	efree(title);
 	return ftotalwords;

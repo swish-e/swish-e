@@ -696,10 +696,6 @@ typedef struct
     /* Phrase delimiter char */
     int     PhraseDelimiter;
 
-    /* If true. Swap part of the info to disk while indexing */
-    /* Save memory */
-    int     swap_flag;
-
 }
 SWISH;
 
