@@ -39,7 +39,7 @@
 #define HAVE_STRING_H   /* For mkstemp from libiberty  */
 
 /* Macros which rewrite values  */
-#define SWISH_VERSION "2.4.3"	/* Should we find a better way to handle this */
+#define SWISH_VERSION "2.4.3-pr1"	/* Should we find a better way to handle this */
 #define VERSION SWISH_VERSION   /* Some things want this  */
 
 #define libexecdir "/usr/local/lib"  /* Microsoft CPP is brain damaged */
