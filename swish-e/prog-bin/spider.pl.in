@@ -316,7 +316,7 @@ sub process_server {
     }
 
 
-    printf STDERR "\nSummary for: $server->{base_url}\n";
+    print STDERR "\nSummary for: $server->{base_url}\n";
 
     for ( sort keys %{$server->{counts}} ) {
         printf STDERR "%${max_width}s: %${max_num}s  (%0.1f/sec)\n",
