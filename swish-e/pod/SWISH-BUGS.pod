@@ -13,6 +13,16 @@ free to bug the developers about it on the Swish-e discussion list.
 
 =over 4
 
+=item * Character Encodings
+
+The XML parser (Expat) returns UTF-8 data to swish-e.  Therefore, the XML
+parser should only be used for parsing US-ASCII encoded text.
+
+The XML2 & HTML2 parsers (Libxml2) converts characters from UTF-8 to 8859-1 encodings before indexing
+and writing properties.  Indexing non-8859-1 data may result in invalid character mappings.
+
+These issues will be resolved soon.
+
 =item *
 
 Phrase search failes with DoubleMetaphone

@@ -19,16 +19,18 @@ install the xpdf package that includes the pdftotext and pdfinfo
 programs.  SWISH::Filters::Pdf2HTML only provides a unified interface
 to this programs.
 
-If a filter loads that requires additional perl modules to be installed
-you will see a warning, and the filter will not be linked into the filter
-chain.
-
 In addition to installing the required filter programs, you will need
 to set the path to the SWISH::Filter modules before indexing.  For example,
 if you unpacked the Swish-e distribution into $HOME/swish-e-2.2 directory
 you could do (with bourne type of shell):
 
     export PERL5LIB=$HOME/swish-e-2.2/filters
+
+When first testing you may also wish to set
+
+    export FILTER_DEBUG=1
+
+which will generate additional warnings when filter modules fail to load.    
 
 Please see the SWISH::Filter documentation for more information.
 
@@ -55,6 +57,10 @@ See the individual module's documentation for dependencies.
     SWISH::Filters::Pdf2HTML    - converts PDF files to HTML with info tags as metanames
     SWISH::Filters::ID3toHTML   - extracts out ID3 (v1 and v2) tags from MP3 files
     SWISH::Filters::XLtoHTML    - converts MS Excel to HTML
+
+Filters that depend on Perl modules that are not installed will not load.
+Setting the environment variable FILTER_DEBUG may report helpful errors when using
+filters.
 
 See perldoc SWISH::Filter for instructions on creating filters.
 

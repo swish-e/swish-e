@@ -293,7 +293,9 @@ sub filter {
             $filtered_doc = $filter_function->($doc_object);
         };
         if ( $@ ) {
-            warn "Problems with filter '$filter->{package}'.  Filter disabled.\n  : $@";
+            warn "Problems with filter '$filter->{package}'.  Filter disabled.\n  : $@"
+                if $ENV{FILTER_DEBUG};
+                
             $filter->{disabled}++;
         }
 
@@ -411,10 +413,12 @@ sub get_filter_list {
 
             eval { require "SWISH/Filters/${base}$suffix" };
             if ( $@ ) {
-                print STDERR "Failed to load 'SWISH/Filters/${base}$suffix'\n",
-                '-+' x 40, "\n",
-                $@,
-                '-+' x 40, "\n";
+                if ( $ENV{FILTER_DEBUG} ) {
+                    print STDERR "Failed to load 'SWISH/Filters/${base}$suffix'\n",
+                    '-+' x 40, "\n",
+                    $@,
+                    '-+' x 40, "\n";
+                }
                 next;
             }
 
@@ -881,7 +885,12 @@ module and run:
 
   perl -I.. Filter.pm test  foo.pdf  bar.doc
 
-replace foo.pdf and bar.doc with real paths on your system.  
+replace foo.pdf and bar.doc with real paths on your system.
+
+Setting the environment variable "FILTER_DEBUG" to a true value will report
+errors when loading filters.  Otherwise error are suppressed.
+
+  export FILTER_DEBUG=1
 
 =head1 SUPPORT
 
