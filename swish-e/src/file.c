@@ -113,64 +113,6 @@ int     getsize(char *path)
 }
 
 
-/* Checks that all the regex in the replace list are correct */
-void    checkReplaceList(SWISH * sw)
-{
-    struct swline *tmpReplace;
-    char   *rule;
-    int     lenpatt;
-    char   *patt;
-    regex_t re;
-    int     status;
-
-/*$$$ lstrstr is certainly wrong...  check if strcasecmp should be used */
-
-    patt = (char *) emalloc((lenpatt = MAXSTRLEN) + 1);
-    tmpReplace = sw->replacelist;
-    while (tmpReplace)
-    {
-        rule = tmpReplace->line;
-
-        /*  If it is not replace, just do nothing */
-        if (lstrstr(rule, "append") || lstrstr(rule, "prepend"))
-        {
-            if (tmpReplace->next)
-            {
-                tmpReplace = tmpReplace->next;
-            }
-            else
-            {
-                efree(patt);
-                return;
-            }
-        }
-        if (lstrstr(rule, "replace"))
-        {
-            tmpReplace = tmpReplace->next;
-            patt = SafeStrCopy(patt, tmpReplace->line, &lenpatt);
-            status = regcomp(&re, patt, REG_EXTENDED);
-            regfree(&re);
-                 /** Marc Perrin ## 18Jan99 **/
-            if (status != 0)
-            {
-                printf("Illegal regular expression %s\n", patt);
-                efree(patt);
-                exit(0);
-            }
-
-            if (tmpReplace->next)
-                tmpReplace = tmpReplace->next;
-            else
-            {
-                efree(patt);
-                return;
-            }
-        }
-        tmpReplace = tmpReplace->next;
-    }
-    efree(patt);
-}
-
 
 FILE   *openIndexFILEForWrite(char *filename)
 {

@@ -27,8 +27,6 @@ int isfile(char *);
 int islink(char *);
 int getsize(char *);
 
-void checkReplaceList(SWISH *);
-void checkListRegex(struct swline *list);
 
 /* use these to open Index files (because they are binary files: Win32)  */
 FILE* openIndexFILEForWrite(char *);
