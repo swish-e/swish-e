@@ -28,8 +28,6 @@ void addstophash (INDEXDATAHEADER *, char *);
 void addusehash (INDEXDATAHEADER *, char *);
 int isstopword (INDEXDATAHEADER *, char *);
 int isuseword (INDEXDATAHEADER *, char *);
-void mergeresulthashlist (SWISH *, RESULT *);
-void initresulthashlist (SWISH *sw);
 void addStopList (INDEXDATAHEADER *, char *);
 void freestophash (INDEXDATAHEADER *);
 void freeStopList (INDEXDATAHEADER *);

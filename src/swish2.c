@@ -168,7 +168,7 @@ if(sw) {
 		freeModule_ResultOutput (sw);
 		freeModule_SearchAlt (sw);
 		freeModule_Entities (sw);
-        freeModule_DB (sw);
+                freeModule_DB (sw);
 
 		/* Since it is possible to invoke SwishSearch several times
                 ** with the same SWISH handle, the freeModule_ResultSort stuff

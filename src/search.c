@@ -1112,7 +1112,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         }
         for (i = 0; i < BIGHASHSIZE; i++)
         {
-            rp = sw->resulthashlist[i];
+            rp = sw->Search->resulthashlist[i];
             while (rp != NULL)
             {
                 rp2 = (RESULT *) addtoresultlist(rp2, rp->filenum, rp->rank, rp->structure, rp->frequency, rp->position, indexf, sw);
@@ -1360,7 +1360,7 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     }
     for (i = 0; i < BIGHASHSIZE; i++)
     {
-        rp = sw->resulthashlist[i];
+        rp = sw->Search->resulthashlist[i];
         while (rp != NULL)
         {
             newnode = (RESULT *) addtoresultlist(newnode, rp->filenum, rp->rank, rp->structure, rp->frequency, rp->position, rp->indexf, sw);
@@ -2227,4 +2227,97 @@ struct swline *parse_search_string(SWISH * sw, char *words, INDEXDATAHEADER head
 
     efree(word);
     return searchwordlist;
+}
+
+
+/* Initializes the result hash list.
+*/
+
+void    initresulthashlist(SWISH * sw)
+{
+    int     i;
+
+    for (i = 0; i < BIGHASHSIZE; i++)
+        sw->Search->resulthashlist[i] = NULL;
+}
+
+
+/* Adds a file number to a hash table of results.
+** If the entry's alrady there, add the ranks,
+** else make a new entry.
+*/
+/* Jose Ruiz 04/00
+** For better performance in large "or"
+** keep the lists sorted by filename
+*/
+void    mergeresulthashlist(SWISH *sw, RESULT *r)
+{
+    unsigned hashval;
+    RESULT *rp,
+           *tmp;
+    int    *newposition;
+
+    tmp = NULL;
+    hashval = bignumhash(r->filenum);
+
+    rp = sw->Search->resulthashlist[hashval];
+    while (rp != NULL)
+    {
+        if (rp->filenum == r->filenum)
+        {
+            rp->rank += r->rank;
+            rp->structure |= r->structure;
+            if (r->frequency)
+            {
+                if (rp->frequency)
+                {
+                    newposition = (int *) emalloc((rp->frequency + r->frequency)* sizeof(int));
+
+                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
+                    CopyPositions(newposition, r->frequency, rp->position, 0, rp->frequency);
+                }
+                else
+                {
+                    newposition = (int *) emalloc(r->frequency * sizeof(int));
+
+                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
+                }
+                rp->frequency += r->frequency;
+                efree(rp->position);
+                rp->position = newposition;
+            }
+            freeresult(sw, r);
+            return;
+        }
+        else if (r->filenum < rp->filenum)
+            break;
+        tmp = rp;
+        rp = rp->next;
+    }
+    if (!rp)
+    {
+        if (tmp)
+        {
+            tmp->next = r;
+            r->next = NULL;
+        }
+        else
+        {
+            sw->Search->resulthashlist[hashval] = r;
+            r->next = NULL;
+        }
+    }
+    else
+    {
+        if (tmp)
+        {
+            tmp->next = r;
+            r->next = rp;
+        }
+        else
+        {
+            sw->Search->resulthashlist[hashval] = r;
+            r->next = rp;
+        }
+    }
 }
