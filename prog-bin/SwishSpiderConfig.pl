@@ -233,7 +233,7 @@ sub filter_content {
 
     # If not filtered return false and doc will be ignored (not indexed)
     
-    my $doc $filter->content(
+    my $doc = $filter->content(
         document => $content_ref,
         name     => $response->base,
         content_type => $content_type,
