@@ -2071,7 +2071,7 @@ else
 fi
 
 
-if test "$withval" == "yes"; then
+if test "$withval" = "yes"; then
     echo "$ac_t""** Enabling libxml2 support -- good choice! **" 1>&6
     LIBXML2_OBJS="parser.o"
     LIBXML2_LIB="-lxml2"
