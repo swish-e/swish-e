@@ -6,9 +6,14 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.2.1 - September xx, 2002
+=head2 Version 2.2.1 - September 26, 2002
 
 =over 4
+
+=item * Add tests for IRIX and sparc machines
+
+8-byte alignment in mem_zones is is required for these machine
+
 
 =item * Fixed code when removing files
 
@@ -16,7 +21,8 @@ Was not correctly removing words from index when parser aborted [jmruiz]
 
 =item * Merge segfault
 
-Fixed segfault caused by trying to print null dates while merging [moseley]
+Fixed segfault caused by trying to print null dates while merging
+duplicate files. [moseley]
 
 =item * Documentation patches
 
