@@ -6,7 +6,7 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 
-<link rel="stylesheet" href="styles/searchform.css">
+<link rel="stylesheet" href="styles/search.css">
 
 <script language="JavaScript1.1">
 
@@ -18,7 +18,7 @@
 
 if (top.location.href == self.location.href) {
 
-	top.location.href = "Index.htm";
+	top.location.href = "index.htm";
 
 }
 
@@ -156,7 +156,7 @@ function ResetForm()
 
 	swishctl.Close();
 
-	swishctl.Init("IndexFiles");
+	swishctl.Init("swishdocs");
 
 	firstresult = 0;
 
@@ -164,7 +164,7 @@ function ResetForm()
 
 	resultcount = 0;
 
-	parent.BodyFrame.navigate( "bodyframe.htm" );
+	parent.BodyFrame.navigate( "body.htm" );
 
 	document.QueryForm.textfield.focus();
 
@@ -182,7 +182,7 @@ function LoadPage()
 
 	swishctl = document.ObjectForm.swishctl;
 
-	swishctl.Init("IndexFiles");
+	swishctl.Init("swishdocs");
 
 	firstresult = 0;
 
@@ -690,7 +690,7 @@ function DoHelp()
 
 	// called when help button is clicked 
 
-	parent.BodyFrame.navigate( "srchhelp.htm" );
+	parent.BodyFrame.navigate( "help.htm" );
 
 	return false;
 
