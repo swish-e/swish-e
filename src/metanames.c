@@ -206,6 +206,8 @@ void ClearInMetaFlags(INDEXDATAHEADER * header)
 *
 *   THIS IS TEMPORARY until I break up the metanames and properties
 *
+*   This just creates two arrays to map metaIDs between property index numbers.
+*
 ***************************************************************************/
 
 void init_property_list(INDEXDATAHEADER *header)

@@ -39,6 +39,8 @@
 #define WRITE_WORDS_RAMDISK 1
 #endif
 
+// #define DEBUG_PROP 1
+
 /*
   -- init structures for this module
 */
@@ -1753,21 +1755,29 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
 
 
 /****************************************************************************
-*   Init Writing files
+*   Writing Properites  (not for USE_BTREE)
 *
-*   Properties are written sequentially to the .prop file
+*   Properties are written sequentially to the .prop file.
 *   Fixed length records of the file length and seek position into the
-*   property file are written sequentially to the main index.
+*   property file are written sequentially to the main index (which is why
+*   there's a separate .prop file).  
 *
 *   DB_InitWriteFiles is called first time a property is written
-*   to save the offset of the property index.
+*   to save the offset of the property index table in the main index.
+*   It's simply a ftell() of the current position in the index and that
+*   seek position is stored in the main index "offsets" table.
 *
-*   DB_WriteProperty writes a property
+*   DB_WriteProperty writes a property.
+*
 *   DB_WritePropPositions write the seek pointers to the main index and
 *   *must* be called after processing each file.
 *   This is all done in WritePropertiesToDisk().
 *
 *   The index tables are all based on the count of properties in the index.
+*   So, to read you find the start of the prop pointers table by the value
+*   stored in the offsets table.  Since we have a fixed number of properties
+*   we know the size of an entry in the prop pointers table, one record per filenum.
+*   Index into the prop seek positions table and grab the pointers to the properties.
 *
 *
 *****************************************************************************/
@@ -1779,7 +1789,13 @@ int     DB_InitWriteFiles_Native(void *db)
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     DB->offsets[FILELISTPOS] = ftell(DB->fp);
+
+#ifdef DEBUG_PROP
+    printf("InitWriteFiles: Start of property table in main index at offset: %ld\n", DB->offsets[FILELISTPOS] );
 #endif
+
+#endif
+
     return 0;
 }
 
@@ -1787,19 +1803,30 @@ int     DB_InitWriteFiles_Native(void *db)
 /****************************************************************************
 *   Writes a property to the property file
 *
+*   Creates a PROP_INDEX structure in the file entry that caches all
+*   the seek pointers into the .prop file, if it doesn't already exist.
+*
+*   Stores in the fi->prop_index structure the seek address of this property and the physical length
+*
+*   Writes to the prop file:
+*       <uncompressed length><property (possibly compressed)>
+*
 *
 *****************************************************************************/
 
 void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    int             written_bytes;
+    size_t             written_bytes;
     PROP_INDEX      *pindex = fi->prop_index;
     PROP_LOCATION   *prop_loc;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
     int             index_size;
     int             propIDX = header->metaID_to_PropIDX[propID];
+#ifdef DEBUG_PROP
+    long            prop_start_pos;
+#endif
 
     if ( count <= 0 )
         return;
@@ -1832,30 +1859,41 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
     /* First write the uncompressed size */
     compress1( uncompressed_len+1, DB->prop, putc);
 
+#ifdef DEBUG_PROP
+    prop_start_pos = ftell(DB->prop);
+#endif
+    
+
 
     if ((written_bytes = fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
-        progerrno("Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", fi->filenum, propID, buf_len,
+        progerrno("Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %Zu : ", fi->filenum, propID, buf_len,
                   written_bytes);
 
     prop_loc->length = buf_len;     /* length of this prop */
+
+
+#ifdef DEBUG_PROP
+    printf("Write Prop: file %d  PropIDX %d  (meta %d) at file offset %ld (data at %ld) <uncompressed_len> %ld bytes <prop> %Zu bytes\n",
+            fi->filenum, propIDX, propID, prop_loc->seek, prop_start_pos, prop_start_pos - prop_loc->seek, written_bytes);
+#endif
 }
 
 
 /****************************************************************************
 *   Writes out the seek positions for the properties
 *
-*   This writes out a fixed size records, one for each file.  Each
+*   This writes out a fixed size records, one for each property.  Each
 *   record is a list of <length>:<seek pos> entries, one for
 *   each property defined.  Length is null if this file doesn't have a
 *   property.
 *
-*   The advantage of the fixed width records is that the can be written
+*   The advantage of the fixed width records is that they can be written
 *   to disk after each file, saving RAM, and more importanly, all the
 *   files don't need to be read when searhing.  Can just seek to the
 *   file of interest, read the table, then read the property file.
 *
-*   This comes at a cost of disk space, since the much of the
-*   data could be compressed.
+*   This comes at a cost of disk space (and maybe disk access speed),
+*   since much of the data in the table written to disk could be compressed.
 *
 *   An optional approach would be to only save the seek positions, plus
 *   an extra seek position at the end (the next position after the last
@@ -1895,6 +1933,11 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     seek_pos = ((fi->filenum - 1) * count) * 2;
 #endif
 
+#ifdef DEBUG_PROP
+    printf("Writing seek positions to index for file %d\n", fi->filenum );
+#endif
+
+
     /* Write out the prop index */
     for ( i = 0; i < count; i++ )
     {
@@ -1902,9 +1945,17 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
 
 #ifndef USE_BTREE
+
+#ifdef DEBUG_PROP
+        printf("  PropIDX: %d  length: %ld, seek: %ld  main index location: %ld\n",
+                 i, prop_loc->length, prop_loc->seek, ftell( DB->fp ) );
+#endif
+        
         /* Write in portable format */
         printlong( DB->fp, prop_loc->length, fwrite );
         printlong( DB->fp, prop_loc->seek, fwrite );
+       
+
 #else
         ARRAY_Put( DB->props_array,seek_pos++, prop_loc->length);
         ARRAY_Put( DB->props_array,seek_pos++, prop_loc->seek);
@@ -1952,6 +2003,12 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         progerrno("Failed to seek to property index located at %ld for file number %d : ", seek_pos, fi->filenum);
 
 
+#ifdef DEBUG_PROP
+        printf("Fetching seek positions for file %d\n", fi->filenum );
+        printf(" property index table at %ld, this file at %ld\n", DB->offsets[FILELISTPOS], seek_pos );
+#endif
+
+
     /* Read in the prop indexes */
     for ( i=0; i < count; i++ )
     {
@@ -1960,6 +2017,12 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
         prop_loc->length = readlong( DB->fp, fread );
         prop_loc->seek = readlong( DB->fp, fread );
+
+#ifdef DEBUG_PROP
+        printf("   PropIDX: %d  Length: %ld  Seek: %ld\n", i, prop_loc->length, prop_loc->seek );
+#endif
+
+
     }
 #else
 
@@ -1997,7 +2060,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     int             propIDX;
     PROP_LOCATION   *prop_loc;
     char            *buffer;
-    int             length;
+    long            length;
 
 
     propIDX = header->metaID_to_PropIDX[propID];
@@ -2031,13 +2094,24 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     if (!length )
         return NULL;
 
+        
+
 
     if (fseek(DB->prop, seek_pos, 0) == -1)
         progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, fi->filenum);
 
+#ifdef DEBUG_PROP
+    printf("Fetching filenum: %d propIDX: %d at seek: %ld (length is %ld)\n", fi->filenum, propIDX, seek_pos, length);
+#endif
+
 
     /* read uncomprssed size (for use in zlib uncompression) */
     *uncompressed_len = uncompress1( DB->prop, fgetc ) - 1;
+
+#ifdef DEBUG_PROP
+    printf(" Fetched uncompressed length of %d (%ld bytes storage), now fetching %ld prop bytes from %ld\n",
+             *uncompressed_len, ftell( DB->prop ) - seek_pos, length, ftell( DB->prop ) );
+#endif
 
 
     /* allocate a read buffer */

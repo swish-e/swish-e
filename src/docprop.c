@@ -1112,6 +1112,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
         DB_InitWriteFiles(sw, indexf->DB);
 
         /* build a list of properties that are in use */
+        /* And create the prop index to propID (metaID) mapping arrays */
         init_property_list(header);
     }
 
@@ -1131,16 +1132,16 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     for( i = 0; i < count; i++ )
     {
         /* convert the count to a propID */
-        int propID = header->propIDX_to_metaID[i];
+        int propID = header->propIDX_to_metaID[i];  // here's the array created in init_property_list()
 
 
-        /* Here's why I need to redo the properties so it's always header->property_count size */
+        /* Here's why I need to redo the properties so it's always header->property_count size in the fi rec */
         /* The mapping is all a temporary kludge */
-        if ( propID >= docProperties->n )
+        if ( propID >= docProperties->n ) // Does this file have this many properties?
             continue;
 
 
-        if ( !(prop = docProperties->propEntry[propID]))
+        if ( !(prop = docProperties->propEntry[propID])) // does this file have this prop?
             continue;
 
         buf = compress_property( prop, propID, sw, &buf_len, &uncompressed_len );
@@ -1337,61 +1338,6 @@ struct MOD_Search *srch = sw->Search;
 
 
 
-void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEntry *metaFile)
-{
-    int metaID, i;
-    propEntry *prop, *tmpprop;
-    struct docProperties *tmpDocProperties;
-
-    if(! *docProperties) return;
-
-
-	tmpDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + (*docProperties)->n * sizeof(propEntry *));
-	tmpDocProperties->n = (*docProperties)->n;
-
-	for ( metaID = 0; metaID < tmpDocProperties->n; metaID++ )
-		tmpDocProperties->propEntry[metaID] = NULL;
-
-	/* swap metaName values for properties */
-	for ( metaID = 0 ; metaID < (*docProperties)->n ;metaID++ )
-	{
-		prop = (*docProperties)->propEntry[metaID];
-		if (prop)
-		{
-			struct metaMergeEntry* metaFileTemp;
-
-
-			/* scan the metaFile list to get the new metaName value */
-			metaFileTemp = metaFile;
-			while (metaFileTemp)
-			{
-				if (metaID == metaFileTemp->oldMetaID)
-				{
-					if (tmpDocProperties->n <= metaFileTemp->newMetaID )
-					{
-						tmpDocProperties = erealloc(tmpDocProperties,sizeof(struct docProperties) + (metaFileTemp->newMetaID + 1) * sizeof(propEntry *));
-						for(i=tmpDocProperties->n; i<= metaFileTemp->newMetaID; i++)
-							tmpDocProperties->propEntry[i] = NULL;
-						tmpDocProperties->n = metaFileTemp->newMetaID + 1;
-					}
-
-					tmpprop = emalloc(sizeof(propEntry) + prop->propLen);
-					memcpy(tmpprop->propValue,prop->propValue,prop->propLen);
-					tmpprop->propLen = prop->propLen;
-					tmpDocProperties->propEntry[metaFileTemp->newMetaID] = tmpprop;
-					break;
-				}
-			    metaFileTemp = metaFileTemp->next;
-
-			}
-		}
-	}
-
-	/* Reasign new values */
-	freeDocProperties(*docProperties);
-	*docProperties = tmpDocProperties;
-
-}
 
 
 /* For faster proccess, get de ID of the properties to sort */
