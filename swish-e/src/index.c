@@ -282,15 +282,21 @@ void freeModule_Index (SWISH *sw)
   /* free IgnoreLimit stuff */
   if(idx->IgnoreLimitPositionsArray)
   {
-	  for(i=0; i<sw->indexlist->header.totalfiles; i++)
+      for(i=0; i<sw->indexlist->header.totalfiles; i++)
+      {
           if(idx->IgnoreLimitPositionsArray[i])
+          {
+              efree(idx->IgnoreLimitPositionsArray[i]->pos);
               efree(idx->IgnoreLimitPositionsArray[i]);
+          }
+      }
       efree(idx->IgnoreLimitPositionsArray);
   }
 
   /* should be free by now!!! But just in case... */
   if (idx->entryZone)
       Mem_ZoneFree(&idx->entryZone);
+
   if (idx->totalLocZone)
       Mem_ZoneFree(&idx->totalLocZone);
   if (idx->currentChunkLocZone)
@@ -419,6 +425,11 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 #define LOC_BLOCK_SIZE 32  /* Must be greater than sizeof(LOCATION) and a power of 2 */
 #define LOC_MIN_SIZE   ((sizeof(LOCATION) + LOC_BLOCK_SIZE - 1) & (~(LOC_BLOCK_SIZE - 1)))
 
+struct  loc_chain {
+    struct loc_chain *next;
+    int size;
+};
+
 /********************************************************************
 ** 2001-08 jmruiz
 ** Routine to allocate memory inside a zone for a plain LOCATION
@@ -428,19 +439,53 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 ** fact, most realloc function work this way. They asks for more memory
 ** to avoid the overhead of the sequence malloc, memcpy, free.
 ********************************************************************/
+
+LOCATION *alloc_location(struct MOD_Index *idx,int size)
+{
+    struct loc_chain *tmp = (struct loc_chain *) idx->freeLocMemChain;
+    struct loc_chain *big = NULL;
+    LOCATION *tmp2 = NULL;
+
+    /* Search for a previously freed location of the same size */
+    while(tmp)
+    {
+        if(tmp->size == size)
+        {
+            if(!tmp2)
+                idx->freeLocMemChain = (LOCATION *)tmp->next;
+            else
+                tmp2->next = (LOCATION *)tmp->next;
+            return (LOCATION *)tmp;
+        }
+        else if(tmp->size > size)
+            big = tmp;
+        tmp2 = (LOCATION *)tmp;
+        tmp = tmp->next;
+    }
+    /* Perhaps we have a block with greater size */
+    if(big)
+    {
+        /* Split it */
+        while(big->size > size)
+        {
+            big->size >>= 1;
+            tmp = (struct loc_chain *) ((unsigned char *)big + big->size);
+            tmp->next = big->next;
+            tmp->size = big->size;
+            if(tmp->size == size)
+                return (LOCATION *)tmp;
+            big->next = tmp;
+            big = tmp;
+        }
+    }
+    /* NO memory in free chain of the same size - Asks for size */
+    return (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, size);
+}
+
+
 LOCATION *new_location(struct MOD_Index *idx)
 {
-        LOCATION *newp;
-
-        /* First, look for size in the free memory chain of previously freed locations */
-        if((newp = idx->freeLocMemChain))
-        {
-             idx->freeLocMemChain = newp->next;
-             return newp;
-        }
- 
-        /* NO memory in free chain - Asks for size */
-        return (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, LOC_MIN_SIZE);
+    return (LOCATION *)alloc_location(idx, LOC_MIN_SIZE);
 }
 
 
@@ -464,7 +509,7 @@ int is_location_full(int size)
         } 
         else
         {
-		    break;
+            break;
         }
     }
     return 0;
@@ -478,28 +523,23 @@ int is_location_full(int size)
 ********************************************************************/
 LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency)
 {
-        LOCATION *newp = NULL, *tmp = NULL;
+        LOCATION *newp = NULL;
+        struct loc_chain *tmp = NULL;
         int oldsize; 
-//        int newsize;
 
         oldsize = sizeof(LOCATION) + (frequency - 1) * sizeof(int);
-//        newsize = oldsize + sizeof(int);
 
         /* Check for available size in block */
         if(is_location_full(oldsize))
         {
             /* Not enough size - Allocate a new block. Size rounded to LOC_BLOCK_SIZE */
-            //newp = (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
-			newp = (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone,oldsize << 1);
+            newp = (LOCATION *)alloc_location(idx,oldsize << 1);
             memcpy((void *)newp,(void *)oldp,oldsize);
             /* Add old zone to the free chain of blocks */
-            for(tmp = (LOCATION *)oldp;oldsize;)
-            {
-                 tmp->next = idx->freeLocMemChain;
-                 idx->freeLocMemChain = tmp;
-                 tmp = (LOCATION *)((unsigned char *)tmp + LOC_MIN_SIZE);
-                 oldsize -= LOC_MIN_SIZE; 
-            }
+            tmp = (struct loc_chain *)oldp;
+            tmp->next = (struct loc_chain *)idx->freeLocMemChain;
+            tmp->size = oldsize;
+            idx->freeLocMemChain = (LOCATION *) tmp;
         }
         else
             /* Enough size */
@@ -1141,7 +1181,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct fi
 
 int     getfilecount(IndexFILE * indexf)
 {
-    return indexf->filearray_cursize;
+    return indexf->header.totalfiles;
 }
 
 
@@ -1223,7 +1263,11 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         return;
 
     if (sw->verbose)
-        printf("Proccesing IgnoreLimit option\n");
+    {
+        printf("\r  Getting IgnoreLimit stopwords: ...");
+        fflush(stdout);
+    }
+
 
     if (!estopmsz)
     {
@@ -1291,6 +1335,12 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         {
             ep = estop[i];
 
+            if (sw->verbose)
+            {
+                printf("\r  Getting IgnoreLimit stopwords: %25s",ep->word);
+                fflush(stdout);
+            }
+
             if(sw->Index->swap_locdata)
                 unSwapLocDataEntry(sw,ep);
 
@@ -1330,30 +1380,25 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                      if (!filepos[filenum - 1])
                      {
                          fpos = (struct IgnoreLimitPositions *) emalloc(sizeof(struct IgnoreLimitPositions));
-                         fpos->pos = (int *) emalloc((fpos->n = frequency) * 2 * sizeof(int));
-
-                         for (k = 0; k < frequency; k++)
-                         {
-                             m = k * 2;
-                             fpos->pos[m++] = metaID;
-                             fpos->pos[m] = positions[k];
-                         }                        
+                         fpos->pos = (int *) emalloc(frequency * 2 * sizeof(int));
+                         fpos->n = 0;
                          filepos[filenum - 1] = fpos;
                      }
                      else /* file exists in array.  just append the meta and position data */
                      {
                          fpos = filepos[filenum - 1];
                          fpos->pos = (int *) erealloc(fpos->pos, (fpos->n + frequency) * 2 * sizeof(int));
+                     }
 
-                         for (k = 0; k < frequency; k++)
-                         {
-                             m = (fpos->n + k) * 2;
-                             fpos->pos[m++] = metaID;
-                             fpos->pos[m] = positions[k];
-                         }
-                         fpos->n += frequency;
-                    }
-                    if(positions != local_positions)
+                     for (m = fpos->n * 2, k = 0; k < frequency; k++)
+                     {
+                         fpos->pos[m++] = metaID;
+                         fpos->pos[m++] = positions[k];
+                     }
+
+                     fpos->n += frequency;
+
+                     if(positions != local_positions)
                          efree(positions);
                 }
                 l = next;
@@ -1362,7 +1407,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                 Mem_ZoneReset(idx->totalLocZone);
         }
 
-        /* sort each file entries by metaname/position */
+        /* sort each file sort entries by metaname/position */
         for (i = 0; i < totalfiles; i++)
         {
             if (filepos[i])
@@ -1372,6 +1417,14 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
     idx->nIgnoreLimitWords = estopsz;
     idx->IgnoreLimitPositionsArray = filepos;
+
+    if (sw->verbose)
+    {
+        printf("\r  Getting IgnoreLimit stopwords: Complete                            \n");
+        fflush(stdout);
+    }
+
+
 }
 
 
@@ -1384,7 +1437,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
             r_filenum, 
             w_filenum,
            *positions;
-    int     i,j,pos;
+    int     i,j,k;
     unsigned long    r_nextposmeta;
     unsigned char   *w_nextposmeta;
     int     local_positions[MAX_STACK_POSITIONS];
@@ -1413,34 +1466,33 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
 
         uncompress_location_positions(&p,r_flag,frequency,positions);
 
-                /* Store the filenum incrementally to save space */
-        compress_location_values(&q,&w_flag,r_filenum - w_filenum,structure,frequency, positions[0]);
-
-        w_filenum = r_filenum;
-
         if(n_files && ilp && ilp[r_filenum - 1])
         {
             for(i = 0; i < ilp[r_filenum - 1]->n; i++)
             {
                 tmpval = ilp[r_filenum - 1]->pos[2 * i];
-                if( tmpval == metaID)
-                {
-                    pos = ilp[r_filenum - 1]->pos[2 * i + 1];
-                    if(pos > positions[frequency - 1])
-                        break;  /* Nothing to do */
-                    for(j = frequency - 1; j >=0 ; j--)
-                    {
-                        if(positions[j] > pos)
-                        {
-                            positions[j]--;
-                        }
-                        else
-                            break;
-                    }
-                } else if(tmpval > metaID)
+                if( tmpval >= metaID)
                     break;
             }
+            if(tmpval == metaID)
+            {
+                for(j = 0; j < frequency ; j++)
+                {
+                    for(k = i; k < ilp[r_filenum - 1]->n ; k++)
+                    {
+                        if(ilp[r_filenum - 1]->pos[2 * k] != metaID || 
+                           ilp[r_filenum - 1]->pos[2 * k + 1] > positions[j])
+                            break;  /* End */
+                    }
+                    positions[j] -= (k-i);
+                }
+            } 
         }
+               /* Store the filenum incrementally to save space */
+        compress_location_values(&q,&w_flag,r_filenum - w_filenum,structure,frequency, positions[0]);
+		w_filenum = r_filenum;
+
+               /* store positions */
         compress_location_positions(&q,w_flag,frequency,positions);
 
 		if(positions != local_positions)
@@ -1711,7 +1763,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         Mem_ZoneReset(sw->Index->totalLocZone);
 
     /* Proccess IgnoreLimit option */
-    //getPositionsFromIgnoreLimitWords(sw);
+    getPositionsFromIgnoreLimitWords(sw);
 
     n = lastPercent = 0;
     for (i = 0; i < totalwords; i++)

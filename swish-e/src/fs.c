@@ -37,6 +37,7 @@
 #include "xml.h"
 #include "txt.h"
 #include "parse_conffile.h"
+#include "swish_qsort.h"
 
 typedef struct
 {
@@ -59,7 +60,7 @@ static void indexafile(SWISH *, char *);
 static void printfile(SWISH *, char *);
 static void printfiles(SWISH *, DOCENTRYARRAY *);
 static void printdirs(SWISH *, DOCENTRYARRAY *);
-static DOCENTRYARRAY *addsortentry(DOCENTRYARRAY * e, char *filename);
+static DOCENTRYARRAY *adddocentry(DOCENTRYARRAY * e, char *filename);
 
 /*
   -- init structures for this module
@@ -335,7 +336,7 @@ static int     fs_already_indexed(SWISH * sw, char *path)
         }
 
     /* Not found, make new entry. */
-    p = (struct dev_ino *) emalloc(sizeof(struct dev_ino));
+    p = (struct dev_ino *) Mem_ZoneAlloc(sw->Index->entryZone,sizeof(struct dev_ino));
 
     p->dev = buf.st_dev;
     p->ino = buf.st_ino;
@@ -476,7 +477,7 @@ static void    indexadir(SWISH * sw, char *dir)
                 s[ilen1 + ilen2 + 1] = '\0';
             }
             
-            sortdirlist = (DOCENTRYARRAY *) addsortentry(sortdirlist, s);
+            sortdirlist = (DOCENTRYARRAY *) adddocentry(sortdirlist, s);
         }
         else        
         {
@@ -485,7 +486,7 @@ static void    indexadir(SWISH * sw, char *dir)
 
             if ( allgoodfiles || check_FileTests( s, &fs->filematch ) ) 
             {
-                sortfilelist = (DOCENTRYARRAY *) addsortentry(sortfilelist, s);
+                sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, s);
                 continue;
             }
 
@@ -498,7 +499,7 @@ static void    indexadir(SWISH * sw, char *dir)
             if ( check_FileTests( s, &fs->filerules ) )
                 continue;
 
-            sortfilelist = (DOCENTRYARRAY *) addsortentry(sortfilelist, s);
+            sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, s);
         }
     }
 
@@ -623,6 +624,19 @@ static void    printfile(SWISH * sw, char *filename)
     }
 }
 
+/* 2001-08 Jose Ruiz */
+/* function for comparing filenames to get all filenames in a dir sorted
+** Original addsortentry used strcmp - So, I use the same routine here
+** What about Win32?
+*/
+int     compfilenames(const void *s1, const void *s2)
+{
+    unsigned char *r1 = *(unsigned char * const *) s1;
+    unsigned char *r2 = *(unsigned char * const *) s2;
+
+    return strcmp(r1,r2);
+}
+
 /* Indexes the words in all the files in the array of files
 ** The array is sorted alphabetically
 */
@@ -633,6 +647,11 @@ static void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
 
     if (e)
     {
+        /* 2001-08 sorting of filenames moved here - Do we really
+        ** need to sort them? */
+        if(e->currentsize)
+            swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+
         for (i = 0; i < e->currentsize; i++)
             printfile(sw, e->filenames[i]);
 
@@ -653,6 +672,11 @@ void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
 
     if (e)
     {
+        /* 2001-08 sorting of dirs moved here - Do we really
+        ** need to sort them? */
+        if(e->currentsize)
+            swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+
         for (i = 0; i < e->currentsize; i++)
         {
             if (sw->verbose >= 3)
@@ -672,14 +696,8 @@ void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
 ** indexed alphabetically. No big whoop.
 */
 
-static DOCENTRYARRAY *addsortentry(DOCENTRYARRAY * e, char *filename)
+static DOCENTRYARRAY *adddocentry(DOCENTRYARRAY * e, char *filename)
 {
-    int     i,
-            j,
-            k,
-            isbigger;
-
-    isbigger = 0;
     if (e == NULL)
     {
         e = (DOCENTRYARRAY *) emalloc(sizeof(DOCENTRYARRAY));
@@ -691,34 +709,12 @@ static DOCENTRYARRAY *addsortentry(DOCENTRYARRAY * e, char *filename)
     }
     else
     {
-        /* Look for the position to insert using a binary search */
-        i = e->currentsize - 1;
-        j = k = 0;
-        while (i >= j)
-        {
-            k = j + (i - j) / 2;
-            isbigger = strcmp(filename, e->filenames[k]);
-            if (!isbigger)
-                progerr("SWISHE: Congratulations. You have found a bug!! Contact the author");
-            else if (isbigger > 0)
-                j = k + 1;
-            else
-                i = k - 1;
-        }
-
-        if (isbigger > 0)
-            k++;
-        e->currentsize++;
-        if (e->currentsize == e->maxsize)
+        if ((e->currentsize + 1) == e->maxsize)
         {
             e->maxsize += 1000;
             e->filenames = (char **) erealloc(e->filenames, e->maxsize * sizeof(char *));
         }
-        /* for(i=e->currentsize;i>k;i--) e->filenames[i]=e->filenames[i-1]; */
-        /* faster!! */
-        memmove(e->filenames + k + 1, e->filenames + k, (e->currentsize - 1 - k) * sizeof(char *));
-
-        e->filenames[k] = (char *) estrdup(filename);
+        e->filenames[e->currentsize++] = (char *) estrdup(filename);
     }
     return e;
 }
