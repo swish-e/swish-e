@@ -159,9 +159,6 @@
 #define MAXPAR 10
 #define MAXCHARDEFINED 256
 
-#define TI_OPEN 1
-#define TI_CLOSE 2
-#define TI_FOUND 4
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
 
@@ -224,6 +221,7 @@ typedef struct {
 	int lookup_path;
 	char *filename;
 	char *title;
+	char *summary;
 	int start;
 	int size;
 } FILEINFO;
@@ -245,6 +243,9 @@ struct file {
  -- store for information about a file to be indexed...
  -- Unused items may be NULL (e.g. if File is not opened, fp == NULL)
  -- (2000-11 rasc)
+
+ -- (2000-12 Jose Ruiz)
+ -- Added StoreDescription
 */
 
 typedef struct  {
@@ -255,6 +256,8 @@ typedef struct  {
 	time_t mtime;           /* size of last mod of or. file */
 	int    doctype;		/* Type of document HTML, TXT, XML, ... */
 	int    index_no_content;/* Flag, index "filename/real_path" only! */
+	struct StoreDescription *stordesc;  
+				/* Null if no description/summary */
 	char   *filterprog;     /* path to a filterscript or NULL */
 } FileProp;
 
@@ -281,11 +284,6 @@ typedef struct ENTRY {
 		int currentlocation;
 	} u2;
 } ENTRY;
-
-typedef struct {
-        char *filename;
-        char *title;
-} DOCENTRY;
 
 struct swline {
 	char *line;
@@ -415,6 +413,7 @@ typedef struct RESULT {
 	struct RESULT *nextsort;   /* Used while sorting results */
 	char *filename;
 	char *title;
+	char *summary;
 	int start;
 	int size;
 	/* file position where this document's properties are stored */
@@ -446,7 +445,7 @@ typedef struct {
 typedef struct {
         int currentsize;
         int maxsize;
-        DOCENTRY **dlist;
+        char **filenames;
 } DOCENTRYARRAY;
 
 struct dev_ino {
@@ -464,6 +463,13 @@ struct IndexContents {
 	int DocType;
 	struct swline *patt;
 	struct IndexContents *next;
+};
+
+struct StoreDescription {
+	int DocType;
+	char *field;
+	int size;
+	struct StoreDescription *next;
 };
 
 /* These two structs are used for lookuptables in order to save memory */
@@ -521,6 +527,8 @@ typedef struct {
 	/* 08/00 Jose Ruiz Values for document type support */
     int DefaultDocType;
     struct IndexContents *indexcontents;
+	/* 12/00 Jose Ruiz Values for summary support */
+    struct StoreDescription *storedescription;
 
 	/* structure for handling replace config data while searching */
     struct swline *replacelist;
@@ -702,71 +710,10 @@ VAR char *defaultstopwords[] = {
 "would", "wouldn", "wouldn't", "yes", "yet", "you", "your", "yours",
 "yourself", "yourselves", NULL };
 
-VAR char *entities[] = 
- { "", "&#32", " ", "", "&#33", "!", "&quot",
-"&#34", "\"", "", "&#35", "#", "", "&#36", "$", "", "&#37", "%",
-"&amp", "&#38", "&", "", "&#39", "'", "", "&#43", "+", "", "&#44",
-",", "", "&#45", "-", "", "&#46", ".", "", "&#47", "/", "", "&#48",
-"0", "", "&#49", "1", "", "&#50", "2", "", "&#51", "3", "", "&#52",
-"4", "", "&#53", "5", "", "&#54", "6", "", "&#55", "7", "", "&#56",
-"8", "", "&#57", "9", "", "&#58", "", "", "&#59", ";", "&lt", "&#60",
-"<", "", "&#61", "=", "&gt", "&#62", ">", "", "&#63", "?", "", "&#64",
-"@", "", "&#65", "A", "", "&#66", "B", "", "&#67", "C", "", "&#68",
-"D", "", "&#69", "E", "", "&#70", "F", "", "&#71", "G", "", "&#72",
-"H", "", "&#73", "I", "", "&#74", "J", "", "&#75", "K", "", "&#76",
-"L", "", "&#77", "M", "", "&#78", "N", "", "&#79", "O", "", "&#80",
-"P", "", "&#81", "Q", "", "&#82", "R", "", "&#83", "S", "", "&#84",
-"T", "", "&#85", "U", "", "&#86", "V", "", "&#87", "W", "", "&#88",
-"X", "", "&#89", "Y", "", "&#90", "Z", "", "&#91", "[", "", "&#92",
-"\\", "", "&#93", "]", "", "&#94", "^", "", "&#95", "-", "", "&#96",
-"`", "", "&#97", "a", "", "&#98", "b", "", "&#99", "c", "", "&#100",
-"d", "", "&#101", "e", "", "&#102", "f", "", "&#103", "g", "",
-"&#104", "h", "", "&#105", "i", "", "&#106", "j", "", "&#107", "k",
-"", "&#108", "l", "", "&#109", "m", "", "&#110", "n", "", "&#111",
-"o", "", "&#112", "p", "", "&#113", "q", "", "&#114", "r", "",
-"&#115", "s", "", "&#116", "t", "", "&#117", "u", "", "&#118", "v",
-"", "&#119", "w", "", "&#120", "x", "", "&#121", "y", "", "&#122",
-"z", "", "&#123", "{", "", "&#124", "|", "", "&#125", "}", "",
-"&#126", "~", "&nbsp", "&#160", " ", "&iexcl", "&#161", "Ì", "&cent",
-"&#162", "Û", "&pound", "&#163", "˙", "&curren", "&#164", "Ò", "&yen",
-"&#165", "—", "&brvbar", "&#166", "™", "&sect", "&#167", "∫", "&die",
-"&#168", "ø", "&copy", "&#169", "®", "&ordf", "&#170", "¨", "&laquo",
-"&#171", "Ω", "&not", "&#172", "º", "&shy", "&#173", "°", "&reg",
-"&#174", "´", "&macron", "&#175", "Ø", "&degree", "&#176", "ó",
-"&plusmn", "&#177", "ò", "&sup2", "&#178", "ô", "&sup3", "&#179", "˛",
-"&acute", "&#180", "≥", "&micro", "&#181", "¥", "&mu", "&#182", "µ",
-"&middot", "&#183", "∏", "&Cedilla", "&#184", "π", "&sup1", "&#185", "†",
-"&ordm", "&#186", "¶", "&raquo", "&#187", "©", "&frac14", "&#188", "≠",
-"&frac12", "&#189", "ª", "&frac34", "&#190", "æ", "&iquest", "&#191",
-"¿", "&Agrave", "&#192", "¡", "&Aacute", "&#193", "¬", "&Acirc",
-"&#194", "√", "&Atilde", "&#195", "»", "&Auml", "&#196", "˝",
-"&Aring", "&#197", " ", "&AElig", "&#198", "À", "&Ccedil", "&#199",
-"Ã", "&Egrave", "&#200", "Æ", "&Eacute", "&#201", "–", "&Ecirc",
-"&#202", "◊", "&Euml", "&#203", "›", "&Igrave", "&#204", "ﬁ",
-"&Iacute", "&#205", "Õ", "&Icirc", "&#206", "", "&Iuml", "&#207",
-"Œ", "&ETH", "&#208", "œ", "&Ntilde", "&#209", "“", "&Ograve", "&#210",
-"”", "&Oacute", "&#211", "‘", "&Ocirc", "&#212", "’", "&Otilde",
-"&#213", "ÿ", "&Ouml", "&#214", "Ÿ", "&times", "&#215", "⁄", "&Oslash",
-"&#216", "€", "&Ugrave", "&#217", "„", "&Uacute", "&#218", "ı",
-"&Ucirc", "&#219", "ö", "&Uuml", "&#220", "õ", "&Yacute", "&#221",
-"ú", "&THORN", "&#222", "ù", "&szlig", "&#223", "û", "&agrave", "&#224",
-"Ä", "&aacute", "&#225", "ﬂ", "&acirc", "&#226", "Ç", "&atilde",
-"&#227", "É", "&auml", "&#228", "Ñ", "&aring", "&#229", "Ö", "&aelig",
-"&#230", "Ü", "&ccedil", "&#231", "á", "&egrave", "&#232", "à",
-"&eacute", "&#233", "â", "&ecirc", "&#234", "ä", "&euml", "&#235",
-"ã", "&igrave", "&#236", "å", "&iacute", "&#237", "ç", "&icirc",
-"&#238", "é", "&iuml", "&#239", "è", "&eth", "&#240", "", "&ntilde",
-"&#241", "±", "&ograve", "&#242", "¯", "&oacute", "&#243", "",
-"&ocirc", "&#244", "ü", "&otilde", "&#245", "", "&ouml", "&#246",
-"˜", "&divide", "&#247", "ï", "&oslash", "&#248", "∞", "&ugrave",
-"&#249", "∑", "&uacute", "&#250", "î", "&ucirc", "&#251", "ì",
-"&uuml", "&#252", "í", "&yacute", "&#253", "≤", "&thorn", "&#254", "ë",
-"&yuml", "&#255", "ê", NULL };
 #else
 VAR struct _indexing_data_source_def *IndexingDataSource;
 VAR char *indexchars;
 VAR char *defaultstopwords[];
-VAR char *entities[];
 #endif
 
 #ifdef MAIN_FILE

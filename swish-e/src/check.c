@@ -215,3 +215,15 @@ struct swline *swl;
 	efree(checksuffix);
 	return NODOCTYPE;
 }
+
+
+struct StoreDescription *hasdescription(int doctype, struct StoreDescription *sd)
+{
+	while(sd)
+	{
+		if(sd->DocType==doctype)
+			return sd;
+		sd=sd->next;
+	}
+	return NULL;
+}

@@ -184,3 +184,18 @@ int i;
 	efree(e->word);
 	efree(e);
 }
+
+char *estrndup(char *s,int n)
+{
+int lens=strlen(s);
+int newlen;
+char *news;
+	if(lens<n)
+		newlen=lens;
+	else
+		newlen=n;
+	news=emalloc(newlen+1);
+	memcpy(news,s,newlen);
+	news[newlen]='\0';
+	return news;
+}

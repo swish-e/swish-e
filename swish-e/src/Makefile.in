@@ -9,6 +9,8 @@
 # Cross Platform Compilation on Solaris, HP-UX, IRIX, Mac OS X, BDSi and Linux
 # Several ideas from a Makefile by Christian Lindig <lindig@ips.cs.tu-bs.de>  
 #
+# $Id$
+
 NAME = swish-e
 # C compiler
 CC = @CC@
@@ -16,7 +18,8 @@ CC = @CC@
 SHELL = /bin/sh
 prefix = @prefix@
 bindir = $(prefix)/bin
-libdir = $(prefix)/lib
+exec_prefix  = @exec_prefix@
+libdir = @libdir@
 mandir = $(prefix)/man
 man1dir = $(mandir)/man1
 
@@ -40,7 +43,7 @@ WEB_OBJS=$(HTTP_OBJS)
 
 OBJS=	check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
-	soundex.o docprop.o compress.o deflate.o xml.o txt.o \
+	soundex.o docprop.o compress.o deflate.o xml.o txt.o html.o\
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS)
 
 .SUFFIXES: 
@@ -89,7 +92,10 @@ test:	$(NAME)
 
 $(OBJS):	Makefile config.h swish.h
 
-install:	
+install:
+	cp swish-e $(bindir)/swish-e
+
+install-lib:	
 	cp libswish-e.a $(libdir)/libswish-e.a
 
 man:
@@ -109,8 +115,9 @@ file.o: file.c swish.h config.h file.h mem.h string.h error.h list.h \
 fs.o: fs.c swish.h config.h index.h hash.h mem.h file.h string.h \
  list.h
 hash.o: hash.c swish.h config.h hash.h mem.h string.h
+html.o: html.c swish.h mem.h html.h
 http.o: http.c swish.h config.h index.h hash.h string.h mem.h file.h \
- http.h httpserver.h
+ http.h httpserver.h html.h
 httpserver.o: httpserver.c swish.h config.h string.h mem.h http.h \
  httpserver.h
 index.o: index.c swish.h config.h index.h hash.h mem.h string.h \

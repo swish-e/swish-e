@@ -15,7 +15,7 @@
 ** to the appropriate structures. This is the most simple function.
 ** Just a call to indexstring
 */
-int countwords_TXT(SWISH *sw, FileProp *fprop, char *title, char *buffer)
+int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 
 {
 int ftotalwords;
@@ -24,15 +24,17 @@ int positionMeta[1];    /* Position of word in file */
 int structure,currentmetanames;
 struct file *thisFileEntry = NULL;
 IndexFILE *indexf=sw->indexlist;
-
-/*
-$$-- Q:What about title? == fprop->real_path and what about fprop->index_no_content?
-$$-- has to be checked and to be implemented!
-*/
+char *summary=NULL;
 
 	sw->filenum++;
-	
-	addtofilelist(sw,indexf, fprop->real_path, title, 0, fprop->fsize, &thisFileEntry);
+
+	if(fprop->stordesc && fprop->stordesc->size)    /* Let us take the summary */
+	{
+		/* No fields in a TXT doc. So it is easy to get summary */
+		summary=estrndup(buffer,fprop->stordesc->size);
+	}
+
+	addtofilelist(sw,indexf, fprop->real_path, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
 		/* Init meta info */
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
@@ -42,5 +44,6 @@ $$-- has to be checked and to be implemented!
 	addtofwordtotals(indexf, sw->filenum, ftotalwords);
 	if(sw->swap_flag)
 		SwapFileData(sw, indexf->filearray[sw->filenum-1]);
+	if(summary) efree(summary);
 	return ftotalwords;
 }

@@ -2,10 +2,13 @@
 #
 # Bas Meijer, bas@antraciet.com 11 Dec 2000
 
+# $Id$
+
 SHELL = /bin/sh
 srcdir      = @srcdir@
 VPATH       = $(srcdir)
 prefix      = @prefix@
+exec_prefix  = @exec_prefix@
 bindir      = $(prefix)/bin
 mandir      = $(prefix)/man/man1
 perl		= @PERL@
@@ -15,7 +18,7 @@ all:	swish-e swish-search
 	echo 'now make test'
 swish-e:	
 	echo 'making swish-e'
-	(cd src;./configure --quiet --prefix=$(prefix) ;make;cd ..)
+	(cd src;./configure --quiet --prefix=$(prefix) --libdir=$(libdir) ;make;cd ..)
 	echo 'swish-e done'
 swish-search: swish-e
 	echo 'making swish-search'
@@ -24,15 +27,16 @@ swish-search: swish-e
 
 #
 clean:
-	rm -f src/swish-e src/swish-search src/*.o \
+	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
 	src/index.swish src/Makefile Makefile 
 
 realclean: 
 	rm -f config.cache config.log config.status
 	rm -f src/config.cache src/config.log \
 		 src/config.status
-	rm -f src/swish-e src/swish-search src/*.o \
-	src/index.swish src/Makefile Makefile 
+	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
+	src/index.swish src/Makefile Makefile \
+	src/testlib
 
 test:
 	(cd ./tests;\
@@ -47,4 +51,10 @@ test:
 	../src/swish-e -f ./test.index -w meta3=metatest3 | grep -v '^#'; \
 	echo "\ntest 1 (Phrase search) ..."; \
 	../src/swish-e -f ./test.index -w 'meta3="three little pigs"' | grep -v '^#'; )
+
+install:
+	cp src/swish-e $(bindir)/swish-e
+
+install-lib:
+	cp src/libswish-e.a $(libdir)/libswish-e.a
 

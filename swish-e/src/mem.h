@@ -25,6 +25,7 @@
 void *emalloc _AP ((int));
 void *erealloc _AP ((void *, int));
 char *estrdup _AP ((char *str));
+char *estrndup _AP ((char *str,int));
 void efree _AP ((void *));
 void freeswline _AP ((struct swline *));
 void freeindexfile _AP ((IndexFILE *));

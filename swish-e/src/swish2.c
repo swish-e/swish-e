@@ -55,6 +55,7 @@ int i;
         sw->nocontentslist = NULL;
 	sw->DefaultDocType=NODOCTYPE;
         sw->indexcontents = NULL;
+        sw->storedescription = NULL;
         sw->suffixlist = NULL;
 	sw->resultlist=NULL;
 	sw->searchwordlist=NULL;

@@ -33,17 +33,9 @@ typedef struct  {
 char *lstrstr _AP ((char *, char *));
 char *getword _AP ((char *, int *skiplen));
 char *getconfvalue _AP ((char *, char *));
-char *parsetitle _AP ((char *filename, char *alttitle));
 int isoksuffix _AP ((char *filename, struct swline *rulelist));
 char *replace _AP ((char *, char *, char *));
-char *convertentities _AP ((char *));
-char *getent _AP ((char *, int *));
-char *converttonamed _AP ((char *));
-int hasnumbered _AP ((char *));
-char *converttoascii _AP ((char *));
-int hasnonascii _AP ((char *));
 void makeItLow _AP ((char *str));
-int ourstricmp _AP((const char*, const char*));
 int matchARegex _AP ((char *str, char *pattern));
 char *SafeStrCopy _AP ((char *,char *, int *));
 void sortstring _AP ((char *));
@@ -73,6 +65,12 @@ StringList *parse_line _AP ((char *));
 ** Function to free memory used by a StringList
 */
 void freeStringList _AP ((StringList *));
+
+char *parsetag _AP ((char *, char *, int ));
+
+int isnumstring _AP ((unsigned char*));
+void remove_newlines _AP ((char*));
+void remove_tags _AP ((char*));
 
 #ifdef _WIN32
 #define strncasecmp	strnicmp
