@@ -1,77 +1,82 @@
+
 # Makefile for swish-e Documentation
 #
 # $Id$
 #
+# Any suggestions to improve this makefile are welcome -- Bill Moseley swish@hank.org
 
 prefix      = @prefix@
 mandir      = @mandir@/man1
 VERSION     = @VERSION@
 
 MANPAGES = src/SWISH-RUN.1 src/SWISH-CONFIG.1 src/SWISH-RUN.1 src/SWISH-FAQ.1 src/SWISH-LIBRARY.1 src/SWISH-PERL.1
+PODPAGES = ../CHANGES.pod  ../README.pod     ../SWISH-CONFIG.pod  ../SWISH-LIBRARY.pod  ../SWISH-RUN.pod \
+           ../INSTALL.pod  ../SWISH-3.0.pod  ../SWISH-FAQ.pod     ../SWISH-PERL.pod     ../SWISH-SEARCH.pod
+
+SOURCEPODS = src/CHANGES.pod  src/SWISH-3.0.pod     src/SWISH-LIBRARY.pod  src/SWISH-SEARCH.pod \
+             src/INSTALL.pod  src/SWISH-CONFIG.pod  src/SWISH-PERL.pod     src/config.pod \
+             src/README.pod   src/SWISH-FAQ.pod     src/SWISH-RUN.pod  \
+
+EXTRAFILES = src/images/dotrule1.gif  src/images/swish2.gif   src/images/swishbanner1.gif \
+             src/images/swish.gif     src/images/swish2b.gif \
+             src/style.css
+ 
+
+# How portable is .PHONY?
+.PHONY: all html pod readme pdf man install-man clean realclean
+
+.SUFFIXES:          # remove default rules
+.SUFFIXES: .pod .1  # Old way to define the rules on this target for no good reason
 
 
-.PHONY: all html pod pdf man install-man clean realclean
-.SUFFIXES: .pod .1
 
-all:	html pod man
+all:	html pod
 
-html: version
-	@echo "Building HTML"
-	@bin/build
-	@rm -f ../html/.htaccess ../html/search.cgi
 
-pod:
-	-chmod 644 src/*.pod
-	-chmod 644 ../*.pod ../README
-	cp src/*.pod ..
-	pod2text src/README.pod > ../README
-	chmod 444 ../*.pod ../README
 
+#---- Copy the .pod files to top-level directory -----
+
+../%.pod: src/%.pod
+	cp $< $@ && chmod 644 $@
+
+../README: src/README.pod
+	pod2text src/README.pod > ../README && chmod 644 ../README
+
+pod: $(PODPAGES) ../README
+
+
+#--- create/install man pages ----------
 
 .pod.1: $(MANPAGES)
 	pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)' $< > $@
+
+$(MANPAGES): ../configure
 
 man: $(MANPAGES)
 
 install-man: man
 	cp $(MANPAGES) $(mandir)
 
-version:
+
+
+#--- create html pages ------
+
+html: ../html/index.html
+
+
+../html/index.html: $(SOURCEPODS) $(EXTRAFILES) src/Version.pm
+	@echo "Building HTML"
+	@bin/build
+#	@rm -f ../html/.htaccess ../html/search.cgi
+
+
+src/Version.pm: ../configure
 	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > src/Version.pm
 
-pdf: version
-	bin/build -d
-	cp -f rel_ps/swish-e_documentation.pdf ..
-	cp -f rel_ps/swish-e_documentation.ps ..
-	rm -rf rel_ps
-	@echo "swish-e_documentation.pdf"
 
+#--- split version (for searchable version of documentation ) ---
 
-# This cleans split and pdf/ps and man pages
-clean:
-	rm -rf rel_ps
-	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
-	-test -e ../html/index.html.orig      && cp ../html/index.html.orig       ../html/index.html
-	
-	-test -e ../html/index_long.html.orig && cp ../html/index_long.html.orig  ../html/index_long.html
-	rm -rf ../html/split
-	rm -f ../html/index.html.orig ../html/index_long.html.orig
-	rm -f src/*.1
-	
-realclean: clean
-	rm -f Makefile
-
-distclean: realclean
-
-# this is to clean all the docs ans start from scratch
-ultraclean: realclean
-	rm -rf ../*.pod readme ../html/images
-	rm -f ../html/* 
-
-split: version
-	@echo "Testing if already created..."
-	test ! -d ../html/split
-	
+split: src/Version.pm
 	@echo "Checking for swish binary..."
 	test -x ../src/swish-e
 	bin/build -s
@@ -81,5 +86,46 @@ split: version
 	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="split/search.cgi">Search The Documentation</a>]</center>}' ../html/index.html ../html/index_long.html
 	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="search.cgi">Search</a>] [<a href="../index.html">Back to Non-Split Documentation</a>]</center>}' ../html/split/index.html ../html/split/index_long.html
 	@echo -e "\n** Don't forget to refresh in your browser to see the new pages! **\n"
+
+
+
+
+
+
+#--- create PDF and PostScript ----
+
+pdf: src/Version.pm
+	bin/build -d
+	cp -f rel_ps/swish-e_documentation.pdf ..
+	cp -f rel_ps/swish-e_documentation.ps ..
+	rm -rf rel_ps
+	@echo "swish-e_documentation.pdf"
+
+
+#---- clean -------------
+
+# This cleans split and pdf/ps and man pages
+clean:
+	rm -rf rel_ps
+	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
+
+	-test -e ../html/index.html.orig      && cp ../html/index.html.orig       ../html/index.html
+	-test -e ../html/index_long.html.orig && cp ../html/index_long.html.orig  ../html/index_long.html
+	rm -rf ../html/split ../html/.htaccess ../html/search.cgi
+	rm -f ../html/index.html.orig ../html/index_long.html.orig
+
+	rm -f src/*.1
+	rm -f pod2html-dircache pod2html-itemcache
+	
+realclean: clean
+	rm -f Makefile
+
+distclean: realclean
+
+# this is to clean all the docs and start from scratch
+ultraclean: realclean
+	rm -rf ../*.pod readme ../html/images
+	rm -f ../html/* 
+
 
 
