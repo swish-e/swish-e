@@ -400,7 +400,6 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
     stripIgnoreLastChars( header, word );
     stripIgnoreFirstChars( header, word );
     
-printf("buzzword check %s\n", word );
     if ( !*word ) /* stripped clean? */
         return 0;
 
