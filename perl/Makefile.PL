@@ -165,7 +165,7 @@ sub find_swish_config {
         my $p = find_program( $prog, $ENV{SWISHBINDIR} );
         die "Failed to find [$prog] in directory $ENV{SWISHBINDIR}: $!" unless $p;
 
-        warn "Using config program [$p], but also noticed you have $binary available in \$PATH\n"
+        print "Using config program [$p], but also noticed you have $binary available in \$PATH\n"
             if $binary;
 
         $binary = $p;
@@ -174,7 +174,7 @@ sub find_swish_config {
 
     die "Failed to find [$prog] in PATH\n" unless $binary;
 
-    warn "Using swish-config found at [$binary]\n";
+    print "Using swish-config found at [$binary]\n";
     return $binary;
 }
 
@@ -283,7 +283,7 @@ sub create_index {
     my @command = ( $swish,  '-c', $conf, '-f', $index, '-v','0' );
 
 
-    warn "Creating index...'@command'\n\n";
+    print "Creating index...'@command'\n\n";
 
     system(@command);
 
