@@ -389,8 +389,9 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     /* restore the setting */
     sw->truncateDocSize = truncate_doc_size;
 
-    if ( pclose(fp) == -1 )                  /* progerr("Failed to properly close external program"); */
-        progwarnno("Failed to properly close external program: ");
+    if ( fp != stdin )
+        if ( pclose(fp) == -1 )
+            progwarnno("Failed to properly close external program: ");
     
 }
 

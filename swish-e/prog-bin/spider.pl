@@ -980,7 +980,7 @@ you may need to index using the command:
     perl spider.pl | swish-e -S prog -c swish.conf -i stdin
 
 This pipes the output of the spider directly into swish.
-   
+
 
 =head1 DESCRIPTION
 
@@ -1109,7 +1109,7 @@ don't give it to swish to index in the first place.
 
 So, for spidering, if you do not wish to index images, for example, you will
 need to either filter by the URL or by the content-type returned from the web
-server.  See L<CALLBACK FUNCTIONS|CALLBACK FUNCTIONS> below for more information.
+server.  See L<"CALLBACK FUNCTIONS"> below for more information.
 
 =head1 REQUIREMENTS
 
@@ -1611,7 +1611,7 @@ in that file:
     },
 
 Note: Do not modify the URI object in this call back function.
-    
+
 
 =item filter_content
 
@@ -1693,7 +1693,6 @@ the server hash passed into the C<test_response> or C<filter_content> subroutine
 For example, in your configuration file you might have the C<test_response> callback set
 as:
 
-   
     test_response => sub {
         my ( $uri, $server, $response ) = @_;
         # tell swish not to index the contents if this is of type image
@@ -1746,9 +1745,6 @@ callback funtions.
 Sending a SIGHUP to the running spider will cause it to stop spidering.  This is a good way to abort spidering, but
 let swish index the documents retrieved so far.
 
-=head1 SEE ALSO
-
-L<URI> L<LWP::RobotUA> L<WWW::RobotRules> L<Digest::MD5>
 
 =head1 COPYRIGHT
 

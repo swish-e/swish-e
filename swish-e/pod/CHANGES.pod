@@ -6,11 +6,50 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Verions 2.4.0 - ????????? ??, ????
+
+=over 4
+
+=item New Swish Library API and Perl Module
+
+The Swish-e C library interface was rewritten to provide
+better memory management and better separation of data.
+Most indexing related code has been removed from the library.
+A new header file is provided for the API: swish-e.h.
+
+The Perl module SWISHE was replaced with the SWISH::API module
+in the Swish-e distribution.
+
+B<Previous versions of the SWISHE module will not work with this version of Swish-e.>
+
+If you are using the SWISHE module from a previous version of Swish then you must
+either rewrite your code to use the new SWISH::API module (highly recommended)
+or use the replacement SWISHE module.  The replacement SWISHE module is a thin
+interface to the SWISH::API module.  It can be downloaded from
+
+    http://swish-e.org/Download/old/SWISHE-0.03.tar.gz
+
+=item * NoContents not working with libxml2 parser
+
+Corrected problem when using NoContents with binary files
+and the HTML2 parser.
+
+Trying to index image file names with:
+
+    IndexOnly .gif .jpeg
+    NoContents .gif .jpeg
+
+failed to index the path names because the default parser
+(HTML2 when libxml2 is linked with swish-e)
+was not finding any text in the binary files. [moseley]
+
+=back
+
 =head2 Version 2.2.1 - September 26, 2002
 
 =over 4
 
-=item * No-Contents with -S prog
+=item * NoContents with -S prog
 
 Failed to use the correct default parser when using the No-Contents header
 and libxml2 linked in. [moseley]
