@@ -661,6 +661,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         /* replace all non-printing chars with a space -- this is questionable */
         // yep, sure is questionable -- isprint() kills 8859-1 chars.
 
+#ifdef FOOO
         char *source, *dest;
         dest = string;
         for( source = string; *source; source++ )
@@ -679,7 +680,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
             dest++;
         }
         *dest = '\0';
-            
+#endif            
         *encodedStr = string;
         return (int)strlen( string );
     }

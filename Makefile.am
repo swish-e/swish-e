@@ -2,12 +2,12 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = example html man src tests
 
 
+if BUILDDOCS
 docdir = $(datadir)/doc/$(PACKAGE)
 
 doc_DATA = \
 	INSTALL \
 	README
-
 INSTALL: $(top_srcdir)/pod/INSTALL.pod
 	-rm -f $(top_srcdir)/INSTALL
 	-pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
@@ -15,7 +15,7 @@ INSTALL: $(top_srcdir)/pod/INSTALL.pod
 README: $(top_srcdir)/pod/README.pod
 	-rm -f $(top_srcdir)/README
 	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
-
+endif
 
 config_dir  = \
      config/config.guess \
