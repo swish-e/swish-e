@@ -2129,9 +2129,9 @@ struct file *fileInfo;
 		tmp->start=fileInfo->fi.start;
 		tmp->size=fileInfo->fi.size;
 		if (sw->numPropertiesToDisplay)
-			tmp->Prop=getResultProperties(sw,fileInfo->docProperties);
+			tmp->Prop=getResultProperties(sw,indexf,fileInfo->docProperties);
 		if (sw->numPropertiesToSort)
-			tmp->PropSort=getResultSortProperties(sw,fileInfo->docProperties);
+			tmp->PropSort=getResultSortProperties(sw,indexf,fileInfo->docProperties);
 		tmp = tmp->next;
 	}
 	return rp;

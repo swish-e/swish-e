@@ -200,13 +200,12 @@
 #define MULTITXT BASEDOCTYPE+4
 #define WML BASEDOCTYPE+5
 
-struct docPropertyEntry 
-{
+typedef struct docPropertyEntry {
 	int metaName;		/* meta field identifier; from getMetaName() */
 	char *propValue;	/* string from META's CONTENTS attribute */
 
 	struct docPropertyEntry *next;
-};
+} docPropertyEntry;
 
 struct metaEntry {
 	char* metaName;
@@ -403,6 +402,9 @@ typedef struct IndexFILE {
 	int n_dict_entries;
 	unsigned char **dict;     /* Used to store the patterns when
 				  ** DEFLATE_FILES is enabled */
+		/* props IDs */
+	int *propIDToDisplay;
+	int *propIDToSort;
 } IndexFILE;
 
 typedef struct RESULT {
@@ -593,11 +595,9 @@ typedef struct {
     int numPropertiesToDisplay;
     int currentMaxPropertiesToDisplay;
     char **propNameToDisplay;
-    int *propIDToDisplay;
     int numPropertiesToSort;
     int currentMaxPropertiesToSort;
     char **propNameToSort;
-    int *propIDToSort;
     int *propModeToSort;
 		
 	/* http proccessing */

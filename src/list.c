@@ -96,6 +96,11 @@ int i;
         newnode->structfreqlookup=NULL;
         newnode->pathlookup=NULL;
 
+
+		/* Props IDs when searching */
+	newnode->propIDToDisplay=NULL;
+	newnode->propIDToSort=NULL;
+
 	init_header(&newnode->header);
 
 	newnode->next = NULL;
