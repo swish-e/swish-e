@@ -77,9 +77,7 @@ double TimeElapsed(void)
 /* return CPU time used */
 double TimeCPU(void)
 {
-    long micro_sec = get_run_time();
-    return ((double) micro_sec ) / 1000000.0;
-    //return  ((double) clock()) / CLOCKS_PER_SEC;
+    return (double) get_cpu_secs();
 }
 
 
