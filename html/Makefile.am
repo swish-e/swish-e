@@ -47,7 +47,14 @@ depends = \
 	$(top_srcdir)/example/swish.cgi \
 	$(top_srcdir)/filters/SWISH/Filter.pm
 
-all: .html-stamp
+all-local: $(html_DATA)
+
+$(html_DATA): .html-stamp
+	@if test -f $@; then :; else rm -f $<; $(MAKE) .html-stamp; fi
+
+$(version_file): $(top_srcdir)/Makefile
+	@echo "updating version file"
+        @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
 
 .html-stamp: $(version_file) $(depends)
 	cd $(srcdir)/../doc && bin/build
