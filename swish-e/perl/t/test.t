@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 60;
+my $lastcase = 90;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -59,9 +59,16 @@ my $mem_test = 0;
 
 
     # then in a loop
-    my $query = "not dkdkd";
+    my $query = "not dkdkd stopword otherstop";
     my $results = $search->Execute( $query );
     check_error('Call $swish->Execute', $swish);
+
+    # Check parsed words
+    my @parsed_words = $results->ParsedWords( 't/index.swish-e' );
+    is_ok("ParsedWords [" . join(', ', @parsed_words) . "]", scalar @parsed_words );
+
+    my @removed_stopwords = $results->RemovedStopwords( 't/index.swish-e' );
+    is_ok("RemovedStopwords [" . join( ', ', @removed_stopwords). "]", scalar @removed_stopwords  );
 
     
     # Display a list of results
@@ -100,19 +107,22 @@ my $mem_test = 0;
             unless $seen;
 
         my %props;
+        
         $props{$_} = $result->Property( $_ ) for @props;
-
         check_error('Call $result->Property', $swish)
             unless $seen;
-        
+
 
         my $string = $result->Property('swishdocpath') ."\n" . join "\n",
             map { "   $_ => " . (defined $props{$_} ? $props{$_} : '*not defined*') }
                 @props;
 
-                        
-
         is_ok( "$string\n", $string );
+
+        for ( @props ) {
+            my $propstr = $result->ResultPropertyStr( $_ );
+            is_ok(" ResultPropertyStr($_) = " . $propstr || '??', $propstr );
+        }
 
         unless ( $seen++ ) {
 
