@@ -59,7 +59,7 @@ pod2usage( -verbose => 1 ) if $help;
 pod2usage( -verbose => 2 ) if $man;
 
 if ( $path ) {
-    print "/home/moseley/swish_test/lib/swish-e/perl\n";
+    print "@@perlmoduledir@@\n";
     exit;
 }
 
