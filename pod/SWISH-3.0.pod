@@ -1,0 +1,229 @@
+=head1 NAME
+
+Proposed changes for SWISH-E 3.0
+
+=head1 Overview
+
+This pages is intended to give users of SWISH-E an idea of the changes to come, to foster
+discussion of the direction of SWISH-E, and a place where developers can map out new ideas.
+
+Most of this is just random notes that should be cleaned up!
+
+=head1 Move from inverted index to a data base
+
+Jose:
+
+=head1 Index and Sort Numbers
+
+Jose:
+
+(Moseley: Dec 29, 2000)
+
+I think this would be a great feature -- it would be nice be able to specify which tags are numeric.
+Something like:
+
+    MetaNames subject title name age
+    PropertyNames name age
+    NumericNames age
+
+Or perhaps
+
+    MetaNames <age type=number> <birthday type=date>
+    MetaNames age:number birthday:date
+
+Then be able to select a range of numbers in a search, (and sort numerically if the tag is also a property).
+
+=head1 Switch to Content-Types
+
+Moseley: Dec 28, 2000
+
+I'm wondering if it might be smart to switch from the current "Document Types" to Content-Types.
+Currently, swish know how to parse three types of documents TXT, HTML, and XML.  There's currently a new
+configuration directives DefaultContents and IndexContents that map file extensions to one of the three
+types.  This doesn't really work when spidering since it's the content-type that describes the document and not
+the file extension.
+
+It's an issue that can wait, but I'm concerned about backward compatiblity before people start using
+the IndexContents and DefaultContents config directives and then we change to content-type in the future.
+There's probably not that many people using those, but it might be work noting in the documentation that
+it will change, if we agree.
+
+The main reason to use content-type instead is for http processig where you can't depend on the
+file extension to determine the document type, so with http we have to use content-type to determine
+how to deal with the file.
+The other reason to changes it is to break down the differences between http and file system modes of indexing.
+
+This would, of course, lead to other issues -- like dealing with IndexOnly so that it might
+be a big enough change that it also needs to wait until a later version (version 3.0?).
+But it should be something we think about, and make note of in the documentation.
+
+Again, I'd propose that swish uses a mime.types file to map from extension to content-type.
+You could add or override mappings in the config file:
+
+   AddType text/plain .doc .log
+
+   DefaultType text/html  # like DefaultContents currently
+
+The file source "plug-in" (whatever that ends up being) would return a content-type,
+but if not returned then swish would map the type from the file name using the mime.types
+file or any AddType directives.
+
+Again, internally swish only knows about text/[TXT|HTML|XML], so there should be a way to map other types,
+otherwise swish might ignore the file.  We could continue to use the three type names or switch completely to
+content-types.
+
+For example, if we continued to use [TXT|HTML|XML]
+
+    MapType TXT  text/directory text/logfile
+    MapType HTML text/html
+
+Or maybe just extend the current directives
+
+    IndexContents HTML .htm .html text/html
+
+Where the content-type would have precedence over the file extensions.    
+
+This would tell swish that those types are handled by those internal handlers.
+
+Then as I've mentioned before, you might specify filters as such
+
+   FilterDocument application/msword /path/to/word-to-text
+
+And word-to-text would convert to text and return one of the
+three content-types that Swish knows how to parse,
+or a different content type if were to chain filters.
+
+
+=head1 Document Source Feature
+
+Moseley: Dec 28, 2000
+
+First, I'd like to see the http part of swish moved out of the program, and instead design
+a fast way for external programs to provide documents to swish.  Spidering is too complicated
+to be done internally, and is not really what swish does at its core.  No doubt that the swish package
+should provide spidering, but in a different, more modular way.
+
+So, I'd like to be able to specify to swish a program, and that program returns the documents to swish to index,
+just as if swish was accessing the documents via http.  For example, the program would return headers followed by
+the document content.
+
+    File-Name: docs/index.html
+    Last-Modified: Fri, 22 Dec 2000 01:07:19 GMT
+    Content-Length: 10483
+    Content-Type: text/html
+    <blank line>
+    <document contents>
+
+This could be any program -- one that spiders a number of servers at the same time, or one that uncompresses
+local files before passing to swish.
+
+Then the IndexDir command would list directories and/or files, and if a file is an exectable program then
+swish runs and accepts documents from that program.
+
+    # Index /usr/doc and spider our other server
+    IndexDir /usr/doc /usr/local/bin/swish-spider
+
+The program could be passed the path to the current configuration file swish is using so the program
+could read the same config information.
+
+(BTW -- It might be nice to be able to say don't recurse directories: /usr/doc recurses where
+/usr/doc/ doesn't recurse.  Now that would be confusing!)
+
+Also B<NoContents> could use content-types and not be limited to just the file
+system indexing mode.
+
+    NoContents image/gif
+    
+
+=head1 Fast Filters
+
+Moseley: Dec 28, 2000
+
+Find a way to create filtrers that can act as servers and be left in memory.  Leave the current filter system
+in place for smaller indexes.  Using sockets may be the most portable method.  Could provide a perl module
+to make it simple to create filters.
+
+    FilterDocument  /path/to/filter application/gzip application/zip
+
+Any documents that are returned to swish of those content-types would be passed to the filter program.
+The protocol would look a lot like http, where swish sends headers and content, and returns headers and content.
+The content could be passed onto other filters.  If the content-type returned matches one of the MapType assigned
+content types then the swish internal parser would accept the document for indexing.
+    
+Perhaps the FilterDocument directive would be listed in order to allow chaining, but prevent loops.
+
+=head1 Enhanced the PropertyNames directive
+
+Moseley: Updated Jan 13, 2001
+
+If PropertyNames directive was enhanced to be able to limit the number of characters stored, optionally
+extract text from HTML, and was able to define what type of docs (text, XML, HTML) it applied to, then
+the existing PropertyNames feature would work like the new StoreDescription feature but be useful for more than
+just one use.
+
+I'm not clear how to enhance the syntax of Properties and/or Metanames, but here's some ideas.  Rainer suggested
+that an xml-type of format might be best and commonly understood.  That's a good idea.  Below are some older ideas
+that I had.  But you will get the idea...
+
+=over 4
+
+=item *
+
+to specify an upper limit on how many characters to store
+
+    PropertyNames meta1 desc:50
+
+That gets all of meta1 and only 50 chars of desc.    
+
+=item *
+
+to limit to certain types of files
+
+    PropertyNames meta1 desc:50/HTML summary/XML
+
+=item *
+
+to extract the text from html (remove html tags)
+
+    PropertyNames desc:50/HTML:text
+
+(ok, that's ugly, but you get the idea)
+
+=item *
+
+to read text documents where there are not tags:
+
+    PropertyNames  desc:50/HTML:text desc:50/TXT
+
+Where desc is a meta name invented for storing the first 50 chars of the
+text files.
+
+=back    
+
+Also, it might be I<nice> to be able to B<alias> meta names so that, say, XML and HTML could have differently named
+meta tags associated with the same meta tag name.
+
+I'm not clear the best way to make an alias:  One way would be to extend the current MetaName syntax:
+
+    MetaNames meta1 meta2 meta2=desc:HTML meta2=summary:XML
+
+So that swish-e -w meta2=(foo) would find foo in the desc meta tag in HTML docs, and find
+foo in the <summary> tag(sic) in XLM documents.
+
+Or another way would be to create a new directive
+
+    AliasMeta meta2=desc:HTML,summary:XML meta3=subject:HTML,type:XML
+
+But I like extending existing syntax than adding new syntax.
+Less chance for errors and keeps settings together in the same place.    
+
+
+
+=head1 Document Info
+
+$Id$
+
+.
+
+
+

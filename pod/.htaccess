@@ -1,0 +1,5 @@
+<files search.cgi>
+    SetHandler cgi-script
+    Options +ExecCGI
+    allow from all
+</files>

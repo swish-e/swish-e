@@ -1,0 +1,340 @@
+=head1 NAME
+
+SWISH-PERL - Perl Interface to the SWISH-E Library
+
+=head1 SYNOPSIS
+
+    use SWISHE;
+
+    my $indexfilename1 = '/path/to/index1.swish';
+    my $indexfilename2 = '/path/to/index2.swish';
+
+    # To search for several indexes just put them together
+    $indexfiles = "$indexfilename1 $indexfilename2";
+
+    my $handle = SwishOpen( $indexfiles )
+        or die "Failed to open '$indexfiles'";
+
+    # Get a few headers from the index files
+    my @headers = qw/WordCharacters BeginCharacters EndCharacters/;
+    for ( @headers ) {
+        my @h = SwishHeaderParameter( $handle, $_ );
+        print "$_ for index 0 is $h[0]\n",
+              "$_ for index 1 is $h[1]\n\n";
+    }
+
+
+    # Now search
+    $props = 'prop1 prop2 prop3';
+    $sort  = 'prop1 asc prop2 desc';
+    $query = 'meta1=metatest1';
+
+    my $num_results = SwishSearch($handle, $query, 1, $props, $sort);
+
+    unless ( $num_results ) {
+        print "No Results\n";
+
+        my $error = SwishError( $handle );
+        print "Error number: $error\n" if $error;
+
+        return;  # or next.
+    }
+
+    while( my($rank,$index,$file,$title,$summary,$start,$size,@props) = SwishNext( $handle )) {
+        print join( ' ',
+              $rank,
+              $index,
+              $file,
+              qq["$title"],
+              qq["$summary"],
+              $start,
+              $size,
+              map{ qq["$_"] } @props,
+              ),"\n";
+    }
+
+    # No more queries on these indexes
+    SwishClose( $handle );
+
+
+=head1 ABSTRACT
+
+SWISHE version 2.1.x creates an archive library of the internal SWISHE C functions.
+This perl module provides access to those functions by embedding the SWISHE search code in
+your application.  The benefits are faster searches (no need to fork/execute an external program)
+and avoids commonly used unsafe system calls.
+
+This module provides direct access to the SWISHE C library functions.  For a higher level, object
+oriented interface to SWISH visit http://search.cpan.org/search?mode=module&query=SWISH
+
+
+=head1 INSTALLATION
+
+Before you can build the perl module you must build and install SWISH-E.  Please read the
+B<INSTALL> documentation included in the SWISHE distribution package.
+
+    perldoc INSTALL
+
+After building the SWISHE executable and successfully running make test, you will need to install
+the SWISHE archive library.  This is done while in the top-level directory of the SWISHE distribution.
+
+    % su root
+    % make install-lib
+    % exit
+
+B<Jose: What's the best way to install if the user doesn't have root access? Set LD_LIBRARY_PATH??>
+
+This will install the archive library (F<libswish-e.a>) into /usr/local/lib by default.
+
+Next, build the perl module.
+
+    % cd perl
+    % perl Makefile.PL
+    % make
+    % make test
+    % su root
+    % make install
+    % exit
+
+If you do not have root access you can instead use
+
+    % perl Makefile.PL PREFIX=/path/to/my/local/perl/library
+
+And then in your perl script:
+
+    use lib '/path/to/my/local/perl/library';
+
+
+To test it you can run the test.pl script.  Type "./test.pl" at your command prompt.
+This perl script uses the index file built by the "make test" command used during the build
+of SWISHE as described in the B<INSTALL> document.
+
+=head1 FUNCTION DESCRIPTIONS
+
+The following describes the perl interface to the SWISHE C library.
+
+=over 4
+
+=item B<$handle = SwishOpen( $IndexFiles );>
+
+Open one or more index files and returns a handle.
+
+    Examples:
+
+        $handle = SwishOpen( 'index_file.idx' );
+
+        # open two indexes
+        $handle = SwishOpen( 'index1.idx index2.idx' );
+
+B<Question: How do you get the error string if this fails?>
+
+
+=item B<SwishClose( $handle );>
+
+Closes the handle returned by SwishOpen.  
+Closes all the opened files and frees the used memory.
+
+B<Question: Is there a return value?>
+
+=item B<$num_results = SwishSearch($handle, $search, $structure, $properties, $sortspec);>
+
+Returns the number of hits, zero for no results, or a negative number.  If zero SwishError( $handle ) will return the error code.
+A typical error code would be -10 (WORD_NOT_FOUND).
+
+B<Is this true?>
+
+The values passed are:
+
+=over 2
+
+=item *
+
+$handle is the handle returned by SwishOpen
+
+=item *
+
+$search is the search string.
+
+Examples:
+    my $query = 'title="this a is phrase"';
+    my $query = '(title="this phrase") or (description=(these words))';
+
+=item *
+
+$structure is an integer value only applicable for an html search.  It defines
+where in an html search to look.
+It can be IN_FILE, IN_TITLE, IN_HEAD, IN_BODY, IN_COMMENTS, IN_HEADER or IN_EMPHASIZED or
+or'ed combinations of them (e.g.: IN_HEAD | IN_BODY).
+Use IN_FILE (a value of 1) if your documents are not html. The numerical values for IN_FILE, IN_HEAD are in src/swish.h
+
+=item *
+
+$properties is a string with the properties to be returned separated by spaces.  Properties must
+be defined during indexing.  See B<README-SWISHE> for more information.
+
+Example:
+    my $properties = 'subject description';
+
+=item *
+
+$sortspec is the sort spec if different from relevance.
+
+Examples:
+    my $sortspec = ''  # sort by relevance
+
+    # sort first in ascending order by title,
+    # then by other fields in descending order
+    my $sortspec = 'title asc category desc category desc';
+
+=back
+
+B<QUESTION: Does this return a swish error, or do you have to call SwishError()?>
+
+=item B<SwishNext( $handle )>
+
+($rank, $indexfile, $filename, $title, $start, $size, @properties) = SwishNext( $handle );
+
+This function returns the next hit of a search. Must be executed after SwishSearch to read the results.
+
+=over 2
+
+=item *
+
+$rank - An integer from 1 to 1000 indicating the relevance of the result
+
+=item *
+
+$filename - The source filename
+
+=item *
+
+$title - The title as indexed (as found in the HTML E<lt>TITLEE<gt> section)
+
+=item *
+
+$start * - The starting position in the file of the record
+
+=item *
+
+$size - The length of the source document
+
+=item *
+
+@properties - The list of properties returned for this result.
+
+=back
+
+Example:
+
+    while(($rank,$indexfile,$filename,$title,$start,$size,@properties)=SwishNext($handle)) {
+
+        print join( ' ',
+              $rank,
+              $indexfile,
+              $filename,
+              qq["$title"],
+              $start,
+              $size,
+              map{ qq["$_"] } @properties,
+              ),"\n";
+    }
+
+=item B<$rc=SwishSeek($handle, $num);>
+
+Repositions the pointer in the result list to the element pointed by num.
+It is useful when you want to read only the results starting at $num (e.g. for showing
+results one page at a time).
+
+=item B<$rc=SwishError($handle);>
+
+Returns the last error if any (always a negative value).
+If there is not an error it will return 0.
+
+B<Question: Should there be a way to return the error string?>
+
+=item B<@ParameterArray=SwishHeaderParameter($handle,$HeaderParameterName);>
+
+This function is useful to access the header data of the index files
+Returns the contents of the requested header parameter of all index files
+opened by SwishOpen in an array.
+
+Example:
+
+    @wordchars = SwishHeaderParameter( $handle, 'WordCharacters' );
+    print "WordCharacters for index 0 = $wordchars[0]\n";
+    print "WordCharacters for index 1 = $wordchars[1]\n";
+
+
+Valid values for HeaderParameterName are:
+    WordCharacters
+    BeginCharacters
+    EndCharacters
+    IgnoreFirstChar
+    IgnoreLastChar
+    Indexed on
+    Description
+    IndexPointer
+    IndexAdmin
+    Stemming
+    Soundex
+
+=item B<@stopwords = SwishStopWords( $handle, $indexfilename );>
+
+Returns an array containing all the stopwords stored in the index file pointed by $indexfilename
+where $indexfilename must match one of the names used in SwishOpen.
+
+Example:
+    @stopwords = SwishStopWords( $handle, $indexfilename );
+    print 'Stopwords: ',
+          join(', ', @stopwords),
+          "\n";
+
+=item B<@keywords = SwishWords( $handle, $indexfilename, $c);>
+
+Returns an array containing all the keywords stored in the index file pointed by
+$indexfilename ($indexfilename must match one of the names used in SwishOpen)
+and starting with the character $c.
+
+Example:
+    my $letter = 't';
+    @keywords = SwishWords( $handle, $indexfilename, $letter);
+
+    print "List of keywords that start with the letter '$letter':\n",
+          join("\n", @keywords),
+          "\n";
+
+=item B<$stemword=SwishStem( $word );>
+
+Returns the stemmed word preserving the original one.
+
+Example:
+    my $stemword = SwishStem( 'parking' );
+    print $stem_word;     # prints park
+
+=back
+
+=head1 SUPPORT
+
+Questions about this module and SWISHE should be posted to the SWISHE mailing list.
+See http://sunsite.berkeley.edu/SWISH-E/.
+
+
+=head1 AUTHOR
+
+Jose Ruiz -- jmruiz@boe.es
+
+
+=head1 SEE ALSO
+
+http://sunsite.berkeley.edu/SWISH-E/
+
+SWISH, SWISH::Library at your local CPAN site.
+
+
+=head1 Document Info
+
+$Id$
+
+.
+
+

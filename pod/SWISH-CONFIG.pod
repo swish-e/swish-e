@@ -1,0 +1,962 @@
+=head1 NAME
+
+SWISH-CONFIG - Configuration File Directives
+
+=head1 SWISH-E CONFIGURATION FILE
+
+What files SWISH-E indexes and how they are indexed, and where the index is written can be controlled
+by a configuration file.
+The configuration file is passed to swish as a command line argument by using the C<-f> switch
+(see L<SWISH-RUN|SWISH-RUN>).
+
+The configuration file is a text file composed of comments, blank lines, and B<configuration directives>.
+Order of the directives is not important.  Some directives may be used more than once in the configuration file,
+while others can only be used once (e.g. additional directives will overwrite preceding directives).
+Case of the directive is not important -- you may use upper, lower, or mixed case.
+
+Comments are any line that begin with a "#".
+
+    # This is a comment
+
+Typically, configuration file the directives are grouped together
+in some logical order -- that is, directives that control the source of the documents would be grouped
+together first, and directives that control how each document is filtered or its words index in another group of
+directives. (The directives listed below are grouped in this order).
+
+You may also split your directives up into different configuration files and specify more than
+one configuration file.
+This allows you to have a master configuration file used for many different indexes, and smaller
+configuration files for each separate index.  You can specify the different configuration files when
+running from the command line with the C<-c> switch, or you may include other Configuration file with the
+B<IncludeConfig> directive.
+
+Some command line arguments can override directives specified in the configuration file.
+Please see also the L<SWISH-RUN|SWISH-RUN> for instructions on running SWISH-E,
+and the L<SWISH-SEARCH|SWISH-SEARCH> page for information and examples on how to search your index.
+
+A commented example configuration file is included in the F<config> directory of the SWISH-E distribution.
+
+The configuration file is specified to SWISH-E by the C<-c> switch.  For example,
+
+    swish-e -c myconfig.conf
+
+
+The configuration file directives are listed below in these groups:    
+
+=over 4
+
+=item *
+
+L<Administrative Headers Directives|/"Administrative Headers Directives"> -- You may add
+administrative information to the header of the index file.
+
+=item *
+
+L<Document Source Directives|/"Document Source Directives"> --
+Directives for selecting the source documents and the location of the index file.
+
+=item *
+
+L<Document Contents Directives|/"Document Contents Directives"> --
+Directives that control how a document content is indexed.
+
+=item *
+
+L<Directives for the File Access method only|/"Directives for the File Access method only"> --
+These directives are only applicable to the File Access indexing method.
+
+=item *
+
+L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access Method Only"> --
+Likewise, these only apply to the HTTP Access method.
+
+=back
+
+=head2 Alphabetical Listing
+
+=over 4
+
+=item *
+
+L<BeginCharacters|/"item_BeginCharacters"> *string of characters*
+
+=item *
+
+L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> *string*
+
+=item *
+
+L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [yes|no]
+
+=item *
+
+L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML]  *file extensions*
+
+=item *
+
+L<Delay|/"item_Delay"> *seconds*
+
+=item *
+
+L<EndCharacter|/"item_EndCharacters"> *string of characters*
+
+=item *
+
+L<EquivalentServer|"/item_EquivalentServer"> *server alias*
+
+=item *
+
+L<FileInfoCompression|/"item_FileInfoCompression"> [yes|no]
+
+=item *
+
+L<FileRules|/"item_FileRules"> [contains|is] *regular expression*
+
+=item *
+
+L<FollowSymLinks|/"item_FollowSymLinks"> [yes|no]
+
+=item *
+
+L<IgnoreFirstChar|/"item_IgnoreFirstChar"> *string of characters*
+
+=item *
+
+L<IgnoreLastChar|/"item_IgnoreLastChar"> *string of characters*
+
+=item *
+
+L<IgnoreLimit|/"item_IgnoreLimit"> *integer integer*
+
+=item *
+
+L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [yes|no]
+
+=item *
+
+L<IgnoreWords|/"item_IgnoreWords"> *list of stop words*
+
+=item *
+
+L<IncludeConfig|/"item_IncludeConfig">
+
+=item *
+
+L<IndexAdmin|/"item_IndexAdmin"> *text*
+
+=item *
+
+L<IndexComments|/"item_IndexComments"> [yes|no]
+
+=item *
+
+L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML]  *file extensions*
+
+=item *
+
+L<IndexDescription|/"item_IndexDescription"> *text*
+
+=item *
+
+L<IndexDir|/"item_IndexDir"> [URL|directories or files]
+
+=item *
+
+L<IndexFile|/"item_IndexFile"> *path*
+
+=item *
+
+L<IndexName|/"item_IndexName"> *text*
+
+=item *
+
+L<IndexOnly|/"item_IndexOnly"> *list of file suffixes*
+
+=item *
+
+L<IndexPointer|/"item_IndexPointer"> *text*
+
+=item *
+
+L<IndexReport|/"item_IndexReport"> [0|1|2|3]
+
+=item *
+
+L<MaxDepth|/"item_MaxDepth"> *integer*
+
+=item *
+
+L<MaxWordLimit|/"item_MaxWordLimit"> *integer*
+
+=item *
+
+L<MetaNames|/"item_MetaNames"> *list of names*
+
+=item *
+
+L<MinWordLimit|/"item_MinWordLimit"> *integer*
+
+=item *
+
+L<NoContents|/"item_NoContents"> *list of file suffixes*
+
+=item *
+
+
+L<PropertyNames|/"item_PropertyNames"> *list of meta names*
+
+=item *
+
+L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append]
+
+=item *
+
+L<SpiderDirectory|/"item_SpiderDirectory"> *path*
+
+=item *
+
+L<StoreDescription|/"item_StoreDescription"> [XML <tag>|HTML <meta>|TXT size]
+
+=item *
+
+L<TmpDir|/"item_TmpDir"> *path*
+
+=item *
+
+L<TranslateCharacters|/"item_TranslateCharacters"> *string1 string2*
+
+=item * L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|index|auto]
+
+=item *
+
+L<UseStemming|/"item_UseStemming"> [yes|no]
+
+=item *
+
+L<WordCharacters|/"item_WordCharacters"> *string of characters*
+
+=back
+
+=head2 Directives that Control Swish
+
+These configuration directives control the behavior of SWISH-E.
+
+=over 4
+
+=item IncludeConfig *path to config file*
+
+This directive can be used to include configuration directives located in another file.
+
+    IncludeConfig /usr/local/swish/conf/site_config.config
+
+=item IndexReport [0|1|2|3]
+
+This is how detailed you want reporting while indexing. You can specify numbers
+0 to 3 - 0 is totally silent, 3 is the most verbose.
+The default is 3, so you probably should define this.
+
+    IndexReport 1
+
+This may be overridden from the command line via the C<-v> switch (see L<SWISH-RUN|SWISH-RUN>).
+
+=item IndexFile *path*
+
+Index file specifies the location of the generated index file.  If not specified, SWISH-E will create
+the file F<index.swish-e> in the current directory.
+
+    IndexFile /usr/local/swish/site.index
+
+=back
+
+
+=head2 Administrative Headers Directives
+
+SWISH-E stores configuration information in the header of the index file.  This information can
+be retrieved while searching or by functions in the SWISH-E C library.  There are a number of fields
+available for your own use.  None of these fields are required:
+
+=over 4
+
+=item IndexName *text*
+
+=item IndexDescription *text*
+
+=item IndexPointer *text*
+
+=item IndexAdmin *text*
+
+
+These variables specify information that goes into index files to help users and administrators.
+IndexName should be the name of your index, like a book title.
+IndexDescription is a short description of the index or a URL pointing to a more full description.
+IndexPointer should be a pointer to the original information, most likely a URL.
+IndexAdmin should be the name of the index maintainer and can include name and email information.
+These values should not be more than 70 or so characters and should be contained in quotes.
+Note that the automatically generated date in index files is in D/M/Y and 24-hour
+format. 
+
+Examples:
+
+    IndexName "Linux Documentation"
+    IndexDescription "This is an index of /usr/doc on our Linux machine." 
+    IndexPointer "http://localhost/swish/linux/index.html"
+    IndexAdmin "webmaster"
+
+=back
+
+=head2 Document Source Directives
+
+These directives control I<what> documents are indexed.  See also
+L<Directives for the File Access method only|/"Directives for the File Access method only">
+and
+L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access Method Only">
+for directives that are specific to those access methods. 
+
+
+=over 4
+
+=item IndexDir [URL|directories or files]
+
+IndexDir defines the source of the documents for SWISH-E.
+SWISH-E currently supports two file access methods: B<File system> and B<HTTP> (also called B<spidering>).
+The C<-S> command line argument is used to select the file access method.
+
+For the B<File system> method of access B<IndexDir> is a
+space-separated list of files and directories to index.
+You may specify more than one B<IndexDir> directive.
+
+Any sub-directories of any listed directory will also be indexed.
+
+Examples:
+
+    # Index this directory an any subdirectories
+    IndexDir /usr/local/home/http
+
+    # Index the docs directory in current directory
+    IndexDir ./docs
+
+    # Index these files in the current directory
+    IndexDir ./index.html ./page1.html ./page2.html
+    # and index this directory, too
+    IndexDir ../public_html
+    
+
+For the B<HTTP> method of access specify the URL's from which
+you want the spidering to begin.
+
+Example:
+
+    IndexDir http://www.my-site.com/index.html
+    IndexDir http://localhost/index.html
+
+Obviously, using the B<HTTP> method to index is B<much> slower than indexing local files.
+Be well aware that some sites do not appreciate spidering and may block your IP address.  You may wish to contact
+the remote site before spidering their web site.
+More information about spidering can be found in L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access Method Only"> below.
+
+=item IndexOnly *list of file suffixes*
+
+This directive specifies the allowable file suffixes (extensions) while indexing.  The default
+is to index all files specified in B<IndexDir>.
+
+    # Only index .html .htm and .q files
+    IndexOnly .html .htm .q
+
+=item NoContents *list of file suffixes*
+
+Files with these suffixes will B<not> have their contents indexed, but their file names will be indexed.
+File names are not normally indexed.  If you specify C<.html> or C<.htm> then if a <TITLE> section is found those words will
+be indexed, otherwise the file name will be indexed.
+
+    NoContents .gif .xbm .au .mov .mpg .pdf .ps
+
+=item FollowSymLinks [yes|no]
+
+Put "yes" to follow symbolic links in indexing, else "no".
+Default is no.
+
+    FollowSymLinks no
+    FollowSymLinks yes
+
+=item ReplaceRules [replace|remove|prepend|append]
+
+ReplaceRules allows you to make changes to file pathnames before they're indexed.
+These changed file names or URLs will be returned in search results.
+
+For example, you may index your files locally (with the File system indexing method),
+yet return a URL in search results.  This directive can be used to map the file names to
+their respective URLs on your web server.
+
+There are four operations you can specify: B<replace>, B<append>, B<remove>, and B<prepend>.
+They will parse the pathname in the order you've typed these commands.
+More than one command and its arguments can appear on the same line,
+but it's easier to read when commands are broken up over a few lines.
+You can't put a command and its argument(s) on different lines, however.
+
+This directive uses C library regex.h regular expressions.
+
+   replace "the string you want replaced" "what to change it to"
+        This replaces all occurrences of the old string
+        with the new one.
+
+   remove "a string to remove"   
+
+   prepend "a string to add before the result"
+
+   append "a string to add after the result"
+
+Examples:
+
+    ReplaceRules replace "testdir/" "anotherdir/"
+    ReplaceRules replace "[a-z_0-9]*_m.*\.html" "index.html"
+
+    ReplaceRules remove "testdir/"
+
+    ReplaceRules prepend "http://localhost/"
+    ReplaceRules append ".html"
+
+=item IndexContents [TXT|HTML|XML]  *file extensions*
+
+Swish knows how to parse TXT, HTML, and XML documents.  This directive maps file extensions to
+those types of parsers.
+
+Example:
+
+    IndexContents HTML .htm .html .shtml
+    IndexContents TXT  .txt .log .text
+    IndexContents XML  .xml
+
+HTML is the default type for all files, unless otherwise specified (and this default can be changed by
+the B<DefaultContents> directive.  Swish parses titles from HTML files, if available, and keeps track of
+the context of the text for context searching (see C<-t> in L<SWISH-RUN|SWISH-RUN>).  HTML and XML files use
+different tag formats for B<MetaNames> and B<PropertyNames>.
+
+If using filters to convert documents you should include those extensions, too.
+For example, if using a filter to conver .pdf to .html, you need to tell swish that .pdf
+should be indexed by the internal HTML parser:
+    
+    FileFilter  .pdf   pdf2html
+    IndexContent  HTML  .pdf
+
+See also L<Document Filter Directives|/"Document Filter Directives">.
+
+
+B<Note:> This may be changed in the future to use content-types.  See L<SWISH-3.0|SWISH-3.0>
+
+
+=item DefaultContents [TXT|HTML|XML]
+
+This sets the default parser for documents that are not specified in B<IndexContents>. If not specified the
+default is HTML.
+
+
+Example:
+
+    DefaultContents HTML
+
+=item FileInfoCompression [yes|no]
+
+Setting B<FileInfoCompression> to C<yes> will compress the index file to save disk space.  This may result
+in longer indexing times.  The default is C<no>.
+
+Also see the C<-e> switch in L<SWISH-RUN|SWISH-RUN> for saving RAM during indexing.
+
+
+=back
+
+=head2 Document Contents Directives
+
+These directives control what information is extracted from your source documents, and
+how that information is made available during searching.
+
+=over 4
+
+=item ConvertHTMLEntities [yes|no]
+
+ASCII I<entities> can be converted automatically while indexing documents of type HTML.
+For performance reasons you may wish to set this to C<no> if your documents contain no HTML entities.
+The default is C<yes>.
+
+
+=item MetaNames *list of names*
+
+META names are a way to define "fields" in your XML and HTML documents.  You can use the META names in your queries
+to limit the search to just the words contained in that META name of your document.
+For example, you might have a META tagged field in your documents called C<subjects> and then you can
+search your documents for the word "foo" but only return documents where "foo" is within the C<subjects> META tag.
+
+    swish-e -w subjects=foo
+    
+(See also the C<-t> switch in L<SWISH-RUN|SWISH-RUN> for information about I<context> searching in HTML documents.)
+
+The B<MetaNames> directive is a space separated list.  For example:
+
+    MetaNames meta1 meta2 keywords subjects
+
+You may also use L<UndefinedMetaTags|/"item_UndefinedMetaTags"> to specify automatic extraction of meta names
+from your HTML and XML documents.
+
+META tags can have two formats in your B<HTML> source documents:
+
+    <META NAME="meta1" CONTENT="some content">
+
+and
+
+    <!-- META START NAME="meta1" -->
+        some content
+    <!-- META END -->
+
+And in B<XML> documents, use the format:
+
+    <meta1>
+        Some Content
+    </meta1>
+
+Then you can limit your search to just META B<meta1> like this:
+
+    swish-e -w 'meta1=(apples or oranges)'
+
+You may nest the XML and the start/end tag versions:
+
+    <keywords>
+        <tag1>
+            some content
+        </tag1>
+        <tag2>
+            some other content
+        </tag2>
+    <keywords>
+
+Then you can search in both tag2 and tag2 with:
+
+  swish-e -w 'keywords=(query words)'
+
+MetaNames are case sensitive in XML documents.  
+
+=item UndefinedMetaTags [error|ignore|index|auto]
+
+This directive defines the behavior of swish during indexing when a meta name is found but is B<not> listed in B<MetaNames>.
+There are four choices:
+
+=over 2
+
+=item error - If a meta name is found that is not listed in B<MetaNames> then indexing will be halted and an
+error reported.
+
+=item ignore - The contents of the meta tag are ignored and B<not> indexed.
+
+=item index - The contenst of the meta tag are indexed, but placed in the main index (the contents are not
+assinged a meta name and cannot be searched by meta name.  This is the default.
+
+=item auto - This method only applies to HTML and XML documents and will create meta tags automatically for
+HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
+B<MetaNames> dirictive.
+
+=back
+
+=item PropertyNames *list of meta names*
+
+SWISH-E allows you to specify certain META tags that can be used as B<document properties>.
+The contents of any META tag that has been identified as a document property can be returned as
+part of the search results along with the rank, file name, title, and document size
+(see the C<-p> switch in L<SWISH-RUN|SWISH-RUN>).
+
+Properties are useful for returning additional data from documents in search results -- this saves the effort of
+reading and parsing the source files while reading SWISH-E search results,
+and is especially useful when the source documents are no longer available or slow to access (e.g. over http).
+
+Another feature of properties is that SWISH-E can use the PropertyNames for sorting the search results (see the C<-s> switch).
+
+    PropertyNames author subjects
+
+Note that the PropertyNames listed must also be listed in the MetaNames directive.
+Property names are case sensitive in XML documents.
+
+Use of PropertyNames will increase the size of your index file, sometimes significantly.
+
+=item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
+
+B<StoreDescription> allows you to store a document description in the index file, and this description is returned in
+your search results when the C<-x> switch is used for extended results.
+
+For text documents you specify the type C<TXT> and the number of characters to capture.
+
+    StoreDescription TXT 20
+
+For HTML, and XML file types, specify the
+the tag to use for the description, and optionally the number of characters to capture.  If not specified will capture
+the entire contents of the tag.
+
+    StoreDescription HTML <body> 20
+    StoreDescription XML  <desc> 40
+
+=item UseStemming [yes|no]
+
+Put yes to apply word stemming algorithm during indexing,
+else no. 
+
+    UseStemming no
+    UseStemming yes
+
+When UseStemming is set to C<yes> every word is stemmed before placing it in to the index.    
+
+The stemming function does not convert words to their root, rather programmatically removes
+endings on words in an attempt to make similar words with different endings stem to the same string of characters.
+It's not a perfect system, and searches on stemmed indexes often return curious results.  For example, two entirely
+different words may stem to the same word.
+
+Stemming also can be confusing when used with a wildcard (truncation).  For example, you might expect to find
+the word "running" by searching for "runn*".  But this fails when using a stemmed index, as "running" stems to "run",
+yet searching for "runn*" looks for words that start with "runn".
+
+It's a good idea to create both a stemmed and non-stemmed index and allow your search interface select which index
+to use.
+
+
+=item IgnoreTotalWordCountWhenRanking [yes|no]
+
+Put yes to ignore the total number of words in the file
+when calculating ranking. Often better with merges and
+small files. Default is no.
+
+    IgnoreTotalWordCountWhenRanking yes
+
+
+
+=item MinWordLimit *integer*
+
+Set the minimum length of an word. Shorter words
+will not be indexed.
+The default is 1 (as defined in F<src/config.h>).
+
+    MinWordLimit 5
+
+=item MaxWordLimit *integer*
+
+Set the maximum length of an indexable word. Every longer word
+will not be indexed.
+The Default is 40 (as defined in F<src/config.h>).
+
+=item WordCharacters *string of characters*
+
+=item IgnoreFirstChar *string of characters*
+
+=item IgnoreLastChar *string of characters*
+
+=item BeginCharacters *string of characters*
+
+=item EndCharacter *string of characters*
+
+
+These settings define what a word consists of to the SWISH-E indexing engine.
+Compiled in defaults are in F<src/config.h>.
+
+When indexing SWISH-E uses B<WordCharacters> to split up the document into words.
+Words are defined by any string of non-blank characters that contain only the characters listed in WordCharacters.
+If a string of characters
+includes a character that is not in WordCharacters then the word will be spit into two or more separate words.
+
+For example:
+
+    WordCharacters abde
+
+Would turn "abcde" into two words "ab" and "de".
+
+Next, of these words, any characters defined in B<IgnoreFirstChar> are stripped off the start of the word,
+and B<IgnoreLastChar> characters are stripped off the end of the word.  This allows, for example, periods within
+a word (www.slashdot.com), but not at the end of a word.
+Characters in IgnoreFirstChar and IgnoreLastChar must be in WordCharacters.
+
+Finally, the resulting words MUST begin with one of the characters
+listed in B<BeginCharacters> and end with one of the characters listed in B<EndCharacters>.
+BeginCharacters and EndCharacters must be a subset of the characters in WordCharacters.
+Often, WordCharacters, BeginCharactes and EndCharacters will all be the same.
+
+Note that the same process applies to the query while searching.
+
+Getting these setting correct will take careful consideration and practice.  It's helpful to create
+an index of a single test file, and then look at the words that are placed in the index
+(see the C<-D> and C<-k> searching switches).
+
+Currently there is only support for eight-bit characters.
+
+Example:
+
+    WordCharacters  .abcdefghijklmnopqrstuvwxyz
+    BeginCharacters abcdefghijklmnopqrstuvwxyz
+    EndCharacters   abcdefghijklmnopqrstuvwxyz
+    IgnoreFirstChar .
+    IgnoreLastChar  .
+
+So the string
+
+    Please visit http://www.example.com/path/to/file.html.
+
+will be indexed as the following words:
+
+    please
+    visit
+    http
+    www.example.com
+    path
+    to
+    file.html
+
+Which means that you can search for C<www.example.com> as a single word, but searching
+for just C<example> will not find the document.
+
+Note: when indexing HTML documents HTML entities are converted to their character equivalents before
+being processed with these directives.  This is a change from previous versions of SWISH-E where you were required
+to include the characters C<0123456789&#;> to index entities.  See also L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> 
+
+If indexing any characters that have special meaning to SWISH "*" "=" "(" and ")", test carefully how they can be accessed
+and searched.  For example, "=" may be used in a query but only if backslashed, where "(" and ")" can be indexed
+but not searched (currently).
+
+=item IgnoreWords *list of stop words*
+
+The IgnoreWords option allows you to specify words to ignore.
+Comment out for no stopwords; the word "SwishDefault" will
+include a list of default stopwords. Words should be separated by spaces
+and may span multiple directives.  If the special format C<File:filename> is used then
+the stop words will be read from an external file during indexing.
+
+Examples:
+
+    IgnoreWords www http a an the of and or
+
+    IgnoreWords SwishDefault
+
+    IgnoreWords File:./stopwords.de
+
+=item IgnoreLimit *integer integer*
+
+This automatically omits words that appear too often in the files
+(these words are called stopwords). Specify a whole percentage
+and a number, such as "80 256". This omits words that occur in
+over 80% of the files and appear in over 256 files. Comment out
+to turn of auto-stopwording.
+
+    IgnoreLimit 50 1000
+
+SWISH-E must do extra processing to adjust the entire index when this feature is used.
+It is recommended that instead of using this feature that you decided what words are stop words
+and add them to B<IngoreWords> in your configuration file.  To do this, use IgnoreLimit one time and note
+the stop words that are found while indexing.  Add this list to IgnoreWords, and then remove IgnoreLimit
+from the configuration file.
+
+
+=item IndexComments [yes|no]
+
+This option allows the user decide if to index the contents of HTML comments.
+Default is yes. Set to no if comment indexing is not required.
+
+    IndexComments no
+
+=item TranslateCharacters *string1 string2*
+
+The TranslateCharacters directive maps the characters in string1 to the characters listed in string2.
+This is done after converting HTML entities, splitting the input into words based on B<WordCharacters>.
+
+For example:
+
+    # This will index a_b as a-b and ámo as amo
+    TranslateCharacters _á -a
+
+=item BumpPositionCounterCharacters *string*
+
+When indexing SWSIH-E assigns a word position to each word.  This allows for phrase searching.
+There may be cases where you would like to prevent phrase matching.  The BumpPositionCounterCharacters
+directive allows you to specify a set of characters that when found in the text will increment
+the word position -- effectively preventing phrase matches across that character.
+
+For example, if you have a META tag:
+
+    <!-- META START NAME="subjects" -->
+        computer programming | apple computers
+    <!-- META END -->
+
+You might want to prevent matching "programming apple" in that meta name.
+
+    BumpPositionCounterCharacters |
+
+There is no default, and you may list a string of characters.
+
+=back
+
+=head2 Document Filter Directives
+
+Internally, SWISH-E knows how to parse only text, HTML, and XML documents.  With SWISH-E filters you can
+index other types of documents.  For example, if all your
+web pages are in gzip format a filter can uncompress these on the fly for indexing.
+
+A filter is an external program that swish executes when processing a document of a given type.
+SWISH-E will execute the filter program for each file that matches the file extension set in the
+B<FileFilter> directive.
+
+SWISH-E calls the external program passing as arguments:
+
+=over 4
+
+=item $0 
+
+the name of the filter program
+
+=item $1
+
+the physical path name of the file to read.  This may be a temporary file location if indexing by
+the http method.
+
+=item $2
+
+When indexing under the file system this will be the same as $1 (the path to the source file), but when
+indexing under the http method this will be the URL of the source document.
+
+=back
+
+The filter program must open the file, process its contents, and return it to SWISH-E by printing to STDOUT.
+
+Note that this can add a significant amount of time to the indexing process.  If you have many files to filter you
+should consider writing your filter in C instead of a shell or perl script.
+
+B<Note:> Filtering in swish may change in the future (see L<SWISH-3.0|SWISH-3.0>).
+
+=over 4
+
+=item FilterDir  *path-to-directory*
+
+This is the path to a directory where the filter programs are stored.  Swish looks in this directory to find
+the filter specified in the B<FileFilter> directive.
+
+Example:
+
+    FilterDir /usr/local/swish/filters
+
+=item FileFilter
+
+This maps file extensions to a filter program.
+
+Examples:
+
+    FileFilter  .pdf   pdf-filter.sh
+    Filefilter  .gz    gzip-filter.sh
+    Filefilter  .doc   wword-filter.sh
+    Filefilter  .dot   wword-filter.sh
+    Filefilter  .ps    ghostscript-filter.sh
+
+Here are some examples of filters.
+
+Convert .pdf files to text:
+
+    #!/bin/sh
+    /usr/local/bin/pdftotext "$1" - 2>/dev/null
+
+Convert gzipped files to text:
+
+    #!/usr/local/bin/perl -w
+    use strict;
+    use Compress::Zlib ;
+    
+    my $file = $ARGV[1] || shift;
+    
+    die "Usage: gzcat file...\n"
+        unless $file;
+    
+    my $gz = gzopen($file, 'rb')
+        or die "Cannot open $file: $gzerrno\n" ;
+    
+    my $buffer;
+    print $buffer
+        while $gz->gzread($buffer) > 0 ;
+    
+    die "Error reading from $file: $gzerrno\n"
+        if $gzerrno != Z_STREAM_END ;
+    
+    $gz->gzclose() ;
+
+=back
+
+=head2 Directives for the File Access method only
+
+Some directives have different uses depending on the source of the documents.
+These directives are only valid when using the B<File system> method of indexing.
+
+=over 4
+
+=item FileRules [contains|is] *regular expression*
+
+Files matching the specified criteria will B<not> be indexed.  C regex.h library
+regular expression pattern matching is allowed.
+
+
+    FileRules pathname contains .*dir1
+    FileRules filename contains # % ~ .bak .orig .old old.
+    FileRules title contains construction example pointers
+    FileRules directory contains .htaccess
+    FileRules filename is index
+
+=back    
+
+=head2 Directives for the HTTP Access Method Only
+
+These directives are available when using the HTTP Access Method of indexing.
+
+=over 4
+
+=item MaxDepth *integer*
+
+MaxDepth defines how many links the spider should
+follow before stopping.  A value of 0 configures the spider to
+traverse all links.  The default is MaxDepth 5.
+
+    MaxDepth 5
+
+=item Delay *seconds*
+
+The number of seconds to wait between issuing
+requests to a server.  This setting allows for more friendly spidering of
+remote sites.  The default is 60 seconds.
+
+    Delay 60
+
+=item TmpDir *path*
+
+The location of a writable temp directory
+on your system.  The HTTP access method tells the Perl helper to place
+its files in this location, and the C<-e> switch causes swish to use this directory
+while indexing.  The default is /var/tmp.
+
+
+    TmpDir /tmp/swish/
+
+If this directory does not exist or is not writable SWISH-E will fail with an error during indexing.    
+
+=item SpiderDirectory *path*
+
+The location of the Perl helper script called F<swishspider>.
+If you use a relative directory, it is relative to
+your directory when you run SWISH-E, not to the directory that SWISH-E
+is in.  The default is C<./>
+
+    SpiderDirectory /usr/local/swish/
+
+=item EquivalentServer *server alias*
+
+Often times the same site may be referred to by different names.  A common example is that often
+http://www.some-server.com and http://some-server.com are the same.
+Each line should have a list of all the method/names that should be considered equivalent.
+Multiple EquivalentServer directives may be used.  Each directive defines its own set of equivalent
+servers.
+
+    EquivalentServer http://library.berkeley.edu http://www.lib.berkeley.edu
+    EquivalentServer http://sunsite.berkeley.edu:2000 http://sunsite.berkeley.edu
+
+=back    
+
+=head1 Document Info
+
+$Id$
+
+.
+
+

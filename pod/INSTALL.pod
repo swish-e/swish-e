@@ -1,0 +1,454 @@
+=head1 NAME
+
+INSTALL - SWISH-E Installation Instructions
+
+=head1 SYSTEM REQUIREMENTS
+
+SWISH-E 2.0 is written in C, and, up to this time, it has been tested on
+Solaris 2.6, AIX 4.3.2, RedHat Linux 6.2 and Win32 platforms (thanks to 
+David Norris for his work).  As you might guess, a C compiler is needed.  Pretty 
+much any standard compiler should do.  Tested compilers include:
+
+  gcc version 2.8.1 (Solaris 2.6)
+  gcc version 2.95.1 (Solaris 2.6)
+  gcc version 2.95.2 (AIX)
+  gcc version egcs-2.91.66 (Linux)
+
+David Norris has built a Win32 version with MS Visual C 6.0.  Please see
+http://www.webaugur.com/wares/swish.
+
+The HTTP file access method uses a Perl helper script that requires
+the LWP, HTTP, and HTML modules. (Note: depending on your perl installation, you might need to
+install additional modules required by LWP; for requirements and
+downloads check http://www.cpan.org or http://theory.uwinnipeg.ca/search/cpan-search.html).
+The Perl helper script was tested with perl 5.005 although should probably work with any version 5 release.
+Do note that the LWP, HTTP, and HTML modules are updated often for bug fixes and such -- do check for upgrades.
+
+=head2 Platform Specific Information
+
+A C<configure> script is used to determine platform specific details for building swish.  Please contact
+the SWISH-E discussion list if you notice any platform specify problems while building SWISH-E.
+
+=head1 INSTALLATION
+
+If you are reading this INSTALL document, then you probably already have
+downloaded and unpacked the distribution.  But just in case...
+
+=head2 Downloading and unpacking and building
+
+Make sure you are using the current
+stable release from http://sunsite.berkeley.edu/SWISH-E/.  How you download is up to you:
+lynx, lwp-download, wget are all common methods.
+
+=over 3
+
+=item 1 Uncompress the distribution file
+
+   gzip -dc swish-e.x.x.tar.gz | tar xof -
+
+or on some versions of tar, simply
+
+   tar zxof swish-e.x.x.tar.gz
+
+Uncompressing should create the following directories:   
+
+   swish-e-x.x/       (documentation and configure script)
+   swish-e-x.x/src/   (source code)
+   swish-e-x.x/conf/  (sample configuration file and stopword files)
+   swish-e-x.x/test/  (test.html sample)
+   swish-e-x.x/perl/  (perl interface to the SWISH-E library)
+   swish-e-x.x/filter-bin/  (filter samples form Rainer Scherg)
+   swish-e-x.x/html   (HTML version of the documentation)
+   swish-e-x.x/doc    (directory used or building the documentation)
+
+
+=item 2 Make any needed changes in F<src/config.h>
+
+Compile-time configuration settings are adjusted in the file F<src/config.h>.
+Many of the settings may also be specified in the configuration file used during
+indexing.  You probably will not need to change this file, but it's helpful to become
+familiar with the default compiled-in settings.
+
+=item 3 Build SWISH-E
+
+In the swish-e-x.x/ top level directory type the following commands
+
+   ./configure
+   make
+   make test
+
+This will create the swish-e executable F<src/swish-e> and test that the
+executable is working correctly.  C<make test> will generate an index file
+in the F<tests> directory and run a number of searches against this index.
+
+You may optionally "build" the F<swish-search> executable.  This is a
+version of swish-e that cannot write to the index file.  This version
+may provide improved security in a CGI environment.  The binaries F<swish-e> and
+F<swish-search> are the same files -- the additional security is enabled when the
+binary is named I<swish-search>.
+
+Again, this is an optional step:
+
+   make swish-search
+
+This simply copies the file F<swish-e> to F<swish-search>.
+
+=item 4 Install swish-e
+
+Move the F<swish-e> (and/or F<swish-search>) executable to its final location
+(normally /usr/local/bin).  You may simply copy the program anywhere you see fit,
+or you may use the C<make install> command to install it to the location defined
+by the F<configure> script:
+
+You may need to su root.
+
+   su root
+   make install
+   exit
+
+The bin directory may be set when first running ./configure. For example:
+
+   ./configure --bindir=$HOME/bin
+
+sets the installation directory to F<$HOME/bin> and C<make install> will install the
+program in that location.
+
+=back   
+
+=head2 Installing the SWISH-E C Library
+
+Swish 2.1 creates the C library F<libswish-e.a> during the build.  You should install this
+library if you wish to embed SWISH-E into another application.  For example,
+the library should be installed before using the high level Perl SWISH modules located
+on CPAN. http://search.cpan.org/search?mode=module&query=SWISH
+
+To install the library issue the following commands (again, you may need to su root)
+
+   su root
+   make install-lib
+   exit
+
+By default this will install the library in /usr/local/lib, but this directory can be set when
+running ./configure with the --libdir option.  For example:
+
+   ./configure --bindir=$HOME/bin --libdir=$HOME/lib
+
+So C<make install> will install the F<swish-e> binary in F<$HOME/bin> and C<make install-lib>
+will install the F<libswish-e.a> library in F<$HOME/lib>.
+
+Note: You may wish to run C<make realclean> before running ./configure again.
+
+=head2 Creating PDF and Postscript documentation
+
+The SWISH-E documentation in HTML format was created with Pod::HtmlPsPdf, a package of Perl modules written
+and/modified by Stas Bekman to automate the conversion of documents in pod format (see perldoc perlpod)
+to HTML, Postscript, and PDF.  A slightly modified version of this package is include with the SWISH-E distribution
+and used for building the HTML.
+
+If your system has the necessary tools to build Postscript and the converter ps2pdf installed, you may be
+able to build the Postscript and PDF versions of the documentation.  After you have run ./configure, type from
+the top-level directory of the distribution:
+
+    make pdf
+
+And with any luck you will end up the the the two files in the top-level directory:
+
+    swish-e_documentation.pdf
+    swish-e_documentation.ps
+
+B<ask Stas for more info on the requirements.>    
+
+=head2 Installing the SWISH-E documentation as man(1) pages
+
+Part of the included SWISH-E documentaiton can be installed as system man(1) pages.  Only the reference
+related pages are installed
+(it's assumed that you don't need to install the README or INSTALL documents as man pages).  You must have
+the pod2man program installed on your system (which you probably do if you have Perl).
+
+To build the man pages and install them into your system, type from the top-level directory (after running ./configure):
+
+    su root
+    make install-man
+    exit
+
+You will need to C<su root> if you do not have write access to the man directory.
+    
+The man pages are installed in the system man directory.  This directory is determined by running ./configure
+and can be set by passing the directory when running ./configure.
+
+For example,
+
+    ./configure --mandir=/usr/local/doc/man
+
+Information on running ./configure can be found by typing:
+
+    ./configure --help
+
+The pod source files used to create the man files were written running under perl 5.6.0.  Older version of Perl
+may complain slightly about the formatting of the pod files.  This shouldn't be a problem, but please let the
+swish-e list know if otherwise.
+    
+
+
+=head1 BASIC CONFIGURATION AND USAGE
+
+This section should give you a basic overview of indexing and searching with B<SWISH-E>.
+
+SWISH-E reads a configuration file (see L<SWISH-CONFIG|SWISH-CONFIG>) for directives that control
+what and how SWISH-E indexes files.  Then running SWISH-E is controlled by command line arguments
+(see L<SWISH-RUN|SWISH-RUN>).
+
+To try the examples below change to the F<tests> subdirectory of the distribution.  The tests will
+use the *.html files in this directory when creating the test index.  You may wish to review these
+*.html files to get an idea of the various native file formats that SWISH-E supports.
+
+=head2 Step 1: Create a Configuration File
+
+The configuration file controls what and how SWISH-E indexes.  The configuration file
+consists of directives, comments, and blank lines.  The configuration file can be
+any name you like, but swish-e.conf is commonly used.
+
+This example will work with the documents in the F<tests> directory.  You may wish to
+review the F<tests/test.config> configuration file used for the C<make test> tests.
+
+For example, a simple configuration file (F<swish-e.conf>):
+
+    # Example SWISH-E Configuration file
+
+    # Define *what* to index
+    # IndexDir can point to a directories and/or a files
+
+    # Here it's pointing to the current directory
+    IndexDir .
+
+    # But only index the .html files
+    IndexOnly .html
+
+    # Show basic info while indexing
+    IndexReport 1
+
+And that's a simple configuration file.
+The complete list of all configuration file directives are described in L<SWISH-CONFIG|SWISH-CONFIG>.
+
+=head2 Step 2: Index your Files
+
+Now, change to the F<tests> directory and save the above example configuration file as F<swish-e.conf>.
+Then run swish using the C<-c> switch to specify the name of the configuration file.
+
+    ../src/swish-e -c swish-e.conf
+    Indexing Data Source: "File-System"
+    Indexing ...
+    Removing very common words...
+    no words removed.
+    Writing main index...
+    Writing header ...
+    Writing index entries ...
+    Writing stopwords ...
+    57 unique words indexed.
+    Writing file index...
+    Writing file list ...
+    Writing file offsets ...
+    Writing MetaNames ...
+    Writing Location lookup tables ...
+    Writing offsets (2)...
+    5 files indexed.
+    Running time: Less than a second.
+    Indexing done!
+
+This created the index file F<index.swish-e>.  This is the default index file name 
+unless the B<IndexFile> directive is specified in the configuration file:
+
+    IndexFile ./website.index
+
+=head2 Step 3: Search
+
+You specify your search terms with the C<-w> switch.  For example, to find the files that
+contain the word B<sample> you would issue the command:
+
+    ../src/swish-e -w sample
+
+This example assumes that you are in the F<tests> directory, and the swish-e binary is in the F<../src> directory.
+Swish returns in response to that command the following:
+
+    # Swish-e format: 2.1
+    # 
+    # Name: (no name)
+    # Saved as: index.swish-e
+    # Counts: 57 words, 5 files
+    # Indexed on: 13/12/2000 16:33:21 PST
+    ...
+    ... (other headers snipped in this example)
+    ...
+    #
+    # Number of hits: 2
+    1000 ./test_xml.html "If you are seeing this, the METATAG XML search was successful!" 159
+    265 ./test.html "If you are seeing this, the test was successful!" 437
+    .
+
+So the word B<sample> was found in two documents.  The first number shown is the relevance or rank of
+the search term, followed by the file containing the search term, the title of the document, and finally
+the length of the document.
+
+The period "." by itself at the end marks the end of results.
+
+Much more information may be retrieved while searching by using the C<-x> switch (see L<SWISH-RUN|SWISH-RUN>)
+and by using Document Properties (see L<SWISH-CONFIG|SWISH-CONFIG>).
+
+=head2 Phrase Searching
+
+To search for a phrase in a document use double-quotes to delimit your search terms.
+(The phrase delimiter is set in src/swish.h.)
+
+You must protect the quotes from the shell.
+
+For example, under Unix:
+
+    swish-e -w '"this is a pharase" or (this and that)'
+    swish-e -w 'meta1=("this is a pharase") or (this and that)'
+
+Or under Windows F<command.com> shell.
+
+    swish-e -w \"this is a pharase\" or (this and that)
+
+The phrase delimiter can be set with the C<-P> switch.
+
+=head2 Boolean Searching
+
+You can use the Boolean operators B<and>, B<or>, or B<not> in searching.
+Without these Boolean, SWISH-E will assume you're B<and>ing the words together.
+
+Here are some examples:
+
+    ../src/swish-e -w 'apples oranges'
+    ../src/swish-e -w 'apples and oranges'  ( Same thing )
+
+    ../src/swish-e -w 'apples or oranges'
+
+    ../src/swish-e -w 'smilla and snow not sense' -f myIndex 
+
+retrieves first the files that contain both the words "smilla" and "snow";
+then among those the ones that do not contain the word "sense"
+
+A few other to ponder:
+
+    ../src/swish-e -w 'apples and oranges or pears'
+    ../src/swish-e -w '(apples and oranges) or pears'  ( Same thing )
+    ../src/swish-e -w 'apples and (oranges or pears)'  ( Not the same thing )
+
+See L<SWISH-SEARCH|SWISH-SEARCH> for more information.    
+
+
+=head2 Context Searching
+
+The C<-t> option in the search command line allows you to search for words that exist only in specific HTML tags.
+Each character in the string you specify in the argument to this option represents a different tag in which
+the word is searched; that is you can use any combinations of the following characters:
+
+    H means all <HEAD> tags
+    B stands for <BODY> tags
+    t is all <TITLE> tags
+    h is <H1> to <H6> (header) tags
+    e is emphasized tags (this may be <B>, <I>, <EM>, or <STRONG>)
+    c is HTML comment tags (<!-- ... -->)
+
+For example:
+
+    # Find only documents with the word "linux" in the E<lg>TITLEE<gt> tags.
+    ./swish-e -w linux -t t
+
+    # Find the word "apple" in titles or comments
+    ./swish-e -w apple -t tc
+
+
+=head2 META Tags
+
+For the last example we will instruct swish to use META tags to define I<fields> in
+your documents.  
+
+META names are a way to define "fields" in your documents.  You can use the META names in your queries
+to limit the search to just the words contained in that META name of your document.  For example, you might have
+a META tagged field in your documents called C<subjects> and then you can search your documents for the word
+"foo" but only return documents where "foo" is within the C<subjects> META tag.
+
+Document I<Properties> are someone related to meta tags:  Properties allow the contents of a META tag in a source
+document to be stored within the index, and that text to be returned along with search results.
+
+META tags can have three formats in your documents.
+
+    <META NAME="keyName" CONTENT="some Content">
+
+    <!-- META START NAME="keyName" -->
+        some Content
+    <!-- META END -->
+
+And in XML format
+
+    <keyName>
+        Some Content
+    </keyName>
+
+
+To continue with our sample F<swish-e.conf> file, add the following lines:
+
+    # Define META tags
+    MetaNames meta1 meta2 meta3
+
+Reindex to include the changes:
+
+    ../src/swish-e -c swish-e.conf
+
+Now search, but this time limit your search to META tag "meta1":
+
+    ../src/swish-e -w 'meta1=metatest1'
+
+Again, please see L<SWISH-RUN|SWISH-RUN> and L<SWISH-CONFIG|SWISH-CONFIG> for complete
+documentation of the various indexing and searching options.
+
+=head1 QUESTIONS AND TROUBLESHOOTING
+
+Please search the SWISH-E list archive before posting, and check the L<SWISH-FAQ|SWISH-FAQ> to
+see if your question hasn't already been asked.
+
+Support for installation, configuration and usage is available via the SWISH-E
+discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
+
+When posting please provide the following information:
+
+=over 4
+
+=item *
+
+The exact version of SWISH-E that you are using.  Running swish-e with the C<-V> switch will print the
+version number.
+
+=item *
+
+A summary of the problem, including a copy of the configuration file, the command you are using
+to index and search your index, and a small copy of a source document.
+Please copy and paste exact commands to avoid typos in your message.
+You will receive better help if you make it easy for others to duplicate your problem.
+
+=item *
+
+If you are having trouble building SWISH-E please cut-n-paste the output from make (or from ./configure if
+that's where the problem is).
+
+=item *
+
+Use tools available to narrow down the problem.  SWISH-E has the -D, -v, and -k switches that may help
+resolve issues.  You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
+programs like C<truss> or C<strace> can often provide interesting informataion.
+
+=back
+
+
+
+
+=head1 Document Info
+
+$Id$
+
+.
+
+
+
