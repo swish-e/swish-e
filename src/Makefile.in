@@ -5,8 +5,8 @@
 # The code has been tested to compile on Solaris and DEC 
 # G.Hill ghill@library.berkeley.edu 6/11/97
 # 
-# autoconf configuration by Bas Meijer, 1 June 2000
-# Cross Platform Compilation on Solaris, HP-UX, IRIX and Linux
+# autoconf configuration by Bas Meijer, 11 Dec 2000
+# Cross Platform Compilation on Solaris, HP-UX, IRIX, Mac OS X, BDSi and Linux
 # Several ideas from a Makefile by Christian Lindig <lindig@ips.cs.tu-bs.de>  
 #
 NAME = swish-e
