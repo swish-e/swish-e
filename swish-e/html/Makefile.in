@@ -289,7 +289,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(DATA)
+all-am: Makefile $(DATA) all-local
 
 installdirs:
 	$(mkinstalldirs) $(DESTDIR)$(htmldir) $(DESTDIR)$(imagedir)
@@ -362,9 +362,9 @@ ps-am:
 
 uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
 
-.PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	distclean distclean-generic distclean-libtool distdir dvi \
-	dvi-am info info-am install install-am install-data \
+.PHONY: all all-am all-local check check-am clean clean-generic \
+	clean-libtool distclean distclean-generic distclean-libtool \
+	distdir dvi dvi-am info info-am install install-am install-data \
 	install-data-am install-exec install-exec-am install-htmlDATA \
 	install-imageDATA install-info install-info-am install-man \
 	install-strip installcheck installcheck-am installdirs \
@@ -374,7 +374,14 @@ uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
 	uninstall-info-am
 
 
-all: .html-stamp
+all-local: $(html_DATA)
+
+$(html_DATA): .html-stamp
+	@if test -f $@; then :; else rm -f $<; $(MAKE) .html-stamp; fi
+
+$(version_file): $(top_srcdir)/Makefile
+	@echo "updating version file"
+        @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
 
 .html-stamp: $(version_file) $(depends)
 	cd $(srcdir)/../doc && bin/build
