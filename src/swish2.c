@@ -196,7 +196,7 @@ void    SwishClose(SWISH * sw)
 
 
 /*************************************************************************
-* SwishInit -- create a swish hanlde
+* SwishInit -- create a swish handle for the indexe or indexes passed in
 *
 *
 **************************************************************************/
@@ -214,7 +214,7 @@ SWISH  *SwishInit(char *indexfiles)
         set_progerr(INDEX_FILE_ERROR, sw, "No index file supplied" );
         return sw;
     }
-    
+
 
     /* Parse out index files, and append to indexlist */
     sl = parse_line(indexfiles);
@@ -225,7 +225,7 @@ SWISH  *SwishInit(char *indexfiles)
         return sw;
     }
 
-    
+
 
     for (i = 0; i < sl->n; i++)
         addindexfile(sw, sl->word[i]);
@@ -246,41 +246,64 @@ SWISH  *SwishInit(char *indexfiles)
 * SwishAttach - Connect to the database
 *  This just opens the index files
 *
+*  Maybe this could be passed a variable length of arguments
+*  so that swis.c:cmd_index() could call SwishAttach( sw, DB_READWRITE )
+*  to have all similar code in one place.
+*
 * Returns false on Failure
 **************************************************/
 
 int     SwishAttach(SWISH * sw)
 {
-    IndexFILE *indexlist;
-
+    IndexFILE *indexlist = sw->indexlist;  /* head of list of indexes */
     IndexFILE *tmplist;
- 
-    indexlist = sw->indexlist;
-    sw->TotalWords = 0;
-    sw->TotalFiles = 0;
 
 
-    /* First of all . Read header default values from all index fileis */
+    /* First of all . Read header default values from all index files */
     /* With this, we read wordchars, stripchars, ... */
     for (tmplist = indexlist; tmplist;)
-    {
-
-        tmplist->DB = (void *)DB_Open(sw, tmplist->line, DB_READ);
-        if ( sw->lasterror )
+        if ( !open_single_index( sw, tmplist, DB_READ ) )
             return 0;
+        else
+            tmplist = tmplist->next;
 
-        read_header(sw, &tmplist->header, tmplist->DB);
 
-
-        sw->TotalWords += tmplist->header.totalwords - tmplist->header.removedwords;
-        sw->TotalFiles += tmplist->header.totalfiles - tmplist->header.removedfiles;
-	sw->TotalWordPos += tmplist->header.total_word_positions;
-	
-        tmplist = tmplist->next;
-    }
-
-    return ( sw->lasterror == 0 ); 
+    return ( sw->lasterror == 0 );
 }
+
+/****************************************************************************
+* open_single_index -- opens the index and reads in its header data
+*
+* Pass:
+*   sw
+*   indexf
+*   db_mode  - open in read or read/write
+*
+* Returns
+*   true if ok.
+*
+****************************************************************************/
+
+int open_single_index( SWISH *sw, IndexFILE *indexf, int db_mode )
+{
+    INDEXDATAHEADER *header = &indexf->header;
+
+
+    indexf->DB = (void *)DB_Open(sw, indexf->line, db_mode);
+
+    if ( sw->lasterror )
+        return 0;
+
+    read_header(sw, header, indexf->DB);
+
+    /* These values are used in ranking */
+
+    sw->TotalFiles   += header->totalfiles - header->removedfiles;
+    sw->TotalWordPos += header->total_word_positions - header->removed_word_positions;
+
+    return 1;
+}
+
 
 /********************************************************************************
 * SwishSetRefPtr - for use the SWISH::API to save the SV* of the swish handle

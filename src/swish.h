@@ -547,10 +547,9 @@ typedef struct
     FUZZY_OBJECT *fuzzy_data;
 
     /* Total files and words in index file */
-    int     totalwords;
+    int     totalwords;    /* Total *unique* words */
     int     totalfiles;
     int     removedfiles;
-    int     removedwords;
 
     /* var to specify how to ranking while indexing */
     int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
@@ -593,7 +592,7 @@ typedef struct
     int     metaCounter;        /* Number of metanames */
 
     int     total_word_positions;       /* IDF ranking */
-
+    int     removed_word_positions;     /* total words (not just unique words) */
 }
 INDEXDATAHEADER;
 
@@ -607,7 +606,7 @@ typedef struct IndexFILE
     char   *line;               /* Name of the index file */
 
     unsigned long total_bytes;  /* Just to show total size when indexing */
-    unsigned long total_word_positions;
+    unsigned long total_word_positions_cur_run;  /* count *while* indexing */
 
 
 
@@ -837,7 +836,7 @@ typedef struct SWISH
 
 
     /* Total words and files in all index files */
-    int     TotalWords;
+    /* int     TotalWords;  Total *unique words*  $$$ doesn't seem to be used */
     int     TotalFiles;
 
     /* verbose flag */
@@ -1011,6 +1010,7 @@ extern struct _indexing_data_source_def *IndexingDataSource;
 void    allocatedefaults(void);
 
 int SwishAttach(SWISH *);
+int open_single_index( SWISH *sw, IndexFILE *indexf, int db_mode );
 SWISH  *SwishNew(void);
 void    SwishFree(SWISH *);
 

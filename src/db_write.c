@@ -100,7 +100,12 @@ void    write_header(SWISH *sw, int merged_flag )
     DB_WriteHeaderData(sw, NAMEHEADER_ID, (unsigned char *)header->indexn, strlen(header->indexn) + 1, DB);
     DB_WriteHeaderData(sw, SAVEDASHEADER_ID, (unsigned char *)c, strlen(c) + 1, DB);
 
-    write_header_int4(sw, COUNTSHEADER_ID, header->totalwords, header->totalfiles, indexf->total_word_positions, header->removedfiles, DB);
+    write_header_int4(sw, COUNTSHEADER_ID,
+            header->totalwords,
+            header->totalfiles,
+            header->total_word_positions + indexf->total_word_positions_cur_run, /* Total this run's total words (not unique) with any previous */
+            header->removedfiles, DB);
+
     tmp = getTheDateISO();
     DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB);
     efree(tmp);
@@ -146,7 +151,7 @@ void    write_header(SWISH *sw, int merged_flag )
         write_integer_table_to_header(sw, TOTALWORDSPERFILE_ID, header->TotalWordsPerFile, header->totalfiles, DB);
 #endif
 
-    write_header_int(sw, TOTALWORDS_REMOVED_ID, header->removedwords, DB);
+    write_header_int(sw, TOTALWORDS_REMOVED_ID, header->removed_word_positions, DB);
 
     DB_EndWriteHeader(sw, DB);
 }
