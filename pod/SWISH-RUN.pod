@@ -485,7 +485,7 @@ EM, or STRONG), and c is HTML comment tags
 
 search only in header (<H*>) tags
 
-    swish-c -w word -t h
+    swish-e -w word -t h
 
 =item -d *string* (delimiter)
 

@@ -26,7 +26,7 @@ MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SW
 
 
 
-all: readme html
+all: readme installpage html
 
 #--- convert README.pod to README ---
 
@@ -34,6 +34,13 @@ all: readme html
 	pod2text ../pod/README.pod > ../README && chmod 644 ../README
 
 readme: ../README	
+
+#--- convert INSTALL.pod to INSTALL ---
+
+../INSTALL: ../pod/INSTALL.pod
+	pod2text ../pod/INSTALL.pod > ../INSTALL && chmod 644 ../INSTALL
+
+installpage: ../INSTALL
 
 
 #--- create/install man pages ----------
