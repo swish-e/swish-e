@@ -231,8 +231,11 @@ char *summary=NULL;
 									p=NULL;
 								}
 							}	
+						} else {
+							/* Ignore and continue */
+							p=endtag;
 						}
-					}
+					} 
 				}  /* Check for end of a XML field */
 				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) {
 					/* search for the metaname in the
@@ -349,3 +352,4 @@ char *tmptag;
 	efree(tmptag);
 	return 0;
 }
+
