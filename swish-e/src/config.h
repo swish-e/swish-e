@@ -31,6 +31,9 @@
 **-----------------------------------------------------------------------
 ** The following are user-definable options that you can change
 ** to fine-tune SWISH's default options.
+**
+** 2001-03-13 rasc   moved search boolean words from swish.h
+**
 */
 
 #define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
@@ -69,6 +72,14 @@
 
 /* You can define VERBOSE to be a number from 0 to 4. 0 is totally
 ** silent operation; 4 is very verbose.
+*/
+
+#define _AND_WORD "and"
+#define _OR_WORD "or"
+#define _NOT_WORD "not"
+
+/* 
+ ** these are the default boolean operator words used by swish search
 */
 
 #define DEFAULT_RULE AND_RULE

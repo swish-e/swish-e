@@ -48,6 +48,8 @@
 **                   ResultExtFmtStrList & var
 **
 ** 2001-02-28 rasc   some cleanup, ANSI compliant
+** 2001-03-12 rasc   logical search operators via config changable
+**                   moved some parts to config.h
 */
 
 #include <stdio.h>
@@ -176,13 +178,6 @@
 
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
-
-#define NO_RULE 0
-#define AND_RULE 1
-#define OR_RULE 2
-#define NOT_RULE 3
-#define PHRASE_RULE 4
-#define AND_NOT_RULE 5
 
 #define IN_FILE 1
 #define IN_TITLE 2
@@ -540,11 +535,39 @@ struct char_lookup_st
         struct char_st *all_entries[1];
 };
 
-#ifndef GLOBAL_VARS
-#define VAR extern
-#else
-#define VAR
-#endif
+
+/*
+  -- internal logical/boolean search operator words 
+  -- Defaults for user: see config.h
+  --  or changed via config directives.
+*/
+
+
+typedef struct {		/* 2001-03-12 rasc */
+   char *and;		/* Logical Search  */
+   char *or;		/* Operators (user)*/
+   char *not;
+   int  defaultrule;	/* missing op == this rule */
+} LOGICAL_OP;
+
+
+/* internal representation,  may not be changed */
+#define AND_WORD "<and>"
+#define OR_WORD "<or>"
+#define NOT_WORD "<not>"
+#define PHRASE_WORD "<precd>"
+#define AND_NOT_WORD "<andnot>"
+
+/* internal search rule numbers */
+#define NO_RULE 0
+#define AND_RULE 1
+#define OR_RULE 2
+#define NOT_RULE 3
+#define PHRASE_RULE 4
+#define AND_NOT_RULE 5
+
+
+
 
 
 /*
@@ -561,6 +584,8 @@ typedef struct {
     char *extendedformat;		/* -x "fmt", holds fmt or NULL */
     int   extendedheader;      /* -X print extended header info */
 } CMDPARAM;
+
+
 
 
 
@@ -590,10 +615,13 @@ typedef struct {			/* Propvalue with type info */
 } PropValue;
 
 
+/* --------------------------------------- */
+
 
 typedef struct {
 
-    CMDPARAM  opt;
+    CMDPARAM 	opt;			/* Cmdline Options       */
+    LOGICAL_OP	srch_op;		/* search operator words */
 
 	/* entry vars */
     ENTRYARRAY *entryArray;
@@ -740,6 +768,18 @@ struct _indexing_data_source_def
   int (*parseconfline_fn)(SWISH *sw, void *line);          /* parse config file lines */
 };
 
+
+
+
+#ifndef GLOBAL_VARS
+#define VAR extern
+#else
+#define VAR
+#endif
+
+
+
+
 #ifdef GLOBAL_VARS
 
 VAR struct _indexing_data_source_def *IndexingDataSource;
@@ -841,16 +881,7 @@ long readlong (FILE *);
 /* Min macro */
 #define Min(a,b) ((a)<(b)?(a):(b))
 
-/* Definitions of word commands and, or, not, ... */
-/* Change them here */
-#define _AND_WORD "and"
-#define _OR_WORD "or"
-#define _NOT_WORD "not"
-#define AND_WORD "<and>"
-#define OR_WORD "<or>"
-#define NOT_WORD "<not>"
-#define PHRASE_WORD "<precd>"
-#define AND_NOT_WORD "<andnot>"
+
 
 /* C library prototypes */
 SWISH * SwishOpen (char *);

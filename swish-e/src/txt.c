@@ -34,6 +34,7 @@ char *summary=NULL;
 	{
 		/* No fields in a TXT doc. So it is easy to get summary */
 		summary=estrndup(buffer,fprop->stordesc->size);
+		remove_newlines(summary);			/* 2001-03-13 rasc */
 	}
 
 	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);

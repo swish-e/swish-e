@@ -96,6 +96,8 @@
 **
 ** 2001-02-xx rasc  search call changed, tolower changed...
 ** 2001-03-03 rasc  altavista search, translatechar in headers
+** 2001-03-13 rasc  definable logical operators via  sw->srch_op.[and|or|nor]
+**                  bugfix in parse_search_string handling...
 **
 */
 
@@ -217,10 +219,12 @@ int search_2 (SWISH *sw, char *words, int structure)
 {
 int j,k, hassearch, metaID, indexYes, totalResults;
 RESULT *tmpresultlist,*tmpresultlist2;
-struct swline *searchwordlist, *tmplist, *tmplist2;
+struct swline *searchwordlist, *tmplist2;
 IndexFILE *indexlist;
 int rc=0;
 unsigned char PhraseDelimiter;
+char  *tmpwords;
+
 			/* If not words - do nothing */
 	if (!words || !*words) 
 		return(sw->lasterror=NO_WORDS_IN_SEARCH);
@@ -243,14 +247,17 @@ unsigned char PhraseDelimiter;
 	if ((rc=initSortResultProperties(sw))) return rc;
 
 	while (indexlist != NULL) {
+		tmpwords = estrdup (words);   /* copy of the string  (2001-03-13 rasc) */
+
 		if(searchwordlist)
 		{
 			freeswline(searchwordlist);
 			searchwordlist=NULL;
 		}
-		if(!(searchwordlist = parse_search_string(sw,words,indexlist->header)))
+		if(!(searchwordlist = parse_search_string(sw,tmpwords,indexlist->header)))
 		{
 			indexlist=indexlist->next;
+			efree (tmpwords);
 			continue;
 		}
 
@@ -258,29 +265,30 @@ unsigned char PhraseDelimiter;
 
 		sw->bigrank = 0;
 		
-		if (!indexlist->fp)
+		if (!indexlist->fp) {
+			efree (tmpwords);
+			if (searchwordlist) freeswline(searchwordlist);   /* 2001-03-13 rasc */ 
 			return sw->lasterror;
+		}
 
 		if (!indexlist->header.totalfiles) {
 			indexlist = indexlist->next;
+			efree (tmpwords);
 			continue;
+		} else {
+		 indexYes = 1; /*There is a non-empty index */
 		}
-		else
-		{ indexYes = 1; /*There is a non-empty index */ }
 
-		tmpresultlist=NULL;
-		tmplist=NULL;
 
-		/* make a copy of searchwordlist */
-		tmplist = dupswline(searchwordlist);
-		tmplist = (struct swline *)translatechars_words_in_query(sw,indexlist,tmplist);
+
+		searchwordlist = (struct swline *)translatechars_words_in_query(sw,indexlist,searchwordlist);
 #ifdef IGNORE_STOPWORDS_IN_QUERY
-		tmplist = (struct swline *)ignore_words_in_query(sw,indexlist,tmplist,PhraseDelimiter);
+		searchwordlist = (struct swline *)ignore_words_in_query(sw,indexlist,searchwordlist ,PhraseDelimiter);
 #endif /* IGNORE_STOPWORDS_IN_QUERY */
 		if(indexlist->header.applyStemmingRules)
-			tmplist = stem_words_in_query(sw,indexlist,tmplist);
+			searchwordlist = stem_words_in_query(sw,indexlist,searchwordlist );
 		if(indexlist->header.applySoundexRules)
-			tmplist = soundex_words_in_query(sw,indexlist,tmplist);
+			searchwordlist = soundex_words_in_query(sw,indexlist,searchwordlist );
 			/* Echo index file, fixed search, stopwords */
 		if (sw->opt.extendedheader)
 		{
@@ -292,7 +300,7 @@ unsigned char PhraseDelimiter;
 			printf("\n");
 			printf("# Search Words: %s\n",words);
 			printf("# Parsed Words: ");
-			tmplist2=tmplist; 
+			tmplist2=searchwordlist; 
 			while(tmplist2)
 			{
 				printf("%s ",tmplist2->line);
@@ -301,16 +309,15 @@ unsigned char PhraseDelimiter;
 			printf("\n");
 		}
 		/* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
-		tmplist = (struct swline *) expandphrase(tmplist,PhraseDelimiter);
-		tmplist = (struct swline *) fixnot(tmplist); 
+		searchwordlist = (struct swline *) expandphrase(searchwordlist,PhraseDelimiter);
+		searchwordlist = (struct swline *) fixnot(searchwordlist); 
 
-		if(tmplist)
+		tmpresultlist=NULL;
+		if(searchwordlist)
 		{
-			tmplist2=tmplist;
+			tmplist2=searchwordlist ;
 			tmpresultlist = (RESULT *) parseterm(sw,0,metaID,indexlist,&tmplist2);
 		}
-		if(tmplist) freeswline(tmplist);
-
 		if(!sw->resultlist)
 			sw->resultlist = tmpresultlist;
 		else {
@@ -324,8 +331,12 @@ unsigned char PhraseDelimiter;
 			}
 
 		}
-                indexlist = indexlist->next;
-	}
+
+
+	  efree (tmpwords);
+	  indexlist = indexlist->next;
+
+	} /* while */
 
 	if(!hassearch)
 	{
@@ -406,7 +417,7 @@ struct swline *tmpp, *newp;
 			openparen--;
 		else if ( ((tmpp->line)[0] == ')') && hasMeta)
 			openMeta--;
-		if (isMetaName(tmpp->next)) {
+		if (isMetaNameOpNext(tmpp->next)) {
 			/* If it is a metaName add the name and = and skip to next */
 			hasMeta = 1;
 			newp = (struct swline *) addswline(newp, "(");
@@ -450,7 +461,7 @@ struct swline *tmpp, *newp;
 			continue;
 		}
 		newp = (struct swline *) addswline(newp, tmpp->line);
-		if (isMetaName(tmpp)) {
+		if (isMetaNameOpNext(tmpp)) {
 			hasMeta = 1;
 			newp = (struct swline *) addswline(newp, "(");
 		}
@@ -872,7 +883,7 @@ FILE *fp=indexf->fp;
 		word = SafeStrCopy(word, (*searchwordlist)->line,&lenword);
 		
 		if (rulenum == NO_RULE)
-			rulenum = DEFAULT_RULE;
+			rulenum = sw->srch_op.defaultrule;
 		if (isunaryrule(word)) {
 			*searchwordlist = (*searchwordlist)->next;
 			rp = (RESULT *) parseterm(sw, 1, metaID,indexf, searchwordlist);
@@ -923,7 +934,7 @@ FILE *fp=indexf->fp;
 		}
 		
 		/* Check if the next word is '=' */
-		if ( isMetaName((*searchwordlist)->next) ) {
+		if ( isMetaNameOpNext((*searchwordlist)->next) ) {
 			metaID = getMetaNameID(indexf, word);
 			if (metaID == 1) {
 				sw->lasterror=UNKNOWN_METANAME;
@@ -1289,23 +1300,39 @@ FILE *fp=indexf->fp;
 	return(indexf->keywords[j]);
 }
 
+
+/*
+  -- Rules checking
+  -- u_is...  = user rules (and, or, ...)
+  -- is...    = internal rules checking
+ */
+
+
 /* Is a word a rule?
 */
 
 int isrule(char *word)
 {
-	if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
-		return 1;
-	else
-		return 0;
+  int i;
+  static char *ops[] = {  /* internal ops... */
+		AND_WORD, OR_WORD, NOT_WORD, PHRASE_WORD, AND_NOT_WORD,
+		NULL };
+
+  for (i=0; ops[i]; i++) {
+     if (! strcmp (word,ops[i]) ) return 1;
+  }
+  return 0;
 }
 
-int _isrule(char *word)
+int u_isrule(SWISH *sw, char *word)
 {
-	if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
-		return 1;
-	else
-		return 0;
+ LOGICAL_OP *op;
+
+  op = &(sw->srch_op);
+  if (!strcmp(word, op->and) || !strcmp(word, op->or) || !strcmp(word, op->not))
+	return 1;
+  else
+	return 0;
 }
 
 int isnotrule(char *word)
@@ -1316,9 +1343,9 @@ int isnotrule(char *word)
 		return 0;
 }
 
-int _isnotrule(char *word)
+int u_isnotrule(SWISH *sw, char *word)
 {
-	if (!strcmp(word,_NOT_WORD) )
+	if (!strcmp(word,sw->srch_op.not) )
 		return 1;
 	else
 		return 0;
@@ -1330,7 +1357,8 @@ int _isnotrule(char *word)
 
 int isbooleanrule(char *word)
 {
-	if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
+	if (!strcmp(word, AND_WORD)    || !strcmp(word, OR_WORD) ||
+	    !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
 		return 1;
 	else
 		return 0;
@@ -1364,6 +1392,28 @@ int getrulenum(char *word)
 		return AND_NOT_RULE;
 	return NO_RULE;
 }
+
+
+/* 
+  -- Return selected RuleNumber for default rule.
+  -- defined via current Swish Search Boolean OP Settings for user.  
+*/
+
+int u_SelectDefaultRulenum(SWISH *sw, char *word)
+{
+	if (!strcasecmp(word, sw->srch_op.and))
+		return AND_RULE;
+	else if (!strcasecmp(word, sw->srch_op.or))
+		return OR_RULE;
+	return NO_RULE;
+}
+
+
+
+
+
+
+
 
 /* Takes two lists of results from searches and ANDs them together.
 */
@@ -1667,7 +1717,7 @@ long swish_magic;
 /* Checks if the next word is "="
 */
 
-int isMetaName (struct swline *searchWord)
+int isMetaNameOpNext (struct swline *searchWord)
 {
 	if (searchWord == NULL)
 		return 0;
@@ -1882,6 +1932,7 @@ void freefileinfo(struct file *f)
 
 /* 02/2001 Jose Ruiz */
 /* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */
+
 struct swline *ignore_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist,unsigned char phrase_delimiter)
 {
 struct swline *pointer1, *pointer2, *pointer3;
@@ -1900,8 +1951,8 @@ int inphrase=0,ignore=0;
 			/* 05/00 Jose Ruiz
 			** NOT rule is legal at begininig */
 		if(pointer1->line[0]==phrase_delimiter) break;
-		if(_isnotrule(pointer1->line) || isMetaName(pointer2)) break;
-		if(!isstopword(indexf,pointer1->line) && !_isrule(pointer1->line)) break;
+		if(u_isnotrule(sw,pointer1->line) || isMetaNameOpNext(pointer2)) break;
+		if(!isstopword(indexf,pointer1->line) && !u_isrule(sw,pointer1->line)) break;
 		searchwordlist = pointer2; /* move the head of the list */
 		printf("# Removed stopword: %s\n",pointer1->line);
 			 /* Free line also !! Jose Ruiz 04/00 */
@@ -1928,8 +1979,8 @@ int inphrase=0,ignore=0;
 			ignore=0;
 			if(!inphrase)
 			{
-				if((isstopword(indexf,pointer2->line) && !_isrule(pointer2->line) && !isMetaName(pointer2->next))    /* non-rule stopwords */
-				|| (_isrule(pointer1->line) &&  _isrule(pointer2->line))) /* two rules together */
+				if((isstopword(indexf,pointer2->line) && !u_isrule(sw,pointer2->line) && !isMetaNameOpNext(pointer2->next))    /* non-rule stopwords */
+				|| (u_isrule(sw,pointer1->line) &&  u_isrule(sw,pointer2->line))) /* two rules together */
 					ignore=1;
 			} else {
 				if(isstopword(indexf,pointer2->line)) 
@@ -1952,6 +2003,8 @@ int inphrase=0,ignore=0;
 	return searchwordlist;
 }
 
+
+
 struct swline *stem_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist)
 {
 struct swline *tmplist;
@@ -1960,7 +2013,7 @@ char *word,*tmp;
 
 	tmplist = searchwordlist;
 	while (tmplist != NULL) {
-		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) 
+		if(!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next)) 
 		{
 			lenword=strlen(tmplist->line)+50;
 			word = emalloc(lenword+1);
@@ -1995,7 +2048,7 @@ char *word;
 
 	tmplist = searchwordlist;
 	while (tmplist != NULL) {
-		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) 
+		if(!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next)) 
 		{
 	                /* apply soundex algorithm to the search term */
 			/* Need to fix word length ? */
@@ -2034,7 +2087,7 @@ struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct 
       tr_lookup = indexf->header.translatecharslookuptable;
 
 	while (tmplist != NULL) {
-		if(!isrule(tmplist->line) && !isMetaName(tmplist->next)) {
+		if(!isrule(tmplist->line) && !isMetaNameOpNext(tmplist->next)) {
                   TranslateChars (tr_lookup, tmplist->line);
 		}
 		tmplist=tmplist->next;
