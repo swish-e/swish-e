@@ -102,7 +102,8 @@ typedef enum {
     MODE_DUMP,
     MODE_WORDS,
     MODE_MERGE,
-    MODE_UPDATE
+    MODE_UPDATE,
+    MODE_REMOVE
 }
 CMD_MODE;
 
@@ -207,6 +208,7 @@ int     main(int argc, char **argv)
 
         case MODE_INDEX:
         case MODE_UPDATE:
+        case MODE_REMOVE:
             cmd_index( sw, params );
             break;
 
@@ -808,6 +810,13 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 params->run_mode = MODE_UPDATE;
                 break;
             }
+            /* Update mode jmruiz 2004/09 */
+
+            case 'r':
+            {
+                params->run_mode = MODE_REMOVE;
+                break;
+            }
 #endif
 
             default:
@@ -835,7 +844,8 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             if ( !is_another_param( argv ) )
                 progerr(" '-i' requires a list of index files.");
 
-            if(params->run_mode != MODE_UPDATE)   /* Preserve update mode */
+            if((params->run_mode != MODE_UPDATE) ||
+               (params->run_mode != MODE_REMOVE))   /* Preserve update mode */
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -877,7 +887,8 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             if ( !is_another_param( argv ) )
                 progerr(" '-c' requires one or more configuration files.");
 
-            if(params->run_mode != MODE_UPDATE)   /* Preserve update mode */     
+            if((params->run_mode != MODE_UPDATE) ||
+               (params->run_mode != MODE_REMOVE))  /* Preserve update mode */ 
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -1309,7 +1320,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
     /* Check for UPDATE_MODE jmruiz 2002/03 */
-    if(params->run_mode == MODE_UPDATE)
+    if((params->run_mode == MODE_UPDATE) || (params->run_mode == MODE_REMOVE))
     {
         /* Open the index file for read/write */
         sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
@@ -1331,7 +1342,11 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
 #endif
         /* Set update_mode */
-        sw->Index->update_mode = 1;
+        if(params->run_mode == MODE_UPDATE)
+            sw->Index->update_mode = 1;
+        /* Set remove_mode */
+        if(params->run_mode == MODE_REMOVE)
+            sw->Index->update_mode = 2;
     }
     else
     {

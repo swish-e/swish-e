@@ -41,39 +41,49 @@
 
 void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) 
 {
-    int     i;
-    int     end = indexf->header.totalfiles;
+    int     i, filenum, totalfiles;
+    int     end;
 
     i = begin ? begin - 1 : 0;
 
-    if ( i >= indexf->header.totalfiles )
+    /* We must keep in mind that some files can be marked as deleted */
+    totalfiles = indexf->header.totalfiles - indexf->header.removedfiles;
+
+    if ( i >= totalfiles )
     {
-        printf("Hey, there are only %d files\n", indexf->header.totalfiles );
+        printf("Hey, there are only %d files\n", totalfiles );
         exit(-1);
     }
 
-    end = indexf->header.totalfiles;
+    end = totalfiles;
 
     if ( maxhits > 0 )
     {
         end = i + maxhits;
-        if ( end > indexf->header.totalfiles )
-            end = indexf->header.totalfiles;
+        if ( end > totalfiles)
+            end = totalfiles;
     }
 
    
     printf("\n\n-----> FILES in index %s <-----\n", indexf->line );
 
-    for (; i < end; i++)
+    for (filenum = i + 1; i < end; i++)
     {
         FileRec fi;
 
         memset( &fi, 0, sizeof( FileRec ) );
-        
-        fi.filenum = i+1;
+
+        /* 2004/09 jmruiz. Need to check for files marked as deleted */
+        if (indexf->header.removedfiles) 
+        {
+            while(!DB_CheckFileNum(sw,filenum,indexf->DB))
+                filenum++;
+        }
+
+        fi.filenum = filenum;
 
         fflush(stdout);
-        printf("Dumping File Properties for File Number: %d\n", i+1);
+        printf("Dumping File Properties for File Number: %d\n", filenum);
 
 
         dump_file_properties( indexf, &fi );
@@ -133,8 +143,9 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
 
 
         freefileinfo(&fi);
+        filenum++;
     }
-    printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
+    printf("\nNumber of File Entries: %d\n", totalfiles);
     fflush(stdout);
 }
 
@@ -143,10 +154,12 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
 
 void	dump_words_per_file( SWISH *sw, IndexFILE * indexf, FileRec *fi )
 {
+#ifndef USE_BTREE
+INDEXDATAHEADER *header;
+#endif
 
 int words;
 int filenum;
-INDEXDATAHEADER *header;
 
 filenum = fi->filenum-1;
 
@@ -179,37 +192,46 @@ otherwise TotalWordsPerFile is not indexed in non-BTREE indexes */
 
 void	dump_word_count( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) 
 {
-    int     i;
-    int     end = indexf->header.totalfiles;
+    int     i, filenum, totalfiles;
+    int     end;
 
+    totalfiles = indexf->header.totalfiles - indexf->header.removedfiles;
     i = begin ? begin - 1 : 0;
 
-    if ( i >= indexf->header.totalfiles )
+    if ( i >= totalfiles )
     {
-        printf("Hey, there are only %d files\n", indexf->header.totalfiles );
+        printf("Hey, there are only %d files\n", totalfiles );
         exit(-1);
     }
 
-    end = indexf->header.totalfiles;
+    end = totalfiles;
 
     if ( maxhits > 0 )
     {
         end = i + maxhits;
-        if ( end > indexf->header.totalfiles )
-            end = indexf->header.totalfiles;
+        if ( end > totalfiles )
+            end = totalfiles;
     }
 
-    for (; i < end; i++)
+    for (filenum = i + 1 ; i < end; i++)
     {
         FileRec fi;
 
         memset( &fi, 0, sizeof( FileRec ) );
-        
-        fi.filenum = i+1;
+     
+        /* 2004/09 jmruiz. Need to check for files marked as deleted */
+        if (indexf->header.removedfiles)
+        {
+            while(!DB_CheckFileNum(sw,filenum,indexf->DB))
+                filenum++;
+        }
 
+        fi.filenum = filenum;
+  
 	dump_words_per_file( sw, indexf, &fi );
 	
         freefileinfo( &fi );
+        filenum++;
     }
 
 }
@@ -224,6 +246,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             frequency,
             metaID,
             tmpval,
+            printedword,
             filenum;
     unsigned int       *posdata;
     int     metadata_length;
@@ -274,13 +297,61 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             word[1] = '\0';
             DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            while(wordID)
+            while(wordID && (((int)((unsigned char)resultword[0]))== j))
             {
-                printf("%s\n",resultword);
+              if(indexf->header.removedfiles)
+              {
+                /* We need to Read Word's data to check that there is 
+                ** at least one file that has not been removed */
+                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
+                uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
 
+                /* parse and print word's data */
+                s = worddata;
+
+                tmpval = uncompress2(&s);     /* tfrequency */
+                metaID = uncompress2(&s);     /* metaID */
+                metadata_length = uncompress2(&s);
+
+                filenum = 0;
+                start = s;
+                while(1)
+                {                   /* Read on all items */
+                    uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                    filenum += tmpval;
+                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                    uncompress_location_positions(&s,flag,frequency,posdata);
+
+                    /* 2004/09 jmruiz. Need to check for one file not being marked as deleted */
+                    if (DB_CheckFileNum(sw,filenum,indexf->DB))
+                    {
+                        printf("%s\n",resultword);
+                        break;
+                    }
+                    /* Check for end of worddata */
+                    if ((s - worddata) == sz_worddata)
+                        break;   /* End of worddata */
+
+                    /* Check for end of current metaID data */
+                    if ( metadata_length == (s - start))
+                    {
+                        filenum = 0;
+                        metaID = uncompress2(&s);
+                        metadata_length = uncompress2(&s);
+                        start = s;
+                    }
+
+                }
+                efree(posdata);
+                efree(worddata);
+              } 
+              else
+                printf("%s\n",resultword);
                 
+              efree(resultword);
+              DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+              if (wordID && ((int)((unsigned char)resultword[0]))!= j)
                 efree(resultword);
-                DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
             }
         }
@@ -300,7 +371,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 end_meta = indexf->header.metaEntryArray[i]->metaID;
 
         meta_used = emalloc( sizeof(int) * ( end_meta + 1) );  
-    
+ 
         /* _META only reports which tags the words are found in */
         for(i = 0; i <= end_meta; i++)
             meta_used[i] = 0;
@@ -315,8 +386,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
             while(wordID && (((int)((unsigned char)resultword[0]))== j))
             {
-                printf("\n%s",resultword);
-
+                /* Flag to know if we must print a word or not */
+                /* Words with all the files marked as deleted shoud not be
+                ** printed */
+                printedword = 0;  
                 /* Read Word's data */
                 DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
                 uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
@@ -337,12 +410,20 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     posdata = (unsigned int *) emalloc(frequency * sizeof(int));
                     uncompress_location_positions(&s,flag,frequency,posdata);
 
-
+                    /* 2004/09 jmruiz. Need to check for files marked as deleted */
+                    if ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB))
+                    {
+                    if(!printedword) 
+                    {
+                        printf("\n%s",resultword);
+                        printedword = 1;
+                    }
+                           
                     // if (sw->verbose >= 4)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
                         struct metaEntry    *m;
-                        
+                            
                         printf("\n Meta:%d", metaID);
 
                         
@@ -356,13 +437,13 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                             memset( &r, 0, sizeof( RESULT ) );
                             memset( &db_results, 0, sizeof( DB_RESULTS ) );
                             db_results.indexf = indexf;
-
+    
                             r.db_results = &db_results;
                             r.filenum = filenum;
                             r.fi.filenum = filenum;
-
+   
                             s = getResultPropAsString( &r, m->metaID);
-
+    
                             printf(" %s", s );
                             efree( s );
                             
@@ -382,7 +463,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         printf(" %d", filenum);
                         printf(" %d (", frequency);
                     }
-                    
 
                     for (i = 0; i < frequency; i++)
                     {
@@ -402,13 +482,14 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                                  printf("%d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                         }
                     }
-
-                    efree(posdata);
-
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
                         printf(")]");
 
-                    /* Check for enf of worddata */
+                    }  /* End of DB_CheckFileNum */
+
+                    efree(posdata);
+
+                    /* Check for end of worddata */
                     if ((s - worddata) == sz_worddata)
                         break;   /* End of worddata */
 
@@ -439,6 +520,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 efree(worddata);
                 efree(resultword);
                 DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+                if (wordID && ((int)((unsigned char)resultword[0]))!= j)
+                  efree(resultword);
             }
         }
         DB_EndReadWords(sw, indexf->DB);
@@ -460,24 +543,25 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     if (DEBUG_MASK & DEBUG_INDEX_WORD_COUNT )
     	dump_word_count( sw, indexf, begin, maxhits );
 
-
     DB_Close(sw, indexf->DB);
-
 }
 
 
 int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
 {
-    unsigned char *buffer;
-    int     sz_buffer;
+    unsigned char *buffer = NULL;
+    int     sz_buffer = 0;
 
     DB_InitReadSortedIndex(sw, indexf->DB);
-    
+   
     /* Get the sorted index of the property */
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
+    /* For incremental index. It will be released when closing indexf->DB */
+#ifndef USE_BTREE
     if ( sz_buffer )
         efree( buffer );
+#endif
 
     /* Table doesn't exist */
     return sz_buffer;
@@ -524,6 +608,7 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
             else
                 printf("unknown!");
         }
+
 
 
         if ( check_presorted && check_sorted_index( sw, indexf, meta_entry)  )

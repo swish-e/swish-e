@@ -602,19 +602,6 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     DB->fp_array = fp_tmp;
     DB->cur_array_file = s;
 
-    s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
-
-    strcpy(s, dbname);
-    strcat(s, PRESORTED_EXTENSION);
-
-    if (!(DB->fp_presorted = openRoutine(s)))
-    {
-        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the presorted index file \"%s\": ", s);
-        return (void *) DB;
-    }
-
-    DB->cur_presorted_file = s;
-    
 #endif
 
     /* Validate index files */
@@ -1545,7 +1532,10 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_o
         (*resultword)[found_len]='\0';
         efree(found);
         if (strncmp(word, *resultword, strlen(word))>0)
+        {
+            efree(*resultword);
             return DB_ReadNextWordInvertedIndex_Native(word, resultword, wordID, db);
+        }
     }
 
     return 0;

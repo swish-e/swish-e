@@ -123,7 +123,8 @@ struct MOD_Index
     MEM_ZONE *totalLocZone;
     MEM_ZONE *entryZone;
 
-    int     update_mode;    /* Set to true when in update mode */
+    int     update_mode;    /* Set to 1 when in update mode */
+                            /* Set to 2 when in remove mode */
 };
 
 void    initModule_Index(SWISH *);
