@@ -16,8 +16,8 @@ use lib qw( modules );  ### This must be adjusted!
 #    Example CGI program for searching with SWISH-E
 #
 #    This example program will only run under an OS that supports fork().
+#    Ok, piped opens.
 #
-#    Documentation below, or try "perldoc swish.cgi"
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of the GNU General Public License
@@ -35,70 +35,135 @@ use lib qw( modules );  ### This must be adjusted!
 #
 ####################################################################################
 
-
-use CGI ();  # might not be needed if using Apache::Request
-
-
-    # Run the script -- entry point if running as a CGI script
-    
-    handler() unless $ENV{MOD_PERL};
-
-
-
-#==================================================================================
-
 # This is written this way so the script can be used as a CGI script or a mod_perl
 # module without any code changes.
 
-# All this does is pass a hash of configuration settings to the process_request() function.
-# You may either set the hash as shown below, or perhaps read it from a file.
-# If running under mod_perl you might want to use a PerlSetVar to specify which or what
-# config setting to use (or where to load the config settings from disk).  That way this
-# same mod_perl "module" could be used for searching different indexes (perhaps all with
-# different templates for a unique look).  Remember to specify absolute paths under mod_perl.
 
-# Configuration is a perl hash.  Note that the settings are separated by a comma.
+# use CGI ();  # might not be needed if using Apache::Request
 
-# Notes:  need to carefully consider what needs to be HTML escaped
-#         also, no filtering is done on the query.  May wish to remove '=' for metanames
+#=================================================================================
+#   CGI entry point
+#
+#=================================================================================
+
+
+
+# Run the script -- entry point if running as a CGI script
+
+    unless ( $ENV{MOD_PERL} ) {
+        my $config = default_config();
+
+        # Merge with disk config file.
+        $config = merge_read_config( $config );
+        process_request( $config );
+    }
+
+
+#=================================================================================
+#   mod_perl entry point
+#
+#   As an example, you might use a PerlSetVar to point to paths to different
+#   config files, and then cache the different configurations by path.
+#
+#=================================================================================
+
+my %cached_configs;
 
 sub handler {
     my $r = shift;
 
+    if ( my $config_path = $r->dir_config( 'Swish_Conf_File' ) ) {
 
-    # Taint issues
-    $ENV{PATH} = '/usr/bin';   # For taint checking
+        # Already cached?
+        if ( $cached_configs{ $config_path } ) {
+            process_request( $cached_configs{ $config_path } );
+            return Apache::Constants::OK();
+        }
+
+        # Else, load config
+        my $config = default_config();
+        $config->{config_file} = $config_path;
+
+        # Merge with disk config file.
+        $cached_configs{ $config_path } = merge_read_config( $config );
+
+        process_request( $cached_configs{ $config_path } );
+        return Apache::Constants::OK();
+    }
+
+
+    # Otherwise, use hard-coded config
+    process_request( default_config() );
+
+    return Apache::Constants::OK();
+
+}
+
+
+
+#==================================================================================
+#   This sets the default configuration
+#   Any configuration read from disk is merged with these settings.
+#
+#   Only a few settings are actually required.  Some reasonable defaults are used
+#   for most.  If fact, you can probably create a complete config as:
+#
+#    return = {
+#        swish_binary    => '/usr/local/bin/swish-e',
+#        swish_index     => '/usr/local/share/swish/index.swish-e',
+#        title_property  => 'swishtitle',  # Not required, but recommended
+#    };
+#
+#   But, that doesn't really show all the options.
+#
+#   You can modify the options below, or you can use a config file.  The config file
+#   is .swishcgi.conf by default (read from the current directory) that must return
+#   a hash reference.  For example, to create a config file that changes the default
+#   title and index file name, plus uses Template::Toolkit to generate output
+#   create a config file as:
+#
+#       # Example config file -- returns a hash reference
+#       {
+#           title           => 'Search Our Site',
+#           swish_index     => 'index.web',
+#
+#           template => {
+#            package         => 'TemplateToolkit',
+#            file            => 'search.tt',
+#            options         => {
+#                INCLUDE_PATH    => '/home/user/swish-e/example',
+#            },
+#       };
+#
+#
+#-----------------------------------------------------------------------------------
+
+sub default_config {
+
 
     
     ##### Configuration Parameters #########
-
-
-    #---- Here's a minimal configuration example for use with a default index.
-    # You will probably want to use more options than these.
-
-    my %small_config = (
-        swish_binary    => '/usr/local/bin/swish-e',
-        swish_index     => '/usr/local/share/swish/index.swish-e',
-        title_property  => 'swishtitle',  # Not required, but recommended
-    );        
-
-    # And then you would run the script like this:
-    # process_request( \%small_config );
-        
-
 
     #---- This lists all the options, with many commented out ---
     # By default, this config is used -- see the process_request() call below.
     
     # You should adjust for your site, and how your swish index was created.
-    # Please don't post this entire section on the swish-e list if looking for help,
-    # rather send a small example, without all the comments.
+
+    ##>>
+    ##>>  Please don't post this entire section on the swish-e list if looking for help!
+    ##>>
+    ##>>  Send a small example, without all the comments.
 
     # Items beginning with an "x" or "#" are commented out
     
-    my %CONFIG = (
+    return {
         title           => 'Search our site',  # Title of your choice.
         swish_binary    => './swish-e',        # Location of swish-e binary
+
+
+        # By default, this script tries to read a config file.  You should probably
+        # comment this out if not used save a disk stat
+        config_file     => '.swishcgi.conf',    # Default config file
 
 
         # The location of your index file.  Typically, this would not be in
@@ -127,7 +192,7 @@ sub handler {
         # prepend this path to the filename (swishdocpath) returned by swish.  This is used to
         # make the href link back to the original document.  Comment out to disable.
 
-        prepend_path    => 'http://localhost/mydocs',
+        #prepend_path    => 'http://localhost/mydocs',
 
 
         # Swish has a configuration directive "StoreDescription" that will save part or
@@ -324,7 +389,7 @@ sub handler {
             package         => 'TemplateToolkit',
             file            => 'search.tt',
             options         => {
-                INCLUDE_PATH    => '/data/_g/lii/swish-e/example',
+                INCLUDE_PATH    => '/home/user/swish-e/example',
                 #PRE_PROCESS     => 'config',
             },
         },
@@ -361,7 +426,7 @@ sub handler {
         # example, you store the date (a unix timestamp) as "date" then specify
         # "date" as the property_name.
 
-        Xdate_ranges     => {
+        date_ranges     => {
             property_name   => 'swishlastmodified',      # property name to limit by
 
             # what you specify here depends on the DateRanges.pm module.
@@ -385,17 +450,28 @@ sub handler {
             date_range      => 1,
         },
 
-    );
+    };
 
+}
 
+#============================================================================
+#   Read config settings from disk, and merge
+#   Note, all errors are ignored since by default this script looks for a
+#   config file.
+#
+#============================================================================
+sub merge_read_config {
+    my $config = shift;
 
+    return $config unless $config->{config_file};
 
-    # Now run the request
+    my $return = do $config->{config_file};
 
-    process_request( \%CONFIG );
+    return $config unless ref $return eq 'HASH';
 
-    return Apache::Constants::OK() if $ENV{MOD_PERL};
-}    
+    # Merge settings
+    return { %$config, %$return };
+}
 
 #============================================================================
 #
@@ -405,6 +481,12 @@ sub handler {
 
 sub process_request {
     my $conf = shift;  # configuration parameters
+
+    # Use CGI.pm by default
+    my $request_package = $conf->{request_package} || 'CGI';
+    $request_package =~ s[::][/]g;
+    require "$request_package.pm";
+
 
     # create search object
     my $search = SwishQuery->new(
@@ -1262,15 +1344,20 @@ swish.cgi -- Example Perl script for searching with the SWISH-E search engine.
 
 =head1 DESCRIPTION
 
-C<swish.cgi> is an example CGI script for searching with the SWISH-E search engine version 2.2 and above.
+C<swish.cgi> is an example CGI script for searching with the SWISH-E search engine version 2.1-dev and above.
 It returns results a page at a time, with matching words from the source document highlighted, showing a
 few words of content on either side of the highlighted word.
+
+The standard configuration should work with most swish index files.  Customization of the parameters will be
+needed if you are indexing special meta data and want to search and/or display the meta data.  The
+configuration can be modified by editing this script directly, or by using a configuration file (.swishcgi.conf
+by default).
 
 The script is modular in design.  Both the highlighting code and output generation is handled by modules, which
 are included in the F<example/modules> directory.  This allows for easy customization of the output without
 changing the main CGI script.  A module exists to generate standard HTML output.  There's also modules and
 template examples to use with the popular templating systems HTML::Template and Template-Toolkit.  This allows
-you to tightly integrate this script with the look of your site.
+you to tightly integrate this script with the look of an existing template-driven web site.
 
 This scipt can also run basically unmodified as a mod_perl handler, providing much better performance than
 running as a CGI script.
@@ -1298,8 +1385,9 @@ For the sake of this example we will assume the following:
 
 =item Copy the swish.cgi file to your CGI directory
 
-Most web servers have a directory where CGI programs are kept.  If this is the case on your
-server copy the C<swish.cgi> perl script into that directory.  You will need to provide read
+Most web servers have a directory where CGI programs are kept.
+Copy the C<swish.cgi> perl script into that directory if this is the case on your
+server.  You will need to provide read
 and execute permisssions to the file.  Exactly what permissions are needed again depends on
 your specific configuration.  For example, under Unix:
 
@@ -1319,11 +1407,13 @@ enable it as a CGI script with something like the following
     </Files>        
 
 Using this method you don't even need to use the C<.cgi> extension.  For example, rename
-the script to "search" and then use that in the C<Files> directive.
+the script to "search" and then use that in the C<Files> directive.  Take to your web
+administrator for further information.
 
 =item Copy the modules directory
 
-This is optional, but the script needs to find additional modules.  Unlike CPAN modules that need to
+Copying the modules directory is optional, but the script needs to find additional modules so you will
+need to edit the script to point to the modules directory.  Unlike CPAN modules that need to
 be uncompressed, built, and installed, all you need to do is make sure the modules are some place where
 the web server can read them.  You may decide to leave them where you uncompressed the swish-e distribution,
 or you may wish to move them to your perl library.
@@ -1368,26 +1458,36 @@ script:
 =item 3 Set the configuration parameters
 
 To make things somewhat simple, the configuration parameters are included at the top of the program.
-The parameters are all part of a C<hash> structure, and the comments at the top of the program should
-get you going.  You will need to specify the location of the swish-e binary, your index file or files,
+The parameters are all part of a perl C<hash> structure, and the comments at the top of the program should
+get you going.
+
+You will probably need to specify at least the location of the swish-e binary, your index file or files,
 and a title.
 
-For exampe:
+You have two options for changing the configuration settings from their default:
+you may edit the script directly, or you may use a configuration file.  In either case, the configuration
+settings are a basic perl hash reference.
 
-    %CONFIG = (
+Using a configuration file is described below.
+
+The configuration settings might look like:
+
+    return {
         title           => 'Search the Swish-e list',   # Title of your choice.
         swish_binary    => './swish-e',                 # Location of swish-e binary
         swish_index     => '../index.swish-e',          # Location of your index file
-    );
+    };
 
 Or if searching more than one index:
     
-    %CONFIG = (
+    return {
         title           => 'Search the Swish-e list',
         swish_binary    => './swish-e',
         swish_index     => ['../index.swish-e', '../index2'],
-    );
+    };
 
+Both of these examples return a reference to a perl hash ( C<return {...}> ).  Again, this same format is
+used either at the top of this program, or in a configuration file.
 
 The examples above place the swish index file(s)
 in the directory above the C<swish.cgi> CGI script.  If using the example paths above
@@ -1395,17 +1495,30 @@ of C</usr/local/apache/cgi-bin> for the CGI bin directory, that means that the i
 is in C</usr/local/apache>.  That places the index out of web space (e.g. cannot be accessed
 via the web server), yet relative to where the C<swish.cgi> script is located.
 
-If running under mod_perl you must specify absolute paths.
+(If running under mod_perl you will most likely specify absolute paths for your index files.)
 
 There's more than one way to do it, of course.
 One option is to place the index in the same directory as the <swish.cgi> script, but
 then be sure to use your web server's configuration to prohibit access to the index directly.
 
-Another common option is to maintain a separate directory of the swish index files.  This decision is
+Another common option is to maintain a separate directory of the all your swish index files.  This decision is
 up to you.
 
-See the next section for more advanced C<swish.cgi> configurations.
+As mentioned above, you can either edit this script directly and modify the configuration settings, or
+use an external configuration file.  The settings in the configuration file are merged with (override)
+the settings defined in the script.
 
+By default, the script will attempt to read from the file F<.swishcgi.conf>.
+For example, you might only wish to change the title used
+in the script.  Simply create a file called F<.swishcgi.conf> in the same directory as the CGI script:
+
+    > cat .swishcgi.conf
+    # Example swish.cgi configuration script.
+    return {
+       title => 'Search Our Mailing List Archive',
+    };
+
+Look at the default configuration settings at the top of this program for information on the available settings.    
 
 =item 4 Create your index
 
@@ -1451,7 +1564,7 @@ This allows searching just the document path or the title instead of the documen
 
 Here's an expanded C<swish.cgi> configuration to make use of the above settings used while indexing:
 
-    %CONFIG = (
+    return {
         title           => 'Search the Apache documentation',
         swish_binary    => './swish-e',
         swish_index     => 'index.swish-e',
@@ -1468,7 +1581,7 @@ Here's an expanded C<swish.cgi> configuration to make use of the above settings 
             swishdocsize        => 'Document Size',
         },
 
-    );
+    };
 
 The above configuration defines metanames to use on the form.
 Searches can be limited to these metanames.
@@ -1489,7 +1602,7 @@ Adding the above to your C<swish.conf> file tells swish-e to store up to 100,000
 swish-e index.  To display this information in search results, highlighting search terms,
 use the follow configuration in C<swish.cgi>:
 
-    %CONFIG = (
+    return {
         title           => 'Search the Apache documentation',
         swish_binary    => './swish-e',
         swish_index     => 'index.swish-e',
@@ -1515,11 +1628,11 @@ use the follow configuration in C<swish.cgi>:
             },
        }
 
-    );
+    };
 
 
 Other C<swish.cgi> configuration settings are available, and are listed at the top of the F<swish.cgi>
-script.  
+script.
 
 
 =back
@@ -1527,6 +1640,8 @@ script.
 You should now be ready to run your search engine.  Point your browser to:
 
     http://www.myserver.name/cgi-bin/swish.cgi
+
+adjusting the server and URL to match your system, of course.    
 
 =head1 MOD_PERL
 
@@ -1559,6 +1674,9 @@ configuration file:
 Unlike CGI, mod_perl does not change the current directory to the location of the perl module, so
 your settings for the swish binary and the path to your index files must be absolute
 paths (or relative to the server root).
+
+Take a look at the C<handler()> routine in this script for ideas how to use PerlSetVar commands
+in httpd.conf to control the script.
 
 Please post to the swish-e discussion list if you have any questions about running this
 script under mod_perl.
