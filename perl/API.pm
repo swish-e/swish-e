@@ -559,6 +559,8 @@ was called.
 
 Splits up the input string into tokens of swish words and operators.
 
+=back
+
 
 =head1 NOTES
 
