@@ -250,7 +250,9 @@ input.button:hover
 
 /* floating turned off for documentation pages */
 /* NOTE this doesn't work in MSIE */
-.floating { position: fixed !important; }
+
+/* .floating { position: fixed !important; } */
+/* disabled for now */
 
 
 #side-bar a {
