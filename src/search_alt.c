@@ -1,4 +1,5 @@
 /*
+$Id$
 **
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
@@ -15,26 +16,131 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
 **
+**  This file handles alternat search syntax handling
+**   e.g.  "+word -word word"   (basic altavista, lycos, etc mode...)
+**         word1  UND  word2    (language specific boolean operators)
+**
+**  
+**
 ** 2001-03-02 rasc   initial coding
+** 2001-04-12 rasc   Module init rewritten
 **
 */
 
 
+#include <string.h>
 #include "swish.h"
 #include "string.h"
 #include "mem.h"
-#include <string.h>
+#include "error.h"
+#include "parse_conffile.h"
+#include "search.h"
+#include "search_alt.h"
+
+
+
 
 
 /* 
-  -- a simple routine to convert a altavista search string
+  -- init structures for this module
+*/
+
+void initModule_SearchAlt (SWISH  *sw)
+
+{
+   	sw->enableAltSearchSyntax = 0;	/* default: enable only Swish syntax */
+
+	/* init default logical operator words (2001-03-12 rasc) */
+	sw->srch_op.and = estrdup (_AND_WORD);
+	sw->srch_op.or  = estrdup (_OR_WORD);
+	sw->srch_op.not = estrdup (_NOT_WORD);
+	sw->srch_op.defaultrule = AND_RULE;	
+
+   return;
+}
+
+
+/* 
+  -- release all wired memory for this module
+*/
+
+void freeModule_SearchAlt (SWISH *sw)
+
+{
+	/* free logical operator words   (2001-03-12 rasc) */
+	efree (sw->srch_op.and);
+	efree (sw->srch_op.or);
+	efree (sw->srch_op.not);
+
+  return;
+}
+
+
+
+
+
+
+/* ---------------------------------------------- */
+
+
+
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_SearchAlt  (SWISH *sw, StringList *sl)
+
+{
+  char *w0    = sl->word[0];
+  int  retval = 1;
+
+                /* $$$ this will not work unless swish is reading the config file also for search ... */
+
+  if (strcasecmp(w0, "EnableAltSearchSyntax")==0) {         /* rasc 2001-02 */
+	sw->enableAltSearchSyntax = getYesNoOrAbort (sl, 1,1);
+  } else if (strcasecmp(w0, "SwishSearchOperators")==0) {   /* rasc 2001-03 */
+	if(sl->n == 4) {
+	   sw->srch_op.and = sl->word[1];
+	   sw->srch_op.or = sl->word[2];
+	   sw->srch_op.not = sl->word[3];
+	} else progerr("%s: requires 3 parameters (and-, or-, not-word)",w0);
+  }
+  else if (strcasecmp(w0, "SwishSearchDefaultRule")==0) {   /* rasc 2001-03 */
+	if(sl->n == 2) {
+	   sw->srch_op.defaultrule = u_SelectDefaultRulenum(sw,sl->word[1]);
+	   if (sw->srch_op.defaultrule == NO_RULE) {
+		progerr("%s: requires \"%s\" or \"%s\"",w0, sw->srch_op.and, sw->srch_op.or);
+	   }
+	} else progerr("%s: requires 1 parameter",w0);
+  }
+  else {
+      retval = 0;	            /* not a module directive */
+  }
+
+
+  return retval;
+}
+
+
+
+
+
+/* ---------------------------------------------- */
+
+
+
+/* 
+  -- a simple routine to convert a alternative (+-) search string
   -- "word1 +word2 +word3  word4 -word5" 
   -- to a swish-e search string... 
-  -- only a basic altavista syntax conversion is done
+  -- only a basic altavista/lycos/etc. syntax conversion is done
   -- Return: (char *) swish-search-string
 */
 
-char *convAltaVista2SwishStr (char *str) 
+char *convAltSearch2SwishStr (char *str) 
 {
   StringList *slst;
   char   *sr_new, *p, *tmp;

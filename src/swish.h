@@ -287,7 +287,7 @@ typedef struct  {
 	int    index_no_content;/* Flag, index "filename/real_path" only! */
 	struct StoreDescription *stordesc;  
 				/* Null if no description/summary */
-	struct filter *hasfilter;
+	struct FilterList  *hasfilter;
 			     /* NULL if no filter for this file */
 } FileProp;
 
@@ -708,9 +708,9 @@ typedef struct {
       /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList   *resultextfmtlist;
 	/* Filter vars */
-    struct filter *filterlist;        /* 1998-08-07 rasc */
+    struct FilterList *filterlist;    /* 1998-08-07 rasc */
     char *filterdir;                  /* 1998-08-07 rasc */
-    int  enableAVSearchSyntax;        /* Altavista Search strings 0/1  (rasc) */
+    int  enableAltSearchSyntax;       /* Alternate search strings 0/1  (rasc) */
     long truncateDocSize;             /* size of doc, at which it will be truncated (2001-03-16 rasc) */ 
 
                 /* 06/00 Jose Ruiz */

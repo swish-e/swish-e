@@ -102,7 +102,7 @@ L<DontBumpPositionOnMetaTags|/"item_DontBumpPositionOnMetaTags"> *list of names*
 
 =item *
 
-L<EnableAltaVistaSyntax|/"item_EnableAltaVistaSyntax">  [yes|NO]
+L<EnableAltSearchSyntax|/"item_EnableAltSearchSyntax">  [yes|NO]
 
 =item *
 
@@ -317,16 +317,18 @@ file while searching>
 
 =over 4
 
-=item EnableAltaVistaSyntax [yes|NO]
+=item EnableAltSearchSyntax [yes|NO]
     
-Allows the usage of a basic Altavista(c) like search syntax.
+Enable alternate search syntax.
+Allows the usage of a basic "Altavista(c)", "Lycos(c)", etc. like search syntax.
 This means a search query can contain "+" and "-" as syntax parameter.
 
 Example:
 
-    swish-e -w "+word1 +word2 -word3"
-    "+"  = following word has to be in document
-    "-"  = following word may not be in document
+    swish-e -w "+word1 +word2 -word3  word4 word5"
+    "+"  = following word has to be in all found documents
+    "-"  = following word may not be in any document found
+    " "  = following word will be searched in documents
   
 =item SwishSearchOperators <and-word> <or-word> <not-word>
 
@@ -334,7 +336,7 @@ Using this config directive you can change the boolean search operators of
 swish-e, e.g. to adapt these to your language.
 The default is:    AND  OR  NOT
 
-Example:
+Example (german):
 
     SwishSearchOperators   UND  ODER  NICHT
 

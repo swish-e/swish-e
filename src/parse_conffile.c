@@ -43,6 +43,7 @@ $Id$
 #include "filter.h"
 #include "result_output.h"
 #include "search.h"
+#include "search_alt.h"
 #include "parse_conffile.h"
 
 
@@ -223,14 +224,6 @@ char *w0;
 		else if (strcasecmp(w0, "UseSoundex")==0)	{
 			indexf->header.applySoundexRules = getYesNoOrAbort (sl, 1,1);
 		}
-                else if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
-                                     /* ResultExt...   name  fmtstring */
-                                     /* $$$ this will not work unless swish is reading the config file also for search ... */
-			if(sl->n==3) {
-			   sw->resultextfmtlist = (struct ResultExtFmtStrList *)
-				 addResultExtFormatStr(sw->resultextfmtlist,sl->word[1],sl->word[2]);
-			} else progerr("%s: requires \"name\" \"fmtstr\"",w0);
-                }
 		else if (strcasecmp(w0, "MetaNames")== 0) 
 		{
 			if(sl->n>1) {
@@ -410,27 +403,6 @@ char *w0;
 		else if (strcasecmp(w0, "ConvertHTMLEntities")==0)	{
 			sw->ConvertHTMLEntities = getYesNoOrAbort (sl, 1,1);
 		}
-		else if (strcasecmp(w0, "EnableAltaVistaSyntax")==0)	{	/* rasc 2001-02 */
-                                    /* $$$ this will not work unless swish is reading the config file also for search ... */
-			sw->enableAVSearchSyntax = getYesNoOrAbort (sl, 1,1);
-		}
-		else if (strcasecmp(w0, "SwishSearchOperators")==0)	{	/* rasc 2001-03 */
-                                    /* $$$ this will not work unless swish is reading the config file also for search ... */
-			if(sl->n == 4) {
-			   sw->srch_op.and = sl->word[1];
-			   sw->srch_op.or = sl->word[2];
-			   sw->srch_op.not = sl->word[3];
-			} else progerr("%s: requires 3 parameters (and-, or-, not-word)",w0);
-		}
-		else if (strcasecmp(w0, "SwishSearchDefaultRule")==0)	{	/* rasc 2001-03 */
-                                    /* $$$ this will not work unless swish is reading the config file also for search ... */
-			if(sl->n == 2) {
-			   sw->srch_op.defaultrule = u_SelectDefaultRulenum(sw,sl->word[1]);
-			   if (sw->srch_op.defaultrule == NO_RULE) {
-				progerr("%s: requires \"%s\" or \"%s\"",w0, sw->srch_op.and, sw->srch_op.or);
-			   }
-			} else progerr("%s: requires 1 parameter",w0);
-		}
 		else if (strcasecmp(w0, "TruncateDocSize")==0)	{	/* rasc 2001-03 */
 			if(sl->n == 2 && isnumstring(sl->word[1]) ) {
 			   sw->truncateDocSize = atol (sl->word[1]);
@@ -441,7 +413,9 @@ char *w0;
 				grabCmdOptions(sl,1,&sw->progparameterslist);
 			} else progerr("%s: requires at least one value",w0);
 		}
-		else if ( configModule_Filter  (sw, sl) ) ;
+		else if ( configModule_Filter            (sw, sl) ) ;   /* rasc */
+		else if ( configModule_ResultOutput      (sw, sl) ) ;   /* rasc */
+		else if ( configModule_SearchAlt         (sw, sl) ) ;   /* rasc */
 		else if (!parseconfline(sw,sl)) {
 			printf("Bad directive on line #%d: %s\n", linenumber, line );
 			baddirective = 1;

@@ -41,7 +41,7 @@ $Id$
 
 /* private module prototypes */
 
-static struct filter *addfilter (struct filter *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
+static struct FilterList *addfilter (struct FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
 static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fp);
 static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop);
 
@@ -70,7 +70,7 @@ void initModule_Filter (SWISH  *sw)
 void freeModule_Filter (SWISH *sw)
 
 {
-  struct filter *f, *fn;
+  struct FilterList *f, *fn;
 
 
    efree(sw->filterdir);	/* free FilterDir */
@@ -121,7 +121,7 @@ int configModule_Filter  (SWISH *sw, StringList *sl)
   else if (strcasecmp(w0, "FileFilter")==0) {  /* 1999-05-05 rasc */
                                /* FileFilter fileextension  filterprog  [options] */
       if (sl->n==3 || sl->n==4) {
-          sw->filterlist = (struct filter *) addfilter(sw->filterlist,sl->word[1],sl->word[2],sl->word[3],sw->filterdir);
+          sw->filterlist = (struct FilterList *) addfilter(sw->filterlist,sl->word[1],sl->word[2],sl->word[3],sw->filterdir);
       } else progerr("%s: requires \"extension\" \"filter\" \"[options]\"",w0);
   }
   else {
@@ -143,16 +143,16 @@ int configModule_Filter  (SWISH *sw, StringList *sl)
 */
 
 
-static struct filter *addfilter(struct filter *rp,
+static struct FilterList *addfilter(struct FilterList *rp,
 			 char *suffix, char *prog, char *options, char *filterdir)
 
 {
- struct filter *newnode;
+ struct FilterList *newnode;
  char *buf;
  char *f_dir;
  int ilen1,ilen2;
 
-	newnode = (struct filter *) emalloc(sizeof(struct filter));
+	newnode = (struct FilterList *) emalloc(sizeof(struct FilterList));
 	newnode->suffix= (char *) estrdup(suffix);
 	newnode->options = (options) ? (char *) estrdup(options) : NULL;
 
@@ -195,14 +195,14 @@ static struct filter *addfilter(struct filter *rp,
  -- 2001-02-28 rasc  rewritten, now possible: search for ".pdf.gz", etc.
 */
 
-struct filter *hasfilter (char *filename, struct filter *filterlist)
+struct FilterList *hasfilter (char *filename, struct FilterList *filterlist)
 {
-struct filter *fl;
+struct FilterList *fl;
 char *s, *fe;
 
 
    fl = filterlist;
-   if (! fl) return (struct filter *)NULL;
+   if (! fl) return (struct FilterList *)NULL;
 
    fe = (filename + strlen(filename));
 
@@ -216,7 +216,7 @@ char *s, *fe;
       fl = fl->next;
    }
 
-   return (struct filter *)NULL;
+   return (struct FilterList *)NULL;
 }
 
 
@@ -230,7 +230,7 @@ char *s, *fe;
 FILE *FilterOpen (FileProp *fprop)
 {
   char   *filtercmd;
-  struct filter *fi;
+  struct FilterList *fi;
   char   *cmd_opts, *opt_mask;
   FILE   *fp;
   int    len;

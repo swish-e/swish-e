@@ -1,4 +1,5 @@
 /*
+$Id$
 **
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
@@ -18,4 +19,19 @@
 ** 2001-03-02 rasc   initial coding
 */
 
-char *convAltaVista2SwishStr (char *str);
+
+#ifndef __HasSeenModule_SearchAlt
+#define __HasSeenModule_SearchAlt	1
+
+
+/* exported Prototypes */
+
+void initModule_SearchAlt   (SWISH *sw);
+void freeModule_SearchAlt   (SWISH *sw);
+int  configModule_SearchAlt (SWISH *sw, StringList *sl);
+
+char *convAltSearch2SwishStr (char *str);
+
+
+#endif
+

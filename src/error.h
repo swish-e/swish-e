@@ -21,6 +21,12 @@
 */
 
 
+#ifndef __HasSeenModule_Error
+#define __HasSeenModule_Error		1
+
+
+
+
 void progerr (char *msgfmt, ...);
 char *getErrorString(int);
 
@@ -40,4 +46,6 @@ char *getErrorString(int);
 #define SWISH_LISTRESULTS_EOF ERROR_BASE-11
 #define INVALID_SWISH_HANDLE ERROR_BASE-12
 
+
+#endif
 

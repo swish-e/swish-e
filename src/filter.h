@@ -25,21 +25,26 @@ $Id$
 #define __HasSeenModule_FILTERS	1
 
 
+/* Module data and structures */
 
-struct filter {	/* Store filtersprogs and extension */
-        char *suffix;
-        char *prog;
-        char *options;       /* 2001-04-09 rasc */
-        struct filter *next;
-        struct filter *nodep;
+
+struct FilterList {	/* Store filtersprogs and extension */
+    char *suffix;
+    char *prog;
+    char *options;       /* 2001-04-09 rasc */
+    struct FilterList *next;
+    struct FilterList *nodep;
 };
 
+
+
+/* exported Prototypes */
 
 void initModule_Filter   (SWISH *sw);
 void freeModule_Filter   (SWISH *sw);
 int  configModule_Filter (SWISH *sw, StringList *sl);
 
-struct filter *hasfilter (char *filename, struct filter *filterlist);
+struct FilterList *hasfilter (char *filename, struct FilterList *filterlist);
 FILE *FilterOpen (FileProp *fprop);
 int FilterClose (FILE *fp);
 

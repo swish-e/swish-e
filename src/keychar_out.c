@@ -24,6 +24,7 @@ $Id$
 #include "swish.h"
 #include "error.h"
 #include "search.h"
+#include "string.h"
 #include "result_output.h"
 #include "keychar_out.h"
 

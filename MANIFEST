@@ -91,8 +91,6 @@ pod/style.css
 src/Makefile.in
 src/acconfig.h.in
 src/acconfig.h_vms
-src/altavista.c
-src/altavista.h
 src/check.c
 src/check.h
 src/check.sh
@@ -147,6 +145,8 @@ src/result_sort.c
 src/result_sort.h
 src/search.c
 src/search.h
+src/search_alt.c
+src/search_alt.h
 src/soundex.c
 src/soundex.h
 src/stemmer.c
