@@ -608,6 +608,9 @@ sort descending by title, ascending by name
 
     -s title desc name asc
 
+Note: Swish limits sort keys to 100 characters.  This limit can be changed
+by changing MAX_SORT_STRING_LEN in src/config.h and rebuilding swish-e.
+
 =item -L limit to a range of property values (Limit)
 
 B<This is an experimental feature!>
