@@ -17,6 +17,7 @@ Vendor:         SWISH-E Team
 Provides:       %{name}
 Obsoletes:	swish
 Requires:       libxml2, pcre, zlib
+BuildRequires:	libxml2-devel, pcre-devel, zlib-devel
 Prefix:         /usr
 
 %description
@@ -59,6 +60,20 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 
 %files
 %defattr(-, root, root)
+%{_libdir}/swish-e/swish.cgi
+%{_libdir}/swish-e/perl/SWISH/DateRanges.pm
+%{_libdir}/swish-e/perl/SWISH/DefaultHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/PhraseHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/SimpleHighlight.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateDefault.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateDumper.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateHTMLTemplate.pm
+%{_libdir}/swish-e/perl/SWISH/TemplateToolkit.pm
+%{_libdir}/swish-e/perl/SWISH/ParseQuery.pm
+%{_libdir}/swish-e/swishspider
+%{_libdir}/swish-e/spider.pl
+%{_libdir}/libswish-e.so.2.0.0
+%{_libdir}/libswish-e.so.2
 %{_datadir}/doc/swish-e/html/CHANGES.html
 %{_datadir}/doc/swish-e/html/INSTALL.html
 %{_datadir}/doc/swish-e/html/README.html
@@ -67,7 +82,6 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/SWISH-CONFIG.html
 %{_datadir}/doc/swish-e/html/SWISH-FAQ.html
 %{_datadir}/doc/swish-e/html/SWISH-LIBRARY.html
-%{_datadir}/doc/swish-e/html/SWISH-PERL.html
 %{_datadir}/doc/swish-e/html/SWISH-RUN.html
 %{_datadir}/doc/swish-e/html/SWISH-SEARCH.html
 %{_datadir}/doc/swish-e/html/API.html
@@ -77,7 +91,6 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/index.html
 %{_datadir}/doc/swish-e/html/index_long.html
 %{_datadir}/doc/swish-e/html/style.css
-%{_datadir}/doc/swish-e/html/images
 %{_datadir}/doc/swish-e/html/images/dotrule1.gif
 %{_datadir}/doc/swish-e/html/images/swish2b.gif
 %{_datadir}/doc/swish-e/html/images/swish2.gif
@@ -85,24 +98,22 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/images/swish.gif
 %{_datadir}/doc/swish-e/INSTALL
 %{_datadir}/doc/swish-e/README
-%{_mandir}/man1/SWISH-CONFIG.1.gz
-%{_mandir}/man1/SWISH-FAQ.1.gz
-%{_mandir}/man1/SWISH-LIBRARY.1.gz
-%{_mandir}/man1/SWISH-PERL.1.gz
-%{_mandir}/man1/SWISH-RUN.1.gz
-%{_libdir}/libswish-e.so.2.0.0
-%{_libdir}/libswish-e.so.2
+%{_mandir}/man1/SWISH-CONFIG.1
+%{_mandir}/man1/SWISH-FAQ.1
+%{_mandir}/man1/SWISH-LIBRARY.1
+%{_mandir}/man1/SWISH-RUN.1
 %{_bindir}/swish-e
-%{_bindir}/swishspider
 
 %files devel
 %defattr(-, root, root)
 %{_libdir}/libswish-e.so
+%{_includedir}/swish-e.h
 %{_libdir}/libswish-e.la
 %{_libdir}/libswish-e.a
-%{_includedir}/swish-e.h
 
 %changelog
+* Sun Apr 20 2003 David L Norris <dave@webaugur.com> 2.3.5
+- Updated RPM to provide the SWISH-E helper scripts.
 * Fri Mar 28 2003 David L Norris <dave@webaugur.com> 2.3.5
 - Updated RPM for the new libtool-based 2.3.5 build system.
 * Wed Dec 04 2002 David L Norris <dave@webaugur.com> 2.3-dev04
