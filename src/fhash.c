@@ -69,7 +69,7 @@ sw_off_t tmp = (sw_off_t)0;
     f->start = sw_ftell(fp);
 
     /* Pack tmp */
-    tmp = PACKOFFSET(tmp);
+    tmp = PACKFILEOFFSET(tmp);
 
     /* Write an empty hash table - Preserve space on disk */
     for(i = 0; i < FHASH_SIZE; i++)
@@ -98,7 +98,7 @@ sw_off_t tmp;
     for(i = 0; i < FHASH_SIZE ; i++)
     {
         sw_fread((unsigned char *)&tmp,sizeof(tmp), 1, fp);
-        f->hash_offsets[i] = UNPACKOFFSET(tmp);
+        f->hash_offsets[i] = UNPACKFILEOFFSET(tmp);
     }
     return f;
 }
@@ -115,7 +115,7 @@ int i;
     /* Read hash table */
     for(i = 0; i < FHASH_SIZE ; i++)
     {
-        tmp = PACKOFFSET(f->hash_offsets[i]);
+        tmp = PACKFILEOFFSET(f->hash_offsets[i]);
         sw_fwrite((unsigned char *)&tmp,sizeof(tmp), 1, fp);
     }
 
@@ -161,7 +161,7 @@ FILE *fp = f->fp;
     new = sw_ftell(fp);
 
     next = f->hash_offsets[hashval];
-    next = PACKOFFSET(next);
+    next = PACKFILEOFFSET(next);
 
     sw_fwrite((unsigned char *)&next,sizeof(next), 1, fp);
     compress1(key_len,fp,fputc);
@@ -184,7 +184,7 @@ sw_off_t tmp;
     {
         sw_fseek(fp,next,SEEK_SET);
         sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
-        next = UNPACKOFFSET(tmp);
+        next = UNPACKFILEOFFSET(tmp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
@@ -222,7 +222,7 @@ sw_off_t tmp;
     {
         sw_fseek(fp,next,SEEK_END);
         sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
-        next = UNPACKOFFSET(tmp);
+        next = UNPACKFILEOFFSET(tmp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
@@ -269,7 +269,7 @@ sw_off_t tmp;
         sw_fread((unsigned char *)read_key,read_key_len,1,fp);
         if(FHASH_CompareKeys(read_key, read_key_len, key, key_len) == 0)
         {
-            next = UNPACKOFFSET(tmp);
+            next = UNPACKFILEOFFSET(tmp);
             if(!prev)
                 f->hash_offsets[hashval] = next;
             else
@@ -285,7 +285,7 @@ sw_off_t tmp;
             efree(read_key);
 
         prev =next;
-        next = UNPACKOFFSET(tmp);
+        next = UNPACKFILEOFFSET(tmp);
     }
     return 1;
 }
