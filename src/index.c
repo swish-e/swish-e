@@ -1,4 +1,5 @@
 /*
+$Id$
 **
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
@@ -255,9 +256,10 @@ int configModule_Index (SWISH *sw, StringList *sl)
 {
   //struct MOD_Index *srch = sw->Index;
   //char *w0    = sl->word[0];
-  int  retval = 0;
+  //int  retval = 1;
 
-  return retval;
+
+  return 0;
 }
 
 /*
@@ -316,7 +318,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
         /* This should be checked in filteropen */
         if ( !fprop->fp )
-            progerr("Failed to open filter file!");
+            progerr("Failed to open filter for file '%s'",fprop->real_path);
     }
 
     else if ( !fprop->fp )

@@ -1,6 +1,5 @@
 /*
-** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
-** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
+$Id$
 **
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
@@ -15,6 +14,7 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
 **
 ** added buffer size arg to grabStringValue prototype - core dumping from overrun
 ** SRE 2/22/00
