@@ -28,6 +28,11 @@ $Id$
 
 #include "mem.h"
 
+/* we can use the real ones here! */
+
+#undef malloc
+#undef realloc
+#undef free
 
 /* simple cases first ... */
 

@@ -43,7 +43,7 @@ $Id$
 #define MEM_TRACE 0
 
 /* MEM_STATISTICS gives memory statistics (bytes allocated, calls, etc */
-#define MEM_STATISTICS 0 
+#define MEM_STATISTICS 1 
 
 
 /* The following are the basic malloc/realloc/free replacements */
@@ -67,3 +67,7 @@ void efree(void *ptr);
 
 /* Hook to print out statistics if enabled */
 void Mem_Summary(char *title, int final);
+
+#define malloc $Please_use_emalloc
+#define realloc $Please_use_erealloc
+#define free $Please_use_efree
