@@ -2175,7 +2175,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 #ifdef USE_BTREE
     /* now calculate index */
-    seek_pos = (fi->filenum - 1) * count;
+    seek_pos = (sw_off_t((swish_off_t)(fi->filenum - 1) * (swish_off_t)count));
 #endif
 
 #ifdef DEBUG_PROP
