@@ -19,6 +19,5 @@
 
 
 int isokword (SWISH *,char *,IndexFILE *);
-int hasokchars (IndexFILE *, char *);
 int getdoctype (char *filename, struct IndexContents *indexcontents);
 struct StoreDescription *hasdescription (int, struct StoreDescription *);

@@ -140,7 +140,7 @@
 #define TITLETOPLINES 12
 
 /* This is how many lines deep SWISH will look into an HTML file to
-** attempt to find a <TITLE> tag.
+** attempt to find a <TITLE> tag.  This has no effect when using the libxml2 parser.
 */
 
 
