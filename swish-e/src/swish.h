@@ -75,7 +75,7 @@
 #include <setjmp.h>
 
 
-#define SWISH_VERSION "2.1"
+#define SWISH_VERSION "2.1.10-devel13"
 
 #define SWISH_MAGIC 21076321L
 
