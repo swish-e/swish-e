@@ -311,7 +311,6 @@ long getthetime()
 {
 long thetime;
 time_t tp;
-return 999L;
         thetime = (long) time(&tp);
         return thetime;
 }

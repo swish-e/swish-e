@@ -1121,7 +1121,7 @@ int filenum;
 int readdocproperties;
 {
 long pos;
-int total_len,len1,len2,len3,mtime,bytes,begin,lookup_path;
+int total_len,len1,len2,len3,len4,mtime,bytes,begin,lookup_path;
 char *buffer,*p;
 char *buf1,*buf2,*buf3;
 struct file *fi;
@@ -1133,7 +1133,6 @@ FILE *fp=indexf->fp;
 		return fi;   /* Read it previously */
 	pos=fo->filelong;
 
-	fseek(fp, 0, 0);  /* Do I have a buggy gcc ? */
 	fseek(fp, pos, 0);
 
 	if(indexf->header.applyFileInfoCompression)
@@ -1178,12 +1177,12 @@ FILE *fp=indexf->fp;
 
 	fi->fi.lookup_path = lookup_path;
 		/* Add the path to filename */
-	len1=strlen(indexf->pathlookup->all_entries[lookup_path]->val);
-	len2=strlen(buf2);
-	fi->fi.filename = emalloc(len1+len2+1);
-	memcpy(fi->fi.filename,indexf->pathlookup->all_entries[lookup_path]->val,len1);
-	memcpy(fi->fi.filename+len1,buf1,len2);
-	fi->fi.filename[len1+len2]='\0';
+	len4=strlen(indexf->pathlookup->all_entries[lookup_path]->val);
+	len1=strlen(buf1);
+	fi->fi.filename = emalloc(len4+len1+1);
+	memcpy(fi->fi.filename,indexf->pathlookup->all_entries[lookup_path]->val,len4);
+	memcpy(fi->fi.filename+len4,buf1,len1);
+	fi->fi.filename[len1+len4]='\0';
 	if(buf1 != buf2) efree(buf1);
 	fi->fi.mtime= (unsigned long)mtime;
 	fi->fi.title = buf2;
