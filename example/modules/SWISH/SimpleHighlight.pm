@@ -44,6 +44,16 @@ sub highlight {
         $$text_ref = join ' ', @words[0..$Max_Words], '<b>...</b>';
     }
 
+    my %entities = (
+        '&' => '&amp;',
+        '>' => '&gt;',
+        '<' => '&lt;',
+        '"' => '&quot;',
+    );
+
+    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;  # " fix emacs
+
+
 
 
     my $On = $settings->{highlight_on} || '<b>';
@@ -55,7 +65,7 @@ sub highlight {
         $$text_ref =~ s/($_)/$On$1$Off/g;
     }
 
-    return 1;  # return true because the property was trimmed
+    return 1;  # return true because the property was trimmed and escaped.
 }
 
 
