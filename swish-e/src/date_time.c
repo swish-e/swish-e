@@ -46,9 +46,9 @@ double TimeElapsed(void)
 #ifdef HAVE_SYS_TIMEB_H
 #include <sys/timeb.h>
 
-	struct _timeb ftimebuf;
+	struct timeb ftimebuf;
 	
-	_ftime(&ftimebuf);
+	ftime(&ftimebuf);
 	return (double)ftimebuf.time + (double)ftimebuf.millitm/1000.0;
 
 #else
