@@ -44,7 +44,7 @@ File /r ..\pcre\*
 
 ; Rename a bunch of text files so Windows has a clue
 Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"
-Rename "$INSTDIR\swishspider" "$INSTDIR\swishspider.pl"
+; Rename "$INSTDIR\swishspider" "$INSTDIR\swishspider.pl"
 Rename "$INSTDIR\filter-bin\README" "$INSTDIR\filter-bin\README.txt"
 Rename "$INSTDIR\prog-bin\README" "$INSTDIR\prog-bin\README.txt"
 Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
