@@ -16,8 +16,8 @@ need to mess with CCFLAGS and LDFROM flags.
 For example:
 
    perl Makefile.PL \
-   CCFLAGS=-I$HOME/t \
-   LDFROM="-L$HOME/libxml -R$HOME/libxml"
+   CCFLAGS=-I$HOME/local/include \
+   LDFROM="-L$HOME/local/lib -R$HOME/local/lib"
 
    
 Perhaps a better solution is to build swish-e without
