@@ -92,6 +92,8 @@ static DEBUG_MAP debug_map[] = {
     /* These dump data from the index file */
     { "INDEX_HEADER", DEBUG_INDEX_HEADER, "Show the headers from the index" },
     { "INDEX_WORDS", DEBUG_INDEX_WORDS, "List words stored in index" },
+    { "INDEX_WORDS_ONLY", DEBUG_INDEX_WORDS_ONLY, "List only words, one per line, stored in index" },
+//    { "INDEX_WORDS_META", DEBUG_INDEX_WORDS_META, "List only words and associated metaID separated by a tab" },
     { "INDEX_WORDS_FULL", DEBUG_INDEX_WORDS_FULL, "List words stored in index (more verbose)" },
     { "INDEX_STOPWORDS", DEBUG_INDEX_STOPWORDS, "List stopwords stored in index" },
     { "INDEX_FILES", DEBUG_INDEX_FILES, "List file data stored in index" },
