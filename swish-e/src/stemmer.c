@@ -88,8 +88,6 @@
 /*****************************************************************************/
 /*****************   Private Defines and Data Structures   *******************/
 
-#define EOS                         '\0'
-
 #define IsVowel(c)        ('a'==(c)||'e'==(c)||'i'==(c)||'o'==(c)||'u'==(c))
 
 typedef struct
@@ -241,6 +239,20 @@ static RuleList step5b_rules[] = {
     {503, "ll", "l", 1, 0, 1, NULL,},
     {000, NULL, NULL, 0, 0, 0, NULL,}
 };
+
+
+static RuleList *all_steps[] = {
+    step1a_rules,
+    step1b_rules,
+    /* step1b1_rules, -- conditionaly called below */
+    step1c_rules,
+    step2_rules,
+    step3_rules,
+    step4_rules,
+    step5a_rules,
+    step5b_rules,
+};
+
 
 
 
@@ -511,7 +523,9 @@ int     Stem(char **inword, int *lenword)
     char   *end;                /* pointer to the end of the word */
     char    word[MAXWORDLEN+1];
     int     length;
-    int     rule;
+    int     rule_result;        /* which rule is fired in replacing an end */
+//    RuleList **rule;
+    int     i;
     
 
 
@@ -536,25 +550,20 @@ int     Stem(char **inword, int *lenword)
 
     /*  Part 2: Run through the Porter algorithm */
 
-    (void) ReplaceEnd(word, step1a_rules);
 
-    rule = ReplaceEnd(word, step1b_rules);
+    for (i = 0; i < sizeof(all_steps)/sizeof(all_steps[0]); i++)
+    {
+        rule_result = ReplaceEnd(word, all_steps[i]);
 
-    
-    if ((106 == rule) || (107 == rule))
-        (void) ReplaceEnd(word, step1b1_rules);
+        if ((rule_result == 106) || (rule_result == 107))
+            rule_result = ReplaceEnd(word, step1b1_rules);
 
-    (void) ReplaceEnd(word, step1c_rules);
+        if ( rule_result == STEM_WORD_TOO_BIG )
+            return rule_result;
+            
+    }
 
-    (void) ReplaceEnd(word, step2_rules);
 
-    (void) ReplaceEnd(word, step3_rules);
-
-    (void) ReplaceEnd(word, step4_rules);
-
-    (void) ReplaceEnd(word, step5a_rules);
-
-    (void) ReplaceEnd(word, step5b_rules);
 
     length = strlen( word );
 
@@ -568,8 +577,8 @@ int     Stem(char **inword, int *lenword)
     {
         efree( *inword );
 
-        *lenword = length;  /* how much extra to allocate */
-        *inword = emalloc( *lenword + 10 );
+        *lenword = length;
+        *inword = emalloc( *lenword + 1 );
     }
 
     strcpy( *inword, word );
