@@ -61,6 +61,7 @@ SWISH *SwishNew()
     initModule_Search (sw);
     initModule_Index (sw);
     initModule_FS (sw);
+    initModule_HTTP (sw);
 
 
     sw->TotalWords = 0;
@@ -89,8 +90,6 @@ SWISH *SwishNew()
     /* prog system parameters */
     sw->progparameterslist =  NULL;
 
-    sw->equivalentservers=NULL;
-
         /* Load Default Values */
     SwishDefaults(sw);
         /* Make rest of lookup tables */
@@ -109,9 +108,6 @@ void SwishDefaults(SWISH *sw)
         /* MetaNames indexing options (default values from config.h)*/
     sw->ReqMetaName=REQMETANAME;
     sw->OkNoMeta=OKNOMETA;
-        /* http system parameters */
-    sw->maxdepth=5;
-    sw->delay=60;
 
 }
 
@@ -150,6 +146,7 @@ void SwishClose(SWISH *sw)
         freeModule_Index (sw);
         freeModule_ResultSort (sw);
         freeModule_FS (sw);
+        freeModule_HTTP (sw);
         freeModule_Search (sw);
 
                         /* Free file structures */

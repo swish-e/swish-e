@@ -1,10 +1,32 @@
 /* http.h
 **/
 
-#ifndef __HTTP_H
-#define __HTTP_H
+#ifndef __HasSeenModule_HTTP
+#define __HasSeenModule_HTTP       1
 
 #define MAXPIDLEN 32 /* 32 is for the pid identifier and the trailing null */
+
+/*
+   -- module data
+*/
+
+struct MOD_HTTP
+{
+        /* spider directory for index (HTTP method) */
+    int     lenspiderdirectory;
+    char   *spiderdirectory;
+
+        /* http system specific configuration parameters */
+    int     maxdepth;
+    int     delay;
+    struct multiswline *equivalentservers;
+
+    struct url_info *url_hash[BIGHASHSIZE];
+};
+
+void initModule_HTTP (SWISH *);
+void freeModule_HTTP (SWISH *);
+int  configModule_HTTP (SWISH *, StringList *);
 
 
 char *url_method ( char *url, int *plen );
