@@ -612,6 +612,9 @@ struct swline *fixmetanames(struct swline *sp)
             newp = (struct swline *) addswline(newp, "=");
             tmpp = tmpp->next;
             tmpp = tmpp->next;
+            if ( !tmpp )
+                return NULL;
+            
             /* 06/00 Jose Ruiz
                ** Fix to consider parenthesys in the
                ** content of a MetaName */
