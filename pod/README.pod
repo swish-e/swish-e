@@ -167,7 +167,7 @@ this site.
 Read the L<INSTALL|INSTALL> page.
 
 Building from source is recommended.  On most platforms Swish-e should build without problems.
-A list of platforms where Swish-e has been build can be found in the L<INSTALL|INSTALL> page.
+A list of platforms where Swish-e has been built can be found in the L<INSTALL|INSTALL> page.
 Information on building for VMS and Win32 can be found in sub-directories of the C<src> directory.
 Check the Swish-e site for information about binary distributions (such as for Windows).
 

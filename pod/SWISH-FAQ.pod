@@ -99,7 +99,7 @@ should not be used.
 
 The included example CGI script was designed with security in mind.
 Regardless, you are encouraged to have your local Perl expert review it
-(and all other CGI scripts you use) before placing into production.
+(and all other CGI scripts you use) before placing it into production.
 This is just a good policy to follow.
 
 =head3 How secure is Swish-e?
@@ -157,7 +157,7 @@ will be located in the current directory.
 
 Yes, you can use a I<Filter> to convert documents while indexing, or you
 can use a program that "feeds" documents to Swish-e that have already
-been converted.  See <Indexing> below.
+been converted.  See C<Indexing> below.
 
 =head3 Can I index documents on a web server?
 
@@ -277,7 +277,7 @@ I<property name>.
 =head3 Can Swish-e index multi-byte characters?
 
 No.  This will require much work to change.  But, Swish-e works with
-eight Bit characters, so many characters sets can be used.  Note that it
+eight-bit characters, so many characters sets can be used.  Note that it
 does call the ANSI-C tolower() function which does depend on the current
 locale setting.  See C<locale(7)> for more information.
 
@@ -713,7 +713,7 @@ specify the mapping of one character to another character with the
 C<TranslateCharacters> directive.
 
 C<TranslateCharacters :ascii7:> is a predefined set of characters that
-will translate eight bit characters to ascii7 characters.  Using the
+will translate eight-bit characters to ascii7 characters.  Using the
 C<:ascii7:> rule will, for example, translate "Ääç" to "aac".  This means:
 searching "Çelik", "çelik" or "celik" will all match the same word.
 
@@ -827,7 +827,7 @@ Or under an old Sparc
 
 =head3 My system admin says Swish-e uses too much of the CPU!
 
-That's a good thing!  That expensive CPU is suppose to be busy.
+That's a good thing!  That expensive CPU is supposed to be busy.
 
 Indexing takes a lot of work -- to make indexing fast much of the work is
 done in memory which reduces the amount of time Swish-e is waiting on I/O.
