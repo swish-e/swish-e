@@ -88,19 +88,32 @@ sub create_html_version{
   my @basenames = map { s/\.pod$//; $_} @{$ra_ordered_srcs};
 
     # Process each pod
-  for (my $i=0; $i<@basenames; $i++) {
+  for (my $i=0; $i<@basenames; $i++) {  # tom wrote that?
 
     my $file     = "$basenames[$i].pod";
     my $src_file = "$src_root/$file";
 
       # to rebuild or not to rebuild
-    my $not_modified = 
-      (-e $last_modified and -M $src_file > -M $last_modified)
-	? 1 : 0;
-    printf("--- %-22s: skipping (not modified)\n",$file),
-      next
-	if   !$Pod::HtmlPsPdf::RunTime::options{rebuild_all}
-	  and $not_modified;
+
+    # This is messed up -- as it always looks at the main html output
+    # for modified instead of what it's really doing.  So it fails to
+    # create the postscript/pdf html files if not forced. - moseley
+
+    # For now, I'll -f pdf building, but not write as I'm not sure what's
+    # requred for the pdf/ps stuff.
+
+    my $generate_ps = $Pod::HtmlPsPdf::RunTime::options{generate_ps};
+
+    my $not_modified =
+        -e $last_modified and -M $src_file > -M $last_modified
+	    ? 1
+	    : 0;
+
+    printf("--- %-22s: skipping (not modified)\n",$file), next
+      if !$Pod::HtmlPsPdf::RunTime::options{rebuild_all}
+         && $not_modified && !$generate_ps;
+
+	  
     my $rebuild_reason = '';
     $rebuild_reason = "modified" unless $not_modified;
     $rebuild_reason .= " / forced"
@@ -154,11 +167,17 @@ sub create_html_version{
         # pod2html
       $chapter->pod2html();
       $chapter->parse_html();
-      $chapter->write_html_file();
+
+
+      # here's the hack to not write when building ps.
+      # Write only if generating pdf/ps, or if not modified
+      #(which would only be if building pdf and html at same time)
+
+      $chapter->write_html_file() unless $generate_ps || !$not_modified;
+
 
         # html for ps creation
-      $chapter->write_ps_html_file() 
-	if $Pod::HtmlPsPdf::RunTime::options{generate_ps};
+      $chapter->write_ps_html_file() if $generate_ps;
 
         # html 2 split html -- this destroys the title/body/index
         # structures! Therefore it MUST come last, when we won't need
@@ -199,6 +218,7 @@ sub copy_the_rest{
 
   foreach my $file (@$nonpod_files) {
 
+    # The nonpod files are relative to the current directory now.
     my $src = "$src_root/$file";
     my $dst = "$target_root/$file";
 
@@ -250,6 +270,7 @@ sub create_ps_version{
   my $command = "$html2ps_exec -f $html2ps_conf -o $ps_root/${out_name}.ps ";
   $command .= join " ", map {"$ps_root/$_.html"} "index", @$ra_ordered_srcs;
   print "Doing $command\n" if $Pod::HtmlPsPdf::RunTime::options{verbose};
+print "Doing $command\n";
   system $command;
 
 } # end of sub create_ps_version
