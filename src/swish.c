@@ -95,23 +95,11 @@ static DEBUG_MAP debug_map[] = {
 };
 
 
-/* Possible run modes */
-typedef enum {
-    MODE_SEARCH,
-    MODE_INDEX,
-    MODE_DUMP,
-    MODE_WORDS,
-    MODE_MERGE,
-    MODE_UPDATE,
-    MODE_REMOVE
-}
-CMD_MODE;
-
 
 /* Parameters read from the command line, that are not stored in *SWISH */
 typedef struct
 {
-    CMD_MODE    run_mode;           /* selected run mode */
+    CMD_MODE    run_mode;           /* selected run mode.  Default is MODE_SEARCH */
     char        keychar;            /* for dumping words */
 
 
@@ -816,24 +804,34 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 break;
             }
 
-
-
-#ifdef USE_BTREE
-            /* Update mode jmruiz 2002/03 */
-
             case 'u':
-            {
-                params->run_mode = MODE_UPDATE;
-                break;
-            }
-            /* Update mode jmruiz 2004/09 */
-
             case 'r':
+
+#ifndef USE_BTREE
+                progerr("Must compile swish-e with --enable-incremental to use -%c option",c);
+#else
             {
-                params->run_mode = MODE_REMOVE;
+                int mode = ( 'u' == c )
+                        ? MODE_UPDATE
+                        : MODE_REMOVE;
+
+
+                /* Make sure not trying to mix modes at same time */
+
+                if ( MODE_UPDATE == params->run_mode || MODE_REMOVE == params->run_mode )
+                    if ( mode != params->run_mode )
+                        progerr("Cannot mix -u (update) and -r (remove) indexing modes.");
+
+
+                params->run_mode = mode;
+
+                if ( is_another_param( argv ) )
+                    progerr("Option -%c does not take a parameter -- use -i to list paths", c );
+
                 break;
             }
 #endif
+
 
             default:
                 progerr("Unknown switch '-%c'.  Use -h for options.", c );
@@ -862,7 +860,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 
             /* Set run_mode to index, unless in update/remove mode */
 
-            if ( (params->run_mode != MODE_UPDATE) && (params->run_mode != MODE_REMOVE) )
+            if ( MODE_UPDATE != params->run_mode && MODE_REMOVE != params->run_mode )
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -904,8 +902,10 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             if ( !is_another_param( argv ) )
                 progerr(" '-c' requires one or more configuration files.");
 
-            if((params->run_mode != MODE_UPDATE) ||
-               (params->run_mode != MODE_REMOVE))  /* Preserve update mode */
+
+            /* Set one of the indexing modes when specifying -c */
+
+            if ( MODE_UPDATE != params->run_mode && MODE_REMOVE != params->run_mode )
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -1326,7 +1326,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
     if (!hasdir)
-        progerr("Specify directories or files to index.");
+        progerr("Specify directories or files to %s.", MODE_INDEX == params->run_mode ? "index" : MODE_UPDATE == params->run_mode ? "update" : "remove" );
 
 
     if (sw->verbose < 0)
@@ -1337,8 +1337,11 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
     /* Check for UPDATE_MODE jmruiz 2002/03 */
-    if((params->run_mode == MODE_UPDATE) || (params->run_mode == MODE_REMOVE))
+    if ( MODE_UPDATE == params->run_mode || MODE_REMOVE == params->run_mode )
     {
+        /* Set update_mode */
+        sw->Index->update_mode = params->run_mode;
+
         /* Open the index file for read/write */
         sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
         if ( sw->lasterror )
@@ -1358,21 +1361,15 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 #ifndef USE_BTREE
         progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
 #endif
-        /* Set update_mode */
-        if(params->run_mode == MODE_UPDATE)
-            sw->Index->update_mode = 1;
-        /* Set remove_mode */
-        if(params->run_mode == MODE_REMOVE)
-            sw->Index->update_mode = 2;
     }
+
+
     else
     {
         /* Create an empty File - before indexing to make sure can write to the index */
         sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
         if ( sw->lasterror )
             SwishAbortLastError( sw );
-
-        sw->Index->update_mode = 0;
     }
 
 
