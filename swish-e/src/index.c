@@ -363,7 +363,15 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if (sw->verbose >= 4)
     {
-        printf("Adding word:'%s' Position:%d Meta:%d\n", word, position, metaID);
+        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:%X (", word, position, metaID, structure);
+        if ( structure & IN_EMPHASIZED ) printf(" EM");
+        if ( structure & IN_HEADER ) printf(" HEADER");
+        if ( structure & IN_COMMENTS ) printf(" COMMENT");
+        if ( structure & IN_BODY ) printf(" BODY");
+        if ( structure & IN_HEAD ) printf(" HEAD");
+        if ( structure & IN_TITLE ) printf(" TITLE");
+        if ( structure & IN_FILE ) printf(" FILE");
+        printf(" )\n");
     }
 
     if (!sw->entryArray)
@@ -1736,7 +1744,7 @@ void    decompress(SWISH * sw, IndexFILE * indexf)
                 fileInfo = readFileEntry(indexf, filenum);
                 printf(" %s", fileInfo->fi.filename);
                 fseek(fp, pos, 0);
-                printf(" Strct:%d", structure);
+                printf(" Strct:%x", structure);
                 printf(" Freq:%d", frequency);
                 printf(" Pos:");
             }
