@@ -2,7 +2,6 @@ AC_PREREQ(2.50)
 AC_INIT(src/swish.c)
 AC_CONFIG_AUX_DIR(config)
 
-
 PACKAGE=swish-e
 
 dnl version number
@@ -14,11 +13,13 @@ BINARY_AGE=0
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
 
 
+
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 AC_PROG_LIBTOOL
 
 dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
 AM_CONFIG_HEADER(src/acconfig.h)
+
 
 
 dnl prevent automake from generating rules to auto-rebuild tools
@@ -27,6 +28,8 @@ dnl developers: either run configure with --enable-maintainer-mode
 dnl or simply rerun ./bootstrap && ./configure when needed
 
 AM_MAINTAINER_MODE
+
+
 
 dnl Check for gettimeofday()
 AC_CHECK_FUNC(BSDgettimeofday, 
@@ -270,6 +273,14 @@ fi
 
 CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
+
+dnl Set a better default for libexecdir -- Thanks to David Norris!
+libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
+if test "x$libexecdiropt" == "x"; then
+        export libexecdir='${exec_prefix}/lib/${PACKAGE}'
+fi
+
+export libexecdir=/foo
 
 
 

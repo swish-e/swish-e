@@ -61,7 +61,7 @@ EXTRA_libswish_e_la_SOURCES =  \
 noinst_LTLIBRARIES = libswishindex.la
 libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS)
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS)
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"
 
 ## in case these change
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
@@ -93,5 +93,7 @@ libswishindex_la_SOURCES = \
 
 include_HEADERS = swish-e.h
 
-bin_SCRIPTS = swishspider
+
+libexec_SCRIPTS = swishspider
+
 EXTRA_DIST = swishspider

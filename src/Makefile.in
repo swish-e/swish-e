@@ -190,7 +190,7 @@ EXTRA_libswish_e_la_SOURCES = \
 noinst_LTLIBRARIES = libswishindex.la
 libswishindex_la_LIBADD = expat/libswexpat.la $(LIBXML2_OBJS)
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS)
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"
 
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
 
@@ -219,7 +219,8 @@ libswishindex_la_SOURCES = \
 
 include_HEADERS = swish-e.h
 
-bin_SCRIPTS = swishspider
+libexec_SCRIPTS = swishspider
+
 EXTRA_DIST = swishspider
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -265,7 +266,7 @@ am_swish_e_OBJECTS = swish.$(OBJEXT) keychar_out.$(OBJEXT) \
 swish_e_OBJECTS = $(am_swish_e_OBJECTS)
 swish_e_DEPENDENCIES = libswishindex.la libswish-e.la
 swish_e_LDFLAGS =
-SCRIPTS = $(bin_SCRIPTS)
+SCRIPTS = $(libexec_SCRIPTS)
 
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I.
@@ -446,25 +447,25 @@ libtest$(EXEEXT): $(libtest_OBJECTS) $(libtest_DEPENDENCIES)
 swish-e$(EXEEXT): $(swish_e_OBJECTS) $(swish_e_DEPENDENCIES) 
 	@rm -f swish-e$(EXEEXT)
 	$(LINK) $(swish_e_LDFLAGS) $(swish_e_OBJECTS) $(swish_e_LDADD) $(LIBS)
-binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-install-binSCRIPTS: $(bin_SCRIPTS)
+libexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+install-libexecSCRIPTS: $(libexec_SCRIPTS)
 	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	$(mkinstalldirs) $(DESTDIR)$(libexecdir)
+	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
 	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
 	  if test -f $$d$$p; then \
 	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f"; \
-	    $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f; \
+	    echo " $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f"; \
+	    $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f; \
 	  else :; fi; \
 	done
 
-uninstall-binSCRIPTS:
+uninstall-libexecSCRIPTS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
 	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f $(DESTDIR)$(bindir)/$$f"; \
-	  rm -f $(DESTDIR)$(bindir)/$$f; \
+	  echo " rm -f $(DESTDIR)$(libexecdir)/$$f"; \
+	  rm -f $(DESTDIR)$(libexecdir)/$$f; \
 	done
 
 mostlyclean-compile:
@@ -2311,7 +2312,7 @@ install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(bindir) $(DESTDIR)$(includedir)
+	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libexecdir) $(DESTDIR)$(includedir)
 
 install: install-recursive
 install-exec: install-exec-recursive
@@ -2358,8 +2359,8 @@ info-am:
 
 install-data-am: install-includeHEADERS
 
-install-exec-am: install-binPROGRAMS install-binSCRIPTS \
-	install-libLTLIBRARIES
+install-exec-am: install-binPROGRAMS install-libLTLIBRARIES \
+	install-libexecSCRIPTS
 
 install-info: install-info-recursive
 
@@ -2384,9 +2385,9 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-includeHEADERS uninstall-info-am \
-	uninstall-libLTLIBRARIES
+uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-info-am uninstall-libLTLIBRARIES \
+	uninstall-libexecSCRIPTS
 
 uninstall-info: uninstall-info-recursive
 
@@ -2397,20 +2398,20 @@ uninstall-info: uninstall-info-recursive
 	distclean-generic distclean-hdr distclean-libtool \
 	distclean-recursive distclean-tags distdir dvi dvi-am \
 	dvi-recursive info info-am info-recursive install install-am \
-	install-binPROGRAMS install-binSCRIPTS install-data \
-	install-data-am install-data-recursive install-exec \
-	install-exec-am install-exec-recursive install-includeHEADERS \
-	install-info install-info-am install-info-recursive \
-	install-libLTLIBRARIES install-man install-recursive \
+	install-binPROGRAMS install-data install-data-am \
+	install-data-recursive install-exec install-exec-am \
+	install-exec-recursive install-includeHEADERS install-info \
+	install-info-am install-info-recursive install-libLTLIBRARIES \
+	install-libexecSCRIPTS install-man install-recursive \
 	install-strip installcheck installcheck-am installdirs \
 	installdirs-am installdirs-recursive maintainer-clean \
 	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	mostlyclean-recursive pdf pdf-am pdf-recursive ps ps-am \
 	ps-recursive tags tags-recursive uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-includeHEADERS uninstall-info-am \
-	uninstall-info-recursive uninstall-libLTLIBRARIES \
+	uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-info-am uninstall-info-recursive \
+	uninstall-libLTLIBRARIES uninstall-libexecSCRIPTS \
 	uninstall-recursive
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
