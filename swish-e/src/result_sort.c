@@ -561,7 +561,7 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
 
 
         /* Now store the sort value in the array */
-        DB_ReadSortedData_Native(m->sorted_data,r->filenum - 1, &props[i], sw->Db);
+        DB_ReadSortedData(sw, m->sorted_data,r->filenum - 1, &props[i], sw->Db);
 
     }
 
