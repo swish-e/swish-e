@@ -117,9 +117,14 @@ extract out the text (e.g. strings(1), catdoc(1), pdftotext(1)).
 
 =head2 Can I reindex and search at the same time?
 
-It's probably best to specify a temporary IndexFile file in your configuration and then rename the index
-to the live index name after indexing is complete.  Under unix rename (mv) is atomic, so any searches in progress not
-be effected.
+Yes.  Starting with version 2.2 swish indexes to temporary files, and then renames
+the files when indexing is complete.  On most systems renames are atomic.  But, since
+swish also generates more than one file during indexing there will be a very short
+period of time between renaming the various files when the index is out of sync.
+Probably not enough time to worry about, though.
+
+Settings in F<config.h> control some options related to temporary files, and their
+use during indexing.
 
 =head2 How can I index documents on a web server?
 
