@@ -1837,7 +1837,7 @@ int resultmaxhits;
 	while ((sp=SwishNext(sw))) 
 	{
 		if (!sw->beginhits) {
-			if (sw->maxhits) 
+			if (resultmaxhits) 
 			{
 				if (sw->useCustomOutputDelimiter)
 				{
