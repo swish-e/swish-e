@@ -75,13 +75,15 @@ static DEBUG_MAP debug_map[] = {
     {"INDEX_STOPWORDS", DEBUG_INDEX_STOPWORDS, "List stopwords stored in index"},
     {"INDEX_FILES", DEBUG_INDEX_FILES, "List file data stored in index"},
     {"INDEX_METANAMES", DEBUG_INDEX_METANAMES, "List metaname table stored in index"},
-    {"INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file"},
+    {"INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file\n\n-- indexing --\n"},
 
     /* These trace indexing */
     {"INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed"},
     {"PARSED_WORDS", DEBUG_PARSED_WORDS, "Display words as they are parsed from source"},
     {"PROPERTIES", DEBUG_PROPERTIES, "Display properties associted with each file as they are indexed"},
     {"REGEX", DEBUG_REGEX, "Debug regular expression processing"},
+    {"PARSED_TAGS", DEBUG_PARSED_TAGS, "Show meta tags as they are found"},
+    {"PARSED_TEXT", DEBUG_PARSED_TEXT, "Show text as it's parsed"},
 };
 
 
