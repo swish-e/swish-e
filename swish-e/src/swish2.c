@@ -42,6 +42,7 @@
 #include "db.h"
 #include "fs.h"
 #include "swish_words.h"
+#include "extprog.h"
 
 /* 
   -- init swish structure 
@@ -64,6 +65,7 @@ SWISH *SwishNew()
     initModule_FS (sw);
     initModule_HTTP (sw);
     initModule_Swish_Words (sw);
+    initModule_Prog (sw);
 
 
     sw->TotalWords = 0;
@@ -88,9 +90,6 @@ SWISH *SwishNew()
 
     sw->truncateDocSize = 0;      /* default: no truncation of docs    */
     
-
-    /* prog system parameters */
-    sw->progparameterslist =  NULL;
 
         /* Load Default Values */
     SwishDefaults(sw);
@@ -148,6 +147,7 @@ void SwishClose(SWISH *sw)
         freeModule_HTTP (sw);
         freeModule_Search (sw);
         freeModule_Swish_Words (sw);
+        freeModule_Prog (sw);
 
                         /* Free file structures */
         freefileoffsets(sw);

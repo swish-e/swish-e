@@ -31,6 +31,70 @@
 #include "mem.h"
 #include "file.h"
 #include "error.h"
+#include "parse_conffile.h"
+
+struct MOD_Prog
+{
+    /* prog system specific configuration parameters */
+    struct swline *progparameterslist;
+};
+
+
+/* 
+  -- init structures for this module
+*/
+
+void initModule_Prog (SWISH  *sw)
+{
+    struct MOD_Prog *self;
+
+    self = (struct MOD_Prog *) emalloc(sizeof(struct MOD_Prog));
+    sw->Prog = self;
+
+    /* initialize buffers used by indexstring */
+    self->progparameterslist = (struct swline *) NULL;
+
+    return;
+}
+
+void freeModule_Prog (SWISH *sw)
+{
+    struct MOD_Prog *self = sw->Prog;
+
+
+    if ( self->progparameterslist )
+        efree( self->progparameterslist );
+
+    efree ( self );
+    sw->Prog = NULL;
+
+    return;
+}
+
+int configModule_Prog (SWISH *sw, StringList *sl)
+
+{
+    struct MOD_Prog *self = sw->Prog;
+    char *w0    = sl->word[0];
+
+    if (strcasecmp(w0, "SwishProgParameters") == 0)
+    {
+        if (sl->n > 1)
+        {
+            grabCmdOptions(sl, 1, &self->progparameterslist);
+        }
+        else
+            progerr("%s: requires at least one value", w0);
+    }
+
+    else 
+    {
+        return 0;                   /* not a module directive */
+    }
+
+    return 1;
+}
+
 
 
 static FILE   *open_external_program(SWISH * sw, char *prog)
@@ -38,19 +102,18 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     char   *cmd;
     FILE   *fp;
     size_t  total_len;
-    struct  swline *tmplist;
     struct  stat stbuf;
+    struct swline *progparameterslist = sw->Prog->progparameterslist;
 
 
     /* get total length of configuration parameters */
 
     total_len = strlen(prog);
 
-    tmplist = sw->progparameterslist;
-    while (tmplist)
+    while (progparameterslist)
     {
-        total_len += strlen(tmplist->line) + 1; /* separate by spaces */
-        tmplist = tmplist->next;
+        total_len += strlen(progparameterslist->line) + 1; /* separate by spaces */
+        progparameterslist = progparameterslist->next;
     }
 
     cmd = emalloc(total_len + 20);
@@ -74,12 +137,12 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 #endif
 
 
-    tmplist = sw->progparameterslist;
-    while (tmplist)
+    progparameterslist = sw->Prog->progparameterslist;
+    while (progparameterslist)
     {
         strcat(cmd, " ");
-        strcat(cmd, tmplist->line);
-        tmplist = tmplist->next;
+        strcat(cmd, progparameterslist->line);
+        progparameterslist = progparameterslist->next;
     }
 
 
@@ -298,11 +361,13 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
 
 
-/* Don't have any specific configuration values to check */
+/* Don't use old method of config checking */
 static int     extprog_parseconfline(SWISH * sw, StringList *l)
 {
     return 0;
 }
+
+
 
 struct _indexing_data_source_def ExternalProgramDataSource = {
     "External-Program",

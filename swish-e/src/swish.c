@@ -75,6 +75,8 @@ extern struct _indexing_data_source_def *data_sources[];
 
 /* vvvvvvvvvv example only vvvvvvvvvvvvv*/
 
+unsigned int Dump_Index = 0;
+
 unsigned int DEBUG_MASK = 0;
 
 typedef struct
@@ -85,8 +87,16 @@ typedef struct
 } DEBUG_MAP;
 
 static DEBUG_MAP debug_map[] = {
-    { "INDEX", DEBUG_INDEX, "Dump data from index file" },
-    { "INDEX_FULL", DEBUG_INDEX_FULL, "Dump data from index file - verbose" },
+    /* These dump data from the index file */
+    { "INDEX_HEADER", DEBUG_INDEX_HEADER, "Show the headers from the index" },
+    { "INDEX_WORDS", DEBUG_INDEX_WORDS, "List words stored in index" },
+    { "INDEX_WORDS_FULL", DEBUG_INDEX_WORDS_FULL, "List words stored in index (more verbose)" },
+    { "INDEX_STOPWORDS", DEBUG_INDEX_STOPWORDS, "List stopwords stored in index" },
+    { "INDEX_FILES", DEBUG_INDEX_FILES, "List file data stored in index" },
+    { "INDEX_METANAMES", DEBUG_INDEX_METANAMES, "List metaname table stored in index" },
+    { "INDEX_ALL", DEBUG_INDEX_ALL, "Dump data ALL above data from index file" },
+
+    /* These trace indexing */
     { "INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed" },
     { "PARSED_WORDS", DEBUG_PARSED_WORDS, "Display words as they are parsed from source" },
     
@@ -106,7 +116,12 @@ unsigned int isDebugWord( char *word )
             printf("  %20s => %s\n", debug_map[i].name, debug_map[i].description );
         else
             if ( strcasecmp( debug_map[i].name, word ) == 0 )
+            {
+                if ( strncasecmp( word, "INDEX_", 6 ) == 0 )
+                    Dump_Index++;
+                    
                 return debug_map[i].bit;
+            }
 
     if ( help )
         exit(1);
@@ -506,7 +521,7 @@ struct stat stat_buf;
 
 	/* -D => give a dump of the contents of index files */
 	// if ( decode )
-	if ( DEBUG_MASK & DEBUG_INDEX || DEBUG_MASK & DEBUG_INDEX_FULL )
+	if ( Dump_Index )
 	{
 		if (!hasindex)
 			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
