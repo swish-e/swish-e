@@ -165,7 +165,7 @@ void    BuildSortedArrayOfWords(SWISH *, IndexFILE *);
 
 void    PrintHeaderLookupTable(int ID, int table[], int table_size, FILE * fp);
 void    coalesce_all_word_locations(SWISH * sw, IndexFILE * indexf);
-void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY * e);
+void    coalesce_word_locations(SWISH * sw, ENTRY * e);
 
 void    adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp);
 

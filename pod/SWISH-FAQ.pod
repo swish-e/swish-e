@@ -811,7 +811,8 @@ files while searching.
 =head3 "too many open files" when indexing with -e option
 
 Some platforms report "too many open files" when using the -e economy option.
-The -e feature uses many tempory files (something like 377) plus the index files
+The -e feature uses many temporary files (something like 377) plus 
+the index files
 and this may exceed your system's limits.
 
 Depending on your platform you may need to set "ulimit" or "unlimit".
