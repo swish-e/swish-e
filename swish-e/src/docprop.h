@@ -26,9 +26,7 @@ void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
 void printStandardResultProperties(SWISH *, FILE *, RESULT *);
 
-void swapDocPropertyMetaNames (docProperties *, struct metaMergeEntry *);
-
-docProperties *DupProps (docProperties *);
+void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 
 char *getResultPropAsString(RESULT *, int);
 

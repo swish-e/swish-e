@@ -745,25 +745,25 @@ struct MOD_Search *srch = sw->Search;
 
 
 
-void swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntry *metaFile)
+void swapDocPropertyMetaNames(docProperties **docProperties, struct metaMergeEntry *metaFile)
 {
-    int metaID;
-    propEntry *prop;
+    int metaID, i;
+    propEntry *prop, *tmpprop;
     struct docProperties *tmpDocProperties;
 
-    if(!docProperties) return;
+    if(! *docProperties) return;
 
 
-	tmpDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
-	tmpDocProperties->n = docProperties->n;
+	tmpDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + (*docProperties)->n * sizeof(propEntry *));
+	tmpDocProperties->n = (*docProperties)->n;
 
 	for ( metaID = 0; metaID < tmpDocProperties->n; metaID++ )
 		tmpDocProperties->propEntry[metaID] = NULL;
 
 	/* swap metaName values for properties */
-	for ( metaID = 0 ; metaID < docProperties->n ;metaID++ )
+	for ( metaID = 0 ; metaID < (*docProperties)->n ;metaID++ )
 	{
-		prop = docProperties->propEntry[metaID];
+		prop = (*docProperties)->propEntry[metaID];
 		while (prop)
 		{
 			struct metaMergeEntry* metaFileTemp;
@@ -776,8 +776,19 @@ void swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntr
 			{
 				if (metaID == metaFileTemp->oldMetaID)
 				{
-					prop->next = tmpDocProperties->propEntry[metaFileTemp->newMetaID];
-					tmpDocProperties->propEntry[metaFileTemp->newMetaID] = prop;
+					if (tmpDocProperties->n <= metaFileTemp->newMetaID )
+					{
+						tmpDocProperties = realloc(tmpDocProperties,sizeof(struct docProperties) + (metaFileTemp->newMetaID + 1) * sizeof(propEntry *));
+						for(i=tmpDocProperties->n; i<= metaFileTemp->newMetaID; i++)
+							tmpDocProperties->propEntry[i] = NULL;
+						tmpDocProperties->n = metaFileTemp->newMetaID + 1;
+					}
+
+					tmpprop = emalloc(sizeof(propEntry) + prop->propLen);
+					memcpy(tmpprop->propValue,prop->propValue,prop->propLen);
+					tmpprop->propLen = prop->propLen;
+					tmpprop->next = tmpDocProperties->propEntry[metaFileTemp->newMetaID];
+					tmpDocProperties->propEntry[metaFileTemp->newMetaID] = tmpprop;
 					break;
 				}
 
@@ -786,48 +797,10 @@ void swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntr
 			prop = nextOne;
 		}
 	}
+
 	/* Reasign new values */
-	for(metaID=0;metaID<docProperties->n;metaID++)
-		docProperties->propEntry[metaID] = tmpDocProperties->propEntry[metaID];
+	*docProperties = tmpDocProperties;
 
-	efree(tmpDocProperties);
-}
-
-
-
-/* Duplicates properties (used by merge) */
-docProperties *DupProps(docProperties *docProperties)
-{
-    struct docProperties *newDocProperties=NULL;
-    int metaID;
-    propEntry *prop = NULL, *tmp = NULL, *newProp = NULL;
-
-	if(!docProperties) return NULL;
-
-	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
-	newDocProperties->n = docProperties->n;
-
-	for( metaID=0; metaID < newDocProperties->n; metaID++ )
-	{
-		newDocProperties->propEntry[metaID] = NULL;
-		prop = docProperties->propEntry[metaID];
-		newProp = NULL;
-		while(prop)
-		{
-			tmp = (propEntry *) emalloc(sizeof(propEntry) + prop->propLen);
-			if(!newProp)
-				newDocProperties->propEntry[metaID] = tmp;
-			else
-				newProp->next = tmp;
-	
-			memcpy(tmp->propValue, prop->propValue, prop->propLen);
-			tmp->propLen = prop->propLen;
-			tmp->next = NULL;
-			newProp = tmp;
-			prop = prop->next;
-		}
-	}
-	return newDocProperties;
 }
 
 

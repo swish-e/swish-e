@@ -906,11 +906,13 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
 
 
     addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
-    thisFileEntry->docProperties = DupProps(docProperties);
 
 
     /* swap meta values for properties */
-    swapDocPropertyMetaNames(docProperties, metaFile);
+    swapDocPropertyMetaNames(&docProperties, metaFile);
+
+    thisFileEntry->docProperties = docProperties;
+
 
     if (sw->Index->economic_flag)
         SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum - 1]);
