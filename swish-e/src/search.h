@@ -54,6 +54,8 @@ struct MOD_Search
     /* Phrase delimiter char */
     int     PhraseDelimiter;
 
+    /* Number of stopwords removed from query */
+    int     removed_stopwords; 
 };
 
 void initModule_Search (SWISH *);
