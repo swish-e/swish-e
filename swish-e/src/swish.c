@@ -681,6 +681,9 @@ IndexFILE *tmpindexlist=NULL;
 	}
 	else 
 	{
+		if (!hasindex)
+			sw->indexlist = (IndexFILE *)
+			addindexfile(sw->indexlist, INDEXFILE);
 		
 		for (i = 0; structstr[i] != '\0'; i++)
 		{
@@ -712,9 +715,6 @@ IndexFILE *tmpindexlist=NULL;
 		
 		if (sw->maxhits <= 0)
 			sw->maxhits = -1;
-		if (!hasindex)
-			sw->indexlist = (IndexFILE *)
-			addindexfile(sw->indexlist, INDEXFILE);
 		if (hasMetaName)
 			while (conflist != NULL) {
 				getdefaults(sw,conflist->line, &hasdir, &hasindex, hasverbose);
@@ -728,8 +728,7 @@ IndexFILE *tmpindexlist=NULL;
 				exit(0);
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
-				printf("err: the index file format is unknown\n.\n");
-				exit(0);
+				progerr("err: the index file format is unknown\n.\n");
 				break;
 		}
 
