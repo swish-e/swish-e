@@ -17,6 +17,7 @@ sub get_version
 {
 
       my $e = shift;
+      return 0 if ! $e;
       my $version = `$e -V`;
       $version =~ tr/[0-9].//cd;
       return $version;
@@ -25,23 +26,13 @@ sub get_version
 sub set_swish_version {
     $|=1;
 
-   my $swish = '';
-   my $version = '';
-
-   my @BIN = grep { m/^BIN=.*/ } @ARGV;
-
-   if (@BIN) {
-       $swish = shift @BIN;
-       $swish =~ s,BIN=,,;
-       $version = get_version($swish);
-       grep { s/^BIN=.*// } @ARGV;
-
-   } else {
+   my $swish = $ENV{SWISHBIN} || '';
+   my $version = get_version($swish) || '';
 
     print "\n\nFor testing we will need the path to your SWISH-E binary.\n",
           qq[** Enter "skip" (without quotes) to skip testing - you will not be able to run "make test"\n\n];
           
-
+    print "\nThe SWISHBIN environment variable may also be used for non-interactive builds.\n\n";
 
     for ( split /:/, $ENV{PATH} ) {
         if ( -x "$_/swish-e" && !-d _ ) {
@@ -50,7 +41,6 @@ sub set_swish_version {
         }
     }
 
-  }
     while ( ! $version ) {
         my $enter = $swish;
 
