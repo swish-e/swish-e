@@ -1784,7 +1784,7 @@ void    sort_words(SWISH * sw)
 
     if (sw->verbose)
     {
-        printf("Sorting %d words alphabetically\n", sw->Index->entryArray->numWords );
+        printf("Sorting %s words alphabetically\n", comma_long( sw->Index->entryArray->numWords ) );
         fflush(stdout);
     }
 

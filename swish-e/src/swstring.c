@@ -1034,3 +1034,34 @@ int     icomp2(const void *s1, const void *s2)
 }
 
 
+/* Functions to format a long with commas. */
+/* Should really do this with locales. */
+/* Maybe not the best file for this */
+
+static void thousep(char *s1, const char *s2)
+{
+ if (*s2) {
+         switch(strlen(s2) % 3)
+         {
+                 do { *s1++ = ',';
+         case 0:      *s1++ = *s2++;
+         case 2:      *s1++ = *s2++;
+         case 1:      *s1++ = *s2++;
+                 } while (*s2);
+         }
+ }
+
+        *s1 = '\0';
+}
+
+char comma_buffer[100];
+
+const char *comma_long( unsigned long u )
+{
+    char buf[60];
+
+    sprintf( buf, "%lu", u );
+    thousep( comma_buffer, buf );
+    return comma_buffer;
+}
+

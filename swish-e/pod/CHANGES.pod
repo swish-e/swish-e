@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Commas in numbers
+
+Added commas to summary display at end of indexing.
+
 =item * Insert whitespace between tags
 
 Parser.c was updated to flush the text buffer before and after
