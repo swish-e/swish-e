@@ -52,6 +52,7 @@ static struct swline *fixnot1(struct swline *);
 static struct swline *fixnot2(struct swline *);
 static struct swline *expandphrase(struct swline *, char);
 
+static char *isBooleanOperatorWord( char * word );
 
 static print_swline( char *msg, struct swline *word_list )
 {
@@ -479,11 +480,10 @@ static void fudge_wildcard( struct swline **original, struct swline *entry )
     replace_swline(original,wild_card,(struct swline *)NULL);
 }
 
-    
-    
-/******************** Public Functions *********************************/
 
-char *isBooleanOperatorWord( char * word )
+/* Converts an operator word into an operator  */    
+    
+static char *isBooleanOperatorWord( char * word )
 {
     /* don't need strcasecmp here, since word should alrady be lowercase -- need to check alt-search first */
     if (!strcasecmp( word, _AND_WORD))
@@ -497,6 +497,44 @@ char *isBooleanOperatorWord( char * word )
 
     return (char *)NULL;
 }
+
+/* This "fixes" the problem of showing operators in Parsed Words as <not> <and> <or> */
+/* Really, it's probably a much better way to display Parsed Words, but that's not the way it was first created */
+
+
+/* Converts an operator into a string */
+static char *isBooleanOperator( char * word )
+{
+    if (!strcasecmp( word, AND_WORD))
+        return _AND_WORD;
+
+    if (!strcasecmp( word, OR_WORD))
+        return _OR_WORD;
+
+    if (!strcasecmp( word, NOT_WORD))
+        return _NOT_WORD;   
+
+    return (char *)NULL;
+}
+
+/* Simply replace <and> with "and" */
+/* it's required that the replacement string is <= to inital string. */
+
+switch_back_operators( struct swline *sl )
+{
+    char *operator;
+
+    while ( sl )
+    {
+        if ( (operator = isBooleanOperator( sl->line )) )
+            strcpy( sl->line, operator );
+        sl = sl->next;
+    }
+
+}
+       
+
+
 
 
 
@@ -655,6 +693,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 
     /* fudge wild cards back onto preceeding word */
     /* $$$ This is broken because a query of "foo *" ends up "foo*" */
+    /*     Now almost fixed "foo *" is an error, but 
     /* Also doesn't check for an operator followed by "*" */
     
     for ( temp = tokens ; temp; )
@@ -733,7 +772,8 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     }
 
     db_results->parsed_words = dupswline(searchwordlist);
-
+    /* see notes in this function why this is done */
+    switch_back_operators( db_results->parsed_words );
 
     /* Now hack up the query for searh processing */
     /* $$$ please fix this!  Let's get a real parser */
