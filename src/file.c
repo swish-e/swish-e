@@ -46,6 +46,10 @@ $Id$
 **
 */
 
+#ifdef HAVE_CONFIG_H
+#include "acconfig.h"
+#endif
+
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
