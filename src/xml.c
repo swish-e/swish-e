@@ -22,71 +22,80 @@ $Id$
 #include "metanames.h"
 #include "entities.h"
 
-struct metaEntry *getXMLField(IndexFILE *indexf, char* tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char **parsed_tag, char *filename )
+struct metaEntry *getXMLField(IndexFILE * indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char **parsed_tag,
+                              char *filename)
 {
-    unsigned char *temp,*temp2,c;
-    int isendtag;
-    struct metaEntry* e;
+    unsigned char *temp,
+           *temp2,
+            c;
+    int     isendtag;
+    struct metaEntry *e;
 
-    temp = (unsigned char *)tag;
+    temp = (unsigned char *) tag;
 
-    if(!temp) return NULL;
-    
+    if (!temp)
+        return NULL;
+
     /* Get to the beginning of the word disreguarding blanks */
-    while (*temp) {
-        if(isspace((int)(*(unsigned char *)temp))) 
+    while (*temp)
+    {
+        if (isspace((int) (*(unsigned char *) temp)))
             temp++;
         else
             break;
     }
 
     /* Are we at the start or end tag ? */
-    if(*temp=='/') 
+    if (*temp == '/')
     {
         temp++;
-        isendtag=1;
-    } else
-        isendtag=0;
+        isendtag = 1;
+    }
+    else
+        isendtag = 0;
 
-    /* XML is case sensitive - Do not convert to lowercase !!!*/
+    /* XML is case sensitive - Do not convert to lowercase !!! */
     /* Jump spaces */
-    for (temp2=temp;*temp2 && !isspace((int)(*(unsigned char *)temp2));temp2++);
-    
-    if(temp==temp2) return NULL;
+    for (temp2 = temp; *temp2 && !isspace((int) (*(unsigned char *) temp2)); temp2++);
+
+    if (temp == temp2)
+        return NULL;
 
     /* Check for empty xml tag . Eg:  <mytag/> */
-    if(!isendtag && (*(temp2-1))=='/') return NULL;
+    if (!isendtag && (*(temp2 - 1)) == '/')
+        return NULL;
 
-    c=*temp2;
-    *temp2='\0';
+    c = *temp2;
+    *temp2 = '\0';
 
-        /* Go lowercase as discussed even if we are in xml */
-                /* Use Rainer's routine */
+    /* Go lowercase as discussed even if we are in xml */
+    /* Use Rainer's routine */
     strtolower(temp);
 
-    *parsed_tag = estrdup( temp );
+    *parsed_tag = estrdup(temp);
 
-    if((e=getMetaNameByName(&indexf->header,temp)))
+    if ((e = getMetaNameByName(&indexf->header, temp)))
     {
-        *temp2=c;
+        *temp2 = c;
         return e;
     }
-    
 
-    if( applyautomaticmetanames && temp && *temp ) {
+
+    if (applyautomaticmetanames && temp && *temp)
+    {
         if (verbose)
             printf("Adding automatic MetaName '%s' found in file '%s'\n", temp, filename);
 
-        return addMetaEntry(&indexf->header,temp,META_INDEX,0 );
+        return addMetaEntry(&indexf->header, temp, META_INDEX, 0);
     }
 
 
     if (!OkNoMeta)
-        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", temp, filename );
+        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", temp, filename);
 
-    *temp2=c;
+    *temp2 = c;
     return NULL;
-    
+
 }
 
 
@@ -94,152 +103,176 @@ struct metaEntry *getXMLField(IndexFILE *indexf, char* tag, int applyautomaticme
 ** to the appropriate structures.
 */
 
-int countwords_XML(SWISH *sw, FileProp *fprop, char *buffer)
+int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
 {
-    return _countwords_XML(sw,fprop,buffer,0,fprop->fsize);
+    return _countwords_XML(sw, fprop, buffer, 0, fprop->fsize);
 }
 
-int _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int size)
+int     _countwords_XML(SWISH * sw, FileProp * fprop, char *buffer, int start, int size)
 {
-int ftotalwords;
-int *metaID;
-int metaIDlen;
-int positionMeta;    /* Position of word in file */
-int position_no_meta=1;    /* Counter for words in file (excluding metanames) */
-int position_meta=1;   /* Counter for words in metanames */
-int currentmetanames;
-unsigned char *newp,*p, *tag, *endtag=NULL,*tempprop;
-int structure;
-struct file *thisFileEntry = NULL;
-struct metaEntry *metaNameXML,*metaNameXML2;
-int i;
-IndexFILE *indexf=sw->indexlist;
-struct MOD_Index *idx = sw->Index;
-char *summary=NULL;
-int in_junk=0;
+    int     ftotalwords;
+    int    *metaID;
+    int     metaIDlen;
+    int     positionMeta;       /* Position of word in file */
+    int     position_no_meta = 1; /* Counter for words in file (excluding metanames) */
+    int     position_meta = 1;  /* Counter for words in metanames */
+    int     currentmetanames;
+    unsigned char *newp,
+           *p,
+           *tag,
+           *endtag = NULL,
+           *tempprop;
+    int     structure;
+    struct file *thisFileEntry = NULL;
+    struct metaEntry *metaNameXML,
+           *metaNameXML2;
+    int     i;
+    IndexFILE *indexf = sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+    char   *summary = NULL;
+    int     in_junk = 0;
+
     idx->filenum++;
 
-    if(fprop->stordesc)
-        summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
+    if (fprop->stordesc)
+        summary = parseXmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size);
 
-	addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry );
-    addCommonProperties( sw, indexf, fprop->mtime, "", summary, start, size );
+    addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry);
+    addCommonProperties(sw, indexf, fprop->mtime, "", summary, start, size);
 
 
-        /* Init meta info */
-    metaID=(int *)emalloc((metaIDlen=1)*sizeof(int));
-    currentmetanames=ftotalwords=0;
-    structure=IN_FILE|IN_META; /* Assume everything is within a meta tag for xml? */
-    metaID[0]=1; 
-    positionMeta=1; 
-    
-    for(p=buffer;p && *p;) {
-        if((tag=strchr(p,'<'))) {   /* Look for '<' */
-                /* Index up to the tag */
-            *tag++='\0';
-            if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
+    /* Init meta info */
+    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
+
+    currentmetanames = ftotalwords = 0;
+    structure = IN_FILE | IN_META; /* Assume everything is within a meta tag for xml? */
+    metaID[0] = 1;
+    positionMeta = 1;
+
+    for (p = buffer; p && *p;)
+    {
+        if ((tag = strchr(p, '<')))
+        {                       /* Look for '<' */
+            /* Index up to the tag */
+            *tag++ = '\0';
+            if ((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
             {
 
                 newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-                ftotalwords +=indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-                if(newp!=p) efree(newp);
+                ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+                if (newp != p)
+                    efree(newp);
             }
-            
-            /* Now let us look for '>' */
-            if((endtag=strchr(tag,'>')))
-            {
-                
-                *endtag++='\0';
 
-                if ((tag[0]!='!') && (tag[0]!='/'))
+            /* Now let us look for '>' */
+            if ((endtag = strchr(tag, '>')))
+            {
+
+                *endtag++ = '\0';
+
+                if ((tag[0] != '!') && (tag[0] != '/'))
                 {
-                    char *parsed_tag = NULL;
-                    
-                    if((metaNameXML=getXMLField(indexf, tag, sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta, &parsed_tag, fprop->real_path)))
+                    char   *parsed_tag = NULL;
+
+                    if (
+                        (metaNameXML =
+                         getXMLField(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, &parsed_tag, fprop->real_path)))
                     {
-                    /* If the data must be indexed add the metaName to the currentlist of metaNames */
-                        if( !in_junk)
+                        /* If the data must be indexed add the metaName to the currentlist of metaNames */
+                        if (!in_junk)
                         {
                             /* realloc memory if needed */
-                            if(currentmetanames==metaIDlen) {
-                                metaID=(int *) erealloc(metaID,(metaIDlen *=2) *sizeof(int));
+                            if (currentmetanames == metaIDlen)
+                            {
+                                metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
                             }
                             /* add netaname to array of current metanames */
-                            metaID[currentmetanames]=metaNameXML->metaID;
+                            metaID[currentmetanames] = metaNameXML->metaID;
                             /* Preserve position counter */
-                            if(!currentmetanames) 
+                            if (!currentmetanames)
                             {
-                                position_no_meta=positionMeta;
+                                position_no_meta = positionMeta;
                                 positionMeta = position_meta;
                             }
-                            
+
                             /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                            if(!isDontBumpMetaName(sw,tag))
+                            if (!isDontBumpMetaName(sw, tag))
                                 positionMeta++;
-        
+
                             currentmetanames++;
                             /* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
-                        
+
                         }
-                        p=endtag;
+                        p = endtag;
 
 
                         /* If it is also a property doc store it
-                        ** Only store until a < is found */
-                        if ((metaNameXML2 = getPropNameByName( &indexf->header, parsed_tag)))
+                           ** Only store until a < is found */
+                        if ((metaNameXML2 = getPropNameByName(&indexf->header, parsed_tag)))
                         {
-                            char *ending_tag = emalloc( strlen( parsed_tag ) + strlen("</") + 1 );
-                            strcpy( ending_tag, "</" );
-                            strcat( ending_tag, parsed_tag );
+                            char   *ending_tag = emalloc(strlen(parsed_tag) + strlen("</") + 1);
 
-                            if ( (endtag = strstr( endtag, ending_tag )))
+                            strcpy(ending_tag, "</");
+                            strcat(ending_tag, parsed_tag);
+
+                            if ((endtag = strstr(endtag, ending_tag)))
                             {
                                 *endtag = '\0';
 
-                             /* Remove tags and convert entities */
-                                tempprop=estrdup(p);
+                                /* Remove tags and convert entities */
+                                tempprop = estrdup(p);
                                 remove_newlines(tempprop);  /** why isn't this just done for the entire doc? */
                                 remove_tags(tempprop);
                                 tempprop = sw_ConvHTMLEntities2ISO(sw, tempprop);
-                            
-                                if ( !addDocProperty(&thisFileEntry->docProperties,metaNameXML2,tempprop,strlen(tempprop),0) )
-                                    progwarn("property '%s' not added for document '%s'\n", metaNameXML->metaName, fprop->real_path );
-                                    
+
+                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameXML2, tempprop, strlen(tempprop), 0))
+                                    progwarn("property '%s' not added for document '%s'\n", metaNameXML->metaName, fprop->real_path);
+
 
                                 efree(tempprop);
-                                if(endtag) *endtag='<';
+                                if (endtag)
+                                    *endtag = '<';
                             }
 
                             efree(ending_tag);
-                        } 
+                        }
 
-                    } else {
+                    }
+                    else
+                    {
                         /* Check for junk metaname */
-                        if(isJunkMetaName(sw,tag))
+                        if (isJunkMetaName(sw, tag))
                         {
                             in_junk++;
                         }
-                            /* continue */
-                        p=endtag;
+                        /* continue */
+                        p = endtag;
                     }
-                    if ( parsed_tag )
-                        efree( parsed_tag );
-                    
-                }  /* Check for end of a XML field */
+                    if (parsed_tag)
+                        efree(parsed_tag);
 
-                else if(tag[0]=='/') 
+                }               /* Check for end of a XML field */
+
+                else if (tag[0] == '/')
                 {
-                    char *parsed_tag;
-                    if((metaNameXML=getXMLField(indexf, tag, sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta, &parsed_tag, fprop->real_path)))
+                    char   *parsed_tag;
+
+                    if (
+                        (metaNameXML =
+                         getXMLField(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, &parsed_tag, fprop->real_path)))
                     {
                         /* search for the metaname in the
-                        ** list of currentmetanames */
-                        if(currentmetanames) 
+                           ** list of currentmetanames */
+                        if (currentmetanames)
                         {
-                            for(i=currentmetanames-1;i>=0;i--) if(metaID[i]==metaNameXML->metaID) break;
-                            if(i>=0) currentmetanames=i;
-                            if(!currentmetanames) {
+                            for (i = currentmetanames - 1; i >= 0; i--)
+                                if (metaID[i] == metaNameXML->metaID)
+                                    break;
+                            if (i >= 0)
+                                currentmetanames = i;
+                            if (!currentmetanames)
+                            {
                                 metaID[0] = 1;
                                 position_meta = positionMeta;
                                 /* Restore position counter */
@@ -247,101 +280,112 @@ int in_junk=0;
                             }
                         }
                     }
-                    else if (isJunkMetaName(sw,tag+1))
+                    else if (isJunkMetaName(sw, tag + 1))
                     {
-                        if(in_junk>0) in_junk--;
+                        if (in_junk > 0)
+                            in_junk--;
                     }
-                    p=endtag;
+                    p = endtag;
 
 
-                    if ( parsed_tag )
-                        efree( parsed_tag );
+                    if (parsed_tag)
+                        efree(parsed_tag);
 
 
-                }  /*  Check for COMMENT */
-                else if ((tag[0]=='!') && sw->indexComments) {
-                    ftotalwords +=parsecomment(sw,tag,idx->filenum,structure,1,&positionMeta);
-                    p=endtag;
-                }    /* Default: Continue */
-                else {    
-                    p=endtag;
+                }               /*  Check for COMMENT */
+                else if ((tag[0] == '!') && sw->indexComments)
+                {
+                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
+                    p = endtag;
+                }               /* Default: Continue */
+                else
+                {
+                    p = endtag;
                 }
 
 
-                
-            } else p=tag;    /* tag not closed: continue */
-        } else {    /* No more '<' */
-            if((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
+
+            }
+            else
+                p = tag;        /* tag not closed: continue */
+        }
+        else
+        {                       /* No more '<' */
+            if ((currentmetanames || (!currentmetanames && !sw->ReqMetaName)) && !in_junk)
             {
 
                 newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-                ftotalwords +=indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-                if(newp!=p) efree(newp);
+                ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+                if (newp != p)
+                    efree(newp);
             }
-            p=NULL;
+            p = NULL;
         }
     }
     efree(metaID);
     addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
-    if(summary)
+    if (summary)
         efree(summary);
-	
+
     return ftotalwords;
 }
 
 
-char *parseXmlSummary(char *buffer,char *field,int size)
+char   *parseXmlSummary(char *buffer, char *field, int size)
 {
-char *summary=NULL,*tmp=NULL;
-int len;
+    char   *summary = NULL,
+           *tmp = NULL;
+    int     len;
 
-       /* Get the summary if no metaname/field is given */
-    if(!field && size)
+    /* Get the summary if no metaname/field is given */
+    if (!field && size)
     {
-        tmp=estrdup(buffer);
+        tmp = estrdup(buffer);
         remove_tags(tmp);
     }
-    else if(field)
+    else if (field)
     {
-        if((tmp=parsetag(field, buffer, 0,CASE_SENSITIVE_ON)))
+        if ((tmp = parsetag(field, buffer, 0, CASE_SENSITIVE_ON)))
         {
             remove_tags(tmp);
 
         }
     }
-    if(tmp)
+    if (tmp)
     {
         remove_newlines(tmp);
-        len=strlen(tmp);
-        if(size && len>size) len=size;
-        summary=emalloc(len+1);
-        memcpy(summary,tmp,len);
-        summary[len]='\0';
+        len = strlen(tmp);
+        if (size && len > size)
+            len = size;
+        summary = emalloc(len + 1);
+        memcpy(summary, tmp, len);
+        summary[len] = '\0';
         efree(tmp);
     }
     return summary;
 }
 
 
-int isJunkMetaName(SWISH *sw,char *tag)
+int     isJunkMetaName(SWISH * sw, char *tag)
 {
-struct swline *tmplist=sw->ignoremetalist;
-char *tmptag;
-    if(!tmplist) return 0;
-    tmptag=estrdup(tag);
-    tmptag=strtolower(tmptag);
-    while(tmplist)
+    struct swline *tmplist = sw->ignoremetalist;
+    char   *tmptag;
+
+    if (!tmplist)
+        return 0;
+    tmptag = estrdup(tag);
+    tmptag = strtolower(tmptag);
+    while (tmplist)
     {
-        if(strcmp(tmptag,tmplist->line)==0)
+        if (strcmp(tmptag, tmplist->line) == 0)
         {
             efree(tmptag);
             return 1;
         }
-        tmplist=tmplist->next;
+        tmplist = tmplist->next;
     }
     efree(tmptag);
     return 0;
 }
-
