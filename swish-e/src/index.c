@@ -188,13 +188,13 @@ void initModule_Index (SWISH  *sw)
     idx->IgnoreLimitPositionsArray = NULL;
 
        /* Swapping access file functions */
-    idx->swap_tell = NULL;
-    idx->swap_write = NULL;
-    idx->swap_seek = NULL;
-    idx->swap_read = NULL;
-    idx->swap_close = NULL;
-    idx->swap_getc = NULL;
-    idx->swap_putc = NULL;
+    idx->swap_tell = ftell;
+    idx->swap_write = fwrite;
+    idx->swap_close = fclose;
+    idx->swap_seek = fseek;
+    idx->swap_read = fread;
+    idx->swap_getc = fgetc;
+    idx->swap_putc = fputc;
 
     for( i = 0; i <MAX_LOC_SWAP_FILES ; i++)
     {
@@ -859,11 +859,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     else if ( fprop->bytes_read && fprop->bytes_read < fprop->fsize )
         flush_stream( fprop );
 
-        
-
-
-
-//***JMRUIZ    efree(rd_buffer);
 
     if (sw->verbose >= 3)
     {
@@ -1352,6 +1347,11 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
     }
 
 
+    if (sw->Index->swap_locdata)
+    {
+        progerr("Sorry, this routine is broken when using with -e\nIt will be fixed as soon as possible\nJose Ruiz\n");
+    }
+
     if (!estopmsz)
     {
         estopmsz = 1;
@@ -1425,7 +1425,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             }
 
             if(sw->Index->swap_locdata)
-                unSwapLocDataEntry(sw,ep);
+                unSwapLocDataEntry_old(sw,ep);
 
             /* Run through location list to get positions */
             for(l=ep->allLocationList;l;)
@@ -1769,6 +1769,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     ENTRY  *epi;
     int     totalwords;
     int     percent, lastPercent, n;
+    int     last_loc_swap;
 
 #define DELTA 10
 
@@ -1872,31 +1873,49 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     }
 
 
-    n = lastPercent = 0;
-    for (i = 0; i < totalwords; i++)
+    n = lastPercent = last_loc_swap = -1;
+    for (i = 0; i < SEARCHHASHSIZE; i++)
     {
-        if ( sw->verbose && totalwords > 10000 )  // just some random guess
+		/* If we are in economic mode -e restore locations */
+		if(sw->Index->swap_locdata)
+		{
+			if (((i * (MAX_LOC_SWAP_FILES - 1)) / (SEARCHHASHSIZE - 1)) != last_loc_swap)
+			{
+                /* Free not longer needed memory */
+				Mem_ZoneReset(sw->Index->totalLocZone);
+				last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (SEARCHHASHSIZE - 1);
+			    unSwapLocData(sw, last_loc_swap );
+			}
+		}
+        if ((epi = sw->Index->hashentries[i]))
         {
-            n++;
-            percent = (n * 100)/totalwords;
-            if (percent - lastPercent >= DELTA )
+            while (epi)
             {
-                printf("\r  Writing word data: %3d%%", percent );
-                fflush(stdout);
-                lastPercent = percent;
-            }
-        }
-
-        epi = ep->elist[i];
-
-        if (epi->u1.wordID > 0)   /* Not a stopword */
-        {
-            build_worddata(sw, epi, indexf);
-            write_worddata(sw, epi, indexf);
-        }
-    }
-
-
+                /* If we are in economic mode -e we must sort locations by metaID, filenum */
+		        if(sw->Index->swap_locdata)
+				{
+                    sortSwapLocData(sw, epi);
+				}
+                if ( sw->verbose && totalwords > 10000 )  // just some random guess
+				{
+                    n++;
+                    percent = (n * 100)/totalwords;
+                    if (percent - lastPercent >= DELTA )
+					{
+                        printf("\r  Writing word data: %3d%%", percent );
+                        fflush(stdout);
+                        lastPercent = percent;
+					}
+				}
+                if (epi->u1.wordID > 0)   /* Not a stopword */
+				{
+                    build_worddata(sw, epi, indexf);
+                    write_worddata(sw, epi, indexf);
+				}
+	            epi = epi->next;
+			}
+		}
+	}
     if (sw->verbose)
         printf("\r  Writing word data: Complete\n" );
 
@@ -2413,8 +2432,9 @@ void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesc
     if(sw->Index->swap_locdata)
     {
         tmploc = (LOCATION **)coalesced;
-        *tmploc = e->allLocationList;
-        e->allLocationList = (LOCATION *)SwapLocData(sw, e, coalesced, sz_coalesced);
+        *tmploc = (LOCATION *)e;   /* Preserve e in buffer */
+                                   /* The cast is for avoiding the warning */		                         
+        SwapLocData(sw, e, coalesced, sz_coalesced);
         return;
     }
 
