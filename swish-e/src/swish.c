@@ -969,19 +969,16 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
 /*************************************************************************
 *   Returns true if we think the program is called swish-search
+*   offers no real security
 *
 **************************************************************************/
 static int check_readonly_mode( char *prog )
 {
-    char   *tmp;
+    char   *tmp = prog + strlen(prog) - strlen("swish-search");
+
+    if ( tmp < prog )
+        return 0;
     
-
-    /* If argv is swish-search then you cannot index and/or merge */
-    if ( (tmp = strrchr( prog, DIRDELIMITER)) )
-        tmp++;  // bump past delimiter
-    else
-        tmp = prog;
-
     /* We must ignore case for WIN 32 */
     if (strcasecmp(tmp, "swish-search") == 0)
         return 1;

@@ -68,6 +68,41 @@ $Id$
 #include "filter.h"
 #include "metanames.h"
 
+
+/* Cough, hack, cough - convert slash to backslash for programs that are run via the shell */
+#ifdef _WIN32
+void make_windows_path( char *path )
+{
+    char    *c;
+
+    for ( c = path; *c; c++ )
+        if ( '/' == *c )
+            *c = '\\';
+}
+#endif
+
+/* Flip any backslashes to forward slashes, and remove trailing slash */
+
+
+void normalize_path(char *path)
+{
+    int     len = strlen( path );
+    char    *c;
+
+    /* For windows users */
+    for ( c = path; *c; c++ )
+        if ( '\\' == *c )
+            *c = '/';
+
+    while( len > 1 && path[len-1] == '/' )
+    {
+        path[len-1] = '\0';
+        len--;
+    }
+}
+
+    
+
 /* Is a file a directory?
 */
 
@@ -453,11 +488,8 @@ FILE *create_tempfile(SWISH *sw, const char *f_mode, char *prefix, char **file_n
     if ( tmpdir )
     {
         strcat( file_name, tmpdir );
-        if ( file_name[ strlen(tmpdir)-1] != DIRDELIMITER )
-        {
-            file_name[ strlen(tmpdir)]     = DIRDELIMITER;
-            file_name[ strlen(tmpdir)+1]   = '\0';
-        }
+        normalize_path( file_name );
+        strcat( file_name, "/" );
     }
 
     strcat( file_name, TEMP_FILE_PREFIX );

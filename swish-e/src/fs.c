@@ -300,12 +300,11 @@ static void    indexadir(SWISH * sw, char *dir)
 #else
     struct dirent   *dp;
 #endif
-    int             lens;
-    unsigned char   *s;
+    int             pathbuflen;
+    unsigned char   *pathname;
     DOCENTRYARRAY   *sortfilelist = NULL;
     DOCENTRYARRAY   *sortdirlist = NULL;
-    int             ilen1,
-                    ilen2;
+    int             dirlen = strlen( dir );
     struct MOD_FS   *fs = sw->FS;
 
     if (fs_already_indexed(sw, dir))
@@ -320,10 +319,10 @@ static void    indexadir(SWISH * sw, char *dir)
     /* but that bypasses pathname checks -- but that's checked per-file */
     /* This allows one to override File* directory checks */
     /* but allows a pathname check to be limited to full paths */
-    /* This also means you can avoid indexing an entire directory tree, */
+    /* This also means you can avoid indexing an entire directory tree with FileRules dirname, */
     /* but using a FileRules pathname allows recursion into the directory */
 
-    /* Reject due to FileRules dirname */
+    /* Reject entire directory due to FileRules dirname */
     if ( *dir && match_regex_list( dir, fs->filerules.dirname ) )
         return;
 
@@ -331,6 +330,8 @@ static void    indexadir(SWISH * sw, char *dir)
 
 
     /* Handle "FileRules directory" directive */
+    /*  - Check all files within the directory before proceeding -- means reading the directory twice */
+    /*  - All files are checked. */
 
     if (fs->filematch.dircontains || fs->filerules.dircontains )
     {
@@ -362,7 +363,8 @@ static void    indexadir(SWISH * sw, char *dir)
 
     /* Now, build list of files and directories */
 
-    s = (char *) emalloc((lens = MAXFILELEN) + 1);
+    pathbuflen = MAXFILELEN;
+    pathname = (char *) emalloc( pathbuflen + 1 ); 
 
     if ((dfd = opendir(dir)) == NULL)
     {
@@ -371,72 +373,71 @@ static void    indexadir(SWISH * sw, char *dir)
         return;
     }
 
-        
+
+    if ( dirlen == 1 && *dir == '/' ) /* case of root dir */
+        dirlen = 0;
 
     while ((dp = readdir(dfd)) != NULL)
     {
+        int filelen = strlen( dp->d_name );
+        
         /* For security reasons, don't index dot files */
+        /* Check for hidden under Windows? */
+
         if ((dp->d_name)[0] == '.')
             continue;
 
+
         /* Build full path to file */
 
-        ilen1 = strlen( dir );          /* Always includes trailing delimiter */
-        ilen2 = strlen(dp->d_name);
-
-        /* reallocate filename buffer, if needed (dir + path + 1 DIRDELIMITER + 1 null */
-        if ((ilen1 + 1 + ilen2) >= lens)
+        /* reallocate filename buffer, if needed (dir + path + '/' ) */
+        if ( dirlen + filelen + 1 > pathbuflen )
         {
-            lens = ilen1 + 1 + ilen2 + 200;
-            s = (char *) erealloc(s, lens + 1);
+            pathbuflen = dirlen + filelen + 200;
+            pathname = (char *) erealloc(pathname, pathbuflen + 1);
         }
 
-        memcpy(s, dir, ilen1);
-        memcpy(s + ilen1, dp->d_name, ilen2);
-        s[ilen1 + ilen2] = '\0';
+        if ( dirlen )
+            memcpy(pathname, dir, dirlen);
+
+        pathname[dirlen] = '/';  // Add path separator
+        memcpy(pathname + dirlen + 1, dp->d_name, filelen);
+        pathname[ dirlen + filelen + 1] = '\0';
 
         /* Check if the path is a symlink */
-        if (!fs->followsymlinks && islink(s))
+        if ( !fs->followsymlinks && islink( pathname ) )
             continue;
 
 
-        if ( isdirectory(s) )
+        if ( isdirectory(pathname) )
         {
-            /* Make all dirs end in trailing slash */
-            
-            if ( s[ilen1 + ilen2 -1 ] != DIRDELIMITER )
-            {
-                s[ilen1 + ilen2] = DIRDELIMITER;
-                s[ilen1 + ilen2 + 1] = '\0';
-            }
-            
-            sortdirlist = (DOCENTRYARRAY *) adddocentry(sortdirlist, s);
+            sortdirlist = (DOCENTRYARRAY *) adddocentry(sortdirlist, pathname);
         }
         else        
         {
-            if (fs_already_indexed(sw, s))
+            if (fs_already_indexed(sw, pathname))
                 continue;
 
-            if ( allgoodfiles || check_FileTests( s, &fs->filematch ) ) 
+            if ( allgoodfiles || check_FileTests( pathname, &fs->filematch ) ) 
             {
-                sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, s);
+                sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, pathname);
                 continue;
             }
 
 
-             if (!isoksuffix(dp->d_name, sw->suffixlist))
+            if (!isoksuffix(dp->d_name, sw->suffixlist))
                 continue;
 
 
             /* Check FileRules for rejects  */
-            if ( check_FileTests( s, &fs->filerules ) )
+            if ( check_FileTests( pathname, &fs->filerules ) )
                 continue;
 
-            sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, s);
+            sortfilelist = (DOCENTRYARRAY *) adddocentry(sortfilelist, pathname);
         }
     }
 
-    efree(s);
+    efree(pathname);
 
     closedir(dfd);
 
@@ -449,25 +450,21 @@ static void    indexadir(SWISH * sw, char *dir)
 
 static void    indexafile(SWISH * sw, char *path)
 {
-    char   *filename;
     struct MOD_FS *fs = sw->FS;
-
-
-    if (path[strlen(path) - 1] == DIRDELIMITER)
-        path[strlen(path) - 1] = '\0';
 
 
     if (!fs->followsymlinks && islink(path))
         return;
 
+
+    /* This only means "IndexDir test.html test.html test.html" will only index test.html once */
     if (fs_already_indexed(sw, path))
         return;
 
     /* Check for File|Pathmatch, and index if any match */
     if ( check_FileTests( path, &fs->filematch ) ) 
     {
-        filename = (char *) estrdup(path);
-        printfile(sw, filename);
+        printfile(sw, path);
         return;
     }
     
@@ -480,9 +477,8 @@ static void    indexafile(SWISH * sw, char *path)
         return;
 
 
-
-    filename = (char *) estrdup(path);
-    printfile(sw, filename);
+    /* Passed all tests, so index */
+    printfile(sw, path);
 }
 
 /**********************************************************
@@ -539,7 +535,8 @@ static void    printfile(SWISH * sw, char *filename)
     {
         if (sw->verbose >= 3)
         {
-            if ((s = (char *) strrchr(filename, DIRDELIMITER)) == NULL)
+            /* Only display file name */
+            if ((s = (char *) strrchr(filename, '/')) == NULL)
                 printf("  %s", filename);
             else
                 printf("  %s", s + 1);
@@ -552,8 +549,6 @@ static void    printfile(SWISH * sw, char *filename)
         do_index_file(sw, fprop);
 
         free_file_properties(fprop);
-
-        efree(filename);  //$$ that's ugly.  this routine doesn't really own filename
     }
 }
 
@@ -591,7 +586,10 @@ static void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
         }
 
         for (i = 0; i < e->currentsize; i++)
+        {
             printfile(sw, e->filenames[i]);
+            efree( e->filenames[i] );
+        }
 
         /* free the array and filenames */
         efree(e->filenames);
@@ -671,24 +669,16 @@ static DOCENTRYARRAY *adddocentry(DOCENTRYARRAY * e, char *filename)
 
 void    fs_indexpath(SWISH * sw, char *path)
 {
-    int     len = strlen( path );
-    char   *tmp = NULL;
+
+    normalize_path( path );  /* flip backslashes and remove trailing slash */
+
 
     if (isdirectory(path))
     {
-        tmp = estrndup( path, len + 2 );
-        if ( tmp[len-1] != DIRDELIMITER )
-        {
-            tmp[len] = DIRDELIMITER;
-            tmp[len+1] = '\0';
-        }
-
         if (sw->verbose >= 2)
-            printf("\nChecking dir \"%s\"...\n", tmp);
+            printf("\nChecking dir \"%s\"...\n", path);
 
-        indexadir(sw, tmp);
-
-        efree( tmp );
+        indexadir(sw, path);
     }
 
     else if (isfile(path))

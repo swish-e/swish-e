@@ -369,12 +369,6 @@ typedef int pid_t;		/* process ID */
 //#define TMPDIR "/var/tmp"
 //#endif
 			
-	/* Directory delimiter */
-#ifdef _WIN32
-#define DIRDELIMITER '\\'
-#else
-#define DIRDELIMITER '/'
-#endif
 
 /* Default Delimiter of phrase search */
 #define PHRASE_DELIMITER_CHAR '"'

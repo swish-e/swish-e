@@ -122,6 +122,8 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     cmd = emalloc(total_len + 20);
     strcpy(cmd, prog);
 
+    normalize_path( cmd );  /* for stat calls */
+
 
     /* this should probably be in file.c so filters.c can check, too */
     /* note this won't catch errors in a shebang line, of course */
@@ -138,6 +140,14 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
         progerrno("Cannot execute '%s': ", cmd);
 
 #endif
+
+#ifdef _WIN32
+
+    make_windows_path( cmd );
+
+#endif
+
+        
 
 
     progparameterslist = sw->Prog->progparameterslist;

@@ -333,6 +333,7 @@ int configModule_Index (SWISH *sw, StringList *sl)
      {
         idx->tmpdir = erealloc( idx->tmpdir, strlen( sl->word[1] ) + 1 );
         strcpy( idx->tmpdir, sl->word[1] );
+        normalize_path( idx->tmpdir );
 
         if (!isdirectory(idx->tmpdir))
            progerr("%s: %s is not a directory", w0, idx->tmpdir);

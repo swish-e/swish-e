@@ -115,7 +115,6 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
     int     retval = 1;
 
     int     i;
-    int     len;
     struct multiswline *list;
     struct swline *slist;
 
@@ -144,22 +143,19 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
         if (sl->n == 2)
         {
             retval = 1;
-            http->spiderdirectory = SafeStrCopy(http->spiderdirectory, sl->word[1], &http->lenspiderdirectory);
-            len = strlen(http->spiderdirectory);
-            /* Make sure the directory has a trailing slash */
-            if (len && (http->spiderdirectory[len - 1] != DIRDELIMITER))
-            {
-                if (len == http->lenspiderdirectory)
-                    http->spiderdirectory = erealloc(http->spiderdirectory, ++http->lenspiderdirectory + 1);
+            http->spiderdirectory = erealloc( http->spiderdirectory, strlen(sl->word[1])+2);
+            strcpy( http->spiderdirectory, sl->word[1] );
+            normalize_path( http->spiderdirectory );
+            
 
-                len = strlen( http->spiderdirectory );
-                http->spiderdirectory[len] = DIRDELIMITER;
-                http->spiderdirectory[len+1] = '\0';
-            }
             if (!isdirectory(http->spiderdirectory))
             {
                 progerr("SpiderDirectory. %s is not a directory", http->spiderdirectory);
             }
+
+            if ( strlen( http->spiderdirectory ) != 1 || http->spiderdirectory[0] != '/' )
+                strcat(http->spiderdirectory, "/" );  /* In this case, we just add the delimiter */
+
         }
         else
             progerr("SpiderDirectory requires one value");

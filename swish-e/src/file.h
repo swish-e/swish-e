@@ -21,6 +21,11 @@ $Id$
 */
 
 
+#ifdef _WIN32
+void make_windows_path( char *path );
+#endif
+
+void normalize_path(char *path);
 
 int isdirectory(char *);
 int isfile(char *);
