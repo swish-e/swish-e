@@ -1,5 +1,4 @@
 /*
-
 $Id$
 **
 ** This program and library is free software; you can redistribute it and/or
@@ -17,18 +16,35 @@ $Id$
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
 **
-** 2001-03-20 rasc   own module for this routine  (from swish.c)
+** 2001-05-05 rasc    initial coding
 **
 */
 
-#ifndef __HasSeenModule_KeycharOut
-#define __HasSeenModule_KeycharOut	1
+
+#ifndef __HasSeenModule_Entities
+#define __HasSeenModule_Entities	1
+
+
+
+/* Global module data */
+
+struct MOD_Entities {
+   int   convertEntities;
+};
 
 
 
 
-void OutputKeyChar (SWISH *sw, int keychar);
+
+void initModule_Entities (SWISH *sw);
+void freeModule_Entities (SWISH *sw);
+int  configModule_Entities (SWISH *sw, StringList *sl);
+
+unsigned char *sw_ConvHTMLEntities2ISO(SWISH *sw, unsigned char *s);
+unsigned char *strConvHTMLEntities2ISO (unsigned char *buf);
+int charEntityDecode (unsigned char **buf);
 
 
 #endif
+
 

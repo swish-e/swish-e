@@ -48,7 +48,9 @@ struct MOD_#modulename# {
 
 void initModule_#modulename# (SWISH *sw);
 void freeModule_#modulename# (SWISH *sw);
+void resetModule_#modulename# (SWISH *sw);
 int  configModule_#modulename# (SWISH *sw, StringList *sl);
+int  cmdlineModule_#modulename# (cmdline handling still to be defined...);
 .....
 
 #endif

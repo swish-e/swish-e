@@ -114,6 +114,8 @@ src/deflate.c
 src/deflate.h
 src/docprop.c
 src/docprop.h
+src/entities.c
+src/entities.h
 src/error.c
 src/error.h
 src/extprog.c

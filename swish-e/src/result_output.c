@@ -206,7 +206,7 @@ int configModule_ResultOutput  (SWISH *sw, StringList *sl)
   -- return:  # of args read
 */
 
-int cmdlineModule_ResultOutput_d (SWISH *sw, char opt, char **args)
+int cmdlineModule_ResultOutput (SWISH *sw, char opt, char **args)
 
 {
 

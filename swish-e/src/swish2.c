@@ -34,6 +34,7 @@ $Id$
 #include "docprop.h"
 #include "mem.h"
 #include "hash.h"
+#include "entities.h"
 #include "filter.h"
 #include "result_output.h"
 #include "search_alt.h"
@@ -53,7 +54,7 @@ int i;
 	initModule_ResultOutput (sw);
       initModule_SearchAlt (sw);
 	initModule_ResultSort (sw);
-
+	initModule_Entities (sw);
 
 	sw->followsymlinks = 0;
 	sw->TotalWords = 0;
@@ -171,7 +172,7 @@ struct DB_RESULTS *tmp,*tmp2;
 		/* Free dsiplay props arrays */
 	FreeOutputPropertiesVars(sw);
                 /* Free sort stuff */
-	freeModule_ResultSort (sw);;
+	freeModule_ResultSort (sw);
 }
 
 void SwishClose(SWISH *sw)
@@ -186,6 +187,7 @@ if(sw) {
 		freeModule_Filter (sw);
 		freeModule_ResultOutput (sw);
 		freeModule_SearchAlt (sw);
+		freeModule_Entities (sw);
 
 		/* Since it is possible to invoke SwishSearch several times
                 ** with the same SWISH handle, the freeModule_ResultSort stuff

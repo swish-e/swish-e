@@ -80,6 +80,23 @@ void freeModule_#modulename# (SWISH *sw)
 }
 
 
+/* 
+  -- reset structures for #modulename#
+  -- reset module data 
+*/
+
+void resetModule_#modulename# (SWISH *sw)
+
+{
+   struct MOD_#modulename# *md = sw->#modulename#;
+
+      md->....;  (md = moduledata)
+      ...
+      ... e.g. for new search operations, etc.
+
+}
+
+
 /*
 ** ----------------------------------------------
 ** 
@@ -107,16 +124,16 @@ int configModule_#modulename# (SWISH *sw, StringList *sl)
   w0 = sl->word[0];
   retval = 1;
 
-  if (strcasecmp(w0, "....xxxx....")==0) {
+  if (!strcasecmp(w0, "ExampleConfigDirective1")) {
       if (sl->n==2) {
-          ... example
+             md->mydata1 = ...
              progerr("%s: errormessage ",w0);
           }
       } else progerr("%s: requires one value",w0);
   }
-  else if (strcasecmp(w0, ".......xyyyyy...")==0) {
+  else if (!strcasecmp(w0, "ExampleConfigDirective2")) {
       if (sl->n==3 || sl->n==4) {
-        ... example
+        md->mydata2 = ....
       } else progerr("%s: requires .....",w0);
   }
   ....... more config directives
@@ -136,7 +153,7 @@ int configModule_#modulename# (SWISH *sw, StringList *sl)
  -- Set param from cmdline for this Module
 */
 
-int cmdlineModule_#modulename# (SWISH *sw, .....)
+int cmdlineModule_#modulename# (SWISH *sw, ..... to be defined ...)
 
 {
 .......
