@@ -240,9 +240,9 @@ sub process_server {
 
     # set the delay
     unless ( defined $server->{delay_sec} ) {
-
         if ( defined $server->{delay_min} && $server->{delay_min} =~ /^\d+\.?\d*$/ ) {
-            $server->{delay_sec} = $server->{delay_min} * 60;
+            # change if ever move to Time::HiRes
+            $server->{delay_sec} = int ($server->{delay_min} * 60);
         }
         
         $server->{delay_sec} = 5 unless defined $server->{delay_sec};

@@ -276,8 +276,11 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             fprop->orig_path = estrdup( real_path );
 
             /* Set the doc type from the header */
-            if ( docType )
+            if ( docType ) 
+            {
                 fprop->doctype   = docType;
+                docType = 0;
+            } 
 
 
             /* set real_path, doctype, index_no_content, filter, stordesc */
