@@ -600,7 +600,7 @@ sub process_link {
 
     my $request = HTTP::Request->new('GET', $uri );
     $request->header('Accept-encoding', 'gzip; deflate') if $can_uncompress;
-
+    $request->header('Referer', $parent ) if $parent;
 
 
     # Set basic auth if defined - use URI specific first, then credentials
