@@ -26,7 +26,7 @@ $Id$
 #include "swish.h"
 #include "mem.h"
 #include "date_time.h"
-
+#include "getruntime.c"
 
 
 
@@ -77,7 +77,9 @@ double TimeElapsed(void)
 /* return CPU time used */
 double TimeCPU(void)
 {
-    return  ((double) clock()) / CLOCKS_PER_SEC;
+    long micro_sec = get_run_time();
+    return ((double) micro_sec ) / 1000000.0;
+    //return  ((double) clock()) / CLOCKS_PER_SEC;
 }
 
 

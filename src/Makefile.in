@@ -219,7 +219,8 @@ libswishindex_la_SOURCES = \
 	parse_conffile.c parse_conffile.h \
 	swregex.c swregex.h \
 	db_write.c  \
-	docprop_write.c
+	docprop_write.c \
+        getruntime.c getruntime.h
 
 
 include_HEADERS = swish-e.h
@@ -243,7 +244,7 @@ libswish_e_la_OBJECTS = $(am_libswish_e_la_OBJECTS)
 am_libswishindex_la_OBJECTS = fs.lo http.lo httpserver.lo extprog.lo \
 	methods.lo html.lo txt.lo xml.lo entities.lo index.lo merge.lo \
 	pre_sort.lo file.lo filter.lo parse_conffile.lo swregex.lo \
-	db_write.lo docprop_write.lo
+	db_write.lo docprop_write.lo getruntime.lo
 libswishindex_la_OBJECTS = $(am_libswishindex_la_OBJECTS)
 EXTRA_PROGRAMS = libtest$(EXEEXT)
 bin_PROGRAMS = swish-e$(EXEEXT)
@@ -274,13 +275,13 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/error.Plo ./$(DEPDIR)/extprog.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/fhash.Plo ./$(DEPDIR)/file.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/filter.Plo ./$(DEPDIR)/fs.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/hash.Plo ./$(DEPDIR)/headers.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/html.Plo ./$(DEPDIR)/http.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/httpserver.Plo ./$(DEPDIR)/index.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/keychar_out.Po ./$(DEPDIR)/libtest.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/list.Plo ./$(DEPDIR)/mem.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/merge.Plo ./$(DEPDIR)/metanames.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/methods.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/getruntime.Plo ./$(DEPDIR)/hash.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/headers.Plo ./$(DEPDIR)/html.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/http.Plo ./$(DEPDIR)/httpserver.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/index.Plo ./$(DEPDIR)/keychar_out.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libtest.Po ./$(DEPDIR)/list.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/mem.Plo ./$(DEPDIR)/merge.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/metanames.Plo ./$(DEPDIR)/methods.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parse_conffile.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parser.Plo ./$(DEPDIR)/pre_sort.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/proplimit.Plo ./$(DEPDIR)/ramdisk.Plo \
@@ -463,6 +464,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getruntime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/headers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html.Plo@am__quote@
