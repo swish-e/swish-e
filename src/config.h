@@ -338,6 +338,9 @@
 /* This is the maximum size of a block of coalesced locations */
 #define COALESCE_BUFFER_MAX_SIZE 1<<18  /* (256 KB) */
 
+/* 2003/06 jmruiz -- Snowball's Stemmers activation */
+#define SNOWBALL 1
+
 /* 2001/08 jmruiz -- File System sort flag - 0 means that filenames
 ** will not be indexed - 1 means that filenames will be indexed */
 #define SORT_FILENAMES 0
