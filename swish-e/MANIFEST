@@ -172,6 +172,8 @@ src/stemmer.h
 src/string.c
 src/string.h
 src/swish.c
+src/swish_qsort.c
+src/swish_qsort.h
 src/swish_words.c
 src/swish_words.h
 src/swish.h
