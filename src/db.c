@@ -178,7 +178,8 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
     int     i, j,
-            curmetaID;
+            curmetaID,
+            sz_worddata;
     unsigned long    tmp,
             curmetanamepos;
     int     metaID;
@@ -292,7 +293,13 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     tmp=q - sw->Index->worddata_buffer;
     PACKLONG2(tmp,sw->Index->worddata_buffer+curmetanamepos);
 
-    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,q - sw->Index->worddata_buffer,indexf->DB);
+    sz_worddata = q - sw->Index->worddata_buffer;
+
+    /* Adjust word positions if ignorelimit was set */
+    if(sw->Index->nIgnoreLimitWords)
+         adjustWordPositions(sw->Index->worddata_buffer, &sz_worddata, sw->indexlist->header.totalfiles, sw->Index->IgnoreLimitPositionsArray);
+
+    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sz_worddata,indexf->DB);
 
     if(sw->Index->swap_locdata)
         Mem_ZoneReset(sw->Index->totalLocZone);
