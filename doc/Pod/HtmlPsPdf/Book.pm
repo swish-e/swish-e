@@ -181,7 +181,7 @@ sub create_html_version {
 
 
     # strip the .pod extension
-    my @basenames = map { s/\.pod$//; $_} @{$ra_ordered_srcs};
+    @basenames = map { s/\.pod$//; $_} @{$ra_ordered_srcs};
 
     # Process each pod
     for (my $i=0; $i < @basenames; $i++) {

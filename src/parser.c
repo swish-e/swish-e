@@ -363,9 +363,11 @@ static int parse_chunks( PARSE_DATA *parse_data )
     // But, it probably should be called when done parsing.
     // xmlCleanupParser();
 
-    /* Check for abort condition set while parsing (isoktitle, NoContents) */
 
-    if ( parse_data->abort && fprop->index_no_content && !parse_data->total_words )
+    /* Check for abort condition set while parsing (isoktitle, NoContents) */
+    /* (But may not abort if the HTML parser never sees any data) */
+
+    if ( fprop->index_no_content && !parse_data->total_words )
     {
         append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
 
@@ -634,6 +636,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
             /* Extract out links from images */
             else if ( strcmp( tag, "img") == 0 )
             {
+                /* Index contents of ALT tag text */
                 if (parse_data->sw->IndexAltTag)
                     index_alt_tab( parse_data, attr );
                     
@@ -1088,7 +1091,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         flush_buffer( parse_data, 10 );
         parse_data->structure[IN_HEAD_BIT] += bump;
 
-        /* Check for NoContents - can quit looking now once out of <head> block */
+        /* Check for NoContents - can quit looking now once out of <head> block since only looking for <title>*/
 
         if ( !start && parse_data->fprop->index_no_content )
             abort_parsing( parse_data, 1 );
