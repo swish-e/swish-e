@@ -560,7 +560,7 @@ char  **getResultSortProperties(SWISH *sw, RESULT * r)
 
     /* $$$ -- need to pass in the max string length */
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
-        props[i] = getResultPropAsString(sw, r, indexf->propIDToSort[i]);
+        props[i] = getResultPropAsString(r, indexf->propIDToSort[i]);
 
     return props;
 }
@@ -799,7 +799,7 @@ int *CreatePropSortArray(SWISH *sw, IndexFILE *indexf, struct metaEntry *m, File
             memset(&fi, 0, sizeof( FileRec ));
             fi.filenum = i+1;
 
-            d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
+            d = ReadSingleDocPropertiesFromDisk(indexf, &fi, me->metaID, 0 );
 
             s = emalloc( d->propLen + 1 );
             memcpy( s, d->propValue, d->propLen );
@@ -826,7 +826,7 @@ int *CreatePropSortArray(SWISH *sw, IndexFILE *indexf, struct metaEntry *m, File
             fi->prop_index = NULL;
 
 
-        PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, fi, m->metaID, MAX_SORT_STRING_LEN);
+        PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(indexf, fi, m->metaID, MAX_SORT_STRING_LEN);
         PropLookup[i].prop_index = fi->prop_index;  // save it for next time
         sort_array[i] = i;
     }

@@ -79,7 +79,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
 
         printf("ReadAllDocProperties:\n");
-        fi.docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
+        fi.docProperties =  ReadAllDocPropertiesFromDisk( indexf, i+1 );
         dump_file_properties( indexf, &fi );
         freefileinfo( &fi );
 
@@ -100,7 +100,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
             {
                 int metaID = header->propIDX_to_metaID[j];
 
-                if ( !(p = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, metaID, 0 )) )
+                if ( !(p = ReadSingleDocPropertiesFromDisk(indexf, &fi, metaID, 0 )) )
                     continue;
 
                 meta_entry = getPropNameByID( &indexf->header, metaID );
@@ -278,7 +278,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                             r.filenum = filenum;
                             r.fi.filenum = filenum;
 
-                            s = getResultPropAsString( sw, &r, m->metaID);
+                            s = getResultPropAsString( &r, m->metaID);
 
                             printf(" %s", s );
                             efree( s );

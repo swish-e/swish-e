@@ -564,7 +564,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
         /* Data source */
 
-        else if (c == 'S')
+        if (c == 'S')
         {
             struct _indexing_data_source_def **data_source;
 
@@ -640,7 +640,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 progerr(" '-f' requires list of index files.");
                 
             while ( (w = next_param( &argv )) )
-                sw->indexlist = addindexfile(sw->indexlist, w);
+                addindexfile(sw, w);
 
             continue;
         }
@@ -794,7 +794,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             {
                 /* Last one listed is the output file */
                 if ( is_another_param( argv  ) )
-                    sw->indexlist = addindexfile(sw->indexlist, w);
+                    addindexfile(sw, w);
                 else
                     params->merge_out_file = estrdup( w );
             }
@@ -1019,7 +1019,7 @@ static void cmd_dump( SWISH *sw, CMDPARAMS *params )
 
     /* Set the default index file */
     if ( sw->indexlist == NULL )
-        sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
+        addindexfile(sw, INDEXFILE);
 
     while ( sw->indexlist != NULL )
     {
@@ -1060,7 +1060,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     /* Default index file */
     if ( sw->indexlist == NULL )
-        sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
+        addindexfile(sw, INDEXFILE);
 
 
     if (!hasdir)
@@ -1174,7 +1174,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
     /* create output */
     sw_out = SwishNew();
 
-    sw_out->indexlist = addindexfile(sw_out->indexlist, params->merge_out_file);
+    addindexfile(sw_out, params->merge_out_file);
 
         
     /* Update Economic mode */
@@ -1204,7 +1204,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 static void cmd_keywords( SWISH *sw, CMDPARAMS *params )
 {
     if (!sw->indexlist)
-        sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
+        addindexfile(sw, INDEXFILE);
 
     OutputKeyChar(sw, (int) (unsigned char) params->keychar);
 }    
@@ -1224,7 +1224,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
     /* Set default index file, if none specified */
     if (!sw->indexlist)
-        sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
+        addindexfile(sw, INDEXFILE);
 
 
     /* Set the result sort order */

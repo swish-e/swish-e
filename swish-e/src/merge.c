@@ -681,7 +681,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
         fi.filenum = cur_index->path_order[cur_index->current_file];
 
         if ( !cur_index->cur_prop )
-            cur_index->cur_prop = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->path_meta->metaID, 0 );
+            cur_index->cur_prop = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->path_meta->metaID, 0 );
 
 
         if ( !winner )
@@ -707,7 +707,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
 
         /* read the modified time for the current file */
         /* Use the same fi record, because it has the cached prop seek locations */
-        cp = ReadSingleDocPropertiesFromDisk(sw_input, cur_index, &fi, cur_index->modified_meta->metaID, 0 );
+        cp = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->modified_meta->metaID, 0 );
 
 
         /* read the modified time for the current winner */
@@ -716,7 +716,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
         memset(&fi, 0, sizeof( FileRec ));
 
         fi.filenum = winner->path_order[winner->current_file];
-        wp = ReadSingleDocPropertiesFromDisk(sw_input, winner, &fi, cur_index->modified_meta->metaID, 0 );
+        wp = ReadSingleDocPropertiesFromDisk(winner, &fi, cur_index->modified_meta->metaID, 0 );
 
         ret = Compare_Properties( cur_index->modified_meta, cp, wp );
 
@@ -806,7 +806,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, 
 #endif
 
     /* read the properties and map them as needed */
-    d = ReadAllDocPropertiesFromDisk( sw_input, cur_index, cur_index->filenum );
+    d = ReadAllDocPropertiesFromDisk( cur_index, cur_index->filenum );
 
 
 #ifdef DEBUG_MERGE
