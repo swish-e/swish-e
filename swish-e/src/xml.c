@@ -108,7 +108,6 @@ int ftotalwords;
 int *metaName;
 int metaNamelen;
 int *positionMeta;    /* Position of word in file */
-int *doNotBumpPosition;    /* DoNotBumpMetaflag */
 int tmpposition=1;    /* Position of word in file */
 int currentmetanames;
 unsigned char *newp,*p,*endjunktag, *endjunktag2, *tag, *endtag=NULL,*endproptag=NULL,*tempprop;
@@ -128,10 +127,9 @@ char *summary=NULL;
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
 	positionMeta = (int *)emalloc(metaNamelen*sizeof(int));
-	doNotBumpPosition = (int *)emalloc(metaNamelen*sizeof(int));
 	currentmetanames=ftotalwords=0;
 	structure=IN_FILE;
-	metaName[0]=1; positionMeta[0]=1; doNotBumpPosition[0]=1;
+	metaName[0]=1; positionMeta[0]=1; 
 	
 	for(p=buffer;p && *p;) {
 		if((tag=strchr(p,'<'))) {   /* Look for '<' */
@@ -159,18 +157,16 @@ char *summary=NULL;
 							if(currentmetanames==metaNamelen) {
 								metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));
 								positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));
-								doNotBumpPosition=(int *) erealloc(doNotBumpPosition,metaNamelen*sizeof(int));
 							}
 							/* add netaname to array of current metanames */
 							metaName[currentmetanames]=metaNameXML->metaID;
 							/* Preserve position counter */
 							if(!currentmetanames) tmpposition=positionMeta[0];
 							
-							/* Bump position for all metanames except for the included in dontbumppositionOnmetatags */
-							for(i=0;i<currentmetanames;i++)
-								if(!doNotBumpPosition[i])
+							/* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
+							if(!isDontBumpMetaName(sw,tag))
+								for(i=0;i<currentmetanames;i++)
 									positionMeta[i]++;
-							doNotBumpPosition[currentmetanames]=isDontBumpMetaName(sw,tag);
 							/* Init word counter for the metaname */
 							positionMeta[currentmetanames++] = 1;
 							/* $$$$$ TODO Check for XML properties here. Eg: <mytag myprop="bla bla" myotherprop="bla bla"> */
