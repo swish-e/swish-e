@@ -221,8 +221,8 @@ use Time::HiRes qw(gettimeofday tv_interval);
 
     # these are normally outside of webspace
 
-    $swish_index  = '/path/to/example.index';
-    $tmpl_path    = '/path/to/swish-e/example/swish.tmpl';
+    $Swish_Index  = '/path/to/example.index';
+    $Tmpl_Path    = '/path/to/swish-e/example/swish.tmpl';
 
 
     # here list the properties that are defined in your index,
@@ -236,9 +236,9 @@ use Time::HiRes qw(gettimeofday tv_interval);
     # specify their names here.  These will be used when generating the query.
     # make an empty list "()" if not used.
     
-    @MetaNames = qw/name discription/;
+    @MetaNames = qw/name description/;
 
-    $Metaname_Default = 'discription';  # set the default radio button
+    $Metaname_Default = 'description';  # set the default radio button
 
     # if $All_Meta is set true, and @MetaNames is not the empty list, then
     # all queries must be a metaname search.
