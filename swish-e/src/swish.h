@@ -541,13 +541,14 @@ typedef struct RESULT
     int     structure;
     int     frequency;
     int     tfrequency;         /* Total frequency of result */
-    int    *position;
 
     /* file position where this document's properties are stored */
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
     struct SWISH *sw;           /* why is this needed? */
+
+    int     position[0];
 }
 RESULT;
 

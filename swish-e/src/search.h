@@ -96,7 +96,7 @@ RESULT *orresultlists(SWISH *, RESULT *, RESULT *);
 RESULT *notresultlist(SWISH *, RESULT *, IndexFILE *);
 RESULT *notresultlists(SWISH *, RESULT *, RESULT *);
 RESULT *phraseresultlists(SWISH *, RESULT *, RESULT *, int);
-RESULT *addtoresultlist(RESULT *, int, int, int, int, int, int *, IndexFILE *,SWISH *);
+RESULT *addtoresultlist(RESULT *, int, int, int, int, int, IndexFILE *,SWISH *);
 
 
 RESULT *sortresultsbyfilenum(RESULT *);

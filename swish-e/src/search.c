@@ -1072,7 +1072,6 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             filenum,
             structure,
             frequency,
-           *position,
             found,
             len,
             curmetaID,
@@ -1092,7 +1091,6 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     unsigned char flag;
 
     x = j = filenum = structure = frequency = len = curmetaID = index_structure = index_structfreq = 0;
-    position = NULL;
     nextposmetaname = 0L;
 
 
@@ -1185,15 +1183,14 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             {                   /* Read on all items */
                 uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
                 filenum += tmpval;
-                position = (int *) emalloc(frequency * sizeof(int));
-                uncompress_location_positions(&s,flag,frequency,position);
 
                     /* Store -1 in rank - This way delay its computation */
                     /* This is very useful if we sorted by other property */
                 rp = (RESULT *) addtoresultlist(
                     rp, filenum,
                     -1,
-                    structure, tfrequency, frequency, position, indexf, sw);
+                    structure, tfrequency, frequency, indexf, sw);
+                uncompress_location_positions(&s,flag,frequency,rp->head->position);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1231,12 +1228,14 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             rp = sw->Search->resulthashlist[i];
             while (rp != NULL)
             {
-                rp2 = (RESULT *) addtoresultlist(rp2, rp->filenum, -1, rp->structure, rp->tfrequency, rp->frequency, rp->position, indexf, sw);
                 tmp = rp->next;
-                /* Do not free position in freeresult
-                   It was added to rp2 !! */
-                rp->position = NULL;
-                freeresult(sw, rp);
+
+                if(rp2 == NULL)
+                    rp2 = rp;
+                else
+                    rp2->head->next = rp;
+                rp2->head = rp;
+
                 rp = tmp;
             }
         }
@@ -1412,7 +1411,6 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
              * and recompute a new, equally weighted average.
              */
             int     newRank = 0;
-            int    *allpositions;
 
             if(r1->rank == -1)
                 r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
@@ -1424,13 +1422,12 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
                * Storing all positions could be useful
                * in the future
              */
-            allpositions = (int *) emalloc((r1->frequency + r2->frequency) * sizeof(int));
 
-            CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
-            CopyPositions(allpositions, r1->frequency, r2->position, 0, r2->frequency);
             newnode =
-                (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, allpositions,
+                (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, 
                                            r1->indexf, sw);
+            CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
+            CopyPositions(newnode->head->position, r1->frequency, r2->position, 0, r2->frequency);
             r1 = r1->next;
             r2 = r2->next;
         }
@@ -1493,12 +1490,14 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
         rp = sw->Search->resulthashlist[i];
         while (rp != NULL)
         {
-            newnode = (RESULT *) addtoresultlist(newnode, rp->filenum, rp->rank, rp->structure, rp->tfrequency, rp->frequency, rp->position, rp->indexf, sw);
             tmp = rp->next;
-            /* Do not free position in freeresult 
-               It was added to newnode !! */
-            rp->position = NULL;
-            freeresult(sw, rp);
+
+            if(newnode == NULL)
+                newnode = rp;
+            else
+                newnode->head->next = rp;
+            newnode->head = rp;
+
             rp = tmp;
         }
     }
@@ -1612,7 +1611,7 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
     {
 
         if (!ismarked(markentrylist, i))
-            newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, 0, NULL, indexf, sw);
+            newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, 0, indexf, sw);
     }
 
     freemarkentrylist(markentrylist);
@@ -1678,10 +1677,13 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
                 newRank = (r1->rank + r2->rank) / 2;
                 /*
                    * Storing positions is neccesary for further
-                   * operations
+                   * operations 
                  */
                 newnode =
-                    (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, found, allpositions, r1->indexf, sw);
+                    (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, found, r1->indexf, sw);
+
+                CopyPositions(newnode->head->position, 0, allpositions, 0, found);
+                efree(allpositions);
             }
             r1 = r1->next;
             r2 = r2->next;
@@ -1716,12 +1718,12 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 */
 
 
-RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int tfrequency, int frequency, int *position, IndexFILE * indexf, SWISH * sw)
+RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
 
 
-    newnode = (RESULT *) emalloc(sizeof(RESULT));
+    newnode = (RESULT *) emalloc(sizeof(RESULT) + frequency * sizeof(int));
     memset( newnode, 0, sizeof(RESULT));
     newnode->fi.filenum = newnode->filenum = filenum;
 
@@ -1729,8 +1731,6 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int t
     newnode->structure = structure;
     newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
-    if (frequency && position)
-        newnode->position = position;
     newnode->indexf = indexf;
     newnode->sw = (struct SWISH *) sw;
 
@@ -1886,10 +1886,6 @@ void    freeresult(SWISH * sw, RESULT * rp)
 
     if (rp)
     {
-        if (rp->position)
-            efree(rp->position);
-
-
         if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
         {
             for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
@@ -1968,7 +1964,6 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
            *r1b,
            *r2b;
     int     res = 0;
-    int    *allpositions;
 
     if (!r1)
         return NULL;
@@ -1991,11 +1986,10 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
                * Storing all positions could be useful
                * in the future
              */
-            allpositions = (int *) emalloc((r1->frequency) * sizeof(int));
 
-            CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
 
-            newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, allpositions, r1->indexf, sw);
+            newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, r1->indexf, sw);
+            CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
             r1 = r1->next;
         }
         else if (res > 0)
@@ -2011,10 +2005,8 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     /* Add remaining results */
     for (; r1; r1 = r1->next)
     {
-        allpositions = (int *) emalloc((r1->frequency) * sizeof(int));
-
-        CopyPositions(allpositions, 0, r1->position, 0, r1->frequency);
-        newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, allpositions, r1->indexf, sw);
+        newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, r1->indexf, sw);
+        CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
     }
     /* Free memory no longer needed */
     while (r1b)
@@ -2156,14 +2148,14 @@ void    initresulthashlist(SWISH * sw)
 */
 /* Jose Ruiz 04/00
 ** For better performance in large "or"
-** keep the lists sorted by filename
+** keep the lists sorted by filenum
 */
 void    mergeresulthashlist(SWISH *sw, RESULT *r)
 {
     unsigned hashval;
     RESULT *rp,
-           *tmp;
-    int    *newposition;
+           *tmp,
+           *newnode = NULL;
 
     tmp = NULL;
     hashval = bignumhash(r->filenum);
@@ -2180,29 +2172,37 @@ void    mergeresulthashlist(SWISH *sw, RESULT *r)
             if(r->rank == -1)
                 r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
 
-            rp->rank += r->rank;
-            rp->structure |= r->structure;
-            rp->tfrequency = 0;
+            newnode = (RESULT *) emalloc(sizeof(RESULT) + (rp->frequency + r->frequency) * sizeof(int));
+            memset( newnode, 0, sizeof(RESULT));
+            newnode->fi.filenum = newnode->filenum = rp->filenum;
+
+            newnode->rank = rp->rank + r->rank;
+            newnode->structure = rp->structure | r->structure;
+            newnode->tfrequency = 0;
+            newnode->frequency = rp->frequency + r->frequency;
+            newnode->indexf = rp->indexf;
+            newnode->sw = (struct SWISH *) rp->sw;
+
             if (r->frequency)
             {
-                if (rp->frequency)
-                {
-                    newposition = (int *) emalloc((rp->frequency + r->frequency)* sizeof(int));
-
-                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
-                    CopyPositions(newposition, r->frequency, rp->position, 0, rp->frequency);
-                }
-                else
-                {
-                    newposition = (int *) emalloc(r->frequency * sizeof(int));
-
-                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
-                }
-                rp->frequency += r->frequency;
-                efree(rp->position);
-                rp->position = newposition;
+                CopyPositions(newnode->position, 0, r->position, 0, r->frequency);
             }
+            if (rp->frequency)
+            {
+                CopyPositions(newnode->position, r->frequency, rp->position, 0, rp->frequency);
+            }
+
+            if(tmp == NULL)
+            {
+                sw->Search->resulthashlist[hashval] = newnode;
+            }
+            else
+            {
+                tmp->next = newnode;
+            }
+            newnode->next = rp->next;
             freeresult(sw, r);
+            freeresult(sw, rp);
             return;
         }
         else if (r->filenum < rp->filenum)
