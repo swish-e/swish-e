@@ -23,55 +23,96 @@ use strict;
 # $Id$
 
 
-# Global vars used
+# Global vars used -- do not edit these
 
     use vars qw/
         $Swish_Binary $Swish_Index $Tmpl_Path @PropertyNames
         @MetaNames $Metaname_Default $All_Meta $Page_Size
+        @Sorts %SortNames $Highlight
     /;
 
 
 #------------ Configuration ----------------------
 
-    # Set these to as needed for your system and your index file
+    # Set these to as needed for your system and your index files
 
     # You might want to read these in from a file (based on
     # the script name or extra path info), or use PerlSetVars
     # under mod_perl to pass in the parameters.
 
 
-    # These paths are normally outside of webspace
+    ## These paths are normally (and probably should be) outside of webspace
+    ## This is just an example, but...
 
-    # This one is obvious, I hope:
+    ## /usr/local/www/htdocs        - web document root
+    ## /usr/local/www/htdocs/images - e.g. place images here
+    ## /usr/local/www/cgi-bin       - web cgi-bin directory (place swish.cgi here)
+    ## /usr/local/www/templates     - place template file here (out of web space)
+    ## /usr/local/www/swish-e       - place index(es) here
+    
+
+
+
+    # Path to the swish-e binary.
 
     $Swish_Binary = '/usr/local/bin/swish-e';
 
 
     # The index file can also be a reference to an array of index files.
 
-    $Swish_Index  = '/path/to/example.index';
+    $Swish_Index  = '../swish-e/index.swish-e';
 
 
     # The template file is the one supplied with this example CGI script
+    # Modify to meet your design needs
 
-    $Tmpl_Path    = '/path/to/swish-e/example/swish.tmpl';
+    $Tmpl_Path    = '../templates/swish.tmpl';
+
+
+    # This lists the properties that you want to sort by in the form.  You can include
+    # any property name -- either the swish internal properties, or ones you add with
+    # the PropertyNames configuration directive.
+    # The order is the order they are shown in the drop-down list.
+
+    @Sorts = qw/swishrank swishtitle swishdocpath swishdocsize swishlastmodified/;
+
+
+    # This maps swish "propery names" to friendly names for the sort drop-down box.
+    # These are only the lables -- you must list which sorts to use in the $Sorts variable above.
+    # If a name listed in $Sorts is NOT listed in %SortNames, then the name in $Sorts will be used.
+    
+
+    %SortNames = (
+        swishreccount       => 'Record Count',  # Integer  Result record counter
+        swishtitle          => 'Title',         # String   Document title (html only)
+        swishrank           => 'Rank',          # Integer  Result rank for this hit
+        swishdocpath        => 'URL',           # String   URL or filepath to document
+        swishdocsize        => 'Size',          # Integer  Document size in bytes
+        swishlastmodified   => 'Modified Date', # Date     Last mod. date of document
+        swishdescription    => 'Description',   # String   Description of document (see:StoreDescription)
+        swishdbfile         => 'Index',         # String   Path of swish database indexfile
+        AddYourPropertyHere => 'Special Sort',  # Add your own like this!
+    );
+
 
 
     # Here list the properties that are defined in your index,
     # and that you want displayed with your search results
-    # Comment out if not used
+    # Comment out if not used.  You do not need to add the swish "internal" property names.
 
-    @PropertyNames   = qw/last_name first_name city phone/;
+    #@PropertyNames   = qw/last_name first_name city phone/;
+
+    #( or use if curious and don't have PropertyNames defined in your index )
+    #@PropertyNames = qw/swishdocpath swishdocsize/;
 
 
-
-    # If you defined MetaNames in your document (to search by field)
+    # If you defined MetaNames in your document (to limit searching by field)
     # specify their names here.  These will be used when generating the query.
     # Comment out if not used
     # This adds a radio group on the form for limiting your search if more than one
     # MetaName is listed.
     
-    @MetaNames = qw/name description/;
+    #@MetaNames = qw/name description/;
 
 
     # The $Metaname_Default does two things.  If you set @MetaNames to more than one
@@ -79,7 +120,7 @@ use strict;
     # If you set MetaNames to the empty list, but set $MetaName_Default to a value, then
     # this value will be used as the metaname for all queries.
 
-    $Metaname_Default = 'description';  # set the default radio button
+    #$Metaname_Default = 'description';  # set the default radio button
 
     # if $All_Meta is set true, and @MetaNames is not the empty list, then
     # all queries must be a metaname search.
@@ -88,6 +129,11 @@ use strict;
     # For HTML docs, it's typically 0, for XML set to 1.
 
     $All_Meta = 0;
+
+    # This does VERY SIMPLE bolding of search word if <swishdescription> is used.
+    # Not really recommended.  See the Swish-e FAQ for more info.
+
+    $Highlight = 1;  
 
 
     $Page_Size    = 20;  # results per page
@@ -442,21 +488,13 @@ sub run_query {
        properties => \@PropertyNames,
        timeout  => 10,  # kill script if query takes more than ten secs
 
-       # Here's a way to make *every* field available to the template
-       # But then you must explicitly set the field names in the template
-       #results  => sub { push @results, { map { $_, $_[1]->$_() } $_[1]->field_names } },
+       # this maps all available properties (internal and user defined) to the tempalte.
 
-       # Here's another, more general way that makes the template cleaner.
-       results => sub {
-            my %result = (
-                FILE   => $_[1]->swishdocpath,
-                TITLE  => $_[1]->swishtitle,
-                TIME   => $_[1]->swishlastmodified,
-                RECNUM => $_[1]->swishreccount,
-                RANK   => $_[1]->swishrank,
-            );
+       results  => sub {
+            my %h = map { $_, $_[1]->$_() } $_[1]->field_names;
 
-            $result{PROPERTIES} =
+            # This just makes it easy to automatically display properties
+            $h{PROPERTIES} =
                 [ map {
                     {
                         PROP_NAME  => $_,
@@ -464,8 +502,21 @@ sub run_query {
                     }
                   } @PropertyNames ] if @PropertyNames;
 
-            push @results, \%result;
-        },
+            
+            push @results, \%h;
+
+            # not recommended -- just a very poor example.
+            if ( $Highlight && $h{swishdescription} ) {
+                for my $word ( split /\s+/, $q->param('query') ) {
+                    next if $word =~ /^(and|or|not)$/i;
+                    
+                    $h{swishdescription} =~ s[(\Q$word\E)][<b>$1</b>]ig;
+                }
+            }
+       }
+                
+                
+                
        
     );
 
@@ -480,9 +531,9 @@ sub run_query {
 
     # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
     
-    my %props = map { $_, 1 } @PropertyNames;
-    $props{swishrank}++;  # also can sort by rank
-    if ( $q->param('sort') && $props{ $q->param('sort') } ) {
+    my %sorts = map { $_, 1 } @Sorts;
+
+    if ( $q->param('sort') && $sorts{ $q->param('sort') } ) {
 
         my $direction = $q->param('sort') eq 'swishrank'
                         ? $q->param('reverse') ? 'asc' : 'desc'
@@ -531,6 +582,7 @@ sub run_query {
         SEARCH_TIME => $sh->get_header('search time') ||  'unknown',
         FROM        => $start + 1,
         TO          => $start + $hits,
+        MOD_PERL    => $ENV{MOD_PERL},
     };
 
     set_page( $result, $q );
@@ -553,12 +605,13 @@ sub show_template {
         filename            => $file,
         die_on_bad_params   => 0,
         loop_context_vars   => 1,
+        cache               => 1,
     );
 
     $params->{MY_URL} = $q->script_name;
 
     # Allow for sort selection in a <select>
-    $params->{SORTS} = [ map { { SORT_BY => $_ } } @PropertyNames ] if @PropertyNames;
+    $params->{SORTS} = [ map { { SORT_BY => $_, SORT_BY_DESC => ($SortNames{$_} || $_) } } @Sorts ] if @Sorts;
 
     $params->{METANAMES} = [ map { { METANAME => $_ } } @MetaNames ] if @MetaNames;
     $params->{ALL_META} = $All_Meta;
