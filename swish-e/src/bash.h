@@ -4,7 +4,20 @@
 #define xrealloc erealloc
 
 #define FS_EXISTS		0x1
+#ifdef _WIN32
+#define FS_EXECABLE		0x1
+#else
 #define FS_EXECABLE		0x2
+#endif
+
+/* horrible Win32 hack */
+#ifdef _WIN32
+/* Fake group functions... */
+#define GETGROUPS_T int
+#define getegid() 0
+#define geteuid() 0
+#define getgid()  0
+#endif
 
 #define savestring(x) (char *)strcpy((char *)xmalloc(1 + strlen (x)), (x))
 
