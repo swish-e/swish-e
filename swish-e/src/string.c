@@ -248,11 +248,11 @@ char   *replace(string, oldpiece, newpiece)
 *
 *
 **********************************************************************/
-char *process_regex_list( char *str, regex_list *regex )
+char *process_regex_list( char *str, regex_list *regex, int *matched )
 {
     while ( regex )
     {
-        str = regex_replace( str, regex, 0 );
+        str = regex_replace( str, regex, 0, matched );
         regex = regex->next;
     }
 
@@ -272,7 +272,7 @@ char *process_regex_list( char *str, regex_list *regex )
 *
 *
 **********************************************************************/
-char *regex_replace( char *str, regex_list *regex, int offset )
+char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
 {
     regmatch_t pmatch[MAXPAR];
     char   *c;
@@ -286,6 +286,10 @@ char *regex_replace( char *str, regex_list *regex, int offset )
     /* Run regex - return original string if no match (might be nice to print error msg? */
     if ( regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) )
         return str;
+
+
+    /* Flat that a pattern matched */
+    (*matched)++;        
 
 
     /* allocate a string long enough */
@@ -381,8 +385,12 @@ char *regex_replace( char *str, regex_list *regex, int offset )
     efree( str );
     
 
+    /* This allow /g processing to match repeatedly */
+    /* I'm sure there a way to mess this up and end up with a regex loop... */
+    
     if ( regex->global && last_offset < strlen( newstr ) )
-        newstr = regex_replace( newstr, regex, last_offset );
+        newstr = regex_replace( newstr, regex, last_offset, matched );
+
     return newstr;
 }
 
