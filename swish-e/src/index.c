@@ -232,7 +232,7 @@ void initModule_Index (SWISH  *sw)
     idx->tmpdir = estrdup(".");
 
     /* By default, we are not in update mode */
-    idx->update_mode = 0;
+    idx->update_mode = MODE_INDEX;
 
     return;
 }
@@ -792,7 +792,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /** Let's see if file already exits when in update mode */
     switch(sw->Index->update_mode)
     {
-      case 1:      /* Update mode */
+
+      case MODE_UPDATE:      /* Update mode */
+
         DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
         /* If exits a previous file with the same real_path ... */
         if(old_filenum)
@@ -811,7 +813,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             memset(&fi, 0, sizeof( FileRec ));
             fi.filenum = old_filenum;
             cp = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->modified_meta->metaID, 0 );
- 
+
             /* Create a property based on mtime in order to use it
             ** for comparing properties in Compare_Property routine */
             tmp = PACKLONG(fprop->mtime);
@@ -839,7 +841,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             }
         }
         break;
-      case 2:      /* Remove mode */
+
+
+
+      case MODE_REMOVE:      /* Remove mode */
+
         DB_ReadFileNum(sw,&old_filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
         /* If exits a previous file with the same real_path remove it */
         if(old_filenum)
@@ -856,7 +862,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 #endif
 
     /** Read the buffer, if not a stream parser **/
-    
+
 #ifdef HAVE_LIBXML2
     if ( !fprop->doctype || fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
         rd_buffer = NULL;

@@ -316,6 +316,20 @@ enum {
         BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, TXT2
 };
 
+
+/* Possible run modes */
+typedef enum {
+    MODE_SEARCH,
+    MODE_INDEX,
+    MODE_DUMP,
+    MODE_WORDS,
+    MODE_MERGE,
+    MODE_UPDATE,
+    MODE_REMOVE
+}
+CMD_MODE;
+
+
 #define NODOCTYPE BASEDOCTYPE
 
 // This is used to build the property to read/write to disk
