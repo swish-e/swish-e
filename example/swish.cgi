@@ -1,14 +1,17 @@
 #!/usr/local/bin/perl -w
 use strict;
+use lib '.';
+use CGI;
+use Symbol;
 
 ####################################################################################
 #
 #    If this text is displayed on your browser then your web server
-#    is not configured to run .cgi programs.
+#    is not configured to run .cgi programs.  Contact your web server administrator.
 #
 #    To display documentation for this program type "perldoc swish.cgi"
 #
-#    swish.cgi $Revision$ Copyright (C) 2001 Bill Moseley search@hank.org
+#    swish.cgi $Revision$ Copyright (C) 2001 Bill Moseley swishscript@hank.org
 #    Example CGI program for searching with SWISH-E
 #
 #    This example program will only run under an OS that supports fork().
@@ -31,64 +34,162 @@ use strict;
 #
 ####################################################################################
 
+    use vars qw/%CONFIG $NotAWord/;
+
 
     ##### Configuration Parameters #########
 
 
-    my $Title = 'Search Our Website';               # Title of your choice.
-    my $Swish_Binary = '/usr/local/bin/swish-e';    # Location of swish-e binary
-    my $Swish_Index   = '../index.swish-e';         # Location of your index file
-
-    my $Page_Size = 15;                             # Number of results per page
-
-    my $Highlight_On = 1;                           # Set to zero to turn off highlighting (and see how slow highlighting is)   
-
-    my $Show_Words = 12;                            # Number of swish words+non-swish words to show around highlighted word
-                                                    # Set to zero to not highlight and only show $Min_Words
-    my $Occurrences = 6;                            # Limit number of occurrences  of highlighted words
-    my $Min_Words = 100;                            # If no words are found to highlighted then show this many words
-    
+    %CONFIG = (
+        title           => 'Search the Swish-e list',   # Title of your choice.
+        swish_binary    => './swish-e',                 # Location of swish-e binary
+        swish_index     => './index.swish-e',           # Location of your index file
+        page_size       => 15,                          # Number of results per page
 
 
+        # Property name to use as the main link text to the indexed document.
+        # Typically, this will be 'swishtitle' if have indexed html documents.
+
+        # title_property => 'swishtitle',
+        title_property  => 'subject',                   
+
+        # prepend this path to the filename returned by swish.  This is used to
+        # make the href link back to the original document.
+
+        prepend_path    => 'http://swish-e.org/archive/',
 
 
-    # These should be left alone.
+        # Swish has a configuration directive "StoreDescription" that will save part or
+        # all of a document's contents in the index file.  This can then be displayed
+        # along with results.  If you are indexing a lot of files this can use a lot of disk
+        # space, so test carefully before indexing your entire site.
+        #
+        # These settings tell this script to display this description.
+        # Normally, this should be 'swishdescription', but you can specify any property name.
 
-    my @PropertyNames = ();
-    my @Sorts = qw/swishrank swishtitle swishdocpath swishdocsize swishlastmodified/;
-    my @MetaNames = qw/swishdocpath swishtitle ALL/;
+        description_prop=> 'swishdescription',
+        max_chars       => 500,   # If highlight is off, then just truncate the description to this many chars.
+                                  # If you want to go by words, enable highlighting,
+                                  # and then comment-out show_words.  It will be a little slower.
 
-    
+        # These settings will use some crude highlighting code to highlight search terms in the
+        # property specified above as the description_prop (normally, 'swishdescription').
 
-    use CGI;
-    use Symbol;
+        
+        highlight_words => 1,     # enable highlighting
+        show_words      => 12,    # Number of swish words+non-swish words to show around highlighted word
+        max_words       => 100,   # If no words are found to highlighted then show this many words
+        occurrences     => 6,     # Limit number of occurrences of highlighted words
+        #highlight_on => '<b>', # HTML highlighting codes
+        #highlight_off   => '</b>',
+        highlight_on    => '<font style="background:#FFFF99">',
+        highlight_off   => '</font>',
+        
 
-    {    
-
-        my $q = CGI->new;
-
-        my $results = run_query( $q );
-
-        $results->{title} = $Title || 'Search our Website';
-    
-
-        print $q->header,
-              header( $q, $results );
-
-
-        unless ( $results->{FILES} ) {
-            print footer();
-            exit;
-        }
+        # Property names listed here will be displayed in a table below each result
+        display_props   => [qw/name email sent/],          # properties to display
 
 
-        print results_header( $results );
-        print show_result( $_ ) for @{$results->{FILES}};
-        print "<P>$results->{LINKS}<P>";
-    
-        print footer();
+        # Resorts can be be sorted by any of the properties listed here
+        # They will be displayed in a drop-down list
+        sorts           => [qw/swishrank subject name email sent/],
+
+        # Secondary_sort is used to sort within a sort
+        # You may enter a property name followed by a direction (asc|desc)
+        secondary_sort  => [qw/sent desc/],
+
+
+        # You can limit by MetaNames here.  Names listed here will be displayed in
+        # a line of radio buttons.
+        # The special case of "ALL" means do not do a metaname search. In otherwords
+        # search in metaID 1 (e.g. the body of an html document)
+        # For XML, you might ONLY have metaname searches available.
+        metanames       => [qw/ALL subject name email/],
+
+
+        # These are used to map MetaNames and PropertyNames to user-friendly names.
+        name_labels     => {
+            swishrank   =>  'Rank',
+            subject     =>  'Message Subject',
+            name        =>  "Poster's Name",
+            email       =>  "Poster's Email",
+            sent        =>  'Message Date',
+            ALL         =>  'Message text',
+        },
+
+
+        # This adds in the date_range limiting options
+        # You will need the DateRanges.pm module from the author to use that feature
+
+        date_ranges     => {
+            property_name   => 'sent',      # property name to limit by
+
+            time_periods    => [
+                'All',
+                'Today',
+                'Yesterday',
+                #'Yesterday onward',
+                'This Week',
+                'Last Week',
+                'Last 90 Days',
+                'This Month',
+                'Last Month',
+                #'Past',
+                #'Future',
+                #'Next 30 Days',
+            ],
+
+            line_break      => 0,
+            default         => 'All',
+            date_range      => 1,
+        },
+
+    );
+
+
+    # disable "date_ranges" in the above example
+    delete $CONFIG{date_ranges};
+
+
+
+
+    $NotAWord = 'not skaisikdeekk';
+
+
+
+    # Now run the request
+
+    process_request( \%CONFIG );
+
+#============================================================================
+sub process_request {
+    my $conf = shift;  # configuration parameters
+
+    # Set some defaults
+    $conf->{name_labels} = {} unless $conf->{name_labels};
+    $conf->{page_size} ||= 15;
+    $conf->{title_property} ||= 'swishtitle';
+    $conf->{title} ||= 'Swish-e Search Form'; 
+
+    my $q = CGI->new;
+
+    my $results = run_query( $q, $conf );
+
+    print $q->header,
+          header( $results );
+
+    unless ( $results->{FILES} ) {
+        print footer( $results );
+        exit;
     }
 
+
+    print results_header( $results );
+    print show_result( $results, $_ ) for @{$results->{FILES}};
+    print "<P>$results->{LINKS}<P>";
+
+    print footer( $results );
+}
 
 #=====================================================================
 # These routines format the HTML output.
@@ -99,39 +200,38 @@ use strict;
 # This generates the header which includes the form
 #
 #   Pass:
-#       $q      - a CGI object
-#       $params - program settings        
-#
+#       $results hash
 
 sub header {
 
-    my $q      = shift;
-    my $params = shift;
+    my $results = shift;
+    my $conf = $results->{conf};
+    my $q = $results->{q};
 
-    my $query = CGI->escapeHTML( $q->param('query') || '' );
-    my $title = $params->{title} || 'Swish-e Search Form';
 
-    my $message = $params->{MESSAGE}
-        ? qq[<br><font color=red>$params->{MESSAGE}</font>]
+    my $query = $q->param('query') || '';
+    $query = '' if $query eq $NotAWord;
+
+    $query = CGI->escapeHTML( $query );  # May contain quotes
+
+    my $title = $conf->{title};
+
+    my $message = $results->{MESSAGE}
+        ? qq[<br><font color=red>$results->{MESSAGE}</font>]
         : '' ;
 
-    my %checked;
-    for ( qw/swishdocpath swishtitle ALL/ ) {
-        $checked{$_} = $q->param('metaname') && $q->param('metaname') eq $_
-            ? 'checked'
-            : '';
-    }
-    $checked{ALL} = 'checked' unless $q->param('metaname');            
 
-    my %selected;
-    for ( qw/swishrank swishtitle swishdocpath swishdocsize swishlastmodified/ ) {
-        $selected{$_} = $q->param('sort') && $q->param('sort') eq $_
-            ? 'selected'
-            : '';
-    }
+    # This is for sticky forms (probably should use CGI.pm for this now)
+    my (%checked, %selected );
+    my ( $checked, $limits, $sorts ) = setup_form( $results, \%checked, \%selected );
 
-    my $checked = $q->param('reverse') ? 'checked' : '';
 
+
+    my $form = $q->script_name;
+
+    my $date_ranges_select = get_date_ranges( $q, $results );
+
+                     
     
     return <<EOF;
 <html>
@@ -147,39 +247,20 @@ sub header {
         </h2>
 
             
-        <form method="post" action="/cgi-bin/swish.cgi" enctype="application/x-www-form-urlencoded" class="form">
+        <form method="post" action="$form" enctype="application/x-www-form-urlencoded" class="form">
             <input / maxlength="200" value="$query" size="32" type="text" name="query">
             <input / value="Search!" type="submit" name="submit"><br>
-
     
-
-                Limit search to:
-                    <input value="swishdocpath" type="radio" $checked{swishdocpath} name="metaname">URL
-                    <input value="swishtitle" type="radio" $checked{swishtitle} name="metaname">Title
-                    <input value="ALL" type="radio" $checked{ALL} name="metaname">Do not Limit
-                <br>
-        
-
-
-
-        
-                Sort by:
-                <select name="sort">
-                        <option $selected{swishrank} value="swishrank">Rank</option>
-                        <option $selected{swishtitle} value="swishtitle">Title</option>
-                        <option $selected{swishdocpath} value="swishdocpath">URL</option>
-                        <option $selected{swishdocsize} value="swishdocsize">Size</option>
-                        <option $selected{swishlastmodified} value="swishlastmodified">Modified Date</option>
-                </select>
-                <input value="1" type="checkbox" $checked name="reverse">Reverse Sort
-                                    
-
+            $limits
+            $sorts
+            $date_ranges_select
         </form>
 
 
     <p>
 EOF
 }
+
 
 #=====================================================================
 # This routine creates the results header display
@@ -191,6 +272,27 @@ EOF
 sub results_header {
 
     my $results = shift;
+    my $config = $results->{config};
+    my $q = $results->{q};
+
+    my $limits = '';
+
+    if ( $results->{DateRanges_time_low} && $results->{DateRanges_time_high} ) {
+        my $low = scalar localtime $results->{DateRanges_time_low};
+        my $high = scalar localtime $results->{DateRanges_time_high};
+        $limits = <<EOF;
+        <tr>
+            <td colspan=2>
+                <font size="-2" face="Geneva, Arial, Helvetica, San-Serif">
+                &nbsp;Results limited to dates $low to $high
+                </font>
+            </td>
+        </tr>
+EOF
+    }
+
+    
+    
 
 
     my $links = '';
@@ -209,6 +311,7 @@ sub results_header {
     $links = qq[<tr><td colspan=2 bgcolor="#EEEEEE">$links</td></tr>] if $links;
     
     my $user_query = CGI->escapeHTML( $results->{QUERY_SIMPLE} );
+    $user_query = 'All' if $results->{QUERY_SIMPLE} eq $NotAWord;
 
     return <<EOF;
 
@@ -229,6 +332,7 @@ sub results_header {
         </tr>
 
         $links
+        $limits
 
     </table>
     
@@ -244,19 +348,54 @@ EOF
 #
 #
 sub show_result {
-    my $result = shift;
+    my ($results, $result ) = @_;
+
+    my $conf = $results->{conf};
+
+    my $DocTitle = $conf->{title_property} || 'swishtitle';
+
+    my $title = $result->{$DocTitle} || $result->{swishdocpath};
+
+                
+
+    my $props = '';
+    if ( $conf->{display_props} ) {
+        my $length = 0;
+        for ( @{$conf->{display_props}} ) {
+            my $label = $conf->{name_labels}{$_} || $_;
+            $length = length($label) if length($label) > $length;
+        }
+
+        
+        $props = join "\n",
+            '<br><table cellpadding=0 cellspacing=0>',
+            map ( {
+                '<tr><td><small>'
+                . ( $conf->{name_labels}{$_} || $_ )
+                . ':</small></td><td><small> '
+                . '<b>'
+                . $result->{$_}
+                . '</b>'
+                . '</small></td></tr>'
+                 }  @{$conf->{display_props}}
+            ),
+            '</table>';
+    }
+            
+
+    my $PathPrePend = $conf->{prepend_path} || '';
+    
+    my $description = '';
+    if ( $conf->{description_prop} ) {
+        $description = $result->{$conf->{description_prop}} || '';
+    }
 
     return <<EOF;
     <dl>
-        <dt>$result->{swishreccount} <a href="$result->{swishdocpath}">$result->{swishtitle}</a> <small>-- rank: <b>$result->{swishrank}</b></small></dt>
-        <dd>$result->{swishdescription}<br>
+        <dt>$result->{swishreccount} <a href="$PathPrePend$result->{save_swishdocpath}">$title</a> <small>-- rank: <b>$result->{swishrank}</b></small></dt>
+        <dd>$description
 
-
-        <small>
-            <a href="$result->{swishdocpath}">$result->{swishdocpath}</a>
-            $result->{swishlastmodified}
-            $result->{swishdocsize} bytes.
-        </small>
+        $props
         </dd>
     </dl>
 
@@ -273,11 +412,210 @@ sub footer {
     return <<EOF;
 
     <hr>
-    
+    <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
   </body>
 </html>
 EOF
 }
+
+#==================================================================
+#  Form setup for sorts and metas
+#
+#  Should probably use CGI's sticky forms instead
+#
+#==================================================================
+
+sub setup_form {
+    my ( $results, $checked, $selected ) = @_;
+
+    my $conf = $results->{conf};
+    my $q = $results->{q};
+    
+
+    if ( $conf->{metanames} ) {
+        for ( @{$conf->{metanames}} ) {
+            $checked->{$_} = $q->param('metaname') && $q->param('metaname') eq $_
+                ? 'checked'
+                : '';
+        }
+    }
+    
+    $checked->{ALL} = 'checked' unless $q->param('metaname');            
+
+    if ( $conf->{sorts} ) {
+        for ( @{$conf->{sorts}} ) {
+            $selected->{$_} = $q->param('sort') && $q->param('sort') eq $_
+                ? 'selected'
+                : '';
+        }
+    }
+    my $check = $q->param('reverse') ? 'checked' : '';
+
+
+
+    # Set the limit by values
+    
+    my $limits = '';
+    if ( $conf->{metanames} ) {
+        $limits = join "\n",
+            'Limit search to:',
+            map( {
+                qq[<input value="$_" type="radio" $checked->{$_} name="metaname">]
+                . ( $conf->{name_labels}{$_} || $_ )
+                } @{$conf->{metanames}}
+            ),
+            '<br>';
+    }
+
+    my $sorts = '';
+    if ( $conf->{sorts} ) {
+        $sorts = join "\n",
+            'Sort by:',
+            '<select name="sort">',
+            map( {
+                qq[<option $selected->{$_} value="$_">]
+                . ( $conf->{name_labels}{$_} || $_ )
+                . '</option>'
+                } @{$conf->{sorts}}
+            ),
+            '</select>',
+            '<input value="1" type="checkbox" $checked name="reverse">Reverse Sort';
+    }
+
+    return ( $check, $limits, $sorts );
+}
+
+#==================================================
+# Format and return the date range options
+#
+#--------------------------------------------------
+sub get_date_ranges {
+    my ( $q, $results ) = @_;
+
+    my $conf = $results->{conf};
+
+    return '' unless $conf->{date_ranges};
+
+    # pass parametes, and a hash to store the returned values.
+
+    my %fields;
+    
+    DateRanges::DateRangeForm( $q, $conf->{date_ranges}, \%fields );
+
+
+    # Set the layout:
+    
+    my $string = '<br>Limit to: '
+                 . ( $fields{buttons} ? "$fields{buttons}<br>" : '' )
+                 . ( $fields{date_range_button} || '' )
+                 . ( $fields{date_range_low}
+                     ? " $fields{date_range_low} through $fields{date_range_high}"
+                     : '' );
+
+    return $string;
+}
+
+#================================================================================
+#   Parse out the date limits from the form or from GET request
+#
+#---------------------------------------------------------------------------------
+
+sub get_date_limits {
+    my $results = shift;
+    my $q = $results->{q};
+
+    # Are date ranges enabled?
+    return 1 unless $results->{conf}{date_ranges};
+
+    eval { require DateRanges };
+    if ( $@ ) {
+        $results->{MESSAGE} = 'Missing module "DateRanges"';
+        delete $results->{conf}{date_ranges};
+        return 0;
+    }
+
+
+    my %limits;
+
+    unless ( DateRanges::DateRangeParse( $q, \%limits ) ) {
+        $results->{MESSAGE} = $limits{DateRanges_error} || 'Bad date range selection';
+        return 0;
+    }
+
+    $results->{DateRanges_time_low} = $limits{DateRanges_time_low};
+    $results->{DateRanges_time_high} = $limits{DateRanges_time_high};
+
+
+    # Allow searchs just be date if not "All dates" search
+    ${$results->{query}} = $NotAWord if !${$results->{query}} && $limits{DateRanges_time_high};
+
+    
+
+    # Check for GET parameters
+    if (
+        ( $q->param('dl') && $q->param('dh') )
+        && $q->param('dl') =~ /^\d+$/
+        && $q->param('dh') =~ /^\d+$/
+        && $q->param('dl') <= $q->param('dh')
+        )
+    {
+        $results->{DateRanges_time_low} = $q->param('dl');
+        $results->{DateRanges_time_high} = $q->param('dh');
+    }
+
+    my $conf = $results->{conf};
+    my $sh   = $results->{sh};
+    my $limit_prop = $conf->{date_ranges}{property_name};
+
+
+    # $$$ need to fix for generalized interface! 
+    if ( $limits{DateRanges_time_low} && $limits{DateRanges_time_high} ) {
+        push @{$sh->{commands}}, ( '-L', $limit_prop, $limits{DateRanges_time_low}, $limits{DateRanges_time_high} );
+    }
+
+    return 1;
+}
+
+
+#================================================================
+#  Set the sort order
+#----------------------------------------------------------------
+
+sub set_sort_order {
+    my $results = shift;
+
+    my $q = $results->{q};
+    my $sh = $results->{sh};
+    my $conf = $results->{conf};
+
+    return 1 unless $conf->{sorts};
+
+
+    # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
+    my %sorts = map { $_, 1 } @{$conf->{sorts}};
+
+    if ( $q->param('sort') && $sorts{ $q->param('sort') } ) {
+
+            my $direction = $q->param('sort') eq 'swishrank'
+                ? $q->param('reverse') ? 'asc' : 'desc'
+                : $q->param('reverse') ? 'desc' : 'asc';
+                    
+            # $sh->{sortorder} = ['-s', $q->param('sort'), $direction ];
+            push @{$sh->{commands}}, ( '-s', $q->param('sort'), $direction );
+
+            if ( $conf->{secondary_sort} && $q->param('sort') ne $conf->{secondary_sort}[0] ) {
+                    # push @{$sh->{sortorder}}, @SecondarySort;
+                    push @{$sh->{commands}}, ref $conf->{secondary_sort} ? @{ $conf->{secondary_sort} } : $conf->{secondary_sort};
+            }
+
+    } else {
+        $results->{MESSAGE} = 'Invalid Sort Option Selected';
+        return;
+    }
+
+    return 1;
+}
+
 
 #============================================
 # This function parses the CGI parameters,
@@ -293,7 +631,9 @@ EOF
 
 sub run_query {
 
-    my $q = shift;
+    my ( $q, $conf ) = @_;
+
+
 
     # set up the query string to pass to swish.
     my $query = $q->param('query') || '';
@@ -303,29 +643,66 @@ sub run_query {
         s/^\s+//;
     }
 
+
+    # initialize the request search hash
+    my $sh = {
+       prog         => $conf->{swish_binary},
+       maxhits      => $conf->{page_size},
+       q            => $q,
+       commands     => [],      # commands passed to swish
+       query        => \$query,
+    };
+
+
+    # Save the index file
+    push @{$sh->{commands}}, '-f', ref $conf->{swish_index} ? @{ $conf->{swish_index} } : $conf->{swish_index};
+
+
+    # initialize the results hash (should be called "self")
+    my %results = (
+        conf    => $conf,
+        q       => $q,
+        query   => \$query,
+        sh      => $sh,     # request hash
+    );
+
+
+    
+
+
+    # Read in the date limits, if any.
+    return \%results unless get_date_limits( \%results );
+
+
     unless ( $query ) {
-        return $q->param('submit')
-            ? { MESSAGE => 'Please enter a query string' }
-            : {};
+        $results{MESSAGE} = 'Please enter a query string' if $q->param('submit');
+        return \%results;
     }
+
 
     if ( length( $query ) > 100 ) {
-        return { MESSAGE => 'Please enter a shorter query' };
+        $results{MESSAGE} = 'Please enter a shorter query';
+        return \%results;
     }
 
-    my $query_simple = $query;
-
+    my $query_simple = $query;    # without metaname
     $q->param('query', $query );  # clean up the query, if needed.
+
+
+    # Adjust the query string for metaname search
 
     my $metaname = $q->param('metaname') || '';
 
     if ( $metaname && $metaname ne 'ALL' ) {
 
-        return { MESSAGE => 'Bad MetaName provided' }
-            unless grep { $metaname eq $_ } @MetaNames;
+        unless ( grep { $metaname eq $_ } @{$conf->{metanames}} ) {
+            $results{MESSAGE} = 'Bad MetaName provided';
+            return \%results;
+        }
 
         # prepend metaname to search, if required.
-        $query = $q->param('metaname') . "=($query)";
+        $query = $metaname . "=($query)";
+        $sh->{metaname} = $metaname;
     }
     
 
@@ -334,60 +711,57 @@ sub run_query {
 
     my $start = $q->param('start') || 0;
     $start = 0 unless $start =~ /^\d+$/ && $start >= 0;
+    $sh->{startnum} = $start + 1;
 
 
-
-    # Create a search record
-
-    my $sh = {
-       prog     => $Swish_Binary,
-       indexes  => $Swish_Index,
-       query    => $query,
-       startnum => $start + 1,  
-       maxhits  => $Page_Size,
-       properties => \@PropertyNames,
-    };
-
-
-    # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
-    
-    my %sorts = map { $_, 1 } @Sorts;
-
-    if ( $q->param('sort') && $sorts{ $q->param('sort') } ) {
-
-            my $direction = $q->param('sort') eq 'swishrank'
-                ? $q->param('reverse') ? 'asc' : 'desc'
-                : $q->param('reverse') ? 'desc' : 'asc';
-                        
-            $sh->{sortorder} = [ $q->param('sort'), $direction ];
-    } else {
-        return { MESSAGE => 'Invalid Sort Option Selected' };
-    }
+    # Set the sort option, if any
+    return \%results unless set_sort_order( \%results );
 
 
     my $ret;
 
 
-    # Trap the call
+    # Trap the call - not portable.
     
     eval {
         local $SIG{ALRM} = sub { die "Timed out\n" };
         alarm 10;
-        $ret = run_swish( $sh );
+        $ret = run_swish( \%results );
     };
+
+
+
+    # error conditions
     
-    return { MESSAGE => $@ } if $@;
+    if ( $@ ) {
+        $results{MESSAGE} = $@;
+        return \%results;
+    }
 
-    return { MESSAGE => $ret } unless ref $ret;
+    unless ( ref $ret ) {
+        $results{MESSAGE} = $ret;
+        return \%results;
+    }
+    
+    if ( ! @{$ret->{FILES}} ) {
+        $results{MESSAGE} = 'Failed to find results';
+        return \%results;
+    }
 
 
-    # Build href for repeated search
+
+
+
+    # Build href for repeated search via GET
 
     my $href = $q->script_name . '?' .
         join( '&amp;',
             map { "$_=" . $q->escape( $q->param($_) ) }
                 grep { $q->param($_) }  qw/query metaname sort reverse/
         );
+
+    $href .= "&amp;dl=$results{DateRanges_time_low}" if $results{DateRanges_time_low};
+    $href .= "&amp;dh=$results{DateRanges_time_high}" if $results{DateRanges_time_high};
 
 
     my $hits = @{$ret->{FILES}};
@@ -396,7 +770,7 @@ sub run_query {
     # Return the template fields
 
     my $results = {
-        %$ret,          # items return from running swish
+        %results,       # results array as setup above (including {FILES}
         
         QUERY       => $q->escapeHTML( $query ),
         QUERY_HREF  => $href,           # for running this query again
@@ -412,7 +786,6 @@ sub run_query {
     };
 
     set_page( $results, $q );
-
 
 
     return $results;
@@ -434,6 +807,8 @@ sub run_query {
     
 sub set_page {
     my ( $results, $q ) = @_;
+
+    my $Page_Size = $results->{conf}{page_size};
     
         
     my $start = $results->{FROM} - 1;   # Current starting record
@@ -547,7 +922,7 @@ sub set_match_regexp {
     return (
         qr/([^$wc]+)/o,                     # regexp for splitting into swish-words
         qr/^$ignoref([$wc]+?)$ignorel$/io,  # regexp for extracting out the words to compare
-        qr/^$match_string$/o,               # regexp for comparing extracted words to query
+        qr/^(?:$match_string)$/o,           # regexp for comparing extracted words to query
                                             # Must force lower case before testing
     );
 }    
@@ -567,60 +942,130 @@ sub set_match_regexp {
 
 sub run_swish {
 
-    my $sh = shift;
+    my $results = shift;
+    my $sh = $results->{sh};
+    my $conf = $results->{conf};
+    my $q = $results->{q};
 
-    my @properties = qw(
-        swishreccount
-        swishtitle
-        swishrank
-        swishdocpath
-        swishdocsize
-        swishlastmodified
-        swishdescription
-        swishdbfile
-    );
+
+    
+    my @properties;
+    my %seen;
+
+    # Gather up the properties specified
+    
+    for ( qw/ title_property description_prop display_props / ) {
+        push @properties, ref $conf->{$_} ? @{$conf->{$_}} : $conf->{$_}
+            if $conf->{$_} && !$seen{$_}++;
+    }
+
+    my %display_props = map { $_, 1 } @properties;
+
+    # add in the default props - a number must be first
+    @properties = (qw/swishreccount swishrank swishdocpath/, @properties );
         
 
+
     my $fh = gensym;
-    my $pid;
+    my $pid = open( $fh, '-|' );
+
+    die "Failed to fork: $!\n" unless defined $pid;
+
+    if ( !$pid ) {  # in child
+
+        my @cmd = (
+            $sh->{prog},
+            -w => ${$sh->{query}},
+            @{$sh->{commands}},
+            -b => $sh->{startnum},
+            -m => $sh->{maxhits},
+            -H => 9,
+            -x => join( '\t', map { "<$_>" } @properties ) . '\n',
+        );
+
+
+        exec @cmd or die "Failed to exec '$sh->{prog}' Error:$!";
+    }
+
+
+    # read in from child
 
     my %ret;
 
     my @results;
 
-    if ( $pid = open( $fh, '-|' ) ) {
-
+    
     my @regexps;  # regular expressions used for highlighting
     my $regexp_set;
     my $stemmer_function;
 
-        while (<$fh>) {
+
+    my $highlight = $conf->{highlight_words} || 0;
+    my $highlight_prop = $conf->{description_prop} || 'swishdescription';
+    my $trim_prop = $highlight_prop;
+
+    my $meta = $sh->{metaname} || '';
+
+    # If a meta search, and it is also a display prop, then highlight that.
+    if ( $meta && $meta ne 'ALL' ) {
+        if ( $display_props{$meta} ) {
+            $highlight_prop = $meta;
+        } else {
+            $highlight = 0;
+        }
+    }
+            
+    delete $display_props{swishdescription};  # This is to prevent running escapeHTML on this property -- so big, and storedescrition is stripped
+
+    $trim_prop = 0 if $highlight && $trim_prop eq $highlight_prop;
 
 
-            chomp;
+    while (<$fh>) {
 
-            # This will not work correctly with multiple indexes
-            if ( /^# ([^:]+):\s+(.+)$/ ) {
-                $ret{header}{ lc($1) } = $2;
-                next;
+        chomp;
+
+        # This will not work correctly with multiple indexes
+        if ( /^# ([^:]+):\s+(.+)$/ ) {
+            $ret{header}{ lc($1) } = $2;
+            next;
+        }
+
+
+        # return errors as text
+        return $1 if /^err:\s*(.+)/;
+
+
+        # Found a result
+        if ( /^\d/ ) {
+
+            my %h;
+            @h{@properties} = split /\t/;
+            push @results, \%h;
+
+            # This can't be escapeHTML'd
+            $h{save_swishdocpath} = $h{swishdocpath};
+
+
+            # Escape display properties (except swishdescription)
+            $h{$_} = $q->escapeHTML( $h{$_} )  for keys %display_props;
+
+
+            # Trim down the description if no highlight, or if highlighting some other property
+            # Not very nice.  The highlighting code would limit by words
+
+            if ( $trim_prop && $h{$trim_prop} ) {
+                my $max = $conf->{max_chars} || 500;
+
+                if ( length $h{$trim_prop} > $max ) {
+                    $h{$trim_prop} = substr( $h{$trim_prop}, 0, $max) . ' <b>...</b>';
+                }
             }
 
-
-            # return errors as text
-            return $1 if /^err:\s*(.+)/;
+            
 
 
-            # Found a result
-            if ( /^\d/ ) {
+            if ( $highlight && $highlight_prop && exists $h{$highlight_prop} ) {
 
-                my %h;
-                @h{@properties} = split /\t/;
-                push @results, \%h;
-
-                if ( ! $Highlight_On ) {
-                    $h{swishdescription} = substr( ($h{swishdescription} || ''), 0, 1000 );
-                    next;
-                }
 
 
                 # This is to prepare for highlighting - only do first time
@@ -639,47 +1084,30 @@ sub run_swish {
                 }
 
 
-                $h{swishdescription} = highlight( \$h{swishdescription}, $stemmer_function, @regexps )
-                    if $h{swishdescription};
+                # Now do the actual highlighting
                 
+                $h{$highlight_prop} = 
+                    highlight( $results, \$h{$highlight_prop}, $stemmer_function, @regexps );
+
             }
-
-            # Might check for "\n." for end of results.
-
-            
         }
 
-        $ret{FILES} = \@results;
+        # Might check for "\n." for end of results.
 
-
-        return \%ret;
         
-    } else {
-
-        return "Failed to fork '$sh->{query}': $!" if !defined $pid;
-
-        my $output_format = join( '\t', map { "<$_>" } @properties ) . '\n';
-
-
-        exec $sh->{prog},
-            -w => $sh->{query},
-            -f => $sh->{indexes},
-            -b => $sh->{startnum},
-            -m => $sh->{maxhits},
-            -s => @{$sh->{sortorder}},
-            -H => 9,
-            -x => $output_format;
-
-        die "Failed to exec '$sh->{prog}' Error:$!";
     }
+    $results->{header} = $ret{header};
+
+    $results->{FILES} = \@results;
+    return $results;
+        
 }
 
 #==========================================================================
 # This routine highlights words in source text
 # Source text must be plain text.
 #
-# This is a very basic highlighting routine that fails for phrase searches, and
-# Does not know how to deal with metaname searches.
+# This is a very basic highlighting routine that fails for phrase searches.
 #
 # The text returned contains highlighted words, plus a few words on either side to give
 # context of the results.
@@ -693,10 +1121,19 @@ sub run_swish {
 #
 
 sub highlight {
-    my ( $text_ref, $stemmer_function, $wc_regexp, $extract_regexp, $match_regexp ) = @_;
+    my ( $results, $text_ref, $stemmer_function, $wc_regexp, $extract_regexp, $match_regexp ) = @_;
+
+    
 
 
     my $last = 0;
+
+    my $Show_Words = $results->{conf}{show_words} || 10;
+    my $Occurrences = $results->{conf}{occurrences} || 5;
+    my $Max_Words = $results->{conf}{max_words} || 100;
+    my $On = $results->{conf}{highlight_on} || '<b>';
+    my $Off = $results->{conf}{highlight_off} || '</b>';
+
 
 
     # Should really call unescapeHTML(), but then would need to escape <b> from escaping.
@@ -726,7 +1163,7 @@ sub highlight {
             # Not check if word matches
             if ( $test =~ /$match_regexp/ ) {
 
-                $words[$pos] = "$begin<b>$word</b>$end";
+                $words[$pos] = "$begin$On$word$Off$end";
 
 
                 my $start = $pos - $Show_Words + 1;
@@ -786,7 +1223,7 @@ sub highlight {
     }
 
     if ( !$some_printed ) {
-        for my $i ( 0 .. $Min_Words ) {
+        for my $i ( 0 .. $Max_Words ) {
             last if $i >= $#words;
             push @output, $words[$i];
         }
@@ -810,7 +1247,7 @@ swish.cgi -- Example Perl script for searching with the SWISH-E search engine.
 
 =head1 DESCRIPTION
 
-This is an example CGI script for searching with the SWISH-E search engine version 2.2 and above.
+C<swish.cgi> is an example CGI script for searching with the SWISH-E search engine version 2.2 and above.
 It returns results a page at a time, with matching words from the source document highlighted, showing a
 few words of content on either side of the highlighted word.
 
@@ -823,16 +1260,17 @@ A more advanced example script is also provided called C<swish2.cgi>.  That scri
 perl modules for templating (separation of content from program logic)
 and abstracting the interface with swish-e.
 
-Due to the forking nature of this program, this will probably not run under Windows without some
-modification.
+Due to the forking nature of this program and its use of signals,
+this script probably will not run under Windows without some modifications.
 
 =head1 INSTALLATION
 
 Installing a CGI application is dependent on your specific web server's configuration.
-For this discussion we will assume you are using Apache, and in a typical configuration.  For example,
+For this discussion we will assume you are using Apache in a typical configuration.  For example,
 a common location for the DocumentRoot is C</usr/local/apache/htdocs>.  If you are installing this
-on your shell account, your DocumentRoot might be C<~yourname/public_html>.  So, for the sake of this example,
-we will assume the following:
+on your shell account, your DocumentRoot might be C<~yourname/public_html>.
+
+For the sake of this example we will assume the following:
 
     /usr/local/apache/htdocs        - Document root
     /usr/local/apache/htdocs/images - images directory
@@ -847,7 +1285,7 @@ we will assume the following:
 Most web servers have a directory where CGI programs are kept.  If this is the case on your
 server copy the C<swish.cgi> perl script into that directory.  You will need to provide read
 and execute permisssions to the file.  Exactly what permissions are needed again depends on
-your specific configuration.  But in general, you should be able to use the command:
+your specific configuration.  For example, under Unix:
 
     chmod 0755 swish.cgi
 
@@ -894,31 +1332,43 @@ examples are:
 
 =item 2 Set the configuration parameters
 
-To make things simple, the configuration parameters are included at the top of the program.
-Look for the following code:
+To make things somewhat simple, the configuration parameters are included at the top of the program.
+The parameters are all part of a C<hash> structure, and the comments at the top of the program should
+get you going.  You will need to specify the location of the swish-e binary, your index file or files,
+and a title.
 
-    ##### Configuration Parameters #########
+For exampe:
 
-    my $Title = 'Search Our Website';               # Title of your choice.
-    my $Swish_Binary = '/usr/local/bin/swish-e';    # Location of swish-e binary
-    my $Swish_Index   = '../index.swish-e';         # Location of your index file
-    my $Page_Size = 20;                             # Number of results per page
-    my $Show_Words = 12;                            # Number of swish words+non-swish words to show around highlighted word
-    my $Occurrences = 6;                            # Limit number of occurrences of highlighted words
-    my $Min_Words = 100;                            # If no words are found to highlighted then show this many words
+    %CONFIG = (
+        title           => 'Search the Swish-e list',   # Title of your choice.
+        swish_binary    => './swish-e',                 # Location of swish-e binary
+        swish_index     => '../index.swish-e',          # Location of your index file
+    );
 
-The comments should be self explanatory.  The example above places the swish index file
+Or if searching more than one index:
+    
+    %CONFIG = (
+        title           => 'Search the Swish-e list',
+        swish_binary    => './swish-e',
+        swish_index     => ['../index.swish-e', '../index2'],
+    );
+
+
+The examples above place the swish index file(s)
 in the directory above the C<swish.cgi> CGI script.  If using the example paths above
 of C</usr/local/apache/cgi-bin> for the CGI bin directory, that means that the index file
 is in C</usr/local/apache>.  That places the index out of web space (e.g. cannot be accessed
 via the web server), yet relative to where the C<swish.cgi> script is located.
 
-There's more than one way to do it, of course.  Some people like to keep the index "tied" to
-the search script.  One option is to place it in the same directory as the <swish.cgi> script, but
+There's more than one way to do it, of course.
+One option is to place it in the same directory as the <swish.cgi> script, but
 then be sure to use your web server's configuration to prohibit access to the index directly.
 
 Another common option is to maintain a separate directory of the swish index files.  This decision is
 up to you.
+
+See the next section for more advanced C<swish.cgi> configurations.
+
 
 =item 3 Create your index
 
@@ -926,13 +1376,11 @@ You must index your web site before you can begin to use the C<swish.cgi> script
 Create a configuration file called C<swish.conf> in the directory where you will store
 the index file.
 
-This example uses the file system to index your web documents.
+This next example uses the file system to index your web documents.
 In general, you will probably wish to I<spider> your web site if your web pages do not
 map exactly to your file system, and to only index files available from links on you web
 site.
 
-The file system is the fastest way to index.  For example, when indexing the Apache documentation
-it took two seconds to index, yet over a minute to spider using the "http" input method.
 See B<Spidering> below for more information.
 
 Example C<swish.conf> file:
@@ -949,9 +1397,6 @@ Example C<swish.conf> file:
     # Replace the path name with a URL
     ReplaceRules replace /usr/local/apache/htdocs/ http://www.myserver.name/
 
-    # Store the text of the documents within the swish index file
-    StoreDescription HTML <body> 200000
-
     # Allow limiting search to titles and URLs.
     MetaNames swishdocpath swishtitle
 
@@ -964,9 +1409,72 @@ Now to index you simply run:
 
 The default index file C<index.swish-e> will be placed in the current directory.
 
+Note that the above swish-e configuration defines two MetaNames "swishdocpath" and "swishtitle".
+This allows searching just the document path or the title instead of the document's content.
+
+Here's an expanded C<swish.cgi> configuration to make use of the above settings used while indexing:
+
+    %CONFIG = (
+        title           => 'Search the Apache documentation',
+        swish_binary    => './swish-e',
+        swish_index     => ['../index.swish-e', '../index2'],
+        metanames       => [qw/ALL swishdocpath swishtitle/],
+        display_props   => [qw/swishlastmodified/],
+
+        name_labels     => {
+            swishdocpath        => 'URL path',
+            swishtitle          => 'Document title',
+            ALL                 => 'Document text',
+            swishlastmodified   => 'Document last modified',
+        },
+
+    );
+
+The above configuration defines metanames to use on the form (including the special "ALL" name which
+tells the script to do a non-metaname search).  Searches can be limited to these metanames.
+
+"display_props" tells the script to display the property "swishlastmodified" (the last modified
+date of the file) with the search results.
+
+The parameter "name_labels" is a hash
+that is used to give friendly names to the metanames.
+
+Swish-e can store part of all of the contents of the documents as they are indexed, and this
+"document description" can be returned with search results.
+
+    # Store the text of the documents within the swish index file
+    StoreDescription HTML <body> 100000
+
+Adding the above to your C<swish.conf> file tells swish-e to store up to 100,000 characters from the body of each document within the
+swish-e index.  To display this information in search results, highlighting search terms,
+use the follow configuration in C<swish.cgi>:
+
+    %CONFIG = (
+        title           => 'Search the Apache documentation',
+        swish_binary    => './swish-e',
+        swish_index     => ['../index.swish-e', '../index2'],
+        metanames       => [qw/ALL swishdocpath swishtitle/],
+        display_props   => [qw/swishlastmodified/],
+
+        name_labels     => {
+            swishdocpath        => 'URL path',
+            swishtitle          => 'Document title',
+            ALL                 => 'Document text',
+            swishlastmodified   => 'Document last modified',
+        },
+
+        description_prop=> 'swishdescription',
+        highlight_words => 1,
+
+    );
+
+Other C<swish.cgi> configuration settings are available.  Please see the example configuration
+at the top of the CGI script.
+
+
 =back
 
-Now you should be ready to run your search engine.  Point your browser to:
+You should now be ready to run your search engine.  Point your browser to:
 
     http://www.myserver.name/cgi-bin/swish.cgi
 
@@ -1115,16 +1623,18 @@ detect this and use the stemmer module.
 
 =head1 DISCLAIMER
 
-Please use at your own risk, of course.
+Please use this CGI script at your own risk.
 
 This script has been tested and used without problem, but you should still be aware that
 any code running on your server represents a risk.  If you have any concerns please carefully
 review the code.
 
+See http://www.w3.org/Security/Faq/www-security-faq.html
+
 =head1 SUPPORT
 
 The SWISH-E discussion list is the place to ask for any help regarding SWISH-E or this example
-script. See http://sunsite.berkeley.edu/SWISH-E/
+script. See http://swish-e.org
 
 Please do not contact the author directly.
 
