@@ -325,16 +325,18 @@ sub process_link {
     
 
 
-    return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
-
 
     # Index the file
     
     if ( $server->{no_index} ) {
         $server->{counts}{Skipped}++;
         print STDERR "-Skipped indexing $uri some callback set 'no_index' flag\n" if $server->{debug}&DEBUG_SKIPPED;
+
     } else {
-        output_content( $server, \$content, $response );
+        return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
+
+        output_content( $server, \$content, $response )
+            unless $server->{no_index};
     }
 
 
@@ -1005,6 +1007,14 @@ the links to the PDF files.
 So, the difference between C<no_contents> and C<no_index> is that C<no_contents> will still index the file
 name, just not the contents, where C<no_index> will still spider the file (if it's C<text/html>) but the
 file will not be processed by swish.
+
+B<Note:> If C<no_index> is set in a C<test_response> callback function then
+the document I<will not be filtered>.  That is, your C<filter_content>
+callback function will not be called.  In general, this is what you want.
+The exception might be where you need to filter a C<text/html> file to
+fix up links before following links in that file (spidering that file).  In
+this case you would want to set the C<no_index> flag in the C<filter_content>
+function instead of the C<test_response> callback.
 
 The C<no_spider> flag can be set to avoid spiderering an HTML file.  The file will still be indexed unless
 C<no_index> is also set.  But if you do not want to index and spider, then simply return false from one of the three
