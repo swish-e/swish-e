@@ -656,4 +656,23 @@ void Mem_ZoneReset(MEM_ZONE *head)
     head->next = NULL;
 }
 
+/* Routine that returns the amount of memory allocated by a zone */
+int Mem_ZoneSize(MEM_ZONE *head)
+{
+        ZONE *next;
+        int   size = 0;
+
+        if (!head)
+                return 0;
+
+        next = head->next;
+        while (next)
+        {
+                size += next->size;
+                next = next->next;
+        }
+        
+        return size;
+}
+
 

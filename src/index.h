@@ -90,6 +90,9 @@ struct MOD_Index
     /* Index in blocks of chunk_size files */
     int chunk_size;
 
+	/* Variable to control the size of the zone used for store locations during chunk proccesing */
+	int optimalChunkLocZoneSize;
+
     MEM_ZONE	*perDocTmpZone;
     MEM_ZONE	*currentChunkLocZone;
     MEM_ZONE    *totalLocZone;
