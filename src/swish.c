@@ -284,6 +284,19 @@ static void    usage()
     printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
     printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
     printf("         -i : create an index from the specified files\n");
+
+#ifdef ALLOW_FILESYSTEM_INDEXING_DATA_SOURCE
+    printf("              for \"-S fs\" - specify a list of files or directories\n");
+#endif
+
+#ifdef ALLOW_HTTP_INDEXING_DATA_SOURCE
+    printf("              for \"-S http\" - specify a list of URLs\n");
+#endif
+
+#ifdef ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE
+    printf("              for \"-S prog\" - specify a list of programs or the string \"stdin\"\n");
+#endif
+
     printf("         -k : Print words starting with a given char.\n");
     printf("         -l : follow symbolic links when indexing\n");
     printf("         -M : merges index files\n");
