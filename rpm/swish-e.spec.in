@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 3
+%define release 4
 
 # SWISH::API definitions
 %define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
@@ -20,6 +20,7 @@ Packager:       David L Norris <dave@webaugur.com>
 Icon:           swish-e.xpm
 Vendor:         SWISH-E Team <http://swish-e.org/>
 Provides:       %{name}
+Obsoletes:      %{name}-doc
 Obsoletes:	swish
 Requires:       libxml2, pcre, zlib
 BuildRequires:	libxml2-devel, pcre-devel, zlib-devel
@@ -37,22 +38,12 @@ to maintain a consistent design. Swish-e can index web pages, but can
 just as easily index text files, mailing list archives, or data stored
 in a relational database.
 
-
-%package doc
-Summary:     doc
-Group:          Networking/Other
-Provides:      %{name}-doc
-Requires:     %{name} = %{version}-%{release}
-
-%description doc
-SWISH-E documentation and examples
-
-
 %package        perl
 Summary:        SWISH-E - PERL Scripts and Modules
 Group:          Networking/Other
 Provides:       %{name}-perl
-Requires:       %{name} = %{version}-%{release}, perl >= 5.8.0
+Requires:       %{name} = %{version}
+Requires:       %{name}-perl-api = %{version}
 
 %description    perl
 PERL SWISH-E language bindings and scripts.
@@ -64,7 +55,7 @@ License:	Artistic
 Group:		Applications/CPAN
 Provides:	%{name}-perl-api
 Provides:	perl-SWISH-API = 0.01
-Requires:	%{name} = %{version}-%{release}
+Requires:	%{name} = %{version}
 
 %description	perl-api
 SWISH::API provides a Perl interface to the Swish-e search engine.
@@ -78,7 +69,7 @@ Summary:	SWISH-E - Static libraries and header files.
 Group:		Networking/Other
 Obsoletes:	swish-devel
 Provides:       %{name}-devel
-Requires:	%{name} = %{version}-%{release}, libxml2-devel, pcre-devel, zlib-devel
+Requires:	%{name} = %{version}
 
 %description	devel
 Libraries and header files required for compiling applications based on the SWISH-E API.
@@ -107,7 +98,7 @@ CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" %
 popd
 
 %install
-make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
+%{__make} DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 
 # Install SWISH::API
 pushd perl
@@ -145,50 +136,22 @@ use File::Find;
 use File::Spec;
 use Config qw(%Config);
 
-my $filelist = "%{filelist}";
 my $buildroot = "%{buildroot}";
 my $sitearch = File::Spec->catdir( $buildroot , $Config{installsitearch} );
-my $mandir = File::Spec->catdir( $buildroot , $Config{installman3dir} );
-
 my @sitearch;
-my @manpp;
 
-sub manpp
-{
-     return if m/^\./;
-     return unless $File::Find::name =~ m/SWISH/;
-     $File::Find::name =~ s|^\Q$buildroot\E||;
-     push(@manpp,$File::Find::name) if m/\.3pm/;
-}
-
-sub sitearch
-{
-     return if m/^\./;
-     return unless $File::Find::name =~ m/SWISH/;
-     $File::Find::name =~ s|^\Q$buildroot\E||;
-     push(@sitearch,$File::Find::name);
-}
-
-find( \&sitearch, $sitearch );
-find( \&manpp, $mandir );
-
-
-open(LIST, "> $filelist") or die "cannot write $filelist: $!\n";
-
-select(LIST);   # comment out to print to stdout
+find( sub{ 
+        push(@sitearch, $File::Find::name =~ /\Q$buildroot\E(.+)$/);
+    }, $sitearch );
 
 $" = "\n";
 print <<EOF;
-%doc perl/Changes perl/README
 @sitearch
-@manpp
 EOF
-
-close(LIST) or die "cannot close $filelist: $!\n";
-'
+' > %{filelist}
 
 [ -z %filelist ] && {
-    echo "ERROR: empty %files listing"
+    echo "ERROR: empty files listing"
     exit -1
     } 
 popd
@@ -205,8 +168,6 @@ popd
 %{_bindir}/swish-e
 %{_libdir}/*.so.*
 %{_mandir}/man[^3]/*
-
-%files doc
 %{_datadir}/doc/swish-e/*
 
 %files perl
@@ -217,16 +178,20 @@ popd
 
 %files perl-api -f %filelist
 %defattr(-,root,root)
+%doc perl/Changes perl/README
+%{_mandir}/man3/SWISH::API.3pm*
 
 %files devel
 %defattr(-, root, root)
-#%{_mandir}/man3/*
+#%{_mandir}/man3/*.3*
 %{_includedir}/*.h
 %{_libdir}/*.la
 %{_libdir}/*.a
 %{_libdir}/*.so
 
 %changelog
+* Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-4
+- Simplify File::Find script.  Merge HTML docs with swish-e package.
 * Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-3
 - Fix dependencies so SWISH::API requires the correct version of SWISH-E.
 * Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-2
