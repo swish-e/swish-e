@@ -8,6 +8,8 @@ extern "C" {
 }
 #endif
 
+/* perl 5.8.0 now defines DEBUG_MASK */
+#undef DEBUG_MASK
 #include "../src/swish.h"
 #include "../src/stemmer.h"
 #include "../src/merge.h"
