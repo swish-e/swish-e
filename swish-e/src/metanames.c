@@ -99,6 +99,9 @@ void    add_default_metanames(IndexFILE * indexf)
 
 
 /* Add an entry to the metaEntryArray if one doesn't already exist */
+/* Nov 2004 -- looks like this was suppose to be a way to either create or
+ * update an existing meta.  Probably a good idea once once parse_conffile.c is rewritten
+ */
 
 
 struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID)
@@ -135,6 +138,11 @@ struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int meta
 
 }
 
+/*********************************************************************************
+* create_meta_entry -- malloc's a new metaEntry and initializes it
+*
+*********************************************************************************/
+
 static struct metaEntry *create_meta_entry( char *name )
 {
     struct metaEntry *newEntry = (struct metaEntry *) emalloc(sizeof(struct metaEntry));
@@ -145,7 +153,14 @@ static struct metaEntry *create_meta_entry( char *name )
     return newEntry;
 }
 
-
+/************************************************************************************
+* addNewMetaEntry -- Adds a new meta entry to the index header.
+* Will create the headers meta array if doesn't exist, otherwise grow it.
+* Always adds; does not protect against duplicates.
+*
+* Returns: *metaEntry (never fails)
+*
+************************************************************************************/
 
 struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID)
 {
@@ -156,7 +171,7 @@ struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int m
 
     newEntry->metaType = metaType;
 
-    /* If metaID is 0 asign a value using metaCounter */
+    /* If metaID is 0 assign a value using metaCounter */
     /* Loaded stored metanames from index specifically sets the metaID */
 
     newEntry->metaID = metaID ? metaID : metaCounter + 1;
@@ -180,6 +195,38 @@ struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int m
     header->metaEntryArray = metaEntryArray;
 
     return newEntry;
+}
+
+/***************************************************************************
+* cloneMetaEntry -- creates a meta entry from another meta making 
+* sure all attributes are copies.  Alias is not copied
+*
+* Only really useful for merge where metas are copied from one index to 
+* another.
+*
+* Doesn't fail
+*
+****************************************************************************/
+
+struct metaEntry *cloneMetaEntry(INDEXDATAHEADER *header, struct metaEntry *meta )
+{
+    struct metaEntry *new_meta = addNewMetaEntry( header, meta->metaName, meta->metaType, 0 );
+    if ( !new_meta )
+        return NULL;
+
+    /* Copy important attributes */
+    new_meta->rank_bias = meta->rank_bias;
+    new_meta->sort_len  = meta->sort_len;
+
+    new_meta->max_len   = meta->max_len;  /* not needed when merging */
+
+    /* 
+     * other attribues, extractpath_default, sorted_data, sorted_loaded, in_tag
+     * are not needed when merging and/or cannot be copied
+     */
+
+    return new_meta;
+
 }
 
 /**************************************************************************

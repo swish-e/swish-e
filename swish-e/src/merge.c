@@ -373,6 +373,8 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
 
     freeMetaEntries( out_header );
 
+    /* Remove the date from the index */
+
     if ( out_header->indexedon )
     {
         efree( out_header->indexedon );
@@ -463,7 +465,6 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
     struct metaEntry *out_meta;
     int             *meta_map;
 
-
     meta_map = emalloc( sizeof( int ) * (in_header->metaCounter + 1) );
     memset( meta_map, 0, sizeof( int ) * (in_header->metaCounter + 1) );
 
@@ -477,24 +478,41 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
                    ? getMetaNameByNameNoAlias( out_header, in_meta->metaName )
                    : getPropNameByNameNoAlias( out_header, in_meta->metaName );
 
-        /* if it's not found, then add it */
+
+
+        /* if meta from input header is not found in the output header then add it */
         if ( !out_meta )
-            out_meta = addMetaEntry(out_header, in_meta->metaName, in_meta->metaType, 0);
-        else
-            if (out_meta->metaType != in_meta->metaType )
-                progerr("meta name %s in index %s is different type than in output index", in_meta->metaName, in_index->line );
+            out_meta = cloneMetaEntry( out_header, in_meta ); /* can't fail */
+
+
+        /* Validate that the two metas are indeed the same */
+        /* This should be done in metanames.c, but error messages are harder */
+
+        if (out_meta->metaType != in_meta->metaType )
+            progerr("meta name %s in index %s is different type than in output index", in_meta->metaName, in_index->line );
+
+        if (out_meta->sort_len != in_meta->sort_len )
+            progerr("meta name %s in index %s has different sort length than in output index", in_meta->metaName, in_index->line );
+
+        if (out_meta->rank_bias != in_meta->rank_bias )
+            progerr("meta name %s in index %s is different rank bias than in output index", in_meta->metaName, in_index->line );
+
+
 
 
         /* Now, save the mapping */
         meta_map[ in_meta->metaID ] = out_meta->metaID;
 
 
-        /* now here's a pain, and lots of room for screw up. */
-        /* Basically, check for alias mappings, and that they are correct */
-        /* you can say title is an alias for swishtitle in one index, and then say */
-        /* title is an alias for doctitle in another index */
+        /* 
+         * now here's a pain, and lots of room for screw up.
+         * Basically, check for alias mappings, and that they are correct
+         * you can say title is an alias for swishtitle in one index, and then say
+         * title is an alias for doctitle in another index, which would be an error.
+         * So, if title is an alias for swishtitle, then the output index either
+         * needs to have that alias already, or it must be created.
+         */
 
-        /* If it's an alias, then make that mapping, too */
         if ( in_meta->alias )
         {
             struct metaEntry *in_alias;
@@ -506,6 +524,8 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
                    ? getMetaNameByID( in_header, in_meta->alias )
                    : getPropNameByID( in_header, in_meta->alias );
 
+
+            /* This should not happen -- it would be a very broken input header */
             if ( !in_alias )
                 progerr("Failed to lookup alias for %s in index %s", in_meta->metaName, in_index->line );
 
@@ -516,7 +536,11 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
                    : getPropNameByNameNoAlias( out_header, in_alias->metaName );
 
 
-            /* should be there, since it would have been added earlier - the real metas must be added before the aliases */
+            /* 
+             * should be there, since it would have been added earlier 
+             * the real metas must be added before the aliases 
+             * */
+
             if ( !out_alias )
                 progerr("Failed to lookup alias for %s in output index", out_meta->metaName );
 
@@ -527,7 +551,14 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 
             /* else, if it is already an alias, but points someplace else, we have a problem */
             else if ( out_meta->alias != out_alias->metaID )
-                progerr("In index %s metaname '%s' is an alias for '%s'(%d).  But another index already mapped '%s' to ID# '%d'", in_index->line, in_meta->metaName, in_alias->metaName, in_alias->metaID, out_meta->metaName, out_meta->alias );
+                progerr("In index %s metaname '%s' is an alias for '%s'(%d).  But another input index already mapped '%s' to '%s'(%d)", 
+                        in_index->line, in_meta->metaName, in_alias->metaName, in_alias->metaID,
+                        out_meta->metaName,
+                        is_meta_index( out_meta )
+                            ?  getMetaNameByID( out_header,  out_meta->alias )->metaName
+                            :  getPropNameByID( out_header,  out_meta->alias )->metaName,
+                        out_meta->alias
+                        );
         }
     }
 
