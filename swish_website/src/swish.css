@@ -449,6 +449,13 @@ div.navbar {
   text-decoration: none;
 }
 
+/* graphics page */
+
+div.graphtitle {
+ text-align: center;
+ margin: 10px 10px 10px 10px;
+ padding: 10px 10px 10px 10px;
+}
 
 /* For header on file lists (like download and swish-daily ) */
 .dirHeader {
