@@ -20,3 +20,4 @@ struct metaEntry *getHTMLMeta (IndexFILE *, char *, int *, int, int, char *);
 int parseMetaData (SWISH *, IndexFILE *, char *, int, int, char *, char *, struct file*, int *);
 char *parseHtmlSummary (char *,char *,int, SWISH *);
 int parsecomment (SWISH *, char *, int, int, int, int *);
+

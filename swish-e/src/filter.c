@@ -21,6 +21,7 @@ $Id$
 ** 2001-02-28 rasc    own module started for filters
 **                    some functions rewritten and enhanced...
 ** 2001-04-09 rasc    options for filters  (%f, etc)
+** 2001-05-31 rasc    fix for possible crashes (NULL checks)
 **
 */
 
@@ -340,35 +341,36 @@ static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop)
 static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fprop)
 
 {
-  char *x;
+  static char *nul = "_NULL_";
+  char        *x;
 
 
    switch (param) {
 
       case 'P':              /* Full Doc Path/URL */
-           strcpy (str,fprop->real_path);    
+           strcpy (str,(fprop->real_path) ? fprop->real_path : nul);    
            break;
 
       case 'p':              /* Full Path TMP/Work path */
-           strcpy (str,fprop->work_path);    
+           strcpy (str,(fprop->work_path) ? fprop->work_path : nul);    
            break;
 
       case 'F':              /* Basename Doc Path/URL */
-           strcat (str,fprop->real_filename);
+           strcat (str,(fprop->real_filename) ? fprop->real_filename : nul);
            break;
 
       case 'f':              /* basename Path TMP/Work path */
-           strcpy (str,str_basename (fprop->work_path));    
+           strcpy (str,(fprop->work_path) ? str_basename (fprop->work_path) : nul);    
            break;
 
       case 'D':              /* Dirname Doc Path/URL */
-           x = cstr_dirname (fprop->real_path);   
+           x = (fprop->real_path) ? cstr_dirname (fprop->real_path) : nul;   
            strcpy (str,x);
            efree (x);
            break;
 
       case 'd':              /* Dirname TMP/Work Path */
-           x = cstr_dirname (fprop->work_path);   
+           x = (fprop->real_path) ? cstr_dirname (fprop->work_path) : nul;   
            strcpy (str,x);
            efree (x);
            break;
