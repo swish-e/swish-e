@@ -262,7 +262,7 @@ This method filters a document.  Returns an object of the class SWISH::Filter::D
 or undefined if passed in an empty document, a filename that cannot be read off disk, or 
 if no filters have been loaded.
 
-Methods in L<SWISH::Filter::Document Methods> below can be called on the object to, for
+Methods in SWISH::Filter::Document Methods below can be called on the object to, for
 example, check if the document was filtered and to fetch the document content (filtered or
 not).
 
@@ -596,6 +596,9 @@ sub find_binary {
 # would then point to the new install location.
 
 sub get_libexec {
+
+   return '@@mylibexecdir@@';  # the below isn't robust, so set at install time
+
    return unless $FindBin::Bin;
 
    # Look for something we expect in libexecdir.
@@ -906,7 +909,7 @@ sub is_binary {
 =head2 Methods used by filter authors
 
 =over 4
-    
+
 =item $file_name = $doc_object->fetch_filename;
 
 Returns a path to the document as stored on disk.
