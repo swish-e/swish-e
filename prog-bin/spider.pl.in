@@ -782,7 +782,7 @@ sub make_request {
     print STDERR "\nvvvvvvvvvvvvvvvv HEADERS for $uri vvvvvvvvvvvvvvvvvvvvv\n\n---- Request ------\n",
                   $response->request->as_string,
                   "\n---- Response ---\nStatus: ", $response->status_line,"\n",
-                  $response->headers_as_string,
+                  $response->headers->as_string,
                   "\n^^^^^^^^^^^^^^^ END HEADERS ^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n"
        if $server->{debug} & DEBUG_HEADERS;
 
