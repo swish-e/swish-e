@@ -102,6 +102,8 @@ pod/search.cgi
 pod/style.css
 src/Makefile.in
 src/acconfig.h.in
+src/btree.c
+src/btree.h
 src/check.c
 src/check.h
 src/check.sh
