@@ -1,16 +1,16 @@
 Here are some very basic filter scripts
 
-The converter programs are not included in the swish-e
-distribution. Please get the lastest version of these
-programs from the internet.
+    _binfilter.sh
+        This filter uses the strings(1) command to extract
+        text out of binary files.
+        
 
-pdf filter:
-  - ghostscript
-  - xpdf
+    _pdf2html.pl
+        Filter uses the xpdf package's programs pdfinfo and pdftotext
+        to convert a PDF file into html.
 
+        
 
-winword filter:
-  - catdoc
 
 
 

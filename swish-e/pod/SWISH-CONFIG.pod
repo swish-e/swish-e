@@ -1611,7 +1611,7 @@ Internally, SWISH-E knows how to parse only text, HTML, and XML documents.  With
 index other types of documents.  For example, if all your
 web pages are in gzip format a filter can uncompress these on the fly for indexing.
 
-A filter is an external program that swish executes when processing a document of a given type.
+A filter is an external program that swish executes while processing a document of a given type.
 SWISH-E will execute the filter program for each file that matches the file extension set in the
 B<FileFilter> directive.
 
@@ -1640,7 +1640,8 @@ B<FileFilter> directive.  See Filter Options below.
 
 The filter program must open the file, process its contents, and return it to SWISH-E by printing to STDOUT.
 
-Note that this can add a significant amount of time to the indexing process.  If you have many files to filter you
+Note that this can add a significant amount of time to the indexing process if your external
+program is a perl or shell script.  If you have many files to filter you
 should consider writing your filter in C instead of a shell or perl script, or using the "prog" Access Method.
 
 =over 4
@@ -1662,78 +1663,64 @@ If I<filter-prog> starts with a directory delimiter (absolute path), SWISH-E doe
 the FilterDir settings, but uses the given I<filter-prog> path directly.
 
 Filter options:
-   Filter options are a string passed as arguments to the I<filter-prog>.
-   Filter options can contain variables, replaced by SWISH-E.
 
-   If you ommit I<filter-options> SWISH-E will use default parameters for the options.
+Filter options are a string passed as arguments to the I<filter-prog>.
+Filter options can contain variables, replaced by SWISH-E.
+If you ommit I<filter-options> SWISH-E will use default parameters for the options listed above.
 
-        Default:      "'%p' '%P'"
-        Which means:  pass   "workfile path" and "documentfile path" to filter (each quoted).
+    Default:      "'%p' '%P'"
+    Which means:  pass   "workfile path" and "documentfile path" to filter (each quoted).
 
-   Variables in filter options:
+Variables in filter options:
 
-       %%   =  %
-       %P   =  Full document pathname (e.g. URL, or path on filesystem)  
-       %p   =  Full pathname to work file (maybe a tmpfile or the real document path on filesystem)
-       %F   =  Filename stripped from full document pathname
-       %f   =  Filename stripped from "work" pathname
-       %D   =  Directoryname stripped from full document pathname
-       %d   =  Directoryname stripped from full "work" pathname
+    %%   =  %
+    %P   =  Full document pathname (e.g. URL, or path on filesystem)  
+    %p   =  Full pathname to work file (maybe a tmpfile or the real document path on filesystem)
+    %F   =  Filename stripped from full document pathname
+    %f   =  Filename stripped from "work" pathname
+    %D   =  Directoryname stripped from full document pathname
+    %d   =  Directoryname stripped from full "work" pathname
 
-       Example:
-          %P =  document pathname:  http://myserver/path1/mydoc.txt
-          %p =  work pathname:      /tmp/tmp.1234.mydoc.txt
-          %F =     mydoc.txt
-          %f =     tmp.1234.mydoc.txt
-          %D =     http://myserver/path1
-          %d =     /tmp
+Examples of strings passed:
 
-       Important hint for security:
-           When using variable substitition, use quotes, to ensure filename integrity.
-           e.g. "'%f'"  -->  'file name with spaces.doc'.
-           If you don't use this, your system security may be compromised, or filtering
-           may not work for these files.
+    %P =  document pathname:  http://myserver/path1/mydoc.txt
+    %p =  work pathname:      /tmp/tmp.1234.mydoc.txt
+    %F =     mydoc.txt
+    %f =     tmp.1234.mydoc.txt
+    %D =     http://myserver/path1
+    %d =     /tmp
+
+Important hint for security:
+
+    When using variable substitution, use quotes to ensure filename integrity.
+    e.g. "'%f'"  -->  'file name with spaces.doc'.
+    If you don't use this, your system security may be compromised, or filtering
+    may not work for these files.
 
 
-Examples for filters:
+Examples of filters:
 
-    FileFilter .pdf       pdftotext   "'%p' -"
     FileFilter .doc       /usr/local/bin/catdoc "-s8859-1 -d8859-1 '%p'"
+    FileFilter .pdf       pdftotext   "'%p' -"
     FileFilter .html.gz   gzip  "-c '%p'"
-    FileFilter .pdf       pdf2html.sh
-    FileFilter .html.gz   ungzip-html
-    FileFilter .doc       /usr/local/filters/wword-filter.sh
-    FileFilter .dot       wword-filter.sh
-    FileFilter .ps        ghostscript-filter.pl
     FileFilter .mydoc     "/some/path/mydocfilter"  "-d '%d' -example -url '%P' '%f'"
 
+The above examples are running a I<binary> filter program.  For more complicated filtering needs you
+may use a scripting language such as Perl or a shell script.  Here's some examples of calling a shell
+and perl script.
 
-Here is a simple example of a filter using Perl.  Again, you should try to avoid running shell or perl
-scripts as filters as the scripts will significantly slow down indexing, if indexing speed is an issue.
-But, for a small number of files to filter, this method works well and is easy to implement.
+    FileFilter .pdf       pdf2html.sh
+    FileFilter .ps        ghostscript-filter.pl
 
-Convert gzipped files to text:
+Using a scripting language (or any language that has a large startup cost)
+can greatly increase the indexing time.  For small indexing jobs, this may not be
+an issue, but for large collections of files that require processing by a scripting language, you may
+be better off using the C<-S prog> access method where the script will only be compiled once, instead
+of for each document.
 
-    #!/usr/local/bin/perl -w
-    use strict;
-    use Compress::Zlib ;
-    
-    my $file = $ARGV[1] || shift;
-    
-    die "Usage: gzcat file...\n"
-        unless $file;
-    
-    my $gz = gzopen($file, 'rb')
-        or die "Cannot open $file: $gzerrno\n" ;
-    
-    my $buffer;
-    print $buffer
-        while $gz->gzread($buffer) > 0 ;
-    
-    die "Error reading from $file: $gzerrno\n"
-        if $gzerrno != Z_STREAM_END ;
-    
-    $gz->gzclose() ;
+Filters are probably easier to write than a C<-S prog> program.  Which you decide to use depends on
+your requirements.  Examples of filter scripts can be found in the F<filter-bin> directory.
+
 
 =back
 

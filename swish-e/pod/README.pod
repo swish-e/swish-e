@@ -17,7 +17,10 @@ In Fall 1996, The Library of UC Berkeley received permission from Kevin Hughes t
 enhancements to the original binary. The result is SWISH-Enhanced or SWISH-E, brought to you by the
 SWISH-E Development Team.
 
-SWISH-E version 2 represents a major rewrite of the code and the addition of many new features.
+SWISH-E version 2.2 represents a major rewrite of the code and the addition of many new features.
+Memory requirements for indexing have been reduced, and indexing speed is much improved.
+New features allow more control over indexing, better document parsing, improved indexing and searching
+logic, better filter code, and the ability to index from any data source.
 
 =head2 Key features
 
@@ -72,12 +75,20 @@ Limit searches to parts of documents such as certain HTML tags
 
 =item *
 
+Includes example search scripts
+
+=item *
+
 SWISH-E is fast.
 
 =item *
 
 It's open source and FREE!  You can customize SWISH-E and you
 can contribute your fancy new features to the project.
+
+=item *
+
+Supported by on-line user and developer group
 
 =back
 
@@ -86,7 +97,7 @@ can contribute your fancy new features to the project.
 
 The current version of SWISH-E can be found at:
 
-http://sunsite.berkeley.edu/SWISH-E/
+http://swish-e.org
 
 Please make sure you use a current version of swish-e.
 
@@ -100,6 +111,10 @@ Read the L<INSTALL|INSTALL> page.  Information on specific ports
 
 The Windows binary can be found in the C<src/win32> directory.
 
+In addition to the INSTALL page,
+make sure you read the L<SWISH-FAQ|SWISH-FAQ> page if you have any questions, or
+to get an idea of questions that you might someday ask.
+
 
 =head1 The SWISH-E Documentation
 
@@ -107,7 +122,8 @@ Documetation is provided in the SWISH-E distribution package in two forms, POD (
 and in html format.  The POD documentation is in the F<pod> directory, and the HTML documentation is in the
 F<html> directory, of course.
 
-The distribution make files can also generate the documentation in these formats:
+If your system includes the required support files and programs,
+the distribution make files can also generate the documentation in these formats:
 
     Postscript
     PDF (Adobe Acrobat)
@@ -129,8 +145,13 @@ versions of the documentation, and for information on installing the SWISH-* doc
 
 =head2 How do I read the SWISH-E documentation?
 
-The SWISH-E documentation is in POD format, and the documentation can be found in the F<pod>
-directory.  POD documentation is displayed by
+The SWISH-E documentation included with the SWISH-E distribution is in POD and HTML formats.
+The POD documentation can be found in the F<pod> directory, and the HTML documentation can be
+found in the F<html> directory.
+
+To view the HTML documentation point your browser to the F<html/index.html> file.
+
+The POD documentation is displayed by
 the "perldoc" command that is included with every Perl installation.
 For example, to view the swish-e installation documentation page called "INSTALL", type
 
@@ -185,6 +206,10 @@ L<SWISH-PERL|SWISH-PERL> -- Instructions for using the Perl library
 =item *
 
 L<CHANGES|CHANGES> -- List of feature changes and bug fixes
+
+=item *
+
+L<SWISH-BUGS|SWISH-BUGS> -- List of known bugs in the release.
 
 =back
 
@@ -274,7 +299,7 @@ in cleaning up the docs will be appreciated!
 SWISH-E is currently being developed as an open source project on SourceForge
 http://sourceforge.net.
 
-See http://sourceforge.net/projects/swishe/ for more information.
+Contact the SWISH-E list for questions.
 
 =head1 Document Info
 
