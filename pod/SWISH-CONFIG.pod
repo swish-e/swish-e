@@ -479,6 +479,19 @@ This tag is described at http://www.robotstxt.org/wc/exclusion.html.
 
 Note: This feature is only available with the libxml2 HTML parser.
 
+Also, if you are using the libxml2 parser (HTML2 and XML2) then you can use the the following
+comments in your documents to prevent indexing:
+
+       <!-- SwishCommand noindex -->
+       <!-- SwishCommand index -->
+
+and/or these may be used also:
+
+       <!-- noindex -->
+       <!-- index -->
+
+For example, these are very helpful to prevent indexing of common headers, footers, and menus.
+
 
 =back
 

@@ -32,7 +32,7 @@ int  configModule_HTTP (SWISH *, StringList *);
 char *url_method ( char *url, int *plen );
 char *url_serverport (char *url, int *plen);
 char *url_uri (char *url, int *plen);
-int get (SWISH *sw, char *contenttype_or_redirect, time_t *plastretrieval, char *url);
+int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url);
 int cmdf (int (*cmd)(const char *), char *fmt, char *,pid_t pid);
 char *readline (FILE *fp);
 pid_t lgetpid ();

@@ -75,7 +75,12 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
     static int lenbuffer=0;
     static char *buffer=NULL;
     FILE *fp;
-    struct MOD_Index *idx = sw->Index;	
+    struct MOD_Index *idx = sw->Index;
+    time_t  last_modified;
+
+    // argh, this is ugly
+    char   *file_prefix;  // prefix for use with files written by swishspider -- should just be on the stack!
+    
 
     if(!lenbuffer)buffer=emalloc((lenbuffer=MAXSTRLEN)+1);
     if(!lencontenttype)contenttype=emalloc((lencontenttype=MAXSTRLEN)+1);
@@ -149,7 +154,14 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 			buffer=erealloc(buffer,lenbuffer+1);
 		}
 		sprintf(buffer, "%srobots.txt", server->baseurl);
-		if (get(sw,contenttype, &server->lastretrieval, buffer) == 200)
+
+
+
+        file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
+        sprintf(file_prefix, "%s/swishspider@%ld", idx->tmpdir, (long) lgetpid());
+
+
+		if (get(sw,contenttype, &last_modified, &server->lastretrieval, file_prefix, buffer) == 200)
 		{
 		    char   *robots_buffer;
 		    int     filelen;
@@ -175,6 +187,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 			//parserobotstxt(fp, server);
 			//fclose(fp);
 		}
+		efree( file_prefix );
 		
 		cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
 		cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());

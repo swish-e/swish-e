@@ -53,6 +53,12 @@
 #include <time.h>
 #include <stdarg.h>
 
+// for wait
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/wait.h>
+#endif
+
 #include "swish.h"
 #include "mem.h"
 #include "string.h"
@@ -356,76 +362,126 @@ char   *url_uri(char *url, int *plen)
     *plen = strlen(url);
     return url;
 }
-
-int     get(SWISH * sw, char *contenttype_or_redirect, time_t * plastretrieval, char *urlx)
+/************************************************************
+*
+* Fork and exec a program, and wait for child to exit.
+* Returns
+*
+*************************************************************/
+#ifndef _WIN32
+static void run_program(char* prog, char** args)
 {
-    static int lenbuffer = 0;
-    static char *buffer = NULL;
-    int     code,
-            cmdsize;
-    FILE   *fp;
-    char   *command;
-    struct MOD_Index *idx = sw->Index;
-    struct MOD_HTTP *http = sw->HTTP;
-    char   *url = estrdup( urlx );
+    pid_t pid = fork();
+    int   status;
 
-    
-/* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
-#ifdef _WIN32
-    char   *spiderprog = "swishspider.pl";
-    char    commandline[] = "perl.exe %s%s %s/swishspider@%ld \"%s\"";
-#else
-    char   *spiderprog = "swishspider";
-    char    commandline[] = "perl %s%s %s/swishspider@%ld '%s'";
+    /* In parent, wait for child */
+    if ( pid )
+    {
+        wait( &status );
+        if ( WIFEXITED( status ) ) // exited normally if non-zero
+            return;
 
+        progerr("%s exited with non-zero status (%d)", prog, WEXITSTATUS(status) );
+    }
+        
+    execvp (prog, args);
+    progerrno("Failed to fork '%s'. Error: ", prog );
+}
 #endif
 
-    if (!lenbuffer)
-        buffer = emalloc((lenbuffer = MAXSTRLEN) + 1);
+/************************************************************
+*
+* Fetch a URL
+* Side effect that it appends to "response_file"
+*  -- lazy programmer hoping that -S http will go away...
+*
+*  Under Windows system() is used to call "perl"
+*  Otherwise, exec is called on the swishspider program
+*
+*************************************************************/
 
-    /* Sleep a little so we don't overwhelm the server
-       * */
+int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url)
+{
+    int     code = 500;
+    FILE   *fp;
+    struct MOD_HTTP *http = sw->HTTP;
+
+    /* Build path to swishspider program */
+    char   *spider_prog = emalloc( strlen(http->spiderdirectory) + strlen("swishspider+fill") );
+    sprintf(spider_prog, "%sswishspider", http->spiderdirectory ); // note that spiderdir MUST be set.  
+
+    
+    /* Sleep a little so we don't overwhelm the server */
     if ((time(0) - *plastretrieval) < http->delay)
     {
         int     num_sec = http->delay - (time(0) - *plastretrieval);
-
         sleep(num_sec);
     }
+
     *plastretrieval = time(0);
 
-    /* URLs can get quite large so don't depend on a fixed size buffer.  The
-       ** +MAXPIDLEN is for the pid identifier and the trailing null.
-       * */
-    cmdsize = strlen(http->spiderdirectory) + strlen(url) + strlen(idx->tmpdir) + strlen(commandline) + strlen(spiderprog) + MAXPIDLEN;
-    command = (char *) emalloc(cmdsize + 1);
-    sprintf(command, commandline, http->spiderdirectory, spiderprog, idx->tmpdir, lgetpid(), url);
-
-    if (system(command) == 0)
+    
+#ifdef _WIN32
+    /* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
     {
-        if ((int) (strlen(idx->tmpdir) + MAXPIDLEN + 30) >= lenbuffer)
-        {
-            lenbuffer = strlen(idx->tmpdir) + MAXPIDLEN + 200;
-            buffer = erealloc(buffer, lenbuffer + 1);
-        }
-        sprintf(buffer, "%s/swishspider@%ld.response", idx->tmpdir, (long) lgetpid());
-        fp = fopen(buffer, F_READ_TEXT);
-        fgets(buffer, lenbuffer, fp);
-        code = atoi(buffer);
-        if ((code == 200) || ((code / 100) == 3))
-        {
-            /* read content-type  redirect
-               * */
-            fgets(contenttype_or_redirect, MAXSTRLEN, fp);
-            *(contenttype_or_redirect + strlen(contenttype_or_redirect) - 1) = '\0';
-        }
-        fclose(fp);
+        int     retval;
+        char    commandline[] = "perl %s %s \"%s\"";
+        char   *command = emalloc( strlen(commandline) + strlen(spider_prog) + strlen(file_prefix) + strlen(url) + 1 );
+
+        sprintf(command, commandline, spider_prog, file_prefix, url);
+
+        retval = system( command );
+        efree( command );
+        efree( spider_prog );
+
+        printf("Returned %d\n", retval );
+        
+        if ( retval )
+            return 500;
+    }
+#else
+    {
+        char *args[4];
+
+        args[0] = spider_prog;
+        args[1] = file_prefix;
+        args[2] = url;
+        args[3] = NULL;
+        run_program( spider_prog, args );
+        efree( spider_prog );
+    }
+#endif
+    
+
+    /* NAUGHTY SIDE EFFECT */
+    strcat( file_prefix, ".response" );
+    
+    if ( !(fp = fopen(file_prefix, F_READ_TEXT)) )
+    {
+        progerrno("Failed to open file '%s': ", file_prefix );
     }
     else
     {
-        code = 500;
-    }
+        char buffer[500];
+    
+        fgets(buffer, 400, fp);
+        code = atoi(buffer);
+        if ((code == 200) || ((code / 100) == 3))
+        {
+            /* read content-type  redirect */
+            fgets(contenttype_or_redirect, MAXSTRLEN, fp);  /* more yuck */
+            *(contenttype_or_redirect + strlen(contenttype_or_redirect) - 1) = '\0';
+        }
+        if (code == 200)
+        {
+            /* read last-mod time */
+            fgets(buffer, 400, fp);  /* more yuck */
+            *last_modified = (time_t)strtol(buffer, NULL, 10);  // go away http.c -- no error checking
+        }
 
-    efree(command);
+
+        fclose(fp);
+    }
 
     return code;
 }
@@ -532,14 +588,13 @@ void    http_indexpath(SWISH * sw, char *url)
 {
     urldepth *urllist = 0;
     urldepth *item;
-    static int lenbuffer = 0;
-    static char *buffer = NULL;
     static int lentitle = 0;
     static char *title = NULL;
     char   *tmptitle;
     static int lencontenttype = 0;
     static char *contenttype = NULL;
     int     code;
+    time_t  last_modified = 0;
 
     httpserverinfo *server;
     char   *link;
@@ -548,19 +603,33 @@ void    http_indexpath(SWISH * sw, char *url)
     FILE   *fp;
     struct MOD_Index *idx = sw->Index;
 
-    if (!lenbuffer)
-        buffer = emalloc((lenbuffer = MAXFILELEN) + 1);
+    char   *file_prefix;  // prefix for use with files written by swishspider -- should just be on the stack!
+    char   *file_suffix;  // where to copy the suffix
+
+
+    /* Initialize buffers */
+
+
+    file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
+    sprintf(file_prefix, "%s/swishspider@%ld", idx->tmpdir, (long) lgetpid());
+    file_suffix = file_prefix + strlen( file_prefix );
+    
+
     if (!lentitle)
         title = emalloc((lentitle = MAXSTRLEN) + 1);
+
     if (!lencontenttype)
         contenttype = emalloc((lencontenttype = MAXSTRLEN) + 1);
 
-    /* prime the pump with the first url
-       * */
+
+
+    /* prime the pump with the first url */
     urllist = add_url(sw, urllist, url, 0, url);
 
-    /* retrieve each url and add urls to a certain depth
-       * */
+
+
+    /* retrieve each url and add urls to a certain depth */
+
     while (urllist)
     {
         item = urllist;
@@ -572,119 +641,86 @@ void    http_indexpath(SWISH * sw, char *url)
             fflush(stdout);
         }
 
-        /* We don't check if this url is legal here, because we do that
-           ** before adding to the list.
-           * */
+        /* We don't check if this url is legal here, because we do that before adding to the list. */
         server = getserverinfo(sw, item->url);
 
-        if ((code = get(sw, contenttype, &server->lastretrieval, item->url)) == 200)
+        strcpy( file_suffix, "" );  // reset to just the prefix
+
+        if ((code = get(sw, contenttype, &last_modified, &server->lastretrieval, file_prefix, item->url)) == 200)
         {
+            /* Set the file_prefix to be the path to "contents" */
+            strcpy( file_suffix, ".contents" );
+
+            
             /* Patch from Steve van der Burg */
             /* change from strcmp to strncmp */
+
+
+            /* Fetch title from doc if it's HTML */
+
+            if (strncmp(contenttype, "text/html", 9) == 0)
+                title = SafeStrCopy(title, (char *) (tmptitle = parseHTMLtitle(sw , file_prefix)), &lentitle);
+            else
+                if ((p = strrchr(item->url, '/')))
+                    title = SafeStrCopy(title, p + 1, &lentitle);
+                else
+                    title = SafeStrCopy(title, item->url, &lentitle);
+
+
+            /* Now index the file */
+
+            /* What to do with non text files?? */
+            if ( strncmp(contenttype, "text/", 5) == 0 )
+            {
+                fprop = file_properties(item->url, file_prefix, sw);
+                fprop->mtime = last_modified;
+
+                /* only index contents of text docs */
+                // this would just index the path name
+                //fprop->index_no_content = strncmp(contenttype, "text/", 5);
+
+                do_index_file(sw, fprop);
+                free_file_properties(fprop);
+            }
+            else if (sw->verbose >= 3)
+                printf("Skipping %s:  Wrong content type: %s.\n", url, contenttype);
+            
+
+
+
+            /* add new links as extracted by the spider */
+
             if (strncmp(contenttype, "text/html", 9) == 0)
             {
-                if ((int) (strlen(idx->tmpdir) + MAXPIDLEN + 30) >= lenbuffer)
+                strcpy( file_suffix, ".links" );
+            
+                if ((fp = fopen(file_prefix, F_READ_TEXT)) != NULL)
                 {
-                    lenbuffer = strlen(idx->tmpdir) + MAXPIDLEN + 200;
-                    buffer = erealloc(buffer, lenbuffer + 1);
-                }
-                sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long) lgetpid());
-                title = SafeStrCopy(title, (char *) (tmptitle = parseHTMLtitle(sw , buffer)), &lentitle);
-            }
-            else
-            {
-                if ((p = strrchr(item->url, '/')))
-                {
-                    title = SafeStrCopy(title, p + 1, &lentitle);
-                }
-                else
-                {
-                    title = SafeStrCopy(title, item->url, &lentitle);
+                    /* URLs can get quite large so don't depend on a fixed size buffer */
+                
+                    while ((link = readline(fp)) != NULL)
+                    {
+                        *(link + strlen(link) - 1) = '\0';
+                        urllist = add_url(sw, urllist, link, item->depth + 1, url);
+                    }
+                    fclose(fp);
                 }
             }
 
-
-
-            if ((int) (strlen(idx->tmpdir) + MAXPIDLEN + 30) >= lenbuffer)
-            {
-                lenbuffer = strlen(idx->tmpdir) + MAXPIDLEN + 200;
-                buffer = erealloc(buffer, lenbuffer + 1);
-            }
-            sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long) lgetpid());
-
-
-            /* -- to retrieve last modification date of the
-               -- http document, the "get"-process has set to
-               -- the last mod timestamp on the tmp file
-               -- or we need to parse the server response...
-               -- $$ still to be done! (rasc) until then,
-               -- we are setting mtime to zero!
-             */
-
-
-            fprop = file_properties(item->url, buffer, sw);
-            fprop->mtime = 0;   /* $$ see above */
-
-            /* Check http header for default filter 
-               $$ original code:
-               $$  indextitleonly=strncmp(contenttype, "text/", 5);
-               $$ what this for?
-               $$ seems to me historical and has to be removed...
-               $$ Why no getting a txt file?
-             */
-
-            // This isn't true, because filters can be used.
-            //fprop->index_no_content = strncmp(contenttype, "text/", 5);
-            /* $$ Jose: to discuss... and eventually be removed... */
-
-
-            do_index_file(sw, fprop);
-
-
-
-
-            free_file_properties(fprop);
-            if (fprop->fp)
-            {
-
-
-
-
-
-            }
-
-            /* add new links
-               * */
-            if ((int) (strlen(idx->tmpdir) + MAXPIDLEN + 30) >= lenbuffer)
-            {
-                lenbuffer = strlen(idx->tmpdir) + MAXPIDLEN + 200;
-                buffer = erealloc(buffer, lenbuffer + 1);
-            }
-            sprintf(buffer, "%s/swishspider@%ld.links", idx->tmpdir, (long) lgetpid());
-            if ((fp = fopen(buffer, F_READ_TEXT)) != NULL)
-            {
-
-                /* URLs can get quite large so don't depend on a fixed size buffer
-                 **/
-                while ((link = readline(fp)) != NULL)
-                {
-                    *(link + strlen(link) - 1) = '\0';
-                    urllist = add_url(sw, urllist, link, item->depth + 1, url);
-                }
-                fclose(fp);
-            }
         }
         else if ((code / 100) == 3)
         {
             urllist = add_url(sw, urllist, contenttype, item->depth, url);
         }
 
-        /* Clean up the files left by swishspider
-           * */
+
+
+        /* Clean up the files left by swishspider */
         cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
         cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());
         cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());
     }
+    efree(file_prefix);
 }
 
 #endif

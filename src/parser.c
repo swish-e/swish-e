@@ -1558,6 +1558,14 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 *   Comments
 *
 *   Should be able to call the char_hndl
+*   Allows comments to enable/disable indexing a block by either:
+*
+*       <!-- noindex -->
+*       <!-- index -->
+*       <!-- SwishCommand noindex -->
+*       <!-- SwishCommand index -->
+* 
+*
 *
 *   To Do:
 *       Can't use DontBump with comments.  Might need a config variable for that.
@@ -1569,25 +1577,37 @@ static void comment_hndl(void *data, const char *txt)
     SWISH       *sw = parse_data->sw;
     int         structure = get_structure( parse_data );
     char        *swishcmd;
+    char        *comment_text = str_skip_ws( (char *)txt );
+    int         found = 0;
 
-    if ( ( swishcmd = lstrstr( (char *)txt, "SwishCommand" )) )
-    {
-        swishcmd++;
-        if ( lstrstr( swishcmd, "noindex" ) )
-        {
-            parse_data->swish_noindex++;
-        }
-        else if ( lstrstr( swishcmd, "index" ) )
-        {
-            if ( parse_data->swish_noindex )
-               parse_data->swish_noindex--;
-        }
 
+    str_trim_ws( comment_text );
+    if ( ! *comment_text )
         return;
+
+
+    /* Strip off SwishCommand - might be for future use */
+    if ( ( swishcmd = lstrstr( comment_text, "SwishCommand" )) && swishcmd == comment_text )
+    {
+        comment_text = str_skip_ws( comment_text + strlen( "SwishCommand" ) );
+        found++;
+    }
+
+    if ( !strcasecmp( comment_text, "noindex" ) )
+    {
+        parse_data->swish_noindex++;
+        return;
+    }
+    else if ( !strcasecmp( comment_text, "index" ) )
+    {
+        if ( parse_data->swish_noindex )
+           parse_data->swish_noindex--;
+
+        return;           
     }
 
 
-    if( !sw->indexComments )
+    if( found || !sw->indexComments )
         return;
 
 
@@ -1596,7 +1616,7 @@ static void comment_hndl(void *data, const char *txt)
 
     /* Index the text */
     parse_data->total_words +=
-        indexstring( sw, (char *)txt, parse_data->filenum, structure | IN_COMMENTS, 0, NULL, &(parse_data->word_pos) );
+        indexstring( sw, comment_text, parse_data->filenum, structure | IN_COMMENTS, 0, NULL, &(parse_data->word_pos) );
 
 
     parse_data->word_pos++;

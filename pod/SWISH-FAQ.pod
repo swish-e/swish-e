@@ -448,6 +448,18 @@ C<IgnoreMetaTags> works with XML documents (and HTML documents when
 using libxml2 as the parser), but not with documents parsed by the text
 (TXT) parser.
 
+If you are using the libxml2 parser (HTML2 and XML2) then you can use the the following
+comments in your documents to prevent indexing:
+
+       <!-- SwishCommand noindex -->
+       <!-- SwishCommand index -->
+
+and/or these may be used also:
+
+       <!-- noindex -->
+       <!-- index -->
+
+
 =head3 How do I modify the path or URL of the indexed documents.
 
 Use the C<ReplaceRules> configuration directive to rewrite path names
@@ -778,7 +790,7 @@ are dynamically generated), Swish-e provides two methods of spidering.
 First, it includes the http method of indexing C<-S http>. A number
 of special configuration directives are available that control spidering
 (see L<Directives for the HTTP Access Method Only|/"Directives for the
-HTTP Access Method Only">).  A perl helper script (swishspider.pl) is
+HTTP Access Method Only">).  A perl helper script (swishspider) is
 included in the F<src> directory to assist with spidering web servers.
 There are example configurations for spidering in the F<conf> directory.
 
@@ -800,6 +812,23 @@ the spider.pl's configuration, and it includes features such as MD5 checks
 to prevent duplicate indexing, options to avoid spidering some files,
 or index but avoid spidering.  And since it's a perl program there's no
 limit on the features you can add.
+
+=head3 Why does swish report "./swishspider: not found"?
+
+Does the file F<swishspider> exist where the error message displays?  If not, either
+set the configuration option L<SpiderDirectory|SWISH-CONFIG/"item_SpiderDir">
+to point to the directory where the F<swishspider> program is found, or place the
+F<swishspider> program in the current directory when running swish-e.
+
+If you are running Windows, make sure "perl" is in your path.  Try typing F<perl> from
+a command prompt.
+
+If you not running windows, make sure that the shebang line (the first line of the
+swishspider program that starts with #!) points to the correct location of perl.
+Typically this will be F</usr/bin/perl> or F</usr/local/bin/perl>.  Also, make sure that
+you have execute and read permissions on F<swishspider>.
+
+The F<swishspider> perl script is only used with the -S http method of indexing.
 
 =head3 I'm using the spider.pl program to spider my web site, but some
 large files are not indexed.

@@ -397,6 +397,18 @@ NOINDEX.
 
     <meta name="robots" content="noindex">
 
+Also, comments may be used within HTML and XML source docs to block sections of
+content from indexing:
+
+       <!-- SwishCommand noindex -->
+       <!-- SwishCommand index -->
+
+and/or these may be used also:
+
+       <!-- noindex -->
+       <!-- index -->
+
+
 =item * New directive: UndefinedXMLAttributes
 
 This describes how the content of XML attributes should be indexed,

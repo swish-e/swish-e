@@ -74,6 +74,7 @@ char *strtolower (char *str);
 #define makeItLow(a)    strtolower ((a)) /* map old name to new $$$ */
 
 char *str_skip_ws (char *s);
+void str_trim_ws(char *string);
 char charDecode_C_Escape (char *s, char **se);
 
 /* ISO-Routines */
