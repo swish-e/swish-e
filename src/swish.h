@@ -105,7 +105,7 @@
 
 
 #ifdef _WIN32
-#include "win32/config.h"
+// #include "win32/config.h"
 
 #elif defined(__VMS)
 #include "vms/regex.h"
@@ -115,7 +115,11 @@ extern int snprintf(char *, size_t, const char *, /*args */ ...);
 extern int vsnprintf(char *, size_t, const char *, va_list);
 #else
 #include <dirent.h>
+#ifdef HAVE_PCRE
+#include <pcreposix.h>
+#else
 #include <regex.h>
+#endif
 #endif
 
 

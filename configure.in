@@ -58,7 +58,7 @@ dnl which we need and don't do anything abut if we don't have them
 dnl so why bother?
 dnl AC_HEADER_STDC
 
-dnl Again, I don't think we do any tests for these, so why bother
+dnl Check for some headers
 AC_CHECK_HEADERS(unistd.h stdlib.h sys/timeb.h)
 
 AC_HEADER_SYS_WAIT
@@ -190,6 +190,65 @@ CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
 
 
+PCRE_REQUIRED_VERSION=3.4
+AC_ARG_WITH(pcre,AC_HELP_STRING([--with-pcre=DIR], [use pcre in DIR (YES if found)]),,withval=no)
+
+dnl if withval not no then try to enable pcre support
+if test "$withval" != "no"; then
+    dnl find pcre-config program
+    PCRE_CONFIG="no"
+    if test "$withval" != "yes" && test "$withval" != "maybe" ; then
+        PCRE_CONFIG_PATH="$withval/bin"
+        AC_PATH_PROG(PCRE_CONFIG, pcre-config,"no", $PCRE_CONFIG_PATH)
+    else
+        PCRE_CONFIG_PATH=$PATH
+        AC_PATH_PROG(PCRE_CONFIG, pcre-config,"no", $PCRE_CONFIG_PATH)
+    fi
+    
+    dnl we won't do anything without pcre-config
+    if test "$PCRE_CONFIG" = "no"; then
+        withval="no"
+    else 
+        withval=`$PCRE_CONFIG --prefix`
+    fi
+    
+    dnl if withval still maybe then we have failed
+    if test "$withval" = "maybe"; then
+        withval = "no"
+    fi
+fi
+
+if test "$withval" != "no"; then
+    AC_SUBST(PCRE_REQUIRED_VERSION)
+    AC_MSG_CHECKING(for libpcre libraries >= $PCRE_REQUIRED_VERSION) 
+
+    AC_DEFUN(VERSION_TO_NUMBER,
+    [`$1 | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
+
+    dnl
+    dnl test version and init our variables
+    dnl
+
+    vers=VERSION_TO_NUMBER($PCRE_CONFIG --version)
+    PCRE_VERSION=`$PCRE_CONFIG --version`
+
+    if test "$vers" -ge VERSION_TO_NUMBER(echo $PCRE_REQUIRED_VERSION);then
+    	PCRE_LIBS="`$PCRE_CONFIG --libs-posix`"
+    	PCRE_CFLAGS="`$PCRE_CONFIG --cflags-posix`"
+    	AC_MSG_RESULT(found version $PCRE_VERSION)
+    else
+    	AC_MSG_ERROR(You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish)
+    fi
+
+    AC_SUBST(PCRE_CFLAGS)
+    AC_SUBST(PCRE_LIBS)
+    AC_DEFINE(HAVE_PCRE)
+else
+    AC_MSG_RESULT([Not building with perl compatible regex - use --with-pcre to enable])
+fi
+
+CPPFLAGS=${_cppflags}
+LDFLAGS=${_ldflags}
 
 dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
 AC_CONFIG_HEADER(src/acconfig.h)

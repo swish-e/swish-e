@@ -29,7 +29,7 @@ ldflags     = @LDFLAGS@
 
 
 
-LIBS        = @LIBS@ @LIBXML2_LIB@ @Z_LIBS@
+LIBS        = @LIBS@ @LIBXML2_LIB@ @Z_LIBS@ @PCRE_LIBS@
 
 # Library related 
 AR          = ar
@@ -98,7 +98,7 @@ SEARCH_LIB_OBJS     =   $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 OBJS                = $(SWISH_BINARY_OBJS) $(SEARCHING_OBJS) $(INDEXING_OBJS) $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
  
 # Flags for C compiler
-CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
+CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ @PCRE_CFLAGS@ $(cflags)
 LDFLAGS     = $(ldflags)
 
 
