@@ -226,8 +226,6 @@ src/swish_words.h
 src/swish.h
 src/swish2.c
 src/swishspider
-src/swregex.c
-src/swregex.h
 src/txt.c
 src/txt.h
 src/vms/acconfig.h_vms
@@ -254,8 +252,6 @@ src/win32/dirent.h
 src/win32/mkstemp.c
 src/win32/mkstemp.h
 src/win32/libswishe.dsp
-src/win32/regex.c
-src/win32/regex.h
 src/win32/swishe.dsp
 src/win32/swishe.dsw
 win32.nsi
