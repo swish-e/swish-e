@@ -658,7 +658,6 @@ typedef struct
     struct StoreDescription *storedescription;
 
     /* structure for handling replace config data while searching */
-    struct swline *replacelist;
     regex_list     *replaceRegexps;
 
     
