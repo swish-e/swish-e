@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <title>SwishCtl - SWISH-E ActiveX API</title>
+    <link href="./style.css" rel=stylesheet type="text/css" title="refstyle">
+  </head>
+<body>
+
+<h1 class="banner">SwishCtl - SWISH-E ActiveX API</h1>
+
+<dl>
+
+<dt><strong><a name="init">void swishctl.Init(str regkey)</a></strong></dt>
+<dd>
+  <code>swishctl.Init(&quot;IndexFiles&quot;)</code>
+    <p>
+    <code>regkey</code> specifies a string value under the 
+        &quot;HKLM\Software\SWISH-E Team\SwishCtl\Options&quot; key 
+        which is a space separated list of filenames.
+        Example: &quot;IndexFiles&quot; = &quot;docs.idx help.idx&quot;
+    </p>
+    <p>
+   <code>regkey</code> is relative to the directory specified in 
+        &quot;HKLM\Software\SWISH-E Team\SwishCtl\Options\IndexLocation&quot; 
+        string value.
+        Example: &quot;IndexLocation&quot; = &quot;c:\swishctl\&quot;
+    </p>
+</dd>
+
+<dt><strong><a name="newsearch">var swishctl.NewSearch( str query )</a></strong></dt>
+<dd>
+  <code>var res = swishctl.NewSearch( &quot;test&quot; )</code>
+  <p>
+   <code>query</code> is equivalent to swish-e's -w command line option.  
+      It is the full text of your query.  It can be changed 
+      later through swishctl.Execute.
+  </p>
+</dd>
+
+<dt><strong><a name="setsort">void swishctl.SetSort( str sort )</a></strong></dt>
+<dd>
+  <code>swishctl.SetSort(&quot;swishdocpath&quot;)</code><br />
+  <code>swishctl.SetSort(&quot;asc swishdocpath&quot;)</code><br />
+  <code>swishctl.SetSort(&quot;desc swishdocpath&quot;)</code>
+  <p>
+   <code>sort</code> order of search results. The string is a space 
+      separated list of valid document properties. Each property 
+      may contain a qualifier that sets the direction of the sort. 
+  </p>
+</dd>
+
+<dt><strong><a name="error">str swishctl.Error()</a></strong></dt>
+<dd>
+  <code>alert( swishctl.Error() )</code>
+  <p>
+    returns the text of the last SWISH-E error that occured; returns 0 if no errors.
+  </p>
+</dd>
+
+<dt><strong><a name="setsearchlimit">void swishctl.SetSearchLimit( str property, str low, str high )</a></strong></dt>
+<dd>
+  <code>swishctl.SetSearchLimit( &quot;year&quot;, startyr, stopyr )</code>
+  <p>
+    Sets a range from <code>low</code> to <code>high</code> inclusive that the give 
+     <code>property</code> must be in to be selected as a result. 
+      Call multiple times to set more than one limit 
+      on different properties. Limits are ANDed, that is, a 
+      result must be within the range of all limits specified 
+      to be included in a list of results.
+  </p>
+</dd>
+
+<dt><strong><a name="execute">void swishctl.Execute( str query )</a></strong></dt>
+<dd>
+  <code>swishctl.Execute( &quot;some words&quot; )</code>
+  <p>
+    Executes a query based on the parameters in the 
+      search object.<code>query</code> is an optional query string 
+      to use for the search (<code>query</code> replaces the set query 
+      string in the search object). 
+  </p>
+</dd>
+
+<dt><strong><a name="hits">int swishctl.Hits()</a></strong></dt>
+<dd>
+  <p>
+    Returns the number of results for the query. If zero and no 
+      errors were reported after calling swishctl.Execute then 
+      the query returned zero results. 
+  <p>
+</dd>
+
+<dt><strong><a name="seekresult">void swishctl.SeekResult( int position )</a></strong></dt>
+<dd>
+  <code>swishctl.SeekResult( startresult - 1 )</code>
+  <p>
+    Seeks to the position<code>position</code> specified in the result 
+    list. Zero is the first position and swishctl.Hits-1 
+    is the last position. Seeking past the end of results sets 
+    a non-critical error condition. 
+  </p>
+</dd>
+
+<dt><strong><a name="nextresult">int swishctl.NextResult()</strong></dt>
+  <p>
+    Fetches the next result from the list of results. Returns 0 if no more results are available.
+  </p>
+</dd>
+
+<dt><strong><a name="resultpropertystring">str swishctl.ResultPropertyString( str property )</a></strong></dt>
+  <code>swishctl.ResultPropertyString( &quot;swishdocpath&quot; )</code>
+  <p>
+    Fetches the <code>property</code> specified for the current result. 
+  </p>
+</dd>
+
+</dl>
+
+    <div class="footer">
+        <br />SwishCtl is distributed with <b>no warranty</b> under the terms of the
+        <a HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</a>,<br />
+
+        Free Software Foundation, Inc., 
+        59 Temple Place - Suite 330, Boston, MA  02111-1307, USA<br> 
+        Public questions may be posted to 
+        the <a HREF="http://swish-e.org/Discussion/">SWISH-E Discussion</a>.
+    </div>
+
+</body>
+</html>
