@@ -2285,8 +2285,8 @@ First the directory name is checked:
 Next the directory is scanned and each file name (which might be the
 name of a sub-directory) is checked:
 
-    FileRules directory - reject entire dir if any files match FileMatch
-    directory - accept *entire* dir if any files match
+    FileRules directory - reject entire dir if *any* files match
+    FileMatch directory - accept entire dir if *any* files match
 
 Then, unless C<FileMatch directory> matched, each file is tested with
 FileMatch.  A match says to index the file without further testing
