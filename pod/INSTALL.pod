@@ -19,14 +19,17 @@ B<libxml2>
 
 Swish-e 2.2 can (and probably should) use the libxml2 library for parsing HTML and XML files.
 This library can be found at http://www.xmlsoft.org/.  Instructions for installing and
-enabling the library are described below.  Currently, the libxml2 library is not required, but
-is a much better parser than the tired old swish-e parsers html.c and xml.c.
+enabling the library are described below.
+
+Currently, the libxml2 library is not required, but
+is a much better parser than the tired old swish-e html parser (html.c).  Please see
+the Swish-e FAQ L<SWISH-FAQ|SWISH-FAQ> for more discussion of the use of libxml2.
 
 Swish's old xml.c paser has been rewritten to use James Clark's Expat library
 (included with the swish-e distribution),
 but Swish's old html.c code is still broken in a number of ways.
 Libxml2 is comparable to Expat, but offers a much better HTML parser that swish-e's html.c parser.
-Use libxml2 if possible.
+Use libxml2 if possible for parsing HTML and XML.
 
 Currently, setting a content type (IndexContents or DefaultContents)
 of HTML uses swish's html.c parser, where HTML2 uses libxml2's HTML parser.
