@@ -205,7 +205,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
     /* Some initial adjusting of the word */
 
 
-    TranslateChars(header->translatecharslookuptable, word);
+    TranslateChars(header->translatecharslookuptable, (unsigned char *)word);
 
 
 

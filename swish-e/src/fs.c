@@ -189,7 +189,7 @@ int     fs_already_indexed(SWISH * sw, char *path)
     p->dev = buf.st_dev;
     p->ino = buf.st_ino;
     p->next = sw->Index->inode_hash[hashval];
-    sw->Index->inode_hash[hashval] = p;
+    sw->Index->inode_hash[hashval] = p;  /* Aug 1, 2001 -- this is not freed */
 #endif
 
     return 0;

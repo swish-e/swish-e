@@ -266,7 +266,8 @@ Creates aliases for a PropertyName.
 =item * New directive: ExtractPath
 
 Allows you to use a regular expression to extract out part of the path of each file
-and index it with a meta name.  This allow limit searches to parts of your file tree.
+and index it with a meta name.
+For example, this allows searches to be limited to parts of your file tree.
 
 =back
 

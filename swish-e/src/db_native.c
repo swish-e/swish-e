@@ -515,7 +515,7 @@ int DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
    if(tmp)
    {
       tmp = uncompress1(fp,fgetc);
-      *s = (char *) emalloc( tmp +1);
+      *s = (unsigned char *) emalloc( tmp +1);
       *len = tmp;
       fread(*s, *len, sizeof(char), fp);
    }
@@ -971,7 +971,7 @@ int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wor
 long DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db)
 {
     int      len;
-    char    *buffer;
+    unsigned char    *buffer;
     struct   Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE    *fp = DB->fp;
 
@@ -1048,7 +1048,7 @@ int DB_InitReadFiles_Native(void *db)
 int DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedata, void *db)
 {
     int     len;
-    char   *buffer;
+    unsigned char   *buffer;
     struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     if (filenum > DB->num_docs)
