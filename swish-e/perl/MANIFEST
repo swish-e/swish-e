@@ -6,6 +6,7 @@ API.pm
 API.xs
 typemap
 t/test.t
+t/dummy.t
 t/test.conf
 t/first.html
 t/second.html
