@@ -74,8 +74,9 @@ sub UNIVERSAL::host_port { '' };
             die "You must specify 'base_url' in your spider config settings\n";
         }
 
-        for (ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} : $s->{base_url} ) {
-            $s->{base_url} = $_;
+        my @urls = ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} :( $s->{base_url});
+        for my $url ( @urls ) {
+            $s->{base_url} = $url;
             process_server( $s );
         }
     }
@@ -729,13 +730,15 @@ sub commify {
 }
 
 sub default_urls {
-    die "$0: Must list URLs when using 'default'\n" unless @ARGV;
 
     my $validate = 0;
     if ( $ARGV[0] eq 'validate' ) {
         shift @ARGV;
         $validate = 1;
     }
+
+    die "$0: Must list URLs when using 'default'\n" unless @ARGV;
+
 
     my @content_types  = qw{ text/html text/plain };
 
