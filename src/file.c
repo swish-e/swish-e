@@ -39,6 +39,7 @@
 ** config flags for this file!
 **
 ** 2001-02-12 rasc   errormsg "print" changed...
+** 2001-03-16 rasc   truncateDoc [read_stream] (if doc to large, truncate... )
 **
 **
 */
@@ -192,23 +193,47 @@ void indexpath(SWISH *sw,char *path)
 }
 
 
-char *read_stream(FILE *fp,int filelen)
+/*
+  -- read file into a buffer
+  -- truncate file if necessary (truncateDocSize)
+  -- return: buffer
+  -- 2001-03-16 rasc    truncateDoc
+*/
+
+char *read_stream(FILE *fp,long filelen, long max_size)
 {
-int c=0,offset,bufferlen=0;
+long c,offset;
+long bufferlen;
 unsigned char *buffer;
-	if(filelen)
-	{
+
+
+	if(filelen)	{
+
+		/* truncate doc? */
+      	if (max_size && (filelen > max_size)) {
+			filelen = max_size;
+		}
+
 		buffer=emalloc(filelen+1);
 		fread(buffer,1,filelen,fp);
+
 	} else {    /* if we are reading from a popen call, filelen is 0 */
 
-		buffer=emalloc((bufferlen=MAXSTRLEN)+1);
-		for(offset=0;(c=fread(buffer+offset,1,MAXSTRLEN,fp))==MAXSTRLEN;offset+=MAXSTRLEN)
+		buffer=emalloc((bufferlen=RD_BUFFER_SIZE)+1);
+		for(offset=0;(c=fread(buffer+offset,1,RD_BUFFER_SIZE,fp))==RD_BUFFER_SIZE;offset+=RD_BUFFER_SIZE)
 		{
-			bufferlen+=MAXSTRLEN;
+			/* truncate? break if to much read */
+			if (max_size && (bufferlen > max_size)) {
+				break;
+			}
+			bufferlen+=RD_BUFFER_SIZE;
 			buffer=erealloc(buffer,bufferlen+1);
 		}
 		filelen=offset+c;
+
+      	if (max_size && (filelen > max_size)) {
+			filelen = max_size;
+		}
 	}
 	buffer[filelen]='\0';
 	return (char *)buffer;

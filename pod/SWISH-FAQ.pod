@@ -71,7 +71,10 @@ Yes, you can. Just remember that swish-e retains capitalization for all characte
 "çelik", "Celik", or "celik". You can index and use words containing any entity from ! (#033) to ÿ (#255).
 
 Also, the TranslateCharacters directive (L<SWISH-CONFIG|SWISH-CONFIG>) can translate characters while indexing
-and searching.  C<TranslateCharacters :ascii7:> is a predefined set of characters that will eight bit characters to ascii7 characters.
+and searching.  C<TranslateCharacters :ascii7:> is a predefined set of characters that will translate eight bit characters to ascii7 characters.
+Using the :ascii7: rule will e.g. translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or "celik"
+will all match the same word.  
+
 
 =head2 How can I index phrases? 
 
@@ -139,6 +142,14 @@ directive.
 
 Yes. At times it might not strictly necessary, but since you don't really know if anything in the index has changed,
 it is a good rule to reindex anyway. 
+
+=head2 Can I index PDF or Winword documents with swish-e?
+
+Swish-e can internally only handle HTML, WML, XML and TXT (text) files.
+To index other document types you have to install a filter into swish-e using the FileFilter config directive.
+These filters have to translate a document into the swish-e known formats (e.g. text or html). You can use
+"xpdf" or "ghostscript" to convert pdf to text or e.g. "catdoc" to convert winword documents on unix.  
+For details, please have a look on the filter configuration part.
 
 
 =head1 Document Info

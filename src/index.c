@@ -164,8 +164,8 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
                 if (fprop->fp) {
 
 		    /* -- Read  all data  (len = 0 if filtered...) */
-		    rd_buffer = read_stream(fprop->fp,(
-					fprop->filterprog) ?0 :fprop->fsize); 
+		    rd_buffer = read_stream(fprop->fp,
+				(fprop->filterprog) ?0 :fprop->fsize, sw->truncateDocSize); 
 
 		    switch(fprop->doctype) {
 
