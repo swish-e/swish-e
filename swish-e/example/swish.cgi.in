@@ -1844,11 +1844,8 @@ sub add_result_to_list {
 
     # HTML escape all properties that were not highlighted
     for my $prop (keys %$props) {
-warn "$prop = [$props->{$prop}]\n";
-warn " highlighted\n" if  $highlighted->{$prop};
         next if  $highlighted->{$prop};
 
-warn " esacped\n";
         # not highlighted, so escape
         html_escape( $props->{$prop} );
 
