@@ -1,0 +1,67 @@
+%define name    @PROJECT@
+%define version @VERSION@
+%define release 1
+
+Summary:        Simple Web Indexing System for Humans - Enhanced
+Name:           %{name}
+# Version:        %{version}
+Version:        2.3
+Release:        %{release}
+License:        GPL
+Group:          Networking/Other
+Source:         http://swish-e.org/Download/%{name}-%{version}.tar.gz
+URL:            http://swish-e.org/
+BuildRoot:      %{_tmppath}/%name-root
+Packager:       David L Norris <dave@webaugur.com>
+# Icon:           %{_tmppath}/%name-root/rpm/swish-e.xpm
+Vendor:         SWISH-E Team
+Provides:       %{name}
+Requires:       libxml2
+Requires:       pcre
+Requires:       zlib
+Prefix:         /usr
+# Patch:          rpm/swish-e-fhs.patch
+
+%description
+Swish-e is Simple Web Indexing System for Humans - Enhanced
+
+Swish-e can quickly and easily index directories of files or remote 
+web sites and search the generated indexes.
+
+Swish-e it extremely fast in both indexing and searching, highly
+configurable, and can be seamlessly integrated with existing web sites
+to maintain a consistent design. Swish-e can index web pages, but can
+just as easily index text files, mailing list archives, or data stored
+in a relational database.
+
+%prep
+%setup -q
+
+%build
+%configure --with-pcre=/usr --with-libxml2=/usr --with-zlib=/usr
+make
+make test
+
+%install
+install -d $RPM_BUILD_ROOT/usr/bin
+install src/swish-e $RPM_BUILD_ROOT/usr/bin/swish-e
+install src/swish-search $RPM_BUILD_ROOT/usr/bin/swish-search
+#mkdir -p $RPM_BUILD_ROOT/{%_datadir/%name,%_bindir}
+#install -m755 src/swish-e $RPM_BUILD_ROOT/%_bindir
+#install -m755 src/swish-search $RPM_BUILD_ROOT/%_bindir
+
+#%post
+
+#%postun
+
+%files
+%defattr(-,root,root)
+%{_bindir}/swish-e
+%{_bindir}/swish-search
+%doc README* conf/example1.config
+# %_datadir/*
+
+%changelog
+* Wed Dec 04 2002 David L Norris <dave@webaugur.com> 2.3-dev04
+- Created RPM spec file
+
