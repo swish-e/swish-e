@@ -294,6 +294,8 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
     DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,q - sw->Index->worddata_buffer,indexf->DB);
 
+    if(sw->Index->swap_locdata)
+        Mem_ZoneReset(sw->Index->totalLocZone);
 }
 
 /* Writes the list of metaNames into the DB index
