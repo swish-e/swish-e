@@ -738,7 +738,11 @@ or more will display warnings when UTF-8 to 8859-1 conversion fails.
 
 =head3 Can I add/remove files from an index?
 
-Not really.  Swish-e currently has no way to add or remove items from
+Try building swish-e with the C<--enable-incremental> option.
+
+The rest of this FAQ applies to the default swish-e format.
+
+Swish-e currently has no way to add or remove items from
 its index.  But, Swish-e indexes so quickly that it's often possible to
 reindex the entire document set when a file needs to be added, modified or removed.
 If you are spidering a remote site then consider caching documents locally compressed.
@@ -1004,6 +1008,167 @@ system to the same metaname:
 Finally, if you have something more complicated, use C<-S prog> and
 write a perl program or use a filter to set a meta tag when processing
 each file.
+
+=head3 How is ranking calculated?
+
+The C<swishrank> property value is calculated based on which Ranking Scheme (or algorithm)
+you have selected. In this discussion, any time the word B<fancy> is used, you should
+consult the actual code for more details. It is open source, after all.
+
+Things you can do to affect ranking:
+
+=over
+
+=item MetaRankBias
+
+You may configure your index to bias certain metaname values more or less than others.
+See the C<MetaRankBias> configuration option in L<SWISH-CONFIG>.
+
+=item IgnoreTotalWordCountWhenRanking
+
+Set to 1 (default) or 0 in your config file. See L<SWISH-CONFIG>.
+B<NOTE:> You must set this to 0 to use the IDF Ranking Scheme.
+
+=item structure
+
+Each term's position in each document is given a structure value based on the context
+in which the word appears. The structure value is used to artificially inflate
+the frequency of each term in that particular document.
+These structural values are defined in F<config.h>:
+
+ #define RANK_TITLE		7
+ #define RANK_HEADER		5
+ #define RANK_META		3
+ #define RANK_COMMENTS		1
+ #define RANK_EMPHASIZED 	0
+
+
+For example, if the word C<foo> appears in the title of a document, the Scheme
+will treat that document as if C<foo> appeared 7 additional times.
+
+
+=back
+
+
+All Schemes share the following characteristics:
+
+=over
+
+=item AND searches
+
+The rank value is averaged for all AND'd terms. Terms within a set of parentheses () are
+averaged as a single term (this is an acknowledged weakness and is on the TODO list).
+
+=item OR searches
+
+The rank value is summed and then doubled for each pair of OR'd terms. This results
+in higher ranks for documents that have multiple OR'd terms.
+
+=item scaled rank
+
+After a document's raw rank score is calculated, a final rank score is calculated using a
+fancy C<log()> function. All the documents are then scaled against a base score of 1000.
+The top-ranked document will therefore always have a C<swishrank> value of 1000.
+
+=back
+
+Here is a brief overview of how the different Schemes work. The number in parentheses after
+the name is the value to invoke that scheme with C<swish-e -R> or C<RankScheme()>.
+
+=over
+
+=item Default (0)
+
+The default ranking scheme considers the number of times a term appears in a 
+document (frequency), the MetaRankBias and the structure value. The rank might be summarized
+as:
+
+ DocRank = Sum of ( structure + metabias )
+
+Consider this output with the DEBUG_RANK variable set at compile time: 
+
+ Ranking Scheme: 0 
+ Word entry 0 at position 6 has struct 7
+ Word entry 1 at position 64 has struct 41
+ Word entry 2 at position 71 has struct 9
+ Word entry 3 at position 132 has struct 9
+ Word entry 4 at position 154 has struct 9
+ Word entry 5 at position 423 has struct 73
+ Word entry 6 at position 541 has struct 73
+ Word entry 7 at position 662 has struct 73
+ File num: 1104.  Raw Rank: 21.  Frequency: 8 scaled rank: 30445
+  Structure tally:
+  struct 0x7 = count of 1 ( HEAD TITLE FILE ) x rank map of 8 = 8
+
+  struct 0x9 = count of 3 ( BODY FILE ) x rank map of 1 = 3
+
+  struct 0x29 = count of 1 ( HEADING BODY FILE ) x rank map of 6 = 6
+
+  struct 0x49 = count of 3 ( EM BODY FILE ) x rank map of 1 = 3
+
+Every word instance starts with a base score of 1.
+Then for each instance of your word, a running
+sum is taken of the structural value of that word position plus any bias you've configured.
+In the example above, the raw rank is C<8 + 3 + 6 + 3 = 21>.
+
+Consider this line:
+
+  struct 0x7 = count of 1 ( HEAD TITLE FILE ) x rank map of 8 = 8
+
+That means there was one instance of our word in the title of the file.
+It's context was in the <head> tagset, inside the <title>. 
+The <title> is the most specific structure, so it gets the
+RANK_TITLE score: 7. The base rank of 1 plus the structure score of 7 equals 8. If there
+had been two instances of this word in the title, then the score would have been C<8 + 8 = 16>.
+
+=item IDF (1)
+
+IDF is short for Inverse Document Frequency. That's fancy ranking lingo for taking into
+account the total frequency of a term across the entire index, in addition to the term's
+frequency in a single document. IDF ranking also uses the relative density of a word in a
+document to judge its relevancy. Words that appear more often in a doc make that doc's rank
+higher, and longer docs are not weighted higher than shorter docs.
+
+The IDF Scheme might be summarized as:
+
+  DocRank = Sum of ( density * idf * ( structure + metabias ) )
+
+Consider this output from DEBUG_RANK:
+
+ Ranking Scheme: 1 
+ File num: 1104  Word Score: 1  Frequency: 8  Total files: 1451   
+ Total word freq: 108   IDF: 2564  
+ Total words: 1145877   Indexed words in this doc: 562   
+ Average words: 789   Density: 1120    Word Weight: 28716   
+ Word entry 0 at position 6 has struct 7
+ Word entry 1 at position 64 has struct 41
+ Word entry 2 at position 71 has struct 9
+ Word entry 3 at position 132 has struct 9
+ Word entry 4 at position 154 has struct 9
+ Word entry 5 at position 423 has struct 73
+ Word entry 6 at position 541 has struct 73
+ Word entry 7 at position 662 has struct 73
+ Rank after IDF weighting: 574321  
+ scaled rank: 132609
+  Structure tally:
+  struct 0x7 = count of  1 ( HEAD TITLE FILE ) x rank map of 8 = 8
+
+  struct 0x9 = count of  3 ( BODY FILE ) x rank map of 1 = 3
+
+  struct 0x29 = count of  1 ( HEADING BODY FILE ) x rank map of 6 = 6
+
+  struct 0x49 = count of  3 ( EM BODY FILE ) x rank map of 1 = 3
+
+It is similar to the default Scheme, but notice how the total number of files in the index
+and the total word frequency (as opposed to the document frequency) are both part of the
+equation.
+
+=back
+
+Ranking is a complicated subject. SWISH-E allows for more Ranking Schemes to be developed
+and experimented with, using the -R option (from the swish-e command) and the RankScheme
+(see the API documentation). Experiment and share your findings via the discussion list.
+
 
 =head3 How can I limit searches to the title, body, or comment?
 
