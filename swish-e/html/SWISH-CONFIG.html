@@ -229,6 +229,10 @@ index file.
 
 <P><LI>
 <P>
+<A HREF="#item_IndexContents">IndexContents</A> [TXT|HTML|XML] <CODE>*file</CODE> extensions*
+
+<P><LI>
+<P>
 <A HREF="#item_IndexDescription">IndexDescription</A> *text*
 
 <P><LI>
@@ -764,6 +768,15 @@ Example:
       </tr>
     </table>
     <P>
+If using filters to convert documents you should include those extensions,
+too. For example, if using a filter to conver .pdf to .html, you need to
+tell swish that .pdf should be indexed by the internal HTML parser:
+FileFilter .pdf pdf2html IndexContent HTML .pdf
+
+<P>
+See also <A HREF="#Document_Filter_Directives">Document Filter Directives</A>.
+
+<P>
 <STRONG>Note:</STRONG> This may be changed in the future to use content-types. See <A HREF="././SWISH-3.0.html">SWISH-3.0</A>
 
 
@@ -1503,9 +1516,7 @@ file that matches the file extension set in the
 <STRONG>FileFilter</STRONG> directive.
 
 <P>
-SWISH-E calls the external program passing as arguments the file path that
-swish is about to index, and optionally, the URL from the http file source
-method.
+SWISH-E calls the external program passing as arguments:
 
 <DL>
 <P><DT><STRONG><A NAME="item__0">$0</A></STRONG><DD>

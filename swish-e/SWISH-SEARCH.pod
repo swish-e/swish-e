@@ -39,18 +39,19 @@ Examples:
 
      swish-e -w "smilla or snow" -f myIndex
 
-retrieves files containing either the words "smilla" or "snow"
+Retrieves files containing either the words "smilla" or "snow".
 
      swish-e -w "smilla and snow not sense" -f myIndex 
+     swish-e -w "(smilla and snow) and not sense" -f myIndex (same thing)
 
 retrieves first the files that contain both the words "smilla" and "snow";
-then among those the ones that do not contain the word "sense"
+then among those the ones that do not contain the word "sense".
+
 
 =head2 Truncation
 
-The wildcard (*) is available, however it can only be used at the end of a word.
-Usage at the beginning or in the middle of the word will
-yield no results.
+The wildcard (*) is available, however it can only be used at the end of a word: otherwise is is considerd
+a normal character (i.e. can be searched for if included in the WordCharacters directive).
 
      swish-e -w "librarian" -f myIndex
 
@@ -86,7 +87,7 @@ retrieves files with "juliet" and containing neither "ophelia" nor "pac".
 
 =head2 Meta Tags
 
-MetaNames are used to represent I<fields> (or columns in a database) and provide a way to search in
+MetaNames are used to represent I<fields> (called I<columns> in a database) and provide a way to search in
 only parts of a document.
 See L<SWISH-CONFIG|SWISH-CONFIG/"Document Contents Directives"> for a description of MetaNames, and how they
 are specified in the source document.
@@ -101,7 +102,7 @@ followed by the equal sign:
 It is not necessary to have spaces at either side of the "=", consequently the following are equivalent:
 
     swish-e -w "metaName=word"
-    swish-e -w "metaName=word" 
+    swish-e -w "metaName = word" 
     swish-e -w "metaName= word" 
 
 To search on a word that contains a "=", precede the "=" with a "\" (backslash).
@@ -116,8 +117,8 @@ plain search can be mixed in a single query.
 
      swish-e -w "metaName1 = (a1 or a4) not (a3 and a7)" -f index.swish-e
 
-This query will retrieve all the files in which the "metaName1" is associated either with
-"a1" or "a4" and that do not contain the words "a3" and "a7",
+This query will retrieve all the files in which "a1" or "a2" are found in the META tag "metaName1"
+and that do not contain the words "a3" and "a7",
 where "a3" and "a7" are not associated to any meta name.
 
 =head2 Phrase Searching
