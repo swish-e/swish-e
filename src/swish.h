@@ -95,10 +95,10 @@
 #endif
 
 
-#ifdef _WIN32
+// #ifdef _WIN32
 // #include "win32/config.h"
 
-#elif defined(__VMS)
+#if defined(__VMS)
 #include "vms/regex.h"
 #include <dirent.h>
 #include <stdarg.h>
