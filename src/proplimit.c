@@ -526,7 +526,6 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
                 high++;
     }
 
-    printf("Returned range %d - %d (exact: %d %d) cnt: %u\n", low, high, foundLo, foundHi, num );
 #ifdef DEBUGLIMIT
     printf("Returned range %d - %d (exact: %d %d) cnt: %u\n", low, high, foundLo, foundHi, num );
 #endif    
