@@ -372,7 +372,8 @@ typedef struct
     char   *orig_path;          /* original path provided to swish */
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
     char   *real_filename;      /* basename() of real_path  */
-    long    fsize;              /* size of the original file (not filtered) */
+    long    source_size;        /* size reported by fstat() before filtering, if read from a file */
+    long    fsize;              /* size of orig file, but once read into buffer is size of buffer */
     long    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
     int     done;               /* flag to read no more from this stream (truncate) */
     int     external_program;   /* Flag to only read fsize bytes from stream */

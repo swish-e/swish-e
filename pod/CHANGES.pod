@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item XML parser and Windows
+
+The XML parser was being passed the incorrect buffer length when used on Windows
+platform causing the parser to abort with an error.
+
 =item Configure script updates
 
 Running "make install" now installs the swish-e binary, the

@@ -179,67 +179,97 @@ void    indexpath(SWISH * sw, char *path)
 */
 
 /* maybe some day this could be chunked reading? */
+/* no, maybe some day this will go away... */
 
-char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_size, int is_text)
+char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
 {
     long    c,
             offset;
     long    bufferlen;
     unsigned char *buffer, *tmp = NULL;
     size_t  bytes_read;
+    long    filelen     = fprop->fsize;   /* Number of bytes we think we need to read */
+    long    max_size    = sw->truncateDocSize; 
 
 
-    if (filelen)
+    if ( filelen && !fprop->hasfilter )
     {
-
         /* truncate doc? */
-        if (max_size && (filelen > max_size))
-        {
-            filelen = max_size;
-        }
+        if (max_size && ( max_size < filelen) )
+            filelen = sw->truncateDocSize;
+
 
         buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, filelen + 1);
         *buffer = '\0';
-        bytes_read = fread(buffer, 1, filelen, fp);
 
+        bytes_read = fread(buffer, 1, filelen, fprop->fp);
+        buffer[bytes_read+1] = '\0';  /* hopfully doesn't read more than filelen bytes ;) */
 
-        buffer[filelen] = '\0';
+        
 
         /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
         if ( is_text && strlen( (char *)buffer ) < bytes_read )
         {
             int i;
-            progwarn("Substituted possible embedded null character(s) in file '%s'\n", name);
-            for (i = 0; i < bytes_read; ++i)
-                if (buffer[i] == '\0') buffer[i] = '\n';
-        }
-
-    }
-    else
-    {                           /* if we are reading from a popen call, filelen is 0 */
-
-        buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone,(bufferlen = RD_BUFFER_SIZE) + 1);
-        *buffer = '\0';
-        for (offset = 0; (c = fread(buffer + offset, 1, RD_BUFFER_SIZE, fp)) == RD_BUFFER_SIZE; offset += RD_BUFFER_SIZE)
-        {
-            /* truncate? break if to much read */
-            if (max_size && (bufferlen > max_size))
-            {
-                break;
+            int j = 0;
+            
+            for (i = 0; i < bytes_read; ++i) {
+                if (buffer[i] == '\0') {
+                    buffer[i] = '\n';
+                    j++;
+                }
             }
-            tmp = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, bufferlen + RD_BUFFER_SIZE + 1);
-            memcpy(tmp,buffer,bufferlen+1);
-            buffer = tmp;			
-            bufferlen += RD_BUFFER_SIZE;
-        }
-        filelen = offset + c;
 
-        if (max_size && (filelen > max_size))
-        {
-            filelen = max_size;
+            if ( j )
+                progwarn("Substituted %d embedded null character(s) in file '%s' with a newline\n", j, fprop->real_path);
         }
-        buffer[filelen] = '\0';
+
+
+        /* Reset length of buffer -- fsize is used by the parsers to say how long the buffer is */
+        fprop->fsize = (long)bytes_read;  /* should be the same as strlen if in text mode */
+
+        return (char *) buffer;
+
+    } /* if (filelen) */
+
+
+
+
+    /* filelen was zero so we are reading from a handle */
+
+    bufferlen = RD_BUFFER_SIZE;
+    buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, bufferlen + 1);
+    *buffer = '\0';
+
+    offset = 0;
+    while ( 1 )
+    {
+        c = fread(buffer + offset, 1, RD_BUFFER_SIZE, fprop->fp);
+        offset += c;  /* next place to write in the buffer */
+
+
+        /* truncate? */
+        if (max_size && (offset > max_size))
+        {
+            offset = max_size;
+            break;
+        }
+
+        /* more to read? */
+        if ( c < RD_BUFFER_SIZE || feof( fprop->fp) )
+            break;
+
+        /* make buffer larger */
+        tmp = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, bufferlen + RD_BUFFER_SIZE + 1);
+        memcpy(tmp,buffer,bufferlen+1);
+        buffer = tmp;			
+        bufferlen += RD_BUFFER_SIZE;
     }
+
+
+    buffer[offset] = '\0';
+    fprop->fsize = offset;
+
     return (char *) buffer;
 }
 
@@ -250,8 +280,9 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
 
 void flush_stream( FileProp *fprop )
 {
-    char tmpbuf[4096];
+    static char tmpbuf[4096];
     int  read;
+
 
     while ( fprop->bytes_read < fprop->fsize )
     {
@@ -373,6 +404,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
     if (!stat(fprop->work_path, &stbuf))
     {
         fprop->fsize = (long) stbuf.st_size;
+        fprop->source_size = fprop->fsize;  /* to report the size of the original file */
         fprop->mtime = stbuf.st_mtime;
     }
 

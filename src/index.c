@@ -773,8 +773,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         rd_buffer = NULL;
     else
 #endif
-    /* -- Read  all data  (len = 0 if filtered...), last 1 is flag that we are expecting text only */
-    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize, 1);
+    /* -- Read  all data, last 1 is flag that we are expecting text only */
+    rd_buffer = read_stream(sw, fprop, 1);
 
 
     /* just for fun so we can show total bytes shown */
@@ -1250,7 +1250,8 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 
     if ( (q = getPropNameByName(header, AUTOPROPERTY_DOCSIZE)))
     {
-        tmp = (unsigned long) fprop->fsize;
+        /* Use the disk size, if available */
+        tmp = (unsigned long) ( fprop->source_size ? fprop->source_size : fprop->fsize);
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
     }
