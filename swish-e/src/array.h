@@ -3,9 +3,9 @@
 
 typedef struct ARRAY_Page
 {
-    unsigned long      next;    /* Next Page */
+    sw_off_t           next;    /* Next Page */
 
-    unsigned long      page_number;
+    sw_off_t           page_number;
     int                modified;
     int                in_use;
 
@@ -18,7 +18,7 @@ typedef struct ARRAY_Page
 
 typedef struct ARRAY
 {
-    unsigned long root_page;
+    sw_off_t root_page;
     int page_size;
     struct ARRAY_Page *cache[ARRAY_CACHE_SIZE];
     int levels;
@@ -27,7 +27,7 @@ typedef struct ARRAY
 } ARRAY;
 
 ARRAY *ARRAY_Create(FILE *fp);
-ARRAY *ARRAY_Open(FILE *fp, unsigned long root_page);
-unsigned long ARRAY_Close(ARRAY *bt);
+ARRAY *ARRAY_Open(FILE *fp, sw_off_t root_page);
+sw_off_t ARRAY_Close(ARRAY *bt);
 int ARRAY_Put(ARRAY *b, int index, unsigned long value);
 unsigned long ARRAY_Get(ARRAY *b, int index);
