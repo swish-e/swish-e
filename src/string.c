@@ -111,7 +111,7 @@ char   *getword(char **in_buf)
     {
         uc = (unsigned char) *s;
 
-        if (uc == '\\' && !backslash )
+        if (uc == '\\' && !backslash && quotechar )  // Mar 17, 2002 - only enable backslash inside of quotes
         {
             s++;
             backslash++;
@@ -918,7 +918,7 @@ char   *str_basename(char *path)
 {
     char   *s;
 
-    s = strrchr(path, DIRDELIMITER);
+    s = strrchr(path, '/');
     return (s) ? s + 1 : path;
 }
 
@@ -935,12 +935,12 @@ char   *cstr_dirname(char *path)
     char   *dir;
     int     len;
 
-    s = strrchr(path, DIRDELIMITER);
+    s = strrchr(path, '/');
 
     if (!s)
     {
         dir = (char *) estrdup(" ");
-        *dir = (*path == DIRDELIMITER) ? DIRDELIMITER : '.';
+        *dir = (*path == '/') ? '/' : '.';
     }
     else
     {
@@ -959,6 +959,7 @@ char   *cstr_dirname(char *path)
 *
 *  Probably should settle on one
 *  Also, this returns "" on empty dirs, where above returns " "
+*  Mar 2002 -- and is only called by fs.c...
 ***************************************************/
 
 void split_path( unsigned char *path, unsigned char **directory, unsigned char **file )
@@ -966,7 +967,8 @@ void split_path( unsigned char *path, unsigned char **directory, unsigned char *
 unsigned char  *p1, *p2, *p3;
 
     /* look for last DIRDELIMITER (FS) and last / (HTTP) */
-    p1 = strrchr( path, DIRDELIMITER);
+    //p1 = strrchr( path, DIRDELIMITER);
+    p1 = strrchr( path, '/');
     p2 = strrchr( path, '/');
 
     if (p1 && p2)  /* if both are found, use the longest. */

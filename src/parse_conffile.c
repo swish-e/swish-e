@@ -153,6 +153,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n == 2)
             {
+                normalize_path( sl->word[1] );
                 getdefaults(sw, sl->word[1], hasdir, hasindex, hasverbose);
             }
             else
@@ -185,6 +186,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     if (indexf->line)
                         efree(indexf->line);
                     indexf->line = estrdup(sl->word[1]);
+                    normalize_path( indexf->line );
                 }
                 else
                     progerr("%s: requires one value", w0);
@@ -822,7 +824,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else if (lstrstr(sl->word[1], "File:"))
                 {               /* 2000-06-15 rasc */
                     if (sl->n == 3)
+                    {
+                        normalize_path( sl->word[2] );
                         readstopwordsfile(sw, indexf, sl->word[2]);
+                    }
                     else
                         progerr("IgnoreWords File: requires path");
                 }
@@ -846,7 +851,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 if (lstrstr(sl->word[1], "File:"))
                 {
                     if (sl->n == 3)
+                    {
+                        normalize_path( sl->word[2] );
                         readbuzzwordsfile(sw, indexf, sl->word[2]);
+                    }
                     else
                         progerr("BuzzWords File: requires path");
                 }
@@ -871,7 +879,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 if (lstrstr(sl->word[1], "File:"))
                 {               /* 2000-06-15 rasc */
                     if (sl->n == 3)
+                    {
+                        normalize_path( sl->word[2] );
                         readusewordsfile(sw, indexf, sl->word[2]);
+                    }
                     else
                         progerr("UseWords File: requires path");
                 }
@@ -1405,9 +1416,11 @@ static void    readstopwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
     int     i;
 
 
+    /* Not this reports "Sucess" on trying to open a directory. to lazy to fix now */
+
     if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
     {
-        progerr("Couldn't open the stopword file \"%s\".", stopw_file);
+        progerrno("Couldn't open the stopword file '%s': ", stopw_file);
     }
 
 
@@ -1447,7 +1460,7 @@ static void    readbuzzwordsfile(SWISH * sw, IndexFILE * indexf, char *stopw_fil
 
     if ((fp = fopen(stopw_file, F_READ_TEXT)) == NULL || !isfile(stopw_file))
     {
-        progerr("Couldn't open the buzzword file \"%s\".", stopw_file);
+        progerrno("Couldn't open the buzzword file '%s': ", stopw_file);
     }
 
 
@@ -1500,7 +1513,7 @@ static void    readusewordsfile(SWISH * sw, IndexFILE * indexf, char *usew_file)
 
     if ((fp = fopen(usew_file, F_READ_TEXT)) == NULL || !isfile(usew_file))
     {
-        progerr("Couldn't open the useword file \"%s\".", usew_file);
+        progerrno("Couldn't open the useword file '%s': ", usew_file);
     }
 
 

@@ -19,18 +19,33 @@ Comments are any line that begin with a "#".
     # This is a comment
 
 Directives may take more than one parameter.  Enclose single parameters that include whitespace
-in quotes (single or double).  You may use a backslash to escape the next character.
+in quotes (single or double).  Inside of quotes the backslash escapes the next character.
 
-    ReplaceRules append "foo bar"   <- define "foo bar" as a single word
-    ReplaceRules append foo\ bar    <- same thing
+    ReplaceRules append "foo bar"   <- define "foo bar" as a single parameter
 
 If you need to include a quote character in the value either use a backslash to escape it, or
 enclose it in quotes of the other type.
 
-    FileFilter .foo foofilter "'%p'"  <- unix
-    FileFilter .foo foofilter \'%p\'  <- unix same thing
-    FileFilter .foo foofilter '"%p"'  <- windows uses double-quotes
+For example, under unix you can use quotes to include white space in a single paramter.
+Here, to protect against path names (%p) that might have white space embedded
+use single quotes (this also protects against shell expansion or metacharacters):
 
+    FileFilter .foo foofilter "'%p'"  <- parameter passed through the shell in single quotes
+    FileFilter .foo foofilter '"%p"'  <- windows uses double-quotes
+    FileFilter .foo foofilter '\'%p\''<- silly example
+    
+
+Backslashes also have special meaning in regular expressions.
+
+    FileFilterMatch pdftotext "'%p' -" /\.pdf$/
+
+This says that the dot is a real dot (instead of matching any character).  If you place
+the regular expression in quotes then you must use double-backslashes.
+
+    FileFilterMatch pdftotext "'%p' -" "/\\.pdf$/"
+
+Swish will convert the double backslash into a single backslash before passing the
+parameter to the regular expression compiler.
     
 Commented example configuration files are included in the F<config> directory of the
 SWISH-E distribution.
@@ -450,13 +465,16 @@ Note: This feature is only available with the libxml2 HTML parser.
 
 =back
 
-B<NOTE>: The following items are currently not available.
+B<NOTE>: This following items are currently not available.
 These items require swish to parse the configuration file while searching.
 
 
 =over 4
 
 =item EnableAltSearchSyntax [yes|NO]
+
+B<NOTE>: This following item is currently not available.
+
 
 Enable alternate search syntax.
 Allows the usage of a basic "Altavista(c)", "Lycos(c)", etc. like search syntax.
@@ -471,6 +489,8 @@ Example:
 
 =item SwishSearchOperators <and-word> <or-word> <not-word>
 
+B<NOTE>: This following item is currently not available.
+
 Using this config directive you can change the boolean search operators of
 swish-e, e.g. to adapt these to your language.
 The default is:    AND  OR  NOT
@@ -480,6 +500,8 @@ Example (german):
     SwishSearchOperators   UND  ODER  NICHT
 
 =item SwishSearchDefaultRule   [<AND-WORD>|<or-word>]
+
+B<NOTE>: This following item is currently not available.
 
 C<SwishSearchDefaultRule> defines the default Boolean operator to use if none is
 specified between words or phrases.  The default is C<AND>.
@@ -494,6 +516,8 @@ Example:
 
 
 =item ResultExtFormatName name -x format string
+
+B<NOTE>: This following item is currently not available.
 
 The output of swish can be defined by specifying a format string with the C<-x>
 command line argument.  Using C<ResultExtFormatName> you can assign a predefined format
@@ -542,8 +566,8 @@ Examples:
 
     IndexName "Linux Documentation"
     IndexDescription "This is an index of /usr/doc on our Linux machine." 
-    IndexPointer "http://localhost/swish/linux/index.html"
-    IndexAdmin "webmaster"
+    IndexPointer http://localhost/swish/linux/index.html
+    IndexAdmin webmaster
 
 
 =back
@@ -661,6 +685,8 @@ This directive uses C library regex.h regular expressions.
    append "a string to add after the result"
    regex  "/search string/replace string/options"
 
+Remember, quotes are needed if an expression contains white space, and backslashes have special meaning.
+   
 Regex is an Extended Regular Expression.  The first character found is is the delimiter
 (but it's not smart enough to use matched chars such as [], (), and {}).
 
@@ -678,26 +704,29 @@ The B<options> change the behavior of expression:
 
 Examples:
 
-    ReplaceRules replace "testdir/" "anotherdir/"
-    ReplaceRules replace "[a-z_0-9]*_m.*\.html" "index.html"
+    ReplaceRules replace testdir/ anotherdir/
+    ReplaceRules replace [a-z_0-9]*_m.*\.html index.html
 
-    ReplaceRules remove "testdir/"
+    ReplaceRules remove testdir/
 
-    ReplaceRules prepend "http://localhost/"
-    ReplaceRules append ".html"
+    ReplaceRules prepend http://localhost/
+    ReplaceRules append .html
 
-    ReplaceRules regex  "!^/web/(.+)/!http://$1.domain.com/!"
+    ReplaceRules regex  !^/web/(.+)/!http://$1.domain.com/!
     replaces a file path:
         /web/search/foo/index.html
     with
         http://search.domain.com/foo/index.html
 
-    ReplaceRules regex  "#^#http://localhost/www#
-    ReplaceRules prepend "http://localhost/www"  (same thing)
+    ReplaceRules regex  #^#http://localhost/www#
+    ReplaceRules prepend http://localhost/www  (same thing)
 
     # Remove all extensions from C source files
-    ReplaceRules remove .c    # ERROR! That "." is *any char*
-    ReplaceRules remove \.c   # much better...
+    ReplaceRules remove .c     # ERROR! That "." is *any char*
+    ReplaceRules remove \.c    # much better...
+
+    ReplaceRules remove "\\.c" # if in quotes you need double-backslash!  
+    ReplaceRules remove "\.c"  # ERROR! "\." -> "." and is *any char*
     
 
 =item IndexContents [TXT|HTML|XML|WML|TXT2|HTML2|XML2]  *file extensions*
@@ -923,6 +952,8 @@ Now, to limit searches to just the links on pages:
 
     -w links='"home.html"'
 
+The double quotes force a phrase search.    
+
 To make swish-e index links as normal text, you may use:
 
     HTMLLinksMetaName swishdefault
@@ -940,7 +971,7 @@ Example:
 
 Now, if you would like to find pages that include a nice image of a beach:
 
-    -w images='"beach"'
+    -w images='beach'
 
 To make swish-e index links as normal text, you may use:
 
@@ -1824,14 +1855,15 @@ See also the C<-l> switch in L<SWISH-RUN|SWISH-RUN>.
 
 FileRules and FileMatch are used to, respectively, exclude and include files
 and directories to index.  Since, by default, swish indexes all files and recurses
-all directories you will typically only use C<FileRules>.
-C<FileMatch> is useful, for example, to override the behavior of C<IndexOnly>.
+all directories (but see also C<FollowSymLinks>) you will typically only use C<FileRules> to exclude
+files or directories.  C<FileMatch> is useful in a few cases, for example, to override the behavior of C<IndexOnly>.
 Some examples are included below.
 
 Except for C<FileRules title ...>, this feature is only available for file access
-method (-S fs), which is the default.  Also, any pathname modification with C<ReplaceRules>
+method (-S fs), which is the default indexing mode.
+Also, any pathname modification with C<ReplaceRules>
 happens after the check for C<FileRules>.
-(it's unlikly that you would exclude files with C<FileRules> based on text you added with
+(It's unlikly that you would exclude files with C<FileRules> based on text you added with
 C<ReplaceRules>!)
 
 The regular expression is a C regex.h extended regular expression.
@@ -1851,19 +1883,32 @@ The C<regex> option requires delimiter characters:
 The only advantage of C<regex> is if you want to do case insensitive matches, or
 simply like your regular expressions to look like perl regular expressions.
 You must use matching delimiters; (), {}, and [], are not currently supported
-for no good reason.
+for no good reason other than laziness.
 
-Use double quotes around a pattern if it contains any white space; 
-otherwise, it will be considered as two or more patterns.
+Use quotes (" or ') around a pattern if it contains any white space.
+Note that the backslash character becomes the escape character within quotes.
+
 For example, these sets generate the same regular expressions.
 
     FileRules title is hello
     FileRules title contains ^hello$
     FileRules title regex /^hello$/
 
+These all need quotes due to the included space character
+
     FileRules title is "hello there"
     FileRules title contains "^hello there$"
-    FileRules title regex !^hello there$!
+    FileRules title regex "!^hello there$!"
+
+These show how the backslash must be doubled inside of quotes.  Swish converts a double-backslahs
+into a single backslash, and then passes that single onto the regular expression compiler.
+
+    FileRules filename regex /\.pdf/
+    FileRules filename regex "/\\.pdf/"
+
+    FileRules filename regex !hello\\there!     # need double for real backslash 
+    FileRules filename regex "!hello\\\\there!" # need double-double inside of quotes
+    
 
 B<Matching Types>
 
@@ -1886,30 +1931,30 @@ C<IndexDir>.
 
 Example:
 
-    # Don't index paths that start with private or hidden
-    FileRules pathname contains "^/(private|hidden)"
+    # Don't index paths that contain private or hidden
+    FileRules pathname contains (private|hidden)
+
+    # Same thing
+    FileRules pathname regex /(private|hidden)/
 
     # Don't index exe files
-    FileRules pathname contains "\.exe$"
+    FileRules pathname contains \.exe$
 
 B<dirname> and B<filename> split the path name by the last delimiter character
 into a directory name, and a file name.  Then these are compared against the patterns
-supplied.
-
-The delimiter used by swish to split the path is set in F<config.h>, and is platform dependent.
-Using C<pathname> will avoid any possible mismatches from what swish thinks your delimter
-should be vs. what it actually is.  B<dirname> and B<filename> will probably fail miserably
-on many platforms.  Patches are welcome.
+supplied.  Directory names do B<not> have a trailing slash.  All path names use the forward slash
+as a delimiter within swish.
 
 Example:
 
     # Same as last example - don't index *.exe files.
-    FileRules filename contains "\.exe$"
+    FileRules filename contains \.exe$
 
     # Don't index any file called test.html files
-    FileRules filename contains "^test\.html$"
+    FileRules filename contains ^test\.html$
+
     # Same thing
-    FileRules filename is "test\.html"
+    FileRules filename is test\.html
 
     # Don't index any directoires that contain "old"  (/usr/local/myold/docs)
     FileRules dirname contains old
@@ -1919,11 +1964,11 @@ Example:
 
     # Index only .htm, .html, plus any all-digit file names
     IndexOnly .htm .html
-    FileMatch filename contains "^\d+$"
+    FileMatch filename contains ^\d+$
 
     # Same as previous, but maybe a little slower
     FileRules filename regex not !\.(htm|html)$!
-    FileMatch filename contains "^\d+$"
+    FileMatch filename contains ^\d+$
 
 Swish checks these settings in the order of C<pathname>, C<dirname>, and
 C<filename>, and C<FileMatch> patterns are checked before C<FileRules>, in general.
@@ -1931,9 +1976,9 @@ This allows you to exclude most files with C<FileRules>, yet allow in a few
 special cases with C<FileMatch>. For example:
 
     # Exclude all files of .exe, .bin, and .bat
-    FileRules filename contains "\.(exe|bin|bat)$"
+    FileRules filename contains \.(exe|bin|bat)$
     # But, let these two in
-    FileMatch filename is "baseball\.bat" "incoming_mail.bin"
+    FileMatch filename is baseball\.bat incoming_mail\.bin
 
     # Same, but as a single pattern
     FileMatch filename is (baseball\.bat|incoming_mail\.bin)
@@ -1945,9 +1990,9 @@ you are matching against file names in a directory -- and some of those names ma
 be directory names.
 
 A C<FileRules directory> match will cause swish to ignore all files and sub-directories
-within the directory where the match occured.
+in the current directory.
 
-Warning: C<FileMatch directory> says to index B<everything> in the current directory
+Warning: A match with C<FileMatch directory> says to index B<everything> in the *current* directory
 and B<ignore> any FileRules for this directory.
 
 
@@ -1955,7 +2000,7 @@ Example:
 
     # Don't index any directories (and sub directories) that contain
     # a file (or sub-directory) called "index.skip"
-    FileRules directory contains "^index\.skip$"
+    FileRules directory contains ^index\.skip$
 
     # Don't index directories that contain a .htaccess file.
     FileRules directory contains ^\.htaccess
@@ -1976,8 +2021,7 @@ Example:
 Note: C<FileRules title> works for any input method (fs, prog, or http) that is parsed as HTML, and
 where a title was found in the document.
 
-In case this seems a bit confusing, processing a directory happens in the following order.
-Remember, directory names will have a trailing path delimiter when checking.
+In case all this seems a bit confusing, processing a directory happens in the following order.
 
 First the directory name is checked:
 
@@ -2058,9 +2102,9 @@ remote sites.  The default is 60 seconds.
 The location of a writable temp directory
 on your system.  The HTTP access method tells the Perl helper to place
 its files in this location, and the C<-e> switch causes swish to use this directory
-while indexing.  There is not default.
+while indexing.  There is no default.
 
-    TmpDir /tmp/swish/
+    TmpDir /tmp/swish
 
 If this directory does not exist or is not writable SWISH-E will fail with an error during indexing.
 
@@ -2074,7 +2118,7 @@ If you use a relative directory, it is relative to
 your directory when you run SWISH-E, not to the directory that SWISH-E
 is in.  The default is C<./>
 
-    SpiderDirectory /usr/local/swish/
+    SpiderDirectory /usr/local/swish
 
 =item EquivalentServer *server alias*
 
@@ -2138,14 +2182,16 @@ And the spider program will use default settings for spidering those sites.
 
 B<Notes when using MS Windows>
 
-Swish uses the C<popen()> system call to run the external command, and the command is passed through
-the shell.  For the standard F<command.com> shell this means that path names must use the backslash character
-to separate path elements.  In addition, swish will make sure the program specified actually exists, which
+You should use unix style path separators to specify your external program.  Swish will convert forward slashes
+to backslashes before calling the external program.  This is only true for the program name specified with
+C<IndexDir> or the C<-i> command line option.
+
+In addition, swish will make sure the program specified actually exists, which
 means you need to use the full name of the program.
 
 For example, to run the perl spider program F<spider.pl> you would need a swish configuration file such as:
 
-    IndexDir e:\\perl\\bin\\perl.exe
+    IndexDir e:/perl/bin/perl.exe
     SwishProgParameters prog-bin/spider.pl default http://swish-e.org
 
 and run indexing with the command:
@@ -2268,12 +2314,10 @@ Windows uses double quotes to escape shell metacharacters, so reverse the quotes
 
         '"%f"' --> "file name with spaced.doc"
 
-The filter program is opened with C<popen()> which passes the command through the shell.
-This means that paths to the filter program must be in DOS format and use the backslash as
-the path separator.  Swish, like many shells, use the backslash as an escape character, so you will
-need to specify the filter program like:
+You can specify the filter program using forward slashes (unix style).  Swish will convert the slashes to
+backslashes before running your program.
 
-    FileFilter .mydoc     c:\\some\\path\\mydocfilter.exe  '-d "%d" -example -url "%P" "%f"'
+    FileFilter .mydoc     c:/some/path/mydocfilter.exe  '-d "%d" -example -url "%P" "%f"'
 
 
 Examples of filters:

@@ -187,29 +187,15 @@ run filtering programs from within your external program.
 
 B<Notes when using -S prog on MS Windows>
 
-When using swish-e on Windows, you must use the DOS-style backslash to separate the path segments.
-This is required because swish runs the external program with popen() which uses the shell to run
-the program and the DOS shell requires a backslash as the path separator.
-
-    swish-e -S prog -i e:\progra~1\swish-e\prog.exe
-
-In the configuration file you will need doube-backslashes:    
-
-    Indexdir c:\\path\\to\\program.exe
-
-Currently, you *cannot* use spaces in the pathname:
-
-    IndexDir '"E:\\Program Files\\swish-e\\prog.exe"'  ** does not work! **
-
-This is because swish does some checks on the file name before running the program, and the
-double-quotes within the file name will cause these checks to fail.  This may change in the future.
-
 Windows does not use the shebang (#!) line of a program to determine the program to run.  So, when running,
 for example, a perl program you will need to specify the perl.exe binary as the program, and use the
 C<SwishProgParameters> to name the file.
 
-    IndexDir e:\\perl\\bin\\perl.exe
+    IndexDir e:/perl/bin/perl.exe
     SwishProgParameters read_database.pl
+
+Swish will replace the forward slashes with backslashes before running the command specified with
+C<IndexDir>.  Swish uses the popen(3) command which passes the command through the shell.
     
 
 =back
