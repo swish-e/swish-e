@@ -166,6 +166,8 @@ void initModule_Search (SWISH  *sw)
 
    srch->bigrank = 0;
 
+   srch->resultSearchZone = Mem_ZoneCreate("resultSearch Zone", 0, 0);
+
    return;
 }
 
@@ -190,6 +192,9 @@ void resetModule_Search (SWISH *sw)
       efree(tmp);
       tmp=tmp2;
    }
+   Mem_ZoneReset(srch->resultSearchZone);
+
+
         /* Free display props arrays */
         /* First the common part to all the index files */
    if (srch->propNameToDisplay)
@@ -220,6 +225,8 @@ void freeModule_Search (SWISH *sw)
  struct MOD_Search *srch = sw->Search;
 
   /* free module data */
+  Mem_ZoneFree(&srch->resultSearchZone);
+
   efree (srch);
   sw->Search = NULL;
 
@@ -1240,6 +1247,9 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             }
         }
         rp = rp2;
+
+        /* Sort results by filenum */
+        rp = sortresultsbyfilenum(rp);
     }
     DB_EndReadWords(sw, indexf->DB);
     return rp;
@@ -1368,14 +1378,13 @@ static void  make_db_res_and_free(SWISH *sw,RESULT *res) {
 
 
 /* Takes two lists of results from searches and ANDs them together.
+** On input, both result lists r1 and r2 must be sorted by filenum
+** On output, the new result list remains sorted
 */
 
 RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
 {
-    RESULT *tmpnode,
-           *newnode,
-           *r1b,
-           *r2b;
+    RESULT *newnode;
     int     res = 0;
 
     /* patch provided by Mukund Srinivasan */
@@ -1389,13 +1398,6 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
     newnode = NULL;
     if (andLevel < 1)
         andLevel = 1;
-    /* Jose Ruiz 06/00
-       ** Sort r1 and r2 by filenum for better performance */
-    r1 = sortresultsbyfilenum(r1);
-    r2 = sortresultsbyfilenum(r2);
-    /* Jose Ruiz 04/00 -> Preserve r1 and r2 for further proccesing */
-    r1b = r1;
-    r2b = r2;
 
     for (; r1 && r2;)
     {
@@ -1440,67 +1442,106 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
             r1 = r1->next;
         }
     }
-    /* Jose Ruiz 04/00 Free memory no longer needed */
-    while (r1b)
-    {
-        tmpnode = r1b->next;
-        freeresult(sw, r1b);
-        r1b = tmpnode;
-    }
-    while (r2b)
-    {
-        tmpnode = r2b->next;
-        freeresult(sw, r2b);
-        r2b = tmpnode;
-    }
+
     return newnode;
 }
 
 /* Takes two lists of results from searches and ORs them together.
+2001-11 jmruiz Completely rewritten. Older one was really
+               slow when the lists are vaery long
+               On input, both result lists r1 and r2 must be sorted by filenum
+               On output, the new result list remains sorted
+
 */
+
 
 RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
 {
-    int     i;
+    int     rc;
     RESULT *rp,
            *tmp;
     RESULT *newnode = NULL;
+
 
     if (r1 == NULL)
         return r2;
     else if (r2 == NULL)
         return r1;
 
-    initresulthashlist(sw);
-    while (r1 != NULL)
+    while(r1 && r2)
     {
-        tmp = r1->next;         /* Save pointer now because memory can be
-                                   ** freed in mergeresulthashlist */
-        mergeresulthashlist(sw, r1);
-        r1 = tmp;
-    }
-    while (r2 != NULL)
-    {
-        tmp = r2->next;
-        mergeresulthashlist(sw, r2);
-        r2 = tmp;
-    }
-    for (i = 0; i < BIGHASHSIZE; i++)
-    {
-        rp = sw->Search->resulthashlist[i];
-        while (rp != NULL)
+        rc = r1->filenum - r2->filenum;
+        if(rc < 0)
         {
-            tmp = rp->next;
-
-            if(newnode == NULL)
-                newnode = rp;
-            else
-                newnode->head->next = rp;
-            newnode->head = rp;
-
-            rp = tmp;
+            rp = r1;
+            r1 = r1->next;
         }
+        else if(rc > 0)
+        {
+            rp = r2;
+            r2 = r2->next;
+        }
+        else
+        {
+            /* Compute rank if not yet computed */
+            if(r1->rank == -1)
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+
+            if(r2->rank == -1)
+                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->structure, r2->indexf, r2->filenum );
+
+            rp = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (r1->frequency + r2->frequency) * sizeof(int));
+            memset( rp, 0, sizeof(RESULT));
+            rp->fi.filenum = rp->filenum = r1->filenum;
+
+            rp->rank = r1->rank + r2->rank;
+            rp->structure = r1->structure | r2->structure;
+            rp->tfrequency = 0;
+            rp->frequency = r1->frequency + r2->frequency;
+            rp->indexf = r1->indexf;
+            rp->sw = (struct SWISH *) r1->sw;
+
+            if (r1->frequency)
+            {
+                CopyPositions(rp->position, 0, r1->position, 0, r1->frequency);
+            }
+            if (r2->frequency)
+            {
+                CopyPositions(rp->position, r1->frequency, r2->position, 0, r2->frequency);
+            }
+
+            r1 = r1->next;
+            r2 = r2->next;
+        }
+        rp->next = NULL;
+        if(newnode == NULL)
+            newnode = rp;
+        else
+            newnode->head->next = rp;
+        newnode->head = rp;
     }
+    /* Add the remaining results */
+    tmp = NULL;
+    if(r1)
+    {
+        tmp = r1;
+    }
+    else if(r2)
+    {
+        tmp = r2;
+    }
+    while(tmp)
+    {
+        rp = tmp;
+        tmp = tmp->next;
+        rp->next = NULL;
+        if(newnode == NULL)
+            newnode = rp;
+        else
+            newnode->head->next = rp;
+        newnode->head = rp;
+    }
+
     return newnode;
 }
 
@@ -1519,12 +1560,12 @@ struct markentry
 /* This marks a number as having been printed.
 */
 
-void    marknum(struct markentry **markentrylist, int num)
+void    marknum(SWISH *sw, struct markentry **markentrylist, int num)
 {
     unsigned hashval;
     struct markentry *mp;
 
-    mp = (struct markentry *) emalloc(sizeof(struct markentry));
+    mp = (struct markentry *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(struct markentry));
 
     mp->num = num;
 
@@ -1568,17 +1609,9 @@ void    initmarkentrylist(struct markentry **markentrylist)
 void    freemarkentrylist(struct markentry **markentrylist)
 {
     int     i;
-    struct markentry *mp, *next;
 
     for (i = 0; i < BIGHASHSIZE; i++)
     {
-        mp = markentrylist[i];  /* minor optimization */
-        while(mp != NULL)
-        {
-            next = mp->next;
-            efree(mp);
-            mp = next;
-        }
         markentrylist[i] = NULL;
     }
 }
@@ -1601,7 +1634,7 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
     initmarkentrylist(markentrylist);
     while (rp != NULL)
     {
-        marknum(markentrylist, rp->filenum);
+        marknum(sw, markentrylist, rp->filenum);
         rp = rp->next;
     }
 
@@ -1616,15 +1649,20 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
 
     freemarkentrylist(markentrylist);
 
+    newp = sortresultsbyfilenum(newp);
+
     return newp;
 }
 
+/* Phrase result routine - see distance parameter. For phrase search this
+** value must be 1 (consecutive words)
+**
+** On input, both result lists r1 abd r2 must be sorted by filenum
+** On output, the new result list remains sorted
+*/
 RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 {
-    RESULT *tmpnode,
-           *newnode,
-           *r1b,
-           *r2b;
+    RESULT *newnode;
     int     i,
             j,
             found,
@@ -1637,11 +1675,7 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 
     newnode = NULL;
 
-    r1 = sortresultsbyfilenum(r1);
-    r2 = sortresultsbyfilenum(r2);
-    r1b = r1;
-    r2b = r2;
-    for (; r1 && r2;)
+    while (r1 && r2)
     {
         res = r1->filenum - r2->filenum;
         if (!res)
@@ -1698,19 +1732,7 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
         }
 
     }
-    /* free unused memory */
-    while (r1b)
-    {
-        tmpnode = r1b->next;
-        freeresult(sw, r1b);
-        r1b = tmpnode;
-    }
-    while (r2b)
-    {
-        tmpnode = r2b->next;
-        freeresult(sw, r2b);
-        r2b = tmpnode;
-    }
+
     return newnode;
 }
 
@@ -1723,7 +1745,7 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int t
     RESULT *newnode;
 
 
-    newnode = (RESULT *) emalloc(sizeof(RESULT) + frequency * sizeof(int));
+    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + frequency * sizeof(int));
     memset( newnode, 0, sizeof(RESULT));
     newnode->fi.filenum = newnode->filenum = filenum;
 
@@ -1904,7 +1926,10 @@ void    freeresult(SWISH * sw, RESULT * rp)
             efree(rp->iPropSort);
         }
 */
+/* For better performance store results in a MemZone
+ 
         efree(rp);
+*/
     }
 }
 
@@ -1956,13 +1981,14 @@ RESULT *sortresultsbyfilenum(RESULT * rp)
 
 
 /* 06/00 Jose Ruiz
-** returns all results in r1 that not contains r2 */
+** returns all results in r1 that not contains r2 
+**
+** On input, both result lists r1 and r2 must be sorted by filenum
+** On output, the new result list remains sorted
+*/
 RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
 {
-    RESULT *tmpnode,
-           *newnode,
-           *r1b,
-           *r2b;
+    RESULT *newnode, *rp;
     int     res = 0;
 
     if (!r1)
@@ -1971,11 +1997,6 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
         return r1;
 
     newnode = NULL;
-    r1 = sortresultsbyfilenum(r1);
-    r2 = sortresultsbyfilenum(r2);
-    /* Jose Ruiz 04/00 -> Preserve r1 and r2 for further proccesing */
-    r1b = r1;
-    r2b = r2;
 
     for (; r1 && r2;)
     {
@@ -1987,10 +2008,14 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
                * in the future
              */
 
-
-            newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, r1->indexf, sw);
-            CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
+            rp = r1;
             r1 = r1->next;
+            rp->next = NULL;
+            if(newnode == NULL)
+                newnode = rp;
+            else
+                newnode->head->next = rp;
+            newnode->head = rp;
         }
         else if (res > 0)
         {
@@ -2003,24 +2028,18 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
         }
     }
     /* Add remaining results */
-    for (; r1; r1 = r1->next)
+    while (r1)
     {
-        newnode = (RESULT *) addtoresultlist(newnode, r1->filenum, r1->rank, r1->structure, r1->tfrequency, r1->frequency, r1->indexf, sw);
-        CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
+        rp = r1;
+        r1 = r1->next;
+        rp->next = NULL;
+        if(newnode == NULL)
+            newnode = rp;
+        else
+            newnode->head->next = rp;
+        newnode->head = rp;
     }
-    /* Free memory no longer needed */
-    while (r1b)
-    {
-        tmpnode = r1b->next;
-        freeresult(sw, r1b);
-        r1b = tmpnode;
-    }
-    while (r2b)
-    {
-        tmpnode = r2b->next;
-        freeresult(sw, r2b);
-        r2b = tmpnode;
-    }
+
     return newnode;
 }
 
@@ -2172,7 +2191,7 @@ void    mergeresulthashlist(SWISH *sw, RESULT *r)
             if(r->rank == -1)
                 r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
 
-            newnode = (RESULT *) emalloc(sizeof(RESULT) + (rp->frequency + r->frequency) * sizeof(int));
+            newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (rp->frequency + r->frequency) * sizeof(int));
             memset( newnode, 0, sizeof(RESULT));
             newnode->fi.filenum = newnode->filenum = rp->filenum;
 
@@ -2201,8 +2220,6 @@ void    mergeresulthashlist(SWISH *sw, RESULT *r)
                 tmp->next = newnode;
             }
             newnode->next = rp->next;
-            freeresult(sw, r);
-            freeresult(sw, rp);
             return;
         }
         else if (r->filenum < rp->filenum)

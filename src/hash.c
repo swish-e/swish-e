@@ -31,8 +31,8 @@
 #include "swish.h"
 #include "string.h"
 #include "hash.h"
-#include "search.h"
 #include "mem.h"
+#include "search.h"
 
 /* Hashes a string.
 */

@@ -56,6 +56,8 @@ struct MOD_Search
 
     /* Number of stopwords removed from query */
     int     removed_stopwords; 
+
+    MEM_ZONE *resultSearchZone;
 };
 
 void initModule_Search (SWISH *);
