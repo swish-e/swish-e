@@ -188,10 +188,9 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *
 ********************************************************************/
 
-static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID )
+static propEntry *getDocProperty( SWISH *sw, RESULT *result, struct metaEntry **meta_entry, int metaID )
 {
     IndexFILE *indexf = result->indexf; 
-    SWISH *sw = (SWISH *) result->sw;
     int     error_flag;
     unsigned long num;
 
@@ -255,7 +254,7 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
 *
 ********************************************************************/
 
-char *getResultPropAsString(RESULT *result, int ID)
+char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 {
     char *s = NULL;
     propEntry *prop;
@@ -267,7 +266,7 @@ char *getResultPropAsString(RESULT *result, int ID)
 
 
 
-    if ( !(prop = getDocProperty( result, &meta_entry, ID )) )
+    if ( !(prop = getDocProperty(sw, result, &meta_entry, ID )) )
         return estrdup("");
 
     /* $$$ Ignores possible other properties that are linked to this one */
@@ -314,7 +313,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
 
     /* This may return false */
-    prop = getDocProperty( r, &meta_entry, ID );
+    prop = getDocProperty( sw, r, &meta_entry, ID );
 
 
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
@@ -403,7 +402,7 @@ void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
 
     for ( i = 0; i < srch->numPropertiesToDisplay; i++ )
     {
-        propValue = s = getResultPropAsString( r, metaIDs[ i ] );
+        propValue = s = getResultPropAsString( sw, r, metaIDs[ i ] );
 
         if (sw->ResultOutput->stdResultFieldDelimiter)
             fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);

@@ -1915,9 +1915,10 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     if ( !(ep = sw->Index->entryArray ))
         return;  /* nothing to do */
 
-
     totalwords = ep->numWords;
 
+
+	/* Write words */
     DB_InitWriteWords(sw, indexf->DB);
 
     if (sw->verbose)

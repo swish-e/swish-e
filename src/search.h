@@ -78,9 +78,9 @@ struct swline *expandphrase(struct swline *, char);
 
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 
-RESULT *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
-RESULT *operate(SWISH *, RESULT *, int, char *, void *, int, int, IndexFILE *);
-RESULT *getfileinfo(SWISH *, char *, IndexFILE *, int);
+RESULT_LIST *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
+RESULT_LIST *operate(SWISH *, RESULT_LIST *, int, char *, void *, int, int, IndexFILE *);
+RESULT_LIST *getfileinfo(SWISH *, char *, IndexFILE *, int);
 
 int isrule(char *);
 int isnotrule(char *);
@@ -93,15 +93,15 @@ int u_isrule(SWISH *sw, char *word);
 int u_SelectDefaultRulenum(SWISH *sw, char *word);
 
 
-RESULT *andresultlists(SWISH *, RESULT *, RESULT *, int);
-RESULT *orresultlists(SWISH *, RESULT *, RESULT *);
-RESULT *notresultlist(SWISH *, RESULT *, IndexFILE *);
-RESULT *notresultlists(SWISH *, RESULT *, RESULT *);
-RESULT *phraseresultlists(SWISH *, RESULT *, RESULT *, int);
-RESULT *addtoresultlist(RESULT *, int, int, int, int, int, IndexFILE *,SWISH *);
+RESULT_LIST *andresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *, int);
+RESULT_LIST *orresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *);
+RESULT_LIST *notresultlist(SWISH *, RESULT_LIST *, IndexFILE *);
+RESULT_LIST *notresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *);
+RESULT_LIST *phraseresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *, int);
+void addtoresultlist(RESULT_LIST *, int, int, int, int, int, IndexFILE *,SWISH *);
 
 
-RESULT *sortresultsbyfilenum(RESULT *);
+RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *);
 
 void getrawindexline(FILE *);
 int wasStemmingAppliedToIndex(FILE *);
@@ -115,7 +115,7 @@ struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
 struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header);
 
-RESULT * mergeresulthashlist (SWISH *sw, RESULT *r);
+RESULT_LIST *mergeresulthashlist (SWISH *sw, RESULT_LIST *r);
 
 #endif
 

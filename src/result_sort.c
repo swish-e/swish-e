@@ -376,7 +376,7 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
     int     i,
             rc,
             num_fields;
-    SWISH  *sw = (SWISH *) r1->sw;
+    SWISH  *sw = (SWISH *) r1->reslist->sw;
     struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
     num_fields = ResultSort->numPropertiesToSort;
@@ -400,7 +400,7 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
     int i,
             num_fields;
     int     rc;
-    SWISH  *sw = (SWISH *) r1->sw;
+    SWISH  *sw = (SWISH *) r1->reslist->sw;
     struct MOD_ResultSort    *ResultSort = sw->ResultSort;
 
     num_fields = ResultSort->numPropertiesToSort;
@@ -434,11 +434,11 @@ RESULT *addsortresult(sw, sphead, r)
 
     if (sphead == NULL)
     {
-        r->nextsort = NULL;
+        r->next = NULL;
     }
     else
     {
-        r->nextsort = sphead;
+        r->next = sphead;
     }
     return r;
 }
@@ -498,13 +498,12 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
 
 
 /* Routine to get the presorted lookupdata for a result for all the specified properties */
-int    *getLookupResultSortedProperties(RESULT * r)
+int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
 {
     int     i;
     int    *props = NULL;       /* Array to Store properties Lookups */
     struct metaEntry *m = NULL;
     IndexFILE *indexf = r->indexf;
-    SWISH  *sw = (SWISH *) r->sw;
     struct MOD_ResultSort *ResultSort = sw->ResultSort;
 
 
@@ -570,12 +569,11 @@ int    *getLookupResultSortedProperties(RESULT * r)
 }
 
 
-char  **getResultSortProperties(RESULT * r)
+char  **getResultSortProperties(SWISH *sw, RESULT * r)
 {
     int     i;
     char  **props = NULL;       /* Array to Store properties */
     IndexFILE *indexf = r->indexf;
-    SWISH  *sw = (SWISH *) r->sw;
     struct MOD_ResultSort *ResultSort = sw->ResultSort;
 
     if (ResultSort->numPropertiesToSort == 0)
@@ -585,7 +583,7 @@ char  **getResultSortProperties(RESULT * r)
 
     /* $$$ -- need to pass in the max string length */
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
-        props[i] = getResultPropAsString(r, indexf->propIDToSort[i]);
+        props[i] = getResultPropAsString(sw, r, indexf->propIDToSort[i]);
 
     return props;
 }
@@ -614,7 +612,10 @@ int     sortresults(SWISH * sw, int structure)
     {
         db_results->sortresultlist = NULL;
         db_results->currentresult = NULL;
-        rp = db_results->resultlist;
+        if(db_results->resultlist)
+            rp = db_results->resultlist->head;
+        else
+            rp = NULL;
 
         if (rs->isPreSorted)
         {
@@ -627,7 +628,7 @@ int     sortresults(SWISH * sw, int structure)
                 if (tmp->structure & structure)
                 {
                     /* Load the presorted data */
-                    tmp->iPropSort = getLookupResultSortedProperties(tmp);
+                    tmp->iPropSort = getLookupResultSortedProperties(sw, tmp);
 
                     /* If some of the properties is not presorted */
                     /* use the old method (ignore presorted index)*/
@@ -656,7 +657,7 @@ int     sortresults(SWISH * sw, int structure)
             {
                 if (tmp->structure & structure)
                 {
-                    tmp->PropSort = getResultSortProperties(tmp);
+                    tmp->PropSort = getResultSortProperties(sw, tmp);
                 }
                 /* Compute number of results */
                 i++;

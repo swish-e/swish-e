@@ -1,5 +1,6 @@
 
 #include "swish.h"
+#include "db.h"
 #include "rank.h"
 
 /* 1000 precomputed 10000 * log(i) */
@@ -262,7 +263,9 @@ int getrank(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, i
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
         INDEXDATAHEADER *header = &indexf->header;
-        int             words = header->TotalWordsPerFile[filenum-1];
+        int             words;
+
+        DB_ReadTotalWordsPerFile(sw, header->TotalWordsPerFile,filenum-1,&words,indexf->DB);
 
         if (words <= 10)
             reduction = 10000;    /* 10000 * log10(10) = 10000 */
@@ -306,7 +309,9 @@ int getrank_old(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *index
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
         INDEXDATAHEADER *header = &indexf->header;
-        int             words = header->TotalWordsPerFile[filenum-1];
+        int             words;
+
+        DB_ReadTotalWordsPerFile(sw, header->TotalWordsPerFile,filenum-1,&words,indexf->DB);
 
         if (words < 10) words = 10;
         reduction = log10((double)words);

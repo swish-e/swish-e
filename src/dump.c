@@ -274,11 +274,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                             memset( &r, 0, sizeof( RESULT ) );
 
                             r.indexf = indexf;
-                            r.sw = (struct SWISH *)sw;
                             r.filenum = filenum;
                             r.fi.filenum = filenum;
 
-                            s = getResultPropAsString( &r, m->metaID);
+                            s = getResultPropAsString( sw, &r, m->metaID);
 
                             printf(" %s", s );
                             efree( s );

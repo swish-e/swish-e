@@ -303,7 +303,7 @@ int SwishSeek(SWISH *sw,int pos)
     if(!sw->Search->db_results->next)
     {
         for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
-            sp = sp->nextsort;
+            sp = sp->next;
 
         sw->Search->db_results->currentresult=sp;
     }

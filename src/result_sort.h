@@ -76,7 +76,7 @@ int configModule_ResultSort (SWISH *sw, StringList *sl);
 int compResultsByNonSortedProps(const void *,const void *);
 int compResultsBySortedProps(const void *,const void *);
 
-char **getResultSortProperties(RESULT *);
+char **getResultSortProperties(SWISH *, RESULT *);
 
 int initSortResultProperties (SWISH *);
 

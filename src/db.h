@@ -104,6 +104,16 @@ void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db
 char   *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
 void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB);
 
+#ifdef USE_BTREE
+int	   DB_InitWriteTotalWordsPerFileArray(SWISH *sw, void *DB);
+int    DB_WriteTotalWordsPerFileArray(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB);
+int    DB_EndWriteTotalWordsPerFileArray(SWISH *sw, void *DB);
+int	   DB_InitReadTotalWordsPerFileArray(SWISH *sw, void *DB);
+int    DB_ReadTotalWordsPerFileArray(SWISH *sw, int **totalWordsPerFile, void *DB);
+int    DB_EndReadTotalWordsPerFileArray(SWISH *sw, void *DB);
+#endif
+
+int    DB_ReadTotalWordsPerFile(SWISH *sw, int *data,int index, int *value, void *DB);
 
 
 struct MOD_DB
@@ -164,7 +174,15 @@ struct MOD_DB
     void   (*DB_ReadPropPositions)(IndexFILE *indexf, FileRec *fi, void *db);
     char  *(*DB_ReadProperty)(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
     void   (*DB_Reopen_PropertiesForRead)(void *DB);
-
+#ifdef USE_BTREE
+    int    (*DB_InitWriteTotalWordsPerFileArray)(SWISH *sw, void *DB);
+    int    (*DB_WriteTotalWordsPerFileArray)(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB);
+    int    (*DB_EndWriteTotalWordsPerFileArray)(SWISH *sw, void *DB);
+    int	   (*DB_InitReadTotalWordsPerFileArray)(SWISH *sw, void *DB);
+    int    (*DB_ReadTotalWordsPerFileArray)(SWISH *sw, int **totalWordsPerFile, void *DB);
+    int    (*DB_EndReadTotalWordsPerFileArray)(SWISH *sw, void *DB);
+#endif
+    int    (*DB_ReadTotalWordsPerFile)(SWISH *sw, int *data,int index, int *value, void *DB);
 };
 
 

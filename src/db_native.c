@@ -105,6 +105,16 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_ReadPropPositions = DB_ReadPropPositions_Native;
     Db->DB_Reopen_PropertiesForRead = DB_Reopen_PropertiesForRead_Native;
 
+#ifdef USE_BTREE
+    Db->DB_InitWriteTotalWordsPerFileArray = DB_InitWriteTotalWordsPerFileArray_Native;
+    Db->DB_WriteTotalWordsPerFileArray = DB_WriteTotalWordsPerFileArray_Native;
+    Db->DB_EndWriteTotalWordsPerFileArray = DB_EndWriteTotalWordsPerFileArray_Native;
+    Db->DB_InitReadTotalWordsPerFileArray = DB_InitReadTotalWordsPerFileArray_Native;
+    Db->DB_ReadTotalWordsPerFileArray = DB_ReadTotalWordsPerFileArray_Native;
+    Db->DB_EndReadTotalWordsPerFileArray = DB_EndReadTotalWordsPerFileArray_Native;
+#endif
+
+    Db->DB_ReadTotalWordsPerFile = DB_ReadTotalWordsPerFile_Native;
 
     sw->Db = Db;
 
@@ -244,6 +254,9 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
     DB->presorted = NULL;
     DB->cur_presorted_array = NULL;
     DB->cur_presorted_propid = 0;
+    DB->totwords_array = NULL;
+    DB->props_array = NULL;
+    DB->props_array_index = 0;
 #endif
 
 
@@ -557,6 +570,10 @@ void    DB_Close_Native(void *db)
         efree(DB->presorted_root_node);
     if(DB->presorted_propid)
         efree(DB->presorted_propid);
+    if(DB->totwords_array)
+        ARRAY_Close(DB->totwords_array);
+    if(DB->props_array)
+        DB->offsets[FILELISTPOS] = ARRAY_Close(DB->props_array);
 #endif
 
     if (DB->mode)               /* If we are indexing update offsets to words and files */
@@ -1743,6 +1760,10 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         memset( pindex, 0, index_size );
     }
 
+#ifdef USE_BTREE
+    if ( !DB->props_array )
+        DB->props_array = ARRAY_Create(DB->fp);
+#endif
 
     /* Write out the prop index */
     for ( i = 0; i < count; i++ )
@@ -1750,9 +1771,14 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         /* make an alias */
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
 
+#ifndef USE_BTREE
         /* Write in portable format */
         printlong( DB->fp, prop_loc->length, fwrite );
         printlong( DB->fp, prop_loc->seek, fwrite );
+#else
+        ARRAY_Put( DB->props_array, DB->props_array_index++, prop_loc->length);
+        ARRAY_Put( DB->props_array, DB->props_array_index++, prop_loc->seek);
+#endif
     }
 
     efree( pindex );
@@ -1786,6 +1812,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     memset( pindex, 0, index_size );
 
 
+#ifndef USE_BTREE
     /* now calculate seek_pos */
     seek_pos = ((fi->filenum - 1) * index_size)  + DB->offsets[FILELISTPOS];
 
@@ -1804,7 +1831,23 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         prop_loc->length = readlong( DB->fp, fread );
         prop_loc->seek = readlong( DB->fp, fread );
     }
+#else
+    if ( !DB->props_array )
+        DB->props_array = ARRAY_Open(DB->fp,DB->offsets[FILELISTPOS]);
 
+    /* now calculate index */
+    seek_pos = ((fi->filenum - 1) * count) * 2;
+
+    /* Read in the prop indexes */
+    for ( i=0; i < count; i++ )
+    {
+        /* make an alias */
+        PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
+
+        prop_loc->length = ARRAY_Get(DB->props_array, seek_pos++);
+        prop_loc->seek = ARRAY_Get(DB->props_array, seek_pos++);
+    }
+#endif
 }
 
     
@@ -1905,3 +1948,105 @@ void    DB_Reopen_PropertiesForRead_Native(void *db)
 
 
 
+#ifndef USE_BTREE
+
+int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
+{
+    return 0;
+}
+
+int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB)
+{
+    return 0;
+}
+
+int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
+{
+    return 0;
+}
+
+int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
+{
+    return 0;
+}
+
+int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **data, void *DB)
+{
+    return 0;
+}
+
+int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int index, int *value, void *db)
+{
+    *value = data[index];
+    return 0;
+}
+
+int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
+{
+    return 0;
+}
+
+#else
+int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *db)
+{
+    return 0;
+}
+
+int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *data, int n, void *db)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->fp;
+   ARRAY *arr;
+   int i;
+
+   arr = ARRAY_Create(fp);
+   for(i = 0 ; i < n ; i++)
+   {
+       ARRAY_Put(arr,i,data[i]);
+/*
+       if(!(i%10000))
+       {
+            ARRAY_FlushCache(arr);
+            printf("%d %d            \r",propID,i);
+       }
+*/
+   }
+
+   DB->offsets[TOTALWORDSPERFILEPOS] = ARRAY_Close(arr);
+
+   return 0;
+}
+
+int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *db)
+{
+    return 0;
+}
+
+int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
+{
+    return 0;
+}
+
+int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **data, void *db)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->fp;
+
+   DB->totwords_array = ARRAY_Open(fp,DB->offsets[TOTALWORDSPERFILEPOS]);
+
+   *data = (int *)DB->totwords_array;
+   return 0;
+}
+
+int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int index, int *value, void *db)
+{
+    *value = ARRAY_Get((ARRAY *)data,index);
+    return 0;
+}
+
+int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
+{
+    return 0;
+}
+
+#endif
