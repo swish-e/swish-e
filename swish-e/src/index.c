@@ -2139,7 +2139,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             /* If exists, we have to add the new worddata buffer to the old one */
             if(old_wordid)
             {
-                 add_worddata(indexf, buffer, sz_buffer);
+                 add_worddata(sw, buffer, sz_buffer);
                  efree(buffer);
                  buffer = NULL;
                  sz_buffer = 0;
