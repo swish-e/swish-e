@@ -115,39 +115,18 @@ bool GetModulePath(char filename[ _MAX_PATH ]);
 STDMETHODIMP CCSwishCtl::Init(BSTR IndexFiles)
 
 {
-
 	// In order to claim "safe for scripting", 
-
 	// don't allow location of resources to be specified 
-
 	// as a parameter - for this application, the dll must
-
 	// and the index files must reside in the same folder
-
-
-
 	// So now the IndexFiles parameter is the name of a 
-
 	// registry value in the options key for this app
-
-
-
-	//BstrConverter bstr_indexfiles(IndexFiles);
-
-
+    CAnsiStr bstr_indexfiles(IndexFiles);
 
 	const char registrykey[] = "Software\\SWISH-E Team\\SwishCtl\\Options";
 
 
-
-	CAnsiStr bstr_indexfiles(IndexFiles);
-
-
-
 	RegKey hkcu(HKEY_LOCAL_MACHINE) ;
-
-
-
 
 
 	string indexfilepath; 
@@ -162,7 +141,7 @@ STDMETHODIMP CCSwishCtl::Init(BSTR IndexFiles)
 
 		indexfilepath = hkcu.QueryValue( "IndexLocation"  );
 
-		indexfilename = hkcu.QueryValue( "IndexFiles"  );
+		indexfilename = hkcu.QueryValue( bstr_indexfiles.c_str() );
 
 	}
 
