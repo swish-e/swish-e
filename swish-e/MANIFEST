@@ -45,6 +45,11 @@ doc/tmpl/indexps.tmpl
 doc/tmpl/page.tmpl
 doc/tmpl/pageps.tmpl
 doc/tmpl/splitpage.tmpl
+doc/SWISH-CONFIG.1
+doc/SWISH-FAQ.1
+doc/SWISH-LIBRARY.1
+doc/SWISH-PERL.1
+doc/SWISH-RUN.1
 example/README
 example/SWISH-Stemmer-0.05.tar.gz
 example/search.tt
@@ -193,6 +198,8 @@ src/expat/xmltok/dllmain.c
 src/expat/xmltok/xmltok.dsp
 src/extprog.c
 src/extprog.h
+src/fhash.c
+src/fhash.h
 src/file.c
 src/file.h
 src/filter.c
@@ -293,6 +300,8 @@ src/win32/swishe.dsw
 src/win32/installer.nsi
 src/win32/build.sh
 src/win32/dist.sh
+src/worddata.c
+src/worddata.h
 win32.nsi
 win32src.nsi
 rpm/swish-e-fhs.patch

@@ -50,7 +50,7 @@ HTMLIMAGES = ../html/images/dotrule1.gif \
 
 
 
-all: readme installpage html
+all: readme installpage html man
 
 #--- convert README.pod to README ---
 

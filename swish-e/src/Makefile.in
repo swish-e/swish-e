@@ -34,6 +34,7 @@ INSTALL_SCRIPT  = @INSTALL_SCRIPT@
 INSTALL_DATA    = @INSTALL_DATA@
 MKINSTALLDIRS   = $(SHELL) $(top_srcdir)/mkinstalldirs
 
+BTREE_OBJS	= @BTREE_OBJS@
 
 
 LIBS        = @LIBS@ @LIBXML2_LIB@ @Z_LIBS@ @PCRE_LIBS@
@@ -92,7 +93,8 @@ SEARCHING_OBJS      = swish2.o search.o swish_words.o proplimit.o \
 
 #--- Common modules --
 
-DB_OBJS             = hash.o compress.o db_native.o ramdisk.o btree.o array.o worddata.o fhash.o
+
+DB_OBJS             = hash.o compress.o db_native.o ramdisk.o $(BTREE_OBJS)
 
 UTIL_OBJS           = check.o error.o list.o mem.o string.o \
                       docprop.o metanames.o headers.o \

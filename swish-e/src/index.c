@@ -145,7 +145,6 @@ static void unSwapLocData(SWISH *,int, ENTRY *);
 static void sortSwapLocData(SWISH * , ENTRY *);
 
 
-
 /* 
   -- init structures for this module
 */
@@ -2941,5 +2940,3 @@ static void sortSwapLocData(SWISH * sw, ENTRY *e)
     efree(ptmp);
                  
 }
-
-

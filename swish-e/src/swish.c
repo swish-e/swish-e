@@ -97,10 +97,10 @@ static DEBUG_MAP debug_map[] = {
 /* Possible run modes */
 typedef enum {
     MODE_SEARCH,
-	MODE_INDEX,
-	MODE_DUMP,
+    MODE_INDEX,
+    MODE_DUMP,
     MODE_WORDS,
-	MODE_MERGE,
+    MODE_MERGE,
     MODE_UPDATE
 }
 CMD_MODE;
@@ -785,14 +785,15 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
 
 
-
+#ifdef USE_BTREE
             /* Update mode jmruiz 2002/03 */
-    
+
             case 'u':
             {
                 params->run_mode = MODE_UPDATE;
                 break;
             }
+#endif
 
             default:
                 progerr("Unknown switch '-%c'.  Use -h for options.", c );

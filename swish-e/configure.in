@@ -144,7 +144,18 @@ else
     AC_SUBST(LIBXML2_CFLAGS)
 fi
 
-    
+
+dnl Provide an option for enabling btree/incremental indexing for development
+AC_ARG_ENABLE(incremental,
+             AC_HELP_STRING([--enable-incremental], [** developer use only **]),btree=yes,)
+
+if test x$btree = xyes; then
+    AC_MSG_WARN([** Buidling with developer only incremental indexing code **])
+    BTREE_OBJS="btree.o array.o worddata.o fhash.o"
+    AC_SUBST(BTREE_OBJS)
+    AC_DEFINE(USE_BTREE)
+fi
+
 
 dnl Checks for zlib library. -- from libxml2 configure.in
 _cppflags="${CPPFLAGS}"
