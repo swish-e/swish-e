@@ -6,6 +6,9 @@ use strict;
 # recursing directories, but also shows how to process different
 # file types -- in this example pdf is converted to xml for indexing.
 
+# for the odd chance of running under Windows
+binmode STDOUT;
+
 use File::Find;  # for recursing a directory tree
 use pdf2xml;     # example module for pdf to xml conversion
                  # Not that you need IndexContents XML .pdf in the
