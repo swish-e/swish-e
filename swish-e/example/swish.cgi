@@ -136,8 +136,8 @@ Time::HiRes may not install on all systems, and if yours
 falls into this category then you must comment out a few lines in this script -- it should be obvious by
 looking at the code.
 
-Sys::Signal is required by the SWISH::Fork module to properly handle timeouts.  A bug in current versions of
-perl do not properly reset signal handlers under some situations.
+When running under mod_perl, Sys::Signal is required by the SWISH::Fork module to properly handle timeouts.
+A bug in current versions of perl do not properly reset signal handlers under some situations.
 
 B<A note about installing Perl modules>
 
@@ -189,7 +189,8 @@ Please see http://sunsite.berkeley.edu/SWISH-E for more information about SWIHS-
 
 
 
-The required modules can be found at your favorite CPAN site (http://search.cpan.org)
+The required modules can be found at your favorite CPAN site (http://search.cpan.org).  ActiveState
+users (Windows) will use the C<ppm> utility to install these modules.
 
     SWISH
     SWISH::Fork
@@ -197,6 +198,7 @@ The required modules can be found at your favorite CPAN site (http://search.cpan
     HTML::FillInForm
     HTML::Parser
     Time::HiRes  (you can get by without this module)
+    Sys::Signal  (used if running mod_perl)
 
 (See below for Windows instructions.)    
 
@@ -319,6 +321,7 @@ the following (perhaps inside a <Directory> block):
 In general, it's a good idea to pre-load modules by using C<PerlModule> statements, or
 by C<use>ing the module in a startup.pl script.
 
+Remember, install the Sys::Signal module when running under mod_perl.
 
 
 =head1 DISCLAIMER
