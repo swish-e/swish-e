@@ -379,10 +379,8 @@ static int  *sorted_data;
 
 static int     compnums(const void *s1, const void *s2)
 {
-    int         *r1 = *(int * const *) s1;
-    int         *r2 = *(int * const *) s2;
-    int         a = (int)r1; // filenumber passed from qsort
-    int         b = (int)r2;
+    int         a = *(int *)s1; // filenumber passed from qsort
+    int         b = *(int *)s2;
     int         v1 = sorted_data[ a-1 ];
     int         v2 = sorted_data[ b-1 ];
 
