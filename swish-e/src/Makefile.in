@@ -27,13 +27,9 @@ cflags      = @CFLAGS@
 ldflags     = @LDFLAGS@
 
 
-# libxml2 -- uncomment to enable
-#LIBXML2_OBJS = parser.o
-#LIBXML2_LIB  = -lxml2
-#LIBXML2_CFLAGS = -DLIBXML2
 
 
-LIBS        = @LIBS@ $(LIBXML2_LIB)
+LIBS        = @LIBS@ @LIBXML2_LIB@ @Z_LIBS@
 
 # Library related 
 AR          = ar
@@ -66,11 +62,11 @@ XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
 
  
 # Flags for C compiler
-CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) $(LIBXML2_CFLAGS) $(cflags)
+CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
 LDFLAGS     = $(ldflags)
 
 
-OBJS=	$(LIBXML2_OBJS) check.o file.o index.o search.o error.o methods.o\
+OBJS=	@LIBXML2_OBJS@ check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
 	soundex.o docprop.o compress.o xml.o txt.o html.o\
 	metanames.o result_output.o parse_conffile.o result_sort.o\
