@@ -10,11 +10,13 @@ SwishSpiderConfig.pl
 file.pl 
 	simple examle of a program that feeds documents to swish.
 
-pdf2xml.pm
-	perl module to convert pdf to xml documents for indexing
-
 DirTree.pl 
 	simple example of that reads a directory tree and indexes
 	a few files types.  Uses the pdf2xml module for pdf files.
 
+pdf2xml.pm
+	perl module to convert pdf to xml documents for indexing
+
+doc2txt.pm
+	perl module to convert MS Word documents to text
 
