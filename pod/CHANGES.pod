@@ -10,11 +10,21 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
-=item Could not set SwsihSetSort() more than once
+=item Change in way symbolic links are followed
+
+John-Marc Chandonia pointed out that if a symlink is skipped
+by FileRules, then the actual file/directory is marked as
+"already seen" and cannot be indexed by other links or directly.
+
+Now, files and directories are not marked "already seen" until
+after passing FileRules (i.e after a file is actually indexed
+or a directory is processed).
+
+=item Could not set SwishSetSort() more than once
 
 David Windmueller found a problem when trying to set the sort
 order more than once on an existing search object.  Memory was not
-correctly reset after clearning the previous sort values.
+correctly reset after clearing the previous sort values.
 
 =item Access MetaNames and PropertyNames from API
 

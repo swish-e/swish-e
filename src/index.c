@@ -967,7 +967,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         else if (wordcount == -2)
             printf(" (Skipped due to 'FileRules title' setting)\n");
         else if (wordcount == -3)
-            printf(" (Skipped due to Robots Excluion Rule in meta tag)\n");
+            printf(" (Skipped due to Robots Exclusion Rule in meta tag)\n");
         fflush(stdout);
     }
 
