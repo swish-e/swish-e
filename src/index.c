@@ -200,6 +200,8 @@ void initModule_Index (SWISH  *sw)
     idx->swap_seek = NULL;
     idx->swap_read = NULL;
     idx->swap_close = NULL;
+    idx->swap_getc = NULL;
+    idx->swap_putc = NULL;
 
     return;
 }

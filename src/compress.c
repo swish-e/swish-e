@@ -289,6 +289,8 @@ struct MOD_Index *idx = sw->Index;
             idx->swap_close = fclose;
             idx->swap_seek = fseek;
             idx->swap_read = fread;
+            idx->swap_getc = fgetc;
+            idx->swap_putc = fputc;
         }
     }
     else
@@ -301,13 +303,12 @@ struct MOD_Index *idx = sw->Index;
             idx->swap_close = ramdisk_close;
             idx->swap_seek = ramdisk_seek_read;
             idx->swap_read = ramdisk_read;
+            idx->swap_getc = ramdisk_getc;
+            idx->swap_putc = ramdisk_putc;
         }
     }
     pos=idx->swap_tell(idx->fp_loc_write);
-    if(idx->swap_write(&lenbuf,1,sizeof(int),idx->fp_loc_write)!=sizeof(int))
-    {
-        progerr("Cannot write to swap file");
-    }
+    compress1(lenbuf,idx->fp_loc_write,idx->swap_putc);
     if(idx->swap_write(buf,1,lenbuf,idx->fp_loc_write)!=(unsigned int)lenbuf)
     {
         progerr("Cannot write to swap file");
@@ -350,7 +351,7 @@ struct MOD_Index *idx = sw->Index;
         }
     }
     idx->swap_seek(idx->fp_loc_read,pos,SEEK_SET);
-    idx->swap_read(&lenbuf,sizeof(int),1,idx->fp_loc_read);
+    lenbuf = uncompress1(idx->fp_loc_read,idx->swap_getc);
     buf=(unsigned char *)emalloc(lenbuf);
     idx->swap_read(buf,lenbuf,1,idx->fp_loc_read);
     return buf;
