@@ -309,6 +309,17 @@ When using libxml2 to parse HTML, swish-e will skip files marked as NOINDEX.
 
     <meta name="robots" content="noindex">
 
+=item * New directive: UndefinedXMLAttributes
+
+This describes how the content of XML attributes should be indexed, if at all.  
+This is similar to UndefinedMetaTags, but is only for XML attributes and when parsed by libxml2.
+The default is to not index XML attributes.
+
+=item * New directive: XMLClassAttributes
+
+XMLClassAttributes can specify a list of attribute names whose content is
+combined with the element name to form metanames.
+
 =back
 
 Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for documentation on these

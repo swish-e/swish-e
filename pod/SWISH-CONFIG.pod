@@ -325,7 +325,11 @@ L<TruncateDocSize|/"item_TruncateDocSize"> *number of characters*
 
 =item * 
 
-L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|index|auto]
+L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|INDEX|auto]
+
+=item *
+
+L<UndefinedXMLAttributes|/"item_UndefinedXMLAttributes"> [DISABLE|error|ignore|index|auto]
 
 =item *
 
@@ -342,6 +346,10 @@ L<UseWords|/"item_UseWords"> [*list of words*|File: path]
 =item *
 
 L<WordCharacters|/"item_WordCharacters"> *string of characters*
+
+=item *
+
+L<XMLClassAttributes|/"item_XMLClassAttributes"> *list of XML attribute names*
 
 =back
 
@@ -876,7 +884,7 @@ This also means you can search for any images within France:
 
 This feature is only available with the libxml2 HTML parser.    
 
-=item UndefinedMetaTags [error|ignore|index|auto]
+=item UndefinedMetaTags [error|ignore|INDEX|auto]
 
 This directive defines the behavior of swish during indexing when a meta name is found but is B<not> listed in B<MetaNames>.
 There are four choices:
@@ -888,16 +896,87 @@ There are four choices:
 error reported.
 
 =item ignore - The contents of the meta tag are ignored and B<not> indexed.
-This only applies to HTML <meta name="...> tags.
+This only applies to HTML <meta name="...> tags if not using libxml2.
 
-=item index - The contenst of the meta tag are indexed, but placed in the main index (the contents are not
-assinged a meta name and cannot be searched by meta name.  This is the default.
+=item index - The contents of the meta tag are indexed, but placed in the main index unless there's
+an enclosing metatag already in force. This is the default.
 
-=item auto - This method only applies to HTML and XML documents and will create meta tags automatically for
+=item auto - This method create meta tags automatically for
 HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
 B<MetaNames> dirictive.
 
 =back
+
+=item UndefinedXMLAttributes [DISABLE|error|index|auto]
+
+This is similar to C<UndefinedMetaTags>, but only applies to XML documents (parsed with libxml2).
+This allows indexing of attribute content, and provides a way to index the content under a
+metaname.  For example, C<UndefinedXMLAttributes> can make
+
+    <person age="23">
+          John Doe
+    </person>
+
+look like the following to swish:
+
+    <person>
+        <person.age>
+            23
+        </person.age>
+        John Doe
+    </person>
+
+What happens to the text "23" will depend on the setting of C<UndefinedXMLAttributes>:    
+
+=over 2
+
+=item disable - XML attributes are not parsed and not indexed.  This is the default.
+
+=item error - If the concatenated meta name (e.g. person.ag) is not listed in B<MetaNames>
+then indexing will be halted and an error reported.
+
+=item ignore - The contents of the meta tag are ignored and B<not> indexed unless a metaname as
+be defined with the C<MetaNames> directive.
+
+=item index - The contents of the meta tag are indexed, but placed in the main index unless there's
+an enclosing metatag already in force.
+
+=item auto - This method will create meta tags automatically for
+HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
+B<MetaNames> dirictive.
+
+
+=back
+    
+=item XMLClassAttributes *list of XML attribute names*
+
+Combines an XML class name with the element name to make up a metaname.
+For example:
+
+    XMLClassAttributes class
+
+    <person class="first">
+        John
+    </person>
+    <person class="last">
+        Doe
+    </person>
+
+Will appear to swish as:
+
+    <person>
+        <person.first>
+        John
+        </person.first>
+    </person>
+    <person>
+        <person.last>
+        Doe
+        </person.last>
+    </person>
+
+How the data is indexed depends on C<MetaNames> and C<UndefinedMetaTags>.
+
 
 =item ExtractPath *metaname* [replace|remove|prepend|append|regex]
 
