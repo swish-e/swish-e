@@ -34,7 +34,7 @@
 // #include "db_berkeley_db.h"
 
 #ifndef min
-#define min(a, b)	(a) < (b) ? a : b
+#define min(a, b)    (a) < (b) ? a : b
 #endif
 
 /*
@@ -114,8 +114,8 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     DB_WriteHeaderData(sw, SAVEDASHEADER_ID, (unsigned char *)c, strlen(c) + 1, DB);
     write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
     tmp = getTheDateISO(); 
-	DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB); 
-	efree(tmp);
+    DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB); 
+    efree(tmp);
     DB_WriteHeaderData(sw, DESCRIPTIONHEADER_ID, (unsigned char *)header->indexd, strlen(header->indexd) + 1, DB);
     DB_WriteHeaderData(sw, POINTERHEADER_ID, (unsigned char *)header->indexp, strlen(header->indexp) + 1, DB);
     DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, (unsigned char *)header->indexa, strlen(header->indexa) + 1,DB);
@@ -131,22 +131,22 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     DB_WriteHeaderData(sw, ENDCHARSHEADER_ID, (unsigned char *)header->endchars, strlen(header->endchars) + 1, DB);
     DB_WriteHeaderData(sw, IGNOREFIRSTCHARHEADER_ID, (unsigned char *)header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
     DB_WriteHeaderData(sw, IGNORELASTCHARHEADER_ID, (unsigned char *)header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
-	/* Removed - Patents 
+    /* Removed - Patents 
     write_header_int(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, DB);
-	*/
+    */
 
 
 
     /* Jose Ruiz 06/00 Added this line to delimite the header */
     write_integer_table_to_header(sw, TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), DB);
-	
-	/* Other header stuff */
-		/* StopWords */
+    
+    /* Other header stuff */
+        /* StopWords */
     write_words_to_header(sw, STOPWORDS_ID, header->hashstoplist, DB);
-		/* Metanames */
+        /* Metanames */
     write_MetaNames(sw, METANAMES_ID, header, DB);
 
-		/* BuzzWords */
+        /* BuzzWords */
     write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);
 
 #ifndef USE_BTREE
@@ -169,7 +169,7 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     wordID = DB_GetWordID(sw, indexf->DB);
 
     DB_WriteWord(sw, ep->word,wordID,indexf->DB);
-	    /* Store word offset for futher hash computing */
+        /* Store word offset for futher hash computing */
     ep->u1.wordID = wordID;
 
 }
@@ -185,7 +185,7 @@ void    update_wordID(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     wordID = DB_GetWordID(sw, indexf->DB);
 
     DB_UpdateWordID(sw, ep->word,wordID,indexf->DB);
-	    /* Store word offset for futher hash computing */
+        /* Store word offset for futher hash computing */
     ep->u1.wordID = wordID;
 }
 
@@ -209,8 +209,8 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     unsigned long    tmp,
             curmetanamepos;
     int     metaID;
-	int     bytes_size,
-			chunk_size;
+    int     bytes_size,
+            chunk_size;
     unsigned char *compressed_data,
            *p,*q;
     LOCATION *l, *next;
@@ -220,7 +220,7 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
 
-		/* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
+        /* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
     for(bytes_size = 0, i = COALESCE_BUFFER_MAX_SIZE; i; i >>= 8)
         bytes_size++;
 
@@ -253,8 +253,8 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             }
                 /* Check for enough memory */
                 /* 
-				** 5 is for the worst case metaID
-				**
+                ** MAXINTCOMPSIZE is for the worst case metaID
+                **
                 ** sizeof(long) is to leave four bytes to
                 ** store the offset of the next metaname
                 ** (it will be 0 if no more metanames).
@@ -264,9 +264,9 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
             tmp=q - sw->Index->worddata_buffer;
 
-            if((long)(tmp + 5 + sizeof(long) + 1) >= (long)sw->Index->len_worddata_buffer)
+            if((long)(tmp + MAXINTCOMPSIZE + sizeof(long) + 1) >= (long)sw->Index->len_worddata_buffer)
             {
-                sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5+sizeof(long)+1;
+                sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+MAXINTCOMPSIZE+sizeof(long)+1;
                 sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
                 q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
             }
@@ -644,10 +644,10 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
     {
         entry = header->metaEntryArray[i];
         len = strlen(entry->metaName);
-        sz_buffer += len + fields * 5; /* compress can use 5 bytes in worse case,  */
+        sz_buffer += len + fields * MAXINTCOMPSIZE; /* compress can use MAXINTCOMPSIZE bytes in worse case,  */
     }
     
-    sz_buffer += 5;  /* Add extra 5 for the number of metanames */
+    sz_buffer += MAXINTCOMPSIZE;  /* Add extra MAXINTCOMPSIZE for the number of metanames */
 
     s = buffer = (unsigned char *) emalloc(sz_buffer);
 
@@ -682,8 +682,8 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
             sz_buffer;
     char   *buffer, *s;
     struct swline *sp = NULL;
-		
-		/* Let's count the words */
+        
+        /* Let's count the words */
 
     for (sz_buffer = 0, num_words = 0 , hashval = 0; hashval < HASHSIZE; hashval++)
     {
@@ -691,14 +691,14 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
         while (sp != NULL)
         {
             num_words++;
-            sz_buffer += 5 + strlen(sp->line);
+            sz_buffer += MAXINTCOMPSIZE + strlen(sp->line);
             sp = sp->next;
         }
     }
 
     if(num_words)
     {
-        sz_buffer += 5;  /* Add 5 for the number of words */
+        sz_buffer += MAXINTCOMPSIZE;  /* Add MAXINTCOMPSIZE for the number of words */
 
         s = buffer = (char *)emalloc(sz_buffer);
 
@@ -730,8 +730,8 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
             tmp;
     char   *s;
     char   *buffer;
-	
-    s = buffer = (char *) emalloc((table_size + 1) * 5);
+    
+    s = buffer = (char *) emalloc((table_size + 1) * MAXINTCOMPSIZE);
 
     s = (char *)compress3(table_size,(unsigned char *)s);   /* Put the number of elements */
     for (i = 0; i < table_size; i++)
@@ -787,7 +787,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case INDEXVERSION_ID:
         case MERGED_ID:
         case DOCPROPENHEADER_ID:
-			break;
+            break;
         case WORDCHARSHEADER_ID:
             header->wordchars = SafeStrCopy(header->wordchars, (char *)buffer, &header->lenwordchars);
             sortstring(header->wordchars);
@@ -959,14 +959,14 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
 {
     int     len;
-    int	    num_words;
+    int        num_words;
     int     i;
     char   *word = NULL;
 
     unsigned char   *s = (unsigned char *)buffer;
 
     num_words = uncompress2(&s);
-	
+    
     for (i=0; i < num_words ; i++)   
     {
         len = uncompress2(&s);
@@ -995,10 +995,10 @@ void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
     {
         len = uncompress2(&s);
         word = emalloc(len+1);
-	memcpy(word,s,len); s += len;
+    memcpy(word,s,len); s += len;
         word[len] = '\0';
         addbuzzwordhash(header, word);
-	efree(word);
+    efree(word);
     }
 }
 
@@ -1031,7 +1031,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     unsigned char    word[2];
     long    wordID;
 
-	
+    
 
     if (!c)
         return "";
@@ -1375,7 +1375,7 @@ int    DB_WriteTotalWordsPerFile(SWISH *sw, int idx, int wordcount, void *DB)
 }
 
 
-int	   DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
+int       DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
 {
     return sw->Db->DB_ReadTotalWordsPerFile(sw, index, value, DB);
 }
