@@ -50,7 +50,7 @@ typedef int mode_t;         /* file permission mode ID */
 #define sleep		_sleep
 #define getpid		_getpid
 #define umask       _umask
-#define stat        _stat
 #define vsnprintf   _vsnprintf
+#define stat(x,y)	my_stat(x,y)
 
 #endif

@@ -29,8 +29,6 @@
 #include <sys\stat.h> 
 #include "dirent.h" 
 
-#define stat _stat
-
 /* 
  *	NT specific 
  */ 
@@ -72,10 +70,15 @@ DIR *opendirx(char *name, char *pattern)
 			break;
 		}
     }
+
+//	FIX_DIRECTORY_NAME( path );
+
     len = ip - name;
     if (len > 0) {
-		unc = ((path[0] == '\\' || path[0] == '/') &&
-			(path[1] == '\\' || path[1] == '/'));
+		/* Windows NT required a trailing '/' at some point.  Now it MUST NOT have one.  */
+//		unc = ((path[0] == '\\' || path[0] == '/') &&
+//			(path[1] == '\\' || path[1] == '/'));
+		unc = 0;
 		c = path[len - 1];
 		if (unc) {
 			if (c != '\\' && c != '/') {
@@ -261,6 +264,52 @@ static char *getdirent(char *dir)
     } 
 } 
 /* end of getdirent() */ 
+
+/* Convert '\\' to '/' 
+ * Strip trailing '/' and '\\' from directory names
+ * See Microsoft KB Article: Q137230
+ */
+void
+fixDirectoryName( char *name ) {
+
+	int position,length;
+
+	position = 0;
+	length = strlen( name );
+
+	while(name[position]){
+		if( name[position] == '\\' )
+			name[position] = '/';
+		position++;
+	}
+	if( name[ length - 1 ] == '/' ){
+		name[ length - 1 ] = '\0';
+	}
+}
+/* end of fixDirectoryName()  */
+
+
+/* stat() MUST trip trailing '/' and '\\' from directory names
+ * See Microsoft KB Article: Q137230
+ */
+int
+my_stat(const char *name, struct _stat *statb){
+    char path[ OFS_MAXPATHNAME ]; 
+    register char *ip, *op;
+	
+	/* copy name to a working variable path  */
+    for (ip = name, op = path; ; op++, ip++) {
+		*op = *ip;
+		if (*ip == '\0') {
+			break;
+		}
+    }
+	/* FIX our local copy of the variable  */
+	FIX_DIRECTORY_NAME( path );
+
+	/* Pass our correct copy of name to stat  */
+	return _stat( path, statb );
+}
 
 struct passwd * _cdecl
 getpwnam(char *name)
