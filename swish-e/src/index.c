@@ -187,6 +187,8 @@ void initModule_Index (SWISH  *sw)
     idx->word = (char *) emalloc((idx->lenword = MAXWORDLEN) + 1);
     idx->swishword = (char *) emalloc((idx->lenswishword = MAXWORDLEN) + 1);
 
+    idx->plimit=PLIMIT;
+    idx->flimit=FLIMIT;
 
     return;
 }
@@ -862,7 +864,7 @@ int     removestops(SWISH * sw)
     int     totalfiles = getfilecount(indexf);
     struct filepos **filepos = NULL;
     struct filepos *fpos;
-
+    struct MOD_Index *idx = sw->Index;
 
     /* Now let's count the current number of stopwords!!
      */
@@ -873,7 +875,7 @@ int     removestops(SWISH * sw)
 
     totalwords = indexf->header.totalwords;
 
-    if (!totalwords || sw->plimit >= NO_PLIMIT)
+    if (!totalwords || idx->plimit >= NO_PLIMIT)
         return stopwords;
 
     if (sw->verbose)
@@ -891,7 +893,7 @@ int     removestops(SWISH * sw)
         for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
         {
             percent = (ep->tfrequency * 100) / totalfiles;
-            if (percent >= sw->plimit && ep->tfrequency >= sw->flimit)
+            if (percent >= idx->plimit && ep->tfrequency >= idx->flimit)
             {
                 addStopList(&indexf->header, ep->word);
                 addstophash(&indexf->header, ep->word);

@@ -48,6 +48,12 @@ struct MOD_Search
 
     /* Hash array for merging results */
     RESULT *resulthashlist[BIGHASHSIZE];
+
+    int bigrank;
+
+    /* Phrase delimiter char */
+    int     PhraseDelimiter;
+
 };
 
 void initModule_Search (SWISH *);

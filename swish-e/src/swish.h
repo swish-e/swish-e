@@ -659,8 +659,6 @@ typedef struct
     int     TotalFiles;
     /* verbose flag */
     int     verbose;
-    /* File counter */
-    int     bigrank;
     /* Error vars */
     int     commonerror;
     int     lasterror;
@@ -688,9 +686,6 @@ typedef struct
 
     /* prog system specific configuration parameters */
     struct swline *progparameterslist;
-
-    /* Phrase delimiter char */
-    int     PhraseDelimiter;
 
 }
 SWISH;

@@ -353,7 +353,7 @@ struct stat stat_buf;
 			/* Custom Phrase Delimiter - Jose Ruiz 01/00 */
 			if (((argv + 1)[0] != '\0') && (*(argv + 1)[0] != '-'))
 			{
-				sw->PhraseDelimiter = (int) (++argv)[0][0];
+				sw->Search->PhraseDelimiter = (int) (++argv)[0][0];
 				argc--;
 			}
 		}
