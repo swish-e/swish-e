@@ -350,7 +350,62 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
 	return pv;
 }
 
+/*******************************************************************
+*   Displays the "old" style properties for -p
+*
+*   Call with:
+*       *RESULT
+*
+*   I think this could be done in result_output.c by creating a standard
+*   -x format (plus properites) for use when there isn't one already.
+*
+*
+********************************************************************/
+void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
+{
+    int     i;
+    struct  MOD_Search *srch = sw->Search;
+    char   *s;
+    char   *propValue;
+    int    *metaIDs;
 
+    metaIDs = r->indexf->propIDToDisplay;
+
+    if (srch->numPropertiesToDisplay == 0)
+        return;
+
+    for ( i = 0; i < srch->numPropertiesToDisplay; i++ )
+    {
+        propValue = s = getResultPropAsString( r, metaIDs[ i ] );
+
+        if (sw->ResultOutput->stdResultFieldDelimiter)
+            fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);
+        else
+            fprintf(f, " \"");	/* default is to quote the string, with leading space */
+
+        /* print value, handling newlines and quotes */
+        while (*propValue)
+        {
+            if (*propValue == '\n')
+                fprintf(f, " ");
+
+            else if (*propValue == '\"')	/* should not happen */
+                fprintf(f,"&quot;");
+
+            else
+                fprintf(f,"%c", *propValue);
+
+            propValue++;
+        }
+
+        //fprintf(f,"%s", propValue);
+
+        if (!sw->ResultOutput->stdResultFieldDelimiter)
+            fprintf(f,"\"");	/* default is to quote the string */
+
+        efree( s );            
+    }
+}
 
 
 /*******************************************************************
@@ -681,61 +736,6 @@ struct MOD_Search *srch = sw->Search;
   -- $$$$ routine obsolete: new method "-x fmt"   $$$$
   -- 2001-02-09 rasc    output on file descriptor
 */
-
-void printSearchResultProperties(SWISH *sw, FILE *f, char **prop)
-{
-int i;
-struct MOD_Search *srch = sw->Search;
-	if (srch->numPropertiesToDisplay == 0)
-		return;
-
-	for (i = 0; i<srch->numPropertiesToDisplay; i++)
-	{
-		char* propValue;
-		propValue = prop[i];
-		
-		if (sw->ResultOutput->stdResultFieldDelimiter)
-			fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);
-		else
-			fprintf(f, " \"");	/* default is to quote the string, with leading space */
-
-		/* print value, handling newlines and quotes */
-		while (*propValue)
-
-		{
-			if (*propValue == '\n')
-				fprintf(f, " ");
-			else if (*propValue == '\"')	/* should not happen */
-				fprintf(f,"&quot;");
-			else
-				fprintf(f,"%c", *propValue);
-			propValue++;
-		}
-		fprintf(f,"%s", propValue);
-
-		if (!sw->ResultOutput->stdResultFieldDelimiter)
-			fprintf(f,"\"");	/* default is to quote the string */
-	}
-}
-
-
-
-char **getResultProperties(RESULT *r)
-{
-int i;
-char **props;      /* Array to Store properties */
-IndexFILE *indexf=r->indexf;
-SWISH *sw=(SWISH *)r->sw;
-struct MOD_Search *srch = sw->Search;
-    if (srch->numPropertiesToDisplay == 0) return NULL;
-	
-	props=(char **) emalloc(srch->numPropertiesToDisplay*sizeof(char *));
-	for (i = 0; i<srch->numPropertiesToDisplay; i++)
-	{
-		props[i] = getResultPropAsString(r, indexf->propIDToDisplay[i]);
-	}
-	return props;
-}
 
 
 

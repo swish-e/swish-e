@@ -482,7 +482,7 @@ typedef struct RESULT
     int     start;
     int     size;
     /* file position where this document's properties are stored */
-    char  **Prop;
+//    char  **Prop;
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
