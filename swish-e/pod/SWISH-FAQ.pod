@@ -808,6 +808,22 @@ than one index when searching by using the C<-f> switch.  Sorting large
 results sets by a property will be slower when specifying multiple index
 files while searching.
 
+=head3 "too many open files" when indexing with -e option
+
+Some platforms report "too many open files" when using the -e economy option.
+The -e feature uses many tempory files (something like 377) plus the index files
+and this may exceed your system's limits.
+
+Depending on your platform you may need to set "ulimit" or "unlimit".
+
+For example, under Linux bash shell:
+
+  $ ulimit -n 1024
+
+Or under an old Sparc
+
+  % unlimit openfiles
+
 =head3 My system admin says Swish-e uses too much of the CPU!
 
 That's a good thing!  That expensive CPU is suppose to be busy.
