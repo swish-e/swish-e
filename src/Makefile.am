@@ -1,4 +1,4 @@
-SUBDIRS = expat replace
+SUBDIRS = expat replace snowball
 
 AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" \
 		 $(Z_CFLAGS) $(PCRE_CFLAGS) $(LIBXML2_CFLAGS) -Ireplace
@@ -21,7 +21,7 @@ libtest_LDFLAGS = -static
 
 lib_LTLIBRARIES = libswish-e.la
 libswish_e_la_LDFLAGS = -version-info 2:0:0 $(Z_LIBS) $(PCRE_LIBS)
-libswish_e_la_LIBADD = $(BTREE_OBJS) replace/libreplace.la
+libswish_e_la_LIBADD = $(BTREE_OBJS) replace/libreplace.la snowball/libsnowball.la
 
 libswish_e_la_DEPENDENCIES = $(libswish_e_la_LIBADD)
 
@@ -63,7 +63,7 @@ EXTRA_libswish_e_la_SOURCES =  \
 ## Convenience lib for indexing code
 
 noinst_LTLIBRARIES = libswishindex.la
-libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS)
+libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS) snowball/libsnowball.la
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS) 
 
 ## in case these change
