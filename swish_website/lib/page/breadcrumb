@@ -10,5 +10,5 @@
            mylist.push( "<a href=\"$item.url\" $tooltip>$escaped</a>" );
         END;
     END;
-    mylist.join(' &#187 ');
+    mylist.join(' &#187; ');
 %]
