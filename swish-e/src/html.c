@@ -205,7 +205,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
 
 
         /* Index only if a metaEntry was found, or if not not ReqMetaName */
-        if ( sw->UndefinedMetaTags != UNDEF_META_ERROR || metaNameEntry)
+        if ( sw->UndefinedMetaTags != UNDEF_META_IGNORE || metaNameEntry)
         {
             /* Meta tags get bummped */
             /* I'm not clear this works as well as I'd like because it always bumps on a new Meta tag, 
