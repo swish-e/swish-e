@@ -1979,7 +1979,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                  efree(buffer);
                  buffer = NULL;
                  sz_buffer = 0;
-                 /* To do delete_worddata() */
+                 delete_worddata(sw, old_wordid, indexf);
                  write_worddata(sw, epi, indexf);
                  update_wordID(sw, epi, indexf);
             }

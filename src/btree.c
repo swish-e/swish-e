@@ -224,6 +224,7 @@ BTREE_Page *tmp,*next;
                 efree(tmp);
                 tmp = next;
             }
+            b->cache[i] = NULL;
         }
     }
     return 0;

@@ -41,6 +41,7 @@ void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
 #ifdef USE_BTREE
 void    update_wordID(SWISH *, ENTRY *, IndexFILE *);
+void    delete_worddata(SWISH *, long, IndexFILE *);
 #endif
 void    build_worddata(SWISH *, ENTRY *, IndexFILE *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
@@ -83,6 +84,7 @@ long    DB_GetWordID(SWISH *sw, void *DB);
 int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB);
 #ifdef USE_BTREE
 int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB);
+int     DB_DeleteWordData(SWISH *sw,long wordID, void *DB);
 #endif
 int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB);
 long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int lendata, void *DB);
@@ -152,6 +154,7 @@ struct MOD_DB
     int    (*DB_WriteWord) (char *word, long wordID, void *DB);
 #ifdef USE_BTREE
     int    (*DB_UpdateWordID)(char *word, long new_wordID, void *DB);
+    int    (*DB_DeleteWordData)(long wordID, void *DB);
 #endif
     int    (*DB_WriteWordHash) (char *word, long wordID, void *DB);
     long   (*DB_WriteWordData) (long wordID, unsigned char *worddata, int lendata, void *DB);
