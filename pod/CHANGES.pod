@@ -318,6 +318,10 @@ multiple names to the same MetaName.
 
 Creates aliases for a PropertyName.
 
+=item * New directive: PropertyNamesMaxLength
+
+Sets the max length of a text property.
+
 =item * New directive: HTMLLinksMetaName
 
 Defines a metaname to use for indexing href links in HTML documents.
