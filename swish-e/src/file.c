@@ -46,7 +46,12 @@ $Id$
 **
 */
 
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include "swish.h"
 #include "mem.h"
 #include "string.h"
@@ -469,7 +474,7 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
 
     if ( remove_file_name )
     {
-        if ( unlink( file_name ) == -1 )
+        if ( remove( file_name ) == -1 )
             progerrno("Couldn't unlink temporary file '%s' :", file_name);
 
         efree( file_name );            
