@@ -1100,11 +1100,6 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                     (RESULT *) addtoresultlist(rp, filenum,
                                                getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
                                                        indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
-                if(!s[0])       /* End of chunk mark */
-                {
-                    filenum = 0;  /* reset filenum */
-                    s++;
-                }
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
