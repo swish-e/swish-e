@@ -335,7 +335,16 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 *
 ***************************************************************************/
 
-static int binary_search(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, int numelements, propEntry *key, struct metaEntry *meta_entry, int *result)
+static int binary_search(
+    SWISH *sw,                      // needed to lookup a file entry
+    IndexFILE *indexf,              // 
+    LOOKUP_TABLE *sort_array,       // table to search through
+    int numelements,                // size of table
+    propEntry *key,                 // property to compare against
+    struct metaEntry *meta_entry,   // associated meta entry (for metaType)
+    int *result,                    // result is stored here
+    int direction,                  // looking up (positive) looking down (negative)
+    int *exact_match)               // last exact match found
 {
     int low = 0;
     int high = numelements - 1;
@@ -344,6 +353,7 @@ static int binary_search(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array,
     int cmp;
     unsigned int half;
 
+    *exact_match = -1;
 
     while ( low <= high )
     {
@@ -354,8 +364,8 @@ static int binary_search(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array,
 
             if ( (cmp = test_prop( sw, indexf, meta_entry, key, &sort_array[mid] )) == 0 )
             {
-                *result = mid;  // exact match
-                return 1;
+                *exact_match = mid;  // exact match
+                cmp = direction;     // but still look for the lowest/highest exact match.
             }
 
             if ( cmp < 0 )
@@ -425,6 +435,7 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     int low, high, j;
     int foundLo, foundHi;
     int some_selected = 0;
+    int exact_match;
     
 
     if ( !meta_entry->loPropRange )
@@ -434,11 +445,10 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
     else
     {
-        foundLo = binary_search(sw, indexf, sort_array, num, meta_entry->loPropRange, meta_entry, &low);
+        foundLo = binary_search(sw, indexf, sort_array, num, meta_entry->loPropRange, meta_entry, &low, -1, &exact_match);
 
-        if ( foundLo ) // exact match
-            while ( low > 0 && (test_prop( sw, indexf, meta_entry, meta_entry->loPropRange, &sort_array[low-1] ) == 0))
-                low--;
+        if ( !foundLo && exact_match >= 0 )
+            low = exact_match;
     }
 
 
@@ -450,10 +460,10 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
     else
     {
-        foundHi = binary_search(sw, indexf, sort_array, num, meta_entry->hiPropRange, meta_entry, &high);
-        if ( foundHi )
-            while ( high < num-1 && (test_prop( sw, indexf, meta_entry, meta_entry->hiPropRange, &sort_array[high+1] ) == 0))
-                high++;
+        foundHi = binary_search(sw, indexf, sort_array, num, meta_entry->hiPropRange, meta_entry, &high, +1, &exact_match);
+
+        if ( !foundHi && exact_match >= 0 )
+            high = exact_match;
     }
 
 #ifdef DEBUGLIMIT

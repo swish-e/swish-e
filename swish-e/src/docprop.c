@@ -230,6 +230,14 @@ char *getResultPropAsString(RESULT *result, int ID)
         return estrdup( result->indexf->line );
 
 
+    if ( ID == AUTOPROP_ID__FILENUM )
+    {
+        s=emalloc(14);
+        sprintf(s,"%.013lu", (unsigned long)result->filenum );
+        return s;
+    }
+
+
     /* "Real" properties */
     {
         propEntry *prop;
@@ -292,6 +300,14 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
     {
         pv->datatype = STRING;
         pv->value.v_str = r->indexf->line;
+        return pv;
+    }
+
+
+    if ( ID == AUTOPROP_ID__FILENUM )
+    {
+        pv->datatype = INTEGER;
+        pv->value.v_int = r->filenum;
         return pv;
     }
 
@@ -953,6 +969,7 @@ int isAutoProperty (char *propname)
 	{ AUTOPROPERTY_LASTMODIFIED,	AUTOPROP_ID__LASTMODIFIED },
 	{ AUTOPROPERTY_INDEXFILE,	AUTOPROP_ID__INDEXFILE },
 	{ AUTOPROPERTY_STARTPOS,	AUTOPROP_ID__STARTPOS },
+	{ AUTOPROPERTY_FILENUM,		AUTOPROP_ID__FILENUM },
 
         { NULL,				0 }
   };

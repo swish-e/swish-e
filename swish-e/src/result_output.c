@@ -268,10 +268,13 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
             /* -- Property - Control: read Property Tag  <name> */
             /* -- Save User PropertyNames for result handling   */
             fmt = parsePropertyResultControl(fmt, &propname, &subfmt);
+
+            /**** Not sure what this is for
             if (!isAutoProperty(propname))
             {
                 addSearchResultDisplayProperty(sw, propname);
             }
+            ****/
             efree(subfmt);
             efree(propname);
             break;
