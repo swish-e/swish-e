@@ -103,7 +103,7 @@ The following Perl modules may be required.  Check your current Perl
 installation as many may already be installed.
 
     LWP
-    URL
+    URI
     HTML::Parser
     HTML::Tagset
     MIME::Types (optional)
