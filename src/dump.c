@@ -57,6 +57,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     unsigned char   *worddata, *s;
     int     sz_worddata;
     long    wordID;
+
+
     
     indexf->DB = DB_Open(sw, indexf->line);
 
@@ -84,6 +86,19 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     fieldnum = 0;
 
 
+    /* Do metanames first as that will be helpful for decoding next */
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
+    {
+        printf("\n\n-----> METANAMES <-----\n");
+        for(i = 0; i < indexf->header.metaCounter; i++)
+        {
+            printf("%s id:%d type:%d\n",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
+        }
+        printf("\n");
+    }
+    
+
+
     if (DEBUG_MASK & DEBUG_INDEX_WORDS_ONLY)
     {
         DB_InitReadWords(sw, indexf->DB);
@@ -104,10 +119,27 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
             }
         }
+        DB_EndReadWords(sw, indexf->DB);
     }
-    else if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL)  )
+
+
+    else if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL | DEBUG_INDEX_WORDS_META)  )
     {
+        int     *meta_used;
+        int     end_meta = 0;
+
         printf("\n-----> WORD INFO <-----\n");
+
+        for(i = 0; i < indexf->header.metaCounter; i++)
+            if ( indexf->header.metaEntryArray[i]->metaID > end_meta )
+                end_meta = indexf->header.metaEntryArray[i]->metaID;
+
+        meta_used = emalloc( sizeof(int) * ( end_meta + 1) );  
+    
+        /* _META only reports which tags the words are found in */
+        for(i = 0; i <= end_meta; i++)
+            meta_used[i] = 0;
+
 
         DB_InitReadWords(sw, indexf->DB);
 
@@ -118,7 +150,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
             while(wordID)
             {
-                printf("\n%s:",resultword);
+                printf("\n%s",resultword);
+
 
                 /* Read Word's data */
                 DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
@@ -154,6 +187,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                         printf(" Freq:%d", frequency);
                         printf(" Pos:");
                     }
+                    else if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
+                        meta_used[ metaname ]++;
                     else
                     {
                         printf(" [%d", metaname);
@@ -161,6 +196,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                         printf(" %x", structure);
                         printf(" %d (", frequency);
                     }
+                    
 
                     for (i = 0; i < frequency; i++)
                     {
@@ -174,7 +210,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                             else
                                 printf("%d", x);
                         }
-                        else
+                        else if ( DEBUG_MASK & DEBUG_INDEX_WORDS)
 						{
 							if (i)
 								printf(" %d", x);
@@ -182,7 +218,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 								printf("%d", x);
 						}
                     }
-                    if ( !(DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL)))
+
+                    if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
 						printf(")]");
 
 
@@ -202,7 +239,20 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     else
                         x = uncompress2(&s);
                 }
-                printf("\n");
+
+                if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
+                {
+                    for(i = 0; i <= end_meta; i++)
+                    {
+                        if ( meta_used[i] )
+                            printf( "\t%d", i );
+                        meta_used[i] = 0;
+                    }
+                }
+                
+
+                if ( !( DEBUG_MASK & DEBUG_INDEX_WORDS_META ))
+                    printf("\n");
 
                 efree(worddata);
                 efree(resultword);
@@ -210,6 +260,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             }
         }
         DB_EndReadWords(sw, indexf->DB);
+
+        efree( meta_used );
     }
 
 
@@ -252,15 +304,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
         fflush(stdout);
     }
 
-    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
-    {
-        printf("\n\n-----> METANAMES <-----\n");
-        for(i = 0; i < indexf->header.metaCounter; i++)
-        {
-            printf("%s id:%d type:%d\n",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
-        }
-        printf("\n");
-    }
 
     DB_Close(sw, indexf->DB);
 
