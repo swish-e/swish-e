@@ -283,7 +283,6 @@ char *regex_replace( char *str, regex_list *regex, int offset )
     int     last_offset = 0;
     
     
-
     /* Run regex - return original string if no match (might be nice to print error msg? */
     if ( regexec(&regex->re, str + offset, (size_t) MAXPAR, pmatch, 0) )
         return str;
@@ -380,6 +379,7 @@ char *regex_replace( char *str, regex_list *regex, int offset )
     
 
     efree( str );
+    
 
     if ( regex->global && last_offset < strlen( newstr ) )
         newstr = regex_replace( newstr, regex, last_offset );

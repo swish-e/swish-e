@@ -125,7 +125,11 @@ L<EndCharacter|/"item_EndCharacters"> *string of characters*
 
 =item *
 
-L<EquivalentServer|"/item_EquivalentServer"> *server alias*
+L<EquivalentServer|/"item_EquivalentServer"> *server alias*
+
+=item *
+
+L<ExtractPath|/"item_ExtractPath"> *metaname* [replace|remove|prepend|append|regex]
 
 =item *
 
@@ -754,6 +758,48 @@ HTML meta names and XML elements.  Using this is the same as specifying all the 
 B<MetaNames> dirictive.
 
 =back
+
+=item ExtractPath *metaname* [replace|remove|prepend|append|regex]
+
+This directive can be used to index extracted parts of a document's path.
+A common use would to to limit searches to specific areas of your file tree.
+
+C<*metaname*> must have been previously defined using the C<MetaNames> directive.
+The extracted string will be indexed under the specified meta name.
+
+See C<ReplaceRules> for a description of the various pattern replacement methods.
+
+For example, say your file system (or web tree) was organized into departments:
+
+    /web/sales/foo...
+    /web/parts/foo...
+    /web/accounting/foo...
+
+And you wanted a way to limit searches to just documents under "sales".  To do this
+you first create a C<MetaName> for indexing, and the extract out the department name:
+
+    MetaNames department
+    ExtractPath department regex !^/web/([^/]+)/.*$!$1!
+
+Which says, extract out the department name (as substring $1) and index it as
+meta name C<department>.  Then to limit a search to the sales department:
+
+    swish-e -w foo AND department=sales
+
+Note that the C<regex> method uses a substitution pattern,
+so to index only a sub-string match the I<entire>
+document path in the regular expression, as shown above.
+
+You may use more than one C<ExtractPath> direcive.  More than one directive of the
+I<same> meta name will operate successively (in order listed in the configuration file)
+on the path.
+
+The document path operated on is the real path swish used to access the document.  That is,
+the C<ReplaceRules> directive has no effect on the path used with C<ExtractPath>.
+
+The full path is used for each meta name if more than one C<ExtractPath> directive is used.
+That is, changes to the path used in C<ExtractPath foo> do not effect the path used
+by C<ExtractPath bar>.
 
 =item PropertyNames *list of meta names*
 

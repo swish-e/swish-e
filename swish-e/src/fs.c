@@ -88,6 +88,8 @@ void freeModule_FS (SWISH *sw)
  -- Config Directives
  -- Configuration directives for this Module
  -- return: 0/1 = none/config applied
+ Aug 1, 2001 -- these probably should be pre-compiled regular expressions,
+                and their memory should be freed on exit.  moseley
 */
 
 int configModule_FS (SWISH *sw, StringList *sl)

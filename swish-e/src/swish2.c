@@ -45,6 +45,7 @@
 #include "extprog.h"
 #include "metanames.h"
 #include "proplimit.h"
+#include "parse_conffile.h"
 
 
 /* Moved here so it's in the library */
@@ -81,6 +82,7 @@ SWISH *SwishNew()
     sw->dirlist = NULL;
     sw->indexlist = NULL;
     sw->replaceRegexps = NULL;
+    sw->pathExtractList = NULL;
     sw->lasterror = RC_OK;
     sw->verbose = VERBOSE;
     sw->indexComments = 0;		/* change default 5/01 wsm */
@@ -166,6 +168,15 @@ void SwishClose(SWISH *sw)
 
         /* Free MetaNames and close files */
         tmpindexlist=sw->indexlist;
+
+        /* Free ReplaceRules regular expressions */
+        free_regex_list( &sw->replaceRegexps );
+
+        /* Free ExtractPath list */
+        free_Extracted_Path( sw );
+
+        /* FileRules?? */
+        
 
         while(tmpindexlist)
         {

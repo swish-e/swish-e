@@ -158,6 +158,11 @@ retrieved.
 To do: removed the C<next> pointer, and allow user-defined character to place between
 properties.
 
+=item * regex type added to ReplaceRules
+
+A more general purpose pattern replacement syntax.
+
+
 =item * New XML Parser
 
 Swish now uses James Clark's expat XML parser library.
@@ -257,6 +262,11 @@ multiple names to the same MetaName.
 =item * New directive: PropertyNameAlias
 
 Creates aliases for a PropertyName.
+
+=item * New directive: ExtractPath
+
+Allows you to use a regular expression to extract out part of the path of each file
+and index it with a meta name.  This allow limit searches to parts of your file tree.
 
 =back
 

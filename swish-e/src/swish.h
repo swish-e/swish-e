@@ -572,6 +572,12 @@ typedef struct regex_list
     int         global;         /* /g flag to repeat sub */
 } regex_list;
 
+typedef struct path_extract_list
+{
+    struct path_extract_list    *next;
+    struct metaEntry            *meta_entry;
+    regex_list                  *regex;
+} path_extract_list;
 
 
 
@@ -659,6 +665,11 @@ typedef struct
 
     /* structure for handling replace config data while searching */
     regex_list     *replaceRegexps;
+
+
+    /* It's common to want to limit searches to areas of a file or web space */
+    /* This allow extraction of a substring out of a file path, and indexed as a metaname */
+    path_extract_list   *pathExtractList;
 
     
 
