@@ -4,6 +4,7 @@ SUBDIRS = expat replace
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
 swish_e_LDADD = libswishindex.la libswish-e.la
+swish_e_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
 
 EXTRA_PROGRAMS = libtest
 libtest_SOURCES = libtest.c 
@@ -61,7 +62,7 @@ EXTRA_libswish_e_la_SOURCES =  \
 noinst_LTLIBRARIES = libswishindex.la
 libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS)
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB)
-libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"
+libswishindex_la_CPPFLAGS = $(LIBXML2_CFLAGS) -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\"
 
 ## in case these change
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)

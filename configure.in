@@ -88,7 +88,7 @@ AC_FUNC_ALLOCA
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_FUNC_FORK
-AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat)
+AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat setenv access)
 AC_CHECK_LIB(m,log)
 
 AC_REPLACE_FUNCS(vsnprintf mkstemp)
@@ -277,13 +277,10 @@ LDFLAGS=${_ldflags}
 dnl Set a better default for libexecdir -- Thanks to David Norris!
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
 if test "x$libexecdiropt" == "x"; then
-        export libexecdir='${exec_prefix}/lib/${PACKAGE}'
+        libexecdir='${exec_prefix}/lib/${PACKAGE}'
 fi
 
-export libexecdir=/foo
 
-
-
-AC_CONFIG_FILES(Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile)
+AC_CONFIG_FILES(Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile)
 AC_OUTPUT
 

@@ -127,6 +127,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     normalize_path( cmd );  /* for stat calls */
 
 
+#ifndef NO_PROG_CHECK
     /* this should probably be in file.c so filters.c can check, too */
     /* note this won't catch errors in a shebang line, of course */
 
@@ -136,12 +137,14 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     if ( stbuf.st_mode & S_IFDIR)
         progerr("External program '%s' is a directory.", cmd);
 
-#ifndef _WIN32
+#ifdef HAVE_ACCESS
 
     if ( access( cmd, R_OK|X_OK ) )
         progerrno("Cannot execute '%s': ", cmd);
 
 #endif
+
+#endif /* NO_PROG_CHECK */
 
 #ifdef _WIN32
 
@@ -159,7 +162,6 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
         strcat(cmd, progparameterslist->line);
         progparameterslist = progparameterslist->next;
     }
-
 
     fp = popen(cmd, F_READ_TEXT);
 

@@ -164,7 +164,7 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
 
 static SWISH  *swish_new();
 static void    swish_close(SWISH * sw);
-
+static void set_path( void );
 
 /************* TOC ***************************************/
 
@@ -181,13 +181,11 @@ int     main(int argc, char **argv)
     sw = swish_new();            /* Get swish handle */
 
 
-
     /* By default we are set up to use the first data source in the list */
     /* I don't like this.   modules.c would fix this */
     IndexingDataSource = data_sources[0];
 
     
-
 
     params = new_swish_params(sw);
     get_command_line_params(sw, argv, params );
@@ -205,6 +203,7 @@ int     main(int argc, char **argv)
 
         case MODE_INDEX:
         case MODE_UPDATE:
+            set_path();
             cmd_index( sw, params );
             break;
 
@@ -1718,4 +1717,24 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
 }
 
 
+static void set_path( void )
+{
+#if defined(HAVE_SETENV) && defined(PATH_SEPARATOR) && defined(libexecdir)
 
+    char pathbuf[1000];
+    char *path = getenv("PATH");
+
+    if ( !path )
+    {
+        setenv("PATH", libexecdir, 1 );
+        return;
+    }
+
+    if ( (strlen( path ) + strlen( libexecdir ) + strlen( PATH_SEPARATOR ) + 1 ) > 1000 )
+        return;
+
+    sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, libexecdir );
+    setenv( "PATH", pathbuf, 1 );
+
+#endif
+}

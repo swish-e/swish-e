@@ -411,12 +411,15 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
     if (  *plastretrieval && (time(0) - *plastretrieval) < http->delay)
     {
         int     num_sec = http->delay - (time(0) - *plastretrieval);
-        if ( sw->verbose > 2 )
+        if ( sw->verbose >= 3 )
             printf("sleeping %d seconds before fetching %s\n", num_sec, url);
         sleep(num_sec);
     }
 
     *plastretrieval = time(0);
+
+    if ( sw->verbose >= 3 )
+        printf("Now fetching [%s]...", url );
 
     
 #ifndef HAVE_WORKING_FORK
@@ -432,8 +435,6 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
         efree( command );
         efree( spider_prog );
 
-        printf("Returned %d\n", retval );
-        
         if ( retval )
             return 500;
     }
@@ -485,6 +486,9 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
 
         fclose(fp);
     }
+
+    if ( sw->verbose >= 3 ) 
+        printf("Status: %d. %s\n", code, contenttype_or_redirect );
 
     return code;
 }
