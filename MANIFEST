@@ -48,9 +48,7 @@ example/swish.cgi
 example/swish.tmpl
 filter-bin/README
 filter-bin/_binfilter.sh
-filter-bin/_doc2text.sh
 filter-bin/_pdf2html.pl
-filter-bin/_pdf2text.sh
 html/CHANGES.html
 html/INSTALL.html
 html/README.html
