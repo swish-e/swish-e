@@ -149,6 +149,7 @@ typedef struct {
     int                 structure[STRUCTURE_END+1];
     int                 parsing_html;
     struct metaEntry   *titleProp;
+    struct metaEntry   *titleMeta;
     int                 flush_word;         // flag to flush buffer next time there's a white space.
     xmlSAXHandlerPtr    SAXHandler;         // for aborting, I guess.
     xmlParserCtxtPtr    ctxt;
@@ -241,6 +242,7 @@ int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 
     parse_data.parsing_html = 1;
     parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
+    parse_data.titleMeta    = getMetaNameByName( parse_data.header, AUTOPROPERTY_TITLE );
     
     /* Now parse the HTML file */
     return parse_chunks( &parse_data );
@@ -1061,6 +1063,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             /* Check for NoContents - abort since all we need is the title text */
             if ( parse_data->fprop->index_no_content )
                 abort_parsing( parse_data, 1 );
+
+
         }
         else
             /* In start tag, allow capture of text (NoContents sets ignore_flag at start) */
@@ -1075,6 +1079,12 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         /* If title is a property, turn on the property flag */
         if ( parse_data->titleProp )
             parse_data->titleProp->in_tag = start ? 1 : 0;
+
+
+        /* If title is a metaname, turn on the indexing flag */
+        if ( parse_data->titleMeta )
+            parse_data->titleMeta->in_tag = start ? 1 : 0;
+
 
 
         parse_data->word_pos++;
