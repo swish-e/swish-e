@@ -20,32 +20,10 @@
 ** G. Hill 3/7/97
 **
 */
+#ifndef __HasSeenModule_Merge
+#define __HasSeenModule_Merge  1
 
-struct mergeindexfileinfo {
-	int filenum;
-	char *path;
-	int start;
-	int size;
-	struct mergeindexfileinfo *next;
-};
-
-struct mapentry {
-	int oldnum;
-	int newnum;
-	struct mapentry *next;
-};
-
-struct markentry {
-	int num;
-	struct markentry *next;
-};
-
-struct markentryMerge {
-	int num;
-	int metaName;
-	struct markentryMerge *next;
-};	
-
+/* used by docprop.c, but maybe should be in merge.c */
 struct metaMergeEntry {
 	struct metaMergeEntry* next;
 	char* metaName;
@@ -54,28 +32,16 @@ struct metaMergeEntry {
 	int metaType;
 };
 
-struct mergeindexfileinfo *indexfilehashlist[BIGHASHSIZE];
-struct mapentry *mapentrylist[BIGHASHSIZE];
-struct markentry *markentrylist[BIGHASHSIZE];
-struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
 
-
+/* called by swish.c */
 void readmerge (char *, char *, char *, int);
-void addfilenums (ENTRY *, int);
-ENTRY *readindexline (SWISH *, IndexFILE *, struct metaMergeEntry *, int, int *);
-// void addindexfilelist (SWISH *, int , char *, time_t, char *, char *, int, int, struct docProperties *, int *, int, struct metaMergeEntry *);
-// struct mergeindexfileinfo *lookupindexfilenum (int ,struct docPropertyEntry**);
-ENTRY *mergeindexentries (ENTRY *,ENTRY *, int);
-int lookupindexfilepath (char *, int, int);
-void remap (int, int);
-int getmap (int);
+
+/* called by search.c */
 void marknum (int);
 int ismarked (int);
 void initmarkentrylist (void);
-void initindexfilehashlist (void);
-void initmapentrylist (void);
-struct metaMergeEntry *readMergeMeta (SWISH *,int, struct metaEntry **); 
-struct metaEntry **createMetaMerge (struct metaMergeEntry *, struct metaMergeEntry*, int *);
-struct metaEntry **addMetaMergeArray (struct metaEntry **, struct metaMergeEntry*, int*);
 
-void addentryMerge (SWISH *, ENTRY *);
+
+#endif
+
+
