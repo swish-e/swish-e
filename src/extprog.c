@@ -160,7 +160,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 /* This may not be safe if running as a threaded app, and I'm not clear on how portable this is */
 /* This also uses read_stream to read in the file -- so the entire file is read into memory instead of chunked to the temp file */
 
-static void    save_to_temp_file(FileProp *fprop)
+static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
 {
     FILE   *out;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
@@ -172,7 +172,7 @@ static void    save_to_temp_file(FileProp *fprop)
 
 
     /* slirp entire file into memory -- yuck */
-    rd_buffer = read_stream(fprop->real_path, fprop->fp, fprop->fsize, 0);
+    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, fprop->fsize, 0);
         
 
     out = fopen( fprop->work_path, "w" );  /* is "w" portable? */        
@@ -191,7 +191,7 @@ static void    save_to_temp_file(FileProp *fprop)
     fprop->fp = (FILE *) NULL;
 
 
-    efree(rd_buffer);
+//***JMRUIZ    efree(rd_buffer);
     fclose( out );
    
 }
@@ -265,7 +265,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
                 if (fprop->hasfilter)
                 {
-                    save_to_temp_file( fprop );
+                    save_to_temp_file( sw , fprop );
                     has_filter++; /* save locally, in case it gets reset somewhere else */
                 }
 

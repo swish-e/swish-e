@@ -159,12 +159,12 @@ void    indexpath(SWISH * sw, char *path)
 
 /* maybe some day this could be chunked reading? */
 
-char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
+char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_size)
 {
     long    c,
             offset;
     long    bufferlen;
-    unsigned char *buffer;
+    unsigned char *buffer, *tmp = NULL;
     size_t  bytes_read;
 
 
@@ -177,7 +177,7 @@ char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
             filelen = max_size;
         }
 
-        buffer = emalloc(filelen + 1);
+        buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, filelen + 1);
         *buffer = '\0';
         bytes_read = fread(buffer, 1, filelen, fp);
 
@@ -191,7 +191,7 @@ char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
     else
     {                           /* if we are reading from a popen call, filelen is 0 */
 
-        buffer = emalloc((bufferlen = RD_BUFFER_SIZE) + 1);
+        buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone,(bufferlen = RD_BUFFER_SIZE) + 1);
         *buffer = '\0';
         for (offset = 0; (c = fread(buffer + offset, 1, RD_BUFFER_SIZE, fp)) == RD_BUFFER_SIZE; offset += RD_BUFFER_SIZE)
         {
@@ -200,8 +200,10 @@ char   *read_stream(char *name, FILE * fp, long filelen, long max_size)
             {
                 break;
             }
+            tmp = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, bufferlen + RD_BUFFER_SIZE + 1);
+            memcpy(tmp,buffer,bufferlen+1);
+            buffer = tmp;			
             bufferlen += RD_BUFFER_SIZE;
-            buffer = erealloc(buffer, bufferlen + 1);
         }
         filelen = offset + c;
 

@@ -36,7 +36,7 @@ void CreateEmptyFile(char *);
 
 void indexpath(SWISH *, char *);
 
-char *read_stream(char *name, FILE *fp, long len, long truncate_size);
+char *read_stream(SWISH *, char *name, FILE *fp, long len, long truncate_size);
 
 /* Get/eval properties for file  (2000-11 rasc) */
 FileProp *file_properties (char *real_path, char *work_path, SWISH *sw);

@@ -210,7 +210,7 @@ void initModule_Index (SWISH  *sw)
     idx->chunk_size = INDEX_DEFAULT_CHUNK_SIZE;
 
     /* memory zones for common structures */
-    idx->uncompressedChunkLocZone = Mem_ZoneCreate("Current unCompressed Chunk Locators", 0, 0);
+    idx->perDocTmpZone = Mem_ZoneCreate("Per Doc Temporal Zone", 0, 0);
     idx->currentChunkLocZone = Mem_ZoneCreate("Current Chunk Locators", 0, 0);
     idx->totalLocZone = Mem_ZoneCreate("All Locators", 0, 0);
     idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
@@ -277,8 +277,8 @@ void freeModule_Index (SWISH *sw)
       Mem_ZoneFree(&idx->totalLocZone);
   if (idx->currentChunkLocZone)
       Mem_ZoneFree(&idx->currentChunkLocZone);
-  if (idx->uncompressedChunkLocZone)
-      Mem_ZoneFree(&idx->currentChunkLocZone);
+  if (idx->perDocTmpZone)
+      Mem_ZoneFree(&idx->perDocTmpZone);
 
        /* free module data */
   efree (idx);
@@ -360,22 +360,16 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     struct MOD_Index   *idx = sw->Index;
     char               *title = "";
     int                 n;
-    int                 free_title = 0;
 
 
     /* Look for title if HTML document */
     
     if (fprop->doctype == HTML)
     {
-        free_title++;
-
-        title = parseHTMLtitle( buffer );
+        title = parseHTMLtitle( sw , buffer );
 
         if (!isoktitle(sw, title))
-        {
-            efree(title);
             return -2;  /* skipped because of title */
-        }
     }
     
     idx->filenum++;
@@ -385,10 +379,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
     n = countwordstr(sw, *title == '\0' ? fprop->real_path : title , idx->filenum);
     addtofwordtotals(indexf, idx->filenum, n);
-
-    if ( free_title ) 
-        efree(title);
-        
+ 
     return n;
 }
 
@@ -428,8 +419,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         /* external program must seek past this data (fseek fails) */
         if (fprop->fp)
         {
-            rd_buffer = read_stream(fprop->real_path, fprop->fp, fprop->fsize, 0);
-            efree(rd_buffer);
+            rd_buffer = read_stream(sw,fprop->real_path, fprop->fp, fprop->fsize, 0);
+//***JMRUIZ            efree(rd_buffer);
         }
 
         return;
@@ -472,7 +463,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
     /* -- Read  all data  (len = 0 if filtered...) */
-    rd_buffer = read_stream(fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
+    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
     /* just for fun */
     sw->indexlist->total_bytes += fprop->fsize;
@@ -536,7 +527,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         }
     }
 
-    efree(rd_buffer);
+//***JMRUIZ    efree(rd_buffer);
 
     if (sw->verbose >= 3)
     {
@@ -579,15 +570,14 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     /* walk the hash list, and compress entries */
     for (i = 0; i < SEARCHHASHSIZE; i++)
+    {
         if (idx->hashentriesdirty[i])
         {
             idx->hashentriesdirty[i] = 0;
             for (ep = idx->hashentries[i]; ep; ep = ep->next)
                 CompressCurrentLocEntry(sw, indexf, ep);
         }
-
-     /* Make zone available for reuse */
-     Mem_ZoneReset(idx->uncompressedChunkLocZone);
+	}
 
     /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
     if(idx->filenum && !(idx->filenum % idx->chunk_size))
@@ -599,6 +589,10 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         Mem_ZoneReset(idx->currentChunkLocZone);
 
     }
+
+     /* Make zone available for reuse */
+     Mem_ZoneReset(idx->perDocTmpZone);
+
 
     return;
 }
@@ -663,7 +657,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         idx->hashentries[hashval] = en;
 
         /* create a location record */
-        tp = (LOCATION *) Mem_ZoneAlloc(idx->uncompressedChunkLocZone,sizeof(LOCATION));
+        tp = (LOCATION *) Mem_ZoneAlloc(idx->perDocTmpZone,sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
@@ -703,7 +697,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     if(!found)
     {
         /* create the new LOCATION entry */
-        tp = (LOCATION *) Mem_ZoneAlloc(idx->uncompressedChunkLocZone,sizeof(LOCATION));
+        tp = (LOCATION *) Mem_ZoneAlloc(idx->perDocTmpZone,sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;            /* count of times this word in this file:metaID */
         tp->structure = structure;
@@ -727,10 +721,11 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     /* Otherwise, found matching LOCATION record (matches filenum and metaID) */
     /* Just add the position number onto the end by expanding the size of the LOCATION record */
-    /* 2001/08 jmruiz - Much better memory usage occurs if we use MemZones i*/
+
+    /* 2001/08 jmruiz - Much better memory usage occurs if we use MemZones */
     /* MemZone will be reset when the doc is completely proccesed */
 
-    newtp = Mem_ZoneAlloc(idx->uncompressedChunkLocZone, sizeof(LOCATION) + tp->frequency * sizeof(int));
+    newtp = Mem_ZoneAlloc(idx->perDocTmpZone, sizeof(LOCATION) + tp->frequency * sizeof(int));
     memcpy(newtp,tp,sizeof(LOCATION) + (tp->frequency - 1) * sizeof(int));
 
     if(newtp != tp)
@@ -1535,7 +1530,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     }
 
     /* This is not longer needed. So free it as soon as possible */
-    Mem_ZoneFree(&sw->Index->uncompressedChunkLocZone);
+    Mem_ZoneFree(&sw->Index->perDocTmpZone);
 
     for (i = 0; i < totalwords; i++)
         coalesce_word_locations(sw, indexf, ep->elist[i]);
