@@ -24,25 +24,14 @@ unsigned char *compress3(int num, unsigned char *buffer);
 int uncompress1(FILE *fp);
 int uncompress2(unsigned char **buffer);
 
-/* Macros to make long integers portable */
-#define PACKLONG(num) \
-{ unsigned long _i=0L; unsigned char *_s; \
-if(num) { _s=(unsigned char *) &_i; _s[0]=((num >> 24) & 0xFF); _s[1]=((num >> 16) & 0xFF); _s[2]=((num >> 8) & 0xFF); _s[3]=(num & 0xFF); } \
-(num)=_i; \
-}
 
-/* Same macro - Packs long in buffer */
-#define PACKLONG2(num,buffer) (unsigned char)(buffer)[0]=((num >> 24) & 0xFF); (unsigned char)(buffer)[1]=((num >> 16) & 0xFF); (unsigned char)(buffer)[2]=((num >> 8) & 0xFF); (unsigned char)(buffer)[3]=(num & 0xFF)
+unsigned long PACKLONG(unsigned long num);
+void PACKLONG2(unsigned long num, unsigned char *buffer);
+
+unsigned long UNPACKLONG(unsigned long num);
+unsigned long UNPACKLONG2(unsigned char *buffer);
 
 
-#define UNPACKLONG(num) \
-{ unsigned long _i; unsigned char *_s; \
-_i=(num);_s=(unsigned char *) &_i; \
-(num)=(_s[0]<<24)+(_s[1]<<16)+(_s[2]<<8)+_s[3]; \
-}
-
-/* Same macro - UnPacks long from buffer */
-#define UNPACKLONG2(num,buffer) (num)=((unsigned char)(buffer)[0]<<24)+((unsigned char)(buffer)[1]<<16)+((unsigned char)(buffer)[2]<<8)+(unsigned char)(buffer)[3]
 
 unsigned char *compress_location(SWISH *,IndexFILE *, LOCATION *);
 LOCATION *uncompress_location(SWISH *,IndexFILE *,unsigned char *);

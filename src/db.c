@@ -84,8 +84,8 @@ int configModule_DB  (SWISH *sw, StringList *sl)
 
 /* Header routines */
 
-#define write_header_int(sw,id,num,DB) {long itmp = (num); PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(long), (DB));}
-#define write_header_int2(sw,id,num1,num2,DB) {long itmp[2]; itmp[0] = (num1); itmp[1] = (num2); PACKLONG(itmp[0]); PACKLONG(itmp[1]); DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB));}
+#define write_header_int(sw,id,num,DB) {unsigned long itmp = (num); itmp = PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(long), (DB));}
+#define write_header_int2(sw,id,num1,num2,DB) {unsigned long itmp[2]; itmp[0] = (num1); itmp[1] = (num2); itmp[0]=  PACKLONG(itmp[0]); itmp[1] = PACKLONG(itmp[1]); DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB));}
 
 
 void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int merged)
@@ -176,7 +176,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     int     i,
             index,
             curmetaID;
-    long    tmp,
+    unsigned long    tmp,
             curmetanamepos;
     int     metaID,
             filenum,
@@ -237,7 +237,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             tmp=0L;
             PACKLONG2(tmp,q);
 
-            q+=sizeof(long);
+            q+=sizeof(unsigned long);
         }
             /* Write filenum,structure and position information to index file */
         filenum = uncompress2(&p);
@@ -520,15 +520,15 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 
 // $$$ to be rewritten as function = smaller code (rasc)
 
-#define parse_int_from_buffer(num,s) UNPACKLONG2((num),(s))
-#define parse_int2_from_buffer(num1,num2,s) UNPACKLONG2((num1),(s));UNPACKLONG2((num2),(s+sizeof(long)))
+#define parse_int_from_buffer(num,s) (num) = UNPACKLONG2((s))
+#define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long)))
 
 
 void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 {
     int     id,
-            len,
-            tmp, tmp1, tmp2;
+            len;
+    unsigned long    tmp, tmp1, tmp2;
     unsigned char   *buffer;
 
     DB_InitReadHeader(sw, DB);

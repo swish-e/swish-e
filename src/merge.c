@@ -349,7 +349,7 @@ int j, x, tfrequency, filenum, structure,metaID, metaID2, frequency, *position, 
 LOCATION *loc;
 ENTRY *ip;
 struct metaMergeEntry* tmp=NULL;
-long nextposmetaname;
+unsigned long nextposmetaname;
 unsigned char word[2];
 char *resultword;
 long wordID;
@@ -392,7 +392,7 @@ int sz_buffer;
 
 	metaID = uncompress2(&s);
 	while(metaID) {
-		UNPACKLONG2(nextposmetaname,s);s += sizeof(long);
+		nextposmetaname = UNPACKLONG2(s);s += sizeof(long);
 		do {
 			filenum = uncompress2(&s);
 			index_structfreq = uncompress2(&s);

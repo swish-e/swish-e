@@ -370,7 +370,7 @@ docPropertyEntry *d;
 		s=emalloc(20);
 		i=*(unsigned long *)d->propValue;  /* read binary */
 									  /* as unsigned long */
-		UNPACKLONG(i);     /* Convert the portable number */
+		i = UNPACKLONG(i);     /* Convert the portable number */
 			/* Convert to ISO datetime */
 		strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
 	}
@@ -379,7 +379,7 @@ docPropertyEntry *d;
 		s=emalloc(14);
 		i=*(unsigned long *)d->propValue;  /* read binary */
 						  /* as unsigned long */
-		UNPACKLONG(i);     /* Convert the portable number */
+		i = UNPACKLONG(i);     /* Convert the portable number */
 				/* Convert to string */
 		sprintf(s,"%.013lu",i);
 	} else s=estrdup("");
@@ -454,7 +454,7 @@ docPropertyEntry *d;
 				s=emalloc(20);
 				i=*(unsigned long *)d->propValue;  /* read binary */
 											  /* as unsigned long */
-				UNPACKLONG(i);     /* Convert the portable number */
+				i = UNPACKLONG(i);     /* Convert the portable number */
 					/* Convert to ISO datetime */
 				strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
 			}
@@ -463,7 +463,7 @@ docPropertyEntry *d;
 				s=emalloc(14);
 				i=*(unsigned long *)d->propValue;  /* read binary */
 								  /* as unsigned long */
-				UNPACKLONG(i);     /* Convert the portable number */
+				i = UNPACKLONG(i);     /* Convert the portable number */
 						/* Convert to string */
 				sprintf(s,"%.013lu",i);
 			} else s=estrdup("");
@@ -482,18 +482,18 @@ docPropertyEntry *p;
 			fi->fi.title=bin2string(p->propValue,p->propLen);
 		else if(indexf->header.filedateProp->metaID==p->metaID) 
 		{
-			fi->fi.mtime=*(unsigned long *)p->propValue;
-			UNPACKLONG(fi->fi.mtime);
+			fi->fi.mtime = *(unsigned long *)p->propValue;
+			fi->fi.mtime = UNPACKLONG(fi->fi.mtime);
 		}
 		else if(indexf->header.startProp->metaID==p->metaID) 
 		{
-			fi->fi.start=*(unsigned long *)p->propValue;
-			UNPACKLONG(fi->fi.start);
+			fi->fi.start = *(unsigned long *)p->propValue;
+			fi->fi.start = UNPACKLONG(fi->fi.start);
 		}
 		else if(indexf->header.sizeProp->metaID==p->metaID) 
 		{
-			fi->fi.size=*(unsigned long *)p->propValue;
-			UNPACKLONG(fi->fi.size);
+			fi->fi.size = *(unsigned long *)p->propValue;
+			fi->fi.size = UNPACKLONG(fi->fi.size);
 		}
 		else if(indexf->header.summaryProp->metaID==p->metaID) 
 		{

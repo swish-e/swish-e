@@ -761,7 +761,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         if (is_meta_property(q))
         {
             tmp = mtime;
-            PACKLONG(tmp);      /* make it portable */
+            tmp = PACKLONG(tmp);      /* make it portable */
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
@@ -772,7 +772,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         if (is_meta_property(q))
         {
             tmp = size;
-            PACKLONG(tmp);      /* make it portable */
+            tmp = PACKLONG(tmp);      /* make it portable */
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
@@ -784,7 +784,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         if (is_meta_property(q))
         {
             tmp = start;
-            PACKLONG(tmp);      /* make it portable */
+            tmp = PACKLONG(tmp);      /* make it portable */
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
@@ -1716,9 +1716,9 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
 ** Jose Ruiz 04/00
 ** Store a portable long with just four bytes
 */
-void    printlong(FILE * fp, long num)
+void    printlong(FILE * fp, unsigned long num)
 {
-    PACKLONG(num);              /* Make the number portable */
+    num = PACKLONG(num);              /* Make the number portable */
     fwrite(&num, MAXLONGLEN, 1, fp);
 }
 
@@ -1726,12 +1726,12 @@ void    printlong(FILE * fp, long num)
 ** Jose Ruiz 04/00
 ** Read a portable long (just four bytes)
 */
-long    readlong(FILE * fp)
+unsigned long    readlong(FILE * fp)
 {
-    long    num;
+    unsigned long    num;
 
     fread(&num, MAXLONGLEN, 1, fp);
-    UNPACKLONG(num);            /* Make the number readable */
+    num = UNPACKLONG(num);            /* Make the number readable */
     return (num);
 }
 
