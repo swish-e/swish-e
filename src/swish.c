@@ -435,7 +435,6 @@ struct stat stat_buf;
 			
 			sw->indexlist = sw->indexlist->next;
 		}
-		exit(0);
 		
 	}
 	else if (index) 
@@ -562,11 +561,6 @@ struct stat stat_buf;
 		chmod(sw->indexlist->line, INDEXPERMS);
 #endif
 
-#ifdef DEBUGMEMORY
-        checkmem();
-#endif
-		SwishClose(sw);
-		exit(0);
 
 	}
 	else if (merge) 
@@ -631,9 +625,6 @@ struct stat stat_buf;
 #endif
 		if (isfile(tmpindex1)) remove(tmpindex1);
 		if (isfile(tmpindex2)) remove(tmpindex2);
-#ifdef DEBUGMEMORY
-        checkmem();
-#endif
 	
 	}
 	else if(keychar)
@@ -642,7 +633,7 @@ struct stat stat_buf;
 			sw->indexlist = (IndexFILE *)	addindexfile(sw->indexlist, INDEXFILE);
 		}
 		OutputKeyChar (sw, (int)(unsigned char)keychar);
-		SwishClose(sw);
+
 	}
 	else 
 	{
@@ -776,13 +767,24 @@ struct stat stat_buf;
 		if(lenmaxhitstr) efree(maxhitstr);
 		if(lenstructstr) efree(structstr);
 		if(lenbeginhitstr) efree(beginhitstr);
-		SwishClose(sw);
 	}
 
-#ifdef DEBUGMEMORY
+
+/* common exit for all functions */
+
+	SwishClose(sw);
+
+	if(index1) efree(index1);
+	if(index2) efree(index2);
+	if(index3) efree(index3);
+	if(index4) efree(index4);
+	if(tmpindex1) efree(tmpindex1);
+	if(tmpindex2) efree(tmpindex2);
+
 	checkmem();
-#endif	
+	
 	exit(0);
+
 	return 0;
 }
 

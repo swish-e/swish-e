@@ -31,3 +31,5 @@ void efree (void *ptr);
 void freeswline (struct swline *ptr);
 void freeindexfile (IndexFILE *ptr);
 void freeentry (ENTRY *ptr);
+
+void checkmem(void);
