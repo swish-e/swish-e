@@ -1,3 +1,20 @@
 These are example scripts that you can use the with "prog" document source
 feature of Swish-e.
 
+spider.pl
+	working example of a web spider
+
+SwishSpiderConfig.pl
+	example configuration file for the spider.pl program
+
+file.pl 
+	simple examle of a program that feeds documents to swish.
+
+pdf2xml.pm
+	perl module to convert pdf to xml documents for indexing
+
+DirTree.pl 
+	simple example of that reads a directory tree and indexes
+	a few files types.  Uses the pdf2xml module for pdf files.
+
+

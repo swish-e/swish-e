@@ -5,7 +5,7 @@ use strict;
 # thing as the default file system access method
 
 # This will index only one directory (the current directory)
-# perldoc File::Path to index a directory tree.
+# See the more advanced example DirTree.pl in the swish-e prog-bin directory.
 
 
 my $dir = '.';
