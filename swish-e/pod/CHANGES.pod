@@ -6,6 +6,11 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.2.2 - October 10, 2002
+
+Fixed bug where nulls were stripped when using FileFilter with -S prog.
+Catch by Greg Fenton. [moseley]
+
 =head2 Version 2.2.1 - September 26, 2002
 
 =over 4

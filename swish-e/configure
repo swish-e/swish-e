@@ -1226,7 +1226,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-VERSION=2.2.1
+VERSION=2.2.2
 
 
 PROJECT=swish-e
