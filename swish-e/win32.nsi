@@ -32,8 +32,8 @@ File COPYING
 
 ; SWISH-E Executable, static, and dynamic libraries
 File src\win32\*.exe
-File src\win32\*.lib
-File src\Win32\*.dll
+; File src\win32\*.lib
+; File src\Win32\*.dll
 
 ; Expat, LibXML2, and ZLib
 File ..\expat\bin\*.dll
