@@ -296,7 +296,17 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
             else if ( strcasecmp( "Stemming Applied", header_map->description ) == 0 )
             {
-                value.number = FUZZY_STEMMING == header->fuzzy_data.fuzzy_mode ? 1 : 0;
+                value.number = (FUZZY_STEMMING_EN == header->fuzzy_data.fuzzy_mode 
+#ifdef SNOWBALL
+                        || FUZZY_STEMMING_ES == header->fuzzy_data.fuzzy_mode ||
+                        FUZZY_STEMMING_FR == header->fuzzy_data.fuzzy_mode ||
+                        FUZZY_STEMMING_PT == header->fuzzy_data.fuzzy_mode ||
+                        FUZZY_STEMMING_IT == header->fuzzy_data.fuzzy_mode ||
+                        FUZZY_STEMMING_DE == header->fuzzy_data.fuzzy_mode ||
+                        FUZZY_STEMMING_NL == header->fuzzy_data.fuzzy_mode 
+#endif
+                               ) ? 1 : 0;
+
                 *data_type = SWISH_BOOL;
                 return value;
             }

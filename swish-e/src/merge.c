@@ -38,6 +38,8 @@
 #include "swish_qsort.h"
 #include "result_output.h"
 #include "parse_conffile.h"
+#include "stemmer.h"
+
 static void dup_header( SWISH *sw_input, SWISH *sw_output );
 static void check_header_match( IndexFILE *in_index, SWISH *sw_output );
 static void make_meta_map( IndexFILE *in_index, SWISH *sw_output);

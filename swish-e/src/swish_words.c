@@ -275,7 +275,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
                 swish_words = (struct swline *) addswline( swish_words, self->word );
                 break;
 
-            case FUZZY_STEMMING:
+            case FUZZY_STEMMING_EN:
 #ifdef SNOWBALL
             case FUZZY_STEMMING_ES:
             case FUZZY_STEMMING_FR:

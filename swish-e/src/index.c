@@ -2469,7 +2469,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     wordcount++;
                     break;
 
-                case FUZZY_STEMMING:
+                case FUZZY_STEMMING_EN:
 #ifdef SNOWBALL
                 case FUZZY_STEMMING_ES:
                 case FUZZY_STEMMING_FR:

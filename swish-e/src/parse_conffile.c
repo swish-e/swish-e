@@ -58,6 +58,7 @@ $Id$
 #include "result_sort.h"
 #include "db.h"
 #include "extprog.h"
+#include "stemmer.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
@@ -425,13 +426,21 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "UseStemming") == 0)
         {
 #ifdef SNOWBALL
+            char *stem_tmp;
             if (sl->n != 2)
                 progerr("%s: requires one value", w0);
 
-            set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming_es" );
+            /* Fix to make "UseStemming yes" -> "UseStemming en" */
+            if( strcasecmp(sl->word[1],"yes") == 0 )
+                strcpy(sl->word[1],"en");
+
+            stem_tmp = (char *) emalloc(strlen("Stemming_") + strlen(sl->word[1]) + 1);
+            sprintf(stem_tmp,"Stemming_%s",sl->word[1]);
+            set_fuzzy_mode( &indexf->header.fuzzy_data, stem_tmp );
+            efree(stem_tmp);
 #else
             if ( getYesNoOrAbort(sl, 1, 1) )
-                set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming" );
+                set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming_en" );
 #endif
                     
             continue;
@@ -455,10 +464,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
-                
-       
-
-        
 
         
         if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking") == 0)

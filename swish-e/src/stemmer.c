@@ -624,8 +624,8 @@ FUZZY_OPTS;
 static FUZZY_OPTS fuzzy_opts[] = {
 
     { FUZZY_NONE, "None", NULL, NULL, NULL },
-    { FUZZY_STEMMING, "Stemming", Stem, NULL, NULL },
-    { FUZZY_STEMMING, "Stem", Stem, NULL, NULL },
+    { FUZZY_STEMMING_EN, "Stemming_en", Stem, NULL, NULL },
+    { FUZZY_STEMMING_EN, "Stem", Stem, NULL, NULL },
     { FUZZY_SOUNDEX, "Soundex", NULL, NULL, NULL },
     { FUZZY_METAPHONE, "Metaphone", NULL, NULL, NULL },
     { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone", NULL, NULL, NULL }
@@ -704,20 +704,18 @@ char *fuzzy_mode_to_string( FuzzyIndexType mode )
 int     Stem_es(char **inword, int *lenword, struct SN_env *snowball)
 {
     int new_lenword;
- 
-    SN_set_current(snowball,*lenword,*inword); /* Set Word to Stem */
+
+    SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
     snowball->p[snowball->l] = '\0'; /* Put a trailing null to the stemmed word (just for printf) */
     spanish_stem(snowball);
 
-    printf("Spanish stems '%s' to '%s'\n",*inword,snowball->p);
-    
     if((*lenword) < snowball->l)
     {
         efree(*inword);
         *inword = emalloc(snowball->l + 1);
+        *lenword = snowball->l;
     }
     memcpy(*inword, snowball->p, snowball->l);
     (*inword)[snowball->l] = '\0';
-    *lenword = snowball->l;
 }
 #endif
