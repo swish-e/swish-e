@@ -20,9 +20,7 @@ Section "Required Components" SecProgram
     ; Local Helper Files
     SetOutPath "$INSTDIR\lib\swish-e"
     File ..\swishspider
-    ;File /r ..\..\filter-bin
-    ;File /r ..\..\prog-bin
-    ;File /r ..\..\filters
+    File ..\..\prog-bin\spider.pl.in
     
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
@@ -36,23 +34,23 @@ SectionEnd ; end of default section
 
 Section "Documentation" SecDocs
     SectionIn 1
-    SetOutPath "$INSTDIR"
+    SetOutPath "$INSTDIR\share\doc\swish-e\examples"
     RMDIR /r "$INSTDIR\html"
     File /r ..\..\html
     
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\Documentation\"
-    ;WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Docs.url" "InternetShortcut" "URL" "file://$INSTDIR\html\index.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Readme.url" "InternetShortcut" "URL" "file://$INSTDIR\html\README.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\CONFIG-Config_File_Directives.url" "InternetShortcut" "URL" "file://$INSTDIR\html\SWISH-CONFIG.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\RUN-Command_Line_Switches.url" "InternetShortcut" "URL" "file://$INSTDIR\html\SWISH-RUN.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\SEARCH-Searching_Instructions.url" "InternetShortcut" "URL" "file://$INSTDIR\html\SWISH-SEARCH.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\FAQ-Frequently_Asked_Questions.url" "InternetShortcut" "URL" "file://$INSTDIR\html\SWISH-FAQ.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\CGI-Web_Interfacing.url" "InternetShortcut" "URL" "file://$INSTDIR\html\swish.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Spidering_Remote_Websites.url" "InternetShortcut" "URL" "file://$INSTDIR\html\spider.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Filtering_Documents.url" "InternetShortcut" "URL" "file://$INSTDIR\html\Filter.html"
-    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Known_Bugs.url" "InternetShortcut" "URL" "file://$INSTDIR\html\SWISH-BUGS.html"
-    ;WriteINIStr "$SMPROGRAMS\SWISH-E\Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR\html\INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
+    ;WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Docs.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\index.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Readme.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\README.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\CONFIG-Config_File_Directives.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\SWISH-CONFIG.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\RUN-Command_Line_Switches.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\SWISH-RUN.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\SEARCH-Searching_Instructions.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\SWISH-SEARCH.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\FAQ-Frequently_Asked_Questions.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\SWISH-FAQ.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\CGI-Web_Interfacing.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\swish.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Spidering_Remote_Websites.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\spider.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Filtering_Documents.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\Filter.html"
+    WriteINIStr "$SMPROGRAMS\SWISH-E\Documentation\Known_Bugs.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\SWISH-BUGS.html"
+    ;WriteINIStr "$SMPROGRAMS\SWISH-E\Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR\share\doc\swish-e\html\INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
 SectionEnd ; end of section 'Documentation'
 
 Section "ActiveX Control" SecSwishCtl
@@ -65,10 +63,7 @@ Section "ActiveX Control" SecSwishCtl
     ; Local Files
     SetOutPath "$INSTDIR"
     ; JavaScript ActiveX Search Example
-;    RmDir /r example
     File /r ..\..\..\swishctl\example
-;    RmDir /r search
-;    Rename example search
     
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
@@ -118,27 +113,26 @@ SubSection "PERL Support" SubSecPerlSupport
         SetOutPath "$INSTDIR"
         File ..\..\filters\swish-filter-test.in"
         
-        SetOutPath "$INSTDIR\lib\swish-e"
-        ; Filter Scripts
-        File ..\..\filter-bin\swish_filter.pl.in
+        SetOutPath "$INSTDIR\share\doc\swish-e\examples\filter-bin"
+        ; Example Filter Scripts
         File ..\..\filter-bin\_binfilter.sh
         File ..\..\filter-bin\_pdf2html.pl
         
+	# Generic SWISH::Filter Filter
+	SetOutPath "$INSTDIR\lib\swish-e"
+	File ..\..\filter-bin\swish_filter.pl.in 
+
+	# SWISH::Filter API
         SetOutPath "$INSTDIR\lib\swish-e\perl"
         File /r ..\..\filters\SWISH
-        
-        ; CreateShortcut "$SMPROGRAMS\SWISH-E\Browse_Filters.lnk" "$INSTDIR\lib\swish-e"
     SectionEnd
     
-    Section /o "PERL -S prog Methods" SecPerlMethod
+    Section /o "PERL -S prog Examples" SecPerlMethod
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlMethods" "1"
-        SetOutPath "$INSTDIR\lib\swish-e"
-        ; CGI Scripts
+        SetOutPath "$INSTDIR\share\doc\swish-e\examples\prog-bin"
         File ..\..\prog-bin\*.pl
         File ..\..\prog-bin\*.in
-        
-        SetOutPath "$INSTDIR\lib\swish-e\perl"
         File ..\..\prog-bin\*.pm
     SectionEnd
     
@@ -158,13 +152,12 @@ SubSection "PERL Support" SubSecPerlSupport
 SubSectionEnd
 
 Section "Examples" SecExample
-    SetOutPath "$INSTDIR"
-;    File /r ..\..\example
+    SetOutPath "$INSTDIR\share\doc\swish-e\examples\cgi"
     File /r ..\..\conf
-    
+    File /r ..\..\example
+
     ; Rename text files so Windows has a clue
-    Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
-;    Rename "$INSTDIR\example\README" "$INSTDIR\example\README.txt"
+    Rename "$INSTDIR\share\doc\swish-e\examples\cgi\conf\README" "$INSTDIR\conf\README.txt"
 SectionEnd ; end of section 'Examples'
 
 Section "-post" ; (post install section, happens last after any optional sections)
