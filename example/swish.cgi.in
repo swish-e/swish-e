@@ -394,6 +394,12 @@ sub default_config {
             # labels must match up one-to-one with elements in "swish_index"
             labels  => [ 'Main Index', 'Other Index', qw/ two three four/ ],  
             description => 'Select Site: ',
+            
+            # Optional - Set the default index if none is selected
+            # This needs to be an index file name listed in swish_index 
+            # above, not a label
+
+            default_index => '',
         },
 
 
@@ -1365,13 +1371,22 @@ sub set_index_file {
     my $q = $self->CGI;
     
     # Set the index file - first check for options
-    
-    if ( $self->config('select_indexes') && ref $self->config('swish_index') eq 'ARRAY'  ) {
+
+    my $si =  $self->config('select_indexes');    
+    if ( $si && ref $self->config('swish_index') eq 'ARRAY'  ) {
 
         my @choices = $q->param('si');
+
         if ( !@choices ) {
-            $self->errstr('Please select a source to search');
-            return;
+
+           if ( $si->{default_index} ) {
+               $self->swish_command('-f', $si->{'default_index'});
+               return 1;
+
+            } else {
+                $self->errstr('Please select a source to search');
+                return;
+            }
         }
 
         my @indexes = @{$self->config('swish_index')};
