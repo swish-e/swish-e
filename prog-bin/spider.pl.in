@@ -640,6 +640,24 @@ sub process_link {
         return;
     }
 
+
+    # Check for meta refresh
+    # requires that $ua->parse_head() is enabled (the default)
+
+    my $refresh = $response->header('refresh') || '';
+
+    if ( $refresh =~ /URL\s*=\s*(.+)/ ) {
+        my $u = URI->new_abs( $1, $response->base );
+
+        if ( $u->canonical eq $uri->canonical ) {
+            print STDERR "Warning: $uri redirects to itself!.\n";
+            return;
+        }
+
+        return [$u] if check_link( $u, $server, $response->base, 'meta','refresh' );
+    }
+
+
     return unless $content;  # $$$ any reason to index empty files?
     
 
