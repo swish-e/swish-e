@@ -51,8 +51,12 @@ int isrule(char *);
 int isnotrule(char *);
 int isbooleanrule(char *);
 int isunaryrule(char *);
-int isMetaName(struct swline *);
+int isMetaNameOpNext(struct swline *);
 int getrulenum(char *);
+int u_isnotrule(SWISH *sw, char *word);
+int u_isrule(SWISH *sw, char *word);
+int u_SelectDefaultRulenum(SWISH *sw, char *word);
+
 
 RESULT *andresultlists(SWISH *, RESULT *, RESULT *, int);
 RESULT *orresultlists(SWISH *, RESULT *, RESULT *);

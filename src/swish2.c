@@ -122,6 +122,8 @@ int i;
 	return(sw);
 }
 
+
+
 void SwishDefaults(SWISH *sw)
 {
         /* Initialize tmpdir */
@@ -142,6 +144,12 @@ void SwishDefaults(SWISH *sw)
 		/* http system parameters */
 	sw->maxdepth=5;
 	sw->delay=60;
+
+	/* init default logical operator words (2001-03-12 rasc) */
+	sw->srch_op.and = estrdup (_AND_WORD);
+	sw->srch_op.or  = estrdup (_OR_WORD);
+	sw->srch_op.not = estrdup (_NOT_WORD);
+	sw->srch_op.defaultrule = AND_RULE;
 }
 
 /* Free memory for search results and parameters (properties ...) */
@@ -244,6 +252,10 @@ if(sw) {
 		/* Free compression buffer */	
 		efree(sw->compression_buffer);
 		
+		/* free logical operator words   (2001-03-12 rasc) */
+		efree (sw->srch_op.and);
+		efree (sw->srch_op.or);
+		efree (sw->srch_op.not);
 
 		/* Free SWISH struct */
 		efree(sw);

@@ -581,7 +581,8 @@ int found,lensummary;
 		remove_tags(tmp);
 
 		/* use only the required memory -save those not used */
-		summary=estrdup(tmp);
+		/* 2001-03-13 rasc  copy only <size> bytes of string */
+		summary = estrndup (tmp,size);
 		efree(tmp);
 		return summary;
 	}
