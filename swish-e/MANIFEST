@@ -287,6 +287,9 @@ src/win32/build.sh
 src/win32/dist.sh
 win32.nsi
 win32src.nsi
+rpm/swish-e-fhs.patch
+rpm/swish-e.spec.in
+rpm/swish-e.xpm
 src/xml.c
 src/xml.h
 tests/test.config
