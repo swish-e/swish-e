@@ -209,6 +209,10 @@ SpiderDirectory *path*
 
 =item *
 
+StoreDescription [XML <tag>|HTML <meta>|TXT size]
+
+=item *
+
 TmpDir *path*
 
 =item *
@@ -382,7 +386,7 @@ Example:
     IndexContents HTML .htm .html .shtml
     IndexContents TXT  .txt .log .text
 
-B<Note:> This may be changed in the future to use content-types.  See L<SWISH-PROPOSAL|SWISH-PROPOSAL>
+B<Note:> This may be changed in the future to use content-types.  See L<SWISH-3.0|SWISH-3.0>
 
 
 =item DefaultContents [TXT|HTML|XML]
@@ -396,7 +400,7 @@ Example:
 
 =item FileInfoCompression [yes|no]
 
-Setting B<FileInfoCompression to C<yes> will compress the index file to save disk space.  This may result
+Setting B<FileInfoCompression> to C<yes> will compress the index file to save disk space.  This may result
 in longer indexing times.  The default is C<no>.
 
 Also see the C<-e> switch in L<SWISH-RUN|SWISH-RUN> for saving RAM during indexing.
@@ -440,8 +444,6 @@ And in XML format
         Some Content
     </meta1>
 
-Note: XML element names I<are> case sensitive.  B<IS THIS TRUE?>
-
 Then you can limit your search to just META B<meta1> like this:
 
     swish-e -w 'meta1=(apples or oranges)'
@@ -463,10 +465,10 @@ Then you can search in both tag2 and tag2 with:
 
 =item OkNoMeta [yes|no]
 
-If B<OkNoMeta> is set to C<yes> (the default) then any META tag found in the document that is not defined
-in the B<MetaNames> directive will be indexed, but the META tag contents will be added to the I<main index> and
-not to any meta name.  In other words, the words of the META tag will be indexed as if the words were part of the
-body of the document.  If B<OkNoMeta> is set to C<no> then SWISH-E will halt indexing with an error if a META tag
+If B<OkNoMeta> is set to C<yes> (the default) then any meta tag contents found in the document that is not defined
+in the B<MetaNames> directive will be indexed, but the tag contents will be added to the I<main index> and
+not to any meta name.  In other words, the words of the meta tag will be indexed as if the words were part of the
+body of the document, and not within a meta tag.  If B<OkNoMeta> is set to C<no> then SWISH-E will halt indexing with an error if a META tag
 is detected that is not listed in the MetaNames directive.  This can be helpful to catch misspelled Meta names
 or names that you did not anticipate.
 
@@ -477,30 +479,63 @@ If this setting is defined as C<yes> then any META tag found in the document tha
 listed in MetaNames will simply be ignored and not indexed.  This is helpful if you have meta data in your source
 documents that you do not want to index.  The default is C<no>, so the entire document is indexed.
 
-B<Check -- this work the same for XML?>
-
 =item PropertyNames *list of meta names*
 
 SWISH-E allows you to specify certain META tags that can be used as B<document properties>.
 The contents of any META tag that has been identified as a document property can be returned as
-part of the search results along with the rank, file name, title, and document size (see the C<-p> switch).
+part of the search results along with the rank, file name, title, and document size
+(see the C<-p> switch in L<SWISH-RUN|SWISH-RUN>).
 
-SWISH-E can also use the PropertyNames for sorting the results (see the C<-s> switch).
+Properties are useful for returning additional data from documents in search results -- this saves the effort of
+reading and parsing the source files while reading SWISH-E search results,
+and is especially useful when the source documents are no longer available.
+
+SWISH-E can also use the PropertyNames for sorting the search results (see the C<-s> switch).
 
     PropertyNames author subjects
 
 Note that the PropertyNames listed must also be listed in the MetaNames directive.  Property names are case insensitive.
 
-B<Are they with XML?>
-    
+Use of PropertyNames will increase the size of your index file, sometimes significantly.
+
+=item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
+
+B<StoreDescription> allows you to store a document description in the index file, and this description is returned in
+your search results when the C<-x> switch is used for extended results.
+
+For text documents you specify the type C<TXT> and the number of characters to capture.
+
+    StoreDescription TXT 20
+
+For HTML, and XML file types, specify the
+the tag to use for the description, and optionally the number of characters to capture.  If not specified will capture
+the entire contents of the tag.
+
+    StoreDescription HTML <body> 20
+    StoreDescription XML  <desc> 40
+ 
 =item UseStemming [yes|no]
 
 Put yes to apply word stemming algorithm during indexing,
-else no. See the manual for info about stemming. Default is 
-no.
+else no. 
 
     UseStemming no
     UseStemming yes
+
+When UseStemming is set to C<yes> every word is stemmed before placing it in to the index.    
+
+The stemming function does not convert words to their root, rather programmatically removes
+endings on words in an attempt to make similar words with different endings stem to the same string of characters.
+It's not a perfect system, and searches on stemmed indexes often return curious results.  For example, two entirely
+different words may stem to the same word.
+
+Stemming also can be confusing when used with a wildcard (truncation).  For example, you might expect to find
+the word "running" by searching for "runn*".  But this fails when using a stemmed index, as "running" stems to "run",
+yet searching for "runn*" looks for words that start with "runn".
+
+It's a good idea to create both a stemmed and non-stemmed index and allow your search interface select which index
+to use.
+
 
 =item IgnoreTotalWordCountWhenRanking [yes|no]
 
@@ -510,14 +545,13 @@ small files. Default is no.
 
     IgnoreTotalWordCountWhenRanking yes
 
-For more info see L<RANKING|RANKING>
 
-    
+
 =item MinWordLimit *integer*
 
 Set the minimum length of an word. Shorter words
 will not be indexed.
-Commenting out the line will give the defaults in F<src/config.h>
+The default is 1 (as defined in F<src/config.h>).
 
     MinWordLimit 5
 
@@ -525,7 +559,7 @@ Commenting out the line will give the defaults in F<src/config.h>
 
 Set the maximum length of an indexable word. Every longer word
 will not be indexed.
-Commenting out the line will give the defaults in F<src/config.h>.
+The Default is 40 (as defined in F<src/config.h>).
 
 =item WordCharacters *string of characters*
 
@@ -538,24 +572,31 @@ Commenting out the line will give the defaults in F<src/config.h>.
 =item EndCharacter *string of characters*
 
 
-B<Jose -- check this please!>
-
-These settings define what a word is to the SWISH-E indexing engine.
+These settings define what a word consists of to the SWISH-E indexing engine.
 Compiled in defaults are in F<src/config.h>.
 
-When indexing (and when searching) SWISH-E uses B<WordCharacters> to split up the document (or search string) into words.
-Words are defined by any string that contains only the characters listed in WordCharacters.  If a string of characters
+When indexing SWISH-E uses B<WordCharacters> to split up the document into words.
+Words are defined by any string of non-blank characters that contain only the characters listed in WordCharacters.
+If a string of characters
 includes a character that is not in WordCharacters then the word will be spit into two or more separate words.
 
-The resulting words MUST begin with one of the characters
+For example:
+
+    WordCharacters abde
+
+Would turn "abcde" into two words "ab" and "de".
+
+Next, of these words, any characters defined in B<IgnoreFirstChar> are stripped off the start of the word,
+and B<IgnoreLastChar> characters are stripped off the end of the word.  This allows, for example, periods within
+a word (www.slashdot.com), but not at the end of a word.
+Characters in IgnoreFirstChar and IgnoreLastChar must be in WordCharacters.
+
+Finally, the resulting words MUST begin with one of the characters
 listed in B<BeginCharacters> and end with one of the characters listed in B<EndCharacters>.
 BeginCharacters and EndCharacters must be a subset of the characters in WordCharacters.
 Often, WordCharacters, BeginCharactes and EndCharacters will all be the same.
 
-Finally, of these words, any characters defined in B<IgnoreFirstChar> are stripped off the start of the word,
-and B<IgnoreLastChar> characters are stripped off the end of the word.  This allows, for example, periods within
-a word (www.slashdot.com), but not at the end of a word.  Characters in IgnoreFirstChar and IgnoreLastChar must be in
-BeginCharacters and EndCharacters respectively (and thus also in WordCharacters).
+Note that the same process applies to the query while searching.
 
 Getting these setting correct will take careful consideration and practice.  It's helpful to create
 an index of a single test file, and then look at the words that are placed in the index
@@ -565,13 +606,17 @@ Currently there is only support for eight-bit characters.
 
 Example:
 
-    WordCharacters  abcdefghijklmnopqrstuvwxyz.
-    BeginCharacters abcdefghijklmnopqrstuvwxyz.
-    EndCharacters   abcdefghijklmnopqrstuvwxyz.
+    WordCharacters  .abcdefghijklmnopqrstuvwxyz
+    BeginCharacters abcdefghijklmnopqrstuvwxyz
+    EndCharacters   abcdefghijklmnopqrstuvwxyz
     IgnoreFirstChar .
     IgnoreLastChar  .
 
-So C<Please visit http://www.example.com/path/to/file.html.> will be indexed as the following words:
+So the string
+
+    Please visit http://www.example.com/path/to/file.html.
+
+will be indexed as the following words:
 
     please
     visit
@@ -584,23 +629,15 @@ So C<Please visit http://www.example.com/path/to/file.html.> will be indexed as 
 Which means that you can search for C<www.example.com> as a single word, but searching
 for just C<example> will not find the document.
 
-
-Note that if you omit "0123456789&#;" you will not be able to
-index HTML entities.
-
-B<Is this true?  or are entities converted before processing if so..>
-
 Note: when indexing HTML documents HTML entities are converted to their character equivalents before
-being processed with these directives.  This is a change from previous version of SWSISH-E where you were required
+being processed with these directives.  This is a change from previous versions of SWISH-E where you were required
 to include the characters C<0123456789&#;> to index entities.
 
-B<Question: Does it matter if " and ( and ) are included?  What about the equal sign = ?>
+B<XXX FIX -- 2.1.10-devel6 still required the &>
 
-DO NOT use the asterisk (*), lesser than
-and greater than signs (<), (>), or colon (:).
-Including any of these four characters may cause funny things to happen.
-
-NOTE: Do not escape \ nor " and they cannot be the first letter in the string
+If indexing any characters that have special meaning to SWISH "*" "=" "(" and ")", test carefully how they can be accessed
+and searched.  For example, "=" may be used in a query but only if backslashed, where "(" and ")" can be indexed
+but not searched (currently).
 
 =item IgnoreWords *list of stop words*
 
@@ -630,12 +667,12 @@ to turn of auto-stopwording.
 
 SWISH-E must do extra processing to adjust the entire index when this feature is used.
 It is recommended that instead of using this feature that you decided what words are stop words
-and add them to B<IngoreWords> in your configuration file.
+and add them to B<IngoreWords> in your configuration file.  To do this, use IgnoreLimit one time and note
+the stop words that are found while indexing.  Add this list to IgnoreWords, and then remove IgnoreLimit
+from the configuration file.
 
 
 =item IndexComments [0|1]
-
-B<XXX why is this not yes|no>
 
 This option allows the user decide if to index the HTML comments.
 Default is 1. Set to 0 if comment indexing is not required.
@@ -646,8 +683,6 @@ Default is 1. Set to 0 if comment indexing is not required.
 
 The TranslateCharacters directive maps the characters in string1 to the characters listed in string2.
 This is done after htnl entities are converted but before words are defined by WordCharacters.
-
- B<True??? xxx>
 
 For example:
 
@@ -677,11 +712,13 @@ There is no default, and you may list a string of characters.
 
 =head2 Document Filter Directives
 
-You may specify external programs to be used for filtering documents.  For example, if all your
+Internally, SWISH-E knows how to parse only text, HTML, and XML documents.  With SWISH-E filters you can
+index other types of documents.  For example, if all your
 web pages are in gzip format a filter can uncompress these on the fly for indexing.
 
+A filter is an external program that swish executes when processing a document of a given type.
 SWISH-E will execute the filter program for each file that matches the file extension set in the
-B<FileFilter> directive>.  SWISH-E calls the external program passing the as arguments the file path
+B<FileFilter> directive.  SWISH-E calls the external program passing as arguments the file path
 that swish is about to index, and optionally, the URL from the http file source method.
 
 The filter program must open the file, process its contents, and return it to SWISH-E by printing to STDOUT.
@@ -689,13 +726,14 @@ The filter program must open the file, process its contents, and return it to SW
 Note that this can add a significant of time to the indexing process.  If you have many files to filter you
 should consider writing your filter in C instead of a shell or perl script.
 
-B<Note:> Filtering in swish may change in the future (see L<SWISH-PROPOSAL|SWISH-PROPOSAL>).
+B<Note:> Filtering in swish may change in the future (see L<SWISH-3.0|SWISH-3.0>).
 
 =over 4
 
 =item FilterDir  *path-to-directory*
 
-This is the path to a directory where filters are stored.
+This is the path to a directory where the filter programs are stored.  Swish looks in this directory to find
+the filter specified in the B<FileFilter> directive.
 
 Example:
 
@@ -742,7 +780,7 @@ Convert gzipped files to text:
         if $gzerrno != Z_STREAM_END ;
     
     $gz->gzclose() ;
-    
+
 =back
 
 =head2 Directives for the File Access method only
@@ -757,15 +795,13 @@ These directives are only valid when using the B<File system> method of indexing
 This directive specifies the allowable file suffixes (extensions) while indexing.  The default
 is to index all files specified in B<IndexDir>.
 
-B<Why are these file system only?>
-
     # Only index .html .htm and .q files
     IndexOnly .html .htm .q
 
 =item NoContents *list of file suffixes*
 
 Files with these suffixes will B<not> have their contents indexed, but their file names will be indexed.
-File names are not normally indexed.  If you specify C<.html> then if a <TITLE> section is found those words will
+File names are not normally indexed.  If you specify C<.html> or C<.htm> then if a <TITLE> section is found those words will
 be indexed, otherwise the file name will be indexed.
 
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
@@ -815,8 +851,6 @@ its files in this location.  The default is /var/tmp.
 
     TmpDir /tmp/swish/
 
-B<The directory will be created?>
-
 =item SpiderDirectory *path*
 
 The location of the Perl helper script called F<swishspider>.
@@ -828,8 +862,6 @@ is in.  The default is C<./>
 
 =item EquivalentServer *server alias*
 
-B<Can there be more than one alias on a single directive?>
-
 Often times the same site may be referred to by different names.  A common example is that often
 http://www.some-server.com and http://some-server.com are the same.
 Each line should have a list of all the method/names that should be considered equivalent.
@@ -840,5 +872,11 @@ servers.
     EquivalentServer http://sunsite.berkeley.edu:2000 http://sunsite.berkeley.edu
 
 =back    
-    
+
+=head1 Document Info
+
+$Id$
+
+.
+
 

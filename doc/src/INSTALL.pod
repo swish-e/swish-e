@@ -223,7 +223,8 @@ contain the word B<sample>:
     # Saved as: index.swish-e
     # Counts: 57 words, 5 files
     # Indexed on: 13/12/2000 16:33:21 PST
-    ... (a number of other headers snipped)
+    ...
+    ...
     #
     # Number of hits: 2
     1000 ./test_xml.html "If you are seeing this, the METATAG XML search was successful!" 159
@@ -234,21 +235,23 @@ So the word B<sample> was found in two documents.  The first number shown is the
 the search term, followed by the file containing the search term, the title of the document, and finally
 the length of the document.
 
+The period "." by itself at the end marks the end of results.
+
 =head2 Phrase Searching
 
-To search for a phrase in a document use double-quotes to delimit your search term.  (The phrase
-delimiter is set in F<src/swish.h>.)
+To search for a phrase in a document use double-quotes to delimit your search terms.
+(The phrase delimiter is set in src/swish.h.)
 
-For example:
+You must protect the quotes from the shell.
 
-    ../src/swish-e -w '"This is sample"'
+For example, under Unix:
 
-    # Number of hits: 1
-    1000 ./test.html "If you are seeing this, the test was successful!" 437
+    swish-e -w '"this is a pharase" or (this and that)'
+    swish-e -w 'meta1=("this is a pharase") or (this and that)'
 
-Note that the double quotes must be protected from the shell by using single quotes.
+Or under Windows:
 
-B<** Single quotes don't work on DOS, right David?>
+    swish-e -w \"this is a pharase\" or (this and that)
 
 =head2 Boolean Searching
 

@@ -1,3 +1,3 @@
 package SWISHE::Doc;
-$VERSION = '0.01';
+$VERSION = '2.1.10-devel6';
 1;

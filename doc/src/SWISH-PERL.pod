@@ -40,12 +40,13 @@ Perl Interface to the SWISH-E Library
         return;  # or next.
     }
 
-    while( my($rank,$index,$file,$title,$start,$size,@props) = SwishNext( $handle )) {
+    while( my($rank,$index,$file,$title,$summary,$start,$size,@props) = SwishNext( $handle )) {
         print join( ' ',
               $rank,
               $index,
               $file,
               qq["$title"],
+              qq["$summary"],
               $start,
               $size,
               map{ qq["$_"] } @props,
@@ -321,7 +322,6 @@ See http://sunsite.berkeley.edu/SWISH-E/.
 =head1 AUTHOR
 
 Jose Ruiz -- jmruiz@boe.es
-$Revision$
 
 
 =head1 SEE ALSO
@@ -329,4 +329,12 @@ $Revision$
 http://sunsite.berkeley.edu/SWISH-E/
 
 SWISH, SWISH::Library at your local CPAN site.
+
+
+=head1 Document Info
+
+$Id$
+
+.
+
 
