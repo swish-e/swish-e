@@ -881,9 +881,14 @@ sub output_content {
     $server->{counts}{'Total Docs'}++;
 
 
+    # ugly and maybe expensive, but perhaps more portable than "use bytes"
+    my $bytecount = length pack 'C0a*', $$content;
+
+
+
     my $headers = join "\n",
         'Path-Name: ' .  $uri,
-        'Content-Length: ' . length $$content,
+        'Content-Length: ' . $bytecount,
         '';
 
     $headers .= 'Last-Mtime: ' . $response->last_modified . "\n"
