@@ -142,7 +142,6 @@ EXTRA_DIST = \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
     $(debian_dir) \
-    win32.nsi \
     win32src.nsi
 
 
