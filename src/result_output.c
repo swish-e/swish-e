@@ -249,37 +249,12 @@ char *printResultControlChar (FILE *f, char *s)
 
 {
   char c, *se;
-  long l;
 
   if (*s != '\\') return s;
 
-  switch (*(++s)) {			   /* can be optimized ... */
-	case 'a':   c = '\a';  break;
-	case 'b':   c = '\b';  break;
-	case 'f':   c = '\f';  break;
-	case 'n':   c = '\n';  break;
-	case 'r':   c = '\r';  break;
-	case 't':   c = '\t';  break;
-	case 'v':   c = '\v';  break;
-
-	case 'x':				  /* Hex  \xff  */
-		c = (char) strtoul (++s, &se, 16);
-		s = se;
-		break;
-
-	case '0':				/* Oct  \0,  \012 */
-		c = (char) strtoul (s, &se, 8);
-		s = se;
-		break;
-
-	default: 
-		c =  *s;		/* print the escaped character */
-		break;
- }
-
- s++;
- if (f) fputc (c,f);
- return s;
+  c =  charDecode_C_Escape (s, &se); 
+  if (f) fputc (c,f);
+ return se;
 }
 
 
@@ -348,9 +323,9 @@ char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
   *propertyname = NULL;
   *subfmt = NULL;
 
-  s = skip_ws (s);
+  s = str_skip_ws (s);
   if (*s != '<') return s;
-  s = skip_ws (++s);
+  s = str_skip_ws (++s);
 
 
   /* parse propertyname */
@@ -369,7 +344,7 @@ char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
 
 
   if (*s == '>') return ++s;		/* no fmt, return */
-  s = skip_ws (s);
+  s = str_skip_ws (s);
 
   
   /* parse optional fmt=<c>...<c>  e.g. fmt="..." */
@@ -398,18 +373,6 @@ char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
   if (*s == '>') s++;
 
   return s;
-}
-
-
-
-/* Skip white spaces...
-*/
-
-char *skip_ws (char *s)
-
-{
-   while (isspace(*s)) s++;
-   return s;
 }
 
 

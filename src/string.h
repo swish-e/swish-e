@@ -35,9 +35,6 @@ char *getconfvalue (char *, char *);
 int isoksuffix (char *filename, struct swline *rulelist);
 char *replace (char *, char *, char *);
 
-char *strtolower (char *str);
-#define makeItLow(a)    strtolower ((a)) /* map old name to new */
-
 int matchARegex (char *str, char *pattern);
 char *SafeStrCopy (char *,char *, int *);
 void sortstring (char *);
@@ -80,5 +77,14 @@ unsigned char *bin2string(unsigned char *,int);
 #ifdef _WIN32
 #define strncasecmp	strnicmp
 #endif
+
+
+
+
+char *strtolower (char *str);
+#define makeItLow(a)    strtolower ((a)) /* map old name to new $$$ */
+
+char *str_skip_ws (char *s);
+char charDecode_C_Escape (char *s, char **se);
 
 
