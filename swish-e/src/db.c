@@ -311,8 +311,8 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
 
 /* #### Use new metaType schema - see metanames.h */
     /* Format of metaname is
-       <len><metaName><metaType>
-       len and metaType are compressed numbers
+       <len><metaName><metaType><Alias>
+       len, metaType, and alias are compressed numbers
        metaName is the ascii name of the metaname
 
        The list of metanames is delimited by a 0
@@ -322,7 +322,7 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
     {
         entry = header->metaEntryArray[i];
         len = strlen(entry->metaName);
-        sz_buffer += len + 5 *3; 
+        sz_buffer += len + 5 *4; /* how is this calculated? */
     }
     
     sz_buffer += 5;  /* Add extra 5 for the number of metanames */
@@ -340,6 +340,7 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
         s += len;
         s = compress3(entry->metaID, s);
         s = compress3(entry->metaType, s);
+        s = compress3(entry->alias+1, s);  /* keep zeros away from compress3, I believe */
     }
     DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
     efree(buffer);
@@ -673,9 +674,11 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
     int     dummy;
     int     metaType,
             i,
+            alias,
             metaID;
     char   *word;
     unsigned char   *s = (unsigned char *)buffer;
+    struct metaEntry *m;
 
 
     /* First clear out the default metanames */
@@ -694,8 +697,14 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
         /* metaType was saved as metaType+1 */
         metaType = uncompress2(&s);
 
+        alias = uncompress2(&s) - 1;
+        
+
         /* add the meta tag */
-        addMetaEntry(header, word, metaType, metaID, NULL, &dummy);
+        if ( !(m = addMetaEntry(header, word, metaType, metaID, NULL, &dummy)))
+            progerr("failed to add new meta entry '%s:%d'", word, metaID );
+
+        m->alias = alias;
 
         efree(word);
     }

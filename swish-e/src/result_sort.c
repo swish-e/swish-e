@@ -741,6 +741,10 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         m->sorted_data = NULL;
 
 
+        /* ignore aliase */
+        if ( m->alias )
+            continue;
+
 
         /* Check if this property must be in a presorted index */
         if (!is_presorted_prop(sw, m->metaName))

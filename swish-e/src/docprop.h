@@ -59,6 +59,7 @@ unsigned char *UnPackPropLocations( struct file *fi, char *buf );
 /* all AutoPropteries start with this string ! */
 
 
+#define AUTOPROPERTY_DEFAULT      "swishdefault"
 #define AUTOPROPERTY_REC_COUNT    "swishreccount"
 #define AUTOPROPERTY_RESULT_RANK  "swishrank"
 #define AUTOPROPERTY_FILENUM      "swishfilenum"

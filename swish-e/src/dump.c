@@ -418,6 +418,14 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf )
             printf(" *presorted*");
 
 
+        if ( meta_entry->alias )
+        {
+            struct metaEntry *m = getMetaIDData( &indexf->header, meta_entry->alias );
+
+            printf(" [Alias for %s (%d)]", m->metaName, m->metaID );
+        }
+
+
         printf("\n");
         
     }

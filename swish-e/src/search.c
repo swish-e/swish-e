@@ -848,11 +848,17 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
         if (isMetaNameOpNext((*searchwordlist)->next))
         {
             metaID = getMetaNameID(indexf, word);
+
+            /****
+          seems like that's ok....
             if (metaID == 1)
             {
                 sw->lasterror = UNKNOWN_METANAME;
                 return NULL;
             }
+            ***/
+
+            
             /* Skip both the metaName end the '=' */
             *searchwordlist = (*searchwordlist)->next->next;
             if ((*searchwordlist) && ((*searchwordlist)->line[0] == '('))

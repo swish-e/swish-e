@@ -200,6 +200,7 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
     struct MOD_PropLimit *self = sw->PropLimit;
 
 
+    /* Currently, can only limit by one property -- so check that one hasn't already been used */
     for ( params = self->params; params && (strcmp( params->propname, propertyname ) != 0); params = (PARAMS *)params->next);
     if ( params )
         progerr("Only one limit per property '%s'", propertyname );
@@ -680,6 +681,17 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
             if ( strcasecmp( curp->propname, meta_entry->metaName) != 0 )
                 continue;
 
+
+            /* Is this an aliased meta entry? */
+            if ( meta_entry->alias )
+            {
+                int id = meta_entry->alias;
+                
+                if ( !(meta_entry = getMetaIDData( &indexf->header, id )))
+                    progerr("failed to load alias meta ID '%d'", id );
+            }
+
+                
             if ( !is_meta_property( meta_entry ) )
                 progerr("Name '%s' is not a PropertyName", curp->propname );
 
