@@ -6,15 +6,15 @@ if BUILDDOCS
 docdir = $(datadir)/doc/$(PACKAGE)
 
 doc_DATA = \
-	INSTALL \
-	README \
+	$(srcdir)/INSTALL \
+	$(srcdir)/README \
         README.cvs
 
-INSTALL: $(top_srcdir)/pod/INSTALL.pod
+$(srcdir)/INSTALL: $(top_srcdir)/pod/INSTALL.pod
 	-rm -f $(top_srcdir)/INSTALL
 	-pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
 
-README: $(top_srcdir)/pod/README.pod
+$(srcdir)/README: $(top_srcdir)/pod/README.pod
 	-rm -f $(top_srcdir)/README
 	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
 endif

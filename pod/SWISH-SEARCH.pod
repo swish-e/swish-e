@@ -243,95 +243,21 @@ does all the hard work for you.
 
 =head2 Perl Modules
 
-There are a couple of Perl modules for accessing Swish-e.  One of the
-modules is included with the distribution, and the other module (or set
-of modules) is located on CPAN.  The included module provides a way to
-embed Swish-e into your perl program, while the modules on CPAN provide an
-abstracted interface to it.  Hopefully, they make using Swish-e easier.
+The Swish-e distribution includes a Perl module called SWISH::API.
+SWISH::API provides access to the Swish-e C Library.  
 
-B<The Included SWISHE Perl Module>
+The SWISH::API module is I<not> installed by default.
 
-When compiling Swish-e from source the build process creates a C library
-(see the L<Swish-e INSTALL|INSTALL/"Installing_the_SWISH_E_C_Library">
-documentation).  The Swish-e distribution includes a F<perl> directory
-with files required to create the F<SWISHE.pm> module.  This module
-will I<embed> Swish-e into your perl program so that searching does not
-require running an external program.  Embedding the Swish-e program into
-your perl program results in faster Swish-e searches since it avoids the
-cost of forking and exec'ing a separate program and opening the index
-file for each request.
+The SWISH::API module will I<embed> Swish-e into your perl program so that searching does
+not require running an external program.  Embedding the Swish-e program into your perl
+program results in faster Swish-e searches, especially when running under a 
+persistent environment like mod_perl since it avoids the cost of opening the
+index file for every request (mod_perl is much also much faster than CGI because it
+avoids the need to compile Perl code for every request).
 
-You will probably B<not> want to embed Swish-e into perl if running under
-mod_perl as you will end up with very large Apache processes.
-
-Building and usage instructions for the F<SWISHE.pm> module can be found
-in the L<SWISH-PERL|SWISH-PERL> man page.
-
-Here's an edited snip from that man page:
-
-    my $handle = SwishOpen( $indexfiles )
-        or die "Failed to open '$indexfiles'";
-
-    my $num_results = SwishSearch($handle, $query, 1, $props, $sort);
-
-    unless ( $num_results ) {
-        print "No Results\n";
-
-        my $error = SwishError( $handle );
-        print "Error number: $error\n" if $error;
-
-        return;  # or next.
-    }
-
-    while( my($rank,$index,$file,$title,$start,$size,@props)
-        = SwishNext( $handle ))
-    {
-        print join( ' ',
-              $rank,
-              $index,
-              $file,
-              qq["$title"],
-              $start,
-              $size,
-              map{ qq["$_"] } @props,
-              ),"\n";
-    }
-
-
-B<SWISH Modules on CPAN>
-
-The Comprehensive Perl Archive Network, or CPAN, is a collection of
-modules for use with Perl.  Always search CPAN (http://search.cpan.org/)
-before starting any new program.  Chances are someone has written just
-what you need.
-
-On CPAN are also modules for searching with Swish-e.  They can be found
-at http://search.cpan.org/search?mode=module&query=SWISH  The main
-SWISH module (different from the SWISHE<E> module included with the
-Swish-e distribution) provides a high-level Object Oriented interface
-to Swish-e, and the same interface can be used to used to either fork
-and exec the Swish-e binary, or use the Swish-e C Library if installed
-by just changing one line of code.  A server interface will be written
-when a Swish-e server is written.
-
-The main idea is that you can write a program to search with Swish-e,
-but not have to change your code (much) when you wish to change to a
-new way of accessing Swish-e.
-
-Here's an example of SWISH module usage from the synopsis:
-
-    use SWISH;
-
-    $sh = SWISH->connect('Fork',
-       prog     => '/usr/local/bin/swish-e',
-       indexes  => 'index.swish-e',
-       results  => sub { print $_[1]->as_string,"\n" },
-    ) or die $SWISH::errstr unless $sh;
-
-    $hits = $sh->query('metaname=(foo or bar)');
-
-This takes care of running Swish-e in a secure way, parsing the output
-from it, and providing OO methods of accessing the resulting data.
+See the README file in the F<perl> directory of the Swish-e distribution for installation 
+instructions.  Documentation for the SWISH::API module is available at 
+http://swish-e.org and is installed along with other HTML documentation on your computer.
 
 =head1 Document Info
 

@@ -1,29 +1,29 @@
 if BUILDDOCS
 man_MANS = \
-    SWISH-CONFIG.1 \
-    SWISH-FAQ.1 \
-    SWISH-LIBRARY.1 \
-    SWISH-RUN.1
+    $(srcdir)/SWISH-CONFIG.1 \
+    $(srcdir)/SWISH-FAQ.1 \
+    $(srcdir)/SWISH-LIBRARY.1 \
+    $(srcdir)/SWISH-RUN.1
 endif
 
 
-SWISH-CONFIG.1: $(srcdir)/../pod/SWISH-CONFIG.pod
+SUFFIXES = .1 .pod
+
+$(srcdir)/SWISH-CONFIG.1 : $(top_srcdir)/pod/SWISH-CONFIG.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-CONFIG.pod > $(top_srcdir)/man/SWISH-CONFIG.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-
-SWISH-FAQ.1: $(srcdir)/../pod/SWISH-FAQ.pod
+$(srcdir)/SWISH-FAQ.1 : $(top_srcdir)/pod/SWISH-FAQ.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-FAQ.pod > $(top_srcdir)/man/SWISH-FAQ.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-
-SWISH-LIBRARY.1: $(srcdir)/../pod/SWISH-LIBRARY.pod
+$(srcdir)/SWISH-LIBRARY.1 : $(top_srcdir)/pod/SWISH-LIBRARY.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-LIBRARY.pod > $(top_srcdir)/man/SWISH-LIBRARY.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
-
-SWISH-RUN.1: $(srcdir)/../pod/SWISH-RUN.pod
+$(srcdir)/SWISH-RUN.1 : $(top_srcdir)/pod/SWISH-RUN.pod
 	-rm -f $@
-	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(srcdir)/../pod/SWISH-RUN.pod > $(top_srcdir)/man/SWISH-RUN.1
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
+
 
 EXTRA_DIST = $(man_MANS)

@@ -111,7 +111,7 @@ all-local:  $(version_file) $(timestamp)
 # run the "build_docs" program, and then update the timestamp
 
 $(timestamp) : $(source_files)
-	@(cd $(top_srcdir)/doc && bin/build)
+	@(cd $(top_srcdir)/doc && bin/build -f)
 	@touch $(timestamp)
 
 endif
