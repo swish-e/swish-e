@@ -60,7 +60,7 @@
 <dd>
   <code>swishctl.SetSearchLimit( &quot;year&quot;, startyr, stopyr )</code>
   <p>
-    Sets a range from <code>low</code> to <code>high</code> inclusive that the give 
+    Sets a range from <code>low</code> to <code>high</code> inclusive that the given 
      <code>property</code> must be in to be selected as a result. 
       Call multiple times to set more than one limit 
       on different properties. Limits are ANDed, that is, a 
@@ -93,7 +93,7 @@
 <dd>
   <code>swishctl.SeekResult( startresult - 1 )</code>
   <p>
-    Seeks to the position<code>position</code> specified in the result 
+    Seeks to the <code>position</code> specified in the result 
     list. Zero is the first position and swishctl.Hits-1 
     is the last position. Seeking past the end of results sets 
     a non-critical error condition. 
@@ -101,12 +101,14 @@
 </dd>
 
 <dt><strong><a name="nextresult">int swishctl.NextResult()</strong></dt>
+<dd>
   <p>
     Fetches the next result from the list of results. Returns 0 if no more results are available.
   </p>
 </dd>
 
 <dt><strong><a name="resultpropertystring">str swishctl.ResultPropertyString( str property )</a></strong></dt>
+<dd>
   <code>swishctl.ResultPropertyString( &quot;swishdocpath&quot; )</code>
   <p>
     Fetches the <code>property</code> specified for the current result. 
