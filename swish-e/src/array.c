@@ -208,26 +208,22 @@ int size = ARRAY_PageSize;
 
     /* Get file pointer */
     if(fseek(fp,0,SEEK_END) !=0)
-    {
-        printf("mal\n");
-    }
+        progerrno("Failed to seek to eof: ");
+
     offset = ftell(fp);
     /* Round up file pointer */
     offset = ARRAY_RoundPageSize(offset);
 
     /* Set new file pointer - data will be aligned */
     if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
-    {
-        printf("mal\n");
-    }
+        progerrno("Failed during seek: ");
+
 
     pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + size);
     memset(pg,0,sizeof(ARRAY_Page) + size);
     /* Reserve space in file */
     if(fwrite(pg->data,1,size,fp)!=size || ((long)size + offset) != ftell(fp))
-    {
-        printf("mal\n");
-    }
+        progerrno("Failed to write ARRAY_page: ");
 
     pg->next = 0;
 

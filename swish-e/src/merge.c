@@ -856,8 +856,11 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     /* now write out the data to be used for mapping file for a given index. */
     //    compress1( cur_index->filenum, filenum_map, fputc );   // what file number this came from
 
-    fwrite( &cur_index->filenum, sizeof(int), 1, filenum_map);
-    fwrite( &cur_index, sizeof(IndexFILE *), 1, filenum_map);        // what index
+    if ( fwrite( &cur_index->filenum, sizeof(int), 1, filenum_map) != 1 )
+        progerrno("Failed to write mapping data: ");
+
+    if ( fwrite( &cur_index, sizeof(IndexFILE *), 1, filenum_map) != 1 )        // what index
+        progerrno("Failed to write mapping data: ");
 
 
     /* Save total words per file */
