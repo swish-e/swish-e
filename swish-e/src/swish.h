@@ -343,12 +343,10 @@ struct metaEntry
                                     /* If 0, files are not sorted by this metaName/property */
 };
 
-
-
-/* These are used to build the table of seek pointers in the main index. */ 
+/* These are used to build the table of seek pointers in the main index. */
 typedef struct
 {
-    long    seek;
+    sw_off_t    seek;
 } PROP_LOCATION;
 
 
@@ -362,7 +360,7 @@ typedef struct
 {
     int             filenum;
     docProperties  *docProperties;  /* list of document props in memory */
-    PROP_INDEX     *prop_index;     /* pointers to properties on disk */
+    void     *prop_index;     /* pointers to properties on disk */
 } FileRec;
 
 

@@ -147,7 +147,7 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 */
 void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
-    long    wordID;
+    sw_off_t    wordID;
 
     wordID = DB_GetWordID(sw, indexf->DB);
 
@@ -163,7 +163,7 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 */
 void    update_wordID(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
-    long    wordID;
+    sw_off_t    wordID;
 
     wordID = DB_GetWordID(sw, indexf->DB);
 
@@ -172,7 +172,7 @@ void    update_wordID(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     ep->u1.wordID = wordID;
 }
 
-void    delete_worddata(SWISH * sw, long wordID, IndexFILE * indexf)
+void    delete_worddata(SWISH * sw, sw_off_t wordID, IndexFILE * indexf)
 {
     DB_DeleteWordData(sw,wordID,indexf->DB);
 }
@@ -801,35 +801,35 @@ int     DB_InitWriteWords(SWISH *sw, void *DB)
    return sw->Db->DB_InitWriteWords(DB);
 }
 
-long    DB_GetWordID(SWISH *sw, void *DB)
+sw_off_t    DB_GetWordID(SWISH *sw, void *DB)
 {
    return sw->Db->DB_GetWordID(DB);
 }
 
-int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB)
+int     DB_WriteWord(SWISH *sw, char *word, sw_off_t wordID, void *DB)
 {
    return sw->Db->DB_WriteWord(word, wordID, DB);
 }
 
 #ifdef USE_BTREE
-int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB)
+int     DB_UpdateWordID(SWISH *sw, char *word, sw_off_t wordID, void *DB)
 {
    return sw->Db->DB_UpdateWordID(word, wordID, DB);
 }
 
-int     DB_DeleteWordData(SWISH *sw, long wordID, void *DB)
+int     DB_DeleteWordData(SWISH *sw, sw_off_t wordID, void *DB)
 {
    return sw->Db->DB_DeleteWordData(wordID, DB);
 }
 
 #endif
 
-int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)
+int     DB_WriteWordHash(SWISH *sw, char *word, sw_off_t wordID, void *DB)
 {
    return sw->Db->DB_WriteWordHash(word, wordID, DB);
 }
 
-long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB)
+long    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB)
 {
    return sw->Db->DB_WriteWordData(wordID, worddata, data_size, saved_bytes, DB);
 }

@@ -81,9 +81,9 @@ static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
 
 
 
-long read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
+sw_off_t read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
 {
-long wordID;
+sw_off_t wordID;
 char *word = ep->word;
 int saved_bytes = 0;
 
@@ -96,7 +96,7 @@ int saved_bytes = 0;
         sw->lasterror = WORD_NOT_FOUND;
         *buffer = NULL;
         *sz_buffer = 0;
-        return 0L;
+        return (sw_off_t)0;
    } 
    DB_ReadWordData(sw, wordID, buffer, sz_buffer, &saved_bytes, indexf->DB);
    uncompress_worddata(buffer,sz_buffer,saved_bytes);
@@ -416,22 +416,22 @@ int     DB_InitReadWords(SWISH *sw, void *DB)
    return sw->Db->DB_InitReadWords(DB);
 }
 
-int     DB_ReadWordHash(SWISH *sw, char *word, long *wordID, void *DB)
+int     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadWordHash(word, wordID, DB);
 }
 
-int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB)
+int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadFirstWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB)
+int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
+long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
 {
    return sw->Db->DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
 }
@@ -508,7 +508,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     int     bufferpos,
             bufferlen;
     unsigned char    word[2];
-    long    wordID;
+    sw_off_t    wordID;
 
     
 
