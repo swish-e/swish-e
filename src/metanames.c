@@ -47,7 +47,7 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
     /* just add META_INDEX to it */
     {AUTOPROPERTY_STARTPOS, META_PROP | META_NUMBER, AUTOPROP_ID__STARTPOS}, /* File start */
     {AUTOPROPERTY_INDEXFILE, META_PROP | META_NUMBER, AUTOPROP_ID__INDEXFILE}, /* It is here just for using a ID */
-	{AUTOPROPERTY_FILENUM, META_PROP | META_NUMBER, AUTOPROP_ID__INDEXFILE},  /* Doc filenum */
+	{AUTOPROPERTY_FILENUM, META_PROP | META_NUMBER, AUTOPROP_ID__FILENUM},  /* Doc filenum */
     {NULL, 0}                   /* End mark */
 };
 
