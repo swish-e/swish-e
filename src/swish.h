@@ -908,6 +908,10 @@ typedef struct SWISH
     int        temp_string_buffer_len;
 
 
+    /* Temporary place to store a stemmed word -- so library user doesn't need to free memory */
+    char * stemmed_word;
+    int    stemmed_word_len;
+
 
 } SWISH;
 

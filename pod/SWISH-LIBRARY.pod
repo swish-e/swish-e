@@ -412,10 +412,16 @@ A convenience method to send errors to stderr instead of stdout.
 
 =over 4
 
-=item void Stem(char **inword, int *lenword)
+=item const char *SwishWordsByLetter(SWISH * sw, char *indexname, char c);
 
-This can be used to convert a word to its stem.  Word is modified in place (or reallocated if
-needed.
+Returns all the words in the index "indexname" that begin with the letter passed in.
+Returns NULL if the name of the index file is invalid.
+
+This fuction may change in the future since only 8-bit chars can currently be used.
+
+=item char * SwsishStemWord( SW_HANDLE, char *in_word );
+
+This can be used to convert a word to its stem.
 
 =back
 

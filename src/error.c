@@ -183,7 +183,7 @@ static error_msg_map swishErrors[]={
     { 0, QUERY_SYNTAX_ERROR,                       "Syntax error in query (missing end quote or unbalanced parenthesis?)" },
     { 0, PROP_LIMIT_ERROR,                         "Failed to setup limit by property"},
     { 0, SWISH_LISTRESULTS_EOF,                    "No more results" },
-    { 0, HEADER_READ_ERROR,                        "Failed to index header data", },
+    { 0, HEADER_READ_ERROR,                        "Index Header Error", },
     { 1, INDEX_FILE_NOT_FOUND,                     "Could not open index file" },
     { 1, UNKNOWN_INDEX_FILE_FORMAT,                "Unknown index file format" },
     { 1, INDEX_FILE_IS_EMPTY,                      "Index file(s) is empty" },

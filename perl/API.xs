@@ -257,6 +257,48 @@ SwishQuery( swish_handle, query = NULL )
         char * CLASS = "SWISH::API::Results";
 
 
+
+# Misc utility routines
+
+void
+SwishWordsByLetter(handle, filename, c)
+     SW_HANDLE handle
+     char *filename
+     char c
+     
+     PREINIT:
+         char *Words,*tmp;
+         int c2;
+
+     PPCODE:
+
+         if(c=='*')
+         {
+            for(c2=1;c2<256;c2++)
+            {
+               Words=(char *)SwishWordsByLetter(handle,filename,(unsigned char)c2);
+               for(tmp=Words;tmp && tmp[0];tmp+=strlen(tmp)+1)
+               {
+                  XPUSHs(sv_2mortal(newSVpv(tmp,0)));
+               }
+            }
+         } else {
+            Words=(char *)SwishWordsByLetter(handle,filename,c);
+            for(tmp=Words;tmp && tmp[0];tmp+=strlen(tmp)+1)
+            {
+               XPUSHs(sv_2mortal(newSVpv(tmp,0)));
+            }
+         }
+
+
+
+char *
+SwishStemWord(handle, word)
+     SW_HANDLE handle
+     char *word
+            
+
+
         
 # **************************************************************
 # 

@@ -12,6 +12,15 @@ The real difference is that search speed is improved since you may
 attach to a swish-e index once and then run many queries on that open
 "swish handle".  This speed comes at a cost of memory added to your program.
 
+Note: This module replaces the SWISHE module available with versions prior
+to 2.3 of Swish-e.  There is a SWISHE interface module available
+on the Swish-e site if you have existing code that depends on 
+previous versions of the SWISHE module.
+
+    http://swish-e.org/Download/SWISHE-0.03.tar.gz
+
+That version is simply an interface to the SWISH::API module.  You
+must install the SWISH::API module to use SWISHE-0.03.tar.gz.
 
 INSTALLATION
 
