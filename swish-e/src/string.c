@@ -78,6 +78,7 @@ char   *lstrstr(char *s, char *t)
 /* Gets the next word in a line. If the word's in quotes,
 ** include blank spaces in the word or phrase.
    -- 2001-02-11 rasc  totally rewritten, respect escapes like \"
+   -- 2001-11-09 moseley rewritten again - doesn't check for missing end quote
 */
 
 char   *getword(char *s, int *skiplen)
@@ -85,61 +86,68 @@ char   *getword(char *s, int *skiplen)
     unsigned char quotechar;
     unsigned char uc;
     char   *start;
-    char   *wstart;
-    char   *word;
-    int     len;
-
+    char   buf[MAXWORDLEN+1];
+    char   *cur_char = buf;
+    int    backslash = 0;
 
     start = s;
     quotechar = '\0';
 
     s = str_skip_ws(s);
+    
     if (!*s)
-        return "\0";
-    if (*s == '\"')
+        return estrdup( "\0" );
+
+        
+    if (*s == '\"' || *s == '\'')
         quotechar = *s++;
 
     /* find end of "more words" or word */
 
-    wstart = s;
     while (*s)
     {
         uc = (unsigned char) *s;
-        if (uc == '\\')
-        {                       /* Escape \     */
+
+
+        if (uc == '\\' && !backslash )
+        {
             s++;
+            backslash++;
             continue;
         }
-        if (!quotechar)
+
+        /* Can't see why we would need to escape these, can you? - always fed a single line */
+        if ( uc == '\n' || uc == '\r' )
+            break;
+        
+
+        if ( !backslash )
         {
-            if (isspace((int) uc))
-                break;          /* end of word  */
+            if ( uc == quotechar )
+                break;
+
+            if ( !quotechar && isspace((int) uc) )
+                break;
         }
         else
-        {
-            if (uc == quotechar)
-                break;          /* end of quote */
-            if (uc == '\n')
-                break;          /* EOL          */
-            if (uc == '\r')
-                break;          /* EOL (WIN)    */
-        }
+            backslash = 0;
+           
 
-        s++;
+        *cur_char++ = *s++;
+
+        if ( cur_char - buf  > MAXWORDLEN )
+            progerr("Parsed word '%s' exceeded max length of %d", start, MAXWORDLEN );
     }
 
-    /* make a save copy of "word" */
+    if ( backslash )
+        *cur_char++ = '\\';
+        
 
-    len = s - wstart;
-    word = (char *) emalloc(len + 1);
-    strncpy(word, wstart, len);
-    *(word + len) = '\0';
+    *cur_char = '\0';
 
-    if (*s && *s == quotechar)
-        s++;
-    *skiplen = s - start;
+    *skiplen = s - start + 1;
 
-    return word;
+    return estrdup( buf );
 
 }
 
