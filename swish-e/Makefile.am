@@ -64,6 +64,7 @@ perl_dir = \
     perl/API.xs \
     perl/typemap \
     perl/t/test.t \
+    perl/t/dummy.t \
     perl/t/test.conf \
     perl/t/first.html \
     perl/t/second.html \
