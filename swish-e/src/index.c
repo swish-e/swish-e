@@ -416,7 +416,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 ** after a MemZoneReset is issued
 ********************************************************************/
 
-#define LOC_BLOCK_SIZE 32  /* Must be greater than sizeof(LOCATION) */
+#define LOC_BLOCK_SIZE 32  /* Must be greater than sizeof(LOCATION) and a power of 2 */
 #define LOC_MIN_SIZE   ((sizeof(LOCATION) + LOC_BLOCK_SIZE - 1) & (~(LOC_BLOCK_SIZE - 1)))
 
 /********************************************************************
@@ -443,6 +443,33 @@ LOCATION *new_location(struct MOD_Index *idx)
         return (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, LOC_MIN_SIZE);
 }
 
+
+int is_location_full(int size)
+{
+    int i;
+
+    /* Fast test. Since LOC_BLOCK_SIZE is the minimum size ... */
+    if(size % LOC_BLOCK_SIZE)
+        return 0;  /* it is not a power of two */
+    /* Check if size is a power of 2 (32,64,128,256,...) in binary ..000100... */
+    for(i=LOC_BLOCK_SIZE;;i <<= 1)
+    {
+        if(size>i)
+        {
+            continue;
+        }
+        if((size & i) == size)
+        {
+            return 1;
+        } 
+        else
+        {
+		    break;
+        }
+    }
+    return 0;
+}
+
 /********************************************************************
 ** 2001-08 jmruiz
 ** Routine to reallocate memory inside a zone for a previous allocated
@@ -453,17 +480,18 @@ LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency
 {
         LOCATION *newp = NULL, *tmp = NULL;
         int oldsize; 
-        int newsize;
+//        int newsize;
 
         oldsize = sizeof(LOCATION) + (frequency - 1) * sizeof(int);
-        newsize = oldsize + sizeof(int);
+//        newsize = oldsize + sizeof(int);
 
         /* Check for available size in block */
-        if(!(oldsize % LOC_BLOCK_SIZE))
+        if(is_location_full(oldsize))
         {
             /* Not enough size - Allocate a new block. Size rounded to LOC_BLOCK_SIZE */
-            newp = (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
-            memcpy((void *)newp,(void *)oldp,sizeof(LOCATION) + (frequency - 1) * sizeof(int));
+            //newp = (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone, (newsize + LOC_BLOCK_SIZE -1) & (~(LOC_BLOCK_SIZE - 1)));
+			newp = (LOCATION *)Mem_ZoneAlloc(idx->currentChunkLocZone,oldsize << 1);
+            memcpy((void *)newp,(void *)oldp,oldsize);
             /* Add old zone to the free chain of blocks */
             for(tmp = (LOCATION *)oldp;oldsize;)
             {
