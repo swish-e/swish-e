@@ -683,6 +683,9 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 
 static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
 {
+#ifdef _WIN32
+	struct stat stbuf;
+#endif
     if (!*fp)
         return;
 
@@ -698,8 +701,7 @@ static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
 
         newname[strlen(newname) - strlen(USE_TEMPFILE_EXTENSION)] = '\0';
 
-#if defined(_WIN32)
-	struct stat stbuf;
+#ifdef _WIN32
 	if(!stat(newname, &stbuf) && ((stbuf.st_mode & S_IFMT) == S_IFREG))
 	/* if(isfile(newname)) FIXME: file.c shouldn't rely on indexing structures */
             if (remove(newname))
