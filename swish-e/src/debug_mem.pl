@@ -48,7 +48,7 @@ while (<>) {
         next;
     }
 
-    $output .= $_;
+#    $output .= $_;
 
 }
 

@@ -164,7 +164,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         /* external program must seek past this data (fseek fails) */
         if (fprop->fp)
         {
-            rd_buffer = read_stream(fprop->fp, fprop->fsize, 0);
+            rd_buffer = read_stream(fprop->real_path, fprop->fp, fprop->fsize, 0);
             efree(rd_buffer);
         }
 
@@ -185,20 +185,27 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 
     if (fprop->hasfilter)
+    {
         fprop->fp = FilterOpen(fprop);
 
+        /* This should be checked in filteropen */
+        if ( !fprop->fp )
+            progerr("Failed to open filter file!");
+    }
+
     else if ( !fprop->fp )
+    {
         /* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
         fprop->fp = fopen(fprop->work_path, FILEMODE_READ);
 
-    /* $$$ needs better error reporting -- should this abort? */
-    if ( !fprop->fp )
-        progerr("Failed to open source file!");
+        if ( !fprop->fp )
+            progerr("Failed to open: '%s': %s", fprop->work_path, strerror( errno ) );
+    }
 
 
 
     /* -- Read  all data  (len = 0 if filtered...) */
-    rd_buffer = read_stream(fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
+    rd_buffer = read_stream(fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
     switch (fprop->doctype)
     {
