@@ -45,12 +45,14 @@
 #define PRESORTED_EXTENSION "_psort"
 #define BTREE_EXTENSION "_btree"
 #define ARRAY_EXTENSION "_array"
+#define HASHFILE_EXTENSION "_file"
 #else
 #define PROPFILE_EXTENSION ".prop"
 #define WORDDATA_EXTENSION ".wdata"
 #define PRESORTED_EXTENSION ".psort"
 #define BTREE_EXTENSION ".btree"
 #define ARRAY_EXTENSION ".array"
+#define HASHFILE_EXTENSION ".file"
 #endif
 
 /* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 
