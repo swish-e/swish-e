@@ -1,7 +1,8 @@
 /*
-$ID  $
+$ID:  $
 **
-**/
+**
+*/
 
 
 void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords);

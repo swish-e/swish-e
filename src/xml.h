@@ -1,5 +1,5 @@
 /*
-$ID $ 
+$ID: $ 
 **
 **
 ** The prototypes
