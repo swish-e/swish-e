@@ -45,17 +45,57 @@ use constant DEBUG_FAILED   => $bit <<= 1;  # failed to return a 200
 use constant DEBUG_SKIPPED  => $bit <<= 1;  # didn't index for some reason
 use constant DEBUG_INFO     => $bit <<= 1;  # more verbose
 use constant DEBUG_LINKS    => $bit <<= 1;  # prints links as they are extracted
+use constant DEBUG_REDIRECT => $bit <<= 1;  # prints links that are redirected
+
+use constant MAX_REDIRECTS  => 20;  # keep from redirecting forever
 
 my %DEBUG_MAP = (
-    errors  => DEBUG_ERRORS,
-    url     => DEBUG_URL,
-    headers => DEBUG_HEADERS,
-    failed  => DEBUG_FAILED,
-    skipped => DEBUG_SKIPPED,
-    info    => DEBUG_INFO,
-    links   => DEBUG_LINKS,
+    errors      => DEBUG_ERRORS,
+    url         => DEBUG_URL,
+    headers     => DEBUG_HEADERS,
+    failed      => DEBUG_FAILED,
+    skipped     => DEBUG_SKIPPED,
+    info        => DEBUG_INFO,
+    links       => DEBUG_LINKS,
+    redirect    => DEBUG_REDIRECT,
 );
-    
+
+# Valid config file options
+my @config_options = qw(
+    agent
+    base_url
+    credentials
+    credential_timeout
+    debug
+    delay_min  (deprecated)
+    delay_sec
+    email
+    filter_content
+    get_password
+    ignore_robots_file
+    keep_alive
+    link_tags
+    max_depth
+    max_files
+    max_indexed
+    max_size
+    max_time
+    max_wait_time
+    quiet
+    remove_leading_dots
+    same_hosts
+    skip
+    spider_done
+    test_response
+    test_url
+    use_cookies
+    use_default_config
+    use_head_requests
+    use_md5
+    validate_links
+);
+my %valid_config_options = map { $_ => 1 } @config_options;
+
 
 
 use constant MAX_SIZE       => 5_000_000;   # Max size of document to fetch
@@ -71,7 +111,7 @@ sub UNIVERSAL::port { '' };
 sub UNIVERSAL::host_port { '' };
 sub UNIVERSAL::userinfo { '' };
 
-    
+
 #-----------------------------------------------------------------------
 
     use vars '@servers';
@@ -105,6 +145,10 @@ sub UNIVERSAL::userinfo { '' };
             die "You must specify 'base_url' in your spider config settings\n";
         }
 
+        # Merge in default config?
+        $s = { %{ default_config() }, %$s } if $s->{use_default_config};
+
+
         my @urls = ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} :( $s->{base_url});
         for my $url ( @urls ) {
             $s->{base_url} = $url;
@@ -123,24 +167,49 @@ sub UNIVERSAL::userinfo { '' };
     }
 
 
-#-----------------------------------------------------------------------
+#==================================================================================
+# process_server()
+#
+# This processes a single server config (part of @servers)
+# It validates and cleans up the config and then starts spidering
+# for each URL listed in base_url
+#
+#----------------------------------------------------------------------------------
 
 
 sub process_server {
     my $server = shift;
 
+
+    # Check config options
+    for ( keys %$server ) {
+        warn "Warning: config option [$_] is unknown.  Perhaps misspelled?\n"
+            unless $valid_config_options{$_}
+    }
+
     # set defaults
 
-    if ( $ENV{SPIDER_DEBUG} ) {
-        $server->{debug} = 0;
 
-        $server->{debug} |= (exists $DEBUG_MAP{lc $_} ? $DEBUG_MAP{lc $_} : die "Bad debug setting passed in environment '$_'\nOptions are: " . join( ', ', keys %DEBUG_MAP) ."\n")
-            for split /\s*,\s*/, $ENV{SPIDER_DEBUG};
+    # Set debug options.
+    $server->{debug} =
+        defined $ENV{SPIDER_DEBUG}
+            ? $ENV{SPIDER_DEBUG}
+            : ($server->{debug} || 0);
 
-    } else {
-        $server->{debug} ||= 0;
-        die "debug parameter '$server->{debug}' must be a number\n" unless $server->{debug} =~ /^\d+$/;
+    # Convert to number
+    if ( $server->{debug} !~ /^\d+$/ ) {
+        my $debug = 0;
+        $debug |= (exists $DEBUG_MAP{lc $_} 
+            ? $DEBUG_MAP{lc $_} 
+            : die "Bad debug setting passed in "
+                    . (defined $ENV{SPIDER_DEBUG} ? 'SPIDER_DEBUG environment' : q['debug' config option])
+                    . " '$_'\nOptions are: " 
+                    . join( ', ', sort keys %DEBUG_MAP) ."\n")
+        for split /\s*,\s*/, $server->{debug};
+        $server->{debug} = $debug;
     }
+
+
 
     $server->{quiet} ||= $ENV{SPIDER_QUIET} || 0;
 
@@ -148,12 +217,18 @@ sub process_server {
     # Lame Microsoft
     $URI::ABS_REMOTE_LEADING_DOTS = $server->{remove_leading_dots} ? 1 : 0;
 
-    $server->{max_size} ||= MAX_SIZE;
+    $server->{max_size} = MAX_SIZE unless defined $server->{max_size};
     die "max_size parameter '$server->{max_size}' must be a number\n" unless $server->{max_size} =~ /^\d+$/;
 
 
     $server->{max_wait_time} ||= MAX_WAIT_TIME;
-    die "max_wait_time parameter '$server->{max_wait_time}' must be a number\n" if $server->{max_wait_time} !~ /^\d+/;
+    die "max_wait_time parameter '$server->{max_wait_time}' must be a number\n" if $server->{max_wait_time} !~ /^\d+$/;
+
+    # Can be zero or undef or a number.
+    $server->{credential_timeout} = 30 unless exists $server->{credential_timeout};
+    die "credential_timeout '$server->{credential_timeout}' must be a number\n" if defined $server->{credential_timeout} && $server->{credential_timeout} !~ /^\d+$/;
+
+
 
 
 
@@ -173,7 +248,7 @@ sub process_server {
         }
     }
 
-    
+
 
     my $start = time;
 
@@ -184,7 +259,7 @@ sub process_server {
 
     require "HTTP/Cookies.pm" if $server->{use_cookies};
     require "Digest/MD5.pm" if $server->{use_md5};
-            
+
 
     # set starting URL, and remove any specified fragment
     my $uri = URI->new( $server->{base_url} );
@@ -200,10 +275,10 @@ sub process_server {
 
     print STDERR "\n -- Starting to spider: $uri --\n" if $server->{debug};
 
-    
+
 
     # set the starting server name (including port) -- will only spider on server:port
-    
+
 
     # All URLs will end up with this host:port
     $server->{authority} = $uri->canonical->authority;
@@ -215,16 +290,16 @@ sub process_server {
 
     # Now, set the OK host:port names
     $server->{same} = [ $uri->canonical->authority || '' ];
-    
+
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
 
     $server->{same_host_lookup} = { map { $_, 1 } @{$server->{same}} };
 
-    
+
 
 
     # set time to end
-    
+
     $server->{max_time} = $server->{max_time} * 60 + time
         if $server->{max_time};
 
@@ -246,11 +321,11 @@ sub process_server {
             # change if ever move to Time::HiRes
             $server->{delay_sec} = int ($server->{delay_min} * 60);
         }
-        
+
         $server->{delay_sec} = 5 unless defined $server->{delay_sec};
     }
     $server->{delay_sec} = 5 unless $server->{delay_sec} =~ /^\d+$/;
-    
+
 
     if ( $server->{ignore_robots_file} ) {
         $ua = LWP::UserAgent->new;
@@ -266,16 +341,16 @@ sub process_server {
 
     # If ignore robots files also ignore meta ignore <meta name="robots">
     $ua->parse_head( 0 ) if $server->{ignore_robots_file} || $server->{ignore_robots_headers};
-    
+
 
     # Set the timeout - used to only for windows and used alarm, but this
-    # did not always works correctly.  Hopefully $ua->timeout works better in 
+    # did not always works correctly.  Hopefully $ua->timeout works better in
     # current versions of LWP (before DNS could block forever)
 
     $ua->timeout( $server->{max_wait_time} );
 
 
-        
+
     $server->{ua} = $ua;  # save it for fun.
     # $ua->parse_head(0);   # Don't parse the content
 
@@ -293,6 +368,17 @@ sub process_server {
         }
     }
 
+    # Disable HEAD requests if there's no reason to use them
+    # Keep_alives is questionable because even without keep alives
+    # it might be faster to do a HEAD than a partial GET.
+
+    if ( $server->{use_head_requests} && !$server->{keep_alive} ||
+        !( $server->{test_response} || $server->{max_size} ) ) {
+
+        warn 'Option "use_head_requests" was disabled.\nNeed keep_alive and either test_response or max_size options\n';
+        delete $server->{use_head_requests};
+    }
+
 
     # uri, parent, depth
     eval { spider( $server, $uri ) };
@@ -301,7 +387,7 @@ sub process_server {
 
     # provide a way to call a function in the config file when all done
     check_user_function( 'spider_done', undef, $server );
-    
+
 
     delete $server->{ua};  # Free up LWP to avoid CLOSE_WAITs hanging around when using a lot of @servers.
 
@@ -339,26 +425,34 @@ sub process_server {
 # Thanks Gisle!
 sub get_basic_credentials {
     my($uri, $server, $realm ) = @_;
+
+    # Exists but undefined means don't ask.
+    return if exists $server->{credential_timeout} && !defined $server->{credential_timeout};
+
+    # Exists but undefined means don't ask.
+
     my $netloc = $uri->canonical->host_port;
 
     my ($user, $password);
 
     eval {
         local $SIG{ALRM} = sub { die "timed out\n" };
-        alarm( $server->{credential_timeout} || 30 ) unless $^O =~ /Win32/i;
+
+        # a zero timeout means don't time out
+        alarm( $server->{credential_timeout} ) unless $^O =~ /Win32/i;
 
         if (  $uri->userinfo ) {
             print STDERR "\nSorry: invalid username/password\n";
             $uri->userinfo( undef );
         }
-            
+
 
         print STDERR "Need Authentication for $uri at realm '$realm'\n(<Enter> skips)\nUsername: ";
         $user = <STDIN>;
-        chomp($user);
+        chomp($user) if $user;
         die "No Username specified\n" unless length $user;
 
-        alarm( $server->{credential_timeout} || 30 ) unless $^O =~ /Win32/i;
+        alarm( $server->{credential_timeout} ) unless $^O =~ /Win32/i;
 
         print STDERR "Password: ";
         system("stty -echo");
@@ -376,11 +470,15 @@ sub get_basic_credentials {
 
 
 }
-            
 
-        
+
+
 
 #----------- Non recursive spidering ---------------------------
+# Had problems with some versions of LWP where memory was not freed
+# after the URI objects went out of scope, so instead just maintain
+# a list of URI.
+# Should move this to a DBM or database.
 
 sub spider {
     my ( $server, $uri ) = @_;
@@ -395,13 +493,16 @@ sub spider {
         die $server->{abort} if $abort || $server->{abort};
 
         my ( $uri, $parent, $depth ) = @{shift @link_array};
-        
+
         delay_request( $server );
-        
+
+        # Delete any per-request data
+        delete $server->{_request};
+
         my $new_links = process_link( $server, $uri, $parent, $depth );
 
         push @link_array, map { [ $_, $uri, $depth+1 ] } @$new_links if $new_links;
-            
+
     }
 }
 
@@ -410,9 +511,8 @@ sub spider {
 sub delay_request {
     my ( $server ) = @_;
 
-    # return if no delay or first request
 
-    return if !$server->{delay_sec} || !$server->{last_response_time};
+    # Here's a place to log the type of connection
 
     if ( $server->{keep_alive_connection} ) {
         $server->{counts}{'Connection: Keep-Alive'}++;
@@ -422,6 +522,11 @@ sub delay_request {
 
     $server->{counts}{'Connection: Close'}++;
 
+    # return if no delay or first request
+    return if !$server->{delay_sec} || !$server->{last_response_time};
+
+
+
     my $wait = $server->{delay_sec} - ( time - $server->{last_response_time} );
 
     return unless $wait > 0;
@@ -429,9 +534,28 @@ sub delay_request {
     print STDERR "sleeping $wait seconds\n" if $server->{debug} & DEBUG_URL;
     sleep( $wait );
 }
-        
 
-#----------- Process a url and return links -----------------------
+
+#================================================================================
+# process_link()  - process a link from the list
+#
+# Can be called recursively (for auth and redirects)
+#
+# This does most of the work.
+# Pass in:
+#   $server -- config hash, plus ugly scratch pad memory
+#   $uri    -- uri to fetch and extract links from
+#   $parent -- parent uri for better messages
+#   $depth  -- for controlling how deep to go into a site, whatever that means
+#
+# Returns:
+#   undef or an array ref of links to add to the list
+#
+# Makes request, tests response, logs, parsers and extracts links
+# Very ugly as this is some of the oldest code
+#
+#---------------------------------------------------------------------------------
+
 sub process_link {
     my ( $server, $uri, $parent, $depth ) = @_;
 
@@ -445,169 +569,523 @@ sub process_link {
         if $server->{max_time} && $server->{max_time} < time;
 
 
-
-    # make request
-    my $ua = $server->{ua};
-    my $request = HTTP::Request->new('GET', $uri );
-    $request->header('Accept-encoding', 'gzip; deflate') if $can_uncompress;
-
-    my $content = '';
-
+    # clean up some per-request crap.
     # Really should just subclass the response object!
     $server->{no_contents} = 0;
     $server->{no_index} = 0;
     $server->{no_spider} = 0;
 
 
+
+    # Make request object for this URI
+
+    my $request = HTTP::Request->new('GET', $uri );
+    $request->header('Accept-encoding', 'gzip; deflate') if $can_uncompress;
+
+
+
     # Set basic auth if defined - use URI specific first, then credentials
     # this doesn't track what should have authorization
+    my $last_auth;
+    if ( $server->{last_auth} ) {
+        my $path = $uri->path;
+        $path =~ s!/[^/]*$!!;
+        $last_auth = $server->{last_auth}{auth} if $server->{last_auth}{path} eq $path;
+    }
 
-    if ( my ( $user, $pass ) = split /:/, ( $uri->userinfo || $server->{credentials} || '' ) ) {
+
+    if ( my ( $user, $pass ) = split /:/, ( $last_auth || $uri->userinfo || $server->{credentials} || '' ) ) {
         $request->authorization_basic( $user, $pass );
     }
 
 
-    
+    my $response;
 
-    my $been_here;
-    my $callback = sub {
 
-        # Cache user/pass
-        if ( $server->{cur_realm} && $uri->userinfo ) {
-             my $key = $uri->canonical->host_port . ':' . $server->{cur_realm};
-             $server->{auth_cache}{$key} =  $uri->userinfo;
+    delete $server->{response_checked};  # to keep from checking more than once
+
+
+    if ( $server->{use_head_requests} ) {
+        $request->method('HEAD');
+
+        # This is ugly in what it can return.  It's can be recursive.
+        $response = make_request( $request, $server, $uri, $parent, $depth );
+
+        return $response if !$response || ref $response eq 'ARRAY';  # returns undef or an array ref if done
+
+        # otherwise, we have a response object.
+
+        $request->method('GET');
+    }
+
+
+    # Now make GET request
+    $response = make_request( $request, $server, $uri, $parent, $depth );
+    return $response if !$response || ref $response eq 'ARRAY';  # returns undef or an array ref
+
+
+    # Now we have a $response object with content
+
+    return process_content( $response, $server, $uri, $parent, $depth );
+
+}
+
+
+#===================================================================================
+# make_request -- 
+#
+# This only can deal with things that happen in a HEAD request.
+# Well, unless test for the method
+#
+# Hacke up function to make either a HEAD or GET request and test the response
+# Returns one of three things:
+#   undef - stop processing and return
+#   and array ref - a list of URLs extracted (via recursive call)
+#   a HTTP::Response object
+#
+#
+# Yes it's a mess -- got pulled out of other code when adding HEAD requests
+#-----------------------------------------------------------------------------------
+
+sub make_request {
+    my ( $request, $server, $uri, $parent, $depth ) = @_;
+
+
+    my $response;
+    my $response_aborted_msg;
+    my $killed_connection;
+
+    my $ua = $server->{ua};
+
+    if ( $request->method eq 'GET' ) {
+
+        # When making a GET request this gets called for every chunk returned
+        # from the webserver (well, from the OS).  No idea how bit it will be.
+        #
+        my $total_length = 0;
+
+        my $callback = sub {
+            my ( $content, $response ) = @_;
+
+            # First time, check response - this can die()
+            check_response( $response, $server, $uri )
+                unless $server->{response_checked}++;
+
+
+
+            # In case didn't return a content-length header
+            $total_length += length $content;
+            check_too_big( $response, $server, $total_length ) if $server->{max_size};
+
+
+
+            $response->add_content( $content );
+        };
+
+
+
+        ## Make Request ##
+
+        # Used to wrap in an eval and use alarm on non-win32 to fix broken $ua->timeout
+
+        $response = $ua->simple_request( $request, $callback, 4096 );
+
+        # Check for callback death:
+        # If the LWP callback aborts
+
+        if ( $response->header('client-aborted') ) {
+            $response_aborted_msg = $response->header('X-Died') || 'unknown';
+            $killed_connection++;  # so we will delay
         }
 
-        $uri->userinfo( undef ) unless $been_here;
+    } else {
 
-        die "test_response" if !$been_here++ && !check_user_function( 'test_response', $uri, $server, $_[1], \$_[0]  );
-            
+        # Make a HEAD request
+        $response = $ua->simple_request( $request );
 
-        if ( length( $content ) + length( $_[0] ) > $server->{max_size} ) {
-            print STDERR "-Skipped $uri: Document exceeded $server->{max_size} bytes\n" if $server->{debug}&DEBUG_SKIPPED;
-            die "too big!\n";
+        # check_response - user callback can call die() so wrap in eval block
+        eval {
+            check_response( $response, $server, $uri )
+                unless $server->{response_checked}++;
+        };
+        $response_aborted_msg = $@ if $@;
+    }
+
+    # save the request completion time for delay between requests
+    $server->{last_response_time} = time;
+
+
+    # Ok, did the request abort for some reason?  (response checker called die() )
+
+    if ( $response_aborted_msg ) {
+        # Log unless it's the callback (because the callback already logged it)
+        if ( $response_aborted_msg !~ /test_response/ ) {
+            $server->{counts}{Skipped}++;
+
+            # Not really sure why request aborted.  Let's try and make the error message
+            # a bit cleaner.
+            print STDERR "Request for '$uri' aborted because: '$response_aborted_msg'\n" if $server->{debug}&DEBUG_SKIPPED;
         }
 
-        $content .= $_[0];
 
-    };
+        # Aborting in the callback breaks the connection (so tested on Apache)
+        # even if all the data was transmitted.
+        # Might be smart to flag to abort but wait until the next chunk
+        # to really abort.  That might make so the connection would not get killed.
+
+        delete $server->{keep_alive_connection} if $killed_connection;
+        return;
+    }
 
 
-    ## Make Request ##
 
-    # Used to wrap in an eval and use alarm on non-win32 to fix broken $ua->timeout
+    # Look for connection.  Assume it's a keep-alive unless we get a Connection: close
+    # header.  Some server errors (on Apache) will close the connection, but they
+    # report it.
+    # Have to assume the connection is open (without asking LWP) since the first 
+    # connection we normally do not see (robots.txt) and then following keep-alive
+    # connections do not have Connection: header.
 
-    my $response = $ua->simple_request( $request, $callback, 4096 );
+    my $connection = $response->header('Connection') || 'Keep-alive';  # assume keep-alive
+    $server->{keep_alive_connection} =  !$killed_connection && $server->{keep_alive} && $connection !~ /close/i;
 
+
+
+    # Did a callback return abort?
     return if $server->{abort};
 
 
-    if ( $response && $response->code == 401 && $response->header('WWW-Authenticate') && $response->header('WWW-Authenticate') =~ /realm="([^"]+)"/i ) {
-        my $realm = $1;
+    # Clean up the URI so passwords don't leak
 
-        my $user_pass;
-
-        # Do we have a cached user/pass for this realm?
-        my $key = $uri->canonical->host_port . ':' . $realm;
-
-        if ( $user_pass = $server->{auth_cache}{$key} ) {
-
-            # If we didn't just try it, try again
-            unless( $uri->userinfo && $user_pass eq $uri->userinfo ) {
-                $uri->userinfo( $user_pass );
-                return process_link( $server, $uri, $parent, $depth );
-            }
-        }
-
-        # otherwise, prompt:
-
-
-        if ( $user_pass = get_basic_credentials( $uri, $server, $realm ) ) {
-            $uri->userinfo( $user_pass );
-
-            $server->{cur_realm} = $realm;  # save so we can cache
-            my $links = process_link( $server, $uri, $parent, $depth );
-            delete $server->{cur_realm};
-
-            return $links;
-        }
-        print STDERR "Skipping $uri\n";
-    }
-
+    $response->request->uri->userinfo( undef ) if $response->request;
     $uri->userinfo( undef );
-        
 
-
-    # Log the response
-    
-    if ( ( $server->{debug} & DEBUG_URL ) || ( $server->{debug} & DEBUG_FAILED && !$response->is_success)  ) {
-        print STDERR '>> ',
-          join( ' ',
-                ( $response->is_success ? '+Fetched' : '-Failed' ),
-                $depth,
-                "Cnt: $server->{counts}{'Unique URLs'}",
-                $uri,
-                ( $response->status_line || $response->status || 'unknown status' ),
-                ( $response->content_type || 'Unknown content type'),
-                ( $response->content_length || '???' ),
-                "parent:$parent",
-           ),"\n";
-    }
-
-
-    print STDERR "\n----HEADERS for $uri ---\n", $response->headers_as_string,"-----END HEADERS----\n\n"
+    # A little debugging
+    print STDERR "\nvvvvvvvvvvvvvvvv HEADERS for $uri vvvvvvvvvvvvvvvvvvvvv\n\n---- Request ------\n",
+                  $response->request->as_string,
+                  "\n---- Response ---\nStatus: ", $response->status_line,"\n",
+                  $response->headers_as_string,
+                  "\n^^^^^^^^^^^^^^^ END HEADERS ^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n"
        if $server->{debug} & DEBUG_HEADERS;
 
 
 
-    # Deal with the client generated responses
+    # Deal with failed responses
 
-    # If the LWP callback aborts
+    return failed_response( $response, $server, $uri, $parent, $depth )
+        unless $response->is_success;
 
-    if ( $response->header('client-aborted') ) {
-        my $msg = $response->header('X-Died') || 'unknown';
-        delete $server->{keep_alive_connection}; # aborting kills the connection
 
-        if ( $msg !~ /test_response/ ) {
-            $server->{counts}{Skipped}++;
-            print STDERR "Request for '$uri' aborted because: '$msg'\n" if $server->{debug}&DEBUG_SKIPPED;
-        }
+    # Don't log HEAD requests
+    return $request if $request->method eq 'HEAD';
 
-        return;
+    # Log if requested
+
+    log_response( $response, $server, $uri, $parent, $depth )
+        if $server->{debug} & DEBUG_URL;
+
+
+
+    # Check for meta refresh
+    # requires that $ua->parse_head() is enabled (the default)
+
+    return redirect_response( $response, $server, $uri, $parent, $depth, $1, 'meta refresh' )
+        if $response->header('refresh') && $response->header('refresh') =~ /URL\s*=\s*(.+)/;
+
+
+    return $response;
+}
+
+
+#===================================================================
+# check_response -- after resonse comes back from server
+#
+# Failure here should die() because check_user_function can die()
+#
+#-------------------------------------------------------------------
+sub check_response {
+    my ( $response, $server, $uri ) = @_;
+
+    return unless $response->is_success;  # 2xx response.
+
+    # Cache user/pass if entered from the keyboard or callback function (as indicated by the realm)
+    # do here so we know it is correct
+
+    if ( $server->{cur_realm} && $uri->userinfo ) {
+        my $key = $uri->canonical->host_port . ':' . $server->{cur_realm};
+        $server->{auth_cache}{$key} =  $uri->userinfo;
+
+        # not too sure of the best logic here
+        my $path = $uri->path;
+        $path =~ s!/[^/]*$!!;
+        $server->{last_auth} = {
+            path => $path,
+            auth => $uri->userinfo,
+        };
     }
 
-    $response->request->uri->userinfo( undef ) if $response->request;
+    # check for document too big.
+    check_too_big( $response, $server ) if $server->{max_size};
 
 
-    # skip excluded by robots.txt
-    
-    if ( !$response->is_success && $response->status_line =~ 'robots.txt' ) {
+    die "test_response" if !check_user_function( 'test_response', $uri, $server, $response );
+
+}
+
+#=====================================================================
+# check_too_big -- see if document is too big
+# Die if it is too big.
+#--------------------------------------------------------------------
+
+sub check_too_big {
+    my ( $response, $server, $length ) = @_;
+
+    $length ||= $response->content_length || 0;
+    return unless $length && $length =~ /^\d+$/;
+
+    if ( $length > $server->{max_size} ) {
+    die "Document exceeded $server->{max_size} bytes (Content-Length: $length) Method: " . $response->request->method . "\n"
+        if $length > $server->{max_size};
+    }
+}
+
+#=========================================================================
+# failed_response -- deal with a non 2xx response
+#
+#------------------------------------------------------------------------
+sub failed_response {
+    my ( $response, $server, $uri, $parent, $depth ) = @_;
+
+    my $links;
+
+    # Do we need to authorize?
+    if ( $response->code == 401 ) {
+        # This will log the error
+        $links = authorize( $response, $server, $uri, $parent, $depth );
+        return $links if ref $links or !$links;
+    }
+
+
+    # Are we rejected because of robots.txt?
+
+    if ( $response->status_line =~ 'robots.txt' ) {
         print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug}&DEBUG_SKIPPED;
         $server->{counts}{'robots.txt'}++;
         return;
     }
 
 
-    # save the request completion time for delay_min
-    $server->{last_response_time} = time;
+    # Look for redirect
+    return redirect_response( $response, $server, $uri, $parent, $depth )
+        if $response->is_redirect;
+
+    # Report bad links (excluding those skipped by robots.txt)
+    # Not so sure about this being here for these links...
+    validate_link( $server, $uri, $parent, $response )
+        if $server->{validate_links};
 
 
-    # LWP failes to return the Connection header after the first response
+    # Otherwise, log if needed and then return.
+    log_response( $response, $server, $uri, $parent, $depth )
+        if $server->{debug} & DEBUG_FAILED;
 
-    my $connection = $response->header('Connection') || 'Keep-alive';
-    $server->{keep_alive_connection} = $server->{keep_alive} && $connection !~ /close/i;
+    return;
+}
 
-    
 
-    # Report bad links (excluding those skipped by robots.txt
+#=============================================================================
+# redirect_response -- deal with a 3xx redirect
+#
+# Returns link to follow
+#
+#----------------------------------------------------------------------------
+sub redirect_response {
+    my ( $response, $server, $uri, $parent, $depth, $location, $description ) = @_;
 
-    if ( $server->{validate_links} && !$response->is_success ) {
-        validate_link( $server, $uri, $parent, $response );
+    $location ||= $response->header('location');
+    unless ( $location ) {
+        print STDERR "Warning: $uri returned a redirect without a Location: header\n";
+        return;
     }
 
+    $description ||= 'Location';
 
 
-    # And check for meta robots tag
+    # This should NOT be needed, but some servers are broken
+    # and don't return absolute links.
+    # and this may even break things
+    my $u = URI->new_abs( $location, $response->base );
+
+    if ( $u->canonical eq $uri->canonical ) {
+        print STDERR "Warning: $uri redirects to itself!.\n";
+        return;
+    }
+
+    # make sure it's ok:
+    return unless check_link( $u, $server, $response->base, '(redirect)', $description  );
+
+
+    # make recursive request
+    # This will not happen because the check_link records that the link has been seen.
+    # But leave here just in case
+
+    if ( $server->{_request}{redirects}++ > MAX_REDIRECTS ) {
+        warn "Exceeded redirect limimt: perhaps a redirect loop: $uri on parent page: $parent\n";
+        return;
+    }
+
+    print STDERR "--Redirect: $description $uri -> $u. Parent: $parent\n" if $server->{debug} & DEBUG_REDIRECT;
+
+    $server->{counts}{"$description Redirects"}++;
+    my $links = process_link( $server, $u, $parent, $depth );
+    $server->{_request}{redirects}-- if  $server->{_request}{redirects};
+    return $links;
+
+}
+
+#=================================================================================
+# Do we need to authorize?  If so, ask for password and request again.
+# First we try using any cached value
+# Then we try using the get_password callback
+# Then we ask.
+
+sub authorize {
+    my ( $response, $server, $uri, $parent, $depth ) = @_;
+
+
+    delete $server->{last_auth};  # since we know that doesn't work
+
+
+    if ( $response->header('WWW-Authenticate') && $response->header('WWW-Authenticate') =~ /realm="([^"]+)"/i ) {
+        my $realm = $1;
+        my $user_pass;
+
+        # Do we have a cached user/pass for this realm?
+        unless ( $server->{_request}{auth}{$uri}++ ) { # only each URI only once
+            my $key = $uri->canonical->host_port . ':' . $realm;
+
+            if ( $user_pass = $server->{auth_cache}{$key} ) {
+
+                # If we didn't just try it, try again
+                unless( $uri->userinfo && $user_pass eq $uri->userinfo ) {
+
+                    # add the user/pass to the URI
+                    $uri->userinfo( $user_pass );
+                    return process_link( $server, $uri, $parent, $depth );
+                }
+            }
+        }
+
+        # now check for a callback password (if $user_pass not set)
+        unless ( $user_pass || $server->{_request}{auth}{callback}++ ) {
+
+            # Check for a callback function
+            $user_pass = $server->{get_password}->( $uri, $server, $response, $realm )
+                if ref $server->{get_password} eq 'CODE';
+        }
+
+        # otherwise, prompt (over and over)
+
+        if ( !$user_pass ) {
+            $user_pass = get_basic_credentials( $uri, $server, $realm );
+        }
+
+
+        if ( $user_pass ) {
+            $uri->userinfo( $user_pass );
+            $server->{cur_realm} = $realm;  # save so we can cache if it's valid
+            my $links = process_link( $server, $uri, $parent, $depth );
+            delete $server->{cur_realm};
+            return $links;
+        }
+    }
+
+    log_response( $response, $server, $uri, $parent, $depth )
+        if $server->{debug} & DEBUG_FAILED;
+
+    return;  # Give up
+}
+
+
+
+
+#==================================================================================
+# Log a response
+
+sub log_response {
+    my ( $response, $server, $uri, $parent, $depth ) = @_;
+
+    # Log the response
+
+    print STDERR '>> ',
+      join( ' ',
+            ( $response->is_success ? '+Fetched' : '-Failed' ),
+            $depth,
+            "Cnt: $server->{counts}{'Unique URLs'}",
+            $response->request->method,
+            " $uri ",
+            ( $response->status_line || $response->status || 'unknown status' ),
+            ( $response->content_type || 'Unknown content type'),
+            ( $response->content_length || '???' ),
+            "parent:$parent",
+            "depth:$depth",
+       ),"\n";
+}
+
+#===================================================================================================
+#  Calls a user-defined function
+#
+#---------------------------------------------------------------------------------------------------
+
+sub check_user_function {
+    my ( $fn, $uri, $server ) = ( shift, shift, shift );
+
+    return 1 unless $server->{$fn};
+
+    my $tests = ref $server->{$fn} eq 'ARRAY' ? $server->{$fn} : [ $server->{$fn} ];
+
+    my $cnt;
+
+    for my $sub ( @$tests ) {
+        $cnt++;
+        print STDERR "?Testing '$fn' user supplied function #$cnt '$uri'\n" if $server->{debug} & DEBUG_INFO;
+
+        my $ret;
+
+        eval { $ret = $sub->( $uri, $server, @_ ) };
+
+        if ( $@ ) {
+            print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt death '$@'\n" if $server->{debug} & DEBUG_SKIPPED;
+            $server->{counts}{Skipped}++;
+            return;
+        }
+
+        next if $ret;
+
+        print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} & DEBUG_SKIPPED;
+        $server->{counts}{Skipped}++;
+        return;
+    }
+    print STDERR "+Passed all $cnt tests for '$fn' user supplied function\n" if $server->{debug} & DEBUG_INFO;
+    return 1;
+}
+
+#==============================================================================
+# process_content -- deals with a response object.  Kinda
+#
+# returns an array ref of new links to follow
+#
+#-----------------------------------------------------------------------------
+
+sub process_content { 
+    my ( $response, $server, $uri, $parent, $depth ) = @_;
+
+
+    my $content = $response->content;
+
+
+
+    # Check for meta robots tag
     # -- should probably be done in request sub to avoid fetching docs that are not needed
     # -- also, this will not not work with compression $$$ check this
 
@@ -620,48 +1098,6 @@ sub process_link {
         }
     }
 
-
-
-
-
-    unless ( $response->is_success ) {
-
-        # look for redirect
-        if ( $response->is_redirect && $response->header('location') ) {
-            my $u = URI->new_abs( $response->header('location'), $response->base );
-
-            if ( $u->canonical eq $uri->canonical ) {
-                print STDERR "Warning: $uri redirects to itself!.\n";
-                return;
-            }
-
-            return [$u] if check_link( $u, $server, $response->base, '(redirect)','Location' );
-        }
-        return;
-    }
-
-
-
-    # Check for meta refresh
-    # requires that $ua->parse_head() is enabled (the default)
-
-    my $refresh = $response->header('refresh') || '';
-
-    if ( $refresh =~ /URL\s*=\s*(.+)/ ) {
-        my $u = URI->new_abs( $1, $response->base );
-
-        if ( $u->canonical eq $uri->canonical ) {
-            print STDERR "Warning: $uri redirects to itself!.\n";
-            return;
-        }
-
-        return [$u] if check_link( $u, $server, $response->base, 'meta','refresh' );
-    }
-
-
-#    return unless $content;  # $$$ any reason to index empty files?
-    
-
     # make sure content is unique - probably better to chunk into an MD5 object above
 
     if ( $server->{use_md5} ) {
@@ -670,7 +1106,7 @@ sub process_link {
 
             print STDERR "-Skipped $uri has same digest as $visited{ $digest }\n"
                 if $server->{debug} & DEBUG_SKIPPED;
-        
+
             $server->{counts}{Skipped}++;
             $server->{counts}{'MD5 Duplicates'}++;
             return;
@@ -693,7 +1129,7 @@ sub process_link {
 
 
     # Index the file
-    
+
     if ( $server->{no_index} ) {
         $server->{counts}{Skipped}++;
         print STDERR "-Skipped indexing $uri some callback set 'no_index' flag\n" if $server->{debug}&DEBUG_SKIPPED;
@@ -710,44 +1146,6 @@ sub process_link {
     return $links_extracted;
 }
 
-#===================================================================================================
-#  Calls a user-defined function
-#
-#---------------------------------------------------------------------------------------------------
-
-sub check_user_function {
-    my ( $fn, $uri, $server ) = ( shift, shift, shift );
-    
-    return 1 unless $server->{$fn};
-
-    my $tests = ref $server->{$fn} eq 'ARRAY' ? $server->{$fn} : [ $server->{$fn} ];
-
-    my $cnt;
-
-    for my $sub ( @$tests ) {
-        $cnt++;
-        print STDERR "?Testing '$fn' user supplied function #$cnt '$uri'\n" if $server->{debug} & DEBUG_INFO;
-
-        my $ret;
-        
-        eval { $ret = $sub->( $uri, $server, @_ ) };
-
-        if ( $@ ) {
-            print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt death '$@'\n" if $server->{debug} & DEBUG_SKIPPED;
-            $server->{counts}{Skipped}++;
-            return;
-        }
-            
-        next if $ret;
-        
-        print STDERR "-Skipped $uri due to '$fn' user supplied function #$cnt\n" if $server->{debug} & DEBUG_SKIPPED;
-        $server->{counts}{Skipped}++;
-        return;
-    }
-    print STDERR "+Passed all $cnt tests for '$fn' user supplied function\n" if $server->{debug} & DEBUG_INFO;
-    return 1;
-}
-
 
 #==============================================================================================
 #  Extract links from a text/html page
@@ -758,7 +1156,7 @@ sub check_user_function {
 #       $response - response object
 #
 #----------------------------------------------------------------------------------------------
-    
+
 sub extract_links {
     my ( $server, $content, $response ) = @_;
 
@@ -797,7 +1195,7 @@ sub extract_links {
         print STDERR "\nLooking at extracted tag '<$tag $attr>'\n" if $server->{debug} & DEBUG_LINKS;
 
         unless ( $server->{link_tags_lookup}{$tag} ) {
-        
+
             # each tag is reported only once per page
             print STDERR
                 "   <$tag> skipped because not one of (",
@@ -808,10 +1206,10 @@ sub extract_links {
                 my $img = URI->new_abs( $attr{src}, $base );
                 validate_link( $server, $img, $base );
             }
-                     
+
             next;
         }
-        
+
         # Grab which attribute(s) which might contain links for this tag
         my $links = $HTML::Tagset::linkElements{$tag};
         $links = [$links] unless ref $links;
@@ -821,16 +1219,16 @@ sub extract_links {
 
 
         # Now, check each attribut to see if a link exists
-        
+
         for my $attribute ( @$links ) {
             if ( $attr{ $attribute } ) {  # ok tag
 
                 # Create a URI object
-                
+
                 my $u = URI->new_abs( $attr{$attribute},$base );
 
                 next unless check_link( $u, $server, $base, $tag, $attribute );
-                
+
                 push @links, $u;
                 print STDERR qq[   $attribute="$u" Added to list of links to follow\n] if $server->{debug} & DEBUG_LINKS;
                 $found++;
@@ -841,7 +1239,7 @@ sub extract_links {
         if ( !$found && $server->{debug} & DEBUG_LINKS ) {
             print STDERR "  tag did not include any links to follow or is a duplicate\n";
         }
-        
+
     }
 
     print STDERR "! Found ", scalar @links, " links in ", $response->base, "\n\n" if $server->{debug} & DEBUG_INFO;
@@ -869,7 +1267,7 @@ sub extract_links {
 #------------------------------------------------------------------------------
 sub check_link {
     my ( $u, $server, $base, $tag, $attribute ) = @_;
-    
+
     $tag ||= '';
     $attribute ||= '';
 
@@ -887,7 +1285,7 @@ sub check_link {
         validate_link( $server, $u, $base ) if $server->{validate_links};
         return;
     }
-    
+
     $u->host_port( $server->{authority} );  # Force all the same host name
 
     # Allow rejection of this URL by user function
@@ -904,7 +1302,7 @@ sub check_link {
         $server->{counts}{Duplicates}++;
 
 
-        # Just so it's reported for all pages 
+        # Just so it's reported for all pages
         if ( $server->{validate_links} && $validated{$u->canonical} ) {
             push @{$bad_links{ $base->canonical }}, $u->canonical;
         }
@@ -930,7 +1328,7 @@ sub validate_link {
     $uri = URI->new_abs($uri, $base) unless ref $uri;
 
 
-   # Already checked? 
+   # Already checked?
 
     if ( exists $validated{ $uri->canonical } )
     {
@@ -938,7 +1336,7 @@ sub validate_link {
         push @{$bad_links{ $base->canonical }}, $uri->canonical
             if $validated{ $uri->canonical };
 
-        return;            
+        return;
     }
 
     $validated{ $uri->canonical } = 0;  # mark as checked and ok.
@@ -959,7 +1357,11 @@ sub validate_link {
     $validated{ $uri->canonical } = $error;
     push @{$bad_links{ $base->canonical }}, $uri->canonical;
 }
-    
+
+#===================================================================================
+# output_content -- formats content for swish-e
+#
+#-----------------------------------------------------------------------------------
 
 sub output_content {
     my ( $server, $content, $uri, $response ) = @_;
@@ -983,6 +1385,17 @@ sub output_content {
     my $path = $uri;
     $path =~ s/%([0-9a-fA-F]{2})/chr hex($1)/ge;
 
+
+    # For Josh
+    if ( my $fn = $server->{output_function} ) {
+        eval {
+            $fn->(  $server, $content, $uri, $response, $bytecount, $path); 
+        };
+        die "output_function died for $uri: $@\n" if $@;
+        return;
+    }
+
+
     my $headers = join "\n",
         'Path-Name: ' .  $path,
         'Content-Length: ' . $bytecount,
@@ -998,7 +1411,7 @@ sub output_content {
     } elsif ( $response->content_type =~ m!^text/(html|xml|plain)! ) {
         $type = $1 eq 'plain' ? 'txt' : $1;
         $headers .= "Document-Type: $type*\n";
-    }        
+    }
 
 
     $headers .= "No-Contents: 1\n" if $server->{no_contents};
@@ -1007,7 +1420,7 @@ sub output_content {
     die "$0: Max indexed files Reached\n"
         if $server->{max_indexed} && $server->{counts}{'Total Docs'} >= $server->{max_indexed};
 }
-        
+
 
 
 sub commify {
@@ -1019,82 +1432,101 @@ sub commify {
 sub default_urls {
 
     my $validate = 0;
-    if ( $ARGV[0] eq 'validate' ) {
+    if ( @ARGV && $ARGV[0] eq 'validate' ) {
         shift @ARGV;
         $validate = 1;
     }
 
     die "$0: Must list URLs when using 'default'\n" unless @ARGV;
 
+    my $config = default_config();
+
+    $config->{base_url} = [ @ARGV ];
+
+    $config->{validate}++ if $validate;
+
+    return $config;
+
+}
+
+# Returns a default config hash
+
+sub default_config {
+
     ## See if we have any filters
 
     my ($filter_sub, $response_sub);
 
-    eval { require SWISH::Filter };
+    eval { $filter_sub = swish_filter() };
+    if ( $@ ) {
 
-    unless ( $@ ) {
-        my $filter = SWISH::Filter->new;
-
-        $filter_sub = sub {
-            my ( $uri, $server, $response, $content_ref ) = @_;
-
-            my $content_type = $response->content_type;
-            # Ignore text/* content type -- no need to filter
-            return 1 if !$content_type || $content_type =~ m!^text/!;
-
-            my $doc = $filter->convert(
-                document     => $content_ref,
-                name         => $response->base,
-                content_type => $content_type,
-            );
-
-            return 1 unless $doc; # so just proceed as if not using filter
-
-            if ( $doc->is_binary ) {  # ignore "binary" files (not text/* mime type)
-                die "Skipping " . $response->base . " due to content type: " . $doc->content_type ." may be binary\n";
-            }
-
-            # nicer to use **char...
-            $$content_ref = ${$doc->fetch_doc};
-
-            # let's see if we can set the parser.
-            $server->{parser_type} = $doc->swish_parser_type || '';
-
-            return 1;            
-        }
-    } else {
-        warn "Failed to find the SWISH::Filter module\n";
-
-        my @content_types  = qw{ text/html text/plain };
+        warn "Failed to find the SWISH::Filter module.  Only processing text/* content.\n$@\n";
 
         $response_sub = sub {
             my $content_type = $_[2]->content_type;
-            my $ok = grep { $_ eq $content_type } @content_types;
-            return 1 if $ok;
-            print STDERR "$_[0] $content_type != (@content_types)\n";
-            return;
+            return $content_type =~ m!^text/!;
         }
     }
 
-    return map {
-        {
-            #debug => DEBUG_HEADERS,
-            #debug => DEBUG_URL|DEBUG_SKIPPED|DEBUG_INFO,
-            base_url        => \@ARGV,
-            email           => 'swish@user.failed.to.set.email.invalid',
-            link_tags       => [qw/ a frame /],
-            keep_alive      => 1,
-            test_url        => sub {  $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
-            test_response   => $response_sub,
-            filter_content  => $filter_sub,
-            validate_links  => $validate,
-
-        }
-    } @ARGV;
+    return {
+        email           => 'swish@user.failed.to.set.email.invalid',
+        link_tags       => [qw/ a frame /],
+        keep_alive      => 1,
+        test_url        => sub {  $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
+        test_response   => $response_sub,
+        filter_content  => $filter_sub,
+    };
 }
 
 
-            
+#=================================================================================
+# swish_filter
+# returns a subroutine for filtering with SWISH::Filter -- for use in config files
+#
+#---------------------------------------------------------------------------------
+
+sub swish_filter {
+
+
+    require SWISH::Filter;
+
+    my $filter = SWISH::Filter->new; # closure
+
+    my $filter_sub = sub {
+        my ( $uri, $server, $response, $content_ref ) = @_;
+
+        my $content_type = $response->content_type;
+        # Ignore text/* content type -- no need to filter
+        if (  $content_type =~ m!^text/! ) {
+            $server->{counts}{$content_type}++;
+            return 1;
+        }
+
+        my $doc = $filter->convert(
+            document     => $content_ref,
+            name         => $response->base,
+            content_type => $content_type,
+        );
+
+        return 1 unless $doc; # so just proceed as if not using filter
+
+        if ( $doc->is_binary ) {  # ignore "binary" files (not text/* mime type)
+            die "Skipping " . $response->base . " due to content type: " . $doc->content_type ." may be binary\n";
+        }
+
+        # nicer to use **char...
+        $$content_ref = ${$doc->fetch_doc};
+
+        # let's see if we can set the parser.
+        $server->{parser_type} = $doc->swish_parser_type || '';
+
+        $server->{counts}{"$content_type->" . $doc->content_type}++;
+
+        return 1;
+    };
+
+    return $filter_sub;
+}
 
 __END__
 
@@ -1104,12 +1536,17 @@ spider.pl - Example Perl program to spider web servers
 
 =head1 SYNOPSIS
 
-  swish.config:
-    IndexDir ./spider.pl
-    SwishProgParameters spider.config
-    # other swish-e settings
+    spider.pl [<spider config file>] [<URL> ...]
 
-  spider.config:
+    # Spider using some common defaults and capture the output
+    # into a file
+
+    ./spider.pl default http://myserver.com/ > output.txt
+
+
+    # or using a config file
+
+    spider.config:
     @servers = (
         {
             base_url    => 'http://myserver.com/',
@@ -1118,77 +1555,126 @@ spider.pl - Example Perl program to spider web servers
         },
     );
 
-Begin indexing:
+    ./spider.pl spider.config > output.txt
 
-    swish-e -S prog -c swish.config
 
-Note: When running on some versions of Windows (e.g. Win ME and Win 98 SE)
-you may need to index using the command:
+    # or using the default config file SwishSpiderConfig.pl
+    ./spider.pl > output.txt
 
-    perl spider.pl | swish-e -S prog -c swish.conf -i stdin
+    # using with swish-e
 
-This pipes the output of the spider directly into swish.
+    ./spider.pl spider.config | swish-e -c swish.config -S prog -i stdin
+
+    # or in two steps and compress the output
+    ./spider.pl spider.config > output.txt
+    swish-e -c swish.config -S prog -i stdin < output.txt
+
+    # or with compression
+    ./spider.pl spider.config | gzip > output.gz
+    gzip -dc output.gz | swish-e -c swish.config -S prog -i stdin
+
+    # or having swish-e call the spider directly using the
+    # spider config file SwishSpiderConfig.pl:
+    swish-e -c swish.config -S prog -i spider.pl
+
+
+    # or the above but passing passing a parameter to the spider:
+    echo "SwishProgParameters  spider.config" >> swish.config
+    echo "IndexDir spider.pl" >> swish.config
+    swish-e -c swish.config -S prog
+
+
+    Note: When running on some versions of Windows (e.g. Win ME and Win 98 SE)
+    you may need to index using the command:
+
+        perl spider.pl | swish-e -S prog -c swish.conf -i stdin
+
+    This pipes the output of the spider directly into swish.
 
 
 =head1 DESCRIPTION
 
-This is a swish-e "prog" document source program for spidering
-web servers.  It can be used instead of the C<http> method for
-spidering with swish.
+F<spider.pl> is a program for fetching documnts from a web server,
+and outputs the documents to STDOUT in a special format designed
+to be read by Swish-e.
 
-The spider typically uses a configuration
-file that lists the URL(s) to spider, and configuration parameters that control
-the behavior of the spider.  In addition, you may define I<callback> perl functions
-in the configuration file that can dynamically change the behavior of the spider
-based on URL, HTTP response headers, or the content of the fetched document.  These
-callback functions can also be used to filter or convert documents (e.g. PDF, gzip, MS Word)
-into a format that swish-e can parse.  Some examples are provided.
+The spider can index non-text documents such as PDF and MS Word by use
+of filter programs.  These programs are not part of the Swish-e distribution and 
+must be installed separately.  See the section on filtering below.
 
-You define "servers" to spider, set a few parameters,
-create callback routines, and start indexing as the synopsis above shows.
-The spider requires its own configuration file (unless you want the default values).  This
-is NOT the same configuration file that swish-e uses.
+A configuration file is noramlly used to control what documents are fetched
+from the web server(s).  The configuration file and its options are described
+below.
 
-The example configuration file C<SwishSpiderConfig.pl> is
-included in the C<prog-bin> directory along with this script.  Please just use it as an
-example, as it contains more settings than you probably want to use.  Start with a tiny config file
-and add settings as required by your situation.
+F<spider.pl> is distributed with Swish-e and is installed in the swish-e
+library directory at installation time.  This directory (libexedir) can
+be seen by running the command:
 
-The available configuration parameters are discussed below.
+    swish-e -h
 
-If all that sounds confusing, then you can run the spider with default settings.  In fact, you can
-run the spider without using swish just to make sure it works.  Just run
+Typically on unix-type systems the spider is installed at:
 
-    ./spider.pl default http://someserver.com/sometestdoc.html
+    /usr/local/lib/swish-e/spider.pl
 
-And you should see F<sometestdoc.html> dumped to your screen.  Get ready to kill the script
-if the file you request contains links as the output from the fetched pages will be displayed.
+This spider stores all links in memory while processing and does not do
+parallel requests.
 
-    ./spider.pl default http://someserver.com/sometestdoc.html > output.file
+=head2 Running the spider
 
-might be more friendly.    
+The output from F<spider.pl> can be captured to a temporary file which is then
+fed into swish-e:
 
-If the first parameter passed to the spider is the word "default" (as in the preceeding
-example) then the spider uses the default parameters, and the following parameter(s) are
-expected to be URL(s) to spider. Otherwise, the first parameter is considered to be the name
-of the configuration file (as described below).  When using C<-S prog>, the swish-e
-configuration setting C<SwishProgParameters> is used to pass parameters to the program
-specified with C<IndexDir> or the C<-i> switch.
+    ./spider.pl > docs.txt
+    swish-e -c config -S prog -i stdin < docs.txt
 
-If you do not specify any parameters the program will look for the file
+or the output can be passed to swish-e via a pipe:
 
-    SwishSpiderConfig.pl
+   ./spider.pl | swish-e -c config -S prog -i stdin
 
-in the current directory.    
+or the swish-e can run the spider directly:
+
+   swish-e -c config -S prog -i spider.pl
+
+One advantage of having Swish-e run F<spider.pl> is that Swish-e knows
+where to locate the program (based on libexecdir compiled into swish-e).
+
+When running the spider without any parameters it looks for a configuration file
+called F<SwishSpiderConfig.pl> in the current directory.  The spider will abort
+with an error if this file is not found.
+
+A configuration file can be specified as the first parameter to the spider:
+
+    ./spider.pl spider.config > output.txt
+
+If running the spider via Swish-e (i.e. Swish-e runs the spider) then use
+the Swish-e config option C<SwishProgParameters> to specify the config file:
+
+In swish.config:
+
+    # Use spider.pl as the external program:
+    IndexDir spider.pl
+    # And pass the name of the spider config file to the spider:
+    SwishProgParameters spider.config
+
+And then run Swish-e like this:
+
+    swish-e -c swish.config -S prog
+
+Finally, by using the special word "default" on the command line the spider will
+use a default configuration that is useful for indexing most sites.  It's a good
+way to get started with the spider:
+
+    ./spider.pl default http://my_server.com/index.html > output.txt
+
+There's no "best" way to run the spider.  I like to capture to a file
+and then feed that into Swish-e.
 
 The spider does require Perl's LWP library and a few other reasonably common modules.
-Most well maintained systems should have these modules installed.  If not, start here:
-
-    http://search.cpan.org/search?dist=libwww-perl
-    http://search.cpan.org/search?dist=HTML-Parser
-
-See more below in C<REQUIREMENTS>.  It's a good idea to check that you are running
+Most well maintained systems should have these modules installed.  
+See  C<REQUIREMENTS> below for more information.
+It's a good idea to check that you are running
 a current version of these modules.
+
 
 =head2 Robots Exclusion Rules and being nice
 
@@ -1225,7 +1711,7 @@ want to fine tune the resources used by spidering.
 =head2 Duplicate Documents
 
 The spider program keeps track of URLs visited, so a document is only indexed
-one time.  
+one time.
 
 The Digest::MD5 module can be used to create a "fingerprint" of every page
 indexed and this fingerprint is used in a hash to find duplicate pages.
@@ -1276,7 +1762,7 @@ MD5 may slow down indexing a tiny bit, so test with and without if speed is an
 issue (which it probably isn't since you are spidering in the first place).
 This feature will also use more memory.
 
-Note: the "prog" document source in swish bypasses many swish-e configuration settings.
+Note: the "prog" document source in Swish-e bypasses many Swish-e configuration settings.
 For example, you cannot use the C<IndexOnly> directive with the "prog" document
 source.  This is by design to limit the overhead when using an external program
 for providing documents to swish; after all, with "prog", if you don't want to index a file, then
@@ -1314,57 +1800,64 @@ installing SSL support.
 
 =head1 CONFIGURATION FILE
 
-Configuration is not very fancy.  The spider.pl program simply does a
-C<do "path";> to read in the parameters and create the callback subroutines.
-The C<path> is the first parameter passed to the spider script, which is set
-by the Swish-e configuration setting C<SwishProgParameters>.
+The spider configuration file is a read by the script as Perl code.
+This makes the configuration a bit more complex than simple text config
+files, but allows the spider to be configured programmatically.
 
-For example, if in your swish-e configuration file you have
+For example, the config file can contain logic for testing URLs against regular
+expressions or even against a database lookup while running.
 
-    SwishProgParameters /path/to/config.pl
-    IndexDir /home/moseley/swish-e/prog-bin/spider.pl
+The configuration file sets an array called C<@servers>.  This array can contain
+one or more hash structures of parameters.  Each hash structure is a configuration for
+a single server.
 
-And then run swish as
+Here's an example:
 
-    swish-e -c swish.config -S prog
-
-swish will run C</home/moseley/swish-e/prog-bin/spider.pl> and the spider.pl
-program will receive as its first parameter C</path/to/config.pl>, and
-spider.pl will read C</path/to/config.pl> to get the spider configuration
-settings.  If C<SwishProgParameters> is not set, the program will try to
-use C<SwishSpiderConfig.pl> by default.
-
-There is a special case of:
-
-    SwishProgParameters default http://www.mysite/index.html ...
-
-Where default parameters are used.  This will only index documents of type
-C<text/html> or C<text/plain>, and will skip any file with an extension that matches
-the pattern:
-
-    /\.(?:gif|jpeg|.png)$/i
-
-This can be useful for indexing just your web documnts, but you will probably want finer
-control over your spidering by using a configuration file.
-
-The configuration file must set a global variable C<@servers> (in package main).
-Each element in C<@servers> is a reference to a hash.  The elements of the has
-are described next.  More than one server hash may be defined -- each server
-will be spidered in order listed in C<@servers>, although currently a I<global> hash is
-used to prevent spidering the same URL twice.
-
-Examples:
-
-    my %serverA = (
-        base_url    => 'http://swish-e.org/',
-        same_hosts  => [ qw/www.swish-e.org/ ],
-        email       => 'my@email.address',
+    my %main_site = (
+        base_url   => 'http://example.com',
+        same_hosts => 'www.example.com',
+        email      => 'admin@example.com',
     );
-    my %serverB = (
-        ...
-        ...
+
+    my %news_site = (
+        base_url   => 'http://news.example.com',
+        email      => 'admin@example.com',
     );
-    @servers = ( \%serverA, \%serverB, );
+
+    @servers = ( \%main_site, \%news_site );
+    1;
+
+The above defines two Perl hashes (%main_site and %news_site) and then places
+a *reference* (the backslash before the name of the hash) to each of those
+hashes in the @servers array.  The "1;" at the end is required at the end
+of the file (Perl must see a true value at the end of the file).
+
+The C<config file path> is the first parameter passed to the spider script.
+
+    ./spider.pl F<config>
+
+If you do not specify a config file then the spider will look for the file
+F<SwishSpiderConfig.pl> in the current directory.
+
+The Swish-e distribution includes a F<SwishSpiderConfig.pl> file with a few
+example configurations.  This example file is installed in the documentation
+installating directory (on unix often this is /usr/local/share/swish-e/prog-bin).
+
+When the special config file name "default" is used:
+
+    SwishProgParameters default http://www.mysite/index.html [<URL>] [...]
+
+Then a default set of parameters are used with the spider.  This is a good way to start
+using the spider before attempting to create a configuration file.
+
+The default settings skip any urls that look like images (well, .gif .jpeg
+.png), and attempts to filter PDF and MS Word documents IF you have the
+required filter programs installed (which are not part of the Swish-e
+distribution).  The spider will follow "a" and "frame" type of links only.
+
+Note that if you do use a spider configuration file that the default configuration will NOT
+be used also (unless you set the "use_default_config" option in your config file).
+
 
 =head1 CONFIGURATION OPTIONS
 
@@ -1449,6 +1942,41 @@ For example, to extract tags from C<a> tags and from C<frame> tags:
         link_tags   => [qw/ a frame /],
     );
 
+=item use_default_config
+
+This option is new for Swish-e 2.4.3.
+
+The spider has a hard-coded default configuration that's available when the spider
+is run with the configuration file listed as "default":
+
+    ./spider.pl default <url>
+
+This default configuration skips urls that match the regular expression:
+
+    /\.(?:gif|jpeg|png)$/i
+
+and the spider will attempt to use the SWISH::Filter module for filtering non-text
+documents.  (You still need to install programs to do the actual filtering, though).
+
+Normally, if you specify your own config file:
+
+    ./spider.pl my_own_spider.config
+
+then you must setup those features available in the default setting in your own config
+file.  But, if you wish to build upon the "default" config file then set this option.
+
+For example, to use the default config but specify your own email address:
+
+    @servers = (
+        {
+            email               => my@email.address,
+            use_default_config  => 1,
+            delay_sec           => 0,
+        },
+    );
+    1;
+
+What this does is "merge" your config file with the default config file.
 
 =item delay_sec
 
@@ -1456,11 +1984,8 @@ This optional key sets the delay in seconds to wait between requests.  See the
 LWP::RobotUA man page for more information.  The default is 5 seconds.
 Set to zero for no delay.
 
-When using the keep_alive feature (recommended) the delay will used only
+When using the keep_alive feature (recommended) the delay will be used only
 where the previous request returned a "Connection: closed" header.
-
-Note: A common recommendation is to use a delay of one minute between requests.
-For example, one minute is the default used in the LWP::RobotUA Perl module.
 
 
 =item delay_min  (deprecated)
@@ -1507,6 +2032,13 @@ This optional key sets the max size of a file read from the web server.
 This B<defaults> to 5,000,000 bytes.  If the size is exceeded the resource is
 skipped and a message is written to STDERR if the DEBUG_SKIPPED debug flag is set.
 
+Set max_size to zero for unlimited size.  If the server returns a Content-Length
+header then that will be used.  Otherwise, the document will be checked for
+size limitation as it arrives.  That's a good reason to have your server send
+Content-Length headers.
+
+See also L<use_head_requests> below.
+
 =item keep_alive
 
 This optional parameter will enable keep alive requests.  This can dramatically speed
@@ -1529,51 +2061,95 @@ current keep alive connection.
 
 Note: you must have at least libwww-perl-5.53_90 installed to use this feature.
 
+=item use_head_requests
+
+This option is new as of swish-e 2.4.3 and can effect the speed of spidering and the
+load of the web server.
+
+To understand this you will likely need to read about the L<CALLBACK FUNCTIONS>
+below -- specifically about the L<test_response()> callback function.  This option is
+also only used when L<keep_alive> is also enabled (although it could be debated that
+it's useful without keep alives).
+
+This option tells the spider to use http HEAD requests before each request.
+
+Normally, the spider simply does a GET request and after receiving the first
+chunk of data back from the web server calls the L<test_response()> callback
+function (if one is defined in your config file).  The L<test_response()>
+callback function is a good place to test the content-type header returned from
+the server and reject types that you do not want to index.
+
+Now, *if* you are using the L<keep_alive> feature then rejecting a document 
+will often (always?) break the keep alive connection.
+
+So, what the L<use_head_requests> option does is issue a HEAD request for every
+document, checks for a Content-Length header (to check if the document is larger than
+L<max_size>, and then calls your L<test_response()> callback function.  If your callback
+function returns true then a GET request is used to fetch the document.
+
+The idea is that by using HEAD requests instead of GET request a false return from 
+your L<test_response()> callback function (i.e. rejecting the document) will not
+break the keep alive connection.
+
+Now, don't get too excited about this.  Before using this think about the ratio of
+rejected documents to accepted documents.  If you reject no documents then using this feature
+will double the number of requests to the web server -- which will also double the number of
+connections to the web server.  But, if you reject a large percentage of documents then
+this feature will help maximize the number of keep alive requests to the server (i.e.
+reduce the number of separate connections needed).
+
+There's also another problem with using HEAD requests.  Some broken servers
+may not respond correctly to HEAD requests (some issues a 500 error), but respond
+fine to a normal GET request.  This is something to watch out for.
+
+Finally, if you do not have a L<test_response()> callback AND L<max_size> is set to zero
+then setting L<use_head_requests> will have no effect.
+
+And, with all other factors involved you might find this option has no effect at all.
+
+
 =item skip
 
 This optional key can be used to skip the current server.  It's only purpose
-is to make it easy to disable a server in a configuration file.
+is to make it easy to disable a specific server hash in a configuration file.
 
 =item debug
 
-Set this to a number to display different amounts of info while spidering.  Writes info
-to STDERR.  Zero/undefined is no debug output.
+Set this item to a comma-separated list of debugging options.
 
-The following constants are defined for debugging.  They may be or'ed together to
-get the individual debugging of your choice.
+Options are currently:
+
+    errors, failed, headers, info, links, redirect, skipped, url
 
 Here are basically the levels:
 
-    DEBUG_ERRORS   general program errors (not used at this time)
-    DEBUG_URL      print out every URL processes
-    DEBUG_HEADERS  prints the response headers
-    DEBUG_FAILED   failed to return a 200
-    DEBUG_SKIPPED  didn't index for some reason
-    DEBUG_INFO     more verbose
-    DEBUG_LINKS    prints links as they are extracted
+    errors      =>   general program errors (not used at this time)
+    url         =>   print out every URL processes
+    headers     =>   prints the response headers
+    failed      =>   failed to return a 200
+    skipped     =>   didn't index for some reason
+    info        =>   a little more verbose
+    links       =>   prints links as they are extracted
+    redirect    =>   prints out redirected URLs
 
-For example, to display the urls processed, failed, and skipped use:
-
-    debug => DEBUG_URL | DEBUG_FAILED | DEBUG_SKIPPED,
-
-To display the returned headers
-
-    debug => DEBUG_HEADERS,
-
-You can easily run the spider without using swish for debugging purposes:
-
-    ./spider.pl test.config > spider.out
-
-And you will see debugging info as it runs, and the fetched documents will be saved
-in the C<spider.out> file.
-
-Debugging can be also be set by an environment variable when running swish.  This will
-override any setting in the configuration file.  Set the variable SPIDER_DEBUG when running
-the spider.  You can specify any of the above debugging options, separated by a comma.
+Debugging can be also be set by an environment variable SPIDER_DEBUG when running F<spider.pl>.
+You can specify any of the above debugging options, separated by a comma.
 
 For example with Bourne type shell:
 
-    SPIDER_DEBUG=url,links
+    SPIDER_DEBUG=url,links spider.pl [....]
+
+Before Swish-e 2.4.3 you had to use the internal debugging constants or'ed together
+like so:
+
+    debug => DEBUG_URL | DEBUG_FAILED | DEBUG_SKIPPED,
+
+You can still do this, but the string version is easier.  In fact, if you want
+to turn on debugging dynamically (for example in a test_url() callback
+function) then you currently *must* use the DEBUG_* constants.  The string is
+converted to a number only at the start of spiderig -- after that the L<debug>
+parameter is converted to a number.
+
 
 =item quiet
 
@@ -1632,11 +2208,21 @@ You may specify a username and password to be used automatically when spidering:
     credentials => 'username:password',
 
 A username and password supplied in a URL will override this setting.
+This username and password will be used for every request.
+
+See also the L<get_password> callback function below.  L<get_password>, if defined,
+will be called when a page requires authorization.
 
 =item credential_timeout
 
 Sets the number of seconds to wait for user input when prompted for a username or password.
 The default is 30 seconds.
+
+Set this to zero to wait forever.  Probably not a good idea.
+
+Set to undef to disable asking for a password.
+
+    credential_timeout => undef,
 
 
 =item remove_leading_dots
@@ -1648,7 +2234,7 @@ The default is to not remove the dots.
 
 =head1 CALLBACK FUNCTIONS
 
-Three callback functions can be defined in your parameter hash.
+Callback functions can be defined in your parameter hash.
 These optional settings are I<callback> subroutines that are called while
 processing URLs.
 
@@ -1678,7 +2264,7 @@ sub foo {
         test_url    => \&foo,  # a reference to a named subroutine
     );
 
-Or the subroutine can be coded right in place:    
+Or the subroutine can be coded right in place:
 
     my %serverA = (
         base_url    => 'http://sunsite.berkeley.edu:4444/',
@@ -1700,7 +2286,7 @@ a reference to the current server hash.  The C<server> hash is just a global has
 useful for setting flags as described below.
 
 Other parameters may be also passed in depending the the callback function,
-as described below. In perl parameters are passed in an array called "@_". 
+as described below. In perl parameters are passed in an array called "@_".
 The first element (first parameter) of that array is $_[0], and the second
 is $_[1], and so on.  Depending on how complicated your function is you may
 wish to shift your parameters off of the @_ list to make working with them
@@ -1845,26 +2431,69 @@ You may also modify the URI object to change the path name passed to swish for i
 
 Swish-e's ReplaceRules feature can also be used for modifying the path name indexed.
 
-Here's a bit more advanced example of indexing text/html and PDF files only:
-
-    use pdf2xml;  # included example pdf converter module
-    $server{filter_content} = sub {
-       my ( $uri, $server, $response, $content_ref ) = @_;
-
-       return 1 if $response->content_type eq 'text/html';
-       return 0 unless $response->content_type eq 'application/pdf';
-
-       # for logging counts
-       $server->{counts}{'PDF transformed'}++;
-
-       $$content_ref = ${pdf2xml( $content_ref )};
-       return 1;
-    }
-
-Note: Swish-e not includes a method of filtering based on the SWISH::Filter 
-Perl modules.  See the SwishSpiderConfig.pl file for an example how to use 
+Note: Swish-e now includes a method of filtering based on the SWISH::Filter
+Perl modules.  See the SwishSpiderConfig.pl file for an example how to use
 SWISH::Filter in a filter_content callback function.
 
+If you use the "default" configuration (i.e. pass "default" as the first parameter
+to the spider) then SWISH::Filter is used automatically.  This only adds code for
+calling the programs to filter your content -- you still need to install applications
+that do the hard work (like xpdf for pdf conversion and catdoc for MS Word conversion).
+
+
+The a function included in the F<spider.pl> for calling SWISH::Filter when using the "default"
+config can also be used in your config file:
+
+    filter_content => swish_filter(),
+
+
+=item spider_done
+
+This callback is called after processing a server (after each server listed
+in the @servers array if more than one).
+
+This allows your config file to do any cleanup work after processing.
+For example, if you were keeping counts during, say, a test_response() callback
+function you could use the spider_done() callback to print the results.
+
+
+=item output_function
+
+If defined, this callback function is called instead of printing the content
+and header to STDOUT.  This can be used if you want to store the output of the
+spider before indexing.
+
+The output_function is called with the following parameters:
+
+   ($server, $content, $uri, $response, $bytecount, $path);
+
+Here is an example that simply shows two of the params passed:
+
+    output_function => sub {
+        my ($server, $content, $uri, $response, $bytecount, $path) = @_;
+        print STDERR  "passed: uri $uri, bytecount $bytecount...\n";
+        # no output to STDOUT for swish-e
+    }
+
+You can do almost the same thing with a filter_content callback.
+
+
+=item get_password
+
+This callback is called when a HTTP password is needed (i.e. after the server
+returns a 401 error).  The function can test the URI and Realm and then return
+a username and password separated by a colon:
+
+    get_password => sub {
+        my ( $uri, $server, $response, $realm ) = @_;
+        if ( $uri->path =~ m!^/path/to/protected! && $realm eq 'private' ) {
+            return 'joe:secret931password';
+        }
+        return;  # sorry, I don't know the password.
+    },
+
+Use the L<credentials> setting if you know the username and password and they will
+be the same for every request.  That is, for a site-wide password.
 
 =back
 
@@ -1914,7 +2543,7 @@ to be ignored.  Therefore, it would be smart to use a C<filter_content> callback
 replace the contents with single character (you cannot use the empty string at this time).
 
 A similar flag may be set to prevent indexing a document at all, but still allow spidering.
-In general, if you want completely skip spidering a file you return false from one of the 
+In general, if you want completely skip spidering a file you return false from one of the
 callback routines (C<test_url>, C<test_response>, or C<filter_content>).  Returning false from any of those
 three callbacks will stop processing of that file, and the file will B<not> be spidered.
 
@@ -1946,6 +2575,56 @@ callback funtions.
 Sending a SIGHUP to the running spider will cause it to stop spidering.  This is a good way to abort spidering, but
 let swish index the documents retrieved so far.
 
+=head1 CHANGES
+
+List of some of the changes
+
+=head2 Thu Sep 30 2004 - changes for Swish-e 2.4.3
+
+
+Code reorganization and a few new featues.  Updated docs a little tiny bit.
+Introduced a few spelling mistakes.
+
+=over 4
+
+=item use_default_config
+
+It used to be that you could run the spider like:
+
+    spider.pl default <some url>
+
+and the spider would use its own internal config.  But if you used your own
+config file then the defaults were not used.  This options allows you to merge
+your config with the default config.  Makes making small changes to the default
+easy.
+
+=item use_head_requests
+
+Tells the spider to make a HEAD request before GET'ing the document from the web server.
+Useful if you use keep_alive and have a test_response() callback that rejects many documents
+(which breaks the connection).
+
+=item spider_done
+
+Callback to tell you (or tell your config as it may be) that the spider is done.
+Useful if you need to do some extra processing when done spidering -- like record
+counts to a file.
+
+=item get_password
+
+This callback is called when a document returns a 401 error needing a username 
+and password.  Useful if spidering a site proteced with multiple passwords.
+
+=item output_function
+
+If defined spider.pl calls this instead of sending ouptut to STDOUT.
+
+=item debug
+
+Now you can use the words instead of or'ing the DEBUG_* constants together.
+
+=back
+
 
 =head1 COPYRIGHT
 
@@ -1960,5 +2639,5 @@ Send all questions to the The SWISH-E discussion list.
 
 See http://sunsite.berkeley.edu/SWISH-E.
 
-=cut   
+=cut
 
