@@ -86,7 +86,23 @@ setting the LD_RUN_PATH environment variable before running make.
 
 The "PREFIX" parameter to Makefile.PL sets where the module will be installed when running
 "make install".
-   
+
+
+How do I build a PPM under Windows using MSVC and PERL 5.8?
+   $ cd perl
+
+   $ perl Makefile.PL \
+     LIBS="../src/win32/libswish-e-mt.lib ../../zlib/lib/zlib.lib libcmt.lib" \
+     OPTIMIZE="-MT -Zi -DNDEBUG -O1 -I../src"
+
+   # Logic says to use CCFLAGS for -I../src but it explodes spectacularly...
+
+   $ nmake
+   $ nmake ppd
+
+   $ tar cvzf SWISH-API.tar.gz blib
+
+Edit SWISH-API.ppd to your liking and upload it and SWISH-API.tar.gz to your repository in the appropriate locations.
 
 PROBLEMS
 --------
