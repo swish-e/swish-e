@@ -21,10 +21,10 @@ man1dir = $(mandir)/man1
 
 # Flags for C compiler
 #CWARN=
-CWARN=/warning=disable=(PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,ARGLISGTR255,QUESTCOMPARE)
+CWARN=/warning=disable=(PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,QUESTCOMPARE,LONGEXTERN)
 #CDEBUG= /debug/noopt
 CDEBUG=
-CFLAGS = /prefix=all/def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-20""")$(CWARN)$(CDEBUG)
+CFLAGS = /prefix=all/def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-21""")$(CWARN)$(CDEBUG)
 
 #LINKFLAGS = /debug
 LINKFLAGS =
@@ -43,10 +43,12 @@ VMS_OBJS = regex.obj
 
 OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	hash.obj list.obj mem.obj string.obj merge.obj swish2.obj stemmer.obj \
-	soundex.obj docprop.obj compress.obj deflate.obj xml.obj txt.obj \
+	soundex.obj docprop.obj compress.obj xml.obj txt.obj \
 	metanames.obj result_sort.obj html.obj lst.obj search_alt.obj \
 	filter.obj parse_conffile.obj result_output.obj date_time.obj \
-	keychar_out.obj extprog.obj \
+	keychar_out.obj extprog.obj db.obj db_native.obj dump.obj \
+	entities.obj no_better_place_module.obj swish_words.obj \
+	proplimit.obj swish_qsort.obj \
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
 
 all :	acconfig.h $(NAME) swish-search.exe testlib
@@ -142,3 +144,6 @@ testlib.obj : testlib.c swish.h config.h error.h list.h search.h index.h \
  string.h file.h merge.h docprop.h
 txt.obj : txt.c txt.h swish.h mem.h string.h index.h
 xml.obj : xml.c txt.h swish.h mem.h string.h index.h
+proplimi.obj : swish.h string.h mem.h merge.h docprop.h index.h metanames.h \
+ compress.h error.h db.h result_sort.h swish_qsort.h proplimit.h
+
