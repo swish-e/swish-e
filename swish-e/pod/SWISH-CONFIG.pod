@@ -247,7 +247,7 @@ L<IndexAdmin|/"item_IndexAdmin"> *text*
 
 =item *
 
-L<IndexAltTagMetaName/"item_IndexAltTagMetaName"> *tagname*|as-text
+L<IndexAltTagMetaName|/"item_IndexAltTagMetaName"> *tagname*|as-text
 
 =item *
 
@@ -335,10 +335,12 @@ L<PropertyNames|/"item_PropertyNames"> *list of meta names*
 
 =item *
 
-L<PropertyNames|/"item_PropertyNamesCompareCase"> *list of meta names*
+L<PropertyNamesCompareCase|/"item_PropertyNamesCompareCase"> *list of meta names*
+
 =item *
 
-L<PropertyNames|/"item_PropertyNamesIgnoreCase"> *list of meta names*
+L<PropertyNamesIgnoreCase|/"item_PropertyNamesIgnoreCase"> *list of meta names*
+
 =item *
 
 L<PropertyNamesDates|/"item_PropertyNamesDates"> *list of meta names*
@@ -1373,7 +1375,9 @@ This basically is a shortcut for:
 but you don't need to keep track of what was extracted.    
 
 =item PropertyNames *list of meta names*
+
 =item PropertyNamesCompareCase *list of meta names*
+
 =item PropertyNamesIgnoreCase *list of meta names*
 
 Swish-e allows you to specify certain META tags that can be used as
@@ -1398,8 +1402,8 @@ C<PropertyNamesIgnoreCase>.  These tell Swish-e to either ignore or
 compare case when sorting results.  The default for C<PropertyNames>
 is to ignore the case.
 
-    PropertyNames subject PropertyNamesIgnoreCase subject    <-- same
-    as previous PropertyNamesCompareCase keyword   <-- sort
+    PropertyNamesIgnoreCase subject
+    PropertyNamesCompareCase keyword
 
 The defaults for "internal" properties are:
 
@@ -1413,7 +1417,7 @@ C<PropertyNamesIgnoreCase>.
     PropertyNamesCompareCase swishtitle    
 
 Use of PropertyNames will increase the size of your index files,
-sometimes significantly.  Properties will be compress if Swish-e is
+sometimes significantly.  Properties will be compressed if Swish-e is
 compiled with zlib as described in the L<INSTALL|INSTALL> manual page.
 
 If Swish-e finds more than one property of the same name in a document
@@ -1424,7 +1428,7 @@ issues for numeric (or date) properties.
 =item PropertyNamesNumeric
 
 This directive is similar to C<PropertyNames>, but it flags the property
-as being a string of digits that will be stored as binary data instead
+as being a string of digits (integer value) that will be stored as binary data instead
 of a string.  This allows sorting with C<-s> and limiting with C<-L>
 to sort and limit the property correctly.
 
@@ -1438,7 +1442,7 @@ in future releases of Swish.
 =item PropertyNamesDate
 
 This directive is exactly like C<PropertyNamesNumeric>, but it also
-flags the number as a machine timestamp (seconds since epoch), and
+flags the number as a machine timestamp (seconds since Epoch), and
 will print a formatted date when returning this property.  See C<-x>
 in L<SWISH-RUN|SWISH-RUN>.
 
