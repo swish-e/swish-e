@@ -63,9 +63,13 @@ perl/Makefile.PL
 perl/SWISHE.pm
 perl/SWISHE.xs
 perl/test.pl
-prog-bin/file.pl
-prog-bin/spider.pl
 prog-bin/README
+prog-bin/file.pl
+prog-bin/DirTree.pl
+prog-bin/spider.pl
+prog-bin/SwishSpiderConfig.pl
+prog-bin/pdf2xml.pm
+prog-bin/doc2txt.pm
 pod/.htaccess
 pod/CHANGES.pod
 pod/INSTALL.pod
