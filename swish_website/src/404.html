@@ -13,8 +13,9 @@ use File::Basename;
     my $cgi = CGI->new;
 
     # Look for possible redirects
+    # REQUEST_URI doens't have host, so not valid redirect.
 
-    if ( $_ = $ENV{REDIRECT_SCRIPT_URI} || $ENV{REDIRECT_URL} ) {
+    if ( $_ = $ENV{REDIRECT_SCRIPT_URI} || $ENV{REQUEST_URI} ) {
         redirect($_) if s[/Download][/download];
         redirect($_) if s[/Discussion/archive][/archive];
         redirect($_) if s[/Discussion/search/][/search_archive/];
