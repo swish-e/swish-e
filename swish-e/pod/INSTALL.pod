@@ -67,8 +67,13 @@ A C<configure> script is used to determine platform specific details for buildin
 Please contact the SWISH-E discussion list if you notice any platform specific problems while building SWISH-E.
 
 Specific information for various platforms can be found in subdirectories of the C<src>
-directory.  For example, the Win32 binary for Windows can be found in C<src/win32>, and instructions
+directory.  For example, the Win32 files can be found in C<src/win32>, and instructions
 for building under VMS can be found in C<src/vms>.
+
+The Windows binary is distributed as a separate package from the source distribution.
+See http://swish-e.org for download information.
+
+Note that some commands (FileFilter, -S prog directives) need to be modified when using Windows.
 
 =head1 INSTALLATION
 

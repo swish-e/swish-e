@@ -192,6 +192,9 @@ L<IgnoreMetaTags|/"item_IgnoreMetaTags"> *list of names*
 
 =item *
 
+L<IgnoreNumberChars|/"item_IgnoreNumberChars"> *list of characters*
+
+=item *
 
 L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [YES|no]
 
@@ -1607,6 +1610,34 @@ This is solved by:
 
 See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
 
+=item IgnoreNumberChars *list of characters*
+
+Experimental Feature
+
+This experimental feature can be used to define a set of characters that describe a number.
+If a word is found to contain only those characters it will not be indexed.  The characters listed
+must be part of C<WordCharacters> settings.  In other words, the "word" checked is a word that swish
+would otherwise index.
+
+For example,
+
+    IgnoreNumberChars 0123456789$.,
+
+Then swish would not index the following:
+
+    123
+    123,456.78
+    $123.45
+    
+You might be tempted to avoid indexing hex numbers with:
+
+    IgnoreNumberChars 0123456789abcdef
+
+which will not index 0D31, but will also not index the word "bad".
+
+This is an experimental feature that may change in future versions.  One possible change
+is to use regular expressions instead.
+    
 
 =item IndexComments [NO|yes]
 
@@ -1887,14 +1918,15 @@ Example:
 Note: C<FileRules title> works for any input method (fs, prog, or http) that is parsed as HTML, and
 where a title was found in the document.
 
-In case this seems a bit confusing, processing a directory happens in the followin order.
-Remember, directory names will have a trailing path delimiter.
+In case this seems a bit confusing, processing a directory happens in the following order.
+Remember, directory names will have a trailing path delimiter when checking.
 
 First the directory name is checked:
 
     FileRules dirname - reject entire directory if matches
 
-Next the directory is scanned and each file (or sub-directory) is checked:
+Next the directory is scanned and each file name (which might be the name of a sub-directory)
+is checked:
     
     FileRules directory - reject entire dir if any files match
     FileMatch directory - accept *entire* dir if any files match
@@ -1933,7 +1965,10 @@ or a FileRules matches.
     FileRules pathname  \
     FileRules dirname   - file is rejected if any match
     FileRules filename  /
- 
+
+Note:  If things are not indexing as you expect, create a directory with some test files
+and use the C<-T regex> trace option to see how file names are checked.  Start with very
+simple tests!
 
 
 =back    
@@ -2041,9 +2076,36 @@ file:
 
 And the spider program will use default settings for spidering those sites.
 
-
-
 =back
+
+B<Notes when using MS Windows>
+
+Swish uses the C<popen()> system call to run the external command, and the command is passed through
+the shell.  For the standard F<command.com> shell this means that path names must use the backslash character
+to separate path elements.  In addition, swish will make sure the program specified actually exists, which
+means you need to use the full name of the program.
+
+For example, to run the perl spider program F<spider.pl> you would need a swish configuration file such as:
+
+    IndexDir e:\\perl\\bin\\perl.exe
+    SwishProgParameters prog-bin/spider.pl default http://swish-e.org
+
+and run indexing with the command:
+
+    swish-e -c swish.cfg -S prog -v 9
+
+The C<IndexDir> command tells swish the name of the program to run.  (Under unix you can just
+specify the name of the script, since unix will figure out the program from the first line of the script.)
+The double backslash characters are required since swish uses the backslash to escape the next character.
+A double backslash will end up as a single one after being parsed from the config file.
+
+The C<SwishProgParameters> are the parameters passed to the program specified by C<IndexDir> (perl.exe in this case).
+The first parameter is the perl script to run (F<prog-bin/spider.pl>).  Perl passes the rest of the parameters directly
+to the perl script.
+The second parameter F<default> tells the F<spider.pl> program to use default settings for spidering
+(or you could specify a spider config file -- see C<perldoc spider.pl> for details), and lastly, the URL is passed
+into the spider program.
+
 
 =head2 Document Filter Directives
 
@@ -2141,7 +2203,7 @@ may not work for these files.
 
 B<Notes when using MS Windows>
 
-Windows uses double quotes to escape shell metacharacters, so reverse the example above.  e.g.:
+Windows uses double quotes to escape shell metacharacters, so reverse the quotes in the examples above.  e.g.:
 
         '"%f"' --> "file name with spaced.doc"
 
@@ -2150,7 +2212,7 @@ This means that paths to the filter program must be in DOS format and use the ba
 the path separator.  Swish, like many shells, use the backslash as an escape character, so you will
 need to specify the filter program like:
 
-    FileFilter .mydoc     "c:\\some\\path\\mydocfilter.exe"  '-d "%d" -example -url "%P" "%f"'
+    FileFilter .mydoc     c:\\some\\path\\mydocfilter.exe  '-d "%d" -example -url "%P" "%f"'
 
 
 Examples of filters:
@@ -2162,7 +2224,7 @@ Examples of filters:
 
 The above examples are running a I<binary> filter program.  For more complicated filtering needs you
 may use a scripting language such as Perl or a shell script.  Here's some examples of calling a shell
-and perl script.
+and perl script:
 
     FileFilter .pdf       pdf2html.sh
     FileFilter .ps        ghostscript-filter.pl
@@ -2174,7 +2236,8 @@ be better off using the C<-S prog> access method where the script will only be c
 of for each document.
 
 Filters are probably easier to write than a C<-S prog> program.  Which you decide to use depends on
-your requirements.  Examples of filter scripts can be found in the F<filter-bin> directory.
+your requirements.  Examples of filter scripts can be found in the F<filter-bin> directory, and examples
+of C<-S prog> programs can be found in the F<prog-bin> directory.
 
 
 =back
