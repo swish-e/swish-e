@@ -127,6 +127,8 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     cmd[0] = '\0';
 
 /* Prefix libexecdir if path does not start with a ".", "/", "\", nor "X:"  */
+/* $$$ the "." check is a bug, need to check for "./"  */
+
     if ( prog[0] != '/' && prog[0] != '.' && prog[0] != '\\' && prog[1] != ':' )
     {
         strcat( cmd, execdir );
