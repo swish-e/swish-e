@@ -4,10 +4,16 @@
 #	tries to be intelligent about OS and compiler
 #	options.
 #
-#	Wed Sep 15 12:07:55 CDT 2004 -- karman@cray.com
 #
-#	0.01	-- initial public release
-#	0.02	-- --srcdir works; IRIX fixes; --quiet fixes
+#	0.01	initial public release . Wed Sep 15 12:07:55 CDT 2004 . karman@cray.com
+#	0.02	--srcdir works; IRIX fixes; --quiet fixes
+#	0.03	chdir to $Bin to check for cvs build
+#		include $installdir in -I when checking for preinstalled libxml2
+#		linux fixes
+#		added --disable-shared to libxml2 build
+#		--force actually works
+#		added --static to make --disable-shared optional
+
 #
 ##########################################################
 $| = 1;
@@ -20,7 +26,7 @@ use Config qw( %Config );
 use File::Path qw( mkpath );
 use FindBin qw($Bin);
 
-my $Version 	= '0.02';
+my $Version 	= '0.03';
 
 # there must be a better way to dynamically retrieve the latest version
 # of a sw package, other than hardcoding urls. help?
@@ -29,7 +35,7 @@ my %URLs	= (
 
 'swishe' 	=> 'http://swish-e.org/Download/latest.tar.gz',
 'zlib'		=> 'http://www.zlib.net/zlib-1.2.1.tar.gz',
-'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.10.tar.gz',
+'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.13.tar.gz',
 
 );
 
@@ -57,7 +63,9 @@ my $allopts = {
 	'help'		=> "print usage statement",
 	'opts'		=> "print options and description",
 	'force'		=> "install zlib and libxml2 no matter what",
-	'debug'		=> "lots of on-screen verbage"
+	'debug'		=> "lots of on-screen verbage",
+	'sudo'      => "run 'make' commands with sudo\n\t!! must be interactive if sudo expects a password !!",
+	'static'	=> "build with static library paths"
 	
 };
 
@@ -78,7 +86,7 @@ if ($opts->{opts}) {
 	exit;
 }
 
-use vars qw( $os $arch $cc $installdir $nogcc $min_gcc $tmpdir
+use vars qw( 	$os $arch $cc $installdir $nogcc $min_gcc $tmpdir
 		$outlog $errlog $output $ld_opts $Cout $Cin
 		$zlib_test $libxml2_test $ld_test $gcc_test
 		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
@@ -185,9 +193,9 @@ my %routines = (
 	
 for ( qw( zlib libxml2 swish swish::api ) ) {
 
-	print '=' x 40 . "\n";
+	print '=' x 60 . "\n";
 	print "building $_ ...\n";
-	print '=' x 40 . "\n";
+	print '~' x 60 . "\n";
 	my $f = $routines{$_};
 	&$f;
 	
@@ -275,6 +283,8 @@ sub makedirs
 sub sanity
 {
 
+	test_make();
+	
 	print "is $cc a GNU C compiler... ";
 	test_compiler();
 	
@@ -291,18 +301,6 @@ sub sanity
 		nice_exit() if ! confirm();
 		
 	}
-	
-}
-
-sub prompt_to_install
-{
-
-	my $what = shift;
-	$opts->{force}
-	? print "you used --force to install $what\n"
-	: print "$what is not installed\n";
-	print "would you like to install it? [y] ";
-	return confirm();
 	
 }
 
@@ -325,7 +323,7 @@ sub test_c_prog
 	$extra 		.= ' -w' if $os =~ /irix/i;
 	my $cmd 	= "$cc $extra -o $Cout $Cin";
 	
-	#print "compile cmd: $cmd\n";
+	print "\n\ncompile cmd: $cmd\n" if $opts->{debug};
 	
 	return 1 if system("$cmd $cmdout");	# don't bother if we can't even compile	
 	
@@ -354,7 +352,8 @@ sub test_c_prog
 
 sub test_for_prior_zlib
 {
-
+	return undef if $opts->{force};
+	
 	print "testing for already-installed zlib... "; 
 	return get_ld_path('libz', '', \$zlibdir) if ! test_c_prog( $zlib_test, '-lz' );
 	
@@ -363,12 +362,19 @@ sub test_for_prior_zlib
 sub test_for_prior_libxml2
 {
 
+	return undef if $opts->{force};
+
 	print "testing for already-installed libxml2... ";
 	
 # first include -lxml2 and see if it returns a path
-	
+
+# include $installdir in -I path, since we may be a repeat user
+
 	my $path = get_ld_path('libxml2', '', \$libxml2dir)
-	  if ! test_c_prog( $ld_test, $ld_opts, '-lxml2' );
+	  if ! test_c_prog( $ld_test,
+	  		    $ld_opts,
+			    #"-Wl,$installdir/include/libxml2 -L$installdir/include/libxml2",
+			    '-lxml2' );
 
 # then check version with xmlversion.h
 
@@ -376,7 +382,11 @@ sub test_for_prior_libxml2
 	
 	print "minimum libxml2 version required is $MinLibxml2 and you have... ";
 	return get_ld_path('libxml2', '', \$libxml2dir)
-	  if ! test_c_prog( $libxml2_test, "-I$path/include/libxml2", '-lxml2', \$MinLibxml2 );
+	  if ! test_c_prog( $libxml2_test,
+	  		    "-I$path/include/libxml2",
+			    $ld_opts,
+			    '-lxml2',
+			    \$MinLibxml2 );
 	  
 	
 }
@@ -386,6 +396,7 @@ sub cleanup
 {
 
 	print "swish-e was installed in $installdir\n";
+	print "SWISH::API was installed in $installdir/lib/$arch\n";
 
 }
 
@@ -527,7 +538,8 @@ sub ld_opts
 	if ($os =~ /darwin/i) {
 	
 		$ENV{DYLD_LIBRARY_PATH} = "$installdir/lib";
-		$ld_opts = "-Wl,-L" . join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
+		$ld_opts = 	"-Wl,-L" .
+				join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
 		
 		
 		
@@ -549,7 +561,8 @@ sub ld_opts
 # linux
 	} elsif ($os =~ /linux/i) {
 	
-		$ld_opts = "-Wl,-rpath -Wl,$ENV{LD_RUN_PATH} -L$ENV{LD_RUN_PATH}";
+		$ld_opts = 	"-Wl,-L" . 
+				join(' -Wl,-L', split(/:/,$ENV{LD_RUN_PATH}) );
 			
 	
 # default		
@@ -565,10 +578,10 @@ sub ld_opts
 	
 		
 	}
-	
-	print "LD_RUN_PATH = $ENV{LD_RUN_PATH}\n";
-	print "ld opts = $ld_opts\n";
-	
+	if ($opts->{debug}) {
+		print "LD_RUN_PATH = $ENV{LD_RUN_PATH}\n";
+		print "ld opts = $ld_opts\n";
+	}
 }
 
 
@@ -661,7 +674,18 @@ sub get_src
 	
 	my ($bare) = ( $src =~ m/^.*\/(.*)/ );
 	
-	if ( -r $bare and $src =~ m/^http:/ ) {
+	if ($opts->{debug}) {
+	
+		print "src looks like $src\n";
+		print "bare looks like $bare\n";
+		
+	}
+	
+	if ( -d $src and -r $src ) {
+	
+		# nothing to do
+		
+	} elsif ( -r $bare and $src =~ m/^http:/ ) {
 	
 	# use previously downloaded version
 	
@@ -768,11 +792,13 @@ sub nice_exit
 
 sub test_make
 {
-
+	print "testing make ...  ";
 	my @o = `make -v`;
 	if (! grep { /GNU Make version 3\.(7|8)/ } @o) {
 		warn "we've only tested with GNU make version 3.79 or higher\n";
 		warn "you've got " . shift @o;
+	} else {
+		print $o[0];
 	}
 }
 
@@ -784,6 +810,7 @@ sub configure
 	#print "I'm in ";
 	#system("pwd");
 	my $arg = join(' ',@_) || '';
+	$arg .= " --disable-shared " if $opts->{static};
 	my $conf = "./configure --prefix=$installdir $arg $output";
 	print "configuring with:\n$conf\n";
 	nice_exit() if system($conf);
@@ -792,17 +819,18 @@ sub configure
 
 sub make
 {
-
-	print "running make... ";
-	nice_exit() if system("make $output");
+	my $c = shift || 'make';
+	print "running $c... ";
+	nice_exit() if system("$c $output");
 
 }
 
 sub make_clean
 {
 
-	print "running make clean ... \n";
-	if (system("make distclean $output")) {
+	my $c = shift || 'make distclean';
+	print "running $c ... \n";
+	if (system("$c $output")) {
 		system("rm -f Makefile config.cache");
 	}
 	
@@ -810,12 +838,13 @@ sub make_clean
 
 sub make_test
 {
-	print "running make test ...\n";
-	if (system("make test $output")) {
-		warn "make test failed\n";
+	my $c = shift || 'make test';
+	print "running $c ...\n";
+	if (system("$c $output")) {
+		warn "$c failed\n";
 		if (! $opts->{verbose}) {
 			warn "running again so you can see output\n";
-			system("make test");
+			system("$c");
 		}
 	}
 	
@@ -825,9 +854,11 @@ sub make_test
 sub make_install
 {
 	my $arg = shift || '';
-	print "running make install $arg\n";
-	nice_exit() if system("make install $arg $output");
-	
+	my $c = $opts->{sudo}
+	? 'sudo make install'
+	: 'make install';
+	print "running $c $arg\n";
+	nice_exit() if system("$c $arg $output");
 }
 
 sub decompress
@@ -878,6 +909,7 @@ sub zlib
 		"mandir=$installdir/man"
 		);
    make_install( join ' ', @arg );
+   $zlibdir = $installdir;
 
 
 }
@@ -897,12 +929,17 @@ sub libxml2
 	make();
 	make_test();
 	make_install();
+	$libxml2dir = $installdir;
 	
 }
 
 
 sub swishe
 {
+
+	
+	chdir( $Bin );	# back to where we started
+	print "we're in " . `pwd` if $opts->{debug};
 
 	if ($opts->{cvs}) {
 # get latest cvs source and set dir
@@ -930,13 +967,13 @@ sub swishe
 	}
 
 	my $dir = get_src( 'swishe' );
+	
 	$swishdir = $dir;
 	chdir($dir) || die "can't chdir to $dir: $!\n";
 	
 	if ($opts->{debug}) {
 	
-		print "building in ";
-		system('pwd');
+		print "building in " . `pwd`;
 		
 	}
 	
@@ -945,7 +982,6 @@ sub swishe
 	
 	my @arg = (	"--with-zlib=$zlibdir",
 			"--with-libxml2=$libxml2dir",
-			"--disable-shared",
 			"LDFLAGS='$ld_opts'",
 			"CPPFLAGS='-I$zlibdir/include -I$libxml2dir/include'",
 			);
@@ -970,7 +1006,8 @@ sub swish_api
 				);
 				
 	$ENV{SWISHBIN} = "$installdir/bin/swish-e";
-				
+	
+	print "env SWISHBIN set to '$installdir/bin/swish-e'\n";
 	print "configuring with:\n";
 	print "$^X Makefile.PL $arg\n";
 				
