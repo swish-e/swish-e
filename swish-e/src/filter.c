@@ -98,7 +98,6 @@ struct filter *addfilter(struct filter *rp, char *suffix, char *prog, char *filt
 char *hasfilter (char *filename, struct filter *filterlist)
 {
 struct filter *fl;
-int  len;
 char *s, *fe;
 
 

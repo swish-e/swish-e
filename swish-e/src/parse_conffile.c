@@ -37,6 +37,7 @@
 #include "hash.h"
 #include "error.h"
 #include "filter.h"
+#include "result_output.h"
 #include "parse_conffile.h"
 
 

@@ -422,7 +422,7 @@ docPropertyEntry *d;
 									  /* as unsigned long */
 		UNPACKLONG(i);     /* Convert the portable number */
 			/* Convert to ISO datetime */
-		strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+		strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
 	}
 	else if(is_meta_number(q))  /* check for a number */
 	{
@@ -478,7 +478,7 @@ docPropertyEntry *d;
 		case AUTOPROP_ID__LASTMODIFIED:
 			s=emalloc(20);
 				/* Convert to ISO datetime */
-			strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&p->last_modified));
+			strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&p->last_modified));
 			break;
 		case AUTOPROP_ID__TITLE:
 			s=estrdup(p->title);
@@ -506,7 +506,7 @@ docPropertyEntry *d;
 											  /* as unsigned long */
 				UNPACKLONG(i);     /* Convert the portable number */
 					/* Convert to ISO datetime */
-				strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+				strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
 			}
 			else if(is_meta_number(q))  /* check for a number */
 			{

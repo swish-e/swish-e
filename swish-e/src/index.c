@@ -531,9 +531,8 @@ time_t time;
 	date=emalloc(MAXSTRLEN);
 	
 	time = (time_t) getthetime();
-/*	strftime(date, MAXSTRLEN, "%x %X", (struct tm *) localtime(&time));*/
 	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
-	strftime(date, MAXSTRLEN, "%d/%m/%Y %H:%M:%S %Z", (struct tm *) localtime(&time)); 
+	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&time)); 
 	
 	return date;
 }

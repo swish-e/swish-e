@@ -859,5 +859,6 @@ void SwishClose (SWISH *);
 void SwishResetSearch (SWISH *);
 RESULT * SwishNext (SWISH *);
 int SwishSearch (SWISH *, char *, int , char *, char *);
+int SwishSeek(SWISH *sw,int pos);
 int getnumPropertiesToDisplay (SWISH *);
 

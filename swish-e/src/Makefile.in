@@ -25,7 +25,7 @@ exec_prefix = @exec_prefix@
 libdir      = @libdir@
 
 # Flags for C compiler
-CFLAGS      = @CFLAGS@
+CFLAGS      = @CFLAGS@ -Wall
 
 
 LIBS        = @LIBS@
@@ -120,45 +120,48 @@ install-lib:
 #
 # dependencies
 # 
-check.o: check.c swish.h config.h check.h hash.h
-compress.o: compress.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h compress.h
-deflate.o: deflate.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h deflate.h
-docprop.o: docprop.c swish.h config.h file.h hash.h mem.h merge.h \
- error.h search.h string.h docprop.h compress.h
-error.o: error.c swish.h config.h error.h
-file.o: file.c swish.h config.h file.h mem.h string.h error.h list.h \
- hash.h index.h
-fs.o: fs.c swish.h config.h index.h hash.h mem.h file.h string.h \
- list.h
-hash.o: hash.c swish.h config.h hash.h mem.h string.h
-html.o: html.c swish.h mem.h html.h
-http.o: http.c swish.h config.h index.h hash.h string.h mem.h file.h \
- http.h httpserver.h html.h
-httpserver.o: httpserver.c swish.h config.h string.h mem.h http.h \
- httpserver.h
-index.o: index.c swish.h config.h index.h hash.h mem.h string.h \
- check.h search.h docprop.h stemmer.h compress.h
-list.o: list.c swish.h config.h list.h mem.h string.h
-mem.o: mem.c swish.h config.h mem.h error.h
-merge.o: merge.c swish.h config.h merge.h error.h search.h index.h \
- string.h hash.h mem.h docprop.h compress.h
-methods.o: methods.c swish.h config.h
-search.o: search.c swish.h config.h search.h file.h list.h string.h \
- merge.h hash.h mem.h docprop.h stemmer.h compress.h
-stemmer.o: stemmer.c swish.h config.h stemmer.h
-soundex.o: soundex.c swish.h config.h stemmer.h
-string.o: string.c swish.h config.h string.h mem.h
-swish2.o: swish2.c swish.h config.h error.h list.h search.h index.h \
- string.h file.h merge.h docprop.h
-swish.o: swish.c swish.h config.h error.h list.h search.h index.h \
- string.h file.h merge.h docprop.h
-testlib.o: testlib.c swish.h config.h error.h list.h search.h index.h \
- string.h file.h merge.h docprop.h
-txt.o: txt.c txt.h swish.h mem.h string.h index.h
-xml.o: xml.c txt.h swish.h mem.h string.h index.h
-metanames.o: metanames.c swish.h mem.h metanames.h
-result_output.o: result_output.c docprop.h swish.h mem.h config.h
-parse_conffile.o: parse_conffile.c string.h swish.h mem.h config.h
-result_sort.o: result_sort.h string.h swish.h mem.h config.h
-filter.o: filter.h string.h swish.h mem.h config.h
-lst.o: lst.h xml.h string.h swish.h mem.h config.h
+*.o: *.h
+
+#to be deleted (rasc): 
+#check.o: check.c swish.h config.h check.h hash.h
+#compress.o: compress.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h compress.h
+#deflate.o: deflate.c swish.h config.h error.h mem.h docprop.h index.h search.h merge.h deflate.h
+#docprop.o: docprop.c swish.h config.h file.h hash.h mem.h merge.h \
+# error.h search.h string.h docprop.h compress.h
+#error.o: error.c swish.h config.h error.h
+#file.o: file.c swish.h config.h file.h mem.h string.h error.h list.h \
+# hash.h index.h
+#fs.o: fs.c swish.h config.h index.h hash.h mem.h file.h string.h \
+# list.h
+#hash.o: hash.c swish.h config.h hash.h mem.h string.h
+#html.o: html.c swish.h mem.h html.h
+#http.o: http.c swish.h config.h index.h hash.h string.h mem.h file.h \
+# http.h httpserver.h html.h
+#httpserver.o: httpserver.c swish.h config.h string.h mem.h http.h \
+# httpserver.h
+#index.o: index.c swish.h config.h index.h hash.h mem.h string.h \
+# check.h search.h docprop.h stemmer.h compress.h
+#list.o: list.c swish.h config.h list.h mem.h string.h
+#mem.o: mem.c swish.h config.h mem.h error.h
+#merge.o: merge.c swish.h config.h merge.h error.h search.h index.h \
+# string.h hash.h mem.h docprop.h compress.h
+#methods.o: methods.c swish.h config.h
+#search.o: search.c swish.h config.h search.h file.h list.h string.h \
+# merge.h hash.h mem.h docprop.h stemmer.h compress.h
+#stemmer.o: stemmer.c swish.h config.h stemmer.h
+#soundex.o: soundex.c swish.h config.h stemmer.h
+#string.o: string.c swish.h config.h string.h mem.h
+#swish2.o: swish2.c swish.h config.h error.h list.h search.h index.h \
+# string.h file.h merge.h docprop.h
+#swish.o: swish.c swish.h config.h error.h list.h search.h index.h \
+# string.h file.h merge.h docprop.h
+#testlib.o: testlib.c swish.h config.h error.h list.h search.h index.h \
+# string.h file.h merge.h docprop.h
+#txt.o: txt.c txt.h swish.h mem.h string.h index.h
+#xml.o: xml.c txt.h swish.h mem.h string.h index.h
+#metanames.o: metanames.c swish.h mem.h metanames.h
+#result_output.o: result_output.c docprop.h swish.h mem.h config.h
+#parse_conffile.o: parse_conffile.c string.h swish.h mem.h config.h
+#result_sort.o: result_sort.h string.h swish.h mem.h config.h
+#filter.o: filter.h string.h swish.h mem.h config.h
+#lst.o: lst.h xml.h string.h swish.h mem.h config.h
