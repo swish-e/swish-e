@@ -9,7 +9,9 @@
 #include "compress.h"
 #include "index.h"
 #include "file.h"
-
+/* #### Added metanames.h */
+#include "metanames.h"
+/* #### */
 
 int getXMLField(indexf, tag, docPropName, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
@@ -63,17 +65,20 @@ struct metaEntry* list;
 		{
 			if (!strcmp(list->metaName, word) )
 			{
-				if ((docPropName != NULL) && (list->isDocProperty))
+/* #### Use metaType */
+				if ((docPropName != NULL) && is_meta_property(list))
 				{
 					*docPropName = list->index;
 				}
-				if (list->isOnlyDocProperty)
+				if ((!is_meta_index(list)) && is_meta_property(list))
 				{
-					if (*applyautomaticmetanames) list->isOnlyDocProperty=0;
+					if (*applyautomaticmetanames) 
+						list->metaType |=META_INDEX;
 					else 
 				/* property is not for indexing, so return generic metaName value */
 						return 1;
 				}
+/* #### */
 				return list->index;
 			}
 		}
@@ -158,7 +163,7 @@ char *summary=NULL;
 					** Only store until a < is found */
 					if(docPropName) {
 					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,docPropName,p);
+					     addDocProperty(&thisFileEntry->docProperties,docPropName,p,strlen(p));
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */

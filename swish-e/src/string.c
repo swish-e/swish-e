@@ -665,3 +665,17 @@ char *p,*q;
 	}
 	*p='\0';
 }
+
+/* #### Function to conver binary data of length len to a string */
+unsigned char *bin2string(unsigned char *data,int len)
+{
+unsigned char *s=NULL;
+	if(data && len)
+	{
+		s=emalloc(len+1);
+		memcpy(s,data,len);
+		s[len]='\0';
+	}
+	return(s);
+}
+/* #### */

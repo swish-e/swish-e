@@ -47,6 +47,9 @@
 #include "merge.h"
 #include "docprop.h"
 #include "mem.h"
+/* #### Added metaNames */
+#include "metanames.h"
+/* #### */
 
 
 /*

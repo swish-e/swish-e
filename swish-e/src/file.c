@@ -50,6 +50,9 @@
 #include "hash.h"
 #include "check.h"
 #include "index.h"
+/* #### Added metanames.h */
+#include "metanames.h"
+/* #### */
 
 /* Is a file a directory?
 */
@@ -111,16 +114,13 @@ char *path;
 /* Add an entry to the metaEntryList with the given value and the
 ** appropriate index
 */
-
-void addMetaEntry(indexf, metaWord, isDocProp, applyautomaticmetanames)
-IndexFILE *indexf;
-char* metaWord;
-int isDocProp;
-int *applyautomaticmetanames;
+/* #### Changed the name isDocProp by metaType */
+void addMetaEntry(IndexFILE *indexf, char *metaWord, int metaType, int *applyautomaticmetanames)
+/* #### */
 {
 int i;
-struct metaEntry* newEntry;
 struct metaEntry* tmpEntry;
+struct metaEntry* newEntry;
 	
 	if(metaWord == NULL || metaWord[0]=='\0') return;
 	for( i=0; metaWord[i]; i++)
@@ -135,62 +135,33 @@ struct metaEntry* tmpEntry;
 	if (indexf->Metacounter <2)
 		indexf->Metacounter = 2;
 
-	tmpEntry = indexf->metaEntryList;
-	while (tmpEntry)
+/* #### Jose Ruiz - New Stuff. Use metaType */
+	/* See if there is a previous metaname */
+	for (tmpEntry=indexf->metaEntryList;tmpEntry;tmpEntry=tmpEntry->next)   
+		if (strcmp(tmpEntry->metaName,metaWord)==0) break; /* found */
+
+	if(!tmpEntry)      /* metaName not found - Create a new one */
 	{
-		if (strcmp(tmpEntry->metaName, metaWord) == 0)
+		newEntry=(struct metaEntry*) emalloc(sizeof(struct metaEntry));
+		newEntry->metaType = 0;
+		newEntry->metaName = (char*)estrdup(metaWord);
+		newEntry->index = indexf->Metacounter++;
+		newEntry->next = NULL;
+			/* Add at the end of the list of metanames */
+		if (indexf->metaEntryList)
 		{
-			/*
-			 * found a duplicate entry already in the list.
-			 * Since there are two different config tags that can
-			 * be used to get here (MetaNames and PropertyNames)
-			 * and that might be using the same Meta tag name,
-			 * we cannot assume that either one of these was
-			 * called first.
-			 * The semantics we want for the metaEntry are:
-			 *	isDocProperty = 1 if in PropertyNames, else 0
-			 *	isOnlyDocProperty = 1 if not in MetaNames, else 0
-			 */
-			if (isDocProp)
-			{
-				/* this is a DocumentProperty tag */
-				if (!tmpEntry->isDocProperty)
-				{
-					tmpEntry->isDocProperty = 1;
-				}
-			}
-			else
-			{
-				/* this is a MetaName tag */
-				if (tmpEntry->isDocProperty)
-				{
-					tmpEntry->isOnlyDocProperty = 0;
-				}
-			}
-
-			return;
-		}
-		tmpEntry = tmpEntry->next;
-	}
-
-	newEntry = (struct metaEntry*) emalloc(sizeof(struct metaEntry));
-
-	/* isDocProp is true when we see the PropertyNames config tag */
-	newEntry->isDocProperty = isDocProp;
-	newEntry->isOnlyDocProperty = isDocProp;
-
-	newEntry->metaName = (char*)estrdup(metaWord);
-	newEntry->index = indexf->Metacounter++;
-	newEntry->next = NULL;
-	if (indexf->metaEntryList)
-	{
-		for(tmpEntry=indexf->metaEntryList;tmpEntry->next!=NULL;tmpEntry=tmpEntry->next)
+			for(tmpEntry=indexf->metaEntryList;tmpEntry->next!=NULL;tmpEntry=tmpEntry->next)
 			;
-		tmpEntry->next = newEntry;
+			tmpEntry->next = newEntry;
+		}
+		else
+			indexf->metaEntryList = newEntry;
+		tmpEntry = newEntry;
 	}
-	else
-		indexf->metaEntryList = newEntry;
-	
+	/* Add metaType info */
+	tmpEntry->metaType |= metaType;
+
+	/* #### End of changes */
 	return;
 }
 
@@ -421,7 +392,9 @@ IndexFILE *indexf=NULL;
 			sl=parse_line(c);
 			if(sl && sl->n) {
 				for(i=0;i<sl->n;i++)
-					addMetaEntry(indexf,sl->word[i], 0, &sw->applyautomaticmetanames);
+/* #### changed 0 by META */
+					addMetaEntry(indexf,sl->word[i], META_INDEX, &sw->applyautomaticmetanames);
+/* #### */
 				freeStringList(sl);
 			} else progerr("MetaNames requires at least one value");
 		}
@@ -443,7 +416,9 @@ IndexFILE *indexf=NULL;
 			sl=parse_line(c);
 			if(sl && sl->n) {
 				for(i=0;i<sl->n;i++)
-					addMetaEntry(indexf,sl->word[i], 1, &sw->applyautomaticmetanames);
+/* #### changed 1 by META_PROP */
+					addMetaEntry(indexf,sl->word[i], META_PROP, &sw->applyautomaticmetanames);
+/* #### */
 				freeStringList(sl);
 			} else progerr("PropertyNames requires at least one value");
 		}

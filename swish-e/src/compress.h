@@ -17,16 +17,8 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
-
-
-
 /* Jose Ruiz 04/00
-** Now this function is a macro for better performance
-** void compress _AP ((int, FILE *));
+** Now these functions are macros for better performance
 */
 #define compress1(num,fp) {register int _i,_r; unsigned char _s[5]; _i=0;_r=num; while(_r) {_s[_i++] = _r & 127;_r >>= 7;} while(--_i >=0) fputc(_s[_i] | (_i ? 128 : 0), fp);}
 
@@ -57,13 +49,13 @@ num=(_s[0]<<24)+(_s[1]<<16)+(_s[2]<<8)+_s[3]; \
 }
 
 
-unsigned char *compress_location _AP ((SWISH *,IndexFILE *, LOCATION *));
-LOCATION *uncompress_location _AP ((SWISH *,IndexFILE *,unsigned char *));
-void CompressPrevLocEntry _AP ((SWISH *,IndexFILE *,ENTRY *));
-void CompressCurrentLocEntry _AP ((SWISH *,IndexFILE *,ENTRY *));
-void SwapFileData _AP ((SWISH *,struct file *));
-struct file *unSwapFileData _AP ((SWISH *));
-long SwapLocData _AP ((SWISH *,unsigned char *,int));
-unsigned char *unSwapLocData _AP ((SWISH *,long));
-int get_lookup_index _AP ((struct int_lookup_st **,int ,int *));
-int get_lookup_path _AP ((struct char_lookup_st **,char *));
+unsigned char *compress_location(SWISH *,IndexFILE *, LOCATION *);
+LOCATION *uncompress_location(SWISH *,IndexFILE *,unsigned char *);
+void CompressPrevLocEntry(SWISH *,IndexFILE *,ENTRY *);
+void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
+void SwapFileData(SWISH *,struct file *);
+struct file *unSwapFileData(SWISH *);
+long SwapLocData(SWISH *,unsigned char *,int);
+unsigned char *unSwapLocData(SWISH *,long);
+int get_lookup_index(struct int_lookup_st **,int ,int *);
+int get_lookup_path(struct char_lookup_st **,char *);

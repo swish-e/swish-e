@@ -43,6 +43,9 @@
 #include "docprop.h"
 #include "list.h"
 #include "compress.h"
+/* #### Added metanames.h */
+#include "metanames.h"
+/* #### */
 
 /* The main merge functions - it accepts three file names.
 ** This is a bit hairy. It basically acts as a zipper,
@@ -778,8 +781,9 @@ struct metaMergeEntry *mme=NULL, *tmp=NULL, *tmp2=NULL;
 		tmp=(struct metaMergeEntry *)emalloc(sizeof(struct metaMergeEntry));
 		tmp->metaName=(char *)estrdup(metaEntryList->metaName);
 		tmp->oldIndex=metaEntryList->index;
-		tmp->isDocProperty=metaEntryList->isDocProperty;
-		tmp->isOnlyDocProperty=metaEntryList->isOnlyDocProperty;
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+		tmp->metaType=metaEntryList->metaType;
+/* #### */
 		tmp->next=NULL;
 		if(!mme)
 			mme=tmp;
@@ -825,8 +829,9 @@ struct metaEntry* newEntry;
 struct metaEntry* tmpEntry;
 struct metaEntry* last;
 char *metaWord, *compWord;
-int isOnlyDocProperty = 0;
-int isDocProperty = 0;
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+int metaType = 0;
+/* #### */
 
 	newIndex=0;
 	last=NULL;	
@@ -835,8 +840,9 @@ int isDocProperty = 0;
 		*count = 2;
 
 	metaWord = metaFileEntry->metaName;
-	isDocProperty = metaFileEntry->isDocProperty;
-	isOnlyDocProperty = metaFileEntry->isOnlyDocProperty;
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+	metaType = metaFileEntry->metaType;
+/* #### */
 	
 	if (metaEntryList)
 	{
@@ -849,20 +855,26 @@ int isDocProperty = 0;
 			{
 				wordExists = 1;
 				newIndex = tmpEntry->index;
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
 				/*
 				 * Keep the docProperties fields in synch.
 				 * The semantics we want for the metaEntry are:
-				 *	isDocProperty = 1 if either index is using as PropertyName
-				 *	isOnlyDocProperty = 1 if neither index is using as MetaName
+				 *	set META_PROP if either index is using as PropertyName
+				 *	set META if either index is using as MetaName
 				 */
-				if (isDocProperty)	/* new entry is docProp, so assert it */
+				if (metaType & META_PROP)	/* new entry is docProp, so assert it */
+					tmpEntry->metaType |= META_PROP;
+
+				if (metaType & META_INDEX)	/* new entry is not *only* docProp, so unassert that */
+					tmpEntry->metaType |= META_INDEX;
+				/* Finally check that the rest of the */
+				/* metaType does match */
+				if(!match_meta_type(metaType,tmpEntry->metaType))
 				{
-					tmpEntry->isDocProperty = 1;
+					fprintf(stderr,"Couldn't merge: metaname \"%s\" :",metaWord);
+					progerr("types do not match.");
 				}
-				if (!isOnlyDocProperty)	/* new entry is not *only* docProp, so unassert that */
-				{
-					tmpEntry->isOnlyDocProperty = 0;
-				}
+/* #### */
 				break;
 			}
 		}
@@ -876,8 +888,9 @@ int isDocProperty = 0;
 			newEntry->metaName = (char*)estrdup(metaWord);
 			newEntry->index = *count;
 			newEntry->next = NULL;
-			newEntry->isDocProperty = isDocProperty;
-			newEntry->isOnlyDocProperty = isOnlyDocProperty;
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+			newEntry->metaType = metaType;
+/* #### */
 			metaFileEntry->newIndex = (*count)++;
 			last->next = newEntry;
 		}
@@ -886,8 +899,9 @@ int isDocProperty = 0;
 		newEntry->metaName = (char*)estrdup(metaWord);
 		newEntry->index = *count;
 		newEntry->next = NULL;
-		newEntry->isDocProperty = isDocProperty;	/* init */
-		newEntry->isOnlyDocProperty = isOnlyDocProperty;   /* init */
+/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+			newEntry->metaType = metaType;
+/* #### */
 		metaFileEntry->newIndex = (*count)++;
 		metaEntryList = newEntry;
 	}
