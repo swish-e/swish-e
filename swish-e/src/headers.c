@@ -275,6 +275,9 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
             if ( (void *)data_pointer == &header->totalfiles )
                 value.number -= header->removedfiles;
 
+            if ( (void *)data_pointer == &header->totalwords )
+                value.number -= header->removedwords;
+
             return value;
 
         case SWISH_LIST:
