@@ -107,7 +107,9 @@ LIB_OBJS     = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS)
 # All objects for make clean target
 OBJS                = $(SEARCHING_OBJS) $(DB_OBJS) $(UTIL_OBJS) $(INDEXING_OBJS)  $(SWISH_BINARY_OBJS) 
 
-
+SWISH_BIN = $(NAME)@EXEEXT@
+SWISHSEARCH_BIN = swish-search@EXEEXT@
+LIBTEST_BIN = libtest@EXEEXT@
  
 # Flags for C compiler
 CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ @PCRE_CFLAGS@ $(cflags)
@@ -125,18 +127,18 @@ LDFLAGS     = $(ldflags)
 all:	$(NAME)
 
 $(NAME): libswish-e.a $(SWISH_BINARY_OBJS)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SWISH_BINARY_OBJS) libswish-e.a $(LIBS)
-	chmod 755 $@
+	$(CC) -o $(SWISH_BIN) $(CFLAGS) $(LDFLAGS) $(SWISH_BINARY_OBJS) libswish-e.a $(LIBS)
+	chmod 755 $(SWISH_BIN)
 
 libswish-e.a: $(LIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $(LIB_OBJS)
 	$(RANLIB) libswish-e.a
 
 swish-search: $(NAME)
-	cp -f $(NAME) swish-search
+	cp -f $(SWISH_BIN) $(SWISHSEARCH_BIN)
 
 clean:
-	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a libsearchswish-e.a libtest.o
+	rm -f ../tests/*.index ../tests/core core $(SWISH_BIN) $(SWISHSEARCH_BIN) $(LIBTEST_BIN) swish.o $(OBJS) libswish-e.a libsearchswish-e.a libtest.o
 
 realclean: clean
 	rm Makefile
@@ -169,7 +171,7 @@ test:	$(NAME)
 $(LIB_OBJS):	Makefile config.h swish.h
 
 install: $(NAME)
-	cp swish-e $(bindir)/swish-e
+	cp $(SWISH_BIN) $(bindir)/$(SWISH_BIN)
 
 install-lib: libswish-e.a	
 	cp libswish-e.a $(libdir)/libswish-e.a
@@ -177,8 +179,8 @@ install-lib: libswish-e.a
 
 
 libtest: libswish-e.a libtest.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(SEARCHLIBS)
-	chmod 755 $@
+	$(CC) -o $(LIBTEST_BIN) $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(SEARCHLIBS)
+	chmod 755 $(LIBTEST_BIN)
 
 
 

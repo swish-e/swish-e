@@ -40,7 +40,7 @@ swish-e:
 
 swish-search: swish-e
 	@echo 'making swish-search'
-	cp -f src/swish-e src/swish-search
+	(cd src; $(MAKE) swish-search)
 	@echo 'swish-search done'
 
 
