@@ -1694,43 +1694,34 @@ void stripIgnoreFirstChars(INDEXDATAHEADER header, char *word)
 }
 
 
+
+int entrystructcmp(const void *e1, const void *e2)
+{
+const ENTRY *ep1=*(ENTRY * const *)e1;
+const ENTRY *ep2=*(ENTRY * const *)e2;
+	return(strcmp(ep1->word,ep2->word));
+}
+
+
 /* Builds a sorted array with all of the words */
 void BuildSortedArrayOfWords(SWISH *sw,IndexFILE *indexf)
 {
-int numWords,maxWordSize,i;
-unsigned char *buf,*pbuf;
+int numWords,i,j;
 ENTRY *e;
 	if(sw->verbose) {
 		printf("Sorting Words alphabetically\n");fflush(stdout);
 	}
 	numWords=indexf->header.totalwords;
-	maxWordSize=sw->entryArray->maxWordSize+1;  /* Includes the extra trailing '\0' */
-		/* Allocate a buffer for sorting with qsort */
-	buf=(unsigned char *)emalloc((maxWordSize+sizeof(void *))*numWords);
-		/* Put all the entries in the buffer */
-	for(pbuf=buf,i=0;i<SEARCHHASHSIZE;i++)
-	{
-		for(e=sw->hashentries[i];e;e=e->nexthash)
-		{
-			memset(pbuf,0,maxWordSize);
-			strcpy(pbuf,e->word);
-			pbuf+=maxWordSize;
-			memcpy(pbuf,(unsigned char *)&e,sizeof(void *));
-			pbuf+=sizeof(void *);
-		}
-	}
-		/* Sort them */
-	qsort(buf,numWords,maxWordSize+sizeof(void *),strcmp);
-		/* Build the array with the output */
+		/* Build the array with the pointers to the entries */
 	sw->entryArray->elist=(ENTRY **)emalloc(numWords*sizeof(ENTRY *));
-	for(pbuf=buf,i=0;i<numWords;i++)
-	{
-		pbuf+=maxWordSize;
-		memcpy((unsigned char *)&sw->entryArray->elist[i],pbuf,sizeof(void *));
-		pbuf+=sizeof(void *);
-	}
-	efree(buf);
+		/* Fill the array with all the entries */
+	for(i=0,j=0;i<SEARCHHASHSIZE;i++)
+		for(e=sw->hashentries[i];e;e=e->nexthash)
+			sw->entryArray->elist[j++]=e;
+		/* Sort them */
+	qsort(sw->entryArray->elist,numWords,sizeof(ENTRY *),&entrystructcmp);
 }
+
 
 /* 
 ** Jose Ruiz 04/00
