@@ -231,7 +231,10 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
         if ( strlen( self->word ) > max_size )
-            progerr( "Search word exceeded maxwordlimit setting." ); 
+        {
+            sw->lasterror = SEARCH_WORD_TOO_BIG;
+            return NULL;
+        }
 
 
         if (header->applyStemmingRules)
@@ -393,8 +396,13 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
     int     max_size;
     int     inphrase;
 
+
+    /* Probably won't get to this point */
     if ( !words || !*words )
-        progerr("Please enter a search string.");
+    {
+        sw->lasterror = NO_WORDS_IN_SEARCH;
+        return NULL;
+    }
 
 
     PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
@@ -426,7 +434,12 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
             /* One current problem is that you can use internal metanames, */
             /* but the "internal" meta data is only indexed when specified with MetaNames */
             if( !getMetaNameByName( header, temp->line ) )
-                progerr("Meta name '%s' is invalid.", temp->line );
+            {
+                sw->lasterror = UNKNOWN_METANAME;
+                sw->lasterrstr = temp->line;
+                return NULL;
+            }
+
 
             /* this might be an option with XML */
             strtolower( temp->line );
@@ -493,6 +506,11 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
         /* query words left.  Turn into "swish_words" */
         swish_words = NULL;
         swish_words = parse_swish_words( sw, header, temp->line, max_size);
+
+        if ( sw->lasterror )
+            return NULL;
+
+        
         next_node = temp->next;
 
         /* move into list.c at some point */

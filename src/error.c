@@ -114,6 +114,8 @@ static char *swishErrors[]={
 "Word not found",          /* WORD_NOT_FOUND */
 "No more results",          /* SWISH_LISTRESULTS_EOF */
 "Invalid swish handle",          /* INVALID_SWISH_HANDLE */
+"Search word exceeded maxwordlimit setting", /* SEARCH_WORD_TOO_BIG */
+"Query Syntax Error",	/* QUERY_SYNTAX_ERROR */
 NULL};
 
 
