@@ -43,6 +43,9 @@ PropValue * getResultPropertyByName (SWISH *sw, char *name, RESULT *r);
 PropValue * getResultPropertyByName_CS (SWISH *sw, char *name, RESULT *r);
 int isAutoProperty (char *propname);
 
+void dump_file_properties(IndexFILE * indexf, struct  file *fi );
+
+
 
 /*
    -- Mapping AutoProperties <-> METANAMES  

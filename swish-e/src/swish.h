@@ -802,6 +802,7 @@ int     getnumPropertiesToDisplay(SWISH *);
 /* These are only checked while indexing */
 #define DEBUG_WORDS 1<<0
 #define DEBUG_PARSED_WORDS 1<<1
+#define DEBUG_PROPERTIES 1<<2
 
 /* These are only checked while searching */
 

@@ -70,6 +70,57 @@ void freeDocProperties(docProperties *docProperties)
 	efree(docProperties);
 }
 
+
+/*******************************************************************
+*   Converts a property into a string, based on it's type.
+*   Numbers are zero filled
+*
+*   Call with:
+*       *metaEntry
+*       *propEntry
+*
+*   Returns:
+*       malloc's a new string.  Caller must call free().
+*
+*
+********************************************************************/
+
+static char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
+{
+    char *s;
+    unsigned long i;
+    
+    if( is_meta_string(meta_entry) )      /* check for ascii/string data */
+        return bin2string(prop->propValue,prop->propLen);
+
+
+    if( is_meta_date(meta_entry) )
+    {
+        s=emalloc(20);
+        i = *(unsigned long *) prop->propValue;  /* read binary */
+        i = UNPACKLONG(i);     /* Convert the portable number */
+        strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+        return s;
+    }
+
+
+    
+    if( is_meta_number(meta_entry) )
+    {
+        s=emalloc(14);
+        i=*(unsigned long *)prop->propValue;  /* read binary */
+        i = UNPACKLONG(i);     /* Convert the portable number */
+        sprintf(s,"%.013lu",i);
+        return s;
+    }
+
+    progwarn("Invalid property type for property '%s'\n", meta_entry->metaName );
+    return estrdup("");
+}
+
+
+
+
 /*******************************************************************
 *   Converts a string into a string for saving as a property
 *   Which means will either return a duplicated string,
@@ -184,6 +235,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 	int i;
 
 
+    /* convert string to a document property, if not already encoded */
     if ( !preEncoded )
     {
         char *tmp;
@@ -199,24 +251,34 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
     }
 
 
+    /* Store property if it's not zero length */
+
 	if(propLen)
 	{
-		if( !dp)
+
+	    /* First property added, allocate space for the property array */
+	    
+		if( !dp )
 		{
 			dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
 			*docProperties = dp;
+
 			dp->n = meta_entry->metaID + 1;
-			for(i=0;i<dp->n;i++)
+
+			for( i = 0; i < dp->n; i++ )
 				dp->propEntry[i] = NULL;
 		}
-		else 
+
+		else /* reallocate if needed */
 		{
-			if(dp->n <= meta_entry->metaID)
+			if( dp->n <= meta_entry->metaID )
 			{
 				dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+
 				*docProperties = dp;
-				for(i=dp->n;i<=meta_entry->metaID;i++)
+				for( i = dp->n ; i <= meta_entry->metaID; i++ )
 					dp->propEntry[i] = NULL;
+					
 				dp->n = meta_entry->metaID + 1;
 			}
 		}
@@ -881,5 +943,40 @@ int isAutoProperty (char *propname)
 	ap++;
   }
   return 0;
+}
+
+
+
+
+void dump_file_properties(IndexFILE * indexf, struct  file *fi )
+{
+    int j;
+	propEntry *prop;
+    struct metaEntry *meta_entry;
+    char *propstr;
+
+	if ( !fi->docProperties )  /* may not be any properties */
+	    return;
+
+    for (j = 0; j < fi->docProperties->n; j++)
+    {
+        if ( !fi->docProperties->propEntry[j] )
+            continue;
+
+        meta_entry = getMetaIDData( &indexf->header, j );
+
+        printf("  %20s (%2d):", meta_entry->metaName, meta_entry->metaID );
+
+        for ( prop = fi->docProperties->propEntry[j]; prop; prop = prop->next )
+        {
+            propstr = DecodeDocProperty( meta_entry, prop );
+            
+            printf(" \"%s\"", propstr );
+
+            efree( propstr );
+        }
+
+        printf( "\n" );;
+    }
 }
 
