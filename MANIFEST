@@ -185,6 +185,8 @@ src/fs.c
 src/fs.h
 src/hash.c
 src/hash.h
+src/headers.c
+src/headers.h
 src/html.c
 src/html.h
 src/http.c

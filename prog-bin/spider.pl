@@ -261,6 +261,8 @@ sub process_server {
     check_user_function( 'spider_done', undef, $server );
     
 
+    delete $server->{ua};  # Free up LWP to avoid CLOSE_WAITs hanging around when using a lot of @servers.
+
     return if $server->{quiet};
 
 
