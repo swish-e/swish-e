@@ -479,7 +479,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, FileRec *fi, char *buf
 
 
 #ifdef HAVE_LIBXML2
-    if (fprop->doctype == HTML2)
+    if (fprop->doctype == HTML2 || !fprop->doctype)
         return parse_HTML( sw, fprop, fi, buffer );
 #endif
 

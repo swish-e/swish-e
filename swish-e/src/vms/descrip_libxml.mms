@@ -71,7 +71,7 @@ xmltok.obj : [.expat.xmltok]xmltok.c
 
 xmlrole.obj : [.expat.xmltok]xmlrole.c
 
-snprintf.obj : [.vms.snprintf_2_2]snprintf.c
+snprintf.obj : [.vms.snprintf]snprintf.c
 
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
         link/exe=$(MMS$TARGET) $(LINKFLAGS) -
