@@ -8,6 +8,33 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =head2 Version 2.4.0 - ????????? ??, ????
 
+=over 4
+
+=item * Note: Different Index Format
+
+Swish-e version 2.4.0 has a different index file format from previous
+versions of Swish-e.  Upgrading will B<require> reindexing -- version 2.4.0
+cannot read indexes created with previous versions.
+
+=back
+
+=head2 Version 2.4.0 (Release Candidate 4)  September xx, 2003
+
+=over 4
+
+=item * SWISH::Filter and locating programs on Windows
+
+SWISH::Filter now scans $libexecdir in addition to the PATH for programs (such at catdoc and
+pdftotext), and also checks for programs by adding the extensions ".exe" and ".bat" to the 
+program name.
+
+=item * Install sample templates
+
+The sample templates included with swish.cgi are now installed
+in $pkgdatadir (typically /usr/local/share/swish-e).
+
+=back
+
 =head2 Version 2.4.0 (Release Candidate 3)  September 11, 2003
 
 =over 4

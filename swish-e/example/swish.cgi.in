@@ -461,7 +461,7 @@ sub default_config {
             package         => 'SWISH::TemplateToolkit',
             file            => 'search.tt',
             options         => {
-                INCLUDE_PATH    => '/home/moseley/swish-e/example',
+                INCLUDE_PATH    => '@@pkgdatadir@@',
                 #PRE_PROCESS     => 'config',
             },
         },
@@ -470,6 +470,7 @@ sub default_config {
             package         => 'SWISH::TemplateHTMLTemplate',
             options         => {
                 filename            => 'swish.tmpl',
+                path                => '@@pkgdatadir@@',
                 die_on_bad_params   => 0,
                 loop_context_vars   => 1,
                 cache               => 1,
