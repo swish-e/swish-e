@@ -219,7 +219,6 @@ void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
 IndexFILE *indexf;
 
-fprintf (stderr,"addSearchResultProp: __%s__\n",propName);
 
 	/* add a property to the list of properties that will be displayed */
 	if (sw->numPropertiesToDisplay >= sw->currentMaxPropertiesToDisplay)
