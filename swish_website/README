@@ -34,7 +34,7 @@ Building the site
 
         $ cd swish_website
         $ mkdir -p public_html dirs_public/download/old dirs_public/swish-daily
-        $ bin/build -swishsrc=$HOME/swish-e -develsrc=$HOME/swish-e
+        $ bin/build -swishsrc=$HOME/swish-e -develsrc=$HOME/swish-e -archive=archive/index.swish-e
 
     (Or symlink as needed -- which is what I did.)
 
@@ -167,7 +167,7 @@ path, or can people figure that out on their own?
 - Have title be part of the layout (instead of added on each page)?
 
 
-- Fetch version from -swishsrc/configure instead of hard-coded in config/site
+- [done] Fetch version from -swishsrc/configure instead of hard-coded in config/site
 
 - Split out some of the lib/page templates into smaller components that can be
 overridden separately.
@@ -176,17 +176,22 @@ overridden separately.
 lastmod is probably fine.  Waiting until can think of a better way to do the same
 for the pod files.
 
-- test speedycgi and install on sunsite
+- [done] test speedycgi and install on sunsite
 
-- enable template caching for the search script
+- [done - not really needed under speedy ] enable template caching for the search script
 
-- Probably should filter all hrefs= and name= through |uri|html.  Plus some
+- [done] Probably should filter all hrefs= and name= through |uri|html.  Plus some
 are very large.  Maybe shorten or md5 them?  If so, then need to adjust link_to_page().
+[Well, partially done.  Pod::POM prevents access to the #fragment so there's spaces in hrefs
+which is ok, I suppose but other chars could mess things up.]
 
-- Try (again) to find a way to detect when a cvs update doesn't really update any files.
+- [done - just rebuld, doesn't take any time] 
+  Try (again) to find a way to detect when a cvs update doesn't really update any files.
 
-- Add disk cache for table of contents for each POD page so index.html can be
+- [done - see above]Add disk cache for table of contents for each POD page so index.html can be
 regenerated without having to parse all pods.  Not that parsing a small handfull of
 pods is a big deal....
 
-- add timezone to dates and make UTC.
+- [done] add timezone to dates and make UTC.
+
+- Set fixed pitch font for timestamp on file listings.  Currently ugly.

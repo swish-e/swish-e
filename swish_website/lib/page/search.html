@@ -116,10 +116,7 @@
         Size: [% item.Property('swishdocsize') %] bytes<br>
         Date: [% result_date.format( item.Property('swishlastmodified')) %]<br>
 
-        [% IF is_list %]
-            Poster's Name: [% item.Property('name') %]<br>
-            Poster's Email: [% item.Property('email') %]
-        [% END %]
+        [% PROCESS show_list_links IF is_list %]
 
         [% IF is_devel %]
             Warning: <b>** Development Documentation **</b>
@@ -128,4 +125,18 @@
 
 [% END %]
 
+[% BLOCK show_list_links %]
+
+    [%
+        SET name    = item.Property('name');
+        SET email   = item.Property('email');
+        SET name_href = myurl( query="name=\"$name\"" );
+        SET email_href = myurl( query="email=\"$email\"" );
+    %]
+
+
+        Poster's Name: <a href="[% name_href %]" title="All posts from this name">[% name | html %]</a><br>
+        Poster's Email: <a href="[% email_href %]" title="All posts from this email">[% email | html %]</a>
+
+[% END %]
 
