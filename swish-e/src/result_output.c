@@ -183,7 +183,7 @@ FILE   *f_out;
 	   printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
 	else {
 					 /* old style v 1.x std output  (compat) */
-	   fprintf(f_out,"%d%s%s%s%s%s%d",
+	   fprintf(f_out,"%d%s%s%s\"%s\"%s%d",
 			r->rank,  delimiter, r->filename,
 			delimiter, r->title, delimiter, r->size);
 	   printSearchResultProperties(sw, f_out, r->Prop);
