@@ -1575,7 +1575,7 @@ spider.pl - Example Perl program to spider web servers
 
     ./spider.pl spider.config | swish-e -c swish.config -S prog -i stdin
 
-    # or in two steps and compress the output
+    # or in two steps
     ./spider.pl spider.config > output.txt
     swish-e -c swish.config -S prog -i stdin < output.txt
 
@@ -1595,7 +1595,7 @@ spider.pl - Example Perl program to spider web servers
 
 
     Note: When running on some versions of Windows (e.g. Win ME and Win 98 SE)
-    you may need to index using the command:
+    you may need to tell Perl to run the spider directly:
 
         perl spider.pl | swish-e -S prog -c swish.conf -i stdin
 
@@ -1608,13 +1608,18 @@ F<spider.pl> is a program for fetching documnts from a web server,
 and outputs the documents to STDOUT in a special format designed
 to be read by Swish-e.
 
-The spider can index non-text documents such as PDF and MS Word by use
-of filter programs.  These programs are not part of the Swish-e distribution and 
-must be installed separately.  See the section on filtering below.
+The spider can index non-text documents such as PDF and MS Word by use of
+filter (helper) programs.  These programs are not part of the Swish-e
+distribution and must be installed separately.  See the section on filtering
+below.
 
 A configuration file is noramlly used to control what documents are fetched
 from the web server(s).  The configuration file and its options are described
-below.
+below.  The is also a "default" config suitable for spidering.
+
+The spider is designed to spider web pages and fetch documents from one
+host at a time -- offsite links are not followed.  But, you can configure
+the spider to spider multiple sites in a single run.
 
 F<spider.pl> is distributed with Swish-e and is installed in the swish-e
 library directory at installation time.  This directory (libexedir) can
@@ -1648,7 +1653,7 @@ or the swish-e can run the spider directly:
 One advantage of having Swish-e run F<spider.pl> is that Swish-e knows
 where to locate the program (based on libexecdir compiled into swish-e).
 
-When running the spider without any parameters it looks for a configuration file
+When running the spider I<without> any parameters it looks for a configuration file
 called F<SwishSpiderConfig.pl> in the current directory.  The spider will abort
 with an error if this file is not found.
 
@@ -1657,7 +1662,8 @@ A configuration file can be specified as the first parameter to the spider:
     ./spider.pl spider.config > output.txt
 
 If running the spider via Swish-e (i.e. Swish-e runs the spider) then use
-the Swish-e config option C<SwishProgParameters> to specify the config file:
+the Swish-e config option L<SwishProgParameters|SWISH-CONFIG/"item_SwishProgParameters">
+to specify the config file:
 
 In swish.config:
 
@@ -1679,11 +1685,22 @@ way to get started with the spider:
 There's no "best" way to run the spider.  I like to capture to a file
 and then feed that into Swish-e.
 
-The spider does require Perl's LWP library and a few other reasonably common modules.
-Most well maintained systems should have these modules installed.  
-See  C<REQUIREMENTS> below for more information.
-It's a good idea to check that you are running
-a current version of these modules.
+The spider does require Perl's LWP library and a few other reasonably common
+modules.  Most well maintained systems should have these modules installed.
+See  L<REQUIREMENTS> below for more information.  It's a good idea to check
+that you are running a current version of these modules.
+
+Note: the "prog" document source in Swish-e bypasses many Swish-e configuration
+settings.  For example, you cannot use the
+L<IndexOnly|SWISH-CONFIG/"item_SwishProgParameters"> directive with the "prog"
+document source.  This is by design to limit the overhead when using an
+external program for providing documents to swish; after all, with "prog", if
+you don't want to index a file, then don't give it to swish to index in the
+first place.
+
+So, for spidering, if you do not wish to index images, for example, you will
+need to either filter by the URL or by the content-type returned from the web
+server.  See L</"CALLBACK FUNCTIONS"> below for more information.
 
 
 =head2 Robots Exclusion Rules and being nice
@@ -1694,7 +1711,7 @@ control over what files are indexed and/or spidered.
 See http://www.robotstxt.org/wc/exclusion.html for details.
 
 This spider provides an extension to the <meta> tag exclusion, by adding a
-C<NOCONTENTS> attribute.  This attribute turns on the C<no_contents> setting, which
+B<NOCONTENTS> attribute.  This attribute turns on the C<no_contents> setting, which
 asks swish-e to only index the document's title (or file name if not title is found).
 
 For example:
@@ -1711,7 +1728,7 @@ parsing by using C<ignore_robots_headers>.
 
 This script only spiders one file at a time, so load on the web server is not that great.
 And with libwww-perl-5.53_91 HTTP/1.1 keep alive requests can reduce the load on
-the server even more (and potentially reduce spidering time considerably!)
+the server even more (and potentially reduce spidering time considerably).
 
 Still, discuss spidering with a site's administrator before beginning.
 Use the C<delay_sec> to adjust how fast the spider fetches documents.
@@ -1743,7 +1760,7 @@ Then only that URL will be indexed.
 
 =head2 Broken relative links
 
-Some times web page authors use too many C</../> segments in relative URLs which reference
+Sometimes web page authors use too many C</../> segments in relative URLs which reference
 documents above the document root.  Some web servers such as Apache will return a
 400 Bad Request when requesting a document above the root.  Other web servers such as
 Micorsoft IIS/5.0 will try and "correct" these errors.  This correction will lead to
@@ -1771,16 +1788,6 @@ MD5 checksomes are done on the compressed data.
 MD5 may slow down indexing a tiny bit, so test with and without if speed is an
 issue (which it probably isn't since you are spidering in the first place).
 This feature will also use more memory.
-
-Note: the "prog" document source in Swish-e bypasses many Swish-e configuration settings.
-For example, you cannot use the C<IndexOnly> directive with the "prog" document
-source.  This is by design to limit the overhead when using an external program
-for providing documents to swish; after all, with "prog", if you don't want to index a file, then
-don't give it to swish to index in the first place.
-
-So, for spidering, if you do not wish to index images, for example, you will
-need to either filter by the URL or by the content-type returned from the web
-server.  See L<"CALLBACK FUNCTIONS"> below for more information.
 
 =head1 REQUIREMENTS
 
@@ -1850,8 +1857,9 @@ If you do not specify a config file then the spider will look for the file
 F<SwishSpiderConfig.pl> in the current directory.
 
 The Swish-e distribution includes a F<SwishSpiderConfig.pl> file with a few
-example configurations.  This example file is installed in the documentation
-installating directory (on unix often this is /usr/local/share/swish-e/prog-bin).
+example configurations.  This example file is installed in the F<prog-bin/>
+documentation directory (on unix often this is
+/usr/local/share/swish-e/prog-bin).
 
 When the special config file name "default" is used:
 
@@ -1866,7 +1874,7 @@ required filter programs installed (which are not part of the Swish-e
 distribution).  The spider will follow "a" and "frame" type of links only.
 
 Note that if you do use a spider configuration file that the default configuration will NOT
-be used also (unless you set the "use_default_config" option in your config file).
+be used (unless you set the "use_default_config" option in your config file).
 
 
 =head1 CONFIGURATION OPTIONS
@@ -1879,22 +1887,27 @@ This describes the required and optional keys in the server configuration hash, 
 
 This required setting is the starting URL for spidering.
 
-Typically, you will just list one URL for the base_url.  You may specify more than one
-URL as a reference to a list
+This sets the first URL the spider will fetch.  It does NOT limit spidering
+to URLs at or below the level of the directory specified in this setting.
+For that feature you need to use the C<test_url> callback function.
+
+Typically, you will just list one URL for the base_url.  You may specify more
+than one URL as a reference to a list and each will be spidered:
 
     base_url => [qw! http://swish-e.org/ http://othersite.org/other/index.html !],
+
+but each site will use the same config opions.  If you want to index two separate
+sites you will likely rather add an additional configuration to the
+@servers array.
 
 You may specify a username and password:
 
     base_url => 'http://user:pass@swish-e.org/index.html',
 
-but you may find that to be a security issue.  If a URL is protected by Basic Authentication
-you will be prompted for a username and password.  This might be a slighly safer way to go.
-
-The parameter C<max_wait_time> controls how long to wait for user entry before skipping the
-current URL.
-
-See also C<credentials> below.
+If a URL is protected by Basic Authentication you will be prompted for a
+username and password.  The parameter C<max_wait_time> controls how long to
+wait for user entry before skipping the current URL.  See also C<credentials>
+below.
 
 
 =item same_hosts
@@ -1941,7 +1954,7 @@ This optional key sets the name of the spider.
 =item link_tags
 
 This optional tag is a reference to an array of tags.  Only links found in these tags will be extracted.
-The default is to only extract links from C<a> tags.
+The default is to only extract links from E<gt>aE<lt> tags.
 
 For example, to extract tags from C<a> tags and from C<frame> tags:
 
@@ -2069,7 +2082,7 @@ header then that will be used.  Otherwise, the document will be checked for
 size limitation as it arrives.  That's a good reason to have your server send
 Content-Length headers.
 
-See also L<use_head_requests> below.
+See also C<use_head_requests> below.
 
 =item keep_alive
 
@@ -2098,29 +2111,29 @@ Note: you must have at least libwww-perl-5.53_90 installed to use this feature.
 This option is new as of swish-e 2.4.3 and can effect the speed of spidering and the
 load of the web server.
 
-To understand this you will likely need to read about the L<CALLBACK FUNCTIONS>
-below -- specifically about the L<test_response()> callback function.  This option is
-also only used when L<keep_alive> is also enabled (although it could be debated that
+To understand this you will likely need to read about the L</"CALLBACK FUNCTIONS">
+below -- specifically about the C<test_response> callback function.  This option is
+also only used when C<keep_alive> is also enabled (although it could be debated that
 it's useful without keep alives).
 
 This option tells the spider to use http HEAD requests before each request.
 
 Normally, the spider simply does a GET request and after receiving the first
-chunk of data back from the web server calls the L<test_response()> callback
-function (if one is defined in your config file).  The L<test_response()>
+chunk of data back from the web server calls the C<test_response> callback
+function (if one is defined in your config file).  The C<test_response>
 callback function is a good place to test the content-type header returned from
 the server and reject types that you do not want to index.
 
-Now, *if* you are using the L<keep_alive> feature then rejecting a document 
+Now, *if* you are using the C<keep_alive> feature then rejecting a document 
 will often (always?) break the keep alive connection.
 
-So, what the L<use_head_requests> option does is issue a HEAD request for every
+So, what the C<use_head_requests> option does is issue a HEAD request for every
 document, checks for a Content-Length header (to check if the document is larger than
-L<max_size>, and then calls your L<test_response()> callback function.  If your callback
+C<max_size>, and then calls your C<test_response> callback function.  If your callback
 function returns true then a GET request is used to fetch the document.
 
 The idea is that by using HEAD requests instead of GET request a false return from 
-your L<test_response()> callback function (i.e. rejecting the document) will not
+your C<test_response> callback function (i.e. rejecting the document) will not
 break the keep alive connection.
 
 Now, don't get too excited about this.  Before using this think about the ratio of
@@ -2134,8 +2147,8 @@ There's also another problem with using HEAD requests.  Some broken servers
 may not respond correctly to HEAD requests (some issues a 500 error), but respond
 fine to a normal GET request.  This is something to watch out for.
 
-Finally, if you do not have a L<test_response()> callback AND L<max_size> is set to zero
-then setting L<use_head_requests> will have no effect.
+Finally, if you do not have a C<test_response> callback AND C<max_size> is set to zero
+then setting C<use_head_requests> will have no effect.
 
 And, with all other factors involved you might find this option has no effect at all.
 
@@ -2179,7 +2192,7 @@ like so:
 You can still do this, but the string version is easier.  In fact, if you want
 to turn on debugging dynamically (for example in a test_url() callback
 function) then you currently *must* use the DEBUG_* constants.  The string is
-converted to a number only at the start of spiderig -- after that the L<debug>
+converted to a number only at the start of spiderig -- after that the C<debug>
 parameter is converted to a number.
 
 
@@ -2242,7 +2255,7 @@ You may specify a username and password to be used automatically when spidering:
 A username and password supplied in a URL will override this setting.
 This username and password will be used for every request.
 
-See also the L<get_password> callback function below.  L<get_password>, if defined,
+See also the C<get_password> callback function below.  C<get_password>, if defined,
 will be called when a page requires authorization.
 
 =item credential_timeout
@@ -2393,7 +2406,7 @@ Web servers use a Content-Type: header to define the type of data returned from 
 On a web server you could have a .jpeg file be a web page -- file extensions may not always
 indicate the type of the file.
 
-If you enable L<use_head_requests> then this function is called after the
+If you enable C<use_head_requests> then this function is called after the
 spider makes a HEAD request.  Otherwise, this function is called while the web
 pages is being fetched from the remote server, typically after just enought
 data has been returned to read the response from the web server.
@@ -2406,7 +2419,7 @@ The $response variable is a HTTP::Response object and provies methods of examini
 the server's response.  The $content_chunk is the first chunk of data returned from
 the server (if not a HEAD request).
 
-When not using L<use_head_requests> the spider requests a document in "chunks"
+When not using C<use_head_requests> the spider requests a document in "chunks"
 of 4096 bytes.  4096 is only a suggestion of how many bytes to return in each
 chunk.  The C<test_response> routine is called when the first chunk is received
 only.  This allows ignoring (aborting) reading of a very large file, for
@@ -2415,7 +2428,7 @@ reference to this chunk is passed as the forth parameter.
 
 If you are spidering a site with many different types of content that you do
 not wish to index (and cannot use a test_url callback to determine what docs to skip)
-then you will see better performance using both the L<use_head_requests> and L<keep_alive>
+then you will see better performance using both the C<use_head_requests> and C<keep_alive>
 features.  (Aborting a GET request kills the keep-alive session.)
 
 For example, to only index true HTML (text/html) pages:
@@ -2502,7 +2515,7 @@ do:
         [...],
     } );
 
-The $response_sub is not required, but is useful if using HEAD requests (L<use_head_requests>):
+The $response_sub is not required, but is useful if using HEAD requests (C<use_head_requests>):
 It tests the content type from the server to see if there's any filters that can handle
 the document.  The $filter_sub does all the work of filtering a document.
 
@@ -2554,7 +2567,7 @@ a username and password separated by a colon:
         return;  # sorry, I don't know the password.
     },
 
-Use the L<credentials> setting if you know the username and password and they will
+Use the C<credentials> setting if you know the username and password and they will
 be the same for every request.  That is, for a site-wide password.
 
 
@@ -2650,7 +2663,7 @@ Introduced a few spelling mistakes.
 
 =over 4
 
-=item use_default_config
+=item Config opiton: use_default_config
 
 It used to be that you could run the spider like:
 
@@ -2661,28 +2674,28 @@ config file then the defaults were not used.  This options allows you to merge
 your config with the default config.  Makes making small changes to the default
 easy.
 
-=item use_head_requests
+=item Config option: use_head_requests
 
 Tells the spider to make a HEAD request before GET'ing the document from the web server.
 Useful if you use keep_alive and have a test_response() callback that rejects many documents
 (which breaks the connection).
 
-=item spider_done
+=item Config option: spider_done
 
 Callback to tell you (or tell your config as it may be) that the spider is done.
 Useful if you need to do some extra processing when done spidering -- like record
 counts to a file.
 
-=item get_password
+=item Config option: get_password
 
 This callback is called when a document returns a 401 error needing a username 
 and password.  Useful if spidering a site proteced with multiple passwords.
 
-=item output_function
+=item Config option: output_function
 
 If defined spider.pl calls this instead of sending ouptut to STDOUT.
 
-=item debug
+=item Config option: debug
 
 Now you can use the words instead of or'ing the DEBUG_* constants together.
 
