@@ -130,6 +130,7 @@ typedef struct {
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);
+static void ignorableWhitespace(void *data, const char *txt, int txtlen);
 static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data, int clear );
 static void comment_hndl(void *data, const char *txt);
@@ -399,6 +400,8 @@ static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
     SAXHandler->startElement   = (startElementSAXFunc)&start_hndl;
     SAXHandler->endElement     = (endElementSAXFunc)&end_hndl;
     SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
+    SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
+    SAXHandler->ignorableWhitespace = (ignorableWhitespaceSAXFunc)&ignorableWhitespace;
 
     if( sw->indexComments )
         SAXHandler->comment    = (commentSAXFunc)&comment_hndl;
@@ -681,6 +684,24 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 }
 
 /*********************************************************************
+*   ignorableWhitespace handler
+*
+*   Just adds a space to the buffer
+*
+*
+*********************************************************************/
+
+static void ignorableWhitespace(void *data, const char *txt, int txtlen)
+{
+    PARSE_DATA         *parse_data = (PARSE_DATA *)data;
+
+    append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
+}
+
+    
+
+
+/*********************************************************************
 *   Convert UTF-8 to Latin-1
 *
 *   Buffer is extended/created if needed
@@ -927,7 +948,15 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     }
 
 
-    /* Now, look for reasons to add whitespace */
+    /* Now, look for reasons to add whitespace
+     * img is not really, as someone might use an image to make up a word, but
+     * commonly an image would split up text.
+     * other tags: frame?  
+     */
+     
+    if ( !strcmp( tag, "br" ) || !strcmp( tag, "img" ) )
+        append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
+    else
     {
         const htmlElemDesc *element = htmlTagLookup( tag );
 
