@@ -100,3 +100,11 @@ Yes. At times it might not strictly necessary, but since you don't really know i
 it is a good rule to reindex
 anyway. 
 
+
+=head1 Document Info
+
+$Id$
+
+.
+
+

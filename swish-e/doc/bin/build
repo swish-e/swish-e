@@ -6,5 +6,11 @@
 # you call this script just like pod2hpp but without the -c argument.
 use FindBin qw($Bin);
 
+$ENV{PERL5LIB} = "$Bin/../"; 
+
+
 # forward the @ARGV
-system "pod2hpp @ARGV $Bin/../swish.conf";
+system "pod2hpp -f @ARGV $Bin/../swish.conf";
+unlink "$Bin/../pod2html-dircache";
+unlink "$Bin/../pod2html-itemcache";
+
