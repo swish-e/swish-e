@@ -111,7 +111,7 @@ dd {
 input.button
 {
 
-	font-size: 80%;
+	/* font-size: 80%; */
 	color: rgb(61,92,135);
 	border-style: outset;
 	border-width: 1px;
@@ -554,7 +554,8 @@ div.search-result a:hover {
 
 span.indxtype {
 /* for ID'ing the search results according to index */
-    font-size: 50%;
+    color: gray;
+    font-size: 80%;
 }
 
 
