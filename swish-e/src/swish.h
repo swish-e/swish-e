@@ -173,11 +173,6 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define IGNORETOTALWORDCOUNTWHENRANKINGPARAMNAME "IgnoreTotalWordCountWhenRanking"
 #define IGNORETOTALWORDCOUNTWHENRANKING_ID (BASEHEADER + 23)
 
-/* Removed - Patents ...
-#define FILEINFOCOMPRESSION "# FileInfoCompression:"
-#define FILEINFOCOMPRESSIONPARAMNAME "FileInfoCompression"
-#define FILEINFOCOMPRESSION_ID (BASEHEADER + 24)
-*/
 
 #define TRANSLATECHARTABLEHEADER "# TranslateCharacterTable:"
 #define TRANSLATECHARTABLEPARAMNAME "TranslateCharacterTable"
@@ -405,9 +400,7 @@ typedef struct
     int     maxwordlimit;
     int     applyStemmingRules; /* added 11/24/98 - MG */
     int     applySoundexRules;  /* added 09/01/99 - DN */
-/* Removed - Patents ...
-    int     applyFileInfoCompression;
-	*/
+
     /* Total files and words in index file */
     int     totalwords;
     int     totalfiles;
@@ -475,11 +468,6 @@ typedef struct IndexFILE
     /* Pointer to cache the keywords */
     char   *keywords[256];
 
-
-	/* Removed due to patents problems
-    int     n_dict_entries;
-    unsigned char **dict; */      /* Used to store the patterns when
-                                   ** DEFLATE_FILES is enabled */
 
     /* props IDs */
     int    *propIDToDisplay;
@@ -693,15 +681,53 @@ typedef struct
     struct MOD_Prog          *Prog;           /* For extprog.c */
     struct MOD_PropLimit     *PropLimit;      /* For proplimit.c */
 
+
+    /** General Purpose **/
+
+    /* list of associated index files  */
+    IndexFILE *indexlist;
+
+
+    unsigned char            *Prop_IO_Buf;      /* For compressing and uncompressing properties (static-like buffer) */
     unsigned long             PropIO_allocated;// total size of the structure
-    unsigned char            *Prop_IO_Buf;     /* For compressing and uncompressing */
     int                       PropCompressionLevel;
 
-    /* 08/00 Jose Ruiz Values for document type support */
-    int     DefaultDocType;
-    struct IndexContents *indexcontents;
-    /* 12/00 Jose Ruiz Values for summary support */
-    struct StoreDescription *storedescription;
+
+    /* Total words and files in all index files */
+    int     TotalWords;
+    int     TotalFiles;
+
+    /* verbose flag */
+    int     verbose;
+
+    /* Error vars */
+    int     commonerror;
+    int     lasterror;
+
+
+    /* 06/00 Jose Ruiz */
+    int     isvowellookuptable[256];  //??? is this used any place?
+
+
+    /********* Document Source info **********/
+
+    /* structure for handling all the directories/files (IndexDIR) while indexing  */
+    struct swline *dirlist;
+
+    /* structure for handling IndexOnly config data while indexing */
+    struct swline *suffixlist;
+
+
+
+
+    /******** Structures for parsers **********/
+
+
+    /* Limit indexing by a file date */
+    time_t  mtime_limit;
+
+    long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
+
 
     /* structure for handling replace config data while searching */
     regex_list     *replaceRegexps;
@@ -716,30 +742,40 @@ typedef struct
     /* structure for handling NoContents config data while searching */
     struct swline *nocontentslist;
 
-    /* structure for handling all the directories while indexing  */
-    struct swline *dirlist;
+    /* 08/00 Jose Ruiz Values for document type support */
+    int     DefaultDocType;
 
-    /* structure for handling IndexOnly config data while indexing */
-    struct swline *suffixlist;
+    /* maps file endings to document types */
+    struct IndexContents *indexcontents;
+
+
+    /* Should comments be indexed */
+    int     indexComments;
+
+
+
+    /******** Variables used by the parsers *********/
+
+    /* 12/00 Jose Ruiz Values for summary support */
+    struct StoreDescription *storedescription;
+
 
     /* structure to handle Ignoremeta metanames */
     struct swline *ignoremetalist;
-
 
 
     /* Structure for handling metatags from DontBumpPositionOnMetaTags */
     struct swline *dontbumpstarttagslist;
     struct swline *dontbumpendtagslist;
 
-    /* structure for handling all the index files while searching  */
-    IndexFILE *indexlist;
 
-    /* Total words and files in all index files */
-    int     TotalWords;
-    int     TotalFiles;
+    /* Undefined MetaName indexing options */
+    UndefMetaFlag   UndefinedMetaTags;
+    UndefMetaFlag   UndefinedXMLAttributes;  // What to do with attributes  libxml2 only
 
-    /* verbose flag */
-    int     verbose;
+
+
+    /*** libxml2 additions ***/
 
     /* parser error warning level */
     int     parser_warn_level;
@@ -755,24 +791,6 @@ typedef struct
     /* for converting relative links in href's and img src tags absoulte */
     int               AbsoluteLinks;
 
-    /* Error vars */
-    int     commonerror;
-    int     lasterror;
-
-    int     indexComments;
-
-    long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
-
-    /* 06/00 Jose Ruiz */
-    int     isvowellookuptable[256];
-
-    /* Limit indexing by a file date */
-    time_t  mtime_limit;
-
-
-    /* Undefined MetaName indexing options */
-    UndefMetaFlag   UndefinedMetaTags;
-    UndefMetaFlag   UndefinedXMLAttributes;  // What to do with attributes
 
     /* structure to handle XMLClassAttributes - list of attributes to use content to make a metaname*/
     /* <foo class="bar"> => generates a metaname foo.bar */

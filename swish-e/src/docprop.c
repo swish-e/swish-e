@@ -1100,6 +1100,12 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
         int propID = header->propIDX_to_metaID[i];
 
 
+        /* Here's why I need to redo the properties so it's always header->property_count size */
+        /* The mapping is all a temporary kludge */
+        if ( propID >= docProperties->n )
+            continue;
+
+
         if ( !(prop = docProperties->propEntry[propID]))
             continue;
 

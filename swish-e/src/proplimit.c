@@ -766,14 +766,23 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
         if ( !(meta_entry = getPropNameByID( &indexf->header, indexf->header.metaEntryArray[j]->metaID )))
             continue;  /* continue if it's not a property */
 
+        /* anything to check? */
+        if ( !meta_entry->loPropRange && !meta_entry->hiPropRange )
+            continue;
+            
+
+
 
         /* If inPropRange is allocated then there is an array for limiting already created from the presorted data */
+
         if ( meta_entry->inPropRange )
             return !meta_entry->inPropRange[filenum-1];
 
+
+
+
         /* Otherwise, if either range is set, then use a manual lookup of the property */
         
-        if ( meta_entry->loPropRange || meta_entry->hiPropRange )
         {
             int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
