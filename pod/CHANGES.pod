@@ -10,7 +10,7 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
-=item Added IDF word weighting in getrank()
+=item Added -R option to support IDF word weighting in ranking. (karman)
 
 Added Inverse Document Frequency calculation to the getrank() routine.
 This will allow the relative frequency of a word in relationship to other

@@ -83,6 +83,8 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
         printf("ReadAllDocProperties:\n");
         fi.docProperties =  ReadAllDocPropertiesFromDisk( indexf, i+1 );
         dump_file_properties( indexf, &fi );
+	printf("Filenum and words in this file:");
+	dump_words_per_file( sw, indexf, &fi );
         freefileinfo( &fi );
 
         printf("\n");
@@ -137,7 +139,79 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
 }
 
 
+/* prints out the number of words in every file in the index */
 
+void	dump_words_per_file(SWISH *sw, IndexFILE * indexf, FileRec *fi )
+{
+
+int words;
+int filenum;
+
+filenum = fi->filenum-1;
+
+#ifdef USE_BTREE
+    getTotalWordsPerFile(sw, indexf, fi->filenum-1, &words);
+#else
+
+/* this depends currently that IgnoreTotalWordCountWhenRanking is set to 0 
+otherwise TotalWordsPerFile is not indexed in non-BTREE indexes */
+
+	INDEXDATAHEADER *header = &indexf->header;
+
+	if ( indexf->header.ignoreTotalWordCountWhenRanking ) {
+		fprintf(stderr, "IgnoreTotalWordCountWhenRanking must be 0 to use IDF ranking\n");
+		
+		words = 0;
+		
+	} else {
+
+		words = header->TotalWordsPerFile[filenum];
+		
+	}
+
+#endif
+
+	printf("%d %d\n", filenum, words );
+
+
+}
+
+void	dump_word_count( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) 
+{
+    int     i;
+    int     end = indexf->header.totalfiles;
+
+    i = begin ? begin - 1 : 0;
+
+    if ( i >= indexf->header.totalfiles )
+    {
+        printf("Hey, there are only %d files\n", indexf->header.totalfiles );
+        exit(-1);
+    }
+
+    end = indexf->header.totalfiles;
+
+    if ( maxhits > 0 )
+    {
+        end = i + maxhits;
+        if ( end > indexf->header.totalfiles )
+            end = indexf->header.totalfiles;
+    }
+
+    for (; i < end; i++)
+    {
+        FileRec fi;
+
+        memset( &fi, 0, sizeof( FileRec ) );
+        
+        fi.filenum = i+1;
+
+	dump_words_per_file( sw, indexf, &fi );
+	
+        freefileinfo( &fi );
+    }
+
+}
 
 /* Prints out the data in an index DB */
 void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
@@ -379,6 +453,11 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     /* Decode File Info */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
         dump_index_file_list( sw, indexf, begin, maxhits );
+	
+	
+    /* just print filenums and number of words per file for word ranking */
+    if (DEBUG_MASK & DEBUG_INDEX_WORD_COUNT )
+    	dump_word_count( sw, indexf, begin, maxhits );
 
 
     DB_Close(sw, indexf->DB);

@@ -1787,6 +1787,9 @@ ranking. Often better with merges and small files. Default is yes.
 
 The default was changed from no to yes in version 2.2.
 
+B<NOTE:> must be set to B<no> if you intend to use the -R 1 option when
+searching.
+
 =item MinWordLimit *integer*
 
 Set the minimum length of an word. Shorter words will not be indexed.

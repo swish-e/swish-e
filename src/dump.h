@@ -26,4 +26,5 @@ void dump_memory_file_list( SWISH *sw, IndexFILE *indexf );
 void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted );
 void dump_file_properties(IndexFILE * indexf, FileRec *fi );
 void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
-
+void	dump_words_per_file(SWISH *sw, IndexFILE * indexf, FileRec *fi );
+void	dump_word_count( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) ;

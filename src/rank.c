@@ -262,6 +262,50 @@ static void build_struct_map( SWISH *sw )
     sw->structure_map_set = 1;  /* flag */
 }
         
+	
+int
+getrank ( RESULT *r )
+{
+	SWISH	*sw;
+	IndexFILE  *indexf;
+	
+	indexf  = r->db_results->indexf;
+	sw      = indexf->sw;
+	int	scheme;
+	
+	scheme = sw->RankScheme;
+	
+#ifdef DEBUG_RANK
+    fprintf( stderr, "Ranking Scheme: %d \n", scheme );
+#endif
+
+
+	switch ( scheme )
+	{
+	
+	   case 0:
+	   {
+		return ( getrankDEF( r ) );
+	   }
+		
+	   case 1:
+	   {
+		if ( indexf->header.ignoreTotalWordCountWhenRanking ) {
+		   fprintf(stderr, "IgnoreTotalWordCountWhenRanking must be 0 to use IDF ranking\n");
+		   exit(1);
+		}
+				
+		return ( getrankIDF( r ) );
+	   }
+		
+	   default:
+	   {
+		return ( getrankDEF( r ) );
+	   }
+		
+	}
+
+}
 
 
 /* 2001-11 jmruiz With thousands results (>1000000) this routine is a bottleneck. 
@@ -275,8 +319,14 @@ static void build_struct_map( SWISH *sw )
 **                reduction *10000, factor *10000, etc...
 */
 
+
+/* renamed getrankDEF to allow for multiple schemes with generic case caller getrank()
+karman Mon Aug 30 07:03:35 CDT 2004
+*/
+
+
 int
-getrank( RESULT *r )
+getrankDEF( RESULT *r )
 {
     int        *posdata;
     int         meta_bias;
@@ -288,19 +338,11 @@ getrank( RESULT *r )
     SWISH      *sw;
     int         metaID;
     int         freq;
-    int		total_files;
-    int		idf;
-    int		tfreq;
-    int		mystruct;
-    
 #ifdef DEBUG_RANK
     int        struct_tally[256];
     for ( i = 0; i <= 255; i++ )
         struct_tally[i] = 0;
 #endif
-
-
-    
 
     /* has rank already been calculated? */
     if ( r->rank >= 0 )
@@ -310,7 +352,7 @@ getrank( RESULT *r )
     indexf  = r->db_results->indexf;
     sw      = indexf->sw;
     posdata = r->posdata;
-    
+
 
     /* Get bias for the current metaID - metaID is stored in the rank for ease here */
     /* Currently, the rankbias is a number from -10 to +10.  It's an arbitrary range. */
@@ -335,7 +377,6 @@ getrank( RESULT *r )
     /* Should really consider r->tfrequency, which is the number of files that have */
     /*  this word.  If the word is not found in many files then it should be ranked higher */
 
-
     rank = 1;
     freq = r->frequency;
     if ( freq > 100 ) 
@@ -344,9 +385,7 @@ getrank( RESULT *r )
     for(i = 0; i < freq; i++)
     {
         /* GET_STRUCTURE must return value in range! */
-
-        rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias ;
-	
+        rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
 #ifdef DEBUG_RANK
         // fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
         struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
@@ -365,35 +404,6 @@ getrank( RESULT *r )
 
     if ( rank < 1 )
         rank = 1;
-
-
-    /* weight rank by word's idf */
-
-    /* 
-    IDF is the Inverse Document Frequency, or, the weight of the word in relationship to the 
-    collection of documents as a whole.
-    Multiply the weight against the rank to give greater weight to words that appear less often
-    in the collection.
-    
-    The biggest impact should be seen when OR'ing words together instead of AND'ing them.
-    
-    karman - Sun Jul 25 22:18:15 CDT 2004
-    */
-    
-    total_files = indexf->header.totalfiles;
-    tfreq	= r->tfrequency;
-    idf		= (int) log( total_files / tfreq );
-    idf++;
-
-#ifdef DEBUG_RANK
-        fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d\n", total_files, tfreq, idf );
-	fprintf(stderr, "Rank before IDF weighting: %d\n", rank );
-#endif
-	rank = rank * idf;
-	
-#ifdef DEBUG_RANK
-	fprintf(stderr, "Rank after IDF weighting: %d\n", rank );
-#endif
 
 
     /* Scale the rank - this was originally based on frequency */
@@ -422,6 +432,7 @@ getrank( RESULT *r )
             fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
          }
 #endif
+
 
 
     /* Return if IgnoreTotalWordCountWhenRanking is true (the default) */
@@ -458,3 +469,249 @@ getrank( RESULT *r )
 }
 
 
+/* multiple ranking schemes allow for more fine-tuning as users' require.
+
+Use the -R <num> command line option or RankScheme() API method.
+
+Default is to use getrank() -- the same as -R 1
+
+IDF ranking uses the total word frequency across all searched indexes
+and a normalizing formula to negate effect of docs with different sizes.
+The normalizing formula evaluates the word's density within a doc.
+Greater density = greater relevance (higher rank)
+
+NOTE that IgnoreTotalWordCountWhenRanking must be FALSE (0) in order to use
+IDF ranking. Do error check on that config when calling getrankIDF()
+
+TODO:
+The ranking functions could likely be split up into smaller functions
+since much code is shared.
+
+karman Sun Aug 29 21:01:28 CDT 2004
+
+*/
+
+/* TODO
+
+add -R option
+do check in search.c to call getrank() or getrankIDF()
+error check on IgnoreTotalWord...
+-T dump to include word count
+
+*/
+
+int
+getrankIDF( RESULT *r )
+{
+
+    int        *posdata;
+    int         meta_bias;
+    IndexFILE  *indexf;
+    int         words;
+    int         i;
+    SWISH      *sw;
+    int         metaID;
+    int         freq;
+    int		total_files;
+    int		total_words;
+    int		average_words;
+    int		density;
+    int		idf;
+    int		total_word_freq;
+    int		word_weight;
+    int		word_score;
+    
+    /* the value named 'rank' in getrank() is here named 'word_score'.
+    it's largely semantic, but helps emphasize that *docs* are ranked,
+    but *words* are scored. The doc rank is calculated based on the accrued word scores.
+    
+    
+    However, the hash key name 'rank' is preserved in the r (RESULT) object
+    for compatibility with getrank()
+    
+    */
+    
+/* this first part is identical to getrankDEF -- could be optimized as a single function */ 
+    
+   
+#ifdef DEBUG_RANK
+    int        struct_tally[256];
+    for ( i = 0; i <= 255; i++ )
+        struct_tally[i] = 0;
+#endif
+
+
+    if ( r->rank >= 0 )
+        return r->rank;
+
+    indexf  = r->db_results->indexf;
+    sw      = indexf->sw;
+    posdata = r->posdata;
+    
+    
+    metaID = r->rank * -1;
+    meta_bias = indexf->header.metaEntryArray[ metaID - 1 ]->rank_bias;
+
+    if ( !sw->structure_map_set )
+        build_struct_map( sw );
+
+/* here we start to diverge */
+
+
+    word_score 	= 1;
+    freq 	= r->frequency;
+  
+  
+#ifdef DEBUG_RANK
+    fprintf( stderr, "File num: %d  Word Score: %d  Frequency: %d  ", r->filenum, word_score, freq );
+#endif
+
+  
+    /* don't do this here; let density calc do it
+    if ( freq > 100 ) 
+        freq = 100;
+	
+    */
+    
+    /* 
+    IDF is the Inverse Document Frequency, or, the weight of the word in relationship to the 
+    collection of documents as a whole. Multiply the weight against the rank to give
+    greater weight to words that appear less often in the collection.
+    
+    The biggest impact should be seen when OR'ing words together instead of AND'ing them.
+    
+    */
+    
+    total_files 	= sw->TotalFiles;
+    total_word_freq	= r->tfrequency;
+    idf			= (int) ( log( total_files / total_word_freq ) * 1000 );
+    
+    /* take 3 significant digits of the IDF.
+    this helps create a wider spread
+    between the most common words and the rest of the pack:
+    "word frequencies in natural language obey a power-law distribution" -- Maciej Ceglowski
+    */
+    
+    if ( idf < 1 )
+    	idf = 1;
+	/* only ubiquitous words like 'the' get idfs < 1.
+	these should probably be stopwords anyway... */
+    
+    
+#ifdef DEBUG_RANK
+        fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d  \n",
+		 total_files, total_word_freq, idf );
+#endif
+
+    /* calc word density. this normalizes document length so that longer docs
+    don't rank higher out of sheer quantity. Hopefully this is a little more
+    scientific than the out-of-the-air calc in getrankDEF() -- though effectiveness
+    is likely the same... */
+    
+#ifdef USE_BTREE
+    getTotalWordsPerFile(sw, indexf, r->filenum-1, &words);
+#else
+    getTotalWordsPerFile(indexf, r->filenum-1, &words);
+#endif
+
+    total_words 	= sw->TotalWordPos;
+    average_words	= total_words / total_files;
+    
+/* normalizing term density in a collection.
+
+Amati & Van Rijsbergen "normalization 2" from 
+A Study of Parameter Tuning for Term Frequency Normalization
+Ben HE
+Department of Computing Science
+University of Glasgow
+Glasgow, UK
+ben@dcs.gla.ac.uk
+
+	term_freq_density = term_freq * log( 1 + c * av_doc_leng/doc_leng)
+
+where c > 0 (optimized at 2 ... we think...)
+
+ */
+
+    /* int density_magic	= 2;
+    density		= freq * log( 1 + ( density_magic * ( average_words / words ) ) ); */
+    
+    /* doesn't work that well with int values */
+    
+    
+    density		= ( ( average_words * 100 ) / words ) * freq;
+    
+/* minimum density  */
+    if (density < 1)
+    	density = 1;
+	
+/* scale word_weight back down by 100 or so, just to make it a little saner */
+	
+    word_weight		= ( density * idf ) / 100;
+    
+
+#ifdef DEBUG_RANK
+	fprintf(stderr, "Total words: %d   Indexed words in this doc: %d   Average words: %d   Density: %d    Word Weight: %d   \n",
+		total_words, words, average_words, density, word_weight );
+#endif
+
+
+    for(i = 0; i < freq; i++)
+    {
+        /* GET_STRUCTURE must return value in range! */
+
+        word_score += word_weight * ( sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias );
+	
+#ifdef DEBUG_RANK
+ /* fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );  */
+ 
+        struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
+#endif
+
+    }
+
+    /* see comment in getrank() about why we make sure score is positive and non-zero */
+
+    if ( word_score < 1 )
+        word_score = 1;
+
+	
+	
+#ifdef DEBUG_RANK
+	fprintf(stderr, "Rank after IDF weighting: %d  \n", word_score );
+#endif
+
+	/* scaling word_score?? */
+
+	/* Scale the rank - this was originally based on frequency */
+    	/* Uses lookup tables for values <= 1000, otherwise calculate */
+
+    	word_score = word_score > 1000
+        	? (int) floor( (log((double)word_score) * 10000 ) + 0.5)
+        	: swish_log[word_score];
+
+
+
+#ifdef DEBUG_RANK
+     fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", word_score );
+     
+     for ( i = 0; i <= 255; i++ )
+         if ( struct_tally[i] )
+         {
+             fprintf( stderr, "      struct 0x%x = %2d (", i, struct_tally[i] );
+            if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
+            if ( i & IN_HEADER ) fprintf(stderr," HEADING");
+            if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
+            if ( i & IN_META ) fprintf(stderr," META");
+            if ( i & IN_BODY ) fprintf(stderr," BODY");
+            if ( i & IN_HEAD ) fprintf(stderr," HEAD");
+            if ( i & IN_TITLE ) fprintf(stderr," TITLE");
+            if ( i & IN_FILE ) fprintf(stderr," FILE");
+            fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
+         }
+#endif
+
+
+	return ( r->rank = word_score / 100 );   /* divide by 100?? */
+    
+}

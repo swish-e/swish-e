@@ -930,6 +930,26 @@ how it was indexed, and how swish is interperting the query.
     -H 9 : print diagnostic information in the header of the results (changed from: C<-v 4>)
 
 
+=item -R [0|1] (Ranking Scheme)
+
+B<This is an experimental feature!>
+
+The default ranking scheme in SWISH-E evaluates each word in a query in terms of its frequency
+and position in each document. The default scheme is 0.
+
+New in version 2.4.3 you may optionally select an experimental ranking scheme that, in addition
+to document frequency and position, uses Inverse Document Frequency (IDF), 
+or the relative frequency of each word across all the indexes
+being searched, and Relative Density, or the normalization of the frequency of a word
+in relationship to the number of words in the document.
+
+B<NOTE:> IgnoreTotalWordCountWhenRanking must be set to B<no> or B<0> in your index(es)
+for -R 1 to work.
+
+Specify -R 1 to turn on IDF ranking. See the API documentation for how to set
+the ranking scheme in your Perl or C program.
+
+
 =back
 
 
