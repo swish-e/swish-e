@@ -731,6 +731,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
             k;
     int    *sortFilenums;
     struct metaEntry *m;
+    int     props_sorted = 0;
 
 
     /* Execute for each property */
@@ -834,10 +835,19 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         /* This is done so that the property file can be read sequentially */
         /* It might be faster to just create a mem zone for this instead of sorting each time */
         swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFilenums);
+
+        props_sorted++;
     }
 
     if (sw->verbose)
-        printf("Property Sorting complete. %-40s\n", " ");
+    {
+        if ( !props_sorted )
+            printf("No properties sorted.      %-40s\n", " ");
+        else if ( props_sorted == 1 )
+            printf("One property sorted.       %-40s\n", " ");
+        else
+            printf("%d properties sorted.      %-40s\n", props_sorted, " ");
+    }
 
 
 }
