@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 1
+%define release 2
 
 Summary:        SWISH-E - Simple Web Indexing System for Humans - Enhanced
 Name:           %{name}
@@ -98,10 +98,10 @@ make DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 %{_datadir}/doc/swish-e/html/images/swish.gif
 %{_datadir}/doc/swish-e/INSTALL
 %{_datadir}/doc/swish-e/README
-%{_mandir}/man1/SWISH-CONFIG.1
-%{_mandir}/man1/SWISH-FAQ.1
-%{_mandir}/man1/SWISH-LIBRARY.1
-%{_mandir}/man1/SWISH-RUN.1
+%{_mandir}/man1/SWISH-CONFIG.1.gz
+%{_mandir}/man1/SWISH-FAQ.1.gz
+%{_mandir}/man1/SWISH-LIBRARY.1.gz
+%{_mandir}/man1/SWISH-RUN.1.gz
 %{_bindir}/swish-e
 
 %files devel
