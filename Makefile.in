@@ -4,62 +4,51 @@
 
 # $Id$
 
-SHELL = /bin/sh
+SHELL       = /bin/sh
 srcdir      = @srcdir@
 VPATH       = $(srcdir)
 prefix      = @prefix@
-exec_prefix  = @exec_prefix@
+exec_prefix = @exec_prefix@
 bindir      = $(prefix)/bin
 mandir      = $(prefix)/man/man1
-perl		= @PERL@
-libdir		= @libdir@
+perl        = @PERL@
+libdir      = @libdir@
 
-all:	swish-e swish-search perllib
-	echo 'now make test'
+all:	swish-e swish-search
+	@echo -e '\nNow make test\n'
+	
 swish-e:	
-	echo 'making swish-e'
+	@echo 'making swish-e'
 	(cd src; make)
-	echo 'swish-e done'
+	@echo 'swish-e done'
 
 swish-search: swish-e
-	echo 'making swish-search'
+	@echo 'making swish-search'
 	cp -f src/swish-e src/swish-search
-	echo 'swish-search done'
+	@echo 'swish-search done'
 
 
 perllib:
-	echo 'making Perl library for Swish-E'
+	@echo 'making Perl library for Swish-E'
 	(cd perl;$(perl) Makefile.PL PREFIX=$(libdir);make) 
 
-#
-clean:
-	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
-	tests/test.index src/testlib 
-	(cd perl; make clean)
-	(cd doc; make clean)
 
-realclean: 
-	rm -f config.cache config.log config.status
-	rm -f src/config.cache src/config.log \
-		 src/config.status
-	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
-	tests/test.index src/testlib src/Makefile Makefile
-	(cd perl; make realclean)
-	(cd doc; make realclean)
+clean:
+	-(cd src; make clean)
+	-(cd perl; make clean)
+	-(cd doc; make clean)
+
+realclean: clean
+	rm -f config.cache config.log config.status Makefile
+	-(cd src; make realclean)
+	-(cd perl; make realclean)
+	-(cd doc; make realclean)
+
+distclean: realclean
+	(cd doc; make ultraclean)
 
 test:
-	(cd ./tests;\
-	../src/swish-e -c test.config; \
-	echo "\ntest 1 (Normal search) ..."; \
-	../src/swish-e -f ./test.index -w test | grep -v '^#'; \
-	echo "\ntest 1 (MetaTag search 1) ..."; \
-	../src/swish-e -f ./test.index -w meta1=metatest1 | grep -v '^#'; \
-	echo "\ntest 1 (MetaTag search 2) ..."; \
-	../src/swish-e -f ./test.index -w meta2=metatest2 | grep -v '^#'; \
-	echo "\ntest 1 (XML search) ..."; \
-	../src/swish-e -f ./test.index -w meta3=metatest3 | grep -v '^#'; \
-	echo "\ntest 1 (Phrase search) ..."; \
-	../src/swish-e -f ./test.index -w 'meta3="three little pigs"' | grep -v '^#'; )
+	(cd src; make test)
 
 install:
 	cp src/swish-e $(bindir)/swish-e
@@ -69,3 +58,6 @@ install-lib:
 
 pdf:
 	(cd doc; make pdf)
+
+install-man:
+	(cd doc; make install-man)
