@@ -82,15 +82,13 @@ $Id$
 
 /* private module prototypes */
 
-static void printExtResultEntry (SWISH *sw, FILE *f, char *fmt, RESULT *r);
-static char *printResultControlChar (FILE *f, char *s);
-static char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r);
-static char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt);
-static void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
-				 char *subfmt, RESULT *r);
+static void printExtResultEntry(SWISH * sw, FILE * f, char *fmt, RESULT * r);
+static char *printResultControlChar(FILE * f, char *s);
+static char *printTagAbbrevControl(SWISH * sw, FILE * f, char *s, RESULT * r);
+static char *parsePropertyResultControl(char *s, char **propertyname, char **subfmt);
+static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, char *subfmt, RESULT * r);
 
-static struct ResultExtFmtStrList *addResultExtFormatStr (
-             struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
+static struct ResultExtFmtStrList *addResultExtFormatStr(struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
 
 
 /*
@@ -107,22 +105,22 @@ static struct ResultExtFmtStrList *addResultExtFormatStr (
   -- init structures for this module
 */
 
-void initModule_ResultOutput (SWISH  *sw)
-
+void    initModule_ResultOutput(SWISH * sw)
 {
-   struct MOD_ResultOutput *md;
+    struct MOD_ResultOutput *md;
 
-   md = (struct MOD_ResultOutput *) emalloc(sizeof(struct MOD_ResultOutput));
-   sw->ResultOutput = md;
+    md = (struct MOD_ResultOutput *) emalloc(sizeof(struct MOD_ResultOutput));
 
-   md->resultextfmtlist=NULL;
+    sw->ResultOutput = md;
 
-   /* cmd options */
-   md->extendedformat = NULL;               /* -x :cmd param  */
-   md->headerOutVerbose  = 1;               /* default = standard header */
-   md->stdResultFieldDelimiter = NULL;      /* -d :old 1.x result output delimiter */
+    md->resultextfmtlist = NULL;
 
-   return;
+    /* cmd options */
+    md->extendedformat = NULL;  /* -x :cmd param  */
+    md->headerOutVerbose = 1;   /* default = standard header */
+    md->stdResultFieldDelimiter = NULL; /* -d :old 1.x result output delimiter */
+
+    return;
 }
 
 
@@ -131,33 +129,34 @@ void initModule_ResultOutput (SWISH  *sw)
   -- 2001-04-11 rasc
 */
 
-void freeModule_ResultOutput (SWISH *sw)
-
+void    freeModule_ResultOutput(SWISH * sw)
 {
- struct MOD_ResultOutput *md = sw->ResultOutput;
- struct ResultExtFmtStrList *l, *ln;
+    struct MOD_ResultOutput *md = sw->ResultOutput;
+    struct ResultExtFmtStrList *l,
+           *ln;
 
 
-   if(md->stdResultFieldDelimiter)
-      efree (md->stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
-  /* was not emalloc!# efree (md->extendedformat);               -x stuff */
+    if (md->stdResultFieldDelimiter)
+        efree(md->stdResultFieldDelimiter); /* -d :free swish 1.x delimiter */
+    /* was not emalloc!# efree (md->extendedformat);               -x stuff */
 
 
-   l = md->resultextfmtlist;                  /* free ResultExtFormatName */
-   while (l) {
-      efree (l->name);
-      efree (l->fmtstr);
-      ln = l->next;
-      efree (l);
-      l = ln;
-   }
-   md->resultextfmtlist = NULL;
+    l = md->resultextfmtlist;   /* free ResultExtFormatName */
+    while (l)
+    {
+        efree(l->name);
+        efree(l->fmtstr);
+        ln = l->next;
+        efree(l);
+        l = ln;
+    }
+    md->resultextfmtlist = NULL;
 
-   /* free module data */
-   efree (sw->ResultOutput);
-   sw->ResultOutput = NULL;
+    /* free module data */
+    efree(sw->ResultOutput);
+    sw->ResultOutput = NULL;
 
-  return;
+    return;
 }
 
 
@@ -177,29 +176,32 @@ void freeModule_ResultOutput (SWISH *sw)
  -- return: 0/1 = none/config applied
 */
 
-int configModule_ResultOutput  (SWISH *sw, StringList *sl)
-
+int     configModule_ResultOutput(SWISH * sw, StringList * sl)
 {
-  struct MOD_ResultOutput *md = sw->ResultOutput;
-  char *w0    = sl->word[0];
-  int  retval = 1;
+    struct MOD_ResultOutput *md = sw->ResultOutput;
+    char   *w0 = sl->word[0];
+    int     retval = 1;
 
 
 
-             /* $$$ this will not work unless swish is reading the config file also for search ... */
+    /* $$$ this will not work unless swish is reading the config file also for search ... */
 
-  if (strcasecmp(w0, "ResultExtFormatName")==0) {  /* 2001-02-15 rasc */
-                                 /* ResultExt...   name  fmtstring */
-      if(sl->n==3) {
-         md->resultextfmtlist = (struct ResultExtFmtStrList *)
-               addResultExtFormatStr(md->resultextfmtlist,sl->word[1],sl->word[2]);
-      } else progerr("%s: requires \"name\" \"fmtstr\"",w0);
-  }
-  else {
-      retval = 0;	            /* not a module directive */
-  }
+    if (strcasecmp(w0, "ResultExtFormatName") == 0)
+    {                           /* 2001-02-15 rasc */
+        /* ResultExt...   name  fmtstring */
+        if (sl->n == 3)
+        {
+            md->resultextfmtlist = (struct ResultExtFmtStrList *) addResultExtFormatStr(md->resultextfmtlist, sl->word[1], sl->word[2]);
+        }
+        else
+            progerr("%s: requires \"name\" \"fmtstr\"", w0);
+    }
+    else
+    {
+        retval = 0;             /* not a module directive */
+    }
 
-  return retval;
+    return retval;
 }
 
 
@@ -209,13 +211,12 @@ int configModule_ResultOutput  (SWISH *sw, StringList *sl)
   -- return:  # of args read
 */
 
-int cmdlineModule_ResultOutput (SWISH *sw, char opt, char **args)
-
+int     cmdlineModule_ResultOutput(SWISH * sw, char opt, char **args)
 {
 
- //$$$ still to do...
- //$$$ move code from swish.c
- return 0;  /* quiet a warning */
+    //$$$ still to do...
+    //$$$ move code from swish.c
+    return 0;                   /* quiet a warning */
 
 
 }
@@ -243,47 +244,49 @@ int cmdlineModule_ResultOutput (SWISH *sw, char opt, char **args)
    2001-02-07   rasc
 */
 
-void initPrintExtResult (SWISH *sw, char *fmt)
-
+void    initPrintExtResult(SWISH * sw, char *fmt)
 {
-  FILE   *f;
-  char   *propname;
-  char   *subfmt;
+    FILE   *f;
+    char   *propname;
+    char   *subfmt;
 
-   f = (FILE *) NULL;		/* no output, just parsing!!! */
-
-
-   while (*fmt) {			/* loop fmt string */
-
-     switch (*fmt) {
-
-	case '%':			/* swish abbrevation controls */
-			/* ignore (dummy param), because autoprop */
-		fmt = printTagAbbrevControl (sw, f, fmt, NULL);
-		break;
-
-	case '<':
-		/* -- Property - Control: read Property Tag  <name> */
-		/* -- Save User PropertyNames for result handling   */
-        	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
-		if (! isAutoProperty (propname)) {
-		   addSearchResultDisplayProperty (sw, propname);
-		}
-		efree (subfmt);
-		efree (propname);
-		break;
-
-	case '\\':			/* format controls */
-            fmt = printResultControlChar (f, fmt);
-		break;
+    f = (FILE *) NULL;          /* no output, just parsing!!! */
 
 
-	default:		/* a output character in fmt string */
-		fmt++;
-		break;
-     }
+    while (*fmt)
+    {                           /* loop fmt string */
 
-   }
+        switch (*fmt)
+        {
+
+        case '%':              /* swish abbrevation controls */
+            /* ignore (dummy param), because autoprop */
+            fmt = printTagAbbrevControl(sw, f, fmt, NULL);
+            break;
+
+        case '<':
+            /* -- Property - Control: read Property Tag  <name> */
+            /* -- Save User PropertyNames for result handling   */
+            fmt = parsePropertyResultControl(fmt, &propname, &subfmt);
+            if (!isAutoProperty(propname))
+            {
+                addSearchResultDisplayProperty(sw, propname);
+            }
+            efree(subfmt);
+            efree(propname);
+            break;
+
+        case '\\':             /* format controls */
+            fmt = printResultControlChar(f, fmt);
+            break;
+
+
+        default:               /* a output character in fmt string */
+            fmt++;
+            break;
+        }
+
+    }
 
 }
 
@@ -300,9 +303,10 @@ void initPrintExtResult (SWISH *sw, char *fmt)
   -- print header informations  ($$todo, move from search.c )
 */
 
-void printResultOutput (SWISH *sw) {
+void    printResultOutput(SWISH * sw)
+{
 
-   printSortedResults(sw);
+    printSortedResults(sw);
 }
 
 
@@ -313,47 +317,48 @@ void printResultOutput (SWISH *sw) {
   -- outputformat depends on some cmd opt settings
 */
 
-void printSortedResults(SWISH *sw)
-
+void    printSortedResults(SWISH * sw)
 {
-struct MOD_ResultOutput *md = sw->ResultOutput;
-RESULT *r;
-int    resultmaxhits;
-int    resultbeginhits;
-int    counter;
-char   *delimiter;
-FILE   *f_out;
+    struct MOD_ResultOutput *md = sw->ResultOutput;
+    RESULT *r;
+    int     resultmaxhits;
+    int     resultbeginhits;
+    int     counter;
+    char   *delimiter;
+    FILE   *f_out;
 
 
-  f_out = stdout;
-  resultmaxhits = sw->Search->maxhits;
-  resultbeginhits = (sw->Search->beginhits > 0) ? sw->Search->beginhits - 1 : 0;
-  delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
-  counter = resultbeginhits;
+    f_out = stdout;
+    resultmaxhits = sw->Search->maxhits;
+    resultbeginhits = (sw->Search->beginhits > 0) ? sw->Search->beginhits - 1 : 0;
+    delimiter = (md->stdResultFieldDelimiter) ? md->stdResultFieldDelimiter : " ";
+    counter = resultbeginhits;
 
-       /* jmruiz 02/2001 SwishSeek is faster because it does not read the
-       ** unused data */
-  SwishSeek(sw,resultbeginhits);
+    /* jmruiz 02/2001 SwishSeek is faster because it does not read the
+    ** unused data */
+    SwishSeek(sw, resultbeginhits);
 
-  /* -- resultmaxhits: >0 or -1 (all hits) */
-  while ((r=SwishNext(sw)) && (resultmaxhits!=0)) {
-	r->count = ++counter;		/* set rec. counter for output */
+    /* -- resultmaxhits: >0 or -1 (all hits) */
+    while ((r = SwishNext(sw)) && (resultmaxhits != 0))
+    {
+        r->count = ++counter;   /* set rec. counter for output */
 
-	if (md->extendedformat)
-	   printExtResultEntry (sw, f_out, md->extendedformat, r);
-	else {
-					 /* old style v 1.x std output  (compat) */
-	   fprintf(f_out,"%d%s%s%s\"%s\"%s%d",
-			r->rank,  delimiter, r->filename,
-			delimiter, r->title, delimiter, r->size);
+        if (md->extendedformat)
+            printExtResultEntry(sw, f_out, md->extendedformat, r);
 
-       printStandardResultProperties(sw, f_out, r);
-//	   printSearchResultProperties(sw, f_out, r->Prop);
-	   fprintf(f_out, "\n");
-	}
-				
-	if (resultmaxhits > 0) resultmaxhits--;
-  }
+        else
+        {
+            /* old style v 1.x std output  (compat) */
+            fprintf(f_out, "%d%s%s%s\"%s\"%s%d", r->rank, delimiter, r->filename, delimiter, r->title, delimiter, r->size);
+
+            printStandardResultProperties(sw, f_out, r);
+
+            fprintf(f_out, "\n");
+        }
+
+        if (resultmaxhits > 0)
+            resultmaxhits--;
+    }
 
 }
 
@@ -370,44 +375,46 @@ FILE   *f_out;
    2001-01-01   rasc
 */
 
-static void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
-
+static void printExtResultEntry(SWISH * sw, FILE * f_out, char *fmt, RESULT * r)
 {
-  FILE   *f;
-  char   *propname;
-  char   *subfmt;
-  
-
-  f = (f_out) ? f_out : stdout;
-
-   while (*fmt) {			/* loop fmt string */
-
-     switch (*fmt) {
-
-	case '%':			/* swish abbrevation controls */
-		fmt = printTagAbbrevControl (sw, f, fmt, r);
-		break;
-
-	case '<':
-		/* Property - Control: read and print Property Tag  <name> */
-        	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
-		printPropertyResultControl (sw, f, propname, subfmt, r);
-		efree (subfmt);
-		efree (propname);
-		break;
-
-	case '\\':			/* print format controls */
-		fmt = printResultControlChar (f, fmt);
-		break;
+    FILE   *f;
+    char   *propname;
+    char   *subfmt;
 
 
-	default:		/* just output the character in fmt string */
-		if (f) fputc (*fmt,f);
-		fmt++;
-		break;
-     }
+    f = (f_out) ? f_out : stdout;
 
-   }
+    while (*fmt)
+    {                           /* loop fmt string */
+
+        switch (*fmt)
+        {
+
+        case '%':              /* swish abbrevation controls */
+            fmt = printTagAbbrevControl(sw, f, fmt, r);
+            break;
+
+        case '<':
+            /* Property - Control: read and print Property Tag  <name> */
+            fmt = parsePropertyResultControl(fmt, &propname, &subfmt);
+            printPropertyResultControl(sw, f, propname, subfmt, r);
+            efree(subfmt);
+            efree(propname);
+            break;
+
+        case '\\':             /* print format controls */
+            fmt = printResultControlChar(f, fmt);
+            break;
+
+
+        default:               /* just output the character in fmt string */
+            if (f)
+                fputc(*fmt, f);
+            fmt++;
+            break;
+        }
+
+    }
 
 
 }
@@ -424,16 +431,18 @@ static void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
     -- return: string ptr to char after control sequence.
 */
 
-static char *printResultControlChar (FILE *f, char *s) 
-
+static char *printResultControlChar(FILE * f, char *s)
 {
-  char c, *se;
+    char    c,
+           *se;
 
-  if (*s != '\\') return s;
+    if (*s != '\\')
+        return s;
 
-  c =  charDecode_C_Escape (s, &se); 
-  if (f) fputc (c,f);
- return se;
+    c = charDecode_C_Escape(s, &se);
+    if (f)
+        fputc(c, f);
+    return se;
 }
 
 
@@ -447,37 +456,64 @@ static char *printResultControlChar (FILE *f, char *s)
     -- return: string ptr to char after control sequence.
 */
 
-static char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r) 
-
+static char *printTagAbbrevControl(SWISH * sw, FILE * f, char *s, RESULT * r)
 {
-  char *t;
-  char buf[MAXWORDLEN];
+    char   *t;
+    char    buf[MAXWORDLEN];
 
-  if (*s != '%') return s;
-  t = NULL;
+    if (*s != '%')
+        return s;
+    t = NULL;
 
-  switch (*(++s)) {
-	case 'c':  t=AUTOPROPERTY_REC_COUNT; break;
-	case 'd':  t=AUTOPROPERTY_SUMMARY; break;
-	case 'D':  t=AUTOPROPERTY_LASTMODIFIED; break;
-	case 'I':  t=AUTOPROPERTY_INDEXFILE; break;
-	case 'p':  t=AUTOPROPERTY_DOCPATH; break;
-	case 'r':  t=AUTOPROPERTY_RESULT_RANK; break;
-	case 'l':  t=AUTOPROPERTY_DOCSIZE; break;
-	case 'S':  t=AUTOPROPERTY_STARTPOS; break;
-	case 't':  t=AUTOPROPERTY_TITLE; break;
+    switch (*(++s))
+    {
+    case 'c':
+        t = AUTOPROPERTY_REC_COUNT;
+        break;
+    case 'd':
+        t = AUTOPROPERTY_SUMMARY;
+        break;
+    case 'D':
+        t = AUTOPROPERTY_LASTMODIFIED;
+        break;
+    case 'I':
+        t = AUTOPROPERTY_INDEXFILE;
+        break;
+    case 'p':
+        t = AUTOPROPERTY_DOCPATH;
+        break;
+    case 'r':
+        t = AUTOPROPERTY_RESULT_RANK;
+        break;
+    case 'l':
+        t = AUTOPROPERTY_DOCSIZE;
+        break;
+    case 'S':
+        t = AUTOPROPERTY_STARTPOS;
+        break;
+    case 't':
+        t = AUTOPROPERTY_TITLE;
+        break;
 
-	case '%':  if (f) fputc ('%',f); break;
-	default:   progerr ("Formatstring: unknown abbrev '%%%c'",*s); break;
+    case '%':
+        if (f)
+            fputc('%', f);
+        break;
+    default:
+        progerr("Formatstring: unknown abbrev '%%%c'", *s);
+        break;
 
- }
+    }
 
- if (t) {
-    sprintf (buf, "<%s>", t);			/* create <...> tag */
-    if (f) printExtResultEntry  (sw, f, buf, r);
-    else   initPrintExtResult (sw, buf);	/* parse only ! */
- }
- return ++s;
+    if (t)
+    {
+        sprintf(buf, "<%s>", t); /* create <...> tag */
+        if (f)
+            printExtResultEntry(sw, f, buf, r);
+        else
+            initPrintExtResult(sw, buf); /* parse only ! */
+    }
+    return ++s;
 }
 
 
@@ -491,67 +527,76 @@ static char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r)
     --         **subfmt = NULL or subformat
 */
 
-static char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
-
+static char *parsePropertyResultControl(char *s, char **propertyname, char **subfmt)
 {
-  char *s1;
-  char c;
-  int  len;
+    char   *s1;
+    char    c;
+    int     len;
 
 
-  *propertyname = NULL;
-  *subfmt = NULL;
+    *propertyname = NULL;
+    *subfmt = NULL;
 
-  s = str_skip_ws (s);
-  if (*s != '<') return s;
-  s = str_skip_ws (++s);
+    s = str_skip_ws(s);
+    if (*s != '<')
+        return s;
+    s = str_skip_ws(++s);
 
 
-  /* parse propertyname */
+    /* parse propertyname */
 
-  s1 = s;
-  while (*s) {				/* read to end of propertyname */
-    if ((*s=='>')|| isspace((unsigned char)*s)) {  	/* delim > or whitespace ? */
-	break;  			/* break on delim */
+    s1 = s;
+    while (*s)
+    {                           /* read to end of propertyname */
+        if ((*s == '>') || isspace((unsigned char) *s))
+        {                       /* delim > or whitespace ? */
+            break;              /* break on delim */
+        }
+        s++;
     }
-    s++;
-  }
-  len = s-s1;
-  *propertyname = (char *) emalloc(len+1);	
-  strncpy (*propertyname, s1, len);
-  *(*propertyname+len) = '\0';
+    len = s - s1;
+    *propertyname = (char *) emalloc(len + 1);
+    strncpy(*propertyname, s1, len);
+    *(*propertyname + len) = '\0';
 
 
-  if (*s == '>') return ++s;		/* no fmt, return */
-  s = str_skip_ws (s);
-
-  
-  /* parse optional fmt=<c>...<c>  e.g. fmt="..." */
-
-  if (! strncmp (s,"fmt=",4)) {
-      s += 4;			/* skip "fmt="  */
-      c = *(s++);		/* string delimiter */ 
-      s1 = s;
-      while (*s) {		/* read to end of delim. char */
-	if (*s == c) {  	/* c or \c */
-	   if (*(s-1) != '\\') break;  /* break on delim c */
-	}
-	s++;
-      }
-
-      len = s-s1;
-      *subfmt = (char *) emalloc(len + 1);	
-      strncpy (*subfmt, s1, len);
-      *(*subfmt+len) = '\0';
-  }
+    if (*s == '>')
+        return ++s;             /* no fmt, return */
+    s = str_skip_ws(s);
 
 
-  /* stupid "find end of tag" */
+    /* parse optional fmt=<c>...<c>  e.g. fmt="..." */
 
-  while (*s && *s != '>') s++;
-  if (*s == '>') s++;
+    if (!strncmp(s, "fmt=", 4))
+    {
+        s += 4;                 /* skip "fmt="  */
+        c = *(s++);             /* string delimiter */
+        s1 = s;
+        while (*s)
+        {                       /* read to end of delim. char */
+            if (*s == c)
+            {                   /* c or \c */
+                if (*(s - 1) != '\\')
+                    break;      /* break on delim c */
+            }
+            s++;
+        }
 
-  return s;
+        len = s - s1;
+        *subfmt = (char *) emalloc(len + 1);
+        strncpy(*subfmt, s1, len);
+        *(*subfmt + len) = '\0';
+    }
+
+
+    /* stupid "find end of tag" */
+
+    while (*s && *s != '>')
+        s++;
+    if (*s == '>')
+        s++;
+
+    return s;
 }
 
 
@@ -565,66 +610,90 @@ static char *parsePropertyResultControl (char *s, char **propertyname, char **su
 */
 
 
-static void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
-				 char *subfmt, RESULT *r)
-
+static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, char *subfmt, RESULT * r)
 {
-  char      *fmt;
-  PropValue *pv;
-  char      *s;
-  int       n;
-  
-
-  pv = getResultPropertyByName (sw, propname, r);
-  if (! pv) {
-     if (f) fprintf (f, "(NULL)");		/* Null value, no propname */
-     return;
-  }
-
-  switch (pv->datatype) {		/* property data type */
-					/* use passed or default fmt */
-	case INTEGER:
-		fmt = (subfmt) ? subfmt: "%d";
-		if (f) fprintf (f,fmt,pv->value.v_int); 
-		break;
-
-	case STRING:
-		fmt = (subfmt) ? subfmt: "%s";
-		/* -- get rid of \n\r in string! */
-		for (s=pv->value.v_str; *s; s++) {
-		   if (isspace((unsigned char) *s)) *s=' ';
-		}
-		/* $$$ ToDo: escaping of delimiter characters  $$$ */
-		if (f) fprintf (f,fmt,(char *)pv->value.v_str); 
-		break;
-
-	case DATE:
-		fmt = (subfmt) ? subfmt: "%Y-%m-%d %H:%M:%S";
-		if (!strcmp (fmt,"%ld")) {
-			/* special: Print date as serial int (for Bill) */
-		   if (f) fprintf (f,fmt, (long) pv->value.v_date);
-		} else {
-			/* fmt is strftime format control! */
-		   s = (char *) emalloc(MAXWORDLEN + 1);
-		   n = strftime (s,(size_t) MAXWORDLEN, fmt,
-			   localtime(&(pv->value.v_date)));
-		   if (n && f) fprintf (f,s);
-		   efree (s);
-		}
-		break;
-
-	case FLOAT:
-		fmt = (subfmt) ? subfmt: "%f";
-		if (f) fprintf (f,fmt,(double) pv->value.v_float); 
-		break;
-
-	default:
-		fprintf (stdout,"err:(unknown datatype <%s>)\n",propname);
-		break;
+    char   *fmt;
+    PropValue *pv;
+    char   *s;
+    int     n;
 
 
-  }
-  efree (pv); 
+    pv = getResultPropertyByName(sw, propname, r);
+
+    if (!pv)
+    {
+        if (f)
+            fprintf(f, "(NULL)"); /* Null value, no propname */
+        return;
+    }
+
+
+    switch (pv->datatype)
+    {
+        /* use passed or default fmt */
+
+    case INTEGER:
+        fmt = (subfmt) ? subfmt : "%d";
+        if (f)
+            fprintf(f, fmt, pv->value.v_int);
+        break;
+
+    case STRING:
+        fmt = (subfmt) ? subfmt : "%s";
+
+        /* -- get rid of \n\r in string! */  // there shouldn't be any in the first place, I believe
+        for (s = pv->value.v_str; *s; s++)
+        {
+            if (isspace((unsigned char) *s))
+                *s = ' ';
+        }
+
+        /* $$$ ToDo: escaping of delimiter characters  $$$ */
+        /* $$$ Also ToDo, escapeHTML entities (need config directive) */
+
+        if (f)
+            fprintf(f, fmt, (char *) pv->value.v_str);
+
+        /* Free the string, if neede */
+        if ( pv->destroy )
+            efree( pv->value.v_str );
+
+
+        break;
+
+
+    case DATE:
+        fmt = (subfmt) ? subfmt : "%Y-%m-%d %H:%M:%S";
+        if (!strcmp(fmt, "%ld"))
+        {
+            /* special: Print date as serial int (for Bill) */
+            if (f)
+                fprintf(f, fmt, (long) pv->value.v_date);
+        }
+        else
+        {
+            /* fmt is strftime format control! */
+            s = (char *) emalloc(MAXWORDLEN + 1);
+            n = strftime(s, (size_t) MAXWORDLEN, fmt, localtime(&(pv->value.v_date)));
+            if (n && f)
+                fprintf(f, s);
+            efree(s);
+        }
+        break;
+
+    case FLOAT:
+        fmt = (subfmt) ? subfmt : "%f";
+        if (f)
+            fprintf(f, fmt, (double) pv->value.v_float);
+        break;
+
+    default:
+        fprintf(stdout, "err:(unknown datatype <%s>)\n", propname);
+        break;
+
+
+    }
+    efree(pv);
 
 }
 
@@ -652,28 +721,25 @@ static void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
    -- add name and string to list 
 */
 
-static struct ResultExtFmtStrList *addResultExtFormatStr (
-              struct ResultExtFmtStrList *rp, char *name, char *fmtstr)
-
-
+static struct ResultExtFmtStrList *addResultExtFormatStr(struct ResultExtFmtStrList *rp, char *name, char *fmtstr)
 {
-struct ResultExtFmtStrList *newnode;
+    struct ResultExtFmtStrList *newnode;
 
 
-   newnode = (struct ResultExtFmtStrList *) 
-              emalloc(sizeof(struct ResultExtFmtStrList));
-   newnode->name   = (char *) estrdup(name);
-   newnode->fmtstr = (char *) estrdup(fmtstr);
-   
-   newnode->next = NULL;
+    newnode = (struct ResultExtFmtStrList *) emalloc(sizeof(struct ResultExtFmtStrList));
 
-   if (rp == NULL)
-       rp = newnode;
-   else
-       rp->nodep->next = newnode;
+    newnode->name = (char *) estrdup(name);
+    newnode->fmtstr = (char *) estrdup(fmtstr);
 
-   rp->nodep = newnode;
-   return rp;
+    newnode->next = NULL;
+
+    if (rp == NULL)
+        rp = newnode;
+    else
+        rp->nodep->next = newnode;
+
+    rp->nodep = newnode;
+    return rp;
 }
 
 
@@ -685,20 +751,22 @@ struct ResultExtFmtStrList *newnode;
 */
 
 
-char *hasResultExtFmtStr (SWISH *sw, char *name)
+char   *hasResultExtFmtStr(SWISH * sw, char *name)
 {
-  struct ResultExtFmtStrList *rfl;
+    struct ResultExtFmtStrList *rfl;
 
-  rfl = sw->ResultOutput->resultextfmtlist;
-  if (! rfl) return (char *)NULL;
+    rfl = sw->ResultOutput->resultextfmtlist;
+    if (!rfl)
+        return (char *) NULL;
 
-  while (rfl) {
-    if (!strcmp (name,rfl->name))
-       return rfl->fmtstr;
-    rfl = rfl->next;
-  }
+    while (rfl)
+    {
+        if (!strcmp(name, rfl->name))
+            return rfl->fmtstr;
+        rfl = rfl->next;
+    }
 
-  return (char *)NULL;
+    return (char *) NULL;
 }
 
 
@@ -723,22 +791,22 @@ char *hasResultExtFmtStr (SWISH *sw, char *name)
   -- 2001-03-13  rasc
 */
 
-int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
-
+int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
 {
-  va_list args;
+    va_list args;
 
-  /* min_verbose to low, no output */
-  if (min_verbose > sw->ResultOutput->headerOutVerbose) return 0;
+    /* min_verbose to low, no output */
+    if (min_verbose > sw->ResultOutput->headerOutVerbose)
+        return 0;
 
-  /* print header info... */
-  va_start (args,printfmt);
-  vfprintf (stdout, printfmt, args);
-  va_end   (args);
-  return 1;
+    /* print header info... */
+    va_start(args, printfmt);
+    vfprintf(stdout, printfmt, args);
+    va_end(args);
+    return 1;
 }
 
-         
+
 
 
 /* 
@@ -746,42 +814,40 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
   -- for the header of an index file
 */
 
-void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h, 
-				char *pathname, int merged)
+void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char *pathname, int merged)
 {
-  char *fname;
-  int  v;
+    char   *fname;
+    int     v;
 
-      v = min_verbose;	
-      fname = str_basename (pathname);
+    v = min_verbose;
+    fname = str_basename(pathname);
 
-	resultHeaderOut (sw,v, "%s\n", INDEXVERSION);
-	/* why the blank merge header? */
-	resultHeaderOut (sw,v, "# %s\n", (merged) ? "MERGED INDEX" : "");
-	resultHeaderOut (sw,v, "%s %s\n", NAMEHEADER, (h->indexn[0] == '\0') ? "(no name)" : h->indexn);
-	resultHeaderOut (sw,v, "%s %s\n", SAVEDASHEADER,fname);
-	resultHeaderOut (sw,v, "%s %d words, %d files\n", COUNTSHEADER,h->totalwords,h->totalfiles);
-	resultHeaderOut (sw,v, "%s %s\n", INDEXEDONHEADER,h->indexedon);
-	resultHeaderOut (sw,v, "%s %s\n", DESCRIPTIONHEADER,(h->indexd[0] == '\0') ? "(no description)" : h->indexd);
-	resultHeaderOut (sw,v, "%s %s\n", POINTERHEADER,(h->indexp[0] == '\0') ? "(no pointer)" : h->indexp);
-	resultHeaderOut (sw,v, "%s %s\n", MAINTAINEDBYHEADER, (h->indexa[0] == '\0') ? "(no maintainer)" : h->indexa);
-	resultHeaderOut (sw,v, "%s %s\n", DOCPROPENHEADER, "Enabled");
-	resultHeaderOut (sw,v, "%s %d\n", STEMMINGHEADER, h->applyStemmingRules);
-	resultHeaderOut (sw,v, "%s %d\n", SOUNDEXHEADER, h->applySoundexRules);
-	resultHeaderOut (sw,v, "%s %d\n", IGNORETOTALWORDCOUNTWHENRANKING, h->ignoreTotalWordCountWhenRanking);
-	resultHeaderOut (sw,v, "%s %s\n", WORDCHARSHEADER, h->wordchars);
-	resultHeaderOut (sw,v, "%s %d\n", MINWORDLIMHEADER, h->minwordlimit);
-	resultHeaderOut (sw,v, "%s %d\n", MAXWORDLIMHEADER, h->maxwordlimit);
-	resultHeaderOut (sw,v, "%s %s\n", BEGINCHARSHEADER, h->beginchars);
-	resultHeaderOut (sw,v, "%s %s\n", ENDCHARSHEADER, h->endchars);
-	resultHeaderOut (sw,v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
-	resultHeaderOut (sw,v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
+    resultHeaderOut(sw, v, "%s\n", INDEXVERSION);
+    /* why the blank merge header? */
+    resultHeaderOut(sw, v, "# %s\n", (merged) ? "MERGED INDEX" : "");
+    resultHeaderOut(sw, v, "%s %s\n", NAMEHEADER, (h->indexn[0] == '\0') ? "(no name)" : h->indexn);
+    resultHeaderOut(sw, v, "%s %s\n", SAVEDASHEADER, fname);
+    resultHeaderOut(sw, v, "%s %d words, %d files\n", COUNTSHEADER, h->totalwords, h->totalfiles);
+    resultHeaderOut(sw, v, "%s %s\n", INDEXEDONHEADER, h->indexedon);
+    resultHeaderOut(sw, v, "%s %s\n", DESCRIPTIONHEADER, (h->indexd[0] == '\0') ? "(no description)" : h->indexd);
+    resultHeaderOut(sw, v, "%s %s\n", POINTERHEADER, (h->indexp[0] == '\0') ? "(no pointer)" : h->indexp);
+    resultHeaderOut(sw, v, "%s %s\n", MAINTAINEDBYHEADER, (h->indexa[0] == '\0') ? "(no maintainer)" : h->indexa);
+    resultHeaderOut(sw, v, "%s %s\n", DOCPROPENHEADER, "Enabled");
+    resultHeaderOut(sw, v, "%s %d\n", STEMMINGHEADER, h->applyStemmingRules);
+    resultHeaderOut(sw, v, "%s %d\n", SOUNDEXHEADER, h->applySoundexRules);
+    resultHeaderOut(sw, v, "%s %d\n", IGNORETOTALWORDCOUNTWHENRANKING, h->ignoreTotalWordCountWhenRanking);
+    resultHeaderOut(sw, v, "%s %s\n", WORDCHARSHEADER, h->wordchars);
+    resultHeaderOut(sw, v, "%s %d\n", MINWORDLIMHEADER, h->minwordlimit);
+    resultHeaderOut(sw, v, "%s %d\n", MAXWORDLIMHEADER, h->maxwordlimit);
+    resultHeaderOut(sw, v, "%s %s\n", BEGINCHARSHEADER, h->beginchars);
+    resultHeaderOut(sw, v, "%s %s\n", ENDCHARSHEADER, h->endchars);
+    resultHeaderOut(sw, v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
+    resultHeaderOut(sw, v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
 /*
 	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
 */
-    	translatecharHeaderOut (sw, v, h );
+    translatecharHeaderOut(sw, v, h);
 
-	
-	return;
+
+    return;
 }
-

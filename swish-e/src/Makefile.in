@@ -64,14 +64,10 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 	$(CC) $(CFLAGS) -c $<
 	$(AR) $(ARFLAGS) $@ $*.o
 
-all:	$(NAME) swish-search testlib
+all:	$(NAME) swish-search
 
 $(NAME): $(OBJS) libswish-e.a swish.o
 	$(CC) -o $@ $(CFLAGS) swish.o libswish-e.a $(LIBS)
-	chmod 755 $@
-
-testlib: testlib.o libswish-e.a swish.o
-	$(CC) -o testlib $(CFLAGS) testlib.o libswish-e.a $(LIBS)
 	chmod 755 $@
 
 libswish-e.a: $(OBJS)
@@ -82,7 +78,7 @@ swish-search: $(NAME)
 	cp -f $(NAME) swish-search
 
 clean:
-	rm -f ../tests/*.index ../tests/core ./core ./testlib ./swish-e ./swish-search ./*.o ./index.swish ./libswish-e.a
+	rm -f ../tests/*.index ../tests/core ./core  ./swish-e ./swish-search ./*.o ./index.swish ./libswish-e.a
 
 realclean: clean
 	rm Makefile
