@@ -188,8 +188,17 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
             if ( **word )  /* break if characters already found - end of this token */
                 break;
 
-            if ( leading_space && **buf == '*' )
-                return UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+            /* special hacks for wild cards */
+            if ( **buf == '*' )
+            {
+                if ( leading_space )
+                    return UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+
+                if ( (*buf)[1] && !inphrase && !isspace( (unsigned char) (*buf)[1]))
+                    return WILDCARD_NOT_ALLOWED_WITHIN_WORD;
+
+            }
+
 
             (*word)[i++] = **buf;  /* save the search operator char as it's own token, and end. */
             (*buf)++;
@@ -528,7 +537,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
         /* catch single wild card early */
         if ( rc < 0 )
         {
-            sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+            sw->lasterror = rc;
             return NULL;
         }
 
