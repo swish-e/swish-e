@@ -118,7 +118,8 @@ web page.  Building the split version also creates a SWISH-E index of the docume
 the documentation searchable via the included Perl CGI program.
 
 Buiding these other forms of documentation require aditional helper applications -- most modern Linux
-distributions will include all that's needed.  At least mine does...
+distributions will include all that's needed.  At least mine does...  You shouldn't have a problem
+if you have kept your perl and perl libraries up to date.
 
 Online documentation can be found at the SWISH-E web site listed above.
 
@@ -197,7 +198,7 @@ See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript, and PFD 
 
 Thanks, Stas, for your help!
 
-=head2 What's included in the SWISH-E distribution?
+=head1 What's included in the SWISH-E distribution?
 
 Here's an overview of the directories included in the swish-e distribution:
 

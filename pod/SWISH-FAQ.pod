@@ -10,7 +10,7 @@ SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
 With it, you can quickly and easily index directories of files or remote web sites and search the generated
 indexes for words and phrases.
 
-=head2 So, is SWISH-E a I<search engine>?
+=head2 So, is SWISH-E a search engine?
 
 Well, yes.  Probably the most common use of swish-e is to provide a search engine for web sites.
 The swish-e distribution includes CGI scripts that can be used with swish-e

@@ -376,7 +376,7 @@ to limit the search to just the words contained in that META name of your docume
 a META tagged field in your documents called C<subjects> and then you can search your documents for the word
 "foo" but only return documents where "foo" is within the C<subjects> META tag.
 
-Document I<Properties> are someone related to meta tags:  Properties allow the contents of a META tag in a source
+Document I<Properties> are someowhat related to meta tags:  Properties allow the contents of a META tag in a source
 document to be stored within the index, and that text to be returned along with search results.
 
 META tags can have three formats in your documents.
@@ -422,7 +422,7 @@ Do not contact developers directly for help -- always post your question to the 
 Before posting use tools available to narrow down the problem.
 
 SWISH-E has the -T, -v, and -k switches that may help resolve issues.
-If possible find a single document that shows the problem, then index with -v 9 and watch
+If possible find a single document that shows the problem, then index with -T INDEXED_WORDS and watch
 the exact words that are indexed.  Use -H 9 when searching and look at C<Parsed Words:> to make
 sure you are searching the correct words.
 
@@ -456,10 +456,10 @@ to demonstrate your problem.  Again, cut-n-paste.
 =item *
 
 A small copy of a source document that demonstrates the problem.
-Please copy and paste exact commands to avoid typos in your message.
 
 If you are having problems spidering a web server, use lwp-download or wget to
-copy the file locally to make sure you can index the document locally.
+copy the file locally to make sure you can index the document using the file system
+method.
 
 If you do need help with spidering, don't post fake URLs, as it makes it impossible to help.
 If you don't want to expose your web page to the people on the swish-e list, find some other site

@@ -539,8 +539,6 @@ Examples of property format strings:
 Please see the manual pages for strftime(3) and sprintf(3) for an explanation of
 format strings.
 
-B<Rainer -- are strftime and sprintf formats fully implemented?>
-
 The first character of a property format string defines the delimiter for this format string.
 For example,
 

@@ -21,6 +21,20 @@ Documentation is now included in the source distribution as .pod (perldoc) files
 In addition, the distribution can now generate PDF, postscript, and unix man pages from the source
 .pod files.  See L<README|README> for more information.
 
+=item * Indexing speed
+
+The indexing process has been imporoved.  Depending on a number of factors, you may see
+a significant improvement in indexing speed.
+
+=item * Properties are written to a sepearte file
+
+Swish now stores document properties in a separate file.  This means there are now two
+files that make up a swish index.  The default files are C<index.swish-e> and C<index.swish-e.prop>.
+
+This change frees memory while indexing, allowing larger collections to be indexed in memory.
+
+The config directive C<PROPFILE> in C<config.h> can be used to disable this behavior.
+
 =item * Internal data stored as Properties
 
 Pre 2.2 some internal data was stored in fixed locations within the index, namely the
@@ -28,11 +42,12 @@ file name, file size, and title.  2.2 introduced new internal data such as the l
 document summaries.
 This data is considered I<meta data> since it is data about a document.
 
-Instead of adding new data to the internal structure of the index file, it was decided to use the MetaNames
-and PropertyNames feature of swish to store this meta information.
+Instead of adding new data to the internal structure of the index file,
+it was decided to use the MetaNames and PropertyNames feature of swish
+to store this meta information.
 This allows for new meta data to be added at a later time (e.g. Content-type), and provides an easy and customizable
 way to print results with the C<-p> switch and the new C<-x> switch.
-In addition, this data can now be sorted by this internal data.
+In addition, search results can now be sorted and limited by properties.
 
 For example, to sort by the rank and title:
 
@@ -211,6 +226,13 @@ PropertyNamesDate only indicates to swish that a number is a unix timestamp, and
 to display the property as a formatted time when printing results.
 Swish can not currently parse date strings.
 
+=item * New directive: MetaNameAlias
+
+You may now supply alias names for MetaNames.  
+
+=item * New directive: PropertyNameAlias
+
+Just like above, this creates aliases for a property name.
 
 =back
 
