@@ -184,7 +184,7 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     htmlSAXParseDoc( buffer, NULL, SAXHandler, &parse_data );
 
     /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data, 1 );
+    flush_buffer( &parse_data, 2 );
 
 
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
@@ -245,7 +245,7 @@ int     parse_XML_push(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data, 1 );
+    flush_buffer( &parse_data, 3 );
 
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
 
@@ -309,7 +309,7 @@ int     parse_HTML_push(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     /* Flush any text left in the buffer, and free the buffer */
-    flush_buffer( &parse_data, 1 );
+    flush_buffer( &parse_data, 4 );
 
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
 
@@ -518,7 +518,6 @@ static void start_hndl(void *data, const char *el, const char **attr)
         /* handle <meta name="metaname" content="foo"> */
         if ( (strcmp( tag, "meta") == 0) && attr  )
         {
-            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
             process_htmlmeta( parse_data, attr );
             return;
         }
@@ -588,10 +587,7 @@ static void end_hndl(void *data, const char *el)
         /* <meta> tags are closed in start_hndl */
         
         if ( (strcmp( tag, "meta") == 0)   )
-        {
-            flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
-            return;
-        }
+            return;  // this was flushed at end tag
 
 
 
@@ -638,6 +634,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
     if ( !Convert_to_latin1( parse_data, txt, txtlen ) )
     {
+printf("failed to append\n");    
         append_buffer( &parse_data->text_buffer, txt, txtlen );
         return;
     }
@@ -716,7 +713,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     if ( (m = getMetaNameByName( parse_data->header, tag)) )
     {
-        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        flush_buffer( parse_data, 5 );  // flush since it's a new meta tag
         
         m->in_tag++;
         parse_data->in_meta++;
@@ -729,7 +726,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
         if (sw->verbose)
             printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
-        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        flush_buffer( parse_data, 6 );  // flush since it's a new meta tag
         addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
         parse_data->in_meta++;
         parse_data->structure |= IN_META;
@@ -746,7 +743,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
     {
-        flush_buffer( parse_data, 1 );  // flush since it's a new meta tag
+        flush_buffer( parse_data, 7 );  // flush since it's a new meta tag
         m->in_tag++;
     }
 
@@ -763,31 +760,30 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
     struct metaEntry *m = NULL;
     
 
-    /* Don't allow matching across tag boundry */
-    if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
-       parse_data->word_pos++;
-
-
-
     /* Flag that we are not in tag anymore - tags must be balanced, of course. */
 
     if ( ( m = getMetaNameByName( parse_data->header, tag) ) )
-    if ( m->in_tag )
-    {
-        flush_buffer( parse_data, 1 );
-        m->in_tag--;
-        parse_data->in_meta--;
-        if ( !parse_data->in_meta )
-            parse_data->structure &= ~IN_META;
-    }
+        if ( m->in_tag )
+        {
+            flush_buffer( parse_data, 8 );
+            m->in_tag--;
+            parse_data->in_meta--;
+            if ( !parse_data->in_meta )
+                parse_data->structure &= ~IN_META;
+        }
 
 
     if ( ( m = getPropNameByName( parse_data->header, tag) ) )
         if ( m->in_tag )
         {
-            flush_buffer( parse_data, 1 );
+            flush_buffer( parse_data, 9 );
             m->in_tag--;
         }
+
+
+    /* Don't allow matching across tag boundry */
+    if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
+       parse_data->word_pos++;
 
 }
 
@@ -808,25 +804,27 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
     if ( strcmp( tag, "head" ) == 0 )
     {
-        flush_buffer( parse_data, 1 );
+        flush_buffer( parse_data, 10 );
         structure = IN_HEAD;
     }
 
     else if ( strcmp( tag, "title" ) == 0 )
     {
-        flush_buffer( parse_data, 1 );
+        flush_buffer( parse_data, 11 );
+        parse_data->word_pos++;
         structure = IN_TITLE;
     }
 
     else if ( strcmp( tag, "body" ) == 0 )
     {
-        flush_buffer( parse_data, 1 );
+        flush_buffer( parse_data, 12 );
         structure = IN_BODY;
+        parse_data->word_pos++;
     }
 
     else if ( tag[0] == 'h' && isdigit((int) tag[1]))
     {
-        flush_buffer( parse_data, 1 );
+        flush_buffer( parse_data, 13 );
         structure = IN_HEADER;
     }
 
@@ -862,15 +860,13 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
     if ( structure )
     {
-        // done when tag is found because some are block and some are char level
-        // flush_buffer( parse_data );
-
         if ( start )
             parse_data->structure |= structure;
         else
             parse_data->structure &= ~structure;
             
     }
+
     return is_html_tag;
 }
 
