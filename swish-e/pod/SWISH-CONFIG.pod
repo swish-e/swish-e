@@ -696,7 +696,7 @@ Note: Not all directives work with all methods.
 
 Files with these suffixes will B<not> have their contents indexed.
 
-If the file's type is HTML (as set by C<IndexContents> or
+If the file's type is HTML (or HTML2) (as set by C<IndexContents> or
 C<DefaultContents>) then the file will be parsed for a HTML title and
 that title will be indexed.  Note that you must set the file's type:
 C<.html> and C<.htm> are NOT type HTML by default.
@@ -880,13 +880,14 @@ documents, and how that information is made available during searching.
 =item ConvertHTMLEntities [YES|no]
 
 ASCII I<entities> can be converted automatically while indexing documents
-of type HTML.  For performance reasons you may wish to set this to C<no>
+of type HTML (not for HTML2).
+For performance reasons you may wish to set this to C<no>
 if your documents do not contain HTML entities.  The default is C<yes>.
 
 If C<ConvertHTMLEntities> is set C<no> the entities will be indexed
 without conversion.
 
-B<NOTE:> Entities within XML files and files parsed with libxml2 are
+B<NOTE:> Entities within XML files and files parsed with libxml2 (HTML2) are
 converted regardless of this setting.
 
 =item MetaNames *list of names*
@@ -1541,11 +1542,22 @@ C<title>:
 =item StoreDescription [XML <tag> size|HTML <meta> size|TXT size]
 
 B<StoreDescription> allows you to store a document description in the
-index file, and this description can be returned in your search results
+index file.  This description can be returned in your search results
 when the C<-x> switch is used to include the I<swishdescription> for
-extended results.
+extended results, or by using C<-p swishdescription>.
 
-For text documents you specify the type C<TXT> and the number of I<characters> to capture.
+The document type (XML, HTML and TXT) must match the document type currently being indexed
+as set by C<IndexContents> or C<DefaultContents>.  See those directives for possible values.
+A common problem is using C<StoreDescription> yet not setting the document's type with
+C<IndexContents> or C<DefaultContents>.  Another problem is different types:
+
+    IndexContents HTML2 .html
+    StoreDescription HTML <body>
+
+Then .html documents are assigned a type of HTML2 (and parsed by the libxml2 parser), but the
+description will not be stored since it is type HTML instead of HTML2.
+
+For text documents you specify the type TXT (or TXT2 or TXT*) and the number of I<characters> to capture.
 
     StoreDescription TXT 20
 
@@ -1559,7 +1571,7 @@ specified will capture the entire contents of the tag.
     StoreDescription HTML <body> 20000
     StoreDescription XML  <desc> 40
 
-Note that documents must be assigned a document type with C<IndexContents>
+Again, note that documents must be assigned a document type with C<IndexContents>
 or C<DefaultContents> to use this feature.
 
 Swish-e will compress the descriptions (or any other large property)
