@@ -19,10 +19,6 @@
 
 */
    
-/* SWISH-E Porting  */
-#define _SWISH_PORT
-#include "config.h"
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
