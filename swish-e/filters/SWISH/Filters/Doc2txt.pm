@@ -27,17 +27,17 @@ sub new {
 
 sub name { $_->{name} || 'unknown' };
 
-
+sub priority{ 50 };  # Make this a higher number (lower priority than the wvware filter
 
 sub filter {
     my ( $self, $filter) = @_;
 
     # Do we care about this document?
-    return unless $filter->content_type =~ m!application/msword!;
+    return unless $filter->content_type =~ m!application/(x-)?msword!;
 
     # We need a file name to pass to the catdoc program
     my $file = $filter->fetch_filename;
-    
+
     # Grab output from running program
     my $content = $filter->run_program( $self->{catdoc}, $file );
 

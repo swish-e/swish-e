@@ -542,11 +542,11 @@ distdir: $(DISTFILES)
 	  ! -type d ! -perm -444 -exec $(SHELL) $(install_sh) -c -m a+r {} {} \; \
 	|| chmod -R a+r $(distdir)
 dist-gzip: distdir
-	$(AMTAR) chf - $(distdir) --posix | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	$(AMTAR) chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
 	$(am__remove_distdir)
 
 dist dist-all: distdir
-	$(AMTAR) chf - $(distdir) --posix | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	$(AMTAR) chof - $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
 	$(am__remove_distdir)
 
 # This target untars the dist file and tries a VPATH configuration.  Then

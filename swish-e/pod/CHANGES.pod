@@ -10,6 +10,19 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item New MS Word Filter
+
+James Job provided the SWISH::Filter::Doc2html filter that uses
+the wvWare (http://wvware.sourceforge.net/) program for filtering
+MS Word documents.  If both catdoc and wvWare are installed then wvWare
+will be used.
+
+wvWare is reported to do a good job at converting MS Word docs
+to HTML.  In a few tests it did work well, but other cases it
+failed to generate correct output.  It was also much, much slower
+than catdoc.  I tested with wvWare 0.7.3 on Debian Linux.  Testing with
+both is recommended.
+
 =item Change in way symbolic links are followed
 
 John-Marc Chandonia pointed out that if a symlink is skipped
