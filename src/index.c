@@ -2462,7 +2462,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
             /* Now translate word if fuzzy mode */                    
 
-            switch ( indexf->header.fuzzy_mode )
+            switch ( indexf->header.fuzzy_data.fuzzy_mode )
             {
                 case FUZZY_NONE:
                     addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
@@ -2470,7 +2470,15 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     break;
 
                 case FUZZY_STEMMING:
-                    stem_return = Stem(&swishword, &lenswishword);
+#ifdef SNOWBALL
+                case FUZZY_STEMMING_ES:
+                case FUZZY_STEMMING_FR:
+                case FUZZY_STEMMING_PT:
+                case FUZZY_STEMMING_IT:
+                case FUZZY_STEMMING_DE:
+                case FUZZY_STEMMING_NL:
+#endif
+                    stem_return = indexf->header.fuzzy_data.fuzzy_routine(&swishword, &lenswishword);
 
                     /* === 
                     if ( stem_return == STEM_NOT_ALPHA ) printf("Stem: not alpha in '%s'\n", swishword );
@@ -2507,7 +2515,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                         addword(codes[0], sw, filenum, structure, numMetaNames, metaID, position );
                         wordcount++;
 
-                        if ( indexf->header.fuzzy_mode == FUZZY_DOUBLE_METAPHONE &&  *(codes[1]) && strcmp(codes[0], codes[1]) )
+                        if ( indexf->header.fuzzy_data.fuzzy_mode == FUZZY_DOUBLE_METAPHONE &&  *(codes[1]) && strcmp(codes[0], codes[1]) )
                         {
                             (*position)--; /* at same position as first word */
                             addword(codes[1], sw, filenum, structure, numMetaNames, metaID, position );
@@ -2522,7 +2530,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     
 
                 default:
-                   progerr("Invalid FuzzyMode '%d'", (int)indexf->header.fuzzy_mode );
+                   progerr("Invalid FuzzyMode '%d'", (int)indexf->header.fuzzy_data.fuzzy_mode );
             }
         }
     }

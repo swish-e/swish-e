@@ -56,10 +56,14 @@
 #include "stemmer.h"
 #include "mem.h"
 
-
 #define FALSE	0
 #define TRUE	1
 
+/* Includes for using SNOWBALL stemmer */
+#ifdef SNOWBALL
+#include "snowball/stem_es.h"
+#include "snowball/api.h"
+#endif
 
 
 /*******************************   stem.c   ***********************************
@@ -585,3 +589,128 @@ int     Stem(char **inword, int *lenword)
     return STEM_OK;
 }        
 
+
+
+
+
+
+
+
+
+
+
+
+
+typedef struct
+{
+    FuzzyIndexType  fuzzy_mode;
+    char            *name;
+    int             (*routine) (char **word, int *len);
+}
+FUZZY_OPTS;
+
+static FUZZY_OPTS fuzzy_opts[] = {
+
+    { FUZZY_NONE, "None", NULL},
+    { FUZZY_STEMMING, "Stemming", Stem },
+    { FUZZY_STEMMING, "Stem", Stem },
+    { FUZZY_SOUNDEX, "Soundex", NULL },
+    { FUZZY_METAPHONE, "Metaphone", NULL },
+    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone", NULL }
+#ifdef SNOWBALL
+    ,{ FUZZY_STEMMING_ES, "Stemming_es", NULL },
+    { FUZZY_STEMMING_FR, "Stemming_fr", NULL },
+    { FUZZY_STEMMING_IT, "Stemming_it", NULL },
+    { FUZZY_STEMMING_PT, "Stemming_pt", NULL },
+    { FUZZY_STEMMING_DE, "Stemming_de", NULL },
+    { FUZZY_STEMMING_NL, "Stemming_nl", NULL }
+#endif
+};
+
+void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
+{
+    int     i;
+
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
+        {
+            fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
+            fi->fuzzy_routine = fuzzy_opts[i].routine;
+            return;
+        }
+
+    fi->fuzzy_mode = FUZZY_NONE;
+    fi->fuzzy_routine = NULL;
+
+    progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
+}
+
+void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
+{
+    int     i;
+
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( fuzzy == fuzzy_opts[i].fuzzy_mode ) 
+        {
+            fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
+            fi->fuzzy_routine = fuzzy_opts[i].routine;
+            return;
+        }
+
+    fi->fuzzy_mode = FUZZY_NONE;
+    fi->fuzzy_routine = NULL;
+
+    progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
+}
+
+char *fuzzy_mode_to_string( FuzzyIndexType mode )
+{
+    int     i;
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( mode == fuzzy_opts[i].fuzzy_mode )
+            return fuzzy_opts[i].name;
+
+    return "Unknown FuzzyIndexingMode";
+}
+
+
+#ifdef SNOWBALL
+void init_snowball(SWISH *sw)
+{
+    IndexFILE *indexf;
+  
+    for ( indexf = sw->indexlist; indexf; indexf = indexf->next)
+    {
+        switch(indexf->header.fuzzy_mode)
+        {
+            case FUZZY_STEMMING_ES:
+                //indexf->header.snowball = spanish_create_env();
+                printf("Spanish\n");
+                break;
+            default:
+                indexf->header.snowball = NULL;
+                break;
+        }
+    }
+}
+
+void free_snowball(SWISH *sw)
+{
+    IndexFILE *indexf;
+  
+    for ( indexf = sw->indexlist; indexf; indexf = indexf->next)
+    {
+        switch(indexf->header.fuzzy_mode)
+        {
+            case FUZZY_STEMMING_ES:
+                //if (indexf->header.snowball)
+                //spanish_close_env(indexf->header.snowball);
+                printf("Spanish\n");
+                break;
+            default:
+                break;
+        }
+        indexf->header.snowball;
+    }
+}
+#endif

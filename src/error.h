@@ -48,9 +48,6 @@ int SwishCriticalError(SWISH *sw);
 void reset_lasterror(SWISH *sw);
 
 
-char *fuzzy_mode_to_string( FuzzyIndexType mode );
-FuzzyIndexType set_fuzzy_mode( char *param );
-
 
 #define RC_OK 0
 

@@ -233,8 +233,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
     char   *curpos;
     struct  MOD_Swish_Words *self = sw->SwishWords;
 
-
-
     /* Some initial adjusting of the word */
 
 
@@ -271,14 +269,22 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         if (!*self->word)
             continue;
 
-        switch ( header->fuzzy_mode )
+        switch ( header->fuzzy_data.fuzzy_mode )
         {
             case FUZZY_NONE:
                 swish_words = (struct swline *) addswline( swish_words, self->word );
                 break;
 
             case FUZZY_STEMMING:
-                Stem(&self->word, &self->lenword);
+#ifdef SNOWBALL
+            case FUZZY_STEMMING_ES:
+            case FUZZY_STEMMING_FR:
+            case FUZZY_STEMMING_IT:
+            case FUZZY_STEMMING_PT:
+            case FUZZY_STEMMING_DE:
+            case FUZZY_STEMMING_NL:
+#endif
+                header->fuzzy_data.fuzzy_routine(&self->word, &self->lenword);
                 if ( *self->word ) // should not happen
                     swish_words = (struct swline *) addswline( swish_words, self->word );
                 break;
@@ -307,7 +313,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
 
                     /* check if just METAPHONE or only one word returned (e.g. they are the same) */
                 
-                    if ( header->fuzzy_mode == FUZZY_METAPHONE || !(*codes[1]) || !strcmp(codes[0], codes[1]) )
+                    if ( header->fuzzy_data.fuzzy_mode == FUZZY_METAPHONE || !(*codes[1]) || !strcmp(codes[0], codes[1]) )
                     {
                         swish_words = (struct swline *) addswline( swish_words, codes[0] );
                     }
@@ -325,10 +331,9 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
                     efree( codes[1] );
                 }
                 break;
-                
 
             default:
-                progerr("Invalid FuzzyMode '%d'", (int)header->fuzzy_mode );
+                progerr("Invalid FuzzyMode '%d'", (int)header->fuzzy_data.fuzzy_mode );
         }
     }
 
