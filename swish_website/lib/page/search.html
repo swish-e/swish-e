@@ -85,7 +85,7 @@
 [% BLOCK show_result %]
 
     <div class="search-title">
-        <a href="[% item.Property('swishdocpath') | uri | html %]">
+        <a href="[% item.Property('swishdocpath') %]">
             [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]</a>
 
         <span class="search-rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
@@ -96,7 +96,7 @@
     </div>
 
     <div class="search-metadata">
-        Path: <a href="[% item.Property('swishdocpath') | uri | html %]">
+        Path: <a href="[% item.Property('swishdocpath') %]">
             [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a>
             - [% item.Property('swishdocsize') %] bytes<br>
         Date: [% result_date.format( item.Property('swishlastmodified')) %]<br>

@@ -6,10 +6,11 @@ use base 'Template::Plugin';
 
 use vars '@pod_toc';
 
+my %split_by = map {"head".$_ => 1} 1..4;
 
-my $mode = 'Pod::POM::View::HTML';  # The view module
+my $view_mode = 'Pod::POM::View::HTML';  # The view module
 
-# Much of this is based on (or copied from) Stas' DocSet 0.17
+# *Much* of this is based on (or copied from) Stas' DocSet 0.17
 # I'm not sure why spaces need to be removed from links.  Pod::POM doesn't remove them.
 
 sub new {
@@ -42,6 +43,8 @@ sub new {
 
     $data{sections} = \@sections;
 
+    $data{podparts} = [ slice_by_head(@sections) ];
+
     $data{toc} = fetch_toc( \@sections );
 
 
@@ -58,6 +61,26 @@ sub new {
 
 
     return \%data;
+}
+
+sub slice_by_head {
+    my @sections = @_;
+    my @body = ();
+    for my $node (@sections) {
+        my @next = ();
+        # assumption, after the first 'headX' section, there can only
+        # be other 'headX' sections
+        my $count = scalar $node->content;
+        my $id = -1;
+        for ($node->content) {
+            $id++;
+            next unless exists $split_by{ $_->type };
+            @next = splice @{$node->content}, $id;
+            last;
+        }
+        push @body, $node, slice_by_head(@next);
+    }
+    return @body;
 }
 
 sub combine_verbatim_sections_hack {
@@ -87,7 +110,7 @@ sub fetch_abstract {
     for ( 0 .. 2 ) {
         next unless $sections->[$_] && $sections->[$_]->title =~ /DESCRIPTION|OVERVIEW/;
 
-        my $abstract = $sections->[$_]->content->present($mode);
+        my $abstract = $sections->[$_]->content->present($view_mode);
         $abstract =~ s|<p>(.*?)</p>.*|$1|s;
         return $abstract;
     }
@@ -121,7 +144,7 @@ sub render_toc_level {
 
 
     my %toc_entry = (
-        title    => $title->present($mode), # run the formatting if any
+        title    => $title->present($view_mode), # run the formatting if any
         link     => "#$title",
     );
 

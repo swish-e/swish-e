@@ -19,8 +19,10 @@ Swish-e version [% swish.version %]
 
 <hr>
 
-[% FOREACH section = pom.sections %]
-  [% section.present(view) %]
+[% FOREACH section = pom.podparts %]
+    <div class="sub-section">
+        [% section.present(view) %]
+    </div>
 [% END %]
 
 

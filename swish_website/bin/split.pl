@@ -1,8 +1,17 @@
 #!/usr/bin/perl -w
 use strict;
+use warnings;
 use File::Find;
 
 my $dir = shift || die "failed to specify directory";
+my $pat = qr!<h\d><a name="([^"]+)"></a>([^<]+)</h\d>!i; #" for vim
+
+
+if ( -f $dir ) {
+    warn "Indexing [$dir] as a single file\n";
+    index_path( $dir );
+    exit;
+}
 
 find( \&process_doc, $dir );
 
@@ -10,7 +19,6 @@ find( \&process_doc, $dir );
 
 
 
-my $pat = qr[<h\d><a name="([^"]+)">([^<]+)</a></h\d>]i;
 
 
 sub process_doc {
@@ -30,9 +38,14 @@ sub process_doc {
     return if $dir =~ m!/search!;
     return if $dir =~ m!/graphics!;
 
+    index_path( $path );
+}
+
+sub index_path {
+    my ( $path ) = @_;
 
     unless ( open( FH, "<$path" ) ) {
-        warn "Failed to open file [$path]\n";
+        warn "Failed to open file - [$path]: $!\n";
         return;
     }
 
@@ -42,6 +55,7 @@ sub process_doc {
 
 sub index_doc {
     my ($name, $doc) = @_;
+
 
 
     my @sections = split /$pat/, $doc;
@@ -54,7 +68,7 @@ sub index_doc {
     my ( $title ) = $doc =~ m[<title>([^<]+)]is;
     $title ||= "Swish-e Documentation";
 
-    $title =~ s/^SWISH-Enhanced: //;
+    $title =~ s/^Swish-e :: //;
 
 
     while ( @sections ) {

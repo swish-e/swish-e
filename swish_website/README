@@ -112,7 +112,29 @@ Links:
 Indexing the site for searches
 ------------------------------
 
-[todo]
+To index the site run from the top level directory:
+
+    $ SWISH_SITE=http://swish-e.org swish-e -c etc/swish.config -S prog
+
+SWISH_SITE is the top level URL.
+START_FILE is the starting file.  Default is index.html
+(SWISH_SITE=http://swish-e.org/docs START_FILE=readme.html to index just one file)
+
+That writes the index to public_html/search/
+
+Or to run it quiet:
+
+$ SPIDER_QUIET=1 SWISH_SITE=http://localhost/apache/public_html \
+    swish-e -c etc/swish.config -S prog -v0
+
+Capture output (for debugging) like this:
+
+  $ SWISH_SITE=http://localhost/apache/public_html \
+        /usr/local/lib/swish-e/spider.pl etc/spider.config > out
+
+
+
+todo: add metaname selection and create build script that is built from
 
 
 TODO
@@ -135,6 +157,9 @@ for the pod files.
 - test speedycgi and install on sunsite
 
 - enable template caching for the search script
+
+- Probably should filter all hrefs= and name= through |uri|html.  Plus some
+are very large.  Maybe shorten or md5 them?  If so, then need to adjust link_to_page().
 
 
 
