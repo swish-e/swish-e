@@ -83,7 +83,6 @@ static SWISH_HEADER_VALUE fetch_header( IndexFILE *indexf, const char *name,  SW
 static const char **create_string_list( SWISH *sw, struct swline *swline );
 static const char **string_list_from_hash( SWISH *sw, WORD_HASH_TABLE table );
 
-IndexFILE *indexf_by_name( SWISH *sw, const char *index_name );
 static DB_RESULTS *db_results_by_name( RESULTS_OBJECT *results, const char *index_name );
 
 static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *header_map, SWISH_HEADER_TYPE *data_type );

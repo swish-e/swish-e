@@ -32,6 +32,7 @@
 #include "search.h"
 #include "docprop.h"
 #include "metanames.h"
+#include "headers.h"
 #include "dump.h"
 #include "error.h"
 

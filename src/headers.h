@@ -37,7 +37,7 @@ typedef union
 
 void print_index_headers( IndexFILE *indexf );
 
-
+IndexFILE *indexf_by_name( SWISH *sw, const char *index_name );
 
 #ifdef __cplusplus
 }
