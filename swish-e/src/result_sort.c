@@ -596,7 +596,10 @@ int     sortresults(SWISH * sw, int structure)
     return TotalResults;
 }
 
-#ifdef RESORTFILES
+/***********************************************************************
+* qsort compare function to sort the file array by filenum
+*
+************************************************************************/
 int     compFilenums(const void *s1, const void *s2)
 {
     struct file *r1 = *(struct file * const *) s1;
@@ -604,8 +607,6 @@ int     compFilenums(const void *s1, const void *s2)
 
     return r1->filenum - r2->filenum;
 }
-
-#endif
 
 /* 01/2001 Jose Ruiz */
 /* function for comparing data in order to
@@ -754,11 +755,9 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
            /* Store the integer array of presorted data */
            m->sorted_data = sortFilenums;
 
-#ifdef RESORTFILES
             /* put the file array back in order */
             /* This is done so that the property file can be read sequentially */
            swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFilenums);
-#endif           
 
            
            break;

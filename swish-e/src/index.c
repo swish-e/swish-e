@@ -1704,11 +1704,11 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
 #ifdef PROPFILE
     /* First reopen the property file in read only mode for seek speed */
-if ( 1 )
     DB_Reopen_PropertiesForRead_Native( indexf->DB, indexf->line );
 #endif    
 
-    printf("Sorting Properties...\n");
+    if (sw->verbose)
+        printf("Sorting Properties...\n");
     sortFileProperties(sw,indexf);
 
 

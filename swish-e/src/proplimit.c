@@ -500,6 +500,10 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
 
 
+    /* now, if not an exact match for the high range, decrease high by one
+     * because high is pointing to the *next* higher element, which is TOO high
+     */
+     
     if ( !foundHi && low < high )
         high--;
 
