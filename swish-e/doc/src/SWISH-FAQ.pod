@@ -21,7 +21,11 @@ type of file.
 By default, swish-e tries to make it best guesses as to what it thinks are reasonable words and filters out "garbage" words according to a set
 of rules, for instance, if swish-e encounters a word that has no vowels, it doesn't index it. You can change these rules by editing the conf.h
 file in the src directory of the swish-e distribution package. By editing the rules, you may be able to index quite a few more words, or less,
-depending on your preference. 
+depending on your preference.
+
+Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>) C<WordCharacters>, C<BeginCharactes>, C<EndCharacters>,
+C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
+Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues.
 
 =head2 How can I index all my compressed files?
 
