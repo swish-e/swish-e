@@ -108,4 +108,9 @@ tardist : $(DISTVNAME).tar$(SUFFIX)
 
 dist : docs $(DIST_DEFAULT)
 
+disttoday : docs distdir
+	$(TAR) $(TARFLAGS) $(DISTVNAME)-`/bin/date +'%Y-%m-%d'`.tar $(DISTVNAME)
+	$(RM_RF) $(DISTVNAME)
+	$(COMPRESS) $(DISTVNAME)-`/bin/date +'%Y-%m-%d'`.tar
+
 
