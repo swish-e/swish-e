@@ -304,7 +304,7 @@
 
 /* 2001/08 jmruiz -- Do not change this (it must be a unsigned 2 byte number) */
 /* This is the maximum size of a block of coalesced locations */
-#define COALESCE_BUFFER_MAX_SIZE 65535
+#define COALESCE_BUFFER_MAX_SIZE 1<<18  /* (256 KB) */
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess
