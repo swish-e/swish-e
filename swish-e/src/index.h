@@ -23,7 +23,7 @@ void do_index_file (SWISH *sw, FileProp *fprop);
 void printMetaNames (IndexFILE *);
 DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 ENTRYARRAY *addentry (SWISH *, ENTRYARRAY *, char*, int, int, int, int );
-void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, char *title, char *summary, int start, int size, struct file ** newFileEntry);
+void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
 int getfilecount (IndexFILE *);
 char *getthedate(void);
 int countwordstr (SWISH *, char *, int);
@@ -49,7 +49,7 @@ int stripIgnoreLastChars _AP ((INDEXDATAHEADER, char *));
 #define isIgnoreLastChar(header,c) header.ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) header.bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry _AP ((char *,char *,char *,int, int, FILE *, struct docPropertyEntry **, int, int *));
+unsigned char *buildFileEntry _AP ((char *,time_t ,char *,char * ,int, int, FILE *, struct docPropertyEntry **, int, int *));
 struct file *readFileEntry _AP ((IndexFILE *,int, int));
 
 void computehashentry _AP ((ENTRY **,ENTRY *));

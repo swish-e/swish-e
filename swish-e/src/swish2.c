@@ -82,17 +82,11 @@ int i;
 	sw->propIDToSort=NULL;
 	sw->propModeToSort=NULL;
 
-		/* MetaNames indexing options (default values from config.h)*/
-	sw->ReqMetaName=REQMETANAME;
-	sw->OkNoMeta=OKNOMETA;
 
 		/* File system parameters */
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->inode_hash[i]=NULL;
 
-		/* http system parameters */
-	sw->maxdepth=5;
-	sw->delay=60;
 	sw->equivalentservers=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->url_hash[i]=NULL;
 
@@ -129,6 +123,15 @@ void SwishDefaults(SWISH *sw)
         sw->spiderdirectory = SafeStrCopy(sw->spiderdirectory,SPIDERDIRECTORY,&sw->lenspiderdirectory);
 	sw->plimit=PLIMIT;
 	sw->flimit=FLIMIT;
+	sw->PhraseDelimiter=PHRASE_DELIMITER_CHAR;
+		/* MetaNames indexing options (default values from config.h)*/
+	sw->ReqMetaName=REQMETANAME;
+	sw->OkNoMeta=OKNOMETA;
+		/* ASCIIENTITIES indexing default option */
+	sw->AsciiEntities=ASCIIENTITIES;
+		/* http system parameters */
+	sw->maxdepth=5;
+	sw->delay=60;
 }
 
 /* Free memory for search results and parameters (properties ...) */
@@ -308,7 +311,7 @@ long getthetime()
 {
 long thetime;
 time_t tp;
-
+return 999L;
         thetime = (long) time(&tp);
         return thetime;
 }

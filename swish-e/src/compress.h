@@ -28,47 +28,33 @@
 ** Now this function is a macro for better performance
 ** void compress _AP ((int, FILE *));
 */
-#define compress1(num,fp) \
-{int i,r; char s[5]; \
-i=0;r=num; \
-while(r) {s[i++] = r % 128;r /= 128;}\
-while(--i >=0) fputc(s[i] | (i ? 128 : 0), fp);}
+#define compress1(num,fp) {register int _i,_r; unsigned char _s[5]; _i=0;_r=num; while(_r) {_s[_i++] = _r & 127;_r >>= 7;} while(--_i >=0) fputc(_s[_i] | (_i ? 128 : 0), fp);}
 
 /* same function but this works with a memory buffer instead of file output */
-#define compress2(data,buffer) {int num=data;while(num) {*buffer = num % 128; if(num!=data) *buffer|=128;num /= 128;buffer--;}}
+#define compress2(num,buffer) {register int _i=num;while(_i) {*buffer = _i & 127; if(_i != num) *buffer|=128;_i >>= 7;buffer--;}}
 
 /* same function but this works with a memory buffer instead of file output */
 /* and also increases the memory pointer */
-#define compress3(num,buffer) \
-{int i,r; char s[5]; \
-i=0;r=num; \
-while(r) {s[i++] = r % 128;r /= 128;}\
-while(--i >=0) *buffer++=(s[i] | (i ? 128 : 0));}
+#define compress3(num,buffer) {register int _i,_r; unsigned char _s[5]; _i=0;_r=num; while(_r) {_s[_i++] = _r & 127;_r >>= 7;} while(--_i >=0) *buffer++=(_s[_i] | (_i ? 128 : 0));}
 
-/* Jose Ruiz 04/00
-** Now this function is a macro for better performance
-** int uncompress _AP ((FILE *));
-*/
-#define uncompress1(num,fp) \
-{int c;num = 0;\
-do{ \
-   c=(int)fgetc(fp);\
-   num *= 128; num += c & 127;\
-   if(!num) break;\
-} while (c & 128);}
-
-/* same function bur works with a memory buffer instead of file output */
-#define uncompress2(num,buffer) {int c;num = 0;do{ c=(int)*buffer++;num*=128; num+= c & 127; if(!num)break;}while(c & 128);} 
+#define uncompress1(num,fp) {register int _c;num = 0; do{ _c=(int)fgetc(fp); num <<= 7; num |= _c & 127; if(!num) break; } while (_c & 128);}
 
 /* same function but this works with a memory forward buffer instead of file */
 /* output and also increases the memory pointer */
-#define uncompress3(num,buffer) \
-{int c;num = 0;\
-do{ \
-   c=(int)((unsigned char)*buffer++);\
-   num *= 128; num += c & 127;\
-   if(!num) break;\
-} while (c & 128);}
+#define uncompress2(num,buffer) {register int _c;num = 0; do{ _c=(int)((unsigned char)*buffer++); num <<= 7; num |= _c & 127; if(!num) break; } while (_c & 128);}
+
+/* Macros to make long integers portable */
+#define PACKLONG(num) \
+{ unsigned long _i=0L; unsigned char *_s; \
+if(num) { _s=(unsigned char *) &_i; _s[0]=((num >> 24) & 0xFF); _s[1]=((num >> 16) & 0xFF); _s[2]=((num >> 8) & 0xFF); _s[3]=(num & 0xFF); } \
+num=_i; \
+}
+
+#define UNPACKLONG(num) \
+{ unsigned long _i; unsigned char *_s; \
+_i=num;_s=(unsigned char *) &_i; \
+num=(_s[0]<<24)+(_s[1]<<16)+(_s[2]<<8)+_s[3]; \
+}
 
 
 unsigned char *compress_location _AP ((SWISH *,IndexFILE *, LOCATION *));

@@ -171,7 +171,7 @@ char* propValueBuf=NULL;
 int tempPropID;
 int len;
 char *p=*buf;
-	uncompress3(tempPropID,p);
+	uncompress2(tempPropID,p);
 	if(tempPropID) tempPropID--;
 
 	*metaName = tempPropID;
@@ -180,7 +180,7 @@ char *p=*buf;
 		return NULL;		/* end of list */
 
 	/* grab the string length */
-	uncompress3(len,p);
+	uncompress2(len,p);
 
 	if ((targetMetaName != 0) && (tempPropID != (short int) targetMetaName))
 	{

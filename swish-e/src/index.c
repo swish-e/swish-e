@@ -394,10 +394,11 @@ IndexFILE *indexf=sw->indexlist;
 /* Adds a file to the master list of files and file numbers.
 */
 
-void addtofilelist(sw,indexf,filename, title, summary, start, size,  newFileEntry)
+void addtofilelist(sw,indexf,filename, mtime, title, summary, start, size,  newFileEntry)
 SWISH *sw;
 IndexFILE *indexf;
 char *filename;
+time_t mtime;
 char *title;
 char *summary;
 int start;
@@ -463,6 +464,10 @@ unsigned char c;
 		newnode->fi.summary= (char *) estrdup(summary);
 	else
 		newnode->fi.summary=NULL;
+
+		/* The datetime of the doc */
+	newnode->fi.mtime=(unsigned long)mtime;
+
 	newnode->fi.start = start;
 	newnode->fi.size = size;
 	newnode->docProperties = NULL;
@@ -1040,8 +1045,9 @@ FILE *fp=indexf->fp;
 	fputc(0,fp);
 }
 
-unsigned char *buildFileEntry(filename, title, summary, start, size, fp, docProperties,lookup_path,sz_buffer)
+unsigned char *buildFileEntry(filename, mtime, title, summary, start, size, fp, docProperties,lookup_path,sz_buffer)
 char *filename;
+time_t mtime;
 char *title;
 char *summary;
 int start;     
@@ -1055,13 +1061,15 @@ int len,len_filename,lentitle,lensummary;
 unsigned char *buffer1,*buffer2,*buffer3,*p;
 int lenbuffer1;
 int datalen1, datalen2,datalen3;
+unsigned long lmtime;
+	lmtime=(unsigned long)mtime;
 	len_filename = strlen(filename)+1;
 	lentitle = strlen(title)+1;
 	if(summary)
 		lensummary=strlen(summary)+1;
 	else
 		lensummary=0;
-	lenbuffer1=len_filename+lentitle+lensummary+6*6;
+	lenbuffer1=len_filename+lentitle+lensummary+7*6;
 	buffer1=emalloc(lenbuffer1);
 	p=buffer1;
 	lookup_path++;   /* To avoid the 0 problem in compress increase 1 */
@@ -1070,6 +1078,7 @@ int datalen1, datalen2,datalen3;
 		it also writes the null terminator */
 	compress3(len_filename,p);
 	memcpy(p,filename,len_filename);p+=len_filename;
+	compress3(lmtime,p);
 	if(lentitle==len_filename)
 	{
 		if(memcmp(filename,title,lentitle)==0)
@@ -1112,11 +1121,9 @@ int filenum;
 int readdocproperties;
 {
 long pos;
-int total_len,len1,len2,len3,bytes,begin,lookup_path;
+int total_len,len1,len2,len3,mtime,bytes,begin,lookup_path;
 char *buffer,*p;
-char *buf1;
-char *buf2;
-char *buf3;
+char *buf1,*buf2,*buf3;
 struct file *fi;
 FILEOFFSET *fo;
 FILE *fp=indexf->fp;
@@ -1140,13 +1147,14 @@ FILE *fp=indexf->fp;
 		fread(buffer,total_len,1,fp);
 	}
 
-	uncompress3(lookup_path,p);  /* Index to lookup table of paths */
+	uncompress2(lookup_path,p);  /* Index to lookup table of paths */
 	lookup_path--;
-	uncompress3(len1,p);   /* Read length of filename */
+	uncompress2(len1,p);   /* Read length of filename */
 	buf1 = emalloc(len1);  /* Includes NULL terminator */
 	memcpy(buf1,p,len1);   /* Read filename */
 	p+=len1;
-	uncompress3(len2,p);   /* Read length of title */
+	uncompress2(mtime,p);  /* Read DateTime of doc */
+	uncompress2(len2,p);   /* Read length of title */
 		/* If 0 then filename == title */
 	if(!len2)
 		buf2=buf1;
@@ -1155,7 +1163,7 @@ FILE *fp=indexf->fp;
 		memcpy(buf2,p,len2);   /* Read title */
 		p+=len2;
 	}
-	uncompress3(len3,p);   /* Read length of summary */
+	uncompress2(len3,p);   /* Read length of summary */
 	if(!len3)
 		buf3=NULL;
 	else {
@@ -1163,9 +1171,9 @@ FILE *fp=indexf->fp;
 		memcpy(buf3,p,len3);   /* Read summary */
 		p+=len3;
 	}
-	uncompress3(begin,p);           /* Read start */
+	uncompress2(begin,p);           /* Read start */
 	begin--;
-	uncompress3(bytes,p);           /* Read size */
+	uncompress2(bytes,p);           /* Read size */
 	bytes--;
 
 	fi->fi.lookup_path = lookup_path;
@@ -1177,6 +1185,7 @@ FILE *fp=indexf->fp;
 	memcpy(fi->fi.filename+len1,buf1,len2);
 	fi->fi.filename[len1+len2]='\0';
 	if(buf1 != buf2) efree(buf1);
+	fi->fi.mtime= (unsigned long)mtime;
 	fi->fi.title = buf2;
 	fi->fi.summary = buf3;
 	fi->fi.start = begin;
@@ -1214,7 +1223,7 @@ struct buffer_pool *bp=NULL;
 		else
 			filep=indexf->filearray[i];
 		fileo=indexf->fileoffsetarray[i];
-		buffer=buildFileEntry(filep->fi.filename, filep->fi.title, filep->fi.summary, filep->fi.start, filep->fi.size, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
+		buffer=buildFileEntry(filep->fi.filename, filep->fi.mtime, filep->fi.title, filep->fi.summary, filep->fi.start, filep->fi.size, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
 		if(indexf->header.applyFileInfoCompression)
 		{
 			bp=zfwrite(bp,buffer,sz_buffer,&fileo->filelong,fp);
@@ -1362,6 +1371,7 @@ long nextposmetaname;
 FILE *fp=indexf->fp;
 struct file *fi=NULL;
 struct docPropertyEntry *docProperties=NULL;
+char ISOTime[20];
 
 	metaname=0;
 	nextposmetaname=0L;
@@ -1489,12 +1499,15 @@ struct docPropertyEntry *docProperties=NULL;
 	for (i=0; i<indexf->filearray_cursize; i++)
 	{
 		fi=readFileEntry(indexf,i+1,1);
+		
+  		strftime(ISOTime,sizeof(ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fi->fi.mtime));
+
 		fflush(stdout);
 		if(fi->fi.summary)
 		{
-			printf("%s \"%s\" \"%s\" %d %d",fi->fi.filename,fi->fi.title,fi->fi.summary,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
+			printf("%s \"%s\" \"%s\" \"%s\" %d %d",fi->fi.filename,ISOTime, fi->fi.title,fi->fi.summary,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
 		} else {
-			printf("%s \"%s\" \"\" %d %d",fi->fi.filename,fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
+			printf("%s \"%s\" \"%s\" \"\" %d %d",fi->fi.filename,ISOTime, fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
 		}
 		for(docProperties=fi->docProperties;docProperties;docProperties=docProperties->next) {
 			printf(" PROP_%d:\"%s\"",docProperties->metaName,docProperties->propValue); 
@@ -1694,12 +1707,8 @@ void printlong(fp, num)
 FILE *fp;
 long num;
 {
-int i;
-	if(!num) 
-		for(i=0;i<MAXLONGLEN;i++) fputc(0,fp);
-	else 
-		for(i=0;i<MAXLONGLEN;i++,num/=256) 
-			fputc((num % 256),fp);
+	PACKLONG(num);     /* Make the number portable */
+	fwrite(&num,MAXLONGLEN,1,fp);
 }
 
 /* 
@@ -1709,14 +1718,9 @@ int i;
 long readlong(fp)
 FILE *fp;
 {
-int i, val[MAXLONGLEN];
-long num=0;
-	for(i=0;i<MAXLONGLEN;i++) 
-		val[i]=fgetc(fp);
-	for(i=MAXLONGLEN;i>0;){
-		num*=256;
-		num+=val[--i];
-	}
+long num;
+	fread(&num,MAXLONGLEN,1,fp);
+	UNPACKLONG(num);     /* Make the number readable */
 	return(num);
 }
 

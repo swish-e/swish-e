@@ -24,7 +24,7 @@ static int lenword=0;
 static char *word=NULL;
 int i;
 struct metaEntry* list;
-
+	
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
 	if (docPropName != NULL)
@@ -127,7 +127,7 @@ char *summary=NULL;
 	if(fprop->stordesc)
 		summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
 	positionMeta =(int *)emalloc(metaNamelen*sizeof(int));

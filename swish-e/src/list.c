@@ -191,6 +191,7 @@ void init_header(INDEXDATAHEADER *header)
 	header->totalfiles=header->totalwords=0;
 	header->applyStemmingRules = 0;                 /* added 11/24/98 */
 	header->applySoundexRules = 0;                  /* added DN 09/01/99 */
+	header->applyFileInfoCompression = 0;			/* added 2000/01/01 jmruiz */
 	header->ignoreTotalWordCountWhenRanking = 0;    /* added 11/24/98 */
 	header->minwordlimit = MINWORDLIMIT;
         header->maxwordlimit = MAXWORDLIMIT;

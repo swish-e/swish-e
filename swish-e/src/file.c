@@ -616,6 +616,7 @@ IndexFILE *indexf=NULL;
 		else if (grabYesNoField(line, "FileInfoCompression", &indexf->header.applyFileInfoCompression))	{}
 		else if (grabYesNoField(line, "OkNoMeta", &sw->OkNoMeta))	{}
 		else if (grabYesNoField(line, "ReqMetaName", &sw->ReqMetaName))	{}
+		else if (grabYesNoField(line, "AsciiEntities", &sw->AsciiEntities))	{}
 		else if (!parseconfline(sw,line)) {
 			printf("Bad directive on line #%d: %s", linenumber, line );
 			baddirective = 1;
@@ -773,36 +774,26 @@ char *line;
 	return (*IndexingDataSource->parseconfline_fn)(sw,line);
 }
 
+
 char *read_stream(FILE *fp,int filelen)
 {
-int c=0,offset=0,bufferlen=0;
+int c=0,offset,bufferlen=0;
 unsigned char *buffer;
 	if(filelen)
 	{
 		buffer=emalloc(filelen+1);
 		fread(buffer,1,filelen,fp);
-		buffer[filelen]='\0';
 	} else {    /* if we are reading from a popen call, filelen is 0 */
 
-/* $$
---- this has definitly be rewritten!
---- this code gets real  slow (e.g. filtering a large pdf we get exp (n)
---- behavior, when 1. getc is slow, 2. realloc has to copy the memory to
---- a new, larger mem area... (rasc)
-*/
-
 		buffer=emalloc((bufferlen=MAXSTRLEN)+1);
-		while((c=fgetc(fp))!=EOF)
+		for(offset=0;(c=fread(buffer+offset,1,MAXSTRLEN,fp))==MAXSTRLEN;offset+=MAXSTRLEN)
 		{
-			if(offset==bufferlen)
-			{
-				bufferlen+=MAXSTRLEN;
-				buffer=erealloc(buffer,bufferlen+1);
-			}
-			buffer[offset++]=(unsigned char)c;
+			bufferlen+=MAXSTRLEN;
+			buffer=erealloc(buffer,bufferlen+1);
 		}
-		buffer[offset]='\0';
+		filelen=offset+c;
 	}
+	buffer[filelen]='\0';
 	return (char *)buffer;
 }
 

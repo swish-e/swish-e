@@ -58,7 +58,7 @@ void indexpath _AP((SWISH *, char *));
 int parseconfline _AP((SWISH *, char *));
 
 
-char *read_stream _AP((FILE *, int));
+char *read_stream _AP((FILE *, int ));
 
 /* Get/eval properties for file  (2000-11 rasc) */
 FileProp *file_properties (char *real_path, char *work_path, SWISH *sw);
