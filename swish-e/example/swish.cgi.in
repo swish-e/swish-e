@@ -698,11 +698,12 @@ sub set_default_debug_flags {
 sub set_debug {
     my $conf = shift;
 
-    unless ( $ENV{SWISH_DEBUG} ||$conf->{debug_options} ) {
-        $conf->{debug} = 0;
-        return;
-    }
-    
+    $conf->{debug} = 0;
+
+    my $debug_string =  $ENV{SWISH_DEBUG} ||$conf->{debug_options};
+    return unless $debug_string;
+
+
     my %debug = (
         basic       => [$SwishSearch::DEBUG_BASIC,   'Basic debugging'],
         command     => [$SwishSearch::DEBUG_COMMAND, 'Show command used to run swish'],
@@ -718,7 +719,7 @@ sub set_debug {
 
     my @debug_str;
 
-    for ( split /\s*,\s*/, $ENV{SWISH_DEBUG} ) {
+    for ( split /\s*,\s*/, $debug_string ) {
         if ( exists $debug{ lc $_ } ) {
             push @debug_str, lc $_;
             $conf->{debug} |= $debug{ lc $_ }->[0];
@@ -779,7 +780,7 @@ sub process_request {
 
 
     set_debug_input( $conf, $request_object )
-        if $conf->{debug};
+        if $conf->{debug} && !$ENV{GATEWAY_INTERFACE};
 
 
     # Create search object and build a query based on CGI parameters

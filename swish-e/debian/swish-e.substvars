@@ -1,1 +1,1 @@
-shlibs:Depends=libc6 (>= 2.3.1-1), libxml2 (>= 2.5.7-1), zlib1g (>= 1:1.1.4)
+shlibs:Depends=libc6 (>= 2.3.2-1), libxml2 (>= 2.5.7-1), zlib1g (>= 1:1.1.4)
