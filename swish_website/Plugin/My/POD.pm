@@ -222,7 +222,23 @@ sub view_verbatim {
 }
 
 
+# Thes first two fixup L<> links.
+# Pod::POM doesn't provide a way to get at the fragment for escaping,
+# so do it the hard way here.
+
+sub view_seq_link {
+    my $self = shift;
+    my $url = $self->SUPER::view_seq_link( @_ );
+    return unless $url;
+    $url = $1 . $self->escape_name($2) . $3 if $url =~ /^([^#]+#)([^"]+)(.+)$/;
+    $url =~ s/#item_/#/;
+    return $url;
+}
+
 # This needs work -- Pod::POM doesn't uri escape the href, for one thing.
+# This converts the file name part.  Can't call esacpe_name(), so do uri
+# escape -- but that will not validate with xhtml in some cases.  So this i
+# not really correct.
 
 sub view_seq_link_transform_path {
     my ( $self, $link ) = @_;
@@ -239,15 +255,7 @@ sub escape_uri {
 sub escape_name {
     my ($self, $text) = @_;
     $text =~ s/\W+/_/g;
-    return $text;
-}
-
-sub view_seq_link {
-    my $self = shift;
-    my $url = $self->SUPER::view_seq_link( @_ );
-    return unless $url;
-    $url = $1 . $self->escape_name($2) . $3 if $url =~ /^([^#]+#)([^"]+)(.+)$/;
-    return $url;
+    return lc $text;
 }
 
 
@@ -261,7 +269,12 @@ sub view_seq_link {
 
 # Modified version of item display that removes the item_ prefix and only takes the first
 # word
-
+#
+# Oh this won't work everywhere.  The problem is we have things like:
+#
+# =item * UndefinedMetaTags [error|ignore|INDEX|auto]
+#
+# so we take only the first word.  But that breaks if linking to multi-word item.
 
 sub view_item {
     my ($self, $item) = @_;
@@ -270,9 +283,13 @@ sub view_item {
 
     if (defined $title) {
         $title = $title->present($self) if ref $title;
-        $title =~ s/\*\s*//;
+
+        $title =~ s/^\*\s*//;  # Remove leading bullet
+
         if (length $title) {
-            my $anchor = $self->escape_name( $title );
+            my $anchor = $title;
+            $anchor =~ s/\s+.*$//;  # strip all trailing stuff from first space on
+            $anchor = $self->escape_name( $anchor );
             $title = qq{<a name="$anchor"></a><b>$title</b>};
         }
     }
