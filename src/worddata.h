@@ -30,7 +30,7 @@ typedef struct WORDDATA
     WORDDATA_Page      *last_get_page;  /* last page after a read (get) */
     struct WORDDATA_Page *cache[WORDDATA_CACHE_SIZE];
     int                page_counter;
-    unsigned long      lastid;
+    sw_off_t           lastid;
     int                num_Reusable_Pages;
     WORDDATA_Reusable_Page Reusable_Pages[WORDDATA_MAX_REUSABLE_PAGES];
     FILE *fp;
@@ -38,6 +38,6 @@ typedef struct WORDDATA
 
 WORDDATA *WORDDATA_Open(FILE *fp);
 void WORDDATA_Close(WORDDATA *bt);
-unsigned long WORDDATA_Put(WORDDATA *b, unsigned int len, unsigned char *data);
-unsigned char * WORDDATA_Get(WORDDATA *b, unsigned long global_id, unsigned int *len);
-void WORDDATA_Del(WORDDATA *b, unsigned long global_id, unsigned int *len);
+sw_off_t WORDDATA_Put(WORDDATA *b, unsigned int len, unsigned char *data);
+unsigned char * WORDDATA_Get(WORDDATA *b, sw_off_t global_id, unsigned int *len);
+void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, unsigned int *len);
