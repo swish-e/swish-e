@@ -97,6 +97,7 @@
 ** isoktitle moved to html.c
 **
 ** 2001-03-02 rasc   Header: write translatecharacters
+** 2001-03-14 rasc   resultHeaderOutput  -X?
 **
 **
 */
@@ -123,6 +124,7 @@
 #include "lst.h"
 #include "metanames.h"
 #include "result_sort.h"
+#include "result_output.h"
 #include "filter.h"
 
 
@@ -828,6 +830,7 @@ int emphasized;
 
 /* Prints the index information at the head of index files.
 ** 06/00 - If fp==stdout ptints the header to screen
+** 2001-03-14 rasc   "screen" print moved to result_output.c
 */
 
 
@@ -837,65 +840,41 @@ char *c,*tmp;
 long itmp;
 	
 	c = (char *) strrchr(filename, '/');
-	if (c == NULL && c + 1 != '\0') 
+	if ( !c || (c &&  !*(c+1)) ) 
 		c = filename;
 	else
 		c+=1;
-	if (fp!=stdout) {
-		itmp=SWISH_MAGIC; printlong(fp,itmp);
-		PrintHeaderStr(INDEXHEADER_ID,INDEXHEADER,fp);
-		PrintHeaderStr(INDEXVERSION_ID,INDEXVERSION,fp);
-		PrintHeaderInt(MERGED_ID,merged,fp);
-		PrintHeaderStr(NAMEHEADER_ID,header->indexn,fp);
-		PrintHeaderStr(SAVEDASHEADER_ID,c,fp);
-		PrintHeaderInt(COUNTSHEADER_ID,totalwords,fp);
-		itmp=totalfiles+1; compress1(itmp,fp);
-		tmp=getthedate();PrintHeaderStr(INDEXEDONHEADER_ID,tmp,fp); efree(tmp);
-		PrintHeaderStr(DESCRIPTIONHEADER_ID,header->indexd,fp);
-		PrintHeaderStr(POINTERHEADER_ID,header->indexp,fp);
-		PrintHeaderStr(MAINTAINEDBYHEADER_ID,header->indexa,fp);
-		PrintHeaderInt(DOCPROPENHEADER_ID,1,fp);
-		PrintHeaderInt(STEMMINGHEADER_ID,header->applyStemmingRules,fp);
-		PrintHeaderInt(SOUNDEXHEADER_ID,header->applySoundexRules,fp);
-		PrintHeaderInt(IGNORETOTALWORDCOUNTWHENRANKING_ID,header->ignoreTotalWordCountWhenRanking,fp);
-		PrintHeaderStr(WORDCHARSHEADER_ID,header->wordchars,fp);
-		PrintHeaderInt(MINWORDLIMHEADER_ID,header->minwordlimit,fp);
-		PrintHeaderInt(MAXWORDLIMHEADER_ID,header->maxwordlimit,fp);
-		PrintHeaderStr(BEGINCHARSHEADER_ID,header->beginchars,fp);
-		PrintHeaderStr(ENDCHARSHEADER_ID,header->endchars,fp);
-		PrintHeaderStr(IGNOREFIRSTCHARHEADER_ID,header->ignorefirstchar,fp);
-		PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
-		PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
-		PrintHeaderInt(FILEINFOCOMPRESSION_ID,header->applyFileInfoCompression,fp);
-		/* Jose Ruiz 06/00 Added this line to delimite the header */
-		PrintHeaderLookupTable (TRANSLATECHARTABLE_ID, header->translatecharslookuptable,
-			sizeof(header->translatecharslookuptable)/sizeof(int),fp);
-		fputc(0,fp);    
-	} else {
-		fprintf(fp, "%s\n", INDEXVERSION);
-		fprintf(fp, "# %s\n", (merged) ? "MERGED INDEX" : "");
-		fprintf(fp, "%s %s\n", NAMEHEADER, (header->indexn[0] == '\0') ? "(no name)" : header->indexn);
-		fprintf(fp, "%s %s\n", SAVEDASHEADER,c);
-		fprintf(fp, "%s %d words, %d files\n", COUNTSHEADER,totalwords,totalfiles);
-		fprintf(fp, "%s %s\n", INDEXEDONHEADER,header->indexedon);
-		fprintf(fp, "%s %s\n", DESCRIPTIONHEADER,(header->indexd[0] == '\0') ? "(no description)" : header->indexd);
-		fprintf(fp, "%s %s\n", POINTERHEADER,(header->indexp[0] == '\0') ? "(no pointer)" : header->indexp);
-		fprintf(fp, "%s %s\n",MAINTAINEDBYHEADER, (header->indexa[0] == '\0') ? "(no maintainer)" : header->indexa);
-		fprintf(fp, "%s %s\n", DOCPROPENHEADER, "Enabled");
-		fprintf(fp, "%s %d\n", STEMMINGHEADER, header->applyStemmingRules);
-		fprintf(fp, "%s %d\n", SOUNDEXHEADER, header->applySoundexRules);
-		fprintf(fp, "%s %d\n", IGNORETOTALWORDCOUNTWHENRANKING, header->ignoreTotalWordCountWhenRanking);
-		fprintf(fp, "%s %s\n", WORDCHARSHEADER, header->wordchars);
-		fprintf(fp, "%s %d\n", MINWORDLIMHEADER, header->minwordlimit);
-		fprintf(fp, "%s %d\n", MAXWORDLIMHEADER, header->maxwordlimit);
-		fprintf(fp, "%s %s\n", BEGINCHARSHEADER, header->beginchars);
-		fprintf(fp, "%s %s\n", ENDCHARSHEADER, header->endchars);
-		fprintf(fp, "%s %s\n", IGNOREFIRSTCHARHEADER, header->ignorefirstchar);
-		fprintf(fp, "%s %s\n", IGNORELASTCHARHEADER, header->ignorelastchar);
-		fprintf(fp, "%s %d\n", FILEINFOCOMPRESSION, header->applyFileInfoCompression);
-//$$$ todo: write translatecharstable  (table or string?)
 
-	}
+	itmp=SWISH_MAGIC; printlong(fp,itmp);
+	PrintHeaderStr(INDEXHEADER_ID,INDEXHEADER,fp);
+	PrintHeaderStr(INDEXVERSION_ID,INDEXVERSION,fp);
+	PrintHeaderInt(MERGED_ID,merged,fp);
+	PrintHeaderStr(NAMEHEADER_ID,header->indexn,fp);
+	PrintHeaderStr(SAVEDASHEADER_ID,c,fp);
+	PrintHeaderInt(COUNTSHEADER_ID,totalwords,fp);
+	itmp=totalfiles+1; compress1(itmp,fp);
+	tmp=getthedate();PrintHeaderStr(INDEXEDONHEADER_ID,tmp,fp); efree(tmp);
+	PrintHeaderStr(DESCRIPTIONHEADER_ID,header->indexd,fp);
+	PrintHeaderStr(POINTERHEADER_ID,header->indexp,fp);
+	PrintHeaderStr(MAINTAINEDBYHEADER_ID,header->indexa,fp);
+	PrintHeaderInt(DOCPROPENHEADER_ID,1,fp);
+	PrintHeaderInt(STEMMINGHEADER_ID,header->applyStemmingRules,fp);
+	PrintHeaderInt(SOUNDEXHEADER_ID,header->applySoundexRules,fp);
+	PrintHeaderInt(IGNORETOTALWORDCOUNTWHENRANKING_ID,header->ignoreTotalWordCountWhenRanking,fp);
+	PrintHeaderStr(WORDCHARSHEADER_ID,header->wordchars,fp);
+	PrintHeaderInt(MINWORDLIMHEADER_ID,header->minwordlimit,fp);
+	PrintHeaderInt(MAXWORDLIMHEADER_ID,header->maxwordlimit,fp);
+	PrintHeaderStr(BEGINCHARSHEADER_ID,header->beginchars,fp);
+	PrintHeaderStr(ENDCHARSHEADER_ID,header->endchars,fp);
+	PrintHeaderStr(IGNOREFIRSTCHARHEADER_ID,header->ignorefirstchar,fp);
+	PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
+	PrintHeaderStr(IGNORELASTCHARHEADER_ID,header->ignorelastchar,fp);
+	PrintHeaderInt(FILEINFOCOMPRESSION_ID,header->applyFileInfoCompression,fp);
+	/* Jose Ruiz 06/00 Added this line to delimite the header */
+	PrintHeaderLookupTable (TRANSLATECHARTABLE_ID, header->translatecharslookuptable,
+		sizeof(header->translatecharslookuptable)/sizeof(int),fp);
+	fputc(0,fp);
+
 }
 
 
@@ -1464,7 +1443,7 @@ char ISOTime[20];
 	fseek(fp, 0, 0);
 
 	readheader(indexf);
-	printheader(&indexf->header, stdout,indexf->line , indexf->header.totalwords , indexf->header.totalfiles, 0);
+	resultPrintHeader(sw,0, &indexf->header,indexf->line,0);
 
 	fieldnum = 0;
 	

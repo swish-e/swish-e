@@ -98,6 +98,7 @@
 ** 2001-03-03 rasc  altavista search, translatechar in headers
 ** 2001-03-13 rasc  definable logical operators via  sw->srch_op.[and|or|nor]
 **                  bugfix in parse_search_string handling...
+** 2001-03-14 rasc  resultHeaderOutput  -X?
 **
 */
 
@@ -291,24 +292,26 @@ char  *tmpwords;
 		if(indexlist->header.applySoundexRules)
 			searchwordlist = soundex_words_in_query(sw,indexlist,searchwordlist );
 			/* Echo index file, fixed search, stopwords */
-		if (sw->opt.extendedheader)
+
+		/* Result Header Output  (2001-03-14 rasc,  rewritten) */
+
+		resultHeaderOut(sw,2, "# Index File: %s\n",indexlist->line);
+		resultPrintHeader(sw,2, &indexlist->header,indexlist->header.savedasheader,0);
+		resultHeaderOut(sw,3,"# StopWords:");
+		for (k=0;k<indexlist->stopPos;k++)
+			resultHeaderOut(sw,3, " %s",indexlist->stopList[k]);
+		resultHeaderOut(sw,3, "\n");
+		resultHeaderOut(sw,2, "# Search Words: %s\n",words);
+		resultHeaderOut(sw,2, "# Parsed Words: ");
+		tmplist2=searchwordlist; 
+		while(tmplist2)
 		{
-			printf("# Index File: %s\n",indexlist->line);
-			printheader(&indexlist->header,stdout,indexlist->header.savedasheader, indexlist->header.totalwords, indexlist->header.totalfiles,0);
-			printf("# StopWords:");
-			for (k=0;k<indexlist->stopPos;k++)
-				printf(" %s",indexlist->stopList[k]);
-			printf("\n");
-			printf("# Search Words: %s\n",words);
-			printf("# Parsed Words: ");
-			tmplist2=searchwordlist; 
-			while(tmplist2)
-			{
-				printf("%s ",tmplist2->line);
-				tmplist2=tmplist2->next;
-			}
-			printf("\n");
+			resultHeaderOut(sw,2, "%s ",tmplist2->line);
+			tmplist2=tmplist2->next;
 		}
+		resultHeaderOut(sw,2, "\n");
+
+
 		/* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
 		searchwordlist = (struct swline *) expandphrase(searchwordlist,PhraseDelimiter);
 		searchwordlist = (struct swline *) fixnot(searchwordlist); 
@@ -1955,7 +1958,7 @@ int inphrase=0,ignore=0;
 		if(u_isnotrule(sw,pointer1->line) || isMetaNameOpNext(pointer2)) break;
 		if(!isstopword(indexf,pointer1->line) && !u_isrule(sw,pointer1->line)) break;
 		searchwordlist = pointer2; /* move the head of the list */
-		printf("# Removed stopword: %s\n",pointer1->line);
+		resultHeaderOut(sw,1, "# Removed stopword: %s\n",pointer1->line);
 			 /* Free line also !! Jose Ruiz 04/00 */
 		efree(pointer1->line);
 		efree(pointer1); /* toss the first point */
@@ -1989,7 +1992,7 @@ int inphrase=0,ignore=0;
 			}
 			if(ignore)
 			{
-				printf("# Removed stopword: %s\n",pointer2->line);    /* keep 1st of 2 rule */
+				resultHeaderOut(sw,2, "# Removed stopword: %s\n",pointer2->line);    /* keep 1st of 2 rule */
 				pointer1->next = pointer2->next;
 				pointer3 = pointer2->next;
 				efree(pointer2->line);
