@@ -33,6 +33,7 @@
 #include "result_output.h"
 
 
+
 /* Prints out the data in an index DB */
 
 void    DB_decompress(SWISH * sw, IndexFILE * indexf)
@@ -50,14 +51,12 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             filenum;
     unsigned long    nextposmetaname;
     struct  file *fi = NULL;
-    struct  docPropertyEntry *docProperties = NULL;
     char    ISOTime[20];
     char    word[2];
     char   *resultword;
     unsigned char   *worddata, *s;
     int     sz_worddata;
     long    wordID;
-	propEntry *prop;
 
 
     
@@ -294,16 +293,9 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             else
                 printf("%d: %s \"%s\" \"%s\" \"\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
 
-            for (j = 0; j < fi->docProperties->n; j++)
-			{ 
-				prop = fi->docProperties->propEntry[j];
-				     /* $$$$$ Mmm - this should be a while */
-				if(prop)
-				{
-						/* j is metaID */
-                    printf(" PROP_%d: \"%s\"\n", j, getDocPropAsString(indexf, fi, j));
-				}
-            }
+
+            dump_file_properties( indexf, fi );
+            
             printf("\n");
             freefileinfo(fi);
         }

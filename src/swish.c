@@ -103,7 +103,7 @@ static DEBUG_MAP debug_map[] = {
     /* These trace indexing */
     { "INDEXED_WORDS", DEBUG_WORDS, "Display words as they are indexed" },
     { "PARSED_WORDS", DEBUG_PARSED_WORDS, "Display words as they are parsed from source" },
-    
+    { "PROPERTIES", DEBUG_PROPERTIES, "Display properties associted with each file as they are indexed" },
 };
 
 unsigned int isDebugWord( char *word )

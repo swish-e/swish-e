@@ -456,6 +456,17 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fflush(stdout);
     }
 
+
+    if ( DEBUG_MASK & DEBUG_PROPERTIES )
+    {
+        IndexFILE *indexf = sw->indexlist;
+        struct file *fi = indexf->filearray[ indexf->filearray_cursize -1 ];
+
+        printf("\nProperties for file '%s':\n", fprop->real_path );
+        dump_file_properties( indexf, fi );
+    }
+
+
 	/* walk the hash list, and compress entries */
 	{
 	ENTRY  *ep;
@@ -840,6 +851,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
     indexf->filearray[indexf->filearray_cursize++] = newnode;
     indexf->header.totalfiles++;
+
 
 
     /* free string returned by ruleparse() */

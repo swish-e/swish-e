@@ -21,3 +21,4 @@
 */
 
 void    DB_decompress(SWISH * sw, IndexFILE * indexf);
+
