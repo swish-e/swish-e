@@ -36,6 +36,7 @@
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
+#define Z_BUFSIZE 16384
 #endif
 
 /* Surfing the web I found this:
@@ -693,10 +694,26 @@ void    CompressCurrentLocEntry(SWISH * sw, ENTRY * e)
 
 /* 2002/11 jmruiz
 ** Simple routine to compress worddata using zlib where available
+** 
+** 2004/06 jmruiz 
+** economic flag is for use less RAM
+** Trying to compress worddata needs some extra RAM in order to call
+** zlib's compress2 routine because this routine needs a buffer
+** for storing the compressed data.
+** So, if someone is trying to index in economic mode (-e switch)
+** he can experiment the annoying "Out of RAM" message if his computer
+** does not have enough RAM for allocating that buffer.
+** In order to fix it, I have tried the low level deflate routines of zlib's
+** (deflateInit, deflate and deflateEnd) with two local buffers:
+** local_buffer_in and local_buffer_out.
+** The original data is being copied in chunks to local_buffer_in
+** and compressed to local_buffer_out after each call to zlib's deflate
+** routine. The compressed chunks are ithen copied to the original worddata
+** area taking care of not to overrun the buffer.
 **
 ** On exit returns the new size of the compressed buffer
 */
-int compress_worddata(unsigned char *wdata,int wdata_size)
+int compress_worddata(unsigned char *wdata,int wdata_size, int economic)
 {
 #ifndef HAVE_ZLIB
     return wdata_size;
@@ -704,40 +721,160 @@ int compress_worddata(unsigned char *wdata,int wdata_size)
     unsigned char  *WDataBuf;     /* For compressing and uncompressing */
     uLongf          dest_size;
     int             zlib_status = 0;
-    unsigned char   local_buffer[8192];/* Just to avoid emalloc/efree overhead*/
+    int             off_wdata, len_chunk, off_out;
+    unsigned char   local_buffer_out[Z_BUFSIZE];/* Just to avoid emalloc/efree overhead and for deflate method */
+    unsigned char   local_buffer_in[Z_BUFSIZE];/* Just to avoid emalloc/efree overhead*/
 
 
     /* Don't bother compressing smaller items */
     if ( wdata_size < MIN_WORDDATA_COMPRESS_SIZE )
-    {
         return wdata_size;
+
+    if(economic)
+    {                    /* -e switch is set. Use deflate* routines */
+        z_stream z;      /* zlib compression stream */
+
+        z.zalloc = (alloc_func)0;   /* init zlib compression stream */
+        z.zfree = (free_func)0;
+        z.opaque = (voidpf)0;
+
+        if(Z_OK != deflateInit(&z, 9))
+            return wdata_size;
+
+        z.avail_in  = 0;
+        z.next_out = (Bytef*)local_buffer_out;
+        z.avail_out  = Z_BUFSIZE;
+
+        dest_size = 0;
+        off_wdata = 0;
+        off_out = 0;
+        for(;;)
+        {
+            if (off_wdata == wdata_size)
+                break;     /* No more data */ 
+            else
+            {
+                if (z.avail_in==0) 
+                {            /* Fill local_buffer_in with more data */
+                    len_chunk = Min(Z_BUFSIZE,(wdata_size - off_wdata));
+                    if(!len_chunk)  /* No more data to compress: exit */
+                        break;     
+                    memcpy(local_buffer_in,wdata + off_wdata, len_chunk);
+                    off_wdata += len_chunk;
+                    z.next_in = local_buffer_in;
+                    z.avail_in = len_chunk;
+                }
+            }
+                       /* Compress local_buffer_in */
+                       /* Z_NO_FLUSH flag achieves better results */
+            zlib_status = deflate(&z, Z_NO_FLUSH);
+                       /* get the size of compressed data */
+            len_chunk = Z_BUFSIZE - z.avail_out;
+            if(len_chunk)
+            {
+                       /* Check for buffer overrun */
+                if((off_out + len_chunk) >= off_wdata)
+                {
+                    /* We are in buffer overrun condition but if we are in 
+                    ** the first chunk we can recover the original data
+                    ** from local_buffer_in
+                    */
+                    if(off_wdata <= Z_BUFSIZE)
+                    {
+                        deflateEnd(&z);
+                        memcpy(wdata,local_buffer_in,wdata_size);   /* Do nothing - Retains data uncompressed */
+                        return wdata_size;   
+                    }
+                    else
+                        progerr("WordData Compression Error. Unable to compress worddata in economic mode. Remove switch -e from your command line or add \"CompressPositions Yes\" to your config file");
+                }
+                       /* Copy the compressed data onto the original buffer */
+                       /* off_out contains the current length of the total 
+                       ** compressed data
+                       */
+                memcpy(wdata + off_out, local_buffer_out, len_chunk);
+                off_out += len_chunk;
+            }
+                       /* reset local_buffer_out to next step */
+            z.next_out = (Bytef*)local_buffer_out;
+            z.avail_out  = Z_BUFSIZE;
+            if(zlib_status != Z_OK)
+                break;
+        }
+
+                       /* We have used Z_NO_FLUSH to achieve better
+                       ** results. So, we have to issue a deflate with
+                       ** Z_FINISH flag to flush the pending data
+                       ** in local_buffer_out
+                       */
+        for(;;)
+        {
+            zlib_status = deflate(&z, Z_FINISH);
+                       /* get the size of compressed data */
+            len_chunk = Z_BUFSIZE - z.avail_out;
+            if(len_chunk)
+            {
+                       /* Check for buffer overrun */
+                if((off_out + len_chunk) >= off_wdata)
+                {
+                    /* We are in buffer overrun condition but if we are in 
+                    ** the first chunk we can recover the original data
+                    ** from local_buffer_in
+                    */
+                    if(off_wdata <= Z_BUFSIZE)
+                    {
+                        deflateEnd(&z);
+                        memcpy(wdata,local_buffer_in,wdata_size);   /* Do nothing - Retains data uncompressed */
+                        return wdata_size;   
+                    }
+                    else
+                        progerr("WordData Compression Error. Unable to compress worddata in economic mode. Remove switch -e from your command line or add \"CompressPositions Yes\" to your config file");
+                }
+                       /* Copy the compressed data onto the original buffer */
+                       /* off_out contains the current length of the total 
+                       ** compressed data
+                       */
+                memcpy(wdata + off_out, local_buffer_out, len_chunk);
+                off_out += len_chunk;
+            }
+                       /* reset local_buffer_out to next step */
+            z.next_out = (Bytef*)local_buffer_out;
+            z.avail_out  = Z_BUFSIZE;
+            if(zlib_status != Z_OK)
+                break;
+        }
+        deflateEnd(&z); 
+        dest_size = off_out;
     }
-
-    /* Buffer should be +1% + a few bytes. */
-    dest_size = (uLongf)(wdata_size + ( wdata_size / 100 ) + 1000);  // way more than should be needed
-
-    /* Get an output buffer */
-    if( dest_size > sizeof(local_buffer) )
-        WDataBuf = (unsigned char *) emalloc((int)dest_size );
     else
-        WDataBuf = local_buffer;
-
-    zlib_status = compress2((Bytef *)WDataBuf, &dest_size, wdata, wdata_size, 9);
-    if ( zlib_status != Z_OK )
-        progerr("WordData Compression Error.  zlib compress2 returned: %d  Worddata size: %d compress buf size: %d", zlib_status, wdata_size, (int)dest_size);
-
-    /* Make sure it's compressed enough -- should check that destsize is not > MAXINT */
-    if ( (int)dest_size < wdata_size )
     {
-        memcpy(wdata,WDataBuf,(int)dest_size);
-    }
-    else
-    {
-        dest_size = wdata_size;
+        /* Buffer should be +1% + a few bytes. */
+        dest_size = (uLongf)(wdata_size + ( wdata_size / 100 ) + 1000);  // way more than should be needed
+
+        /* Get an output buffer */
+        if( dest_size > Z_BUFSIZE )
+            WDataBuf = (unsigned char *) emalloc((int)dest_size );
+        else
+            WDataBuf = local_buffer_out;
+
+        zlib_status = compress2((Bytef *)WDataBuf, &dest_size, wdata, wdata_size, 9);
+        if ( zlib_status != Z_OK )
+            progerr("WordData Compression Error.  zlib compress2 returned: %d  Worddata size: %d compress buf size: %d", zlib_status, wdata_size, (int)dest_size);
+
+        /* Make sure it's compressed enough -- should check that destsize is not > MAXINT */
+        if ( (int)dest_size < wdata_size )
+        {
+            memcpy(wdata,WDataBuf,(int)dest_size);
+        }
+        else
+        {
+            dest_size = wdata_size;
+        }
+
+        if ( WDataBuf != local_buffer_out)
+            efree(WDataBuf);
     }
 
-    if ( WDataBuf != local_buffer)
-        efree(WDataBuf);
     return (int)dest_size;
 #endif
 }

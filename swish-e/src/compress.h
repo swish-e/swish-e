@@ -47,7 +47,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 
 void CompressCurrentLocEntry(SWISH *, ENTRY *);
 
-int compress_worddata(unsigned char *,int );
+int compress_worddata(unsigned char *, int, int );
 void uncompress_worddata(unsigned char **,int *, int);
 void    remove_worddata_longs(unsigned char *,int *);
 
