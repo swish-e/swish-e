@@ -320,6 +320,7 @@ struct MOD_Index *idx = sw->Index;
     if(!idx->fp_loc_read)
     {
         fclose(idx->fp_loc_write);
+        idx->fp_loc_write = NULL;
         idx->fp_loc_read=fopen(idx->swap_location_name,FILEMODE_READ);
         if (!idx->fp_loc_read) {
             progerr("Could not open temp file %s",idx->swap_location_name);
@@ -376,6 +377,7 @@ struct MOD_Index *idx = sw->Index;
     if (!idx->fp_file_read)
     {
         fclose(idx->fp_file_write);
+        idx->fp_file_write = NULL;
         idx->fp_file_read=fopen(idx->swap_file_name,FILEMODE_READ);
         if (!idx->fp_file_read)
         {
