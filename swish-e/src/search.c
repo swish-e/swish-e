@@ -1853,16 +1853,40 @@ int resultmaxhits;
 				if (sw->useCustomOutputDelimiter)
 				{
 					if(extended_info)
-						printf("%d%s%s%s%s%s%s%s%s%s%s%s%s%d%s%d", sp->rank, sw->customOutputDelimiter, sp->indexf->line, sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->ISOTime, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sw->customOutputDelimiter,sp->summary, sw->customOutputDelimiter, sp->start, sw->customOutputDelimiter, sp->size);
+						printf("%d%s%s%s%s%s%s%s%s%s%s%s%d%s%d",
+						    sp->rank,           sw->customOutputDelimiter,
+						    sp->indexf->line,   sw->customOutputDelimiter,
+						    sp->filename,       sw->customOutputDelimiter,
+						    sp->ISOTime,        sw->customOutputDelimiter,
+						    sp->title,          sw->customOutputDelimiter,
+						    sp->summary,        sw->customOutputDelimiter,
+						    sp->start,          sw->customOutputDelimiter,
+						    sp->size);
 					else
-						printf("%d%s%s%s%s%s%d", sp->rank,  sw->customOutputDelimiter, sp->filename, sw->customOutputDelimiter, sp->title, sw->customOutputDelimiter, sp->size);
+						printf("%d%s%s%s%s%s%d",
+						    sp->rank,           sw->customOutputDelimiter,
+						    sp->filename,       sw->customOutputDelimiter,
+						    sp->title,          sw->customOutputDelimiter,
+						    sp->size);
 				}
 				else
 				{
 					if(extended_info)
-						printf("%d %s %s \"%s\" \"%s\" \"%s\" %d %d", sp->rank, sp->indexf->line, sp->filename,sp->ISOTime, sp->title,sp->summary,sp->start,sp->size);
+						printf("%d %s %s \"%s\" \"%s\" \"%s\" %d %d",
+						    sp->rank,
+						    sp->indexf->line,
+						    sp->filename,
+						    sp->ISOTime,
+						    sp->title,
+						    sp->summary,
+						    sp->start,
+						    sp->size);
 					else
-						printf("%d %s \"%s\" %d", sp->rank, sp->filename,sp->title,sp->size);
+						printf("%d %s \"%s\" %d",
+						    sp->rank,
+						    sp->filename,
+						    sp->title,
+						    sp->size);
 				}
 				printSearchResultProperties(sw, sp->Prop);
 				printf("\n");
