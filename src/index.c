@@ -797,6 +797,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* $$$ rename DB_CheckFileNum to something like FetchWordCount */
     existing_is_deleted = existing_filenum && indexf->header.removedfiles && !DB_CheckFileNum(sw,existing_filenum,indexf->DB);
 
+
+    if ( sw->verbose >= 5 )
+        printf("\nFile %s.  Existing filenum: %d.  Existing is deleted: %d\n",
+                fprop->real_path, existing_filenum, existing_is_deleted );
+
     switch(sw->Index->update_mode)
     {
 
