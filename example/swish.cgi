@@ -109,7 +109,7 @@ sub handler {
         display_props   => [qw/name email sent/],          # properties to display
 
 
-        # Resorts can be be sorted by any of the properties listed here
+        # Results can be be sorted by any of the properties listed here
         # They will be displayed in a drop-down list
         sorts           => [qw/swishrank subject name email sent/],
 
