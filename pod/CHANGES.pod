@@ -10,6 +10,16 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Single Wildcards
+
+Due to the way the query parser "works" a search of
+
+   "foo *"
+
+would result in a search of "foo*".  Now that results in:
+
+   err: Single wildcard not allowed as word 
+
 =item * Fixed search parsing bug
 
 Brad Miele reported that the word "andes" was not being found.  It was being
