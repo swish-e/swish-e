@@ -184,6 +184,8 @@ if(sw) {
 				for(i=0;i<tmpindexlist->metaCounter;i++)
 				{
                 			efree(tmpindexlist->metaEntryArray[i]->metaName);
+							if(tmpindexlist->metaEntryArray[i]->sorted_data)
+									efree(tmpindexlist->metaEntryArray[i]->sorted_data);
                 			efree(tmpindexlist->metaEntryArray[i]);
 				}
                 		efree(tmpindexlist->metaEntryArray);

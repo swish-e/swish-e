@@ -21,8 +21,8 @@ int *applyautomaticmetanames;
 int verbose;
 int OkNoMeta;
 {
-unsigned char *temp,*temp2,*temp3,c;
-int i,isendtag;
+unsigned char *temp,*temp2,c;
+int isendtag;
 struct metaEntry* e;
 
 	temp = (unsigned char *)tag;
@@ -76,7 +76,7 @@ struct metaEntry* e;
 		if(*applyautomaticmetanames) {
 			if (verbose) 
 				printf("\nAdding automatic MetaName %s\n",temp);
-			addMetaEntry(indexf,temp,0,applyautomaticmetanames); 
+			addMetaEntry(indexf,temp,0,0,0, applyautomaticmetanames); 
 		} else break;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */
@@ -106,7 +106,7 @@ int metaNamelen;
 int *positionMeta;    /* Position of word in file */
 int tmpposition=1;    /* Position of word in file */
 int currentmetanames;
-unsigned char *newp,*p,*tag, *endtag=NULL,*endproptag=NULL,*tempprop,*tempprop2;
+unsigned char *newp,*p,*tag, *endtag=NULL,*endproptag=NULL,*tempprop;
 int structure,dummy;
 struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameXML,*metaNameXML2;

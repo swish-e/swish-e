@@ -34,7 +34,8 @@
 #include "string.h"
 #include "index.h"
 #include "html.h"
-/* #### Added metanames.h */
+#include "hash.h"
+#include "compress.h"
 #include "merge.h"
 #include "docprop.h"
 #include "metanames.h"
@@ -177,7 +178,6 @@ char *p, *newp, *tag, *endtag;
 int structure;
 struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameEntry;
-int i;
 IndexFILE *indexf=sw->indexlist;
 char *Content=NULL,*Name=NULL,*summary=NULL;
 char *title=parsetitle(buffer,fprop->real_path);
@@ -473,7 +473,7 @@ struct metaEntry *e=NULL;
 		if(*applyautomaticmetanames) {
 			if (verbose) 
 				printf("\nAdding automatic MetaName %s\n",word);
-			addMetaEntry(indexf,word,0,applyautomaticmetanames); 
+			addMetaEntry(indexf,word,0,0,0, applyautomaticmetanames); 
 		} else break;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */
@@ -560,7 +560,7 @@ int wordcount=0; /* Word count */
 char *parseHtmlSummary(char *buffer,char *field,int size,SWISH *sw)
 {
 char *p,*q,*tag,*endtag,c;
-char *summary,*convsummary,*beginsum,*endsum,*tmp,*tmp2,*tmp3;
+char *summary,*beginsum,*endsum,*tmp,*tmp2,*tmp3;
 int found,lensummary;
 		/* Get the summary if no metaname/field is given */
 	if(!field && size)

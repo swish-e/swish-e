@@ -224,9 +224,9 @@ int sz_buffer,tmp;
 struct file *unSwapFileData(SWISH *sw)
 {
 struct file *fi;
-int len,len1,len2,len3,mtime,begin,bytes,lookup_path;
+int len,len1,lookup_path;
 char *buffer,*p;
-char *buf1,*buf2,*buf3;
+char *buf1;
 	fi=(struct file *)emalloc(sizeof(struct file));
 	if (!sw->fp_file_read)
 	{
@@ -259,7 +259,7 @@ char *buf1,*buf2,*buf3;
 
 int get_lookup_index(struct int_lookup_st **lst,int n,int *values)
 {
-unsigned int i,hash;
+int i,hash;
 struct int_st *is=NULL,*tmp=NULL;
 	for(i=0,hash=0;i<n;i++)
 		hash=hash*17+(values[i]-1);

@@ -16,9 +16,6 @@
 void freeDocProperties (docPropertyEntry **);
 unsigned char *storeDocProperties (docPropertyEntry *, int *);
 
-unsigned char* readNextDocPropEntry(char **, int *, int *);
-
-
 void addDocProperty (docPropertyEntry **, int , unsigned char* ,int );
 
 docPropertyEntry *fetchDocProperties (char * );
@@ -29,20 +26,17 @@ void addSearchResultSortProperty (SWISH *, char*, int );
 unsigned char* lookupDocPropertyValue (int , char *, int *);
 void printSearchResultProperties (SWISH *, FILE *f_out, char **);
 
-void swapDocPropertyMetaNames (docPropertyEntry *pe, struct metaMergeEntry *me);
+void swapDocPropertyMetaNames (docPropertyEntry *, struct metaMergeEntry *);
 
-char **getResultProperties (SWISH *, IndexFILE *, docPropertyEntry *);
-char **getResultSortProperties (SWISH *, IndexFILE *, docPropertyEntry *);
-int isSortProp (SWISH *);
-RESULT *sortresultsbyproperty (SWISH *, int );
-
-int initSortResultProperties (SWISH *);
+char **getResultProperties (RESULT *);
 
 docPropertyEntry *DupProps (docPropertyEntry *);
 
 void FreeOutputPropertiesVars (SWISH *);
 
-char *getPropAsString(IndexFILE *, docPropertyEntry *);
+char *getResultPropAsString(RESULT *, int);
+
+char *getDocPropAsString(IndexFILE*, struct file *, int);
 
 void getSwishInternalProperties(struct file *, IndexFILE *);
 
@@ -79,5 +73,7 @@ int isAutoProperty (char *propname);
 #define AUTOPROP_ID__STARTPOS     8
 #define AUTOPROPERTY_INDEXFILE    "swishdbfile"
 #define AUTOPROP_ID__INDEXFILE    9
+
+
 
 

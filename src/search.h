@@ -26,58 +26,56 @@
 ** <return value> <functionname> _AP( (<arg prototypes>) );
 */
 
-int SwishAttach _AP ((SWISH *, int));
+int SwishAttach(SWISH *, int);
 int search (SWISH *, char *, int);
-RESULT *SwishNext _AP ((SWISH *));
-struct swline *fixnot _AP ((struct swline *));
+RESULT *SwishNext(SWISH *);
+struct swline *fixnot(struct swline *);
 
-struct swline *expandphrase _AP ((struct swline *, char));
+struct swline *expandphrase(struct swline *, char);
 
-void readheader _AP ((IndexFILE *));
-void readoffsets _AP ((IndexFILE *));
-void readhashoffsets _AP ((IndexFILE *));
-void readstopwords _AP ((IndexFILE *));
-void readfileoffsets _AP ((IndexFILE *));
-void readMetaNames _AP ((IndexFILE *));
-void readlocationlookuptables _AP ((IndexFILE *));
-void readpathlookuptable _AP ((IndexFILE *));
+void readheader(IndexFILE *);
+void readoffsets(IndexFILE *);
+void readhashoffsets(IndexFILE *);
+void readstopwords(IndexFILE *);
+void readfileoffsets(IndexFILE *);
+void readMetaNames(IndexFILE *);
+void readlocationlookuptables(IndexFILE *);
+void readpathlookuptable(IndexFILE *);
 
-int countResults _AP ((RESULT *));
-RESULT *parseterm _AP ((SWISH *, int, int, IndexFILE *, struct swline **));
-RESULT *operate _AP ((SWISH *, RESULT *, int, char *, FILE *, int, int, IndexFILE *));
-RESULT *getfileinfo _AP ((SWISH *, char *, IndexFILE *, int));
-char *getfilewords _AP ((SWISH *sw, char, IndexFILE *));
+int countResults(RESULT *);
+RESULT *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
+RESULT *operate(SWISH *, RESULT *, int, char *, FILE *, int, int, IndexFILE *);
+RESULT *getfileinfo(SWISH *, char *, IndexFILE *, int);
+char *getfilewords(SWISH *sw, char, IndexFILE *);
 
-int isrule _AP ((char *));
-int isnotrule _AP ((char *));
-int isbooleanrule _AP ((char *));
-int isunaryrule _AP ((char *));
-int isMetaName _AP ((struct swline *));
-int getrulenum _AP ((char *));
+int isrule(char *);
+int isnotrule(char *);
+int isbooleanrule(char *);
+int isunaryrule(char *);
+int isMetaName(struct swline *);
+int getrulenum(char *);
 
-RESULT *andresultlists _AP ((SWISH *, RESULT *, RESULT *, int));
-RESULT *orresultlists _AP ((SWISH *, RESULT *, RESULT *));
-RESULT *notresultlist _AP ((SWISH *, RESULT *, IndexFILE *));
-RESULT *notresultlists _AP ((SWISH *, RESULT *, RESULT *));
-RESULT *phraseresultlists _AP ((SWISH *, RESULT *, RESULT *, int));
-RESULT *addtoresultlist _AP ((RESULT *, int, int, int, int, int *, IndexFILE *,SWISH *));
+RESULT *andresultlists(SWISH *, RESULT *, RESULT *, int);
+RESULT *orresultlists(SWISH *, RESULT *, RESULT *);
+RESULT *notresultlist(SWISH *, RESULT *, IndexFILE *);
+RESULT *notresultlists(SWISH *, RESULT *, RESULT *);
+RESULT *phraseresultlists(SWISH *, RESULT *, RESULT *, int);
+RESULT *addtoresultlist(RESULT *, int, int, int, int, int *, IndexFILE *,SWISH *);
 
-RESULT *getproperties _AP ((SWISH *, IndexFILE *, RESULT *));
+RESULT *getproperties(RESULT *);
 
-RESULT *addsortresult _AP ((SWISH *, RESULT *sp, RESULT *));
 
-RESULT *sortresultsbyrank _AP ((SWISH *, int structure));
-RESULT *sortresultsbyfilenum _AP ((RESULT *rp));
+RESULT *sortresultsbyfilenum(RESULT *);
 
-void getrawindexline _AP ((FILE *));
-int isokindexheader _AP ((FILE *));
-int wasStemmingAppliedToIndex _AP ((FILE *));
-int wasSoundexAppliedToIndex _AP ((FILE *));
+void getrawindexline(FILE *);
+int isokindexheader(FILE *);
+int wasStemmingAppliedToIndex(FILE *);
+int wasSoundexAppliedToIndex(FILE *);
 
-void freeresultlist _AP ((SWISH *));
-void freefileoffsets _AP ((SWISH *));
-void freeresult _AP ((SWISH *,RESULT *));
-void freefileinfo _AP ((struct file *));
-struct swline *ignore_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *,unsigned char));
-struct swline *stem_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
-struct swline *soundex_words_in_query _AP ((SWISH *,IndexFILE *, struct swline *));
+void freeresultlist(SWISH *);
+void freefileoffsets(SWISH *);
+void freeresult(SWISH *,RESULT *);
+void freefileinfo(struct file *);
+struct swline *ignore_words_in_query(SWISH *,IndexFILE *, struct swline *,unsigned char);
+struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
+struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);

@@ -252,7 +252,7 @@ char *w0;
 		{
 			if(sl->n>1) {
 				for(i=1;i<sl->n;i++)
-					addMetaEntry(indexf,sl->word[i], META_INDEX, &sw->applyautomaticmetanames);
+					addMetaEntry(indexf,sl->word[i], META_INDEX, 0, 0, &sw->applyautomaticmetanames);
 			} else progerr("MetaNames requires at least one value");
 		}
 		else if (strcasecmp(w0, "TranslateCharacters")== 0)  
@@ -271,7 +271,7 @@ char *w0;
 		{
 			if(sl->n>1) {
 				for(i=1;i<sl->n;i++)
-					addMetaEntry(indexf,sl->word[i], META_PROP, &sw->applyautomaticmetanames);
+					addMetaEntry(indexf,sl->word[i], META_PROP, 0, 0, &sw->applyautomaticmetanames);
 			} else progerr("PropertyNames requires at least one value");
 		}
 		else if (strcasecmp(w0, "IgnoreWords")== 0) {
