@@ -51,6 +51,8 @@ $Id$
 
 /* #### */
 
+static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, int case_sensitive);
+
 static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, SWISH *sw, char *name,
                                      char **parsed_tag, char *filename)
 {
@@ -399,7 +401,9 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         summary = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,strlen(p)+1);
         strcpy(summary,p);
         remove_newlines(summary);
+
 //$$$$ Todo: remove tag and content of scripts, css, java, embeddedobjects, comments, etc  
+
         remove_tags(summary);
 
         summary = sw_ConvHTMLEntities2ISO(sw, summary);
@@ -561,6 +565,164 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     return summary;
 }
 
+
+#define NO_TAG 0
+#define TAG_CLOSE 1
+#define TAG_FOUND 2
+
+/* Gets the content between "<parsetag>" and "</parsetag>" from buffer
+limiting the scan to the first max_lines lines (0 means all lines) */
+static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, int case_sensitive)
+{
+    register int c,
+            d;
+    register char *p,
+           *r;
+    char   *tag;
+    int     lencontent;
+    char   *content;
+    int     i,
+            j,
+            lines,
+            status,
+            tagbuflen,
+            totaltaglen,
+            curlencontent;
+    char   *begintag;
+    char   *endtag;
+    char   *newbuf;
+    char   *(*f_strstr) ();
+
+
+
+    if (case_sensitive)
+        f_strstr = strstr;
+    else
+        f_strstr = lstrstr;
+
+    lencontent = strlen(parsetag);
+    begintag = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, lencontent + 3);
+    endtag = (char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, lencontent + 4);
+    sprintf(begintag, "<%s>", parsetag);
+    sprintf(endtag, "</%s>", parsetag);
+
+    tag = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, 1);
+    tag[0] = '\0';
+
+    content = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, (lencontent = MAXSTRLEN) + 1);
+    lines = 0;
+    status = NO_TAG;
+    p = content;
+    *p = '\0';
+
+
+    for (r = buffer;;)
+    {
+        c = *r++;
+        if (c == '\n')
+        {
+            lines++;
+            if (max_lines && lines == max_lines)
+                break;
+        }
+        if (!c)
+            return NULL;
+
+        switch (c)
+        {
+        case '<':
+            tag = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, (tagbuflen = MAXSTRLEN) + 1);
+            totaltaglen = 0;
+            tag[totaltaglen++] = '<';
+
+            /* Collect until find '>' */
+            while (1)
+            {
+                d = *r++;
+                if (!d)
+                    return NULL;
+                if (totaltaglen == tagbuflen)
+                {
+                    newbuf = (char *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, tagbuflen + 200 + 1);
+		            memcpy(newbuf,tag,tagbuflen + 1);
+                    tag = newbuf;
+                    tagbuflen += 200;
+                }
+                tag[totaltaglen++] = d;
+                if (d == '>')
+                {
+                    tag[totaltaglen] = '\0';
+                    break;
+                }
+            }
+
+
+            if (f_strstr(tag, endtag))
+            {
+                status = TAG_CLOSE;
+                *p = '\0';
+
+                /* nulls to spaces */
+                for (i = 0; content[i]; i++)
+                    if (content[i] == '\n')
+                        content[i] = ' ';
+
+                /* skip over initial spaces and quotes */
+                for (i = 0; isspace((int) ((unsigned char) content[i])) || content[i] == '\"'; i++)
+                    ;
+
+                /* shift buffer to left */
+                for (j = 0; content[i]; j++)
+                    content[j] = content[i++];
+
+                content[j] = '\0';
+
+
+                /* remove trailing spaces, nulls, quotes */
+                for (j = strlen(content) - 1; ( j >= 0 ) && ( isspace((int) ((unsigned char) content[j])) || content[j] == '\0' || content[j] == '\"'); j--)
+                    content[j] = '\0';
+
+                /* replace double quotes with single quotes -- why? */
+                for (j = 0; content[j]; j++)
+                    if (content[j] == '\"')
+                        content[j] = '\'';
+
+                if (*content)
+                    return (content);
+                else
+                    return NULL;
+            }
+            else if (f_strstr(tag, begintag))
+            {
+                status = TAG_FOUND;
+            }
+            break;
+        default:
+            if (status == TAG_FOUND)
+            {
+                curlencontent = p - content;
+                if (curlencontent == lencontent)
+                {
+                    newbuf = Mem_ZoneAlloc(sw->Index->perDocTmpZone,(lencontent * 2) + 1);
+                    memcpy(newbuf,content,lencontent + 1);
+                    lencontent *= 2;
+                    content = newbuf;
+                    p = content + curlencontent;
+                }
+                *p = c;
+                p++;
+            }
+        }
+    }
+    return NULL;
+}
+
+
+
+
+
+
+
 /* Parses the words in a comment.
 */
 
@@ -597,7 +759,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
     char   *Content = NULL,
            *Name = NULL,
            *summary = NULL;
-    char   *title = parseHTMLtitle(sw, buffer);
+    char   *title = sw_ConvHTMLEntities2ISO(sw, parseHTMLtitle(sw, buffer));
 
     if (!isoktitle(sw, title))
         return -2;

@@ -56,7 +56,6 @@ StringList *parse_line (char *);
 */
 void freeStringList (StringList *);
 
-char *parsetag (SWISH *, char *, char *, int, int );
 
 int isnumstring (unsigned char*);
 void remove_newlines (char*);
