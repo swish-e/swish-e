@@ -207,9 +207,11 @@ or merge the indexes
 
 =item -v [0|1|2|3|4] (verbosity level)
 
-The C<-v> option can take a numerical value from 0 to 3.
-Specify 0 for completely silent operation and 3 for detailed reports.
-If no value is given then 3 is assumed.  See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
+The C<-v> option can take a numerical value from 0 to 4.
+Specify 0 for completely silent operation and 3 for detailed reports.  A level of
+4 and above is used to generate mostly debugging output.
+If no value is given then 3 is assumed.
+See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
 
 =back
 
