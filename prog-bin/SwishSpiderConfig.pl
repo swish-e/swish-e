@@ -233,56 +233,24 @@ sub filter_content {
 
     # If not filtered return false and doc will be ignored (not indexed)
     
-    return unless $filter->filter(
+    my $doc $filter->content(
         document => $content_ref,
         name     => $response->base,
         content_type => $content_type,
     );
+    return unless $doc;
+    # return unless $doc->was_filtered # could do this since checking for text/* above
+    return if $doc->is_binary;
 
     # nicer to use **char...
-    $$content_ref = ${$filter->fetch_doc};
+    $$content_ref = ${$doc->fetch_doc};
 
     # let's see if we can set the parser.
-    $server->{parser_type} = $filter->swish_parser_type || '';
+    $server->{parser_type} = $doc->swish_parser_type || '';
 
     return 1;
 }
 
-
-    
-
-# Here's othre ways to filter.
-
-# This converts PDF files into HTML.  The second parameter of
-# pdf2html tells which pfd info filed to set as <title>
-
-use pdf2html;  # included example pdf converter module
-sub pdf {
-   my ( $uri, $server, $response, $content_ref ) = @_;
-
-   return 1 unless $response->content_type eq 'application/pdf';
-
-   # for logging counts
-   $server->{counts}{'PDF transformed'}++;
-
-   $$content_ref = ${pdf2html( $content_ref, 'title' )};
-   $$content_ref =~ tr/ / /s;
-   return 1;
-}
-
-use doc2txt;  # included example pdf converter module
-sub doc {
-   my ( $uri, $server, $response, $content_ref ) = @_;
-
-   return 1 unless $response->content_type eq 'application/msword';
-
-   # for logging counts
-   $server->{counts}{'DOC transformed'}++;
-
-   $$content_ref = ${doc2txt( $content_ref )};
-   $$content_ref =~ tr/ / /s;
-   return 1;
-}
 
 # Must return true...
 
