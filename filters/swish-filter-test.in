@@ -262,10 +262,11 @@ swish-filter-test [options] <file or url>  <...>
 
  Options:
    -quiet           don't generate messages to stderr
-   -content         output content to stderr
+   -content         output content to stdout
    -(no)skip_binary skip output of binary files (default)
    -lines <num>     Number of lines of content to display to stderr if verbose
-   -headers         output with headers for swish-e -S prog method 
+   -headers         output with headers for swish-e -S prog method
+   -verbose         enable $ENV{FILTER_DEBUG} for verbose output
    -path            output @INC path to SWISH::Filter module
    -help            brief help message
    -man             full documentation
@@ -321,7 +322,7 @@ Note, the summary is limited to 1000 characters regardless of this option.
 Specifying -content will output full content to stdout.  The default is to only display
 a few lines.
 
-=item B<-(no)skip_binary
+=item B<-(no)skip_binary>
 
 The default is to not output content from binary files.  -noskip_binary will disable this.
 
@@ -355,5 +356,4 @@ Prints the manual page and exits.
 
 
 =cut
- 
 

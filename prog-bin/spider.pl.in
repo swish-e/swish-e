@@ -69,7 +69,7 @@ use constant MAX_WAIT_TIME  => 30;          # request time.
 sub UNIVERSAL::host { '' };
 sub UNIVERSAL::port { '' };
 sub UNIVERSAL::host_port { '' };
-
+sub UNIVERSAL::userinfo { '' };
 
     
 #-----------------------------------------------------------------------
@@ -214,7 +214,7 @@ sub process_server {
 
 
     # Now, set the OK host:port names
-    $server->{same} = [ $uri->canonical->authority ];
+    $server->{same} = [ $uri->canonical->authority || '' ];
     
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
 
@@ -878,17 +878,9 @@ sub check_link {
     $u->fragment( undef );
 
 
-    # This should not happen, but make sure we have a host to check against
-
-    unless ( $u->host ) {
-        print STDERR qq[ ?? <$tag $attribute="$u"> skipped because missing host name\n] if $server->{debug} & DEBUG_LINKS;
-        return;
-    }
-
-
     # Here we make sure we are looking at a link pointing to the correct (or equivalent) host
 
-    unless ( $server->{scheme} eq $u->scheme && $server->{same_host_lookup}{$u->canonical->authority} ) {
+    unless ( $server->{scheme} eq $u->scheme && $server->{same_host_lookup}{$u->canonical->authority||''} ) {
 
         print STDERR qq[ ?? <$tag $attribute="$u"> skipped because different host\n] if $server->{debug} & DEBUG_LINKS;
         $server->{counts}{'Off-site links'}++;
