@@ -22,6 +22,10 @@
 ** <return value> <functionname> _AP( (<arg prototypes>) );
 */
 
+
+#define CASE_SENSITIVE_ON 1
+#define CASE_SENSITIVE_OFF 0
+
 /* 06/00 Jose Ruiz
 ** Structure  StringList. Stores words up to a number of n
 */
@@ -66,7 +70,7 @@ StringList *parse_line _AP ((char *));
 */
 void freeStringList _AP ((StringList *));
 
-char *parsetag _AP ((char *, char *, int ));
+char *parsetag _AP ((char *, char *, int, int ));
 
 int isnumstring _AP ((unsigned char*));
 void remove_newlines _AP ((char*));

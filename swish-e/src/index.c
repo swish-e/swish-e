@@ -454,9 +454,11 @@ unsigned char c;
 	newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
 			/* Just to save a little memory */
 	if(strcmp(title,newnode->fi.filename)==0)
+	{
 		newnode->fi.title = newnode->fi.filename;
-	else
+	} else {
 		newnode->fi.title = (char *) estrdup(title);
+	}
 	if(summary)
 		newnode->fi.summary= (char *) estrdup(summary);
 	else
@@ -1174,7 +1176,7 @@ FILE *fp=indexf->fp;
 	memcpy(fi->fi.filename,indexf->pathlookup->all_entries[lookup_path]->val,len1);
 	memcpy(fi->fi.filename+len1,buf1,len2);
 	fi->fi.filename[len1+len2]='\0';
-	efree(buf1);
+	if(buf1 != buf2) efree(buf1);
 	fi->fi.title = buf2;
 	fi->fi.summary = buf3;
 	fi->fi.start = begin;

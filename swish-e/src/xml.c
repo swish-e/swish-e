@@ -210,15 +210,17 @@ int len;
 	}
 	else if(field)
 	{
-		if((tmp=parsetag(field, buffer, 0)))
+		if((tmp=parsetag(field, buffer, 0,CASE_SENSITIVE_ON)))
 		{
 			remove_tags(tmp);
+
 		}
 	}
 	if(tmp)
 	{
 		remove_newlines(tmp);
-		if(size && (len=strlen(tmp))>size) len=size;
+		len=strlen(tmp);
+		if(size && len>size) len=size;
 		summary=emalloc(len+1);
 		memcpy(summary,tmp,len);
 		summary[len]='\0';

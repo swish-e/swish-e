@@ -499,13 +499,13 @@ int len;
         return(dest);
 }
 
-#define TAG_OPEN 1
-#define TAG_CLOSE 2
-#define TAG_FOUND 4
+#define NO_TAG 0
+#define TAG_CLOSE 1
+#define TAG_FOUND 2
 
 /* Gets the content between "<parsetag>" and "</parsetag>" from buffer
 limiting the scan to the first max_lines lines (0 means all lines) */
-char *parsetag(char *parsetag, char *buffer, int max_lines)
+char *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive)
 {
 register int c, d;
 register char *p,*q,*r;
@@ -515,6 +515,12 @@ char *content;
 int i, j, lines, status, tagbuflen, totaltaglen, curlencontent;
 char *begintag;
 char *endtag;
+char *(*f_strstr)();
+
+	if(case_sensitive)
+		f_strstr=strstr;
+	else
+		f_strstr=lstrstr;
 
 	lencontent=strlen(parsetag);
 	begintag=emalloc(lencontent+3);
@@ -525,8 +531,9 @@ char *endtag;
 	tag = (char *) emalloc(1);
 	tag[0] = '\0';
 
-	content = (char *) emalloc((lencontent=MAXTITLELEN) +1);
-	lines = status = 0;
+	content = (char *) emalloc((lencontent=MAXSTRLEN) +1);
+	lines = 0;
+	status= NO_TAG;
 	p = content;
 	*p = '\0';
 
@@ -546,7 +553,6 @@ char *endtag;
 			tag = (char *) erealloc(tag,(tagbuflen=MAXSTRLEN)+1);
 			totaltaglen = 0;
 			tag[totaltaglen++] = '<';
-			status = TAG_OPEN;
 			
 			while (1) {
 				d = *r++;
@@ -565,7 +571,7 @@ char *endtag;
 				}
 			}
 			
-			if (lstrstr(tag, endtag)) {
+			if (f_strstr(tag, endtag)) {
 				status = TAG_CLOSE;
 				*p = '\0';
 				for (i = 0; content[i]; i++)
@@ -592,9 +598,9 @@ char *endtag;
 					return NULL;
 				}
 			}
-			else {
-				if (lstrstr(tag, begintag))
-					status = TAG_FOUND;
+			else if (f_strstr(tag, begintag))
+			{
+				status = TAG_FOUND;
 			}
 			break;
 		default:
@@ -607,12 +613,6 @@ char *endtag;
 				}
 				*p = c;
 				p++;
-			}
-			else {
-				if (status == TAG_CLOSE) {
-					efree(tag); efree(content); efree(endtag); efree(begintag);
-					return NULL;
-				}
 			}
 		}
 	}
