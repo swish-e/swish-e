@@ -38,7 +38,7 @@ char *BuildErrorString(char *buffer,int *bufferlen,char *fmt,char *var)
 
 void progerr(char *errstring)
 {
-	fprintf(stderr, "swish: %s\n", errstring);
+	fprintf(stderr, "err: %s\n.\n", errstring);
 	exit(-1);
 }
 

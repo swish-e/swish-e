@@ -58,7 +58,7 @@ int i;
 {
 void *p;
 int j;
-if (firsttime) progerr("Memory error. Calling erealloc without emalloc\n");
+if (firsttime) progerr("Memory error. Calling erealloc without emalloc");
 for(j=0;j<MAXMEMARRAY;j++) if (mem[j].p == ptr) break;
 if (j==MAXMEMARRAY) progerr("Error reallocating memory. Original pointer not found");	 
         if ((p = (void *) realloc(ptr, i)) == NULL)
@@ -88,7 +88,7 @@ void efree(ptr)
 void *ptr;
 {
 int j;
-if (firsttime) progerr("Memory error. Calling efree without emalloc or estrdup\n");
+if (firsttime) progerr("Memory error. Calling efree without emalloc or estrdup");
 for(j=0;j<MAXMEMARRAY;j++) if (mem[j].p == ptr) break;
 if (j==MAXMEMARRAY) progerr("Error freeing memory. Pointer not found");
         free(ptr);

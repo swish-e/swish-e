@@ -482,9 +482,8 @@ struct metaEntry *e=NULL;
 		return NULL;
 	}
 	else {
-		printf ("\nerr: INDEXING FAILURE\n");
-		printf ("err: The metaName %s does not exist in the user config file\n", word);
-		exit(0);
+		printf ("\nerr: INDEXING FAILURE: The metaName %s does not exist in the user config file\n", word);
+		exit(-1);
 	}
 	
 }

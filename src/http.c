@@ -532,7 +532,7 @@ int http_parseconfline(SWISH *sw,char *line)
 		}
 		if(!isdirectory(sw->spiderdirectory))
 		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in SpiderDirectory. %s is not a directory\n.\n",sw->spiderdirectory);
+			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in SpiderDirectory. %s is not a directory",sw->spiderdirectory);
 			progerr(sw->errorstr);
 		}
     	}

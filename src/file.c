@@ -318,7 +318,7 @@ IndexFILE *indexf=NULL;
 			sw->filterdir = SafeStrCopy(sw->filterdir,StringValue,&sw->lenfilterdir);
 			if(!isdirectory(sw->filterdir)) 
 			{
-				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in FilterDir. %s is not a directory\n.\n",sw->filterdir);
+				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in FilterDir. %s is not a directory",sw->filterdir);
 				progerr(sw->errorstr);
 			}
 			efree(StringValue);
@@ -531,7 +531,7 @@ IndexFILE *indexf=NULL;
 			sw->tmpdir = SafeStrCopy(sw->tmpdir,StringValue,&sw->lentmpdir);
 			if(!isdirectory(sw->tmpdir)) 
 			{
-				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in TempDir. %s is not a directory\n.\n",sw->tmpdir);
+				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in TempDir. %s is not a directory",sw->tmpdir);
 				progerr(sw->errorstr);
 			}
 		}
@@ -562,7 +562,7 @@ IndexFILE *indexf=NULL;
 					all meta tags are listed in Metanames */	
 			}
 			else 
-				progerr("Error: Values for UndefinedMetaTags are error, ignore, index or auto\n.\n");
+				progerr("Error: Values for UndefinedMetaTags are error, ignore, index or auto");
 		}
 /* #### */
 		else if (grabYesNoField(line, "FileInfoCompression", &indexf->header.applyFileInfoCompression))	{}

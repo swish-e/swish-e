@@ -154,14 +154,14 @@ long pos;
 	if(!sw->fp_loc_write)sw->fp_loc_write=fopen(sw->swap_location_name,FILEMODE_WRITE);
 	if (!sw->fp_loc_write)
 	{
-		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s\n.\n",sw->swap_location_name);
+		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s",sw->swap_location_name);
 		progerr(sw->errorstr);
 	}
 	pos=ftell(sw->fp_loc_write);
 	if(fwrite(&lenbuf,1,sizeof(int),sw->fp_loc_write)!=sizeof(int))
-		progerr("Cannot write to swap file\n.\n");	
+		progerr("Cannot write to swap file");	
 	if(fwrite(buf,1,lenbuf,sw->fp_loc_write)!=(unsigned int)lenbuf)
-		progerr("Cannot write to swap file\n.\n");	
+		progerr("Cannot write to swap file");	
 	return pos;
 }
 
@@ -184,7 +184,7 @@ int lenbuf;
 		sw->fp_loc_read=fopen(sw->swap_location_name,FILEMODE_READ);
 		if (!sw->fp_loc_read)
 		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s\n.\n",sw->swap_location_name);
+			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s",sw->swap_location_name);
 			progerr(sw->errorstr);
 		}
 	}
@@ -206,7 +206,7 @@ int sz_buffer,tmp;
 	if (!sw->fp_file_write) sw->fp_file_write=fopen(sw->swap_file_name,FILEMODE_WRITE);
 	if (!sw->fp_file_write)
 	{
-		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s\n.\n",sw->swap_file_name);
+		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s",sw->swap_file_name);
 		progerr(sw->errorstr);
 	}
 		
@@ -237,7 +237,7 @@ char *buf1,*buf2,*buf3;
 		sw->fp_file_read=fopen(sw->swap_file_name,FILEMODE_READ);
 		if (!sw->fp_file_read)
 		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s\n.\n",sw->swap_file_name);
+			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s",sw->swap_file_name);
 			progerr(sw->errorstr);
 		}
 	}
