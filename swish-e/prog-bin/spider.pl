@@ -616,7 +616,7 @@ sub default_urls {
                 print STDERR "$_[0] $content_type != (@content_types)\n";
                 return;
             },
-            validate_links => 1,
+            validate_links => $validate,
 
         }
     } @ARGV;
