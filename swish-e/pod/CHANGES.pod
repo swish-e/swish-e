@@ -162,8 +162,9 @@ Controls parsing and conversion of HTML entities.
 
 =item * New directive: DontBumpPositionOnMetaTags
 
-The word position is bumped when a new metatag is found -- this
-is to prevent phrases from matching across meta tags.
+The word position is now bumped when a new metatag is found -- this
+is to prevent phrases from matching across meta tags.  This directive will
+disable this behavior for the listed tags.
 
 This currently works only with XML parsing.
 
@@ -177,17 +178,22 @@ The builtin list of stop words has been removed. Use of the SwishDefault word
 will generate a warning. A sample file C<stopwords.txt> has been included if
 you wish to use these default words using C<IgnoreWords File: stopwords.txt>
 
-=item * New directive: Buzzwords
+=item * Change of the default for IgnoreTotalWordCountWhenRanking
 
-This implementation is not complete yet (and not yet documented).
+The default is now "yes".
+
+=item * New directive: Buzzwords
 
 Buzzwords are words that should be indexed as-is, without checking for stopwords,
 word length, WordCharacters, or any other of the word limiting features.  This allows indexing
-of things like C<C++>.
+of things like C<C++> when "+" is not listed in WordCharacters.
 
-Currenly, IgnoreFirstChar and IgnoreLastChar will be stripped before processing, but it may be
-necessary to have separate IgnoreFirst/Last for buzzwords since, for example, you may wish to
-all C<+> within swish words, but strip C<+> from the start/end of swish words, but not from the buzzword C<C++>.
+Currenly, IgnoreFirstChar and IgnoreLastChar will be stripped before processing Buzzwords.
+
+In the future we may use separate IgnoreFirst/Last settings for buzzwords since, for example, you may wish to
+index all C<+> within swish words, but strip C<+> from the start/end of swish words, 
+but not from the buzzword C<C++>.
+
 
 
 =back
