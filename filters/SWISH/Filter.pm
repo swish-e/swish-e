@@ -711,6 +711,7 @@ sub read_file {
 
     my $sym = gensym;
     open($sym, "<$doc" ) or die "Failed to open file '$doc': $!";
+    binmode $sym unless $self->{content_type} =~ /^text/;
     local $\ = undef;
     my $content = <$sym>;
     close $sym;
@@ -732,6 +733,9 @@ sub create_temp_file {
     return $doc unless ref $doc;
 
     my ( $fh, $file_name ) = File::Temp::tempfile();
+
+    # assume binmode if we need to filter...
+    binmode $fh unless $self->{content_type} =~ /^text/;
 
     print $fh $$doc or die "Failed to write to '$file_name': $!";
     close $fh or die "Failed to close '$file_name' $!";
