@@ -1,6 +1,0 @@
-swish-e (2.4.0-0) unstable; urgency=low
-
-  * Addition of Debian build system into swish-e
-
- -- Bill Moseley <moseley@hank.org>  Thu, 15 May 2003 12:06:51 -0700
-
