@@ -7,9 +7,6 @@
 # Let's just set the PATH once for the whole script
 PATH=/usr/local/cross-tools/bin:/usr/local/cross-tools/i586-mingw32msvc/bin:$PATH
 
-# Docs will fail if we don't bootstrap
-./bootstrap
-
 # Remove the cache for our configure script else we will have problems.
 rm -f config.cross.cache
 
@@ -24,10 +21,11 @@ rm -f config.cross.cache
         --with-zlib=$PWD/../zlib \
         --with-pcre=$PWD/../pcre
 
-# Build Docs
-make docs
-# Build Binaries; pushd in case something else fails
-pushd src
+# Build docs
+pushd docs
 make
 popd
+
+# Build Binaries; pushd in case something else fails
+make
 
