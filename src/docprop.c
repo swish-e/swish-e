@@ -216,7 +216,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 
 
     /* This is a memory leak if not using PROPFILE */
-
+#define RAW_RANK 1
     /* Some properties are generated during a search */
     if ( is_meta_internal( *meta_entry ) )
     {
@@ -227,12 +227,22 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
 #else
             int scale_factor = result->db_results->results->rank_scale_factor;
-            unsigned long rank_num = (unsigned long) (result->rank * scale_factor)/10000;
+            unsigned long rank_num;
 
-            if ( rank_num >= 999)
-                rank_num = 1000;
-            else if ( rank_num < 1)
-                rank_num = 1;
+            /* scale_factor is zero while sorting, so use the raw rank */
+            /* othersise, scale for display */
+
+            if ( scale_factor )
+            {
+                rank_num = (unsigned long) (result->rank * scale_factor)/10000;
+
+                if ( rank_num >= 999)
+                    rank_num = 1000;
+                else if ( rank_num < 1)
+                    rank_num = 1;
+            }
+            else
+                rank_num = result->rank;
 
             num = PACKLONG( rank_num );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
@@ -944,7 +954,8 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
     return 1;	    
 }
 
-// #define DEBUGPROP 1
+/* #define DEBUGPROP 1 */
+
 #ifdef DEBUGPROP
 static int insidecompare = 0;
 #endif

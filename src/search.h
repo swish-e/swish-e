@@ -100,7 +100,8 @@ struct s_RESULT
     FileRec     fi;             /* This is used to cache the properties and the seek index */
     int         rank;
     int         frequency;
-    int         tfrequency;     /* Total frequency of result */
+    int         tfrequency;     /* Total frequency of result OR result index */
+                                /* during result sorting tfrequency is used as an index number */
     int         posdata[1];     /* used for phrase searches */
 };
 
@@ -125,7 +126,7 @@ typedef struct
 {
     int              direction;  /* -1 for asc and 1 for desc */
     propEntry        **key;      /* pointer to an array of PropEntry's indexed by filenum - 1 */
-    struct metaEntry *property;  /* pointer to the metaEntry for this key */
+    struct metaEntry *property;  /* pointer to the metaEntry for this key - need for sorting propEntry */
     int              checked_presorted; /* flag to track if attempted to load presorted array */
 } SortData;
 

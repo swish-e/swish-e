@@ -50,6 +50,8 @@ $Id$
 *
 *  Will lazy load properties as needed when primary key matches
 *
+*  Just to keep things confusing, +1 = desc sort, -1 = ascending
+*  qsort's output is then reversed when rebuilding the linked list of results.
 *
 *
 *****************************************************************************/
@@ -98,15 +100,16 @@ static int compare_results_single_index(const void *s1, const void *s2)
 
 
             /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
-            
-            if ( sort_data->key[ r1->filenum - 1 ] == (propEntry *)-1 )
-                sort_data->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data->property, 0, sort_data->property->sort_len );            
+            /* tfrequency is used to store the index into the key (propery key) array */   
+         
+            if ( sort_data->key[ r1->tfrequency ] == (propEntry *)-1 )
+                sort_data->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data->property, 0, sort_data->property->sort_len );            
 
-            if ( sort_data->key[ r2->filenum - 1 ] == (propEntry *)-1 )
-                sort_data->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data->property, 0, sort_data->property->sort_len );
-                
+            if ( sort_data->key[ r2->tfrequency ] == (propEntry *)-1 )
+                sort_data->key[ r2->tfrequency ] = getDocProperty( r2, &sort_data->property, 0, sort_data->property->sort_len );
+
             /* finally compare the properties */
-            if ( (rc = Compare_Properties(  sort_data->property, sort_data->key[ r1->filenum - 1 ], sort_data->key[ r2->filenum - 1 ]) ) )
+            if ( (rc = Compare_Properties(  sort_data->property, sort_data->key[ r1->tfrequency ], sort_data->key[ r2->tfrequency ]) ) )
                 return ( rc * sort_data->direction );
         }
 
@@ -122,7 +125,6 @@ static int compare_results_single_index(const void *s1, const void *s2)
 *
 *  Must make sure that the sort keys are the same for each index 
 *  (e.g. same prop type, type of case compare)
-*
 *
 *
 *****************************************************************************/
@@ -160,14 +162,14 @@ int compare_results(const void *s1, const void *s2)
 
         /* Now load the properties if they do not already exist (a -1 pointer indicates undefined) */
             
-        if ( sort_data1->key[ r1->filenum - 1 ] == (propEntry *)-1 )
-            sort_data1->key[ r1->filenum - 1 ] = getDocProperty( r1, &sort_data1->property, 0, sort_data1->property->sort_len );            
+        if ( sort_data1->key[ r1->tfrequency ] == (propEntry *)-1 )
+            sort_data1->key[ r1->tfrequency ] = getDocProperty( r1, &sort_data1->property, 0, sort_data1->property->sort_len );            
 
-        if ( sort_data2->key[ r2->filenum - 1 ] == (propEntry *)-1 )
-            sort_data2->key[ r2->filenum - 1 ] = getDocProperty( r2, &sort_data2->property, 0, sort_data2->property->sort_len );
-                
+        if ( sort_data2->key[ r2->tfrequency ] == (propEntry *)-1 )
+            sort_data2->key[ r2->tfrequency ] = getDocProperty( r2, &sort_data2->property, 0, sort_data2->property->sort_len );
+
         /* finally compare the properties */
-        if ( (rc = Compare_Properties(  sort_data1->property, sort_data1->key[ r1->filenum - 1 ], sort_data2->key[ r2->filenum - 1 ]) ) )
+        if ( (rc = Compare_Properties(  sort_data1->property, sort_data1->key[ r1->tfrequency ], sort_data2->key[ r2->tfrequency ]) ) )
            return ( rc * sort_data1->direction );
 
     }
@@ -249,6 +251,9 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 *       - pre-load the array[0] elements with properties, if needed
 *         (i.e. when the first sort key is non-presorted   
 *
+*   Todo:
+*       This runs through the list results a number of times (plus qsort)
+*
 ****************************************************************************************/
 static int sort_single_index_results( DB_RESULTS *db_results )
 {
@@ -276,12 +281,17 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
     /* Need to tally up the number of results in this set */
     /* $$$$ can search.c do this when creating results? It's an extra loop */
+    /* perhaps it can't be done in search.c -- need to set an index number on the result */
 
     cur_result = db_results->resultlist->head;
 
     while ( cur_result )
     {
-        results_in_index++;
+        /* Set an index number which can be used to point into the sort_data->key array. */
+        /* tfrequency is not after rank calculations (or at all?) */
+
+        cur_result->tfrequency = results_in_index++;
+
         cur_result = cur_result->next;
     }
     
@@ -294,8 +304,14 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     if ( ! sort_data->property->sorted_data )  /* is array already loaded? */
         if ( !LoadSortedProps( db_results->indexf, sort_data->property ) )    /* can we load the array? */
         {
-            lookup_props = 1;  /* otherwise, we must read all the properties off disk */
-            /* Create the array */
+            /* otherwise, we must read all the properties off disk */
+
+            lookup_props = 1;  
+
+
+            /* Create the array the size of the number of results to hold *propEntry's */
+            /* This array sticks around until freeing the results object */
+
             sort_data->key = (propEntry **)emalloc( db_results->result_count * sizeof( propEntry *) );
             memset( sort_data->key, -1, db_results->result_count * sizeof( propEntry *) );
         }
@@ -306,26 +322,30 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 
     /* Now build an array to hold the results for sorting */
 
-    sort_array = (RESULT **) emalloc(results_in_index * sizeof(RESULT *));
+    sort_array = (RESULT **) emalloc(db_results->result_count * sizeof(RESULT *));
 
-    /* Build an array with the elements to compare and pointers to data */
+
+    /* Fill the array for qsort -- and load the properties, if they are needed */
+    /* This could be optimized for rank, since that's in the result structure */
+    /* but would add complexity to the sort functions -- need to benchmark or profile */
 
     cur_result = db_results->resultlist->head;
-    results_in_index = 0;
+
     
     while ( cur_result )
     {
-        sort_array[results_in_index++] = cur_result;
-        
+        sort_array[ cur_result->tfrequency ] = cur_result;
+
+        /* If can't use the presorted numbers ("meta->sorted_data") then load the properties */
         if ( lookup_props )
-            sort_data->key[ cur_result->filenum - 1 ] = 
+            sort_data->key[ cur_result->tfrequency ] =
                 getDocProperty( cur_result, &sort_data->property, 0, sort_data->property->sort_len );
 
         cur_result = cur_result->next;
     }
         
     /* Sort them */
-    swish_qsort(sort_array, results_in_index, sizeof(RESULT *), compare_results_single_index);
+    swish_qsort(sort_array, db_results->result_count, sizeof(RESULT *), compare_results_single_index);
 
         
 
@@ -335,7 +355,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
         RESULT *head = NULL;
         int j;
 
-        for (j = 0; j < results_in_index; j++)
+        for (j = 0; j < db_results->result_count; j++)
         {
             RESULT *r = sort_array[j];
 
@@ -363,14 +383,16 @@ static int sort_single_index_results( DB_RESULTS *db_results )
         db_results->sortresultlist = head;
         db_results->resultlist->head = head;
         db_results->currentresult = head;
+
+
     }
 
 
-        /* Free the memory of the array */
-        efree( sort_array );
+    /* Free the memory of the array */
+    efree( sort_array );
 
     
-    return results_in_index;
+    return db_results->result_count;
 }
 
 
