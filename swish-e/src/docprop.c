@@ -153,8 +153,11 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     if ( *meta_entry )
         metaID = (*meta_entry)->metaID;
 
-    else if( !(*meta_entry = getMetaIDData(&indexf->header, metaID )) )
+    else if ( !(*meta_entry = getMetaIDData(&indexf->header, metaID )) )
         return NULL;
+
+    if ( ! ( (*meta_entry)->metaType & META_PROP) )
+        progerr( "'%s' is not a PropertyName", (*meta_entry)->metaName );
 
 
     /* Read in the file info for this file - this can be a cached read */
@@ -853,6 +856,11 @@ int initSearchResultProperties(SWISH *sw)
 			if (indexf->propIDToDisplay[i] == 1)
 			{
 				progerr ("Unknown Display property name \"%s\"", srch->propNameToDisplay[i]);
+				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
+			}
+			else
+			{
+				progerr ("Name \"%s\" is not a PropertyName", srch->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 		}
