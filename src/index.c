@@ -1664,7 +1664,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         Mem_ZoneReset(sw->Index->totalLocZone);
 
     /* Proccess IgnoreLimit option */
-    getPositionsFromIgnoreLimitWords(sw);
+    //getPositionsFromIgnoreLimitWords(sw);
 
     n = lastPercent = 0;
     for (i = 0; i < totalwords; i++)
