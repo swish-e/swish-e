@@ -13,6 +13,21 @@ Most of this is just random notes that should be cleaned up!
 
 Jose:
 
+=head1 Index and Sort Numbers
+
+Jose:
+
+(Moseley: Dec 29, 2000)
+
+I think this would be a great feature -- it would be nice be able to specify which tags are numeric.
+Something like:
+
+    MetaNames subject title name age
+    PropertyNames name age
+    NumericNames age
+
+Then be able to select a range of numbers in a search, and sort numerically is the tag is also a property.
+
 =head1 Switch to Content-Types
 
 Moseley: Dec 28, 2000
