@@ -433,7 +433,7 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
             printf(" META_PROP:");
 
             if  ( is_meta_string(meta_entry) )
-                printf("STRING");
+                printf("STRING(case:%s)", is_meta_ignore_case(meta_entry)? "ignore" : "compare");
 
             else if ( is_meta_date(meta_entry) )
                 printf("DATE");

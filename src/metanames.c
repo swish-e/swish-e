@@ -66,16 +66,16 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
     { AUTOPROPERTY_REC_COUNT,    META_PROP | META_INTERNAL | META_NUMBER },
     { AUTOPROPERTY_RESULT_RANK,  META_PROP | META_INTERNAL | META_NUMBER },
     { AUTOPROPERTY_FILENUM,      META_PROP | META_INTERNAL | META_NUMBER },
-    { AUTOPROPERTY_INDEXFILE,    META_PROP | META_INTERNAL },
+    { AUTOPROPERTY_INDEXFILE,    META_PROP | META_INTERNAL | META_STRING },
 
     /* These meta names "real" meta names that are available by default */
     /* These can be commented out (e.g. to save disk space) and added back in with PropertyNames */
-    { AUTOPROPERTY_DOCPATH,      META_PROP},
-    { AUTOPROPERTY_TITLE,        META_PROP},
+    { AUTOPROPERTY_DOCPATH,      META_PROP | META_STRING },
+    { AUTOPROPERTY_TITLE,        META_PROP | META_STRING | META_IGNORE_CASE },
     { AUTOPROPERTY_DOCSIZE,      META_PROP | META_NUMBER},
     { AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE},
-    // { AUTOPROPERTY_SUMMARY,      META_PROP},
-    // { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},  // should be added only if LST is selected
+ // { AUTOPROPERTY_SUMMARY,      META_PROP | META_STRING},
+ // { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},  // should be added only if LST is selected
 };
 
 /* Add the Internal swish metanames to the index file structure */

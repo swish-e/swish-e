@@ -474,6 +474,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+
         if (strcasecmp(w0, "MetaNameAlias") == 0)
         {
             struct metaEntry *meta_entry;
@@ -560,11 +561,63 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 if ( getPropNameByName( &indexf->header, sl->word[i]) )
                     progerr("%s - name '%s' is already a PropertyName", w0, sl->word[i] );
 
-                addMetaEntry(&indexf->header, sl->word[i], META_PROP, 0);
+                addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING|META_IGNORE_CASE, 0);
             }
 
             continue;
         }
+
+
+        if (strcasecmp(w0, "PropertyNamesIgnoreCase") == 0)
+        {
+            struct metaEntry *m;
+            
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( !(m = getPropNameByName( &indexf->header, sl->word[i])) )
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING|META_IGNORE_CASE, 0);
+                else
+                {
+                    if ( !is_meta_string( m ) )
+                        progerr("%s - name '%s' is not a STRING type of Property", w0, sl->word[i] );
+
+                    m->metaType |= META_IGNORE_CASE;
+                }
+            }
+
+            continue;
+        }
+
+
+
+        if (strcasecmp(w0, "PropertyNamesCompareCase") == 0)
+        {
+            struct metaEntry *m;
+            
+            if (sl->n <= 1)
+                progerr("%s: requires at least one value", w0);
+
+            for (i = 1; i < sl->n; i++)
+            {
+                if ( !(m = getPropNameByName( &indexf->header, sl->word[i])) )
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_STRING, 0);
+                else
+                {
+
+                    if ( !is_meta_string( m ) )
+                        progerr("%s - name '%s' is not a STRING type of Property", w0, sl->word[i] );
+
+                    m->metaType &= ~META_IGNORE_CASE;
+                }
+            }
+
+            continue;
+        }
+
+
 
         if (strcasecmp(w0, "PropertyNamesNumeric") == 0)
         {
@@ -795,7 +848,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
                 /* Make sure there's a property name */
                 if ( !getPropNameByName( &indexf->header, AUTOPROPERTY_SUMMARY) )
-                    addMetaEntry(&indexf->header, AUTOPROPERTY_SUMMARY, META_PROP, 0);
+                    addMetaEntry(&indexf->header, AUTOPROPERTY_SUMMARY, META_PROP|META_STRING, 0);
             }
             else
                 progerr("%s: requires two or three values", w0);
