@@ -45,7 +45,7 @@ string properties.  The default is 100 characters.  There was a hard-coded
 from source (Windows).  The value of this is questionable -- it's intended to
 limit how much memory is used when sorting while indexing and searching. [moseley]
 
-=item * Fixed sorting issues with multple indexes and reverse sorting
+=item * Fixed sorting issues with multiple indexes and reverse sorting
 
 Reworked much of the sorting code.  Still to do is setting the character sort order. 
 [moseley]
