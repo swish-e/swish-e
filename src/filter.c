@@ -155,8 +155,8 @@ int     configModule_Filter(SWISH * sw, StringList * sl)
     if ( strcasecmp( w0, "FileFilterMatch") == 0 )
     {
         FilterList *filter;
-        
-        if ( sl->n < 3 )
+
+        if ( sl->n < 4 )
             progerr("%s requires at least three parameters: 'filterprog' 'options' 'regexp' ['regexp'...]\n");
 
 

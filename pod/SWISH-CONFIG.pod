@@ -2300,17 +2300,23 @@ Filters are probably easier to write than a C<-S prog> program.  Which you decid
 your requirements.  Examples of filter scripts can be found in the F<filter-bin> directory, and examples
 of C<-S prog> programs can be found in the F<prog-bin> directory.
 
-=item FileFilterMatch   *filter-prog*   *filter-options*  *regular expression(s)*
+=item FileFilterMatch   *filter-prog*   *filter-options*  *regex* [*regex* ...]
 
-This is simliar to C<FileMatch> except uses regular expressions to match against the file name.
-The *filter-prog* should be the path the the program.  Unlike C<FileFilter> this does B<not> use
+This is similar to C<FileMatch> except uses regular expressions to match against the file name.
+*filter-prog* is the path to the program.  Unlike C<FileFilter> this does B<not> use
 the C<FilterDir> option.  Also unlike C<FileFilter> you B<must> specify the *filter-options*.
 
 Examples:
 
     FileFilterMatch ./pdftotext "'%p' -" /\.pdf$/
 
-Or to specify more than one extension:
+Note that will also match a file called ".pdf", so you may
+want to use something that requires a filename that has more than just
+an extension.  For example:
+
+    FileFilterMatch ./pdftotext "'%p' -" /.\.pdf$/
+
+To specify more than one extension:
 
     FileFilterMatch ./check_title.pl "%p" /\.html$/  /\.htm$/
     
@@ -2323,7 +2329,7 @@ And to ignore case:
 
     FileFilterMatch ./check_title.pl %p /\.html?$/i
 
-You may also preceed an expression with "not" to negate regular expression that follows.
+You may also precede an expression with "not" to negate regular expression that follow.
 For example, to match files that do not have an extension:
 
     FileFilterMatch ./convert "%p %P" not /\..+$/
