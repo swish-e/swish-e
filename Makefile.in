@@ -44,8 +44,6 @@ realclean: clean
 	-(cd perl; make realclean)
 	-(cd doc; make realclean)
 
-distclean: realclean
-	(cd doc; make ultraclean)
 
 test:
 	(cd src; make test)
