@@ -336,7 +336,7 @@ static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
         memcpy(word,s,len); s += len;
         word[len] = '\0';
 
-        add_word_to_hash_table( table_ptr, word );
+        add_word_to_hash_table( table_ptr, word , HASHSIZE);
         efree(word);
     }
 }

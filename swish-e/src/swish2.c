@@ -123,6 +123,9 @@ static IndexFILE *free_index( IndexFILE *indexf )
     /* free the name of the index file */
     efree( indexf->line );
 
+    /* free the stem cache if any */
+    free_word_hash_table( &indexf->hashstemcache);
+  
     /* finally free up the index itself */
     efree( indexf );
 

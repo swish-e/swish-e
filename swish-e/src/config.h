@@ -341,6 +341,9 @@
 /* 2003/06 jmruiz -- Snowball's Stemmers activation */
 #define SNOWBALL 1
 
+/* 2003/08 jmruiz -- Use cache for stemming (snowball is so slow ...)
+#define STEMCACHE 1
+
 /* 2001/08 jmruiz -- File System sort flag - 0 means that filenames
 ** will not be indexed - 1 means that filenames will be indexed */
 #define SORT_FILENAMES 0

@@ -1532,7 +1532,7 @@ static void word_hash_config( StringList *sl, WORD_HASH_TABLE *table_ptr )
 
 
     for (i = 1; i < sl->n; i++)
-        add_word_to_hash_table( table_ptr, sl->word[i]);
+        add_word_to_hash_table( table_ptr, sl->word[i], HASHSIZE);
 }
 
 
@@ -1562,7 +1562,7 @@ static void    readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file)
         if (sl && sl->n)
         {
             for (i = 0; i < sl->n; i++)
-                add_word_to_hash_table( table_ptr, sl->word[i]);
+                add_word_to_hash_table( table_ptr, sl->word[i], HASHSIZE);
 
             freeStringList(sl);
         }

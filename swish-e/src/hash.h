@@ -17,15 +17,16 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-
+unsigned string_hash(char *, int);
+unsigned int_hash(int, int);
 unsigned hash (char *);
 unsigned numhash (int);
 unsigned bighash (char *);
 unsigned bignumhash (int);
 unsigned verybighash (char *);
 
-void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word);
-int is_word_in_hash_table( WORD_HASH_TABLE table, char *word);
+void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size);
+struct swline * is_word_in_hash_table( WORD_HASH_TABLE table, char *word);
 void free_word_hash_table( WORD_HASH_TABLE *table_ptr);
 
 

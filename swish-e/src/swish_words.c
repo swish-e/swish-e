@@ -396,15 +396,15 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
     {
         if ( new_words )
         {
-            new_words->nodep->next = temp->next;
-            new_words->nodep = temp->nodep;
+            new_words->other.nodep->next = temp->next;
+            new_words->other.nodep = temp->other.nodep;
              
             *original = new_words;
         } 
         else /* just delete first node */
         {
             if ( entry->next )
-                entry->next->nodep = entry->nodep; /* point next one to last one */
+                entry->next->other.nodep = entry->other.nodep; /* point next one to last one */
             *original = entry->next;
         }
     }
@@ -425,7 +425,7 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
             temp->next = new_words;
 
             /* set the end of the new string to point to the next entry */
-            new_words->nodep->next = entry->next;
+            new_words->other.nodep->next = entry->next;
         }
         else /* delete the entry */
             temp->next = temp->next->next;
@@ -454,7 +454,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
         return 0;
 
 
-    return is_word_in_hash_table( header->hashbuzzwordlist, word );
+    return (int)is_word_in_hash_table( header->hashbuzzwordlist, word );
 }
 
 /* I hope this doesn't live too long */
@@ -477,8 +477,8 @@ static void fudge_wildcard( struct swline **original, struct swline *entry )
 
 
     /* removing last entry - set pointer to new end */
-    if ( (*original)->nodep == wild_card )
-        (*original)->nodep = entry;
+    if ( (*original)->other.nodep == wild_card )
+        (*original)->other.nodep = entry;
 
     /* and point next to the one after next */
     entry->next = wild_card->next;

@@ -430,10 +430,16 @@ typedef struct ENTRY
 }
 ENTRY;
 
+typedef union
+{
+    struct swline *nodep;
+    char *data;
+} swline_other;
+
 struct swline
 {
     struct swline *next;
-    struct swline *nodep;
+    swline_other other;
     char   *line;
 };
 
@@ -469,6 +475,7 @@ typedef enum {
 
 typedef struct {
     struct swline  **hash_array;
+    int              hash_size;
     int              count;
 }  WORD_HASH_TABLE;
 
@@ -619,6 +626,9 @@ typedef struct IndexFILE
 
     /* Used by merge.c */
     int    *merge_file_num_map;
+
+    /* Cache for stemming */
+    WORD_HASH_TABLE hashstemcache;
 }
 IndexFILE;
 
