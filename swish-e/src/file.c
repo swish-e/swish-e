@@ -296,9 +296,22 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
 
     /* filelen was zero so we are reading from a handle */
 
+    /* 
+     * No, if filelen is zero and fprop->hasfilter is set, then we are
+     * reading from a filter and need to read the entire stream in.
+     * This broke when using -S prog and a zero length file came along. - moseley Mar 2005
+     */
+
     bufferlen = RD_BUFFER_SIZE;
     buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, bufferlen + 1);
     *buffer = '\0';
+
+
+    /* catches case where source file is zero bytes */
+    /* but filter may still produce outut */
+    if ( !fprop->hasfilter )
+        return (char *)buffer;
+
 
     offset = 0;
     while ( 1 )
