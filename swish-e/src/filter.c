@@ -34,12 +34,6 @@ $Id$
 #include "filter.h"
 
 
-#ifdef _WIN32
-#define pclose _pclose
-#define popen _popen
-#endif
-
-
 /* private module prototypes */
 
 static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
