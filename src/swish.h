@@ -665,7 +665,6 @@ typedef struct
     /* verbose flag */
     int     verbose;
     /* File counter */
-    int     filenum;
     int     bigrank;
     int     followsymlinks;
     /* Error vars */

@@ -35,7 +35,7 @@ struct file *thisFileEntry = NULL;
 IndexFILE *indexf=sw->indexlist;
 char *summary=NULL;
 
-	sw->filenum++;
+	sw->Index->filenum++;
 		/* external filters can output control chars. So remove them */
 	remove_controls(buffer);
 
@@ -52,10 +52,10 @@ char *summary=NULL;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
 	currentmetanames= 0; /* No metanames in TXT */
 	metaName[0]=1; positionMeta[0]=1; /* No metanames in TXT */
-	ftotalwords +=indexstring(sw, buffer, sw->filenum, structure, currentmetanames, metaName, positionMeta);
-	addtofwordtotals(indexf, sw->filenum, ftotalwords);
+	ftotalwords +=indexstring(sw, buffer, sw->Index->filenum, structure, currentmetanames, metaName, positionMeta);
+	addtofwordtotals(indexf, sw->Index->filenum, ftotalwords);
 	if(sw->swap_flag)
-		SwapFileData(sw, indexf->filearray[sw->filenum-1]);
+		SwapFileData(sw, indexf->filearray[sw->Index->filenum-1]);
 	if(summary) efree(summary);
 	return ftotalwords;
 }
