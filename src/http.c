@@ -34,8 +34,20 @@
 ** http.c
 */
 
-#ifndef _WIN32
+#ifdef HAVE_CONFIG_H
+#include "acconfig.h"
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_PROCESS_H
+#include <process.h>
 #endif
 
 #include <time.h>
@@ -346,11 +358,6 @@ char   *url_uri(char *url, int *plen)
     return url;
 }
 
-#ifdef _WIN32
-#include <stdlib.h>             /* _sleep() */
-#include <process.h>            /* _getpid() */
-#endif
-
 int     get(SWISH * sw, char *contenttype_or_redirect, time_t * plastretrieval, char *urlx)
 {
     static int lenbuffer = 0;
@@ -364,7 +371,7 @@ int     get(SWISH * sw, char *contenttype_or_redirect, time_t * plastretrieval, 
     char   *url = estrdup( urlx );
 
     
-
+/* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
 #ifdef _WIN32
     char   *spiderprog = "swishspider.pl";
     char    commandline[] = "perl.exe %s%s %s/swishspider@%ld \"%s\"";
@@ -383,11 +390,7 @@ int     get(SWISH * sw, char *contenttype_or_redirect, time_t * plastretrieval, 
     {
         int     num_sec = http->delay - (time(0) - *plastretrieval);
 
-#ifdef _WIN32
-        _sleep(num_sec);
-#else
         sleep(num_sec);
-#endif
     }
     *plastretrieval = time(0);
 
@@ -496,11 +499,7 @@ pid_t   lgetpid()
 
     if (pid == -1)
     {
-#ifdef _WIN32
-        pid = _getpid();
-#else
         pid = getpid();
-#endif
     }
     return pid;
 }
