@@ -540,12 +540,27 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
     if ( is_meta_string(meta_entry) )
     {
-        int len = (int) strlen( string );
-        int i;
         /* replace all non-printing chars with a space -- this is questionable */
-        for ( i = 0; i < len; i++ )
-            if ( !isprint( (int)((unsigned char)string[i]) ) )
-                string[i] = ' ';
+        // yep, sure is questionable -- isprint() kills 8859-1 chars.
+
+        char *source, *dest;
+        dest = string;
+        for( source = string; *source; source++ )
+        {
+            if ( (int)((unsigned char)*source) <= (int)' ' )
+            {
+                if ( dest > string && *(dest - 1) != ' ' )
+                {
+                    *dest = ' ';
+                    dest++;
+                }
+                continue;
+            }
+
+            *dest = *source;
+            dest++;
+        }
+        *dest = '\0';
             
         *encodedStr = string;
         return (int)strlen( string );
@@ -1436,7 +1451,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
 
     while ( i < strlen( propstr ) )
     {
-        if ( isprint( (int)propstr[i] ))
+        if ( 1 ) // ( isprint( (int)propstr[i] ))
             printf("%c", propstr[i] );
             
         else if ( propstr[i] == '\n' )
