@@ -112,10 +112,10 @@ sub fixup_pm_files {
     my @remove_files;
 
     for ( @{$self->{pod_files}} ) {
-        next unless /\.(pm|cgi|pl)$/;
+        next unless /\.(pm|cgi|pl)(\.in)?$/;
         my $orig_file = "$self->{src_root}/$_";
 
-        my ($name,$path,$suffix) = fileparse($_,'\.pm', '\.cgi', '\.pl');
+        my ($name,$path,$suffix) = fileparse($_,'\.pm', '\.cgi.in', '\.cgi', '\.pl');
 
         $_ = "$name.pod";
 
