@@ -1293,7 +1293,7 @@ int     getfilecount(IndexFILE * indexf)
 /* 2001/02 jmruiz - rewritten - all the proccess is made in one pass to achieve
 better performance */
 /* 2001-08 jmruiz - rewritten - adapted to new locations and zone schema */
-
+/* 2002-07 jmruiz - rewritten - adapted to new -e schema */
 
 int getNumberOfIgnoreLimitWords(SWISH *sw)
 {
@@ -1330,6 +1330,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
     struct IgnoreLimitPositions *fpos;
     struct MOD_Index *idx = sw->Index;
     unsigned char *p, *q, *compressed_data, flag;
+    int     last_loc_swap;
 
     stopwords = 0;
     totalwords = indexf->header.totalwords;
@@ -1346,11 +1347,6 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         fflush(stdout);
     }
 
-
-    if (sw->Index->swap_locdata)
-    {
-        progerr("Sorry, this routine is broken when using with -e\nIt will be fixed as soon as possible\nJose Ruiz\n");
-    }
 
     if (!estopmsz)
     {
@@ -1425,8 +1421,15 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             }
 
             if(sw->Index->swap_locdata)
-                unSwapLocDataEntry_old(sw,ep);
-
+            {
+                /* jmruiz - Be careful with this lines!!!! If we have a lot of words,
+			    ** probably this code can be very slow and may be rethought.
+                ** Fortunately, only a few words must usually raise a IgnoreLimit option
+                */
+				last_loc_swap = (verybighash(ep->word) * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
+			    unSwapLocData(sw, last_loc_swap, ep );
+            }
+      
             /* Run through location list to get positions */
             for(l=ep->allLocationList;l;)
             {
@@ -1458,7 +1461,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
                      chunk_size -= (p-q);
          
-                     /* Now build the list by file name of meta/position info */
+                     /* Now build the list by filenum of meta/position info */
 
                      if (!filepos[filenum - 1])
                      {
@@ -1476,7 +1479,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                      for (m = fpos->n * 2, k = 0; k < frequency; k++)
                      {
                          fpos->pos[m++] = metaID;
-                         fpos->pos[m++] = positions[k];
+                         fpos->pos[m++] = GET_POSITION(positions[k]);
                      }
 
                      fpos->n += frequency;
@@ -1564,7 +1567,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
                     for(k = i; k < ilp[r_filenum - 1]->n ; k++)
                     {
                         if(ilp[r_filenum - 1]->pos[2 * k] != metaID || 
-                           ilp[r_filenum - 1]->pos[2 * k + 1] > GET_POSITION(posdata[j]))
+                            ilp[r_filenum - 1]->pos[2 * k + 1] > GET_POSITION(posdata[j]))
                             break;  /* End */
                     }
                     posdata[j] = SET_POSDATA(GET_POSITION(posdata[j]) - (k-i), GET_STRUCTURE(posdata[j]));
@@ -1757,6 +1760,25 @@ void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     efree(ptmp);
 }
 
+void    coalesce_all_word_locations(SWISH * sw, IndexFILE * indexf)
+{
+    int     i;
+    ENTRY  *epi;
+
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
+    {
+        if ((epi = sw->Index->hashentries[i]))
+        {
+            while (epi)
+            {
+                coalesce_word_locations(sw, indexf, epi);
+                epi = epi->next;
+            }
+        }
+    }
+
+}
+
 /* Write the index entries that hold the word, rank, and other information.
 */
 
@@ -1791,8 +1813,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     /* This is not longer needed. So free it as soon as possible */
     Mem_ZoneFree(&sw->Index->perDocTmpZone);
 
-    for (i = 0; i < totalwords; i++)
-        coalesce_word_locations(sw, indexf, ep->elist[i]);
 
     /* This is not longer needed. So free it as soon as possible */
     Mem_ZoneFree(&sw->Index->currentChunkLocZone);
@@ -1884,7 +1904,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 /* Free not longer needed memory */
 				Mem_ZoneReset(sw->Index->totalLocZone);
 				last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
-			    unSwapLocData(sw, last_loc_swap );
+			    unSwapLocData(sw, last_loc_swap, NULL );
 			}
 		}
         if ((epi = sw->Index->hashentries[i]))
@@ -1964,8 +1984,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     /* This is not longer needed. So free it as soon as possible */
     Mem_ZoneFree(&sw->Index->perDocTmpZone);
 
-    for (i = 0; i < totalwords; i++)
-        coalesce_word_locations(sw, indexf, ep->elist[i]);
 
     /* This is not longer needed. So free it as soon as possible */
     Mem_ZoneFree(&sw->Index->currentChunkLocZone);

@@ -1298,6 +1298,9 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     int totalfiles = getfilecount(sw->indexlist);
     int stopwords = 0;
 
+	/* Coalesce all remaining locations */
+    coalesce_all_word_locations(sw, sw->indexlist);
+
     if ( process_stopwords )
     {
 
@@ -1314,7 +1317,10 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
                 int pos;
         
                 /* 05/00 Jose Ruiz  Adjust totalwords for IgnoreLimit ONLY  */
-                sw->indexlist->header.totalwords -= stopwords;
+                /* 2002-07 jmruiz
+                **This is already done in getPositionsFromIgnoreLimitWords
+                ** sw->indexlist->header.totalwords -= stopwords;
+                */
 
                 if (sw->indexlist->header.totalwords < 0)
                     sw->indexlist->header.totalwords = 0;

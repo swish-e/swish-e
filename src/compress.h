@@ -42,7 +42,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
 
 void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
-void unSwapLocData(SWISH *,int);
+void unSwapLocData(SWISH *,int, ENTRY *);
 void sortSwapLocData(SWISH * , ENTRY *);
 void unSwapLocDataEntry_old(SWISH *,ENTRY *);
 
