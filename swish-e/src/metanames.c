@@ -10,8 +10,15 @@ int metaType;   /* see metanames.h for values. All values must be "ored" */
 
 /* List of the internal metanames */
 static defaultMetaNames SwishDefaultMetaNames[]={
+    {META_FILENAME, META_PROP}, /* Filename No index (META_INDEX is not set) */
+				/* If you want filename indexed and searchable*/
+				/* just add META_INDEX to it */
+    {META_TITLE, META_PROP}, /* Title No index (META_INDEX is not set) */
+				/* If you want title indexed and searchable */
+				/* just add META_INDEX to it */
     {META_FILEDATE,META_INDEX | META_PROP | META_DATE},     /* File date */
-    {META_SIZE,META_INDEX | META_PROP | META_NUMBER},     /* File date */
+    {META_START,META_PROP | META_NUMBER},     /* File start */
+    {META_SIZE,META_PROP | META_NUMBER},     /* File size */
     {META_SUMMARY, META_PROP}, /* Summary No index (META_INDEX is not set) */
 				/* If you want summary indexed and searchable */
 				/* just add META_INDEX to it */

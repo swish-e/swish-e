@@ -374,10 +374,7 @@ docPropertyEntry *p;
 		{
 			if(indexf->propIDToDisplay[i]==p->metaName) break;
 		}
-		if(!p)
-			props[i] = estrdup("");
-		else
-                	props[i] = getPropAsString(indexf,p);
+                props[i] = getPropAsString(indexf,p);
 	}
 	return props;
 }
@@ -399,10 +396,7 @@ docPropertyEntry *p;
 		{
 			if(indexf->propIDToSort[i]==p->metaName) break;
 		}
-		if(!p)
-			props[i] = estrdup("");
-		else
-                	props[i] = getPropAsString(indexf,p);
+                props[i] = getPropAsString(indexf,p);
 	}
 	return props;
 }
@@ -599,6 +593,7 @@ char *getPropAsString(IndexFILE *indexf,docPropertyEntry *p)
 char *s=NULL;
 unsigned long i;
 struct metaEntry *q;
+	if(!p) return estrdup("");
 	q=getMetaIDData(indexf,p->metaName); /* BTW metaName is de ID !!!*/
 	if(!q) return estrdup("");
 
@@ -611,7 +606,7 @@ struct metaEntry *q;
 		i=*(unsigned long *)p->propValue;  /* read binary */
 						  /* as unsigned long */
 		UNPACKLONG(i);     /* Convert the portable number */
-				/* Conver to ISO datetime */
+				/* Convert to ISO datetime */
 		strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
 	} else if(is_meta_number(q))  /* check for a number */
 	{
@@ -619,7 +614,7 @@ struct metaEntry *q;
 		i=*(unsigned long *)p->propValue;  /* read binary */
 						  /* as unsigned long */
 		UNPACKLONG(i);     /* Convert the portable number */
-				/* Conver to ISO datetime */
+				/* Convert to string */
 		sprintf(s,"%.013lu",i);
 	} else s=estrdup("");
 	return s;
