@@ -837,7 +837,7 @@ is to make it easy to disable a server in a configuration file.
 =item debug
 
 Set this to a number to display different amounts of info while spidering.  Writes info
-to STDOUT.  Zero/undefined is no debug output.
+to STDERR.  Zero/undefined is no debug output.
 
 The following constants are defined for debugging.  They may be or'ed together to
 get the individual debugging of your choice.
