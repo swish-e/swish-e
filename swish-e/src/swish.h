@@ -996,6 +996,12 @@ int     SwishSeek(SWISH * sw, int pos);
 char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname);
 unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname);
 
+char  **SwishStopWords(SWISH * sw, char *filename, int *numstops);
+char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name);
+char   *SwishWords(SWISH * sw, char *filename, char c);
+
+
+
 
 
 /* These are only checked in dump.c */
