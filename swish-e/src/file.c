@@ -145,8 +145,19 @@ void normalize_path(char *path)
 
     while( len > 1 && path[len-1] == '/' )
     {
+#ifdef _WIN32
+        /* c:/ must end with / but other directories must not */
+        if( path[1] == ':' && len == 3 ){
+            break;
+        }
+        else {
+            path[len-1] = '\0';
+            len--;
+        }
+#else
         path[len-1] = '\0';
         len--;
+#endif
     }
 }
 
