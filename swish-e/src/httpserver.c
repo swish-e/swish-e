@@ -187,7 +187,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 			efree( robots_buffer );
 
 			//parserobotstxt(fp, server);
-			//fclose(fp);
+			fclose(fp); /* Have to close before unlink on Windows */
 		}
 		efree( file_prefix );
 		
