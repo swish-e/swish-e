@@ -316,26 +316,6 @@ int len;
 	return summary;
 }
 
-int isDontBumpMetaName(SWISH *sw,char *tag)
-{
-struct swline *tmplist=sw->dontbumptagslist;
-char *tmptag;
-	if(!tmplist) return 0;
-	tmptag=estrdup(tag);
-	tmptag=strtolower(tmptag);
-	while(tmplist)
-	{
-		if(strcmp(tmptag,tmplist->line)==0)
-		{
-			efree(tmptag);
-			return 1;
-		}
-		tmplist=tmplist->next;
-	}
-	efree(tmptag);
-	return 0;
-
-}
 
 int isJunkMetaName(SWISH *sw,char *tag)
 {

@@ -214,3 +214,25 @@ int     getMetaNameID(indexf, word)
             return (indexf->header.metaEntryArray[i]->metaID);
     return 1;
 }
+
+int isDontBumpMetaName(SWISH *sw,char *tag)
+{
+struct swline *tmplist=sw->dontbumptagslist;
+char *tmptag;
+	if(!tmplist) return 0;
+	tmptag=estrdup(tag);
+	tmptag=strtolower(tmptag);
+	while(tmplist)
+	{
+		if(strcmp(tmptag,tmplist->line)==0)
+		{
+			efree(tmptag);
+			return 1;
+		}
+		tmplist=tmplist->next;
+	}
+	efree(tmptag);
+	return 0;
+
+}
+

@@ -419,6 +419,9 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
         if ( isMetaNameOpNext(temp->next) )
         {
+
+            /* One current problem is that you can use internal metanames, */
+            /* but the "internal" meta data is only indexed when specified with MetaNames */
             if( !getMetaNameData( header, temp->line ) )
                 progerr("Meta name '%s' is invalid.", temp->line );
 
