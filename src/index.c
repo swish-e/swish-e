@@ -209,15 +209,30 @@ void freeModule_Index (SWISH *sw)
 
   if (isfile(idx->swap_file_name))
   {
-      remove(idx->swap_file_name);
-      /* tempnam internally calls malloc, so must use free not efree */
-      free(idx->swap_file_name);
+	if (idx->fp_file_read)
+		fclose(idx->fp_file_read);
+
+	if (idx->fp_file_write)
+		fclose(idx->fp_file_write);
+
+	remove(idx->swap_file_name);
+
+	/* tempnam internally calls malloc, so must use free not efree */
+	free(idx->swap_file_name);
   }
+
   if (isfile(idx->swap_location_name))
   {
-      remove(idx->swap_location_name);
-      /* tempnam internally calls malloc, so must use free not efree */
-      free(idx->swap_location_name);
+	if (idx->fp_loc_read)
+		fclose(idx->fp_loc_read);
+
+	if (idx->fp_loc_write)
+		fclose(idx->fp_loc_write);
+
+	remove(idx->swap_location_name);
+
+	/* tempnam internally calls malloc, so must use free not efree */
+	free(idx->swap_location_name);
   }
 
   if(idx->lentmpdir) efree(idx->tmpdir);        
