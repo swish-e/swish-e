@@ -451,7 +451,7 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
         efree( meta->metaName );
 
-#ifndef USE_BTREE
+#ifndef USE_PRESORT_ARRAY
         if ( meta->sorted_data)
             efree( meta->sorted_data );
 #endif

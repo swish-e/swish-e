@@ -1119,8 +1119,8 @@ Consider this line:
   struct 0x7 = count of 1 ( HEAD TITLE FILE ) x rank map of 8 = 8
 
 That means there was one instance of our word in the title of the file.
-It's context was in the <head> tagset, inside the <title>. 
-The <title> is the most specific structure, so it gets the
+It's context was in the E<lt>headE<gt> tagset, inside the E<lt>titleE<gt>. 
+The E<lt>titleE<gt> is the most specific structure, so it gets the
 RANK_TITLE score: 7. The base rank of 1 plus the structure score of 7 equals 8. If there
 had been two instances of this word in the title, then the score would have been C<8 + 8 = 16>.
 

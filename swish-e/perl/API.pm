@@ -135,25 +135,25 @@ create objects used for searching the associated index files.
 
 =over 4
 
-=item $swish = SWISH::API->new( $index_files );
+=item $swish = SWISH::API-E<gt>new( $index_files );
 
 This method returns a swish handle object blessed into the SWISH::API class.
 $index_files is a space separated list of index files to open.
 This always returns an object, even on errors.
 Caller must check for errors (see below).
 
-=item @indexes = $swish->IndexNames;
+=item @indexes = $swish-E<gt>IndexNames;
 
 Returns a list of index names associated with the swish handle.
-These were the indexes specified as a parameter on the SWISH::API->new call.
+These were the indexes specified as a parameter on the SWISH::API-E<gt>new call.
 This can be used in calls below that require specifying the index file name.
 
-=item @header_names = $swish->HeaderNames;
+=item @header_names = $swish-E<gt>HeaderNames;
 
 Returns a list of possible header names.  These can be used to lookup
 header values.  See C<SwishHeaderValue> method below.
 
-=item @values = $swish->HeaderValue( $index_file, $header_name );
+=item @values = $swish-E<gt>HeaderValue( $index_file, $header_name );
 
 A swish-e index has data associated with it stored in the index header.  This method
 provides access to that data.
@@ -163,7 +163,7 @@ are a single item, but some headers (e.g. "Stopwords") return a list.
 
 The list of possible header names can be obtained from the SwishHeaderNames method.
 
-=item $swish->RankScheme( 0|1 );
+=item $swish-E<gt>RankScheme( 0|1 );
 
 Similar to the -R option with the swish-e command line tool. The default
 ranking scheme is 0. Set it to 1 to experiment with other ranking features.
@@ -195,33 +195,33 @@ Again, all error methods need to be called on the parent swish object
 
 =over 4
 
-=item $swish->Error
+=item $swish-E<gt>Error
 
 Returns true if an error occurred on the last operation.  On errors the value returned
 is the internal Swish-e error number (which is less than zero).
 
-=item $swish->CriticalError
+=item $swish-E<gt>CriticalError
 
 Returns true if the last error was a critical error
 
-=item $swish->AbortLastError
+=item $swish-E<gt>AbortLastError
 
 Aborts the running program and prints an error message to STDERR.
 
-=item $str = $swish->ErrorString
+=item $str = $swish-E<gt>ErrorString
 
 Returns the string description of the current error (based on the value
-returned by $swish->Error).  This is a generic error string.
+returned by $swish-E<gt>Error).  This is a generic error string.
 
-=item $msg = $swish->LastErrorMsg
+=item $msg = $swish-E<gt>LastErrorMsg
 
 Returns a string with specific information about the last error, if any.
 For example, if a query of:
 
     badmeta=foo
 
-and "badmeta" is an invalid metaname $swish->ErrorString
-might return "Unknown metaname", but $swish->LastErrorMsg might return "badmeta".
+and "badmeta" is an invalid metaname $swish-E<gt>ErrorString
+might return "Unknown metaname", but $swish-E<gt>LastErrorMsg might return "badmeta".
 
 
 =back
@@ -230,7 +230,7 @@ might return "Unknown metaname", but $swish->LastErrorMsg might return "badmeta"
 
 =over 4
 
-=item $search = $swish->New_Search_Object( $query );
+=item $search = $swish-E<gt>New_Search_Object( $query );
 
 This creates a new search object blessed into the SWISH::API::Search class.  The optional
 $query parameter is a query string to store in the search object.
@@ -245,7 +245,7 @@ The advantage of this method is that a search object can be used for multiple qu
         ...
     }
 
-=item $results = $swish->Query( $query );
+=item $results = $swish-E<gt>Query( $query );
 
 This is a short-cut which avoids the step of creating a separate search object.
 It returns a results object blessed into the SWISH::API::Results class described below.
@@ -265,13 +265,13 @@ set of search parameters.
 
 =over 4
 
-=item $search->SetQuery( $query );
+=item $search-E<gt>SetQuery( $query );
 
 This will set (or replace) the query string associated with a search object.
 This method is typically not used as the query can be set when executing the
 actual query or when creating a search object.
 
-=item $search->SetStructure( $structure_bits );
+=item $search-E<gt>SetStructure( $structure_bits );
 
 This method may change in the future.
 
@@ -293,12 +293,12 @@ or in the E<lt>titleE<gt> tag use:
     $search->SetStructure( IN_HEAD | IN_TITLE );
 
 
-=item $search->PhraseDelimiter( $char );
+=item $search-E<gt>PhraseDelimiter( $char );
 
 Sets the character used as the phrase delimiter in searches.  The default
 is double-quotes (").
 
-=item $search->SetSearchLimit( $property, $low, $high );
+=item $search-E<gt>SetSearchLimit( $property, $low, $high );
 
 Sets a range from $low to $high inclusive that the give $property must be in
 to be selected as a result.  Call multiple times to set more than one limit
@@ -322,12 +322,12 @@ Once a query is run
 you cannot change the limit settings without calling the ResetSearchLimit
 method first.
 
-=item $search->ResetSearchLimit;
+=item $search-E<gt>ResetSearchLimit;
 
 Clears the limit parameters for the given object.  This must be called if
 the limit parameters need to be changed.
 
-=item $search->SetSort( $sort_string );
+=item $search-E<gt>SetSort( $sort_string );
 
 Sets the sort order of search results.  The string is a space separated
 list of valid document properties.  Each property may contain a qualifier
@@ -351,7 +351,7 @@ Searching generates a results object blessed into the SWISH::API::Results class.
 
 =over 4
 
-=item $results = $search->Execute( $query );
+=item $results = $search-E<gt>Execute( $query );
 
 Executes a query based on the parameters in the search object.
 $query is an optional query string to use for the search ($query replaces
@@ -372,38 +372,38 @@ A query creates a results object that contains information about the query
 
 =over 4
 
-=item $hits = $results->Hits;
+=item $hits = $results-E<gt>Hits;
 
 Returns the number of results for the query.  If zero and no errors were reported
-after calling $search->Execute then the query returned zero results.
+after calling $search-E<gt>Execute then the query returned zero results.
 
-=item @parsed_words = $results->ParsedWords( $index_name );
+=item @parsed_words = $results-E<gt>ParsedWords( $index_name );
 
 Returns an array of tokenized words and operators with stopwords removed.
 This is the array of tokens used by swish for the query.
 
 $index_name must match one of the index files specified on the creation of
-the swish object (via the SWISH::API->new call).
+the swish object (via the SWISH::API-E<gt>new call).
 
 The parsed words are useful for highlighting search terms in associated documents.
 
-=item @removed_stopwords = $results->RemovedStopwords( $index_name) ;
+=item @removed_stopwords = $results-E<gt>RemovedStopwords( $index_name) ;
 
 Returns an array of stopwords removed from a query, if any, for the index
 specified.
 
 $index_name must match one of the index files specified on the creation of
-the swish object (via the SWISH::API->new call).
+the swish object (via the SWISH::API-E<gt>new call).
 
-=item $results->SeekResult( $position );
+=item $results-E<gt>SeekResult( $position );
 
 Seeks to the position specified in the result list.  Zero is the first position
-and $results->Hits-1 is the last position.  Seeking past the end of results
+and $results-E<gt>Hits-1 is the last position.  Seeking past the end of results
 sets a non-critical error condition.
 
 Useful for seeking to a specific "page" of results.
 
-=item $result = $results->NextResult;
+=item $result = $results-E<gt>NextResult;
 
 Fetches the next result from the list of results.  Returns undef if no
 more results are available.  $result is an object blessed into the
@@ -417,7 +417,7 @@ The follow methods provide access to data related to an individual result.
 
 =over 4
 
-=item $prop = $result->Property( $prop_name );
+=item $prop = $result-E<gt>Property( $prop_name );
 
 Fetches the property specified for the current result.
 An invalid property name will cause an exception (which can be caught
@@ -428,7 +428,7 @@ Can return undefined.
 Date properties are returned as a timestamp.  Use something like Date::Format to
 format the strings (or just call scalar localtime( $prop ) ).
 
-=item $prop = $result->ResultPropertyStr( $prop_name );
+=item $prop = $result-E<gt>ResultPropertyStr( $prop_name );
 
 Fetches and formats the property.  Unlike above, invalid property names return the
 string "(null)" -- this will likely change to match the above (i.e. throw an exception).
@@ -436,10 +436,10 @@ string "(null)" -- this will likely change to match the above (i.e. throw an exc
 Undefined values are returned at the null string ("").
 
 
-=item $value = $result->ResultIndexValue( $header_name );
+=item $value = $result-E<gt>ResultIndexValue( $header_name );
 
 Returns the header value specified.  This is similar to
-$swish->HeaderValue(), but the index file is not specified
+$swish-E<gt>HeaderValue(), but the index file is not specified
 (it is determined by the result).
 
 =back
@@ -448,7 +448,7 @@ $swish->HeaderValue(), but the index file is not specified
 
 =over 4
 
-=item @metas = $swish->MetaList( $index_name );
+=item @metas = $swish-E<gt>MetaList( $index_name );
 
 Swish-e has "MetaNames" which allow searching by fields in the index.
 This method returns information about the Metanames.
@@ -469,7 +469,7 @@ The ID is the internal ID number used to represent the meta name.
 Type is the type of metaname.  Currently only one type exists and its
 value is zero.
 
-=item @props = $swish->PropertyList( $index_name );
+=item @props = $swish-E<gt>PropertyList( $index_name );
 
 Swish-e can store content or "properties" in the index and return this data
 when running a query.
@@ -493,9 +493,9 @@ The ID is the internal ID number used to represent the meta name.
 Type is the type of metaname.  Currently only one type exists and its
 value is zero.
 
-=item @propes = $result->PropertyList;
+=item @propes = $result-E<gt>PropertyList;
 
-=item @meta = $result->MetaList;
+=item @meta = $result-E<gt>MetaList;
 
 These also return a list of Property or Metaname description objects, but are
 accessed via a result record.  Since the result comes from a specific index file
@@ -503,7 +503,7 @@ there's no need to specify the index file name.
 
 
 
-=item $stemmed_word = $swish->StemWord( $word );
+=item $stemmed_word = $swish-E<gt>StemWord( $word );
 
 *Deprecated*
 
@@ -514,46 +514,46 @@ and uses a shared memory location in the SW_HANDLE object to store the stemmed
 word.  See below for other stemming options.
 
 
-=item $fuzzy_word = $swish->Fuzzy( $indexname, $word );
+=item $fuzzy_word = $swish-E<gt>Fuzzy( $indexname, $word );
 
 Like StemWord used to work, only it uses whatever stemmer is named in $indexname.
 Returns the same kind of fuzzy_word object as the FuzzyWord() method.
 
-=item $mode_string = $result->FuzzyMode;
+=item $mode_string = $result-E<gt>FuzzyMode;
 
 Returns the string (e.g. "Stemming_en", "Soundex", "None" ) indicating the stemming
 method used while indexing the given document.
 
-=item $fuzzy_word = $result->FuzzyWord( $word );
+=item $fuzzy_word = $result-E<gt>FuzzyWord( $word );
 
 Converts $word using the same fuzzy mode used to index the $result.
 Returns a SWISH::API::FuzzyWord object.  Methods on the object are used
 to access the converted words and other data as shown below.
 
-=item $count = $fuzzy_word->WordCount;
+=item $count = $fuzzy_word-E<gt>WordCount;
 
 Returns the number of output words.  Normally this is the value one, but may
 be more depending on the stemmer used.  DoubleMetaphone can return two strings
 for a single input string.
 
-=item $status = $fuzzy_word->WordError;
+=item $status = $fuzzy_word-E<gt>WordError;
 
 Returns any error code that the stemmer might set.  Normally, this return value
 is zero, indicating that the stemming/fuzzy operation succedded.  The values returned
 are defined in the swish-e source file /src/stemmer.h.
 
-=item @words = $fuzzy_word->WordList;
+=item @words = $fuzzy_word-E<gt>WordList;
 
 Returns the converted words from the stemming/fuzzy operation.  Normally, the array will
 contain a single element, although may contain more (i.e. if DoubleMetaphone is
 used and the input word returns two strings).
 
 In the event that a word does not stem (e.g. trying to stem a number), this method
-will return the original input word specified when $result->FuzzyWord( $word )
+will return the original input word specified when $result-E<gt>FuzzyWord( $word )
 was called.
 
 
-=item @parsed_words = $swish->SwishWords( $string, $index_file );
+=item @parsed_words = $swish-E<gt>SwishWords( $string, $index_file );
 
 * Not implemented *
 
@@ -593,7 +593,7 @@ it easy to access properties:
    }
 
 But as long as a SWISH::API::Result object is around, so is the entire list
-of results generated by the $handle->Query() call, and the index file is
+of results generated by the $handle-E<gt>Query() call, and the index file is
 still open (because a SWISH::API::Result depends on a SWISH::API::Results object, which
 depends on a SWISH::API object).
 

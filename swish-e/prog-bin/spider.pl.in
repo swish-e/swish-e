@@ -1709,7 +1709,7 @@ and then feed that into Swish-e.
 
 The spider does require Perl's LWP library and a few other reasonably common
 modules.  Most well maintained systems should have these modules installed.
-See  L<REQUIREMENTS> below for more information.  It's a good idea to check
+See  L</"REQUIREMENTS"> below for more information.  It's a good idea to check
 that you are running a current version of these modules.
 
 Note: the "prog" document source in Swish-e bypasses many Swish-e configuration
@@ -1728,11 +1728,11 @@ server.  See L</"CALLBACK FUNCTIONS"> below for more information.
 =head2 Robots Exclusion Rules and being nice
 
 By default, this script will not spider files blocked by F<robots.txt>.  In addition,
-The script will check for <meta name="robots"..> tags, which allows finer
+The script will check for E<lt>meta name="robots"..E<gt> tags, which allows finer
 control over what files are indexed and/or spidered.
 See http://www.robotstxt.org/wc/exclusion.html for details.
 
-This spider provides an extension to the <meta> tag exclusion, by adding a
+This spider provides an extension to the E<lt>metaE<gt> tag exclusion, by adding a
 B<NOCONTENTS> attribute.  This attribute turns on the C<no_contents> setting, which
 asks swish-e to only index the document's title (or file name if not title is found).
 
@@ -2345,7 +2345,7 @@ The above example is not very useful as it just creates a user callback function
 always returns a true value (the number 1).  But, it's just an example.
 
 The function calls are wrapped in an eval, so calling die (or doing something that dies) will just cause
-that URL to be skipped.  If you really want to stop processing you need to set $server->{abort} in your
+that URL to be skipped.  If you really want to stop processing you need to set $server-E<gt>{abort} in your
 subroutine (or send a kill -HUP to the spider).
 
 The first two parameters passed are a URI object (to have access to the current URL), and
@@ -2596,7 +2596,7 @@ be the same for every request.  That is, for a site-wide password.
 =back
 
 Note that you can create your own counters to display in the summary list when spidering
-is finished by adding a value to the hash pointed to by C<$server->{counts}>.
+is finished by adding a value to the hash pointed to by C<$server-E<gt>{counts}>.
 
     test_url => sub {
         my $server = $_[1];

@@ -615,7 +615,7 @@ Copy the resulting tarball to RPM's SOURCES directory and then run as a superuse
     rpmbuild -ba rpm/swish-e.spec
 
 
-You should have swish-e packages in your RPMS/<arch> directory.  [augur]
+You should have swish-e packages in your RPMS/$arch directory.  [augur]
 
 =item * Changed default perl binary location
 
@@ -747,7 +747,7 @@ if libxml2 is linked with Swish-e, otherwise fallback to the built-in parsers.
 
 Filters (FileFilter directive) did not work correctly when spidering
 with the -S http method.  A new filter system was developed and now
-filtering of documents (e.g. pdf->html or MSWord->text) is handled
+filtering of documents (e.g. pdf-E<gt>html or MSWord-E<gt>text) is handled
 by the src/SwishSpider program.
 
 When indexing with the -S http method only documents of content-type "text/*"
@@ -839,7 +839,7 @@ For example, to sort by the rank and title:
 =item * The header display has been slightly reorganized.
 
 If you are parsing output headers in a program then you may need to
-adjust your code.  There's a new switch <-H> to control the level of
+adjust your code.  There's a new switch '-H' to control the level of
 header output when searching.
 
 =item * Results are now combined when searching more than one index.
@@ -1137,7 +1137,7 @@ Available only with libxml2 parser.
 
 =item * New directive: ImageLinksMetaName
 
-Defines a metaname to use for indexing src links in <img> tags.
+Defines a metaname to use for indexing src links in E<lt>imgE<gt> tags.
 Allow you to search image pathnames within HTML pages.  Available only
 with libxml2 parser.
 
