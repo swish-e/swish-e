@@ -75,6 +75,11 @@ int     main(int argc, char **argv)
     swish_handle = SwishInit( index_file_list );
 
 
+    /* set ranking scheme. default is 0 */
+    
+    SwishRankScheme( swish_handle, 1 );
+
+
     /* Check for errors after every call */
 
     if ( SwishError( swish_handle ) )

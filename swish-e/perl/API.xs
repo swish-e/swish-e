@@ -86,7 +86,16 @@ SwishIndexNames(self)
             index_name++;
         }
 
+############################################
+# set RankScheme
+# karman - Wed Sep  1 09:22:50 CDT 2004
 
+void
+SwishRankScheme(self, scheme)
+    SW_HANDLE self
+    int scheme
+
+#############################################
 
 void
 SwishHeaderNames(self)
