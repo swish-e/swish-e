@@ -305,8 +305,8 @@
 ** properties), and after documents that do not include the property
 */
 
-#define RANK_TITLE		4
-#define RANK_HEADER		3
+#define RANK_TITLE		7
+#define RANK_HEADER		5
 #define RANK_META		3
 #define RANK_COMMENTS	1
 #define RANK_EMPHASIZED 0

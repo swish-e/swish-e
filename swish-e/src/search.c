@@ -1089,17 +1089,6 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
     if (res)
     {
         results->cur_rec_number++;
-
-
-
-        /* Normalize rank */
-        
-        res->rank = (int) (res->rank * results->rank_scale_factor)/10000;
-        
-        if (res->rank >= 999)  /* because of rounding error in integer divide */
-            res->rank = 1000;
-        else if (res->rank < 1)
-            res->rank = 1;
     }
     else
     {
@@ -1589,11 +1578,11 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
                     addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, indexf, db_results);
 
-                    /* Calculate rank now -- can't delay as an optimization */
-                    getrank( l_rp->tail );
-
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
+
+                    /* Calculate rank now -- can't delay as an optimization */
+                    getrank( l_rp->tail );
                 }
                 if(posdata != stack_posdata)
                     efree(posdata);
