@@ -45,7 +45,7 @@ depends = \
 	$(pod_dir)/SWISH-SEARCH.pod \
 	$(top_srcdir)/perl/API.pm \
 	$(top_srcdir)/prog-bin/spider.pl \
-	$(top_srcdir)/example/swish.cgi \
+	$(top_srcdir)/example/swish.cgi.in \
 	$(top_srcdir)/filters/SWISH/Filter.pm
 
 if BUILDDOCS

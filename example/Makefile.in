@@ -153,11 +153,13 @@ perlmodule_SCRIPTS = \
     modules/SWISH/ParseQuery.pm
 
 
+CLEANFILES = swish.cgi
+
 EXTRA_DIST = \
     README \
     SWISH-Stemmer-0.05.tar.gz \
     search.tt \
-    swish.cgi \
+    swish.cgi.in \
     swish.gif \
     swish.tmpl \
     $(perlmodule_SCRIPTS)
@@ -291,6 +293,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-rm -f Makefile $(CONFIG_CLEAN_FILES)
@@ -355,6 +358,13 @@ uninstall-am: uninstall-info-am uninstall-libexecSCRIPTS \
 	uninstall-info-am uninstall-libexecSCRIPTS \
 	uninstall-perlmoduleSCRIPTS
 
+swish.cgi: swish.cgi.in
+	@rm -f swish.cgi
+	@sed \
+		-e 's,@@perlmoduledir@@,$(libexecdir)/perl,' \
+		-e 's,@@swishbindir@@,$(bindir),' \
+		-e 's,@@perlbinary@@,$(PERL),' \
+			 $(srcdir)/swish.cgi.in > swish.cgi
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

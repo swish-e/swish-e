@@ -1,8 +1,9 @@
 These are example scripts that can be used with SWISH-E.
 
 swish.cgi   - example search script that allows displaying results
-              page-by-page.  Type `perldoc swish.cgi' from the
+              page-by-page.  Type `perldoc swish.cgi.in' from the
               examples directory for instructions.
+              Note: before installation the file is "swish.cgi.in"
 
 swish.gif   - Swish-e logo.
 
@@ -11,6 +12,7 @@ swish.tmpl  - HTML::Template file for use with swish.cgi.
 search.tt   - Template::Toolkit example template file.
 
 modules     - Directory containing required modules for use with swish.cgi.
+              The modules are installed into $libexecdir/swish-e/perl.
 
 
 

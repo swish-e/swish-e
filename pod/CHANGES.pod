@@ -1,4 +1,4 @@
-=head1 NAME
+/=head1 NAME
 
 CHANGES - List of revisions
 
@@ -98,7 +98,9 @@ You should have swish-e packages in your RPMS/<arch> directory.  [augur]
 
 =item * Changed default perl binary location
 
-Perl scripts provided with SWISH-E now use /usr/bin/perl by default.
+Most perl scripts provided with SWISH-E now use /usr/bin/perl by default.
+Note that some scripts are generated at build time, so those will look in the
+path for the location of the perl binary.
 
 =item * New Feature: MetaNamesRank
 
