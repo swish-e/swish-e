@@ -70,7 +70,8 @@ recommended to always include zlib support.
 B<Memory>
 
 Swish needs quite a bit of memory while indexing.  How much depends
-on what you are indexing.  The index is portable between platforms,
+on what you are indexing.  The index is portable between platforms
+(that use the same basic data type sizes),
 so you can index on a machine that has lots of memory available and
 move the index files to another machine for searching.  Use the C<-e>
 switch if you are short on memory.
@@ -105,6 +106,9 @@ in C<src/vms>.
 
 The Windows binary is distributed as a separate package from the source
 distribution.  See http://Swish-e.org for download information.
+
+Swish-e indexes are not portable between 32 and 64 bit platforms, but should
+be portable between machines with different "endian" types.
 
 =head1 INSTALLATION
 
