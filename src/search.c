@@ -1367,7 +1367,6 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             filenum = 0;
             do
             {
-
                 /* Read on all items */
                 uncompress_location_values(&s,&flag,&tmpval,&frequency);
                 filenum += tmpval;  
@@ -1381,6 +1380,14 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                 // frequency = number of times this words is in this document for this metaID
 
                 addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, sw);
+
+                // Temp fix
+                {
+                    struct RESULT *r1 = l_rp->tail;
+                    r1->rank =  r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                }
+
+                    
                 uncompress_location_positions(&s,flag,frequency,l_rp->tail->posdata);
 
             } while ((unsigned long)(s - buffer) != nextposmetaname);
@@ -1585,24 +1592,29 @@ RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, 
 
             if(r1->rank == -1)
                 r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+
             if(r2->rank == -1)
                 r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->indexf, r2->filenum );
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
-            /*
-               * Storing all positions could be useful
-               * in the future
-             */
+            
 
             if(!new_results_list)
                 new_results_list = newResultsList(sw);
 
             addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, r1->indexf, sw);
+
+
+            /* Storing all positions could be useful in the future  */
+
             CopyPositions(new_results_list->tail->posdata, 0, r1->posdata, 0, r1->frequency);
             CopyPositions(new_results_list->tail->posdata, r1->frequency, r2->posdata, 0, r2->frequency);
+
+
             r1 = r1->next;
             r2 = r2->next;
         }
+
         else if (res > 0)
         {
             r2 = r2->next;
@@ -1622,6 +1634,9 @@ RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, 
                On input, both result lists r1 and r2 must be sorted by filenum
                On output, the new result list remains sorted
 
+               rank is combined for matching files.  That is,
+               "foo OR bar" will rank files with both higher.
+
 */
 
 
@@ -1635,10 +1650,14 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
     RESULT_LIST *new_results_list = NULL;
 
 
+    /* If either list is empty, just return the other */
     if (l_r1 == NULL)
         return l_r2;
+
     else if (l_r2 == NULL)
         return l_r1;
+
+    /* Look for files that have both words, and add up the ranks */
 
     r1 = l_r1->head;
     r2 = l_r2->head;
@@ -1656,7 +1675,8 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
             rp = r2;
             r2 = r2->next;
         }
-        else
+
+        else /* Matching file number */
         {
             /* Compute rank if not yet computed */
             if(r1->rank == -1)
@@ -1665,6 +1685,9 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
             if(r2->rank == -1)
                 r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->posdata, r2->indexf, r2->filenum );
 
+
+            /* Create a new RESULT - Should be a function to creeate this, I'd think */
+            
             rp = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (r1->frequency + r2->frequency) * sizeof(int));
             memset( rp, 0, sizeof(RESULT));
             rp->fi.filenum = rp->filenum = r1->filenum;
@@ -1674,38 +1697,39 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
             rp->frequency = r1->frequency + r2->frequency;
             rp->indexf = r1->indexf;
 
+            
+            /* save the combined position data in the new result.  (Would freq ever be zero?) */
             if (r1->frequency)
-            {
                 CopyPositions(rp->posdata, 0, r1->posdata, 0, r1->frequency);
-            }
+
             if (r2->frequency)
-            {
                 CopyPositions(rp->posdata, r1->frequency, r2->posdata, 0, r2->frequency);
-            }
 
             r1 = r1->next;
             r2 = r2->next;
         }
+
+
+        /* Now add the result to the output list */
+        
         if(!new_results_list)
             new_results_list = newResultsList(sw);
+
         addResultToList(new_results_list,rp);
     }
+
+
     /* Add the remaining results */
-    tmp = NULL;
-    if(r1)
-    {
-        tmp = r1;
-    }
-    else if(r2)
-    {
-        tmp = r2;
-    }
+
+    tmp = r1 ? r1 : r2;
+
     while(tmp)
     {
         rp = tmp;
         tmp = tmp->next;
         if(!new_results_list)
             new_results_list = newResultsList(sw);
+
         addResultToList(new_results_list,rp);
     }
 
