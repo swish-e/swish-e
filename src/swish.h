@@ -219,7 +219,7 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 
 /* Document Types */
 enum {
-	BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2
+	BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, HTML3, XML3
 };
 
 #define NODOCTYPE BASEDOCTYPE

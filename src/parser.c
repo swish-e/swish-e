@@ -30,6 +30,7 @@ $Id$
 
 /* libxml2 */
 #include <libxml/HTMLparser.h>
+#include <libxml/xmlerror.h>
 
 #define BUFFER_CHUNK_SIZE 20000
 
@@ -77,8 +78,9 @@ typedef struct {
     int         parsing_html;
     struct metaEntry *titleProp;
     int         flush_word;         // flag to flush buffer next time there's a white space.
-    htmlSAXHandlerPtr   SAXHandler;
-    
+    htmlSAXHandlerPtr   SAXHandler; // for title only 
+    xmlParserCtxtPtr    ctxt;       // for error reporting
+    CHAR_BUFFER ISO_Latin1;         // buffer to hold UTF-8 -> ISO Latin-1 converted text
 } PARSE_DATA;
 
 
@@ -90,15 +92,18 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data, int clear );
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
-static void warning(void *data, const char *msg, ...);
 static void error(void *data, const char *msg, ...);
-static void fatalError(void *data, const char *msg, ...);
+static void warning(void *data, const char *msg, ...);
 static void process_htmlmeta( PARSE_DATA *parse_data, const char ** atts );
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
 static void start_metaTag( PARSE_DATA *parse_data, char * tag );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
 static void start_title_tag(void *data, const char *el, const char **attr);
 static void end_title_tag(void *data, const char *el);
+static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
+static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop );
+static void free_parse_data( PARSE_DATA *parse_data ); 
+static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen );
 
 
 /*********************************************************************
@@ -116,61 +121,15 @@ static void end_title_tag(void *data, const char *el);
 
 int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
 {
-    PARSE_DATA          parse_data;
-    IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
-    struct StoreDescription *stordesc = fprop->stordesc;
     xmlSAXHandler       SAXHandlerStruct;
     xmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
+    struct MOD_Index   *idx = sw->Index;
+    PARSE_DATA          parse_data;
+    IndexFILE          *indexf = sw->indexlist;
     int                 SAXerror;
 
-
-
-    /* Set event handlers for libxml2 parser */
-    memset( SAXHandler, 0, sizeof( xmlSAXHandler ) );
-
-    SAXHandlerStruct.startElement   = (startElementSAXFunc)&start_hndl;
-    SAXHandlerStruct.endElement     = (endElementSAXFunc)&end_hndl;
-    SAXHandlerStruct.characters     = (charactersSAXFunc)&char_hndl;
-    if( sw->indexComments )
-        SAXHandlerStruct.comment    = (commentSAXFunc)&comment_hndl;
-
-    if ( sw->parser_warn_level >= 3 )
-        SAXHandlerStruct.fatalError     = (fatalErrorSAXFunc)&fatalError;
-    if ( sw->parser_warn_level >= 2 )
-        SAXHandlerStruct.error          = (errorSAXFunc)&error;
-    if ( sw->parser_warn_level >= 1 )
-        SAXHandlerStruct.warning        = (warningSAXFunc)&warning;
-    
-
-    
-    /* I have no idea why addtofilelist doesn't do this! */
-    idx->filenum++;
-
-    /* Set defaults  */
-    memset(&parse_data, 0, sizeof(parse_data));
-
-    parse_data.header = &indexf->header;
-    parse_data.sw     = sw;
-    parse_data.fprop  = fprop;
-    parse_data.filenum = idx->filenum;
-    parse_data.word_pos= 1;  /* compress doesn't like zero */
-
-
-    /* Don't really like this, as mentioned above */
-    if ( stordesc && (parse_data.summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
-    {
-        /* Set property limit size for this document type, and store previous size limit */
-        parse_data.summary.save_size = parse_data.summary.meta->max_len;
-        parse_data.summary.meta->max_len = stordesc->size;
-        parse_data.summary.tag = stordesc->field;
-    }
-        
-    
-    /* Create file entry in index */
-
-    addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
-    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
+    init_sax_handler( SAXHandler, sw );
+    init_parse_data( &parse_data, sw, fprop );
 
 
     /* Now parse the XML file */
@@ -178,23 +137,13 @@ int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
     if ( (SAXerror = xmlSAXUserParseMemory( SAXHandler, &parse_data, buffer, strlen( buffer ))) != 0 )
         progwarn("xmlSAXUserParseMemory returned '%d' for file '%s'", SAXerror, fprop->real_path );
 
-    
 
     /* Flush any text left in the buffer, and free the buffer */
     flush_buffer( &parse_data, 1 );
 
-    if ( parse_data.text_buffer.buffer )
-        efree( parse_data.text_buffer.buffer );
-
-
-    /* Restore the size in the StoreDescription property */
-    if ( parse_data.summary.save_size )
-        parse_data.summary.meta->max_len = parse_data.summary.save_size;
-        
-
-
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
 
+    free_parse_data( &parse_data );
     return parse_data.total_words;
 }
 
@@ -213,61 +162,21 @@ int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
 
 int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 {
+    htmlSAXHandler       SAXHandlerStruct;
+    htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
+    struct MOD_Index   *idx = sw->Index;
     PARSE_DATA          parse_data;
     IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
-    struct StoreDescription *stordesc = fprop->stordesc;
-    htmlSAXHandler      SAXHandlerStruct;
-    htmlSAXHandlerPtr   SAXHandler = &SAXHandlerStruct;
 
 
+    init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
 
-    /* Set event handlers for libxml2 parser */
-    memset( SAXHandler, 0, sizeof( htmlSAXHandler ) );
 
-    SAXHandlerStruct.startElement   = (startElementSAXFunc)&start_hndl;
-    SAXHandlerStruct.endElement     = (endElementSAXFunc)&end_hndl;
-    SAXHandlerStruct.characters     = (charactersSAXFunc)&char_hndl;
-    if( sw->indexComments )
-        SAXHandlerStruct.comment    = (commentSAXFunc)&comment_hndl;
+    init_parse_data( &parse_data, sw, fprop );
 
-    if ( sw->parser_warn_level >= 3 )
-        SAXHandlerStruct.fatalError     = (fatalErrorSAXFunc)&fatalError;
-    if ( sw->parser_warn_level >= 2 )
-        SAXHandlerStruct.error          = (errorSAXFunc)&error;
-    if ( sw->parser_warn_level >= 1 )
-        SAXHandlerStruct.warning        = (warningSAXFunc)&warning;
-    
-    
-    /* I have no idea why addtofilelist doesn't do this! */
-    idx->filenum++;
-
-    /* Set defaults  */
-    memset(&parse_data, 0, sizeof(parse_data));
-
-    parse_data.header = &indexf->header;
-    parse_data.sw     = sw;
-    parse_data.fprop  = fprop;
-    parse_data.filenum = idx->filenum;
-    parse_data.word_pos= 1;  /* compress doesn't like zero */
     parse_data.parsing_html = 1;
-    parse_data.titleProp = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
-    parse_data.structure = IN_FILE;
-
-    /* Don't really like this, as mentioned above */
-    if ( stordesc && (parse_data.summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
-    {
-        /* Set property limit size for this document type, and store previous size limit */
-        parse_data.summary.save_size = parse_data.summary.meta->max_len;
-        parse_data.summary.meta->max_len = stordesc->size;
-        parse_data.summary.tag = stordesc->field;
-    }
-        
-    
-    /* Create file entry in index */
-
-    addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
-    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
+    parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
+    parse_data.structure    = IN_FILE;
 
 
     /* Now parse the HTML file */
@@ -277,20 +186,138 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     /* Flush any text left in the buffer, and free the buffer */
     flush_buffer( &parse_data, 1 );
 
-    if ( parse_data.text_buffer.buffer )
-        efree( parse_data.text_buffer.buffer );
-
-
-    /* Restore the size in the StoreDescription property */
-    if ( parse_data.summary.save_size )
-        parse_data.summary.meta->max_len = parse_data.summary.save_size;
-        
-
 
     addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
 
+    free_parse_data( &parse_data );
+
     return parse_data.total_words;
 }
+
+/*********************************************************************
+*   XML Push parser
+*
+*   Returns:
+*       Count of words indexed
+*
+*   ToDo:
+*       Don't forget to deal with TRUNCATE
+*
+*********************************************************************/
+
+int     parse_XML_push(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    xmlSAXHandler       SAXHandlerStruct;
+    xmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
+    struct MOD_Index   *idx = sw->Index;
+    PARSE_DATA          parse_data;
+    IndexFILE          *indexf = sw->indexlist;
+
+
+    init_sax_handler( SAXHandler, sw );
+    init_parse_data( &parse_data, sw, fprop );
+    
+
+    /* Now parse the HTML file */
+    {
+        int                 res, size = 1024;
+        FILE               *f = fprop->fp;
+        char                chars[1024];
+        xmlParserCtxtPtr    ctxt;
+
+        res = fread(chars, 1, 4, f);
+
+        if (res == 0)
+            return 0;
+
+        ctxt = xmlCreatePushParserCtxt(SAXHandler, &parse_data, chars, res, fprop->real_path);
+        parse_data.ctxt = ctxt;
+
+        while ((res = fread(chars, 1, size, f)) > 0)
+        {
+            xmlParseChunk(ctxt, chars, res, 0);
+            // break if read sw->truncateDocSize chars (and then flush to fprop->fsize if -S prog
+        }
+        
+        xmlParseChunk(ctxt, chars, 0, 1);
+        xmlFreeParserCtxt(ctxt);
+    }
+
+
+    /* Flush any text left in the buffer, and free the buffer */
+    flush_buffer( &parse_data, 1 );
+
+    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
+
+    free_parse_data( &parse_data );
+
+    return parse_data.total_words;
+}
+
+/*********************************************************************
+*   HTML Push parser
+*
+*   Returns:
+*       Count of words indexed
+*
+*   ToDo:
+*       Don't forget to deal with TRUNCATE
+*
+*********************************************************************/
+
+int     parse_HTML_push(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    htmlSAXHandler       SAXHandlerStruct;
+    htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
+    struct MOD_Index   *idx = sw->Index;
+    PARSE_DATA          parse_data;
+    IndexFILE          *indexf = sw->indexlist;
+
+
+    init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
+    init_parse_data( &parse_data, sw, fprop );
+    
+    parse_data.parsing_html = 1;
+    parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
+    parse_data.structure    = IN_FILE;
+    
+
+    /* Now parse the HTML file */
+    {
+        int                 res, size = 1024;
+        FILE               *f = fprop->fp;
+        char                chars[1024];
+        htmlParserCtxtPtr   ctxt;
+
+        res = fread(chars, 1, 4, f);
+
+        if (res == 0)
+            return 0;
+
+        ctxt = htmlCreatePushParserCtxt(SAXHandler, &parse_data, chars, res, fprop->real_path,0);
+        parse_data.ctxt = (htmlParserCtxtPtr)ctxt;
+
+        while ((res = fread(chars, 1, size, f)) > 0)
+        {
+            htmlParseChunk(ctxt, chars, res, 0);
+            // break if read sw->truncateDocSize chars (and then flush to fprop->fsize if -S prog
+        }
+        
+        htmlParseChunk(ctxt, chars, 0, 1);
+        htmlFreeParserCtxt(ctxt);
+    }
+
+
+    /* Flush any text left in the buffer, and free the buffer */
+    flush_buffer( &parse_data, 1 );
+
+    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
+
+    free_parse_data( &parse_data );
+
+    return parse_data.total_words;
+}
+
 
 /*********************************************************************
 *   Grab the title
@@ -358,7 +385,100 @@ static void end_title_tag(void *data, const char *el)
     }
 }
 
+
+/*********************************************************************
+*   Init a sax handler structure
+*   Must pass in the structure
+*
+*********************************************************************/
+static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
+{
+    /* Set event handlers for libxml2 parser */
+    memset( SAXHandler, 0, sizeof( xmlSAXHandler ) );
+
+    SAXHandler->startElement   = (startElementSAXFunc)&start_hndl;
+    SAXHandler->endElement     = (endElementSAXFunc)&end_hndl;
+    SAXHandler->characters     = (charactersSAXFunc)&char_hndl;
+
+    if( sw->indexComments )
+        SAXHandler->comment    = (commentSAXFunc)&comment_hndl;
+
+    if ( sw->parser_warn_level >= 1 )
+        SAXHandler->fatalError     = (fatalErrorSAXFunc)&error;
+
+    if ( sw->parser_warn_level >= 2 )
+        SAXHandler->error          = (errorSAXFunc)&error;
+
+    if ( sw->parser_warn_level >= 3 )
+        SAXHandler->warning        = (warningSAXFunc)&warning;
+
+}
+
+
+/*********************************************************************
+*   Init the parer data structure
+*   Must pass in the structure
+*
+*********************************************************************/
+static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop  )
+{
+    IndexFILE          *indexf = sw->indexlist;
+    struct MOD_Index   *idx = sw->Index;
+    struct StoreDescription *stordesc = fprop->stordesc;
+
+    /* Set defaults  */
+    memset( parse_data, 0, sizeof(PARSE_DATA));
+
+    parse_data->header = &indexf->header;
+    parse_data->sw     = sw;
+    parse_data->fprop  = fprop;
+    parse_data->filenum = idx->filenum + 1;
+    parse_data->word_pos= 1;  /* compress doesn't like zero */
+
+
+    /* Don't really like this, as mentioned above */
+    if ( stordesc && (parse_data->summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+    {
+        /* Set property limit size for this document type, and store previous size limit */
+        parse_data->summary.save_size = parse_data->summary.meta->max_len;
+        parse_data->summary.meta->max_len = stordesc->size;
+        parse_data->summary.tag = stordesc->field;
+    }
+
+
+
+    /* I have no idea why addtofilelist doesn't do this! */
+    idx->filenum++;
+
+    /* Create file entry in index */
+
+    addtofilelist(sw, indexf, fprop->real_path, &(parse_data->thisFileEntry) );
+    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
+
+
+}    
+
+
+/*********************************************************************
+*   Free any data used by the parse_data struct
+*
+*********************************************************************/
+static void free_parse_data( PARSE_DATA *parse_data )
+{
     
+    if ( parse_data->ISO_Latin1.buffer )
+        efree( parse_data->ISO_Latin1.buffer );
+
+    if ( parse_data->text_buffer.buffer )
+        efree( parse_data->text_buffer.buffer );
+
+
+    /* Restore the size in the StoreDescription property */
+    if ( parse_data->summary.save_size )
+        parse_data->summary.meta->max_len = parse_data->summary.save_size;
+
+}        
+
 /*********************************************************************
 *   Start Tag Event Handler
 *
@@ -510,15 +630,24 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
 
+
     /* If currently in an ignore block, then return */
     if ( parse_data->ignore_tag )
         return;
 
+
+    if ( !Convert_to_latin1( parse_data, txt, txtlen ) )
+    {
+        append_buffer( &parse_data->text_buffer, txt, txtlen );
+        return;
+    }
+
+
     /* Buffer the text */
-    append_buffer( &parse_data->text_buffer, txt, txtlen );
+    append_buffer( &parse_data->text_buffer, parse_data->ISO_Latin1.buffer, parse_data->ISO_Latin1.cur );
 
     /* Some day, might want to have a separate property buffer if need to collect more than plain text */
-    // append_buffer( parse_data->prop_buffer, txt, txtlen );
+    // append_buffer( &parse_data->prop_buffer, txt, txtlen );
 
 
     /* attempt to flush on a word boundry, if possible */
@@ -526,6 +655,38 @@ static void char_hndl(void *data, const char *txt, int txtlen)
         flush_buffer( parse_data, 0 );
 
 }
+
+/*********************************************************************
+*   Convert UTF-8 to Latin-1
+*
+*   Buffer is extended/created if needed
+*   Returns true if failed.
+*
+*********************************************************************/
+
+static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtlen )
+{
+    CHAR_BUFFER *buf = &parse_data->ISO_Latin1;
+    int     inlen = txtlen;
+    
+
+    /* (re)allocate buf if needed */
+    
+    if ( txtlen >= buf->max )
+    {
+        buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < txtlen )
+                    ? buf->max + txtlen+1
+                    : buf->max + BUFFER_CHUNK_SIZE+1;
+                    
+        buf->buffer = erealloc( buf->buffer, buf->max );
+    }
+
+    buf->cur = buf->max;
+
+    return !UTF8Toisolat1( buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
+}
+
+
 
 
 /*********************************************************************
@@ -763,12 +924,16 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
     if ( !txtlen )  // shouldn't happen
         return;
 
-
     /* (re)allocate buf if needed */
     
     if ( buf->cur + txtlen >= buf->max )
-        buf->buffer = erealloc( buf->buffer, ( buf->max += BUFFER_CHUNK_SIZE+1 ) );
-
+    {
+        buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < buf->cur + txtlen )
+                    ? buf->cur + txtlen+1
+                    : buf->max + BUFFER_CHUNK_SIZE+1;
+                    
+        buf->buffer = erealloc( buf->buffer, buf->max );
+    }
 
     memcpy( (void *) &(buf->buffer[buf->cur]), txt, txtlen );
     buf->cur += txtlen;
@@ -916,36 +1081,27 @@ static char *isIgnoreMetaName(SWISH * sw, char *tag)
 *
 ******************************************************************/
 
-static void warning(void *data, const char *msg, ...)
-{
-    va_list args;
-    PARSE_DATA *parse_data = (PARSE_DATA *)data;
-
-    va_start(args, msg);
-    fprintf(stdout, "\n** %s [WARNING] ", parse_data->fprop->real_path);
-    vfprintf(stdout, msg, args);
-    va_end(args);
-}
-
 static void error(void *data, const char *msg, ...)
 {
     va_list args;
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    char str[1000];
 
     va_start(args, msg);
-    fprintf(stdout, "\n** %s [ERROR] ", parse_data->fprop->real_path);
-    vfprintf(stdout, msg, args);
+    vsnprintf(str, 1000, msg, args );
     va_end(args);
+    xmlParserError(parse_data->ctxt, str);
 }
 
-static void fatalError(void *data, const char *msg, ...)
+static void warning(void *data, const char *msg, ...)
 {
     va_list args;
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
+    char str[1000];
 
     va_start(args, msg);
-    fprintf(stdout, "\n** %s [FATAL ERROR] ", parse_data->fprop->real_path);
-    vfprintf(stdout, msg, args);
+    vsnprintf(str, 1000, msg, args );
     va_end(args);
+    xmlParserWarning(parse_data->ctxt, str);
 }
 

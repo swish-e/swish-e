@@ -645,6 +645,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     ENTRY  *ep;
     int     i;
 
+
     wordcount = -1;
 
     /* skip file is the last_mod date is newer than the check date */
@@ -695,11 +696,13 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             return;
         }
     }
-    else  /* Already open - flag to preven closing the stream used with "prog" */
+    else  /* Already open - flag to prevent closing the stream used with "prog" */
         external_program++;
 
 
-
+if ( fprop->doctype == HTML3 || fprop->doctype == XML3 )
+    rd_buffer = NULL;
+else
     /* -- Read  all data  (len = 0 if filtered...) */
     rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
@@ -736,6 +739,16 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     case HTML2:
         strcpy(strType,"HTML2");
         countwords = parse_HTML;
+        break;
+
+    case XML3:
+        strcpy(strType,"XML3");
+        countwords = parse_XML_push;
+        break;
+
+    case HTML3:
+        strcpy(strType,"HTML3");
+        countwords = parse_HTML_push;
         break;
 
 #endif
