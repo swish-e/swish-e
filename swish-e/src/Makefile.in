@@ -11,27 +11,29 @@
 #
 # $Id$
 
-NAME = swish-e
-# C compiler
-CC = @CC@
+# get name and version from configure.in
+NAME        = @PROJECT@
+VERSION     = @VERSION@
 
-SHELL = /bin/sh
-prefix = @prefix@
-bindir = $(prefix)/bin
-exec_prefix  = @exec_prefix@
-libdir = @libdir@
-mandir = $(prefix)/man
-man1dir = $(mandir)/man1
+# C compiler
+CC          = @CC@
+
+SHELL       = /bin/sh
+prefix      = @prefix@
+bindir      = $(prefix)/bin
+exec_prefix = @exec_prefix@
+libdir      = @libdir@
 
 # Flags for C compiler
-CFLAGS = @CFLAGS@
+CFLAGS      = @CFLAGS@
 
-LIBS=@LIBS@
+
+LIBS        = @LIBS@
 
 # Library related 
-AR = ar
-ARFLAGS = cr
-RANLIB = @RANLIB@
+AR          = ar
+ARFLAGS     = cr
+RANLIB      = @RANLIB@
 
 #
 # The objects for the different methods and
@@ -39,9 +41,9 @@ RANLIB = @RANLIB@
 #
 
 FILESYSTEM_OBJS=fs.o
-HTTP_OBJS=http.o httpserver.o 
-FS_OBJS=$(FILESYSTEM_OBJS)
-WEB_OBJS=$(HTTP_OBJS)
+HTTP_OBJS   =http.o httpserver.o 
+FS_OBJS     =$(FILESYSTEM_OBJS)
+WEB_OBJS    =$(HTTP_OBJS)
 
 OBJS=	check.o file.o index.o search.o error.o methods.o\
 	hash.o list.o mem.o string.o merge.o swish2.o stemmer.o \
@@ -52,7 +54,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 .SUFFIXES: 
 .SUFFIXES : .o .c
 .c.o :
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -DSWISH_VERSION=\"$(VERSION)\" $(CFLAGS) -c $<
 .c.a :
 	$(CC) $(CFLAGS) -c $<
 	$(AR) $(ARFLAGS) $@ $*.o
@@ -113,8 +115,6 @@ install:
 install-lib:	
 	cp libswish-e.a $(libdir)/libswish-e.a
 
-man:
-	cp swish-e.1 $(man1dir)
 
 #
 # dependencies

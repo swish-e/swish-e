@@ -424,6 +424,12 @@ Example:
 
     IndexContents HTML .htm .html .shtml
     IndexContents TXT  .txt .log .text
+    IndexContents XML  .xml
+
+HTML is the default type for all files, unless otherwise specified (and this default can be changed by
+the B<DefaultContents> directive.  Swish parses titles from HTML files, if available, and keeps track of
+the context of the text for context searching (see C<-t> in L<SWISH-RUN|SWISH-RUN>).  HTML and XML files use
+different tag formats for B<MetaNames> and B<PropertyNames>.
 
 If using filters to convert documents you should include those extensions, too.
 For example, if using a filter to conver .pdf to .html, you need to tell swish that .pdf
@@ -440,7 +446,8 @@ B<Note:> This may be changed in the future to use content-types.  See L<SWISH-3.
 
 =item DefaultContents [TXT|HTML|XML]
 
-This sets the default parser for documents that are not specified in B<IndexContents>
+This sets the default parser for documents that are not specified in B<IndexContents>. If not specified the
+default is HTML.
 
 
 Example:
@@ -473,9 +480,9 @@ The default is C<yes>.
 
 =item MetaNames *list of names*
 
-META names are a way to define "fields" in your documents.  You can use the META names in your queries
+META names are a way to define "fields" in your XML and HTML documents.  You can use the META names in your queries
 to limit the search to just the words contained in that META name of your document.
-(see also the C<-t> switch below)
+(see also the C<-t> switch in L<SWISH-RUN|SWISH-RUN>).
 For example, you might have a META tagged field in your documents called C<subjects> and then you can
 search your documents for the word "foo" but only return documents where "foo" is within the C<subjects> META tag.
 
@@ -483,22 +490,20 @@ The B<MetaNames> directive is a space separated list:
 
     MetaNames meta1 meta2 keywords subjects
 
-If you use the special word B<automatic> then SWISH-E will automatically locate any meta names
-in your document.
+You may also use L<UndefinedMetaTags|/"item_UndefinedMetaTags"> to specify automatic extraction of meta names
+from your HTML and XML documents.
 
-    MetaNames automatic
-
-This option should not be used in HTML documents.
-
-META tags can have three formats in your source documents:
+META tags can have two formats in your B<HTML> source documents:
 
     <META NAME="meta1" CONTENT="some content">
+
+and
 
     <!-- META START NAME="meta1" -->
         some content
     <!-- META END -->
 
-And in XML format
+And in B<XML> documents, use the format:
 
     <meta1>
         Some Content
@@ -540,7 +545,9 @@ error reported.
 =item index - The contenst of the meta tag are indexed, but placed in the main index (the contents are not
 assinged a meta name and cannot be searched by meta name.  This is the default.
 
-=item auto - This method only applies to XML and will create meta tags automatically for XML elements.
+=item auto - This method only applies to HTML and XML documents and will create meta tags automatically for
+HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
+B<MetaNames> dirictive.
 
 =back
 

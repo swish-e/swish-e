@@ -3,8 +3,10 @@
 # $Id$
 #
 
-prefix   = @prefix@
-mandir   = @mandir@/man1
+prefix      = @prefix@
+mandir      = @mandir@/man1
+VERSION     = @VERSION@
+
 MANPAGES = src/SWISH-RUN.1 src/SWISH-CONFIG.1 src/SWISH-RUN.1 src/SWISH-FAQ.1 src/SWISH-LIBRARY.1 src/SWISH-PERL.1
 
 
@@ -13,7 +15,7 @@ MANPAGES = src/SWISH-RUN.1 src/SWISH-CONFIG.1 src/SWISH-RUN.1 src/SWISH-FAQ.1 sr
 
 all:	html pod man
 
-html:
+html: version
 	@echo "Building HTML"
 	@bin/build
 	@rm -f ../html/.htaccess ../html/search.cgi
@@ -26,17 +28,18 @@ pod:
 	chmod 444 ../*.pod ../README
 
 
-# Sure, parse version for every page!
 .pod.1: $(MANPAGES)
-	pod2man --center="SWISH-E Documentation" --lax --release=`perl -ne 'print $$1 if /#define SWISH_VERSION "(.+)"/' ../src/swish.h` $< > $@
+	pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)' $< > $@
 
 man: $(MANPAGES)
 
 install-man: man
 	cp $(MANPAGES) $(mandir)
-	
 
-pdf:
+version:
+	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > src/Version.pm
+
+pdf: version
 	bin/build -d
 	cp -f rel_ps/swish-e_documentation.pdf ..
 	cp -f rel_ps/swish-e_documentation.ps ..
@@ -65,7 +68,7 @@ ultraclean: realclean
 	rm -rf ../*.pod readme ../html/images
 	rm -f ../html/* 
 
-split:
+split: version
 	@echo "Testing if already created..."
 	test ! -d ../html/split
 	

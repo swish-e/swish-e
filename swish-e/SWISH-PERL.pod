@@ -1,6 +1,6 @@
 =head1 NAME
 
-Perl Interface to the SWISH-E Library
+SWISH-PERL - Perl Interface to the SWISH-E Library
 
 =head1 SYNOPSIS
 

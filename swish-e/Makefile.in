@@ -4,6 +4,9 @@
 
 # $Id$
 
+PROJECT     = @PROJECT@
+VERSION     = @VERSION@
+
 SHELL       = /bin/sh
 srcdir      = @srcdir@
 VPATH       = $(srcdir)
@@ -12,7 +15,19 @@ exec_prefix = @exec_prefix@
 bindir      = $(prefix)/bin
 mandir      = $(prefix)/man/man1
 perl        = @PERL@
+PERL        = @PERL@
 libdir      = @libdir@
+
+#-- for making distribution --- (should let ./configure find these programs)
+DIST_DEFAULT= tardist
+TAR         = tar
+TARFLAGS    = cvf
+COMPRESS    = gzip
+RM_RF       = rm -rf
+DISTVNAME   = $(PROJECT)-$(VERSION)
+SUFFIX      = gz
+
+#-- for building code, testing, and installing --
 
 all:	swish-e swish-search
 	@echo -e '\nNow make test\n'
@@ -32,6 +47,17 @@ perllib:
 	@echo 'making Perl library for Swish-E'
 	(cd perl;$(perl) Makefile.PL PREFIX=$(libdir);make) 
 
+test:
+	(cd src; make test)
+
+install:
+	cp src/swish-e $(bindir)/swish-e
+
+install-lib:
+	cp src/libswish-e.a $(libdir)/libswish-e.a
+
+
+#-- Cleanup tags --
 
 clean:
 	-(cd src; make clean)
@@ -45,17 +71,40 @@ realclean: clean
 	-(cd doc; make realclean)
 
 
-test:
-	(cd src; make test)
-
-install:
-	cp src/swish-e $(bindir)/swish-e
-
-install-lib:
-	cp src/libswish-e.a $(libdir)/libswish-e.a
-
+#-- Documentation --
+docs:
+	(cd doc; make all)
+	
 pdf:
 	(cd doc; make pdf)
 
 install-man:
 	(cd doc; make install-man)
+
+#---- Distribution --------
+
+distclean :: realclean distcheck
+
+distcheck :
+	$(PERL) -MExtUtils::Manifest=fullcheck \
+		-e fullcheck
+        
+skipcheck :
+	$(PERL) -MExtUtils::Manifest=skipcheck \
+		-e skipcheck
+
+distdir :
+	$(RM_RF) $(DISTVNAME)
+	$(PERL)  -MExtUtils::Manifest=manicopy,maniread \
+		-e "manicopy(maniread(),'$(DISTVNAME)', 'best');"
+
+$(DISTVNAME).tar$(SUFFIX) : distdir
+	$(TAR) $(TARFLAGS) $(DISTVNAME).tar $(DISTVNAME)
+	$(RM_RF) $(DISTVNAME)
+	$(COMPRESS) $(DISTVNAME).tar
+
+tardist : $(DISTVNAME).tar$(SUFFIX)
+
+dist : docs $(DIST_DEFAULT)
+
+

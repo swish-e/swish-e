@@ -36,7 +36,7 @@
 	<LI><A HREF="#Switch_to_Content_Types">Switch to Content-Types</A>
 	<LI><A HREF="#Document_Source_Feature">Document Source Feature</A>
 	<LI><A HREF="#Fast_Filters">Fast Filters</A>
-	<LI><A HREF="#Convert_all_Meta_data_to_Meta_Na">Convert all Meta data to Meta Names</A>
+	<LI><A HREF="#Enhanced_the_PropertyNames_direc">Enhanced the PropertyNames directive</A>
 	<LI><A HREF="#Document_Info">Document Info</A>
 </UL>
 
@@ -96,8 +96,27 @@ specify which tags are numeric. Something like:
       </tr>
     </table>
     <P>
-Then be able to select a range of numbers in a search, and sort numerically
-is the tag is also a property.
+Or perhaps
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    MetaNames &lt;age type=number&gt; &lt;birthday type=date&gt;
+    MetaNames age:number birthday:date</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Then be able to select a range of numbers in a search, (and sort
+numerically if the tag is also a property).
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -199,7 +218,29 @@ For example, if we continued to use [TXT|HTML|XML]
       </tr>
     </table>
     <P>
-Would tell swish that those types are handled by those internal handlers.
+Or maybe just extend the current directives
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    IndexContents HTML .htm .html text/html</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Where the content-type would have precedence over the file extensions.    
+
+<P>
+This would tell swish that those types are handled by those internal
+handlers.
 
 <P>
 Then as I've mentioned before, you might specify filters as such
@@ -236,7 +277,7 @@ First, I'd like to see the http part of swish moved out of the program, and
 instead design a fast way for external programs to provide documents to
 swish. Spidering is too complicated to be done internally, and is not
 really what swish does at its core. No doubt that the swish package should
-provide spidering, but in a different way.
+provide spidering, but in a different, more modular way.
 
 <P>
 So, I'd like to be able to specify to swish a program, and that program
@@ -291,7 +332,7 @@ that program.
     </table>
     <P>
 The program could be passed the path to the current configuration file
-swish is using.
+swish is using so the program could read the same config information.
 
 <P>
 (BTW -- It might be nice to be able to say don't recurse directories:
@@ -358,185 +399,11 @@ directive would be listed in order to allow chaining, but prevent loops.
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
-<H1><A NAME="Convert_all_Meta_data_to_Meta_Na">Convert all Meta data to Meta Names</A></H1>
+<H1><A NAME="Enhanced_the_PropertyNames_direc">Enhanced the PropertyNames directive</A></H1>
 <P>
-Moseley: Jan 1, 2001
-
-<P>
-Swish currently returns a file name, file size (or content-length) in
-search results. This is called <EM>Meta Data</EM>
-as it's information about (or that describes) the document. There are and
-will be new Meta Data added as time goes on. For example, the Last Modified
-Date is currently being added to 2.1.
+Moseley: Updated Jan 13, 2001
 
 <P>
-The problem with this is how to return this data in query results -- if the
-standard output from swish-e changes with a new version that means any
-program parsing the results must also be changed.
-
-<P>
-Swish 2.1 has an c&lt;-x&gt; switch to report <EM>extended</EM> output in search results, but again once someone starts to use -x in a CGI
-script then that script will break if a new feature is added.
-
-<P>
-Currently in swish documents may contain meta tagged content:
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    &lt;subjects&gt;
-          Food | Drinks | Recipes
-    &lt;/subjects&gt;</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    &lt;summary&gt;
-        The art of making good food and drinks, and lists many recipies.
-    &lt;/summary&gt;</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-This is also Meta Data since it's information about the document.    
-
-<P>
-By using
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    MetaNames subjects summary</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-you can search for words or phrases just within those meta fields.
-
-<P>
-By also using
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    PropertyNames subjects summary</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-you can also return the contents of those meta tags in a search by using
-the <CODE>-p</CODE> switch.
-
-<P>
-Search results may also be sorted by PropertyNames.
-
-<P>
-My proposal is to use the existing swish framework of <STRONG>MetaNames</STRONG> and <STRONG>PropertyNames</STRONG> to handle meta data that's currently available only in swish results (rank,
-file name, file size). The difference is that we assign ``internal'' meta
-names to this data.
-
-<P>
-For example, SWISH_FILENAME could the be meta name used for the name of the
-file:
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    MetaNames SWISH_FILENAME</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    swish-e -w SWISH_FILENAME=(html/index*)</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-Or SWISH_LAST_MODIFIED_SEC could be used for sorting results
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    PropertyNames SWISH_LAST_MODIFIED_SEC category</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    swish-e -w foo -s category asc SWISH_LAST_MODIFIED_SEC desc</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
 If PropertyNames directive was enhanced to be able to limit the number of
 characters stored, optionally extract text from HTML, and was able to
 define what type of docs (text, XML, HTML) it applied to, then the existing
@@ -545,7 +412,9 @@ be useful for more than just one use.
 
 <P>
 I'm not clear how to enhance the syntax of Properties and/or Metanames, but
-here's some ideas:
+here's some ideas. Rainer suggested that an xml-type of format might be
+best and commonly understood. That's a good idea. Below are some older
+ideas that I had. But you will get the idea...
 
 <UL>
 <P><LI>
@@ -685,38 +554,6 @@ Or another way would be to create a new directive
 But I like extending existing syntax than adding new syntax. Less chance
 for errors and keeps settings together in the same place.    
 
-<P>
-The advantages of all this are:
-
-<UL>
-<P><LI>
-<P>
-new internal meta data tags can be added without having to change the
-output from swish results and therefore without changing any CGIs
-
-<P><LI>
-<P>
-uses existing code to implement, and existing interface to use
-
-<P><LI>
-<P>
-user can decide which meta data to include in an index which might be
-helpful for really large sites where index size is important
-
-<P><LI>
-<P>
-can search by the meta data, just like existing &lt;meta&gt; tagged content
-
-<P><LI>
-<P>
-can sort results by all meta data, not just &lt;meta&gt; tags in documents.
-
-<P><LI>
-<P>
-can be used to implement the StoreDescription feature insead of creating a
-new feature.
-
-</UL>
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>

@@ -171,7 +171,7 @@ To build the man pages and install them into your system, type from the top-leve
     make install-man
     exit
 
-You will need to C<su root> if you do not have write access to the man directory.    
+You will need to C<su root> if you do not have write access to the man directory.
     
 The man pages are installed in the system man directory.  This directory is determined by running ./configure
 and can be set by passing the directory when running ./configure.
@@ -183,6 +183,11 @@ For example,
 Information on running ./configure can be found by typing:
 
     ./configure --help
+
+The pod source files used to create the man files were written running under perl 5.6.0.  Older version of Perl
+may complain slightly about the formatting of the pod files.  This shouldn't be a problem, but please let the
+swish-e list know if otherwise.
+    
 
 
 =head1 BASIC CONFIGURATION AND USAGE

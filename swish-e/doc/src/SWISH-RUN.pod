@@ -132,9 +132,10 @@ swish uses so much RAM that the computer begins to swap excessively.
 Specifying this option tells swish to follow symbolic links when indexing.
 The configuration file value B<FollowSymLinks> will override the command-line value.
 
+
 =item -v [0|1|2|3] (verbosity level)
 
-The -v option can take a numerical value from 0 to 3.
+The C<-v> option can take a numerical value from 0 to 3.
 Specify 0 for completely silent operation and 3 for detailed reports.
 If no value is given then 3 is assumed.  See also B<IndexReport> in the L<configuration file|SWISH-CONFIG>.
 
@@ -217,7 +218,7 @@ Example:
 
 =item -t HBthec (context searching)
 
-The -t option allows you to search for words that exist only
+The C<-t> option allows you to search for words that exist only
 in specific HTML tags. Each character in the string you
 specify in the argument to this option represents a
 different tag in which to search for the word. H means all HEAD
@@ -318,7 +319,7 @@ With C<-x> swish reports:
     offset into file (to handle multiple documents within a single file)
     file size
     properties (if -p used)
-    
+
 =item -v 4 (verbosity level)
 
 If set to C<-v 4> while searching, SWISH-E will print additional diagnostic information
@@ -419,7 +420,7 @@ Merging removes all redundant file and word data. To estimate how much memory th
 sum up the sizes of the files to be merged and divide by two.
 That's about the maximum amount of memory that will be used.
 
-You can use the -v option to produce feedback while merging and the -c option with a
+You can use the C<-v> option to produce feedback while merging and the C<-c> option with a
 configuration file to include new administrative information in the new index file.
 
 =item -c *configuration file*

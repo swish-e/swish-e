@@ -265,9 +265,9 @@ The configuration file value <STRONG>FollowSymLinks</STRONG> will override the c
 
 <P><DT><STRONG><A NAME="item__v">-v [0|1|2|3] (verbosity level)</A></STRONG><DD>
 <P>
-The -v option can take a numerical value from 0 to 3. Specify 0 for
-completely silent operation and 3 for detailed reports. If no value is
-given then 3 is assumed. See also <STRONG>IndexReport</STRONG> in the <A HREF="././SWISH-CONFIG.html">configuration file</A>.
+The <CODE>-v</CODE> option can take a numerical value from 0 to 3. Specify 0 for completely
+silent operation and 3 for detailed reports. If no value is given then 3 is
+assumed. See also <STRONG>IndexReport</STRONG> in the <A HREF="././SWISH-CONFIG.html">configuration file</A>.
 
 </DL>
 <P>
@@ -427,8 +427,8 @@ Example:
     </table>
     <P><DT><STRONG><A NAME="item__t">-t HBthec (context searching)</A></STRONG><DD>
 <P>
-The -t option allows you to search for words that exist only in specific
-HTML tags. Each character in the string you specify in the argument to this
+The <CODE>-t</CODE> option allows you to search for words that exist only in specific HTML
+tags. Each character in the string you specify in the argument to this
 option represents a different tag in which to search for the word. H means
 all HEAD tags, B stands for BODY tags, t is all TITLE tags, h is H1 to H6
 (header) tags, e is emphasized tags (this may be B, I, EM, or STRONG), and
@@ -487,7 +487,26 @@ The following control characters may also be specified: <CODE>\t \r \n \f</CODE>
 <P>
 Sets the delimiter used for phrase searches. The default is double quotes <CODE>&quot;</CODE>.
 
-<P><DT><STRONG><A NAME="item__p">-p *property1 property2 ...*  (display properties)</A></STRONG><DD>
+<P>
+Some examples under bash: (be careful about you shell metacharacters)
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -P ^ -w 'title=^words in a phrase^'
+    swish-e -P \' -w &quot;title='words in a pharse&quot;'</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P><DT><STRONG><A NAME="item__p">-p *property1 property2 ...*  (display properties)</A></STRONG><DD>
 <P>
 This causes swish to print the listed property in the search results. The
 properties are returned in the order they are listed in the <CODE>-p</CODE> argument.
@@ -618,14 +637,13 @@ With <CODE>-x</CODE> swish reports:
     document summary (xxx to be announced)
     offset into file (to handle multiple documents within a single file)
     file size
-    properties (if -p used)
-    
-=item -v 4 (verbosity level)</pre>
+    properties (if -p used)</pre>
         </td>
 	    
       </tr>
     </table>
-    <P>
+    <P><DT><STRONG>-v 4 (verbosity level)</STRONG><DD>
+<P>
 If set to <CODE>-v 4</CODE> while searching, SWISH-E will print additional diagnostic information in
 the header of the results.
 
@@ -635,15 +653,6 @@ the header of the results.
 <HR>
 <H1><A NAME="OTHER_SWITCHES">OTHER SWITCHES</A></H1>
 <DL>
-<P><DT><STRONG><A NAME="item__D">-D *index file*  (debug index)</A></STRONG><DD>
-<P>
-This option is provided so you can check the word, file, and maintenance
-information in index files. You can specify multiple files to decode. Use
-with <CODE>-v 4</CODE> for even more output.
-
-<P>
-A lot of information is printed, so use with caution.
-
 <P><DT><STRONG><A NAME="item__V">-V (version)</A></STRONG><DD>
 <P>
 Print the current version.
@@ -651,7 +660,132 @@ Print the current version.
 <P><DT><STRONG><A NAME="item__k">-k *letter* (print out keywords)</A></STRONG><DD>
 <P>
 The <CODE>-k</CODE> switch is used for testing and will cause swish to print out all keywords
-in the index beginning with that letter.
+in the index beginning with that letter. You may enter <CODE>-k '*'</CODE> to generate a list of all words indexed by swish.
+
+<P><DT><STRONG><A NAME="item__D">-D *index file*  (debug index)</A></STRONG><DD>
+<P>
+This option is provided so you can check the word, file, and maintenance
+information in index files. You can specify multiple files to decode. Use
+with <CODE>-v 4</CODE> for even more output. You must specify an index file with <CODE>-f</CODE>, even if it's the default index file <EM>index.swish-e</EM>.
+
+<P>
+A lot of information is printed, so use with caution.
+
+<P>
+For example here's a few of the interesting parts from <CODE>-D</CODE> (with <CODE>-v 4</CODE>):
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -D -v 4 -f test.index</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    -----&gt; WORD INFO &lt;-----
+    apples: Meta:1 ./test.html Strct:25 Freq:1 Pos:54</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+This tells you that the word <CODE>apples</CODE> is found in <EM>./test.html</EM>, and is *not* associated with any MetaNames (meta tag number one is the
+default index). The <CODE>Strct:25</CODE> is used to limit searches by context (see <CODE>-t</CODE> above).  <CODE>Freq:1</CODE> says the word was found one time in the document at position
+<CODE>Pos:54</CODE>. This position data is used for phrase searches. If the word was found in
+other meta tags you will see other <CODE>Meta:</CODE> items listed. And the entire structure will be repeated, on the same line,
+for every file that contains this word.
+
+<P>
+The next section:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    &lt;-----&gt; FILES &lt;-----&gt;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Lists the files, and their associated properties (including last modified
+date, title and file size).
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    -----&gt; METANAMES &lt;-----
+    swishfilename&quot;2 swishtitle&quot;2 swishfiledate&quot;10 swishstart&quot;6 swishsize&quot;6 swishsummary&quot;2 meta1&quot;3 meta2&quot;3 meta3&quot;3</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+(The above will be all on one line.)
+
+<P>
+The METANAME section lists the meta names and properties that are assigned
+internally within swish, and the names you specify in the configuration
+file with MetaNames and PropertyNames. The number that follow is a decimal
+number where each bit represents an attribute of that meta name. The bits
+are AND'ed together to make the attribute.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>       Bit            Bit Represents
+    ----------    --------------------------------------
+    0000000001    META_INDEX (it is indexed -- MetaNames)
+    0000000010    META_PROP (it is a property -- PropertyNames)
+    0000000100    META_NUMBER (it is binary number.Eg: swishsize)
+    0000001000    META_DATE(it is a binary date. Eg: swishfiledate)</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+So, for swishfiledate value 10 means META_PROP+META_DATE, or 2 (property
+and binary date).
+
+<P>
+Currently, the indexing of numbers (searching by range) is not supported.
 
 </DL>
 <P>
@@ -697,8 +831,7 @@ and divide by two. That's about the maximum amount of memory that will be
 used.
 
 <P>
-You can use the -v option to produce feedback while merging and the -c
-option with a configuration file to include new administrative information
+You can use the <CODE>-v</CODE> option to produce feedback while merging and the <CODE>-c</CODE> option with a configuration file to include new administrative information
 in the new index file.
 
 <P><DT><STRONG>-c *configuration file*</STRONG><DD>

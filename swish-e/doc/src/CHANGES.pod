@@ -33,9 +33,15 @@ For example, to sort by the rank and title:
 
 =back
 
-Changes to Configuration File Directives
+Changes to Configuration File Directives.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for
+more info.
 
 =over 4
+
+=item * New directives: IndexContents and DefaultContents
+
+Previously, swish parsed all documents as HTML documents.  Now swish knows how to parse HTML, TXT, and XML
+documents.  The IndexContents and DefaultContents tells swish how to index files by their extension.
 
 =item * New directive: UndefinedMetaTags [error|ignore|index|auto]
 

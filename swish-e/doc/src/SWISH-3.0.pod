@@ -26,7 +26,12 @@ Something like:
     PropertyNames name age
     NumericNames age
 
-Then be able to select a range of numbers in a search, and sort numerically is the tag is also a property.
+Or perhaps
+
+    MetaNames <age type=number> <birthday type=date>
+    MetaNames age:number birthday:date
+
+Then be able to select a range of numbers in a search, (and sort numerically if the tag is also a property).
 
 =head1 Switch to Content-Types
 
@@ -72,7 +77,13 @@ For example, if we continued to use [TXT|HTML|XML]
     MapType TXT  text/directory text/logfile
     MapType HTML text/html
 
-Would tell swish that those types are handled by those internal handlers.
+Or maybe just extend the current directives
+
+    IndexContents HTML .htm .html text/html
+
+Where the content-type would have precedence over the file extensions.    
+
+This would tell swish that those types are handled by those internal handlers.
 
 Then as I've mentioned before, you might specify filters as such
 
@@ -90,7 +101,7 @@ Moseley: Dec 28, 2000
 First, I'd like to see the http part of swish moved out of the program, and instead design
 a fast way for external programs to provide documents to swish.  Spidering is too complicated
 to be done internally, and is not really what swish does at its core.  No doubt that the swish package
-should provide spidering, but in a different way.
+should provide spidering, but in a different, more modular way.
 
 So, I'd like to be able to specify to swish a program, and that program returns the documents to swish to index,
 just as if swish was accessing the documents via http.  For example, the program would return headers followed by
@@ -112,7 +123,8 @@ swish runs and accepts documents from that program.
     # Index /usr/doc and spider our other server
     IndexDir /usr/doc /usr/local/bin/swish-spider
 
-The program could be passed the path to the current configuration file swish is using.
+The program could be passed the path to the current configuration file swish is using so the program
+could read the same config information.
 
 (BTW -- It might be nice to be able to say don't recurse directories: /usr/doc recurses where
 /usr/doc/ doesn't recurse.  Now that would be confusing!)
@@ -140,69 +152,18 @@ content types then the swish internal parser would accept the document for index
     
 Perhaps the FilterDocument directive would be listed in order to allow chaining, but prevent loops.
 
-=head1 Convert all Meta data to Meta Names
+=head1 Enhanced the PropertyNames directive
 
-Moseley: Jan 1, 2001
-
-Swish currently returns a file name, file size (or content-length) in search results.  This is called I<Meta Data>
-as it's information about (or that describes) the document.
-There are and will be new Meta Data added as time goes on.  For example, the Last Modified Date is currently being
-added to 2.1.
-
-The problem with this is how to return this data in query results -- if the standard output from swish-e changes
-with a new version that means any program parsing the results must also be changed.
-
-Swish 2.1 has an c<-x> switch to report I<extended> output in search results, but again once someone starts to
-use -x in a CGI script then that script will break if a new feature is added.
-
-Currently in swish documents may contain meta tagged content:
-
-    <subjects>
-          Food | Drinks | Recipes
-    </subjects>
-
-    <summary>
-        The art of making good food and drinks, and lists many recipies.
-    </summary>
-
-This is also Meta Data since it's information about the document.    
-
-By using
-
-    MetaNames subjects summary
-
-you can search for words or phrases just within those meta fields.
-
-By also using
-
-    PropertyNames subjects summary
-
-you can also return the contents of those meta tags in a search by using the C<-p> switch.
-
-Search results may also be sorted by PropertyNames.
-
-My proposal is to use the existing swish framework of B<MetaNames> and B<PropertyNames> to handle meta data that's
-currently available only in swish results (rank, file name, file size).  The difference is that we
-assign "internal" meta names to this data.
-
-For example, SWISH_FILENAME could the be meta name used for the name of the file:
-
-    MetaNames SWISH_FILENAME
-
-    swish-e -w SWISH_FILENAME=(html/index*)
-
-Or SWISH_LAST_MODIFIED_SEC could be used for sorting results
-
-    PropertyNames SWISH_LAST_MODIFIED_SEC category
-
-    swish-e -w foo -s category asc SWISH_LAST_MODIFIED_SEC desc
+Moseley: Updated Jan 13, 2001
 
 If PropertyNames directive was enhanced to be able to limit the number of characters stored, optionally
 extract text from HTML, and was able to define what type of docs (text, XML, HTML) it applied to, then
 the existing PropertyNames feature would work like the new StoreDescription feature but be useful for more than
 just one use.
 
-I'm not clear how to enhance the syntax of Properties and/or Metanames, but here's some ideas:
+I'm not clear how to enhance the syntax of Properties and/or Metanames, but here's some ideas.  Rainer suggested
+that an xml-type of format might be best and commonly understood.  That's a good idea.  Below are some older ideas
+that I had.  But you will get the idea...
 
 =over 4
 
@@ -255,40 +216,6 @@ Or another way would be to create a new directive
 
 But I like extending existing syntax than adding new syntax.
 Less chance for errors and keeps settings together in the same place.    
-
-
-The advantages of all this are:
-
-=over 4
-
-=item *
-
-new internal meta data tags can be added without having to change the
-output from swish results and therefore without changing any CGIs
-
-=item *
-
-uses existing code to implement, and existing interface to use
-
-=item *
-
-user can decide which meta data to include in an index which might be helpful
-for really large sites where index size is important
-
-=item *
-
-can search by the meta data, just like existing <meta> tagged content
-
-=item *
-
-can sort results by all meta data, not just <meta> tags in documents.
-
-=item *
-
-can be used to implement the StoreDescription feature insead of creating a new feature.
-
-=back
-
 
 
 

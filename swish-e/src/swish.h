@@ -74,8 +74,9 @@
 #include <time.h>
 #include <setjmp.h>
 
-
+/* -- moved version into top-level configure.in -- 
 #define SWISH_VERSION "2.1-dev18"
+*/
 
 #define SWISH_MAGIC 21076321L
 

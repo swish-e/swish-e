@@ -33,7 +33,7 @@
 	<LI><A HREF="#Revision_History">Revision History</A>
 	<UL>
 
-		<LI><A HREF="#Version_2_1_10_devel6">Version 2.1.10-devel6</A>
+		<LI><A HREF="#Version_2_2">Version 2.2</A>
 	</UL>
 
 </UL>
@@ -53,14 +53,90 @@ This document contains list of bug fixes and feature additions to SWISH-E.
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
-<H2><A NAME="Version_2_1_10_devel6">Version 2.1.10-devel6</A></H2>
+<H2><A NAME="Version_2_2">Version 2.2</A></H2>
 <P>
-Release Date: December 21, 2000
+Release Date: ???????
+
+<P>
+Many large changes were made internally in the code, some for performance
+reasons, some for feature changes and additions, and some to prepare for
+new features in later versions of SWISH-E.
 
 <UL>
-<P><LI><STRONG><A NAME="item_foo">foo</A></STRONG>
+<P><LI><STRONG><A NAME="item_Internal">Internal data stored as Properties</A></STRONG>
 <P>
-Fixed bla and bla
+Pre 2.2 some internal data was stored in fixed locations within the index,
+namely the file name, file size, and title. 2.2 introduced new internal
+data such as the last modified date, and document summaries. This data is
+considered <EM>meta data</EM> since it is data about a document. Instead of adding new data to the
+internal structure of the index file, it was decided to use the MetaNames
+and PropertyNames feature of swish to store this meta information. This
+allows for new meta data to be added at a later time (e.g. Content-type),
+and provides an easy and customizable way to print results with the <CODE>-p</CODE> switch and the new <CODE>-x</CODE> switch. In addition, this data can now be sorted by this internal data.
+
+<P>
+For example, to sort by the rank and title:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w foo -s swishrank desc swishtitle asc</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    </UL>
+<P>
+Changes to Configuration File Directives. Please see <A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A> for more info.
+
+<UL>
+<P><LI><STRONG><A NAME="item_New">New directives: IndexContents and DefaultContents</A></STRONG>
+<P>
+Previously, swish parsed all documents as HTML documents. Now swish knows
+how to parse HTML, TXT, and XML documents. The IndexContents and
+DefaultContents tells swish how to index files by their extension.
+
+<P><LI><STRONG><A NAME="item_New">New directive: UndefinedMetaTags [error|ignore|index|auto]</A></STRONG>
+<P>
+This describes what to do when a meta tag is found in a document that is
+not listed in the MetaNames directive.
+
+<P><LI><STRONG><A NAME="item_New">New directive: ConvertHTMLEntities [yes|no]</A></STRONG>
+<P>
+Disables parsing and conversion of HTML entities.
+
+</UL>
+<P>
+Changes to command line arguments. See <A HREF="././SWISH-RUN.html">SWISH-RUN</A> for documentation on these switches.
+
+<UL>
+<P><LI><STRONG><A NAME="item_New">New command line argument -x</A></STRONG>
+<P>
+Provides additional header output and allows for a <EM>format string</EM> to describe what data to print.
+
+<P><LI><STRONG><A NAME="item_New">New command line argument -k</A></STRONG>
+<P>
+Prints words stored in the swish index.
+
+<P><LI><STRONG><A NAME="item_Enhanced">Enhanced command line argument -D</A></STRONG>
+<P>
+When <CODE>-D</CODE> is used with <CODE>-v 4</CODE> additional debugging data is printed.
+
+<P><LI><STRONG><A NAME="item_Enhanced">Enhanced command line argument -d</A></STRONG>
+<P>
+Now -d can accept some back-slashed characters to be used as output
+separators.
+
+<P><LI><STRONG><A NAME="item_Enhanced">Enhanced command line argument -P</A></STRONG>
+<P>
+Now -P sets the phrase delimiter character in searches.
 
 </UL>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
