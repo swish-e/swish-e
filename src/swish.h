@@ -754,7 +754,7 @@ struct DB_RESULTS
 
 #define MAX_ERROR_STRING_LEN 500
 
-typedef struct
+typedef struct SWISH
 {
     /* New module design structure data */
     struct MOD_SearchAlt     *SearchAlt;      /* search_alt module data */

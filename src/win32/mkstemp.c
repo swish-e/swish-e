@@ -52,24 +52,24 @@
    they are replaced with a string that makes the filename unique.
    Returns a file descriptor open on the file for reading and writing.  */
 int
-mkstemp (template)
-     char *template;
+mkstemp (Template)
+     char *Template;
 {
   static const char letters[]
     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   size_t len;
   size_t i;
 
-  len = strlen (template);
+  len = strlen (Template);
 
-  printf("mkstemp: template = %s\n", template);
-  if (len < 6 || strcmp (&template[len - 6], "XXXXXX"))
+  // printf("mkstemp: Template = %s\n", Template);
+  if (len < 6 || strcmp (&Template[len - 6], "XXXXXX"))
     {
       __set_errno (EINVAL);
       return -1;
     }
 
-  if (sprintf (&template[len - 5], "%.5u",
+  if (sprintf (&Template[len - 5], "%.5u",
 	       (unsigned int) getpid () % 100000) != 5)
     /* Inconceivable lossage.  */
     return -1;
@@ -78,15 +78,15 @@ mkstemp (template)
     {
       int fd;
 
-      template[len - 6] = letters[i];
+      Template[len - 6] = letters[i];
 
-      fd = open (template, O_RDWR|O_BINARY|O_CREAT|O_EXCL, 0600);
+      fd = open (Template, O_RDWR|O_BINARY|O_CREAT|O_EXCL, 0600);
       if (fd >= 0)
 	return fd;
     }
 
   /* We return the null string if we can't find a unique file name.  */
 
-  template[0] = '\0';
+  Template[0] = '\0';
   return -1;
 }

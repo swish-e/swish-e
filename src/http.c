@@ -214,25 +214,25 @@ urldepth *add_url(SWISH * sw, urldepth * list, char *url, int depth, char *baseu
 
     if (!equivalentserver(sw, url, baseurl))
     {
-        if (sw->verbose == 3)
+        if (sw->verbose >= 3)
             printf("Skipping %s:  %s\n", url, "Wrong method or server.");
 
 
     }
     else if (http->maxdepth && (depth >= http->maxdepth))
     {
-        if (sw->verbose == 3)
+        if (sw->verbose >= 3)
             printf("Skipping %s:  %s\n", url, "Too deep.");
     }
     else if (sw->nocontentslist && isoksuffix(url, sw->nocontentslist))
     {
-        if (sw->verbose == 3)
+        if (sw->verbose >= 3)
             printf("Skipping %s: %s\n", url, "Wrong suffix.");
 
     }
     else if (urldisallowed(sw, url))
     {
-        if (sw->verbose == 3)
+        if (sw->verbose >= 3)
             printf("Skipping %s:  %s\n", url, "URL disallowed by robots.txt.");
     }
     else if (!http_already_indexed(sw, url))
@@ -290,7 +290,7 @@ int     http_already_indexed(SWISH * sw, char *url)
     for (p = http->url_hash[hashval]; p != NULL; p = p->next)
         if ((strcmp(url, p->url) == 0) || (equivalentserver(sw, url, p->url) && (strcmp(url_uri(url, &len), url_uri(p->url, &len)) == 0)))
         {                       /* We found it. */
-            if (sw->verbose == 3)
+            if (sw->verbose >= 3)
                 printf("Skipping %s:  %s\n", url, "Already indexed.");
             return 1;
         }
