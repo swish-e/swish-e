@@ -161,6 +161,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
     
     indexf->DB = DB_Open(sw, indexf->line,DB_READ);
+    if ( sw->lasterror )
+        SwishAbortLastError( sw );
 
     metaID = 0;
 
