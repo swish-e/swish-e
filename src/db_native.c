@@ -171,8 +171,6 @@ void *DB_Create_Native (char *dbname)
 
    DB->offsetstart = 0;
    DB->hashstart = 0;
-   DB->lasthashval = -1;
-   DB->lastwordID = -1;
    DB->fileoffsetarray = NULL;
    DB->fileoffsetarray_maxsize = 0;
    DB->nextwordoffset = 0;
@@ -184,6 +182,7 @@ void *DB_Create_Native (char *dbname)
 
    for(i=0 ; i<MAXCHARS; i++) DB->offsets[i] = 0L;
    for(i=0 ; i<SEARCHHASHSIZE; i++) DB->hashoffsets[i] = 0L;
+   for(i=0 ; i<SEARCHHASHSIZE; i++) DB->lasthashval[i] = 0L;
 
    swish_magic = SWISH_MAGIC;
    printlong(DB->fp,swish_magic);
@@ -221,8 +220,6 @@ void *DB_Open_Native (char *dbname)
 
    DB->offsetstart = 0;
    DB->hashstart = 0;
-   DB->lasthashval = -1;
-   DB->lastwordID = -1;
    DB->fileoffsetarray = NULL;
    DB->fileoffsetarray_maxsize = 0;
    DB->nextwordoffset = 0;
@@ -465,30 +462,28 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
     hashval = searchhash(word);
     if(!DB->hashoffsets[hashval])
     {
-	DB->hashoffsets[hashval] = wordID;
+        DB->hashoffsets[hashval] = wordID;
     }
     fseek(fp, wordID, SEEK_SET);
-        /* Store wordlen */
+        /* Get wordlen */
     uncompress1(wordlen, fp);
             /* Jump word */
     fseek(fp, (long) wordlen, SEEK_CUR);
             /* Write Null terminator */
     printlong(fp, (long) 0);
-            /* Update previous one in hashlist */
-    if(DB->lasthashval == hashval)
+            /* Update previous word in hashlist */
+    if(DB->lasthashval[hashval])
     {
-        fseek(fp, wordID, SEEK_SET);
-            /* Store wordlen */
+        fseek(fp, DB->lasthashval[hashval], SEEK_SET);
+            /* Get wordlen */
         uncompress1(wordlen, fp);
             /* Jump word */
         fseek(fp, (long) wordlen, SEEK_CUR);
                 /* Overwrite previous NULL pointer */
         printlong(fp, wordID);
-    }
-    else
-        DB->lasthashval = hashval;
 
-    DB->lastwordID = wordID;
+    }
+	DB->lasthashval[hashval] = wordID;
 
     return 0;
 }

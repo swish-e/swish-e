@@ -63,13 +63,11 @@ struct swline *fixnot(struct swline *);
 
 struct swline *expandphrase(struct swline *, char);
 
-void ReadHeaderLookupTable (int table[], int table_size, FILE *fp);
-
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 
 int countResults(RESULT *);
 RESULT *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
-RESULT *operate(SWISH *, RESULT *, int, char *, FILE *, int, int, IndexFILE *);
+RESULT *operate(SWISH *, RESULT *, int, char *, void *, int, int, IndexFILE *);
 RESULT *getfileinfo(SWISH *, char *, IndexFILE *, int);
 
 int isrule(char *);
