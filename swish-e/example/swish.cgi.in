@@ -1966,7 +1966,7 @@ sub run_library {
 
     SwishSearch::load_module( 'SWISH::API' );
 
-    my $indexes = join ' ', $self->swish_command('-f');
+    my $indexes = $self->swish_command('-f');
 
 
     print STDERR "swish.cgi: running library thus no 'output' available -- try 'summary'\n"
@@ -1979,7 +1979,7 @@ sub run_library {
 
     unless ( $cached_handles{$indexes} ) {
 
-        my $swish = SWISH::API->new( $indexes );
+        my $swish = SWISH::API->new( ref $indexes ? join(' ', @$indexes) : $indexes );
         if ( $swish->Error ) {
             $self->errstr( join ': ', $swish->ErrorString, $swish->LastErrorMsg );
             delete $cached_handles{$indexes} if $swish->CriticalError;
