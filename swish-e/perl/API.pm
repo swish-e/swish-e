@@ -487,6 +487,15 @@ The ID is the internal ID number used to represent the meta name.
 Type is the type of metaname.  Currently only one type exists and its
 value is zero.
 
+=item @propes = $result->PropertyList;
+
+=item @meta = $result->MetaList;
+
+These also return a list of Property or Metaname description objects, but are
+accessed via a result record.  Since the result comes from a specific index file
+there's no need to specify the index file name.
+
+
 
 =item $stemmed_word = $swish->StemWord( $word );
 

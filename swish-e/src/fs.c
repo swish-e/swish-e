@@ -308,10 +308,7 @@ static void    indexadir(SWISH * sw, char *dir)
     int             dirlen = strlen( dir );
     struct MOD_FS   *fs = sw->FS;
 
-    if (fs_already_indexed(sw, dir))
-        return;
-
-    /* and another stat if not set to follow symlinks */
+    /* First check if it's a symlink and if so are they allowed */
     if (!fs->followsymlinks && islink(dir))
         return;
 
@@ -328,6 +325,14 @@ static void    indexadir(SWISH * sw, char *dir)
         return;
 
 
+    /* 
+     * Now mark this directory as visited.  This is done before dircontains
+     * because dircontains would have the same results regardless if "dir" is
+     * a symlink or not, so it only needs to be done once.
+     */
+
+    if (fs_already_indexed(sw, dir))
+        return;
 
 
     /* Handle "FileRules directory" directive */
@@ -348,7 +353,7 @@ static void    indexadir(SWISH * sw, char *dir)
             if ( match_regex_list( dp->d_name, fs->filerules.dircontains,"FileRules dircontains" ) )
             {
                 closedir( dfd );
-                return;  /* doesn't recurse */
+                return;  /* prevents recursion into subdirs of this directory */
             }
 
             if ( match_regex_list( dp->d_name, fs->filematch.dircontains, "FileMatch dircontains" ) )
@@ -381,7 +386,7 @@ static void    indexadir(SWISH * sw, char *dir)
     while ((dp = readdir(dfd)) != NULL)
     {
         int filelen = strlen( dp->d_name );
-        
+
         /* For security reasons, don't index dot files */
         /* Check for hidden under Windows? */
 
@@ -414,10 +419,13 @@ static void    indexadir(SWISH * sw, char *dir)
         {
             sortdirlist = (DOCENTRYARRAY *) adddocentry(sortdirlist, pathname);
         }
-        else        
+        else
         {
-            if (fs_already_indexed(sw, pathname))
-                continue;
+            /*
+             * "allgoodfiles" was set above if ANY file in the directory matched
+             * FileMatch directory [...]
+             * Otherwise, run the FilesMatch tests to see if it should be included.
+             */
 
             if ( allgoodfiles || check_FileTests( pathname, &fs->filematch ) ) 
             {
@@ -458,17 +466,13 @@ static void    indexafile(SWISH * sw, char *path)
         return;
 
 
-    /* This only means "IndexDir test.html test.html test.html" will only index test.html once */
-    if (fs_already_indexed(sw, path))
-        return;
-
     /* Check for File|Pathmatch, and index if any match */
     if ( check_FileTests( path, &fs->filematch ) ) 
     {
         printfile(sw, path);
         return;
     }
-    
+
     /* This is likely faster, so do it first */
     if (!isoksuffix(path, sw->suffixlist))
         return;
@@ -582,26 +586,29 @@ static void    printfile(SWISH * sw, char *filename)
     char   *s;
     FileProp *fprop;
 
+    if ( !filename )
+        return;
 
-    if (filename)
+    /* Only index files once */
+    if ( fs_already_indexed( sw, filename ) )
+        return;
+
+    if (sw->verbose >= 3)
     {
-        if (sw->verbose >= 3)
-        {
-            /* Only display file name */
-            if ((s = (char *) strrchr(filename, '/')) == NULL)
-                printf("  %s", filename);
-            else
-                printf("  %s", s + 1);
-            fflush(stdout);
-        }
-
-
-        fprop = file_properties(filename, filename, sw);
-
-        do_index_file(sw, fprop);
-
-        free_file_properties(fprop);
+        /* Only display file name */
+        if ((s = (char *) strrchr(filename, '/')) == NULL)
+            printf("  %s", filename);
+        else
+            printf("  %s", s + 1);
+        fflush(stdout);
     }
+
+
+    fprop = file_properties(filename, filename, sw);
+
+    do_index_file(sw, fprop);
+
+    free_file_properties(fprop);
 }
 
 /* 2001-08 Jose Ruiz */
