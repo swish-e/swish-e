@@ -145,14 +145,13 @@ also be used to escape the following character.
 
 Previous versions of swish included a configuration file called C<user.config> which
 contained examples of all directives.
-This has been replace by a series of example configuration files located in the C<conf>
+This has been replaced by a series of example configuration files located in the C<conf>
 directory.  The configuration directives are now described in L<SWISH-CONFIG|SWISH-CONFIG>.
 
 =item * Ports to Win32 and VMS
 
-David Norris has included the files required to build swish under Windows.  In addition, a binary version of
-swish for Win32 is now included in the distribution.
-See C<src/win32>.
+David Norris has included the files required to build swish under Windows.  See C<src/win32>.
+A self-extracting Windows version is available from the Download page of the swish-e.org web site.
 
 Jean-François Piéronne has provided the files required to build swish under OpenVMS.  See C<src/vms>
 for more information.
@@ -167,7 +166,7 @@ found in the same document, and the additional properties will be ignored.
 Previously, properties of the same name were added to the index, but could not be
 retrieved.
 
-To do: removed the C<next> pointer, and allow user-defined character to place between
+To do: remove the C<next> pointer, and allow user-defined character to place between
 properties.
 
 =item * regex type added to ReplaceRules
@@ -177,16 +176,19 @@ A more general purpose pattern replacement syntax.
 
 =item * New Parsers
 
+Swish's XML parser was replaced with James Clark's expat XML parser library.
+
 Swish can now use Daniel Veillard's libxml2 library for parsing HTML and XML.
 This requires installation of the library before building swish-e.  See the INSTALL
-document for information.
-
-Swish now uses James Clark's expat XML parser library.
+document for information.  libxml2 is not required, but is strongly recommended for
+parsing HTML over swish-e's internal HTML parser, and provides more features for both
+HTML and XML parsing.
 
 =item * Support for zlib
 
 Swish can be compiled with zlib.  This is useful for compressing large
-properties.
+properties.  Building swish with zlib is stronly recommended if you use
+swish-e's C<StoreDescription> feature.
 
 =item * LST type of document no longer supported
 
@@ -198,9 +200,11 @@ To improve security swish-e now uses the C<mkstemp(3)> function to create tempor
 Temporary files are used while indexing only.
 This may result in some portability issues, but the security issues were overriding.
 
+(Currently this does not apply to the -S http indexing method.)
+
 C<mkstemp> opens the temporary with O_EXCL|O_CREAT flags.  This prevents overwriting
 existing files.  In addition, the name of the file created is a lot harder to guess
-by attackers.  In addition, the temporary file is created with only owner permissions.
+by attackers.  The temporary file is created with only owner permissions.
 
 Please report any portability issues on the swish-e discussion list.
 
