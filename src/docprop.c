@@ -298,7 +298,6 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
     pv->datatype = UNDEFINED;
     pv->destroy = 0;
 
-
     /* Lookup by property name, if supplied */
     if ( pname )
         if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname )) )
@@ -307,7 +306,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     /* This may return false */
     prop = getDocProperty( r, &meta_entry, ID );
-        
+
 
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
     {
@@ -347,25 +346,25 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
         freeProperty( prop );
 #endif        
         return pv;
+    }
 
    
-        if ( is_meta_date(meta_entry) )
-        {
-            unsigned long i;
-            i = *(unsigned long *) prop->propValue;  /* read binary */
-            i = UNPACKLONG(i);     /* Convert the portable number */
-            pv->datatype = DATE;
-            pv->value.v_date = (time_t)i;
-#ifdef PROPFILE
-            freeProperty( prop );
-#endif        
-            return pv;
-        }
-
+    if ( is_meta_date(meta_entry) )
+    {
+        unsigned long i;
+        i = *(unsigned long *) prop->propValue;  /* read binary */
+        i = UNPACKLONG(i);     /* Convert the portable number */
+        pv->datatype = DATE;
+        pv->value.v_date = (time_t)i;
 #ifdef PROPFILE
         freeProperty( prop );
 #endif        
+        return pv;
     }
+
+#ifdef PROPFILE
+    freeProperty( prop );
+#endif        
 
 
  
