@@ -53,7 +53,6 @@ Examples:
                       what gets indexed
 
     example6.conf   - spider using "prog" feature
-    example6.spider
 
     example7.conf   - spider using the "http" method of indexing
 
