@@ -401,7 +401,10 @@ You may need to superuser privileges:
    make install
    exit
 
-B<IMPORTANT:> Do not run swish-e as the superuser (root) -- this is only required
+Running make install installs the swish-e binary, the swish-e static library and
+header file, the man pages and HTML documentaiton.
+
+B<IMPORTANT:> Do not run swish-e as the superuser (root) -- root is only required
 during the installation step.
 
 If you do not have root access you can install Swish-e in a local directory.
@@ -485,22 +488,16 @@ And with any luck you will end up with the these two files in the top-level dire
 
 Most people find reading the documentation in HTML most convenient.
 
-=head2 Installing the Swish-e documentation as man(1) pages (optional)
+=head2 Installing the Swish-e documentation as man(1) pages
 
-Part of the included Swish-e documentation can be installed as system
-man(1) pages.  Only the reference related pages are installed (it's
-assumed that you don't need to install the README or INSTALL documents as
-man pages).  You must have the pod2man program installed on your system
-(which you probably do if you have Perl).
+Running make install installs some of the Swish-e documentation as man pages.
+The following man pages are installed:
 
-To build the man pages and install them into your system, type from the
-top-level directory (after running ./configure):
-
-    su root
-    make install-man
-    exit
-
-You will need to C<su root> if you do not have write access to the man directory.
+    SWISH-FAQ(1)
+    SWISH-CONFIG(1)
+    SWISH-RUN(1)
+    SWISH-LIBRARY(1)
+    SWISH-PERL(1)
 
 The man pages are installed in the system man directory.  This directory
 is determined by running ./configure and can be set by passing the
@@ -513,11 +510,6 @@ For example,
 Information on running ./configure can be found by typing:
 
     ./configure --help
-
-The pod source files used to create the man files were written running
-under perl 5.6.1.  Older version of Perl may complain slightly about the
-formatting of the pod files.  This shouldn't be a problem, but please
-let the Swish-e list know if otherwise.  Then upgrade your version of perl. ;)
 
 =head1 QUESTIONS AND TROUBLESHOOTING
 

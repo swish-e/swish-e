@@ -108,3 +108,6 @@
 /* Do we have window.h */
 #undef HAVE_WINDOWS_H
 
+/* Enable BTREE/Incremental support */
+#undef USE_BTREE
+

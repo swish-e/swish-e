@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS VERSION PROJECT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE PERL POD2MAN INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB CPP EGREP ALLOCA LIBOBJS XML2_CONFIG LIBXML_REQUIRED_VERSION LIBXML2_OBJS LIBXML2_LIB LIBXML2_CFLAGS Z_CFLAGS Z_LIBS PCRE_CONFIG PCRE_REQUIRED_VERSION PCRE_CFLAGS PCRE_LIBS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS VERSION PROJECT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT SET_MAKE PERL POD2MAN INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RANLIB ac_ct_RANLIB CPP EGREP ALLOCA LIBOBJS XML2_CONFIG LIBXML_REQUIRED_VERSION LIBXML2_OBJS LIBXML2_LIB LIBXML2_CFLAGS BTREE_OBJS Z_CFLAGS Z_LIBS PCRE_CONFIG PCRE_REQUIRED_VERSION PCRE_CFLAGS PCRE_LIBS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -835,6 +835,11 @@ fi
 if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-incremental    ** developer use only **
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -6066,6 +6071,23 @@ _ACEOF
 fi
 
 
+# Check whether --enable-incremental or --disable-incremental was given.
+if test "${enable_incremental+set}" = set; then
+  enableval="$enable_incremental"
+  btree=yes
+fi;
+
+if test x$btree = xyes; then
+    { echo "$as_me:$LINENO: WARNING: ** Buidling with developer only incremental indexing code **" >&5
+echo "$as_me: WARNING: ** Buidling with developer only incremental indexing code **" >&2;}
+    BTREE_OBJS="btree.o array.o worddata.o fhash.o"
+
+    cat >>confdefs.h <<\_ACEOF
+#define USE_BTREE 1
+_ACEOF
+
+fi
+
 
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
@@ -7107,6 +7129,7 @@ s,@LIBXML_REQUIRED_VERSION@,$LIBXML_REQUIRED_VERSION,;t t
 s,@LIBXML2_OBJS@,$LIBXML2_OBJS,;t t
 s,@LIBXML2_LIB@,$LIBXML2_LIB,;t t
 s,@LIBXML2_CFLAGS@,$LIBXML2_CFLAGS,;t t
+s,@BTREE_OBJS@,$BTREE_OBJS,;t t
 s,@Z_CFLAGS@,$Z_CFLAGS,;t t
 s,@Z_LIBS@,$Z_LIBS,;t t
 s,@PCRE_CONFIG@,$PCRE_CONFIG,;t t
