@@ -264,6 +264,10 @@
 #define NO_SYMBOLIC_FILE_LINKS		/* Win32 has no symbolic links */
 #endif
 
+#ifdef __VMS
+#define NO_SYMBOLIC_FILE_LINKS          /* VMS has no symbolic links */
+#endif
+
 #ifdef _WIN32
 #undef INDEXPERMS		/* Win32 version doesn't use chmod() */
 #endif
@@ -274,6 +278,8 @@ typedef int pid_t;		/* process ID */
 
 #ifdef _WIN32
 #define TMPDIR "c:\\windows\\temp"
+#elif defined(__VMS)
+#define TMPDIR "sys$scratch:"
 #else
 #define TMPDIR "/var/tmp"
 #endif
@@ -297,6 +303,10 @@ typedef int pid_t;		/* process ID */
  * otherwise end-of-line processing is not done correctly (on Win32).
  */
 #ifdef _WIN32
+#define FILEMODE_READ           "rb"
+#define FILEMODE_WRITE          "wb"
+#define FILEMODE_READWRITE      "rb+"
+#elif defined(__VMS)
 #define FILEMODE_READ           "rb"
 #define FILEMODE_WRITE          "wb"
 #define FILEMODE_READWRITE      "rb+"
