@@ -1083,7 +1083,9 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     totalfiles = getfilecount(sw->indexlist);
 
-    stopwords = 0;
+    /* Proccess IgnoreLimit option */
+    getPositionsFromIgnoreLimitWords(sw);
+
     stopwords = getNumberOfIgnoreLimitWords(sw);
 
 

@@ -895,7 +895,6 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if(newtp != tp)
     {
-        /* Memory has been reallocated - Update the linked list */
         if(efound->currentChunkLocationList == tp)
             efound->currentChunkLocationList = newtp;
         else
@@ -911,7 +910,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     }
 
     tp->position[tp->frequency++] = position;
-    tp->structure |= structure;  /* Just merge the structure elements! */
+    tp->structure |= structure;  /* Just merged the structure elements! */
 
 }
 
@@ -1761,9 +1760,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     /* If we are swaping locs to file, reset memory zone */
     if(sw->Index->swap_locdata)
         Mem_ZoneReset(sw->Index->totalLocZone);
-
-    /* Proccess IgnoreLimit option */
-    getPositionsFromIgnoreLimitWords(sw);
 
     n = lastPercent = 0;
     for (i = 0; i < totalwords; i++)
