@@ -6,9 +6,15 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.2 - January ??, 2004
+=head2 Version 2.4.2 - March 09, 2004
 
 =over 4
+
+=item * UseStemming didn't take no for an answer
+
+UseStemming was coded as an alias for FuzzyIndexingMode when Snowball was
+compiled in (the default), but "no" doesn't always mean no when the Norwegian
+stemmer is available.
 
 =item * Fixed problem building incremental version
 
