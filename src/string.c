@@ -957,7 +957,7 @@ int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to)
   /* special cases, one param  */
   if (! strcmp (from,":ascii7:") ){
      for (i=0; i<256; i++)  
-        trlookup[i] = (int) char_ISO_normalize (i);
+        trlookup[i] = (int) char_ISO_normalize ((unsigned char) i);
      return 1;
   }
 
@@ -1029,6 +1029,55 @@ char *cstr_dirname (char *path)
   }
  
   return dir;  
+}
+
+/* estrdup - like strdup except we call our emalloc routine explicitly
+** as it does better memory management and tracking 
+** Note: emalloc will report error and not return if no memory
+*/
+
+char *estrdup(char *str)
+{
+	char *p;
+
+	if (!str)
+		return NULL;
+
+	if ((p = emalloc(strlen(str) + 1)))
+		return strcpy(p, str);
+
+	return NULL;
+}
+
+
+char *estrndup(char *s, size_t n)
+{
+size_t lens=strlen(s);
+size_t newlen;
+char *news;
+	if(lens<n)
+		newlen=lens;
+	else
+		newlen=n;
+	news=emalloc(newlen+1);
+	memcpy(news,s,newlen);
+	news[newlen]='\0';
+	return news;
+}
+
+
+/*
+   -- estrredup
+   -- do free on s1 and make copy of s2
+   -- this is used, when s1 is replaced by s2
+   -- 2001-02-15 rasc
+
+*/
+
+char *estrredup (char *s1, char *s2)
+{
+   if (s1) efree (s1);
+   return estrdup (s2);
 }
 
 

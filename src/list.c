@@ -105,6 +105,30 @@ int i;
 }
 
 
+void freeswline(struct swline *tmplist)
+{
+struct swline *tmplist2;
+
+	while (tmplist) {
+		tmplist2 = tmplist->next;
+		efree(tmplist->line);
+		efree(tmplist);
+		tmplist = tmplist2;
+	}
+}
+
+
+void freeindexfile(IndexFILE *tmplist)
+{
+IndexFILE *tmplist2;
+
+	while (tmplist) {
+		tmplist2 = tmplist->next;
+		efree(tmplist->line);
+		efree(tmplist);
+		tmplist = tmplist2;
+	}
+}
 
 
 void init_header(INDEXDATAHEADER *header)
