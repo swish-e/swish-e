@@ -2,6 +2,18 @@
 
 INSTALL - Swish-e Installation Instructions
 
+=head1 OVERVIEW
+
+This document describes how to download, build and install Swish-e.
+Also described is how to build Swish-e with optional, yet recommended libraries that
+extend and enhance Swish-e.
+
+This document also provides instructions on how to get help installing
+and using Swish-e (and the important information you should provide when asking for help).
+
+Also, below is a basic overview of using Swish-e to index documents, with pointers to
+other more advanced examples.
+
 =head1 SYSTEM REQUIREMENTS
 
 Swish-e 2.x is written in C, and, up to this time, it has been tested on
@@ -45,7 +57,7 @@ B<zlib compression>
 http://www.gzip.org/zlib/
 
 Swish-e can make use of zlib to compress document properties.  This is recommended
-if you are using L<StoreDescription|SWISH-CONFIG/"item_StoreDescription">
+if you are using L<StoreDescription|SWISH-CONFIG/"item_StoreDescription">.
 
 B<Memory>
 
@@ -62,8 +74,8 @@ http://www.cpan.org
 http://search.cpan.org
 
 Swish-e uses a perl script for spidering web sites.  The script 
-requires the LWP, HTTP, and HTML modules. (Note: depending on your perl
-installation, you might need to install additional modules required
+requires the LWP bundle of modules (see http://search.cpan.org/search?dist=libwww-perl ).
+(Note: depending on your perl installation, you might need to install additional modules required
 by LWP; for requirements and downloads check http://www.cpan.org
 or http://search.cpan.org).  The Perl helper script was tested with
 perl 5.005, 5.6.0, and 5.6.1 although it should probably work with any version 5 release.
@@ -87,6 +99,32 @@ The Windows binary is distributed as a separate package from the source
 distribution.  See http://Swish-e.org for download information.
 
 =head1 INSTALLATION
+
+Instructions below are for installing Swish-e from source.
+Installing from source is recommended, but you should also check
+the Swish-e web site for binary distributions for your platform.
+
+Windows binary distributions are available from the Swish-e site.
+
+=head2 Brief Instructions
+
+    ./configure
+    make
+    make test
+    su root
+    make install
+
+Swish uses a F<configure> script to generate a Makefile for your platform.
+You will probably want to specify options to the F<configure> script.
+These options are described in detail below.  But, to be brief:
+
+    ./configure --with-libxml2 --with-zlib
+    make
+    make test
+    su root
+    make install
+
+You will need to be sure zlib and libxml2 are installed first.    
 
 =head2 Using libxml2 parser library  (optional, but recommended)
 
@@ -208,8 +246,11 @@ or C<LD_LIBRARY_PATH> variables.  See above for more details.
 If you are reading this INSTALL document, then you probably already have
 downloaded and unpacked the distribution.  But just in case...
 
-Make sure you are using the current stable release from
-http://Swish-e.org.  How you download is up to you: lynx, lwp-download,
+Make sure you are using the current release from
+http://Swish-e.org.  If you have any questions about which version to use, please
+ask on the Swish-e discussion list.
+
+How you download Swish-e is up to you: lynx, lwp-download,
 wget are all common methods.
 
 =over 3
@@ -245,9 +286,10 @@ Uncompressing should create the following directories:
 
 Compile-time configuration settings are adjusted in the file
 F<src/config.h>.  Most of the settings may also be specified in the
-configuration file used during indexing.  You probably will not need to
-change this file, but it's helpful to become familiar with the default
-compiled-in settings.
+configuration file used during indexing.
+
+You probably will B<not> need to change this file, but it's helpful
+to become familiar with the default compiled-in settings.
 
 =item 3 Build Swish-e
 
@@ -296,7 +338,7 @@ You may need to superuser privileges:
    make install
    exit
 
-B<IMPORTANT:> Do not *run* swish-e as the superuser (root).
+B<IMPORTANT:> Do not run swish-e as the superuser (root).
 
 The bin directory may be set when first running F<./configure>. For example:
 
@@ -324,7 +366,7 @@ a question to the Swish-e list.
 
 =head2 Installing the Swish-e C Library (optional)
 
-Swish 2.2 creates the C library F<libSwish-e.a> during the build.
+Swish 2.2 creates the C library F<libswish-e.a> during the build.
 Install this library if you wish to embed Swish-e into another
 application.  For example, the library should be installed
 before using the high level Perl SWISH modules located on
@@ -736,7 +778,7 @@ such as documents stored in a database (RDBMS), or documents that need
 to be processed before they can be indexed.  Examples for using the C<-S
 prog> method are shown in the F<prog-bin> directory>.
 
-Swishe- can also use I<filters> to convert documents as they are
+Swish-e can also use I<filters> to convert documents as they are
 processed by Swish-e.  For example, MS-Word or PDF documents can be
 converted and indexed by Swish-e by using filters.  See the section on
 filters in L<SWISH-CONFIG|SWISH-CONFIG>, and the examples shown in the
