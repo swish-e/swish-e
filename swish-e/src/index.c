@@ -1124,8 +1124,6 @@ int     removestops(SWISH * sw)
     ENTRY **estop = NULL;
     int     estopsz = 0,
             estopmsz = 0;
-    int     hashval;
-    struct swline *sp;
     int     modified,
             totalwords;
     IndexFILE *indexf = sw->indexlist;
@@ -1134,12 +1132,7 @@ int     removestops(SWISH * sw)
     struct filepos *fpos;
     struct MOD_Index *idx = sw->Index;
 
-    /* Now let's count the current number of stopwords as defined by IgnoreWords */
-
-    for (stopwords = 0, hashval = 0; hashval < HASHSIZE; hashval++)
-        for (sp = indexf->header.hashstoplist[hashval]; sp; sp = sp->next)
-            stopwords++;
-
+    stopwords = 0;
     totalwords = indexf->header.totalwords;
 
     if (!totalwords || idx->plimit >= NO_PLIMIT)
@@ -1168,7 +1161,7 @@ int     removestops(SWISH * sw)
                 addStopList(&indexf->header, ep->word); /* For printing list of words */
                 addstophash(&indexf->header, ep->word); /* Lookup hash */
                 stopwords++;
-
+printf("Removing %s\n", ep->word );
                 /* unlink the ENTRY from the hash */
                 if (ep2)
                     ep2->next = ep->next;
