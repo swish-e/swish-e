@@ -179,6 +179,8 @@ void    addbuzzwordhash(IndexFILE * indexf, char *word)
     if (isbuzzword(indexf, word))
         return;
 
+    indexf->buzzwords_used_flag++;
+
     sp = (struct swline *) emalloc(sizeof(struct swline));
 
     sp->line = (char *) estrdup(word);
