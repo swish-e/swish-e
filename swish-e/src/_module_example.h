@@ -26,6 +26,13 @@ $Id$
 
 
 
+/*
+   use the following methode/layout to access module data:
+
+       sw->modulname->data
+
+*/
+
 struct some-module-structures and types {	
 	.....
 };
