@@ -290,6 +290,14 @@ char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 *
 *   Returns:
 *       pointer to a propValue structure if found -- caller MUST free
+*       Returns NULL if propertyName doesn't exist.
+*
+*   Note:
+*       Feb 13, 2002 - now defined properties that just don't exist
+*       for the document return a blank *string* even for numeric
+*       and date properties.  This it to prevent "(NULL)" from displaying.
+*       They used to return NULL, but since currently only result_output.c
+*       uses this function, it's not a problem.
 *
 *
 ********************************************************************/
@@ -301,30 +309,32 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
     propEntry *prop;
 
 
-    /* create a propvalue to return to caller */
-    pv = (PropValue *) emalloc (sizeof (PropValue));
-    pv->datatype = UNDEFINED;
-    pv->destroy = 0;
-
     /* Lookup by property name, if supplied */
     if ( pname )
         if ( !(meta_entry = getPropNameByName( &r->indexf->header, pname )) )
             return NULL;
 
 
+    /* create a propvalue to return to caller */
+    pv = (PropValue *) emalloc (sizeof (PropValue));
+    pv->datatype = UNDEFINED;
+    pv->destroy = 0;
+
+
+
     /* This may return false */
     prop = getDocProperty( sw, r, &meta_entry, ID );
+
+    if ( !prop )
+    {
+        pv->datatype = STRING;
+        pv->value.v_str = "";
+        return pv;
+    }
 
 
     if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
     {
-        if ( !prop )
-        {
-            pv->datatype = STRING;
-            pv->value.v_str = "";
-            return pv;
-        }
-
         pv->datatype = STRING;
         pv->destroy++;       // caller must free this
         pv->value.v_str = bin2string(prop->propValue,prop->propLen);
@@ -334,11 +344,16 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
 
     /* dates and numbers should return null to tell apart from zero */
+    /* This is a slight problem with display, as blank properties show "(NULL)" */
+    /* but is needed since other parts of swish (like sorting) need to see NULL. */
+
+    /****************
     if ( !prop )
     {
         efree( pv );
         return NULL;
     }
+    ****************/
 
 
     if ( is_meta_number(meta_entry) )
