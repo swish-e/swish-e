@@ -764,6 +764,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = index_no_content;
 
 
+    /* Make sure all meta flags are cleared (incase a parser aborts) */
+    ClearInMetaFlags( &indexf->header );
+
     wordcount = countwords(sw, fprop, rd_buffer);
 
 

@@ -180,6 +180,24 @@ struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int m
 }
 
 /**************************************************************************
+*   Clear in_tag flags on all metanames
+*   The flags are used for indexing
+*
+***************************************************************************/
+
+
+/** Lookup META_INDEX -- these only return meta names, not properties **/
+
+void ClearInMetaFlags(INDEXDATAHEADER * header)
+{
+    int     i;
+
+    for (i = 0; i < header->metaCounter; i++)
+        header->metaEntryArray[i]->in_tag = 0;
+}
+
+
+/**************************************************************************
 *   These routines lookup either a property or a metaname
 *   by its ID or name
 *

@@ -36,4 +36,5 @@ struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int 
 void freeMetaEntries( INDEXDATAHEADER * );
 int isDontBumpMetaName(struct swline *,char *tag);
 int is_meta_entry( struct metaEntry *meta_entry, char *name );
+void ClearInMetaFlags(INDEXDATAHEADER * header);
 
