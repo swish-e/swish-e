@@ -645,6 +645,8 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         char *c;
         efree( pv );
         pv = getResultPropValue(sw, r, AUTOPROPERTY_DOCPATH, 0);
+
+        /* Just display the base name */
         if ( pv )
         {
             c = estrdup( str_basename( pv->value.v_str ) );
@@ -691,11 +693,6 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
         if (f)
             fprintf(f, fmt, (char *) pv->value.v_str);
 
-        /* Free the string, if neede */
-        if ( pv->destroy )
-            efree( pv->value.v_str );
-
-
         break;
 
 
@@ -730,8 +727,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
 
 
     }
-    efree(pv);
-
+    freeResultPropValue(pv);
 }
 
 

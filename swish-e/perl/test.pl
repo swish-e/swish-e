@@ -36,6 +36,7 @@
     # First, open the index files. 
     # This reads in headers and prepares the index for searching
     # You can run more than one query once the index is opened.
+
     
     my $handle = SwishOpen( $indexfiles )
         or die "Failed to SwishOpen '$indexfiles'";
@@ -57,6 +58,8 @@
     # Now, let's run a few queries...
 
     # Define a few searches
+
+
 
     my @searches = (
         {
@@ -102,7 +105,22 @@
             context => 1,   # Search the entire file
         },
         {
+            title   => 'Advanced search',
+            query   => 'test or meta1=m* or meta2=m* or meta3=m*',
+            props   => 'meta1 meta2 meta3',
+            sort    => '',
+            context => 1,   # Search the entire file
+        },
+        {
             title   => 'Limit to title',
+            query   => 'test or meta1=m* or meta2=m* or meta3=m*',
+            props   => 'meta1 meta2 meta3 swishrank swishdocpath swishlastmodified',
+            sort    => '',
+            context => 1,   # Search the entire file
+            limit   => [ 'swishtitle', '<=', 'If you are seeing this, the test' ],
+        },
+        {
+            title   => 'Limit to title - second test with same query',
             query   => 'test or meta1=m* or meta2=m* or meta3=m*',
             props   => 'meta1 meta2 meta3 swishrank swishdocpath swishlastmodified',
             sort    => '',
@@ -133,26 +151,29 @@
     for my $search ( @searches ) {
         print_header( "$search->{title} - Query: '$search->{query}'" );
 
-        # Here's the actual query
 
+        # Since we *might* use SetLimitParameter, make sure it's reset first
+        ClearLimitParameter( $handle );
+        
         if ( $search->{limit} ) {
             print "limiting to @{$search->{limit}}\n\n";
             SetLimitParameter( $handle, ,@{$search->{limit}});
         }
 
+        # Here's the actual query
         
         my $num_results = SwishSearch( $handle, @{$search}{ @settings } );
 
         print "# Number of results = $num_results\n\n";
 
-    if ( $num_results <= 0 ) {
-        print ($num_results ? SwishErrorString( $num_results ) : 'No Results');
+        if ( $num_results <= 0 ) {
+            print ($num_results ? SwishErrorString( $num_results ) : 'No Results');
 
-        my $error = SwishError( $handle );
-        print "\nError number: $error\n" if $error;
+            my $error = SwishError( $handle );
+            print "\nError number: $error\n" if $error;
 
-        next;
-    }
+            next;
+        }
 
         my %result;
         my @properties = split /\s+/, $search->{props};
@@ -169,7 +190,6 @@
             print "-----------\n";
         }
     }
-
 
     print_header('Other Functions');
 
@@ -205,6 +225,10 @@
     # Free the memory.
 
     SwishClose( $handle );
+
+    # If swish was built with memory debugging this will dump extra info
+    SWISHE::MemSummary();
+
 
 sub print_header {
     print "\n", '-' x length( $_[0] ),"\n",

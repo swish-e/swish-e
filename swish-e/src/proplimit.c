@@ -141,29 +141,29 @@ void initModule_PropLimit (SWISH  *sw)
     self =(struct MOD_PropLimit *) emalloc(sizeof(struct MOD_PropLimit));
     sw->PropLimit = self;
 
-
     self->params = NULL;
 }
+
+void ClearLimitParameter (SWISH *sw)
+{
+    struct MOD_PropLimit *self = sw->PropLimit;
+    PARAMS  *tmp;
+
+    while ( self->params ) {
+        efree( self->params->propname );
+        efree( self->params->lowrange );
+        efree( self->params->highrange );
+        tmp = (PARAMS *)self->params->next;
+        efree( self->params );
+        self->params = tmp;
+    }
+}
+
 
 
 void freeModule_PropLimit (SWISH *sw)
 {
-    struct MOD_PropLimit *self = sw->PropLimit;
-    PARAMS  *tmp;
-    PARAMS  *tmp2;
-
-
-
-    tmp = self->params;
-    while ( tmp ) {
-        efree( tmp->propname );
-        efree( tmp->lowrange );
-        efree( tmp->highrange );
-        tmp2 = (PARAMS *)tmp->next;
-        efree( tmp );
-        tmp = tmp2;
-    }
-
+    ClearLimitParameter( sw );
     efree( sw->PropLimit );
     sw->PropLimit = NULL;
     

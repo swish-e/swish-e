@@ -77,9 +77,10 @@ char   *lstrstr(char *s, char *t)
 ** include blank spaces in the word or phrase.
    -- 2001-02-11 rasc  totally rewritten, respect escapes like \"
    -- 2001-11-09 moseley rewritten again - doesn't check for missing end quote
+   -- Always returns a string, but may be empty.  
 */
 
-char   *getword(char **in_buf)
+static char   *getword(char **in_buf)
 {
     unsigned char quotechar;
     unsigned char uc;
@@ -422,8 +423,14 @@ StringList *parse_line(char *line)
 
     p = line;
 
-    while (&line && *(p = (char *) getword(&line)))
+    while (&line && (p = getword(&line)))
     {
+        /* getword returns "" when, not null, so need to free it if we are not using it */
+        if ( !*p) {
+            efree( p );
+            break;
+        }
+        
         if (cursize == maxsize)
             sl->word = (char **) erealloc(sl->word, (maxsize *= 2) * sizeof(char *));
 
@@ -944,10 +951,10 @@ char   *cstr_dirname(char *path)
 char   *estrdup(char *str)
 {
     char   *p;
-
+    
     if (!str)
         return NULL;
-
+    
     if ((p = emalloc(strlen(str) + 1)))
         return strcpy(p, str);
 

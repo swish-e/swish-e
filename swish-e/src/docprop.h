@@ -42,6 +42,8 @@ void getSwishInternalProperties(FileRec *, IndexFILE *);
 
 
 PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *name, int ID);
+void    freeResultPropValue(PropValue *pv);
+
 
 void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
 void dump_file_properties(IndexFILE * indexf, FileRec *fi );

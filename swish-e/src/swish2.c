@@ -222,16 +222,20 @@ SWISH  *SwishOpen(char *indexfiles)
 
     if (indexfiles && indexfiles[0]) {
         sw = SwishNew();
+
+        /* Parse out index files, and append to indexlist */
         sl = parse_line(indexfiles);
+
         for (i = 0; i < sl->n; i++)
-            sw->indexlist = (IndexFILE *)
-                addindexfile(sw->indexlist, sl->word[i]);
+            sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, sl->word[i]);
+
         if ((i = SwishAttach(sw, 0)) < 0) {
             SwishClose(sw);
             sw = NULL;
         }
     } else
         sw = NULL;
+
     if (sl)
         freeStringList(sl);
 
@@ -344,6 +348,8 @@ char   *SwishErrorString(int errornumber)
 }
 
 char    tmp_header_buffer[50];  /*  Not thread safe $$$ */
+
+/** Argh!  This is as ugly as the config parsing code **/ 
 
 char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name)
 {

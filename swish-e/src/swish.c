@@ -145,10 +145,7 @@ int     main(int argc, char **argv)
     SWISH  *sw;
     CMDPARAMS *params;
 
-
-
     setlocale(LC_CTYPE, "");
-
 
 
     /* Start a session */
