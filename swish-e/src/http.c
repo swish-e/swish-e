@@ -634,7 +634,9 @@ void    http_indexpath(SWISH * sw, char *url)
                $$ seems to me historical and has to be removed...
                $$ Why no getting a txt file?
              */
-            fprop->index_no_content = strncmp(contenttype, "text/", 5);
+
+            // This isn't true, because filters can be used.
+            //fprop->index_no_content = strncmp(contenttype, "text/", 5);
             /* $$ Jose: to discuss... and eventually be removed... */
 
 
