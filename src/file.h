@@ -38,10 +38,7 @@ void checkListRegex(struct swline *list);
  * Some handy routines for parsing the Configuration File
  */
 
-void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords);
 int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);
-void readstopwordsfile(SWISH *, IndexFILE *, char *);
-void readusewordsfile(SWISH *, IndexFILE *, char *);
 
 /* use these to open Index files (because they are binary files: Win32)  */
 FILE* openIndexFILEForWrite(char *);
@@ -50,8 +47,6 @@ FILE* openIndexFILEForReadAndWrite(char *);
 void CreateEmptyFile(SWISH *, char *);
 
 void indexpath(SWISH *, char *);
-int parseconfline(SWISH *, StringList *);
-
 
 char *read_stream(FILE *, int );
 
