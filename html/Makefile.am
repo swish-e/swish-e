@@ -13,7 +13,6 @@ html_DATA = \
 	SWISH-CONFIG.html \
 	SWISH-FAQ.html \
 	SWISH-LIBRARY.html \
-	SWISH-PERL.html \
 	SWISH-RUN.html \
 	SWISH-SEARCH.html \
 	API.html \
@@ -61,9 +60,6 @@ SWISH-FAQ.html: $(pod_dir)/SWISH-FAQ.pod
 	$(MAKE) html
 
 SWISH-LIBRARY.html: $(pod_dir)/SWISH-LIBRARY.pod
-	$(MAKE) html
-
-SWISH-PERL.html: $(pod_dir)/SWISH-PERL.pod
 	$(MAKE) html
 
 SWISH-RUN.html: $(pod_dir)/SWISH-RUN.pod

@@ -136,7 +136,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 noinst_LTLIBRARIES = libreplace.la
-libreplace_la_SOURCES = 
+libreplace_la_SOURCES = dummy.c
 libreplace_la_LIBADD = @LTLIBOBJS@
 EXTRA_DIST = mkstemp.h
 subdir = src/replace
@@ -147,13 +147,14 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 
 libreplace_la_LDFLAGS =
 libreplace_la_DEPENDENCIES = @LTLIBOBJS@
-am_libreplace_la_OBJECTS =
+am_libreplace_la_OBJECTS = dummy.lo
 libreplace_la_OBJECTS = $(am_libreplace_la_OBJECTS)
 
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)/src
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = $(DEPDIR)/mkstemp.Plo $(DEPDIR)/vsnprintf.Plo
+@AMDEP_TRUE@DEP_FILES = $(DEPDIR)/mkstemp.Plo $(DEPDIR)/vsnprintf.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/dummy.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -194,9 +195,10 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/mkstemp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/vsnprintf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Plo@am__quote@
 
 distclean-depend:
-	-rm -rf $(DEPDIR)
+	-rm -rf $(DEPDIR) ./$(DEPDIR)
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" \

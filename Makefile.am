@@ -10,11 +10,11 @@ doc_DATA = \
 
 INSTALL: $(top_srcdir)/pod/INSTALL.pod
 	-rm -f $(top_srcdir)/INSTALL
-	pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
+	-pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
 
 README: $(top_srcdir)/pod/README.pod
 	-rm -f $(top_srcdir)/README
-	pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
+	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
 
 
 config_dir  = \
@@ -137,7 +137,6 @@ pod_dir = \
     pod/SWISH-CONFIG.pod \
     pod/SWISH-FAQ.pod \
     pod/SWISH-LIBRARY.pod \
-    pod/SWISH-PERL.pod \
     pod/SWISH-RUN.pod \
     pod/SWISH-SEARCH.pod \
     pod/images/dotrule1.gif \
