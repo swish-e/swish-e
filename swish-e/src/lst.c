@@ -34,6 +34,8 @@ char *begintag=NULL,*endtag=NULL,*p,*q,*tag;
 IndexFILE *indexf=sw->indexlist;
 struct MOD_Index *idx = sw->Index;
 int numwords=0,lentag=0;
+char *parsed_tag;
+
 		/* First time - Look for the first valid tag */
 	for(p=buffer,tag=NULL;p;)
 	{
@@ -41,7 +43,7 @@ int numwords=0,lentag=0;
 			begintag++;
 			if((endtag=strchr(begintag,'>'))) {   /* Found */
 				*endtag='\0';
-				if ((begintag[0]!='!') && (begintag[0]!='/') && ((getXMLField(indexf, begintag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta)))) 
+				if ((begintag[0]!='!') && (begintag[0]!='/') && ((getXMLField(indexf, begintag,sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta,&parsed_tag, fprop->real_path)))) 
 				{
 						/* Build "<tag>" */
 					lentag=strlen(begintag)+2;

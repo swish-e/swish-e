@@ -516,13 +516,15 @@ static struct metaMergeEntry *readMergeMeta(SWISH * sw, int metaCounter, struct 
  ** new index in the idividual file entry
  */
 
-static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, struct metaMergeEntry *metaFileEntry, int *count)
+static void addMetaMergeArray(IndexFILE *indexf, struct metaMergeEntry *metaFileEntry)
 {
     int     newMetaID;
     struct metaEntry *tmpEntry;
     char   *metaWord;
     int     metaType = 0;
     int     i;
+    int     count = indexf->header.metaCounter;
+    struct metaEntry **metaEntryArray = indexf->header.metaEntryArray;
 
     newMetaID = 0;
 
@@ -531,7 +533,7 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
 
     if (metaEntryArray)
     {
-        for (i = 0; i < (*count); i++)
+        for (i = 0; i < count; i++)
         {
             tmpEntry = metaEntryArray[i];
 
@@ -567,27 +569,26 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
 
 
 
-        if (i < (*count))       /* metaname exists */
+        if (i < count)       /* metaname exists */
         {
             metaFileEntry->newMetaID = newMetaID;
         }
         else
         {
 /***************** FIX ******************/       
-            metaFileEntry->newMetaID = (*count) + 1; 
-            metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
+            metaFileEntry->newMetaID = count + 1; 
+            addNewMetaEntry( &indexf->header, metaWord, metaType, 0);
         }
     }
     else //   if (!metaEntryArray)
     {
-                *count = 0;
+                count = 0;
 /***************** FIX ******************/       
         metaFileEntry->newMetaID = 1;
-        metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
+        addNewMetaEntry( &indexf->header, metaWord, metaType, 0);
     }
 
-
-    return metaEntryArray;
+    indexf->header.metaCounter = count;
 }
 
 
@@ -618,21 +619,17 @@ static void    addentryMerge(SWISH * sw, ENTRY * ip)
 
 /* Creates a list of all the meta names in the indexes
 */
-struct metaEntry **createMetaMerge(struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2, int *metaCounter)
+static void createMetaMerge(IndexFILE *indexf, struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2)
 {
     struct metaMergeEntry *tmpEntry;
-    int     counter;
-    struct metaEntry **metaEntryArray = NULL;
 
-    counter = 0;
 
     for (tmpEntry = metaFile1; tmpEntry; tmpEntry = tmpEntry->next)
-        metaEntryArray = addMetaMergeArray(metaEntryArray, tmpEntry, &counter);
+        addMetaMergeArray(indexf, tmpEntry);
 
     for (tmpEntry = metaFile2; tmpEntry; tmpEntry = tmpEntry->next)
-        metaEntryArray = addMetaMergeArray(metaEntryArray, tmpEntry, &counter);
-    *metaCounter = counter;
-    return metaEntryArray;
+        addMetaMergeArray(indexf, tmpEntry);
+
 }
 
 
@@ -855,12 +852,22 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
     struct mergeindexfileinfo *ip;
     int     start,
             size;
+    struct metaEntry *m;
 
     //addtofilelist(sw, sw->indexlist, filename, &thisFileEntry);
     //return;
 
-    start = get_numeric_prop(docProperties, sw->indexlist->header.startProp);
-    size = get_numeric_prop(docProperties, sw->indexlist->header.sizeProp);
+
+    /* $$$ These property name lookups should be cached */
+    /* but I'm not clear why they are needed at all */
+    start = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_STARTPOS ))
+            ? get_numeric_prop(docProperties, m )
+            : 0;
+
+    size = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCSIZE ))
+            ? get_numeric_prop(docProperties, m )
+            : 0;
+
 
 
     i = lookupindexfilepath(filename, start, size);
@@ -1000,7 +1007,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     /* Create the merged list and modify the
        individual ones with the new meta index
      */
-    indexf->header.metaEntryArray = createMetaMerge(metaFile1, metaFile2,&indexf->header.metaCounter);
+    createMetaMerge(indexf, metaFile1, metaFile2);
 
 
 

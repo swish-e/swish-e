@@ -20,13 +20,20 @@
 
 
 void add_default_metanames(IndexFILE *);
-struct metaEntry * getMetaNameData(INDEXDATAHEADER *, char *);
-struct metaEntry *getMetaNameDataNoAlias(INDEXDATAHEADER * header, char *word);
-struct metaEntry * getMetaIDData(INDEXDATAHEADER *, int);
-struct metaEntry * addMetaEntry(INDEXDATAHEADER *, char *, int, int, int *, int *);
+
+struct metaEntry * getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word);
+struct metaEntry * getMetaNameByName(INDEXDATAHEADER *, char *);
+struct metaEntry * getMetaNameByID(INDEXDATAHEADER *, int);
+
+struct metaEntry * getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word);
+struct metaEntry * getPropNameByName(INDEXDATAHEADER *, char *);
+struct metaEntry * getPropNameByID(INDEXDATAHEADER *, int);
+
+
+struct metaEntry * addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID);
+struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID);
+
 void freeMetaEntries( INDEXDATAHEADER * );
-int getMetaNameID(IndexFILE *, char *);
 int isDontBumpMetaName(SWISH *sw,char *tag);
 int is_meta_entry( struct metaEntry *meta_entry, char *name );
-struct metaEntry **addNewMetaEntry(struct metaEntry **metaEntryArray, int *metaCounter, int metaID, char *metaWord, int metaType, int *sort_array);
 

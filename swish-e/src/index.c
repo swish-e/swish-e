@@ -760,16 +760,14 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
     properties = &indexf->filearray[indexf->filearray_cursize -1 ]->docProperties;
 
     /* Check if title is internal swish metadata */
-    if ( title && (q = indexf->header.titleProp))
+    if ( title )
     {
-
-        if ( is_meta_property(q) )
+        if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_TITLE)))
             addDocProperty(properties, q, title, strlen(title),0);
 
 
-        /* Perhaps we want it to be indexed ... */
-
-        if ( is_meta_index(q) )
+         /* Perhaps we want it to be indexed ... */
+        if ( (q = getMetaNameByName(&indexf->header, AUTOPROPERTY_TITLE)))
         {
             int     metaID,
                     positionMeta;
@@ -781,15 +779,13 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
     }
 
 
-    if (summary && (q = indexf->header.summaryProp))
+    if ( summary )
     {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
+        if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
             addDocProperty(properties, q, summary, strlen(summary),0);
-        }
-        /* Perhaps we want it to be indexed ... */
-        if (is_meta_index(q))
+
+        
+        if ( (q = getMetaNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
         {
             int     metaID,
                     positionMeta;
@@ -801,42 +797,29 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
     }
 
 
-    /* Check if filedate is an internal swish metadata */
-    if ((q = indexf->header.filedateProp))
+
+    /* Currently don't allow indexing by date or size or position */
+
+    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_LASTMODIFIED)))
     {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
-            tmp = (unsigned long) mtime;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
-        }
+        tmp = (unsigned long) mtime;
+        tmp = PACKLONG(tmp);      /* make it portable */
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+    }
+
+    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCSIZE)))
+    {
+        tmp = (unsigned long) size;
+        tmp = PACKLONG(tmp);      /* make it portable */
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
     }
 
 
-    /* Check if size is internal swish metadata */
-    if ((q = indexf->header.sizeProp))
+    if ( (q = getPropNameByName(&indexf->header, AUTOPROPERTY_STARTPOS)))
     {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
-            tmp = (unsigned long) size;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
-        }
-    }
-
-
-    /* Check if size is internal swish metadata */
-    if ((q = indexf->header.startProp))
-    {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
-            tmp = (unsigned long) start;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
-        }
+        tmp = (unsigned long) start;
+        tmp = PACKLONG(tmp);      /* make it portable */
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
     }
 
 }
@@ -909,27 +892,21 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
 
 
 
-    /* Check if filename is internal swish metadata */
-    if ((q = getMetaNameData(&indexf->header, AUTOPROPERTY_DOCPATH)))
+    /* Check if filename is internal swish metadata -- should be! */
+
+    if ((q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
+        addDocProperty(&newnode->docProperties, q, ruleparsedfilename_tmp, strlen(ruleparsedfilename_tmp),0);
+
+
+    /* Perhaps we want it to be indexed ... */
+    if ((q = getMetaNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
     {
-        /* Check if it is also a property (META_PROP flag) */
+        int     metaID,
+                positionMeta;
 
-        if ( is_meta_property(q) )
-            // oh, that was a bug.
-            // addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
-            addDocProperty(&newnode->docProperties, q, ruleparsedfilename_tmp, strlen(ruleparsedfilename_tmp),0);
-
-
-        /* Perhaps we want it to be indexed ... */
-        if ( is_meta_index(q) )
-        {
-            int     metaID,
-                    positionMeta;
-
-            metaID = q->metaID;
-            positionMeta = 1;
-            indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-        }
+        metaID = q->metaID;
+        positionMeta = 1;
+        indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
     }
 
 
@@ -1831,9 +1808,9 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
 
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
-        m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+        m = getMetaNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
 
-        if (m->sorted_data)
+        if (m && m->sorted_data)
         {
             s = CompressedSortFileProps;
             for(i=0;i<indexf->filearray_cursize;i++)

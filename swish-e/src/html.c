@@ -51,13 +51,15 @@ $Id$
 
 /* #### */
 
-static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticmetanames, int verbose, int OkNoMeta, char *name)
+static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char *name, char **parsed_tag, char *filename)
 {
     char   *temp;
     static int lenword = 0;
     static char *word = NULL;
     int     i;
     struct metaEntry *e = NULL;
+
+
 
     /*** $$$ NOTE: memory for "word" is never freed... ***/
     if (!lenword)
@@ -102,6 +104,7 @@ static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyaut
     /* and the above <= was wrong, should be < which caused the
        null insertion below to be off by two bytes */
 
+
     for (i = 0; temp != NULL && *temp && *temp != ' ' && *temp != '"';)
     {
         if (i == lenword)
@@ -122,44 +125,24 @@ static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyaut
     /* Use Rainer's routine */
     strtolower(word);
 
-    while (1)
+    *parsed_tag = word;
+
+    if ((e = getMetaNameByName(&indexf->header, word)))
+        return e;
+
+    if ( applyautomaticmetanames && word && *word )
     {
-        if ((e = getMetaNameData(&indexf->header, word)))
-        {
-            if ((!is_meta_index(e)) && (*applyautomaticmetanames))
-                e->metaType |= META_INDEX;
+        if (verbose)
+            printf("Adding automatic MetaName '%s' found in file '%s'\n", word, filename);
 
-            return e;
-        }
-
-        /* 06/00 Jose Ruiz
-           ** If automatic MetaNames enabled add the metaName
-           ** else break
-         */
-
-        if (*applyautomaticmetanames && word && *word )
-        {
-            if (verbose)
-                printf("\nAdding automatic MetaName %s\n", word);
-
-            /* $$$ addMetaEntry needs to return something here */    
-            addMetaEntry(&indexf->header, word, 0, 0, 0, applyautomaticmetanames);
-        }
-        else
-            break;
+        return addMetaEntry(&indexf->header, word, META_INDEX, 0 );
     }
 
     /* If it is ok not to have the name listed, just index as no-name */
-    if (OkNoMeta)
-    {
-        /*    printf ("\nwarning: metaName %s does not exist in the user config file", word); */
-        return NULL;
-    }
-    else
-    {
-        printf("\nerr: INDEXING FAILURE: The metaName %s does not exist in the user config file\n", word);
-        exit(-1);
-    }
+    if (!OkNoMeta)
+        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", word, filename );
+
+    return NULL;        
 
 }
 
@@ -174,20 +157,14 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
            *start,
            *convtag;
     int     wordcount = 0;      /* Word count */
+    char   *parsed_tag;
 
 
-    metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, name);
+    /* Lookup (or add if "auto") meta name for tag */
+    
+    metaNameEntry = getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, name, &parsed_tag, filename);
+    metaName = metaNameEntry ? metaNameEntry->metaID : 1;
 
-    /* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
-    if (sw->ReqMetaName && !metaNameEntry)
-    {
-        return 0;
-    }
-
-    if (!metaNameEntry)
-        metaName = 1;
-    else
-        metaName = metaNameEntry->metaID;
 
     temp = content + 7;         /* 7 is strlen("CONTENT") */
 
@@ -212,39 +189,44 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
             *temp = '\0';       /* terminate CONTENT, temporarily */
 
 
-        /* Convert entities before saving as a property */
+        /* Convert entities, if requested, and remove newlines */
         convtag = sw_ConvHTMLEntities2ISO(sw, start);
-
         remove_newlines(convtag);  /** why isn't this just done for the entire doc? */
 
 
+
+        /* Index only if a metaEntry was found, or if not not ReqMetaName */
+        if (!sw->ReqMetaName || metaNameEntry)
+        {
+            /* Meta tags get bummped */
+            /* I'm not clear this works as well as I'd like because it always bumps on a new Meta tag, 
+             * but in order to disable this behavior the name MUST be a meta name.
+             * Probably better to let getHTMLMeta() return the name as a string.
+             */
+
+         
+            if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                    position[0]++;
+
+            wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
+        }
+
+
         /* If it is a property store it */
-        if (metaNameEntry && is_meta_property(metaNameEntry))
+        
+        if ( (metaNameEntry = getPropNameByName( &indexf->header, parsed_tag)))
             if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag),0) )
                 progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename );
 
 
 
-        /* Do not index as a metaName */
-        if (metaNameEntry && !is_meta_index(metaNameEntry))
-            metaName = 1;
-
-
-        /* Meta tags get bummped */
-        /* I'm not clear this works as well as I'd like because it always bumps on a new Meta tag, 
-         * but in order to disable this behavior the name MUST be a meta name.
-         * Probably better to let getHTMLMeta() return the name as a string.
-         */
-        if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
-                position[0]++;
-
-        wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
-
         if (convtag != start)
             efree(convtag);
+
         if (temp)
             *temp = '\"';       /* restore string */
     }
+
     return wordcount;
 }
 
@@ -691,42 +673,37 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                     structure |= IN_META;
                     if (lstrstr(tag, "START"))
                     {
-                        if ((metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL)))
+                        char *parsed_tag;
+                        
+                        if ((metaNameEntry = getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL, &parsed_tag, fprop->real_path)))
                         {
-                            /* If must be indexed add the metaName to the currentlist of metaNames */
-                            if (is_meta_index(metaNameEntry))
+                            /* realloc memory if needed */
+                            if (currentmetanames == metaIDlen)
+                                metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
+
+                            /* add metaname to array of current metanames */
+                            metaID[currentmetanames] = metaNameEntry->metaID;
+
+                            /* Preserve position */
+                            if (!currentmetanames)
                             {
-                                /* realloc memory if needed */
-                                if (currentmetanames == metaIDlen)
-                                {
-                                    metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
-                                }
-
-                                /* add metaname to array of current metanames */
-                                metaID[currentmetanames] = metaNameEntry->metaID;
-
-                                /* Preserve position */
-                                if (!currentmetanames)
-                                {
-                                    position_no_meta = positionMeta;
-                                     /* Init word counter for the metaname */
-                                    positionMeta = position_meta;
-                                }
-
-
-                                /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                                if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
-                                        positionMeta++;
-
-                                currentmetanames++;
-
-
-                                
+                                position_no_meta = positionMeta;
+                                 /* Init word counter for the metaname */
+                                positionMeta = position_meta;
                             }
+
+
+                            /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
+                            if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                                    positionMeta++;
+
+                            currentmetanames++;
+
+
                             p = endtag;
 
                             /* If it is also a property store it until a < is found */
-                            if (is_meta_property(metaNameEntry))
+                            if ( (metaNameEntry = getPropNameByName( &indexf->header, parsed_tag )))
                             {
                                 if ((endtag = strchr(p, '<')))
                                     *endtag = '\0';

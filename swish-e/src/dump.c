@@ -98,7 +98,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         if ( !(p = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, j, 0 )) )
             continue;
 
-        meta_entry = getMetaIDData( &indexf->header, j );
+        meta_entry = getPropNameByID( &indexf->header, j );
         dump_single_property( p, meta_entry );
         freeProperty( p );
     }
@@ -420,7 +420,9 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf )
 
         if ( meta_entry->alias )
         {
-            struct metaEntry *m = getMetaIDData( &indexf->header, meta_entry->alias );
+            struct metaEntry *m = is_meta_index( meta_entry )
+                                  ? getMetaNameByID( &indexf->header, meta_entry->alias )
+                                  : getPropNameByID( &indexf->header, meta_entry->alias );
 
             printf(" [Alias for %s (%d)]", m->metaName, m->metaID );
         }

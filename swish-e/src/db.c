@@ -671,7 +671,6 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 {
     int     len;
     int     num_metanames;
-    int     dummy;
     int     metaType,
             i,
             alias,
@@ -701,7 +700,7 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
         
 
         /* add the meta tag */
-        if ( !(m = addMetaEntry(header, word, metaType, metaID, NULL, &dummy)))
+        if ( !(m = addNewMetaEntry(header, word, metaType, metaID)))
             progerr("failed to add new meta entry '%s:%d'", word, metaID );
 
         m->alias = alias;

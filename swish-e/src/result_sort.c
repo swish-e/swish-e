@@ -183,11 +183,7 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
                 tmplist->line = strtolower(tmplist->line);
 
                 /* Check if it is in metanames list */
-                if (!(m = getMetaNameData(&sw->indexlist->header, tmplist->line)))
-                    progerr("%s: parameter is not a property", tmplist->line);
-
-                /* Check if it is a property */
-                if (!is_meta_property(m))
+                if (!(m = getPropNameByName(&sw->indexlist->header, tmplist->line)))
                     progerr("%s: parameter is not a property", tmplist->line);
             }
         }
@@ -296,15 +292,17 @@ int     initSortResultProperties(SWISH * sw)
 
     if (sw->ResultSort->numPropertiesToSort == 0)
     {
-        /* hack -> If no sort perperties have been specified then
-           use rank in descending mode */
+        /* hack -> If no sort perperties have been specified then use rank in descending mode */
         addSearchResultSortProperty(sw, AUTOPROPERTY_RESULT_RANK, 1);
 
         for (indexf = sw->indexlist; indexf; indexf = indexf->next)
         {
-            struct metaEntry *m = getMetaNameData(&indexf->header, AUTOPROPERTY_RESULT_RANK);
-            indexf->propIDToSort = (int *) emalloc(sizeof(int));
+            struct metaEntry *m = getPropNameByName(&indexf->header, AUTOPROPERTY_RESULT_RANK);
 
+            if ( !m )
+                progerr("Rank is not defined as an auto property");
+
+            indexf->propIDToSort = (int *) emalloc(sizeof(int));
             indexf->propIDToSort[0] = m->metaID;
         }
 
@@ -327,12 +325,12 @@ int     initSortResultProperties(SWISH * sw)
         /* Get ID for each index file */
         for (indexf = sw->indexlist; indexf; indexf = indexf->next)
         {
-            indexf->propIDToSort[i] = getMetaNameID(indexf, sw->ResultSort->propNameToSort[i]);
-            if (indexf->propIDToSort[i] == 1)
-            {
+            struct metaEntry *m = getPropNameByID(&indexf->header, (int)sw->ResultSort->propNameToSort[i] );
+
+            if ( !m )
                 progerr("Unknown Sort property name \"%s\" in one of the index files", sw->ResultSort->propNameToSort[i]);
-                return (sw->lasterror = UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
-            }
+
+            indexf->propIDToSort[i] = m->metaID;
         }
     }
     return RC_OK;
@@ -483,9 +481,10 @@ int    *getLookupResultSortedProperties(RESULT * r)
     {
 
         /* This shouldn't happen -- the meta names should be checked before this */
-        if (!(m = getMetaIDData(&indexf->header, indexf->propIDToSort[i])))
+        if (!(m = getPropNameByID(&indexf->header, indexf->propIDToSort[i])))
         {
             props[i] = 0;
+progerr("result_sort -- not a property lookup %d",indexf->propIDToSort[i] );
             continue;
         }
 
@@ -737,7 +736,9 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
     /* Execute for each property */
     for (j = 0; j < indexf->header.metaCounter; j++)
     {
-        m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+        if ( !(m = getPropNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID)))
+            continue;
+            
         m->sorted_data = NULL;
 
 
