@@ -58,8 +58,8 @@ sub process_server {
     my $uri = URI->new( $server->{base_url} );
     $uri->fragment(undef);
 
-    $server->{host} = $uri->host;
-    $server->{same} = [ $uri->host ];
+    $server->{authority} = $uri->authority;
+    $server->{same} = [ $uri->authority ];
     push @{$server->{same}}, @{$server->{same_hosts}} if ref $server->{same_hosts};
 
     $server->{max_time} = $server->{max_time} * 60 + time
@@ -257,8 +257,8 @@ sub extract_links {
             next;
         }
 
-        next unless grep { $u->host eq $_ } @{$server->{same}};
-        $u->host( $server->{host} );  # Force all the same host name
+        next unless grep { $u->authority eq $_ } @{$server->{same}};
+        $u->authority( $server->{authority} );  # Force all the same host name
 
         push @links, $u;
     }
@@ -448,9 +448,10 @@ This required setting is the starting URL for spidering.
 
 =item same_hosts
 
-This optional key sets equivalent host name(s) for the site you are spidering.
+This optional key sets equivalent B<authority> name(s) for the site you are spidering.
 For example, if your site is C<www.mysite.edu> but also can be reached by
 C<mysite.edu> (with or without C<www>) and also C<web.mysite.edu> then:
+
 
 Example:
 
@@ -465,7 +466,17 @@ it will be considered on the same site, and will actually spidered and indexed
 as:
 
     http://www.mysite.edu/path/to/file.html
-    
+
+Note: This should probably be called B<same_authority> because it compares the URI C<authority>
+against the list of host names in C<same_hosts>.  So, if you specify a port name in you will
+probably want to specify the port name in the the list of hosts in C<same_hosts>:
+
+    my %serverA = (
+        base_url    => 'http://sunsite.berkeley.edu:4444/',
+        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        email       => 'my@email.address',
+    );
+
 
 =item email
 
