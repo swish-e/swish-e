@@ -183,7 +183,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     
 
     /* slirp entire file into memory -- yuck */
-    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, fprop->fsize, 0);
+    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, fprop->fsize, 0, 0);
         
 
     /* Save content to a temporary file */

@@ -3,7 +3,7 @@
 
 ; NOTE: this NSI script is designed for NSIS v1.3+
 
-Name "SWISH-E"
+Name "SWISH-E 2.2"
 OutFile "InstallSWISH-E.exe"
 
 ; Some default compiler settings (uncomment and change at will):
@@ -11,12 +11,18 @@ SetCompress auto ; (can be off or force)
 SetDatablockOptimize on ; (can be off)
 CRCCheck on ; (can be off)
 AutoCloseWindow false ; (can be true for the window go away automatically at end)
-ShowInstDetails hide ; (can be show to have them shown, or nevershow to disable)
+ShowInstDetails show ; (can be show to have them shown, or nevershow to disable)
 SetDateSave on ; (can be on to have files restored to their orginal date)
+
+BrandingText "SWISH-E 2.2.1 Installation"
+CompletedText "Installation Complete. Please see the SWISH-E Start Menu Group."
+; Put up one of those silly blue backgrounds while installing
+BGGradient 0000ff 000000 ffffff
 
 LicenseText "You may redistribute SWISH-E under the following terms:"
 LicenseData "COPYING"
-
+EnabledBitmap src\win32\swish2-16.bmp
+DisabledBitmap src\win32\swish2-16-desel.bmp
 InstallDir "$PROGRAMFILES\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
 DirShow show ; (make this hide to not let the user change it)
@@ -27,11 +33,13 @@ InstType "Full"
 ComponentText "Which components do you require?"
 
 Section "Program" ; (default, required section)
+
 SetOutPath "$INSTDIR"
 File COPYING
 
 ; SWISH-E Executable, static, and dynamic libraries
 File src\win32\*.exe
+File src\win32\vars.bat
 ; File src\win32\*.lib
 ; File src\Win32\*.dll
 
@@ -48,6 +56,7 @@ File "C:\Program Files\Common Files\Microsoft Shared\VSA\7.0\VsaEnv\msvcr70.dll"
 File src\swishspider
 File /r filter-bin
 File /r prog-bin
+File /r filters
 
 ; Rename a bunch of text files so Windows has a clue
 Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"
@@ -56,10 +65,15 @@ Rename "$INSTDIR\filter-bin\README" "$INSTDIR\filter-bin\README.txt"
 Rename "$INSTDIR\prog-bin\README" "$INSTDIR\prog-bin\README.txt"
 
 ; Create shorcuts on the Start Menu
+SetOutPath "$INSTDIR\"
+CreateShortcut "$SMPROGRAMS\SWISH-E\SWISH-E Command Prompt.lnk" "%comspec%" "/K vars.bat"
 SetOutPath "$SMPROGRAMS\SWISH-E\"
 CreateShortcut "$SMPROGRAMS\SWISH-E\Browse Files.lnk" "$INSTDIR\"
 WriteINIStr "$SMPROGRAMS\SWISH-E\Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
 CreateShortcut "$SMPROGRAMS\SWISH-E\License.lnk" "$INSTDIR\COPYING.txt"
+SetOutPath "$SMPROGRAMS\SWISH-E\PERL_Resources"
+WriteINIStr "$SMPROGRAMS\SWISH-E\PERL_Resources\Install_ActivePerl.url" "InternetShortcut" "URL" "http://www.activestate.com/Products/Download/Download.plex?id=ActivePerl"
+WriteINIStr "$SMPROGRAMS\SWISH-E\PERL_Resources\CPAN_PERL_Modules.url" "InternetShortcut" "URL" "http://search.cpan.org/"
 SectionEnd ; end of default section
 
 Section "Documentation"
@@ -94,6 +108,9 @@ WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninst
 WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
 
 WriteUninstaller "uninst.exe"
+
+MessageBox MB_OK "SWISH-E has been installed to $INSTDIR. Please see the SWISH-E Start Menu group."
+
 SectionEnd ; end of -post section
 
 
