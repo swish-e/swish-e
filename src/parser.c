@@ -63,6 +63,11 @@ $Id$
 **
 */
 
+/* libxml2 */
+#include <libxml/HTMLparser.h>
+#include <libxml/xmlerror.h>
+#include <libxml/uri.h>
+
 
 #include <stdarg.h>  // for va_list
 #include "swish.h"
@@ -75,10 +80,6 @@ $Id$
 #include "index.h"
 #include "metanames.h"
 
-/* libxml2 */
-#include <libxml/HTMLparser.h>
-#include <libxml/xmlerror.h>
-#include <libxml/uri.h>
 
 /* Should be in config.h */
 
@@ -151,6 +152,7 @@ typedef struct {
     CHAR_BUFFER         ISO_Latin1;         // buffer to hold UTF-8 -> ISO Latin-1 converted text
     int                 abort;              // flag to stop parsing
     char               *baseURL;            // for fixing up relative links
+    int                 swish_noindex;      // swishindex swishnoindex
 } PARSE_DATA;
 
 
@@ -576,6 +578,9 @@ static void start_hndl(void *data, const char *el, const char **attr)
     int         prop_append = 0;
 
 
+    /* disabeld by a comment? */
+    if ( parse_data->swish_noindex )
+        return;
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
@@ -677,6 +682,11 @@ static void end_hndl(void *data, const char *el)
     char        tag[MAXSTRLEN + 1];
     int         is_html_tag = 0;  // to allow <foo> type of metatags in html.
 
+
+    /* disabeld by a comment? */
+    if ( parse_data->swish_noindex )
+        return;
+
     if(strlen(el) > MAXSTRLEN)
     {
         warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
@@ -733,6 +743,10 @@ static void char_hndl(void *data, const char *txt, int txtlen)
    
     /* Have we been disabled? */
     if ( !parse_data->SAXHandler->characters )
+        return;
+
+    /* disabeld by a comment? */
+    if ( parse_data->swish_noindex )
         return;
 
 
@@ -1470,6 +1484,23 @@ static void comment_hndl(void *data, const char *txt)
     PARSE_DATA  *parse_data = (PARSE_DATA *)data;
     SWISH       *sw = parse_data->sw;
     int         structure = get_structure( parse_data );
+    char        *swishcmd;
+
+    if ( ( swishcmd = lstrstr( (char *)txt, "SwishCommand" )) )
+    {
+        swishcmd++;
+        if ( lstrstr( swishcmd, "noindex" ) )
+        {
+            parse_data->swish_noindex++;
+        }
+        else if ( lstrstr( swishcmd, "index" ) )
+        {
+            if ( parse_data->swish_noindex )
+               parse_data->swish_noindex--;
+        }
+
+        return;
+    }
     
 
     /* Bump position around comments - hard coded, always done to prevent phrase matching */
