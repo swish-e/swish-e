@@ -113,6 +113,8 @@ src/merge.h
 src/metanames.c
 src/metanames.h
 src/methods.c
+src/parse_conffile.c
+src/parse_conffile.h
 src/result_output.c
 src/result_output.h
 src/result_sort.c
