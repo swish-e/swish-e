@@ -60,40 +60,40 @@
 /* Is a file a directory?
 */
 
-int isdirectory(char *path)
+int     isdirectory(char *path)
 {
-	struct stat stbuf;
-	
-	if (stat(path, &stbuf))
-		return 0;
-	return ((stbuf.st_mode & S_IFMT) == S_IFDIR) ? 1 : 0;
+    struct stat stbuf;
+
+    if (stat(path, &stbuf))
+        return 0;
+    return ((stbuf.st_mode & S_IFMT) == S_IFDIR) ? 1 : 0;
 }
 
 /* Is a file a regular file?
 */
 
-int isfile(char *path)
+int     isfile(char *path)
 {
-	struct stat stbuf;
-	
-	if (stat(path, &stbuf))
-		return 0;
-	return ((stbuf.st_mode & S_IFMT) == S_IFREG) ? 1 : 0;
+    struct stat stbuf;
+
+    if (stat(path, &stbuf))
+        return 0;
+    return ((stbuf.st_mode & S_IFMT) == S_IFREG) ? 1 : 0;
 }
 
 /* Is a file a link?
 */
 
-int islink(char *path)
+int     islink(char *path)
 {
 #ifndef NO_SYMBOLIC_FILE_LINKS
-	struct stat stbuf;
-	
-	if (lstat(path, &stbuf))
-		return 0;
-	return ((stbuf.st_mode & S_IFLNK) == S_IFLNK) ? 1 : 0;
+    struct stat stbuf;
+
+    if (lstat(path, &stbuf))
+        return 0;
+    return ((stbuf.st_mode & S_IFLNK) == S_IFLNK) ? 1 : 0;
 #else
-	return 0;
+    return 0;
 #endif
 }
 
@@ -101,97 +101,108 @@ int islink(char *path)
 ** Return -1 if there's a problem.
 */
 
-int getsize(char *path)
+int     getsize(char *path)
 {
-	struct stat stbuf;
-	
-	if (stat(path, &stbuf))
-		return -1;
-	return stbuf.st_size;
+    struct stat stbuf;
+
+    if (stat(path, &stbuf))
+        return -1;
+    return stbuf.st_size;
 }
 
 
 /* Checks that all the regex in the replace list are correct */
-void checkReplaceList(SWISH *sw) 
+void    checkReplaceList(SWISH * sw)
 {
-struct swline *tmpReplace;
-char *rule;
-int lenpatt;
-char *patt;
-regex_t re;
-int status;
+    struct swline *tmpReplace;
+    char   *rule;
+    int     lenpatt;
+    char   *patt;
+    regex_t re;
+    int     status;
 
 /*$$$ lstrstr is certainly wrong...  check if strcasecmp should be used */
-	
-	patt = (char *) emalloc((lenpatt=MAXSTRLEN) + 1);
-	tmpReplace = sw->replacelist;
-	while (tmpReplace) {
-		rule = tmpReplace->line;
-		
-		/*  If it is not replace, just do nothing */
-		if (lstrstr(rule,"append") || lstrstr(rule,"prepend") ) {
-			if (tmpReplace->next){
-				tmpReplace = tmpReplace->next;
-			} else {
-				efree(patt);
-				return;
-			}
-		}
-		if (lstrstr(rule,"replace")) {
-			tmpReplace = tmpReplace->next;
-			patt = SafeStrCopy(patt,tmpReplace->line,&lenpatt);
-			status = regcomp(&re,patt, REG_EXTENDED);
-			regfree(&re); /** Marc Perrin ## 18Jan99 **/
-			if (status != 0) {
-				printf ("Illegal regular expression %s\n",patt);
-				efree(patt);
-				exit(0);
-			}
-			
-			if (tmpReplace->next) 
-				tmpReplace = tmpReplace->next;
-			else {
-				efree(patt);
-				return;
-			}
-		}
-		tmpReplace = tmpReplace->next;
-	}
-	efree(patt);
+
+    patt = (char *) emalloc((lenpatt = MAXSTRLEN) + 1);
+    tmpReplace = sw->replacelist;
+    while (tmpReplace)
+    {
+        rule = tmpReplace->line;
+
+        /*  If it is not replace, just do nothing */
+        if (lstrstr(rule, "append") || lstrstr(rule, "prepend"))
+        {
+            if (tmpReplace->next)
+            {
+                tmpReplace = tmpReplace->next;
+            }
+            else
+            {
+                efree(patt);
+                return;
+            }
+        }
+        if (lstrstr(rule, "replace"))
+        {
+            tmpReplace = tmpReplace->next;
+            patt = SafeStrCopy(patt, tmpReplace->line, &lenpatt);
+            status = regcomp(&re, patt, REG_EXTENDED);
+            regfree(&re);
+                 /** Marc Perrin ## 18Jan99 **/
+            if (status != 0)
+            {
+                printf("Illegal regular expression %s\n", patt);
+                efree(patt);
+                exit(0);
+            }
+
+            if (tmpReplace->next)
+                tmpReplace = tmpReplace->next;
+            else
+            {
+                efree(patt);
+                return;
+            }
+        }
+        tmpReplace = tmpReplace->next;
+    }
+    efree(patt);
 }
 
 
-FILE* openIndexFILEForWrite(char *filename)
+FILE   *openIndexFILEForWrite(char *filename)
 {
-	return fopen(filename, FILEMODE_WRITE);
+    return fopen(filename, FILEMODE_WRITE);
 }
 
-FILE* openIndexFILEForRead(char *filename)
+FILE   *openIndexFILEForRead(char *filename)
 {
-	return fopen(filename, FILEMODE_READ);
+    return fopen(filename, FILEMODE_READ);
 }
 
-FILE* openIndexFILEForReadAndWrite(char *filename)
+FILE   *openIndexFILEForReadAndWrite(char *filename)
 {
-	return fopen(filename, FILEMODE_READWRITE);
+    return fopen(filename, FILEMODE_READWRITE);
 }
 
-void CreateEmptyFile(SWISH *sw,char *filename)
+void    CreateEmptyFile(SWISH * sw, char *filename)
 {
-FILE *fp;
-	if(!(fp=openIndexFILEForWrite(filename))) {
-		progerr("Couldn't write the file \"%s\".", filename);
-	}
-	fclose(fp);
+    FILE   *fp;
+
+    if (!(fp = openIndexFILEForWrite(filename)))
+    {
+        progerr("Couldn't write the file \"%s\".", filename);
+    }
+    fclose(fp);
 }
 
 /*
  * Invoke the methods of the current Indexing Data Source
  */
-void indexpath(SWISH *sw,char *path)
+void    indexpath(SWISH * sw, char *path)
 {
-	/* invoke routine to index a "path" */
-	(*IndexingDataSource->indexpath_fn)(sw,path);
+    /* invoke routine to index a "path" */
+    (*IndexingDataSource->indexpath_fn) (sw, path);
 }
 
 
@@ -202,45 +213,52 @@ void indexpath(SWISH *sw,char *path)
   -- 2001-03-16 rasc    truncateDoc
 */
 
-char *read_stream(FILE *fp,long filelen, long max_size)
+char   *read_stream(FILE * fp, long filelen, long max_size)
 {
-long c,offset;
-long bufferlen;
-unsigned char *buffer;
+    long    c,
+            offset;
+    long    bufferlen;
+    unsigned char *buffer;
 
 
-	if(filelen)	{
+    if (filelen)
+    {
 
-		/* truncate doc? */
-      	if (max_size && (filelen > max_size)) {
-			filelen = max_size;
-		}
+        /* truncate doc? */
+        if (max_size && (filelen > max_size))
+        {
+            filelen = max_size;
+        }
 
-		buffer=emalloc(filelen+1);
-		*buffer = '\0';
-		fread(buffer,1,filelen,fp);
+        buffer = emalloc(filelen + 1);
+        *buffer = '\0';
+        fread(buffer, 1, filelen, fp);
 
-	} else {    /* if we are reading from a popen call, filelen is 0 */
+    }
+    else
+    {                           /* if we are reading from a popen call, filelen is 0 */
 
-		buffer=emalloc((bufferlen=RD_BUFFER_SIZE)+1);
-		*buffer = '\0';
-		for(offset=0;(c=fread(buffer+offset,1,RD_BUFFER_SIZE,fp))==RD_BUFFER_SIZE;offset+=RD_BUFFER_SIZE)
-		{
-			/* truncate? break if to much read */
-			if (max_size && (bufferlen > max_size)) {
-				break;
-			}
-			bufferlen+=RD_BUFFER_SIZE;
-			buffer=erealloc(buffer,bufferlen+1);
-		}
-		filelen=offset+c;
+        buffer = emalloc((bufferlen = RD_BUFFER_SIZE) + 1);
+        *buffer = '\0';
+        for (offset = 0; (c = fread(buffer + offset, 1, RD_BUFFER_SIZE, fp)) == RD_BUFFER_SIZE; offset += RD_BUFFER_SIZE)
+        {
+            /* truncate? break if to much read */
+            if (max_size && (bufferlen > max_size))
+            {
+                break;
+            }
+            bufferlen += RD_BUFFER_SIZE;
+            buffer = erealloc(buffer, bufferlen + 1);
+        }
+        filelen = offset + c;
 
-      	if (max_size && (filelen > max_size)) {
-			filelen = max_size;
-		}
-	}
-	buffer[filelen]='\0';
-	return (char *)buffer;
+        if (max_size && (filelen > max_size))
+        {
+            filelen = max_size;
+        }
+    }
+    buffer[filelen] = '\0';
+    return (char *) buffer;
 }
 
 /* Mar 27, 2001 - moseley
@@ -248,21 +266,24 @@ unsigned char *buffer;
  *
  */
 
-FileProp *init_file_properties( SWISH *sw ) 
+FileProp *init_file_properties(SWISH * sw)
 {
     FileProp *fprop;
 
-    fprop = (FileProp *)emalloc(sizeof(FileProp));
+    fprop = (FileProp *) emalloc(sizeof(FileProp));
     /* emalloc checks fail and aborts... */
 
-    /* -- init */
+    /* -- init -- */
     fprop->fp = (FILE *) NULL;
+    fprop->real_path = (char *) NULL;  /* path to real file, or URL */
+    fprop->work_path = (char *) NULL;  /* path to work file (can be real file with fs, or local tmp file for http) */
+    fprop->real_filename = (char *) NULL;
     fprop->fsize = 0;
     fprop->mtime = (time_t) 0;
-    fprop->doctype = sw->DefaultDocType;  
-    fprop->index_no_content = 0;	      /* former: was indextitleonly! */
-    fprop->hasfilter = NULL; 	      /* Default = No Filter */
-    fprop->stordesc = NULL; 	      /* Default = No summary */
+    fprop->doctype = sw->DefaultDocType;
+    fprop->hasfilter = NULL;    /* Default = No Filter */
+    fprop->stordesc = NULL;     /* Default = No summary */
+    fprop->index_no_content = 0; /* former: was indextitleonly! */
 
     return fprop;
 }
@@ -273,38 +294,38 @@ FileProp *init_file_properties( SWISH *sw )
  * 2001-04-09  rasc changed filters
  */
 
-void init_file_prop_settings(SWISH *sw, FileProp *fprop )
+void    init_file_prop_settings(SWISH * sw, FileProp * fprop)
 {
 
-  /* Basename of document path => document filename */
-  fprop->real_filename = str_basename (fprop->real_path);
+    /* Basename of document path => document filename */
+    fprop->real_filename = str_basename(fprop->real_path);
 
 
-  /* -- get Doc Type as is in IndexContents or Defaultcontents
-     -- doctypes by jruiz
-  */
+    /* -- get Doc Type as is in IndexContents or Defaultcontents
+       -- doctypes by jruiz
+     */
 
-  fprop->doctype = getdoctype(fprop->real_path,sw->indexcontents);
-  if(fprop->doctype == NODOCTYPE && sw->DefaultDocType!=NODOCTYPE) {
-     fprop->doctype = sw->DefaultDocType;  
-  }
+    fprop->doctype = getdoctype(fprop->real_path, sw->indexcontents);
+    if (fprop->doctype == NODOCTYPE && sw->DefaultDocType != NODOCTYPE)
+    {
+        fprop->doctype = sw->DefaultDocType;
+    }
 
 
-  /* -- index just the filename (or doc title tags)?
-     -- this param was "wrongly" named indextitleonly */
+    /* -- index just the filename (or doc title tags)?
+       -- this param was "wrongly" named indextitleonly */
 
-  fprop->index_no_content =  (sw->nocontentslist != NULL) &&
-                    isoksuffix(fprop->real_path, sw->nocontentslist);
+    fprop->index_no_content = (sw->nocontentslist != NULL) && isoksuffix(fprop->real_path, sw->nocontentslist);
 
-  /* -- Any filter for this file type?
-     -- NULL = No Filter, (char *) path to filter prog.
-  */
+    /* -- Any filter for this file type?
+       -- NULL = No Filter, (char *) path to filter prog.
+     */
 
-  fprop->hasfilter= hasfilter (sw,fprop->real_path);
+    fprop->hasfilter = hasfilter(sw, fprop->real_path);
 
-  fprop->stordesc = hasdescription (fprop->doctype,sw->storedescription);
+    fprop->stordesc = hasdescription(fprop->doctype, sw->storedescription);
 
-}  
+}
 
 
 
@@ -321,38 +342,45 @@ void init_file_prop_settings(SWISH *sw, FileProp *fprop )
   -- Added StoreDescription
 */
 
-FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
+FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 {
-  FileProp     *fprop; 
-  struct stat  stbuf;
+    FileProp *fprop;
+    struct stat stbuf;
 
 
-  fprop = init_file_properties( sw );
-
-  fprop->real_path = fprop->work_path = (char *)NULL;
-  fprop->real_path = real_path;
-  fprop->work_path = (work_file) ? work_file : real_path;
-
-                                   
-
-  /* -- Get Properties of File
-     --  return if error or file not exists
-   */
-  if ( stat(fprop->work_path, &stbuf) ) return fprop;
-  fprop->fsize = (long) stbuf.st_size;
-  fprop->mtime = stbuf.st_mtime;
+    /* create an initilized fprop structure */
+    
+    fprop = init_file_properties(sw);
 
 
-  init_file_prop_settings( sw, fprop );
+    fprop->real_path = real_path;
+    fprop->work_path = (work_file) ? work_file : real_path;
+
+
+    /* Stat the file */
+    /* This is really the wrong place for this, as it's really only useful for fs.c method */
+    /* for http.c it means the last mod date is the temp file date */
+    /* Probably this entire function isn't needed - moseley */
+
+    if (stat(fprop->work_path, &stbuf))
+    {
+        fprop->fsize = (long) stbuf.st_size;
+        fprop->mtime = stbuf.st_mtime;
+    }
+
+
+    /* Now set various fprop settings based mostly on file name */
+    
+    init_file_prop_settings(sw, fprop);
 
 
 
 #ifdef DEBUG
-  fprintf (stderr,"file_properties: path=%s, (workpath=%s), fsize=%ld, last_mod=%ld Doctype: %d Filter: %p\n",
-       fprop->real_path, fprop->work_path, (long)fprop->fsize, (long)fprop->mtime,fprop->doctype, fprop->filterprog);
+    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%ld, last_mod=%ld Doctype: %d Filter: %p\n",
+            fprop->real_path, fprop->work_path, (long) fprop->fsize, (long) fprop->mtime, fprop->doctype, fprop->filterprog);
 #endif
 
-  return fprop;
+    return fprop;
 }
 
 
@@ -360,8 +388,7 @@ FileProp *file_properties (char *real_path, char *work_file, SWISH *sw)
    -- unless no alloc for strings simple free structure
 */
 
-void free_file_properties (FileProp *fprop)
+void    free_file_properties(FileProp * fprop)
 {
-  efree (fprop);
+    efree(fprop);
 }
-
