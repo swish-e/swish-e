@@ -479,7 +479,9 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         /* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
         searchwordlist = (struct swline *) expandphrase(searchwordlist, PhraseDelimiter);
-        searchwordlist = (struct swline *) fixnot(searchwordlist);
+        searchwordlist = (struct swline *) fixmetanames(searchwordlist);
+        searchwordlist = (struct swline *) fixnot1(searchwordlist);
+        searchwordlist = (struct swline *) fixnot2(searchwordlist);
 
         /* Allocate memory for the result list structure */
         db_results = (struct DB_RESULTS *) emalloc(sizeof(struct DB_RESULTS));
@@ -543,96 +545,31 @@ int     search_2(SWISH * sw, char *words, int structure)
     return totalResults;
 }
 
+/* 2001-09 jmruiz - Rewriting
+** This puts parentheses in the right places around meta searches
+** to avoid problems whith them. Basically "metaname = bla" 
+** becomes "(metanames = bla)" */
 
-/* This puts parentheses in the right places around not structures
-** so the parser can do its thing correctly.
-** It does it both for 'not' and '='; the '=' is used for the METADATA (GH)
-*/
-
-struct swline *fixnot(struct swline *sp)
+struct swline *fixmetanames(struct swline *sp)
 {
-    int     openparen,
-            hasnot;
-    int     openMeta,
-            hasMeta;
-    int     isfirstnot = 0,
-            metapar;
+    int     metapar;
     struct swline *tmpp,
            *newp;
-
-    if (!sp)
-        return NULL;
-    /* 06/00 Jose Ruiz - Check if first word is NOT_RULE */
-    /* Change remaining NOT by AND_NOT_RULE */
-    for (tmpp = sp; tmpp; tmpp = tmpp->next)
-    {
-        if (tmpp->line[0] == '(')
-            continue;
-        else if (isnotrule(tmpp->line))
-        {
-            isfirstnot = 1;
-        }
-        else
-            break;
-    }
-    for (tmpp = sp; tmpp; tmpp = tmpp->next)
-    {
-        if (isnotrule(tmpp->line))
-        {
-            if (!isfirstnot)
-            {
-                efree(tmpp->line);
-                tmpp->line = estrdup(AND_NOT_WORD);
-            }
-            else
-                isfirstnot = 0;
-        }
-    }
 
     tmpp = sp;
     newp = NULL;
 
-    openparen = 0;
-    openMeta = 0;
-    hasMeta = 0;
-    hasnot = 0;
+    /* Fix metanames with parenthesys eg: metaname = bla => (metanames = bla) */
     while (tmpp != NULL)
     {
-        if (((tmpp->line)[0] == '(') && hasnot)
-            openparen++;
-        else if (((tmpp->line)[0] == '(') && hasMeta)
-            openMeta++;
-        else if (((tmpp->line)[0] == ')') && hasnot)
-            openparen--;
-        else if (((tmpp->line)[0] == ')') && hasMeta)
-            openMeta--;
         if (isMetaNameOpNext(tmpp->next))
         {
             /* If it is a metaName add the name and = and skip to next */
-            hasMeta = 1;
             newp = (struct swline *) addswline(newp, "(");
             newp = (struct swline *) addswline(newp, tmpp->line);
             newp = (struct swline *) addswline(newp, "=");
             tmpp = tmpp->next;
             tmpp = tmpp->next;
-            continue;
-        }
-        if (isnotrule(tmpp->line))
-        {
-            hasnot = 1;
-            newp = (struct swline *) addswline(newp, "(");
-        }
-        else if (hasnot && !openparen)
-        {
-            hasnot = 0;
-            newp = (struct swline *) addswline(newp, tmpp->line);
-            newp = (struct swline *) addswline(newp, ")");
-            tmpp = tmpp->next;
-            continue;
-        }
-        else if (hasMeta && !openMeta)
-        {
-            hasMeta = 0;
             /* 06/00 Jose Ruiz
                ** Fix to consider parenthesys in the
                ** content of a MetaName */
@@ -657,19 +594,123 @@ struct swline *fixnot(struct swline *sp)
             else
                 newp = (struct swline *) addswline(newp, tmpp->line);
             newp = (struct swline *) addswline(newp, ")");
-            tmpp = tmpp->next;
-            continue;
         }
-        newp = (struct swline *) addswline(newp, tmpp->line);
-        if (isMetaNameOpNext(tmpp))
-        {
-            hasMeta = 1;
-            newp = (struct swline *) addswline(newp, "(");
-        }
+        else 
+            newp = (struct swline *) addswline(newp, tmpp->line);
+        /* next one */
         tmpp = tmpp->next;
     }
 
     freeswline(sp);
+    return newp;
+}
+
+/* 2001 -09 jmruiz Rewritten 
+** This optimizes some NOT operator to be faster.
+**
+** "word1 not word" is changed by "word1 and_not word2"
+**
+** In the old way the previous query was...
+**    get results if word1
+**    get results of word2
+**    not results of word2 (If we have 100000 docs and word2 is in
+**                          just 3 docs, this means read 99997
+**                          results)
+**    intersect both list of results
+**
+** The "new way"
+**    get results if word1
+**    get results of word2
+**    intersect (and_not_rule) both lists of results
+** 
+*/
+
+struct swline *fixnot1(struct swline *sp)
+{
+    struct swline *tmpp,
+           *prev;
+
+    if (!sp)
+        return NULL;
+    /* 06/00 Jose Ruiz - Check if first word is NOT_RULE */
+    /* Change remaining NOT by AND_NOT_RULE */
+    for (tmpp = sp, prev = NULL; tmpp; prev = tmpp, tmpp = tmpp->next)
+    {
+        if (tmpp->line[0] == '(')
+            continue;
+        else if (isnotrule(tmpp->line))
+        {
+            if(prev && prev->line[0]!='=' && prev->line[0]!='(')
+            {
+                efree(tmpp->line);
+                tmpp->line = estrdup(AND_NOT_WORD);
+            }
+        }
+    }
+    return sp;
+}
+
+/* 2001 -09 jmruiz - Totally new - Fix the meta=(not ahsg) bug
+** Add parentheses to avoid the way operator NOT confuse complex queries */
+struct swline *fixnot2(struct swline *sp)
+{
+    int     openparen, found;
+    struct swline *tmpp, *newp;
+    char    *magic = "<__not__>";  /* magic avoids parsing the
+                                   ** "not" operator twice
+                                   ** and put the code in an 
+                                   ** endless loop */                            
+
+    found = 1;
+    while(found)
+    {
+        openparen = 0;
+        found = 0;
+
+        for (tmpp = sp , newp = NULL; tmpp ; tmpp = tmpp->next)
+        {
+            if (isnotrule(tmpp->line))
+            {
+                found = 1;
+                /* Add parentheses */
+                newp = (struct swline *) addswline(newp, "(");
+                /* Change "NOT" by magic to avoid find it in next iteration */
+                newp = (struct swline *) addswline(newp, magic);
+                for(tmpp = tmpp->next; tmpp; tmpp = tmpp->next)
+                {
+                    if ((tmpp->line)[0] == '(')
+                        openparen++;
+                    else if(!openparen)
+                    {
+                        newp = (struct swline *) addswline(newp, tmpp->line);
+                        /* Add parentheses */
+                        newp = (struct swline *) addswline(newp, ")");
+                        break;
+                    }
+                    else if ((tmpp->line)[0] == ')')
+                        openparen--;
+                    newp = (struct swline *) addswline(newp, tmpp->line);
+                }
+                if(!tmpp)
+                    break;
+            }
+            else
+                newp = (struct swline *) addswline(newp, tmpp->line);
+        }
+        freeswline(sp);
+        sp = newp;
+    }
+
+    /* remove magic and put the "real" NOT in place */
+    for(tmpp = newp; tmpp ; tmpp = tmpp->next)
+    {
+        if(!strcmp(tmpp->line,magic))
+        {
+            efree(tmpp->line);
+            tmpp->line = estrdup(NOT_WORD);
+        }
+    }
+
     return newp;
 }
 
