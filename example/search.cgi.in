@@ -347,7 +347,7 @@ sub create_highlight_filter {
             # Here's the filter factory
             return sub {
                 my $text = shift;
-                $instance->{highlight_object}->highlight( \$text, \@phrases, $result_object );
+                $instance->{highlight_object}->highlight( \$text, \@phrases, $property_name, $result_object );
                 return $text;
             }
         }, 
