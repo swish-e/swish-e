@@ -280,6 +280,8 @@ int in_junk=0;
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
+	if(summary)
+		efree(summary);  
 	return ftotalwords;
 }
 
