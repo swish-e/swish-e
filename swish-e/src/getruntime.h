@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-typedef unsigned long long cpu_seconds;
+typedef double cpu_seconds;
 cpu_seconds get_cpu_secs ();
 
 #ifdef __cplusplus
