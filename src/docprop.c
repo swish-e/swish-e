@@ -1071,7 +1071,6 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     int             i;
     
 
-
     /* initialize the first time called */
     if ( header->property_count == 0 )
     {
@@ -1090,7 +1089,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     /* any props exist, unlikely, but need to save a space. */
     if ( !docProperties )
     {
-        DB_WritePropPositions( sw, fi, indexf->DB);
+        DB_WritePropPositions( sw, indexf, fi, indexf->DB);
         return;
     }
 
@@ -1106,14 +1105,14 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 
         buf = compress_property( prop, propID, sw, &buf_len, &uncompressed_len );
 
-        DB_WriteProperty( sw, fi, propID, buf, buf_len, uncompressed_len, indexf->DB );
+        DB_WriteProperty( sw, indexf, fi, propID, buf, buf_len, uncompressed_len, indexf->DB );
     }
 
 
 
 
     /* Write the position data */
-    DB_WritePropPositions( sw, fi, indexf->DB);
+    DB_WritePropPositions( sw, indexf, fi, indexf->DB);
 
     freeDocProperties( docProperties );
     fi->docProperties = NULL;
@@ -1179,7 +1178,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
 
     /* Otherwise, read from disk */
 
-    if ( !(buf = DB_ReadProperty( sw, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
+    if ( !(buf = DB_ReadProperty( sw, indexf, fi, metaID, &buf_len, &uncompressed_len, indexf->DB )))
         return NULL;
 
 	propbuf = uncompress_property( sw, buf, buf_len, &uncompressed_len );

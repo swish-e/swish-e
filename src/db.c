@@ -939,25 +939,25 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 }
 
 
-void DB_WriteProperty( SWISH *sw, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
+void DB_WriteProperty( SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
 {
-    sw->Db->DB_WriteProperty( sw, fi, propID, buffer, buf_len, uncompressed_len, db );
+    sw->Db->DB_WriteProperty( indexf, fi, propID, buffer, buf_len, uncompressed_len, db );
 }
 
-void    DB_WritePropPositions(SWISH *sw, FileRec *fi, void *db)
+void    DB_WritePropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db)
 {
-    sw->Db->DB_WritePropPositions( sw, fi, db);
+    sw->Db->DB_WritePropPositions( indexf, fi, db);
 }
 
-void    DB_ReadPropPositions(SWISH *sw, FileRec *fi, void *db)
+void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db)
 {
-    sw->Db->DB_ReadPropPositions( sw, fi, db);
+    sw->Db->DB_ReadPropPositions( indexf, fi, db);
 }
 
 
-char *DB_ReadProperty(SWISH *sw, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
+char *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
-    return sw->Db->DB_ReadProperty( sw, fi, propID, buf_len, uncompressed_len, db );
+    return sw->Db->DB_ReadProperty( indexf, fi, propID, buf_len, uncompressed_len, db );
 }
 
 

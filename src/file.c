@@ -417,12 +417,11 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
 
     
 
+    /* Perl is nice sometimes */
     if ( !( tmpdir = getenv("TMPDIR")) )
-        tmpdir = getenv("TMP");
-
-    /* otherwise use configuration setting */
-    if ( !tmpdir )
-        tmpdir = idx->tmpdir;
+        if ( !(tmpdir = getenv("TMP")) )
+            if( !(tmpdir = getenv("TEMP")) )
+                tmpdir = idx->tmpdir;
 
     if ( tmpdir )
         file_name_len += strlen( tmpdir ) + 1;  // for path separator
