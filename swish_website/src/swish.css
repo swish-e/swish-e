@@ -317,22 +317,14 @@ li.submenu {
   margin: 0;
 }
 
+
 /* TOC at top of each POD page */
 ul.toc li {
   padding: 0 0 0 0;
-  line-height: 0;
+  margin-left: 12pt;
+  margin-top: 0;
+  margin-bottom: 0;
 }
-
-/* For the main TOC (with the OVERVIEW summary) add space at the end */
-ul.toc li.top-level {
-  margin-bottom: 3em;
-}
-
-
-/* must be a better way to do leading than line-height
-(thus necessitating turning it off and on) */
-
-ul.toc div, p, blockquote { line-height: 1; }
 
 ul.toc li a {
   text-decoration: none;
