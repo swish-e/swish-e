@@ -279,13 +279,12 @@ You may also specify more than one configuration file on the command line:
 Another option is to create a directory with symbolic links of the files to index,
 and index just that directory.
 
-=head3 How does swish which parser to use?
+=head3 How does swish know which parser to use?
 
 Swish can parse HTML, XML, and text documents.  The parser is set by associating a
 file extension with a parser by the C<IndexContents> directive.  You may set the default
 parser with the C<DefaultContents> directive.  If a document is not assigned a parser it
-will default to the HTML parser (but its document type -- used by a number of configuration
-directives -- will be undefined).
+will default to the HTML parser (HTML2 if built with libxml2).
 
 You may use Filters or an external program to convert documents to HTML, XML, or text.
 
@@ -338,6 +337,14 @@ and use -T to output debugging information about the index.  A useful command mi
 Once you see how swish is parsing and indexing your words, you can adjust the configuration settings mentioned
 above to control what words are indexed.
 
+Another useful command might be:
+
+     ./swish-e -c my.conf -i problem.file -T PARSED_WORDS INDEXED_WORDS
+
+This will show white-spaced words parsed from the document (PARSED_WORDS), and how those words are split up
+into separate words for indexing (INDEXED_WORDS).
+
+
 =head3 How do I keep swish from indexing numbers?
 
 Swish indexes words as defined by the C<WordCharacters> setting, as described above.  So to avoid
@@ -347,6 +354,10 @@ There are also some settings in F<config.h> that control what "words" are indexe
 swish to never index words that are all digits, vowels, or consonants, or that contain more than some
 consecutive number of digits, vowels, or consonants.  In general, you won't need to change these
 settings.
+
+Also, there's an experimental feature called C<IgnoreNumberChars> which allows you to define a set of characters
+that describe a number.  If a word is made up of B<only> those characters it will not be indexed.
+
 
 =head3 Swish crashes and burns on a certain file. What can I do?
 
@@ -358,8 +369,7 @@ If there are serious problems in indexing certain types of files, they may not h
 in them (they may be binary files, for instance). You can use NoContents to exclude that
 type of file.
 
-Swish will issue a warning if an embedded null character is found in a document.  The document will be truncated
-at the null.  This warning will be an indication
+Swish will issue a warning if an embedded null character is found in a document.  This warning will be an indication
 that you are trying to index binary data.  If you need to index binary files try to find a program that will
 extract out the text (e.g. strings(1), catdoc(1), pdftotext(1)).
 
@@ -390,7 +400,7 @@ you are using libxml2 for parsing HTML, then you may use a fake HTML tag around 
 you wish to ignore and use the C<IgnoreMetaTags> directive.  This will generate an error message if
 the C<ParserWarningLevel> is set as it's invalid HTML.
 
-C<IgnoreMetaTags> works with XML documents (and HTML documents when using libxml2 as the HTML parser),
+C<IgnoreMetaTags> works with XML documents (and HTML documents when using libxml2 as the parser),
 but not with documents parsed by the text (TXT) parser.
 
 =head3 How do I modify the path or URL of the indexed documents.
@@ -410,6 +420,9 @@ Swish indexes 8-bit characters only.  This is the ISO 8859-1 Latin-1 character s
 many non-English letters (and symbols).  As long as they are listed in C<WordCharacters> they will
 be indexed.
 
+Actually, you probably can index any 8-bit character set, as long as you don't mix character sets in the
+same index.
+
 The C<TranslateCharacters> directive (L<SWISH-CONFIG|SWISH-CONFIG>) can translate characters while indexing
 and searching.  You may specify the mapping of one character to another character with the C<TranslateCharacters>
 directive.
@@ -427,7 +440,7 @@ to 1 or more will display warnings when UTF-8 to 8859-1 conversion fails.
 
 =head3 How do I index my PDF, Word, and compressed documents?
 
-Swish-e can internally only handle HTML, WML, XML and TXT (text) files by default, but
+Swish-e can internally only parse HTML, XML and TXT (text) files by default, but
 can make use of I<filters> that will convert other types of files such as MS Word documents, PDF,
 or gzipped files into one of the file types that Swish-e understands.
 
@@ -543,10 +556,27 @@ See the examples in the F<conf> directory.
 
 =head3 I'm using the prog method to index PDF documents, but the file contents are not indexed.
 
-The examples in the F<prog-bin> directory use a module to convert the PDF files into XML.  So you must
+The examples some of the examples in the F<prog-bin> directory use a module to convert the PDF files into XML.  So you must
 tell swish that you are indexing XML files for the PDF extension.
 
     IndexContents XML .pdf
+
+=head3 I'm using Windows and can't get Filters or the prog input method to work!
+
+Both the C<-S prog> input method and filters use the C<popen()> system call to run the external program.
+If your external program is, for example, a perl script, you have to tell swish-e to run perl, instead of the script.
+Also, you must use the backslash character in the program name since C<popen()> runs the command via the shell, which
+must be a backslash in windows.
+
+For example, you would need to specify the path to perl as
+(assuming this is where perl is on your system):
+
+    IndexDir e:\\perl\\bin\\perl.exe
+
+Or run a filter like:
+
+    FileFilter .foo e:\\perl\\bin\\perl.exe 'myscript.pl "%p"'
+
 
 =head3 Can I add/remove files from an index?
 
@@ -620,7 +650,7 @@ This is I<with> C<-e>, and used about 26M or memory:
     Elapsed time: 00:06:43 CPU time: 00:04:12
 
 You can also build a number of smaller indexes and then merge together with C<-M>.
-This may or may not use less memory.
+This will use more memory.  Merging is not a great option.
 
 Finally, if you do build a number of smaller indexes, you can specify more than one index when searching
 by using the C<-f> switch.  Sorting large results sets by a property will be slower when specifying
@@ -694,6 +724,8 @@ the document.
 
 You can either merge C<-M> two indexes into a single index,
 or use C<-f> to specify more than one index while searching.
+
+You will have better results with the C<-f> method.
 
 
 =head2 Searching
@@ -789,6 +821,12 @@ C<perldoc swish.cgi>.
 
 
 =head3 How do I make swish highlight words in search results?
+
+Short answer:
+
+Use the supplied swish.cgi script located in the F<examples> directory.
+
+Long answer:
 
 Swish-e can't because it doesn't have access to the source documents when returning results,
 of course.  But a front-end program of your creation can highlight terms.  Your program can open up the

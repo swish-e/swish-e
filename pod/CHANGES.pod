@@ -377,6 +377,11 @@ If compiled with zlib, Swish uses this setting to control the level of
 compression applied to properties.  Properties must be long enough
 (defined in config.h) to be compressed.  Useful for StoreDescription.
 
+=item * Experimental directive: IgnoreNumberChars
+
+Defines a set of characters.  If a word is made of of *only* those characters the word
+will not be indexed.
+
 =back
 
 Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for documentation on these
