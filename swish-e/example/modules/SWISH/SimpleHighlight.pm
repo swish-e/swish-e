@@ -77,10 +77,6 @@ sub highlight {
 sub set_match_regexp {
     my ( $self, $phrases, $prop_name ) = @_;
 
-    # Already cached?
-    return @{$self->{cache}{$prop_name}}
-	if $self->{cache}{$prop_name};
-
     my $wc = quotemeta $self->header('wordcharacters');
 
 
@@ -101,8 +97,6 @@ sub set_match_regexp {
 
         push @matches, qr/$exp/i;
     }
-
-    $self->{cache}{$prop_name} = \@matches;
 
     return @matches;
 
