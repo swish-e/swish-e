@@ -1,0 +1,88 @@
+This file contains some info about the swish-e library.
+
+What is the swish-e C library
+================================
+It is a C library implementation based on swish-e-2.0 beta4, but
+many of the functions have been rewritten in order to get a 
+thread safe library.
+
+How to build the library?
+================================
+In src directory, just type 
+
+        make libswish-e
+
+If you build swish-e executable (make swish-e) the library will also
+be built
+
+How to install the library?
+================================
+Just copy the libswish-e.a file to your favourite lib directory 
+(normally /usr/local/lib)
+
+Syntax of the functions of the library
+=============================================
+At this moment (Aug 2000) there are 6 functions defined:
+
+struct SWISH *SwishOpen(char *IndexFiles);
+      This functions opens and reads header info of the index files
+      included in IndexFiles
+      eg:  myhandle=SwishOpen("file1.idx");
+
+      Returns NULL on error
+
+void SwishClose(struct SWISH *handle);
+      This function closes a and frees the memory of a Swish handle
+
+int SwishSearch(struct SWISH *handle,char *words,int structure,
+      char *properties,char *sortspec)
+      This function executes a search for a handle
+      Input data:
+            handle:  value returned by SwishOpen
+            words: the search string
+            structure: At this moment always one ( it will implement
+                the -t option of swish-e)
+            properties: Optional. Properties to display. Use NULL if
+                        no properties
+            sortspec: Sort specs for the results. Use NULL if sort by rank
+       
+      Returns the number of hits or a negative value on error
+      eg: results=SwishSearch(handle,"tit=test",1,"tit","date desc");
+      
+      (*) There is a new feature here that it is not included in swish-e-2.0: 
+      You can specify several sorting properties including a combination
+      of descending and ascending fields. eg: field1 asc field2 desc 
+
+struct result *SwishNext(struct SWISH *handle)
+      This function returns next result. It must be executed after 
+      SwishSearch
+      Returns NULL on error or when no more results are available
+
+int SwishSeek(struct SWISH *handle,int n)
+      This function puts the results pointer in the nth reult
+      Returns n if operation goes OK or a negative number on error.
+
+int SwishError(struct SWISH *handle)
+      This function returns the last error
+
+To do
+=====
+
+stemmer.c and soundex.c are not thread safe. 
+More functions:
+- Stemming and Soundex functions
+- Functions to get data from the index header (eg: Wordcharacters)
+- Index and Merge functions?
+Any comments are welcome. Use swish-e discussion group.
+
+
+Bug-Reports
+===========
+
+ Please report bug reports to the swish-e discussion group.
+ Feel also free to improve or enhance this feature.
+ 
+
+Aug 2000
+Jose Ruiz
+jmruiz@boe.es

@@ -1,0 +1,163 @@
+Here is an html page from Rainer Scherg to show you how to write filters
+
+More info on filters from thr original page of Rainer:
+
+http://www.bnmsp.de/home/rainer.scherg/swish/filters.html
+
+
+
+
+How does the filter option work?
+================================
+
+ There are two configuration directives:
+    - FilterDir
+    - FileFilter
+
+ "FilterDir" tells swhish, where the filter scripts resides.
+ "FileFilter" tells swish which filetype corresponds with which
+ filter.
+
+ A filter may be any executable program (C, shell, perl, tkl, etc.).
+ The filter gets the filepath to the file which has to be converted to
+ TXT as argument 1 on the commandline - this may be a tmp-file.
+
+ The converted text- or html-output has to be send to stdout.
+ 
+ swish-e itsself doesn't provide any filtering capabilities - you have
+ to use speciallized programs to convert a document type to simple text
+ or html.
+
+ E.g. use "pdftotext" from the xpdf package to enable swish to index PDF
+ files. Ghostscript may also be a good program for filtering purpose...
+
+
+
+Syntax
+======
+
+  FilterDir  <path-to-filterprog/>
+
+  FileFilter  <file-ext> <filter-program>
+
+  e.g.:
+      FilterDir   /usr/local/apache/swish-e/filters-bin/
+      FileFilter  .pdf   pdf-filter.sh
+      Filefilter  .gz    gzip-filter.sh
+      Filefilter  .doc   wword-filter.sh
+      Filefilter  .dot   wword-filter.sh
+      Filefilter  .ps    ghostscript-filter.sh
+
+
+  Filter program syntax:
+
+    <filter-program> <filepath>  [<url-or-filepath>] 
+
+      filepath:    	Arg1 contains the file to be opened and converted.
+      url-or-filepath:	url-path or filepath, if filepath is a tmpfile.
+                        (normally not needed, but in case you want to check
+                         fileextensions, etc. in the filterprog)
+
+      Output:		on Standard Output as (ISO-/ASCII)Text or HTML.
+
+
+     This means:
+
+      swish-e is passing these arguments to your filter script.
+      Your filter has to read <filepath>, process the file and
+      send the converted output simply to STDOUT.
+     
+
+
+
+Simple Sample Filter Files
+==========================
+
+ pdf-filter.sh:
+ #!/bin/sh
+ /usr/local/bin/pdftotext "$1" - 2>/dev/null
+
+
+ test-filter.sh:
+ #!/bin/sh
+ echo "Filter-Call: "
+ echo "  File to process: $1"
+ echo "  File real location: $2"
+
+
+
+Complex Filters
+===============
+
+
+ You can also write filter scripts, which are doing a more complex
+ file handling...
+
+   E.g.:
+      FileFilter    .gz    gz-filter
+
+   Script (pseudo code):
+      - unzip   .gz file  in tmpfile
+      - check new extension
+      - call filter script for this extension
+
+ In this way you can handle tar, tar.gz, doc.gz, html.Z or
+ any file you need.
+
+
+
+Optimization of the filtering process
+=====================================
+
+ Because sometimes it takes a lot of (cpu-)time to convert files 
+ (and produces also a heavy impact on the system - especially
+ with masses of files to index), you might check in your filterscript,
+ if there's already a converted file in a hidden directory tree,
+ which can simply be send with "cat".
+
+ If the file is not present or uptodate, because the e.g. pdf file has
+ been updated, you can create this file on the fly using the filter script.
+
+ This makes indexing much faster (depends on the speed of the
+ converter programs), but will burn down a lot of disk space...
+ ... but IMO not necessary, because todays computer are fast
+ enough...
+
+
+
+
+ 
+Bug-Reports
+===========
+
+ Please report bug reports to the swish-e discussion group.
+ Feel also free to improve or enhance this feature.
+ 
+
+6. New Filter Modules
+=====================
+
+ If you have developed a filter module, please make this known to the swish-e
+ discussion group.
+
+
+7. Some Urls
+============
+
+ Apache:     http://www.apache.org
+             http://modules.apache.org
+              -- Apache Webserver resource
+
+ SWISH-E:    http://sunsite.berkeley.edu/SWISH-E/
+              -- swish-e search engine
+
+ XPDF:       http://www.foolabs.com/xpdf/
+	      -- The xpdf software and documentation by
+              -- Derek B. Noonburg. 
+
+
+Aug 1998 & May 1999
+Rainer.Scherg@t-online.de
+[Rainer.Scherg@rexroth.de]
+
+

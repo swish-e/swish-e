@@ -1,0 +1,242 @@
+<html>
+<head>
+<title>SWISH-E 2 perl module</title>
+</head>
+<body bgcolor="ivory">
+<center>
+<h1>Swish-2.1.X builtin sample perl module</h1>
+<h2>Why using a perl module</h2>
+</center>
+The distribution of swish-e 2.1.X includes a sample and totally functional perl module
+built on the top of the C library.
+The final goal is to show other people an easy way to implement other perl modules to access swish-e-2.1.x index files<br>
+With this builtin perl module you can write easily safe CGIs (external system calls are no longer needed).<br>
+<p>
+<p>
+
+<center>
+<h2>How to build the perl module</h2>
+</center>
+First of all, build an <b>install</b> the library. The library must be accessible to build the perl module<br>
+Now in the perl directory, type:<br>
+<pre>
+perl Makefile.PL
+make
+make install
+</pre>
+To test it you can issue a "./test.pl". This perl script uses the index file built by the "make test" issued in src directory. So be sure that the index file exists in the tests directory<br>
+<p>
+<p>
+
+<center>
+<h2>Functions of the perl module</h2>
+</center>
+
+<h3>$handle=SwishOpen($IndexFiles);</h3>
+This function opens one or more index files and returns a handle to them.<br>
+<font size=-1>Eg:  $handle=SwishOpen("index_file.idx");</font><br>
+If you want to search in more than one index file, use spaces to separate them.<br>
+<font size=-1>Eg:  $handle=SwishOpen("index1.idx index2.idx");</font><br>
+<p>
+
+<h3>SwishClose($handle)</h3>
+Closes the handle returned by SwishOpen. This function closes all the opened files and frees the used memory.<br>
+<p>
+
+<h3>$num_results = SwishSearch($handle,$search,$structure,$properties,$sortspec)</h3>
+This function parses a search and returns the number of hits or a negative value on error<br>
+The values passed are:<br>
+<i>handle</i> is the handle returned by SwishOpen<br>
+<i>search</i> is the search string. Eg: title="this a is phrase"<br>
+<i>structure (*)</i> is an integer value only applicable for an html search. It can be IN_FILE, IN_TITLE, IN_HEAD, IN_BODY, IN_COMMENTS, IN_HEADER or IN_EMPHASIZED or "ored" combinatios of them (eg: IN_HEAD | IN_BODY). Use IN_FILE (1) if your documents are not html.<br>
+<i>properties</i> is a string with the properties to be returned separated by spaces<br>
+<i>sortspec</i> is the sort spec if different from relevance. Eg: title asc otherfield desc anotherfiled desc<br>
+* The numerical values for IN_FILE, IN_HEAD are in src/swish.h<br>
+<br>
+<font size =-1>Eg: $num_results=SwishSearch($handle,"metaname=\"this is a phrase\" or otherword",1,"name depno","depno asc");</font><bt>
+<p>
+
+
+<h3>($rank,$indexfile,$filename,$title,$start,$size,$prop1,$prop2,$prop3,...)=SwishNext($handle)</h3>
+This function returns the next hit of a search. Must be executed after SwishSearch to read the results.<br>
+Eg (assuming that you have asked for three properties in SwishSearch):<br>
+<pre>
+while(($rank,$indexfile,$filename,$title,$start,$size,$prop1,$prop2,$prop3)=SwishNext($handle))
+{
+   print "$rank $indexfile $filename \"$title\" $start $size \"$prop1\" \"$prop2\" \"$prop3\"\n";
+}
+</pre>
+<p>
+
+
+<h3>$rc=SwishSeek($handle, $num)</h3>
+Repositions the pointer in the result list to the element pointed by num. It is useful when you want to read only the results starting at num<br>
+<p>
+
+<h3>$rc=SwishError($handle)</h3>
+Returns the last error if any (always a negative value). If there is not an error it will return 0<br>
+<p>
+
+<h3>@ParameterArray=SwishHeaderParameter($handle,$HeaderParameterName)</h3>
+This function is useful to access the header data of the index files<br>
+Returns the contents of the requested header parameter of all index files opend by SwishOpen in an array. This different in the C library, withe the perl module You do not need to use this function inside a bucle.<br>
+<pre>
+Eg:
+@wordchars=SWISHE::SwishHeaderParameter($handle,"WordCharacters");
+print "WordCharacters 0 = @wordchars[0]\n";
+print "WordCharacters 1 = @wordchars[1]\n";
+...
+</pre>
+<br>
+Valid values for HeaderParameterName are: WordCharacters,BeginCharacters,EndCharacters,IgnoreFirstChar,IgnoreLastChar,Indexed on,Description,IndexPointer,IndexAdmin,Stemming,Soundex.<br>
+<p>
+
+<h3>@stopwords=SwishStopWords($handle,$indexfilename)</h3>
+Returns an array containing all the stopwords stored in the index file pointed by filename (filename must match one of the names used in SwishOpen)<br>
+<pre>
+Eg:
+@stopwords=SWISHE::SwishStopWords($handle,$indexfilename);
+print "StopWords =";
+for($i=0;@stopwords[$i];$i++)
+{
+	print " @stopwords[$i]"
+}
+print "\n";
+</pre>
+<p>
+
+<h3>@keywords=SwishWords($handle,$indexfilename,$c)</h3>
+Returns an array containing all the keywords stored in the index file pointed by filename (filename must match one of the names used in SwishOpen) and starting with the character c<br>
+<pre>
+Eg:
+@keywords=SWISHE::SwishWords($handle,$indexfilename,"t");
+print "KeyWords =";
+for($i=0;@keywords[$i];$i++)
+{
+	print " @keywords[$i]"
+}
+print "\n";
+</pre>
+<p>
+
+<h3>$stemword=SwishStem($word)</h3>
+Returns the stemmed word preserving the original one.
+<pre>
+Eg:
+$stemword=SWISHE::SwishStem("parking");
+print "$stem_word";     # prints park
+</pre>
+<p>
+
+
+
+<p>
+<p>
+
+
+<center>
+<h2>Sample test.pl</h2>
+</center>
+
+<pre>
+#!/usr/local/bin/perl
+
+use SWISHE;
+
+$properties='prop1 prop2 prop3';
+$sortspec='prop1 asc prop2 desc';
+$searchstring='meta1=metatest1';
+
+$indexfilename1='../tests/test.index';
+$indexfilename2='../tests/test.index';
+
+# To search for several index just put them together
+$indexfilename="$indexfilename1 $indexfilename2";
+
+
+unless($handle=SWISHE::SwishOpen($indexfilename))
+{
+	print "Could not open index files\n";
+	die;
+}
+
+# Need some info from header ? Here is how
+# Since we have open two files, two values are returned
+@wordchars=SWISHE::SwishHeaderParameter($handle,"WordCharacters");
+print "WordCharacters 0 = @wordchars[0]\n";
+print "WordCharacters 1 = @wordchars[1]\n";
+
+@beginchars=SWISHE::SwishHeaderParameter($handle,"BeginCharacters");
+print "BeginCharacters 0 = @beginchars[0]\n";
+print "BeginCharacters 1 = @beginchars[1]\n";
+
+@endchars=SWISHE::SwishHeaderParameter($handle,"EndCharacters");
+print "EndCharacters 0 = @endchars[0]\n";
+print "EndCharacters 1 = @endchars[1]\n";
+
+@ignorefirstchar=SWISHE::SwishHeaderParameter($handle,"IgnoreFirstChar");
+print "IgnoreFirstChar 0 = @ignorefirstchar[0]\n";
+print "IgnoreFirstChar 1 = @ignorefirstchar[1]\n";
+
+@ignorelastchar=SWISHE::SwishHeaderParameter($handle,"IgnoreLastChar");
+print "IgnoreLastChar 0 = @ignorelastchar[0]\n";
+print "IgnoreLastChar 1 = @ignorelastchar[1]\n";
+
+@indexedon=SWISHE::SwishHeaderParameter($handle,"Indexed on");
+print "Indexed on 0 = @indexedon[0]\n";
+print "Indexed on 1 = @indexedon[1]\n";
+
+@description=SWISHE::SwishHeaderParameter($handle,"Description");
+print "Description 0 = @description[0]\n";
+print "Description 1 = @description[1]\n";
+
+@indexpointer=SWISHE::SwishHeaderParameter($handle,"IndexPointer");
+print "IndexPointer 0 = @indexpointer[0]\n";
+print "IndexPointer 1 = @indexpointer[1]\n";
+
+@indexadmin=SWISHE::SwishHeaderParameter($handle,"IndexAdmin");
+print "IndexAdmin 0 = @indexadmin[0]\n";
+print "IndexAdmin 1 = @indexadmin[1]\n";
+
+@stemming=SWISHE::SwishHeaderParameter($handle,"Stemming");
+print "Stemming 0 = @stemming[0]\n";
+print "Stemming 1 = @stemming[1]\n";
+
+@soundex=SWISHE::SwishHeaderParameter($handle,"Soundex");
+print "Soundex 0 = @soundex[0]\n";
+print "Soundex 1 = @soundex[1]\n";
+
+# Do you want know the stopwords of indexfile1? Here is how
+@stopwords=SWISHE::SwishStopWords($handle,$indexfilename1);
+print "StopWords =";
+for($i=0;@stopwords[$i];$i++)
+{
+	print " @stopwords[$i]"
+}
+print "\n";
+
+$structure=1;
+
+# Uncomment for a testing endless loop
+#while (1)
+#{
+$num_results=SwishSearch($handle,$searchstring,$structure,$properties,$sortspec);
+
+if ($num_results<0) 
+{
+	print "Search error: $num_results\n";
+} else{ 
+	print "Search Results: $num_results\n";
+}
+
+while(($rank,$indexfile,$filename,$title,$start,$size,$prop1,$prop2,$prop3)=SWISHE::SwishNext($handle))
+{
+   print "$rank $indexfile $filename \"$title\" $start $size \"$prop1\" \"$prop2\" \"$prop3\"\n";
+}
+# Uncomment for an endless loop
+}
+SWISHE::SwishClose($handle);
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# Some Stopwords for German Language
+# -- for swish-e (V2.0 or higher)
+# -- Rainer.Scherg (Rainer.Scherg@t-online.de)
+#
+#
+
+
+ab aber als am an auch auf aus
+
+bei beim bin bis bist
+
+da dadurch daher dann darum das dass daß dein deine dem den der deren des
+deshalb die dies dieser dieses doch dort du durch
+
+ein eine einem einen einer eines er es euer eure euren
+
+für fuer
+
+haben hatte hatten hattest hattet hätte haette hätten hätten
+hier hinten
+
+ich ihr ihre im in ist
+
+ja jede jedem jeden jeder jedes jener jenes jetzt
+
+kann kannst können könnt könnte konnte koennen koennte könnten koennten
+
+machen mein meine mit muss muß musst mußt muessen müssen muesst müßt
+muesste müßte
+
+nach nachdem nein nicht noch nun
+
+oder
+
+seid sein seine seit sich sie sind soll sollen sollst sollt solltest
+sonst soweit sowie
+
+und unser unsere unter über ueber
+
+vom von vor
+
+wann warum war waere wäre was weiter weitere welcher welcher
+wenn wer werde werden werdet weshalb
+wie wieder wieso wir wird wirst wo wurde
+
+zu zum zur zurück 
+
+
+
