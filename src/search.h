@@ -133,7 +133,7 @@ struct s_DB_RESULTS
     DB_RESULTS   *next;
 
     RESULTS_OBJECT *results;            /* parent */
-    SEARCH_OBJECT  *srch;               /* make life easy */
+    SEARCH_OBJECT  *srch;               /* make life easy (only valid during search) */
 
 
     IndexFILE   *indexf;                /* the associated index file */
@@ -155,9 +155,10 @@ struct s_DB_RESULTS
 
 struct s_RESULTS_OBJECT
 {
-    SEARCH_OBJECT  *srch;               /* params that generated these results */
     SWISH          *sw;                 /* parent */
     char           *query;              /* in case user forgot what they searched for */
+
+    void           *ref_count_ptr;      /* for SWISH::API */
 
     DB_RESULTS     *db_results;         /* Linked list of results - one for each index file */
 

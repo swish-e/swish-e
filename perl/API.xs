@@ -23,20 +23,29 @@ MODULE = SWISH::API        PACKAGE = SWISH::API    PREFIX = Swish
 # Make sure that we have at least xsubpp version 1.922.
 REQUIRE: 1.922
 
-SW_HANDLE
+# This returns SW_HANDLE
+void 
 new(CLASS, index_file_list )
     char *CLASS
     char *index_file_list
-    CODE:
+
+    PREINIT:
+        SW_HANDLE handle;
+
+    PPCODE:
         SwishErrorsToStderr();
-        RETVAL = SwishInit( index_file_list );
-    OUTPUT:
-        RETVAL
+        handle = SwishInit( index_file_list );
+        ST(0) = sv_newmortal();
+        sv_setref_pv( ST(0), CLASS, (void *)handle );
+        SwishSetRefPtr( handle, (void *)SvRV(ST(0)) );
+        XSRETURN(1);
+
 
 
 void
 DESTROY(self)
-    SW_HANDLE self
+        SW_HANDLE self;
+
     CODE:
         SwishClose( self );
 
@@ -192,19 +201,37 @@ New_Search_Object(swish_handle, query = NULL)
 
     PREINIT:
         char * CLASS = "SWISH::API::Search";
-        
+
+    CODE:
+	RETVAL = New_Search_Object( swish_handle, query );
+        if ( RETVAL )
+	    SvREFCNT_inc( (SV *)SwishSearch_parent( RETVAL ) );
+
+    OUTPUT:
+	RETVAL
 
 
-# Returns a results object
+# Returns a SW_RESULTS object
 
-SW_RESULTS
+void
 SwishQuery( swish_handle, query = NULL )
     SW_HANDLE swish_handle
     char *query
 
     PREINIT:
         char * CLASS = "SWISH::API::Results";
+        SW_RESULTS results;
 
+    PPCODE:
+	results = SwishQuery( swish_handle, query );
+        if ( results )
+        {
+	    SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
+            ST(0) = sv_newmortal();
+            sv_setref_pv( ST(0), CLASS, (void *)results );
+            ResultsSetRefPtr( results, (void *)SvRV(ST(0)) );
+            XSRETURN(1);
+        }
 
 
 # Misc utility routines
@@ -262,8 +289,14 @@ MODULE = SWISH::API        PACKAGE = SWISH::API::Search    PREFIX = Swish
 void
 DESTROY(search)
     SW_SEARCH search
+
     CODE:
-        Free_Search_Object( search );
+        if ( search )
+        {
+            SV *parent = (SV *)SwishSearch_parent( search );
+            Free_Search_Object( search );
+	    SvREFCNT_dec( parent );
+        }
 
 
 void
@@ -306,15 +339,26 @@ SwishSetSort(search, sort_string)
     char *sort_string
 
 
-# Returns a result object 
+# Returns a SW_RESULTS object
 
-SW_RESULTS
+void
 SwishExecute( search, query = NULL )
     SW_SEARCH search
     char *query
 
     PREINIT:
         char * CLASS = "SWISH::API::Results";
+        SW_RESULTS results;
+
+    PPCODE:
+        results = SwishExecute( search, query );
+        {
+	    SvREFCNT_inc( (SV *)SwishResults_parent( results ) );
+            ST(0) = sv_newmortal();
+            sv_setref_pv( ST(0), CLASS, (void *)results );
+            ResultsSetRefPtr( results, (void *)SvRV(ST(0)) );
+            XSRETURN(1);
+        }
 
 
 
@@ -332,10 +376,14 @@ MODULE = SWISH::API        PACKAGE = SWISH::API::Results    PREFIX = Swish
 void
 DESTROY(results)
     SW_RESULTS results
-    CODE:
-        Free_Results_Object( results );
 
-        
+    CODE:
+        if ( results )
+    	{
+            SV *parent = (SV *)SwishResults_parent( results );
+            Free_Results_Object( results );
+            SvREFCNT_dec( parent );
+        } 
 
 int
 SwishHits(self)
@@ -358,6 +406,12 @@ SwishNextResult(results)
     PREINIT:
         char * CLASS = "SWISH::API::Result";
 
+    CODE:
+        RETVAL = SwishNextResult(results);
+        if ( RETVAL )
+            SvREFCNT_inc( (SV *)SwishResult_parent( RETVAL ));
+    OUTPUT:
+        RETVAL
 
 
 void
@@ -422,13 +476,22 @@ SwishParsedWords(results, index_name)
 #
 #            SWISH::API::Result (single result)
 #
-#   No real object is created in C, so there's no DESTROY
 #
 # ***************************************************************/
 
 
 MODULE = SWISH::API        PACKAGE = SWISH::API::Result    PREFIX = Swish
 
+void
+DESTROY(result)
+    SW_RESULT result
+
+    CODE:
+        if ( result )
+        {
+            SV *parent = (SV *)SwishResult_parent(result);
+            SvREFCNT_dec( parent );
+        }
 
 void
 SwishProperty(result, property)
