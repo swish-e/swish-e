@@ -615,13 +615,17 @@ sub write_split_html_files{
 # convert the template into the release version
 # input: ref to template array
 ###################
+use File::Basename;
+
 sub split_template2release{
   my $self    = shift;
   my $ra_tmpl = shift;
 
   my $full_file_name = $self->{curr_page};
-  $full_file_name =~ s|^.*?(\w+)\.\w+$|$1|;
-
+  #$full_file_name =~ s|^.*?(\w+)\.\w+$|$1|;
+  # Just want the basename, correct?  Is it always .pod?
+  $full_file_name = $1 if $full_file_name =~ m!([^/]+)\.\w+$!;  
+  
   my %replace_map = 
     (
      PAGE     => $full_file_name,
