@@ -45,6 +45,7 @@ doc/tmpl/pageps.tmpl
 doc/tmpl/splitpage.tmpl
 example/README
 example/swish.cgi
+example/swish2.cgi
 example/swish.tmpl
 filter-bin/README
 filter-bin/_binfilter.sh
