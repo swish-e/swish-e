@@ -261,25 +261,9 @@ char   *parseHTMLtitle(char *buffer)
 
 int     isoktitle(SWISH *sw, char *title)
 {
-    int     badfile;
-    struct swline *tmplist;
     struct MOD_FS *fs = sw->FS;
 
-    badfile = 0;
-    tmplist = fs->titconlist;
-    while (tmplist != NULL)
-    {
-        if (matchARegex(title, tmplist->line))
-        {
-            badfile = 1;
-            break;
-        }
-        tmplist = tmplist->next;
-    }
-    if (badfile)
-        return 0;
-    else
-        return 1;
+    return !match_regex_list( title, fs->filerules.title );
 }
 
 

@@ -99,7 +99,6 @@ int  configModule_Index (SWISH *, StringList *);
 
 void do_index_file (SWISH *sw, FileProp *fprop);
 
-DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 void addentry (SWISH *, char*, int, int, int, int );
 
 void addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size );

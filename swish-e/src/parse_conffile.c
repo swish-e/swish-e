@@ -55,8 +55,8 @@ $Id$
 #include "db.h"
 #include "extprog.h"
 
-static void Build_ReplaceRules( char *name, StringList *sl, regex_list **reg_list );
-static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, StringList *sl );
+static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
+static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
 
 
 
@@ -90,25 +90,30 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
     /* Init default index file */
     indexf = sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
+
+
+    sl = NULL;
+
     while (fgets(line, MAXSTRLEN, fp) != NULL)
     {
         linenumber++;
+
+        if ( sl )
+            freeStringList(sl);
+
         /* Parse line */
         if (!(sl = parse_line(line)))
             continue;
 
         if (!sl->n)
-        {
-            freeStringList(sl);
             continue;
-        }
 
         w0 = sl->word[0];       /* Config Direct. = 1. word */
+
         if (w0[0] == '#')
-		{
-			freeStringList(sl);
             continue;           /* comment */
-		}
+
+
 
         if (strcasecmp(w0, "IndexDir") == 0)
         {
@@ -290,7 +295,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "ReplaceRules") == 0)
         {
             if (sl->n > 2)
-                Build_ReplaceRules( w0, sl, &sw->replaceRegexps );
+                Build_ReplaceRules( w0, sl->word, &sw->replaceRegexps );
             else
                 progerr("%s: requires at least two values", w0);
 
@@ -394,6 +399,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "ExtractPath") == 0)
         {
             struct metaEntry *m;
+            char **words;
 
             if (sl->n < 4)
                 progerr("%s: requires at least three values: metaname expression type and a expression/strings", w0);
@@ -401,8 +407,9 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if ( !( m = getMetaNameByName( &indexf->header, sl->word[1])) )
                 progerr("%s - name '%s' is not a MetaName", w0, sl->word[1] );
 
-            sl->word++; /* past meta name */
-            add_ExtractPath( w0, sw, m, sl );
+            words = sl->word;
+            words++;  /* past metaname */
+            add_ExtractPath( w0, sw, m, words );
 
             continue;
         }
@@ -830,12 +837,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Prog(sw, sl));
         else if (!parseconfline(sw, sl))
         {
-            printf("Bad directive on line #%d: %s\n", linenumber, line);
+            printf("Bad directive on line #%d of file %s: %s\n", linenumber, conffile, line);
             if ( ++baddirective > 30 )
                 progerr("Too many errors.  Can not continue.");
         }
-        freeStringList(sl);
+
     }
+
+    freeStringList(sl);
+
     fclose(fp);
 
     if (baddirective)
@@ -882,7 +892,7 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
 }
 
 
-static  void add_ExtractPath( char *name, SWISH *sw, struct metaEntry *m, StringList *sl )
+static  void add_ExtractPath( char *name, SWISH *sw, struct metaEntry *m, char **params )
 {
     path_extract_list *list = sw->pathExtractList;
     path_extract_list *last = NULL;
@@ -910,31 +920,9 @@ static  void add_ExtractPath( char *name, SWISH *sw, struct metaEntry *m, String
     }
 
     /* now add regular expression to list */
-    Build_ReplaceRules( name, sl, &list->regex ); /* compile and add to list of expression */
+    Build_ReplaceRules( name, params, &list->regex ); /* compile and add to list of expression */
 }
 
-/*********************************************************
-*  Free a regular express list
-*
-*********************************************************/
-
-void free_regex_list( regex_list **reg_list )
-{
-    regex_list *list = *reg_list;
-    regex_list *next;
-    while ( list )
-    {
-        if ( list->replace )
-            efree( list->replace );
-
-        regfree(&list->re);
-
-        next = list->next;
-        efree( list );
-        list = next;
-    }
-    *reg_list = NULL;
-}
 
 /********************************************************
 *  Free a ExtractPath list
@@ -956,109 +944,57 @@ void free_Extracted_Path( SWISH *sw )
     sw->pathExtractList = NULL;
 }
 
-        
-        
+/*********************************************************************
+*  Builds regex substitution strings of the FileRules type
+*  But also includex ExtractPath
+*
+*********************************************************************/
 
-
-static void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global )
-{
-    regex_list *new_node = emalloc( sizeof( regex_list ) );
-    regex_list *last;
-    char       *c;
-    int         status;
-    int         escape = 0;
-
-    if ( (status = regcomp( &new_node->re, pattern, cflags )))
-        progerr("Failed to complie regular expression '%s', pattern. Error: %d", pattern, status );
-
-
-    efree( pattern );        
-    new_node->replace = replace;
-
-    new_node->global = global;  /* repeat flag */
-
-    new_node->replace_length = strlen( replace );
-
-    new_node->replace_count = 0;
-    for ( c = replace; *c; c++ )
-    {
-        if ( escape )
-        {
-            escape = 0;
-            continue;
-        }
-        
-        if ( *c == '\\' )
-        {
-            escape = 1;
-            continue;
-        }
-
-        if ( *c == '$' && *(c+1) )
-            new_node->replace_count++;
-    }
-         
-            
-    new_node->next = NULL;
-
-
-    if ( *reg_list == NULL )
-        *reg_list = new_node;
-    else
-    {
-        /* get end of list */
-        for ( last = *reg_list; last->next; last = last->next );
-
-        last->next = new_node;
-    }
-
-}
-
-
-
-
-static void Build_ReplaceRules( char *name, StringList *sl, regex_list **reg_list )
+static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list )
 {
     char *pattern = NULL;
     char *replace = NULL;
     int   cflags = REG_EXTENDED;
     int   global = 0;
+    char *ptr;
+
+    params++;
 
     /* these two could be optimized, of course */
     
-    if ( strcasecmp( sl->word[1], "append") == 0 )
+    if ( strcasecmp( params[0], "append") == 0 )
     {
         pattern = estrdup("$");
-        replace = estrdup(sl->word[2]);
+        replace = estrdup( params[1] );
     }
 
-    else if  ( strcasecmp( sl->word[1], "prepend") == 0 )
+    else if  ( strcasecmp( params[0], "prepend") == 0 )
     {
         pattern = estrdup("^");
-        replace = estrdup(sl->word[2]);
+        replace = estrdup(params[1]);
     }
 
        
-    else if  ( strcasecmp( sl->word[1], "remove") == 0 )
+    else if  ( strcasecmp( params[0], "remove") == 0 )
     {
-        pattern = estrdup(sl->word[2]);
+        pattern = estrdup(params[1]);
         replace = estrdup( "" );
         global++;
     }
         
 
-    else if  ( strcasecmp( sl->word[1], "replace") == 0 )
+    else if  ( strcasecmp( params[0], "replace") == 0 )
     {
-        pattern = estrdup(sl->word[2]);
-        replace = estrdup(sl->word[3]);
+        pattern = estrdup(params[1]);
+        replace = estrdup(params[2]);
         global++;
     }
 
 
-    else if  ( strcasecmp( sl->word[1], "regex") == 0 )
+    else if  ( strcasecmp( params[0], "regex") == 0 )
     {
-        int delimiter = (int)*(sl->word[2]);
-        char    *word = sl->word[2];
+        char    *word = params[1];
+        int     delimiter = (int)*word;
         char    *pos;
 
         word++; /* past the first delimiter */
@@ -1078,28 +1014,30 @@ static void Build_ReplaceRules( char *name, StringList *sl, regex_list **reg_lis
         replace = estrdup(word);
 
         /* now check for flags */
-        for ( word = pos + 1; *word; word++ )
+        for ( ptr = pos + 1; *ptr; ptr++ )
         {
-            if ( *word == 'i' )
+            if ( *ptr == 'i' )
                 cflags |= REG_ICASE;
-            else if ( *word == 'm' )
+            else if ( *ptr == 'm' )
                 cflags |= REG_NEWLINE;
-            else if ( *word == 'g' )
+            else if ( *ptr == 'g' )
                 global++;
             else
-                progerr("%s regexp %s: unknown flag '%c'", name, sl->word[2], *word );
+                progerr("%s regexp %s: unknown flag '%c'", name, params[1], *word );
         }
         
     }
 
     else
-        progerr("%s: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", name, sl->word[1] );
+        progerr("%s: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", name, params[0] );
 
 
-    add_regular_expression( reg_list, pattern, replace, cflags, global );
+    add_regular_expression( reg_list, pattern, replace, cflags, global, 0 );
+
+    efree( pattern );
+    efree( replace );
 }
 
-    
 
 
 
