@@ -11938,7 +11938,7 @@ echo "$as_me: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&6;}
 fi
 
 
-                                                                                                                                                      ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile conf/Makefile filter-bin/Makefile"
+                                                                                                                                                      ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile src/snowball/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile conf/Makefile filter-bin/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -12516,6 +12516,7 @@ do
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "src/expat/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/expat/Makefile" ;;
   "src/replace/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/replace/Makefile" ;;
+  "src/snowball/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/snowball/Makefile" ;;
   "perl/Makefile.PL" ) CONFIG_FILES="$CONFIG_FILES perl/Makefile.PL" ;;
   "rpm/swish-e.spec" ) CONFIG_FILES="$CONFIG_FILES rpm/swish-e.spec" ;;
   "tests/Makefile" ) CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
