@@ -199,7 +199,7 @@ L<FileRules|/"item_FileRules"> [contains|is|regex] *regular expression*
 
 =item *
 
-L<FuzzyIndexingMode|/"item_FuzzyIndexingMode"> NONE|Stemming|Soundex|Metaphone|DoubleMetaphone
+L<FuzzyIndexingMode|/"item_FuzzyIndexingMode"> [NONE|Stemming|Soundex|Metaphone|DoubleMetaphone]
 
 =item *
 
@@ -1005,7 +1005,7 @@ to the "summary" meta name.
 
     * Not implemented yet *
 
-You can assign a bias to metanames that will effect how ranking is
+You can assign a bias to metanames that will affect how ranking is
 calculated.  The range of values is from -10 to +10, with zero being
 no bias.
 
@@ -1356,7 +1356,7 @@ the path used with C<ExtractPath>.
 
 The full path is used for each meta name if more than one C<ExtractPath>
 directive is used.  That is, changes to the path used in C<ExtractPath
-foo> do not effect the path used by C<ExtractPath bar>.
+foo> do not affect the path used by C<ExtractPath bar>.
 
 =item ExtractPathDefault *metaname* default_value
 
@@ -1673,7 +1673,7 @@ From: http://aspell.sourceforge.net/metaphone/
     the rough approximation of how an English word sounds.
 
 The C<DoubleMetaphone> mode will sometimes generate two different metaphones for the same word.
-This is suppose to be useful when a word may be pronounced more than one way.
+This is supposed to be useful when a word may be pronounced more than one way.
 
 A metaphone index should give results somewhere in between Soundex and Stemming.    
 
@@ -1689,14 +1689,14 @@ Put yes to apply word stemming algorithm during indexing, else no.
 When UseStemming is set to C<yes> every word is stemmed before placing
 it in to the index.
 
-This option is depreciated.  It has been superceded by L<FuzzyIndexingMode>.
+This option is depreciated.  It has been superceded by C<FuzzyIndexingMode>.
 
 =item UseSoundex [yes|NO]
 
 When UseSoundex is set to C<yes> every word is converted to a Soundex
 code before placing it in to the index.
 
-This option is depreciated.  It has been superceded by L<FuzzyIndexingMode>.
+This option is depreciated.  It has been superceded by C<FuzzyIndexingMode>.
 
 =item IgnoreTotalWordCountWhenRanking [YES|no]
 

@@ -358,40 +358,6 @@ int     icomp2(const void *s1, const void *s2)
     }
 }
 
-int     SwishAttach(SWISH * sw, int printflag)
-{
-    struct MOD_Search *srch = sw->Search;
-    IndexFILE *indexlist;
-
-    IndexFILE *tmplist;
- 
-    indexlist = sw->indexlist;
-    sw->TotalWords = 0;
-    sw->TotalFiles = 0;
-
-
-    /* First of all . Read header default values from all index fileis */
-    /* With this, we read wordchars, stripchars, ... */
-    for (tmplist = indexlist; tmplist;)
-    {
-        sw->commonerror = RC_OK;
-        srch->bigrank = 0;
-
-        /* Program exits in DB_Open if it fails */
-
-        tmplist->DB = (void *)DB_Open(sw, tmplist->line, DB_READ);
-
-        read_header(sw, &tmplist->header, tmplist->DB);
-
-
-        sw->TotalWords += tmplist->header.totalwords;
-        sw->TotalFiles += tmplist->header.totalfiles;
-        tmplist = tmplist->next;
-    }
-
-    /* Make lookuptables for char processing */
-    return (sw->lasterror = RC_OK);
-}
 
 
 /*
@@ -483,7 +449,6 @@ int     search_2(SWISH * sw, char *words, int structure)
     IndexFILE *indexlist;
     int     rc = 0;
     unsigned char PhraseDelimiter;
-    char   *tmpwords;
     struct DB_RESULTS *db_results,
            *db_tmp;
     struct MOD_Search *srch = sw->Search;
@@ -524,9 +489,6 @@ int     search_2(SWISH * sw, char *words, int structure)
         sw->lasterror = RC_OK;
         sw->commonerror = RC_OK;
 
-        tmpwords = estrdup(words); /* copy of the string  (2001-03-13 rasc) */
-
-
 
         /* Clean up from previous loop */
         if (searchwordlist)
@@ -539,10 +501,9 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         /* tokenize the query into swish words based on this current index */
 
-        if (!(searchwordlist = tokenize_query_string(sw, tmpwords, &indexlist->header)))
+        if (!(searchwordlist = tokenize_query_string(sw, words, &indexlist->header)))
         {
             indexlist = indexlist->next;
-            efree(tmpwords);
             if ( sw->lasterror )
                 return sw->lasterror;
             continue;
@@ -557,7 +518,6 @@ int     search_2(SWISH * sw, char *words, int structure)
         /* Is there an open index? */
         if (!indexlist->DB)
         {
-            efree(tmpwords);
             if (searchwordlist)
                 freeswline(searchwordlist); /* 2001-03-13 rasc */
             return sw->lasterror;
@@ -569,7 +529,6 @@ int     search_2(SWISH * sw, char *words, int structure)
         if (!indexlist->header.totalfiles)
         {
             indexlist = indexlist->next;
-            efree(tmpwords);
             continue;
         }
         else
@@ -669,7 +628,6 @@ int     search_2(SWISH * sw, char *words, int structure)
         }
 
 
-        efree(tmpwords);
         indexlist = indexlist->next;
 
     }  /* end process each index file */
@@ -2048,6 +2006,14 @@ RESULT *SwishNext(SWISH * sw)
     else
         num = 10000;
 
+
+    /* Seems like we should error here if there are no results */
+    if ( !sw->Search->db_results )
+    {
+        set_progerr(SWISH_LISTRESULTS_EOF, sw, "Attempted to read results before searching");
+        return NULL;
+    }
+
     /* Check for a unique index file */
     if (!sw->Search->db_results->next)
     {
@@ -2129,7 +2095,8 @@ RESULT *SwishNext(SWISH * sw)
     }
     else
     {
-        sw->lasterror = SWISH_LISTRESULTS_EOF;
+        // it's expected to just return null on end of list.
+        // sw->lasterror = SWISH_LISTRESULTS_EOF;  
     }
 
         

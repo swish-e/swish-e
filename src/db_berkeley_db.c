@@ -278,12 +278,12 @@ struct Handle_DB_db *open_db_files(char *dbname, u_int32_t flags)
     return DB;
 }
 
-void   *DB_Create_db(char *dbname)
+void   *DB_Create_db(SWISH *sw, char *dbname)
 {
     return (void *) open_db_files(dbname, DB_CREATE);
 }
 
-void   *DB_Open_db(char *dbname)
+void   *DB_Open_db(SWISH *sw, char *dbname)
 {
     return (void *) open_db_files(dbname, DB_RDONLY);
 }

@@ -71,7 +71,7 @@ SWISH-PERL - Perl Interface to the SWISH-E Library
     my $num_results = SwishSearch($handle, $query, 1, $props, $sort);
 
     if ( $num_results <= 0 ) {
-        print ($num_results ? SwishErrorString( $num_results ) : 'No Results');
+        print ($num_results ? SwishErrorString( $handle ) : 'No Results');
 
         my $error = SwishError( $handle );
         print "\nError number: $error\n" if $error;
@@ -194,8 +194,7 @@ Closes all the opened files and frees the used memory.
 =item B<$num_results = SwishSearch($handle, $search, $structure, $properties, $sortspec);>
 
 Returns the number of hits, zero for no results, or a negative number.
-If zero SwishError( $handle ) will return the error code which can be passed
-to SwishErrorString() to fetch an error string.
+If negative SwishErrorString( $handle ) will return the error message.
 
 The values passed are:
 
@@ -344,11 +343,11 @@ results one page at a time).
 Returns the last error if any (always a negative value).
 If there is not an error it will return 0.
 
-=item B<$error_string=SwishErrorString( $error_number );>
+=item B<$error_string=SwishErrorString( $handle );>
 
 Returns the error string for the number supplied.
 
-    print 'Error: ', SwishErrorString( SwishError($handle) ), "\n";
+    print 'Error: ', SwishErrorString( $handle ), "\n";
 
 =item B<@ParameterArray=SwishHeaderParameter($handle,$HeaderParameterName);>
 

@@ -14,7 +14,7 @@ extern "C" {
 #include "../src/docprop.h"
 #include "../src/mem.h"
 #include "../src/search.h"
-
+#include "../src/error.h"
 
 MODULE = SWISHE  PACKAGE = SWISHE
 PROTOTYPES: DISABLE
@@ -280,13 +280,13 @@ SwishStem(word)
             
 
 char *
-SwishErrorString(number)
-     int number
+SwishErrorString(handle)
+     void *handle;
      PREINIT:
      char *value;
      PPCODE:
      PUSHMARK(SP);
-     value = (char *)SwishErrorString(number);
+     value = (char *)SwishErrorString((SWISH *)handle);
      XPUSHs(sv_2mortal(newSVpv(value,0)));
      PUTBACK;
 
@@ -304,7 +304,7 @@ SwishHeaders(handle)
      while(indexf)
      {
         indexheader = newHV();
-        hv_store(indexheader,"IndexName",9,newSVpv(indexf->line,0),0);
+        hv_store(indexheader,"IndexFile",9, newSVpv(indexf->line,0),0);
         hv_store(indexheader,"WordCharacters",14,newSVpv(indexf->header.wordchars,0),0);
         hv_store(indexheader,"BeginCharacters",15,newSVpv(indexf->header.beginchars,0),0);
         hv_store(indexheader,"EndCharacters",13,newSVpv(indexf->header.endchars,0),0);
@@ -314,10 +314,14 @@ SwishHeaders(handle)
         hv_store(indexheader,"IndexDescription",16,newSVpv(indexf->header.indexd,0),0);
         hv_store(indexheader,"IndexPointer",12,newSVpv(indexf->header.indexp,0),0);
         hv_store(indexheader,"IndexAdmin",10,newSVpv(indexf->header.indexa,0),0);
-        hv_store(indexheader,"UseStemming",11,newSViv(indexf->header.applyStemmingRules),0);
-        hv_store(indexheader,"UseSoundex",10,newSViv(indexf->header.applySoundexRules),0);
+
+        hv_store(indexheader,"UseStemming",11,newSViv(indexf->header.fuzzy_mode == FUZZY_STEMMING ? 1 : 0 ),0);
+        hv_store(indexheader,"UseSoundex",10,newSViv(indexf->header.fuzzy_mode == FUZZY_SOUNDEX ? 1 : 0),0);
+        hv_store(indexheader,"FuzzyIndexingMode",17,newSVpv(fuzzy_mode_to_string(indexf->header.fuzzy_mode),0),0);
+
         hv_store(indexheader,"TotalWords",10,newSViv(indexf->header.totalwords),0);
         hv_store(indexheader,"TotalFiles",10,newSViv(indexf->header.totalfiles),0);
+
         av_push(headers,newRV_noinc((SV *)indexheader));
         indexf = indexf->next;
      }

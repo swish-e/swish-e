@@ -185,6 +185,7 @@ src/index.c
 src/index.h
 src/keychar_out.c
 src/keychar_out.h
+src/libtest.c
 src/list.c
 src/list.h
 src/mem.c

@@ -69,7 +69,6 @@ void resetModule_Search (SWISH *);
 int  configModule_Search (SWISH *, StringList *);
 
 
-int SwishAttach(SWISH *, int);
 int search (SWISH *sw, char *str, int structure);
 int search_2 (SWISH *sw, char *words, int structure);
 RESULT *SwishNext(SWISH *);

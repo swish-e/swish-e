@@ -162,7 +162,7 @@ install-lib:
 	cp libswish-e.a $(libdir)/libswish-e.a
 
 
-libtest: libsearchswish-e.a libtest.o
+libtest: all libsearchswish-e.a libtest.o
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(LIBS)
 	chmod 755 $@
 

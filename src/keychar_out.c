@@ -54,18 +54,9 @@ void OutputKeyChar (SWISH *sw, int keychar)
  IndexFILE *tmpindexlist;
  int       keychar2;
  char      *keywords;
- int       rc;
 
-	rc=SwishAttach(sw,1);
-	switch(rc) {
-		case INDEX_FILE_NOT_FOUND:
-			resultHeaderOut(sw,1, "# Name: unknown index\n");
-			progerrno("could not open index file %s: ",sw->indexlist->line);
-			break;
-		case UNKNOWN_INDEX_FILE_FORMAT:
-			progerr("the index file format is unknown");
-			break;
-	}
+	if ( !SwishAttach(sw) )
+            SwishAbortLastError( sw );
 
 	resultHeaderOut(sw,1, "%s\n", INDEXHEADER);
 		/* print out "original" search words */

@@ -504,6 +504,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
             if( !getMetaNameByName( header, temp->line ) )
             {
                 set_progerr( UNKNOWN_METANAME, sw, "'%s'", temp->line );
+                freeswline( tokens );
                 return NULL;
             }
 
