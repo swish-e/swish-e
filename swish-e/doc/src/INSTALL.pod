@@ -27,8 +27,9 @@ It was tested with Perl 5.005 although should probably work with any version 5 r
 
 A tip from Wil Vree about compiling with a Sun C compiler:
 In the Makefile the following two options need to be modified
-CC = /opt/SUNWspro/bin/cc
-CFLAGS= -xO2
+
+    CC = /opt/SUNWspro/bin/cc
+    CFLAGS= -xO2
 
 =head1 INSTALLATION
 
@@ -59,6 +60,8 @@ Uncompressing should create the following directories:
    swish-e-x.x/test/  (test.html sample)
    swish-e-x.x/perl/  (perl interface to the SWISH-E library)
    swish-e-x.x/filter-bin/  (filter samples form Rainer Scherg)
+   swish-e-x.x/html   (HTML version of the documentation)
+   swish-e-x.x/doc    (directory used or building the documentation)
 
 
 =item 2 Make any needed changes in F<src/config.h>
@@ -121,8 +124,6 @@ library if you wish to embed SWISH-E into another application.  For example,
 the library should be installed before using the high level Perl SWISH modules located
 on CPAN. http://search.cpan.org/search?mode=module&query=SWISH
 
-B<Jose, can the perl/Makefile be setup to look in ../src for libswish-e.a? so this step isn't required?>
-
 To install the library issue the following commands (again, you may need to su root)
 
    su root
@@ -141,8 +142,10 @@ will install the F<libswish-e.a> library in F<$HOME/lib>.
 =head1 BASIC CONFIGURATION AND USAGE
 
 This section should give you a basic overview of indexing and searching with B<SWISH-E>.
-See L<SWISH-INDEX|SWISH-INDEX> and L<SWISH-SEARCH|SWISH-SEARCH> for complete documentation of the various indexing
-and searching options.
+
+SWISH-E reads a configuration file (see L<SWISH-CONFIG|SWISH-CONFIG>) for directives that control
+what and how SWISH-E indexes files.  Then running SWISH-E is controlled by command line arguments
+(see L<SWISH-RUN|SWISH-RUN>).
 
 To try the examples below change to the F<tests> subdirectory of the distribution.  The tests will
 use the *.html files in this directory when creating the test index.  You may wish to review these
@@ -175,8 +178,8 @@ For example, a simple configuration file:
    IndexReport 1
 
 And that's a simple configuration file.  The order of the directives is not important, but
-currently (B<why?>) each comment or directive must begin in column 1.
-The complete list of all configuration file directives are described in L<SWISH-INDEX|SWISH-INDEX>.
+currently each comment or directive must begin in column 1.
+The complete list of all configuration file directives are described in L<SWISH-CONFIG|SWISH-CONFIG>.
 
 =head2 Step 2: Index your Files
 
@@ -314,16 +317,22 @@ Now search, but this time limit your search to META tag "meta1":
 
     ../src/swish-e -w 'meta1=metatest1'
 
-Again, please see L<SWISH-INDEX|SWISH-INDEX> and L<SWISH-SEARCH|SWISH-SEARCH> for complete
+Again, please see L<SWISH-RUN|SWISH-RUN> and L<SWISH-CONFIG|SWISH-CONFIG> for complete
 documentation of the various indexing and searching options.
 
 =head1 QUESTIONS AND TROUBLESHOOTING
 
 Support for installation, configuration and usage is available via the SWISH-E
 discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
-Please search the SWISH-E list archive before posting, and check the L<SWISH-FAQ> to
+Please search the SWISH-E list archive before posting, and check the L<SWISH-FAQ|SWISH-FAQ> to
 see if your question hasn't already been asked.
 
+
+=head1 Document Info
+
+$Id$
+
+.
 
 
 
