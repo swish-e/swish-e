@@ -689,6 +689,31 @@ void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy )
     progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
 }
 
+void free_fuzzy_mode( FUZZY_INDEX *fi )
+{
+    int     i;
+
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( fi->fuzzy_mode == fuzzy_opts[i].fuzzy_mode )
+        {
+            fi->fuzzy_mode = FUZZY_NONE;
+            fi->fuzzy_routine = NULL;
+#ifdef SNOWBALL
+            if(fuzzy_opts[i].free)
+                fuzzy_opts[i].free(fi->snowball);
+
+            fi->snowball = NULL;
+#endif
+            return;
+        }
+
+    fi->fuzzy_mode = FUZZY_NONE;
+    fi->fuzzy_routine = NULL;
+#ifdef SNOWBALL
+    fi->snowball = NULL;
+#endif
+}
+
 char *fuzzy_mode_to_string( FuzzyIndexType mode )
 {
     int     i;
@@ -699,6 +724,19 @@ char *fuzzy_mode_to_string( FuzzyIndexType mode )
     return "Unknown FuzzyIndexingMode";
 }
 
+int stemmer_applied(INDEXDATAHEADER *header)
+{
+     return (FUZZY_STEMMING_EN == header->fuzzy_data.fuzzy_mode
+#ifdef SNOWBALL
+          || FUZZY_STEMMING_ES == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_FR == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_PT == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_IT == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_DE == header->fuzzy_data.fuzzy_mode ||
+             FUZZY_STEMMING_NL == header->fuzzy_data.fuzzy_mode
+#endif
+                               ) ? 1 : 0;
+}
 
 #ifdef SNOWBALL
 int     Stem_es(char **inword, int *lenword, struct SN_env *snowball)
@@ -706,7 +744,6 @@ int     Stem_es(char **inword, int *lenword, struct SN_env *snowball)
     int new_lenword;
 
     SN_set_current(snowball,strlen(*inword),*inword); /* Set Word to Stem */
-    snowball->p[snowball->l] = '\0'; /* Put a trailing null to the stemmed word (just for printf) */
     spanish_stem(snowball);
 
     if((*lenword) < snowball->l)
