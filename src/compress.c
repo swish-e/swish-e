@@ -30,6 +30,7 @@
 #include "index.h"
 #include "search.h"
 #include "hash.h"
+#include "ramdisk.h"
 
 
 /* 2001-05 jmruiz */
@@ -211,13 +212,7 @@ struct MOD_Index *idx = sw->Index;
         progerr("Internal error in compress_location routine");
 
         /* Swap location info to file */
-    if(idx->swap_locdata) {
-        q=(unsigned char *)SwapLocData(sw,++p,i);
-    }
-	else {
-        q=(unsigned char *)emalloc(i);
-        memcpy(q,++p,i);
-    }
+    q=(unsigned char *)SwapLocData(sw,++p,i);
     efree(l);
     return (unsigned char *)q;
 }
@@ -265,7 +260,7 @@ int i;
 }
 
 /* 09/00 Jose Ruiz
-** Function to swap location data to a temporal file to save
+** Function to swap location data to a temporal file or ramdisk to save
 ** memory. Unfortunately we cannot use it with IgnoreLimit option
 ** enabled.
 ** The data has been compressed previously in memory.
@@ -276,33 +271,52 @@ long SwapLocData(SWISH *sw,unsigned char *buf,int lenbuf)
 long pos;
 struct MOD_Index *idx = sw->Index;
 
+
         /* Check if we have IgnoreLimit active */
         /* If it is active, we can not swap the location info */
         /* to disk because it can be modified later */
-    if(idx->plimit!=NO_PLIMIT) 
+    if(idx->plimit!=NO_PLIMIT)
         return (long)buf;  /* do nothing */
 
-    if(!idx->fp_loc_write)
+    if(idx->swap_locdata)
     {
-        idx->fp_loc_write = fopen(idx->swap_location_name,FILEMODE_WRITE);
+        if(!idx->fp_loc_write)
+        {
+            if(!(idx->fp_loc_write = fopen(idx->swap_location_name,FILEMODE_WRITE)))
+                progerr("Could not create temp file %s",idx->swap_location_name);
+            idx->swap_tell = ftell;
+            idx->swap_write = fwrite;
+            idx->swap_close = fclose;
+            idx->swap_seek = fseek;
+            idx->swap_read = fread;
+        }
     }
-    if (!idx->fp_loc_write) {
-        progerr("Could not create temp file %s",idx->swap_location_name);
-    }
-    pos=ftell(idx->fp_loc_write);
-    if(fwrite(&lenbuf,1,sizeof(int),idx->fp_loc_write)!=sizeof(int))
+    else
     {
-        progerr("Cannot write to swap file");    
+        if(!idx->fp_loc_write)
+        {
+            idx->fp_loc_write = (FILE *)ramdisk_create(200000);
+            idx->swap_tell = ramdisk_tell_write;
+            idx->swap_write = ramdisk_write;
+            idx->swap_close = ramdisk_close;
+            idx->swap_seek = ramdisk_seek_read;
+            idx->swap_read = ramdisk_read;
+        }
     }
-    if(fwrite(buf,1,lenbuf,idx->fp_loc_write)!=(unsigned int)lenbuf)
+    pos=idx->swap_tell(idx->fp_loc_write);
+    if(idx->swap_write(&lenbuf,1,sizeof(int),idx->fp_loc_write)!=sizeof(int))
     {
-        progerr("Cannot write to swap file");    
+        progerr("Cannot write to swap file");
+    }
+    if(idx->swap_write(buf,1,lenbuf,idx->fp_loc_write)!=(unsigned int)lenbuf)
+    {
+        progerr("Cannot write to swap file");
     }
     return pos;
 }
 
 /* 09/00 Jose Ruiz
-** Gets the location data from the swap file
+** Gets the location data from the swap file or ramdisk
 ** Returns a memory compressed location data
 */
 unsigned char *unSwapLocData(SWISH *sw,long pos)
@@ -314,22 +328,31 @@ struct MOD_Index *idx = sw->Index;
         /* Check if we have IgnoreLimit active */
         /* If it is active, we can not swap the location info */
         /* to disk because it can be modified later */
-    if(idx->plimit!=NO_PLIMIT) 
+    if(idx->plimit!=NO_PLIMIT)
         return (unsigned char *)pos;  /* do nothing */
 
-    if(!idx->fp_loc_read)
+    if(idx->swap_locdata)
     {
-        fclose(idx->fp_loc_write);
-        idx->fp_loc_write = NULL;
-        idx->fp_loc_read=fopen(idx->swap_location_name,FILEMODE_READ);
-        if (!idx->fp_loc_read) {
-            progerr("Could not open temp file %s",idx->swap_location_name);
+        if(!idx->fp_loc_read)
+        {
+            idx->swap_close(idx->fp_loc_write);
+            idx->fp_loc_write = NULL;
+            if(!(idx->fp_loc_read=fopen(idx->swap_location_name,FILEMODE_READ)))
+                progerr("Could not open temp file %s",idx->swap_location_name);
         }
     }
-    fseek(idx->fp_loc_read,pos,SEEK_SET);
-    fread(&lenbuf,sizeof(int),1,idx->fp_loc_read);    
+    else
+    {
+        if(!idx->fp_loc_read)
+        {
+            idx->fp_loc_read = idx->fp_loc_write;
+            idx->fp_loc_write = NULL;
+        }
+    }
+    idx->swap_seek(idx->fp_loc_read,pos,SEEK_SET);
+    idx->swap_read(&lenbuf,sizeof(int),1,idx->fp_loc_read);
     buf=(unsigned char *)emalloc(lenbuf);
-    fread(buf,lenbuf,1,idx->fp_loc_read);    
+    idx->swap_read(buf,lenbuf,1,idx->fp_loc_read);
     return buf;
 }
 

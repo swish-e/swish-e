@@ -194,6 +194,12 @@ void initModule_Index (SWISH  *sw)
 
     idx->plimit=PLIMIT;
     idx->flimit=FLIMIT;
+       /* Swaping access file functions */
+    idx->swap_tell = NULL;
+    idx->swap_write = NULL;
+    idx->swap_seek = NULL;
+    idx->swap_read = NULL;
+    idx->swap_close = NULL;
 
     return;
 }
@@ -227,11 +233,11 @@ void freeModule_Index (SWISH *sw)
 
   if (isfile(idx->swap_location_name))
   {
-	if (idx->fp_loc_read)
-		fclose(idx->fp_loc_read);
+	if (idx->fp_loc_read)  
+		idx->swap_close(idx->fp_loc_read);
 
 	if (idx->fp_loc_write)
-		fclose(idx->fp_loc_write);
+		idx->swap_close(idx->fp_loc_write);
 
 	remove(idx->swap_location_name);
 
@@ -1347,7 +1353,6 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
            *ptmp2,
            *compressed_data;
     int    *pi = NULL;
-    struct  MOD_Index *idx = sw->Index;
 
     /* Very trivial case */
     if (!e)
@@ -1370,8 +1375,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
 
-        if (idx->swap_locdata)
-            e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+        e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
         compressed_data = (unsigned char *)e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */

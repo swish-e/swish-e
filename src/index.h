@@ -77,9 +77,17 @@ struct MOD_Index
 	int		swap_filedata;		/* swap file & property data */
 	int		swap_locdata;		/* swap location data */
 
+	/* Pointer to swap functions */ 
+    long    (*swap_tell)(FILE *);
+    size_t  (*swap_write)(const void *, size_t, size_t, FILE *);
+    int  (*swap_seek)(FILE *, long, int);
+    size_t  (*swap_read)(void *, size_t, size_t, FILE *);
+    int     (*swap_close)(FILE *);
+
     /* removestops limit values */
     int		plimit;
     int		flimit;
+
 };
 
 void initModule_Index (SWISH *);
