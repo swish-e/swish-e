@@ -573,14 +573,16 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
         }
         else
         {
-            metaFileEntry->newMetaID = (*count) + AUTOPROP_ID__DOCPATH;;
+/***************** FIX ******************/       
+            metaFileEntry->newMetaID = (*count) + 1; 
             metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
         }
     }
     else //   if (!metaEntryArray)
     {
                 *count = 0;
-        metaFileEntry->newMetaID = AUTOPROP_ID__DOCPATH;;
+/***************** FIX ******************/       
+        metaFileEntry->newMetaID = 1;
         metaEntryArray = addNewMetaEntry(metaEntryArray, count, 0, metaWord, metaType, NULL);
     }
 

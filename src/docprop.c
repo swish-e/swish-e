@@ -146,6 +146,9 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *   Warning:
 *       Only returns first property in list (which is the last property added)
 *
+*   Notes:
+*       with PROPFILE, caller is expected to destroy the property
+*
 *
 ********************************************************************/
 
@@ -155,6 +158,8 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     propEntry *prop = NULL;
     struct file *fi;
     SWISH *sw = (SWISH *) result->sw;
+    int     error_flag;
+    unsigned long num;
 
 
     /* Grab the meta structure for this ID, unless one was passed in */
@@ -168,6 +173,35 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     if ( ! ( (*meta_entry)->metaType & META_PROP) )
         progerr( "'%s' is not a PropertyName", (*meta_entry)->metaName );
 
+
+    /* This is a memory leak if not using PROPFILE */
+
+    /* Some properties are generated during a search */
+    if ( is_meta_internal( *meta_entry ) )
+    {
+        if ( is_meta_entry( *meta_entry, AUTOPROPERTY_RESULT_RANK ) )
+        {
+            num = PACKLONG( (unsigned long)result->rank );
+            return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
+        }
+
+        if ( is_meta_entry( *meta_entry, AUTOPROPERTY_REC_COUNT ) )
+        {
+            num = PACKLONG( (unsigned long)result->count );
+            return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
+        }
+
+        if ( is_meta_entry( *meta_entry, AUTOPROPERTY_FILENUM ) )
+        {
+            num = PACKLONG( (unsigned long)result->filenum );
+            return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
+        }
+
+            
+        if ( is_meta_entry( *meta_entry, AUTOPROPERTY_INDEXFILE ) )
+            return CreateProperty( *meta_entry, result->indexf->line, strlen( result->indexf->line ), 0, &error_flag );
+    }
+                   
 
 #ifdef PROPFILE
     return ReadSingleDocPropertiesFromDisk(sw, indexf, result->filenum, metaID, 0 );
@@ -213,6 +247,8 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
 char *getResultPropAsString(RESULT *result, int ID)
 {
     char *s = NULL;
+    propEntry *prop;
+    struct metaEntry *meta_entry = NULL;
 
     
 	if( !result )
@@ -220,49 +256,17 @@ char *getResultPropAsString(RESULT *result, int ID)
 
 
 
-    /* Deal with internally generated props */
-    
-    if ( ID == AUTOPROP_ID__REC_COUNT )
-    {
-    	s=emalloc(14);
-    	sprintf(s,"%.013lu", (unsigned long)0 );
-    	return s;
-    }
+    if ( !(prop = getDocProperty( result, &meta_entry, ID )) )
+        return estrdup("");
 
-    if ( ID == AUTOPROP_ID__RESULT_RANK )
-    {
-        s=emalloc(14);
-        sprintf(s,"%.013lu", (unsigned long)result->rank );
-        return s;
-    }
+    /* $$$ Ignores possible other properties that are linked to this one */
+    s = DecodeDocProperty( meta_entry, prop );
 
-    if ( ID == AUTOPROP_ID__INDEXFILE )
-        return estrdup( result->indexf->line );
-
-
-    if ( ID == AUTOPROP_ID__FILENUM )
-    {
-        s=emalloc(14);
-        sprintf(s,"%.013lu", (unsigned long)result->filenum );
-        return s;
-    }
-
-
-    /* "Real" properties */
-    {
-        propEntry *prop;
-        struct metaEntry *meta_entry = NULL;
-
-        if ( !(prop = getDocProperty( result, &meta_entry, ID )) )
-            return estrdup("");
-
-        /* $$$ Ignores possible other properties that are linked to this one */
-        s = DecodeDocProperty( meta_entry, prop );
 #ifdef PROPFILE
-        freeProperty( prop );
+    freeProperty( prop );
 #endif        
-        return s;
-    }
+
+    return s;
 }
 
 /*******************************************************************
@@ -285,7 +289,8 @@ char *getResultPropAsString(RESULT *result, int ID)
 PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 {
     PropValue *pv;
-    struct metaEntry *meta_entry;
+    struct metaEntry *meta_entry = NULL;
+    propEntry *prop;
 
 
     /* create a propvalue to return to caller */
@@ -293,97 +298,55 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
     pv->datatype = UNDEFINED;
     pv->destroy = 0;
 
+
+    /* Lookup by property name, if supplied */
     if ( pname )
-        ID = isAutoProperty ( pname );  // I'd rather that everything had a metaEntry!
-            
-    if ( ID == AUTOPROP_ID__REC_COUNT )
-    {
-        pv->datatype = INTEGER;
-        pv->value.v_int = r->count;
-        return pv;
-    }
-
-    if ( ID == AUTOPROP_ID__RESULT_RANK )
-    {
-        pv->datatype = INTEGER;
-        pv->value.v_int = r->rank;
-        return pv;
-    }
-
-    if ( ID == AUTOPROP_ID__INDEXFILE )
-    {
-        pv->datatype = STRING;
-        pv->value.v_str = r->indexf->line;
-        return pv;
-    }
-
-
-    if ( ID == AUTOPROP_ID__FILENUM )
-    {
-        pv->datatype = INTEGER;
-        pv->value.v_int = r->filenum;
-        return pv;
-    }
-
-
-    /* meta name exists? */
-    if ( pname )
-    {
         if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname )) )
             return NULL;
-    }
-    else
-        if ( !(meta_entry = getMetaIDData(&r->indexf->header, ID)) )
-            return NULL;
 
 
-    /* Now return a "real" property */
+    /* This may return false */
+    prop = getDocProperty( r, &meta_entry, ID );
+        
+
+    if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
     {
-        propEntry *prop;
-
-        /* This may return false */
-        prop = getDocProperty( r, &meta_entry, 0 );
-            
-
-        if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
-        {
-            if ( !prop )
-            {
-                pv->datatype = STRING;
-                pv->value.v_str = "";
-                return pv;
-            }
-
-            pv->datatype = STRING;
-            pv->destroy++;       // caller must free this
-            pv->value.v_str = bin2string(prop->propValue,prop->propLen);
-#ifdef PROPFILE
-            freeProperty( prop );
-#endif        
-            return pv;
-        }
-
-
-        /* dates and numbers should return null to tell apart from zero */
         if ( !prop )
         {
-            efree( pv );
-            return NULL;
-        }
-
-
-        if ( is_meta_number(meta_entry) )
-        {
-            unsigned long i;
-            i = *(unsigned long *) prop->propValue;  /* read binary */
-            i = UNPACKLONG(i);     /* Convert the portable number */
-            pv->datatype = ULONG;
-            pv->value.v_ulong = i;
-#ifdef PROPFILE
-            freeProperty( prop );
-#endif        
+            pv->datatype = STRING;
+            pv->value.v_str = "";
             return pv;
         }
+
+        pv->datatype = STRING;
+        pv->destroy++;       // caller must free this
+        pv->value.v_str = bin2string(prop->propValue,prop->propLen);
+#ifdef PROPFILE
+        freeProperty( prop );
+#endif        
+        return pv;
+    }
+
+
+    /* dates and numbers should return null to tell apart from zero */
+    if ( !prop )
+    {
+        efree( pv );
+        return NULL;
+    }
+
+
+    if ( is_meta_number(meta_entry) )
+    {
+        unsigned long i;
+        i = *(unsigned long *) prop->propValue;  /* read binary */
+        i = UNPACKLONG(i);     /* Convert the portable number */
+        pv->datatype = ULONG;
+        pv->value.v_ulong = i;
+#ifdef PROPFILE
+        freeProperty( prop );
+#endif        
+        return pv;
 
    
         if ( is_meta_date(meta_entry) )
@@ -504,6 +467,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     char     *badchar;
     char     *tmpnum;
     char     *string;
+  
     
     string = propstring;
 
@@ -1370,54 +1334,6 @@ int initSearchResultProperties(SWISH *sw)
 	return RC_OK;
 }
 
-
-
-/*
-  -- check if a propertyname is an internal property
-  -- (AutoProperty). Check is case sensitive!
-  -- Return: 0 (no AutoProp)  or >0 = ID of AutoProp..
-  -- 2001-02-07 rasc
-*/
-
-
-int isAutoProperty (char *propname)
-
-{
-  static struct {
-	char *name;
-	int  id;
-  }  *ap, auto_props[] = {
-	{ AUTOPROPERTY_REC_COUNT,	AUTOPROP_ID__REC_COUNT },
-	{ AUTOPROPERTY_RESULT_RANK,	AUTOPROP_ID__RESULT_RANK },
-	{ AUTOPROPERTY_TITLE,		AUTOPROP_ID__TITLE },
-	{ AUTOPROPERTY_DOCPATH,		AUTOPROP_ID__DOCPATH },
-	{ AUTOPROPERTY_DOCSIZE,		AUTOPROP_ID__DOCSIZE },
-	{ AUTOPROPERTY_SUMMARY,		AUTOPROP_ID__SUMMARY },
-	{ AUTOPROPERTY_LASTMODIFIED,	AUTOPROP_ID__LASTMODIFIED },
-	{ AUTOPROPERTY_INDEXFILE,	AUTOPROP_ID__INDEXFILE },
-	{ AUTOPROPERTY_STARTPOS,	AUTOPROP_ID__STARTPOS },
-	{ AUTOPROPERTY_FILENUM,		AUTOPROP_ID__FILENUM },
-
-        { NULL,				0 }
-  };
-
-
-  /* -- Precheck... fits start of propname? */
-
-  if (strncasecmp (propname,AUTOPROPERTY__ID_START__,
-		sizeof(AUTOPROPERTY__ID_START__)-1)) {
-	return 0;
-  }
-
-  ap = auto_props;
-  while (ap->name) {
-	if (! strcasecmp(propname,ap->name)) {
-	   return ap->id;
-	}
-	ap++;
-  }
-  return 0;
-}
 
 
 void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )

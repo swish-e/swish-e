@@ -23,3 +23,5 @@
 void    DB_decompress(SWISH * sw, IndexFILE * indexf);
 void dump_file_list( SWISH *sw, IndexFILE *indexf );
 void dump_memory_file_list( SWISH *sw, IndexFILE *indexf );
+void dump_metanames( SWISH *sw, IndexFILE *indexf );
+
