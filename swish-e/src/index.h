@@ -68,19 +68,18 @@ struct MOD_Index
     struct dev_ino *inode_hash[BIGHASHSIZE];
 
     /* Buffers used by indexstring */
-    int lenswishword;
-    char *swishword;
-    int lenword;
-    char *word;
+    int		lenswishword;
+    char	*swishword;
+    int		lenword;
+    char	*word;
 
     /* Economic mode (-e) */
-    /* If true. Swap part of the info to disk while indexing */
-    /* Save memory */
-    int     economic_flag;
+	int		swap_filedata;		/* swap file & property data */
+	int		swap_locdata;		/* swap location data */
 
     /* removestops limit values */
-    int plimit;
-    int flimit;
+    int		plimit;
+    int		flimit;
 };
 
 void initModule_Index (SWISH *);

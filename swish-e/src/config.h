@@ -238,7 +238,8 @@
 
 #define SPIDERDIRECTORY "./"
 
-#define SWAP_DEFAULT 0
+#define SWAP_LOC_DEFAULT 0
+#define SWAP_FILE_DEFAULT 0
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess

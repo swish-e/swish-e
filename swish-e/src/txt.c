@@ -63,7 +63,7 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
-	if(idx->economic_flag)
+	if(idx->swap_filedata)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 
 	if(summary) efree(summary);

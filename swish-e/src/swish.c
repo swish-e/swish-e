@@ -582,7 +582,8 @@ struct stat stat_buf;
 			starttime = getTheTime();
 
 			/* Update Economic mode */
-		sw->Index->economic_flag=swap_mode;
+		sw->Index->swap_locdata = swap_mode;
+		sw->Index->swap_filedata = swap_mode;
 
 		while (sw->dirlist != NULL) {
 			if (sw->verbose) {
