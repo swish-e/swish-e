@@ -25,14 +25,18 @@ exec_prefix = @exec_prefix@
 libdir      = @libdir@
 
 
+# libxml2 -- uncomment to enable
+#LIBXML2_OBJS = parser.o
+#LIBXML2_LIB  = -lxml2
+#LIBXML2_CFLAGS = -DLIBXML2
 
-LIBS        = @LIBS@
+
+LIBS        = @LIBS@ $(LIBXML2_LIB)
 
 # Library related 
 AR          = ar
 ARFLAGS     = cr
 RANLIB      = @RANLIB@
-
 
 #
 # The objects for the different methods and
@@ -57,8 +61,10 @@ XP_INC = -I$(XPDIR)/xmltok -I$(XPDIR)/xmlparse
 
 XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
 
+
+ 
 # Flags for C compiler
-CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC)
+CFLAGS      = -Wall @CFLAGS@ @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) $(LIBXML2_CFLAGS)
 
 
 
@@ -70,7 +76,7 @@ OBJS=	check.o file.o index.o search.o error.o methods.o\
 	extprog.o entities.o no_better_place_module.o \
 	db.o dump.o db_native.o swish_words.o proplimit.o swish_qsort.o \
 	ramdisk.o \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ)
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ) $(LIBXML2_OBJS)
 
 
 #.SUFFIXES: 

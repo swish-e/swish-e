@@ -191,6 +191,16 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+        if (strcasecmp(w0, "ParserWarnLevel") == 0)
+        {
+            if (sl->n == 2)
+                sw->parser_warn_level = atoi(sl->word[1]);
+            else
+                progerr("%s: requires one value", w0);
+            continue;
+        }
+        
+
         if (strcasecmp(w0, "MinWordLimit") == 0)
         {
             if (sl->n == 2)
@@ -1061,6 +1071,8 @@ int     getDocTypeOrAbort(StringList * sl, int n)
         {"HTML", HTML},
         {"XML", XML},
         {"WML", WML},
+        {"XML2", XML2 },
+        {"HTML2", HTML2 },
         {NULL, NODOCTYPE}
     };
 

@@ -85,6 +85,7 @@ SWISH *SwishNew()
     sw->pathExtractList = NULL;
     sw->lasterror = RC_OK;
     sw->verbose = VERBOSE;
+    sw->parser_warn_level = 0;
     sw->indexComments = 0;		/* change default 5/01 wsm */
     sw->nocontentslist = NULL;
     sw->DefaultDocType=NODOCTYPE;

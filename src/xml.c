@@ -237,7 +237,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
         if (sw->applyautomaticmetanames)
         {
             if (sw->verbose)
-                printf("Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
+                printf("!!!Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
             addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
         }
