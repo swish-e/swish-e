@@ -13,11 +13,14 @@
  */
 
 
+void freeProperty( propEntry *prop );
 void freeDocProperties (docProperties *);
+
 unsigned char *storeDocProperties (docProperties *, int *);
 
-int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *string );
+propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded );
 int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
+int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 );
 
 docProperties *fetchDocProperties (char * );
 
@@ -29,7 +32,7 @@ void printStandardResultProperties(SWISH *, FILE *, RESULT *);
 void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 
 char *getResultPropAsString(RESULT *, int);
-
+char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop );
 void getSwishInternalProperties(struct file *, IndexFILE *);
 
 

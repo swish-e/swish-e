@@ -632,7 +632,7 @@ int     compFileProps(const void *s1, const void *s2)
     if (is_meta_number(r1->currentSortProp) || is_meta_date(r1->currentSortProp))
     {
         /* The PACKEDLONG is a string */
-        rc = memcmp( (const void *)p1->propValue, (const void *)p2->propValue, sizeof( unsigned long ) );
+        rc = memcmp( (const void *)p1->propValue, (const void *)p2->propValue, p1->propLen );
     }
 
     else if (is_meta_string(r1->currentSortProp))
