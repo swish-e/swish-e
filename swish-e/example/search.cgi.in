@@ -270,10 +270,9 @@ __DATA__
     [% FOREACH item = search.results %]
         <div class="title">
             <a href="[% item.Property('swishdocpath') | uri | html %]">
-                [%  item.Property('swishtitle') || item.Property('swishdocpath') | html %]
-            </a>
+                [%  item.Property('swishtitle') || item.Property('swishdocpath') | html %]</a>
 
-            <span class="rank">-- rank: <b>[% item.Property('swishrank') %]</b></span>
+            <span class="rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
         </div>
 
         <div class="description">

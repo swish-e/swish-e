@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Added new example CGI script
+
+search.cgi is a new skeleton CGI script that uses SWISH::API for searching.
+It is installed in the same location as swish.cgi.
+
 =item * Add Fuzzy access to C and Perl interfaces
 
 Added a number of functions to the C API (and SWISH::API)
