@@ -352,6 +352,15 @@
 
 //#define USE_BTREE
 
+#define sw_off_t unsigned long
+#define sw_fopen fopen
+#define sw_fclose fclose
+#define sw_fwrite fwrite
+#define sw_fread fread
+#define sw_fseek fseek
+#define sw_ftell ftell
+#define sw_fputc fputc
+#define sw_fgetc fgetc
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess

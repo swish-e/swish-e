@@ -44,7 +44,7 @@ void    delete_worddata(SWISH *, long, IndexFILE *);
 #endif
 void    build_worddata(SWISH *, ENTRY *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
-long    read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **bufer, int *sz_buffer);
+sw_off_t    read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **bufer, int *sz_buffer);
 void    add_worddata(SWISH *sw, unsigned char *buffer, int sz_buffer);
 void    write_pathlookuptable_to_header(SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 void    write_MetaNames (SWISH *, int id, INDEXDATAHEADER *header, void *DB);
@@ -80,21 +80,21 @@ int     DB_ReadHeaderData(SWISH *sw, int *id, unsigned char **s, int *len, void 
 int     DB_EndReadHeader(SWISH *sw, void *DB);
 
 int     DB_InitWriteWords(SWISH *sw, void *DB);
-long    DB_GetWordID(SWISH *sw, void *DB);
-int     DB_WriteWord(SWISH *sw, char *word, long wordID, void *DB);
+sw_off_t    DB_GetWordID(SWISH *sw, void *DB);
+int     DB_WriteWord(SWISH *sw, char *word, sw_off_t wordID, void *DB);
 #ifdef USE_BTREE
-int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB);
-int     DB_DeleteWordData(SWISH *sw,long wordID, void *DB);
+int     DB_UpdateWordID(SWISH *sw, char *word, sw_off_t wordID, void *DB);
+int     DB_DeleteWordData(SWISH *sw,sw_off_t wordID, void *DB);
 #endif
-int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB);
-long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
+int     DB_WriteWordHash(SWISH *sw, char *word, sw_off_t wordID, void *DB);
+long    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
 int     DB_EndWriteWords(SWISH *sw, void *DB);
 
 int     DB_InitReadWords(SWISH *sw, void *DB);
-int     DB_ReadWordHash(SWISH *sw, char *word, long *wordID, void *DB);
-int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB);
-int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB);
-long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
+int     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB);
+int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB);
+int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB);
+long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
@@ -148,21 +148,21 @@ struct MOD_DB
     int    (*DB_EndReadHeader) (void *DB);
     
     int    (*DB_InitWriteWords) (void *DB);
-    long   (*DB_GetWordID) (void *DB);
-    int    (*DB_WriteWord) (char *word, long wordID, void *DB);
+    sw_off_t   (*DB_GetWordID) (void *DB);
+    int    (*DB_WriteWord) (char *word, sw_off_t wordID, void *DB);
 #ifdef USE_BTREE
-    int    (*DB_UpdateWordID)(char *word, long new_wordID, void *DB);
-    int    (*DB_DeleteWordData)(long wordID, void *DB);
+    int    (*DB_UpdateWordID)(char *word, sw_off_t new_wordID, void *DB);
+    int    (*DB_DeleteWordData)(sw_off_t wordID, void *DB);
 #endif
-    int    (*DB_WriteWordHash) (char *word, long wordID, void *DB);
-    long   (*DB_WriteWordData) (long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
+    int    (*DB_WriteWordHash) (char *word, sw_off_t wordID, void *DB);
+    long   (*DB_WriteWordData) (sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
     int    (*DB_EndWriteWords) (void *DB);
     
     int    (*DB_InitReadWords) (void *DB);
-    int    (*DB_ReadWordHash) (char *word, long *wordID, void *DB);
-    int    (*DB_ReadFirstWordInvertedIndex) (char *word, char **resultword, long *wordID, void *DB);
-    int    (*DB_ReadNextWordInvertedIndex) (char *word, char **resultword, long *wordID, void *DB);
-    long   (*DB_ReadWordData) (long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
+    int    (*DB_ReadWordHash) (char *word, sw_off_t *wordID, void *DB);
+    int    (*DB_ReadFirstWordInvertedIndex) (char *word, char **resultword, sw_off_t *wordID, void *DB);
+    int    (*DB_ReadNextWordInvertedIndex) (char *word, char **resultword, sw_off_t *wordID, void *DB);
+    long   (*DB_ReadWordData) (sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
     int    (*DB_EndReadWords) (void *DB);
     
     

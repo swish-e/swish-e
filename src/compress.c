@@ -187,7 +187,7 @@ int     uncompress2(unsigned char **buffer)
     return num;
 }
 
-/* Rourtines to make long integers portable */
+/* Routines to make long integers portable */
 unsigned long PACKLONG(unsigned long num)
 {
     unsigned long tmp = 0L;
@@ -255,7 +255,74 @@ unsigned long UNPACKLONG2(unsigned char *s)
     return tmp;
 }
 
+/* 2003/10/28 jmruiz - Routines to make file offsets portable */
+/* sw_off_t is a type defined in config.h to be 32 or 64 bit */
+sw_off_t PACKFILEOFFSET(sw_off_t num)
+{
+    sw_off_t tmp = (sw_off_t)0;
+    unsigned char *s;
+    int sz_off_t = sizeof(sw_off_t);
 
+    if (num && LITTLE_ENDIAN)
+    {
+        s = (unsigned char *) &tmp;
+        while(sz_off_t)
+            *s++ = (unsigned char) ((num >> ((--sz_off_t)<<3)) & 0xFF);
+
+        return tmp;
+    }
+    return num;
+}
+
+/* Same routine - Packs file offset into a buffer */
+void    PACKFILEOFFSET2(sw_off_t num, unsigned char *s)
+{
+    int sz_off_t = sizeof(sw_off_t);
+
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_off_t)
+            *s++ = (unsigned char) ((num >> ((--sz_off_t)<<3)) & 0xFF);
+    }
+    else
+    {
+        memcpy(s,(unsigned char *)&num,sz_off_t);
+    }
+}
+
+/* Routine to unpack a file offset */
+sw_off_t UNPACKFILEOFFSET(sw_off_t num)
+{
+    int sz_off_t = sizeof(sw_off_t);
+    sw_off_t tmp = (sw_off_t)0;
+    unsigned char *s = (unsigned char *) &num;
+
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_off_t)
+            tmp += (sw_off_t)(*s++ << ((--sz_off_t)<<3));
+        return tmp;
+    }
+    return num;
+}
+
+/* Same routine - UnPacks file offset from buffer */
+sw_off_t UNPACKFILEOFFSET2(unsigned char *s)
+{
+    int sz_off_t = sizeof(sw_off_t);
+    sw_off_t tmp = 0;
+
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_off_t)
+            tmp += (sw_off_t)(*s++ << ((--sz_off_t)<<3));
+    }
+    else
+    {
+        memcpy((unsigned char *)&tmp,s,sz_off_t);
+    }
+    return tmp;
+}
 
 /***********************************************************************************
 *   09/00 Jose Ruiz 

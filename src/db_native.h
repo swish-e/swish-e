@@ -57,32 +57,32 @@ struct Handle_DBNative
 {
        /* values used by the index proccess */
        /* points to the start of offsets to words in the file */
-   int offsetstart;
+   sw_off_t offsetstart;
 
    SWISH *sw;  /* for reporting errors back */
 
 #ifndef USE_BTREE
        /* points to the start of hashoffsets to words in the file */
-   int hashstart;
+   sw_off_t hashstart;
 #endif
        /* File Offsets to words */
-   long offsets[MAXCHARS];
+   sw_off_t offsets[MAXCHARS];
 
 #ifndef USE_BTREE
-   long hashoffsets[VERYBIGHASHSIZE];
+   sw_off_t hashoffsets[VERYBIGHASHSIZE];
 
-   int lasthashval[VERYBIGHASHSIZE];
+   sw_off_t lasthashval[VERYBIGHASHSIZE];
    int wordhash_counter;
 #endif
 
-   long nextwordoffset;
-   long lastsortedindex;
-   long next_sortedindex;
+   sw_off_t nextwordoffset;
+   sw_off_t last_sortedindex;
+   sw_off_t next_sortedindex;
    
    int worddata_counter;
 
 #ifndef USE_BTREE
-   long *wordhashdata;
+   sw_off_t *wordhashdata;
 
       /* Hash array to improve wordhashdata performance */
    struct numhash
@@ -107,9 +107,9 @@ struct Handle_DBNative
        /* Index FILE handle as returned from fopen */
 
        /* Pointers to words write/read functions */ 
-   long    (*w_tell)(FILE *);
+   sw_off_t    (*w_tell)(FILE *);
    size_t  (*w_write)(const void *, size_t, size_t, FILE *);
-   int     (*w_seek)(FILE *, long, int);
+   int     (*w_seek)(FILE *, sw_off_t, int);
    size_t  (*w_read)(void *, size_t, size_t, FILE *);
    int     (*w_close)(FILE *);
    int     (*w_putc)(int , FILE *);
@@ -162,7 +162,6 @@ struct Handle_DBNative
 #endif
 };
 
-
 void initModule_DBNative (SWISH *);
 void freeModule_DBNative (SWISH *);
 
@@ -184,23 +183,23 @@ int     DB_EndReadHeader_Native(void *db);
 
 
 int     DB_InitWriteWords_Native(void *db);
-long    DB_GetWordID_Native(void *db);
-int     DB_WriteWord_Native(char *word, long wordID, void *db);
+sw_off_t    DB_GetWordID_Native(void *db);
+int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db);
 
 #ifdef USE_BTREE
-int     DB_UpdateWordID_Native(char *word, long new_wordID, void *db);
+int     DB_UpdateWordID_Native(char *word, sw_off_t new_wordID, void *db);
 int     DB_DeleteWordData_Native(long wordID, void *db);
 #endif
 
-int     DB_WriteWordHash_Native(char *word, long wordID, void *db);
-long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
+int     DB_WriteWordHash_Native(char *word, sw_off_t wordID, void *db);
+long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
 int     DB_EndWriteWords_Native(void *db);
 
 int     DB_InitReadWords_Native(void *db);
-int     DB_ReadWordHash_Native(char *word, long *wordID, void *db);
-int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
-int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wordID, void *db);
-long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
+int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db);
+int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
+int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
+long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
 int     DB_EndReadWords_Native(void *db);
 
 
@@ -249,6 +248,12 @@ int    DB_EndReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
 */
 void    printlong(FILE * fp, unsigned long num, size_t (*f_write)(const void *, size_t, size_t, FILE *));
 unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *));
+
+/* 2003/10 Jose Ruiz
+** Functions to read/write file offsets
+*/
+void    printfileoffset(FILE * fp, sw_off_t num, size_t (*f_write)(const void *, size_t, size_t, FILE *));
+sw_off_t    readfileoffset(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *));
 
 
 #endif

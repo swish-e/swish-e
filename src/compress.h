@@ -32,6 +32,13 @@ void PACKLONG2(unsigned long num, unsigned char *buffer);
 unsigned long UNPACKLONG(unsigned long num);
 unsigned long UNPACKLONG2(unsigned char *buffer);
 
+
+sw_off_t PACKFILEOFFSET(sw_off_t num);
+void PACKFILEOFFSET2(sw_off_t num, unsigned char *buffer);
+
+sw_off_t UNPACKFILEOFFSET(sw_off_t num);
+sw_off_t UNPACKLONGFILEOFFSET2(unsigned char *buffer);
+
 void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *position);
 void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position);
 
