@@ -1168,6 +1168,9 @@ regular expression pattern matching is allowed.
     FileRules directory contains .htaccess
     FileRules filename is index
 
+Note: C<FileRules title> works for any input method (fs, prog, or http) that is parsed as HTML, and
+where a title was found in the document.
+
 =back    
 
 =head2 Directives for the HTTP Access Method Only
