@@ -1031,7 +1031,7 @@ B<NOTE:> You must set this to 0 to use the IDF Ranking Scheme.
 
 =item structure
 
-Each term's position in each document is given a structure value based on the context
+Each term's position in each HTML document is given a structure value based on the context
 in which the word appears. The structure value is used to artificially inflate
 the frequency of each term in that particular document.
 These structural values are defined in F<config.h>:
@@ -1109,7 +1109,7 @@ Consider this output with the DEBUG_RANK variable set at compile time:
 Every word instance starts with a base score of 1.
 Then for each instance of your word, a running
 sum is taken of the structural value of that word position plus any bias you've configured.
-In the example above, the raw rank is C<8 + 3 + 6 + 3 = 21>.
+In the example above, the raw rank is C<1 + 8 + 3 + 6 + 3 = 21>.
 
 Consider this line:
 
