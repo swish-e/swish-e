@@ -804,7 +804,11 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
         /* If inPropRange is allocated then there is an array for limiting already created from the presorted data */
 
         if ( meta_entry->inPropRange )
-            return !meta_entry->inPropRange[filenum-1];
+        {
+            if ( !meta_entry->inPropRange[filenum-1] )
+                return 1;
+            continue;
+        }
 
 
 

@@ -7,7 +7,7 @@ AC_INIT(src/swish.c)
 
 dnl revision name
 AC_SUBST(VERSION)
-VERSION=2.2rc1-dev
+VERSION=2.2.3
 
 dnl Corresponds to NAME in src/Makefile.in
 AC_SUBST(PROJECT)
@@ -161,7 +161,7 @@ if test "$withval" != "no" -a "$withval" != "yes"; then
 fi
 
 dnl if withval is maybe
-if test "$withval" == "maybe"; then
+if test "$withval" = "maybe"; then
     withval="yes"
     Z_DIR=""
     CPPFLAGS="${CPPFLAGS}"

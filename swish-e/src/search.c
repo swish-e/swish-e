@@ -263,15 +263,19 @@ void dump_result_lists( SWISH *sw, char *message )
         if ( !db_results->resultlist )
         {
             printf("no resultlist\n");
+            db_results = db_results->next;
             continue;
         }
+
         result = db_results->resultlist->head;
 
         if ( !result )
         {
             printf("resultlist, but head is null\n");
+            db_results = db_results->next;
             continue;
         }
+
         while ( result )
         {
             printf("Result (%2d): filenum '%d' from index file '%s'\n", ++cnt, result->filenum, result->indexf->line );
@@ -662,6 +666,11 @@ int     search_2(SWISH * sw, char *words, int structure)
     /* 04/00 Jose Ruiz - Sort results by rank or by properties */
 
     totalResults = sortresults(sw, structure);
+
+#ifdef DUMP_RESULTS
+    dump_result_lists( sw, "After sorting" );
+#endif
+    
 
 
     if (!totalResults && sw->commonerror)
