@@ -98,6 +98,8 @@ Check with your system administrator if this command is not available.
 Online documentation can be found at the SWISH-E web site listed above.
 Optionally, you may view the documentation in HTML format in the html directory
 of the distribution.  PDF or Postscript format is also available.
+See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
+versions of the documentation, and for information on installing the SWISH-* documentation as Unix man(1) pages.
 
 =head2  Included Documentation
 
@@ -119,7 +121,7 @@ L<SWISH-CONFIG|SWISH-CONFIG> -- Configuration File Directives
 
 =item *
 
-L<SWISH-INDEX|SWISH-RUN> -- Running Swish and Command Line Switches
+L<SWISH-RUN|SWISH-RUN> -- Running Swish and Command Line Switches
 
 =item *
 
@@ -143,6 +145,15 @@ L<CHANGES|CHANGES> -- List of feature changes and bug fixes
 
 =back
 
+=head2 Document Generation
+
+The SWISH-E documentation in HTML format was created with Pod::HtmlPsPdf, a package of Perl modules written
+and/modified by Stas Bekman to automate the conversion of documents in pod format (see perldoc perlpod)
+to HTML, Postscript, and PDF.  A slightly modified version of this package is include with the SWISH-E distribution
+and used for building the HTML.  As distributed, SWISH-E contains only the pod and HTML documentation.
+See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript, and PFD formats.
+
+Thanks, Stas, for your help!
 
 =head1 Where do I get help with SWISH-E?
 
