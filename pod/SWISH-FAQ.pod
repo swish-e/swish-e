@@ -132,9 +132,6 @@ When searching you can now limit some or all search terms to that MetaName.
 For example, to look for documents that contain the word apple and also have either
 fruit or cooking in the DC.subject meta tag.
 
-    ./swish-e -w apples and DC.subject=(fruit or cooking)
-
-    
 =head3 What are document properties?
 
 A document property is typically data that describes the document.  For example,
