@@ -335,6 +335,10 @@ uninstall-am: uninstall-exampleDATA uninstall-info-am
 	uninstall uninstall-am uninstall-exampleDATA uninstall-info-am
 
 
+# This is done here to stay in the GNU coding standards
+# libexecdir can be modified at make time, so can't use
+# variable substitution at configure time
+
 swish_filter.pl: swish_filter.pl.in
 	@rm -f swish_filter.pl
 	@sed \

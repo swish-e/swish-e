@@ -223,6 +223,9 @@
 /* Experimental BTREE support */
 #undef USE_BTREE
 
+/* Experimental BTREE PRESORT ARRAYS */
+#undef USE_PRESORT_ARRAY
+
 /* Version number of package */
 #undef VERSION
 

@@ -1699,7 +1699,7 @@ Words are converted using the Porter stemming algorithm.
 
 From: http://www.tartarus.org/~martin/PorterStemmer/
 
-    The Porter stemming algorithm (or ‘Porter stemmer’) is a
+    The Porter stemming algorithm (or Porter stemmer) is a
     process for removing the commoner morphological and inflexional
     endings from words in English. Its main use is as part of a
     term normalisation process that is usually done when setting up

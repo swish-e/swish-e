@@ -865,21 +865,29 @@ int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB)
 }
 
 
-#ifdef USE_BTREE
+#ifdef USE_PRESORT_ARRAY
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB, int n_props)
 {
    return sw->Db->DB_InitWriteSortedIndex(DB, n_props);
 }
+
+int     DB_WriteSortedIndex(SWISH *sw, int propID, int *data, int sz_data,void *DB)
+{
+   return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
+}
+
+
 #else
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitWriteSortedIndex(DB);
 }
-#endif
+
 int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB)
 {
    return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
 }
+#endif
 
 int     DB_EndWriteSortedIndex(SWISH *sw, void *DB)
 {
