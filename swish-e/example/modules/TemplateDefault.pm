@@ -55,6 +55,11 @@ sub page_header {
 
         : ( $results->errstr || $title );
 
+
+    my $logo = $results->config('on_intranet')
+               ? ''
+               : '<a href="http://swish-e.org"><img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> ' ;
+
     return <<EOF;
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
@@ -65,9 +70,7 @@ sub page_header {
     </head>
     <body>
         <h2>
-        <a href="http://swish-e.org">
-        <img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> $title $message
-        
+        $logo$title $message
         </h2>
 EOF
 }
@@ -302,22 +305,23 @@ EOF
 
 
 sub footer {
+    my $results = shift;
 
     my $mod_perl = $ENV{MOD_PERL}
                ? '<br><small>Response brought to you by <a href="http://perl.apache.org"><em>mod_perl</em></a></small>'
                : '';
+
+    my $valid_html_logo = $results->config('on_intranet')
+               ? ''
+               : '<p><a href="http://validator.w3.org/check/referer"><img border="0" src="http://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01!" height="31" width="88"></a></p>';
+               
 
     return <<EOF;
 
     <hr>
     <small>Powered by <em>Swish-e</em> <a href="http://swish-e.org">swish-e.org</a></small>
     $mod_perl
-
-    <p>
-        <a href="http://validator.w3.org/check/referer"><img border="0"
-            src="http://www.w3.org/Icons/valid-html401"
-            alt="Valid HTML 4.01!" height="31" width="88"></a>
-    </p>
+    $valid_html_logo
     </body>
 </html>
 EOF
