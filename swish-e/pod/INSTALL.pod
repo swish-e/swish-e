@@ -417,36 +417,62 @@ see if your question hasn't already been asked.
 
 Support for installation, configuration and usage is available via the SWISH-E
 discussion list.  Visit http://sunsite.berkeley.edu/SWISH-E/ for information.
+Do not contact developers directly for help -- always post your question to the list.
 
-When posting please provide the following information:
+Before posting use tools available to narrow down the problem.
+
+SWISH-E has the -D, -v, and -k switches that may help resolve issues.
+If possible find a single document that shows the problem, then index with -v 9 and watch
+the exact words that are indexed.  Use -H 9 when searching and look at C<Parsed Words:> to make
+sure you are searching the correct words.
+
+You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
+programs like C<truss> or C<strace> can often provide interesting information, if you are adventurous.
+
+=head2 When posting please provide the following information:
 
 =over 4
 
 =item *
 
 The exact version of SWISH-E that you are using.  Running swish-e with the C<-V> switch will print the
-version number.
+version number.  Also, supply the output from C<uname -a> or similar command that identifies the
+operating system you are running on.  If you are running an old version of swish be prepared for
+a response to your question of "upgrade."
 
 =item *
 
-A summary of the problem, including a copy of the configuration file, the command you are using
-to index and search your index, and a small copy of a source document.
+A summary of the problem.  This should include the commands issued (e.g. for indexing or searching)
+and their output, and why you don't think it's working correctly.
+Please cut-n-paste the exact commands and their output instead of retyping to avoid errors.
+
+=item *
+
+Include a copy of the configuration file you are using, if any.  Swish has reasonable
+defaults so in many cases you can run swish without using a configuration file.  But, if you need
+to use a configuration file, reduce it down to the absolute minimum number of commands required
+to demonstrate your problem.  Again, cut-n-paste.
+
+=item *
+
+A small copy of a source document that demonstrates the problem.
 Please copy and paste exact commands to avoid typos in your message.
-You will receive better help if you make it easy for others to duplicate your problem.
+
+If you are having problems spidering a web server, use lwp-download or wget to
+copy the file locally to make sure you can index the document locally.
+
+If you do need help with spidering, don't post fake URLs, as it makes it impossible to help.
+If you don't want to expose your web page to the people on the swish-e list, find some other site
+to test spidering on.  If that works, but you still cannot spider your own site then post your real
+URL if you want help.
 
 =item *
 
 If you are having trouble building SWISH-E please cut-n-paste the output from make (or from ./configure if
 that's where the problem is).
 
-=item *
-
-Use tools available to narrow down the problem.  SWISH-E has the -D, -v, and -k switches that may help
-resolve issues.  You can also use programs like C<gdb> to help find segfaults and other run-time errors, and
-programs like C<truss> or C<strace> can often provide interesting informataion.
 
 =back
-
 
 
 
