@@ -283,6 +283,16 @@ int configModule_Index (SWISH *sw, StringList *sl)
      else
         progerr("%s: requires one value", w0);
   }
+  else if (strcasecmp(w0, "IgnoreLimit") == 0)
+  {
+     if (sl->n == 3)
+     {
+        idx->plimit = atol(sl->word[1]);
+        idx->flimit = atol(sl->word[2]);
+     }
+     else
+        progerr("%s: requires two values", w0);
+  }
   else 
   {
       retval = 0;                   /* not a module directive */
@@ -1189,16 +1199,8 @@ int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignor
 
 void    sort_words(SWISH * sw, IndexFILE * indexf)
 {
-    int     i;
-    ENTRYARRAY *ep;
-
-
+	/* Removed unneeded stuff */
     BuildSortedArrayOfWords(sw, indexf);
-    ep = sw->Index->entryArray;
-               /* Compress remaining data */
-    if (ep)
-        for (i = 0; i < ep->numWords; i++)
-            CompressCurrentLocEntry(sw, indexf, ep->elist[i]);
 }
 
 
@@ -1212,7 +1214,8 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
             num;
     unsigned char *ptmp,
            *ptmp2,
-           *compressed_data;
+           *compressed_data,
+           *p;
     int    *pi = NULL;
     struct  MOD_Index *idx = sw->Index;
 
@@ -1237,14 +1240,18 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
         if (idx->economic_flag)
-            e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
-
-        compressed_data = (char *)e->locationarray[k];
-        num = uncompress2(&compressed_data); /* index to lookuptable */
+            p = compressed_data = (unsigned char *) unSwapLocData(sw, (long) e->locationarray[k]);
+        else
+            p = compressed_data = (unsigned char *)e->locationarray[k];
+        num = uncompress2(&p); /* index to lookuptable */
         pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
-        num = uncompress2(&compressed_data); /* filenum */
+        num = uncompress2(&p); /* filenum */
         pi[1] = num;
         ptmp2 += 2 * sizeof(int);
+
+                          /* Get the best of economic mode !!! */
+        if(idx->economic_flag && (compressed_data != (unsigned char *)e->locationarray[k]))
+              efree(compressed_data);
 
         memcpy((char *) ptmp2, (char *) &e->locationarray[k], sizeof(LOCATION *));
         ptmp2 += sizeof(void *);
@@ -1324,13 +1331,13 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             {
                 write_worddata(sw, epi, indexf);
             }
-			efree(epi->locationarray);
+            efree(epi->locationarray);
             efree(epi);
         }
         
-    DB_EndWriteWords(sw, indexf->DB);
+        DB_EndWriteWords(sw, indexf->DB);
 
-	efree(ep->elist);
+        efree(ep->elist);
 
     }
 }

@@ -194,7 +194,11 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
         /* Write location list */
     for(i=0;i<ep->u1.max_locations;i++) 
     {
-        p = compressed_data = (unsigned char *)ep->locationarray[i];
+        if (sw->Index->economic_flag)
+            p = compressed_data = (unsigned char *) unSwapLocData(sw, (long) ep->locationarray[i]);
+        else
+            p = compressed_data = (unsigned char *) ep->locationarray[i];
+
         index = uncompress2(&p);
         metaID=indexf->header.locationlookup->all_entries[index-1]->val[0];
         if(curmetaID!=metaID) 

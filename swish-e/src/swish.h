@@ -682,11 +682,6 @@ typedef struct
     int     applyautomaticmetanames;
     int     isvowellookuptable[256];
 
-
-    /* Values for IgnoreLimit */
-    long    plimit;
-    long    flimit;
-
     /* Limit indexing by a file date */
     time_t  mtime_limit;
 
