@@ -109,7 +109,7 @@ included in IndexFiles string.  The string should contain a space-separated
 list of index files.
 
     SW_HANDLE myhandle;
-    myhandle = SwishOpen("file1.idx");
+    myhandle = SwishInit("file1.idx");
 
 Typically you will open a handle at the beginning of your program and use it to make
 multiple queries on an index.
