@@ -250,7 +250,7 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
         *buffer = '\0';
 
         bytes_read = fread(buffer, 1, filelen, fprop->fp);
-        buffer[bytes_read+1] = '\0';  /* hopfully doesn't read more than filelen bytes ;) */
+        buffer[bytes_read] = '\0';  /* hopfully doesn't read more than filelen bytes ;) */
 
         
 
