@@ -1279,7 +1279,7 @@ sub build_query {
 
     my $metaname = $q->param('metaname') || 'swishdefault';
 
-    return unless $self->is_valid_config_option( $self->config('metanames'), 'Bad MetaName provided', $metaname );
+    return unless $self->is_valid_config_option( $self->config('metanames') || 'swishdefault', 'Bad MetaName provided', $metaname );
 
     # save the metaname so we know what field to highlight
     # Note that this might be a fake metaname
