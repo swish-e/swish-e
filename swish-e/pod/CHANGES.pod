@@ -10,6 +10,14 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item "Fixed" libxml2's change in UTF8Toisolat1() return value
+
+Bernhard Weisshuhn supplied a patch to parser.c for checking the return value of
+UTF8Toisolat1().  Seems that libxml2 now returns the number of characters converted
+instead of zero for success.
+
+   http://bugzilla.gnome.org/show_bug.cgi?id=153937
+
 =item Added swish-config and pkg-config
 
 Swish now provides a swish-config script and config file for the pkg-config

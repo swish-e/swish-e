@@ -37,7 +37,7 @@ $Id$
 **  The TXT buffer does flush after every chunk read.
 **
 **  I doubt messing with any of these would change much...
-**  
+**
 **
 ** TODO:
 **
@@ -128,7 +128,7 @@ typedef struct {
     int                 is_meta;        // is this a metaname or property stack?
 } MetaStack;
 
-        
+
 
 
 
@@ -180,7 +180,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  );
-static void free_parse_data( PARSE_DATA *parse_data ); 
+static void free_parse_data( PARSE_DATA *parse_data );
 static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
 
@@ -222,7 +222,7 @@ int parse_XML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 
     init_sax_handler( SAXHandler, sw );
     init_parse_data( &parse_data, sw, fprop, fi, SAXHandler );
-    
+
 
     /* Now parse the XML file */
     return parse_chunks( &parse_data );
@@ -245,13 +245,13 @@ int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 
     init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
     init_parse_data( &parse_data, sw, fprop, fi, (xmlSAXHandlerPtr)SAXHandler );
-    
+
 
     parse_data.parsing_html = 1;
     parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
     parse_data.titleMeta    = getMetaNameByName( parse_data.header, AUTOPROPERTY_TITLE );
     parse_data.swishdefaultMeta = getMetaNameByName( parse_data.header, AUTOPROPERTY_DEFAULT );
-    
+
     /* Now parse the HTML file */
     return parse_chunks( &parse_data );
 
@@ -281,12 +281,12 @@ int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
     if ( parse_data.summary.meta && parse_data.summary.meta->max_len )
         parse_data.summary.active++;
 
-    
+
     while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
         append_buffer( &parse_data.text_buffer, chars, res );
         flush_buffer( &parse_data, 0 );  // flush upto whitespace
-        
+
 
         /* turn off summary when we exceed size */
         if ( parse_data.summary.meta && parse_data.summary.meta->max_len && fprop->bytes_read > parse_data.summary.meta->max_len )
@@ -330,7 +330,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
 
     parse_data->ctxt = ctxt; // save
 
-    
+
 
     while ( !parse_data->abort && (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
@@ -340,7 +340,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
             xmlParseChunk(ctxt, chars, res, 0);
 
         /* Doesn't seem to make much difference to flush here */
-        //flush_buffer( parse_data, 0 );  // flush upto whitespace    
+        //flush_buffer( parse_data, 0 );  // flush upto whitespace
     }
 
 
@@ -374,8 +374,8 @@ static int parse_chunks( PARSE_DATA *parse_data )
         parse_data->meta_stack.ignore_flag = 0;  /* make sure we can write */
         flush_buffer( parse_data, 3 );
     }
-    
-    
+
+
     /* Flush any text left in the buffer */
 
     if ( !parse_data->abort )
@@ -387,7 +387,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
 
 
     // $$$ This doesn't work since the file (and maybe some words) already added
-    // $$$ need a way to "remove" the file entry and words already added 
+    // $$$ need a way to "remove" the file entry and words already added
 
     if ( parse_data->abort < 0 )
         return parse_data->abort;
@@ -431,7 +431,7 @@ static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_si
     if ( !fprop->bytes_read && size > 4 )
         size = 4;
 
-               
+
 
     /* Truncate -- safety feature from Rainer.  No attempt is made to backup to a whole word */
     if ( max_size && fprop->bytes_read + size > max_size )
@@ -442,7 +442,7 @@ static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_si
 
 
     res = fread(buf, 1, size, fprop->fp);
-            
+
     fprop->bytes_read += res;
 
     return res;
@@ -522,7 +522,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
         s = &parse_data->meta_stack;
         s->is_meta = 1;
         s->maxsize = STACK_SIZE;
-        
+
         s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
         if ( fprop->index_no_content )
             s->ignore_flag++;
@@ -536,7 +536,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
     }
 
     addCommonProperties(sw, fprop, fi, NULL, NULL, 0);
-}    
+}
 
 
 /*********************************************************************
@@ -545,7 +545,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 *********************************************************************/
 static void free_parse_data( PARSE_DATA *parse_data )
 {
-    
+
     if ( parse_data->ISO_Latin1.buffer )
         efree( parse_data->ISO_Latin1.buffer );
 
@@ -573,7 +573,7 @@ static void free_parse_data( PARSE_DATA *parse_data )
     if ( parse_data->summary.save_size )
         parse_data->summary.meta->max_len = parse_data->summary.save_size;
 
-}        
+}
 
 /*********************************************************************
 *   Start Tag Event Handler
@@ -614,7 +614,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if ( parse_data->parsing_html )
     {
-        
+
         /* handle <meta name="metaname" content="foo"> */
         if ( (strcmp( tag, "meta") == 0) && attr  )
         {
@@ -639,7 +639,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
                 /* Index contents of ALT tag text */
                 if (parse_data->sw->IndexAltTag)
                     index_alt_tab( parse_data, attr );
-                    
+
                 extract_html_links( parse_data, attr, parse_data->sw->images_meta, "src" );
             }
 
@@ -648,7 +648,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
             else if ( strcmp( tag, "base") == 0 )
                 parse_data->baseURL = estrdup( extract_html_links( parse_data, attr, NULL, "href" ) );
         }
-        
+
     }
 
 
@@ -667,7 +667,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
         if ( parse_data->sw->XMLClassAttributes )
             class_found = start_XML_ClassAttributes( parse_data, tag, attr, &meta_append, &prop_append );
-            
+
 
         /* Index XML attributes */
 
@@ -677,8 +677,8 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
 }
 
-                
-        
+
+
 
 
 /*********************************************************************
@@ -711,13 +711,13 @@ static void end_hndl(void *data, const char *el)
     strcpy(tag,(char *)el);
     strtolower( tag );
 
-    
+
 
     if ( parse_data->parsing_html )
     {
-        
+
         /* <meta> tags are closed in start_hndl */
-        
+
         if ( (strcmp( tag, "meta") == 0)   )
             return;  // this was flushed at end tag
 
@@ -729,7 +729,7 @@ static void end_hndl(void *data, const char *el)
 
 
     end_metaTag( parse_data, tag, is_html_tag );
-}    
+}
 
 
 
@@ -764,7 +764,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     if ( parse_data->text_buffer.cur + txtlen >= BUFFER_CHUNK_SIZE )
         flush_buffer( parse_data, 0 );  // flush upto last word - somewhat expensive
 
-        
+
 
     Convert_to_latin1( parse_data, (char *)txt, txtlen );
 
@@ -777,7 +777,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
     /* Check if we are waiting for a word boundry, and there is white space in the text */
     /* If so, write the word, then reset the structure, then write the rest of the text. */
-    
+
     if ( parse_data->flush_word  )
     {
         /* look for whitespace */
@@ -826,7 +826,7 @@ static void Whitespace(void *data, const xmlChar *txt, int txtlen)
     append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
 }
 
-    
+
 
 
 /*********************************************************************
@@ -844,10 +844,10 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
     char  *start_buf;
     char  *end_buf = txt + txtlen - 1;
     int             used;
-    
+
 
     /* (re)allocate buf if needed */
-    
+
     if ( txtlen >= buf->max )
     {
         buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < txtlen )
@@ -863,15 +863,15 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
     {
         used = buf->max - buf->cur;             /* size available in buffer */
         start_buf = &buf->buffer[buf->cur];     /* offset into buffer */
-        
+
         /* Returns 0 for OK */
         ret = UTF8Toisolat1( (unsigned char *)start_buf, &used, (const unsigned char *)txt, &inlen );
 
         if ( used > 0 )         // tally up total bytes consumed
             buf->cur += used;
 
-        if ( ret == 0 )         // all done
-            return;
+        if ( ret >= 0 )         /* libxml2 seems confused about what this should return */
+            return;             /* either 0 for ok, or number of chars converted */
 
         if ( ret == -2 )        // encoding failed
         {
@@ -892,7 +892,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
             if ( inlen <= 0 )
                 return;
 
-            start_buf += buf->cur-1;                
+            start_buf += buf->cur-1;
         }
         else
         {
@@ -901,7 +901,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
         }
     }
 }
-                
+
 
 /*********************************************************************
 *   Start of a MetaTag
@@ -934,14 +934,14 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 
     /* check for ignore tag (should probably remove char handler for speed) */
     // Should specific property names and meta names override this?
-    
+
     if ( isIgnoreMetaName( sw, tag ) )
     {
         /* shouldn't need to flush buffer since it's just blocking out a section and should be balanced */
         /* but need to due to the weird way the char buffer is used (and shared with props) and how metatags are assigned to the buffer */
         /* basically, since flush_buffer looks at the ignore flag and always clears the buffer, need to do it now */
         /* flush_buffer really should not be in the business of checking the ignore flag, and rather we need to keep two buffers -- or maybe just always flush with any change */
-        
+
         flush_buffer( parse_data, 1 );
 
         push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
@@ -966,7 +966,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
                 m = addMetaEntry( parse_data->header, tag, META_INDEX, 0);
             }
 
-        
+
             else if ( sw->UndefinedMetaTags == UNDEF_META_IGNORE )  /* Ignore this block of text for metanames only (props ok) */
             {
                 flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
@@ -1001,7 +1001,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
                 debug_show_tag( tag, parse_data, 1, "(undefined meta name - no action)" );
         }
     }
-            
+
 
     /* Check property names -- allows HTML tags as property names */
 
@@ -1038,7 +1038,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
         }
     }
 
-}    
+}
 
 
 /*********************************************************************
@@ -1073,7 +1073,7 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
     {
         SUMMARY_INFO    *summary = &parse_data->summary;
         if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
-        {        
+        {
             /* Flush data in buffer */
             if ( 1 == summary->active )
                 flush_buffer( parse_data, 1 );  // do first since flush buffer looks at summary->active
@@ -1123,12 +1123,12 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     // Note: I think storing the title words by default should be optional.
     // Someone might not want to search title tags, if if they don't they are
     // screwed since title by default ranks higher than body words.
- 
-    
+
+
     else if ( strcmp( tag, "title" ) == 0 )
     {
         /* Can't flush buffer until we have looked at the title */
-        
+
         if ( !start )
         {
             struct MOD_FS *fs = parse_data->sw->FS;
@@ -1150,8 +1150,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             /* In start tag, allow capture of text (NoContents sets ignore_flag at start) */
             if ( parse_data->fprop->index_no_content )
                 parse_data->meta_stack.ignore_flag--;
-        
-        
+
+
         /* Now it's ok to flush */
         flush_buffer( parse_data, 11 );
 
@@ -1188,7 +1188,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
 
     /** H1 HEADINGS **/
-    
+
     /* This should be split so know different level for ranking */
     else if ( tag[0] == 'h' && isdigit((int) tag[1]))
     {
@@ -1201,7 +1201,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     /** EMPHASIZED **/
 
     /* These should not be hard coded */
-    
+
     else if ( !strcmp( tag, "em" ) || !strcmp( tag, "b" ) || !strcmp( tag, "strong" ) || !strcmp( tag, "i" ) )
     {
         /* This is hard.  The idea is to not break up words.  But messes up the structure
@@ -1222,8 +1222,8 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             else
                 parse_data->structure[IN_EMPHASIZED_BIT]--;
         }
-        
-        
+
+
     }
 
 
@@ -1232,9 +1232,9 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     /* Now, look for reasons to add whitespace
      * img is not really, as someone might use an image to make up a word, but
      * commonly an image would split up text.
-     * other tags: frame?  
+     * other tags: frame?
      */
-     
+
     if ( !strcmp( tag, "br" ) || !strcmp( tag, "img" ) )
         append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
     else
@@ -1246,7 +1246,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
         else if ( !element->isinline )
         {
-            /* Used to just append a space to the buffer, 
+            /* Used to just append a space to the buffer,
                but that didn't prevent phrase matches across tags
             */
             flush_buffer( parse_data, 1 );
@@ -1336,7 +1336,7 @@ static char *isXMLClassAttribute(SWISH * sw, char *tag)
 
     if (!tmplist)
         return 0;
-        
+
     while (tmplist)
     {
         if (strcasecmp(tag, tmplist->line) == 0)
@@ -1395,7 +1395,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
             warning(" (void *)parse_data, Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
             continue;
         }
-        
+
         strcpy( t, (char *)attr[i] );         /* create tag.attribute metaname */
         content = (char *)attr[i+1];
 
@@ -1414,8 +1414,8 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
     sw->UndefinedMetaTags = tmp_undef;
 }
-    
-   
+
+
 
 /*********************************************************************
 *   Deal with html's <meta name="foo" content="bar">
@@ -1489,7 +1489,7 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
         return;
 
     /* (re)allocate buf if needed */
-    
+
     if ( buf->cur + txtlen >= buf->max )
     {
         buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < buf->cur + txtlen )
@@ -1540,13 +1540,13 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
         if ( !buf->cur )  // then there's only a single word in the buffer
         {
             buf->cur = orig_end;
-            if ( buf->cur < BUFFER_CHUNK_SIZE )  // should reall look at indexf->header.maxwordlimit 
+            if ( buf->cur < BUFFER_CHUNK_SIZE )  // should reall look at indexf->header.maxwordlimit
                 return;                          // but just trying to keep the buffer from growing too large
         }
 
         save_char =  buf->buffer[buf->cur];
     }
-            
+
 
     /* Mark the end of the buffer - should switch over to using a length to avoid strlen */
 
@@ -1554,7 +1554,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 
 
     /* Make sure there some non-whitespace chars to print */
-    
+
     c = buf->buffer;
     while ( *c && isspace( (int)*c ) )
         c++;
@@ -1605,7 +1605,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 *       <!-- index -->
 *       <!-- SwishCommand noindex -->
 *       <!-- SwishCommand index -->
-* 
+*
 *
 *
 *   To Do:
@@ -1644,7 +1644,7 @@ static void comment_hndl(void *data, const char *txt)
         if ( parse_data->swish_noindex )
            parse_data->swish_noindex--;
 
-        return;           
+        return;
     }
 
 
@@ -1680,7 +1680,7 @@ static char *isIgnoreMetaName(SWISH * sw, char *tag)
 
     if (!tmplist)
         return 0;
-        
+
     while (tmplist)
     {
         if (strcmp(tag, tmplist->line) == 0)
@@ -1745,7 +1745,7 @@ static void index_alt_tab( PARSE_DATA *parse_data, const char **attr )
         char_hndl( parse_data, alt_text, strlen( alt_text ) );
         return;
     }
-    
+
     flush_buffer( parse_data, 1 );
     start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append, 0 );
     char_hndl( parse_data, alt_text, strlen( alt_text ) );
@@ -1798,7 +1798,7 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, stru
     else
         absoluteURL = NULL;
 
-        
+
 
     /* Index the text */
     parse_data->total_words +=
@@ -1807,7 +1807,7 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, stru
     if ( absoluteURL )
         xmlFree( absoluteURL );
 
-    return href;   
+    return href;
 }
 
 
@@ -1870,10 +1870,10 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
         int i;
         for (i=0; i<stack->pointer; i++)
             printf("    ");
-        
+
         printf("<%s> (%s [%s]%s)\n", tag, stack->is_meta ? "meta" : "property", !meta ? "no meta name defined" : meta->metaName, ignore ? " *Start Ignore*" : ""  );
     }
-    
+
 
     /* Create a new node ( MetaStackElement already has one byte allocated for string ) */
     node = (MetaStackElementPtr) emalloc( sizeof( MetaStackElement ) + strlen( tag ) );
@@ -1886,19 +1886,19 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
     if ( ( node->ignore = ignore ) )  /* entering a block to ignore */
         stack->ignore_flag++;
 
-        
+
     strcpy( node->tag, tag );
 
 
 
-    
+
     if ( !(*append)++ )
     {
         /* reallocate stack buffer if needed */
         if ( stack->pointer >= stack->maxsize )
         {
             progwarn("swish parser adding more stack space for tag %s. from %d to %d", tag, stack->maxsize, stack->maxsize+STACK_SIZE );
-            
+
             stack->maxsize += STACK_SIZE;
             stack->stack = (MetaStackElementPtr *)erealloc( stack->stack, sizeof( MetaStackElementPtr ) * stack->maxsize );
         }
@@ -1936,10 +1936,10 @@ static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *ta
     if ( !stack->pointer )
         return 0;
 
-        
+
 
     /* return if doesn't match the tag at the top of the stack */
-   
+
     if ( strcmp( stack->stack[stack->pointer - 1]->tag, tag ) != 0 )
         return 0;
 
@@ -1994,11 +1994,11 @@ static int pop_stack( MetaStack *stack )
             int i;
             for (i=0; i<stack->pointer; i++)
                 printf("    ");
-        
+
             printf("</%s> (%s)%s\n", node->tag, stack->is_meta ? "meta" : "property", node->ignore ? " end ignore" : "" );
         }
 
-            
+
         node = node->next;
         efree( this );
     }
@@ -2010,16 +2010,16 @@ static int debug_get_indent( INDEXDATAHEADER *header )
 {
     int i;
     int indent = 0;
-    
+
     for (i = 0; i < header->metaCounter; i++)
         if ( is_meta_index(header->metaEntryArray[i]) )
             indent += header->metaEntryArray[i]->in_tag;
 
     return indent;
 }
-            
-        
-        
+
+
+
 static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *message )
 {
     int  indent = debug_get_indent( &parse_data->sw->indexlist->header);
@@ -2044,7 +2044,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
 
     for (i=0; i<indent && strlen(indent_buf)<900; i++)
         strcat( indent_buf, "    ");
-            
+
 
     i = 0;
     while ( i < len )
@@ -2062,7 +2062,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
         {
             col++;
 
-            
+
             if ( txt[i] == '\n' )
             {
                 while ( i < len && isspace((int)txt[i] ))
@@ -2091,4 +2091,4 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
     if ( !last_newline )
         printf("\n");
 }
-    
+
