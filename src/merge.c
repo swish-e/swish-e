@@ -92,7 +92,11 @@ struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
 
 
 
-
+/* 2001-09 jmruiz - I do not know why is this code in merge.c
+**                  It should be moved to search.c
+**                  Also seems that it is not thread safe 
+**                  It uses global vars...
+*/
 /*** These three routines are public, and used by search.c */
 
 /* This marks a number as having been printed.
@@ -217,10 +221,10 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
     if (!wordID)                /* No more words */
         return NULL;
 
-    ip = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(resultword) + 1);
+    ip = (ENTRY *) Mem_ZoneAlloc(sw->Index->entryZone,sizeof(ENTRY) + strlen(resultword) + 1);
     strcpy(ip->word, resultword);
 
-	ip->allLocationList = ip->currentChunkLocationList = ip->currentlocation = NULL;
+    ip->allLocationList = ip->currentChunkLocationList = ip->currentlocation = NULL;
 
     /* read Word data */
     DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
@@ -245,10 +249,10 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
         filenum += tmpval;
 
-		/* Adjust filenum based on map */
+        /* Adjust filenum based on map */
         filenum = (int) getmap(filenum + num);
 
-        loc = (LOCATION *) emalloc(sizeof(LOCATION) + (frequency - 1) * sizeof(int));
+        loc = (LOCATION *) Mem_ZoneAlloc(sw->Index->perDocTmpZone, sizeof(LOCATION) + (frequency - 1) * sizeof(int));
 
         loc->filenum = filenum;
 
@@ -261,7 +265,7 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
             /* we also need to modify metaID with new list */
             metaID2 = 1;
             if (metaID != 1)
-            {			
+            {
                 for (tmp = metaFile; tmp; tmp = tmp->next)
                 {
                     if (tmp->oldMetaID == metaID)
@@ -282,17 +286,15 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         }
 
         /* Add only if filenum is not null */
-		if(filenum)
+        if(filenum)
         {
-		    if(!prev_loc)
+            if(!prev_loc)
                 ip->currentChunkLocationList = loc;
             else
                 prev_loc->next = loc;
         
             prev_loc = loc;        
         }
-        else
-            efree(loc);
 
         if ((s - worddata) == sz_worddata)
             break;   /* End of worddata */
@@ -350,14 +352,12 @@ static ENTRY  *mergeindexentries(ENTRY * ip1, ENTRY * ip2, int num)
 
     for (lap = ip1->currentChunkLocationList; ; lap = lap->next)
         if(!lap->next)
-			break;
+             break;
 
-	lap->next = ip2->currentChunkLocationList;
-	lap = lap->next;
+    lap->next = ip2->currentChunkLocationList;
+    lap = lap->next;
 
     ip1->tfrequency += ip2->tfrequency;
-
-    efree(ip2);
 
     return ip1;
 }
@@ -434,13 +434,9 @@ static int     getmap(int num)
 void    initindexfilehashlist()
 {
     int     i;
-    struct mergeindexfileinfo *ip;
 
     for (i = 0; i < BIGHASHSIZE; i++)
     {
-        ip = indexfilehashlist[i];
-        if (ip != NULL)
-            efree(ip);
         indexfilehashlist[i] = NULL;
     }
 }
@@ -451,13 +447,9 @@ void    initindexfilehashlist()
 static void    initmapentrylist()
 {
     int     i;
-    struct mapentry *ip;
 
     for (i = 0; i < BIGHASHSIZE; i++)
     {
-        ip = mapentrylist[i];
-        if (ip != NULL)
-            efree(ip);
         mapentrylist[i] = NULL;
     }
 }
@@ -591,8 +583,8 @@ static void    addentryMerge(SWISH * sw, ENTRY * ip)
     sw->Index->entryArray->numWords++;
     indexf->header.totalwords++;
 
-	CompressCurrentLocEntry(sw, indexf, ip);
-	coalesce_word_locations(sw, indexf, ip);
+    CompressCurrentLocEntry(sw, indexf, ip);
+    coalesce_word_locations(sw, indexf, ip);
 }
 
 /* Creates a list of all the meta names in the indexes
@@ -805,6 +797,12 @@ static int merge_words(
                 buffer2 = NULL;
             }
             addentryMerge(sw, ip3);
+
+            if(!result)
+            {
+                /* Make zone available for reuse */
+                Mem_ZoneReset(sw->Index->perDocTmpZone);
+            }
         }
     }
     DB_EndReadWords(sw1, indexf1->DB);
@@ -846,7 +844,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
     if (i != -1)
     {
         /* Use mtime to map to the newest entry */
-		int mtime_i = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_LASTMODIFIED ))
+        int mtime_i = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_LASTMODIFIED )) 
             ? get_numeric_prop(sw->indexlist->filearray[i - 1]->docProperties, m )
             : 0;
         int mtime_num = (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_LASTMODIFIED ))
@@ -867,7 +865,7 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
         else 
         {
             remap(num, 0);   /* Remap to 0 - word's data of this filenum will be removed later */
-			return;
+            return;
         }
     }
     else
@@ -962,7 +960,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
     /* Force the economic mode to save memory */
     sw->Index->swap_locdata = 1;
-	sw->Index->swap_filedata = 0;
+    sw->Index->swap_filedata = 0;
 
     initindexfilehashlist();
 
@@ -1014,7 +1012,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     for (i = 1; i <= indexfilenum1; i++)
     {
         fi = readFileEntry(sw1, indexf1, i);
-		/* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
+        /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
 #ifdef PROPFILE
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
 #endif
@@ -1028,7 +1026,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     for (i = 1; i <= indexfilenum2; i++)
     {
         fi = readFileEntry(sw2, indexf2, i);
-		/* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
+        /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
 #ifdef PROPFILE
         fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
 #endif
