@@ -1,4 +1,6 @@
 package SWISH::Filters::Doc2html;
+use strict;
+
 use vars qw/ $VERSION /;
 
 
