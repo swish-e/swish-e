@@ -635,6 +635,7 @@ typedef struct
     struct MOD_SearchAlt     *SearchAlt;      /* search_alt module data */
     struct MOD_ResultOutput  *ResultOutput;   /* result_output module data */
     struct MOD_Filter        *Filter;         /* filter module data */
+    struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
 
 
     /* entry vars */
@@ -699,10 +700,6 @@ typedef struct
     int     numPropertiesToDisplay;
     int     currentMaxPropertiesToDisplay;
     char  **propNameToDisplay;
-    int     numPropertiesToSort;
-    int     currentMaxPropertiesToSort;
-    char  **propNameToSort;
-    int    *propModeToSort;
 
     /* http proccessing */
     int     lentmpdir;
