@@ -30,12 +30,13 @@
 
 <UL>
 
+	<LI><A HREF="#Frequently_Asked_Questions">Frequently Asked Questions</A>
 	<UL>
 
 		<LI><A HREF="#What_is_SWISH_E_">What is SWISH-E?</A>
 		<LI><A HREF="#Swish_crashes_and_burns_on_a_cer">Swish crashes and burns on a certain file. What can I do? </A>
 		<LI><A HREF="#Swish_isn_t_indexing_a_certain_w">Swish isn't indexing a certain word or phrase. </A>
-		<LI><A HREF="#How_can_I_index_all_my_compresse">How can I index all my compressed files? </A>
+		<LI><A HREF="#How_can_I_index_all_my_compresse">How can I index all my compressed files?</A>
 		<LI><A HREF="#Can_I_index_8_bit_text_">Can I index 8-bit text? </A>
 		<LI><A HREF="#How_can_I_index_phrases_">How can I index phrases? </A>
 		<LI><A HREF="#How_can_I_implement_keywords_in_">How can I implement keywords in my documents? </A>
@@ -56,6 +57,10 @@
 <HR>
 
 <P>
+<H1><A NAME="Frequently_Asked_Questions">Frequently Asked Questions</A></H1>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
 <H2><A NAME="What_is_SWISH_E_">What is SWISH-E?</A></H2>
 <P>
 SWISH-E is <STRONG>S</STRONG>imple <STRONG>W</STRONG>eb <STRONG>I</STRONG>ndexing <STRONG>S</STRONG>ystem for <STRONG>H</STRONG>umans - <STRONG>E</STRONG>nhanced. With it, you can quickly and easily index directories of files or
@@ -89,11 +94,9 @@ on your preference.
 <HR>
 <H2><A NAME="How_can_I_index_all_my_compresse">How can I index all my compressed files?</A></H2>
 <P>
-Swish doesn't currently have the capability to do on-the-fly filtering of
-files. In the meantime, first index the uncompressed data, compress it, and
-using a ReplaceRules operation, change the suffix of indexed files to .Z or
-whatever is appropriate. That way users can retrieve the compressed
-information.
+Swish can make use of ``filters'' that will convert files such as MS Word
+documents, PDF, or gzipped files into text, HTML or XML and can thus be
+indexed by SWISH-E. Please see <A HREF="././SWISH-CONFIG.html#Document_Filter_Directives">SWISH-CONFIG</A> for more information.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -222,10 +225,24 @@ file full of IndexDir directives. For instance, make a separate file called
 files.conf and put something like this in it:
 
 <P>
-IndexDir /this_is_file_1/file.html IndexDir /usr/local/www IndexDir
-file2.html /some/directory/ ...
 
-<P>
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    IndexDir /this_is_file_1/file.html
+    IndexDir /usr/local/www
+    IndexDir file2.html /some/directory/
+    ...</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
 Then call swish-e like this (assuming you're using a main swish-e.conf
 file): 
 
@@ -242,8 +259,8 @@ is make many indices of smaller content instead of trying to do everything
 at once. You can then merge all the smaller pieces together.
 
 <P>
-Another option is use the c&lt;-e&gt; switch. This will require less memory, but indexing will take longer
-as not all data will be stored in memory while indexing. See <A HREF="././pfe.bak/SWISH-INDEX.html">SWISH-INDEX</A>.
+Another option is use the <CODE>-e</CODE> switch. This will require less memory, but indexing will take longer as not
+all data will be stored in memory while indexing.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]

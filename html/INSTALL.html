@@ -106,39 +106,25 @@ you might need to install additional modules required by LWP; for
 requirements and downloads check <A
 HREF="http://www.cpan.org">http://www.cpan.org</A> or <A
 HREF="http://theory.uwinnipeg.ca/search/cpan-search.html">http://theory.uwinnipeg.ca/search/cpan-search.html</A>).
-It was tested with Perl 5.005 although should probably work with any
-version 5 release.
+The Perl helper script was tested with perl 5.005 although should probably
+work with any version 5 release. Do note that the LWP, HTTP, and HTML
+modules are updated often for bug fixes and such -- do check for upgrades.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
 <H2><A NAME="Platform_Specific_Information">Platform Specific Information</A></H2>
 <P>
-A tip from Wil Vree about compiling with a Sun C compiler: In the Makefile
-the following two options need to be modified
+A <CODE>configure</CODE> script is used to determine platform specific details for building swish.
+Please contact the SWISH-E discussion list if you notice any platform
+specify problems while building SWISH-E.
 
 <P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    CC = /opt/SUNWspro/bin/cc
-    CFLAGS= -xO2</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
 <H1><A NAME="INSTALLATION">INSTALLATION</A></H1>
 <P>
-If you are reading this INSTALL document then you probably already have
+If you are reading this INSTALL document, then you probably already have
 downloaded and unpacked the distribution. But just in case...
 
 <P>
@@ -531,7 +517,7 @@ supports.
 <H2><A NAME="Step_1_Create_a_Configuration_F">Step 1: Create a Configuration File</A></H2>
 <P>
 The configuration file controls what and how SWISH-E indexes. The
-configuration file consists of directives, comments and blank lines. The
+configuration file consists of directives, comments, and blank lines. The
 configuration file can be any name you like, but swish-e.conf is commonly
 used.
 
@@ -888,7 +874,7 @@ See <A HREF="././SWISH-SEARCH.html">SWISH-SEARCH</A> for more information.
 The <CODE>-t</CODE> option in the search command line allows you to search for words that exist
 only in specific HTML tags. Each character in the string you specify in the
 argument to this option represents a different tag in which the word is
-searched; that is you can use any combinations of the following charactes:
+searched; that is you can use any combinations of the following characters:
 
 <P>
 
@@ -1082,12 +1068,41 @@ Again, please see <A HREF="././SWISH-RUN.html">SWISH-RUN</A> and <A HREF="././SW
 <HR>
 <H1><A NAME="QUESTIONS_AND_TROUBLESHOOTING">QUESTIONS AND TROUBLESHOOTING</A></H1>
 <P>
+Please search the SWISH-E list archive before posting, and check the <A HREF="././SWISH-FAQ.html">SWISH-FAQ</A> to see if your question hasn't already been asked.
+
+<P>
 Support for installation, configuration and usage is available via the
 SWISH-E discussion list. Visit <A
 HREF="http://sunsite.berkeley.edu/SWISH-E/">http://sunsite.berkeley.edu/SWISH-E/</A>
-for information. Please search the SWISH-E list archive before posting, and
-check the <A HREF="././SWISH-FAQ.html">SWISH-FAQ</A> to see if your question hasn't already been asked.
+for information.
 
+<P>
+When posting please provide the following information:
+
+<UL>
+<P><LI>
+<P>
+The exact version of SWISH-E that you are using. Running swish-e with the <CODE>-V</CODE> switch will print the version number.
+
+<P><LI>
+<P>
+A summary of the problem, including a copy of the configuration file, the
+command you are using to index and search your index, and a small copy of a
+source document. Please copy and paste exact commands to avoid typos in
+your message. You will receive better help if you make it easy for others
+to duplicate your problem.
+
+<P><LI>
+<P>
+If you are having trouble building SWISH-E please cut-n-paste the output
+from make (or from ./configure if that's where the problem is).
+
+<P><LI>
+<P>
+Use tools available to narrow down the problem. SWISH-E has the -D, -v, and
+-k switches that may help resolve issues. You can also use programs like <CODE>gdb</CODE> to help find segfaults and other run-time errors, and programs like <CODE>truss</CODE> or <CODE>strace</CODE> can often provide interesting informataion.
+
+</UL>
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>

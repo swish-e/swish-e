@@ -73,11 +73,11 @@ div.toc a {
     text-decoration: none;
 }
 
+
 div.search { 
-	align: center;
+	text-align: center;
 	padding: .25em; 
-	border: thin dashed #00eeee;
-	background-color: #ee00ee;
-      	color: black;
-	width: 70%
+	#border: thin dashed blue;
+    #  	color: blue;
 }
+

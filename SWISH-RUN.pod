@@ -60,7 +60,7 @@ would cause swish to write to the index file.
 
 This specifies the directories and/or files to index. Directories will be indexed recursively.
 This is typically specified in the L<configuration file|SWISH-CONFIG> with the B<IndexDir> directive
-instead of on the command line.
+instead of on the command line.  Use of this switch overrides the configuration file settings.
 
 
 =item -S [fs|http] (indexing mode)
@@ -130,7 +130,7 @@ swish uses so much RAM that the computer begins to swap excessively.
 =item -l (symbolic links)
 
 Specifying this option tells swish to follow symbolic links when indexing.
-The configuration file value B<FollowSymLinks> will currently override the command-line value.
+The configuration file value B<FollowSymLinks> will override the command-line value.
 
 =item -v [0|1|2|3] (verbosity level)
 
@@ -171,16 +171,23 @@ the search phrase.
     swish-e -w 'word or "this phrase"'
 
 Search would should be protected from the shell by quotes.  Typically, this is single quotes when
-running under Unix.  Under Windows you will may not need to use quotes, but you will need to
+running under Unix.
+
+Under Windows F<command.com> you may not need to use quotes, but you will need to
 backslash the quotes used to delimit phrases:
 
-    swihs-e -w \"a phrase\"
+    swish-e -w \"a phrase\"
 
-The search may be limited to a I<MetaName>.  For example:
+The phrase delimiter can be set with the C<-P> switch.
+
+The search may be limited to a I<MetaName>.
+For example:
 
     swish-e -w meta1=(foo or baz)
 
-will only search within the B<meta1> tag.    
+will only search within the B<meta1> tag.
+
+Please see L<SWISH-SEARCH|SWISH-SEARCH> for a description of MetaNames.
 
 
 
@@ -218,7 +225,8 @@ tags, B stands for BODY tags, t is all TITLE tags, h is H1
 to H6 (header) tags, e is emphasized tags (this may be B, I,
 EM, or STRONG), and c is HTML comment tags
 
-    # search only in <H?> tags
+search only in header (<H*>) tags
+
     swish-c -w word -t h
 
 =item -d *string* (delimiter)
@@ -227,15 +235,19 @@ Set the delimiter used when printing results.  By default, SWISH-E separates the
 space, and places double-quotes around the document title.  This output may be hard to parse, so it
 is recommended to use C<-d> to specify a character or string used as a separator between fields.
 
-The string C<dq> means "double-quotes".  Not sure why it's needed.
-B<How about entering '\t' or 'tab' for a tab?>
+The string C<dq> means "double-quotes".
 
     swish-e -w word -d ,    # single char
     swish-e -w word -d ::   # string
     swish-e -w word -d '"'  # double quotes under Unix
     swish-e -w word -d \"   # double quotes under Windows
     swish-e -w word -d dq   # double quotes
-    
+
+The following control characters may also be specified: C<\t \r \n \f>.
+
+=item -P *character*
+
+Sets the delimiter used for phrase searches.  The default is double quotes C<">.
 
 =item -p *property1 property2 ...*  (display properties)
 
@@ -270,10 +282,12 @@ one property may be specified to sort on more than one key.
 
 Examples:
 
-    # sort by title property ascending order
+sort by title property ascending order
+
     -s title
 
-    # sort descending by title, ascending by name
+sort descending by title, ascending by name
+
     -s title desc name asc
 
 =item -x (extra output)
