@@ -99,6 +99,14 @@ int soundex(word)
 	printf("=>3, ");
 #endif
 
+        /* If looks like a 4 digit soundex code we don't want to touch it. */
+        if((n = (int)strlen(word)) == 4){
+                if( isdigit( (int)(unsigned char)word[1] ) 
+                 && isdigit( (int)(unsigned char)word[2] ) 
+                 && isdigit( (int)(unsigned char)word[3] ) )
+                       return soundXit();
+        }
+
 	/* Convert chars to lower case and strip non-letter chars  */
 	j = 0;
 	for (i = 0; i < n; i++) {
