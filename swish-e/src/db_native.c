@@ -1888,7 +1888,7 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    if(DB->cur_presorted_array)
    {
        *data = (unsigned char *)DB->cur_presorted_array;
-       *sz_data = sizeof(DB->cur_presorted_array);
+       *sz_data = sizeof(DB->cur_presorted_array);  /* is this just a non-zero value to flag that something was returned? */
    }
    else
    {
@@ -1942,6 +1942,12 @@ int     DB_EndReadSortedIndex_Native(void *db)
 * DB_InitWriteSortedIndex_Native should probably write a null for the first
 * record's "next table entry" and set next_ and last_ pointers.  Then
 * DB_EndWriteSortedIndex_Native call would not be needed.
+*
+* Notes/Questions:
+*   Seems like result_sort.c is the only place that loads this -- in LoadSortedProps.
+*   LoadSortedProps is used by merge, proplimit, and result_sort.  LoadSortedProps
+*   uncompresses the array (and pre_sort.c compresses).  Why isn't that compression
+*   and uncompression done here?
 *
 *
 ********************************************************************************/
@@ -2082,6 +2088,8 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    }
    return 0;
 }
+
+/* Why doesn't this just return the value? */
 
 int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
 {
