@@ -48,6 +48,11 @@
 #define PROPFILE_EXTENSION ".prop"
 #endif
 
+/* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 
+ * must be compiled with zlib.
+ */
+#define MIN_PROP_COMPRESS_SIZE 100
+
 /* Defines the file extension to use on the property file.
 */
 
