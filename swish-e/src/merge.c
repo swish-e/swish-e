@@ -221,9 +221,9 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
 
     ip = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(resultword) + 1);
     strcpy(ip->word, resultword);
-    ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
-    ip->u1.max_locations = 0;
-    ip->currentlocation = 0;
+//***JMRUIZ    ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
+//***JMRUIZ    ip->u1.max_locations = 0;
+//***JMRUIZ    ip->currentlocation = 0;
 
     /* read Word data */
     DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
@@ -243,9 +243,9 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         {
             filenum = uncompress2(&s);
             index_structfreq = uncompress2(&s);
-            frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-            index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-            structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+//***JMRUIZ            frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
+//***JMRUIZ            index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
+//***JMRUIZ            structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
 
             loc = (LOCATION *) emalloc(sizeof(LOCATION) + (frequency - 1) * sizeof(int));
 
@@ -275,11 +275,11 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
                 progerr("Merge internal error: Could not translate metaname");
             loc->metaID = metaID2;
 
-            if (!ip->u1.max_locations)
-                ip->locationarray = (LOCATION **) emalloc((++ip->u1.max_locations) * sizeof(LOCATION *));
-            else
-                ip->locationarray = (LOCATION **) erealloc(ip->locationarray, (++ip->u1.max_locations) * sizeof(LOCATION *));
-            ip->locationarray[ip->u1.max_locations - 1] = loc;
+//***JMRUIZ            if (!ip->u1.max_locations)
+//***JMRUIZ                ip->locationarray = (LOCATION **) emalloc((++ip->u1.max_locations) * sizeof(LOCATION *));
+//***JMRUIZ            else
+//***JMRUIZ                ip->locationarray = (LOCATION **) erealloc(ip->locationarray, (++ip->u1.max_locations) * sizeof(LOCATION *));
+//***JMRUIZ            ip->locationarray[ip->u1.max_locations - 1] = loc;
         }
         while ((unsigned long) (s - buffer) != nextposmetaname);
         metaID = uncompress2(&s);
@@ -325,27 +325,27 @@ static ENTRY  *mergeindexentries(ENTRY * ip1, ENTRY * ip2, int num)
     int     i,
             j;
 
-    lap = (LOCATION **) emalloc((ip1->u1.max_locations + ip2->u1.max_locations) * sizeof(LOCATION *));
-    for (j = 0; j < ip1->u1.max_locations; j++)
-        lap[j] = ip1->locationarray[j];
-    for (i = 0; i < ip2->u1.max_locations; i++)
-    {
-        if (ip2->locationarray[i]->filenum > num)
-        {
-            lap[j++] = ip2->locationarray[i];
-        }
-    }
+//***JMRUIZ    lap = (LOCATION **) emalloc((ip1->u1.max_locations + ip2->u1.max_locations) * sizeof(LOCATION *));
+//***JMRUIZ    for (j = 0; j < ip1->u1.max_locations; j++)
+//***JMRUIZ        lap[j] = ip1->locationarray[j];
+//***JMRUIZ    for (i = 0; i < ip2->u1.max_locations; i++)
+//***JMRUIZ    {
+//***JMRUIZ        if (ip2->locationarray[i]->filenum > num)
+//***JMRUIZ        {
+//***JMRUIZ            lap[j++] = ip2->locationarray[i];
+//***JMRUIZ        }
+//***JMRUIZ    }
 
     ep = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(ip1->word) + 1);
     strcpy(ep->word, ip1->word);
-    ep->locationarray = lap;
-    ep->u1.max_locations = j;
+//***JMRUIZ    ep->locationarray = lap;
+//***JMRUIZ    ep->u1.max_locations = j;
     ep->currentlocation = 0;
     ep->tfrequency = ip1->tfrequency + ip2->tfrequency;
 
-    efree(ip1->locationarray);
+//***JMRUIZ    efree(ip1->locationarray);
     efree(ip1);
-    efree(ip2->locationarray);
+//***JMRUIZ    efree(ip2->locationarray);
     efree(ip2);
 
     return ep;
@@ -402,8 +402,8 @@ static void    addfilenums(ENTRY * ip, int num)
 {
     int     i;
 
-    for (i = 0; i < ip->u1.max_locations; i++)
-        ip->locationarray[i]->filenum = getmap(ip->locationarray[i]->filenum + num);
+//***JMRUIZ    for (i = 0; i < ip->u1.max_locations; i++)
+//***JMRUIZ        ip->locationarray[i]->filenum = getmap(ip->locationarray[i]->filenum + num);
 }
 
 

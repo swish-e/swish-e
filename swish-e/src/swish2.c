@@ -193,25 +193,6 @@ void SwishClose(SWISH *sw)
 
             free_header(&tmpindexlist->header);
 
-            /* Free compression lookup tables */
-            if(tmpindexlist->header.locationlookup)
-            {
-                for(i=0;i<tmpindexlist->header.locationlookup->n_entries;i++)
-                    efree(tmpindexlist->header.locationlookup->all_entries[i]);
-                efree(tmpindexlist->header.locationlookup);
-            }    
-            if(tmpindexlist->header.structurelookup)
-            {
-                for(i=0;i<tmpindexlist->header.structurelookup->n_entries;i++)
-                    efree(tmpindexlist->header.structurelookup->all_entries[i]);
-                efree(tmpindexlist->header.structurelookup);
-            }    
-            if(tmpindexlist->header.structfreqlookup)
-            {
-                for(i=0;i<tmpindexlist->header.structfreqlookup->n_entries;i++)
-                    efree(tmpindexlist->header.structfreqlookup->all_entries[i]);
-                efree(tmpindexlist->header.structfreqlookup);
-            }
             if(tmpindexlist->header.pathlookup)
             {
                 for(i=0;i<tmpindexlist->header.pathlookup->n_entries;i++)

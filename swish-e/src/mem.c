@@ -546,16 +546,19 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 }
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
+/* 2001-08 jmruiz -- Minor modification to asks just for what we need */
+/* 2001-08 jmruiz -- If a zone is full, before allocating a new one
+** search in previous zones. Very useful if a Mem_ZoneReset was executed
+*/
 void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 {
 	ZONE		*zone;
 	ZONE		*newzone;
+	ZONE		*tmp;
 	unsigned char *ptr;
 
 	/* statistics */
 	head->allocs++;
-
-	size = ROUND_LONG(size);
 
 	zone = head->next;
 
@@ -566,10 +569,28 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 
 	if (!zone || (zone->free < size))
 	{
-		newzone = allocChunk(size > head->size ? size : head->size);
-		head->next = newzone;
-		newzone->next = zone;
-		zone = newzone;
+		/* Before allocating a new zone, let's see if there is enough room in
+		   a previous one 
+		*/
+		if(zone)
+			tmp = zone->next;
+		else
+			tmp = NULL;
+		while(tmp)
+		{
+			if(tmp->free >= size)
+				break;
+			tmp = tmp->next;
+		}
+		if(!tmp)
+		{
+			newzone = allocChunk(size > head->size ? ROUND_LONG(size) : head->size);
+			head->next = newzone;
+			newzone->next = zone;
+			zone = newzone;
+		}
+		else
+			zone = tmp;
 	}
 
 	/* decrement free, advance pointer, and return allocation to the user */
@@ -579,7 +600,6 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 
 	return ptr;
 }
-
 
 void Mem_ZoneFree(MEM_ZONE **head)
 {
@@ -630,4 +650,25 @@ void Mem_ZoneStatistics(MEM_ZONE *head)
 	printf("Zone '%s':\n  Chunks:%d, Allocs:%u, Used:%u, Free:%u, Wasted:%u\n",
 		head->name, chunks, head->allocs, used, free, wasted);
 }
+
+/* make all memory in a zone reusable */
+void Mem_ZoneReset(MEM_ZONE *head)
+{
+	ZONE *next;
+
+	if (!head)
+		return;
+
+	head->allocs = 0;
+
+	next = head->next;
+	while (next)
+	{
+		next->ptr = next->alloc;
+		next->free = next->size;
+		next = next->next;
+	}
+
+}
+
 

@@ -31,6 +31,7 @@
 #include "search.h"
 #include "hash.h"
 #include "ramdisk.h"
+#include "swish_qsort.h"
 
 
 /* 2001-05 jmruiz */
@@ -186,16 +187,92 @@ unsigned long UNPACKLONG2(unsigned char *buffer)
 * 
 ************************************************************************************/
 
+#define STRUCTURE_EQ_1       0x80  /* Binary 10000000 */
+#define FREQ_AND_POS_EQ_1    0x40  /* Binary 01000000 */
+#define POS_4_BIT            0x20  /* Binary 00100000 */
+
+void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int structure,int frequency, int position0)
+{
+    unsigned char *p = *buf;
+    unsigned char *flag;
+
+    /* Make room for flag and init it */
+    flag = p;
+    *flagp = p;
+    p++;
+
+    *flag = 0;
+
+    /* Add file number */
+    p = compress3(filenum, p);
+
+    /* Add structure */
+    if(structure == 1)
+        (*flag) |= STRUCTURE_EQ_1;
+    else
+        *p++ = (unsigned char) structure;
+
+    /* Check for special case frequency ==1 and position[0] == 1 */
+    if(frequency == 1 && position0 == 1)
+    {
+        *flag |= FREQ_AND_POS_EQ_1;
+    }
+    else
+    {
+        if(frequency <32)
+             (*flag) |= frequency;
+        else
+             p = compress3(frequency, p);
+    }
+    *buf = p;
+}
+
+void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position)
+{
+    unsigned char *p = *buf;
+    int i;
+
+    if(! ((*flag) & FREQ_AND_POS_EQ_1))
+    {
+        /* Adjust positions to store them incrementally */
+        if(position[0] < 16)
+            (*flag) |= POS_4_BIT;
+        else
+            (*flag) &= ~POS_4_BIT; 
+        for(i = frequency - 1; i > 0 ; i--)
+        {
+            position[i] -= position[i-1];
+            if(position[i] >= 16)
+                (*flag) &= ~POS_4_BIT; 
+        }
+        /* write the position data working from the end of the buffer */
+        if((*flag) & POS_4_BIT)
+        {
+            for (i = 0; i < frequency; i++)
+            {
+                if(i % 2)
+                    p[i/2] |= (unsigned char) position[i];
+                else
+                    p[i/2] = (unsigned char) position[i] << 4;
+            }
+            p += ((frequency + 1)/2);
+        }
+        else
+        {
+            for (i = 0; i < frequency; i++)
+                p = compress3(position[i], p);
+        }
+    }
+    *buf = p;
+}
+
 unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
 {
     unsigned char *p,
            *q;
     int     i,
-            index,
-            index_structure,
-            index_structfreq,
-            max_size,
-            vars[2];
+            max_size;
+    unsigned char *flag;
     struct MOD_Index *idx = sw->Index;
 
     /* check if the work buffer is long enough */
@@ -203,7 +280,8 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
     /* In the worst case and integer will need 5 bytes */
     /* but fortunatelly this is very uncommon */
 
-    max_size = ((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * 5;
+//***JMRUIZ    max_size = ((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * 5;
+    max_size = sizeof(unsigned char) + sizeof(LOCATION *) + (((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * 5);
 
 
     /* reallocate if needed */
@@ -214,95 +292,130 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
     }
 
 
-    /* Get the end of the buffer */
-    p = idx->compression_buffer + idx->len_compression_buffer - 1;
+    /* Pointer to the buffer */
+    p = idx->compression_buffer;
 
+    /* Add extra bytes for handling linked list */
+//***JMRUIZ
 
-    /* write the position data working from the end of the buffer */
-    for (i = l->frequency - 1; i >= 0; i--)
-        p = compress2(l->position[i], p);
+    memcpy(p,&l->next,sizeof(LOCATION *));
+    p += sizeof(LOCATION *);
 
+    /* Add the metaID */
+    p = compress3(l->metaID,p);
 
-    /* And write the file number */
-    p = compress2(l->filenum, p);
-
-    /* Pack metaID frequency and structure in just one integer */
-    /* Pack structure in just one smaller integer */
-    vars[0] = l->structure;
-    index_structure = get_lookup_index(&indexf->header.structurelookup, 1, vars) + 1;
-
-    vars[0] = l->frequency;
-    vars[1] = index_structure;
-    index_structfreq = get_lookup_index(&indexf->header.structfreqlookup, 2, vars) + 1;
-
-
-    /* Pack and add 1 to index to avoid problems with compress 0 */
-    vars[0] = l->metaID;
-    vars[1] = index_structfreq;
-    index = get_lookup_index(&indexf->header.locationlookup, 2, vars) + 1;
-    p = compress2(index, p);
+    compress_location_values(&p,&flag,l->filenum,l->structure,l->frequency, l->position[0]);
+    compress_location_positions(&p,flag,l->frequency,l->position);
 
 
 
     /* Get the length of all the data */
-    i = idx->compression_buffer + idx->len_compression_buffer - p - 1;
+    i = p - idx->compression_buffer;
 
 
     /* Did we underrun our buffer? */
-    if (p < idx->compression_buffer)
+    if (i > idx->len_compression_buffer)
         progerr("Internal error in compress_location routine");
 
 
-    /* Swap location info to file */
-    if (idx->swap_locdata)
+    q = (unsigned char *) Mem_ZoneAlloc(idx->currentChunkLocZone, i);
+    memcpy(q, idx->compression_buffer, i);
+
+    return (unsigned char *) q;
+}
+
+
+void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *structure,int *frequency)
+{
+    unsigned char *p = *buf;
+
+    *structure = 0;
+    *frequency = 0;
+
+    *flag = *p++;
+
+    (*structure) = ((*flag) & STRUCTURE_EQ_1) ? 1 : 0;
+
+    if((*flag) & FREQ_AND_POS_EQ_1)
     {
-        q = (unsigned char *) SwapLocData(sw, ++p, i);
+        *frequency = 1;
+    }
+    else
+        (*frequency) |= (*flag) & 0x1F;   /* Binary 00011111 */
+
+    *filenum = uncompress2(&p);
+
+    if(! (*structure))
+        *structure = *p++;
+    if(! (*frequency))
+        *frequency = uncompress2(&p);
+    *buf = p;
+}
+
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *position)
+{
+    int i, tmp;
+    unsigned char *p = *buf;
+
+    /* Chaeck for special case frequency == 1 and position[0] == 1 */
+    if(flag & FREQ_AND_POS_EQ_1)
+    {
+        position[0] = 1;
+        return;
+    }
+
+    /* Check if positions where stored as two values per byte or the old "compress" style */
+    if(flag & POS_4_BIT)
+    {
+        for (i = 0; i < frequency; i++)
+        {
+            if(i%2)
+                position[i] = p[i/2] & 0x0F;
+            else
+                position[i] = p[i/2] >> 4;
+        }
+        p += ((frequency +1)/2);
     }
     else
     {
-        q = (unsigned char *) Mem_ZoneAlloc(idx->locZone, i);
-        memcpy(q, ++p, i);
+        for (i = 0; i < frequency; i++)
+        {
+            tmp = uncompress2(&p);
+            position[i] = tmp;
+        }
     }
-
-    efree(l);
-    return (unsigned char *) q;
+    /* Position were compressed incrementally. So restore them */
+    for(i = 1; i < frequency; i++)
+        position[i] += position[i-1];
+    /* Update buffer pointer */
+    *buf = p;
 }
 
 /* 09/00 Jose Ruiz 
 ** Extract compressed location
-** Just needed by merge and removestops (IgnoreLimit option)
 */
 LOCATION *uncompress_location(SWISH * sw, IndexFILE * indexf, unsigned char *p)
 {
     LOCATION *loc;
-    int     i,
-            tmp,
-            metaID,
+    int     metaID,
             filenum,
             structure,
-            frequency,
-            index,
-            index_structfreq,
-            index_structure;
+            frequency;
+    unsigned char flag;
 
-    index = uncompress2(&p);
-    filenum = uncompress2(&p);
-    metaID = indexf->header.locationlookup->all_entries[index - 1]->val[0];
-    index_structfreq = indexf->header.locationlookup->all_entries[index - 1]->val[1];
-    frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-    index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-    structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+    metaID = uncompress2(&p);
+
+    uncompress_location_values(&p,&flag,&filenum,&structure,&frequency);
+
     loc = (LOCATION *) emalloc(sizeof(LOCATION) + (frequency - 1) * sizeof(int));
 
     loc->metaID = metaID;
     loc->filenum = filenum;
     loc->structure = structure;
     loc->frequency = frequency;
-    for (i = 0; i < frequency; i++)
-    {
-        tmp = uncompress2(&p);
-        loc->position[i] = tmp;
-    }
+
+    uncompress_location_positions(&p,flag,frequency,loc->position);
+
     return loc;
 }
 
@@ -312,12 +425,20 @@ LOCATION *uncompress_location(SWISH * sw, IndexFILE * indexf, unsigned char *p)
 */
 void    CompressCurrentLocEntry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 {
-    int     i;
-
-    for (i = e->currentlocation; i < e->u1.max_locations; i++)
-        e->locationarray[i] = (LOCATION *) compress_location(sw, indexf, e->locationarray[i]);
-
-    e->currentlocation = e->u1.max_locations;
+    LOCATION *l, *prev, *next, *comp;
+   
+    for(l = e->currentChunkLocationList,prev = NULL ; l != e->currentlocation; )
+    {
+        next = l->next;
+        comp = (LOCATION *) compress_location(sw, indexf, l);
+        if(l == e->currentChunkLocationList)
+            e->currentChunkLocationList =comp;
+        if(prev)
+            memcpy(prev, &comp, sizeof(LOCATION *));   /* Use memcpy to avoid alignment problems */
+        prev = comp;
+        l = next;        
+    } 
+    e->currentlocation = e->currentChunkLocationList;
 }
 
 /* 09/00 Jose Ruiz
@@ -331,13 +452,6 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
 {
     long    pos;
     struct MOD_Index *idx = sw->Index;
-
-
-    /* Check if we have IgnoreLimit active */
-    /* If it is active, we can not swap the location info */
-    /* to disk because it can be modified later */
-    if (idx->plimit != NO_PLIMIT)
-        return (long) buf;      /* do nothing */
 
     if (!idx->fp_loc_write)
     {
@@ -356,7 +470,7 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
     compress1(lenbuf, idx->fp_loc_write, idx->swap_putc);
     if (idx->swap_write(buf, 1, lenbuf, idx->fp_loc_write) != (unsigned int) lenbuf)
     {
-        progerr("Cannot write to swap file");
+        progerr("Cannot write location to swap file");
     }
     return pos;
 }
@@ -371,12 +485,6 @@ unsigned char *unSwapLocData(SWISH * sw, long pos)
     int     lenbuf;
     struct MOD_Index *idx = sw->Index;
 
-    /* Check if we have IgnoreLimit active */
-    /* If it is active, we can not swap the location info */
-    /* to disk because it can be modified later */
-    if (idx->plimit != NO_PLIMIT)
-        return (unsigned char *) pos; /* do nothing */
-
     if (!idx->fp_loc_read)
     {
         idx->swap_close(idx->fp_loc_write);
@@ -387,9 +495,113 @@ unsigned char *unSwapLocData(SWISH * sw, long pos)
 
     idx->swap_seek(idx->fp_loc_read, pos, SEEK_SET);
     lenbuf = uncompress1(idx->fp_loc_read, idx->swap_getc);
-    buf = (unsigned char *) emalloc(lenbuf);
+    buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
     idx->swap_read(buf, lenbuf, 1, idx->fp_loc_read);
     return buf;
+}
+
+
+/* Gets all LOCATIONs for an entry and puts them in memory */
+void unSwapLocDataEntry(SWISH *sw,ENTRY *e)
+{
+    int     i,
+            j,
+            k,
+            metaID;
+    unsigned char *ptmp,
+           *ptmp2,
+           *compressed_data;
+    int    *pi = NULL;
+    LOCATION *l, *prev=NULL, **lp;
+    LOCATION **tmploc;
+    LOCATION **p_array,*array[MAX_STACK_POSITIONS];
+    int array_size;
+    long fileoffset;
+
+    if(!e->allLocationList)
+        return;
+
+    p_array = array;
+    array_size = sizeof(array)/sizeof(LOCATION *);
+
+    /* Read all locations */
+    for(i = 0, l = e->allLocationList; l; i++)
+    {
+        if(i == MAX_STACK_POSITIONS)
+        {
+            p_array = (LOCATION **)emalloc((array_size *=2) * sizeof(LOCATION *));
+            memcpy(p_array,array,MAX_STACK_POSITIONS * sizeof(LOCATION *));
+        }
+        if(array_size==i)
+        {
+            p_array = (LOCATION **) erealloc(p_array,(array_size *=2) * sizeof(LOCATION *));
+        }
+        fileoffset = (long)l;
+        p_array[i] = (LOCATION *)unSwapLocData(sw,fileoffset);
+        l=*(LOCATION **)p_array[i];    /* Get fileoffset to next location */
+        /* store current file offset for later sort */
+        tmploc = (LOCATION **) p_array[i];
+        *tmploc = (LOCATION *) fileoffset;
+    }
+
+    /* Now, let's sort by metanum, offset in file */
+
+    /* Compute array wide for sort */
+    j = 2 * sizeof(int) + sizeof(void *);
+
+    /* Compute array size */
+    ptmp = (void *) emalloc(j * i);
+
+    /* Build an array with the elements to compare
+       and pointers to data */
+
+    for(k=0, ptmp2 = ptmp ; k < i; k++)
+    {
+        pi = (int *) ptmp2;
+
+        compressed_data = (unsigned char *)p_array[k];
+        tmploc = (LOCATION **) p_array[k];
+        fileoffset = (long) *tmploc;
+        /* Jump fileoffset */
+        compressed_data += sizeof(LOCATION *);
+
+        metaID = uncompress2(&compressed_data);
+        pi[0] = metaID;
+        pi[1] = fileoffset;
+        ptmp2 += 2 * sizeof(int);
+
+        lp = (LOCATION **)ptmp2;
+        *lp = p_array[k];
+        ptmp2 += sizeof(void *);
+    }
+
+    /* Sort them */
+    swish_qsort(ptmp, i, j, &icomp2);
+
+    /* Store results */
+    for (k = 0, ptmp2 = ptmp; k < i; k++)
+    {
+        ptmp2 += 2 * sizeof(int);
+
+        l = *(LOCATION **)ptmp2;
+        if(!k)
+            e->allLocationList = l;
+        else
+        {
+            tmploc = (LOCATION **)prev;
+            *tmploc = l;
+        }
+        ptmp2 += sizeof(void *);
+        prev = l;
+    }
+    tmploc = (LOCATION **)l;
+    *tmploc = NULL;
+
+    /* Free the memory of the sorting array */
+    efree(ptmp);
+
+    if(p_array != array)
+        efree(p_array);
 }
 
 /* 09/00 Jose Ruiz
@@ -482,63 +694,6 @@ struct file *unSwapFileData(SWISH * sw)
     return fi;
 }
 
-int     get_lookup_index(struct int_lookup_st **lst, int n, int *values)
-{
-    int     i,
-            hash;
-    struct int_st *is = NULL,
-           *tmp = NULL;
-
-    for (i = 0, hash = 0; i < n; i++)
-        hash = hash * 17 + (values[i] - 1);
-    hash = hash % HASHSIZE;
-
-    if (!*lst)
-    {
-        *lst = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st));
-
-        (*lst)->n_entries = 1;
-        for (i = 0; i < HASHSIZE; i++)
-            (*lst)->hash_entries[i] = NULL;
-        is = (struct int_st *) emalloc(sizeof(struct int_st) + sizeof(int) * (n - 1));
-
-        is->index = 0;
-        is->next = NULL;
-        for (i = 0; i < n; i++)
-            is->val[i] = values[i];
-        (*lst)->all_entries[0] = is;
-        (*lst)->hash_entries[hash] = is;
-    }
-    else
-    {
-        for (tmp = (*lst)->hash_entries[hash]; tmp; tmp = tmp->next)
-        {
-            for (i = 0; i < n; i++)
-                if (tmp->val[i] != values[i])
-                    break;
-            if (i == n)
-                break;
-        }
-        if (tmp)
-        {
-            return tmp->index;
-        }
-        else
-        {
-            is = (struct int_st *) emalloc(sizeof(struct int_st) + sizeof(int) * (n - 1));
-
-            is->index = (*lst)->n_entries;
-            for (i = 0; i < n; i++)
-                is->val[i] = values[i];
-            is->next = (*lst)->hash_entries[hash];
-            (*lst)->hash_entries[hash] = is;
-            *lst = (struct int_lookup_st *) erealloc(*lst, sizeof(struct int_lookup_st) + (*lst)->n_entries * sizeof(struct int_st *));
-
-            (*lst)->all_entries[(*lst)->n_entries++] = is;
-        }
-    }
-    return ((*lst)->n_entries - 1);
-}
 
 
 int     get_lookup_path(struct char_lookup_st **lst, char *path)

@@ -292,6 +292,16 @@
 #define SWAP_LOC_DEFAULT 0
 #define SWAP_FILE_DEFAULT 0
 
+/* 2001/08 jmruiz -- Default chunk size - Index will work with blocks of files. This number specifies when to coalesce locations to save memory */
+#define INDEX_DEFAULT_CHUNK_SIZE 10000
+
+/* 2001/08 jmruiz -- To avoid emalloc/erealloc in some routines some stack arrays have been added. This is their default size */
+#define MAX_STACK_POSITIONS 1024
+
+/* 2001/08 jmruiz -- Do not change this (it must be a unsigned 2 byte number) */
+/* This is the maximum size of a block of coalesced locations */
+#define COALESCE_BUFFER_MAX_SIZE 65535
+
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess
 ** Do not change it. You can activate this option through the command

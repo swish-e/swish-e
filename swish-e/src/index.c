@@ -142,6 +142,7 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list );
   -- init structures for this module
 */
 
+
 void initModule_Index (SWISH  *sw)
 {
     int i;
@@ -159,12 +160,12 @@ void initModule_Index (SWISH  *sw)
     idx->len_worddata_buffer = MAXSTRLEN;  /* For example */
     idx->worddata_buffer=(unsigned char *)emalloc(idx->len_worddata_buffer);
 
-        /* Init  entries hash table */
-	for (i=0; i<SEARCHHASHSIZE; i++)
-	{
-		idx->hashentries[i] = NULL;
-		idx->hashentriesdirty[i] = 0;
-	}
+    /* Init  entries hash table */
+    for (i=0; i<SEARCHHASHSIZE; i++)
+    {
+        idx->hashentries[i] = NULL;
+        idx->hashentriesdirty[i] = 0;
+    }
 
     idx->fp_loc_write=idx->fp_loc_read=idx->fp_file_write=idx->fp_file_read=NULL;
 
@@ -176,15 +177,15 @@ void initModule_Index (SWISH  *sw)
 
         /* Economic flag and temp files*/
     idx->swap_locdata = SWAP_LOC_DEFAULT;
-	idx->swap_filedata = SWAP_FILE_DEFAULT;
+    idx->swap_filedata = SWAP_FILE_DEFAULT;
 
     if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
     {
-        idx->swap_file_name= (unsigned char *)tempnam(idx->tmpdir,"swfi");
-        idx->swap_location_name= (unsigned char *)tempnam(idx->tmpdir,"swlo");
+        idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
+        idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
     } else {
-        idx->swap_file_name= (unsigned char *)tempnam(NULL,"swfi");
-        idx->swap_location_name= (unsigned char *)tempnam(NULL,"swlo");
+        idx->swap_file_name=tempnam(NULL,"swfi");
+        idx->swap_location_name=tempnam(NULL,"swlo");
     }
 
     for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
@@ -205,9 +206,14 @@ void initModule_Index (SWISH  *sw)
     idx->swap_getc = NULL;
     idx->swap_putc = NULL;
 
-	/* memory zones for common structures */
-	idx->locZone = Mem_ZoneCreate("Locators", 0, 0);
-	idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
+    /* Index in blocks of chunk_size documents */
+    idx->chunk_size = INDEX_DEFAULT_CHUNK_SIZE;
+
+    /* memory zones for common structures */
+    idx->uncompressedChunkLocZone = Mem_ZoneCreate("Current unCompressed Chunk Locators", 0, 0);
+    idx->currentChunkLocZone = Mem_ZoneCreate("Current Chunk Locators", 0, 0);
+    idx->totalLocZone = Mem_ZoneCreate("All Locators", 0, 0);
+    idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
 
     return;
 }
@@ -225,32 +231,32 @@ void freeModule_Index (SWISH *sw)
 /* we need to call the real free here */
 #undef free
 
-  if (isfile((char *)idx->swap_file_name))
+  if (isfile(idx->swap_file_name))
   {
-	if (idx->fp_file_read)
-		fclose(idx->fp_file_read);
+    if (idx->fp_file_read)
+        fclose(idx->fp_file_read);
 
-	if (idx->fp_file_write)
-		fclose(idx->fp_file_write);
+    if (idx->fp_file_write)
+        fclose(idx->fp_file_write);
 
-	remove((char *)idx->swap_file_name);
+    remove(idx->swap_file_name);
 
-	/* tempnam internally calls malloc, so must use free not efree */
-	free(idx->swap_file_name);
+    /* tempnam internally calls malloc, so must use free not efree */
+    free(idx->swap_file_name);
   }
 
-  if (isfile((char *)idx->swap_location_name))
+  if (isfile(idx->swap_location_name))
   {
-	if (idx->fp_loc_read)  
-		idx->swap_close(idx->fp_loc_read);
+    if (idx->fp_loc_read)  
+        idx->swap_close(idx->fp_loc_read);
 
-	if (idx->fp_loc_write)
-		idx->swap_close(idx->fp_loc_write);
+    if (idx->fp_loc_write)
+        idx->swap_close(idx->fp_loc_write);
 
-	remove((char *)idx->swap_location_name);
+    remove(idx->swap_location_name);
 
-	/* tempnam internally calls malloc, so must use free not efree */
-	free(idx->swap_location_name);
+    /* tempnam internally calls malloc, so must use free not efree */
+    free(idx->swap_location_name);
   }
 
   if(idx->lentmpdir) efree(idx->tmpdir);        
@@ -266,9 +272,13 @@ void freeModule_Index (SWISH *sw)
 
   /* should be free by now!!! But just in case... */
   if (idx->entryZone)
-	  Mem_ZoneFree(&idx->entryZone);
-  if (idx->locZone)
-	  Mem_ZoneFree(&idx->locZone);
+      Mem_ZoneFree(&idx->entryZone);
+  if (idx->totalLocZone)
+      Mem_ZoneFree(&idx->totalLocZone);
+  if (idx->currentChunkLocZone)
+      Mem_ZoneFree(&idx->currentChunkLocZone);
+  if (idx->uncompressedChunkLocZone)
+      Mem_ZoneFree(&idx->currentChunkLocZone);
 
        /* free module data */
   efree (idx);
@@ -276,7 +286,6 @@ void freeModule_Index (SWISH *sw)
 
   return;
 }
-
 
 
 /*
@@ -356,19 +365,19 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
     /* Look for title if HTML document */
     
-	if (fprop->doctype == HTML)
-	{
-	    free_title++;
+    if (fprop->doctype == HTML)
+    {
+        free_title++;
 
-	    title = parseHTMLtitle( buffer );
+        title = parseHTMLtitle( buffer );
 
-	    if (!isoktitle(sw, title))
+        if (!isoktitle(sw, title))
         {
             efree(title);
             return -2;  /* skipped because of title */
         }
-	}
-	
+    }
+    
     idx->filenum++;
     addtofilelist(sw, indexf, fprop->real_path, NULL );
 
@@ -404,6 +413,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     IndexFILE *indexf = sw->indexlist;
     struct MOD_Index *idx = sw->Index;
     char    strType[30];
+    ENTRY  *ep;
+    int     i;
 
     wordcount = -1;
 
@@ -566,26 +577,31 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 
 
-	/* walk the hash list, and compress entries */
-	{
-	ENTRY  *ep;
-    int     i;
-    IndexFILE *indexf = sw->indexlist;
+    /* walk the hash list, and compress entries */
+    for (i = 0; i < SEARCHHASHSIZE; i++)
+        if (idx->hashentriesdirty[i])
+        {
+            idx->hashentriesdirty[i] = 0;
+            for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                CompressCurrentLocEntry(sw, indexf, ep);
+        }
 
-	for (i = 0; i < SEARCHHASHSIZE; i++)
-		if (sw->Index->hashentriesdirty[i])
-		{
-			sw->Index->hashentriesdirty[i] = 0;
-			for (ep = sw->Index->hashentries[i]; ep; ep = ep->next)
-				CompressCurrentLocEntry(sw, indexf, ep);
-		}
+     /* Make zone available for reuse */
+     Mem_ZoneReset(idx->uncompressedChunkLocZone);
 
-	}
+    /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
+    if(idx->filenum && !(idx->filenum % idx->chunk_size))
+    {
+        for (i = 0; i < SEARCHHASHSIZE; i++)
+            for (ep = idx->hashentries[i]; ep; ep = ep->next)
+                coalesce_word_locations(sw, indexf, ep);
+        /* Make zone available for reuse */
+        Mem_ZoneReset(idx->currentChunkLocZone);
+
+    }
 
     return;
 }
-
-
 
 
 /* Adds a word to the master index tree.
@@ -593,19 +609,18 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
 void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID, int position)
 {
-    int     l;
+    int     found;
     ENTRY  *en,
            *efound;
-    LOCATION *tp;
+    LOCATION *tp, *newtp, *prevtp;
     int     hashval;
     IndexFILE *indexf = sw->indexlist;
-	struct MOD_Index *idx = sw->Index;
+    struct MOD_Index *idx = sw->Index;
 
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
-        struct metaEntry *m = getMetaNameByID( &indexf->header, metaID );
-        printf("    Adding:(%s) '%s' Pos:%d Meta:%d Stuct:%X (", m->metaName, word, position, metaID, structure);
+        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:%X (", word, position, metaID, structure);
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADER");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
@@ -632,8 +647,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         if (strcmp(efound->word, word) == 0)
             break;
 
-	/* flag hash entry used this file, so that the locations can be "compressed" in do_index_file */
-	idx->hashentriesdirty[hashval] = 1;
+    /* flag hash entry used this file, so that the locations can be "compressed" in do_index_file */
+    idx->hashentriesdirty[hashval] = 1;
 
 
     /* Word not found, so create a new word */
@@ -643,22 +658,22 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word) + 1);
         strcpy(en->word, word);
         en->tfrequency = 1;
-        en->last_filenum = filenum;
-        en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
-        en->currentlocation = 0;
-        en->u1.max_locations = 1;
+        en->u1.last_filenum = filenum;
         en->next = idx->hashentries[hashval];
         idx->hashentries[hashval] = en;
 
         /* create a location record */
-        tp = (LOCATION *) emalloc(sizeof(LOCATION));
+        tp = (LOCATION *) Mem_ZoneAlloc(idx->uncompressedChunkLocZone,sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
         tp->metaID = metaID;
         tp->position[0] = position;
 
-        en->locationarray[0] = tp;
+        tp->next = NULL;
+        en->currentlocation = NULL;
+        en->currentChunkLocationList = tp;
+        en->allLocationList = NULL;
 
         idx->entryArray->numWords++;
         indexf->header.totalwords++;
@@ -666,32 +681,29 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         return;  /* all done here */
     }
 
-
-
-
-
     /* Word found -- look for same metaID and filename */
     /* $$$ To do it right, should probably compare the structure, too */
     /* Note: filename not needed due to compress we are only looking at the current file */
 
-    for (l = efound->currentlocation; l < efound->u1.max_locations; l++)
+    tp = efound->currentChunkLocationList;
+    found = 0;
+    while (tp != efound->currentlocation)
     {
-        tp = efound->locationarray[l];
-        if (tp->filenum == filenum && tp->metaID == metaID)
+        if(tp->metaID == metaID)
+        {
+            found =1;
             break;
+        }
+        tp = tp->next;
     }
-
-
 
     /* matching metaID NOT found.  So, add a new LOCATION record onto the word */
     /* This expands the size of the location array for this word by one */
     
-    if (l == efound->u1.max_locations)
-    { 
-        efound->locationarray = (LOCATION **) erealloc(efound->locationarray, (++efound->u1.max_locations) * sizeof(LOCATION *));
-
-        /* create the new LOCAITON entry */
-        tp = (LOCATION *) emalloc(sizeof(LOCATION));
+    if(!found)
+    {
+        /* create the new LOCATION entry */
+        tp = (LOCATION *) Mem_ZoneAlloc(idx->uncompressedChunkLocZone,sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;            /* count of times this word in this file:metaID */
         tp->structure = structure;
@@ -699,14 +711,14 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp->position[0] = position;
 
         /* add the new LOCATION onto the array */
-        efound->locationarray[l] = tp;  /* that's an ell, not a one */
-
+        tp->next = efound->currentChunkLocationList;
+        efound->currentChunkLocationList = tp;
 
         /* Count number of different files that this word is used in */
-        if ( efound->last_filenum != filenum )
+        if ( efound->u1.last_filenum != filenum )
         {
             efound->tfrequency++;
-            efound->last_filenum = filenum;
+            efound->u1.last_filenum = filenum;
         }
 
         return; /* all done */
@@ -715,15 +727,35 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     /* Otherwise, found matching LOCATION record (matches filenum and metaID) */
     /* Just add the position number onto the end by expanding the size of the LOCATION record */
-    
-    tp = efound->locationarray[l];
-    tp = erealloc(tp, sizeof(LOCATION) + tp->frequency * sizeof(int));
+    /* 2001/08 jmruiz - Much better memory usage occurs if we use MemZones i*/
+    /* MemZone will be reset when the doc is completely proccesed */
+
+    newtp = Mem_ZoneAlloc(idx->uncompressedChunkLocZone, sizeof(LOCATION) + tp->frequency * sizeof(int));
+    memcpy(newtp,tp,sizeof(LOCATION) + (tp->frequency - 1) * sizeof(int));
+
+    if(newtp != tp)
+    {
+        if(efound->currentChunkLocationList == tp)
+            efound->currentChunkLocationList = newtp;
+        else
+            for(prevtp = efound->currentChunkLocationList;;prevtp = prevtp->next)
+            {
+                if(prevtp->next == tp)
+                {
+                    prevtp->next = newtp;
+                    break;
+                }
+            }
+        tp = newtp;
+    }
+
     tp->position[tp->frequency++] = position;
     tp->structure |= structure;  /* Just merged the structure elements! */
 
-    efound->locationarray[l] = tp;
+    efound->currentChunkLocationList = tp;
 
 }
+
 
 /*******************************************************************
 *   Adds common file properties to the last entry in the file array
@@ -1054,6 +1086,8 @@ int     removestops(SWISH * sw)
     struct filepos *fpos;
     struct MOD_Index *idx = sw->Index;
 
+/* To be rewritten - JMRUIZ */
+return 0;
     stopwords = 0;
     totalwords = indexf->header.totalwords;
 
@@ -1126,7 +1160,8 @@ int     removestops(SWISH * sw)
         {
             e = estop[i];
 
-            for (j = 0; j < e->u1.max_locations; j++)
+//***JMRUIZ TODO            for (j = 0; j < e->u1.max_locations; j++)
+for(;;)
             {
                 int free_lp = 0;
 
@@ -1134,10 +1169,10 @@ int     removestops(SWISH * sw)
                 if ( j < e->currentlocation )
                 {
                     free_lp++;
-                    lp = uncompress_location(sw, indexf, (unsigned char *) e->locationarray[j]);
+//***JMRUIZ TODO                    lp = uncompress_location(sw, indexf, (unsigned char *) e->locationarray[j]);
                 }
-                else
-                    lp = e->locationarray[j];
+//***JMRUIZ TODO                else
+//***JMRUIZ TODO                    lp = e->locationarray[j];
                 
 
 
@@ -1181,9 +1216,9 @@ int     removestops(SWISH * sw)
 
             /* Free location entries */
             /* REMOVED: the word and locations (when not running -e) are stored in a memzone */
-            if (sw->Index->swap_locdata)
-                for (m = 0; m < e->u1.max_locations; m++)
-                    efree(e->locationarray[m]);
+//***JMRUIZ TODO            if (sw->Index->swap_locdata)
+//***JMRUIZ TODO                for (m = 0; m < e->u1.max_locations; m++)
+//***JMRUIZ TODO                    efree(e->locationarray[m]);
 
             //efree(e);
         }
@@ -1207,15 +1242,16 @@ int     removestops(SWISH * sw)
             {
                 if (sw->verbose >= 3)
                 {
-                    printf("Computing new positions for %s (%d occurrences)                        \r", ep->word, ep->u1.max_locations);
+//***JMRUIZ TODO                    printf("Computing new positions for %s (%d occurrences)                        \r", ep->word, ep->u1.max_locations);
                     fflush(stdout);
                 }
-                for (j = 0, modified = 0; j < ep->u1.max_locations; j++)
+//***JMRUIZ TODO                for (j = 0, modified = 0; j < ep->u1.max_locations; j++)
+for(;;)
                 {
-                    if (j < ep->currentlocation)
-                        lp = uncompress_location(sw, indexf, (unsigned char *) ep->locationarray[j]);
-                    else
-                        lp = ep->locationarray[j];
+//***JMRUIZ TODO                    if (j < ep->currentlocation)
+//***JMRUIZ TODO                        lp = uncompress_location(sw, indexf, (unsigned char *) ep->locationarray[j]);
+//***JMRUIZ TODO                    else
+//***JMRUIZ TODO                        lp = ep->locationarray[j];
                     if (filepos[lp->filenum - 1])
                     {
                         fpos = filepos[lp->filenum - 1];
@@ -1248,13 +1284,13 @@ int     removestops(SWISH * sw)
                     /* Restore array of positions to its original state */
                     if (j < ep->currentlocation)
                     {
-                        if (modified)
-                        {
+//***JMRUIZ TODO                        if (modified)
+//***JMRUIZ TODO                        {
                             // can't free a LOCATION, as it's in a memzone
                             // efree(ep->locationarray[j]);
-                            ep->locationarray[j] = (LOCATION *) compress_location(sw, indexf, lp);
-                        }
-                        else
+//***JMRUIZ TODO                            ep->locationarray[j] = (LOCATION *) compress_location(sw, indexf, lp);
+//***JMRUIZ TODO                        }
+//***JMRUIZ TODO                        else
                             efree(lp);
                     }
                 }
@@ -1278,16 +1314,16 @@ int     removestops(SWISH * sw)
 
 
 typedef struct {
-	long	mask;
-	double	rank;
+    long    mask;
+    double    rank;
 } RankFactor;
 
 static RankFactor ranks[] = {
-	{IN_TITLE,		RANK_TITLE},
-	{IN_HEADER,		RANK_HEADER},
-	{IN_META,		RANK_META},
-	{IN_COMMENTS,	RANK_COMMENTS},
-	{IN_EMPHASIZED,	RANK_EMPHASIZED}
+    {IN_TITLE,        RANK_TITLE},
+    {IN_HEADER,        RANK_HEADER},
+    {IN_META,        RANK_META},
+    {IN_COMMENTS,    RANK_COMMENTS},
+    {IN_EMPHASIZED,    RANK_EMPHASIZED}
 };
 
 #define numRanks (sizeof(ranks)/sizeof(ranks[0]))
@@ -1298,52 +1334,52 @@ static RankFactor ranks[] = {
 ** 2001/05 wsm
 **
 ** Parameters:
-**	sw
-**		Pointer to SWISH structure
+**    sw
+**        Pointer to SWISH structure
 **
-**	freq
-**		Number of times this word appeared in this file
+**    freq
+**        Number of times this word appeared in this file
 **
-**	tfreq
-**		Number of files this word appeared in this index (not used for ranking)
+**    tfreq
+**        Number of files this word appeared in this index (not used for ranking)
 **
-**	words
-**		Number of owrds in this file
+**    words
+**        Number of owrds in this file
 **
-**	structure
-**		Bit mask of context where this word appeared
+**    structure
+**        Bit mask of context where this word appeared
 **
-**	ignoreTotalWordCount
-**		Ignore total word count when ranking (config file parameter)
+**    ignoreTotalWordCount
+**        Ignore total word count when ranking (config file parameter)
 */
 
 int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCount)
 {
-	double	factor;
+    double    factor;
     double  rank;
-	double	reduction;
-	int		i;
+    double    reduction;
+    int        i;
 
-	factor = 1.0;
+    factor = 1.0;
 
-	/* add up the multiplier factor based on where the word occurs */
-	for (i = 0; i < numRanks; i++)
-		if (ranks[i].mask & structure)
-			factor += ranks[i].rank;
+    /* add up the multiplier factor based on where the word occurs */
+    for (i = 0; i < numRanks; i++)
+        if (ranks[i].mask & structure)
+            factor += ranks[i].rank;
 
     rank = log((double)freq) + 10.0;
 
-	/* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
+    /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
     if (!ignoreTotalWordCount)
-	{
-		if (words < 10) words = 10;
-		reduction = log10((double)words);
-		if (reduction > 5.0) reduction = 5.0;
-		rank /= reduction;
-	}
+    {
+        if (words < 10) words = 10;
+        reduction = log10((double)words);
+        if (reduction > 5.0) reduction = 5.0;
+        rank /= reduction;
+    }
 
-	/* multiply by the weighting factor, and scale to be sure we don't loose
-	   precision when converted to an integer. The rank will be normalized later */
+    /* multiply by the weighting factor, and scale to be sure we don't loose
+       precision when converted to an integer. The rank will be normalized later */
     rank = rank * factor * 100.0 + 0.5;
 
     return (int)rank;
@@ -1391,26 +1427,31 @@ void    sort_words(SWISH * sw, IndexFILE * indexf)
 
 
 
-/* Sort entry by MetaName, FileNum */
-void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
+/* Sort chunk locations of entry e by metaID, filenum */
+void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 {
     int     i,
             j,
             k,
-            num;
+            filenum,metaID,structure,frequency;
+    unsigned char flag;
     unsigned char *ptmp,
            *ptmp2,
            *compressed_data;
     int    *pi = NULL;
+    LOCATION *l, *prev = NULL, **lp;
 
     /* Very trivial case */
     if (!e)
         return;
 
-    if (!(i = e->u1.max_locations))
-    {
+    if(!e->currentChunkLocationList)
         return;
-    }
+
+    /* Get the number of locations in chunk */
+    for(i = 0, l = e->currentChunkLocationList; l; i++)
+        l=*(LOCATION **)l;    /* Get next location */
+
     /* Compute array wide */
     j = 2 * sizeof(int) + sizeof(void *);
 
@@ -1420,24 +1461,25 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     /* Build an array with the elements to compare
        and pointers to data */
 
-    for (k = 0, ptmp2 = ptmp; k < i; k++)
+    for(l = e->currentChunkLocationList, ptmp2 = ptmp; l; )
     {
         pi = (int *) ptmp2;
 
-        /* If using -e then read in from memory */
-		if (sw->Index->swap_locdata)
-			e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+        compressed_data = (unsigned char *)l;
+        /* Jump next offset */
+        compressed_data += sizeof(LOCATION *);
 
-        compressed_data = (unsigned char *)e->locationarray[k];
-        num = uncompress2(&compressed_data); /* index to lookuptable */
-		/* val[0] is metanum */
-        pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
-        num = uncompress2(&compressed_data); /* filenum */
-        pi[1] = num;
+        metaID = uncompress2(&compressed_data);
+        uncompress_location_values(&compressed_data,&flag,&filenum,&structure,&frequency);
+        pi[0] = metaID;
+        pi[1] = filenum;
         ptmp2 += 2 * sizeof(int);
 
-        memcpy((char *) ptmp2, (char *) &e->locationarray[k], sizeof(LOCATION *));
+        lp = (LOCATION **)ptmp2;
+        *lp = l;
         ptmp2 += sizeof(void *);
+          /* Get next location */
+        l=*(LOCATION **)l;    /* Get next location */
     }
 
     /* Sort them */
@@ -1448,14 +1490,19 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         ptmp2 += 2 * sizeof(int);
 
-        memcpy((char *) &e->locationarray[k], (char *) ptmp2, sizeof(LOCATION *));
+        l = *(LOCATION **)ptmp2;
+        if(!k)
+            e->currentChunkLocationList = l;
+        else
+            prev->next =l;
         ptmp2 += sizeof(void *);
+        prev = l;
     }
+    l->next =NULL;
 
     /* Free the memory of the array */
     efree(ptmp);
 }
-
 
 /* Write the index entries that hold the word, rank, and other information.
 */
@@ -1481,26 +1528,38 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
     DB_InitWriteWords(sw, indexf->DB);
 
-
-	if (sw->verbose)
-	{
-		printf("  Writing word text: ...");
-		fflush(stdout);
+    if (sw->verbose)
+    {
+        printf("  Writing word text: ...");
+        fflush(stdout);
     }
+
+    /* This is not longer needed. So free it as soon as possible */
+    Mem_ZoneFree(&sw->Index->uncompressedChunkLocZone);
+
+    for (i = 0; i < totalwords; i++)
+        coalesce_word_locations(sw, indexf, ep->elist[i]);
+
+    /* This is not longer needed. So free it as soon as possible */
+    Mem_ZoneFree(&sw->Index->currentChunkLocZone);
+
+    /* If we are swaping locs to file, reset memory zone */
+    if(sw->Index->swap_locdata)
+        Mem_ZoneReset(sw->Index->totalLocZone);
 
     n = lastPercent = 0;
     for (i = 0; i < totalwords; i++)
     {
         if ( sw->verbose && totalwords > 10000 )  // just some random guess
         {
-			n++;
-			percent = (n * 100)/totalwords;
-			if (percent - lastPercent >= DELTA )
-			{
-	    		printf("\r  Writing word text: %3d%%", percent );
-				fflush(stdout);
-				lastPercent = percent;
-			}
+            n++;
+            percent = (n * 100)/totalwords;
+            if (percent - lastPercent >= DELTA )
+            {
+                printf("\r  Writing word text: %3d%%", percent );
+                fflush(stdout);
+                lastPercent = percent;
+            }
         }
 
         epi = ep->elist[i];
@@ -1512,14 +1571,14 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             write_word(sw, epi, indexf);
         }
         else
-            epi->u1.fileoffset = -1L;  /* flag as a stop word */
+            epi->u1.wordID = -1;  /* flag as a stop word */
     }    
 
-	if (sw->verbose)
-	{
-		printf("\r  Writing word text: Complete\n" );
-		printf("  Writing word hash: ...");
-		fflush(stdout);
+    if (sw->verbose)
+    {
+        printf("\r  Writing word text: Complete\n" );
+        printf("  Writing word hash: ...");
+        fflush(stdout);
     }
 
 
@@ -1529,14 +1588,14 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     {
         if ( sw->verbose )
         {
-			n++;
-			percent = (n * 100)/SEARCHHASHSIZE;
-			if (percent - lastPercent >= DELTA )
-			{
-	    		printf("\r  Writing word hash: %3d%%", percent );
-				fflush(stdout);
-				lastPercent = percent;
-			}
+            n++;
+            percent = (n * 100)/SEARCHHASHSIZE;
+            if (percent - lastPercent >= DELTA )
+            {
+                printf("\r  Writing word hash: %3d%%", percent );
+                fflush(stdout);
+                lastPercent = percent;
+            }
         }
 
 
@@ -1545,18 +1604,17 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             while (epi)
             {
                 /* If it is not a stopword write it */
-                if (epi->u1.fileoffset >= 0L)  
-                    DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
+                if (epi->u1.wordID > 0)  
+                    DB_WriteWordHash(sw, epi->word,epi->u1.wordID,indexf->DB);
                 epi = epi->next;
             }
         }
     }
 
-
-	if (sw->verbose)
+    if (sw->verbose)
     {
-		printf("\r  Writing word hash: Complete\n" );
-		printf("  Writing word data: ...");
+        printf("\r  Writing word hash: Complete\n" );
+        printf("  Writing word data: ...");
         fflush(stdout);
     }
 
@@ -1566,43 +1624,36 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     {
         if ( sw->verbose && totalwords > 10000 )  // just some random guess
         {
-			n++;
-			percent = (n * 100)/totalwords;
-			if (percent - lastPercent >= DELTA )
-			{
-	    		printf("\r  Writing word data: %3d%%", percent );
-				fflush(stdout);
-				lastPercent = percent;
-			}
+            n++;
+            percent = (n * 100)/totalwords;
+            if (percent - lastPercent >= DELTA )
+            {
+                printf("\r  Writing word data: %3d%%", percent );
+                fflush(stdout);
+                lastPercent = percent;
+            }
         }
-
 
         epi = ep->elist[i];
-        if (epi->u1.fileoffset >= 0L)
-        {
-            /* Sort locationlist by MetaName, Filenum
-               ** for faster search */
-            sortentry(sw, indexf, epi);
+
+        if (epi->u1.wordID > 0)   /* Not a stopword */
             write_worddata(sw, epi, indexf);
-        }
-        efree(epi->locationarray);
     }
 
 
-	if (sw->verbose)
-		printf("\r  Writing word data: Complete\n" );
+    if (sw->verbose)
+        printf("\r  Writing word data: Complete\n" );
 
 
     DB_EndWriteWords(sw, indexf->DB);
 
-	/* free all ENTRY structs at once */
-	Mem_ZoneFree(&sw->Index->entryZone);
+       /* free all ENTRY structs at once */
+    Mem_ZoneFree(&sw->Index->entryZone);
 
-	/* free all location compressed data */
-	Mem_ZoneFree(&sw->Index->locZone);
+       /* free all location compressed data */
+    Mem_ZoneFree(&sw->Index->totalLocZone);
 
     efree(ep->elist);
-
 }
 
 
@@ -2155,4 +2206,202 @@ void    addtofwordtotals(IndexFILE * indexf, int filenum, int ftotalwords)
         indexf->header.filetotalwordsarray[filenum - 1] = ftotalwords;
 }
 
+/* Coalesce word current word location into the linked list */
+void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesced, int metaID)
+{
+    int        tmp;
+    LOCATION  *tloc, *tprev;
+    LOCATION **tmploc, **tmploc2;
+    unsigned char *tp;
+
+    /* Check for economic mode (-e) and swap data to disk */
+    if(sw->Index->swap_locdata)
+    {
+        tmploc = (LOCATION **)coalesced;
+        *tmploc = e->allLocationList;
+        e->allLocationList = (LOCATION *)SwapLocData(sw, coalesced, sz_coalesced);
+        return;
+    }
+
+    /* Add to the linked list keeping the data sorted by metaname, filenum */
+    for(tprev =NULL, tloc = e->allLocationList; tloc; )
+    {
+        tp = (unsigned char *)tloc + sizeof(void *);
+        tmp = uncompress2(&tp); /* Read metaID */
+        if(tmp > metaID)
+             break;
+        tprev = tloc;
+        tmploc = (LOCATION **)tloc;
+        tloc = *tmploc;
+    }
+
+    if(! tprev)
+    {
+        tmploc = (LOCATION **)coalesced;
+        *tmploc = e->allLocationList;
+        e->allLocationList = (LOCATION *)coalesced;
+    }
+    else
+    {
+        tmploc = (LOCATION **)coalesced;
+        tmploc2 = (LOCATION **)tprev;
+        *tmploc = *tmploc2;
+        *tmploc2 = (LOCATION *)coalesced;
+    }
+}
+
+
+void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
+{
+    int      curmetaID, metaID,
+             curfilenum, filenum,
+             structure,
+             frequency,
+             num_locs,
+             bytes_size,
+             worst_case_size;
+    int      i, j, tmp;
+    unsigned char *p, *q, *size_p;
+    unsigned char uflag, *cflag;
+    LOCATION *loc, *next;
+    unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
+    unsigned char *coalesced_buffer;
+    int     *positions;
+    int      local_positions[MAX_STACK_POSITIONS];
+
+
+    /* Check for new locations in the current chunk */
+    if(!e->currentChunkLocationList)
+        return;
+
+    /* Compute bytes required for size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
+    for(bytes_size = 0, tmp = COALESCE_BUFFER_MAX_SIZE; tmp; tmp >>= 8)
+        bytes_size++;
+
+    /* Sort all pending word locations by metaID, filenum */
+    sortChunkLocations(sw, indexf, e);
+
+    /* Init vars */
+    curmetaID = 0;
+    curfilenum = 0;
+    q = buffer;     /* Destination buffer */
+    num_locs = 0;   /* Number of coalesced LOCATIONS */
+
+    /* Run on all locations */
+    for(loc = e->currentChunkLocationList; loc; )
+    {
+        p = (unsigned char *) loc;
+
+        /* get next LOCATION in linked list*/
+        next = * (LOCATION **) loc;
+        p += sizeof(LOCATION *);
+
+        /* get metaID of LOCATION */
+        metaID = uncompress2(&p);
+
+        /* Check for new metaID */
+        if(metaID != curmetaID)
+        {
+            /* If exits previous data add it to the linked list */
+            if(curmetaID)
+            {
+                /* add to the linked list and reset values */
+                /* Update the size of chunk's data in *size_p */
+                tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+                /* Write the size */
+                for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
+                    size_p[i] = tmp >> (j * 8);
+                /* Add to the linked list keeping the data sorted by metaname, filenum */
+                /* Allocate memory space */
+                coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
+        /* Copy content to it */
+                memcpy(coalesced_buffer,buffer,q-buffer);
+                /* Add to the linked list */
+                add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
+            }
+        /* Reset values */
+            curfilenum = 0;
+            curmetaID = metaID;
+            q = buffer + sizeof(void *);   /* Make room for linked list pointer */        
+            q = compress3(metaID,q);  /* Add metaID */
+            size_p = q;      /* Preserve position for size */
+            q += bytes_size;     /* Make room for size */
+            num_locs = 0;
+        }
+        uncompress_location_values(&p,&uflag,&filenum,&structure,&frequency);
+        worst_case_size = sizeof(unsigned char *) + (3 + frequency) * 5;
+
+        while ((q + worst_case_size) - buffer > sizeof(buffer))
+        {
+            if(!num_locs)
+                progerr("Buffer too short in coalesce_word_locations. Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.");
+            /* add to the linked list and reset values */
+            /* Update the size of chunk's data in *size_p */
+            tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+            /* Write the size */
+            for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
+                size_p[i] = tmp >> (j * 8);
+            /* Add to the linked list keeping the data sorted by metaname, filenum */
+            /* Allocate memory space */
+            coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
+            /* Copy content to it */
+            memcpy(coalesced_buffer,buffer,q-buffer);
+            /* Add to the linked list */
+            add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
+
+            /* Reset values */
+            curfilenum = 0;
+            curmetaID = metaID;
+            q = buffer + sizeof(void *);   /* Make room for linked list pointer */
+            q = compress3(metaID,q);
+            size_p = q;      /* Preserve position for size */
+            q += bytes_size;     /* Make room for size */
+            num_locs = 0;
+        }
+
+        if(frequency > MAX_STACK_POSITIONS)
+            positions = emalloc(frequency * sizeof(int));
+        else
+            positions = local_positions;
+
+        uncompress_location_positions(&p,uflag,frequency,positions);
+
+                /* Store the filenum incrementally to save space */
+        compress_location_values(&q,&cflag,filenum - curfilenum,structure,frequency, positions[0]);
+
+        curfilenum = filenum;
+
+        compress_location_positions(&q,cflag,frequency,positions);
+
+        if(frequency > MAX_STACK_POSITIONS)
+            efree(positions);
+
+        num_locs++;
+
+        loc = next;
+    }
+    if (num_locs)
+    {
+        /* add to the linked list and reset values */
+        /* Update the size of chunk's data in *size_p */
+        tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+        /* Write the size */
+        for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
+            size_p[i] = tmp >> (j * 8);
+        /* Add to the linked list keeping the data sorted by metaname, filenum */
+        /* Allocate memory space */
+        coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
+        /* Copy content to it */
+        memcpy(coalesced_buffer,buffer,q-buffer);
+        /* Add to the linked list */
+        add_coalesced(sw, e, coalesced_buffer, q - buffer, curmetaID);
+    }
+    e->currentChunkLocationList = NULL;
+    e->currentlocation = NULL;
+
+        /* If we are swaping locs to file, reset also correspondant memory zone */
+        if(sw->Index->swap_locdata)
+            Mem_ZoneReset(sw->Index->totalLocZone);
+
+}
 

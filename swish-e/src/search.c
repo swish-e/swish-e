@@ -985,7 +985,8 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             len,
             curmetaID,
             index_structure,
-            index_structfreq;
+            index_structfreq,
+            tmpval;
     RESULT *rp,
            *rp2,
            *tmp;
@@ -996,6 +997,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     unsigned char   *s, *buffer; 
     char   *resultword;
     int     sz_buffer;
+    unsigned char flag;
 
     x = j = filenum = structure = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     position = NULL;
@@ -1051,11 +1053,11 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
             return NULL;
         }
-    DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+        DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
 
-    if (!wordID)
-    {
-       DB_EndReadWords(sw, indexf->DB);
+        if (!wordID)
+        {
+            DB_EndReadWords(sw, indexf->DB);
             sw->lasterror = WORD_NOT_FOUND;
             return NULL;
         }
@@ -1076,6 +1078,8 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             if (curmetaID >= metaID)
                 break;
             s = buffer + nextposmetaname;
+            if(nextposmetaname == (unsigned long)sz_buffer)
+                break;
             curmetaID = uncompress2(&s);
         }
         if (curmetaID == metaID)
@@ -1084,24 +1088,23 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             found = 0;
         if (found)
         {
+            filenum = 0;
             do
             {                   /* Read on all items */
-                filenum = uncompress2(&s);
-                index_structfreq = uncompress2(&s);
-                frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-                index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-                structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+                uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                filenum += tmpval;
                 position = (int *) emalloc(frequency * sizeof(int));
+                uncompress_location_positions(&s,flag,frequency,position);
 
-                for (j = 0; j < frequency; j++)
-                {
-                    x = uncompress2(&s);
-                    position[j] = x;
-                }
                 rp =
                     (RESULT *) addtoresultlist(rp, filenum,
                                                getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
                                                        indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
+                if(!s[0])       /* End of chunk mark */
+                {
+                    filenum = 0;  /* reset filenum */
+                    s++;
+                }
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1153,7 +1156,6 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     DB_EndReadWords(sw, indexf->DB);
     return rp;
 }
-
 
 
 /*
