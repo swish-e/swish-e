@@ -51,18 +51,6 @@ Package=<4>
 
 ###############################################################################
 
-Project: "libxml2"="..\..\..\libxml2\win32\dsp\libxml2.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "swishe"=".\swishe.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -75,13 +63,10 @@ Package=<4>
     Project_Dep_Name libswishe
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name libxml2
-    End Project Dependency
-    Begin Project Dependency
     Project_Dep_Name xmlparse
     End Project Dependency
     Begin Project Dependency
-    Project_Dep_Name dllswish
+    Project_Dep_Name libswishindex
     End Project Dependency
 }}}
 

@@ -19,6 +19,7 @@ CFG=libswishe - Win32 Debug
 !MESSAGE 
 !MESSAGE "libswishe - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "libswishe - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "libswishe - Win32 Release_Multithreaded" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -41,7 +42,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "tmp/libswishe_Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "." /I "../../../pcre/include" /I "../../../zlib/include" /I "..\replace" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "." /I "../../../pcre/include" /I "../../../zlib/include" /I "..\replace" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /D "HAVE_LIBXML2" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -49,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"libswishe.lib"
+# ADD LIB32 /nologo /out:"libswish-e.lib"
 
 !ELSEIF  "$(CFG)" == "libswishe - Win32 Debug"
 
@@ -64,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "tmp/libswishe_Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../../../zlib/include" /I "..\replace" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../../../pcre/include" /I "../../../zlib/include" /I "..\replace" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /D "HAVE_LIBXML2" /YX /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -72,7 +73,30 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo
+# ADD LIB32 /nologo /out:"tmp/libswishe_Debug\libswish-e.lib"
+
+!ELSEIF  "$(CFG)" == "libswishe - Win32 Release_Multithreaded"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "libswishe___Win32_Release_Multithreaded"
+# PROP BASE Intermediate_Dir "libswishe___Win32_Release_Multithreaded"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "libswishe___Win32_Release_Multithreaded"
+# PROP Intermediate_Dir "libswishe___Win32_Release_Multithreaded"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /W3 /GX /O2 /I "." /I "../../../pcre/include" /I "../../../zlib/include" /I "..\replace" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /D "HAVE_LIBXML2" /Fp"tmp/libswishe_Release/libswishe.pch" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "." /I "../../../pcre/include" /I "../../../zlib/include" /I "..\replace" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /D "HAVE_LIBXML2" /Fp"tmp/libswishe_Release/libswishe.pch" /YX /FD /c
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo /out:"libswish-e.lib"
+# ADD LIB32 /nologo /out:"libswish-e-mt.lib"
 
 !ENDIF 
 
@@ -80,6 +104,7 @@ LIB32=link.exe -lib
 
 # Name "libswishe - Win32 Release"
 # Name "libswishe - Win32 Debug"
+# Name "libswishe - Win32 Release_Multithreaded"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
