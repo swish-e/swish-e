@@ -660,7 +660,6 @@ sub get_filter_list {
     for my $inc_path ( @INC ) {
         my $cur_path = "$inc_path/SWISH/Filters";
 
-       
         next unless opendir( DIR, $cur_path );
 
 
@@ -673,13 +672,11 @@ sub get_filter_list {
 
 
             next unless $suffix eq '.pm';
-            
 
             # Should this filter be skipped?
-            
             next if $self->{skip_filters}{$base};
 
-            
+            $self->mywarn("\n>> Loading filter: [SWISH/Filters/${base}$suffix]");
 
             eval { require "SWISH/Filters/${base}$suffix" };
             if ( $@ ) {
@@ -693,11 +690,11 @@ sub get_filter_list {
             }
 
             my $package =  "SWISH::Filters::" . $base;
-            
             my $filter = $package->new( name => $full_path );
-            
+	    $self->mywarn(":-( Filter [SWISH/Filters/${base}$suffix] not loaded\n")
+	    	unless $filter;
+
             next unless $filter;  # may not get installed
-            
             push @filters, $filter;
         }
     }
@@ -1237,7 +1234,7 @@ Here's a module to index MS Word documents using the program "catdoc":
 
         # check for helpers
         for my $prog ( qw/ catdoc / ) {
-            my $path = $self->find_binary( $prog );
+            my $path = $SELF->find_binary( $prog );
             unless ( $path ) {
                 $self->mywarn("Can not use Filter $pack -- need to install $prog");
                 return;
