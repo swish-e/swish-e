@@ -55,8 +55,8 @@ modename="$progname"
 # Constants.
 PROGRAM=ltmain.sh
 PACKAGE=libtool
-VERSION=1.5.0a
-TIMESTAMP=" (1.1220.2.35 2003/11/12 18:51:58) Debian$Rev: 159 $"
+VERSION=1.5.2
+TIMESTAMP=" (1.1220.2.60 2004/01/25 12:25:08) Debian$Rev: 192 $"
 
 default_mode=
 help="Try \`$progname --help' for more information."
@@ -858,7 +858,7 @@ EOF
       ;;
     esac
     libtool_args="$nonopt"
-    base_compile="$nonopt"
+    base_compile="$nonopt $@"
     compile_command="$nonopt"
     finalize_command="$nonopt"
 
@@ -890,6 +890,7 @@ EOF
     no_install=no
     objs=
     non_pic_objects=
+    precious_files_regex=
     prefer_static_libs=no
     preload=no
     prev=
@@ -908,7 +909,7 @@ EOF
     # Only attempt this if the compiler in the base link
     # command doesn't match the default compiler.
     if test -n "$available_tags" && test -z "$tagname"; then
-      case "$base_compile " in
+      case $base_compile in
       # Blanks in the command may have been stripped by the calling shell,
       # but not from the CC environment variable when configure was run.
       "$CC "* | " $CC "* | "`$echo $CC` "* | " `$echo $CC` "*) ;;
@@ -919,7 +920,7 @@ EOF
 	  if grep "^# ### BEGIN LIBTOOL TAG CONFIG: $z$" < "$0" > /dev/null; then
 	    # Evaluate the configuration.
 	    eval "`${SED} -n -e '/^# ### BEGIN LIBTOOL TAG CONFIG: '$z'$/,/^# ### END LIBTOOL TAG CONFIG: '$z'$/p' < $0`"
-	    case "$base_compile " in
+	    case $base_compile in
 	    "$CC "* | " $CC "* | "`$echo $CC` "* | " `$echo $CC` "*)
 	      # The compiler in $compile_command matches
 	      # the one in the tagged configuration.
@@ -975,7 +976,6 @@ EOF
     # Go through the arguments, transforming them on the way.
     while test "$#" -gt 0; do
       arg="$1"
-      base_compile="$base_compile $arg"
       shift
       case $arg in
       *[\[\~\#\^\&\*\(\)\{\}\|\;\<\>\?\'\ \	]*|*]*|"")
@@ -1051,6 +1051,11 @@ EOF
 	  ;;
 	inst_prefix)
 	  inst_prefix_dir="$arg"
+	  prev=
+	  continue
+	  ;;
+	precious_regex)
+	  precious_files_regex="$arg"
 	  prev=
 	  continue
 	  ;;
@@ -1419,6 +1424,11 @@ EOF
 	;;
 
       -o) prev=output ;;
+
+      -precious-files-regex)
+	prev=precious_regex
+	continue
+	;;
 
       -release)
 	prev=release
@@ -2322,9 +2332,10 @@ EOF
 	    else
 	      $show "extracting exported symbol list from \`$soname'"
 	      save_ifs="$IFS"; IFS='~'
-	      eval cmds=\"$extract_expsyms_cmds\"
+	      cmds=$extract_expsyms_cmds
 	      for cmd in $cmds; do
 		IFS="$save_ifs"
+		eval cmd=\"$cmd\"
 		$show "$cmd"
 		$run eval "$cmd" || exit $?
 	      done
@@ -2335,9 +2346,10 @@ EOF
 	    if test -f "$output_objdir/$newlib"; then :; else
 	      $show "generating import library for \`$soname'"
 	      save_ifs="$IFS"; IFS='~'
-	      eval cmds=\"$old_archive_from_expsyms_cmds\"
+	      cmds=$old_archive_from_expsyms_cmds
 	      for cmd in $cmds; do
 		IFS="$save_ifs"
+		eval cmd=\"$cmd\"
 		$show "$cmd"
 		$run eval "$cmd" || exit $?
 	      done
@@ -2616,8 +2628,8 @@ EOF
 		    *" $path "*) ;;
 		    *) newlib_search_path="$newlib_search_path $path";;
 		    esac
-		    path=""
 		  fi
+		  path=""
 		  ;;
 		*)
 		path="-L$path"
@@ -3085,6 +3097,10 @@ EOF
 	    *.$objext)
 	       ;;
 	    $output_objdir/$outputname | $output_objdir/$libname.* | $output_objdir/${libname}${release}.*)
+	       if echo $p | $EGREP -e "$precious_files_regex" >/dev/null 2>&1
+	       then
+		 continue
+	       fi
 	       removelist="$removelist $p"
 	       ;;
 	    *) ;;
@@ -3594,10 +3610,11 @@ EOF
 	    $show "generating symbol list for \`$libname.la'"
 	    export_symbols="$output_objdir/$libname.exp"
 	    $run $rm $export_symbols
-	    eval cmds=\"$export_symbols_cmds\"
+	    cmds=$export_symbols_cmds
 	    save_ifs="$IFS"; IFS='~'
 	    for cmd in $cmds; do
 	      IFS="$save_ifs"
+	      eval cmd=\"$cmd\"
 	      if len=`expr "X$cmd" : ".*"` &&
 	       test "$len" -le "$max_cmd_len" || test "$max_cmd_len" -le -1; then
 	        $show "$cmd"
@@ -3714,19 +3731,23 @@ EOF
 	# Do each of the archive commands.
 	if test "$module" = yes && test -n "$module_cmds" ; then
 	  if test -n "$export_symbols" && test -n "$module_expsym_cmds"; then
-	    eval cmds=\"$module_expsym_cmds\"
+	    eval test_cmds=\"$module_expsym_cmds\"
+	    cmds=$module_expsym_cmds
 	  else
-	    eval cmds=\"$module_cmds\"
+	    eval test_cmds=\"$module_cmds\"
+	    cmds=$module_cmds
 	  fi
 	else
 	if test -n "$export_symbols" && test -n "$archive_expsym_cmds"; then
-	  eval cmds=\"$archive_expsym_cmds\"
+	  eval test_cmds=\"$archive_expsym_cmds\"
+	  cmds=$archive_expsym_cmds
 	else
-	  eval cmds=\"$archive_cmds\"
+	  eval test_cmds=\"$archive_cmds\"
+	  cmds=$archive_cmds
 	  fi
 	fi
 
-	if test "X$skipped_export" != "X:" && len=`expr "X$cmds" : ".*"` &&
+	if test "X$skipped_export" != "X:" && len=`expr "X$test_cmds" : ".*"` &&
 	   test "$len" -le "$max_cmd_len" || test "$max_cmd_len" -le -1; then
 	  :
 	else
@@ -3811,6 +3832,7 @@ EOF
 	  save_ifs="$IFS"; IFS='~'
 	  for cmd in $concat_cmds; do
 	    IFS="$save_ifs"
+	    eval cmd=\"$cmd\"
 	    $show "$cmd"
 	    $run eval "$cmd" || exit $?
 	  done
@@ -3827,19 +3849,28 @@ EOF
 	  # value of $libobjs for piecewise linking.
 
 	  # Do each of the archive commands.
-	  if test -n "$export_symbols" && test -n "$archive_expsym_cmds"; then
-	    eval cmds=\"$archive_expsym_cmds\"
+	  if test "$module" = yes && test -n "$module_cmds" ; then
+	    if test -n "$export_symbols" && test -n "$module_expsym_cmds"; then
+	      cmds=$module_expsym_cmds
+	    else
+	      cmds=$module_cmds
+	    fi
 	  else
-	    eval cmds=\"$archive_cmds\"
+	  if test -n "$export_symbols" && test -n "$archive_expsym_cmds"; then
+	    cmds=$archive_expsym_cmds
+	  else
+	    cmds=$archive_cmds
+	    fi
 	  fi
 
 	  # Append the command to remove the reloadable object files
 	  # to the just-reset $cmds.
-	  eval cmds=\"\$cmds~$rm $delfiles\"
+	  eval cmds=\"\$cmds~\$rm $delfiles\"
 	fi
 	save_ifs="$IFS"; IFS='~'
 	for cmd in $cmds; do
 	  IFS="$save_ifs"
+	  eval cmd=\"$cmd\"
 	  $show "$cmd"
 	  $run eval "$cmd" || exit $?
 	done
@@ -3990,10 +4021,11 @@ EOF
       reload_objs="$objs$old_deplibs "`$echo "X$libobjs" | $SP2NL | $Xsed -e '/\.'${libext}$'/d' -e '/\.lib$/d' -e "$lo2o" | $NL2SP`" $reload_conv_objs" ### testsuite: skip nested quoting test
 
       output="$obj"
-      eval cmds=\"$reload_cmds\"
+      cmds=$reload_cmds
       save_ifs="$IFS"; IFS='~'
       for cmd in $cmds; do
 	IFS="$save_ifs"
+	eval cmd=\"$cmd\"
 	$show "$cmd"
 	$run eval "$cmd" || exit $?
       done
@@ -4026,10 +4058,11 @@ EOF
 	# Only do commands if we really have different PIC objects.
 	reload_objs="$libobjs $reload_conv_objs"
 	output="$libobj"
-	eval cmds=\"$reload_cmds\"
+	cmds=$reload_cmds
 	save_ifs="$IFS"; IFS='~'
 	for cmd in $cmds; do
 	  IFS="$save_ifs"
+	  eval cmd=\"$cmd\"
 	  $show "$cmd"
 	  $run eval "$cmd" || exit $?
 	done
@@ -5001,13 +5034,13 @@ fi\
 
       # Do each command in the archive commands.
       if test -n "$old_archive_from_new_cmds" && test "$build_libtool_libs" = yes; then
-	eval cmds=\"$old_archive_from_new_cmds\"
+       cmds=$old_archive_from_new_cmds
       else
 	eval cmds=\"$old_archive_cmds\"
 
 	if len=`expr "X$cmds" : ".*"` &&
 	     test "$len" -le "$max_cmd_len" || test "$max_cmd_len" -le -1; then
-	  :
+	  cmds=$old_archive_cmds
 	else
 	  # the command line is too long to link in one step, link in parts
 	  $echo "using piecewise archive linking..."
@@ -5059,12 +5092,13 @@ fi\
 	  if test "X$oldobjs" = "X" ; then
 	    eval cmds=\"\$concat_cmds\"
 	  else
-	    eval cmds=\"\$concat_cmds~$old_archive_cmds\"
+	    eval cmds=\"\$concat_cmds~\$old_archive_cmds\"
 	  fi
 	fi
       fi
       save_ifs="$IFS"; IFS='~'
       for cmd in $cmds; do
+        eval cmd=\"$cmd\"
 	IFS="$save_ifs"
 	$show "$cmd"
 	$run eval "$cmd" || exit $?
@@ -5482,10 +5516,11 @@ relink_command=\"$relink_command\""
 
 	  # Do each command in the postinstall commands.
 	  lib="$destdir/$realname"
-	  eval cmds=\"$postinstall_cmds\"
+	  cmds=$postinstall_cmds
 	  save_ifs="$IFS"; IFS='~'
 	  for cmd in $cmds; do
 	    IFS="$save_ifs"
+	    eval cmd=\"$cmd\"
 	    $show "$cmd"
 	    $run eval "$cmd" || exit $?
 	  done
@@ -5638,7 +5673,7 @@ relink_command=\"$relink_command\""
 	      tmpdir="/tmp"
 	      test -n "$TMPDIR" && tmpdir="$TMPDIR"
 	      tmpdir="$tmpdir/libtool-$$"
-	      if $mkdir -p "$tmpdir" && chmod 700 "$tmpdir"; then :
+	      if $mkdir "$tmpdir" && chmod 700 "$tmpdir"; then :
 	      else
 		$echo "$modename: error: cannot create temporary directory \`$tmpdir'" 1>&2
 		continue
@@ -5698,16 +5733,17 @@ relink_command=\"$relink_command\""
       $show "$install_prog $file $oldlib"
       $run eval "$install_prog \$file \$oldlib" || exit $?
 
-      if test -n "$stripme" && test -n "$striplib"; then
+      if test -n "$stripme" && test -n "$old_striplib"; then
 	$show "$old_striplib $oldlib"
 	$run eval "$old_striplib $oldlib" || exit $?
       fi
 
       # Do each command in the postinstall commands.
-      eval cmds=\"$old_postinstall_cmds\"
+      cmds=$old_postinstall_cmds
       save_ifs="$IFS"; IFS='~'
       for cmd in $cmds; do
 	IFS="$save_ifs"
+	eval cmd=\"$cmd\"
 	$show "$cmd"
 	$run eval "$cmd" || exit $?
       done
@@ -5742,10 +5778,11 @@ relink_command=\"$relink_command\""
       for libdir in $libdirs; do
 	if test -n "$finish_cmds"; then
 	  # Do each command in the finish commands.
-	  eval cmds=\"$finish_cmds\"
+	  cmds=$finish_cmds
 	  save_ifs="$IFS"; IFS='~'
 	  for cmd in $cmds; do
 	    IFS="$save_ifs"
+	    eval cmd=\"$cmd\"
 	    $show "$cmd"
 	    $run eval "$cmd" || admincmds="$admincmds
        $cmd"
@@ -6019,10 +6056,11 @@ relink_command=\"$relink_command\""
 	  if test "$mode" = uninstall; then
 	    if test -n "$library_names"; then
 	      # Do each command in the postuninstall commands.
-	      eval cmds=\"$postuninstall_cmds\"
+	      cmds=$postuninstall_cmds
 	      save_ifs="$IFS"; IFS='~'
 	      for cmd in $cmds; do
 		IFS="$save_ifs"
+		eval cmd=\"$cmd\"
 		$show "$cmd"
 		$run eval "$cmd"
 		if test "$?" -ne 0 && test "$rmforce" != yes; then
@@ -6034,10 +6072,11 @@ relink_command=\"$relink_command\""
 
 	    if test -n "$old_library"; then
 	      # Do each command in the old_postuninstall commands.
-	      eval cmds=\"$old_postuninstall_cmds\"
+	      cmds=$old_postuninstall_cmds
 	      save_ifs="$IFS"; IFS='~'
 	      for cmd in $cmds; do
 		IFS="$save_ifs"
+		eval cmd=\"$cmd\"
 		$show "$cmd"
 		$run eval "$cmd"
 		if test "$?" -ne 0 && test "$rmforce" != yes; then
@@ -6282,6 +6321,8 @@ The following components of LINK-COMMAND are treated specially:
   -no-undefined     declare that a library does not refer to external symbols
   -o OUTPUT-FILE    create OUTPUT-FILE from the specified objects
   -objectlist FILE  Use a list of object files found in FILE to specify objects
+  -precious-files-regex REGEX
+                    don't remove output files matching REGEX
   -release RELEASE  specify package release information
   -rpath LIBDIR     the created library will eventually be installed in LIBDIR
   -R[ ]LIBDIR       add LIBDIR to the runtime path of programs and libraries

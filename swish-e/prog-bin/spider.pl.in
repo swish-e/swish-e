@@ -1463,7 +1463,7 @@ Note: A common recommendation is to use a delay of one minute between requests.
 For example, one minute is the default used in the LWP::RobotUA Perl module.
 
 
-=item delay_min  (depreciated)
+=item delay_min  (deprecated)
 
 Set the delay to wait between requests in minutes.  If both delay_sec and
 delay_min are defined, delay_sec will be used.

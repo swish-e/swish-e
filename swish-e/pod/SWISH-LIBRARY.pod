@@ -268,35 +268,80 @@ The result object returned does not need to be freed after use
 
 =item const char *SwishResultPropertyStr(SW_RESULT, char *propertyname);
 
-Returns a string value of the specified property.  
+This function is mostly useful for testing as it returns odd results on errors.
+
+Aborts if called with a NULL SW_RESULT object
+
+Returns a string value of the specified property.
+
 Returns the empty string "" if the current result does not have
 the specified property assigned.
+
 Returns the string "(null)" on invalid property name (i.e. property name
-is not defined in the index).
+is not defined in the index) and sets an error (see below) indicating the
+invalid property name.
 
 The string returned does not need to be freed, but is only valid
 for the current result.  If you wish to save the string you must
 copy it locally.
 
-Numeric properties are zero filled for some odd reason.  Dates are 
-formatted.
+Dates are formatted using the hard-coded format string: "%Y-%m-%d %H:%M:%S" in
+localtime.
 
-=item unsigned long SwishResultPropertyULong(SW_RESULT, char *propertyname);
+=item unsigned long SwishResultPropertyULong(SW_RESULT r, char *propertyname);
 
-Returns a numeric property as an unsigned long.  Returns UMAX_LONG on
-errors.  Use the error checking functions to determine the exact error.
-
+Returns a numeric property as an unsigned long.
 Numeric properties are used for both PropertyNamesNumeric and PropertyNamesDate
-type of properties.
+type of properties.  Dates are returned as a unix timestamp as reported by the system
+when the index was created.
 
-=item PropValue *getResultPropValue (RESULT *r, char *pname, int ID );
+Swish-e will abort if called with a NULL SW_RESULT object.  Without the SW_RESULT object
+swish-e cannot set any error codes.
+
+On error returns UMAX_LONG.  This is commonly defined in limits.h.
+Check SwishError() (see below) for the type of error.
+
+If SwishError() returns false (zero)
+then it simply means that this result does not have any data for the specified
+property.
+
+If SwishError() returns true (non-zero) then either the propertyname specified is
+invalid, or the property requested is not a numeric (or date) property (e.g. it's
+a string property).
+
+See below on how to fetch the specific error message when SwishError() is true.
+
+
+=item PropValue *getResultPropValue (SW_RESULT r, char *propertyname, int ID );
 
 This is a low-level function to fetch a property regardless of type.
-The return PropValue is a structure that contains a flag to indicate the
-type, and a union that holds the property value.  
+This is likely the best function for accessing properties.
 
-The property must be copied locally and the returned "PropValue" value must be freed by 
-calling freeResultPropValue().  See perl/API.xs for an example.
+Swish-e will abort if called with a NULL SW_RESULT object.  Propertyname is the name
+of the property.  ID is the id number of the property, if known.  ID is not normally
+used in the API, but it's purpose is to avoid looking up the property ID for every
+result displayed.
+
+The return PropValue is a structure that contains a flag to indicate the
+type, and a union that holds the property value.  They flags and structure are
+defined in swish-e.h.
+
+The property must be copied locally and the returned "PropValue" value must be freed by
+calling freeResultPropValue() to avoid a memory leak.
+
+On error returns NULL.
+Check SwishError() (see below) for the type of error.
+
+If returns NULL but SwishError() returns false (zero)
+then it simply means that this result does not have any data for the specified
+property.
+
+If SwishError() returns true (non-zero) then the property name specified
+is invalid (i.e. not defined for the index).
+
+See below on how to fetch the specific error message when SwishError() is true.
+
+See perl/API.xs for an example on using this function.
 
 =item void freeResultPropValue(void)
 
@@ -422,7 +467,7 @@ This fuction may change in the future since only 8-bit chars can currently be us
 
 =item char * SwsishStemWord( SW_HANDLE sw, char *in_word );
 
-Depreciated
+Deprecated
 
 This can be used to convert a word to its stem.  It uses only the 
 original Porter Stemmer.

@@ -151,10 +151,18 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 SUBDIRS = expat replace snowball
 
+
+# Using AM_CPPFLAGS instead of per-target flags means object names
+# don't get renamed.  If using per-target _CPPFLAGS then would need
+# to update configure.in to use the prefix names on all optional objects
+# passed in. (e.g. $BTREE_OBJS).
 AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  \
 		-DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" \
 		$(Z_CFLAGS) $(PCRE_CFLAGS) $(LIBXML2_CFLAGS) -Ireplace
 
+
+# Until can figure out how to use AM_AUTOMAKE_INIT([-Wall])
+AM_CFLAGS = -Wall
 
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h

@@ -48,7 +48,7 @@ Release and Tag
 
    $ cvs tag rel-2-4-0
 
-9) Upload to swish-e site -- see README on swish-e site for details.
+9) Upload to swish-e site -- see "Update Site" below for details before doing this.
 
 Now move on to development.  Change version in configure.in (2.5.0 for example),
 run ./bootstrap and check in.
@@ -143,4 +143,56 @@ NOTE: The example for naming the branch may not be best.  In this example we
 are fixing a bug in 2.4.0 so will likely release a 2.4.1.  Development is now 
 in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead 
 of rel-2-4-0-patches) and then all 2.4.x updates will get added there.
+
+
+Update Site
+-----------
+
+These are notes from the README on the swish-e.org site (in the builds directory).
+Some of these notes duplicate comments from above.
+
+
+To make a release:
+
+This uses the swish-daily.pl script.  It still needs updating to
+work better with a "release" (namely the script used here has been modified
+to not remove old tarballs and to not copy the build logs to the Download directory.
+
+Need to find time to update the swish-daily script to read params from a soruce file.
+
+To create a release:
+
+1) update configure.in's version number and run a make distcheck.
+     Then cvs ci to update the version in cvs
+     And tag the files:  cvs tar rel-2-4-0
+
+2) I scp the tarball to swish-e.org's top directory (just a place with web access)
+3) run the build scrip:
+
+   ./swish-daily.pl -notimestamp -fetchtarurl=http://swish-e.org/swish-e-2.4.0.tar.gz
+
+(Be careful about permissions here as it does try and move links around)
+
+That will fetch the tarball, unpack into a build directory, and make install into
+an install directory (all this happens in the /data/_a/webdata/SWISH-E/builds directory.
+
+The HTML docs are indexed and the symlink at /data/_a/webdata/SWISH-E/current/docs is
+updated to point to this install directory.
+
+Then make dist is run and the resulting tarball is copied to 
+/data/_a/webdata/SWISH-E/Download
+
+The --notimestamp option disables the timestamp option used by configure to add a date to
+the version number.
+
+Note that a "lastinstall" file is used to track the last installation directory.  So next
+time a build is created the old installation directory is removed.
+
+4) Edit Download/HEADER, index.html, swish-daily/HEADER to reflect the right version
+
+5) Announce on list.
+
+6) back at cvs, change to a new dev version by editing configure.in, ./bootstrap and 
+checkin.
+
 

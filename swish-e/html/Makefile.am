@@ -27,6 +27,7 @@ targets = \
 	$(srcdir)/API.html \
 	$(srcdir)/spider.html \
 	$(srcdir)/swish.html \
+	$(srcdir)/search.html \
 	$(srcdir)/Filter.html \
         $(srcdir)/style.css \
 	$(srcdir)/index.html \
@@ -64,7 +65,7 @@ source_files = \
 # Extra files for creating the search page for the docs:
 search_doc_files = \
 	.htaccess \
-	search.html \
+	searchdoc.html \
 	.swishcgi.conf \
 	swish.conf \
 	split.pl
@@ -133,4 +134,4 @@ searchdoc :
 	cp $(libexecdir)/swish.cgi $(htmldir)
 	( cd $(htmldir) && \
 		$(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf && \
-		$(PERL) -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a target="_parent" href="search.html">Search The Documentation</a>]</center>}' index.html index_long.html)
+		$(PERL) -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a target="_parent" href="searchdoc.html">Search The Documentation</a>]</center>}' index.html index_long.html)

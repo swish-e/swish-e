@@ -604,7 +604,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -704,7 +704,7 @@ static void end_hndl(void *data, const char *el)
 
     if(strlen(el) > MAXSTRLEN)
     {
-        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -1008,8 +1008,15 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 
     if ( (m  = getPropNameByName( parse_data->header, tag)) )
     {
-        flush_buffer( parse_data, 7 );  // flush since it's a new meta tag
-        push_stack( &parse_data->prop_stack, endtag, m, prop_append, 0 );
+        if ( is_meta_internal( m ) )
+        {
+            warning( (void *)parse_data, "Found Swish-e reserved property name '%s'\n", tag );
+        }
+        else
+        {
+            flush_buffer( parse_data, 7 );  // flush since it's a new meta tag
+            push_stack( &parse_data->prop_stack, endtag, m, prop_append, 0 );
+        }
     }
 
 
@@ -1264,11 +1271,11 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
         return 0;
     }
-    
-    
+
+
     strcpy( tagbuf, tag );
     t = tagbuf + taglen;
     *t = '.';  /* hard coded! */
@@ -1284,14 +1291,14 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
         /* Is the tag going to be too long? */
         if ( strlen( (char *)attr[i+1] ) + taglen + 2 > 256 )
         {
-            warning("ClassAttribute on tag '%s' too long\n", tag );
+            warning( (void *)parse_data, "ClassAttribute on tag '%s' too long\n", tag );
             continue;
         }
 
 
         /* All metanames are currently lowercase -- would be better to force this in metanames.c */
         strtolower( tagbuf );
-        
+
         strcpy( t, (char *)attr[i+1] );         /* create tag.attribute metaname */
         start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append, 0 );
         found++;
@@ -1357,7 +1364,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning("Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
         return;
     }
 
@@ -1379,7 +1386,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
         if ( strlen( (char *)attr[i] ) + taglen + 2 > 256 )
         {
-            warning("Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
+            warning(" (void *)parse_data, Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
             continue;
         }
         
@@ -1702,6 +1709,7 @@ static void warning(void *data, const char *msg, ...)
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char str[1000];
 
+    printf("8888\n");
     va_start(args, msg);
     vsnprintf(str, 1000, msg, args );
     va_end(args);
