@@ -70,7 +70,7 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
         /* $$$ this feature is still pending (and needs to be extended to work with Compare_Properties() */
         /* if ((rc = sw_strcasecmp( (unsigned char*)r1->PropSort[i], (unsigned char*)r2->PropSort[i], md->iSortCaseTranslationTable))) */
 
-        if ((rc = strcasecmp( (unsigned char*)r1->PropSort[i], (unsigned char*)r2->PropSort[i])))
+        if ((rc = strcasecmp( (char*)r1->PropSort[i], (char*)r2->PropSort[i])))
             return ( rc * sort_direction[i] );
     }
     return 0;
