@@ -6,7 +6,21 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.3 - ????? ??, 2004
+=head2 Version 2.4.3 ?????
+
+=over 4
+
+=item Improved error messsages when using incremental indexing
+
+There was a bit of confusion on how to use incremental indexing (still
+experimental) so added better logic for error messages.
+
+Also fixed a logic error when setting the incremental update mode.  Caught by
+Paul Loner.
+
+=back
+
+=head2 Version 2.4.3-pr1 - Wed Dec  1 09:52:50 PST 2004
 
 =over 4
 
