@@ -1,3 +1,8 @@
+/*
+$ID  $
+**
+**/
+
 
 void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords);
 void getdefaults(SWISH *sw, char *conffile, int *hasdir, int *hasindex, int hasverbose);
