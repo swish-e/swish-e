@@ -878,6 +878,11 @@ typedef struct SWISH
     /* for extracting image hrefs into a metaEntry */
     struct metaEntry *images_meta;
 
+
+    /* if allocated the meta name to store alt tags as */
+    int               IndexAltTag;     
+    char             *IndexAltTagMeta;   // use this meta-tag, if set
+
     /* for converting relative links in href's and img src tags absoulte */
     int               AbsoluteLinks;
 

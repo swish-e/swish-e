@@ -230,6 +230,7 @@ src/swregex.c
 src/swregex.h
 src/txt.c
 src/txt.h
+src/vsnprintf.c
 src/vms/acconfig.h_vms
 src/vms/build_swish-e.com
 src/vms/config.h

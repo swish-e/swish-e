@@ -256,6 +256,11 @@ sub process_server {
     eval { spider( $server, $uri ) };
     print STDERR $@ if $@;
 
+
+    # provide a way to call a function in the config file when all done
+    check_user_function( 'spider_done', undef, $server );
+    
+
     return if $server->{quiet};
 
 

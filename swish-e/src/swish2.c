@@ -173,6 +173,14 @@ void    SwishClose(SWISH * sw)
 
         /* FileRules?? */
 
+        /* meta name for ALT tags */
+        if ( sw->IndexAltTagMeta )
+        {
+            efree( sw->IndexAltTagMeta );
+            sw->IndexAltTagMeta = NULL;
+        }
+
+
 
         while (tmpindexlist) {
             /* free the meteEntry array */

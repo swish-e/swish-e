@@ -158,7 +158,7 @@ typedef struct {
     CHAR_BUFFER         ISO_Latin1;         // buffer to hold UTF-8 -> ISO Latin-1 converted text
     int                 abort;              // flag to stop parsing
     char               *baseURL;            // for fixing up relative links
-    int                 swish_noindex;      // swishindex swishnoindex
+    int                 swish_noindex;      // swishindex swishnoindex -- for hiding blocks with comments
 } PARSE_DATA;
 
 
@@ -182,6 +182,8 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 static void free_parse_data( PARSE_DATA *parse_data ); 
 static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
+
+static void index_alt_tab( PARSE_DATA *parse_data, const char **attr );
 static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
@@ -630,7 +632,12 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
             /* Extract out links from images */
             else if ( strcmp( tag, "img") == 0 )
+            {
+                if (parse_data->sw->IndexAltTag)
+                    index_alt_tab( parse_data, attr );
+                    
                 extract_html_links( parse_data, attr, parse_data->sw->images_meta, "src" );
+            }
 
 
             /* Extract out the BASE URL for fixups */
@@ -899,7 +906,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 *   Call with:
 *       parse_data
 *       tag         = tag to look for as a metaname/property
-*       endtag      = tag to look for as the ending tag
+*       endtag      = tag to look for as the ending tag (since might be different from start tag)
 *       meta_append = if zero, tells push that this is a new meta
 *       prop_append   otherwise, says it's a sibling of a previous call
 *                     (Argh Jan 29, 2001 -- now I don't remember what that _append does!)
@@ -928,6 +935,12 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
     if ( isIgnoreMetaName( sw, tag ) )
     {
         /* shouldn't need to flush buffer since it's just blocking out a section and should be balanced */
+        /* but need to due to the weird way the char buffer is used (and shared with props) and how metatags are assigned to the buffer */
+        /* basically, since flush_buffer looks at the ignore flag and always clears the buffer, need to do it now */
+        /* flush_buffer really should not be in the business of checking the ignore flag, and rather we need to keep two buffers -- or maybe just always flush with any change */
+        
+        flush_buffer( parse_data, 1 );
+
         push_stack( &parse_data->meta_stack, endtag, NULL, meta_append, 1 );
         push_stack( &parse_data->prop_stack, endtag, NULL, prop_append, 1 );
         parse_data->structure[IN_META_BIT]++;  // so we are in balance with pop_stack
@@ -1472,7 +1485,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     char        save_char = '?';
     char        *c;
 
-
     /* anything to do? */
     if ( !buf->cur )
         return;
@@ -1510,7 +1522,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     if ( *c )
     {
         /* Index the text */
-        if ( !parse_data->meta_stack.ignore_flag )
+        if ( !parse_data->meta_stack.ignore_flag )  // this really is wrong -- should not check ignore here.  Fix should be to use two buffers
             parse_data->total_words +=
                 indexstring( sw, c, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
 
@@ -1647,6 +1659,38 @@ static void warning(void *data, const char *msg, ...)
     va_end(args);
     xmlParserWarning(parse_data->ctxt, str);
 }
+
+
+/*********************************************************************
+*   Index ALT tabs
+*
+*
+*********************************************************************/
+static void index_alt_tab( PARSE_DATA *parse_data, const char **attr )
+{
+    int  meta_append = 0;
+    int  prop_append = 0;
+    char *tagbuf     = parse_data->sw->IndexAltTagMeta;
+    char *alt_text   = extract_html_links( parse_data, attr, NULL, "alt");
+
+
+    if ( !alt_text )
+        return;
+
+    /* Index as regular text? */
+    if ( !parse_data->sw->IndexAltTagMeta )
+    {
+        char_hndl( parse_data, alt_text, strlen( alt_text ) );
+        return;
+    }
+    
+    flush_buffer( parse_data, 1 );
+    start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append, 0 );
+    char_hndl( parse_data, alt_text, strlen( alt_text ) );
+    end_metaTag( parse_data, tagbuf, 0 );
+}
+
+
 
 
 /*********************************************************************
