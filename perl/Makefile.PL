@@ -32,7 +32,7 @@ sub set_swish_version {
     print "\n\nFor testing we will need the path to your SWISH-E binary.\n",
           qq[** Enter "skip" (without quotes) to skip testing - you will not be able to run "make test"\n\n];
           
-    print "\nThe SWISHBIN environment variable may also be used for non-interactive builds.\n\n";
+    $ENV{SWISHBIN} or print "\nThe SWISHBIN environment variable may also be used for non-interactive builds.\n\n";
 
     unless ($swish and $version) {
      for ( split /:/, $ENV{PATH} ) {
