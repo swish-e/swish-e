@@ -85,8 +85,36 @@ C<perldoc perlsec> at your local prompt for more information.  Another must-read
 C<http://www.w3.org/Security/faq/wwwsf4.html>.
 
 Note that there are many I<free> yet insecure and poorly written CGI scripts available --
-even some designed for use with swish.
+even some designed for use with swish.  Please carefully review any CGI script you use.
 Free is not such a good price when you get your server hacked...
+
+=head3 Should I run swish as the superuser (root)?
+
+No.  Never.
+
+=head3 What files does swish write?
+
+Swish writes the index file, of course.  This is specified with the C<IndexFile>
+configuration directive or by the C<-f> command line switch.
+
+The index file is currently made up of two files, one as specified by C<IndexFile> or
+C<-f>, and a file of the same name but ends in F<.prop>.  This file contains the
+document properties.
+
+When creating the index files swish appends the extension F<.temp> to the index file
+names.  When indexing is complete swish renames the F<.temp> files to the index files
+specified by C<IndexFile> or C<-f>.  This is done so that existing indexes remain untouched
+until swish completes indexing.
+
+Swish also writes temporary files in some cases during indexing
+(e.g. C<-s http>, C<-s prog> with filters>, when merging, and when using C<-e>).
+Temporary files are created with the mkstemp(3) function
+(with 0600 permission on unix-like operating systems).
+
+The temporary files are created in the directory specified by the environment variables
+C<TMPDIR> and C<TMP> in that order.  If those are not set then swish uses the setting
+the configuration setting L<TmpDir|SWISH-CONFIG/"item_TmpDir">.
+Otherwise, the temporary file will be located in the current directory.
 
 =head3 Can I index PDF and MS-Word documents?
 
