@@ -285,6 +285,7 @@ struct DB_RESULTS *db_results,*db_tmp;
 		}
 
 
+		resultHeaderOut(sw,2, "#\n# Index File: %s\n",indexlist->line);
 
 		searchwordlist = (struct swline *)translatechars_words_in_query(sw,indexlist,searchwordlist);
 #ifdef IGNORE_STOPWORDS_IN_QUERY
@@ -298,7 +299,6 @@ struct DB_RESULTS *db_results,*db_tmp;
 
 		/* Result Header Output  (2001-03-14 rasc,  rewritten) */
 
-		resultHeaderOut(sw,2, "# Index File: %s\n",indexlist->line);
 		resultPrintHeader(sw,2, &indexlist->header,indexlist->header.savedasheader,0);
 
 		resultHeaderOut(sw,3,"# StopWords:");
@@ -306,10 +306,9 @@ struct DB_RESULTS *db_results,*db_tmp;
 			resultHeaderOut(sw,3, " %s",indexlist->stopList[k]);
 		resultHeaderOut(sw,3, "\n");
 
-		resultHeaderOut(sw,3,"# BuzzWords:");
-		for (k=0;k<indexlist->buzzPos;k++)
-			resultHeaderOut(sw,3, " %s",indexlist->buzzList[k]);
-		resultHeaderOut(sw,3, "\n");
+		if ( sw->opt.headerOutVerbose >= 3 )
+		    printheaderbuzzwords( indexlist );
+
 
 		resultHeaderOut(sw,2, "# Search Words: %s\n",words);
 		resultHeaderOut(sw,2, "# Parsed Words: ");
@@ -735,7 +734,6 @@ FILE *fp=indexf->fp;
 }
 
 /* read the buzzwords from the index file */
-/* The addBuzzWordList() seems like overkill */
 
 void readbuzzwords(IndexFILE *indexf)
 {
@@ -755,12 +753,32 @@ FILE *fp=indexf->fp;
 		}
 		fread(word,len,1,fp);
 		word[len]='\0';
-		addBuzzWordList(indexf,word);
 		addbuzzwordhash(indexf,word);
 		uncompress1(len,fp);
 	}
 	efree(word);
 }
+
+/* Print the buzzwords */
+void    printheaderbuzzwords(IndexFILE * indexf)
+{
+    int     hashval;
+    struct swline *sp = NULL;
+
+    printf("# BuzzWords:");
+
+    for (hashval = 0; hashval < HASHSIZE; hashval++)
+    {
+        sp = indexf->hashbuzzwordlist[hashval];
+        while (sp != NULL)
+        {
+            printf(" %s", sp->line);
+            sp = sp->next;
+        }
+    }
+    printf("\n");
+}
+
 
 
 /* Reads the metaNames from the index
@@ -2076,6 +2094,7 @@ int inphrase=0,ignore=0;
 		if(u_isnotrule(sw,pointer1->line) || isMetaNameOpNext(pointer2)) break;
 		if(!isstopword(indexf,pointer1->line) && !u_isrule(sw,pointer1->line)) break;
 		searchwordlist = pointer2; /* move the head of the list */
+
 		resultHeaderOut(sw,1, "# Removed stopword: %s\n",pointer1->line);
 			 /* Free line also !! Jose Ruiz 04/00 */
 		efree(pointer1->line);
