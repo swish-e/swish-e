@@ -55,7 +55,6 @@ int size = strlen(line);  /* Compute strlen only once */
 struct swline *addswline(struct swline *rp, char *line)
 {
 struct swline *newnode;
-int len;
 
     newnode = newswline(line);
 
@@ -73,7 +72,7 @@ struct swline *dupswline(struct swline *rp)
 {
 struct swline *tmp=NULL, *tmp2=NULL;
 struct swline *newnode;
-int len;
+
     while(rp)
     {
         newnode = newswline(rp->line);

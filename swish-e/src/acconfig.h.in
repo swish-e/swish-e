@@ -8,6 +8,9 @@
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
 
+/* Check for groups with AC_TYPE_GETGROUPS */
+#undef GETGROUPS_T
+
 /* Define to 1 if you have the `access' function. */
 #undef HAVE_ACCESS
 
@@ -37,6 +40,9 @@
 /* Define to 1 if you have the `fork' function. */
 #undef HAVE_FORK
 
+/* Define to 1 if your system has a working `getgroups' function. */
+#undef HAVE_GETGROUPS
+
 /* Define to 1 if you have the `getrusage' function. */
 #undef HAVE_GETRUSAGE
 
@@ -54,6 +60,9 @@
 
 /* Define to 1 if you have the `lstat' function. */
 #undef HAVE_LSTAT
+
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -81,6 +90,9 @@
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strchr' function. */
+#undef HAVE_STRCHR
 
 /* Define to 1 if you have the `strdup' function. */
 #undef HAVE_STRDUP
@@ -195,6 +207,9 @@
         STACK_DIRECTION = 0 => direction of growth unknown */
 #undef STACK_DIRECTION
 
+/* Define to 1 if the `S_IS*' macros in <sys/stat.h> do not work properly. */
+#undef STAT_MACROS_BROKEN
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
@@ -210,11 +225,17 @@
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
 
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef gid_t
+
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
 
 /* Define to `unsigned' if <sys/types.h> does not define. */
 #undef size_t
+
+/* Define to `int' if <sys/types.h> doesn't define. */
+#undef uid_t
 
 /* Define as `fork' if `vfork' does not work. */
 #undef vfork
