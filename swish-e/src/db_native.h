@@ -49,6 +49,7 @@
 #endif
 
 
+
 struct Handle_DBNative
 {
        /* values used by the index proccess */
@@ -90,7 +91,7 @@ struct Handle_DBNative
 
    int num_words;
 
-   int mode;  /* 1 - Create  0 - Open */
+   DB_OPEN_MODE mode; 
 
    char *dbname;
 
@@ -148,7 +149,7 @@ void freeModule_DBNative (SWISH *);
 int configModule_DBNative (SWISH *sw, StringList *sl);
 
 void   *DB_Create_Native (char *dbname);
-void   *DB_Open_Native (char *dbname);
+void   *DB_Open_Native (char *dbname, int mode);
 void    DB_Close_Native(void *db);
 void    DB_Remove_Native(void *db);
 

@@ -158,7 +158,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
 
     
-    indexf->DB = DB_Open(sw, indexf->line);
+    indexf->DB = DB_Open(sw, indexf->line,DB_READ);
 
     metaname = 0;
 

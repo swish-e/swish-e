@@ -303,7 +303,7 @@ void   *DB_Create_Native(char *dbname)
 
     /* Allocate structure */
     DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
-    DB->mode = 1;
+    DB->mode = DB_CREATE;
 
 #ifdef USE_TEMPFILE_EXTENSION
     filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
@@ -420,19 +420,32 @@ void   *DB_Create_Native(char *dbname)
 *
 *******************************************************************/
 
-void   *DB_Open_Native(char *dbname)
+void   *DB_Open_Native(char *dbname,int mode)
 {
     struct Handle_DBNative *DB;
     int     i;
+    FILE   *(*openRoutine)(char *) = NULL;
 #ifdef USE_BTREE
     FILE *fp_tmp;
 #endif
 
-    DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
-    DB->mode = 0;
+    switch(mode)
+    {
+    case DB_READ:
+        openRoutine = openIndexFILEForRead;
+        break;
+    case DB_READWRITE:
+        openRoutine = openIndexFILEForReadAndWrite;
+        break;
+    default:
+        openRoutine = openIndexFILEForRead;
+    }
 
-    /* Create index File */
-    if (!(DB->fp = openIndexFILEForRead(dbname)))
+    DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
+    DB->mode = mode;
+
+    /* Open index File */
+    if (!(DB->fp = openRoutine(dbname)))
         progerrno("Could not open the index file '%s': ", dbname);
 
     DB->cur_index_file = estrdup(dbname);
@@ -443,7 +456,7 @@ void   *DB_Open_Native(char *dbname)
         strcpy(s, dbname);
         strcat(s, PROPFILE_EXTENSION);
 
-        if (!(DB->prop = openIndexFILEForRead(s)))
+        if (!(DB->prop = openRoutine(s)))
             progerrno("Couldn't open the property file \"%s\": ", s);
 
         DB->cur_prop_file = s;
@@ -457,7 +470,7 @@ void   *DB_Open_Native(char *dbname)
         strcpy(s, dbname);
         strcat(s, WORDDATA_EXTENSION);
 
-        if (!(fp_tmp = openIndexFILEForRead(s)))
+        if (!(fp_tmp = openRoutine(s)))
             progerrno("Couldn't open the worddata file \"%s\": ", s);
           
         DB->worddata = WORDDATA_Open(fp_tmp);
@@ -469,7 +482,7 @@ void   *DB_Open_Native(char *dbname)
         strcpy(s, dbname);
         strcat(s, PRESORTED_EXTENSION);
 
-        if (!(DB->presorted = openIndexFILEForRead(s)))
+        if (!(DB->presorted = openRoutine(s)))
             progerrno("Couldn't open the presorted index file \"%s\": ", s);
 
         DB->cur_presorted_file = s;
@@ -585,7 +598,7 @@ void    DB_Close_Native(void *db)
         DB->offsets[FILELISTPOS] = ARRAY_Close(DB->props_array);
 #endif
 
-    if (DB->mode)               /* If we are indexing update offsets to words and files */
+    if (DB->mode == DB_CREATE)     /* If we are indexing update offsets to words and files */
     {
         /* Update internal pointers */
 
@@ -711,7 +724,13 @@ int     DB_InitWriteWords_Native(void *db)
 
 
 #ifdef USE_BTREE
-    DB->bt = BTREE_Create(DB->fp, 4096);
+    /* If exits a pointer to a BTREE in WORDPOS,
+    ** we are in update mode. SO we will open the BTREE
+    ** instead of creating a new one */
+    if(DB->offsets[WORDPOS])
+        DB->bt = BTREE_Open(DB->fp,4096,DB->offsets[WORDPOS]);
+    else
+        DB->bt = BTREE_Create(DB->fp, 4096);
 #else
     DB->offsets[WORDPOS] = ftell(DB->fp);
 #endif
