@@ -220,9 +220,18 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define MAXWORDLEN 1000
 #define MAXTITLELEN 300
 #define MAXENTLEN 10
-#define HASHSIZE 101
-#define BIGHASHSIZE 1009
-#define SEARCHHASHSIZE 10001
+
+// #define HASHSIZE 101
+// #define BIGHASHSIZE 1009
+// #define SEARCHHASHSIZE 10001
+
+// Change as suggested by Jean-François PIÉRONNE <jfp@altavista.net>
+// on Fri, 28 Dec 2001 07:37:26 -0800 (PST)
+#define HASHSIZE 1009
+#define BIGHASHSIZE 10001
+#define SEARCHHASHSIZE 100003
+
+
 #define MAXPAR 10
 #define MAXCHARDEFINED 256
 #define RD_BUFFER_SIZE  65356   /* init size, larger to avoid often reallocs  (2001-03-16 rasc) */
