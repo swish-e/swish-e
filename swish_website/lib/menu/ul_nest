@@ -1,13 +1,20 @@
 <!-- noindex -->
 [%
 
-DEFAULT class = '';
+DEFAULT class = 'menu';
+DEFAULT liclass = '';
 
     "<ul class=\"$class\">";
 
 FOREACH item = menu.items;
 
-    "<li class=\"$class\">";
+   IF item.subs;
+     liclass = 'menuparent';
+   ELSE;
+     liclass = '';
+   END;
+
+    "<li class=\"$liclass\">";
 
 
     INCLUDE menu_link
@@ -36,6 +43,6 @@ END;
 [% BLOCK menu_link %]
 
     <a class="[% link.class %]" href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
-    [% IF item.here; "&#187;"; ELSIF item.hot;  "&#172;"; END; -%]
+    [% IF item.here; "&#187;";  END; -%]
 
 [% END -%]

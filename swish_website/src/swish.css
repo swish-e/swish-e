@@ -283,6 +283,18 @@ input.button:hover
   text-decoration: underline;
 }
 
+/* indicate the parent of a submenu when not active */
+/* play with these at your whimsey */
+#side-bar li.menuparent > a {
+  font-style: italic;
+  /* font-weight: bold; */
+}
+
+#side-bar li.menuparent > a.thisfile {
+  font-style: normal;
+  font-weight: normal;
+}
+
 /* turn 'off' link for current page */
 
 #side-bar li a.thisfile {
