@@ -6,6 +6,7 @@
 #include "mem.h"
 #include "compress.h"
 #include "error.h"
+#include "string.h"
 #include "deflate.h"
 
 #define MemCopy memcpy
@@ -530,4 +531,31 @@ unsigned char **dict;
 	} else dict=NULL;
 	indexf->dict=dict;
 }
+
+/*
+ -- Config Directives
+ -- Configuration directives for this Module
+ -- return: 0/1 = none/config applied
+*/
+
+int configModule_Deflate  (SWISH *sw, StringList *sl)
+
+{
+  char *w0;
+  int  retval;
+
+
+  w0 = sl->word[0];
+  retval = 1;
+
+  if (strcasecmp(w0, "FileInfoCompression")==0)	{
+      sw->indexlist->header.applyFileInfoCompression = getYesNoOrAbort (sl, 1,1);
+  } 
+  else {
+	  retval = 0;
+  }
+
+  return retval;
+}
+
 

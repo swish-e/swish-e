@@ -10,6 +10,6 @@ char *converttoascii(char *);
 int countwords_HTML(SWISH *, FileProp *, char *buffer);
 int getstructure(char*, int);
 struct metaEntry *getHTMLMeta (IndexFILE *, char *, int *, int, int, char *);
-int parseMetaData (SWISH *, IndexFILE *, char *, int, int, char *, char *, struct file*);
+int parseMetaData (SWISH *, IndexFILE *, char *, int, int, char *, char *, struct file*, int *);
 char *parseHtmlSummary (char *,char *,int, SWISH *);
 struct EntitiesHashTable *buildEntitiesHashTable(void);

@@ -1943,8 +1943,8 @@ char   *ruleparse(SWISH * sw, char *line)
 
 int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
 {
-    int     bump_pocistion_counter_flag = 0;
-    int     i = strlen(word);
+    int     bump_position_counter_flag = 0;
+    int     k,j,i = strlen(word);
 
     /* Get rid of specified last char's */
     /* for (i=0; word[i] != '\0'; i++); */
@@ -1952,10 +1952,19 @@ int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
     while ((i > 0) && (isIgnoreLastChar(header, word[--i])))
     {
         if (isBumpPositionCounterChar(header, word[i]))
-            bump_pocistion_counter_flag++;
+            bump_position_counter_flag++;
         word[i] = '\0';
+        /* We must take care of the escaped characeters */
+        /* Things like hello\c hello\\c hello\\\c can appear */
+        for(j=0,k=i-1;k>=0 && word[k]=='\\';k--,j++);
+		
+        /* j contains the number of \ */
+        if(j%2)   /* Remove the escape if even */
+        {
+             word[--i]='\0';    
+        }
     }
-    return bump_pocistion_counter_flag;
+    return bump_position_counter_flag;
 }
 
 void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
@@ -1965,8 +1974,20 @@ void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
     int     i = 0;
 
     /* Keep going until a char not to ignore is found */
-    while (word[i] && isIgnoreFirstChar(header, word[i]))
-        i++;
+	/* We must take care of the escaped characeters */
+	/* Things like \chello \\chello can appear */
+
+    while (word[i])
+    {
+        if(word[i]=='\\')   /* Jump escape */
+            k=i+1;
+        else
+            k=i;
+        if(!word[k] || !isIgnoreFirstChar(header, word[k]))
+            break;
+        else
+            i=k+1;
+    }
 
     /* If all the char's are valid, just return */
     if (0 == i)
