@@ -472,6 +472,16 @@ void Mem_Summary(char *title, int final)
 
 }
 
+#endif
+
+
+/*************************************************************************
+**
+** Mem Zone routines -- efficient memory allocation if you don't need
+** realloc and free...
+**
+*/
+
 #define longSize (sizeof(long))
 
 /* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
@@ -483,10 +493,6 @@ void Mem_Summary(char *title, int final)
 /* round up to a page */
 #define ROUND_PAGE(n) (((n) + pageSize - 1) & (~(pageSize - 1)))
 
-/*
-** Mem Zone routines -- efficient memory allocation if you don't need
-** realloc and free...
-*/
 
 /* allocate a chunk of memory from the OS */
 static MEM_ZONE *allocChunk(size_t size)
@@ -566,5 +572,3 @@ void Mem_ZoneFree(MEM_ZONE_HEAD *head)
 	efree(head);
 }
 
-
-#endif
