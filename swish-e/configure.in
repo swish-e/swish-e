@@ -7,7 +7,7 @@ AC_INIT(src/swish.c)
 
 dnl revision name
 AC_SUBST(VERSION)
-VERSION=2.3-dev-04
+VERSION=2.3.4
 
 dnl Corresponds to NAME in src/Makefile.in
 AC_SUBST(PROJECT)
@@ -31,8 +31,8 @@ AC_PROG_MAKE_SET
 dnl Check for Perl - used for making the distribution
 AC_PATH_PROG(PERL, perl, /usr/local/bin/perl,$PATH:/usr/bin:/usr/local/bin:/opt/bin:/usr/freeware/bin)
 
-
-
+dnl Check for install - used for installing distribution
+AC_PROG_INSTALL
 
 dnl -- from src/configure.in --
 
@@ -250,6 +250,6 @@ dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
 AC_CONFIG_HEADER(src/acconfig.h)
 
 
-AC_OUTPUT(Makefile doc/Makefile src/Makefile perl/Makefile.PL)
+AC_OUTPUT(Makefile doc/Makefile src/Makefile perl/Makefile.PL rpm/swish-e.spec)
 
 
