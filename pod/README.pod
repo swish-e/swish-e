@@ -11,17 +11,23 @@ and search the generated indexes.
 Swish-e it extremely fast in both indexing and searching, highly configurable,
 and can be seamlessly integrated with existing web sites to maintain a consistent design.
 Swish-e can index web pages, but can just as easily index text files, mailing list archives,
-or data sorted in a relational database.
-
-Swish-e is an Open Source program supported by developers and a large group of users.
-Please take time to join the Swish-e discussion list at http://Swish-e.org.
+or data stored in a relational database.
 
 Swish-e version 2.2 represents a major rewrite of the code and the
 addition of many new features.  Memory requirements for indexing have
-been reduced, and indexing speed is much improved.  New features allow
-more control over indexing, better document parsing, improved indexing
-and searching logic, better filter code, and the ability to index from
-any data source.
+been reduced, and indexing speed is significantly improved from previous versions.
+New features allow more control over indexing, better document parsing, improved indexing
+and searching logic, better filter code, and the ability to index from any data source.
+
+Swish-e is not a "turn-key" indexing and searching solution.  The Swish-e distribution contains
+most of the parts to create such a system, but you need to put the parts together as best meets your needs.
+You will need to configure Swish-e to index your documents, create an index by running Swish-e,
+and setup an interface such as a CGI script (a script is included).  Swish uses helper programs
+to index documents of types that Swish-e cannot natively index.  These programs may need to be installed
+separately from Swish-e.
+
+Swish-e is an Open Source (see: http://opensource.org ) program supported by developers and a large group of users.
+Please take time to join the Swish-e discussion list at http://Swish-e.org.
 
 
 =head2 Key features
@@ -41,13 +47,13 @@ Postscript.
 =item *
 
 Includes a web spider for indexing remote documents over HTTP.
-Follows Robots Exclusion Rules (including <META> tags).
+Follows Robots Exclusion Rules (including META tags).
 
 =item *
 
 Use an external program to supply documents to Swish-e, such as an
-advanced spider for your web server, or a program to read and format
-records from a relational database management system (RDBMS).
+advanced spider for your web server or a program to read and format
+records from a relational database.
 
 =item *
 
@@ -61,7 +67,7 @@ Document summaries can be returned with each search
 
 =item *
 
-Word stemming and soundex indexing
+Word stemming and soundex indexing for "fuzzy" searching
 
 =item *
 
@@ -73,7 +79,7 @@ Limit searches to HTML links
 
 =item *
 
-Use powerful Regular Expressions to select documents for indexing
+Use powerful Regular Expressions to select documents for indexing or exclusion
 
 =item *
 
@@ -92,6 +98,15 @@ Limit searches to parts of documents such as certain HTML tags
 =item *
 
 Can report structural errors in your XML and HTML documents
+
+=item *
+
+Index file is portable between platforms.
+
+=item *
+
+A Swish-e library is provided to allow embedding Swish-e into your applications.
+A Perl module is available that provides a standard API for accessing Swish-e.
 
 =item *
 
@@ -126,14 +141,18 @@ this site.
 
 =head1 How Do I Install Swish-e?
 
-Read the L<INSTALL|INSTALL> page.  Information on specific ports (VMS
-and Win32) can be found in sub-directories of the C<src> directory.
+Read the L<INSTALL|INSTALL> page.
 
-The Windows binary can be found in the C<src/win32> directory.
+Building from source is recommended.  On most platforms Swish-e should build without problems.
+Information on building for VMS and Win32 can be found in sub-directories of the C<src> directory.
+Check the Swish-e site for information about binary distributions (such as for Windows).
 
 In addition to the INSTALL page, make sure you read the
 L<SWISH-FAQ|SWISH-FAQ> page if you have any questions, or to get an idea
 of questions that you might someday ask.
+
+Problems or questions about installing Swish-e should be directed to the Swish-e discussion list (see the
+Swish-e web site at http://Swish-e.org).
 
 
 =head1 The Swish-e Documentation
@@ -156,10 +175,10 @@ topic heading is a separate web page.  Building the split version also
 creates a Swish-e index of the documentation that makes the documentation
 searchable via the included Perl CGI program.
 
-Buiding these other forms of documentation require aditional helper
+Building these other forms of documentation require additional helper
 applications -- most modern Linux distributions will include all that's
-needed.  At least mine does...  You shouldn't have a problem if you have
-kept your perl and perl libraries up to date.
+needed (at least mine does...).  You shouldn't have a problem if you have
+kept your Perl and Perl libraries up to date.
 
 Online documentation can be found at the Swish-e web site listed above.
 
@@ -194,49 +213,53 @@ available on your machine.
 
 =head2  Included Documentation
 
-The following documentation is included in this Swish-e distribution:
+The following documentation is included in this Swish-e distribution.
+
+If you are new to Swish-e read the L<INSTALL|INSTALL> page to get Swish-e installed
+and tested.  Work through the example in shown in the  L<INSTALL|INSTALL> page, and
+the examples in the F<conf> directory.  Also review the L<SWISH-FAQ|SWISH-FAQ>.
 
 =over 4
 
-=item L<README|README>
+=item *
 
-This file
+L<README|README> - This file
 
-=item L<INSTALL|INSTALL>
+=item *
 
-Installation and basic usage instructions
+L<INSTALL|INSTALL> - Installation and basic usage instructions
 
-=item L<SWISH-CONFIG|SWISH-CONFIG>
+=item *
 
-Configuration File Directives
+L<SWISH-CONFIG|SWISH-CONFIG> - Configuration File Directives
 
-=item L<SWISH-RUN|SWISH-RUN>
+=item *
 
-Running Swish and Command Line Switches
+L<SWISH-RUN|SWISH-RUN> - Running Swish and Command Line Switches
 
-=item L<SWISH-SEARCH|SWISH-SEARCH>
+=item *
 
-All about Searching with Swish-e
+L<SWISH-SEARCH|SWISH-SEARCH> - All about Searching with Swish-e
 
-=item L<SWISH-FAQ|SWISH-FAQ>
+=item *
 
-Common questions, and some answers
+L<SWISH-FAQ|SWISH-FAQ> - Common questions, and some answers
 
-=item L<SWISH-LIBRARY|SWISH-LIBRARY>
+=item *
 
-Interface to the Swish-e C library
+L<SWISH-LIBRARY|SWISH-LIBRARY> - Interface to the Swish-e C library
 
-=item L<SWISH-PERL|SWISH-PERL>
+=item *
 
-Instructions for using the Perl library
+L<SWISH-PERL|SWISH-PERL> - Instructions for using the Perl library
 
-=item L<CHANGES|CHANGES>
+=item *
 
-List of feature changes and bug fixes
+L<CHANGES|CHANGES> - List of feature changes and bug fixes
 
-=item L<SWISH-BUGS|SWISH-BUGS>
+=item *
 
-List of known bugs in the release
+L<SWISH-BUGS|SWISH-BUGS> - List of known bugs in the release
 
 =back
 
@@ -262,9 +285,14 @@ distribution:
 
 =item conf/
 
-Example Swish-e configuration setups to help you get started.  In the
-C<stopwords> sub-directory are a number of stopword files for different
-languages.
+Example Swish-e configuration setups to help you get started.
+After reading the L<INSTALL|INSTALL> page, and its included example, review
+the sample configuration in this directory.
+
+=item conf/stopwords
+
+In the C<conf/stopwords> sub-directory are a number of stopword files for different
+languages.  Use of stopwords is not required with Swish-e.
 
 =item doc/
 
@@ -273,12 +301,18 @@ documentation.
 
 =item example/
 
-This contains a sample CGI front-end for running Swish-e.
+This contains a sample CGI script (F<swish.cgi>) for searching with Swish-e.
+Documentation for using F<swish.cgi> are included within the script.  Type:
+
+    perldoc example/swish.cgi
+
+from the top-level directory where the Swish-e distribution was unpacked.    
 
 =item filter-bin/
 
 Sample programs to use with Swish-e's "filters".  Examples include PDF,
 MS Word, and binary strings filters.
+Filters often require installing separate document conversion programs.
 
 =item html/
 
@@ -286,7 +320,8 @@ The documentation in HTML format.
 
 =item perl/
 
-The perl interface to the Swish-e C library.
+The Perl interface to the Swish-e C library.  This Perl module provides direct access to
+Swish-e from within your Perl programs.  See the F<perl/README> file for more information.
 
 =item pod/
 
@@ -295,8 +330,22 @@ The source for all documentation in perldoc (pod) format.
 =item prog-bin/
 
 Example programs and modules to use with the "prog" document source
-access method.  Examples include a web spider, and a program to filter
-pdf and MS word documents.
+access method.  Examples include a web spider, a program to index directly from
+a MySQL database, and a program to recurse a directory tree.
+Example Perl modules are provided for converting PDF and MS-Word documents
+into a format usable by Swish-e.  See F<prog-bin/README> for an overview of the
+programs and modules, and check each file for included documentation.
+
+The F<prog-bin/spider.pl> program is a web spider program with many features.
+It contains its own documentation.  Type:
+
+    perldoc example/spider.pl
+
+from the top-level directory where the Swish-e distribution was unpacked.
+
+The "prog" document source feature is very powerful, but can be a challange to
+set up when first using Swish-e.  Please contact the Swish-e disussion list
+if you have any questions.
 
 =item src/
 
@@ -314,17 +363,19 @@ The documents used for running C<make test>.
 =head1 Where do I get help with Swish-e?
 
 If you need help with installing or using Swish-e please subscribe to
-the Swish-e mailing list.  See visit the Swish-e web site listed above
+the Swish-e mailing list.  Visit the Swish-e web site listed above
 for information on subscribing to the mailing list.
 
-Before posting any questions please read L<QUESTIONS AND
-TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING"> in the
-L<INSTALL|INSTALL> documentation page.
+Before posting any questions please read
+L<QUESTIONS AND TROUBLESHOOTING|INSTALL/"QUESTIONS AND TROUBLESHOOTING">
+in the L<INSTALL|INSTALL> documentation page.
 
 =head1 Speling mistakes
 
 Please contact the Swish-e list with corrections to this documentation.
 Any help in cleaning up the docs will be appreciated!
+
+Any patches should be made against the .pod files, not the .html files.
 
 =head1 Swish-e Development
 
@@ -355,5 +406,4 @@ Swish-e program or the documentation as a whole.
 $Id$
 
 .
-
 
