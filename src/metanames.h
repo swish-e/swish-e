@@ -37,6 +37,7 @@ struct metaEntry * getPropNameByID(INDEXDATAHEADER *, int);
 
 struct metaEntry * addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID);
 struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID);
+struct metaEntry * cloneMetaEntry(INDEXDATAHEADER *header, struct metaEntry *meta );
 
 void freeMetaEntries( INDEXDATAHEADER * );
 int isDontBumpMetaName(struct swline *,char *tag);

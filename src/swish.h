@@ -38,13 +38,13 @@
 **
 ** 2000-11-15 Rainer Scherg (rasc)  FileProp type and routines
 **
-** 2001-01-01 Jose Ruiz Added ISOTime 
+** 2001-01-01 Jose Ruiz Added ISOTime
 **
 ** 2001-01-xx Rainer Scherg (rasc) Added property type structures, etc.
 ** 2001-01-xx Rainer Scherg (rasc) cmd-opt should be own structure in SWISH * (started)
 **
 ** 2001-02-xx rasc   replaced ISOTime by binary value
-**                   removed SWISH.errorstr, etc. 
+**                   removed SWISH.errorstr, etc.
 **                   ResultExtFmtStrList & var
 **
 ** 2001-02-28 rasc   some cleanup, ANSI compliant
@@ -56,7 +56,7 @@
 ** 2001-04-09 rasc   filters changed and enhanced
 ** 2001-06-08 wsm    Add word to end of ENTRY and propValue to end of docPropertyEntry
 **                     to save memory and less malloc/free
-** 
+**
 ** 2001-08-12 jmruiz ENTRY struct modified to index in chunks
 **
 */
@@ -225,7 +225,7 @@ checked in db_native.c (DB_CheckHeader routine) */
 #define IGNORELASTCHARHEADER "# IgnoreLastChar:"
 #define IGNORELASTCHARHEADER_ID (BASEHEADER + 16)
 
-#define STEMMINGHEADER	"# Stemming Applied:"
+#define STEMMINGHEADER  "# Stemming Applied:"
 //#define STEMMINGHEADER_ID (BASEHEADER + 17)
 
 #define SOUNDEXHEADER "# Soundex Applied:"
@@ -300,20 +300,20 @@ checked in db_native.c (DB_CheckHeader routine) */
 #define STRUCTURE_END 7
 
 
-#define IN_FILE		(1<<IN_FILE_BIT)
-#define IN_TITLE	(1<<IN_TITLE_BIT)
-#define IN_HEAD		(1<<IN_HEAD_BIT)
-#define IN_BODY		(1<<IN_BODY_BIT)
-#define IN_COMMENTS	(1<<IN_COMMENTS_BIT)
-#define IN_HEADER	(1<<IN_HEADER_BIT)
+#define IN_FILE         (1<<IN_FILE_BIT)
+#define IN_TITLE        (1<<IN_TITLE_BIT)
+#define IN_HEAD         (1<<IN_HEAD_BIT)
+#define IN_BODY         (1<<IN_BODY_BIT)
+#define IN_COMMENTS     (1<<IN_COMMENTS_BIT)
+#define IN_HEADER       (1<<IN_HEADER_BIT)
 #define IN_EMPHASIZED (1<<IN_EMPHASIZED_BIT)
-#define IN_META		(1<<IN_META_BIT)
+#define IN_META         (1<<IN_META_BIT)
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED|IN_META)
 
 
 /* Document Types */
 enum {
-	BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, TXT2
+        BASEDOCTYPE = 0, TXT, HTML, XML, WML, XML2, HTML2, TXT2
 };
 
 #define NODOCTYPE BASEDOCTYPE
@@ -337,22 +337,25 @@ typedef struct docProperties
 }
 docProperties;
 
-#define RANK_BIAS_RANGE 10 // max/min range ( -10 -> 10, with zero being no bias )
+#define RANK_BIAS_RANGE 10 /* max/min range ( -10 -> 10, with zero being no bias ) */
 
 /* This structure is for storing both properties and metanames -- probably should be two lists */
 struct metaEntry
 {
+    /* Stored in index */
     char       *metaName;           /* MetaName string */
     int         metaID;             /* Meta ID */
     int         metaType;           /* See metanames.h for values */
-    int         in_tag;             /* Flag to indicate that we are within this tag */
-    int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
-    int         sort_len;            /* sort length used when sorting a property */
-    char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
     int         alias;              /* if non-zero, this is an alias to the listed metaID */
+    int         sort_len;           /* sort length used when sorting a property */
     int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
+
+    /* Fields used while indexing or searching */
+    int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
+    char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
     int        *sorted_data;        /* Sorted data . NULL if not read/done */
     int         sorted_loaded;      /* true if have attempted to load sorted data (doesn't me it exists) */
+    int         in_tag;             /* Flag to indicate that we are within this tag while indexing (parsing) */
 };
 
 /* These are used to build the table of seek pointers in the main index. */
@@ -377,14 +380,14 @@ typedef struct
 
 
 /*
- -- FileProperties 
+ -- FileProperties
  -- store for information about a file to be indexed...
  -- Unused items may be NULL (e.g. if File is not opened, fp == NULL)
  -- (2000-11 rasc)
 
  -- (2000-12 Jose Ruiz)
  -- Added StoreDescription
-  
+
 */
 
 typedef struct
@@ -501,11 +504,11 @@ typedef struct
     char   *savedasheader;
     int     lensavedasheader;
 
-    /* vars for numberchars */  /* Not yet stored in the header. */ 
+    /* vars for numberchars */  /* Not yet stored in the header. */
     int     lennumberchars;     /* Probably don't need it for searching */
     char   *numberchars;
     int     numberchars_used_flag;
-    
+
 
     int     lenindexedon;
     char   *indexedon;
@@ -555,7 +558,7 @@ typedef struct
 
     /* Buzzwords hash */
     WORD_HASH_TABLE hashbuzzwordlist;
-    
+
     /* values for handling "use" words - > Unused in the search proccess */
     WORD_HASH_TABLE hashuselist;
 
@@ -572,7 +575,7 @@ typedef struct
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
 
-    int	    total_word_positions;	/* IDF ranking */
+    int     total_word_positions;       /* IDF ranking */
 
 }
 INDEXDATAHEADER;
@@ -608,7 +611,7 @@ typedef struct IndexFILE
     struct  metaEntry *modified_meta;
     propEntry *cur_prop;            // last read pathname
     int     filenum;                // current filenumber to use
-    
+
 
     /* Used by merge.c */
     int    *merge_file_num_map;
@@ -626,7 +629,7 @@ IndexFILE;
 
 
 
-    
+
 
 
 
@@ -728,11 +731,11 @@ typedef struct path_extract_list
 
 
 
-/* -- Property data types 
+/* -- Property data types
    -- Result handling structures, (types storage, values)
-   -- Warnung! Changing types inflicts outpur routines, etc 
+   -- Warnung! Changing types inflicts outpur routines, etc
    -- 2001-01  rasc
-  
+
    $$$ ToDO: data types are not yet fully supported by swish
    $$$ Future: to be part of module data_types.c/h
 */
@@ -745,7 +748,7 @@ typedef enum
     PROP_STRING,
     PROP_INTEGER,
     PROP_FLOAT,
-    PROP_DATE, 
+    PROP_DATE,
     PROP_ULONG
 }
 PropType;
@@ -760,7 +763,7 @@ typedef enum
     UNDEF_META_IGNORE       // don't index
 }
 UndefMetaFlag;
-    
+
 
 typedef union
 {                               /* storage of the PropertyValue */
@@ -823,8 +826,8 @@ typedef struct SWISH
     /* verbose flag */
     int     verbose;
 
-    int     headerOutVerbose;   /* -H <n> print extended header info */     
-    
+    int     headerOutVerbose;   /* -H <n> print extended header info */
+
 
     /* Error vars */
     int     lasterror;
@@ -863,7 +866,7 @@ typedef struct SWISH
     /* This allow extraction of a substring out of a file path, and indexed as a metaname */
     path_extract_list   *pathExtractList;
 
-    
+
 
     /* structure for handling NoContents config data while searching */
     struct swline *nocontentslist;
@@ -918,7 +921,7 @@ typedef struct SWISH
 
 
     /* if allocated the meta name to store alt tags as */
-    int               IndexAltTag;     
+    int               IndexAltTag;
     char             *IndexAltTagMeta;   // use this meta-tag, if set
 
     /* for converting relative links in href's and img src tags absoulte */
@@ -948,11 +951,11 @@ typedef struct SWISH
     int     structure_map[256];
 
 
-	/* karman Mon Aug 30 07:54:10 CDT 2004 */
-    int	    RankScheme;		/* Ranking Scheme */
-    int	    TotalWordPos;
-    
-    
+        /* karman Mon Aug 30 07:54:10 CDT 2004 */
+    int     RankScheme;         /* Ranking Scheme */
+    int     TotalWordPos;
+
+
     void *ref_count_ptr;  /* pointer for use with SWISH::API */
 
 
@@ -1004,7 +1007,7 @@ void    SwishFree(SWISH *);
 ** copy num integers on dest (starting at posdest) from
 ** orig (starting at posorig)
 */
-/* 
+/*
 #define CopyPositions(dest,posdest,orig,posorig,num) \
 {int i;for(i=0;i<num,i++) (dest)[i+(posdest)]=(orig)[i+(posorig)];}
 */
@@ -1027,26 +1030,26 @@ void free_swish_memory( SWISH *sw );  /* in swish2.c */
 
 
 /* These are only checked in dump.c */
-#define DEBUG_INDEX_HEADER		(1<<0)
-#define DEBUG_INDEX_WORDS		(1<<1)
-#define DEBUG_INDEX_WORDS_FULL	(1<<2)
-#define DEBUG_INDEX_STOPWORDS	(1<<3)
-#define DEBUG_INDEX_FILES		(1<<4)
-#define DEBUG_INDEX_METANAMES	(1<<5)
-#define DEBUG_INDEX_ALL			(1<<6)
-#define DEBUG_INDEX_WORDS_ONLY	(1<<7)
-#define DEBUG_INDEX_WORDS_META	(1<<8)
-#define DEBUG_LIST_FUZZY	(1<<9)
+#define DEBUG_INDEX_HEADER              (1<<0)
+#define DEBUG_INDEX_WORDS               (1<<1)
+#define DEBUG_INDEX_WORDS_FULL  (1<<2)
+#define DEBUG_INDEX_STOPWORDS   (1<<3)
+#define DEBUG_INDEX_FILES               (1<<4)
+#define DEBUG_INDEX_METANAMES   (1<<5)
+#define DEBUG_INDEX_ALL                 (1<<6)
+#define DEBUG_INDEX_WORDS_ONLY  (1<<7)
+#define DEBUG_INDEX_WORDS_META  (1<<8)
+#define DEBUG_LIST_FUZZY        (1<<9)
 #define DEBUG_INDEX_WORD_COUNT (1<<10)
 
 
 /* These are only checked while indexing */
-#define DEBUG_WORDS				(1<<0)
-#define DEBUG_PARSED_WORDS		(1<<1)
-#define DEBUG_PROPERTIES		(1<<2)
-#define DEBUG_REGEX 	    	(1<<3)
-#define DEBUG_PARSED_TAGS    	(1<<4)
-#define DEBUG_PARSED_TEXT 	   	(1<<5)
+#define DEBUG_WORDS                             (1<<0)
+#define DEBUG_PARSED_WORDS              (1<<1)
+#define DEBUG_PROPERTIES                (1<<2)
+#define DEBUG_REGEX             (1<<3)
+#define DEBUG_PARSED_TAGS       (1<<4)
+#define DEBUG_PARSED_TEXT               (1<<5)
 
 /* These are only checked while searching */
 

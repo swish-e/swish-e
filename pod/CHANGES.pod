@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed rank bias in merge
+
+Peter van Dijk noticed that MetaNamesRank settings were not being copied to the output
+index when merging.
+
 =item Added SwishFuzzy function
 
 SwishFuzzy function (SWISH::API::Fuzzy) lets you stem a word without first searching.
