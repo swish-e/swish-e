@@ -141,11 +141,12 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
 
 /* prints out the number of words in every file in the index */
 
-void	dump_words_per_file(SWISH *sw, IndexFILE * indexf, FileRec *fi )
+void	dump_words_per_file( SWISH *sw, IndexFILE * indexf, FileRec *fi )
 {
 
 int words;
 int filenum;
+INDEXDATAHEADER *header;
 
 filenum = fi->filenum-1;
 
@@ -156,7 +157,7 @@ filenum = fi->filenum-1;
 /* this depends currently that IgnoreTotalWordCountWhenRanking is set to 0 
 otherwise TotalWordsPerFile is not indexed in non-BTREE indexes */
 
-	INDEXDATAHEADER *header = &indexf->header;
+	header = &indexf->header;
 
 	if ( indexf->header.ignoreTotalWordCountWhenRanking ) {
 		fprintf(stderr, "IgnoreTotalWordCountWhenRanking must be 0 to use IDF ranking\n");
