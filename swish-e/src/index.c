@@ -1386,7 +1386,8 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
 
-        e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+		if (RAM_DISK)
+			e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
         compressed_data = (unsigned char *)e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */
