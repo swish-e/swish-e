@@ -32,7 +32,8 @@
 ** fixed variable declarations for INDEX_READ_ONLY to avoid unused variables
 ** SRE 2/22/00
 **
-** 2001-02-12 rasc   errormsg "print" changed...
+** 2001-02-12 rasc    errormsg "print" changed...
+** 2001-03-13 rasc    result header output routine  -X?
 **
 */
 
@@ -61,16 +62,15 @@
 
 
 #ifdef NO_GETTOD
-#define CLOCK_DIVIDE 1
 
 double TimeHiRes(void)  /* How about GetLocalTime() for WIN32 */
 {
 
-    return (double)clock();
+    return  ((double) clock()) / CLOCKS_PER_SEC;
 }
     
 #else
-#define CLOCK_DIVIDE 0
+
 #include <sys/time.h>
 
 double TimeHiRes(void)
@@ -412,12 +412,17 @@ double search_starttime, run_starttime, endtime;
 			   sw->opt.extendedformat = (s) ? s : *argv;
 			   initPrintExtResult (sw, sw->opt.extendedformat);
 			   argc--;
+			} else {
+			   usage();
 			}
-			/* $$$ progerror todo... */
 		}
 		else if (c == 'X') {
-			sw->opt.X_headerOut = atoi(&((*argv)[1]));
-                                        /* rasc 2001-02, 2001-03-13 */
+			  /* rasc 2001-02, 2001-03-13 */
+			if ( (*argv)[2] ) {
+			   sw->opt.X_headerOut = atoi(&((*argv)[2]));
+			} else {
+			   usage();
+			}
 		}    
 		else
 			usage();
@@ -689,7 +694,7 @@ double search_starttime, run_starttime, endtime;
 		rc=SwishAttach(sw,1);
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
-				printf("# Name: unknown index\n");
+				resultHeaderOut(sw,1, "# Name: unknown index\n");
 				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
 				exit(-1);
 				break;
@@ -698,23 +703,25 @@ double search_starttime, run_starttime, endtime;
 				break;
 		}
 
-		printf("%s\n", INDEXHEADER);
+		resultHeaderOut(sw,1, "%s\n", INDEXHEADER);
 			/* print out "original" search words */
 		for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
 		{
-			printf("%s:",tmpindexlist->line);
+			resultHeaderOut(sw,1, "%s:",tmpindexlist->line);
 			if(keychar=='*')
 			{
 				for(keychar2=1;keychar2<256;keychar2++)
 				{
 					keywords=getfilewords(sw,(unsigned char )keychar2,tmpindexlist);
-					for(;keywords && keywords[0];keywords+=strlen(keywords)+1) printf(" %s",keywords);
+					for(;keywords && keywords[0];keywords+=strlen(keywords)+1)
+						resultHeaderOut(sw,1, " %s",keywords);
 				}
 			} else {
 				keywords=getfilewords(sw,keychar,tmpindexlist);
-				for(;keywords && keywords[0];keywords+=strlen(keywords)+1) printf(" %s",keywords);
+				for(;keywords && keywords[0];keywords+=strlen(keywords)+1)
+						resultHeaderOut(sw,1, " %s",keywords);
 			}
-			printf("\n");
+			resultHeaderOut(sw,1, "\n");
 		}
 		SwishClose(sw);
 	}
@@ -792,7 +799,7 @@ double search_starttime, run_starttime, endtime;
 		rc=SwishAttach(sw,1);
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
-				printf("# Name: unknown index\n");
+				resultHeaderOut(sw,1, "# Name: unknown index\n");
 				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
 				exit(-1);
 				break;
@@ -801,9 +808,9 @@ double search_starttime, run_starttime, endtime;
 				break;
 		}
 
-		printf("%s\n", INDEXHEADER);
+		resultHeaderOut(sw,1, "%s\n", INDEXHEADER);
 			/* print out "original" search words */
-		printf("# Search words: %s\n#\n",wordlist);
+		resultHeaderOut(sw,1, "# Search words: %s\n#\n",wordlist);
 
         search_starttime = TimeHiRes();
 
@@ -811,7 +818,7 @@ double search_starttime, run_starttime, endtime;
 
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
-				printf("# Name: unknown index\n");
+				resultHeaderOut(sw,1, "# Name: unknown index\n");
 				progerr("could not open index file");
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
@@ -831,18 +838,17 @@ double search_starttime, run_starttime, endtime;
 				/* error msg already printed */
 				break;
 		}
+		resultHeaderOut(sw,2, "#\n");
 		if(rc>0) {
-            printf("# Number of hits: %d\n",rc);
+			resultHeaderOut(sw,1, "# Number of hits: %d\n",rc);
 
-            endtime = TimeHiRes();
-            printf("# Search time: %0.3f seconds\n", CLOCK_DIVIDE ? (endtime - search_starttime) / CLOCKS_PER_SEC : endtime - search_starttime );
-            printf("# Run time: %0.3f seconds\n", CLOCK_DIVIDE ? (endtime - run_starttime) / CLOCKS_PER_SEC : endtime - run_starttime );
-
-            printSortedResults(sw);
-            printf(".\n");
-
+			endtime = TimeHiRes();
+			resultHeaderOut(sw,1, "# Search time: %0.3f seconds\n", endtime - search_starttime );
+			resultHeaderOut(sw,1, "# Run time: %0.3f seconds\n", endtime - run_starttime );
+			printSortedResults(sw);
+			resultHeaderOut(sw,1, ".\n");
 		} else if(!rc) {
-			printf("err: no results\n.\n");
+			resultHeaderOut(sw,1, "err: no results\n.\n");
 		}
 			/* Free conflist */
 		freeswline(conflist);
@@ -938,7 +944,7 @@ void usage()
 	printf("         -V : prints the current version\n");
 	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
 	printf("         -x : \"Extended Output Format\": Specify the output format.\n");
-	printf("         -X : \"Extended Search Header\": The search proccess gives more info.\n");
+	printf("         -X : \"Extended Search Header Output\": The search proccess gives more info [-X1].\n");
 	printf("         -k : Print words starting with a given char.\n\n");
 	printf("version: %s\n", SWISH_VERSION);
 	printf("   docs: http://sunsite.berkeley.edu/SWISH-E/\n");
