@@ -183,7 +183,7 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
                 /* Add a new entry to this list */
                 slist = (struct swline *) emalloc(sizeof(struct swline));
 
-                slist->line = sl->word[i];
+                slist->line = estrdup( sl->word[i] );
                 slist->next = list->list;
                 list->list = slist;
             }
