@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "tmp/libswishindex_Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "." /I "../replace" /I "../../../pcre/include" /I "../../../zlib/include" /I "../../../iconv/include" /I "../../../libxml2/include" /I ".." /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_PCRE" /D "HAVE_LIBXML2" /D "HAVE_ZLIB" /D "HAVE_CONFIG_H" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GX /O2 /I "." /I "../replace" /I "../../../pcre/include" /I "../../../zlib/include" /I "../../../iconv/include" /I "../../../libxml2/include" /I ".." /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_PCRE" /D "HAVE_LIBXML2" /D "HAVE_ZLIB" /D "HAVE_CONFIG_H" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
