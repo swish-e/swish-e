@@ -1,5 +1,5 @@
 #=======================================================================
-#  Module for using Template-Toolkit for generating output
+#  Module for using HTML::Template for generating output
 #    $Id$
 #
 #  This module probably does not automatically support all the features
@@ -34,7 +34,6 @@ sub show_template {
             for @$page_array;
     }
 
-#suse Data::Dumper;  print STDERR Dumper $results;
     my %params = (
         TITLE           => ($results->config('title') || 'Search Page'),
         QUERY_SIMPLE    => CGI::escapeHTML( $results->{query_simple} ),
@@ -67,6 +66,9 @@ sub show_template {
         );
 
         $params{PAGE_ARRAY} = $page_array if $results->navigation('pages');
+
+        my $display_props = load_display_properties( $results );
+        $params{PROPERTIES} = $display_props if $display_props;
             
     };
 
@@ -111,6 +113,27 @@ sub show_template {
             fobject   => $cgi,
           );
 }
+
+# This function creates a key "PROPERTIES" in each result's hash that is 
+# a hash with two keys PROP_NAME and PROP_VALUE
+# Allows automatic display of properties listed in the "display_prop" config option.
+
+sub load_display_properties {
+    my $results = shift;
+    my $labels = $results->config('name_labels');
+    my $display_props = $results->config('display_props');
+    return unless $display_props;
+
+    for my $this_result ( @{$results->results} ) {
+        $this_result->{PROPERTIES} = [ map { 
+            { 
+                PROP_NAME => $labels->{$_} || $_,
+                PROP_VALUE => $this_result->{$_} || '',
+            }
+         } @$display_props ];
+    }
+}
+
    
 1;
 
