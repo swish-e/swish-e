@@ -196,6 +196,12 @@ void initModule_Index (SWISH  *sw)
     idx->swap_getc = NULL;
     idx->swap_putc = NULL;
 
+    for( i = 0; i <MAX_LOC_SWAP_FILES ; i++)
+    {
+        idx->swap_location_name[i] = NULL;
+        idx->fp_loc_write[i] = NULL;
+        idx->fp_loc_read[i] = NULL;
+    }
     /* Index in blocks of chunk_size documents */
     idx->chunk_size = INDEX_DEFAULT_CHUNK_SIZE;
 
@@ -236,22 +242,23 @@ void freeModule_Index (SWISH *sw)
 
 /* we need to call the real free here */
 
-
-  if (idx->swap_location_name && isfile(idx->swap_location_name))
+  for( i = 0; i < MAX_LOC_SWAP_FILES ; i++)
   {
-    if (idx->fp_loc_read)  
-        idx->swap_close(idx->fp_loc_read);
+      if (idx->swap_location_name[i] && isfile(idx->swap_location_name[i]))
+      {
+          if (idx->fp_loc_read[i])  
+             idx->swap_close(idx->fp_loc_read[i]);
 
-    if (idx->fp_loc_write)
-        idx->swap_close(idx->fp_loc_write);
+          if (idx->fp_loc_write[i])
+             idx->swap_close(idx->fp_loc_write[i]);
 
-    remove(idx->swap_location_name);
+          remove(idx->swap_location_name[i]);
+      }
+
+
+      if (idx->swap_location_name[i])
+          efree(idx->swap_location_name[i]);
   }
-
-
-  if (idx->swap_location_name)
-      efree(idx->swap_location_name);
-
 
   if(idx->tmpdir) efree(idx->tmpdir);        
 
@@ -2407,7 +2414,7 @@ void add_coalesced(SWISH *sw, ENTRY *e, unsigned char *coalesced, int sz_coalesc
     {
         tmploc = (LOCATION **)coalesced;
         *tmploc = e->allLocationList;
-        e->allLocationList = (LOCATION *)SwapLocData(sw, coalesced, sz_coalesced);
+        e->allLocationList = (LOCATION *)SwapLocData(sw, e, coalesced, sz_coalesced);
         return;
     }
 

@@ -576,15 +576,14 @@ void    CompressCurrentLocEntry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 ** The data has been compressed previously in memory.
 ** Returns the pointer to the file.
 */
-long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
+long    SwapLocData(SWISH * sw, ENTRY *e, unsigned char *buf, int lenbuf)
 {
     long    pos;
+    int     i;
     struct MOD_Index *idx = sw->Index;
 
-    if (!idx->fp_loc_write)
+    if (!idx->fp_loc_write[0])
     {
-        idx->fp_loc_write = create_tempfile(sw, F_WRITE_BINARY, "loc", &idx->swap_location_name, 0 );
-
         idx->swap_tell = ftell;
         idx->swap_write = fwrite;
         idx->swap_close = fclose;
@@ -592,19 +591,23 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
         idx->swap_read = fread;
         idx->swap_getc = fgetc;
         idx->swap_putc = fputc;
-        /* 2001-09 jmruiz - FIX- Write one byte to avoid starting at 0 */
-		/* If not, This can cause problems with pointers to NULL in allLocationlist */
 
+        for(i = 0; i < MAX_LOC_SWAP_FILES; i++)
+        {
+            idx->fp_loc_write[i] = create_tempfile(sw, F_WRITE_BINARY, "loc", &idx->swap_location_name[i], 0 );
+            /* 2001-09 jmruiz - FIX- Write one byte to avoid starting at 0 */
+            /* If not, This can cause problems with pointers to NULL in allLocationlist */
+            if (idx->swap_write("", 1, 1, idx->fp_loc_write[i]) != (unsigned int) 1)
+                progerr("Cannot write location to swap file");
+
+        }
     }
 
-    if (idx->swap_write("", 1, 1, idx->fp_loc_write) != (unsigned int) 1)
-    {
-        progerr("Cannot write location to swap file");
-    }
+    i = (int) (((int) e) % MAX_LOC_SWAP_FILES);
 
-    pos = idx->swap_tell(idx->fp_loc_write);
-    compress1(lenbuf, idx->fp_loc_write, idx->swap_putc);
-    if (idx->swap_write(buf, 1, lenbuf, idx->fp_loc_write) != (unsigned int) lenbuf)
+    pos = idx->swap_tell(idx->fp_loc_write[i]);
+    compress1(lenbuf, idx->fp_loc_write[i], idx->swap_putc);
+    if (idx->swap_write(buf, 1, lenbuf, idx->fp_loc_write[i]) != (unsigned int) lenbuf)
     {
         progerr("Cannot write location to swap file");
     }
@@ -615,26 +618,31 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
 ** Gets the location data from the swap file
 ** Returns a memory compressed location data
 */
-unsigned char *unSwapLocData(SWISH * sw, long pos)
+unsigned char *unSwapLocData(SWISH * sw, ENTRY *e, long pos)
 {
     unsigned char *buf;
-    int     lenbuf;
+    int     i,lenbuf;
     struct MOD_Index *idx = sw->Index;
 
 
     /* Reopen in read mode for (for faster reads, I suppose) */
-    if (!idx->fp_loc_read)
+    if (!idx->fp_loc_read[0])
     {
-        idx->swap_close(idx->fp_loc_write);
-        idx->fp_loc_write = NULL;
-        if (!(idx->fp_loc_read = fopen(idx->swap_location_name, F_READ_BINARY)))
-            progerrno("Could not open temp file %s: ", idx->swap_location_name);
+        for( i = 0; i < MAX_LOC_SWAP_FILES ; i++)
+        {
+            idx->swap_close(idx->fp_loc_write[i]);
+            idx->fp_loc_write[i] = NULL;
+            if (!(idx->fp_loc_read[i] = fopen(idx->swap_location_name[i], F_READ_BINARY)))
+                progerrno("Could not open temp file %s: ", idx->swap_location_name[i]);
+        }
     }
 
-    idx->swap_seek(idx->fp_loc_read, pos, SEEK_SET);
-    lenbuf = uncompress1(idx->fp_loc_read, idx->swap_getc);
+    i = (int) (((int) e) % MAX_LOC_SWAP_FILES);
+
+    idx->swap_seek(idx->fp_loc_read[i], pos, SEEK_SET);
+    lenbuf = uncompress1(idx->fp_loc_read[i], idx->swap_getc);
     buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
-    idx->swap_read(buf, lenbuf, 1, idx->fp_loc_read);
+    idx->swap_read(buf, lenbuf, 1, idx->fp_loc_read[i]);
     return buf;
 }
 
@@ -675,7 +683,7 @@ void unSwapLocDataEntry(SWISH *sw,ENTRY *e)
             p_array = (LOCATION **) erealloc(p_array,(array_size *=2) * sizeof(LOCATION *));
         }
         fileoffset = (long)l;
-        p_array[i] = (LOCATION *)unSwapLocData(sw,fileoffset);
+        p_array[i] = (LOCATION *)unSwapLocData(sw,e,fileoffset);
         l=*(LOCATION **)p_array[i];    /* Get fileoffset to next location */
         /* store current file offset for later sort */
         tmploc = (LOCATION **) p_array[i];

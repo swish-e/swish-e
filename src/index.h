@@ -48,6 +48,7 @@ METAIDTABLE;
    -- module data
 */
 
+
 struct MOD_Index
 {
     /* entry vars */
@@ -71,11 +72,11 @@ struct MOD_Index
     char   *tmpdir;
 
     /* Filenames of the swap files */
-    char   *swap_location_name; /* Location info file */
+    char   *swap_location_name[MAX_LOC_SWAP_FILES]; /* Location info file */
 
     /* handlers for both files */
-    FILE   *fp_loc_write;       /* Location (writing) */
-    FILE   *fp_loc_read;        /* Location (writing) */
+    FILE   *fp_loc_write[MAX_LOC_SWAP_FILES];       /* Location (writing) */
+    FILE   *fp_loc_read[MAX_LOC_SWAP_FILES];        /* Location (reading) */
 
     struct dev_ino *inode_hash[BIGHASHSIZE];
 

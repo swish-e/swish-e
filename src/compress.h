@@ -41,8 +41,8 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
 
-long SwapLocData(SWISH *,unsigned char *,int);
-unsigned char *unSwapLocData(SWISH *,long);
+long SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
+unsigned char *unSwapLocData(SWISH *,ENTRY *,long);
 void unSwapLocDataEntry(SWISH *,ENTRY *);
 
 
