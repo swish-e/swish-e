@@ -58,7 +58,7 @@ source_files = \
 	$(top_srcdir)/perl/API.pm \
 	$(top_srcdir)/prog-bin/spider.pl.in \
 	$(top_srcdir)/example/swish.cgi.in \
-	$(top_srcdir)/filters/SWISH/Filter.pm
+	$(top_srcdir)/filters/SWISH/Filter.pm.in
 
 
 # These are what get installed -- they will also be 

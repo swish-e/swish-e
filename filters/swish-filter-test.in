@@ -1,4 +1,4 @@
-#!/@@perlbinary@@ -w
+#!@@perlbinary@@ -w
 use strict;
 
 # This is set to where Swish-e's "make install" installed the helper modules.
@@ -59,7 +59,7 @@ pod2usage( -verbose => 1 ) if $help;
 pod2usage( -verbose => 2 ) if $man;
 
 if ( $path ) {
-    print "@@perlmoduledir@@\n";
+    print '@@perlmoduledir@@',"\n";
     exit;
 }
 
@@ -225,7 +225,8 @@ sub fetch_url {
     die "LWP::UserAgent is required to fetch a URL\n$@\n" if $@;
     
     my $ua = LWP::UserAgent->new;
-    my $response = $ua->get( $url );
+    my $request = HTTP::Request->new('GET', $url );
+    my $response = $ua->request( $request );
     die sprintf "Error while getting '%s'.  Server returned %s.", $response->request->uri,$response->status_line
         unless $response->is_success;
         

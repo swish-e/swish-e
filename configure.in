@@ -324,6 +324,6 @@ AC_CONFIG_FILES(
        src/replace/Makefile src/snowball/Makefile 
        rpm/swish-e.spec tests/Makefile 
        example/Makefile prog-bin/Makefile 
-       filters/Makefile conf/Makefile filter-bin/Makefile)
+       filters/Makefile filters/SWISH/Makefile conf/Makefile filter-bin/Makefile)
 AC_OUTPUT
 
