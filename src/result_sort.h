@@ -37,6 +37,9 @@ struct MOD_ResultSort
 	    /* sorted index flag */
 	    /* TRUE - Use sorted index */
 	int isPreSorted;
+	    /* structure for presorted properties - used by index proccess */
+    struct swline *presortedindexlist;
+
         /* Sortorder Translation table arrays */
               /* case sensitive translation table */
     int iSortTranslationTable[256];
@@ -77,7 +80,7 @@ int initSortResultProperties (SWISH *);
 
 void addSearchResultSortProperty (SWISH *, char*, int );
 
-void sortFileProperties(IndexFILE *indexf);
+void sortFileProperties(SWISH *sw, IndexFILE *indexf);
 
 RESULT *addsortresult(SWISH *, RESULT *sp, RESULT *);
 int sortresults (SWISH *, int );

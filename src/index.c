@@ -1519,7 +1519,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
     } */
 
     /* Sort properties -> Better search performance */
-    sortFileProperties(indexf);
+    sortFileProperties(sw,indexf);
 
     /* Free memory */
     for (i = 0; i < indexf->filearray_cursize; i++)

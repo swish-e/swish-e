@@ -33,6 +33,7 @@ $Id$
 #include "string.h"
 #include "mem.h"
 #include "merge.h"
+#include "list.h"
 #include "docprop.h"
 #include "metanames.h"
 #include "compress.h"
@@ -78,6 +79,7 @@ void initModule_ResultSort (SWISH  *sw)
     md->propNameToSort=NULL;
     md->propModeToSort=NULL;
 	md->isPreSorted=1; /* Use presorted Index by default */
+	md->presortedindexlist = NULL;
 }
 
 
@@ -125,12 +127,13 @@ void freeModule_ResultSort (SWISH *sw)
 {
   struct MOD_ResultSort *md = sw->ResultSort;
 
-      resetModule_ResultSort(sw);
+   resetModule_ResultSort(sw);
 
+   if(md->presortedindexlist) freeswline(md->presortedindexlist);
       /* Free Module Data Structure */
       /* should not be freed here */
-      efree (md);
-      sw->ResultSort = NULL;
+   efree (md);
+   sw->ResultSort = NULL;
 }
 
 
@@ -158,11 +161,28 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
   int  retval = 1;
   int  incr = 0;
   int  i,j;
+  struct swline *tmplist = NULL;
+  struct metaEntry *m = NULL;
 
 
-
-  if (strcasecmp(w0, "PreSortedIndex")==0) {         
-	md->isPreSorted = getYesNoOrAbort (sl, 1,1);
+  if (strcasecmp(w0, "PresortedIndex") == 0)
+  {
+     md->isPreSorted = sl->n - 1;    /* If n is 1 (No properties specified) - Do not create presorted indexes */
+     if (sl->n > 1)
+     {
+        grabCmdOptions(sl, 1, &md->presortedindexlist);
+                /* Go lowercase  and check with properties */
+        for (tmplist = md->presortedindexlist; tmplist; tmplist = tmplist->next)
+		{
+            tmplist->line = strtolower(tmplist->line);
+			/* Check if it is in metanames list */
+			if(!(m= getMetaNameData(&sw->indexlist->header, tmplist->line)))
+				progerr("%s: parameter is not a property", tmplist->line);
+			/* Check if it is a property */
+			if(!is_meta_property(m))
+			   progerr("%s: parameter is not a property", tmplist->line);
+		}
+     }
   } else if (strcasecmp(w0, "ResultSortOrder")==0) { 
 	if(sl->n == 4) 
 	{
@@ -183,14 +203,11 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
           case '=':
 			  incr = 0;
 			break;
-		  case '<':
-			  incr = -1;
-			break;
 		  case '>':
 			  incr = 1;
 			break;
 		  default:
-			progerr("%s: parameter 1 must be one of this values: = < >", w0);
+			progerr("%s: parameter 1 must be = or >", w0);
 			break;
 		}
 	    for(i=0;w3[i];i++)
@@ -202,14 +219,11 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
 			md->iSortCaseTranslationTable[(int) w3[i]] = 
 				md->iSortCaseTranslationTable[j] + incr * (i+1);
 		}
-	} else progerr("%s: requires 3 parameters (Eg: [=|<|>] a бад)",w0);
+	} else progerr("%s: requires 3 parameters (Eg: [=|>] a бад)",w0);
   }
   else {
       retval = 0;	            /* not a module directive */
   }
-
-  retval = 0; // tmp due to empty routine
-
   return retval;
 }
 
@@ -429,15 +443,24 @@ int    *getLookupResultSortedProperties(RESULT * r)
 			       DB_InitReadSortedIndex(sw, r->indexf->DB);
 				        /* Get the sorted index of the property */
 			       DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer,r->indexf->DB);
-			       s = buffer;
-			       m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
+				   if(sz_buffer)
+				   {                 /* Exists a presorted table - Let's use it */
+			           s = buffer;
+			           m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
 				       /* Unpack / decompress the numbers */
-			       for( j = 0; j < r->indexf->header.totalfiles; j++)
-				   {
-				      tmp = uncompress2(&s);
-				      m->sorted_data[j] = tmp;
+			           for( j = 0; j < r->indexf->header.totalfiles; j++)
+					   {
+				          tmp = uncompress2(&s);
+				          m->sorted_data[j] = tmp;
+					   }
+    		           efree(buffer);
 				   }
-    		       efree(buffer);
+				   else
+				   {                 /* Does not exits a presorted table */
+					   efree(props);
+					   DB_EndReadSortedIndex(sw, r->indexf->DB);
+					   return NULL;
+				   }
 	               DB_EndReadSortedIndex(sw, r->indexf->DB);
 				}
                 props[i] = m->sorted_data[r->filenum - 1];
@@ -486,6 +509,7 @@ int     sortresults(SWISH * sw, int structure)
     struct DB_RESULTS *db_results;
     int     (*compResults) (const void *, const void *);
     struct MOD_ResultSort *rs = sw->ResultSort;
+	int    presorted_data_not_available = 0;
 
 
     /* Sort each index file resultlist */
@@ -505,9 +529,17 @@ int     sortresults(SWISH * sw, int structure)
 			{
                 /* Load the presorted data */
                 tmp->iPropSort = getLookupResultSortedProperties(tmp);
+				/* If some of the properties is not presorted, use the
+				** old method (ignore presorted index)
+				*/
+				if(!tmp->iPropSort)
+				{
+					presorted_data_not_available = 1;
+					break;
+				}
 			}
 		} 
-		else
+		if(!rs->isPreSorted || presorted_data_not_available)
 		{
     			/* We do not have presorted tables or do not want to use them */
                 /* Asign comparison routine to be used by qsort */
@@ -610,10 +642,32 @@ int     compFileProps(const void *s1, const void *s2)
     return rc;
 }
 
+int is_presorted_prop(SWISH *sw, char *name)
+{
+  struct MOD_ResultSort *md = sw->ResultSort;
+  struct swline *tmplist = NULL;
+
+  if(!md->isPreSorted)
+	  return 0;    /* Do not sort any property */
+  else 
+  {
+	 if(!md->presortedindexlist)
+	    return 1;    /* All properties must be indexed */
+     else
+	 {
+        for(tmplist = md->presortedindexlist;tmplist;tmplist = tmplist->next)
+		   if(strcmp(name,tmplist->line) == 0)
+			  return 1;
+		return 0;
+	 }
+  }
+  return 0;
+}
+
 
 /* 02/2001 jmruiz */
 /* Routine to sort properties at index time */
-void    sortFileProperties(IndexFILE * indexf)
+void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
 {
     int     i,
             j,
@@ -628,47 +682,51 @@ void    sortFileProperties(IndexFILE * indexf)
         m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
 		m->sorted_data = NULL;
 
-        switch (indexf->header.metaEntryArray[j]->metaID)
-        {
-        case AUTOPROP_ID__REC_COUNT:
-        case AUTOPROP_ID__RESULT_RANK:
-        case AUTOPROP_ID__DOCPATH:
-        case AUTOPROP_ID__INDEXFILE:
-            break;              /* Do nothing : Files are already sorted */
-            /* Rec_count and rank are computed in search */
-        case AUTOPROP_ID__TITLE:
-        case AUTOPROP_ID__DOCSIZE:
-        case AUTOPROP_ID__LASTMODIFIED:
-        case AUTOPROP_ID__SUMMARY:
-        case AUTOPROP_ID__STARTPOS:
-        default:               /* User properties */
+		/* Check if thi property must be in a presorted index */
+		if(is_presorted_prop(sw,m->metaName))
+		{
+           switch (indexf->header.metaEntryArray[j]->metaID)
+		   {
+           case AUTOPROP_ID__REC_COUNT:
+           case AUTOPROP_ID__RESULT_RANK:
+           case AUTOPROP_ID__DOCPATH:
+           case AUTOPROP_ID__INDEXFILE:
+               break;              /* Do nothing : Files are already sorted */
+               /* Rec_count and rank are computed in search */
+           case AUTOPROP_ID__TITLE:
+           case AUTOPROP_ID__DOCSIZE:
+           case AUTOPROP_ID__LASTMODIFIED:
+           case AUTOPROP_ID__SUMMARY:
+           case AUTOPROP_ID__STARTPOS:
+           default:               /* User properties */
 
-		    /* Array of filenums to store the sorted docs (referenced by its filenum) */
-		    sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
+		       /* Array of filenums to store the sorted docs (referenced by its filenum) */
+		       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
 
-            for (i = 0; i < indexf->filearray_cursize; i++)
-                indexf->filearray[i]->currentSortProp = m;
+               for (i = 0; i < indexf->filearray_cursize; i++)
+                   indexf->filearray[i]->currentSortProp = m;
 
-            /* Sort them using qsort. The main work is done by compFileProps */
-            qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
+               /* Sort them using qsort. The main work is done by compFileProps */
+               qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
-            /* Build the sorted table */
-            for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
-            {
-                /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
-                if (i)
-                {
-                    /* If consecutive elements are different increase the number */
-                    if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
-                        k++;
-                }
-                sortFilenums[indexf->filearray[i]->fi.filenum - 1] = k;
-            }
+               /* Build the sorted table */
+               for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
+			   {
+                   /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
+                   if (i)
+				   {
+                       /* If consecutive elements are different increase the number */
+                       if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
+                           k++;
+				   }
+                   sortFilenums[indexf->filearray[i]->fi.filenum - 1] = k;
+			   }
 
-            /* Store the integer array of presorted data */
-            m->sorted_data = sortFilenums;
-           break;
-        }
+               /* Store the integer array of presorted data */
+               m->sorted_data = sortFilenums;
+              break;
+		   }
+		}
     }
 }
 
