@@ -193,13 +193,13 @@ void initModule_Index (SWISH  *sw)
     idx->IgnoreLimitPositionsArray = NULL;
 
        /* Swapping access file functions */
-    idx->swap_tell = ftell;
-    idx->swap_write = fwrite;
-    idx->swap_close = fclose;
-    idx->swap_seek = fseek;
-    idx->swap_read = fread;
-    idx->swap_getc = fgetc;
-    idx->swap_putc = fputc;
+    idx->swap_tell = sw_ftell;
+    idx->swap_write = sw_fwrite;
+    idx->swap_close = sw_fclose;
+    idx->swap_seek = sw_fseek;
+    idx->swap_read = sw_fread;
+    idx->swap_getc = sw_fgetc;
+    idx->swap_putc = sw_fputc;
 
     for( i = 0; i <MAX_LOC_SWAP_FILES ; i++)
     {
@@ -763,7 +763,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     else if ( !fprop->fp )
     {
-        fprop->fp = fopen(fprop->work_path, F_READ_TEXT );
+        fprop->fp = sw_fopen(fprop->work_path, F_READ_TEXT );
 
         if ( !fprop->fp )
         {
@@ -947,7 +947,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         if (fprop->hasfilter)
             FilterClose(fprop->fp); /* close filter pipe - should the filter be flushed? */
         else
-            fclose(fprop->fp); /* close file */
+            sw_fclose(fprop->fp); /* close file */
     }
     /* Else, it's -S prog so make sure we read all the bytes we are suppose to read! */
     /* Can remove the check for fprop->bytes_read once read_stream is no longer used */
@@ -2886,13 +2886,13 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     /* Reopen in read mode for (for faster reads, I suppose) */
     if(!idx->fp_loc_read[idx_swap_file])
     {
-        if (!(idx->fp_loc_read[idx_swap_file] = fopen(idx->swap_location_name[idx_swap_file], F_READ_BINARY)))
+        if (!(idx->fp_loc_read[idx_swap_file] = sw_fopen(idx->swap_location_name[idx_swap_file], F_READ_BINARY)))
             progerrno("Could not open temp file %s: ", idx->swap_location_name[idx_swap_file]);
     }
     else
     {
         /* File already opened for read -> reset pointer */
-        fseek(idx->fp_loc_read[idx_swap_file],0,SEEK_SET);
+        sw_fseek(idx->fp_loc_read[idx_swap_file],(sw_off_t)0,SEEK_SET);
     }
 
     fp = idx->fp_loc_read[idx_swap_file];
@@ -2926,7 +2926,7 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
             else
             {
                 /* Just advance file pointer */
-                idx->swap_seek(fp,lenbuf - sizeof(ENTRY *),SEEK_CUR);
+                idx->swap_seek(fp,(sw_off_t)(lenbuf - sizeof(ENTRY *)),SEEK_CUR);
             }
         }
     }

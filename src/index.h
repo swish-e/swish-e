@@ -90,9 +90,9 @@ struct MOD_Index
     int     swap_locdata;       /* swap location data */
 
     /* Pointer to swap functions */
-    long    (*swap_tell) (FILE *);
+    sw_off_t    (*swap_tell) (FILE *);
             size_t(*swap_write) (const void *, size_t, size_t, FILE *);
-    int     (*swap_seek) (FILE *, long, int);
+    int     (*swap_seek) (FILE *, sw_off_t, int);
             size_t(*swap_read) (void *, size_t, size_t, FILE *);
     int     (*swap_close) (FILE *);
     int     (*swap_putc) (int, FILE *);
