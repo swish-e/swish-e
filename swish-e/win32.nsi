@@ -14,13 +14,13 @@ AutoCloseWindow false ; (can be true for the window go away automatically at end
 ShowInstDetails show ; (can be show to have them shown, or nevershow to disable)
 SetDateSave on ; (can be on to have files restored to their orginal date)
 
-BrandingText "SWISH-E 2.2.1 Installation"
+BrandingText "SWISH-E 2.2.3 Installation"
 CompletedText "Installation Complete. Please see the SWISH-E Start Menu Group."
 ; Put up one of those silly blue backgrounds while installing
 BGGradient 0000ff 000000 ffffff
 
 LicenseText "You may redistribute SWISH-E under the following terms:"
-LicenseData "COPYING"
+LicenseData "COPYING.txt"
 EnabledBitmap src\win32\swish2-16.bmp
 DisabledBitmap src\win32\swish2-16-desel.bmp
 InstallDir "$PROGRAMFILES\SWISH-E"
@@ -35,7 +35,7 @@ ComponentText "Which components do you require?"
 Section "Program" ; (default, required section)
 
 SetOutPath "$INSTDIR"
-File COPYING
+File COPYING.txt
 
 ; SWISH-E Executable, static, and dynamic libraries
 File src\win32\*.exe
@@ -59,10 +59,7 @@ File /r prog-bin
 File /r filters
 
 ; Rename a bunch of text files so Windows has a clue
-Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"
 ; Rename "$INSTDIR\swishspider" "$INSTDIR\swishspider.pl"
-Rename "$INSTDIR\filter-bin\README" "$INSTDIR\filter-bin\README.txt"
-Rename "$INSTDIR\prog-bin\README" "$INSTDIR\prog-bin\README.txt"
 
 ; Create shorcuts on the Start Menu
 SetOutPath "$INSTDIR\"
