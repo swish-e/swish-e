@@ -70,9 +70,17 @@ SWISH_HEADER_VALUE SwishResultIndexValue( SW_RESULT, const char *name, SWISH_HEA
 
 
 SW_HANDLE  SwishInit(char *);
+
 SW_RESULTS SwishQuery(SW_HANDLE, char *words );
 
 SW_SEARCH New_Search_Object( SW_HANDLE, char *query );
+
+void SwishSetRefPtr( SW_HANDLE sw, void *address );
+void *SwishSearch_parent( SW_SEARCH srch );
+void *SwishResults_parent( SW_RESULTS results );
+void *SwishResult_parent( SW_RESULT result );
+void ResultsSetRefPtr( SW_RESULTS results, void *address );
+
 void SwishSetStructure( SW_SEARCH srch, int structure );
 void SwishPhraseDelimiter( SW_SEARCH srch, char delimiter );
 void SwishSetSort( SW_SEARCH srch, char *sort );

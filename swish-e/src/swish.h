@@ -925,6 +925,9 @@ typedef struct SWISH
     int     structure_map[256];
 
 
+    void *ref_count_ptr;  /* pointer for use with SWISH::API */
+
+
 } SWISH;
 
 

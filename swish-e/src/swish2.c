@@ -265,6 +265,19 @@ int     SwishAttach(SWISH * sw)
     return ( sw->lasterror == 0 ); 
 }
 
+/********************************************************************************
+* SwishSetRefPtr - for use the SWISH::API to save the SV* of the swish handle
+*
+********************************************************************************/
+
+void SwishSetRefPtr( SWISH *sw, void *address )
+{
+    if ( !address )
+        progerr("SwishSetRefPtr - passed null address");
+
+    sw->ref_count_ptr = address;
+}
+
 
 /*********************************************************************************
 * SwishWords -- returns all the words that begin with the specified character

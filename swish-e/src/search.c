@@ -224,6 +224,35 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
     return srch;
 }
 
+/****************************************************************
+* These three funtions return the swish object's ref_count_ptr
+****************************************************************/
+void *SwishSearch_parent ( SEARCH_OBJECT *srch )
+{
+    return srch ? srch->sw->ref_count_ptr : NULL;
+}
+
+void *SwishResults_parent ( RESULTS_OBJECT *results )
+{
+    return results ? results->sw->ref_count_ptr : NULL;
+}
+
+
+/*** and this is same for the results ***/
+
+void ResultsSetRefPtr( RESULTS_OBJECT *results, void *address )
+{
+    if ( !address )
+        progerr("ResultsSetRefPtr - passed null address");
+
+    results->ref_count_ptr = address;
+}
+
+void *SwishResult_parent ( RESULT *result )
+{
+    return result ? result->db_results->results->ref_count_ptr : NULL;
+}
+
 
 /********** Search object methods *************************/
 
@@ -350,7 +379,6 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
     results = (RESULTS_OBJECT *)emalloc( sizeof(RESULTS_OBJECT) );
     memset( results, 0, sizeof(RESULTS_OBJECT) );
 
-    results->srch = srch;
     results->sw = srch->sw;
 
     /* Create place to store results */
@@ -372,8 +400,7 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
         db_results->results     = results;      /* parent object */
         db_results->indexf      = indexf;
         db_results->index_num   = indexf_count++;
-        db_results->srch        = srch;         /* associated search */
-
+	db_results->srch        = srch;        /* only valid during the search */
 
 
         if ( !last )
@@ -657,7 +684,6 @@ RESULTS_OBJECT *SwishQuery(SWISH *sw, char *words )
         
     results = SwishExecute( srch, NULL );
     Free_Search_Object( srch );
-    results->srch = NULL;
     return results;
 }
 
