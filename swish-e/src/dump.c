@@ -226,12 +226,12 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
         DB_InitReadWords(sw, indexf->DB);
 
-        for(j=0;j<256;j++)
+        for(j=1;j<256;j++)
         {
             word[0] = (unsigned char) j; word[1] = '\0';
             DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            while(wordID)
+            while(wordID && (((int)((unsigned char)resultword[0]))== j))
             {
                 printf("\n%s",resultword);
 

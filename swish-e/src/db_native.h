@@ -29,6 +29,7 @@
 #ifdef USE_BTREE
 #include "btree.h"
 #include "array.h"
+#include "worddata.h"
 #define MAXCHARS 6            /* Only 5 are needed when BTREE is used */
 
 #else
@@ -119,7 +120,7 @@ struct Handle_DBNative
 
 #ifdef USE_BTREE
    BTREE   *bt;
-   FILE    *worddata;
+   WORDDATA    *worddata;
    int      tmp_worddata;
    char    *cur_worddata_file;
 

@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+/*
 #define STANDALONE
 #define DEBUG
-
+*/
 
 #ifdef STANDALONE
 
@@ -282,6 +282,7 @@ int i;
     b = (WORDDATA *) emalloc(sizeof(WORDDATA));
     b->fp = fp;
     b->last_page = 0;
+    b->page_counter = 0;
     for(i = 0; i < WORDDATA_CACHE_SIZE; i++)
         b->cache[i] = NULL;
 
@@ -344,7 +345,7 @@ unsigned long id;
     {
         printf("mal\n");
     }
-
+    b->lastid = id;
     return id;
 }
 
@@ -380,6 +381,15 @@ unsigned char buffer[WORDDATA_PageSize];
     }
     else
     {
+        /* Save some memory - Do some flush flush of the data */
+
+        if(!(b->page_counter % WORDDATA_CACHE_SIZE))
+        {
+            WORDDATA_FlushCache(b);
+            WORDDATA_CleanCache(b);
+            b->page_counter = 0;
+        }
+        b->page_counter++;
         b->last_page = WORDDATA_NewPage(b);
     }
     
@@ -404,7 +414,7 @@ unsigned char buffer[WORDDATA_PageSize];
     memcpy(q,WORDDATA_PageData(b->last_page), p - WORDDATA_PageData(b->last_page));
     q += p - WORDDATA_PageData(b->last_page);
     q[0] = (unsigned char) free_id;
-    q[1] = (unsigned char) len >> 8;
+    q[1] = (unsigned char) (len >> 8);
     q[2] = (unsigned char) (len & 0xff);
     memcpy(q+3,data,len);
     q += WORDDATA_RoundBlockSize((3 + len));
@@ -421,7 +431,7 @@ unsigned char buffer[WORDDATA_PageSize];
     b->last_page->n++;
     b->last_page->used_blocks += required_length / WORDDATA_BlockSize;
     WORDDATA_WritePage(b,b->last_page);
-    return (unsigned long)((b->last_page->page_number << 8) + free_id);
+    return (unsigned long)(b->lastid=(unsigned long)((b->last_page->page_number << 8) + free_id));
 }
 
 unsigned char *WORDDATA_GetBig(WORDDATA *b, unsigned long page_number, unsigned int *len)
