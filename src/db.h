@@ -23,11 +23,20 @@
 #ifndef __HasSeenModule_DB
 #define __HasSeenModule_DB    1
 
+/* Possible Open File modes */
+typedef enum {
+    DB_CREATE,
+	DB_READ,
+	DB_READWRITE,
+}
+DB_OPEN_MODE;
+
 void initModule_DB (SWISH *);
 void freeModule_DB (SWISH *);
 int configModule_DB (SWISH *sw, StringList *sl);
 
 void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int);
+void    update_header(SWISH *, void *, int, int );
 void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
@@ -49,7 +58,7 @@ char *getfilewords(SWISH *sw, int, IndexFILE *);
 
 /* Common DB api */
 void   *DB_Create (SWISH *sw, char *dbname);
-void   *DB_Open (SWISH *sw, char *dbname);
+void   *DB_Open (SWISH *sw, char *dbname, int mode);
 void    DB_Close(SWISH *sw, void *DB);
 void    DB_Remove(SWISH *sw, void *DB);
 
@@ -121,7 +130,7 @@ struct MOD_DB
     char *DB_name; /* short name for data source */
 
     void * (*DB_Create) (char *dbname);
-    void * (*DB_Open) (char *dbname);
+    void * (*DB_Open) (char *dbname, int mode);
     void   (*DB_Close) (void *DB);
     void   (*DB_Remove) (void *DB);
     

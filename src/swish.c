@@ -93,7 +93,8 @@ typedef enum {
 	MODE_INDEX,
 	MODE_DUMP,
     MODE_WORDS,
-	MODE_MERGE
+	MODE_MERGE,
+    MODE_UPDATE
 }
 CMD_MODE;
 
@@ -135,7 +136,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params );
 static void cmd_merge( SWISH *sw, CMDPARAMS *params );
 static void cmd_search( SWISH *sw, CMDPARAMS *params );
 static void cmd_keywords( SWISH *sw, CMDPARAMS *params );
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge);
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge, int is_update);
 /************* TOC ***************************************/
 
 
@@ -176,6 +177,7 @@ int     main(int argc, char **argv)
             break;
 
         case MODE_INDEX:
+        case MODE_UPDATE:
             cmd_index( sw, params );
             break;
 
@@ -186,6 +188,7 @@ int     main(int argc, char **argv)
         case MODE_WORDS:
             cmd_keywords( sw ,params );  /* -k setting */
             break;
+
             
         default:
             progerr("Invalid operation mode '%d'", (int)params->run_mode);
@@ -502,7 +505,8 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             if ( !is_another_param( argv ) )
                 progerr(" '-i' requires a list of index files.");
 
-            params->run_mode = MODE_INDEX;
+            if(params->run_mode != MODE_UPDATE)   /* Preserve update mode */
+                params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
                 sw->dirlist = addswline(sw->dirlist, w );
@@ -647,8 +651,9 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
         {
             if ( !is_another_param( argv ) )
                 progerr(" '-c' requires one or more configuration files.");
-                
-            params->run_mode = MODE_INDEX;
+
+            if(params->run_mode != MODE_UPDATE)   /* Preserve update mode */     
+                params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
                 params->conflist = addswline(params->conflist, w);
@@ -949,6 +954,14 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             continue;
         }
 
+        /* Update mode jmruiz 2002/03 */
+        
+        if (c == 'u')
+        {
+            params->run_mode = MODE_UPDATE;
+            continue;
+        }
+
         progerr("Unknown switch '-%c'.  Use -h for options.", c );
     }
 }
@@ -1041,9 +1054,29 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     sw->Index->swap_locdata = params->swap_mode;
 
 
-    /* Create an empty File - before indexing to make sure can write to the index */
-    sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+    /* Check for UPDATE_MODE jmruiz 2002/03 */
+    if(params->run_mode == MODE_UPDATE)
+    {
+        /* Open the index file for read/write */
+        sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
 
+        /* Read the header and overwrite the '-c' option  and feault values - In other 
+        ** words, the header values are the good ones */
+        read_header(sw, &sw->indexlist->header, sw->indexlist->DB);
+        sw->TotalWords = sw->indexlist->header.totalwords;
+        sw->TotalFiles = sw->indexlist->header.totalfiles;
+
+        /* Adjust filenum to totalfiles */
+        sw->Index->filenum = sw->TotalFiles;
+
+        progerr("Invalid operation mode '%d': Update mode is not yet ", (int)params->run_mode);
+
+    }
+    else
+    {
+        /* Create an empty File - before indexing to make sure can write to the index */
+        sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+    }
 
 
     /* This should be printed by the module that's reading the source */
@@ -1074,7 +1107,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     fflush(stdout);
 
-    write_index_file( sw, 1, elapsedStart, cpuStart, 0);
+    write_index_file( sw, 1, elapsedStart, cpuStart, 0, params->run_mode == MODE_UPDATE?1:0);
 }
 
 
@@ -1125,7 +1158,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     merge_indexes( sw_input, sw_out );
 
-    write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
+    write_index_file( sw_out, 0, elapsedStart, cpuStart, 1, 0);
 
     SwishClose( sw_out );
 
@@ -1240,7 +1273,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 *
 **************************************************************************/
 
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge)
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge, int is_update)
 {
     int totalfiles = getfilecount(sw->indexlist);
     int stopwords = 0;
@@ -1303,8 +1336,10 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
             printf("Writing header ...\n");
         fflush(stdout);
 
-
-        write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, merge);
+        if(is_update)
+            update_header(sw,sw->indexlist->DB,sw->indexlist->header.totalwords, totalfiles);
+        else
+            write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, merge);
 
         fflush(stdout);
 

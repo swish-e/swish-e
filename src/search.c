@@ -324,7 +324,8 @@ int     SwishAttach(SWISH * sw, int printflag)
         srch->bigrank = 0;
 
         /* Program exits in DB_Open if it fails */
-        tmplist->DB = (void *)DB_Open(sw, tmplist->line);
+
+        tmplist->DB = (void *)DB_Open(sw, tmplist->line, DB_READ);
 
         read_header(sw, &tmplist->header, tmplist->DB);
 

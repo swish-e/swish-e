@@ -142,7 +142,6 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 		/* Metanames */
     write_MetaNames(sw, METANAMES_ID, header, DB);
 
-
 		/* BuzzWords */
     write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);
 
@@ -164,6 +163,34 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     }
 #endif
 
+}
+
+/* 2002/03 jmruiz */
+/* Routine used by MODE_UPDATE to update the totalwords and totalfiles in the header  */
+void    update_header(SWISH *sw, void * DB, int totalwords, int totalfiles)
+{
+    int   id,
+          len;
+    unsigned char *buffer;
+
+    DB_InitReadHeader(sw, DB);
+
+    DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
+
+    while (id)
+    {
+        /* This is  a bad way to update the header. For now, it works 
+        ** It is based on the idea that SAVEDASHEADER_ID is before 
+        ** COUNTSHEADER_ID - This must be fixed */
+        if (id == SAVEDASHEADER_ID)
+        {
+            write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
+            break;
+        }
+        efree(buffer);
+        DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
+    }
+    DB_EndReadHeader(sw, DB);
 }
 
 /* Jose Ruiz 11/00
@@ -814,9 +841,9 @@ void   *DB_Create (SWISH *sw, char *dbname)
    return sw->Db->DB_Create(dbname);
 }
 
-void   *DB_Open (SWISH *sw, char *dbname)
+void   *DB_Open (SWISH *sw, char *dbname, int mode)
 {
-   return sw->Db->DB_Open(dbname);
+   return sw->Db->DB_Open(dbname,mode);
 }
 
 void    DB_Close(SWISH *sw, void *DB)
