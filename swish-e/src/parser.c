@@ -51,15 +51,15 @@ $Id$
 **
 **
 **  - UndefinedMetaTags ignore might throw things like structure off since
-**    processing continues (unlike IgnoreMetaTags).
+**    processing continues (unlike IgnoreMetaTags).  But everything should balance out.
 **
 **  - There are two buffers that are created for every file, but these could be done once
 **    and only expanded when needed.  If that would make any difference in indexing speed.
 **
-**  - There is also a read chunk stack variable that's 1024 bytes.  Is stack space an issue?
-**
 **  - Note that these parse_*() functions get passed a "buffer" which is not used
 **    (to be compatible with old swihs-e buffer-based parsers)
+**
+**  - XML elements and attributes are all converted to lowercase.
 **
 */
 
@@ -300,7 +300,6 @@ static int parse_chunks( PARSE_DATA *parse_data )
     xmlParserCtxtPtr    ctxt;
 
 
-
     /* Now start pulling into the libxml2 parser */
 
     res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize );
@@ -329,13 +328,6 @@ static int parse_chunks( PARSE_DATA *parse_data )
     }
 
 
-    /* Check for abort condition set while parsing (isoktitle, NoContents) */
-
-    if ( parse_data->abort && fprop->index_no_content && !parse_data->total_words )
-    {
-        append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
-        flush_buffer( parse_data, 3 );
-    }
 
     /* Tell the parser we are done, and free it */
     if ( parse_data->parsing_html )
@@ -352,11 +344,22 @@ static int parse_chunks( PARSE_DATA *parse_data )
     /* Not sure if this is needed */
     xmlCleanupParser();
 
+    /* Check for abort condition set while parsing (isoktitle, NoContents) */
+
+    if ( parse_data->abort && fprop->index_no_content && !parse_data->total_words )
+    {
+        append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
+
+        parse_data->meta_stack.ignore_flag = 0;  /* make sure we can write */
+        flush_buffer( parse_data, 3 );
+    }
+    
     
     /* Flush any text left in the buffer */
 
     if ( !parse_data->abort )
         flush_buffer( parse_data, 3 );
+
 
     addtofwordtotals(indexf, idx->filenum, parse_data->total_words);
 
@@ -499,10 +502,14 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
         s = &parse_data->meta_stack;
         s->maxsize = STACK_SIZE;
         s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
+        if ( fprop->index_no_content )
+            s->ignore_flag++;
 
         s = &parse_data->prop_stack;
         s->maxsize = STACK_SIZE;
         s->stack = (MetaStackElementPtr *)emalloc( sizeof( MetaStackElementPtr ) * s->maxsize );
+        if ( fprop->index_no_content )  /* only works for HTML */
+            s->ignore_flag++;
     }
 
 
@@ -973,7 +980,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         {
             struct MOD_FS *fs = parse_data->sw->FS;
 
-            /* Check isoktitle */
+            /* Check isoktitle - before NoContents? */
             if ( match_regex_list( parse_data->text_buffer.buffer, fs->filerules.title) )
             {
                 abort_parsing( parse_data, -2 );
@@ -984,9 +991,13 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             if ( parse_data->fprop->index_no_content )
                 abort_parsing( parse_data, 1 );
         }
+        else
+            /* In start tag, allow capture of text */
+            if ( parse_data->fprop->index_no_content )
+                parse_data->meta_stack.ignore_flag--;
+        
         
         /* Now it's ok to flush */
-        
         flush_buffer( parse_data, 11 );
 
 
@@ -1098,6 +1109,8 @@ static void  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, cons
             warning("ClassAttribute on tag '%s' too long\n", tag );
             continue;
         }
+
+        strtolower( tagbuf );
         
         strcpy( t, (char *)atts[i+1] );         /* create tag.attribute metaname */
         start_metaTag( parse_data, tagbuf, tag, meta_append, prop_append );
@@ -1175,6 +1188,8 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
         if ( !*content )
             continue;
 
+        strtolower( tagbuf );
+
         flush_buffer( parse_data, 1 );
         start_metaTag( parse_data, tagbuf, tagbuf, &meta_append, &prop_append );
         char_hndl( parse_data, content, strlen( content ) );
@@ -1227,6 +1242,8 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
         }
 
         /* Process as a start -> end tag sequence */
+        strtolower( metatag );
+
         flush_buffer( parse_data, 1 );
         start_metaTag( parse_data, metatag, metatag, &meta_append, &prop_append );
         char_hndl( parse_data, content, strlen( content ) );
@@ -1327,7 +1344,6 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     {
         /* Index the text */
         if ( !parse_data->meta_stack.ignore_flag )
-        
             parse_data->total_words +=
                 indexstring( sw, c, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
 
@@ -1518,9 +1534,9 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
 {
     parse_data->abort = abort_code;  /* Flag that the we are all done */
     /* Disable parser */
-    parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
-    parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
-    parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
+//    parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
+//    parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
+//    parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
 
     // if ( abort_code < 0 )
     // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
