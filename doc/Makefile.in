@@ -16,21 +16,6 @@ SOURCEPODS = ../pod/CHANGES.pod    ../pod/README.pod   ../pod/SWISH-CONFIG.pod  
              ../pod/SWISH-PERL.pod ../pod/SWISH-SEARCH.pod
 
 
-# These are used for buiding the HTML pages
-
-EXTRAFILES = ../pod/images/dotrule1.gif        ../pod/images/swish2.gif \
-             ../pod/images/swishbanner1.gif    ../pod/images/swish.gif \
-             ../pod/images/swish2b.gif         ../pod/style.css
-
-
-HTMLFILES = ../html/CHANGES.html    ../html/SWISH-CONFIG.html   ../html/SWISH-RUN.html     ../html/search.cgi \
-            ../html/INSTALL.html    ../html/SWISH-FAQ.html      ../html/SWISH-SEARCH.html  ../html/style.css \
-            ../html/README.html     ../html/SWISH-LIBRARY.html  ../html/index.html \
-            ../html/SWISH-3.0.html  ../html/SWISH-PERL.html     ../html/index_long.html \
-            ../html/images/dotrule1.gif  ../html/images/swish2.gif   ../html/images/swishbanner1.gif \
-            ../html/images/swish.gif     ../html/images/swish2b.gif \
-
-
 MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
 
 
@@ -68,25 +53,17 @@ install-man: man
 #--- create html pages ------
 
 
-#$(HTMLFILES): $(SOURCEPODS) $(EXTRAFILES) ./Version.pm
-#	@echo "Building HTML"
-#	@bin/build
-#	@rm -f ../html/.htaccess ../html/search.cgi
-
 
 ./Version.pm: ../configure
 	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > ./Version.pm
 
-$(SOURCEPODS): ./Version.pm
-	touch $@
-
-html: ./Version.pm $(SOURCEPODS)
+html: ./Version.pm
 	@bin/build
 
 
 #--- split version (for searchable version of documentation ) ---
 
-split: html
+split: ./Version.pm
 	@echo "Checking for swish binary..."
 	test -x ../src/swish-e
 
@@ -98,10 +75,6 @@ split: html
 	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="split/search.cgi">Search The Documentation</a>]</center>}' ../html/index.html ../html/index_long.html
 	perl -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a href="search.cgi">Search</a>] [<a href="../index.html">Back to Non-Split Documentation</a>]</center>}' ../html/split/index.html ../html/split/index_long.html
 	@echo -e "\n** Don't forget to refresh in your browser to see the new pages! **\n"
-
-
-
-
 
 
 #--- create PDF and PostScript ----
