@@ -11,6 +11,8 @@
 
 /* A BTREE page cannot be smaller than BTREE_MinPageSize */
 #define BTREE_MinPageSize 4096
+/* BTREE max key length*/
+#define BTREE_MaxKeySize BTREE_MinPageSize>>2
 
 /* A BTREE page can be greater than BTREE_MaxPageSize */
 #define BTREE_MaxPageSize 65536
@@ -106,7 +108,9 @@ BTREE_Page *tmp, *next;
                     tmp->modified = 0;
                 }
                 if(tmp != b->cache[i])
+                {
                     efree(tmp);
+                }
                 tmp = next;
             }
             b->cache[i]->next_cache = NULL;
@@ -695,7 +699,6 @@ int comp;
         key_data0 = BTREE_KeyData(pg,0);
         key_len0 = uncompress2(&key_data0);
         BTREE_AddKeyToPage(root_page, 0, key_data0, key_len0 , pg->page_number);
-
         key_data0 = BTREE_KeyData(new_pg,0);
         key_len0 = uncompress2(&key_data0);
         BTREE_AddKeyToPage(root_page, 1, key_data0, key_len0, new_pg->page_number);
@@ -718,7 +721,7 @@ int comp;
             father_pg = BTREE_ReadPage(b,b->tree[level]);
             BTREE_InsertInPage(b,father_pg, key, key_len, pg->page_number, level - 1, 1);
         }
-
+    
         BTREE_WritePage(b, pg);
         BTREE_FreePage(b, pg);
 
@@ -735,9 +738,11 @@ int comp;
         key_len0 = uncompress2(&key_data0);
     }
 
-    father_pg = BTREE_ReadPage(b,b->tree[level]);
-    BTREE_InsertInPage(b,father_pg, key_data0, key_len0, new_pg->page_number, level - 1, 0);
-
+    if(!(new_pg->flags & BTREE_ROOT_NODE))
+    {
+        father_pg = BTREE_ReadPage(b,b->tree[level]);
+        BTREE_InsertInPage(b,father_pg, key_data0, key_len0, new_pg->page_number, level - 1, 0);
+    }
 
     BTREE_WritePage(b, new_pg);
     BTREE_FreePage(b, new_pg);
@@ -749,6 +754,10 @@ int comp;
 int BTREE_Insert(BTREE *b, unsigned char *key, int key_len, unsigned long data_pointer)
 {
 BTREE_Page *pg = BTREE_Walk(b,key,key_len);
+
+    if(key_len>BTREE_MaxKeySize)
+        return 0;
+
     return BTREE_InsertInPage(b, pg, key, key_len, data_pointer, b->levels - 1, 0);
 }
 
