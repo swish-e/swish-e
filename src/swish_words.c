@@ -283,8 +283,10 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
             case FUZZY_STEMMING_PT:
             case FUZZY_STEMMING_DE:
             case FUZZY_STEMMING_NL:
-#endif
+                header->fuzzy_data.fuzzy_routine(&self->word, &self->lenword,header->fuzzy_data.snowball);
+#else
                 header->fuzzy_data.fuzzy_routine(&self->word, &self->lenword);
+#endif
                 if ( *self->word ) // should not happen
                     swish_words = (struct swline *) addswline( swish_words, self->word );
                 break;
