@@ -10,6 +10,20 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Fixed minor memory leak
+
+Fixed leak of not releasing memory of index file name and swish_handle 
+destroy, and fixed SwishStemWord to default to the Stemmer_en.
+
+Fixed libtest.c example program that was not cleaning up memory after an
+error condition.
+
+=back
+
+=head2 Version 2.4.0 (Release Candidate 1)  May 21, 2003
+
+=over 4
+
 =item * Security Fix: swish.cgi
 
 The swish.cgi script was not correctly escaping HTML when searching by 
