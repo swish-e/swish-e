@@ -55,6 +55,13 @@ struct Handle_DBNative
    int wordhash_counter;
    long *wordhashdata;
 
+      /* Hash array to improve wordhashdata performance */
+   struct numhash
+   {
+      int index;
+      struct numhash *next;
+   } *hash[BIGHASHSIZE];
+
    int worddata_counter;
    long *worddata_wordID;
    long *worddata_offset;
