@@ -469,7 +469,11 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
     if (temp_fd == -1)
         progerrno("Couldn't open temporary file '%s': ", file_name );
 
+#ifdef __VMS
+    if (!(temp_file = fdopen(temp_fd, "w")))
+#else
     if (!(temp_file = fdopen(temp_fd, "w+b")))
+#endif
         progerrno("Couldn't create temporary file '%s' file descriptor: ", file_name);
 
     if ( remove_file_name )
