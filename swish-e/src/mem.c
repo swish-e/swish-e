@@ -546,22 +546,16 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 }
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
-/* 2001-08 jmruiz -- Minor modification to asks just for what we need */
-/* 2001-08 jmruiz -- If a zone is full, before allocating a new one
-** search in previous zones. Very useful if a Mem_ZoneReset was executed
-*/
-/* 2001-08 jmruiz -- Thanks to Bill's comments ROUND_LONG is back */
 void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 {
 	ZONE		*zone;
 	ZONE		*newzone;
-	ZONE		*tmp;
 	unsigned char *ptr;
-
-	size = ROUND_LONG(size);
 
 	/* statistics */
 	head->allocs++;
+
+	size = ROUND_LONG(size);
 
 	zone = head->next;
 
@@ -572,36 +566,10 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 
 	if (!zone || (zone->free < size))
 	{
-		/* Before allocating a new zone, let's see if the previous one is empty
-		** If so, a Mem_ZoneReset was previously issued. In this case we will put
-		** the filled zone at the end and the unused one at the start.
-		*/
-		if(zone)
-			tmp = zone->next;
-		else
-			tmp = NULL;
-		if(tmp && (tmp->size == tmp->free))
-		{
-			head->next =tmp;
-			for(;;)
-			{
-				if(!tmp->next)
-				{ 
-					/* Put at the end */
-					tmp->next = zone;
-					zone->next = NULL;
-					break;
-				}
-				tmp = tmp->next;
-			}
-		}
-		else
-		{
-			newzone = allocChunk(size > head->size ? size : head->size);
-			head->next = newzone;
-			newzone->next = zone;
-		}
-		zone = head->next;
+		newzone = allocChunk(size > head->size ? size : head->size);
+		head->next = newzone;
+		newzone->next = zone;
+		zone = newzone;
 	}
 
 	/* decrement free, advance pointer, and return allocation to the user */
@@ -611,6 +579,8 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 
 	return ptr;
 }
+
+
 
 void Mem_ZoneFree(MEM_ZONE **head)
 {
@@ -662,10 +632,13 @@ void Mem_ZoneStatistics(MEM_ZONE *head)
 		head->name, chunks, head->allocs, used, free, wasted);
 }
 
-/* make all memory in a zone reusable */
+/* Frees all memory chunks but preserves head */
+/* 2001-17 jmruiz modified to avoid the document peak problem (one document can
+use a lot of memory and, in the old way, this memory was never reused)
+*/
 void Mem_ZoneReset(MEM_ZONE *head)
 {
-	ZONE *next;
+	ZONE *next, *tmp;
 
 	if (!head)
 		return;
@@ -675,11 +648,12 @@ void Mem_ZoneReset(MEM_ZONE *head)
 	next = head->next;
 	while (next)
 	{
-		next->ptr = next->alloc;
-		next->free = next->size;
-		next = next->next;
+		efree(next->alloc);
+		tmp = next->next;
+		efree(next);
+		next = tmp;
 	}
-
+    head->next = NULL;
 }
 
 
