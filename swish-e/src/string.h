@@ -63,13 +63,6 @@ void remove_tags (char*);
 
 unsigned char *bin2string(unsigned char *,int);
 
-#ifdef _WIN32
-#define strncasecmp	strnicmp
-#endif
-
-
-
-
 char *strtolower (char *str);
 #define makeItLow(a)    strtolower ((a)) /* map old name to new $$$ */
 
