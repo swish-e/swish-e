@@ -83,7 +83,6 @@
 
 #ifdef _WIN32
 #include "win32/config.h"
-#define strcasecmp stricmp
 #elif defined(__VMS)
 #include "vms/regex.h"
 #include <dirent.h>
