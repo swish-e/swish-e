@@ -267,7 +267,7 @@ sw_off_t PACKFILEOFFSET(sw_off_t num)
     {
         s = (unsigned char *) &tmp;
         while(sz_off_t)
-            *s++ = (unsigned char) ((num >> ((--sz_off_t)<<3)) & 0xFF);
+            *s++ = (unsigned char) ((num >> (sw_off_t)((--sz_off_t)<<3)) & (sw_off_t)0xFF);
 
         return tmp;
     }
@@ -282,7 +282,7 @@ void    PACKFILEOFFSET2(sw_off_t num, unsigned char *s)
     if(LITTLE_ENDIAN)
     {
         while(sz_off_t)
-            *s++ = (unsigned char) ((num >> ((--sz_off_t)<<3)) & 0xFF);
+            *s++ = (unsigned char) ((num >> (sw_off_t)((--sz_off_t)<<3)) & (sw_off_t)0xFF);
     }
     else
     {
@@ -300,7 +300,7 @@ sw_off_t UNPACKFILEOFFSET(sw_off_t num)
     if(LITTLE_ENDIAN)
     {
         while(sz_off_t)
-            tmp += (sw_off_t)(*s++ << ((--sz_off_t)<<3));
+            tmp += (sw_off_t)((sw_off_t)(*s++) << (sw_off_t)((--sz_off_t)<<3));
         return tmp;
     }
     return num;
@@ -310,12 +310,12 @@ sw_off_t UNPACKFILEOFFSET(sw_off_t num)
 sw_off_t UNPACKFILEOFFSET2(unsigned char *s)
 {
     int sz_off_t = sizeof(sw_off_t);
-    sw_off_t tmp = 0;
+    sw_off_t tmp = (sw_off_t)0;
 
     if(LITTLE_ENDIAN)
     {
         while(sz_off_t)
-            tmp += (sw_off_t)(*s++ << ((--sz_off_t)<<3));
+            tmp += (sw_off_t)((sw_off_t)(*s++) << (sw_off_t)((--sz_off_t)<<3));
     }
     else
     {
