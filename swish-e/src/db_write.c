@@ -713,11 +713,11 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 
 void setTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int wordcount)
 {
-INDEXDATAHEADER *header = &indexf->header;
 #ifdef USE_BTREE
         DB_WriteTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
 
 #else
+INDEXDATAHEADER *header = &indexf->header;
 
         if ( !header->TotalWordsPerFile || idx >= header->TotalWordsPerFileMax )
         {

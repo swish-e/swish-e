@@ -118,10 +118,12 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
 ********************************************************************/
 int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
 {
-    unsigned char *buffer,
-           *s;
+    unsigned char *buffer;
     int     sz_buffer;
+#ifndef USE_BTREE
+    unsigned char *s;
     int     j;
+#endif
 
     DB_InitReadSortedIndex(sw, indexf->DB);
 

@@ -905,8 +905,8 @@ int     cmp_wordhashdata(const void *s1, const void *s2)
 int     DB_EndWriteWords_Native(void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    FILE   *fp = (FILE *) DB->fp;
 #ifndef USE_BTREE
+    FILE   *fp = (FILE *) DB->fp;
     int     i,
             wordlen;
     long    wordID,
@@ -1157,14 +1157,38 @@ int     DB_DeleteWordData_Native(long wordID, void *db)
     return 0;
 }
 
-long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
+long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
 {
+    unsigned char stack_buffer[8192]; /* just to avoid emalloc,efree overhead */
+    unsigned char *buf, *p;
+    int buf_size;
+
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    /* WORDDATA_Put requires only 2 values (size and data). So
+    ** we need to pack the saved bytes into data
+    */
+
+    /* Get total size */
+    buf_size = data_size + sizeofcompint(saved_bytes);
+
+    if(buf_size > sizeof(stack_buffer))
+        buf = (unsigned char *) emalloc(buf_size);
+    else
+        buf = stack_buffer;
+
+    /* Put saved_bytes in buf */
+    p = compress3(saved_bytes, buf);
+    /* Put bytes worddata buf */
+    memcpy(p,worddata,data_size);
+
     DB->worddata_counter++;
 
     /* Write the worddata to disk */
-    WORDDATA_Put(DB->worddata,lendata,worddata);
+    WORDDATA_Put(DB->worddata,buf_size,buf);
 
+    if(buf != stack_buffer)
+        efree(buf);
     return 0;
 }
 
@@ -1499,11 +1523,18 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long 
     return 0;
 }
 
-long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db)
+long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
 {
+    unsigned char *buf;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
-    *worddata = WORDDATA_Get(DB->worddata,wordID,lendata);
+    *worddata = buf = WORDDATA_Get(DB->worddata,wordID,data_size);
+    /* Get saved_bytes and adjust data_size */
+    *saved_bytes = uncompress2(&buf);
+    *data_size -= (buf - (*worddata));
+    /* Remove saved_bytes from buffer 
+    ** We need to use memmove because data overlaps */
+    memmove(*worddata,buf, *data_size);
 
     return 0;
 }
@@ -1579,17 +1610,19 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
    return 0;
 }
 
-int     DB_WriteSortedIndex_Native(int propID, int *data, int n,void *db)
+int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp_presorted;
    ARRAY *arr;
    int i;
+   int *num = (int *)data;
+   int n = sz_data/sizeof(int);
 
    arr = ARRAY_Create(fp);
    for(i = 0 ; i < n ; i++)
    {
-       ARRAY_Put(arr,i,data[i]);
+       ARRAY_Put(arr,i,num[i]);
 /*
        if(!(i%10000))
        {
@@ -2025,7 +2058,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
 #ifdef USE_BTREE
     /* now calculate index */
-    seek_pos = ((fi->filenum - 1) * count) * 2;
+    seek_pos = (fi->filenum - 1) * count;
 #endif
 
 #ifdef DEBUG_PROP
@@ -2131,7 +2164,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #else
 
     /* now calculate index */
-    seek_pos = (fi->filenum - 1) * count);
+    seek_pos = (fi->filenum - 1) * count;
 
     /* Read in the prop indexes */
     for ( i=0; i < count; i++ )
@@ -2246,7 +2279,6 @@ void    DB_Reopen_PropertiesForRead_Native(void *db)
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     int     no_rename = 0;
     char   *s = estrdup(DB->cur_prop_file);
-
 
     /* Close property file */
     DB_Close_File_Native(&DB->prop, &DB->cur_prop_file, &no_rename);
