@@ -36,7 +36,7 @@ Since so much effort has gone into version 2.2, support for previous versions wi
 =head2 Are there binary distributions available for Swish-e on platform foo?
 
 Foo?  Well, yes there are some binary distributions available.  Please see the swish-e web site for
-a list at http://sunsite.berkeley.edu/SWISH-E/.
+a list at http://swish-e.org/.
 
 In general, it is recommended that you build swish from source, if possible.
 
@@ -58,7 +58,7 @@ C<perldoc swish.cgi>.
 
 =head2 I have read the FAQ but I still have questions about using Swish-e.
 
-The SWISH-E discussion list is the place to go.  http://sunsite.berkeley.edu/SWISH-E/.  Please do not
+The SWISH-E discussion list is the place to go.  http://swish-e.org/.  Please do not
 email developers directly.  The list is the best place to ask questions.
 
 Before you post please read I<QUESTIONS AND TROUBLESHOOTING> located in the L<INSTALL|INSTALL> page.
@@ -105,7 +105,7 @@ and use -T to out debugging information about the index.  A useful command might
 This shouldn't happen.  If it does please post to the swish-e discussion list the details so it can be
 reproduced by the developers.
 
-In the mean time, you can use a FileRules operation to exclude the particular file name, or pathname, or its title.
+In the mean time, you can use a C<FileRules> directive to exclude the particular file name, or pathname, or its title.
 If there are serious problems in indexing certain types of files, they may not have valid text
 in them (they may be binary files, for instance). You can use NoContents to exclude that
 type of file.
@@ -154,11 +154,15 @@ the document.
 
 =head2 How to I prevent indexing of some web pages?
 
-Use a F<robots.text> file in your document root.  This is a standard way to excluded files from search engines, and
+In general (for both spidering and the file system)
+use the C<FileRules> directive to control what is indexed.  
+
+If you are spidering, use a F<robots.text> file in your document root.
+This is a standard way to excluded files from search engines, and
 is fully supported by swish-e.  See http://www.robotstxt.org/
 
 You can also modify the F<spider.pl> spider perl program to skip, index content only, or spider only listed web
-pages.
+pages.  Type C<perldoc spider.pl> in the C<prog-bin> directory for details.
 
 =head2 I'm using the spider.pl program to spider my web site, but some files large files are not indexed.
 
@@ -174,6 +178,55 @@ what's happening, and why.  See C<perldoc spider.pl> for instructions.
 =head2 How do I modify the path or URL of the indexed documents.
 
 Use the C<ReplaceRules> configuration directive to rewrite path names and URLs.
+
+=head2 How do I limit *searches* to just parts of the index?
+
+If you can identify "parts" of your index by the path name you have two options.
+
+The first options is by indexing the document path.  Add this to your configuration:
+
+    MetaNames swishdocpath
+
+Now you can search for words or phrases in the path name:
+
+    swish-e -w 'foo AND swishdocpath=(sales)'
+
+So that will only find documents with the word "foo" and where the file's path
+contains "sales".  That might not works as well as you like, though, as both
+of these paths will match:
+
+    /web/sales/products/index.html
+    /web/accounting/private/sales_we_messed_up.html
+
+This can be solved by searching with a phrase (assuming "/" is not a WordCharacter):
+
+    swish-e -w 'foo AND swishdocpath=("/web/sales/")'
+    swish-e -w 'foo AND swishdocpath=("web sales")'
+
+
+The second option is a bit more powerful.
+With the C<ExtractPath> directive you can use a regular expression to extract
+out a sub-set of the path and save it as a separate meta name:
+
+    MetaNames department
+    ExtractPath department regex !^/web/([^/]+).+$!$1/
+
+Which says match a path that starts with "/web/" and extract out everything
+after that upto, but not including the next "/" and save it in variable $1, and
+then match everything from the "/" ownward.  Then replace the entire matches string
+with $1.  And that gets indexed as meta name "department".
+
+Now you can search like:
+
+    swish-e -w 'foo AND department=sales'
+
+and be sure that you will only match the documents in the /www/sales/* path.
+
+This has the added (yet small) advantage over indexing swishdocpath of saving
+a little memory while indexing.
+
+Finally, if you have something more complicated, use C<-S prog> and write a perl
+program or use a filter to set a meta tag when processing each file.
 
 =head2 How can I index data from a database?
 
