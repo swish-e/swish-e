@@ -613,7 +613,9 @@ IndexFILE *indexf=NULL;
 				progerr(sw->errorstr);
 			}
 		}
-		else if (grabYesNoField(line, "FileInfoCompression", &indexf->header.applyFileInfoCompression))	{}	/* 11/24/98 MG */
+		else if (grabYesNoField(line, "FileInfoCompression", &indexf->header.applyFileInfoCompression))	{}
+		else if (grabYesNoField(line, "OkNoMeta", &sw->OkNoMeta))	{}
+		else if (grabYesNoField(line, "ReqMetaName", &sw->ReqMetaName))	{}
 		else if (!parseconfline(sw,line)) {
 			printf("Bad directive on line #%d: %s", linenumber, line );
 			baddirective = 1;
@@ -763,45 +765,6 @@ char *path;
 	(*IndexingDataSource->indexpath_fn)(sw,path);
 }
 
-int vgetc(vp)
-void *vp;
-{
-	/* invoke routine to get char from "file" */
-	return (*IndexingDataSource->vgetc_fn)(vp);
-}
-
-int vsize(vp)
-void *vp;
-{
-	/* invoke routine to get size of "file" */
-	return (*IndexingDataSource->vsize_fn)(vp);
-}
-
-int vtell(vp)
-void *vp;
-{
-        /* invoke routine to get position in "file" */
-        return (*IndexingDataSource->vtell_fn)(vp);
-}
-
-int vseek(vp,pos)
-void *vp;
-long pos;
-{
-        /* invoke routine to set pointer in "file" */
-        return (*IndexingDataSource->vseek_fn)(vp,pos);
-}
-
-int vread(buffer,len,size,vp)
-char *buffer;
-int len;
-int size;
-void *vp;
-{
-        /* invoke routine to set pointer in "file" */
-        return (*IndexingDataSource->vread_fn)(buffer,len,size,vp);
-}
-
 int parseconfline(sw,line)
 SWISH *sw;
 char *line;
@@ -817,7 +780,7 @@ unsigned char *buffer;
 	if(filelen)
 	{
 		buffer=emalloc(filelen+1);
-		vread(buffer,1,filelen,fp);
+		fread(buffer,1,filelen,fp);
 		buffer[filelen]='\0';
 	} else {    /* if we are reading from a popen call, filelen is 0 */
 

@@ -11,19 +11,20 @@
 #include "file.h"
 
 
-int getXMLField(indexf, tag, docPropName, applyautomaticmetanames, verbose)
+int getXMLField(indexf, tag, docPropName, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
 char* tag;
 int* docPropName;
 int *applyautomaticmetanames;
 int verbose;
+int OkNoMeta;
 {
 char* temp;
 static int lenword=0;
 static char *word=NULL;
 int i;
 struct metaEntry* list;
-	
+
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
 	if (docPropName != NULL)
@@ -87,7 +88,7 @@ struct metaEntry* list;
 		} else break;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */
-	if (OKNOMETA) {
+	if (OkNoMeta) {
 		/*    printf ("\nwarning: metaName %s does not exiest in the user config file", word); */
 		return 1;
 	}
@@ -142,7 +143,7 @@ char *summary=NULL;
 				/* Now let us look for '>' */
 			if((endtag=strchr(tag,'>'))) {  
 				*endtag++='\0';
-				if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf, tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1)) 
+				if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf, tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) 
 				{
 					/* realloc memory if needed */
 					if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
@@ -161,7 +162,7 @@ char *summary=NULL;
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag+1,&docPropName, &sw->applyautomaticmetanames,sw->verbose))!=1)) {
+				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf, tag+1,&docPropName, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
 					/* search for the metaname in the
 				        ** list of currentmetanames */
 					if(currentmetanames) {

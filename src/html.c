@@ -442,7 +442,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 				structure = getstructure(tag,structure);
 				if((tag[0]=='!') && lstrstr(tag,"META") && (lstrstr(tag,"START") || lstrstr(tag,"END"))) {    /* Check for META TAG TYPE 1 */
 					if(lstrstr(tag,"START")) {
-						if((metaNameOld=getMeta(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1) {
+						if((metaNameOld=getMeta(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1) {
 							/* realloc memory if needed */
 							if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen*=2)*sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
 							/* add netaname to array of current metanames */
@@ -478,7 +478,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 					ftotalwords +=parseMetaData(sw,indexf,tag,sw->filenum,structure,thisFileEntry);
 					p=endtag;
 				}  /* Check for XML field */
-				else if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1)) {
+				else if ((tag[0]!='!') && ((metaNameXML=getXMLField(indexf,tag,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
 					/* realloc memory if needed */
 					if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
 					/* add netaname to array of current metanames */
@@ -496,7 +496,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */
-				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf,tag+1,&docPropName,&sw->applyautomaticmetanames,sw->verbose))!=1)) {
+				else if((tag[0]=='/') && ((metaNameXML=getXMLField(indexf,tag+1,&docPropName,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta))!=1)) {
 					/* search for the metaname in the
 				        ** list of currentmetanames */
 					if(currentmetanames) {
@@ -623,12 +623,13 @@ int structure;
 
 */
 
-int getMeta(indexf, tag, docPropName, applyautomaticmetanames, verbose)
+int getMeta(indexf, tag, docPropName, applyautomaticmetanames, verbose, OkNoMeta)
 IndexFILE *indexf;
 char* tag;
 int* docPropName;
 int *applyautomaticmetanames;
 int verbose;
+int OkNoMeta;
 {
 char* temp;
 static int lenword=0;
@@ -722,7 +723,7 @@ struct metaEntry* list=NULL;
 		} else break;
 	}
 	/* If it is ok not to have the name listed, just index as no-name */
-	if (OKNOMETA) {
+	if (OkNoMeta) {
 		/*    printf ("\nwarning: metaName %s does not exiest in the user config file", word); */
 		return 1;
 	}
@@ -749,10 +750,10 @@ int docPropName = 0;
 int position=1; /* position of word */
 int wordcount=0; /* Word count */
 	temp = NULL;
-	metaName= getMeta(indexf, tag, &docPropName, &sw->applyautomaticmetanames,sw->verbose);
+	metaName= getMeta(indexf, tag, &docPropName, &sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta);
 
 	/* 10/11/99 - Bill Moseley - don't index meta tags not specified in MetaNames */
-	if ( REQMETANAME && metaName == 1 ) return 0;
+	if ( sw->ReqMetaName && metaName == 1 ) return 0;
 
 	temp = (char*) lstrstr((char*) tag,(char*) "CONTENT");
 	
@@ -947,7 +948,7 @@ int found,lensummary;
 		if(convsummary!=summary) efree(summary);
 		summary=convsummary;
         }
-        if(summary && size && strlen(summary)>size) 
+        if(summary && size && ((int)strlen(summary))>size) 
                 summary[size]='\0';
 	return summary;
 }
