@@ -97,21 +97,16 @@ vms_dir = \
     src/vms/acconfig.h_vms \
     src/vms/build_swish-e.com \
     src/vms/config.h \
+    src/vms/descrip_axp.mms \
+    src/vms/descrip_libxml2.mms \
+    src/vms/descrip_vax.mms \
+    src/vms/libtest.opt \
     src/vms/readme_vms.txt \
     src/vms/regex.c \
     src/vms/regex.h \
-    src/vms/descrip_vax.mms \
-    src/vms/descrip_axp.mms \
-    src/vms/descrip_libxml.mms \
-    src/vms/sprintf_2_2/install   \
-    src/vms/sprintf_2_2/license.txt   \
-    src/vms/sprintf_2_2/makefile   \
-    src/vms/sprintf_2_2/readme   \
-    src/vms/sprintf_2_2/readme.html  \
-    src/vms/sprintf_2_2/snprintf.c   \
-    src/vms/sprintf_2_2/snprintf.c_orig   \
-    src/vms/sprintf_2_2/snprintf.h   \
-    src/vms/sprintf_2_2/test.c
+    src/vms/regexpr.h \
+    src/vms/swish.opt
+
 
 win32_dir = \
     src/win32/dirent.c \
