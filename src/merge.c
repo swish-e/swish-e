@@ -867,7 +867,7 @@ IndexFILE *indexf=sw->indexlist;
         if(!sw->entryArray)
         {
                 sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
-                sw->entryArray->maxWordSize=0;
+                sw->entryArray->numWords=0;
                 sw->entryArray->elist=NULL;
         }
                 /* Compute hash value of word */
@@ -876,8 +876,7 @@ IndexFILE *indexf=sw->indexlist;
 	ip->nexthash=sw->hashentries[hashval];
 	sw->hashentries[hashval]=ip;
 
-        if((lenword=strlen(ip->word))>sw->entryArray->maxWordSize)
-                sw->entryArray->maxWordSize=lenword;
+        sw->entryArray->numWords++;
         indexf->header.totalwords++;
 
                 /* In merge there is no dup !!! */

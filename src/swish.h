@@ -451,7 +451,7 @@ struct filter {
 };
 
 typedef struct {
-	int maxWordSize;
+	int numWords;
 	ENTRY **elist;
 } ENTRYARRAY;
 

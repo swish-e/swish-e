@@ -300,7 +300,7 @@ IndexFILE *indexf=sw->indexlist;
 	if(!sw->entryArray)
 	{
 		sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
-		sw->entryArray->maxWordSize=0;
+		sw->entryArray->numWords=0;
 		sw->entryArray->elist=NULL;
 	}
 		/* Compute hash value of word */	
@@ -328,8 +328,7 @@ IndexFILE *indexf=sw->indexlist;
 
 		en->locationarray[0] = tp;
 
-		if((lenword=strlen(word))>sw->entryArray->maxWordSize)
-			sw->entryArray->maxWordSize=lenword;
+		sw->entryArray->numWords++;
 		indexf->header.totalwords++;
 	}
 	else {
@@ -1706,20 +1705,19 @@ const ENTRY *ep2=*(ENTRY * const *)e2;
 /* Builds a sorted array with all of the words */
 void BuildSortedArrayOfWords(SWISH *sw,IndexFILE *indexf)
 {
-int numWords,i,j;
+int i,j;
 ENTRY *e;
 	if(sw->verbose) {
 		printf("Sorting Words alphabetically\n");fflush(stdout);
 	}
-	numWords=indexf->header.totalwords;
 		/* Build the array with the pointers to the entries */
-	sw->entryArray->elist=(ENTRY **)emalloc(numWords*sizeof(ENTRY *));
+	sw->entryArray->elist=(ENTRY **)emalloc(sw->entryArray->numWords*sizeof(ENTRY *));
 		/* Fill the array with all the entries */
 	for(i=0,j=0;i<SEARCHHASHSIZE;i++)
 		for(e=sw->hashentries[i];e;e=e->nexthash)
 			sw->entryArray->elist[j++]=e;
 		/* Sort them */
-	qsort(sw->entryArray->elist,numWords,sizeof(ENTRY *),&entrystructcmp);
+	qsort(sw->entryArray->elist,sw->entryArray->numWords,sizeof(ENTRY *),&entrystructcmp);
 }
 
 
