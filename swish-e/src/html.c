@@ -442,6 +442,8 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
                             }
                             p = endtag;
                         }
+                        else
+                            p = endtag;
                     }
                     else if (lstrstr(tag, "END"))
                     {
