@@ -32,9 +32,15 @@ Section "Program" ; (default, required section)
 SetOutPath "$INSTDIR\swish-e"
 File /r .\*
 
-; Copy libxml2 used to build binary
+; Copy libxml2 sources
 SetOutPath "$INSTDIR\libxml2"
 File /r ..\libxml2\*
+; Copy zlib sources
+SetOutPath "$INSTDIR\zlib"
+File /r ..\zlib\*
+; Copy pcre sources
+SetOutPath "$INSTDIR\pcre"
+File /r ..\pcre\*
 
 ; Rename a bunch of text files so Windows has a clue
 Rename "$INSTDIR\COPYING" "$INSTDIR\COPYING.txt"

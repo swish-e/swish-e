@@ -41,6 +41,9 @@ File ..\libxml2\win32\dsp\libxml2\*.dll
 File ..\zlib\zlib.dll
 File ..\pcre\bin\pcre.dll
 
+; Microsoft Visual Studio 7 Runtime
+File "C:\Program Files\Common Files\Microsoft Shared\VSA\7.0\VsaEnv\msvcr70.dll"
+
 ; Misc SWISH-E Support Files
 File src\swishspider
 File /r filter-bin
