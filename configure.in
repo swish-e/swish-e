@@ -76,7 +76,7 @@ dnl Optional building with libxml2
 AC_ARG_WITH(libxml2,[\
   --with-libxml2[=DIR]    use libxml2 in DIR],,withval=no)
 
-if test "$withval" == "yes"; then
+if test "$withval" = "yes"; then
     AC_MSG_RESULT([** Enabling libxml2 support -- good choice! **])
     LIBXML2_OBJS="parser.o"
     LIBXML2_LIB="-lxml2"
