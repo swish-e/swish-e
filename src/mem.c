@@ -550,12 +550,15 @@ MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes)
 /* 2001-08 jmruiz -- If a zone is full, before allocating a new one
 ** search in previous zones. Very useful if a Mem_ZoneReset was executed
 */
+/* 2001-08 jmruiz -- Thanks to Bill's comments ROUND_LONG is back */
 void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 {
 	ZONE		*zone;
 	ZONE		*newzone;
 	ZONE		*tmp;
 	unsigned char *ptr;
+
+	size = ROUND_LONG(size);
 
 	/* statistics */
 	head->allocs++;
@@ -584,7 +587,7 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size)
 		}
 		if(!tmp)
 		{
-			newzone = allocChunk(size > head->size ? ROUND_LONG(size) : head->size);
+			newzone = allocChunk(size > head->size ? size : head->size);
 			head->next = newzone;
 			newzone->next = zone;
 			zone = newzone;
