@@ -20,10 +20,10 @@
 #define _DIRENT
 
 #include <direct.h>
-
+#include <sys/types.h>
 struct dirent 
-{ 
-    ino_t    d_ino;                   /* a bit of a farce */ 
+{
+	ino_t    d_ino;                   /* a bit of a farce */ 
     short    d_reclen;                /* more farce */ 
     short    d_namlen;                /* length of d_name */ 
     char    *d_name;

@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "tmp/libswishe_Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\..\..\zlib" /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\..\..\zlib" /I "." /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "tmp/libswishe_Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\..\..\expat\xmlparse" /I "..\..\..\expat/xmltok" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "../../../pcre/include" /I "..\..\..\expat/xmltok" /D "_LIB" /D "_DEBUG" /D "_MBCS" /D "WIN32" /YX /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../../../zlib" /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "../../../pcre/include" /I "..\..\..\expat/xmltok" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "_LIB" /D "_DEBUG" /D "_MBCS" /D "WIN32" /D "HAVE_ZLIB" /YX /FD /I /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -97,11 +97,15 @@ SOURCE=..\date_time.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\db.c
+SOURCE=..\db_native.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\db_native.c
+SOURCE=..\db_read.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\db_write.c
 # End Source File
 # Begin Source File
 
@@ -110,6 +114,10 @@ SOURCE=.\dirent.c
 # Begin Source File
 
 SOURCE=..\docprop.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\docprop_write.c
 # End Source File
 # Begin Source File
 
@@ -146,6 +154,10 @@ SOURCE=..\fs.c
 # Begin Source File
 
 SOURCE=..\hash.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\headers.c
 # End Source File
 # Begin Source File
 
@@ -189,7 +201,7 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\mkstemp.c
+SOURCE=..\mkstemp.c
 # End Source File
 # Begin Source File
 
@@ -202,6 +214,10 @@ SOURCE=..\parse_conffile.c
 # Begin Source File
 
 SOURCE=..\parser.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\pre_sort.c
 # End Source File
 # Begin Source File
 
@@ -226,10 +242,6 @@ SOURCE=..\result_sort.c
 # Begin Source File
 
 SOURCE=..\search.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\search_alt.c
 # End Source File
 # Begin Source File
 
@@ -290,10 +302,6 @@ SOURCE=..\check.h
 # Begin Source File
 
 SOURCE=..\compress.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\config.h
 # End Source File
 # Begin Source File
 
@@ -365,6 +373,10 @@ SOURCE=..\hash.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\headers.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\html.h
 # End Source File
 # Begin Source File
@@ -398,6 +410,10 @@ SOURCE=..\merge.h
 # Begin Source File
 
 SOURCE=..\metanames.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\mkstemp.h
 # End Source File
 # Begin Source File
 
