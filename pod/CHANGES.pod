@@ -31,9 +31,9 @@ You can now use continuation lines in the config file:
         are \
         was
 
-The cannot be any characters following the backslash.
+There may not be any characters following the backslash.
 
-=item Fixed Buzzwords (and other word lists intered in the config)
+=item Fixed Buzzwords (and other word lists entered in the config)
 
 Words entered in config were not converted to lower case before storing in the index.
 
