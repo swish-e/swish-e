@@ -255,7 +255,7 @@ L<IndexAltTagMetaName|/"item_IndexAltTagMetaName"> *tagname*|as-text
 
 =item *
 
-L<IndexComments|/"item_IndexComments"> [YES|no]
+L<IndexComments|/"item_IndexComments"> [yes|NO]
 
 =item *
 

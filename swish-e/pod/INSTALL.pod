@@ -200,6 +200,15 @@ will display the options.  Two options are of common interest: --prefix sets
 the top-level installation directory, and --disable-shared will link swish-e
 statically, which may be needed on some platforms (Solaris 2.6 perhaps).
 
+Note: On some platfoms (e.g. Solaris) zlib is installed in /usr/local/lib, but the
+linker does not use that path for run-time linkages.  Swish will build correctly
+but make check will fail.  The solution is to set the environment variable 
+
+    LDFLAGS=-R/usr/local/lib
+
+before running configure.
+
+
 Now configure and build Swish-e:
 
     $ ../swish-e-2.4.0/configure --prefix=$HOME/swish-e
@@ -409,7 +418,7 @@ The Swish-e documentation in HTML format was created with Pod::HtmlPsPdf,
 a package of Perl modules written and/or modified by Stas Bekman to automate
 the conversion of documents in pod format (see perldoc perlpod) to HTML,
 Postscript, and PDF.  A slightly modified version of this package is
-include with the Swish-e distribution and used for building the HTML.
+included with the Swish-e distribution and used for building the HTML.
 
 If your system has the B<necessary tools> to build Postscript and the
 converter ps2pdf installed, you may be able to build the Postscript
