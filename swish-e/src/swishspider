@@ -1,8 +1,9 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 use strict;
 
 use LWP::UserAgent;
 use HTTP::Status;
+use HTML::Parser 3.00;
 use HTML::LinkExtor;
 
 if (scalar(@ARGV) != 2) {
