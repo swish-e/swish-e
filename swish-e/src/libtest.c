@@ -84,6 +84,10 @@ int     main(int argc, char **argv)
     else
     {
         display_results( swish_handle, results );
+
+        printf( "Testing SW_ResultsToSW_HANDLE() = '%s'\n",
+            SW_ResultsToSW_HANDLE( results ) == swish_handle ? "OK" : "Not OK" );
+        
         Free_Results_Object( results );
     }
 
@@ -183,6 +187,7 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 {
     SW_RESULT result;
     int       hits;
+    int       first = 1;
 
     if ( !results )  /* better safe than sorry */
         return;
@@ -245,6 +250,14 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
             
             header_value = SwishResultIndexValue( result, example, &header_type );
             print_header_value( swish_handle, example, header_value, header_type );
+        }
+
+        if ( first )
+        {
+            printf( "Testing SW_ResultToSW_HANDLE() = '%s'\n",
+                SW_ResultToSW_HANDLE( result ) == swish_handle ? "OK" : "Not OK" );
+
+            first = 0;
         }
             
     }

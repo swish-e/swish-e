@@ -168,7 +168,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
         s=emalloc(14);
         i=*(unsigned long *)prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        sprintf(s,"%.013lu",i);
+        sprintf(s,"%lu",i);
         return s;
     }
 
