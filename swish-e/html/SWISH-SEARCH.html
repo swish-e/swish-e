@@ -1,0 +1,863 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+  <head>
+   <title>SWISH-Enhanced:  SWISH-SEARCH - SWISH-E Searching Instructions </title>
+   <link href="./style.css" rel=stylesheet type="text/css" title="refstyle">
+  </head>
+  <body>
+
+    <h1 class="banner">
+        <img src="images/swish.gif" alt="Swish-E Logo"><br>
+        <img src="images/swishbanner1.gif"><br>
+        <img src="images/dotrule1.gif"><br>
+         SWISH-SEARCH - SWISH-E Searching Instructions 
+    </h1>
+
+    <hr>
+
+    <p>
+    <div class="navbar">
+      <a href="./SWISH-CONFIG.html">Prev</a> |
+      <a href="./index.html">Contents</a> |
+      <a href="./SWISH-FAQ.html">Next</a>
+    </div>
+    <p>
+
+    <div class="toc">
+      
+<A NAME="toc"></A>
+<P><B>Table of Contents:</B></P>
+
+<UL>
+
+	<LI><A HREF="#OVERVIEW">OVERVIEW</A>
+	<LI><A HREF="#Searching_Syntax_and_Operations">Searching Syntax and Operations</A>
+	<UL>
+
+		<LI><A HREF="#Boolean_Operators">Boolean Operators</A>
+		<LI><A HREF="#Truncation">Truncation</A>
+		<LI><A HREF="#Order_of_Evaluation">Order of Evaluation</A>
+		<LI><A HREF="#Meta_Tags">Meta Tags</A>
+		<LI><A HREF="#Phrase_Searching">Phrase Searching</A>
+		<LI><A HREF="#Context">Context</A>
+	</UL>
+
+	<LI><A HREF="#Searching_with_Perl">Searching with Perl</A>
+	<UL>
+
+		<LI><A HREF="#CGI_Danger_">CGI Danger!</A>
+		<LI><A HREF="#Perl_Modules">Perl Modules</A>
+	</UL>
+
+	<LI><A HREF="#Document_Info">Document Info</A>
+</UL>
+
+    </div>
+
+    
+
+	    [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+<P>
+<H1><A NAME="OVERVIEW">OVERVIEW</A></H1>
+<P>
+This page describes the process of searching with SWISH-E. Please see the <A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A> page for information the SWISH-E configuration file directives, and <A HREF="././SWISH-RUN.html">SWISH-RUN</A> for a complete list of command line arguments.
+
+<P>
+Searching a SWISH-E index involves passing <A HREF="././SWISH-RUN.html">command line arguments</A>
+to SWISH-E that specify the index file to use, and the <A HREF="#Searching_Syntax_and_Operations">query</A>
+(or search words) to locate in the index. SWISH-E returns a list of file
+names (or URLs) that contain the matched search words.  <A HREF="#Searching_with_Perl">Perl</A> is often used as a front-end to SWISH-E such as in CGI applications, and <A HREF="#Perl_Modules">perl modules</A> exist to for accessing SWISH-E.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Searching_Syntax_and_Operations">Searching Syntax and Operations</A></H1>
+<P>
+The <CODE>-w</CODE> command line argument (switch) is used specify the search query to SWISH-E.
+When running swish from a shell prompt, be careful to protect your query
+from shell metacharacters and shell expansions. This often means placing
+single or double quotes around your query. See <A HREF="#Searching_with_Perl">Searching with Perl</A> if you plan to use Perl as a front end to SWISH-E.
+
+<P>
+The following section describes various aspects of searching with SWISH-E.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Boolean_Operators">Boolean Operators</A></H2>
+<P>
+You can use the Boolean operators <STRONG>and</STRONG>, <STRONG>or</STRONG>, or <STRONG>not</STRONG> in searching. Without these Boolean operators, SWISH-E will assume you're <STRONG>and</STRONG>ing the words together. The operators are not case sensitive.
+
+<P>
+[Note: you can change the default to <STRONG>or</STRONG>ing by changing the variable DEFAULT_RULE in the config.h file and
+recompiling SWISH-E.]
+
+<P>
+Evaluation takes place from <STRONG>left to right</STRONG> only, although you can use parentheses to force the order of evaluation.
+
+<P>
+Examples:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>     swish-e -w &quot;smilla or snow&quot; -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+retrieves files containing either the words ``smilla'' or ``snow''
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>     swish-e -w &quot;smilla and snow not sense&quot; -f myIndex </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+retrieves first the files that contain both the words ``smilla'' and
+``snow''; then among those the ones that do not contain the word ``sense''
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Truncation">Truncation</A></H2>
+<P>
+The wildcard (*) is available, however it can only be used at the end of a
+word. Usage at the beginning or in the middle of the word will yield no
+results.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>     swish-e -w &quot;librarian&quot; -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+this query only retrieves files which contain the given word.
+
+<P>
+On the other hand:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>     swish-e -w &quot;librarian*&quot; -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+retrieves ``librarians'', ``librarianship'', etc. along with ``librarian''.
+
+<P>
+Note that wildcard searches combined with word stemming can lead to
+unexpected results. If stemming is enabled, a search term with a wildcard
+will be stemmed internally before searching. So searching for <CODE>running*</CODE> will actually be a search for <CODE>run*</CODE>, so
+<CODE>running*</CODE> would find <CODE>runway</CODE>. Also, searching for <CODE>runn*</CODE> will not find <CODE>running</CODE> as you might expect, since
+<CODE>running</CODE> stems to <CODE>run</CODE> in the index, and thus <CODE>runn*</CODE> will not find <CODE>run</CODE>.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Order_of_Evaluation">Order of Evaluation</A></H2>
+<P>
+Expressions are always evaluated left to right: 
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish -w &quot;juliet not ophelia and pac&quot; -f myIndex </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+retrieves files which contain ``juliet'' and ``pac'' but not ``ophelia'' 
+
+<P>
+However it is always possible to force the order of evaluation by using
+parenthesis. For example: 
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w &quot;juliet not (ophelia and pac)&quot; -f myIndex </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+retrieves files with ``juliet'' and containing neither ``ophelia'' nor
+``pac''.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Meta_Tags">Meta Tags</A></H2>
+<P>
+MetaNames are used to represent <EM>fields</EM> (or columns in a database) and provide a way to search in only parts of a
+document. See <A HREF="././SWISH-CONFIG.html#Document_Contents_Directives">SWISH-CONFIG</A> for a description of MetaNames, and how they are specified in the source
+document.
+
+<P>
+To limit a search to words found in a meta tag you prefix the keywords with
+the name of the meta tag, followed by the equal sign:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    metaname = word
+    metaname = (this or that)
+    metatname = ( (this or that) or &quot;this phrase&quot; )</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+It is not necessary to have spaces at either side of the ``='',
+consequently the following are equivalent:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w &quot;metaName=word&quot;
+    swish-e -w &quot;metaName=word&quot; 
+    swish-e -w &quot;metaName= word&quot; </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+To search on a word that contains a ``='', precede the ``='' with a ``\''
+(backslash).
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w &quot;test\=3 = x\=4 or y\=5&quot; -f &lt;index.file&gt; </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+this query returns the files where the word ``x=4'' is associated with the
+metaName ``test=3'' or that contains the word ``y=5'' not associated with
+any metaName.
+
+<P>
+Queries can be also constructed using any of the usual search features,
+moreover metaName and plain search can be mixed in a single query.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>     swish-e -w &quot;metaName1 = (a1 or a4) not (a3 and a7)&quot; -f index.swish-e</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+This query will retrieve all the files in which the ``metaName1'' is
+associated either with ``a1'' or ``a4'' and that do not contain the words
+``a3'' and ``a7'', where ``a3'' and ``a7'' are not associated to any meta
+name.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Phrase_Searching">Phrase Searching</A></H2>
+<P>
+To search for a phrase in a document use double-quotes to delimit your
+search terms. (The phrase delimiter is set in src/swish.h.)
+
+<P>
+You must protect the quotes from the shell.
+
+<P>
+For example, under Unix:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w '&quot;this is a pharase&quot; or (this and that)'
+    swish-e -w 'meta1=(&quot;this is a pharase&quot;) or (this and that)'</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Or under Windows:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e -w \&quot;this is a pharase\&quot; or (this and that)</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>  </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Context">Context</A></H2>
+<P>
+At times you might not want to search for a word in every part of your
+files since you know that the <CODE>word(s)</CODE> are present in a
+particular tag. The ability to seach according to context greatly increases
+the chances that your hits will be relevant, and SWISH-E provides a
+mechanism to do just that. 
+
+<P>
+The -t option in the search command line allows you to search for words
+that exist only in specific HTML tags. Each character in the string you
+specify in the argument to this option represents a different tag in which
+the word is searched; that is you can use any combinations of the following
+characters:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    H means all&lt;HEAD&gt; tags 
+    B stands for &lt;BODY&gt; tags 
+    t is all &lt;TITLE&gt; tags 
+    h is &lt;H1&gt; to &lt;H6&gt; (header) tags 
+    e is emphasized tags (this may be &lt;B&gt;, &lt;I&gt;, &lt;EM&gt;, or &lt;STRONG&gt;) 
+    c is HTML comment tags (&lt;!-- ... --&gt;)</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    # This search will look for files with these two words in their titles only.
+    swish-e -w &quot;apples oranges&quot; -t t -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    # This search will look for files with these words in comments only.
+    swish-e -w &quot;keywords draft release&quot; -t c -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    This search will look for words in titles, headers, and emphasized tags.
+    swish-e -w &quot;world wide web&quot; -t the -f myIndex</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Searching_with_Perl">Searching with Perl</A></H1>
+<P>
+Perl ( <A HREF="http://www.perl.com/">http://www.perl.com/</A> ) is
+probably the most common programming language used with SWISH-E, especially
+in CGI interfaces. Perl makes searching and parsing results with SWISH-E
+easy, but if not done properly can leave your server vulnerable to attacks.
+
+<P>
+When designing your CGI scripts you should carefully screen user input, and
+include features such as paged results and a timer to limit time required
+for a search to complete. These are to protect your web site against a
+denial of service (DoS) attack.
+
+<P>
+Included with every distribution of Perl is a document called perlsec --
+Perl Security.
+<EM>Please</EM> take time to read and understand that document before writing CGI scripts
+in perl.
+
+<P>
+Type at your shell/command prompt:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    perldoc perlsec</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+If nothing else, start every CGI program in perl as such:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    #!/usr/local/bin/perl -wT
+    use strict;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+That alone won't make your script secure, but may help you fine insecure
+code.    
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="CGI_Danger_">CGI Danger!</A></H2>
+<P>
+There are many examples of CGI scripts on the Internet. Many are poorly
+written and insecure. A commonly seen way to execute SWISH-E from a perl
+CGI script is with a
+<EM>piped open</EM>. For example, it is common to see this type of <CODE>open()</CODE>:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    open(SWISH, &quot;$swish -w $query -f $index|&quot;);</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+This <CODE>open()</CODE> gives shell access to the entire Internet! Often an attempt is made to
+strip <CODE>$query</CODE> of <EM>bad</EM> characters. But, this often fails since it's hard to guess what every <EM>bad</EM> character is. Would you have thought about a null? A better approach is to
+only allow <EM>in</EM> known safe characters.
+
+<P>
+Even if you can be sure that any user supplied data is safe, this <EM>piped open</EM> still passes the command parameters through the shell. If nothing else,
+it's just an extra unnecessary step to running SWISH-E.
+
+<P>
+Therefore, the recommended approach is to fork and exec SWISH-E directly
+without passing through the shell. This process is described in the perl
+man page <CODE>perlipc</CODE> under the appropriate heading
+<STRONG>Safe Pipe Opens</STRONG>.
+
+<P>
+Type:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    perldoc perlipc</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+If all this sounds complicated you may wish to use a Perl module that does
+all the hard work for you.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Perl_Modules">Perl Modules</A></H2>
+<P>
+There are a couple of Perl modules for accessing SWISH-E. Hopefully, they
+make using SWISH-E easier. One of the modules requires the use of the
+SWISH-E C library, and the other option just requires that your operating
+system knows how to fork.
+
+<P>
+<STRONG>The Included SWISH Perl Module</STRONG>
+
+
+
+<P>
+When compiling SWISH-E from source the build process creates a C library
+(see the <A HREF="././INSTALL.html#Installing_the_SWISH_E_C_Library">SWISH-E INSTALL</A> documentation). The SWISH-E distribution includes a <EM>perl</EM> directory with files required to create the <EM>SWISHE.pm</EM> module. This module will <EM>embed</EM> SWISH-E into your perl program so that searching does not require running
+an external program. Embedding the SWISH-E program into your perl program
+results in faster SWISH-E searches since it avoids the cost of forking and
+exec'ing a separate program.
+
+<P>
+Building and usage instructions for the <EM>SWISHE.pm</EM> module can be found in the
+<A HREF="././SWISH-PERL.html">SWISH-PERL</A> man page.
+
+<P>
+Here's an edited snip from that man page:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    my $handle = SwishOpen( $indexfiles )
+        or die &quot;Failed to open '$indexfiles'&quot;;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    my $num_results = SwishSearch($handle, $query, 1, $props, $sort);</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    unless ( $num_results ) {
+        print &quot;No Results\n&quot;;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>        my $error = SwishError( $handle );
+        print &quot;Error number: $error\n&quot; if $error;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>        return;  # or next.
+    }</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    while( my($rank,$index,$file,$title,$start,$size,@props)
+        = SwishNext( $handle ))
+    {
+        print join( ' ',
+              $rank,
+              $index,
+              $file,
+              qq[&quot;$title&quot;],
+              $start,
+              $size,
+              map{ qq[&quot;$_&quot;] } @props,
+              ),&quot;\n&quot;;
+    }</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+<STRONG>SWISH Modules on CPAN</STRONG>
+
+
+
+<P>
+The Comprehensive Perl Archive Network, or CPAN, is a collection of modules
+for use with Perl. Always search CPAN (http://search.cpan.org/) before
+starting any new program. Chances are someone has written just what you
+need.
+
+<P>
+On CPAN are also modules for searching with SWISH-E. They can be found at
+<A
+HREF="http://search.cpan.org/search?mode=module&query=SWISH">http://search.cpan.org/search?mode=module&query=SWISH</A>
+The main SWISH module (different from the SWISH<STRONG>E</STRONG> module included with the SWISH-E distribution) provides a high-level Object
+Oriented interface to SWISH-E, and the same can interface can be used to
+used to either fork and exec the swish-e binary, or use the SWISH-E C
+Library if installed by just changing one line of code.
+
+<P>
+Here's an example of SWISH module usage from the synopsis:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    use SWISH;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    $sh = SWISH-&gt;connect('Fork',
+       prog     =&gt; '/usr/local/bin/swish-e',
+       indexes  =&gt; 'index.swish-e',
+       results  =&gt; sub { print $_[1]-&gt;as_string,&quot;\n&quot; },
+    ) or die $SWISH::errstr unless $sh;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    $hits = $sh-&gt;query('metaname=(foo or bar)');</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Document_Info">Document Info</A></H1>
+<P>
+$Id$
+
+<P>
+.
+
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+
+
+    <p>
+    <div class="navbar">
+      <a href="./SWISH-CONFIG.html">Prev</a> |
+      <a href="./index.html">Contents</a> |
+      <a href="./SWISH-FAQ.html">Next</a>
+    </div>
+    <p>
+
+    <P ALIGN="CENTER">
+    <IMG ALT="" WIDTH="470" HEIGHT="10" SRC="images/dotrule1.gif"></P>
+    <P ALIGN="CENTER">
+
+    <div class="footer">
+        Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Hewlett-Packard Company<BR>
+        Originally by Kevin Hughes, kev@kevcom.com, March 11, 1994.
+        <BR>SWISH-E is distributed with <B>no warranty</B> under the terms of the <A 
+        HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</A>,<BR>
+        Free Software Foundation, Inc., 
+        59 Temple Place - Suite 330, Boston, MA  02111-1307, USA<BR> 
+        Public questions may be posted to 
+        the <A HREF="http://sunsite.berkeley.edu/SWISH-E/Discussion/">SWISH-E Discussion</A>.
+    </div>
+
+</body>
+</html>

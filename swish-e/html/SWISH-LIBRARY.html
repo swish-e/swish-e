@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+  <head>
+   <title>SWISH-Enhanced:  Interface to the SWISH-E C library </title>
+   <link href="./style.css" rel=stylesheet type="text/css" title="refstyle">
+  </head>
+  <body>
+
+    <h1 class="banner">
+        <img src="images/swish.gif" alt="Swish-E Logo"><br>
+        <img src="images/swishbanner1.gif"><br>
+        <img src="images/dotrule1.gif"><br>
+         Interface to the SWISH-E C library 
+    </h1>
+
+    <hr>
+
+    <p>
+    <div class="navbar">
+      <a href="./SWISH-FAQ.html">Prev</a> |
+      <a href="./index.html">Contents</a> |
+      <a href="./SWISH-PERL.html">Next</a>
+    </div>
+    <p>
+
+    <div class="toc">
+      
+<A NAME="toc"></A>
+<P><B>Table of Contents:</B></P>
+
+<UL>
+
+	<LI><A HREF="#What_is_the_swish_e_C_library">What is the swish-e C library</A>
+	<LI><A HREF="#Syntax_of_the_functions_of_the_l">Syntax of the functions of the library</A>
+	<LI><A HREF="#Bug_Reports">Bug-Reports</A>
+	<LI><A HREF="#Author">Author</A>
+	<LI><A HREF="#Document_Info">Document Info</A>
+</UL>
+
+    </div>
+
+    
+
+	    [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+<P>
+<H1><A NAME="What_is_the_swish_e_C_library">What is the swish-e C library</A></H1>
+<P>
+It is a C library implementation based on swish-e-2.0 beta4, but many of
+the functions have been rewritten in order to get a thread safe library.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Syntax_of_the_functions_of_the_l">Syntax of the functions of the library</A></H1>
+<P>
+At this moment (Aug 2000) there are 6 functions defined:
+
+<DL>
+<P><DT><STRONG><A NAME="item_struct">struct SWISH *SwishOpen(char *IndexFiles);</A></STRONG><DD>
+<P>
+This functions opens and reads header info of the index files included in
+IndexFiles
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    myhandle=SwishOpen(&quot;file1.idx&quot;);</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Returns NULL on error
+
+<P><DT><STRONG><A NAME="item_void">void SwishClose(struct SWISH *handle);</A></STRONG><DD>
+<P>
+This function closes and frees the memory of a Swish handle
+
+<P><DT><STRONG><A NAME="item_int">int SwishSearch(struct SWISH *handle,char *words,int structure,char *properties,char *sortspec);</A></STRONG><DD>
+<P>
+This function executes a search for a handle
+
+<P>
+Input data:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    handle:  value returned by SwishOpen
+    words: the search string
+    structure: At this moment always one ( it will implement
+        the -t option of swish-e)
+    properties: Optional. Properties to display. Use NULL if
+                no properties
+    sortspec: Sort specs for the results. Use NULL if sort by rank</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Returns the number of hits or a negative value on error
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    results=SwishSearch(handle,&quot;tit=test&quot;,1,&quot;tit&quot;,&quot;date desc&quot;);
+      
+There is a new feature here that it is not included in swish-e-2.0: 
+You can specify several sorting properties including a combination
+of descending and ascending fields.</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    field1 asc field2 desc </pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P><DT><STRONG>struct result *SwishNext(struct SWISH *handle)</STRONG><DD>
+<P>
+This function returns next result. It must be executed after SwishSearch.
+Returns NULL on error or when no more results are available
+
+<P><DT><STRONG>int SwishSeek(struct SWISH *handle,int n)</STRONG><DD>
+<P>
+This function puts the results pointer in the nth reult Returns n if
+operation goes OK or a negative number on error.
+
+<P><DT><STRONG>int SwishError(struct SWISH *handle)</STRONG><DD>
+<P>
+This function returns the last error
+
+<P><DT><STRONG><A NAME="item_Stem">Stem(word)</A></STRONG><DD>
+<P>
+XXX add
+
+</DL>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Bug_Reports">Bug-Reports</A></H1>
+<P>
+Please report bug reports to the swish-e discussion group. Feel also free
+to improve or enhance this feature.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Author_Aug_2000_Jose_Ruiz_jmruiz">Author
+ 
+Aug 2000
+Jose Ruiz
+jmruiz@boe.es</A></H1>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Document_Info">Document Info</A></H1>
+<P>
+$Id$
+
+<P>
+.
+
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+
+
+    <p>
+    <div class="navbar">
+      <a href="./SWISH-FAQ.html">Prev</a> |
+      <a href="./index.html">Contents</a> |
+      <a href="./SWISH-PERL.html">Next</a>
+    </div>
+    <p>
+
+    <P ALIGN="CENTER">
+    <IMG ALT="" WIDTH="470" HEIGHT="10" SRC="images/dotrule1.gif"></P>
+    <P ALIGN="CENTER">
+
+    <div class="footer">
+        Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Hewlett-Packard Company<BR>
+        Originally by Kevin Hughes, kev@kevcom.com, March 11, 1994.
+        <BR>SWISH-E is distributed with <B>no warranty</B> under the terms of the <A 
+        HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</A>,<BR>
+        Free Software Foundation, Inc., 
+        59 Temple Place - Suite 330, Boston, MA  02111-1307, USA<BR> 
+        Public questions may be posted to 
+        the <A HREF="http://sunsite.berkeley.edu/SWISH-E/Discussion/">SWISH-E Discussion</A>.
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+  <head>
+   <title>SWISH-Enhanced:  The SWISH-E README File </title>
+   <link href="./style.css" rel=stylesheet type="text/css" title="refstyle">
+  </head>
+  <body>
+
+    <h1 class="banner">
+        <img src="images/swish.gif" alt="Swish-E Logo"><br>
+        <img src="images/swishbanner1.gif"><br>
+        <img src="images/dotrule1.gif"><br>
+         The SWISH-E README File 
+    </h1>
+
+    <hr>
+
+    <p>
+    <div class="navbar">
+       |
+      <a href="./index.html">Contents</a> |
+      <a href="./INSTALL.html">Next</a>
+    </div>
+    <p>
+
+    <div class="toc">
+      
+<A NAME="toc"></A>
+<P><B>Table of Contents:</B></P>
+
+<UL>
+
+	<LI><A HREF="#What_is_SWISH_E_">What is SWISH-E?</A>
+	<UL>
+
+		<LI><A HREF="#Key_features">Key features</A>
+	</UL>
+
+	<LI><A HREF="#Where_do_I_get_SWISH_E_">Where do I get SWISH-E?</A>
+	<LI><A HREF="#How_do_I_read_the_SWISH_E_docume">How do I read the SWISH-E documentation?</A>
+	<UL>
+
+		<LI><A HREF="#Included_Documentation">Included Documentation</A>
+	</UL>
+
+	<LI><A HREF="#Where_do_I_get_help_with_SWISH_E">Where do I get help with SWISH-E?</A>
+	<LI><A HREF="#Document_Info">Document Info</A>
+</UL>
+
+    </div>
+
+    
+
+	    [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+<P>
+<H1><A NAME="What_is_SWISH_E_">What is SWISH-E?</A></H1>
+<P>
+SWISH-E is <STRONG>S</STRONG>imple <STRONG>W</STRONG>eb <STRONG>I</STRONG>ndexing <STRONG>S</STRONG>ystem for <STRONG>H</STRONG>umans - <STRONG>E</STRONG>nhanced. SWISH-E can quickly and easily index directories of files or
+remote web sites and search the generated indexes.
+
+<P>
+SWISH was created by Kevin Hughes to fill the need of the growing number of
+Web administrators on the Internet - many of the indexing systems were not
+well documented, were hard to use and install, and were too complex for
+their own good. The system was widely used for several years, long enough
+to collect some bug fixes and requests for enhancements.
+
+<P>
+In Fall 1996, The Library of UC Berkeley received permission from Kevin
+Hughes to implement bug fixes and enhancements to the original binary. The
+result is SWISH-Enhanced or SWISH-E, brought to you by the SWISH-E
+Development Team.
+
+<P>
+SWISH-E version 2 represents a major rewrite of the code and the addition
+of many new features.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Key_features">Key features</A></H2>
+<UL>
+<P><LI>
+<P>
+Quickly index a large number of documents in different formats including
+text, HTML, and XML
+
+<P><LI>
+<P>
+Includes a web spider for indexing remote documents over HTTP
+
+<P><LI>
+<P>
+Use ``filters'' to index any type of file such as PDF, gzip, or Postscript
+
+<P><LI>
+<P>
+Document ``properties'' (some subset of the source document, usually
+defined as a META or XML elements) may be stored in the index and returned
+with search results
+
+<P><LI>
+<P>
+Document summaries can be returned with each search
+
+<P><LI>
+<P>
+Word stemming and soundex indexing
+
+<P><LI>
+<P>
+Phrase searching and wildcard searching
+
+<P><LI>
+<P>
+Results can be sorted by relevance or by any number of properties in
+ascending or decending order
+
+<P><LI>
+<P>
+Limit searches to parts of documents such as certain HTML tags (META,
+TITLE, comments, etc.) or to XML elements.
+
+<P><LI>
+<P>
+It's open source and FREE! You can customize SWISH-E and you can contribute
+your fancy new features to the project.
+
+</UL>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Where_do_I_get_SWISH_E_">Where do I get SWISH-E?</A></H1>
+<P>
+The current version of SWISH-E can be found at:
+
+<P>
+<A
+HREF="http://sunsite.berkeley.edu/SWISH-E/">http://sunsite.berkeley.edu/SWISH-E/</A>
+
+
+<P>
+Please make sure you use a current version of swish-e.
+
+<P>
+Information about Windows binary distributions can also be found at this
+site.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="How_do_I_read_the_SWISH_E_docume">How do I read the SWISH-E documentation?</A></H1>
+<P>
+The SWISH-E documentation is in POD format. POD documentation is displayed
+by the `perldoc' command that is included with every Perl installation. For
+example, to view the installation documentation for swish-e, type
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>   perldoc INSTALL</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Check with your system administrator if this command is not available.
+
+<P>
+Online documentation can be found at the SWISH-E web site listed above.
+Optionally, you may view the documentation in HTML format in the html
+directory of the distribution. PDF or Postscript format is also available.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Included_Documentation">Included Documentation</A></H2>
+<P>
+The following documentation is included in this SWISH-E distribution:
+
+<UL>
+<P><LI>
+<P>
+<A HREF="././README.html">README</A> -- this file
+
+<P><LI>
+<P>
+<A HREF="././INSTALL.html">INSTALL</A>  -- Installation and basic usage instructions
+
+<P><LI>
+<P>
+<A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A> -- Configuration File Directives
+
+<P><LI>
+<P>
+<A HREF="././SWISH-RUN.html">SWISH-INDEX</A> -- Running Swish and Command Line Switches
+
+<P><LI>
+<P>
+<A HREF="././SWISH-SEARCH.html">SWISH-SEARCH</A> --All about Searching with SWISH-E
+
+<P><LI>
+<P>
+<A HREF="././SWISH-FAQ.html">SWISH-FAQ</A> -- Common questions, and some answers
+
+<P><LI>
+<P>
+<A HREF="././SWISH-LIBRARY.html">SWISH-LIBRARY</A> -- Interface to the SWISH-E C library
+
+<P><LI>
+<P>
+<A HREF="././SWISH-PERL.html">SWISH-PERL</A> -- Instructions for using the Perl library
+
+<P><LI>
+<P>
+<A HREF="././CHANGES.html">CHANGES</A> -- List of feature changes and bug fixes
+
+</UL>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Where_do_I_get_help_with_SWISH_E">Where do I get help with SWISH-E?</A></H1>
+<P>
+If you need help with installing or using SWISH-E please subscribe to the
+SWISH-E mailing list. See visit the SWISH-E web site listed above for
+information on subscribing to the SWISH-E list.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H1><A NAME="Document_Info">Document Info</A></H1>
+<P>
+$Id$
+
+<P>
+.
+
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+
+
+
+    <p>
+    <div class="navbar">
+       |
+      <a href="./index.html">Contents</a> |
+      <a href="./INSTALL.html">Next</a>
+    </div>
+    <p>
+
+    <P ALIGN="CENTER">
+    <IMG ALT="" WIDTH="470" HEIGHT="10" SRC="images/dotrule1.gif"></P>
+    <P ALIGN="CENTER">
+
+    <div class="footer">
+        Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Hewlett-Packard Company<BR>
+        Originally by Kevin Hughes, kev@kevcom.com, March 11, 1994.
+        <BR>SWISH-E is distributed with <B>no warranty</B> under the terms of the <A 
+        HREF="http://www.fsf.org/copyleft/gpl.html">GNU Public License</A>,<BR>
+        Free Software Foundation, Inc., 
+        59 Temple Place - Suite 330, Boston, MA  02111-1307, USA<BR> 
+        Public questions may be posted to 
+        the <A HREF="http://sunsite.berkeley.edu/SWISH-E/Discussion/">SWISH-E Discussion</A>.
+    </div>
+
+</body>
+</html>
