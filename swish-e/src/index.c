@@ -487,6 +487,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     }
 
 
+#ifdef PROPFILE
+    /* write properties to disk, and release memory */
+    WritePropertiesToDisk( sw );
+#endif
+
 	/* walk the hash list, and compress entries */
 	{
 	ENTRY  *ep;
@@ -1503,7 +1508,9 @@ unsigned char *buildFileEntry(char *filename, struct docProperties **docProperti
     memcpy(p, filename, len_filename);
     p += len_filename;
     datalen1 = p - buffer1;
+
     buffer2 = storeDocProperties(*docProperties, &datalen2);
+    
     buffer3 = emalloc((datalen3 = datalen1 + datalen2 + 1));
 
     memcpy(buffer3, buffer1, datalen1);
@@ -1555,6 +1562,8 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
         p = buffer;
     /* } */
 
+
+
     lookup_path = uncompress2(&p); /* Index to lookup table of paths */
     lookup_path--;
     len1 = uncompress2(&p);       /* Read length of filename */
@@ -1575,8 +1584,16 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 
     fi->filenum = filenum - 1;
 
+    
+
     /* read the document properties section  */
-    fi->docProperties = fetchDocProperties(p);
+    p = fetchDocProperties(fi, p);
+
+
+#ifdef PROPFILE
+    p = UnPackPropLocations( fi, p );
+#endif    
+
 
 
     efree(buffer);
@@ -1613,8 +1630,31 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
             filep = indexf->filearray[i];
 
 
-
         buffer = buildFileEntry(filep->filename, &filep->docProperties, filep->lookup_path, &sz_buffer);
+
+
+#ifdef PROPFILE
+    /* this can move into buildFileEntry later */
+    {
+        int propbuflen;
+        unsigned char *tmp;
+        unsigned char *proppointers = PackPropLocations( filep, &propbuflen );
+        int total_length;
+
+        if ( propbuflen )
+        {
+            tmp = emalloc( total_length = sz_buffer + propbuflen );
+            memcpy( tmp, buffer, sz_buffer );
+            memcpy( tmp + sz_buffer, proppointers, propbuflen );
+            efree( buffer );
+            efree( proppointers );
+            buffer = tmp;
+            sz_buffer = total_length;
+        }
+    }
+#endif        
+        
+
 
         /* Deflate stuff removed due to patents 
         if (indexf->header.applyFileInfoCompression)

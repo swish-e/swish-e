@@ -585,6 +585,12 @@ struct stat stat_buf;
 		sw->Index->swap_locdata = swap_mode;
 		sw->Index->swap_filedata = swap_mode;
 
+		
+#ifdef PROPFILE
+        /* Create an empty File - before indexing to make sure can write to the index */
+		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+#endif		
+
 		while (sw->dirlist != NULL) {
 			if (sw->verbose) {
 				printf("Indexing %s..\n",sw->dirlist->line);
@@ -597,8 +603,10 @@ struct stat stat_buf;
 		
 		Mem_Summary("After indexing", 0);
 
-			/* Create an empty File */
+#ifndef PROPFILE
+        /* Create an empty File */
 		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+#endif		
 		
 		if (sw->verbose > 1)
 			putchar('\n');
