@@ -288,11 +288,19 @@ getrank( RESULT *r )
     SWISH      *sw;
     int         metaID;
     int         freq;
+    int		total_files;
+    int		idf;
+    int		tfreq;
+    int		mystruct;
+    
 #ifdef DEBUG_RANK
     int        struct_tally[256];
     for ( i = 0; i <= 255; i++ )
         struct_tally[i] = 0;
 #endif
+
+
+    
 
     /* has rank already been calculated? */
     if ( r->rank >= 0 )
@@ -302,7 +310,7 @@ getrank( RESULT *r )
     indexf  = r->db_results->indexf;
     sw      = indexf->sw;
     posdata = r->posdata;
-
+    
 
     /* Get bias for the current metaID - metaID is stored in the rank for ease here */
     /* Currently, the rankbias is a number from -10 to +10.  It's an arbitrary range. */
@@ -327,6 +335,7 @@ getrank( RESULT *r )
     /* Should really consider r->tfrequency, which is the number of files that have */
     /*  this word.  If the word is not found in many files then it should be ranked higher */
 
+
     rank = 1;
     freq = r->frequency;
     if ( freq > 100 ) 
@@ -335,7 +344,9 @@ getrank( RESULT *r )
     for(i = 0; i < freq; i++)
     {
         /* GET_STRUCTURE must return value in range! */
-        rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
+
+        rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias ;
+	
 #ifdef DEBUG_RANK
         // fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
         struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
@@ -354,6 +365,34 @@ getrank( RESULT *r )
 
     if ( rank < 1 )
         rank = 1;
+
+
+    /* weight rank by word's idf */
+
+    /* 
+    IDF is the Inverse Document Frequency, or, the weight of the word in relationship to the 
+    collection of documents as a whole.
+    Multiply the weight against the rank to give greater weight to words that appear less often
+    in the collection.
+    
+    The biggest impact should be seen when OR'ing words together instead of AND'ing them.
+    
+    karman - Sun Jul 25 22:18:15 CDT 2004
+    */
+    
+    total_files = indexf->header.totalfiles;
+    tfreq	= r->tfrequency;
+    idf		= (int) log( total_files / tfreq );
+
+#ifdef DEBUG_RANK
+        fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d\n", total_files, tfreq, idf );
+	fprintf(stderr, "Rank before IDF weighting: %d\n", rank );
+#endif
+	rank = rank * idf;
+	
+#ifdef DEBUG_RANK
+	fprintf(stderr, "Rank after IDF weighting: %d\n", rank );
+#endif
 
 
     /* Scale the rank - this was originally based on frequency */
@@ -382,7 +421,6 @@ getrank( RESULT *r )
             fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
          }
 #endif
-
 
 
     /* Return if IgnoreTotalWordCountWhenRanking is true (the default) */
