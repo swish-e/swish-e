@@ -629,6 +629,7 @@ FUZZY_OPTS;
 static FUZZY_OPTS fuzzy_opts[] = {
 
     { FUZZY_NONE, "None", NULL, NULL, NULL },
+    { FUZZY_NONE, "Stemming_no", NULL, NULL, NULL },
     { FUZZY_STEMMING_EN, "Stemming_en", Stem, NULL, NULL },
     { FUZZY_STEMMING_EN, "Stem", Stem, NULL, NULL },
     { FUZZY_SOUNDEX, "Soundex", NULL, NULL, NULL },
@@ -652,7 +653,7 @@ void set_fuzzy_mode( FUZZY_INDEX *fi, char *param )
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
             fi->fuzzy_mode = fuzzy_opts[i].fuzzy_mode;
-            fi->fuzzy_routine = &fuzzy_opts[i].routine;
+            fi->fuzzy_routine = fuzzy_opts[i].routine;
 #ifdef SNOWBALL
             if(fuzzy_opts[i].init)
                 fi->snowball = fuzzy_opts[i].init();
