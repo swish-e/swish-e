@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * DirTree.pl
+
+DirTree.pl was updated to work with SWISH::Filter and to work on Windows.
+DirTree.pl is a program to fetch files from the file system and works with
+the -S prog input method.
+
 =item * Problem with --enable-incremental option
 
 Fixed configure script to build incremental option.  Note that this is still
