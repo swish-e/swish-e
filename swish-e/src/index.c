@@ -180,11 +180,11 @@ void initModule_Index (SWISH  *sw)
 
     if(idx->tmpdir && idx->tmpdir[0] && isdirectory(idx->tmpdir))
     {
-        idx->swap_file_name=tempnam(idx->tmpdir,"swfi");
-        idx->swap_location_name=tempnam(idx->tmpdir,"swlo");
+        idx->swap_file_name= (unsigned char *)tempnam(idx->tmpdir,"swfi");
+        idx->swap_location_name= (unsigned char *)tempnam(idx->tmpdir,"swlo");
     } else {
-        idx->swap_file_name=tempnam(NULL,"swfi");
-        idx->swap_location_name=tempnam(NULL,"swlo");
+        idx->swap_file_name= (unsigned char *)tempnam(NULL,"swfi");
+        idx->swap_location_name= (unsigned char *)tempnam(NULL,"swlo");
     }
 
     for(i=0;i<BIGHASHSIZE;i++) idx->inode_hash[i]=NULL;
@@ -225,7 +225,7 @@ void freeModule_Index (SWISH *sw)
 /* we need to call the real free here */
 #undef free
 
-  if (isfile(idx->swap_file_name))
+  if (isfile((char *)idx->swap_file_name))
   {
 	if (idx->fp_file_read)
 		fclose(idx->fp_file_read);
@@ -233,13 +233,13 @@ void freeModule_Index (SWISH *sw)
 	if (idx->fp_file_write)
 		fclose(idx->fp_file_write);
 
-	remove(idx->swap_file_name);
+	remove((char *)idx->swap_file_name);
 
 	/* tempnam internally calls malloc, so must use free not efree */
 	free(idx->swap_file_name);
   }
 
-  if (isfile(idx->swap_location_name))
+  if (isfile((char *)idx->swap_location_name))
   {
 	if (idx->fp_loc_read)  
 		idx->swap_close(idx->fp_loc_read);
@@ -247,7 +247,7 @@ void freeModule_Index (SWISH *sw)
 	if (idx->fp_loc_write)
 		idx->swap_close(idx->fp_loc_write);
 
-	remove(idx->swap_location_name);
+	remove((char *)idx->swap_location_name);
 
 	/* tempnam internally calls malloc, so must use free not efree */
 	free(idx->swap_location_name);
@@ -317,8 +317,8 @@ int configModule_Index (SWISH *sw, StringList *sl)
               efree(idx->swap_file_name);
            if (idx->swap_location_name)
               efree(idx->swap_location_name);
-           idx->swap_file_name = tempnam(idx->tmpdir, "swfi");
-           idx->swap_location_name = tempnam(idx->tmpdir, "swlo");
+           idx->swap_file_name = (unsigned char *)tempnam(idx->tmpdir, "swfi");
+           idx->swap_location_name = (unsigned char *)tempnam(idx->tmpdir, "swlo");
         }
      }
      else
@@ -1134,8 +1134,7 @@ int     removestops(SWISH * sw)
     struct filepos *fpos;
     struct MOD_Index *idx = sw->Index;
 
-    /* Now let's count the current number of stopwords!!
-     */
+    /* Now let's count the current number of stopwords as defined by IgnoreWords */
 
     for (stopwords = 0, hashval = 0; hashval < HASHSIZE; hashval++)
         for (sp = indexf->header.hashstoplist[hashval]; sp; sp = sp->next)
@@ -1147,15 +1146,18 @@ int     removestops(SWISH * sw)
         return stopwords;
 
     if (sw->verbose)
-        printf("Warning: This proccess can take some time. For a faster one, use IgnoreWords instead of IgnoreLimit\n");
+        printf("Warning: This proccess can take some time.  For a faster one, use IgnoreWords instead of IgnoreLimit\n");
 
     if (!estopmsz)
     {
         estopmsz = 1;
         estop = (ENTRY **) emalloc(estopmsz * sizeof(ENTRY *));
     }
-    /* this is the easy part: Remove the automatic stopwords from
-       ** the hash array */
+
+    
+    /* this is the easy part: Remove the automatic stopwords from the hash array */
+    /* Builds a list estop[] of ENTRY's that need to be removed */
+
     for (i = 0; i < SEARCHHASHSIZE; i++)
     {
         for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->next)
@@ -1163,24 +1165,28 @@ int     removestops(SWISH * sw)
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= idx->plimit && ep->tfrequency >= idx->flimit)
             {
-                addStopList(&indexf->header, ep->word);
-                addstophash(&indexf->header, ep->word);
+                addStopList(&indexf->header, ep->word); /* For printing list of words */
+                addstophash(&indexf->header, ep->word); /* Lookup hash */
                 stopwords++;
-                /* Remove entry from  the hash array */
+
+                /* unlink the ENTRY from the hash */
                 if (ep2)
                     ep2->next = ep->next;
                 else
                     sw->Index->hashentries[i] = ep->next;
+
                 totalwords--;
                 sw->Index->entryArray->numWords--;
                 indexf->header.totalwords--;
+
+                /* Reallocte if more space is needed */
                 if (estopsz == estopmsz)
-                {               /* More memory? */
+                {
                     estopmsz *= 2;
                     estop = (ENTRY **) erealloc(estop, estopmsz * sizeof(ENTRY *));
                 }
-                /* estop is an array for storing the
-                   ** automatic stopwords */
+
+                /* estop is an array of ENTRY's that need to be removed */
                 estop[estopsz++] = ep;
             }
             else
@@ -1188,8 +1194,10 @@ int     removestops(SWISH * sw)
         }
     }
 
-    /* If we have automatic stopwords we have to recalculate
-       ** word positions */
+
+
+    /* If we have automatic stopwords we have to recalculate word positions */
+
     if (estopsz)
     {
         /* Build an array with all the files positions to be removed */
@@ -1197,15 +1205,30 @@ int     removestops(SWISH * sw)
 
         for (i = 0; i < totalfiles; i++)
             filepos[i] = NULL;
+
+
+        /* Process each automatic stop word */
         for (i = 0; i < estopsz; i++)
         {
             e = estop[i];
+
             for (j = 0; j < e->u1.max_locations; j++)
             {
-                if (j < e->currentlocation)
+                int free_lp = 0;
+
+                /* Locations are always compressed, unless running -e */
+                if ( j < e->currentlocation )
+                {
+                    free_lp++;
                     lp = uncompress_location(sw, indexf, (unsigned char *) e->locationarray[j]);
+                }
                 else
                     lp = e->locationarray[j];
+                
+
+
+                /* Now build the list by file name of meta/position info */
+
                 if (!filepos[lp->filenum - 1])
                 {
                     fpos = (struct filepos *) emalloc(sizeof(struct filepos));
@@ -1221,7 +1244,9 @@ int     removestops(SWISH * sw)
                     }
                     filepos[lp->filenum - 1] = fpos;
                 }
-                else
+
+
+                else /* file exists in array.  just append the meta and position data */
                 {
                     fpos = filepos[lp->filenum - 1];
                     fpos->pos = (int *) erealloc(fpos->pos, (fpos->n + lp->frequency) * 2 * sizeof(int));
@@ -1234,15 +1259,22 @@ int     removestops(SWISH * sw)
                     }
                     fpos->n += lp->frequency;
                 }
+
+                /* uncompress allocated some memory */
+                if ( free_lp )
+                    efree( lp );
             }
 
-            /* Free Memory used by stopword */
-            for (m = 0; m < e->u1.max_locations; m++)
-            {
-                efree(e->locationarray[m]);
-            }
-            efree(e);
+            /* Free location entries */
+            /* REMOVED: the word and locations (when not running -e) are stored in a memzone */
+            if (sw->Index->swap_locdata)
+                for (m = 0; m < e->u1.max_locations; m++)
+                    efree(e->locationarray[m]);
+
+            //efree(e);
         }
+
+
         /* sort each file entries by metaname/position */
         for (i = 0; i < totalfiles; i++)
         {
@@ -1304,7 +1336,8 @@ int     removestops(SWISH * sw)
                     {
                         if (modified)
                         {
-                            efree(ep->locationarray[j]);
+                            // can't free a LOCATION, as it's in a memzone
+                            // efree(ep->locationarray[j]);
                             ep->locationarray[j] = (LOCATION *) compress_location(sw, indexf, lp);
                         }
                         else
@@ -1477,6 +1510,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
 
+        /* If using -e then read in from memory */
 		if (sw->Index->swap_locdata)
 			e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
