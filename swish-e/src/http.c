@@ -147,11 +147,14 @@ int     configModule_HTTP(SWISH * sw, StringList * sl)
             http->spiderdirectory = SafeStrCopy(http->spiderdirectory, sl->word[1], &http->lenspiderdirectory);
             len = strlen(http->spiderdirectory);
             /* Make sure the directory has a trailing slash */
-            if (len && (http->spiderdirectory[len - 1] != '/'))
+            if (len && (http->spiderdirectory[len - 1] != DIRDELIMITER))
             {
                 if (len == http->lenspiderdirectory)
                     http->spiderdirectory = erealloc(http->spiderdirectory, ++http->lenspiderdirectory + 1);
-                strcat(http->spiderdirectory, "/");
+
+                len = strlen( http->spiderdirectory );
+                http->spiderdirectory[len] = DIRDELIMITER;
+                http->spiderdirectory[len+1] = '\0';
             }
             if (!isdirectory(http->spiderdirectory))
             {
