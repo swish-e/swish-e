@@ -6,6 +6,20 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.3 ??????
+
+=over 4
+
+=item libxml2 UTF-8 conversion failures
+
+Fixed issue where a UTF-8 to Latin1 encoding failure would skip
+more input than just the failed character.   Libxml2 passes swish text
+that is not null terminated, but the libxml2 functions to skip UTF-8
+chars expected a null-terminated string.  Replace libxml2 call with
+fixed version.
+
+=back
+
 =head2 Version 2.4.3 December 9, 2004
 
 =over 4

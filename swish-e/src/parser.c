@@ -883,12 +883,54 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 
 
             /* Skip one UTF-8 character -- returns null if not pointing to a UTF-8 char */
+
+            /*
+             * xmlUTF8Strpos() calls xmlUTFStrlen() which requires a null-terminated string.
+             * so, jump over the utf-8 char here.  Mostly from libxml2's encoding.c.
+             *
+             *
             if (  !(txt = (char *)xmlUTF8Strpos( (const xmlChar *)(&txt[inlen]), 1) ))
                 return;
+            */
+
+
+            {
+                char ch;
+                txt += inlen;  /* point to the start of the utf-8 char (where conversion left off) */
+
+                /* grab first utf-8 char and check that it's not null */
+                if ( 0 == (ch = *txt++) )
+                    return;
+
+                /* Make sure valid starting utf-8 char (must be 11xxxxxx) */
+                if ( 0xc0 != ( ch & 0xc0 ) )
+                    return;
+
+                /* Now skip over the aditional bytes based on the number of high-order bits */
+                while ( (ch <<= 1 ) & 0x80 )
+                {
+                    /* Are we past the end of the buffer? */
+                    if ( txt > end_buf )
+                    {
+                        if ( parse_data->sw->parser_warn_level >= 1 )
+                            xmlParserError(parse_data->ctxt, "Incomplete UTF-8 character found\n" );
+
+                        return;
+                    }
+
+                    /* all trailing bytes must be 10xx xxxx */
+                    if ( 0x80 != (*txt++ & 0xc0) )
+                    {
+                        if ( parse_data->sw->parser_warn_level >= 1 )
+                            xmlParserError(parse_data->ctxt, "Invalid UTF-8 sequence found. A secondary byte was: '0x%2x'\n", (unsigned char)txt[-1] );
+
+                        return;
+                    }
+                }
+            }
 
             /* Calculate the remaining length of the input string */
             inlen = (unsigned long)end_buf - (unsigned long)txt + 1;
-
             if ( inlen <= 0 )
                 return;
 
