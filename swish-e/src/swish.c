@@ -79,8 +79,6 @@ extern struct _indexing_data_source_def *data_sources[];
 
 unsigned int Dump_Index = 0;
 
-unsigned int DEBUG_MASK = 0;
-
 typedef struct
 {
     char   *name;
