@@ -59,6 +59,7 @@ void extprog_indexpath( SWISH *sw, char *prog )
 FileProp *fprop;
 FILE *fp;
 char *line;
+char *ln;
 char *x;
 char *real_path;
 long fsize;
@@ -70,13 +71,11 @@ time_t mtime;
 
     fp = open_external_program( sw, prog );
 
-    line = emalloc( MAXSTRLEN + 1 );
-
+    ln = emalloc( MAXSTRLEN + 1 );
 
     /* loop on headers */
-    while (fgets(line, MAXSTRLEN, fp) != NULL) {
-
-        line = str_skip_ws(line);     /* skip leading white space */
+    while (fgets(ln, MAXSTRLEN, fp) != NULL) {
+        line = str_skip_ws(ln);      /* skip leading white space */
         x = strrchr( line, '\n' );    /* replace \n with null -- better to remove trailing white space */
         if ( x ) x[0] = '\0';
 
@@ -98,7 +97,7 @@ time_t mtime;
                 do_index_file( sw, fprop );
 
                 free_file_properties( fprop );
-                free( real_path );
+                efree( real_path ); 
                 real_path = NULL;
                 mtime = 0;
 
@@ -140,6 +139,8 @@ time_t mtime;
             
         }
     }
+
+    efree( ln );
 
     pclose( fp ); /* progerr("Failed to properly close external program"); */
 }
