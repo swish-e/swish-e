@@ -20,6 +20,9 @@
 **
 */
 
+
+#define WRITE_WORDS_RAMDISK 1
+
 #include "swish.h"
 #include "mem.h"
 #include "file.h"
@@ -29,8 +32,8 @@
 #include "hash.h"
 #include "db.h"
 #include "swish_qsort.h"
+#include "ramdisk.h"
 #include "db_native.h"
-
 
 /*
   -- init structures for this module
@@ -143,13 +146,62 @@ int DB_OkHeader(FILE * fp)
     long    swish_magic;
 
     fseek(fp, 0, 0);
-    swish_magic = readlong(fp);
+    swish_magic = readlong(fp,fread);
     if (swish_magic != SWISH_MAGIC)
     {
         fseek(fp, 0, 0);
         return 0;
     }
     return 1;
+}
+
+struct Handle_DBNative *newNativeDBHandle(char *dbname)
+{
+   struct Handle_DBNative *DB;
+
+         /* Allocate structure */
+   DB= (struct Handle_DBNative  *) emalloc(sizeof(struct Handle_DBNative));
+
+   DB->offsetstart = 0;
+   DB->hashstart = 0;
+   DB->fileoffsetarray = NULL;
+   DB->fileoffsetarray_maxsize = 0;
+   DB->nextwordoffset = 0;
+   DB->num_docs = 0;
+   DB->num_words = 0;
+   DB->wordhash_counter = 0;
+   DB->wordhashdata = NULL;
+   DB->worddata_counter = 0;
+   DB->worddata_wordID = NULL;
+   DB->worddata_offset = NULL;
+   DB->mode = 1;
+   DB->lastsortedindex = 0;
+   DB->rd = NULL;
+
+   if(WRITE_WORDS_RAMDISK)
+   {
+       DB->w_tell = ramdisk_tell;
+       DB->w_write = ramdisk_write;
+       DB->w_seek = ramdisk_seek;
+       DB->w_read = ramdisk_read;
+       DB->w_close = ramdisk_close;
+       DB->w_putc = ramdisk_putc;
+       DB->w_getc = ramdisk_getc;
+   }
+   else
+   {
+       DB->w_tell = ftell;
+       DB->w_write = fwrite;
+       DB->w_seek = fseek;
+       DB->w_read = fread;
+       DB->w_close = fclose;
+       DB->w_putc = fputc;
+       DB->w_getc = fgetc;
+   }
+
+   DB->dbname = estrdup(dbname);
+
+   return DB;
 }
 
 
@@ -163,7 +215,7 @@ void *DB_Create_Native (char *dbname)
 
 
          /* Allocate structure */
-   DB= (struct Handle_DBNative  *) emalloc(sizeof(struct Handle_DBNative));
+   DB= (struct Handle_DBNative  *) newNativeDBHandle(dbname);
 
           /* Create index File */
    CreateEmptyFile(dbname);
@@ -186,41 +238,22 @@ void *DB_Create_Native (char *dbname)
     }
 #endif
 
-   
-
-   DB->offsetstart = 0;
-   DB->hashstart = 0;
-   DB->fileoffsetarray = NULL;
-   DB->fileoffsetarray_maxsize = 0;
-   DB->nextwordoffset = 0;
-   DB->num_docs = 0;
-   DB->num_words = 0;
-   DB->wordhash_counter = 0;
-   DB->wordhashdata = NULL;
-   DB->worddata_counter = 0;
-   DB->worddata_wordID = NULL;
-   DB->worddata_offset = NULL;
-
-   DB->mode = 1;
-   DB->lastsortedindex = 0;
-
-   DB->dbname = estrdup(dbname);
-
+  
    for(i=0 ; i<MAXCHARS; i++) DB->offsets[i] = 0L;
    for(i=0 ; i<SEARCHHASHSIZE; i++) DB->hashoffsets[i] = 0L;
    for(i=0 ; i<SEARCHHASHSIZE; i++) DB->lasthashval[i] = 0L;
 
    swish_magic = SWISH_MAGIC;
-   printlong(DB->fp,swish_magic);
+   printlong(DB->fp,swish_magic,fwrite);
 
          /* Reserve space for offset pointers */
    DB->offsetstart = ftell(fp);
    for (i = 0; i < MAXCHARS; i++)
-      printlong(fp,(long)0);
+      printlong(fp,(long)0,fwrite);
 
    DB->hashstart = ftell(fp);
    for (i = 0; i < SEARCHHASHSIZE; i++)
-      printlong(fp,(long)0);
+      printlong(fp,(long)0,fwrite);
 
    return (void *)DB;
 }
@@ -232,8 +265,8 @@ void *DB_Open_Native (char *dbname)
    int i;
    long pos;
 
-          /* Allocate structure */
-   DB= (struct Handle_DBNative  *) emalloc(sizeof(struct Handle_DBNative));
+   DB= (struct Handle_DBNative  *) newNativeDBHandle(dbname);
+
           /* Create index File */
    if(!(DB->fp = openIndexFILEForRead(dbname)))
       progerrno("Couldn't open the index file \"%s\".", dbname);
@@ -258,38 +291,21 @@ void *DB_Open_Native (char *dbname)
    }
 
    fp = DB->fp;
-   DB->offsetstart = 0;
-   DB->hashstart = 0;
-   DB->fileoffsetarray = NULL;
-   DB->fileoffsetarray_maxsize = 0;
-   DB->nextwordoffset = 0;
-   DB->num_docs = 0;
-   DB->num_words = 0;
-   DB->wordhash_counter = 0;
-   DB->wordhashdata = NULL;
-   DB->worddata_counter = 0;
-   DB->worddata_wordID = NULL;
-   DB->worddata_offset = NULL;
-   DB->mode = 0;
-   DB->lastsortedindex = 0;
-
-
-   DB->dbname = estrdup(dbname);
 
    		/* Read offsets lookuptable */
    DB->offsetstart = ftell(fp);
    for (i = 0; i < MAXCHARS; i++)
-       DB->offsets[i] = readlong(fp);
+       DB->offsets[i] = readlong(fp,fread);
 
 		/* Read hashoffsets lookuptable */
    DB->hashstart = ftell(fp);
    for (i = 0; i < SEARCHHASHSIZE; i++)
-       DB->hashoffsets[i] = readlong(fp);
+       DB->hashoffsets[i] = readlong(fp,fread);
 
         /* Now, read fileoffsets */
    DB->fileoffsetarray = emalloc((DB->fileoffsetarray_maxsize = BIGHASHSIZE) * sizeof(long));
    fseek(fp,DB->offsets[FILEOFFSETPOS],0);
-   for ( i = 0; (pos=readlong(fp)) ; i++)
+   for ( i = 0; (pos=readlong(fp,fread)) ; i++)
    {
        if (i == DB->fileoffsetarray_maxsize)
           DB->fileoffsetarray = erealloc(DB->fileoffsetarray,(DB->fileoffsetarray_maxsize += 10000) * sizeof(long));
@@ -338,10 +354,10 @@ void DB_Close_Native(void *db)
 	       /* Update internal pointers */
        fseek(fp,DB->offsetstart,0);
        for (i = 0; i < MAXCHARS; i++)
-           printlong(fp,DB->offsets[i]);
+           printlong(fp,DB->offsets[i],fwrite);
        fseek(fp,DB->hashstart,0);
        for (i = 0; i < SEARCHHASHSIZE; i++)
-           printlong(fp,DB->hashoffsets[i]);
+           printlong(fp,DB->hashoffsets[i],fwrite);
    }
    fclose(DB->fp);
    efree(DB->dbname);
@@ -462,10 +478,8 @@ int DB_EndWriteWords_Native(void *db)
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = (FILE *) DB->fp;
    int i, wordlen;
-   long wordID,f_offset;
+   long wordID,f_offset,word_pos;
 
-   fputc(0, fp);   /* End of words mark */
-   
 
          /* Now update word's data offset into the list of words */
          /* Simple check  words and worddata must match */
@@ -473,20 +487,27 @@ int DB_EndWriteWords_Native(void *db)
    if(DB->num_words != DB->wordhash_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter");
 
-      /* Sort wordhashdata to be writte to allow sequential writes */
-   swish_qsort(DB->wordhashdata,DB->num_words,2*sizeof(long), cmp_wordhashdata);
-
+   if(WRITE_WORDS_RAMDISK)
+   {
+	   fp = (FILE *) DB->rd;
+   }
    for(i=0;i<DB->num_words;i++)
    {
        wordID = DB->wordhashdata[2 * i];
        f_offset = DB->wordhashdata[2 * i + 1];
-        /* Position file pointer in word */
-       fseek(fp,wordID,SEEK_SET);
+
+       word_pos = wordID;
+       if(WRITE_WORDS_RAMDISK)
+       {
+           word_pos -= DB->offsets[WORDPOS];
+       }
+         /* Position file pointer in word */
+       DB->w_seek(fp, word_pos, SEEK_SET);
         /* Jump over word length and word */
-       wordlen = uncompress1(fp,fgetc);   /* Get Word length */
-       fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
+       wordlen = uncompress1(fp,DB->w_getc);   /* Get Word length */
+       DB->w_seek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
         /* Write offset to word data */
-       printlong(fp,f_offset);
+       printlong(fp,f_offset,DB->w_write);
    }
 
    if(DB->num_words != DB->worddata_counter)
@@ -496,15 +517,20 @@ int DB_EndWriteWords_Native(void *db)
    {
        wordID = DB->worddata_wordID[i];
        f_offset = DB->worddata_offset[i];
+
+       word_pos = wordID;
+       if(WRITE_WORDS_RAMDISK)
+       {
+           word_pos -= DB->offsets[WORDPOS];
+       }
+
         /* Position file pointer in word */
-       fseek(fp,wordID,SEEK_SET);
+       DB->w_seek(fp,word_pos,SEEK_SET);
         /* Jump over word length and word */
-       wordlen = uncompress1(fp,fgetc);   /* Get Word length */
-       fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
-        /* Jump also hash pointer */
-       fseek(fp,(long)sizeof(long),SEEK_CUR);  /* Jump Hash pointer */
+       wordlen = uncompress1(fp,DB->w_getc);   /* Get Word length */
+       DB->w_seek(fp,(long)(wordlen + sizeof(long)),SEEK_CUR);  /* Jump Word and hash chain offset */
         /* Write offset to word data */
-       printlong(fp,f_offset);
+       printlong(fp,f_offset,DB->w_write);
    } 
    efree(DB->worddata_wordID);
    DB->worddata_wordID = NULL;
@@ -514,16 +540,50 @@ int DB_EndWriteWords_Native(void *db)
    efree(DB->wordhashdata);
    DB->wordhashdata = NULL;
    DB->wordhash_counter = 0;
+
+   if(WRITE_WORDS_RAMDISK)
+   {
+       unsigned char buffer[4096];
+       long ramdisk_size;
+       long read = 0;
+       ramdisk_seek((FILE *)DB->rd,0,SEEK_END);
+       ramdisk_size = ramdisk_tell((FILE *)DB->rd);
+         /* Write ramdisk to fp end free it */
+       fseek((FILE *)DB->fp,DB->offsets[WORDPOS],SEEK_SET);
+       ramdisk_seek((FILE *)DB->rd,0,SEEK_SET);
+       while (ramdisk_size)
+       {
+           read = ramdisk_read(buffer,4096,1,(FILE *)DB->rd);
+           fwrite(buffer,read,1,DB->fp);
+           ramdisk_size -= read;
+       }
+       ramdisk_close((FILE *)DB->rd);
+   }
        /* Restore file pointer at the end of file */
-   fseek(fp,0,SEEK_END);
+   fseek(DB->fp,0,SEEK_END);
+   fputc(0, DB->fp);   /* End of words mark */
    return 0;
 }
 
 long DB_GetWordID_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->fp;
+   long pos = 0;
 
-   return ftell(DB->fp);   /* Native database uses position as a Word ID */
+   if(WRITE_WORDS_RAMDISK)
+   {
+      if(!DB->rd)
+      {
+         /* ramdisk size as suggested by Bill Meier */
+         DB->rd = ramdisk_create(32 * 4096);
+      }
+      pos = DB->offsets[WORDPOS];
+      fp = (FILE *) DB->rd;
+   }
+   pos += DB->w_tell(fp);
+
+   return pos;   /* Native database uses position as a Word ID */
 }
 
 int DB_WriteWord_Native(char *word, long wordID, void *db)
@@ -534,20 +594,23 @@ int DB_WriteWord_Native(char *word, long wordID, void *db)
 
     FILE   *fp = DB->fp;
 
-
     i = (int) ((unsigned char) word[0]);
-    /* if(isindexchar(indexf->header,i) && !indexf->offsets[i]) indexchars stuff removed */
+
     if (!DB->offsets[i])
         DB->offsets[i] = wordID;
 
 
     /* Write word length, word and a NULL offset */
     wordlen = strlen(word);
-    compress1(wordlen, fp, fputc);
-    fwrite(word, wordlen, sizeof(char), fp);
 
-    printlong(fp, (long) 0);    /* hash offset */
-    printlong(fp, (long) 0);    /* word's data pointer */
+    if(WRITE_WORDS_RAMDISK)
+    {
+        fp = (FILE *)DB->rd;
+    }
+    compress1(wordlen, fp, DB->w_putc);
+    DB->w_write(word, wordlen, sizeof(char), fp);
+    printlong(fp, (long) 0, DB->w_write);    /* hash chain */
+    printlong(fp, (long) 0, DB->w_write);    /* word's data pointer */
 
     DB->num_words++;
 
@@ -565,8 +628,20 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
 
     if(!DB->worddata_counter)
     {
-        DB->worddata_wordID = emalloc(DB->num_words * sizeof(long));
-        DB->worddata_offset = emalloc(DB->num_words * sizeof(long));
+        /* We are starting writing worddata */
+        /* If inside a ramdisk we must preserve its space */
+       if(WRITE_WORDS_RAMDISK)
+       {
+           long ramdisk_size;
+           ramdisk_seek((FILE *)DB->rd,0,SEEK_END);
+           ramdisk_size = ramdisk_tell((FILE *)DB->rd);
+              /* Preserve ramdisk size in DB file  */
+              /* it will be write later */
+           fseek((FILE *)DB->fp,ramdisk_size,SEEK_END);
+       }
+
+       DB->worddata_wordID = emalloc(DB->num_words * sizeof(long));
+       DB->worddata_offset = emalloc(DB->num_words * sizeof(long));
     }
         /* Preserve word's data offset */
     DB->worddata_wordID[DB->worddata_counter] = wordID;
@@ -587,11 +662,21 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
 int DB_WriteWordHash_Native(char *word, long wordID, void *db)
 {
     int     i,
+            j,
+            k,
+            isbigger = 0,
             hashval;
     struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     if(!DB->wordhash_counter)
     {
+		/* If we are here we have finished WriteWord_Native */
+		/* If using ramdisk - Reserve space upto the size of the ramdisk */
+        if(WRITE_WORDS_RAMDISK)
+        {
+            long ram_size = DB->w_seek((FILE *)DB->rd,0,SEEK_END);
+            fseek(DB->fp,ram_size,SEEK_SET);
+	}
         DB->wordhashdata = emalloc(2 * DB->num_words * sizeof(long));
     }
 
@@ -602,21 +687,44 @@ int DB_WriteWordHash_Native(char *word, long wordID, void *db)
         DB->hashoffsets[hashval] = wordID;
     }
 
-    DB->wordhashdata[2 * DB->wordhash_counter] = wordID;
-    DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
+    if(DB->wordhash_counter)
+    {
+        /* Look for the position to insert using a binary search */
+        i = DB->wordhash_counter - 1;
+        j = k = 0;
+        while (i >= j)
+        {
+            k = j + (i - j) / 2;
+            isbigger = wordID - DB->wordhashdata[2 * k];
+            if (!isbigger)
+                progerr("Internal error in db_native.c. Routine DB_WriteWordHashNative");
+            else if (isbigger > 0)
+                j = k + 1;
+            else
+                i = k - 1;
+        }
+
+        if (isbigger > 0)
+            k++;
+        memmove(&DB->wordhashdata[2 * (k + 1)], &DB->wordhashdata[2 * k], (DB->wordhash_counter - k) * 2 * sizeof(long));
+    }
+    else
+    {
+        k = 0;
+    }
+    DB->wordhashdata[2 * k] = wordID;
+    DB->wordhashdata[2 * k + 1] = (long)0;
     DB->wordhash_counter++;
 
             /* Update previous word in hashlist */
     if(DB->lasthashval[hashval])
     {
         // This must be a binary search - Use bsearch - To do !!
-        for(i=0;i<DB->wordhash_counter;i++)
-            if(DB->wordhashdata[2 * i] == DB->lasthashval[hashval])
-                break;
-        if(i==DB->wordhash_counter)
+		int *tmp = bsearch(&DB->lasthashval[hashval], DB->wordhashdata,  DB->wordhash_counter,2 *sizeof(long),cmp_wordhashdata);
+        if(! tmp)
               progerrno("Internal db_native.c error in DB_WriteWordHash_Native");
 
-        DB->wordhashdata[2 * i + 1] = (long)wordID;
+        tmp[1] = (long)wordID;
     }
     DB->lasthashval[hashval] = wordID;
 
@@ -665,8 +773,8 @@ int DB_ReadWordHash_Native(char *word, long *wordID, void *db)
         fileword = emalloc(wordlen + 1);
         fread(fileword, 1, wordlen, fp);
         fileword[wordlen] = '\0';
-        offset = readlong(fp); /* Next hash */
-        dataoffset = readlong(fp); /* Offset to Word data */
+        offset = readlong(fp,fread); /* Next hash */
+        dataoffset = readlong(fp,fread); /* Offset to Word data */
 
         res = strcmp(word, fileword);
         efree(fileword);
@@ -719,8 +827,8 @@ int DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long *wo
     {
         fread(fileword, 1, wordlen, fp);
         fileword[wordlen] = '\0';
-        readlong(fp);       /* jump hash offset */
-        dataoffset = readlong(fp); /* Get offset to word's data */
+        readlong(fp,fread);       /* jump hash offset */
+        dataoffset = readlong(fp,fread); /* Get offset to word's data */
         if (!(res = strncmp(word, fileword, len))) /*Found!! */
         {
             DB->nextwordoffset = ftell(fp); /* preserve next word pos */
@@ -788,8 +896,8 @@ int DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long *wor
     } 
     else
     {
-        readlong(fp);       /* jump hash offset */
-        dataoffset = readlong(fp); /* Get data offset */
+        readlong(fp,fread);       /* jump hash offset */
+        dataoffset = readlong(fp,fread); /* Get data offset */
         DB->nextwordoffset = ftell(fp);
     }
     *resultword = fileword;
@@ -848,9 +956,9 @@ int DB_EndWriteFiles_Native(void *db)
    for (i = 0; i < DB->num_docs; i++)
    {
        offset = (long) DB->fileoffsetarray[i];
-       printlong(fp, offset);
+       printlong(fp, offset, fwrite);
    }
-   printlong(fp, (long) 0);
+   printlong(fp, (long) 0, fwrite);
    return 0;
 }
 
@@ -937,7 +1045,7 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
    FILE *fp = DB->fp;
 
    tmp1 = ftell(fp);
-   printlong(fp,(long)0);  /* Pointer to next table if any */
+   printlong(fp,(long)0,fwrite);  /* Pointer to next table if any */
 	/* Write ID */
    compress1(propID,fp,fputc);
    /* Write len of data */
@@ -949,7 +1057,7 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
    if(DB->lastsortedindex)
    {
        fseek(fp,DB->lastsortedindex,0);
-       printlong(fp,tmp1);
+       printlong(fp,tmp1,fwrite);
        fseek(fp,tmp2,0);
    }
    DB->lastsortedindex = tmp1;
@@ -961,7 +1069,7 @@ int     DB_EndWriteSortedIndex_Native(void *db)
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
    FILE *fp = DB->fp;
 
-   printlong(fp,(long)0);  /* No next table mark - Useful if no presorted indexes */
+   printlong(fp,(long)0,fwrite);  /* No next table mark - Useful if no presorted indexes */
          /* NULL meta id- Only useful if no presorted indexes  */
    fputc(0, fp);
 
@@ -981,7 +1089,7 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    FILE *fp = DB->fp;
 
    fseek(fp,DB->offsets[SORTEDINDEX],0);
-   next = readlong(fp);
+   next = readlong(fp,fread);
         /* read propID */
    id = uncompress1(fp,fgetc);
    while(1)
@@ -997,7 +1105,7 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
        if(next)
        {
            fseek(fp,next,0);
-           next = readlong(fp);
+           next = readlong(fp,fread);
            id = uncompress1(fp,fgetc);
        }
        else
@@ -1019,21 +1127,22 @@ int     DB_EndReadSortedIndex_Native(void *db)
 ** Jose Ruiz 04/00
 ** Store a portable long with just four bytes
 */
-void    printlong(FILE * fp, unsigned long num)
+void    printlong(FILE * fp, unsigned long num, size_t (*f_write)(const void *, size_t, size_t, FILE *))
 {
     num = PACKLONG(num);              /* Make the number portable */
-    fwrite(&num, MAXLONGLEN, 1, fp);
+    f_write(&num, MAXLONGLEN, 1, fp);
 }
 
 /* 
 ** Jose Ruiz 04/00
 ** Read a portable long (just four bytes)
 */
-unsigned long    readlong(FILE * fp)
+unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *))
 {
     unsigned long    num;
 
-    fread(&num, MAXLONGLEN, 1, fp);
+    f_read(&num, MAXLONGLEN, 1, fp);
     return UNPACKLONG(num);            /* Make the number readable */
 }
+
 
