@@ -21,9 +21,9 @@ man1dir = $(mandir)/man1
 
 # Flags for C compiler
 #CWARN=
-CDEF = /def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-24""", -
+CDEF = /def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.2""", -
 	"XML_SetExternalEntityRefHandlerArg"="XML_SetExternalEntityRefHandArg")
-CINCL= /include=([.expat.xmlparse],[.expat.xmltok])
+CINCL= /include=([.expat.xmlparse],[.expat.xmltok],libz:)
 CWARN=/warning=disable=(ZEROELEMENTS,PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,QUESTCOMPARE,LONGEXTERN)
 #CDEBUG= /debug/noopt
 CDEBUG=
@@ -52,7 +52,8 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	keychar_out.obj extprog.obj db.obj db_native.obj dump.obj \
 	entities.obj no_better_place_module.obj swish_words.obj \
 	proplimit.obj swish_qsort.obj ramdisk.obj rank.obj \
-	xmlparse.obj xmltok.obj xmlrole.obj \
+	xmlparse.obj xmltok.obj xmlrole.obj swregex.obj snprintf.obj \
+        double_metaphone.obj \
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
 
 all :	acconfig.h $(NAME) swish-search.exe ! testlib
@@ -64,8 +65,11 @@ xmltok.obj : [.expat.xmltok]xmltok.c
 
 xmlrole.obj : [.expat.xmltok]xmlrole.c
 
+snprintf.obj : [.vms.sprintf_2_2]snprintf.c
+
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
-        link/exe=$(MMS$TARGET) $(LINKFLAGS) swish.obj, libswish-e.olb/lib
+        link/exe=$(MMS$TARGET) $(LINKFLAGS) -
+                swish.obj, libswish-e.olb/lib, libz:libz.olb/lib
 
 testlib : testlib.exe
 	!
