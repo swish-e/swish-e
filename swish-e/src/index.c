@@ -979,7 +979,8 @@ FILE *fp=indexf->fp;
 
 	f_offset = ftell(fp);
 	i=(int)((unsigned char)ep->word[0]);
-	if(isindexchar(indexf->header,i) && !indexf->offsets[i])
+	/* if(isindexchar(indexf->header,i) && !indexf->offsets[i]) indexchars stuff removed */
+	if(!indexf->offsets[i])
 		indexf->offsets[i] = f_offset;
 		
 		/* Get HashOffset for direct access */

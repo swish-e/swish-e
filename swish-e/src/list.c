@@ -205,7 +205,7 @@ void init_header(INDEXDATAHEADER *header)
 	header->minwordlimit = MINWORDLIMIT;
         header->maxwordlimit = MAXWORDLIMIT;
 		/* Init indexchars lookuptable */
-	makelookuptable(indexchars,header->indexcharslookuptable);
+	/* makelookuptable(indexchars,header->indexcharslookuptable); indexchars stuff removed */
 }
 
 
