@@ -221,8 +221,21 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     {
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_RESULT_RANK ) )
         {
-            num = PACKLONG( (unsigned long)result->rank );
+#ifdef RAW_RANK
+            num = PACKLONG( result->rank );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
+#else
+            int scale_factor = result->db_results->results->rank_scale_factor;
+            unsigned long rank_num = (unsigned long) (result->rank * scale_factor)/10000;
+
+            if ( rank_num >= 999)
+                rank_num = 1000;
+            else if ( rank_num < 1)
+                rank_num = 1;
+
+            num = PACKLONG( rank_num );
+            return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
+#endif
         }
 
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_REC_COUNT ) )

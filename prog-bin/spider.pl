@@ -747,6 +747,8 @@ sub extract_links {
 
 
     my $base = $response->base;
+    $visited{ $base }++;  # $$$ come back and fix this (see 4/20/03 lwp post)
+
 
     print STDERR "\nExtracting links from ", $response->request->uri, ":\n" if $server->{debug} & DEBUG_LINKS;
 
@@ -872,6 +874,8 @@ sub check_link {
 
 
     # Don't add the link if already seen  - these are so common that we don't report
+    # Might be better to do something like $visited{ $u->path } or $visited{$u->host_port}{$u->path};
+
 
     if ( $visited{ $u->canonical }++ ) {
         #$server->{counts}{Skipped}++;
@@ -979,7 +983,7 @@ sub output_content {
         $headers .= "Document-Type: $type\n";
 
     } elsif ( $response->content_type =~ m!^text/(html|xml|plain)! ) {
-        my $type = $1 eq 'plain' ? 'txt' : $1;
+        $type = $1 eq 'plain' ? 'txt' : $1;
         $headers .= "Document-Type: $type*\n";
     }        
 

@@ -287,7 +287,12 @@ getrank( RESULT *r )
     int         i;
     SWISH      *sw;
     int         metaID;
-
+    int         freq;
+#ifdef DEBUG_RANK
+    int        struct_tally[256];
+    for ( i = 0; i <= 255; i++ )
+        struct_tally[i] = 0;
+#endif
 
     /* has rank already been calculated? */
     if ( r->rank >= 0 )
@@ -322,13 +327,25 @@ getrank( RESULT *r )
     /* Should really consider r->tfrequency, which is the number of files that have */
     /*  this word.  If the word is not found in many files then it should be ranked higher */
 
-    rank = 0;
-    for(i = 0; i < r->frequency; i++)
+    rank = 1;
+    freq - r->frequency;
+    if ( freq > 100 ) 
+        freq = 100;
+
+    for(i = 0; i < freq; i++)
     {
         /* GET_STRUCTURE must return value in range! */
         rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
+#ifdef DEBUG_RANK
+        // fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+        struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
+#endif
 
     }
+
+#ifdef DEBUG_RANK
+    fprintf( stderr, "File num: %d.  Raw Rank: %d.  Frequency: %d ", r->filenum, rank, r->frequency );
+#endif
 
     /* Ranks could end up less than zero -- but since the *final* rank is calcualted here */
     /* we can't know the *lowest* value to use an offset.  It might be better to track */
@@ -343,8 +360,30 @@ getrank( RESULT *r )
     /* Uses lookup tables for values <= 1000, otherwise calculate */
 
     rank = rank > 1000
-        ? (int)(10000 * (floor(log((double)rank) + 0.5)))
-        : swish_log[rank] + 100000;  /* 100000 = 10 * 10000 */
+        ? (int) floor( (log((double)rank) * 10000 ) + 0.5)
+        : swish_log[rank];
+
+
+#ifdef DEBUG_RANK
+     fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", rank );
+
+     for ( i = 0; i <= 255; i++ )
+         if ( struct_tally[i] )
+         {
+             fprintf( stderr, "      struct 0x%x = %2d (", i, struct_tally[i] );
+            if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
+            if ( i & IN_HEADER ) fprintf(stderr," HEADING");
+            if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
+            if ( i & IN_META ) fprintf(stderr," META");
+            if ( i & IN_BODY ) fprintf(stderr," BODY");
+            if ( i & IN_HEAD ) fprintf(stderr," HEAD");
+            if ( i & IN_TITLE ) fprintf(stderr," TITLE");
+            if ( i & IN_FILE ) fprintf(stderr," FILE");
+            fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
+         }
+#endif
+
+
 
     /* Return if IgnoreTotalWordCountWhenRanking is true (the default) */
     if ( indexf->header.ignoreTotalWordCountWhenRanking )
