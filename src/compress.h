@@ -46,6 +46,8 @@ void unSwapLocData(SWISH *,int, ENTRY *);
 void sortSwapLocData(SWISH * , ENTRY *);
 void unSwapLocDataEntry_old(SWISH *,ENTRY *);
 
+void    remove_worddata_longs(unsigned char *,int *);
+
 /* Here is the worst case size for a compressed number 
 ** MAXINTCOMPSIZE stands for MAXimum INTeger COMPressed SIZE
 **

@@ -796,4 +796,74 @@ void sortSwapLocData(SWISH * sw, ENTRY *e)
 
 
 
+/* 2002/09 jmruiz
+** This routine changes longs in worddata by shorter compressed
+** numbers.
+**
+** Here are two reasons for using compressed numbers in worddata
+** instead of longs:
+**   - Compressed numbers are more portable: longs are usually 4 bytes
+**     long in a 32 bit machine but in a 64 bit alpha they are 8 bytes
+**     long (this a waste of space).
+**   - The obvious one is that compressed numbers use less disk space
+**
+** BTW, Any change in worddata will also affect to dump.c and search.c
+** (getfileinfo routine).
+**
+**  worddata has the following format
+**  <tfreq><metaID><nextposmetaID><data><metaID><nextposmetaID><data>...
+**
+**  Entering this routine nextposmetaID is the offset to next metaid
+**  in bytes starting to count them from the begining of worddata.
+**  It is packed long (sizeof(long) bytes).
+**
+**  Exiting this routine, nextposmetaID has changed to be the size of
+**  the data block.
+**  It is a compressed number.
+*/
+void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
+{
+    unsigned char *src,*dst;   //source and dest pointers for worddata
+    unsigned int metaID, tfrequency, data_len;
+    unsigned long nextposmetaID;
 
+    src = worddata;
+
+    /* Jump over tfrequency and get first metaID */
+    tfrequency = uncompress2(&src);     /* tfrequency */
+    metaID = uncompress2(&src);     /* metaID */
+    dst = src;
+
+    while(metaID)
+    {
+        /* Get offset to next one */
+        nextposmetaID = UNPACKLONG2(src);
+        src += sizeof(long);
+
+        /* Compute data length for this metaID */
+        data_len = (int)nextposmetaID - (src - worddata);
+
+        /* Store data_len as a compressed number */
+        dst = compress3(data_len,dst);
+
+        /* This must not happen. Anyway check it */
+        if(dst > src)
+            progerr("Internal error in remove_worddata_longs");
+
+        /* dst may be smaller tahn src. So move the data */
+        memcpy(dst,src,data_len);
+
+        /* Increase pointers */
+        src = worddata + nextposmetaID;
+        dst += data_len;
+
+        /* Check if we are at the end of the buffer */
+        if ((src - worddata) == *sz_worddata)
+            break;   /* End of worddata */
+
+        /* Get next metaID */
+        metaID = uncompress2(&src);
+    }
+    /* Adjust to new size */
+    *sz_worddata = dst - worddata;
+}
