@@ -62,9 +62,9 @@ struct ramdisk *ramdisk_create(char *name, int buf_size)
 struct ramdisk *rd;
 
         rd = (struct ramdisk *) emalloc(sizeof(struct ramdisk));
-		rd->zone = Mem_ZoneCreate(name, buf_size, 0);
+        rd->zone = Mem_ZoneCreate(name, buf_size, 0);
         rd->cur_pos = 0;
-		rd->end_pos =0;
+        rd->end_pos =0;
         rd->n_buffers = 1;
         rd->buf_size = buf_size;
         rd->buffer = (unsigned char **)emalloc(sizeof(unsigned char *));
@@ -77,9 +77,10 @@ int ramdisk_close(FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
 
-	Mem_ZoneFree(&rd->zone);
-    efree(rd);
-	return 0;
+        Mem_ZoneFree(&rd->zone);
+        efree(rd->buffer);
+        efree(rd);
+    return 0;
 }
 
 void add_buffer_ramdisk(struct ramdisk *rd)
@@ -140,11 +141,11 @@ struct ramdisk *rd = (struct ramdisk *)fp;
     switch(set)
     {
     case SEEK_CUR:
-    	pos += rd->cur_pos;
-    	break;
+        pos += rd->cur_pos;
+        break;
     case SEEK_END:
-    	pos += rd->end_pos;
-    	break;
+        pos += rd->end_pos;
+        break;
     }
     if( pos > rd->end_pos )
     {
