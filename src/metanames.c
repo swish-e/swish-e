@@ -1,6 +1,22 @@
+
+/*
+   -- This module does metaname handling for swish-e
+   -- 
+   -- License: see swish licence file
+
+
+   -- 2001-02-12 rasc    minor changes, concering the tolower problem 
+				 (unsigned char) problem!!!
+
+*/
+
+
+
+
 #include "swish.h"
 #include "mem.h"
 #include "merge.h"
+#include "string.h"
 #include "docprop.h"
 #include "metanames.h"
 
@@ -79,13 +95,12 @@ struct metaEntry * getMetaIDData(IndexFILE *indexf, int number)
 /* #### Changed the name isDocProp by metaType */
 void addMetaEntry(IndexFILE *indexf, char *metaWord, int metaType, int *applyautomaticmetanames)
 {
-register int i;
 struct metaEntry* tmpEntry;
 struct metaEntry* newEntry;
 	
 	if(metaWord == NULL || metaWord[0]=='\0') return;
-	for( i=0; metaWord[i]; i++)
-		metaWord[i] =  tolower(metaWord[i]);
+	strtolower(metaWord);
+
 	
 	/* 06/00 Jose Ruiz - Check for automatic metanames
 	*/

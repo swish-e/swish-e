@@ -102,7 +102,7 @@ int soundex(word)
 	/* Convert chars to lower case and strip non-letter chars  */
 	j = 0;
 	for (i = 0; i < n; i++) {
-		u = tolower(word[i]);
+		u = tolower((unsigned char)word[i]);
 		if ((u > 96) && (u < 123)) {
 			 word[j] = u;
 			j++;

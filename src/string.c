@@ -29,6 +29,11 @@
 ** 2001-02-xx  rasc  makeItLow, strtolower  optimized/new
 **			   iso handling, minor bugfixes
 **
+** 2001-02-xx  jruiz, rasc:  -- IMPORTANT NOTE --
+**                   due to ISO charsset tolower,isspace, strcmp, etc.
+**                   have to be (unsigned char)!!
+**                   otherwise some chars may fail.
+**
 */
 
 #include <ctype.h>
@@ -39,9 +44,8 @@
 
 /* Case-insensitive strstr(). */
 /* Jose Ruiz 02/2001 Faster one */
-char *lstrstr(s, t)
-char *s;
-char *t;
+char *lstrstr(char *s, char *t)
+
 {
 int lens;
 int lent;
@@ -66,13 +70,13 @@ int first=tolower((unsigned char)*t);
 char *getword(char *s, int *skiplen)
 
 {
- char quotechar;
+ unsigned char quotechar;
+ unsigned char uc;
  char *start;
  char *wstart;
  char *word;
  int  len;
 
-fprintf (stderr,"DBG: getword:  string in: __%s__\n",s);
 
 	start = s;
 	quotechar = '\0';
@@ -80,46 +84,36 @@ fprintf (stderr,"DBG: getword:  string in: __%s__\n",s);
       s = str_skip_ws (s);
 	if (! *s) return "\0";
 	if (*s == '\"') quotechar = *s++;
-fprintf (stderr,"DBG: getword:  string after skip in: __%s__\n",s);
-
-      wstart = s;
 
 	/* find end of "more words" or word */
 
+      wstart = s;
       while (*s) {
-int break1 = 0;  // $$$
-fprintf (stderr,"%c",*s); // $$$
-// $$$ "break1=..." is for debug only and should read "break".
-// $$$ we have a problem with isspace reading non ascii characters
-// $$$ DEBUG rasc 2001-02-11
-         if (*s == '\\') {                      /* Escape \     */
+         uc = (unsigned char) *s;
+         if (uc == '\\') {                      /* Escape \     */
             s++;
             continue;
          }
          if (! quotechar) {
-            if (isspace (*s)) break1=1;		/* end of word  */
+            if (isspace ((int)uc)) break;		/* end of word  */
          } else {
-            if (*s == quotechar) break1=2;		/* end of quote */
-		if (*s == '\n') break1=3;			/* EOL          */
-		if (*s == '\r') break1=4;			/* EOL (WIN)    */
+            if (uc == quotechar) break;		/* end of quote */
+		if (uc == '\n') break;			/* EOL          */
+		if (uc == '\r') break;			/* EOL (WIN)    */
          }
-if (break1){ fprintf(stderr," -- break: %d on char _%c_\n",break1,*s); break;}
 
          s++;
       }
 
 	/* make a save copy of "word" */
-fprintf (stderr,"getword:  word1=: __%s__  len=%d \n",wstart,s-wstart);
 
       len = s - wstart;
       word = (char *)emalloc(len + 1);
       strncpy (word,wstart,len);
       *(word+len) = '\0';
-fprintf (stderr,"getword:  word_copied=: __%s__   ",word);
 
       if (*s == quotechar) s++;
       *skiplen = s - start;
-fprintf (stderr," next=: __%s__, skiplen=%d\n\n",s,*skiplen);
 
       return word;
 
@@ -702,7 +696,7 @@ unsigned char *s=NULL;
 char *str_skip_ws (char *s)
 
 {
-   while (*s && isspace(*s)) s++;
+   while (*s && isspace((int)(unsigned char)*s)) s++;
    return s;
 }
 
@@ -773,17 +767,17 @@ char charDecode_C_Escape (char *s, char **se)
    -- Return: ptr to string
    -- 2001-02-09  rasc:  former makeItLow() been a little optimized
 
-$$$: THIS has to be enhanced!
-     e.g. most tolower() don't map umlauts, etc. so there has to be
-     an ISO to lower map...
+   !!!  most tolower() don't map umlauts, etc. 
+   !!!  you have to use the right cast! (unsigned char)
+   !!!  or an ISO mapping...
 */
 
 char *strtolower (char *s)
 {
-  char *p = s;
+  unsigned char *p = s;
 
   while (*p) {
-     *p = tolower(*p);
+     *p = tolower((unsigned char)*p);
      p++;
   }
   return s; 

@@ -1828,8 +1828,7 @@ IndexFILE *indexf=sw->indexlist;
 				word[i] = '\0';
 
 				/* Now go to lowercase */
-				for (i = 0; word[i]; i++)
-					word[i] = tolower(word[i]);
+				strtolower (word);
                                 /* Get rid of the last char's */
                                 bump_position_flag=stripIgnoreLastChars(indexf->header,word);
 

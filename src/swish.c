@@ -31,6 +31,9 @@
 ** fixed cast to int and unused variable problems pointed out by "gcc -Wall"
 ** fixed variable declarations for INDEX_READ_ONLY to avoid unused variables
 ** SRE 2/22/00
+**
+** 2001-02-12 rasc   errormsg "print" changed...
+**
 */
 
 #define MAIN_FILE
@@ -194,10 +197,8 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			}
 		    }
 		  
-		  if (!*data_source)
-		    {
-		      sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Unknown -S option \"%s\"", opt);
-		      progerr(sw->errorstr);
+		  if (!*data_source) {
+		      progerr("Unknown -S option \"%s\"", opt);
 		    }
 		  else
 		    {
@@ -395,12 +396,10 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		while (sw->indexlist != NULL) {
 			
 			if ((sw->indexlist->fp = openIndexFILEForRead(sw->indexlist->line)) == NULL) {
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't open the index file \"%s\".", sw->indexlist->line);
-				progerr(sw->errorstr);
+				progerr("Couldn't open the index file \"%s\".", sw->indexlist->line);
 			}
 			if (!isokindexheader(sw->indexlist->fp)) {
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "\"%s\" has an unknown format.", sw->indexlist->line);
-				progerr(sw->errorstr);
+				progerr("File \"%s\" has an unknown format.", sw->indexlist->line);
 			}
 			
 			decompress(sw,sw->indexlist);
@@ -784,7 +783,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 				break;
 			case UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY:
 			case UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT:
-				progerr(sw->errorstr);
+				/* error msg already printed */
 				break;
 		}
 		if(rc>0) {

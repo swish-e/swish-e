@@ -94,7 +94,7 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
-** 20001-02-03 rasc  search call changed
+** 20001-02-xx rasc  search call changed, tolower changed...
 **
 */
 
@@ -352,7 +352,7 @@ unsigned char PhraseDelimiterString[2];
 					{
 						/* Needs to erase the '\' */
 						j--;
-						word[j] = tolower(words[i]);
+						word[j] = tolower((unsigned char)words[i]);
 						j++;
 					}
 				}
@@ -391,7 +391,7 @@ unsigned char PhraseDelimiterString[2];
 		}
 		else 
 		{
-			word[j] = tolower(words[i]);
+			word[j] = tolower((unsigned char)words[i]);
 			j++;
 		}
 	}
