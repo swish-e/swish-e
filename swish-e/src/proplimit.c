@@ -71,7 +71,7 @@ static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, 
 }
 
 #ifdef DEBUGLIMIT
-static void printdocprop( docPropertyEntry *d )
+static void printdocprop( propEntry *d )
 {
     char str[1000];
     int  j;
@@ -86,10 +86,12 @@ static void printdocprop( docPropertyEntry *d )
 
 static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
 {
-    docPropertyEntry *d;
+    propEntry *d;
 
-    d = GetPropertyByFile( sw, indexf, filenum,metaID );
-    printdocprop( d );
+    if ( (d = GetPropertyByFile( sw, indexf, filenum,metaID )))
+        printdocprop( d );
+    else
+        printf("File %d does not have a property for metaID %d", filenum, metaID );
 }
 #endif
     
@@ -311,7 +313,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 
     if ( !(fileprop = GetPropertyByFile( sw, indexf, sort_array->filenum, meta_entry->metaID )) )
         /* No property found, assume it's very, very, small */
-        return -1;
+        return +1;
 
 
 /***** display the compare
@@ -360,22 +362,6 @@ static int binary_search(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array,
     int mid;
     int cmp;
     unsigned int half;
-
-    /* Not sure if this will be any faster */
-    /** ------cut------ now with <= and >= probably not needed
-    if ( test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[0] ) < 0 )
-    {
-        *result = 0;
-        return 0;
-    }
-        
-    if ( test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[high] ) > 0 )
-    {
-        *result = num;
-        return 0;
-    }
-    ------------cut------- */
-    
 
 
     while ( low <= high )
