@@ -731,12 +731,12 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
             {
-                int     metaID[1],
-                        positionMeta[1];
+                int     metaID,
+                        positionMeta;
 
-                metaID[0] = q->metaID;
-                positionMeta[0] = 1;
-                indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
+                metaID = q->metaID;
+                positionMeta = 1;
+                indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
             }
         }
     }
@@ -755,12 +755,12 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
             {
-                int     metaID[1],
-                        positionMeta[1];
+                int     metaID,
+                        positionMeta;
 
-                metaID[0] = q->metaID;
-                positionMeta[0] = 1;
-                indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
+                metaID = q->metaID;
+                positionMeta = 1;
+                indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
             }
         }
     }
@@ -779,12 +779,12 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
             {
-                int     metaID[1],
-                        positionMeta[1];
+                int     metaID,
+                        positionMeta;
 
-                metaID[0] = q->metaID;
-                positionMeta[0] = 1;
-                indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
+                metaID = q->metaID;
+                positionMeta = 1;
+                indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
             }
         }
     }
@@ -1801,12 +1801,12 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
 
 void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
-    int     i;
+    int     i,
+            tmp = *position;
 
     if ( *bump_position_flag )
     {
-        for (i = 0; i < numMetaNames; i++)
-            position[i]++;
+        tmp++;
 
         *bump_position_flag = 0;
     }
@@ -1814,9 +1814,10 @@ void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int 
 
     for (i = 0; i < numMetaNames; i++)
     {
-        addentry(sw, word, filenum, structure, metaID[i], position[i]);
-        position[i]++;
+        addentry(sw, word, filenum, structure, metaID[i], *position);
     }
+    tmp++;
+    *position = tmp;
 }
 
 /* Gets the next white-space delimited word */

@@ -117,9 +117,9 @@ int     isoktitle(sw, title)
 int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     int     ftotalwords;
-    int    *metaName;
-    int     metaNamelen;
-    int    *positionMeta;       /* Position of word in file */
+    int    *metaID;
+    int     metaIDlen;
+    int     positionMeta;       /* Position of word in file */
     int     position_no_meta = 1; /* Counter for words in doc (excluding metanames) */
     int     position_meta = 1;  /* Counter for words in doc (only for metanames) */
     int     currentmetanames;
@@ -165,13 +165,12 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
 
     /* Init meta info */
-    metaName = (int *) emalloc((metaNamelen = 1) * sizeof(int));
-    positionMeta = (int *) emalloc(metaNamelen * sizeof(int));
+    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
 
     currentmetanames = ftotalwords = 0;
     structure = IN_FILE;
-    metaName[0] = 1;
-    positionMeta[0] = 1;
+    metaID[0] = 1;
+    positionMeta = 1;
 
     for (p = buffer; p && *p;)
     {
@@ -183,7 +182,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaName, positionMeta);
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
 
             if (newp != p)
                 efree(newp);
@@ -217,37 +216,27 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             /* If must be indexed add the metaName to the currentlist of metaNames */
                             if (is_meta_index(metaNameEntry))
                             {
-                                int i;
-                                
                                 /* realloc memory if needed */
-                                if (currentmetanames == metaNamelen)
+                                if (currentmetanames == metaIDlen)
                                 {
-                                    metaName = (int *) erealloc(metaName, (metaNamelen *= 2) * sizeof(int));
-                                    positionMeta = (int *) erealloc(positionMeta, metaNamelen * sizeof(int));
+                                    metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
                                 }
 
                                 /* add metaname to array of current metanames */
-                                metaName[currentmetanames] = metaNameEntry->metaID;
+                                metaID[currentmetanames] = metaNameEntry->metaID;
 
                                 /* Preserve position */
                                 if (!currentmetanames)
-                                    position_no_meta = positionMeta[0];
+                                {
+                                    position_no_meta = positionMeta;
+                                     /* Init word counter for the metaname */
+                                    positionMeta = position_meta;
+                                }
 
 
-
-                                /* Init word counter for the metaname */
-                                if (currentmetanames)
-                                    positionMeta[currentmetanames] = positionMeta[0];
-                                else
-                                    positionMeta[currentmetanames] = position_meta;
-
-
-    							/* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-    							if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
-    								for(i=0; i<=currentmetanames; i++)
-    								{
-    									positionMeta[i]++;
-    							    }
+                                /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
+                                if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                                        positionMeta++;
 
                                 currentmetanames++;
 
@@ -279,10 +268,10 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             currentmetanames--;
                             if (!currentmetanames)
                             {
-                                metaName[0] = 1;
-                                position_meta = positionMeta[0];
+                                metaID[0] = 1;
+                                position_meta = positionMeta;
                                 /* Restore position counter */
-                                positionMeta[0] = position_no_meta;
+                                positionMeta = position_no_meta;
                             }
                         }
                         p = endtag;
@@ -297,7 +286,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                 }               /*  Check for COMMENT */
                 else if ((tag[0] == '!') && sw->indexComments)
                 {
-                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, positionMeta);
+                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
                     p = endtag;
                 }               /* Default: Continue */
                 else
@@ -315,7 +304,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaName, positionMeta);
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
 
             if (newp != p)
                 efree(newp);
@@ -323,8 +312,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
         }
     }
 
-    efree(metaName);
-    efree(positionMeta);
+    efree(metaID);
 
     addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
@@ -434,7 +422,7 @@ struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticm
     int     i;
     struct metaEntry *e = NULL;
 
-	/*** $$$ NOTE: memory for "word" is never freed... ***/
+    /*** $$$ NOTE: memory for "word" is never freed... ***/
     if (!lenword)
         word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
 
@@ -599,8 +587,8 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
          * but in order to disable this behavior the name MUST be a meta name.
          * Probably better to let getHTMLMeta() return the name as a string.
          */
-		if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
-				position[0]++;
+        if(!metaNameEntry || !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                position[0]++;
 
         wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
 
