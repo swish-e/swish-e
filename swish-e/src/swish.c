@@ -57,6 +57,7 @@ $Id$
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"
+#include "result_sort.h"
 #include "keychar_out.h"
 #include "date_time.h"
 #include "db.h"
@@ -485,6 +486,11 @@ struct stat stat_buf;
 			   usage();
 			}
 		}    
+		else if (c == 'o')
+		{
+			    /* Ignore sorted indexes */
+			sw->ResultSort->isPreSorted = 0;
+		}
 		else
 			usage();
 		if (argc == 0)

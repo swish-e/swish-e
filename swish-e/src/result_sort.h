@@ -33,6 +33,10 @@ $Id$
 
 struct MOD_ResultSort
 {
+
+	    /* sorted index flag */
+	    /* TRUE - Use sorted index */
+	int isPreSorted;
         /* Sortorder Translation table arrays */
               /* case sensitive translation table */
     int iSortTranslationTable[256];

@@ -394,6 +394,7 @@ char *getResultPropAsString(RESULT *p, int ID)
 char *s=NULL;
 unsigned long i;
 IndexFILE *indexf=p->indexf;
+SWISH *sw=(SWISH *)p->sw;
 struct metaEntry *q;
 docPropertyEntry *d;
 	if(!p) return estrdup("");
@@ -440,6 +441,8 @@ docPropertyEntry *d;
 			q=getMetaIDData(&indexf->header,ID); 
 			if(!q) return estrdup("");
 				/* Search the property */
+			if(indexf->filearray[p->filenum-1] == NULL)
+				indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
 			for(d=indexf->filearray[p->filenum-1]->docProperties;d;d=d->next)
 				if(d->metaID==ID) break;
 				/* If not found return */

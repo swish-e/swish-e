@@ -39,6 +39,7 @@ $Id$
 #include "search.h"
 #include "error.h"
 #include "db.h"
+#include "parse_conffile.h"
 #include "result_sort.h"
 
 
@@ -76,6 +77,7 @@ void initModule_ResultSort (SWISH  *sw)
     md->currentMaxPropertiesToSort=0;
     md->propNameToSort=NULL;
     md->propModeToSort=NULL;
+	md->isPreSorted=1; /* Use presorted Index by default */
 }
 
 
@@ -150,22 +152,61 @@ void freeModule_ResultSort (SWISH *sw)
 int configModule_ResultSort  (SWISH *sw, StringList *sl)
 
 {
-  //struct MOD_ResultSort *md = sw->ResultSort;
-  //char *w0    = sl->word[0];
+  struct MOD_ResultSort *md = sw->ResultSort;
+  char *w0    = sl->word[0];
+  unsigned char *w1,*w2,*w3;
   int  retval = 1;
+  int  incr = 0;
+  int  i,j;
 
 
 
-  // @ Jose:  I don't want to add code, while your work is in progress
-  // but here is the idea:
-  //   wordsequence of character orders 
-  // Config statement:   ResultSortOrder   "AД"  "aд"
-  //    could work like follows:   v = value[*s];  loop i rest: value[*(s+i)] = v+i;     
+  if (strcasecmp(w0, "PreSortedIndex")==0) {         
+	md->isPreSorted = getYesNoOrAbort (sl, 1,1);
+  } else if (strcasecmp(w0, "ResultSortOrder")==0) { 
+	if(sl->n == 4) 
+	{
+	   w1 = (unsigned char *)sl->word[1];
+	   w2 = (unsigned char *)sl->word[2];
+	   w3 = (unsigned char *)sl->word[3];
 
+	   if(strlen(w1)!=1)
+	   {
+           progerr("%s: parameter 1 must be one char length", w0);
+	   }
+       if(strlen(w2)!=1)
+	   {
+           progerr("%s: parameter 2 must be one char length", w0);
+	   }
+       switch(w1[0])
+	   {
+          case '=':
+			  incr = 0;
+			break;
+		  case '<':
+			  incr = -1;
+			break;
+		  case '>':
+			  incr = 1;
+			break;
+		  default:
+			progerr("%s: parameter 1 must be one of this values: = < >", w0);
+			break;
+		}
+	    for(i=0;w3[i];i++)
+		{
+			j=(int) w2[0];
+            md->iSortTranslationTable[(int) w3[i]] = 
+				md->iSortTranslationTable[j] + incr * (i+1);
 
-  // md->mydata = ...
-  // best practice: copy from _mod_example.c
-
+			md->iSortCaseTranslationTable[(int) w3[i]] = 
+				md->iSortCaseTranslationTable[j] + incr * (i+1);
+		}
+	} else progerr("%s: requires 3 parameters (Eg: [=|<|>] a бад)",w0);
+  }
+  else {
+      retval = 0;	            /* not a module directive */
+  }
 
   retval = 0; // tmp due to empty routine
 
@@ -383,22 +424,22 @@ int    *getLookupResultSortedProperties(RESULT * r)
             m = getMetaIDData(&indexf->header, indexf->propIDToSort[i]);
             if (m)
             {
-		if(!m->sorted_data)
-		{
-			DB_InitReadSortedIndex(sw, r->indexf->DB);
-				/* Get the sorted index of the property */
-			DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer,r->indexf->DB);
-			s = buffer;
-			m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
-				/* Unpack / decompress the numbers */
-			for( j = 0; j < r->indexf->header.totalfiles; j++)
-			{
-				tmp = uncompress2(&s);
-				m->sorted_data[j] = tmp;
-			}
-			efree(buffer);
-			DB_EndReadSortedIndex(sw, r->indexf->DB);
-		}
+		        if(!m->sorted_data)
+				{
+			       DB_InitReadSortedIndex(sw, r->indexf->DB);
+				        /* Get the sorted index of the property */
+			       DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer,r->indexf->DB);
+			       s = buffer;
+			       m->sorted_data = (int *)emalloc(r->indexf->header.totalfiles * sizeof(int));
+				       /* Unpack / decompress the numbers */
+			       for( j = 0; j < r->indexf->header.totalfiles; j++)
+				   {
+				      tmp = uncompress2(&s);
+				      m->sorted_data[j] = tmp;
+				   }
+    		       efree(buffer);
+	               DB_EndReadSortedIndex(sw, r->indexf->DB);
+				}
                 props[i] = m->sorted_data[r->filenum - 1];
             }
             else
@@ -444,6 +485,8 @@ int     sortresults(SWISH * sw, int structure)
            *tmp;
     struct DB_RESULTS *db_results;
     int     (*compResults) (const void *, const void *);
+    struct MOD_ResultSort *rs = sw->ResultSort;
+
 
     /* Sort each index file resultlist */
     for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)
@@ -452,16 +495,30 @@ int     sortresults(SWISH * sw, int structure)
         db_results->currentresult = NULL;
         rp = db_results->resultlist;
 
-        /* Asign comparison routine to be used by qsort */
-        compResults = compResultsBySortedProps;
+		if(rs->isPreSorted)
+		{
+                /* Asign comparison routine to be used by qsort */
+            compResults = compResultsBySortedProps;
 
-        /* As we are sorting a unique index file, we can use the presorted data in the index file */
-        for (tmp = rp; tmp; tmp = tmp->next)
-        {
-            /* Load the presorted data */
-            tmp->iPropSort = getLookupResultSortedProperties(tmp);
-        }
-
+                /* As we are sorting a unique index file, we can use the presorted data in the index file */
+            for (tmp = rp; tmp; tmp = tmp->next)
+			{
+                /* Load the presorted data */
+                tmp->iPropSort = getLookupResultSortedProperties(tmp);
+			}
+		} 
+		else
+		{
+    			/* We do not have presorted tables or do not want to use them */
+                /* Asign comparison routine to be used by qsort */
+            compResults = compResultsByNonSortedProps;
+			                /* As we are sorting a unique index file, we can use the presorted data in the index file */
+            for (tmp = rp; tmp; tmp = tmp->next)
+			{
+                /* Load the presorted data */
+                tmp->PropSort = getResultSortProperties(tmp);
+			}
+		}
         /* Compute number of results */
         for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
         {
