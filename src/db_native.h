@@ -208,6 +208,7 @@ int     DB_EndReadWords_Native(void *db);
 
 int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db);
 int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata,int sz_filedata, void *db);
+int     DB_CheckFileNum_Native(int filenum, void *db);
 int     DB_RemoveFileNum_Native(int filenum, void *db);
 
 #ifdef USE_BTREE

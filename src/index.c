@@ -776,8 +776,46 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         /* If exits a previous file with the same real_path ... */
         if(old_filenum)
         {
-printf("DEBUG: %d\n",old_filenum);
+            IndexFILE   *cur_index = sw->indexlist;
+            FileRec     fi;
+            int         ret;
+            propEntry   *wp, *cp;
+            int         error_flag;
+            unsigned long tmp;
 
+            /* Let's see if file is newer base on mtime property */
+            if(!cur_index->modified_meta)
+                cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
+
+            memset(&fi, 0, sizeof( FileRec ));
+            fi.filenum = old_filenum;
+            cp = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->modified_meta->metaID, 0 );
+ 
+            /* Crate a property based on mtime in order to use it
+            ** for comparing properties in Compare_Property routine */
+            tmp = PACKLONG(fprop->mtime);
+            wp = CreateProperty( cur_index->modified_meta, (unsigned char *)&tmp, sizeof( tmp ), 1, &error_flag );
+
+            ret = Compare_Properties( cur_index->modified_meta, cp, wp );
+
+            freeProperty( cp );     
+            freeProperty( wp );     
+            if ( fi.prop_index )
+                efree( fi.prop_index );
+
+            /* New file is the same or older. Skip it */
+            if (ret >= 0)
+            {
+               if (sw->verbose >= 3)
+                   printf(" - Update mode - File same or older - (Skipping it)\n\n");
+
+                return;
+            }
+            else
+            {  /* Remove old filenum and continue */
+                DB_RemoveFileNum(sw,old_filenum,indexf->DB);
+                cur_index->header.removedfiles++;
+            }
         }
     }
 

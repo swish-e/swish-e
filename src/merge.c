@@ -364,6 +364,7 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
     read_header(sw_input, out_header, sw_input->indexlist->DB);
 
     out_header->totalfiles = 0;
+    out_header->removedfiles = 0;
     out_header->totalwords = 0;
 
     freeMetaEntries( out_header );

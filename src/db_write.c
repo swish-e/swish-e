@@ -61,9 +61,20 @@ static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline
         itmp[1] = PACKLONG(itmp[1]); \
         DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB)); \
 }
+#define write_header_int3(sw,id,num1,num2,num3,DB)\
+{  \
+        unsigned long itmp[3]; \
+        itmp[0] = (num1); \
+        itmp[1] = (num2); \
+        itmp[2] = (num3); \
+        itmp[0] = PACKLONG(itmp[0]); \
+        itmp[1] = PACKLONG(itmp[1]); \
+        itmp[2] = PACKLONG(itmp[2]); \
+        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 3, (DB)); \
+}
 
 
-void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int merged)
+void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filename, int totalwords, int totalfiles, int removedfiles, int merged)
 {
     char   *c,
            *tmp;
@@ -81,7 +92,7 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     write_header_int(sw, MERGED_ID, merged, DB);
     DB_WriteHeaderData(sw, NAMEHEADER_ID, (unsigned char *)header->indexn, strlen(header->indexn) + 1, DB);
     DB_WriteHeaderData(sw, SAVEDASHEADER_ID, (unsigned char *)c, strlen(c) + 1, DB);
-    write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
+    write_header_int3(sw, COUNTSHEADER_ID, totalwords, totalfiles, removedfiles, DB);
     tmp = getTheDateISO(); 
     DB_WriteHeaderData(sw, INDEXEDONHEADER_ID, (unsigned char *)tmp, strlen(tmp) + 1,DB); 
     efree(tmp);

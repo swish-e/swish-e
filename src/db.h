@@ -35,7 +35,7 @@ void initModule_DB (SWISH *);
 void freeModule_DB (SWISH *);
 int configModule_DB (SWISH *sw, StringList *sl);
 
-void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int);
+void    write_header(SWISH *, INDEXDATAHEADER *, void *, char *, int, int, int, int);
 void    update_header(SWISH *, void *, int, int );
 void    write_index(SWISH *, IndexFILE *);
 void    write_word(SWISH *, ENTRY *, IndexFILE *);
@@ -111,6 +111,7 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 int     DB_WriteFileNum(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
 int     DB_ReadFileNum(SWISH *sw, int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+int     DB_CheckFileNum(SWISH *sw, int filenum, void *DB);
 int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB);
 
 int     DB_InitWriteProperties(SWISH *sw, void *DB);
@@ -164,6 +165,7 @@ struct MOD_DB
     
     int    (*DB_WriteFileNum) (int filenum, unsigned char *filedata,int sz_filedata, void *DB);
     int    (*DB_ReadFileNum) (int *filenum, unsigned char *filedata,int sz_filedata, void *DB);
+    int    (*DB_CheckFileNum) (int filenum, void *DB);
     int    (*DB_RemoveFileNum) (int filenum, void *DB);
 
 #ifdef USE_BTREE
