@@ -524,7 +524,8 @@ div.search-result a:hover {
 }
 
 .search-rank {
-    color: red;
+    color: gray;
+    font-size: 80%;
 }
 
 .search-description {
