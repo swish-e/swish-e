@@ -654,7 +654,6 @@ typedef struct {
     struct ResultExtFmtStrList   *resultextfmtlist;
 	/* Filter vars */
     struct filter *filterlist;                  /* 1998-08-07 rasc */
-    int lenfilterdir;
     char *filterdir;                  /* 1998-08-07 rasc */
 
                 /* 06/00 Jose Ruiz */

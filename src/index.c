@@ -119,6 +119,7 @@
 #include "txt.h"
 #include "metanames.h"
 #include "result_sort.h"
+#include "filter.h"
 
 
 /*
@@ -135,32 +136,19 @@
 void do_index_file (SWISH *sw, FileProp *fprop)
 {
 int      wordcount;
-char     *filtercmd;
 char     *rd_buffer=NULL;	/* complete file read into buffer */
 
 	wordcount = -1;
-	filtercmd = NULL;
 
 	if (fprop->work_path) {
 
                 /*
                   -- jeek! simple filter hack!
-                  -- simple filter call "filter 'work_file' 'real_path_url'"
-		  --    > (decoded output =stdout)
                   -- if no filter defined, call file-open
                 */
 
                 if (fprop->filterprog) {
-                    filtercmd=emalloc(strlen(fprop->filterprog)
-                                        +strlen(fprop->work_path)
-                                        +strlen(fprop->real_path)+6+1);
-                    sprintf(filtercmd, "%s \'%s\' \'%s\'", fprop->filterprog,
-					fprop->work_path,fprop->real_path);
-#ifdef DEBUG
-                    fprintf(stderr, "DBG: FilterOpen: %s ::%p:\n",filtercmd,fprop->fp);
-#endif
-                    fprop->fp = popen (filtercmd,"r");  /* Open stream */
-
+                    fprop->fp = FilterOpen(fprop);
                 } else {
 						/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
                     fprop->fp = fopen(fprop->work_path, FILEMODE_READ );
@@ -207,9 +195,8 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 			break;
 		    }
 
-                    if (fprop->filterprog) {
-			pclose(fprop->fp); /* close filter pipe */
-			efree(filtercmd);
+		    if (fprop->filterprog) {
+			FilterClose(fprop); /* close filter pipe */
 		    } else {
 			fclose (fprop->fp);  /* close file */
 		    }

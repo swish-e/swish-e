@@ -17,14 +17,9 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
 struct swline *addswline (struct swline *, char *);
 struct swline *dupswline (struct swline *);
 IndexFILE *addindexfile (IndexFILE *, char *);
-struct filter *addfilter (struct filter *rp, char *FilterSuffix, char *FilterProg, char *FilterDir); 
 void init_header (INDEXDATAHEADER *);
 void free_header (INDEXDATAHEADER *);
