@@ -103,6 +103,10 @@ struct MOD_Index
 	/* Variable to control the size of the zone used for store locations during chunk proccesing */
 	int optimalChunkLocZoneSize;
 
+    /* variable to handle free memory space for locations inside currentChunkLocZone */
+
+    LOCATION    *freeLocMemChain;
+
     MEM_ZONE	*perDocTmpZone;
     MEM_ZONE	*currentChunkLocZone;
     MEM_ZONE    *totalLocZone;

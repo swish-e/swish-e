@@ -295,8 +295,8 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
     sz_worddata = q - sw->Index->worddata_buffer;
 
-    /* Adjust word positions if ignorelimit was set */
-    //if(sw->Index->nIgnoreLimitWords)
+    /* Adjust word positions if ignorelimit was set  and we found some new stopwords */
+    // if(sw->Index->nIgnoreLimitWords)
     //     adjustWordPositions(sw->Index->worddata_buffer, &sz_worddata, sw->indexlist->header.totalfiles, sw->Index->IgnoreLimitPositionsArray);
 
     DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sz_worddata,indexf->DB);
