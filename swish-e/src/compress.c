@@ -189,15 +189,28 @@ unsigned long UNPACKLONG2(unsigned char *buffer)
 ************************************************************************************/
 
 #define IS_FLAG              0x80  /* Binary 10000000 */   /* Always set */
-#define STRUCTURE_EQ_1       0x40  /* Binary 01000000 */
+#define COMMON_STRUCTURE     0x40  /* Binary 01000000 */
 #define FREQ_AND_POS_EQ_1    0x20  /* Binary 00100000 */
 #define POS_4_BIT            0x10  /* Binary 00010000 */
 
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int structure,int frequency, int position0)
+
+void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *posdata)
 {
     unsigned char *p = *buf;
     unsigned char *flag;
-
+    int structure = GET_STRUCTURE(posdata[0]);
+    int common_structure = COMMON_STRUCTURE;
+    int i;
+   
+    /* Let's see if all positions have the same structure to a get better compression */
+    for(i=0;i<frequency;i++)
+    {
+        if(structure != GET_STRUCTURE(posdata[i]))
+        {
+            common_structure = 0;
+            break;
+        }
+    }
     /* Make room for flag and init it */
     flag = p;
     *flagp = p;
@@ -208,28 +221,31 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     /* Add file number */
     p = compress3(filenum, p);
 
-    /* Add structure */
-    if(structure == 1)
-        (*flag) |= STRUCTURE_EQ_1;
-    else
-        *p++ = (unsigned char) structure;
 
     /* Check for special case frequency ==1 and position[0] == 1 */
-    if(frequency == 1 && position0 == 1)
+    if(frequency == 1 && GET_POSITION(posdata[0]) == 1)
     {
         *flag |= FREQ_AND_POS_EQ_1;
     }
     else
     {
         if(frequency < 16)
-             (*flag) |= frequency; /* Store in flag - last 4 bit 0000xxxx */
+             (*flag) |= frequency; /* Store in flag - last 3 bit 00000xxx */
         else
              p = compress3(frequency, p);
     }
+
+    /* Add structure if it is equal for all positions */
+    if(common_structure)
+    {
+        *p++ = (unsigned char) structure;
+        *flag |= COMMON_STRUCTURE;
+    }
+
     *buf = p;
 }
 
-void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position)
+void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *posdata)
 {
     unsigned char *p = *buf;
     int i;
@@ -237,14 +253,14 @@ void compress_location_positions(unsigned char **buf,unsigned char *flag,int fre
     if(! ((*flag) & FREQ_AND_POS_EQ_1))
     {
         /* Adjust positions to store them incrementally */
-        if(position[0] < 16)
+        if(GET_POSITION(posdata[0]) < 16)
             (*flag) |= POS_4_BIT;
         else
             (*flag) &= ~POS_4_BIT; 
         for(i = frequency - 1; i > 0 ; i--)
         {
-            position[i] -= position[i-1];
-            if(position[i] >= 16)
+            posdata[i] = SET_POSDATA(GET_POSITION(posdata[i]) - GET_POSITION(posdata[i-1]),GET_STRUCTURE(posdata[i]));
+            if(GET_POSITION(posdata[i]) >= 16)
                 (*flag) &= ~POS_4_BIT; 
         }
         /* write the position data working from the end of the buffer */
@@ -253,18 +269,23 @@ void compress_location_positions(unsigned char **buf,unsigned char *flag,int fre
             for (i = 0; i < frequency; i++)
             {
                 if(i % 2)
-                    p[i/2] |= (unsigned char) position[i];
+                    p[i/2] |= (unsigned char) GET_POSITION(posdata[i]);
                 else
-                    p[i/2] = (unsigned char) position[i] << 4;
+                    p[i/2] = (unsigned char) GET_POSITION(posdata[i]) << 4;
             }
             p += ((frequency + 1)/2);
         }
         else
         {
             for (i = 0; i < frequency; i++)
-                p = compress3(position[i], p);
+                p = compress3(GET_POSITION(posdata[i]), p);
         }
+        if(! (*flag & COMMON_STRUCTURE))
+            for(i = 0; i < frequency; i++)
+                *p++ = (unsigned char) GET_STRUCTURE(posdata[i]);
+
     }
+
     *buf = p;
 }
 
@@ -282,8 +303,11 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
     /* In the worst case and integer will need 5 bytes */
     /* but fortunatelly this is very uncommon */
 
-//***JMRUIZ    max_size = ((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * 5;
-    max_size = sizeof(unsigned char) + sizeof(LOCATION *) + (((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * 5);
+/* 2002/01 JMRUIZ
+** Added an extra byte (MAXINTCOMPSIZE+1) for each position's structure
+*/
+
+    max_size = sizeof(unsigned char) + sizeof(LOCATION *) + (((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * (MAXINTCOMPSIZE + sizeof(unsigned char)));
 
 
     /* reallocate if needed */
@@ -306,8 +330,8 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
     /* Add the metaID */
     p = compress3(l->metaID,p);
 
-    compress_location_values(&p,&flag,l->filenum,l->structure,l->frequency, l->position[0]);
-    compress_location_positions(&p,flag,l->frequency,l->position);
+    compress_location_values(&p,&flag,l->filenum,l->frequency, l->posdata);
+    compress_location_positions(&p,flag,l->frequency,l->posdata);
 
 
 
@@ -327,16 +351,13 @@ unsigned char *compress_location(SWISH * sw, IndexFILE * indexf, LOCATION * l)
 }
 
 
-void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *structure,int *frequency)
+void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency)
 {
     unsigned char *p = *buf;
 
-    *structure = 0;
     *frequency = 0;
 
     *flag = *p++;
-
-    (*structure) = ((*flag) & STRUCTURE_EQ_1) ? 1 : 0;
 
     if((*flag) & FREQ_AND_POS_EQ_1)
     {
@@ -347,22 +368,30 @@ void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *fi
 
     *filenum = uncompress2(&p);
 
-    if(! (*structure))
-        *structure = *p++;
     if(! (*frequency))
         *frequency = uncompress2(&p);
     *buf = p;
 }
 
-void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *position)
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *posdata)
 {
     int i, tmp;
     unsigned char *p = *buf;
+    int common_structure = 0;
+    int structure = 0;
 
-    /* Chaeck for special case frequency == 1 and position[0] == 1 */
+    /* Check for common structure */
+    if (flag & COMMON_STRUCTURE)
+    {
+        common_structure = COMMON_STRUCTURE;
+        structure = (int)((unsigned char) *p++);
+    }
+
+    /* Check for special case frequency == 1 and position[0] == 1 */
     if(flag & FREQ_AND_POS_EQ_1)
     {
-        position[0] = 1;
+        posdata[0] =  SET_POSDATA(1,structure);
+        *buf = p;
         return;
     }
 
@@ -372,9 +401,9 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
         for (i = 0; i < frequency; i++)
         {
             if(i%2)
-                position[i] = p[i/2] & 0x0F;
+                posdata[i] = p[i/2] & 0x0F;
             else
-                position[i] = p[i/2] >> 4;
+                posdata[i] = p[i/2] >> 4;
         }
         p += ((frequency +1)/2);
     }
@@ -383,12 +412,22 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
         for (i = 0; i < frequency; i++)
         {
             tmp = uncompress2(&p);
-            position[i] = tmp;
+            posdata[i] = tmp;
         }
     }
     /* Position were compressed incrementally. So restore them */
     for(i = 1; i < frequency; i++)
-        position[i] += position[i-1];
+        posdata[i] += posdata[i-1];
+
+    /* Get structure */
+    for(i = 0; i < frequency; i++)
+    {
+        if(!common_structure)
+            structure = (int)((unsigned char) *p++);
+
+        posdata[i] = SET_POSDATA(posdata[i],structure);
+    }
+
     /* Update buffer pointer */
     *buf = p;
 }
@@ -401,22 +440,20 @@ LOCATION *uncompress_location(SWISH * sw, IndexFILE * indexf, unsigned char *p)
     LOCATION *loc;
     int     metaID,
             filenum,
-            structure,
             frequency;
     unsigned char flag;
 
     metaID = uncompress2(&p);
 
-    uncompress_location_values(&p,&flag,&filenum,&structure,&frequency);
+    uncompress_location_values(&p,&flag,&filenum,&frequency);
 
     loc = (LOCATION *) emalloc(sizeof(LOCATION) + (frequency - 1) * sizeof(int));
 
     loc->metaID = metaID;
     loc->filenum = filenum;
-    loc->structure = structure;
     loc->frequency = frequency;
 
-    uncompress_location_positions(&p,flag,frequency,loc->position);
+    uncompress_location_positions(&p,flag,frequency,loc->posdata);
 
     return loc;
 }

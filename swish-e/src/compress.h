@@ -32,11 +32,11 @@ unsigned long UNPACKLONG(unsigned long num);
 unsigned long UNPACKLONG2(unsigned char *buffer);
 
 unsigned char *compress_location(SWISH *,IndexFILE *, LOCATION *);
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int structure,int frequency, int position0);
+void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *position);
 void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position);
 
 LOCATION *uncompress_location(SWISH *,IndexFILE *,unsigned char *);
-void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *structure,int *frequency);
+void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency);
 void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *position);
 
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
@@ -46,3 +46,4 @@ unsigned char *unSwapLocData(SWISH *,long);
 void unSwapLocDataEntry(SWISH *,ENTRY *);
 
 
+#define MAXINTCOMPSIZE 5

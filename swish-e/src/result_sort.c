@@ -525,7 +525,7 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
             {
                 /* If rank was delayed, compute it now */
                 if(r->rank == -1)
-                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->structure, r->indexf, r->filenum );
+                    r->rank = getrank( sw, r->frequency, r->tfrequency, r->posdata, r->indexf, r->filenum );
                 props[i] = r->rank;
                 continue;
             }
@@ -589,6 +589,19 @@ char  **getResultSortProperties(SWISH *sw, RESULT * r)
 }
 
 
+/* Routine to test structure in a result */
+int test_structure(RESULT *r,int structure)
+{
+int i;
+    for(i = 0; i < r->frequency; i++)
+    {
+        if(GET_STRUCTURE(r->posdata[i]) & structure)
+            return 1;
+    }
+    return 0;
+}
+
+
 /* Jose Ruiz 04/00
 ** Sort results by property
 */
@@ -627,7 +640,7 @@ int     sortresults(SWISH * sw, int structure)
             /* As we are sorting a unique index file, we can use the presorted data in the index file */
             for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                if (tmp->structure & structure)
+                if (test_structure(tmp,structure))
                 {
                     /* Load the presorted data */
                     tmp->iPropSort = getLookupResultSortedProperties(sw, tmp);
@@ -657,7 +670,7 @@ int     sortresults(SWISH * sw, int structure)
             /* Read the property value string(s) for all the sort properties */
             for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                if (tmp->structure & structure)
+                if (test_structure(tmp,structure))
                 {
                     tmp->PropSort = getResultSortProperties(sw, tmp);
                 }
@@ -675,7 +688,7 @@ int     sortresults(SWISH * sw, int structure)
 
             /* Build an array with the elements to compare and pointers to data */
             for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-                if (rtmp->structure & structure)
+                if (test_structure(rtmp,structure))
                     ptmp[j++] = rtmp;
 
 
