@@ -610,31 +610,13 @@ docPropertyEntry *p;
  */
 
 
- /*
-    -- Case insensitive (lowercase check = LC)
- */
-
-PropValue * getResultPropertyByNameLC (SWISH *sw, char *propertyname, RESULT *r)
-{
-  char *p,*pname;
-  PropValue *pv;
-
-    /* To avoid problems and for faster scan make propertyname */
-    /* to lowercase */
-
-    pname=estrdup(propertyname);     /* preserve original value */
-    for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
-
-    pv = getResultPropertyByName (sw, pname, r);
-
-    efree(pname);
-    return pv;
-}
 
 
  /*
-    -- case sensitive check...
-    -- (XML props should be case sensitive)
+    -- case insensitive  check...
+    -- (XML props should be case sensitive, but does a user understand this?
+    --  ==> user properties are not case sensitive)
+    -- 2001-02-11  rasc  (result of develop discussion)
  */
 
 PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
@@ -713,7 +695,7 @@ PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
 		    */
 
 		   for(i=0;i<sw->numPropertiesToDisplay;i++) {
-			if(!strcmp(pname,sw->propNameToDisplay[i])) {
+			if(!strcasecmp(pname,sw->propNameToDisplay[i])) {
 				pv->datatype = STRING;
 				pv->value.v_str = r->Prop[i];
 				break;
@@ -762,14 +744,14 @@ int isAutoProperty (char *propname)
 
   /* -- Precheck... fits start of propname? */
 
-  if (strncmp (propname,AUTOPROPERTY__ID_START__,
+  if (strncasecmp (propname,AUTOPROPERTY__ID_START__,
 		sizeof(AUTOPROPERTY__ID_START__)-1)) {
 	return 0;
   }
 
   ap = auto_props;
   while (ap->name) {
-	if (! strcmp(propname,ap->name)) {
+	if (! strcasecmp(propname,ap->name)) {
 	   return ap->id;
 	}
 	ap++;

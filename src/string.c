@@ -26,10 +26,12 @@
 ** fixed cast to int problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
-** 2001-02-09 rasc  makeItLow, strtolower  optimized/new
+** 2001-02-xx  rasc  makeItLow, strtolower  optimized/new
+**			   iso handling, minor bugfixes
 **
 */
 
+#include <ctype.h>
 #include "swish.h"
 #include "string.h"
 #include "mem.h"
@@ -58,53 +60,71 @@ int first=tolower((unsigned char)*t);
 
 /* Gets the next word in a line. If the word's in quotes,
 ** include blank spaces in the word or phrase.
+   -- 2001-02-11 rasc  totally rewritten, respect escapes like \"
 */
 
-char *getword(line, skiplen)
-char *line;
-int *skiplen;
+char *getword(char *s, int *skiplen)
+
 {
-int i, inquotes;
-char *start,*p;
-int lenword;
-char *word;
-	start = line;
-	if (!(*line)) return "\0";
+ char quotechar;
+ char *start;
+ char *wstart;
+ char *word;
+ int  len;
 
-	while (isspace((int)((unsigned char)*line))) line++;
+fprintf (stderr,"DBG: getword:  string in: __%s__\n",s);
 
-	if (!(*line)) return "\0";
+	start = s;
+	quotechar = '\0';
 
-	if (*line == '\"') {
-		inquotes = 1;
-		line++;
-	}
-	else
-		inquotes = 0;
+      s = str_skip_ws (s);
+	if (! *s) return "\0";
+	if (*s == '\"') quotechar = *s++;
+fprintf (stderr,"DBG: getword:  string after skip in: __%s__\n",s);
 
-	word = (char *)emalloc((lenword=MAXWORDLEN) + 1);
+      wstart = s;
 
-	for (i = 0; *line && ((inquotes) ? (*line != '\"') : (!isspace((int)((unsigned char)*line)))); line++) {
-		if(i==lenword) {
-			lenword *=2;
-			word = (char *)erealloc(word,lenword+1);
-		}
-		word[i++] = *line;
-	}
-	word[i] = '\0';
+	/* find end of "more words" or word */
 
-	if (!(*line) && i) if ((p=strpbrk(word,"\r\n"))) *p='\0';
+      while (*s) {
+int break1 = 0;  // $$$
+fprintf (stderr,"%c",*s); // $$$
+// $$$ "break1=..." is for debug only and should read "break".
+// $$$ we have a problem with isspace reading non ascii characters
+// $$$ DEBUG rasc 2001-02-11
+         if (*s == '\\') {                      /* Escape \     */
+            s++;
+            continue;
+         }
+         if (! quotechar) {
+            if (isspace (*s)) break1=1;		/* end of word  */
+         } else {
+            if (*s == quotechar) break1=2;		/* end of quote */
+		if (*s == '\n') break1=3;			/* EOL          */
+		if (*s == '\r') break1=4;			/* EOL (WIN)    */
+         }
+if (break1){ fprintf(stderr," -- break: %d on char _%c_\n",break1,*s); break;}
 
-	if (*line == '\"') line++;
-	
-	*skiplen = line - start;
+         s++;
+      }
 
-		/* Do not waste memory !! Resize word */	
-	p=word;
-	word=estrdup(p);
-	efree(p);
-	return word;
+	/* make a save copy of "word" */
+fprintf (stderr,"getword:  word1=: __%s__  len=%d \n",wstart,s-wstart);
+
+      len = s - wstart;
+      word = (char *)emalloc(len + 1);
+      strncpy (word,wstart,len);
+      *(word+len) = '\0';
+fprintf (stderr,"getword:  word_copied=: __%s__   ",word);
+
+      if (*s == quotechar) s++;
+      *skiplen = s - start;
+fprintf (stderr," next=: __%s__, skiplen=%d\n\n",s,*skiplen);
+
+      return word;
+
 }
+
 
 /* Gets the value of a variable in a line of the configuration file.
 ** Basically, anything in quotes or an argument to a variable.
@@ -667,7 +687,7 @@ unsigned char *s=NULL;
 
 
 
-
+/* ------------------------------------------------------------ */
 
 
 
@@ -768,4 +788,95 @@ char *strtolower (char *s)
   }
   return s; 
 }
+
+
+
+
+
+
+/* ---------------------------------------------------------- */
+/* ISO characters conversion/mapping  handling                */
+
+
+
+/*
+  -- character map to normalize chars for search and store
+  -- characters are all mapped to lowercase
+  -- umlauts and special characters are mapped to ascii7 chars
+  -- control chars/ special chars are mapped to " "
+  -- 2001-02-10 rasc
+*/
+
+
+static const char iso8859_to_ascii7_lower_map[] = {
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /*  0 */
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /*  8 */
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /* 16 */
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+	' ', '!', '"', '#', '$', '%', '&', '\'',  /* 32 */
+	'(', ')', '*', '+', ',', '-', '.', '/',
+	'0', '1', '2', '3', '4', '5', '6', '7',   /* 48 */
+	'8', '9', ':', ';', '<', '=', '>', '?',
+	'@', 'a', 'b', 'c', 'd', 'e', 'f', 'g',   /* 64 */
+	'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+	'p', 'q', 'r', 's', 't', 'u', 'v', 'q',   /* 80 */
+	'x', 'y', 'z', '[', '\\', ']', '^', '_',
+	'`', 'a', 'b', 'c', 'd', 'e', 'f', 'g',   /* 96 */
+	'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+	'p', 'q', 'r', 's', 't', 'u', 'v', 'w',
+	'x', 'y', 'z', '{', '|', '}', '~', ' ',
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',	/* 128 */
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',   /* 144 */
+	' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+	' ', '!', 'c', 'l', 'o', 'y', '|', '§',   /* 160 */
+	'\"', 'c', ' ', '\"', ' ', '-', 'r', ' ',
+	' ', ' ', '2', '3', '\'', 'u', ' ', '.',  /* 176 */
+	' ', '1', ' ', '"', ' ', ' ', ' ', '?',
+	'a', 'a', 'a', 'a', 'a', 'a', 'e', 'c',	/* 192 */
+	'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i',
+	'd', 'n', 'o', 'o', 'o', 'o', 'o', ' ',   /* 208 */
+	'o', 'u', 'u', 'u', 'u', 'y', ' ', 's',
+	'a', 'a', 'a', 'a', 'a', 'a', 'e', 'c',   /* 224 */
+	'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i',
+	'd', 'n', 'o', 'o', 'o', 'o', 'o', ' ',   /* 240 */
+	'o', 'u', 'u', 'u', 'u', 'y', ' ', 'y'
+};
+
+
+
+/*
+  -- "normalize" ISO character for store and search
+  -- operations. This means convert it to ascii7 lower case.
+  -- Return: char
+  -- 2001-02-11  rasc
+*/
+
+char char_ISO_normalize (char c)
+{  
+  return iso8859_to_ascii7_lower_map[c];
+}
+
+
+
+
+/*
+  -- "normalize" ISO character for store and search
+  -- operations. This means convert it to ascii7 lower case.
+  -- Return: char
+  -- 2001-02-11  rasc
+*/
+
+
+char *str_ISO_normalize (char *s)
+
+{
+  char *p = s;
+
+  while (*p) {
+    *p = iso8859_to_ascii7_lower_map[*p++];
+  }
+  return s;
+}
+
 

@@ -86,7 +86,6 @@ void initPrintExtResult (SWISH *sw, char *fmt)
 		/* -- Property - Control: read Property Tag  <name> */
 		/* -- Save User PropertyNames for result handling   */
         	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
-		strtolower(propname);	/* $$$ really?  $$$ to be optimzed */
 		if (! isAutoProperty (propname)) {
 		   addSearchResultDisplayProperty (sw, propname);
 		}
@@ -211,7 +210,6 @@ void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 	case '<':
 		/* Property - Control: read and print Property Tag  <name> */
         	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
-		strtolower(propname);	/* $$$ really?  $$ to be optimized */
 		printPropertyResultControl (sw, f, propname, subfmt, r);
 		efree (subfmt);
 		efree (propname);
