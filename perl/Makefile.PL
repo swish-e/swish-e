@@ -34,13 +34,19 @@ sub set_swish_version {
           
     print "\nThe SWISHBIN environment variable may also be used for non-interactive builds.\n\n";
 
-    for ( split /:/, $ENV{PATH} ) {
+    unless ($swish and $version) {
+     for ( split /:/, $ENV{PATH} ) {
         if ( -x "$_/swish-e" && !-d _ ) {
             $swish = "$_/swish-e";
             last;
         }
+     }
+    } else {
+    
+    	print "using $swish $version\n";
+	
     }
-
+    
     while ( ! $version ) {
         my $enter = $swish;
 
@@ -63,7 +69,7 @@ sub set_swish_version {
             print "File '$enter' missing or not exectuable\n";
 
         } else {
-            $version = get_version($swish);
+            $version = get_version($enter);
        
             
             if ( $version ) {
