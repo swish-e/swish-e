@@ -13,5 +13,6 @@ karman Mon Aug 30 07:01:31 CDT 2004
 int getrank( RESULT *r );
 int getrankDEF( RESULT *r );
 int getrankIDF( RESULT *r );
+int scale_word_score( int score );
 
 #endif

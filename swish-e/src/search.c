@@ -163,7 +163,7 @@ static void make_db_res_and_free(RESULT_LIST *l_res);
 void SwishRankScheme(SWISH *sw, int scheme)
 {
 	
-    sw->RankScheme = scheme ? scheme : 0;
+    sw->RankScheme = scheme;
     
 }
 

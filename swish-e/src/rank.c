@@ -268,12 +268,12 @@ getrank ( RESULT *r )
 {
 	SWISH	*sw;
 	IndexFILE  *indexf;
+	int	scheme;
+	
 	
 	indexf  = r->db_results->indexf;
 	sw      = indexf->sw;
-	int	scheme;
-	
-	scheme = sw->RankScheme;
+	scheme  = sw->RankScheme;
 	
 #ifdef DEBUG_RANK
     fprintf( stderr, "Ranking Scheme: %d \n", scheme );
@@ -405,13 +405,7 @@ getrankDEF( RESULT *r )
     if ( rank < 1 )
         rank = 1;
 
-
-    /* Scale the rank - this was originally based on frequency */
-    /* Uses lookup tables for values <= 1000, otherwise calculate */
-
-    rank = rank > 1000
-        ? (int) floor( (log((double)rank) * 10000 ) + 0.5)
-        : swish_log[rank];
+    rank = scale_word_score( rank );
 
 
 #ifdef DEBUG_RANK
@@ -473,7 +467,7 @@ getrankDEF( RESULT *r )
 
 Use the -R <num> command line option or RankScheme() API method.
 
-Default is to use getrank() -- the same as -R 1
+Default is to use getrank() -- the same as -R 0
 
 IDF ranking uses the total word frequency across all searched indexes
 and a normalizing formula to negate effect of docs with different sizes.
@@ -491,14 +485,6 @@ karman Sun Aug 29 21:01:28 CDT 2004
 
 */
 
-/* TODO
-
-add -R option
-do check in search.c to call getrank() or getrankIDF()
-error check on IgnoreTotalWord...
--T dump to include word count
-
-*/
 
 int
 getrankIDF( RESULT *r )
@@ -520,6 +506,7 @@ getrankIDF( RESULT *r )
     int		total_word_freq;
     int		word_weight;
     int		word_score;
+    /* int density_magic	= 2; */
     
     /* the value named 'rank' in getrank() is here named 'word_score'.
     it's largely semantic, but helps emphasize that *docs* are ranked,
@@ -633,7 +620,8 @@ where c > 0 (optimized at 2 ... we think...)
 
  */
 
-    /* int density_magic	= 2;
+    /*
+    
     density		= freq * log( 1 + ( density_magic * ( average_words / words ) ) ); */
     
     /* doesn't work that well with int values */
@@ -651,8 +639,8 @@ where c > 0 (optimized at 2 ... we think...)
     
 
 #ifdef DEBUG_RANK
-	fprintf(stderr, "Total words: %d   Indexed words in this doc: %d   Average words: %d   Density: %d    Word Weight: %d   \n",
-		total_words, words, average_words, density, word_weight );
+    fprintf(stderr, "Total words: %d   Indexed words in this doc: %d   Average words: %d   Density: %d    Word Weight: %d   \n",
+	total_words, words, average_words, density, word_weight );
 #endif
 
 
@@ -686,9 +674,7 @@ where c > 0 (optimized at 2 ... we think...)
 	/* Scale the rank - this was originally based on frequency */
     	/* Uses lookup tables for values <= 1000, otherwise calculate */
 
-    	word_score = word_score > 1000
-        	? (int) floor( (log((double)word_score) * 10000 ) + 0.5)
-        	: swish_log[word_score];
+    	word_score = scale_word_score( word_score );
 
 
 
@@ -712,6 +698,20 @@ where c > 0 (optimized at 2 ... we think...)
 #endif
 
 
-	return ( r->rank = word_score / 100 );   /* divide by 100?? */
+	return ( r->rank = word_score / 100 );
     
+}
+
+int
+scale_word_score( int score )
+{
+
+    /* Scale the rank - this was originally based on frequency */
+    /* Uses lookup tables for values <= 1000, otherwise calculate */
+
+
+	return  score > 1000
+        	? (int) floor( (log((double)score) * 10000 ) + 0.5)
+        	: swish_log[score];
+		
 }
