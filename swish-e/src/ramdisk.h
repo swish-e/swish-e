@@ -17,3 +17,6 @@ int ramdisk_seek_read(FILE *,long, int );
 
 size_t ramdisk_read(void *, size_t, size_t, FILE *);
 
+int ramdisk_getc(FILE *);
+
+int ramdisk_putc(int , FILE *);

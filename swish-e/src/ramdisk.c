@@ -173,4 +173,16 @@ unsigned int avail, num_buffer, start_pos, buffer_offset;
     return buffer_offset;
 }
 
+int ramdisk_getc(FILE *fp)
+{
+unsigned char c;
+    ramdisk_read((void *)&c, 1, 1, fp);
+    return (int) ((unsigned char)c);
+}
 
+int ramdisk_putc(int c, FILE *fp)
+{
+unsigned char tmp = (unsigned char)c;
+    ramdisk_write((const void *)&tmp,1, 1, fp);
+    return 1;
+}
