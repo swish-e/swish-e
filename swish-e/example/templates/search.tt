@@ -63,18 +63,18 @@
     [% FOREACH item = result.results %]
         <div class="title">
             <a href="[% item.Property('swishdocpath') | uri | html %]">
-                [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle') %]</a>
+                [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]</a>
 
             <span class="rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
         </div>
 
         <div class="description">
-            [% item.Property('swishdescription') || "No description" | highlight('swishdefault') %]
+            [% item.Property('swishdescription') || "No description" | highlight('swishdescription', item) %]
         </div>
 
         <div class="metadata">
             Path: <a href="[% item.Property('swishdocpath') | uri | html %]">
-                [% item.Property('swishdocpath') | highlight('swishdocpath') %]</a>
+                [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a>
                 - [% item.Property('swishdocsize') %] bytes<br>
             Date: [% date.format( item.Property('swishlastmodified')) %]<br>
         </div>
