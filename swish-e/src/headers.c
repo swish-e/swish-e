@@ -177,7 +177,7 @@ const char **SwishIndexNames(SWISH *sw)
     if ( !index_count ) /* should not happen */
         progerr("Swish Handle does not have any associated index files!?!?");
 
-    sw->index_names = (const char **)emalloc( sizeof(char *) + (1+index_count) );
+    sw->index_names = (const char **)emalloc( sizeof(char *) * (1+index_count) );
 
     for ( index_count = 0, indexf = sw->indexlist; indexf; indexf = indexf->next )
         sw->index_names[index_count++] = (const char *)indexf->line;
