@@ -64,6 +64,7 @@ typedef struct _mem_zone {
 /* The following are the basic malloc/realloc/free replacements */
 #if MEM_TRACE
 extern size_t memory_trace_counter;
+void Mem_bp(int n);
 #endif
 
 #if MEM_DEBUG | MEM_TRACE | MEM_STATISTICS
@@ -118,4 +119,5 @@ int Mem_ZoneSize(MEM_ZONE *head);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
+
 

@@ -135,6 +135,11 @@ install:
 install-lib:	
 	cp libswish-e.a $(libdir)/libswish-e.a
 
+libtest: libswish-e.a libtest.o
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(LIBS)
+	chmod 755 $@
+	
+
 
 #
 # dependencies

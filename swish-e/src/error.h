@@ -41,6 +41,7 @@ void progwarnno (char *msgfmt, ...);
 char *getErrorString(int);
 int  SwishError(SWISH * sw);
 char *SwishErrorString(int errornumber);
+char *SwishLastError(SWISH *sw);
 void abort_last_error(SWISH *sw);
 
 #define RC_OK 0

@@ -415,35 +415,6 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
     return 0;
 }
 
-/* Adds the results of a search, sorts them by rank.
-*/
-
-/* Jose Ruiz 04/00
-** Complete rewrite
-** Sort was made before calling this function !! -> FASTER!!
-** This one just reverses order
-*/
-RESULT *addsortresult(sw, sphead, r)
-     SWISH  *sw;
-     RESULT *sphead;
-     RESULT *r;
-{
-    struct MOD_Search *srch = sw->Search;
-
-    if (r->rank > srch->bigrank)
-        srch->bigrank = r->rank;
-
-
-    if (sphead == NULL)
-    {
-        r->next = NULL;
-    }
-    else
-    {
-        r->next = sphead;
-    }
-    return r;
-}
 
 
 /*******************************************************************
@@ -570,7 +541,10 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
     return props;
 }
 
-
+/*******************************************************
+* For a given result, return an array of pointers to strings
+*
+***********************************************************/
 char  **getResultSortProperties(SWISH *sw, RESULT * r)
 {
     int     i;
@@ -676,7 +650,7 @@ int     sortresults(SWISH * sw, int structure)
             /* Read the property value string(s) for all the sort properties */
             for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                if (test_structure(tmp,structure))
+                if (test_structure(tmp,structure))  // $$$ *** WRONG PLACE
                 {
                     tmp->PropSort = getResultSortProperties(sw, tmp);
                 }
@@ -702,9 +676,36 @@ int     sortresults(SWISH * sw, int structure)
             swish_qsort(ptmp, i, sizeof(RESULT *), compResults);
 
 
-            /* Build the list */
-            for (j = 0; j < i; j++)
-                db_results->sortresultlist = (RESULT *) addsortresult(sw, db_results->sortresultlist, ptmp[j]);
+            /* Build the list -- the list is in reverse order, so build the list backwards */
+            {
+                struct MOD_Search *srch = sw->Search;
+                tmp = NULL;
+
+                for (j = 0; j < i; j++)
+                {
+                    RESULT *r = ptmp[j];
+                    
+                    /* Find the largest rank for scaling */
+                    if (r->rank > srch->bigrank)
+                        srch->bigrank = r->rank;
+
+                        
+                    if ( !tmp )             // first time
+                    {
+                        tmp = r;
+                        r->next = NULL;
+                    }
+                    else                    // otherwise, place this at the head of the list
+                    {
+                        r->next = tmp;
+                        tmp = r;
+                    }
+                    
+                }
+                db_results->sortresultlist = tmp;
+                db_results->resultlist->head = tmp;
+            }
+//                db_results->sortresultlist = (RESULT *) addsortresult(sw, db_results->sortresultlist, ptmp[j]);
 
 
             /* Free the memory of the array */
