@@ -20,14 +20,23 @@ $Id$
 **
 */
 
-#include <string.h>
-...
-#include "module_example.h"
+#include ...
+#include "module_example_xxxx.h"
 
 
 /* private module prototypes */
 
-....
+.... int my_module_local_routine (...);
+
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module management code starts here
+**
+** ----------------------------------------------
+*/
 
 
 
@@ -67,6 +76,14 @@ void freeModule_#modulename# (SWISH *sw)
       sw->#modulename# = NULL;
 }
 
+
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
 
 
 
@@ -123,6 +140,16 @@ int cmdlineModule_#modulename# (SWISH *sw, .....)
 
 }
 
+
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module code starts here
+**
+** ----------------------------------------------
+*/
 
 
 

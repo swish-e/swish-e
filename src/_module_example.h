@@ -33,11 +33,13 @@ $Id$
 //                ...
 //                struct MOD_#modulename# *#modulename#;
 //
+//     Hint: Just copy the module and replace #modulename# by the Name... ;-) 
+//
 
 /* Global module data */
 
 struct MOD_#modulename# {
-   ....
+   .... here module data...
 };
 
 
@@ -45,8 +47,8 @@ struct MOD_#modulename# {
 
 
 void initModule_#modulename# (SWISH *sw);
-void freeModule_...   (SWISH *sw);
-int  configModule_... (SWISH *sw, StringList *sl);
+void freeModule_#modulename# (SWISH *sw);
+int  configModule_#modulename# (SWISH *sw, StringList *sl);
 .....
 
 #endif

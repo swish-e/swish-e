@@ -85,8 +85,6 @@
 #include "vms/regex.h"
 #include <dirent.h>
 #include <stdarg.h>
-extern int snprintf(char *, size_t, const char *, /*args */ ...);
-extern int vsnprintf(char *, size_t, const char *, va_list);
 #else
 #include <dirent.h>
 #include <regex.h>

@@ -29,6 +29,18 @@ $Id$
 #include "keychar_out.h"
 
 
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module code starts here
+**
+** ----------------------------------------------
+*/
+
+
+
 /*
   -- output all indexed words starting with character "keychar"
   -- keychar == '*' prints all words
