@@ -524,14 +524,16 @@ int Stem_it( word )
    {
    int rule;    /* which rule is fired in replacing an end */
    char *end;   /* pointer to the end of the word */
-   /*  Hack to make sure Stem() doesn't stem the word into nonexistence */
-   char *saveword= (char *)estrdup(*word);
+   char *saveword;
 
             /* Part 1: Check to ensure the word is all alphabetic */
    for ( end = (*word); *end != EOS; end++ )
       if ( !isalpha((int)((unsigned char)*end)) ) return( FALSE ); /* cast to int 2/22/00 */
       else *end = tolower( (unsigned char)*end );
    end--;
+
+   /*  Hack to make sure Stem() doesn't stem the word into nonexistence */
+   saveword= (char *)estrdup(*word);
 
                 /*  Part 2: Run through the Porter algorithm */
    (void)ReplaceEnd( word, step1a_rules, &end );
