@@ -189,6 +189,7 @@ L<IgnoreWords|/"item_IgnoreWords"> [*list of stop words*|File: path]
 L<ImageLinksMetaName|/"item_ImageLinksMetaName"> *metaname*
 
 =item *
+
 L<IncludeConfigFile|/"item_IncludeConfigFile">
 
 =item *
@@ -201,7 +202,7 @@ L<IndexComments|/"item_IndexComments"> [YES|no]
 
 =item *
 
-L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|WML]  *file extensions*
+L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|WML|TXT2|HTML2|XML2]  *file extensions*
 
 =item *
 
@@ -658,12 +659,14 @@ Examples:
     ReplaceRules remove \.c   # much better...
     
 
-=item IndexContents [TXT|HTML|XML|WML]  *file extensions*
+=item IndexContents [TXT|HTML|XML|WML|TXT2|HTML2|XML2]  *file extensions*
 
 The C<IndexContents> directive assigns one of Swish's document parsers to a document,
 based on the its extension.
 Swish currently knows how to parse TXT, HTML, and XML documents.
 
+The XML2, HTML2, and TXT2 parsers are currently only available when swish is
+configured to use libxml2.
 
 Documents that are not assigned a parser with C<IndexContents> will, by default,
 use the HTML parser.  The C<DefaultContents> directive may be used to assign
@@ -694,10 +697,13 @@ B<Note:> Some of this may be changed in the future to use content-types instead 
 See L<SWISH-3.0|SWISH-3.0>
 
 
-=item DefaultContents [TXT|HTML|XML|WML]
+=item DefaultContents [TXT|HTML|XML|WML|TXT2|HTML2|XML2]
 
 This sets the default parser for documents that are not specified in B<IndexContents>. If not specified the
 default is HTML.
+
+The XML2, HTML2, and TXT2 parsers are currently only available when swish is
+configured to use libxml2.
 
 
 Example:
@@ -892,16 +898,24 @@ There are four choices:
 
 =over 2
 
-=item error - If a meta name is found that is not listed in B<MetaNames> then indexing will be halted and an
+=item *
+
+error - If a meta name is found that is not listed in B<MetaNames> then indexing will be halted and an
 error reported.
 
-=item ignore - The contents of the meta tag are ignored and B<not> indexed.
-This only applies to HTML <meta name="...> tags if not using libxml2.
+=item *
 
-=item index - The contents of the meta tag are indexed, but placed in the main index unless there's
+ignore - The contents of the meta tag are ignored and B<not> indexed unless a metaname has
+been defined with the C<MetaNames> directive.
+
+=item *
+
+index - The contents of the meta tag are indexed, but placed in the main index unless there's
 an enclosing metatag already in force. This is the default.
 
-=item auto - This method create meta tags automatically for
+=item *
+
+auto - This method create meta tags automatically for
 HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
 B<MetaNames> dirictive.
 
@@ -930,24 +944,34 @@ What happens to the text "23" will depend on the setting of C<UndefinedXMLAttrib
 
 =over 2
 
-=item disable - XML attributes are not parsed and not indexed.  This is the default.
+=item *
 
-=item error - If the concatenated meta name (e.g. person.ag) is not listed in B<MetaNames>
+disable - XML attributes are not parsed and not indexed.  This is the default.
+
+=item *
+
+error - If the concatenated meta name (e.g. person.age) is not listed in B<MetaNames>
 then indexing will be halted and an error reported.
 
-=item ignore - The contents of the meta tag are ignored and B<not> indexed unless a metaname as
-be defined with the C<MetaNames> directive.
+=item *
 
-=item index - The contents of the meta tag are indexed, but placed in the main index unless there's
+ignore - The contents of the meta tag are ignored and B<not> indexed unless a metaname has
+been defined with the C<MetaNames> directive.
+
+=item *
+
+index - The contents of the meta tag are indexed, but placed in the main index unless there's
 an enclosing metatag already in force.
 
-=item auto - This method will create meta tags automatically for
+=item *
+
+auto - This method will create meta tags automatically for
 HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
-B<MetaNames> dirictive.
+B<MetaNames> directive.
 
 
 =back
-    
+
 =item XMLClassAttributes *list of XML attribute names*
 
 Combines an XML class name with the element name to make up a metaname.
@@ -1430,11 +1454,11 @@ There may be cases where you would like to prevent phrase matching.  The BumpPos
 directive allows you to specify a set of characters that when found in the text will increment
 the word position -- effectively preventing phrase matches across that character.
 
-For example, if you have a META tag:
+For example, if you have a tag:
 
-    <!-- META START NAME="subjects" -->
+    <subjects>
         computer programming | apple computers
-    <!-- META END -->
+    </subjects>
 
 You might want to prevent matching "programming apple" in that meta name.
 
