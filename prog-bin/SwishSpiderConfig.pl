@@ -1,5 +1,3 @@
-use vars '@servers';
-
 =pod
 
 =head1 NAME
@@ -24,9 +22,29 @@ Please see C<perldoc spider.pl> for more information.
 
 
 @servers = (
+
+    # This is a simple example, that includes a few limits
     {
+        skip        => 1,  # skip spidering this server
+        
+        base_url    => 'http://www.infopeople.org/',
+        same_hosts  => [ qw/infopeople.org/ ],
+        agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
+        email       => 'swish@domain.invalid',
+        delay_min   => .0001,     # Delay in minutes between requests
+        max_time    => 10,        # Max time to spider in minutes
+        max_files   => 10,        # Max files to spider
+    },
+
+
+    # This is a more advanced example that uses more features,
+    # such as ignoring some file extensions, and only indexing
+    # some content-types, plus filters PDF and MS Word docs.
+    # The call-back subroutines are explained a bit more below.
+    {
+        skip            => 1,
         base_url        => 'http://www.infopeople.org/',
-        email           => 'moseley@hank.org',
+        email           => 'swish@domain.invalid',
         delay_min       => .0001,
         link_tags       => [qw/ a frame /],
         max_files       => 50,
@@ -41,6 +59,8 @@ Please see C<perldoc spider.pl> for more information.
         filter_content  => [ \&pdf, \&doc ],
     },
 
+
+    # This example just includes use of more features.
     {
         base_url    => 'http://sunsite.berkeley.edu/SWISH-E/',
         same_hosts  => [ qw/www.sunsite.berkeley.edu/ ],
@@ -77,21 +97,7 @@ Please see C<perldoc spider.pl> for more information.
         
     },
 
-    # You can define more than one server to spider.
-    # Each is just a hash reference.
 
-    {
-skip => 1,
-        base_url    => 'http://www.infopeople.org/',
-        same_hosts  => [ qw/infopeople.org/ ],
-        agent       => 'swish-e spider http://sunsite.berkeley.edu/SWISH-E/',
-        email       => 'swish@domain.invalid',
-        delay_min   => .0001,     # Delay in minutes between requests
-        max_time    => 10,        # Max time to spider in minutes
-        max_files   => 10,        # Max files to spider
-        thin_dots   => 1,         # If true will strip /../ from URLs                                  
-        use_md5     => 1,         # If true, this will use the Digest::MD5
-    },
 
 );    
     
@@ -142,7 +148,7 @@ sub filter_content {
 
 }
 
-# Here's some more real examples
+# Here's some real examples
 
 use pdf2xml;  # included example pdf converter module
 sub pdf {
@@ -172,5 +178,6 @@ sub doc {
    return 1;
 }
 
+# Must return true...
 
 1;
