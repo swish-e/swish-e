@@ -10,6 +10,15 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * updated build instructions in INSTALL
+
+Added a few comments about use of CPPFLAGS and LDFLAGS.
+
+=item * Updated the index_hypermail.pl
+
+Updated to work with latest version of hypermail (pre-2.1.9).
+
+
 =item * Time zone in ResultPropertyStr()
 
 Format string for generating date did not include the time zone in location.
