@@ -201,7 +201,7 @@ sub process_server {
         $max_num = length $val if length $val > $max_num;
     }
 
-    printf STDERR "\n$0: Summary for: $server->{base_url}\n";
+    printf STDERR "\nSummary for: $server->{base_url}\n";
 
     for ( sort keys %{$server->{counts}} ) {
         printf STDERR "%${max_width}s: %${max_num}s  (%0.1f/sec)\n",
@@ -469,7 +469,13 @@ sub extract_links {
                 " ?? <$tag> skipped because not one of (",
                 join( ',', @{$server->{link_tags}} ),
                 ")\n"
-                     if $server->{debug} & DEBUG_LINKS && !$skipped_tags{$tag}++;
+
+            if $server->{debug} & DEBUG_LINKS && !$skipped_tags{$tag}++;
+
+            if ( $server->{validate_links} && $tag eq 'img' && $attr{src} ) {
+                my $img = URI->new_abs( $attr{src}, $base );
+                validate_link( $img, $base );
+            }
                      
             next;
         }
@@ -501,7 +507,7 @@ sub extract_links {
                 unless ( grep { $u->authority eq $_ } @{$server->{same}} ) {
                     print STDERR qq[ ?? <$tag $_="$u"> skipped because different authority (server:port)\n] if $server->{debug} & DEBUG_LINKS;
                     $server->{counts}{'Off-site links'}++;
-                    validate_link( $u ) if $server->{validate_links} && $u->scheme eq 'http';
+                    validate_link( $u, $base ) if $server->{validate_links} && $u->scheme eq 'http';
                     next;
                 }
                 
@@ -537,16 +543,29 @@ sub extract_links {
 }
 
 sub validate_link {
-    my $uri = shift;
+    my ($uri, $base) = @_;
 
     return if $visited{ $uri->canonical } || $validated{ $uri->canonical }++;
 
     my $ua = LWP::UserAgent->new;
     my $request = HTTP::Request->new('HEAD', $uri->canonical );
-    my $response = $ua->simple_request( $request );
+
+    my $response;
+    eval {
+        $SIG{ALRM} = sub { die "timed out\n" };
+        alarm 5;
+        $response = $ua->simple_request( $request );
+        alarm 0;
+    };
+
+    if ( $@ ) {
+        print STDERR "$@ trying to read $uri on page $base\n";
+    }
 
     print STDERR "$uri - returned '",
         ( $response->status_line || $response->status || 'unknown status' ),
+        ' From page: ',
+        $base,
         "\n" unless $response->is_success;
 }
     
