@@ -111,7 +111,6 @@ struct MOD_Index
     MEM_ZONE	*currentChunkLocZone;
     MEM_ZONE    *totalLocZone;
     MEM_ZONE	*entryZone;
-
 };
 
 void initModule_Index (SWISH *);
@@ -164,5 +163,7 @@ void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
 
 void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
 void coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e);
+
+void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp);
 
 #endif
