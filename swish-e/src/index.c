@@ -2626,7 +2626,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             num_locs = 0;
         }
         uncompress_location_values(&p,&uflag,&filenum,&frequency);
-        worst_case_size = sizeof(unsigned char *) + (3 + frequency) * 5;
+        worst_case_size = sizeof(unsigned char *) + (3 + frequency) * MAXINTCOMPSIZE;
 
         while ((q + worst_case_size) - buffer > sizeof(buffer))
         {

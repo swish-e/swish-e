@@ -15,7 +15,7 @@ unsigned char *compress3(int num, unsigned char *buffer)
 {
     int     _i = 0,
             _r = num;
-    unsigned char _s[5];
+    unsigned char _s[MAXINTCOMPSIZE];
 
     while (_r)
     {
@@ -700,7 +700,7 @@ int key_pos, key_len0;
 unsigned char *key_data0;
 int comp;
 
-    required_space = 5 + key_len + SizeInt32;
+    required_space = MAXINTCOMPSIZE + key_len + SizeInt32;
 
     /* Check for Duplicate key if we are in a leaf page */
     key_pos = BTREE_GetPositionForKey(pg, key, key_len, &comp);

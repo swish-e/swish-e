@@ -948,7 +948,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
             if ( PropLookup[i].SortProp )
                 freeProperty( PropLookup[i].SortProp );
 #else
-        out_buffer = emalloc( total_files * 5 ); 
+        out_buffer = emalloc( total_files * MAXINTCOMPSIZE ); 
 
 
         /* Now compress */
