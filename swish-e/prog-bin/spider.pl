@@ -497,7 +497,7 @@ sub output_content {
     $server->{indexed}++;
 
     $server->{counts}{'Total Bytes'} += length $$content;
-    $server->{counts}{'Toatl Docs'}++;
+    $server->{counts}{'Total Docs'}++;
 
 
     my $headers = join "\n",
@@ -511,6 +511,9 @@ sub output_content {
 
     $headers .= "No-Contents: 1\n" if $server->{no_contents};
     print "$headers\n$$content";
+
+    die "$0: Max indexed files Reached\n"
+        if $server->{max_indexed} && $server->{counts}{'Total Docs'} >= $server->{max_indexed};
 }
         
 
@@ -803,7 +806,17 @@ next server, if any.  The default is to not limit by time.
 
 This optional key sets the max number of files to spider before aborting.
 The default is to not limit by number of files.  This is the number of requests
-made to the remote server, not the total number of files to index.
+made to the remote server, not the total number of files to index (see C<max_indexed).
+This count is displayted at the end of indexing as C<Unique URLs>.
+
+This feature can (and perhaps should) be use when spidering a web site where dynamic
+content may generate unique URLs to prevent run-away spidering.
+
+=item max_indexed
+
+This optional key sets the max number of files that will be indexed.
+The default is to not limit.  This is the number of files sent to
+swish for indexing (and is reported by C<Total Docs> when spidering ends).
 
 =item max_size
 

@@ -9,6 +9,32 @@ SwishSpiderConfig.pl - Sample swish-e spider configuration
 This is a sample configuation file for the spider.pl program provided
 with the swish-e distribution.
 
+It contains settings for spidering three servers (two are the same server).
+All are disabled (skip => 1) to prevent every new swish user from spidering these sites.
+
+These are just examples.  Please spider your own web site.  Also, please don't use this exact
+file as your configuration file.  Trim your file down to just the content you need, especially
+if posting your config to the Swish-e list requesting for help.
+
+The first example is relativly simple.  It just spiders any URL that
+ends in C<.html>.
+
+The second example is a bit more advanced and shows how to filter content.
+
+First, this the spider doesn't request image files (files that end in .gif or .jpeg)
+then only indexes files with of C<text/html text/plain application/pdf application/msword> content
+type.
+
+C<application/pdf> and C<application/msword> are then run through filters to extract
+out their content.  The example filter subroutines are included below, as well.
+
+This config is set to only spider 100 URLs, or index 20 files, which ever comes first.
+
+The third example shows more options (which are listed in C<perldoc spider.pl>), and how you might use
+subroutine calls for checking URLs, content, and filtering instead of inlined subroutines shown in
+the first two examples.
+
+
 Please see C<perldoc spider.pl> for more information.
 
 =cut
@@ -39,7 +65,8 @@ Please see C<perldoc spider.pl> for more information.
 
         delay_min   => .0001,     # Delay in minutes between requests
         max_time    => 10,        # Max time to spider in minutes
-        max_files   => 10,        # Max files to spider
+        max_files   => 100,       # Max Unique URLs to spider
+        max_indexed => 20,        # Max number of files to send to swish for indexing
         keep_alive  => 1,         # enable keep alives requests
     },
 
@@ -49,13 +76,14 @@ Please see C<perldoc spider.pl> for more information.
     # some content-types, plus filters PDF and MS Word docs.
     # The call-back subroutines are explained a bit more below.
     {
-        skip            => 1,
+        skip            => 0,
 
         base_url        => 'http://www.infopeople.org/',
         email           => 'swish@domain.invalid',
         delay_min       => .0001,
         link_tags       => [qw/ a frame /],
-        max_files       => 50,
+        max_files       => 50,         
+        max_indexed     => 20,        # Max number of files to send to swish for indexing
 
         max_size        => 1_000_000,  # limit to 1MB file size
         max_depth       => 10,         # spider only ten levels deep
@@ -66,6 +94,10 @@ Please see C<perldoc spider.pl> for more information.
         test_response   => sub {
             my $content_type = $_[2]->content_type;
             my $ok = grep { $_ eq $content_type } qw{ text/html text/plain application/pdf application/msword };
+
+            # This might be used if you only wanted to index PDF files, yet spider still spider.
+            #$_[1]->{no_index} = $content_type ne 'application/pdf';
+
             return 1 if $ok;
             print STDERR "$_[0] wrong content type ( $content_type )\n";
             return;
