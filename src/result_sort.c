@@ -165,7 +165,7 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
   struct metaEntry *m = NULL;
 
 
-  if (strcasecmp(w0, "PresortedIndex") == 0)
+  if (strcasecmp(w0, "PreSortedIndex") == 0)
   {
      md->isPreSorted = sl->n - 1;    /* If n is 1 (No properties specified) - Do not create presorted indexes */
      if (sl->n > 1)

@@ -823,6 +823,13 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
 
 int     DB_EndWriteSortedIndex_Native(void *db)
 {
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->fp;
+
+   printlong(fp,(long)0);  /* No next table mark - Useful if no presorted indexes */
+         /* NULL meta id- Only useful if no presorted indexes  */
+   fputc(0, fp);
+
    return 0;
 }
 
