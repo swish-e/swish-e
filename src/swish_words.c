@@ -18,6 +18,13 @@ $Id$
 **
 ** 2001-05-23  moseley  created - replaced parser in search.c
 **
+** 2001-12-11  moseley, updated to deal with swish operators inside of phrases
+**                      Still broken with regard to double-quotes inside of phrases
+**                      Very unlikely someone would want to search for a single double quote
+**                      within a phrase.  It currently works if the double-quotes doesn't have
+**                      white space around.  Really should tag the words as being operators, or
+**                      or "swish words", or let the backslash stay in the query until searching.
+**
 */
 
 #include "swish.h"
@@ -73,17 +80,23 @@ void freeModule_Swish_Words (SWISH *sw)
 
 
 
+/* Returns true if the character is a search operator */
 /* this could be a macro, but gcc is probably smart enough */
-static int isSearchOperatorChar( int c, int phrase_delimiter )
+
+static int isSearchOperatorChar( int c, int phrase_delimiter, int inphrase )
 {
-    return ( '(' == c || ')' == c || '=' == c || '*' == c || c == phrase_delimiter );
+    return inphrase
+        ? ( '*' == c || c == phrase_delimiter )
+        : ( '(' == c || ')' == c || '=' == c || '*' == c || c == phrase_delimiter );
 }
 
 
 /* This simply tokenizes by whitespace and by the special characters "()=" */
+/* If within a phrase, then just splits by whitespace */
+
 /* Funny how argv was joined into a string just to be split again... */
 
-static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter )
+static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int inphrase )
 {
     int     i;
     int     backslash;
@@ -124,7 +137,7 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
         }
 
 
-        if ( backslash || !isSearchOperatorChar( (unsigned char) **buf, phrase_delimiter ) )
+        if ( backslash || !isSearchOperatorChar( (unsigned char) **buf, phrase_delimiter, inphrase ) )
         {
             backslash = 0;
             
@@ -394,7 +407,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
     struct  MOD_Search *srch = sw->Search;
     unsigned char PhraseDelimiter;
     int     max_size;
-    int     inphrase;
+    int     inphrase = 0;
 
 
     /* Probably won't get to this point */
@@ -411,8 +424,15 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
     curpos = words;  
 
     /* split into words by whitespace and by the swish operator characters */
-    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter ) )
+    
+    while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, inphrase ) )
+    {
         tokens = (struct swline *) addswline( tokens, self->word );
+
+
+        if ( self->word[0] == PhraseDelimiter && !self->word[1] )
+            inphrase = !inphrase;
+    }
 
 
     /* no search words found */
@@ -428,11 +448,9 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
         /* do look-ahead processing first -- metanames */
 
-        if ( isMetaNameOpNext(temp->next) )
+        if ( !inphrase && isMetaNameOpNext(temp->next) )
         {
 
-            /* One current problem is that you can use internal metanames, */
-            /* but the "internal" meta data is only indexed when specified with MetaNames */
             if( !getMetaNameByName( header, temp->line ) )
             {
                 sw->lasterror = UNKNOWN_METANAME;
@@ -450,10 +468,10 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
                 
 
         /* skip operators */
-        if ( strlen( temp->line ) == 1 && isSearchOperatorChar( (unsigned char) temp->line[0], PhraseDelimiter ) )
+        if ( strlen( temp->line ) == 1 && isSearchOperatorChar( (unsigned char) temp->line[0], PhraseDelimiter, inphrase ) )
         {
 
-            if ( (unsigned char) temp->line[0] == PhraseDelimiter )
+            if ( temp->line[0] == PhraseDelimiter && !temp->line[1] )
                 inphrase = !inphrase;
 
             temp = temp->next;
