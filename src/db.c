@@ -140,8 +140,6 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 		/* Metanames */
     write_MetaNames(sw, METANAMES_ID, header, DB);
 
-		/* lookup tables */
-    write_locationlookuptables_to_header(sw, LOCATIONLOOKUPTABLE_ID, header, DB);
     if (!header->pathlookup)
     {
         DB_Remove(sw, DB);   /* Remove file: It is useless */
@@ -168,42 +166,58 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
     DB_WriteWord(sw, ep->word,wordID,indexf->DB);
 	    /* Store word offset for futher hash computing */
-    ep->u1.fileoffset = wordID;
+    ep->u1.wordID = wordID;
 
 }
 
 /* Jose Ruiz 11/00
 ** Function to write all word's data to the index DB
 */
-void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
+
+
+void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
-    int     i,
-            index,
+    int     i, j,
             curmetaID;
     unsigned long    tmp,
             curmetanamepos;
-    int     metaID,
-            filenum,
-            frequency,
-            position;
-    int     index_structfreq;
+    int     metaID;
+	int     bytes_size,
+			chunk_size;
     unsigned char *compressed_data,
            *p,*q;
+    LOCATION *l, *next;
+
+
+    if(sw->Index->swap_locdata)
+        unSwapLocDataEntry(sw,ep);
 
     curmetaID=0;
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
 
+		/* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
+    for(bytes_size = 0, i = COALESCE_BUFFER_MAX_SIZE; i; i >>= 8)
+        bytes_size++;
+
     /* Write tfrequency */
     q = compress3(ep->tfrequency,q);
 
     /* Write location list */
-    for(i=0;i<ep->u1.max_locations;i++) 
+    for(l=ep->allLocationList;l;)
     {
-        p = compressed_data = (unsigned char *) ep->locationarray[i];
+        compressed_data = (unsigned char *) l;
+            /* Get next element */
+        next = *(LOCATION **)compressed_data;
+            /* Jump pointer to next element */
+        p = compressed_data + sizeof(LOCATION *);
 
-        index = uncompress2(&p);
-        metaID=indexf->header.locationlookup->all_entries[index-1]->val[0];
+        metaID = uncompress2(&p);
+
+        for(chunk_size = 0, i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
+            chunk_size |= p[i] << (j * 8);
+        p += bytes_size;
+
         if(curmetaID!=metaID) 
         {
             if(curmetaID) 
@@ -214,11 +228,9 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 PACKLONG2(tmp,sw->Index->worddata_buffer+curmetanamepos);
             }
                 /* Check for enough memory */
-                /* 5 is the worst case for a compressed number
-                ** (curmetaID) - Well, it is too much for
-                ** a Meta ID which normally fits in just
-                ** 1 byte !! Consider it as a "safe" factor
-                **
+                /* 
+				** 5 is for the worst case metaID
+				**
                 ** sizeof(long) is to leave four bytes to
                 ** store the offset of the next metaname
                 ** (it will be 0 if no more metanames).
@@ -250,56 +262,39 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
             q+=sizeof(unsigned long);
         }
+        /* Store all data for this chunk */
+        /* First check for enough space 
+        **
+        ** 1 is for the trailing '\0'
+        */
 
+        tmp=q - sw->Index->worddata_buffer;
 
-            /* Write filenum,structure and position information to index file */
-        filenum = uncompress2(&p);
-        index_structfreq=indexf->header.locationlookup->all_entries[index-1]->val[1];
-        frequency=indexf->header.structfreqlookup->all_entries[index_structfreq-1]->val[0];
-                /* Check for enough memory */
-                /* 5 is the worst case for a compressed number
-                ** We have at least 2+frequency numbers
-                ** So, in the worst case we need
-                **     5 bytes for filenum
-                **     5 bytes for index_structfreq
-                **     5* frequency bytes for the positions
-                **
-                ** Once again, probably it is too much space
-                ** Consider 5 as a safe factor
-                **
-                ** 1 is for the trailing '\0';
-                */
-        tmp=q - sw->Index->worddata_buffer;  
-        if((long)(tmp + 5 *(2+frequency) + 1) >= (long)sw->Index->len_worddata_buffer)
+        if((long)(tmp + chunk_size + 1) >= (long)sw->Index->len_worddata_buffer)
         {
-            sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5*(2+frequency)+1;
+            sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+chunk_size+1;
             sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
             q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
         }
 
-        q = compress3(filenum,q);
-        q = compress3(index_structfreq,q);
-        for(;frequency;frequency--)
-        {
-            position = uncompress2(&p);
-            q = compress3(position,q);
-        }
-		if (sw->Index->swap_locdata)
-	        efree(compressed_data);
+        /* Copy it and advance pointer */
+        memcpy(q,p,chunk_size);
+        q += chunk_size;
+
+        /* End of chunk mark -> Write trailing '\0' */
+        *q++ = '\0';
+
+        l = next;
     }
 
-        /* Write in previous meta (curmetaID)
-        ** file offset to end of metas */
+    /* Write in previous meta (curmetaID)
+    ** file offset to end of metas */
     tmp=q - sw->Index->worddata_buffer;
     PACKLONG2(tmp,sw->Index->worddata_buffer+curmetanamepos);
 
-        /* Write trailing '\0' */
-    *q++ = '\0';
-
-    DB_WriteWordData(sw, ep->u1.fileoffset,sw->Index->worddata_buffer,q - sw->Index->worddata_buffer,indexf->DB);
+    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,q - sw->Index->worddata_buffer,indexf->DB);
 
 }
-
 
 /* Writes the list of metaNames into the DB index
 */
@@ -402,61 +397,6 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
 return 0;
 }
 
-
-/* Print the info lookuptable of structures and frequency */
-/* These lookuptables make the file index small and decreases I/O op */
-void    write_locationlookuptables_to_header(SWISH *sw, int id, INDEXDATAHEADER *header, void *DB)
-{
-    int     i,
-            n,
-            sz_buffer,
-            tmp;
-    char   *s,
-           *buffer;
-    char    empty_buffer[2];
-
-    /* Let us begin with structure lookuptable */
-    if (!header->structurelookup)
-    {
-            /* No words in DB */
-        empty_buffer[0]='\0';    /* Write 2 empty numbers */
-        empty_buffer[1]='\0';
-        DB_WriteHeaderData(sw, id,empty_buffer,2,DB);
-        return;
-    }
-	
-        /* First of all ->  Compute required size */
-
-    sz_buffer = 5 + 5 * header->structurelookup->n_entries + 5 + 5 * 2 * header->structfreqlookup->n_entries;
-
-    s = buffer = emalloc(sz_buffer);
-
-    n = header->structurelookup->n_entries;
-
-    s = compress3(n, s);
-    for (i = 0; i < n; i++)
-    {
-        tmp = header->structurelookup->all_entries[i]->val[0] + 1;
-        s = compress3(tmp, s);
-    }
-    /* Let us continue with structure_lookup,frequency lookuptable */
-
-    n = header->structfreqlookup->n_entries;
-    s = compress3(n, s);
-    for (i = 0; i < n; i++)
-    {
-        /* frequency */
-        tmp = header->structfreqlookup->all_entries[i]->val[0] + 1;
-        s = compress3(tmp, s);
-        /* structure lookup value */
-        tmp = header->structfreqlookup->all_entries[i]->val[1] + 1;
-        s = compress3(tmp, s);
-    }
-
-    DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);
-
-    efree(buffer);
-}
 
 /* Print the info lookuptable of paths/urls */
 /* This lookuptable make the file index small and decreases I/O op */
@@ -644,9 +584,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case METANAMES_ID:
             parse_MetaNames_from_buffer(header, buffer);
             break;
-        case LOCATIONLOOKUPTABLE_ID:
-            parse_locationlookuptables_from_buffer(header, buffer);
-            break;
         case PATHLOOKUPTABLE_ID:
             parse_pathlookuptable_from_buffer(header, buffer);
             break;
@@ -761,50 +698,6 @@ void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer)
     }
 }
 
-
-
-/* Read the lookuptables for structure, frequency */
-void    parse_locationlookuptables_from_buffer(INDEXDATAHEADER *header, char *buffer)
-{
-
-    int     i,
-            n,
-            tmp;
-
-    unsigned char   *s = (unsigned char *) buffer;
-
-    n = uncompress2(&s);
-    if (!n)                     /* No words in file !!! */
-    {
-        header->structurelookup = NULL;
-        n = uncompress2(&s);     /* just to maintain file pointer */
-        header->structfreqlookup = NULL;
-        return;
-    }
-    header->structurelookup = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st) + sizeof(struct int_st *) * (n - 1));
-
-    header->structurelookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        header->structurelookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st));
-
-        tmp = uncompress2(&s);
-        header->structurelookup->all_entries[i]->val[0] = tmp - 1;
-    }
-    n = uncompress2(&s);
-    header->structfreqlookup = (struct int_lookup_st *) emalloc(sizeof(struct int_lookup_st) + sizeof(struct int_st *) * (n - 1));
-
-    header->structfreqlookup->n_entries = n;
-    for (i = 0; i < n; i++)
-    {
-        header->structfreqlookup->all_entries[i] = (struct int_st *) emalloc(sizeof(struct int_st) + sizeof(int));
-
-        tmp = uncompress2(&s);
-        header->structfreqlookup->all_entries[i]->val[0] = tmp - 1;
-        tmp = uncompress2(&s);
-        header->structfreqlookup->all_entries[i]->val[1] = tmp - 1;
-    }
-}
 
 /* Read the lookuptable for paths/urls */
 void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer)

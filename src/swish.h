@@ -57,6 +57,8 @@
 ** 2001-06-08 wsm    Add word to end of ENTRY and propValue to end of docPropertyEntry
 **                     to save memory and less malloc/free
 ** 
+** 2001-08-12 jmruiz ENTRY struct modified to index in chunks
+**
 */
 
 
@@ -297,9 +299,9 @@ typedef struct
 }
 FileProp;
 
-
-typedef struct
+typedef struct LOCATION
 {
+    struct LOCATION *next;
     int     metaID;
     int     filenum;
     int     structure;
@@ -312,18 +314,20 @@ typedef struct ENTRY
 {
     struct ENTRY *next;
     int     tfrequency;
-    int     last_filenum;
-    LOCATION **locationarray;
+       /* Chunk's LOCATIONs goes here */
+    LOCATION *currentChunkLocationList;
+    LOCATION *currentlocation;
+       /* All locations goes here */
+    LOCATION *allLocationList;
+
     /* this union is just for saving memory */
     struct
     {
-        long    fileoffset;
-        int     max_locations;
+        long    wordID;
+        int     last_filenum;
     }
     u1;
-    /* this union is just for saving memory */
-    int     currentlocation;
-	char	word[1];	/* actual word starts here */
+    char    word[0];	/* actual word starts here */
 }
 ENTRY;
 
@@ -406,12 +410,6 @@ typedef struct
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
 
-    /* Lookup tables for repetitive values of locations (frequency,structureand metaname */
-    /* Index use all of them */
-    /* search does not use locationlookup */
-    struct int_lookup_st *locationlookup;
-    struct int_lookup_st *structurelookup;
-    struct int_lookup_st *structfreqlookup;
     /* Lookup table for repetitive values of the path */
     struct char_lookup_st *pathlookup;
 

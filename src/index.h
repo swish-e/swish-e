@@ -71,8 +71,8 @@ struct MOD_Index
     char	*word;
 
     /* Economic mode (-e) */
-	int		swap_filedata;		/* swap file & property data */
-	int		swap_locdata;		/* swap location data */
+    int         swap_filedata;		/* swap file & property data */
+    int         swap_locdata;		/* swap location data */
 
 	/* Pointer to swap functions */ 
     long    (*swap_tell)(FILE *);
@@ -87,8 +87,13 @@ struct MOD_Index
     int		plimit;
     int		flimit;
 
-	MEM_ZONE	*locZone;
-	MEM_ZONE	*entryZone;
+    /* Index in blocks of chunk_size files */
+    int chunk_size;
+
+    MEM_ZONE	*uncompressedChunkLocZone;
+    MEM_ZONE	*currentChunkLocZone;
+    MEM_ZONE    *totalLocZone;
+    MEM_ZONE	*entryZone;
 
 };
 
@@ -126,7 +131,7 @@ struct file *readFileEntry(SWISH *, IndexFILE *,int);
 void computehashentry(ENTRY **,ENTRY *);
 
 void sort_words(SWISH *, IndexFILE *);
-void sortentry(SWISH *, IndexFILE *, ENTRY *);
+void sortChunkLocations(SWISH *, IndexFILE *, ENTRY *);
 
 int indexstring(SWISH*, char *, int, int, int, int *, int *);
 
@@ -138,5 +143,6 @@ void BuildSortedArrayOfWords(SWISH *,IndexFILE *);
 
 
 void PrintHeaderLookupTable (int ID, int table[], int table_size, FILE *fp);
+void coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e);
 
 #endif

@@ -93,6 +93,8 @@ void Mem_ZoneFree(MEM_ZONE **head);
 /* memory zone statistics */
 void Mem_ZoneStatistics(MEM_ZONE *head); 
 
+/* make all memory in a zone reusable */
+void Mem_ZoneReset(MEM_ZONE *head); 
 
 
 /* Don't let people use the regular C calls */

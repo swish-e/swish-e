@@ -118,24 +118,22 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
 
 /* Prints out the data in an index DB */
-
 void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 {
     int     i,
             j,
             c,
-            x,
             fieldnum,
             frequency,
             metaname,
-            index_structure,
             structure,
-            index_structfreq,
-            filenum;
+            tmpval,
+            filenum,
+           *position;
     unsigned long    nextposmetaname;
     char    word[2];
     char   *resultword;
-    unsigned char   *worddata, *s;
+    unsigned char   *worddata, *s, flag;
     int     sz_worddata;
     long    wordID;
 
@@ -170,9 +168,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     /* Do metanames first as that will be helpful for decoding next */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
         dump_metanames( sw, indexf );
-
-
-
 
     if (DEBUG_MASK & DEBUG_INDEX_WORDS_ONLY)
     {
@@ -234,22 +229,22 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 /* parse and print word's data */
                 s = worddata;
 
-                x = uncompress2(&s);     /* tfrequency */
-                x = uncompress2(&s);     /* metaname */
-                metaname = x;
+                tmpval = uncompress2(&s);     /* tfrequency */
+                metaname = uncompress2(&s);     /* metaname */
                 if (metaname)
                 {
                     nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
-                    x = uncompress2(&s); /* First file */
                 }
-                while (x)
-                {
-                    filenum = x;
-                    index_structfreq = uncompress2(&s);
-                    frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-                    index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-                    structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+                filenum = 0;
+		while(1)
+                {                   /* Read on all items */
+                    uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                    filenum += tmpval;
+                    position = (int *) emalloc(frequency * sizeof(int));
+                    uncompress_location_positions(&s,flag,frequency,position);
 
+
+                    // if (sw->verbose >= 4)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
                         struct file *fileInfo;
@@ -274,43 +269,49 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
                     for (i = 0; i < frequency; i++)
                     {
-                        x = uncompress2(&s);
-
                         if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS_FULL))
+                        //if (sw->verbose >= 4)
                         {
                             if (i)
-                                printf(",%d", x);
+                                printf(",%d", position[i]);
                             else
-                                printf("%d", x);
+                                printf("%d", position[i]);
                         }
                         else if ( DEBUG_MASK & DEBUG_INDEX_WORDS)
-						{
-							if (i)
-								printf(" %d", x);
-							else
-								printf("%d", x);
-						}
+                        {
+                            if (i)
+                                 printf(" %d", position[i]);
+                            else
+                                 printf("%d", position[i]);
+                        }
                     }
 
-                    if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
-						printf(")]");
+                    efree(position);
 
+                    if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
+                        printf(")]");
+
+
+                    if(!s[0])       /* End of chunk mark */
+                    {
+                        filenum = 0;  /* reset filenum */
+                        s++;
+                    }
+
+                    if ((s - worddata) == sz_worddata)
+                        break;   /* End of worddata */
 
                     if ((unsigned long)(s - worddata) == nextposmetaname)
                     {
-                        x = uncompress2(&s);
-                        metaname = x;
+                        metaname = uncompress2(&s);
                         if (metaname)
                         {
                             nextposmetaname = UNPACKLONG2(s); 
                             s += sizeof(long);
-                            x = uncompress2(&s);
                         }
                         else
                             nextposmetaname = 0L;
                     }
-                    else
-                        x = uncompress2(&s);
                 }
 
                 if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
@@ -358,6 +359,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     DB_Close(sw, indexf->DB);
 
 }
+
 
 int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
 {
