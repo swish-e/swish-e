@@ -541,7 +541,6 @@ sub run_query {
        indexes  => $Swish_Index,
        startnum => $start + 1,  
        maxhits  => $Page_Size,
-       properties => \@PropertyNames,
        timeout  => 10,  # kill script if query takes more than ten secs
        output_separator => "\t:\t",
 
@@ -608,6 +607,9 @@ sub run_query {
     # Check for connect errors
     return { MESSAGE => $SWISH::errstr || 'Sorry, failed to process your query' } unless $sh;
 
+
+    # Set properties to include with results, if any.
+    $sh->properties( \@PropertyNames ) if @PropertyNames;
 
 
     #$SWISH::Fork::DEBUG++;  # generates (a lot of) debugging info to STDERR 
