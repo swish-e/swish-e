@@ -16,8 +16,11 @@ $Id$
 ** 2001-09-21  new HTML parser using libxml2 (http://www.xmlsoft.org/) Bill Moseley
 **
 ** TODO:
+**
+**  - FileRules title
+**
 **  - There are two buffers that are created for every file, but these could be done once
-**    and only expanded when needed.  If that would make any difference in indexing, I don' know.
+**    and only expanded when needed.  If that would make any difference in indexing speed.
 **
 **  - There is also a read chunk stack variable that's 1024 bytes.  Is stack space an issue?
 **
@@ -44,7 +47,7 @@ $Id$
 /* Should be in config.h */
 
 #define BUFFER_CHUNK_SIZE 10000 // This is the size of buffers used to accumulate text
-#define READ_CHUNK_SIZE 1024    // The size of chunks read from the stream
+#define READ_CHUNK_SIZE 4096    // The size of chunks read from the stream
 
 /* to buffer text until an end tag is found */
 
@@ -159,6 +162,7 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
     init_parse_data( &parse_data, sw, fprop, (xmlSAXHandlerPtr)SAXHandler );
     
+
     parse_data.parsing_html = 1;
     parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
     parse_data.structure    = IN_FILE;
@@ -187,11 +191,21 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
     init_parse_data( &parse_data, sw, fprop, NULL );
     parse_data.structure    = IN_FILE;
 
+
+    /* Document Summary */
+    if ( parse_data.summary.meta->max_len )
+        parse_data.summary.active++;
+
     
     while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
         append_buffer( &parse_data.text_buffer, chars, res );
         flush_buffer( &parse_data, 0 );  // flush upto whitespace
+
+        /* turn off summary when we exceed size */
+        if ( parse_data.summary.meta->max_len && fprop->bytes_read > parse_data.summary.meta->max_len )
+            parse_data.summary.active = 0;
+
     }
 
     flush_buffer( &parse_data, 1 );
@@ -218,7 +232,6 @@ static int parse_chunks( PARSE_DATA *parse_data )
     char                chars[READ_CHUNK_SIZE];
     xmlParserCtxtPtr    ctxt;
 
-
     res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize );
     if (res == 0)
         return 0;
@@ -234,7 +247,6 @@ static int parse_chunks( PARSE_DATA *parse_data )
 
     while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
-
         if ( parse_data->parsing_html )
             htmlParseChunk((htmlParserCtxtPtr)ctxt, chars, res, 0);
         else
@@ -269,6 +281,10 @@ static int parse_chunks( PARSE_DATA *parse_data )
         xmlFreeParserCtxt(ctxt);
     }
 
+    /* Not sure if this is needed */
+    xmlCleanupParser();
+
+    
     /* Flush any text left in the buffer */
 
     if ( !parse_data->abort )
@@ -320,6 +336,9 @@ static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_si
     size = fprop->external_program && (( fprop->fsize - fprop->bytes_read ) < buf_size)
            ? fprop->fsize - fprop->bytes_read
            : buf_size;
+
+    if ( !fprop->bytes_read && size > 4 )
+        size = 4;
 
                
 
@@ -587,6 +606,7 @@ static void end_hndl(void *data, const char *el)
 static void char_hndl(void *data, const char *txt, int txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
+    int ret;
 
 
    
@@ -600,8 +620,17 @@ static void char_hndl(void *data, const char *txt, int txtlen)
         return;
 
 
-    if ( !Convert_to_latin1( parse_data, txt, txtlen ) )
+    /* $$$ this was added to limit the buffer size */
+    if ( parse_data->text_buffer.cur + txtlen >= BUFFER_CHUNK_SIZE )
+        flush_buffer( parse_data, 0 );  // flush upto last word - somewhat expensive
+
+
+    
+    if ( (ret = Convert_to_latin1( parse_data, txt, txtlen )) != 0 )
     {
+        if ( parse_data->sw->parser_warn_level >= 1 )
+            xmlParserWarning(parse_data->ctxt, "Failed to convert internal UTF-8 to Latin-1.\nIndexing w/o conversion.\n");
+            
         append_buffer( &parse_data->text_buffer, txt, txtlen );
         return;
     }
@@ -647,7 +676,7 @@ static int Convert_to_latin1( PARSE_DATA *parse_data, const char *txt, int txtle
 
     buf->cur = buf->max;
 
-    return !UTF8Toisolat1( buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
+    return UTF8Toisolat1( buf->buffer, &buf->cur, (unsigned char *)txt, &inlen );
 }
 
 
@@ -943,7 +972,7 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
                     ? buf->cur + txtlen+1
                     : buf->max + BUFFER_CHUNK_SIZE+1;
 
-        buf->buffer = erealloc( buf->buffer, buf->max );
+        buf->buffer = erealloc( buf->buffer, buf->max+1 );
     }
 
     memcpy( (void *) &(buf->buffer[buf->cur]), txt, txtlen );
@@ -985,7 +1014,9 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
         if ( !buf->cur )  // then there's only a single word in the buffer
         {
             buf->cur = orig_end;
-            return;
+            if ( buf->cur < BUFFER_CHUNK_SIZE )  // should reall look at indexf->header.maxwordlimit 
+                return;                          // but just trying to keep the buffer from growing too large
+printf("File %s has a really long word found\n", parse_data->fprop->real_path );
         }
 
         save_char =  buf->buffer[buf->cur];
