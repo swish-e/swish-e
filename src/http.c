@@ -624,12 +624,15 @@ void    http_indexpath(SWISH * sw, char *url)
     file_suffix = file_prefix + strlen( file_prefix );
     
 
-    if (!lentitle)
+    if (!lentitle) {
         title = emalloc((lentitle = MAXSTRLEN) + 1);
+        *title = '\0';
+    }
 
-    if (!lencontenttype)
+    if (!lencontenttype) {
         contenttype = emalloc((lencontenttype = MAXSTRLEN) + 1);
-
+        *contenttype = '\0';
+    }
 
 
     /* prime the pump with the first url */
