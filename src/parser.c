@@ -70,6 +70,9 @@ $Id$
 
 
 #include <stdarg.h>  // for va_list
+#ifdef HAVE_VARARGS_H
+#include <varargs.h>  // va_list on Win32
+#endif
 #include "swish.h"
 #include "fs.h"  // for the title check
 #include "merge.h"
