@@ -146,6 +146,10 @@ C<BumpPositionCounterCharacters> *string*
 
 C<Buzzwords> [*list of buzzwords*|File: path]
 
+=item*
+
+C<CompressPositions>  [yes|NO]
+
 
 =item *
 
@@ -1905,6 +1909,18 @@ C<IgnoreLastChar> settings.
 
 Note: Buzzwords specific settings for C<IgnoreFirstChar> and C<IgnoreLastChar>
 may be used in the future.
+
+=item CompressPositions  [yes|NO]
+
+This option enables zlib compression for individual word data in the index file.
+The default is NO, that is the index word data is not compressed by default.
+
+Enabling this option can reduced the size of the index file, but at the expense of
+slower wildcard search times.
+
+The default changed from YES to NO starting with version 2.4.3.
+
+
 
 
 =item IgnoreWords [*list of stop words*|File: path]

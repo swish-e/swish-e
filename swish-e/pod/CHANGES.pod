@@ -6,9 +6,15 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.3 ??????
+=head2 Version 2.4.4 ??????
 
 =over 4
+
+=item Documentation correction
+
+A change in the default way the index was compressed was not documented
+in 2.4.3.  The change resulted in larger indexes.  See CompressPositions
+below.
 
 =item libxml2 UTF-8 conversion failures
 
@@ -23,6 +29,16 @@ fixed version.
 =head2 Version 2.4.3 December 9, 2004
 
 =over 4
+
+=item New config directive: CompressPositions
+
+This option enables zlib compression for word data in the index.
+Previously word data was always compressed but resulted in slower
+wildcard searches.  The default now is to not compress the word data,
+but results in larger index files.  Set to "YES" to get pre-2.4.3 index
+sizes.
+
+[This CHANGES entry was added after 2.4.3 was released]
 
 =item Improved error messsages when using incremental indexing
 
