@@ -1,0 +1,8 @@
+# $Id$
+
+LTLIBRARY_NAME          = libswishe.la
+LTLIBRARY_SOURCES       = swishe.c
+LTLIBRARY_SHARED_NAME   = swishe.la
+LTLIBRARY_SHARED_LIBADD = $(SWISHE_SHARED_LIBADD)
+
+include $(top_srcdir)/build/dynlib.mk
