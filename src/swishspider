@@ -1,4 +1,10 @@
-#!/usr/bin/perl -w
+#!/usr/local/bin/perl -w
+
+#
+# SWISH-E http method Spider
+# $Id$ 
+#
+
 use strict;
 
 use LWP::UserAgent;
