@@ -1217,22 +1217,40 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
         resultHeaderOut(sw, 1, "# Name: unknown index\n");
         progerr("could not open index file");
         break;
+
     case UNKNOWN_INDEX_FILE_FORMAT:
         progerr("the index file format is unknown");
         break;
+
     case NO_WORDS_IN_SEARCH:
         progerr("no search words specified");
         break;
+
     case WORDS_TOO_COMMON:
         progerr("all search words too common to be useful");
         break;
+
     case INDEX_FILE_IS_EMPTY:
         progerr("the index file(s) is empty");
         break;
+
+    case UNKNOWN_METANAME:
+        progerr("meta name '%s' is invalid.", sw->lasterrstr ? sw->lasterrstr : "(in query)" );
+        break;
+
+    case SEARCH_WORD_TOO_BIG:        
+        progerr("search word exceeded maxwordlimit setting");
+        break;
+
+    case QUERY_SYNTAX_ERROR:
+        progerr("syntax error in query (missing end quote or unbalanced parenthesis?)");
+        break;
+
     case UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY:
     case UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT:
-        /* error msg already printed */
+        /* error msg already printed -- this need to be trapped when running with library $$$ */
         break;
+
     }
 
 
@@ -1248,7 +1266,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
         printSortedResults(sw);
         resultHeaderOut(sw, 1, ".\n");
     }
-    else if (!rc)
+    else if (!rc )
         resultHeaderOut(sw, 1, "err: no results\n.\n");
 
 

@@ -759,6 +759,7 @@ typedef struct
     /* Error vars */
     int     commonerror;
     int     lasterror;
+    char    *lasterrstr;
 
 
     /* 06/00 Jose Ruiz */

@@ -447,6 +447,9 @@ int     search_2(SWISH * sw, char *words, int structure)
 
     while (indexlist != NULL)
     {
+        /* moved these inside the loop Nov 24,2001.  Need to verify */
+        sw->lasterror = RC_OK;
+        sw->commonerror = RC_OK;
 
         tmpwords = estrdup(words); /* copy of the string  (2001-03-13 rasc) */
 
@@ -456,14 +459,16 @@ int     search_2(SWISH * sw, char *words, int structure)
             searchwordlist = NULL;
         }
 
-
         /* tokenize the query into swish words */
         if (!(searchwordlist = tokenize_query_string(sw, tmpwords, &indexlist->header)))
         {
             indexlist = indexlist->next;
             efree(tmpwords);
+            if ( sw->lasterror )
+                return sw->lasterror;
             continue;
         }
+
 
         hassearch = 1;
 
@@ -492,6 +497,12 @@ int     search_2(SWISH * sw, char *words, int structure)
         resultHeaderOut(sw, 2, "#\n# Index File: %s\n", indexlist->line);
 
         searchwordlist = (struct swline *) ignore_words_in_query(sw, indexlist, searchwordlist, PhraseDelimiter);
+        if ( sw->lasterror )
+        {
+            if (searchwordlist)
+                freeswline(searchwordlist);
+            return sw->lasterror;
+        }
 
 
         /* Echo index file, fixed search, stopwords */
@@ -500,23 +511,36 @@ int     search_2(SWISH * sw, char *words, int structure)
 
         resultPrintHeader(sw, 2, &indexlist->header, indexlist->header.savedasheader, 0);
 
+
         resultHeaderOut(sw, 3, "# StopWords:");
         for (k = 0; k < indexlist->header.stopPos; k++)
             resultHeaderOut(sw, 3, " %s", indexlist->header.stopList[k]);
+
         resultHeaderOut(sw, 3, "\n");
+
+
 
         printheaderbuzzwords(sw,indexlist);
 
 
         resultHeaderOut(sw, 2, "# Search Words: %s\n", words);
-        resultHeaderOut(sw, 2, "# Parsed Words: ");
+
         tmplist2 = searchwordlist;
-        while (tmplist2)
+
+        if ( !tmplist2 )
+            sw->commonerror++;
+        else
         {
-            resultHeaderOut(sw, 2, "%s ", tmplist2->line);
-            tmplist2 = tmplist2->next;
+            resultHeaderOut(sw, 2, "# Parsed Words: ");
+
+            while (tmplist2)
+            {
+                resultHeaderOut(sw, 2, "%s ", tmplist2->line);
+                tmplist2 = tmplist2->next;
+            }
+        
+            resultHeaderOut(sw, 2, "\n");
         }
-        resultHeaderOut(sw, 2, "\n");
 
 
         /* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
@@ -945,6 +969,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
             struct metaEntry *m = getMetaNameByName(&indexf->header, word);
 
             /* shouldn't happen since already checked */
+            /* And really, should return the error, since might be running as a library */
             if ( !m )
                 progerr("Unknown metaname '%s'", word );
 
@@ -1834,6 +1859,8 @@ RESULT *SwishNext(SWISH * sw)
     {
         sw->lasterror = SWISH_LISTRESULTS_EOF;
     }
+
+        
     return res;
 
 }
@@ -1883,6 +1910,7 @@ void    freeresult(SWISH * sw, RESULT * rp)
         {
             for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
                 efree(rp->PropSort[i]);
+
 /* For better performance with thousands of results this is stored in a MemZone
    in result_sort.c module
             efree(rp->PropSort);
@@ -2015,107 +2043,197 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
 }
 
 
+/******************************************************************************
+*   Remove the stop words from the tokenized query
+*   rewritten Nov 24, 2001 - moseley
+*   Still horrible!  Need a real parse tree.
+*******************************************************************************/
 
-/* 02/2001 Jose Ruiz */
-/* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */
-/* 2001-10 jmruiz - Added removed_stopwords counter */
 
 struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swline *searchwordlist, unsigned char phrase_delimiter)
 {
-    struct swline *pointer1,
-           *pointer2,
-           *pointer3;
-    int     inphrase = 0,
-            ignore = 0;
+    struct swline  *cur_token = searchwordlist;
+    struct swline  *prev_token = NULL;
+    struct swline  *prev_prev_token = NULL;  // for removing two things
+    int             in_phrase = 0;
+    int             word_count = 0; /* number of search words found */
+    int             paren_count = 0;
     struct MOD_Search *srch = sw->Search;
 
     srch->removed_stopwords = 0;
 
-    /* Added JM 1/10/98. */
-    /* completely re-written 2/25/00 - SRE - "ted and steve" --> "and steve" if "ted" is stopword --> no matches! */
+    
 
-    /* walk the list, looking for rules & stopwords to splice out */
-    /* remove a rule ONLY if it's the first thing on the line */
-    /*   (as when exposed by removing stopword that comes before it) */
-
-    /* loop on FIRST word: quit when neither stopword nor rule (except NOT rule) or metaname (last one as suggested by Adrian Mugnolo) */
-    pointer1 = searchwordlist;
-    while (pointer1 != NULL)
+    while ( cur_token )
     {
-        pointer2 = pointer1->next;
-        /* 05/00 Jose Ruiz
-           ** NOT rule is legal at begininig */
-        if (pointer1->line[0] == phrase_delimiter)
-            break;
-        if (u_isnotrule(sw, pointer1->line) || isMetaNameOpNext(pointer2))
-            break;
-        if (!isstopword(&indexf->header, pointer1->line) && !u_isrule(sw, pointer1->line))
-            break;
-        searchwordlist = pointer2; /* move the head of the list */
+        int remove = 0;
+        char first_char = cur_token->line[0];
 
-        resultHeaderOut(sw, 1, "# Removed stopword: %s\n", pointer1->line);
-
-        srch->removed_stopwords++;
-
-        /* Free line also !! Jose Ruiz 04/00 */
-        efree(pointer1->line);
-        efree(pointer1);        /* toss the first point */
-        /* Free line also !! Jose Ruiz 04/00 */
-        pointer1 = pointer2;    /* reset for the loop */
-    }
-    if (!pointer1)
-    {
-        sw->lasterror = WORDS_TOO_COMMON;
-        return NULL;
-    }
-
-    /* loop on REMAINING words: ditch stopwords but keep rules (unless two rules in a row?) */
-    pointer2 = pointer1->next;
-    while (pointer2 != NULL)
-    {
-        if (pointer1->line[0] == phrase_delimiter)
+        if ( cur_token == searchwordlist )
         {
-            if (inphrase)
-                inphrase = 0;
-            else
-                inphrase = 1;
-            pointer1 = pointer1->next;
-            pointer2 = pointer2->next;
+            prev_token = prev_prev_token = NULL;
+            word_count = 0;
+            paren_count = 0;
+            in_phrase = 0;
         }
-        else
+
+        while ( 1 )  // so we can use break.
         {
-            ignore = 0;
-            if (!inphrase)
+
+            /* Can't backslash here -- (because this code should really be include in swish_words.c) */
+            
+            if ( first_char == phrase_delimiter )
             {
-                if ((isstopword(&indexf->header, pointer2->line) && !u_isrule(sw, pointer2->line) && !isMetaNameOpNext(pointer2->next)) /* non-rule stopwords */
-                    || (u_isrule(sw, pointer1->line) && u_isrule(sw, pointer2->line))) /* two rules together */
-                    ignore = 1;
+                in_phrase = !in_phrase;
+
+                if ( !in_phrase && prev_token && prev_token->line[0] == phrase_delimiter )
+                    remove = 2;
+                    
+                break;
             }
-            else
+
+
+            /* leave everything alone inside a pharse */
+            
+            if ( in_phrase )
             {
-                if (isstopword(&indexf->header, pointer2->line))
-                    ignore = 1;
+                if (isstopword(&indexf->header, cur_token->line))
+                {
+                    srch->removed_stopwords++;
+                    resultHeaderOut(sw, 1, "# Removed stopword: %s\n", cur_token->line);
+                    remove = 1;
+                }
+                else
+                    word_count++;
+
+                break;                    
             }
-            if (ignore)
+            
+
+            /* Allow operators */
+
+            if ( first_char == '=' )
+                break;
+            
+            if ( first_char == '(' )
             {
-                resultHeaderOut(sw, 2, "# Removed stopword: %s\n", pointer2->line); /* keep 1st of 2 rule */
+                paren_count++;
+                break;
+            }
+
+            if ( first_char == ')' )
+            {
+                paren_count--;
+
+                if ( prev_token && prev_token->line[0] == '(' )
+                    remove = 2;
+
+                break;
+            }
+                
+
+
+            /* Allow all metanames */
+            
+            if ( isMetaNameOpNext(cur_token->next) )
+                break;
+
+
+
+            /* Look for AND OR NOT - remove AND OR at start, and remove second of doubles */
+
+            if ( u_isrule(sw, cur_token->line)  )
+            {
+                if ( prev_token )
+                {
+                    /* remove double tokens */
+                    if ( u_isrule( sw, prev_token->line ) )
+                        remove = 1;
+                }
+                /* allow NOT at the start */
+                else if ( !u_isnotrule(sw, cur_token->line) )
+                    remove = 1;
+
+                break;
+            }
+                    
+
+
+            /* Finally, is it a stop word? */
+
+            if ( isstopword(&indexf->header, cur_token->line) )
+            {
                 srch->removed_stopwords++;
-                pointer1->next = pointer2->next;
-                pointer3 = pointer2->next;
-                efree(pointer2->line);
-                efree(pointer2);
-                pointer2 = pointer3;
+                resultHeaderOut(sw, 1, "# Removed stopword: %s\n", cur_token->line);
+                remove = 1;
             }
             else
-            {
-                pointer1 = pointer1->next;
-                pointer2 = pointer2->next;
-            }
-        }
-    }
-    return searchwordlist;
-}
+                word_count++;
+            
 
+            
+            break;
+        }
+
+
+        /* Catch dangling metanames */
+        if ( !remove && !cur_token->next && isMetaNameOpNext( cur_token ) )
+            remove = 2;
+
+
+        if ( remove )
+        {
+            struct swline *tmp = cur_token;
+                
+            if ( cur_token == searchwordlist )      // we are removing first token
+                searchwordlist = cur_token->next;
+            else
+            {
+                prev_token->next = cur_token->next; // remove one in the middle
+                cur_token = prev_token;  // save if remove == 2
+            }
+
+
+            efree( tmp->line );
+            efree( tmp );
+
+            if ( remove == 2 )
+            {
+                tmp = cur_token;
+
+                if ( cur_token == searchwordlist )      // we are removing first token
+                    searchwordlist = cur_token->next;
+                else
+                    prev_prev_token->next = cur_token->next; // remove one in the middle
+                
+                efree( tmp->line );
+                efree( tmp );
+            }
+
+
+            /* start at the beginning again */
+
+            cur_token = searchwordlist;
+            continue;
+        }
+        
+        if ( prev_token )
+            prev_prev_token = prev_token;
+            
+        prev_token = cur_token;
+        cur_token = cur_token->next;
+    }
+
+
+    if ( in_phrase || paren_count )
+        sw->lasterror = QUERY_SYNTAX_ERROR;
+
+    else if ( !word_count )
+        sw->lasterror = srch->removed_stopwords ? WORDS_TOO_COMMON : NO_WORDS_IN_SEARCH;
+
+    return searchwordlist;
+
+}
 
 
 
