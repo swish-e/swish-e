@@ -215,6 +215,10 @@ void initModule_Index (SWISH  *sw)
     idx->metaIDtable.array = (int *)emalloc( idx->metaIDtable.max * sizeof(int) );
     idx->metaIDtable.defaultID = -1;
 
+
+    /* $$$ this is only a fix while http.c and httpserver.c still exist */
+    idx->tmpdir = estrdup(".");
+
     return;
 }
 
@@ -333,8 +337,9 @@ int configModule_Index (SWISH *sw, StringList *sl)
         if (!isdirectory(idx->tmpdir))
            progerr("%s: %s is not a directory", w0, idx->tmpdir);
 
-        if ( !( env_tmp = getenv("TMPDIR")) )
-            env_tmp = getenv("TMP");
+       if ( !( env_tmp = getenv("TMPDIR")) )
+            if ( !(env_tmp = getenv("TMP")) )
+                env_tmp = getenv("TEMP");
 
         if ( env_tmp )
             progwarn("Configuration setting for TmpDir '%s' will be overridden by environment setting '%s'", idx->tmpdir, env_tmp );
@@ -958,6 +963,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     IndexFILE *indexf = sw->indexlist;
     struct MOD_Index *idx = sw->Index;
 
+
+    indexf->total_word_positions++;
 
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )

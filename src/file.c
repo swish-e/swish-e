@@ -438,6 +438,9 @@ FILE *create_tempfile(SWISH *sw, char *prefix, char **file_name_buffer, int remo
             if( !(tmpdir = getenv("TEMP")) )
                 tmpdir = idx->tmpdir;
 
+    if ( tmpdir && !*tmpdir )
+        tmpdir = NULL;     // just in case it's the empty string
+
     if ( tmpdir )
         file_name_len += strlen( tmpdir ) + 1;  // for path separator
 

@@ -1373,7 +1373,8 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     if (sw->verbose)
     {
         if (totalfiles)
-            printf("%d file%s indexed.  %d total bytes.\n", totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes);
+            printf("%d file%s indexed.  %lu total bytes.  %lu total words.\n",
+                totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes, sw->indexlist->total_word_positions);
         else
             printf("no files indexed.\n");
 
