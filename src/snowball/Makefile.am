@@ -6,6 +6,10 @@ libsnowball_la_SOURCES = \
 	api.h \
 	utilities.c \
 	header.h \
+	stem_en1.c \
+	stem_en1.h \
+	stem_en2.c \
+	stem_en2.h \
 	stem_es.c \
 	stem_es.h \
 	stem_fr.c \
