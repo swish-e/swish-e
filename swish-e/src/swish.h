@@ -510,6 +510,7 @@ typedef struct
     /* Total files and words in index file */
     int     totalwords;
     int     totalfiles;
+    int     removedfiles;
 
     /* var to specify how to ranking while indexing */
     int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */

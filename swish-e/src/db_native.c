@@ -89,6 +89,7 @@ void    initModule_DBNative(SWISH * sw)
 
     Db->DB_WriteFileNum = DB_WriteFileNum_Native;
     Db->DB_ReadFileNum = DB_ReadFileNum_Native;
+    Db->DB_CheckFileNum = DB_CheckFileNum_Native;
     Db->DB_RemoveFileNum = DB_RemoveFileNum_Native;
 
     Db->DB_InitWriteSortedIndex = DB_InitWriteSortedIndex_Native;
@@ -1634,6 +1635,17 @@ int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata, int sz_file
     return 0;
 }
 
+/* Routine to test if filenum was deleted */
+int     DB_CheckFileNum_Native(int filenum, void *db)
+{
+#ifdef USE_BTREE
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    return ARRAY_Get(DB->totwords_array,filenum - 1);
+#endif
+    return 1;
+}
+
 
 /* Routine to remove a filenum */
 /* At this moment, to remove a filenum I am just puting 0 in the number of
@@ -2267,7 +2279,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     PROP_INDEX      *pindex = fi->prop_index;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
-    long            seek_pos;
+    long            seek_pos, prev_seek_pos;
     int             propIDX;
     PROP_LOCATION   *prop_loc;
     char            *buffer;
@@ -2302,8 +2314,10 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
         return NULL;
     }
 
+    /* Preserve seek_pos */
+    prev_seek_pos = ftell(DB->prop);
 
-    if (fseek(DB->prop, seek_pos, 0) == -1)
+    if (fseek(DB->prop, seek_pos, SEEK_SET) == -1)
         progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, fi->filenum);
 
 #ifdef DEBUG_PROP
@@ -2316,6 +2330,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 
     /* Get the uncompressed size */
     saved_bytes = uncompress1( DB->prop, fgetc );
+
     /* If saved_bytes is 0 there was not any compression */
     if( !saved_bytes )             /* adjust *uncompressed_len */
         *uncompressed_len = 0;    /* This value means no compression */
@@ -2335,6 +2350,9 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 
     if (fread(buffer, 1, *buf_len, DB->prop) != *buf_len)
         progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, fi->filenum);
+
+    /* Restore previous seek_pos */
+    fseek(DB->prop, prev_seek_pos,SEEK_SET);
 
     return buffer;
 }

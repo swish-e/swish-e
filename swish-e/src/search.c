@@ -1549,7 +1549,8 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 /* Store metaID * -1 in rank - In this way, we can delay its computation */
 
                 /* Store result */
-                if(frequency)
+                /* 2003-01 jmruiz. Check also if file is deleted */
+                if(frequency && ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB)))
                 {
                     /* This is very useful if we sorted by other property */
                     if(!l_rp)
