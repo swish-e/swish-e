@@ -14,13 +14,9 @@
 /* We define this in OS-specific code which include's config.h  */
 
 #ifndef _SWISH_PORT
-
 #  include "dirent.h"
-
 #  include "pcreposix.h"
-
 #  include "mkstemp.h"
-
 #endif
 
 
@@ -78,12 +74,6 @@
 /* Type definitions */
 typedef int pid_t;			/* process ID */
 typedef int mode_t;         /* file permission mode ID */
-
-/* Fake some group functions... */
-#define GETGROUPS_T int
-#define getegid() 0
-#define geteuid() 0
-#define getgid()  0
 
 /* Rewrite ANSI functions to Win32 equivalents */
 #define popen		_popen
