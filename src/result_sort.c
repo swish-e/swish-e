@@ -601,20 +601,22 @@ int     compFileProps(const void *s1, const void *s2)
 {
     struct file *r1 = *(struct file * const *) s1;
     struct file *r2 = *(struct file * const *) s2;
-    docPropertyEntry *p1,
+    propEntry *p1,
            *p2;
     int     metaID = r1->currentSortProp->metaID,
             rc = 0,
             len = 0;
 
     /* Find the current metaID */
-    for (p1 = r1->docProperties; p1; p1 = p1->next)
-        if (metaID == p1->metaID)
-            break;
+	if(metaID < r1->docProperties->n)
+		p1 = r1->docProperties->propEntry[metaID];
+	else
+		p1 = NULL;
 
-    for (p2 = r2->docProperties; p2; p2 = p2->next)
-        if (metaID == p2->metaID)
-            break;
+	if(metaID < r2->docProperties->n)
+		p2 = r2->docProperties->propEntry[metaID];
+	else
+		p2 = NULL;
 
     /* Check for two values */
     if (!p1 && !p2)

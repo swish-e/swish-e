@@ -13,24 +13,24 @@
  */
 
 
-void freeDocProperties (docPropertyEntry **);
-unsigned char *storeDocProperties (docPropertyEntry *, int *);
+void freeDocProperties (docProperties *);
+unsigned char *storeDocProperties (docProperties *, int *);
 
 int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *string );
-int addDocProperty (docPropertyEntry **, struct metaEntry * , unsigned char* ,int, int );
+int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
 
-docPropertyEntry *fetchDocProperties (char * );
+docProperties *fetchDocProperties (char * );
 
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
 void printSearchResultProperties (SWISH *, FILE *f_out, char **);
 
-void swapDocPropertyMetaNames (docPropertyEntry *, struct metaMergeEntry *);
+docProperties *swapDocPropertyMetaNames (docProperties *, struct metaMergeEntry *);
 
 char **getResultProperties (RESULT *);
 
-docPropertyEntry *DupProps (docPropertyEntry *);
+docProperties *DupProps (docProperties *);
 
 char *getResultPropAsString(RESULT *, int);
 

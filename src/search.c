@@ -1907,7 +1907,7 @@ void    freefileinfo(struct file *f)
     if (f->fi.summary)
         efree(f->fi.summary);
     if (f->docProperties)
-        freeDocProperties(&f->docProperties);
+        freeDocProperties(f->docProperties);
     efree(f);
 }
 

@@ -1339,7 +1339,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
 
-unsigned char *buildFileEntry(char *filename, struct docPropertyEntry **docProperties, int lookup_path, int *sz_buffer)
+unsigned char *buildFileEntry(char *filename, struct docProperties **docProperties, int lookup_path, int *sz_buffer)
 {
     int     len_filename;
     unsigned char *buffer1,

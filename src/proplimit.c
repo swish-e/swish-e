@@ -51,17 +51,20 @@ $Id$
 *
 ********************************************************************/
 
-static docPropertyEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
+static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
 {
     struct file *fi;
-    docPropertyEntry *d;
+    propEntry *d;
 
     /* this will read all doc data from the index file or from cache */
 
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
     
-    for( d = fi->docProperties; d && d->metaID != metaID; d = d->next);
+	if(metaID < fi->docProperties->n)
+		d = fi->docProperties->propEntry[metaID];
+	else
+		d = NULL;
 
     return d;
 }
@@ -303,7 +306,7 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 
 static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry, char *key, int keyLen, LOOKUP_TABLE *sort_array)
 {
-    docPropertyEntry *fileprop;
+    propEntry *fileprop;
 
     if ( !(fileprop = GetPropertyByFile( sw, indexf, sort_array->filenum, meta_entry->metaID )) )
         /* No property found, assume it's very, very, small */
