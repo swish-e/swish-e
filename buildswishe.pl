@@ -16,6 +16,14 @@
 #	0.04	fixed swishdir/installdir bug
 #			thanks to chyla@knihovnabbb.cz
 #
+#	0.05	Tue Nov 16 07:08:56 CST 2004
+#			rewrote get_src() with a little more reality in mind
+#			fixed swish option to refer to swish-e, swish, or swishe
+#				but look for file called 'swish-e' or 'latest'
+#			added --progress option to print a few messages under --quiet
+#			added --make option for when you can't symlink make -> gmake
+#			libxml2-2.6.16  --- still need to get 'latest' support
+#
 ################################################################################
 $| = 1;
 
@@ -27,18 +35,20 @@ use Config qw( %Config );
 use File::Path qw( mkpath );
 use FindBin qw($Bin);
 
-my $Version 	= '0.04';
+my $Version 	= '0.05';
 
 # there must be a better way to dynamically retrieve the latest version
 # of a sw package, other than hardcoding urls. help?
 
 my %URLs	= (
 
-'swishe' 	=> 'http://swish-e.org/Download/latest.tar.gz',
+'swish-e' 	=> 'http://swish-e.org/Download/latest.tar.gz',
 'zlib'		=> 'http://www.zlib.net/zlib-1.2.1.tar.gz',
-'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.13.tar.gz',
+'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.16.tar.gz',
 
 );
+
+$URLs{'swishe'} = $URLs{'swish-e'};	# common misspelling...
 
 my $swish_cvs 	= ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/swishe';
 my $cvs_cmd 	= "cvs -q -d$swish_cvs co swish-e";
@@ -52,7 +62,7 @@ my $allopts = {
         
 	'quiet'		=> "run non-interactively",
 	'cvs'		=> "use latest CVS version of SWISH-E",
-	'swish=s'	=> "use <X> as swish-e source -- either URL, tar.gz or directory",
+	'swish|swish-e|swishe=s'	=> "use <X> as swish-e source -- either URL, tar.gz or directory",
 	'libxml2=s'	=> "use <X> as libxml2 source -- either URL, tar.gz or directory",
 	'zlib=s'	=> "use <X> as zlib source -- either URL, tar.gz or directory",
 	'prevzlib=s'	=> "use already-installed zlib in directory <X>",
@@ -66,7 +76,9 @@ my $allopts = {
 	'force'		=> "install zlib and libxml2 no matter what",
 	'debug'		=> "lots of on-screen verbage",
 	'sudo'      => "run 'make' commands with sudo\n\t!! must be interactive if sudo expects a password !!",
-	'static'	=> "build with static library paths"
+	'static'	=> "build with static library paths",
+	'progress'	=> "with --quiet, will print a few important progress messages to stdout",
+	'make=s'	=> "use <X> as make command (useful if your GNU make is named gmake)",
 	
 };
 
@@ -77,7 +89,8 @@ Thanks.
 
 EOF
 
-usage() unless GetOptions($opts,keys %$allopts) or $opts->{help};
+usage() unless GetOptions($opts,keys %$allopts);
+usage() if $opts->{help};
 
 if ($opts->{opts}) {
 # print all options and descriptions
@@ -92,6 +105,7 @@ use vars qw(
 		$outlog $errlog $output $ld_opts $Cout $Cin
 		$zlib_test $libxml2_test $ld_test $gcc_test
 		$swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
+		$Make
 		
 		);
 
@@ -114,6 +128,7 @@ $cmdout		= $opts->{quiet} ? ' 1>/dev/null 2>/dev/null ' : '';
 
 $ld_opts 	= '';	# define these based on OS platform
 
+$Make		= $opts->{make} || 'make';
 
 # better C tests would be nice. these seem to work.
 $Cout 		= "$tmpdir/test";
@@ -246,7 +261,7 @@ sub usage
 sub checkenv
 {
 
-	if ($opts->{quiet}) {
+	if ( $opts->{quiet} and ! $opts->{progress} ) {
 	
 		open(QUIET, ">/dev/null") or die "can't write to /dev/null: $!\n";
 		select(QUIET);	# should send all default print()s to oblivion
@@ -664,34 +679,91 @@ sub get_src
 
 	my $sw = shift;
 
-# check for src sw in following order:
-#	$opts
-#	$PWD
-#	tar.gz
-#	%URLs
-
-	chdir( $Bin );
+	chdir( $Bin );	# start in same dir where this script was called from
+					# since that might be swish src dir
+		
+# several scenarios
+# 1. srcdir indicates dir to look in for tar.gz files
+# 2. srcdir indicates base dir, plus --sw=file.tar.gz for specific file
+# 3. --sw=file.tar.gz with no srcdir base
+# 4. no --srcdir and no --sw [ this is default ]
 	
-	my $src = $opts->{$sw} || $opts->{srcdir} || $URLs{$sw};
+	my $src;	# will ultimately be a directory path to sw src
+	
+	if ( $opts->{srcdir} and ! $opts->{$sw} ) {
+	
+		my $dir = $opts->{srcdir};
+		
+		print "looking in $dir for $sw|latest.*tar.gz\n";
+		
+		my $found = 0;
+		opendir(DIR, $dir) || die "can't open dir $dir: $!\n";
+		while(my $f = readdir(DIR)) {
+		
+			print "file: $f\n" if $opts->{debug};
+		
+			if ($f =~ m/($sw|latest).*tar\.gz/) {
+			
+				$dir .= "/$f";
+				$found++;
+			}
+			
+		}
+		closedir(DIR);
+		
+		if ($found) {
+			print "Found $dir\n";
+			print "Shall I use that? [y] ";
+			nice_exit() unless confirm();
+			$src = $dir;
+		}
+	
+	} elsif ( $opts->{srcdir} and $opts->{$sw} ) {
+	
+	# --sw could be a file or a dir; we trust the user
+	
+		$src = join '/', $opts->{srcdir}, $opts->{$sw};
+	
+	
+	} elsif ( $opts->{$sw} ) {
+	
+		$src = $opts->{$sw};
+	
+	} else {
+	
+	# assume our hardcoded URL value
+	
+		$src = $URLs{$sw};
+	
+	}
+	
 	
 	my ($bare) = ( $src =~ m/^.*\/(.*)/ );
 	
 	if ($opts->{debug}) {
 	
+		print "sw was $sw\n";
 		print "src looks like $src\n";
 		print "bare looks like $bare\n";
 		
 	}
 	
-	if ( -d $src and -r $src ) {
+	
+# now check on readability of what we've deduced
+
+	if ( -r "$Bin/$bare"  and $src =~ m!^http://! ) {
+	# use local cached version if it's here
+	
+		print "Found local copy of $bare in $Bin.\n";
+		print "Should I use that instead of downloading? [y] ";
+		
+		$src = "$Bin/$bare" if confirm();
+
+	}
+
+	if ( -r $src ) {
 	
 		# nothing to do
-		
-	} elsif ( -r $bare and $src =~ m/^http:/ ) {
-	
-	# use previously downloaded version
-	
-		$src = "$Bin/$bare";
 	
 	} elsif ( ! -r $src and $src !~ m/^http:/ ) {
 	
@@ -742,42 +814,17 @@ sub get_src
 		$src = "$Bin/$bare";	# default is to download to same dir where we run script
 	
 	
-	} elsif ( -d $src ) {
-	# find a tar.gz or subdir in $src and reset
+	} else {
 	
-		my $dir = $src;
+		warn "can't determine how to get src file/dir.\n";
+		warn "src = $src\n";
+		nice_exit();
 		
-		print "looking in $dir for $sw|latest.*tar.gz\n";
-		
-		my $found = 0;
-		opendir(DIR, $dir) || die "can't open dir $dir: $!\n";
-		while(my $f = readdir(DIR)) {
-		
-			if ($f =~ m/($sw|latest).*tar\.gz/) {
-			
-				$dir .= "/$f";
-				$found++;
-			}
-			
-		}
-		closedir(DIR);
-		
-		if ($found) {
-			print "Found $dir\n";
-			print "Shall I use that? [y] ";
-			nice_exit() if ! confirm();
-			$src = $dir;
-		}
-	
 	}
 	
 # at this point, $src should be either a dir or a tar.gz file
-
-	my $dir = -d $src
-	? $src
-	: decompress( $src );
 	
-	return $dir;
+	return -d $src ? $src : decompress( $src );
 
 }
 
@@ -794,8 +841,8 @@ sub nice_exit
 
 sub test_make
 {
-	print "testing make ...  ";
-	my @o = `make -v`;
+	print "testing $Make ...  ";
+	my @o = `$Make -v`;
 	if (! grep { /GNU Make version 3\.(7|8)/ } @o) {
 		warn "we've only tested with GNU make version 3.79 or higher\n";
 		warn "you've got " . shift @o;
@@ -821,7 +868,7 @@ sub configure
 
 sub make
 {
-	my $c = shift || 'make';
+	my $c = shift || $Make;
 	print "running $c... ";
 	nice_exit() if system("$c $output");
 
@@ -830,7 +877,7 @@ sub make
 sub make_clean
 {
 
-	my $c = shift || 'make distclean';
+	my $c = shift || "$Make distclean";
 	print "running $c ... \n";
 	if (system("$c $output")) {
 		system("rm -f Makefile config.cache");
@@ -840,7 +887,7 @@ sub make_clean
 
 sub make_test
 {
-	my $c = shift || 'make test';
+	my $c = shift || "$Make test";
 	print "running $c ...\n";
 	if (system("$c $output")) {
 		warn "$c failed\n";
@@ -857,8 +904,8 @@ sub make_install
 {
 	my $arg = shift || '';
 	my $c = $opts->{sudo}
-	? 'sudo make install'
-	: 'make install';
+	? "sudo $Make install"
+	: "$Make install";
 	print "running $c $arg\n";
 	nice_exit() if system("$c $arg $output");
 }
@@ -968,11 +1015,8 @@ sub swishe
 		
 	}
 
-	#my $dir = get_src( 'swishe' );
-	
-	#$swishdir = $dir;
-	$swishdir = get_src( 'swishe' );
-	#chdir($dir) || die "can't chdir to $dir: $!\n";
+	$swishdir = get_src( 'swish-e' );
+
 	chdir($swishdir) || die "can't chdir to $swishdir: $!\n";
 	
 	if ($opts->{debug}) {
@@ -1002,7 +1046,8 @@ sub swish_api
 {
 
 	chdir("$swishdir/perl");
-	my $arg = join ' ', (	"PREFIX=$installdir",
+	my $arg = join ' ', (	
+				"PREFIX=$installdir",
 				"LIB=$installdir/lib",
 				"LIBS='-L$installdir/lib -lswish-e -lz'",
 				"LDFLAGS='-L$installdir'",
@@ -1134,5 +1179,3 @@ but should work fine for swish-e users and developers.
  http://www.cray.com/craydoc/
 
 =cut
-
-
