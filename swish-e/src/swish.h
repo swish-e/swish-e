@@ -80,6 +80,12 @@
 #include "win32/dirent.h"
 #include "win32/regex.h"
 #define strcasecmp stricmp
+#elif defined(__VMS)
+#include "vms/regex.h"
+#include <dirent.h>
+#include <stdarg.h>
+extern int snprintf(char *, size_t, const char *, /*args*/ ...);
+extern int vsnprintf(char *, size_t, const char *, va_list);
 #else    
 #include <dirent.h>
 #include <regex.h>
@@ -100,9 +106,17 @@
 
 #define BASEHEADER 1
 
+#ifdef __VMS
+#define INDEXHEADER "# SWISH format: " ## SWISH_VERSION
+#else
 #define INDEXHEADER "# SWISH format: " SWISH_VERSION
+#endif
 #define INDEXHEADER_ID BASEHEADER + 1 
+#ifdef __VMS
+#define INDEXVERSION "# Swish-e format: " ## SWISH_VERSION
+#else
 #define INDEXVERSION "# Swish-e format: " SWISH_VERSION
+#endif
 #define INDEXVERSION_ID (BASEHEADER + 2)
 
 
