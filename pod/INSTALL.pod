@@ -5,8 +5,10 @@ INSTALL - SWISH-E Installation Instructions
 =head1 SYSTEM REQUIREMENTS
 
 SWISH-E 2.0 is written in C, and, up to this time, it has been tested on
-Solaris 2.6, AIX 4.3.2, RedHat Linux 6.2 and Win32 platforms (thanks to 
-David Norris for his work).  As you might guess, a C compiler is needed.  Pretty 
+Solaris 2.6, AIX 4.3.2, OpenVMS 7.2-1 AXP, RedHat Linux 6.2 (and other Linux distributions)
+and Win32 platforms.
+
+Unless you are using the included Win32 binary, a C compiler is needed.  Pretty 
 much any standard compiler should do.  Tested compilers include:
 
   gcc version 2.8.1 (Solaris 2.6)
@@ -14,10 +16,7 @@ much any standard compiler should do.  Tested compilers include:
   gcc version 2.95.2 (AIX)
   gcc version egcs-2.91.66 (Linux)
 
-David Norris has built a Win32 version with MS Visual C 6.0.  Please see
-http://www.webaugur.com/wares/swish.
-
-The HTTP file access method uses a Perl helper script that requires
+The HTTP document source method uses a Perl helper script that requires
 the LWP, HTTP, and HTML modules. (Note: depending on your perl installation, you might need to
 install additional modules required by LWP; for requirements and
 downloads check http://www.cpan.org or http://theory.uwinnipeg.ca/search/cpan-search.html).
@@ -26,8 +25,13 @@ Do note that the LWP, HTTP, and HTML modules are updated often for bug fixes and
 
 =head2 Platform Specific Information
 
-A C<configure> script is used to determine platform specific details for building swish.  Please contact
-the SWISH-E discussion list if you notice any platform specify problems while building SWISH-E.
+A C<configure> script is used to determine platform specific details for building swish.
+Please contact the SWISH-E discussion list if you notice any platform specific problems while building SWISH-E.
+
+Specific information for various platforms can be found in subdirectories of the C<src>
+directory.  For example, the Win32 binary for Windows can be found in C<src/win32>, and instructions
+for building under VMS can be found in C<src/vms>.
+
 
 =head1 INSTALLATION
 
@@ -52,14 +56,18 @@ or on some versions of tar, simply
 
 Uncompressing should create the following directories:   
 
-   swish-e-x.x/       (documentation and configure script)
-   swish-e-x.x/src/   (source code)
-   swish-e-x.x/conf/  (sample configuration file and stopword files)
-   swish-e-x.x/test/  (test.html sample)
-   swish-e-x.x/perl/  (perl interface to the SWISH-E library)
-   swish-e-x.x/filter-bin/  (filter samples form Rainer Scherg)
-   swish-e-x.x/html   (HTML version of the documentation)
-   swish-e-x.x/doc    (directory used or building the documentation)
+   swish-e-x.x/            configure script and top-level Makefile
+   swish-e-x.x/pod/        swish-e documentation
+   swish-e-x.x/src/        source code
+   swish-e-x.x/win32/      win32 binary and buid files
+   swish-e-x.x/vms/        files required for building under VMS
+   swish-e-x.x/conf/       example configuration files and stopword files
+   swish-e-x.x/tests/      tests used for running "make test"
+   swish-e-x.x/perl/       perl interface to the SWISH-E library
+   swish-e-x.x/html/       HTML version of the documentation
+   swish-e-x.x/doc/        directory used or building the documentation
+   swish-e-x.x/filter-bin/ filter samples
+   swish-e-x.x/prog-bin/   a web spider and other examples
 
 
 =item 2 Make any needed changes in F<src/config.h>

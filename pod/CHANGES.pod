@@ -15,6 +15,12 @@ changes and additions, and some to prepare for new features in later versions of
 
 =over 4
 
+=item * Documentation!
+
+Documentation is now included in the source distribution as .pod (perldoc) files, and as HTML files.
+In addition, the distribution can now generate PDF, postscript, and unix man pages from the source
+.pod files.  See L<REAME|README> for more information.
+
 =item * Internal data stored as Properties
 
 Pre 2.2 some internal data was stored in fixed locations within the index, namely the
@@ -31,12 +37,54 @@ For example, to sort by the rank and title:
 
     swish-e -w foo -s swishrank desc swishtitle asc
 
-=item * New "prog" document source indexing method
+=item * The header display has been slighly reorganized.
+
+If you are parsing output headers in a program then you may need to adjust your code.
+
+=item * Results are now combined when searching more than one index
+
+Swish now merges (and sorts) the results from multiple indexes when using C<-f> to specify
+more than one index.
+
+=item * Indexing and searching speed improvements
+
+A number of imporvements in indexing and searching speed were made, especially for searching
+very large indexes and sorting by properties.
+
+=item * New B<prog> document source indexing method
 
 You can now use -S prog to use an external program to supply documents
 to swish.  This program can be used to spider web servers, index databases,
 or to convert any type of document into html, xml, or text, so it can be
-indexed by swish.
+indexed by swish.  Examples are given in the C<prog-bin> directory.
+
+=item * The indexing parser was rewritten to be more logical.
+
+TranslateCharacters now is done before WordCharacters is checked.  For example,
+
+    WordCharacters abcdefghijklmnopqrstuvwxyz
+    TranslateCharacters ñ n
+
+Now C<El Niño> will be indexed as El Nino (el and nino), even though C<ñ> is
+not listed in WordCharacters.  Previously, stopwords were checked after stemming and
+soundex conversions, as well as most of the other word checks (WordCharacters, min/max length
+and so on).  This meant that the stopword list probably didn't work as expected when using stemming.
+
+=item * Example C<user.config> file removed.
+
+Previous versions of swish included a configuration file called C<user.config> which
+contained examples of all directives.
+This has been replace by a series of example configuration files located in the C<conf>
+directory.  The configuration directives are now described in L<SWISH-CONFIG|SWISH-CONFIG>.
+
+=item * Ports to Win32 and VMS
+
+David Norris has included the files required to build swish under windows.  In addition, a binary version of
+swish for Win32 is now included in the distribution.
+See C<src/win32>.
+
+Jean-François Piéronne has provided the files required to build swish under OpenVMS.  See C<src/vms>
+for more information.
 
 =back
 
@@ -60,11 +108,32 @@ Will ignore listed tags in XML files
 
 =item * New directive: SwishProgParameters *list of words*
 
-Passess words listed to the external swish-e program.
+Passes words listed to the external swish-e program when running with
+C<-S prog> document source method.
 
 =item * New directive: ConvertHTMLEntities [yes|no]
 
 Disables parsing and conversion of HTML entities.
+
+=item * New directive DontBumpPositionOnMetaTags
+
+The word position is bumped when a new metatag is found -- this
+is to prevent phrases from matching across meta tags.
+
+This currently works only with XML parsing.
+
+=item * New directive Words
+
+This implementation is not complete yet (and not yet documented).
+
+Buzzwords are words that should be indexed as-is, without checking for stopwords,
+word length, WordCharacters, or any other of the word limiting features.  This allows indexing
+of things like C<C++>.
+
+Currenly, IgnoreFirstChar and IgnoreLastChar will be stripped before processing, but it may be
+necessary to have separate IgnoreFirst/Last for buzzwords since, for example, you may wish to
+all C<+> within swish words, but strip C<+> from the start/end of swish words, but not from the buzzword C<C++>.
+
 
 =back
 
@@ -97,6 +166,7 @@ Now -d can accept some back-slashed characters to be used as output separators.
 =item * Enhanced command line argument C<-P>
 
 Now -P sets the phrase delimiter character in searches.
+
 
 
 =back
