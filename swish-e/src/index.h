@@ -69,6 +69,14 @@ struct MOD_Index
     FILE   *fp_file_read;       /* File (read) */
 
     struct dev_ino *inode_hash[BIGHASHSIZE];
+    struct url_info *url_hash[BIGHASHSIZE];
+
+    /* Buffers used by indexstring */
+    int lenswishword;
+    char *swishword;
+    int lenword;
+    char *word;
+
 };
 
 void initModule_Index (SWISH *);
