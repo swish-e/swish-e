@@ -94,6 +94,7 @@ my @config_options = qw(
     use_md5
     validate_links
     filter_object
+    output_function
 );
 my %valid_config_options = map { $_ => 1 } @config_options;
 
