@@ -873,3 +873,25 @@ int     DB_EndReadSortedIndex_Native(void *db)
    return 0;
 }
 
+/* 
+** Jose Ruiz 04/00
+** Store a portable long with just four bytes
+*/
+void    printlong(FILE * fp, unsigned long num)
+{
+    num = PACKLONG(num);              /* Make the number portable */
+    fwrite(&num, MAXLONGLEN, 1, fp);
+}
+
+/* 
+** Jose Ruiz 04/00
+** Read a portable long (just four bytes)
+*/
+unsigned long    readlong(FILE * fp)
+{
+    unsigned long    num;
+
+    fread(&num, MAXLONGLEN, 1, fp);
+    return UNPACKLONG(num);            /* Make the number readable */
+}
+
