@@ -247,11 +247,23 @@ char *buf1;
 	p+=len1;
 
 	fi->fi.lookup_path=lookup_path;
-        fi->fi.filename = buf1;
-        fi->fi.title = NULL;
-        fi->fi.summary = NULL;
+    fi->fi.filename = buf1;
 
 	fi->docProperties = fetchDocProperties(p);
+	/* Read internal swish properties */
+	/* first init them */
+	fi->fi.mtime= (unsigned long)0L;
+	fi->fi.title = NULL;
+	fi->fi.summary = NULL;
+	fi->fi.start = 0;
+	fi->fi.size = 0;
+
+	/* Read values */
+	getSwishInternalProperties(fi, sw->indexlist);
+
+	/* Add empty strings if NULL */
+	if(!fi->fi.title) fi->fi.title=estrdup("");
+	if(!fi->fi.summary) fi->fi.summary=estrdup("");
 
 	efree(buffer);
 	return fi;

@@ -1158,8 +1158,11 @@ struct buffer_pool *bp=NULL;
 	for(i=0;i<indexf->filearray_cursize;i++)
 	{
 		if(sw->swap_flag)
+		{
 			filep=unSwapFileData(sw);
-		else
+			filep->fi.filenum=i+1;
+			indexf->filearray[i]=filep;
+		} else
 			filep=indexf->filearray[i];
 		fileo=indexf->fileoffsetarray[i];
 		buffer=buildFileEntry(filep->fi.filename, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
@@ -1720,7 +1723,6 @@ FILE *fp=indexf->fp;
 }
 
 
-
 int indexstring(SWISH *sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
 int i, j, k, inword, wordcount;
@@ -1762,7 +1764,6 @@ IndexFILE *indexf=sw->indexlist;
 				/* Translate chars */
 				TranslateChars(indexf->header.translatecharslookuptable,word);
 			
-
 				if (indexf->header.applyStemmingRules)
 				{
 					/* apply stemming algorithm to the word to index */

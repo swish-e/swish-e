@@ -328,13 +328,13 @@ int SwishSeek(SWISH *sw,int pos)
 int i;
 RESULT *sp;
 	if(!sw) return INVALID_SWISH_HANDLE;
-	sw->currentresult=0;
-        for (i=0,sp=SwishNext(sw);sp && i<pos;i++)
+        for (i=0,sp=sw->sortresultlist;sp && i<pos;i++)
         {
 		sp = sp->nextsort;
 	}
-	if(!sp) return(sw->lasterror);
-	else return pos;
+	sw->currentresult=sp;
+	if(!sp) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+	return pos;
 }
 
 int SwishError(SWISH *sw)
