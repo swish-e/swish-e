@@ -21,13 +21,16 @@
 **
 */
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 #include "swish.h"
 #include "index.h"
 #include "mem.h"
 #include "string.h"
 #include "file.h"
 #include "error.h"
-#include <unistd.h>
 
 
 static FILE   *open_external_program(SWISH * sw, char *prog)
@@ -63,9 +66,12 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     if ( stbuf.st_mode & S_IFDIR)
         progerr("External program '%s' is a directory.", cmd );
 
+#ifndef _WIN32
+
     if ( access( cmd, R_OK|X_OK ) )
         progerr("Cannot execute '%s': %s", cmd, strerror( errno ) );
 
+#endif
 
 
     tmplist = sw->progparameterslist;
