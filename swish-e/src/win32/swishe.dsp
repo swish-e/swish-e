@@ -97,6 +97,10 @@ SOURCE=..\swish.c
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
+SOURCE=.\acconfig.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\check.h
 # End Source File
 # Begin Source File
