@@ -405,11 +405,8 @@ swish.html: $(top_srcdir)/example/swish.cgi
 Filter.html: $(top_srcdir)/filters/SWISH/Filter.pm
 	$(MAKE) html
 
-index.html: $(html_DATA)
-index_long: $(html_DATA)
-
-$(image_DATA):
-	$(MAKE) html
+index.html index_long.html style.css:
+	echo "done"
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

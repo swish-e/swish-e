@@ -84,13 +84,8 @@ swish.html: $(top_srcdir)/example/swish.cgi
 Filter.html: $(top_srcdir)/filters/SWISH/Filter.pm
 	$(MAKE) html
 
-
-index.html: $(html_DATA)
-index_long: $(html_DATA)
-
-$(image_DATA):
-	$(MAKE) html
-
+index.html index_long.html style.css:
+	echo "done"
 
 
 EXTRA_DIST = $(html_DATA) $(image_DATA)
