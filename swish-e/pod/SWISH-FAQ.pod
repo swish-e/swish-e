@@ -33,7 +33,7 @@ file for more information.
 
 Since so much effort has gone into version 2.2, support for previous versions will probably be limited.
 
-=head2 Are there binary distributions avaliable for Swish-e on platform foo?
+=head2 Are there binary distributions available for Swish-e on platform foo?
 
 Foo?  Well, yes there are some binary distributions available.  Please see the swish-e web site for
 a list at http://sunsite.berkeley.edu/SWISH-E/.
@@ -61,7 +61,9 @@ C<perldoc swish.cgi>.
 The SWISH-E discussion list is the place to go.  http://sunsite.berkeley.edu/SWISH-E/.  Please do not
 email developers directly.  The list is the best place to ask questions.
 
-Before you post you might read the next question.  Also, be sure to include in the following when asking for help.
+Before you post please read I<QUESTIONS AND TROUBLESHOOTING> located in the L<INSTALL|INSTALL> page.
+
+In short, be sure to include in the following when asking for help.
 
 =over 4
 
@@ -75,14 +77,6 @@ Before you post you might read the next question.  Also, be sure to include in t
 
 =back
 
-In addition, the utilities strace (or truss), and a backtrace from a debugger such as gdb
-may provide valuable information.  This can be helpful in tracking down segfaults:
-
-    % gdb /path/to/swish-e
-    [now run with parameters that cause a segfault]
-    (gdb) run -w foo -f index.file 
-    (gdb) bt
-
 
 =head2 Swish isn't indexing a certain word or phrase. 
 
@@ -95,14 +89,14 @@ Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>)
 C<WordCharacters>, C<BeginCharacters>, C<EndCharacters>,
 C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
 
-Use of the command line arguments C<-k>, C<-v> and C<-D> are useful when debugging these issues.
+Use of the command line arguments C<-k>, C<-v> and C<-T> are useful when debugging these issues.
 Using C<-T INDEXED_WORDS> while indexing will display each word as it is indexed.  You should specify one file
 when using this feature since it can generate a lot of output.
 
      ./swish-e -c my.conf -i problem.file -T INDEXED_WORDS
      
 You may also wish to index a single file that contains words that are or are not indexing as you expect
-and use -D -v 4 to out debugging information about the index.  A useful command might be:
+and use -T to out debugging information about the index.  A useful command might be:
 
     ./swish-e -f index.swish-e -T INDEX_FULL
 
@@ -299,21 +293,21 @@ with this:
 Perl will try to avoid running the command through the shell if meta characters are not passed
 to the open.  See C<perldoc -f open> for more information.
 
-=head2 Eh, but I just want to know how to index PDF doucments!
+=head2 Eh, but I just want to know how to index PDF documents!
 
 See the examples in the F<conf> directory.
 
 =head2 I'm using the C<prog> method to index PDF documents, but the file contents are not indexed.
 
 The examples in the F<prog-bin> directory use a module to convert the PDF files into XML.  So you must
-tell swish that you are indexing XML files for the PDF extenstion.
+tell swish that you are indexing XML files for the PDF extension.
 
     IndexContents XML .pdf
 
 =head2 Do filters effect the performance during search?
 
-No. Filters (FileFilter or via "prog" method) is only used for building the searchindex 
-database. During search requests there will be no filter calls.
+No. Filters (FileFilter or via "prog" method) are only used for building the search index 
+database.  During search requests there will be no filter calls.
 
 
 =head2 Can I index 8-bit text? 
@@ -367,6 +361,84 @@ edit the line in your configuration file:
 
     MetaNames DC.subject meta1 meta2
 
+=head2 What are I<document properties>?
+
+A document property is typically data that describes the document.  For example,
+properties might include a document's path name, its last modified date,
+its title, or its size.
+Swish stores a document's properties in the index file,
+and they can be reported back in search results.
+
+Swish also uses properties for sorting.  You may sort your results by
+one or more properties, in ascending or descending order.
+
+Properties can also be defined within your documents.  HTML and XML files
+can specifify tags (see previous question) as properties.  The I<contents>
+of these tags can then be returned with search results.
+These user-defined properties can also be used for sorting search results.
+
+For example, if you had the following in your documents
+
+   <meta name="creator" content="accounting department">
+
+And C<creator> is defined as a property
+(see C<PropertyNames> in L<SWISH-CONFIG|SWISH-CONFIG>)
+swish can return C<accounting department> with the result for that
+document.
+
+    swish-e -w foo -p creator
+
+Or for sorting:
+
+    swish-e -w foo -s creator
+
+=head2 What's the difference between I<MetaNames> and I<PropertyNames>?
+
+MetaNames allows keywords searches in your documents.
+That is, you can use MetaNames to restrict searches to just parts of
+your documents.
+
+PropertyNames, on the other hand, define text that
+can be returned with results, and can be used for sorting.
+
+Both use I<meta tags> found in your documents
+(as shown in the above two questions) to define
+the text you wish to use as a property or meta name.
+
+You may define a tag as B<both> a property and a meta name.  For example:
+
+   <meta name="creator" content="accounting department">
+
+placed in your documents and then using configuration settings of:
+
+    PropertyNames creator
+    MetaNames creator
+
+will allow you to limit your searches to documents created by accounting:
+
+    swish-e -w 'foo and creator=(accounting)'
+
+That will find all documents with the word C<foo> that also have a creator meta tag
+that contains the word C<accounting>.  This is using MetaNames.
+
+And you can also say:
+
+    swish-e -w foo -p creator
+
+which will return all documents with the word C<foo>, but the results will
+also include the contents of the C<creator> meta tag along with results.
+This is using properties.
+
+You can use properties and meta names at the same time, too:
+
+    swish-e -w creator=(accounting or marketing) -p creator -s creator
+
+That searches only in the C<creator> I<meta name> for either of the words
+C<accounting> or C<marketing>, prints out the contents of the contents
+of the C<creator> I<property>, and sorts the results by the C<creator>
+I<property name>.
+
+(See also the C<-x> output format switch in L<SWISH-RUN|SWISH-RUN>.)
 
 =head2 I run out of memory trying to index my files. 
 
@@ -518,7 +590,7 @@ This is a question for the swish-e discussion list.
 How does one create the incremental index?
 
 One method is by using the C<-N> switch to pass a file path to swish when indexing.
-Swish will only index files that have a last modificaiton date C<newer> than the file
+Swish will only index files that have a last modification date C<newer> than the file
 supplied with the C<-N> switch.
 
 This option has the disadvantage that swish must process every file in every directory
