@@ -157,7 +157,11 @@ void    addMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int 
 
         newEntry->metaType = 0;
         newEntry->sorted_data = NULL;
+
         newEntry->inPropRange = NULL;  /* for limiting by this property - moseley */
+        newEntry->loPropRange = NULL;
+        newEntry->hiPropRange = NULL;
+
         newEntry->metaName = (char *) estrdup(metaWord);
 
         if (metaID)
@@ -215,17 +219,24 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
         return; 
 
 
+    /* should the elements be set to NULL? */
     for( i = 0; i < header->metaCounter; i++ )
     {
         struct metaEntry *meta = header->metaEntryArray[i];
 
         efree( meta->metaName );
 
-        if( meta->sorted_data)
+        if ( meta->sorted_data)
             efree( meta->sorted_data );
 
-        if( meta->inPropRange )
+        if ( meta->inPropRange )
             efree( meta->inPropRange);
+
+        if ( meta->loPropRange )
+            freeProperty( meta->loPropRange );
+
+        if ( meta->hiPropRange )
+            freeProperty( meta->hiPropRange );
 
         efree( meta );
     }

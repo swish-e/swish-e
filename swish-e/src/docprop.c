@@ -50,25 +50,31 @@ $Id$
 #include "result_sort.h"
 #include "entities.h"
 
+/* Delete a property entry (and any linked properties) */
+void freeProperty( propEntry *prop )
+{
+	while (prop)
+	{
+		propEntry *nextOne = prop->next;
+		efree(prop);
 
+		prop = nextOne;
+	}
+}	
+
+
+/* delete the linked list of doc properties */
 
 void freeDocProperties(docProperties *docProperties)
 {
-	/* delete the linked list of doc properties */
-	struct propEntry *prop;
 	int i;
 
-	for(i=0;i<docProperties->n;i++)
+	for( i = 0; i < docProperties->n; i++ )
 	{
-		prop = docProperties->propEntry[i];
-		while (prop)
-		{
-			propEntry *nextOne = prop->next;
-			efree(prop);
-
-			prop = nextOne;
-		}
+	    freeProperty( docProperties->propEntry[i] );
+	    docProperties->propEntry[i] = NULL;
 	}
+
 	efree(docProperties);
 
 	
@@ -89,7 +95,7 @@ void freeDocProperties(docProperties *docProperties)
 *
 ********************************************************************/
 
-static char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
+char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 {
     char *s;
     unsigned long i;
@@ -446,7 +452,7 @@ void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
 *       What about convert entities here?
 *
 ********************************************************************/
-int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring )
+static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring )
 {
     unsigned long int num;
     char     *newstr;
@@ -528,6 +534,56 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *props
 }
 
 /*******************************************************************
+*   Creates a document property 
+*
+*   Call with:
+*       *metaEntry
+*       *propValue  - string to add
+*       *propLen    - length of string to add
+*       preEncoded  - flag saying the data is already encoded
+*                     (that's for filesize, last modified, start position)
+*
+*   Returns:
+*       pointer to a newly created document property
+*       NULL indicates property could not be created
+*
+*
+********************************************************************/
+propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+{
+    propEntry *docProp;
+
+    /* convert string to a document property, if not already encoded */
+    if ( !preEncoded )
+    {
+        char *tmp;
+        
+        propLen = EncodeProperty( meta_entry, &tmp, propValue );
+
+        if ( !propLen )  /* Error detected in encode */
+            return NULL;
+            
+        propValue = tmp;
+    }
+
+
+    /* Now create the property */
+    docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
+    docProp->next = NULL;
+
+    memcpy(docProp->propValue, propValue, propLen);
+    docProp->propLen = propLen;
+
+
+    /* EncodeProperty creates a new string */
+	if ( !preEncoded )
+	    efree( propValue );
+
+    return docProp;	    
+}
+
+
+/*******************************************************************
 *   Adds a document property to the list of properties.
 *   Creates or extends the list, as necessary
 *
@@ -553,68 +609,94 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 	int i;
 
 
-    /* convert string to a document property, if not already encoded */
-    if ( !preEncoded )
-    {
-        char *tmp;
+    /* Allocate or extend the property array, if needed */
 
-        /* $$$ Just ignore null values -- would probably be better to check before calling */
-        if ( !propValue || !*propValue )
-            return 1;
-        
-        propLen = EncodeProperty( meta_entry, &tmp, propValue );
-        if ( !propLen )
-            return 0;
-        propValue = tmp;
-    }
-
-
-    /* Store property if it's not zero length */
-
-	if(propLen)
+	if( !dp )
 	{
+		dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+		*docProperties = dp;
 
-	    /* First property added, allocate space for the property array */
-	    
-		if( !dp )
-		{
-			dp = (struct docProperties *) emalloc(sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
-			*docProperties = dp;
+		dp->n = meta_entry->metaID + 1;
 
-			dp->n = meta_entry->metaID + 1;
-
-			for( i = 0; i < dp->n; i++ )
-				dp->propEntry[i] = NULL;
-		}
-
-		else /* reallocate if needed */
-		{
-			if( dp->n <= meta_entry->metaID )
-			{
-				dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
-
-				*docProperties = dp;
-				for( i = dp->n; i <= meta_entry->metaID; i++ )
-					dp->propEntry[i] = NULL;
-					
-				dp->n = meta_entry->metaID + 1;
-			}
-		}
-
-		docProp=(propEntry *) emalloc(sizeof(propEntry) + propLen);
-
-	    memcpy(docProp->propValue, propValue, propLen);
-		docProp->propLen = propLen;
-		
-		docProp->next = dp->propEntry[meta_entry->metaID];	
-		dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
+		for( i = 0; i < dp->n; i++ )
+			dp->propEntry[i] = NULL;
 	}
 
-	if ( !preEncoded )
-	    efree( propValue );
+	else /* reallocate if needed */
+	{
+		if( dp->n <= meta_entry->metaID )
+		{
+			dp = (struct docProperties *) erealloc(dp,sizeof(struct docProperties) + (meta_entry->metaID + 1) * sizeof(propEntry *));
+
+			*docProperties = dp;
+			for( i = dp->n; i <= meta_entry->metaID; i++ )
+				dp->propEntry[i] = NULL;
+				
+			dp->n = meta_entry->metaID + 1;
+		}
+	}
+
+
+    /* create the document property */
+
+    if ( !(docProp = CreateProperty( meta_entry, propValue, propLen, preEncoded )) )
+        return 0;
+    
+	docProp->next = dp->propEntry[meta_entry->metaID];	
+	dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
 
     return 1;	    
 }
+
+/*******************************************************************
+*   Compares two properties for sorting
+*
+*   Call with:
+*       *metaEntry
+*       *docPropertyEntry1
+*       *docPropertyEntry2
+*
+*   Returns:
+*       0 - two properties are the same
+*      -1 - docPropertyEntry1 < docPropertyEntry2
+*       1 - docPropertyEntry1 ? docPropertyEntry2
+*
+*   QUESTION: ??? what if it's not string, date, or number?
+*
+********************************************************************/
+int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
+{
+    if ( !p1 && p2 )
+        return -1;
+
+    if ( !p1 && !p2 )
+        return 0;
+
+    if ( p1 && !p2 )
+        return +1;
+        
+
+    if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
+        return memcmp( (const void *)p1->propValue, (const void *)p2->propValue, p1->propLen );
+
+
+    if ( is_meta_string(meta_entry) )
+    {
+        int rc;
+        int len = Min( p1->propLen, p2->propLen );
+
+        rc = strncasecmp(p1->propValue, p2->propValue, len);
+        if ( rc != 0 )
+            return rc;
+            
+        return p1->propLen - p2->propLen;
+    }
+
+    return 0;
+
+}
+
+
 
 /*#### */
 

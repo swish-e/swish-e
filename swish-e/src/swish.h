@@ -248,6 +248,8 @@ struct metaEntry
     int    *sorted_data;        /* Sorted data . NULL if not read/done */
 
     int    *inPropRange;          /* Used for limiting to a range */
+    propEntry *loPropRange;
+    propEntry *hiPropRange;
 };
 
 

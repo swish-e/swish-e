@@ -1514,7 +1514,7 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
     RESULT *newnode;
 
 
-    if ( LimitByProperty( indexf, filenum ) )
+    if ( LimitByProperty( sw, indexf, filenum ) )
         return rp;
 
     newnode = (RESULT *) emalloc(sizeof(RESULT));
