@@ -406,10 +406,6 @@ L<SwishSearchDefaultRule|/SwishSearchDefaultRule>   [E<lt>AND-WORDE<gt>|E<lt>or-
 
 =item *
 
-L<SwishSearchOperators|/SwishSearchOperators> E<lt>and-wordE<gt> E<lt>or-wordE<gt> E<lt>not-wordE<gt>
-
-=item *
-
 L<TmpDir|/TmpDir> *path*
 
 =item *

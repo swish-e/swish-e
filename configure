@@ -1570,7 +1570,7 @@ fi;
 
 if test x$daystamp = xyes; then
         TODAY=`/bin/date +%Y-%m-%d`
-	VERSION="$VERSION-$TODAY"
+        VERSION="$VERSION-$TODAY"
 fi
 
 
@@ -23894,12 +23894,12 @@ echo $ECHO_N "checking for libxml libraries >= $LIBXML_REQUIRED_VERSION... $ECHO
     XML2_VERSION=`$XML2_CONFIG --version`
 
     if test "$vers" -ge `echo $LIBXML_REQUIRED_VERSION | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`;then
-    	LIBXML2_LIB="`$XML2_CONFIG --libs`"
-    	LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
-    	echo "$as_me:$LINENO: result: found version $XML2_VERSION" >&5
+        LIBXML2_LIB="`$XML2_CONFIG --libs`"
+        LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
+        echo "$as_me:$LINENO: result: found version $XML2_VERSION" >&5
 echo "${ECHO_T}found version $XML2_VERSION" >&6
     else
-    	{ { echo "$as_me:$LINENO: error: You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish" >&5
+        { { echo "$as_me:$LINENO: error: You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish" >&5
 echo "$as_me: error: You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish" >&2;}
    { (exit 1); exit 1; }; }
     fi
@@ -23918,6 +23918,63 @@ _ACEOF
 fi
 
 
+echo "$as_me:$LINENO: checking for working strcoll" >&5
+echo $ECHO_N "checking for working strcoll... $ECHO_C" >&6
+if test "${ac_cv_func_strcoll_works+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "$cross_compiling" = yes; then
+  ac_cv_func_strcoll_works=no
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+int
+main ()
+{
+exit (strcoll ("abc", "def") >= 0 ||
+	 strcoll ("ABC", "DEF") >= 0 ||
+	 strcoll ("123", "456") >= 0)
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_func_strcoll_works=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+ac_cv_func_strcoll_works=no
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+echo "$as_me:$LINENO: result: $ac_cv_func_strcoll_works" >&5
+echo "${ECHO_T}$ac_cv_func_strcoll_works" >&6
+if test $ac_cv_func_strcoll_works = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_STRCOLL 1
+_ACEOF
+
+fi
 
 
 
@@ -24321,12 +24378,12 @@ echo $ECHO_N "checking for libpcre libraries >= $PCRE_REQUIRED_VERSION... $ECHO_
     PCRE_VERSION=`$PCRE_CONFIG --version`
 
     if test "$vers" -ge `echo $PCRE_REQUIRED_VERSION | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ($1 * 1000 + $2) * 1000 + $3;}'`;then
-    	PCRE_LIBS="`$PCRE_CONFIG --libs-posix`"
-    	PCRE_CFLAGS="`$PCRE_CONFIG --cflags-posix`"
-    	echo "$as_me:$LINENO: result: found version $PCRE_VERSION" >&5
+        PCRE_LIBS="`$PCRE_CONFIG --libs-posix`"
+        PCRE_CFLAGS="`$PCRE_CONFIG --cflags-posix`"
+        echo "$as_me:$LINENO: result: found version $PCRE_VERSION" >&5
 echo "${ECHO_T}found version $PCRE_VERSION" >&6
     else
-    	{ { echo "$as_me:$LINENO: error: You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish" >&5
+        { { echo "$as_me:$LINENO: error: You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish" >&5
 echo "$as_me: error: You need at least libpcre $PCRE_REQUIRED_VERSION for this version of swish" >&2;}
    { (exit 1); exit 1; }; }
     fi
@@ -24349,7 +24406,7 @@ LDFLAGS=${_ldflags}
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
 if test "x$libexecdiropt" = "x"; then
         libexecdir='${exec_prefix}/lib/${PACKAGE}'
-	{ echo "$as_me:$LINENO: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&5
+        { echo "$as_me:$LINENO: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&5
 echo "$as_me: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&6;}
 fi
 

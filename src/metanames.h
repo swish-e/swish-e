@@ -9,7 +9,7 @@
 #define META_INTERNAL (1<<5)      /* flag saying this is an internal metaname */
 #define META_IGNORE_CASE (1<<6)   /* flag to say ignore case when comparing/sorting */
 #define META_NOSTRIP  (1<<7)      /* Do not strip low ascii chars when indexing */
-
+#define META_USE_STRCOLL (1<<8)  /* Use strcoll for sorting string properties */
 
 /* Macros to test the type of a MetaName */
 #define is_meta_internal(x)     ((x)->metaType & META_INTERNAL)
@@ -20,7 +20,7 @@
 #define is_meta_string(x)       ((x)->metaType & META_STRING)
 #define is_meta_ignore_case(x)  ((x)->metaType & META_IGNORE_CASE)
 #define is_meta_nostrip(x)      ((x)->metaType & META_NOSTRIP)
-
+#define is_meta_use_strcoll(x)  ((x)->metaType & META_USE_STRCOLL)
 
 int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 );
 

@@ -599,7 +599,12 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
 
             if  ( is_meta_string(meta_entry) )
             {
-                printf("STRING(case:%s) ", is_meta_ignore_case(meta_entry)? "ignore" : "compare");
+                printf("STRING(case:%s) ",
+                    is_meta_use_strcoll(meta_entry)
+                        ? "strcoll"
+                        : is_meta_ignore_case(meta_entry)
+                            ? "ignore" 
+                            : "compare");
                 printf("SortKeyLen: %d ", meta_entry->sort_len );
             }
 
