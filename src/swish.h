@@ -273,8 +273,6 @@ enum {
 // This is used to build the property to read/write to disk
 // It's here so the buffer can live between writes
 
-
-
 typedef struct propEntry
 {
     unsigned int propLen;       /* Length of buffer */

@@ -91,8 +91,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
     int     linenumber = 0;
     int     baddirective = 0;
     StringList *sl;
-    struct IndexContents *ic;
-    struct StoreDescription *sd;
     IndexFILE *indexf = NULL;
     unsigned char *StringValue = NULL;
     struct swline *tmplist;
@@ -101,9 +99,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
     gotdir = gotindex = 0;
 
     if ((fp = fopen(conffile, F_READ_TEXT)) == NULL || !isfile(conffile))
-    {
         progerrno("Couldn't open the configuration file '%s': ", conffile);
-    }
+
+    if ( sw->verbose >= 2 )
+        printf("Parsing config file '%s'\n", conffile );
+
 
     /* Init default index file */
     indexf = sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
@@ -927,7 +927,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n > 2)
             {
-                ic = (struct IndexContents *) emalloc(sizeof(struct IndexContents));
+                struct IndexContents *ic = (struct IndexContents *) emalloc(sizeof(struct IndexContents));
 
                 ic->DocType = getDocTypeOrAbort(sl, 1);
                 ic->patt = NULL;
@@ -954,7 +954,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n == 3 || sl->n == 4)
             {
-                sd = (struct StoreDescription *) emalloc(sizeof(struct StoreDescription));
+                struct StoreDescription *sd = (struct StoreDescription *) emalloc(sizeof(struct StoreDescription));
 
                 sd->DocType = getDocTypeOrAbort(sl, 1);
                 sd->size = 0;
@@ -1560,5 +1560,66 @@ static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *
         *setting = UNDEF_META_INDEX;
     else
         progerr("%s: possible values are error, ignore, index or auto", w0);
+}
+
+
+void freeSwishConfigOptions( SWISH *sw )
+{
+    /** Ah, these should all be in their own structure **/
+
+    /* string lists */
+    if (sw->dirlist)
+        freeswline(sw->dirlist);
+
+    if (sw->suffixlist)
+        freeswline(sw->suffixlist);
+
+    if (sw->nocontentslist)
+        freeswline(sw->nocontentslist);
+
+    if (sw->ignoremetalist)
+        freeswline(sw->ignoremetalist);
+
+    if (sw->XMLClassAttributes)
+        freeswline(sw->XMLClassAttributes);
+
+    if (sw->dontbumpstarttagslist)
+        freeswline(sw->dontbumpstarttagslist);
+
+    if (sw->dontbumpendtagslist)
+        freeswline(sw->dontbumpendtagslist);
+
+
+    /* IndexContents */
+    {
+        struct IndexContents *next;
+        while ( sw->indexcontents )
+        {
+             next = sw->indexcontents->next;
+             
+             if ( sw->indexcontents->patt )
+                freeswline( sw->indexcontents->patt );
+
+             efree( sw->indexcontents );
+             sw->indexcontents = next;
+        }
+    }
+
+
+    /* StoreDescription */
+    {
+        struct StoreDescription *next;
+        while ( sw->storedescription )
+        {
+             next = sw->storedescription->next;
+             if ( sw->storedescription->field )
+                efree( sw->storedescription->field );
+
+             efree( sw->storedescription );
+             sw->storedescription = next;
+        }
+    }
+      
+        
 }
 

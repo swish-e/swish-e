@@ -125,6 +125,7 @@ void    resetModule_ResultSort(SWISH * sw)
 
 
     /* First the common part to all the index files */
+
     if (md->propNameToSort)
     {
         for (i = 0; i < md->numPropertiesToSort; i++)
@@ -528,7 +529,7 @@ int    *getLookupResultSortedProperties(SWISH *sw, RESULT * r)
 
         if (!m->sorted_data && !LoadSortedProps(sw, indexf, m))
         {
-            efree(props);
+            /* FIX: Removed!!! efree(props); props is allocated using Zone. Do not call efree here */
             return NULL;
         }
 
@@ -562,23 +563,6 @@ char  **getResultSortProperties(SWISH *sw, RESULT * r)
         props[i] = getResultPropAsString(sw, r, indexf->propIDToSort[i]);
 
     return props;
-}
-
-
-/* Routine to test structure in a result */
-int test_structure(RESULT *r,int structure)
-{
-    int i;
-
-    if ( !r->frequency )
-        return 1;
-    
-    for(i = 0; i < r->frequency; i++)
-    {
-        if(GET_STRUCTURE(r->posdata[i]) & structure)
-            return 1;
-    }
-    return 0;
 }
 
 
@@ -620,22 +604,19 @@ int     sortresults(SWISH * sw, int structure)
             /* As we are sorting a unique index file, we can use the presorted data in the index file */
             for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                if (test_structure(tmp,structure))
+                /* Load the presorted data */
+                tmp->iPropSort = getLookupResultSortedProperties(sw, tmp);
+
+                /* If some of the properties is not presorted */
+                /* use the old method (ignore presorted index)*/
+
+                if (!tmp->iPropSort)
                 {
-                    /* Load the presorted data */
-                    tmp->iPropSort = getLookupResultSortedProperties(sw, tmp);
-
-                    /* If some of the properties is not presorted */
-                    /* use the old method (ignore presorted index)*/
-
-                    if (!tmp->iPropSort)
-                    {
-                        presorted_data_not_available = 1;
-                        break;
-                    }
-                    /* Compute number of results */
-                    i++;
+                    presorted_data_not_available = 1;
+                    break;
                 }
+                /* Compute number of results */
+                i++;
             }
         }
 
@@ -650,10 +631,7 @@ int     sortresults(SWISH * sw, int structure)
             /* Read the property value string(s) for all the sort properties */
             for (i = 0, tmp = rp; tmp; tmp = tmp->next)
             {
-                if (test_structure(tmp,structure))  // $$$ *** WRONG PLACE
-                {
-                    tmp->PropSort = getResultSortProperties(sw, tmp);
-                }
+                tmp->PropSort = getResultSortProperties(sw, tmp);
                 /* Compute number of results */
                 i++;
             }
@@ -668,8 +646,7 @@ int     sortresults(SWISH * sw, int structure)
 
             /* Build an array with the elements to compare and pointers to data */
             for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-                if (test_structure(rtmp,structure))
-                    ptmp[j++] = rtmp;
+                ptmp[j++] = rtmp;
 
 
             /* Sort them */

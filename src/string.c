@@ -954,7 +954,7 @@ char   *estrdup(char *str)
     
     if (!str)
         return NULL;
-    
+
     if ((p = emalloc(strlen(str) + 1)))
         return strcpy(p, str);
 
