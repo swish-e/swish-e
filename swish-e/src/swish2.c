@@ -210,9 +210,8 @@ void    SwishClose(SWISH * sw)
 
         /* Free SWISH struct */
 
-        if (sw->dirlist)
-            freeswline(sw->dirlist);
 
+        freeSwishConfigOptions( sw );  // should be freeConfigOptions( sw->config )
         efree(sw);
     }
 }

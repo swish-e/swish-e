@@ -254,6 +254,7 @@ void dump_result_lists( SWISH *sw, char *message )
     
 {
     struct DB_RESULTS *db_results = sw->Search->db_results;
+    int cnt = 0;
 
     printf("\nDump Results: (%s)\n", message );
 
@@ -275,7 +276,7 @@ void dump_result_lists( SWISH *sw, char *message )
         }
         while ( result )
         {
-            printf("Result: filenum '%d' from index file '%s'\n", result->filenum, result->indexf->line );
+            printf("Result (%2d): filenum '%d' from index file '%s'\n", ++cnt, result->filenum, result->indexf->line );
             result = result->next;
         }
 
@@ -646,7 +647,7 @@ int     search_2(SWISH * sw, char *words, int structure)
             int metaID = 1;  /* Default meta ID to search */
             
             tmplist2 = searchwordlist;
-            db_results->resultlist = (RESULT_LIST *) parseterm(sw, 0, metaID, indexlist, &tmplist2);
+            db_results->resultlist = (RESULT_LIST *) parseterm(sw, 0, metaID, structure, indexlist, &tmplist2);
         }
 
 
@@ -978,7 +979,7 @@ void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 ** with the default metaname.
 */
 
-RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
+RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, int structure, IndexFILE * indexf, struct swline **searchwordlist)
 {
     int     rulenum;
     char   *word;
@@ -1020,7 +1021,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
         if (isunaryrule(word))  /* is it a NOT? */
         {
             *searchwordlist = (*searchwordlist)->next;
-            l_rp = (RESULT_LIST *) parseterm(sw, 1, metaID, indexf, searchwordlist);
+            l_rp = (RESULT_LIST *) parseterm(sw, 1, metaID, structure, indexf, searchwordlist);
             l_rp = (RESULT_LIST *) notresultlist(sw, l_rp, indexf);
 
             /* Wild goose chase */
@@ -1055,7 +1056,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
             
             /* Recurse */
             *searchwordlist = (*searchwordlist)->next;
-            new_l_rp = (RESULT_LIST *) parseterm(sw, 0, metaID, indexf, searchwordlist);
+            new_l_rp = (RESULT_LIST *) parseterm(sw, 0, metaID, structure, indexf, searchwordlist);
 
 
             if (rulenum == AND_RULE)
@@ -1113,7 +1114,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
 
             /* Now recursively process the next terms */
             
-            new_l_rp = (RESULT_LIST *) parseterm(sw, parseone, metaID, indexf, searchwordlist);
+            new_l_rp = (RESULT_LIST *) parseterm(sw, parseone, metaID, structure, indexf, searchwordlist);
             if (rulenum == AND_RULE)
                 l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
 
@@ -1137,7 +1138,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
 
         /* Finally, look up a word, and merge with previous results. */
 
-        l_rp = (RESULT_LIST *) operate(sw, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
+        l_rp = (RESULT_LIST *) operate(sw, l_rp, rulenum, word, indexf->DB, metaID, structure, andLevel, indexf);
 
         if (parseone)
         {
@@ -1159,7 +1160,7 @@ RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf,
 ** it calls getfileinfo(), which does the real searching.
 */
 
-RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
+RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int structure, int andLevel, IndexFILE * indexf)
 {
     RESULT_LIST *new_l_rp,
            *return_l_rp;
@@ -1188,35 +1189,35 @@ RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, 
 
     if (rulenum == AND_RULE)
     {
-        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID, structure);
         return_l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
     }
 
 
     else if (rulenum == OR_RULE)
     {
-        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID, structure);
         return_l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
     }
 
 
     else if (rulenum == NOT_RULE)
     {
-        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID, structure);
         return_l_rp = (RESULT_LIST *) notresultlist(sw, new_l_rp, indexf);
     }
 
 
     else if (rulenum == PHRASE_RULE)
     {
-        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID, structure);
         return_l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
     }
 
 
     else if (rulenum == AND_NOT_RULE)
     {
-        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID, structure);
         return_l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
     }
 
@@ -1250,6 +1251,30 @@ void addResultToList(RESULT_LIST *l_r, RESULT *r)
 }
 
 
+/* Routine to test structure in a result */
+/* Also removes posdata that do not fit with structure field */
+int test_structure(int structure, int frequency, int *posdata)
+{
+    int i, j;    /* i -> counter upto frequency, j -> new frequency */
+    int *p,*q;   /* Use pointers to ints instead of arrays for
+                 ** faster proccess */
+    
+    for(i = j = 0, p = q = posdata; i < frequency; i++, p++)
+    {
+        if(GET_STRUCTURE(*p) & structure)
+        {
+            if(p - q)
+            {
+                *q = *p;
+            }
+            j++;
+            q++;
+        }
+    }
+    return j;  /* return new frequency */
+}
+
+
 
 /* Finds a word and returns its corresponding file and rank information list.
 ** If not found, NULL is returned.
@@ -1259,13 +1284,15 @@ void addResultToList(RESULT_LIST *l_r, RESULT *r)
 ** Also solves stars. Faster!! It can even found "and", "or"
 ** when looking for "an*" or "o*" if they are not stop words
 */
-RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
+
+#define MAX_POSDATA_STACK 256
+
+RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID, int structure)
 {
     int     j,
             x,
             filenum,
             frequency,
-            found,
             len,
             curmetaID,
             index_structure,
@@ -1279,6 +1306,8 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     unsigned char   *s, *buffer; 
     int     sz_buffer;
     unsigned char flag;
+    int     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
+    int    *posdata;
 
     x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     nextposmetaname = 0L;
@@ -1380,14 +1409,7 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             curmetaID = uncompress2(&s);
         }
 
-        if (curmetaID == metaID)
-            found = 1;
-        else
-            found = 0;
-
-        // ??? why not just check curmetaID == metaID here
-            
-        if (found) /* found a matching meta value */
+        if (curmetaID == metaID) /* found a matching meta value */
         {
             filenum = 0;
             do
@@ -1396,24 +1418,46 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                 uncompress_location_values(&s,&flag,&tmpval,&frequency);
                 filenum += tmpval;  
 
+                /* stack_posdata is just to avoid calling emalloc */
+                /* it should be enough for most cases */
+                if(frequency > MAX_POSDATA_STACK)
+                    posdata = (int *)emalloc(frequency * sizeof(int));
+                else
+                    posdata = stack_posdata;
+
+                /* read positions */
+                uncompress_location_positions(&s,flag,frequency,posdata);
+
+                /* test structure and adjust frequency */
+                frequency = test_structure(structure, frequency, posdata);
+
                 /* Store -1 in rank - In this way, we can delay its computation */
-                /* This is very useful if we sorted by other property */
-                if(!l_rp)
-                    l_rp = newResultsList(sw);
+                /* This stuff has been removed */
 
-                // tfrequency = number of files with this word
-                // frequency = number of times this words is in this document for this metaID
-
-                addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, sw);
-
-                // Temp fix
+                /* Store result */
+                if(frequency)
                 {
-                    struct RESULT *r1 = l_rp->tail;
-                    r1->rank =  r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
-                }
+                    /* This is very useful if we sorted by other property */
+                    if(!l_rp)
+                       l_rp = newResultsList(sw);
 
+                    // tfrequency = number of files with this word
+                    // frequency = number of times this words is in this document for this metaID
+
+                    addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, sw);
+
+                    /* Copy positions */
+                    memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
+
+                    // Temp fix
+                    {
+                        struct RESULT *r1 = l_rp->tail;
+                        r1->rank =  r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
+                    }
+                }
+                if(posdata != stack_posdata)
+                    efree(posdata);
                     
-                uncompress_location_positions(&s,flag,frequency,l_rp->tail->posdata);
 
             } while ((unsigned long)(s - buffer) != nextposmetaname);
 

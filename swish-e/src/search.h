@@ -81,9 +81,9 @@ struct swline *expandphrase(struct swline *, char);
 
 void printheaderbuzzwords(SWISH *sw, IndexFILE * indexf);
 
-RESULT_LIST *parseterm(SWISH *, int, int, IndexFILE *, struct swline **);
-RESULT_LIST *operate(SWISH *, RESULT_LIST *, int, char *, void *, int, int, IndexFILE *);
-RESULT_LIST *getfileinfo(SWISH *, char *, IndexFILE *, int);
+RESULT_LIST *parseterm(SWISH *, int, int, int, IndexFILE *, struct swline **);
+RESULT_LIST *operate(SWISH *, RESULT_LIST *, int, char *, void *, int, int, int, IndexFILE *);
+RESULT_LIST *getfileinfo(SWISH *, char *, IndexFILE *, int, int);
 
 int isrule(char *);
 int isnotrule(char *);

@@ -1047,10 +1047,13 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
     /* Read configuration files */
-    while (params->conflist != NULL)
     {
-        getdefaults(sw, params->conflist->line, &hasdir, &hasindex, params->hasverbose);
-        params->conflist = params->conflist->next;
+        struct swline *tmp = params->conflist;
+        while ( tmp != NULL)
+        {
+            getdefaults(sw, tmp->line, &hasdir, &hasindex, params->hasverbose);
+            tmp = tmp->next;
+        }
     }
 
 
