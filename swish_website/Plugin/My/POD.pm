@@ -242,6 +242,14 @@ sub escape_name {
     return $text;
 }
 
+sub view_seq_link {
+    my $self = shift;
+    my $url = $self->SUPER::view_seq_link( @_ );
+    return unless $url;
+    $url = $1 . $self->escape_name($2) . $3 if $url =~ /^([^#]+#)([^"]+)(.+)$/;
+    return $url;
+}
+
 
 # Pod::POM::View::HTML:
 # view_seq_link is broken in many ways
