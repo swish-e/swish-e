@@ -61,40 +61,40 @@ void    DB_Remove_gdbm(void *db);
 
 int     DB_InitWriteHeader_gdbm(void *db);
 int     DB_EndWriteHeader_gdbm(void *db);
-int     DB_WriteHeaderData_gdbm(int id, char *s, int len, void *db);
+int     DB_WriteHeaderData_gdbm(int id, unsigned char *s, int len, void *db);
 
 int     DB_InitReadHeader_gdbm(void *db);
-int     DB_ReadHeaderData_gdbm(int *id, char **s, int *len, void *db);
+int     DB_ReadHeaderData_gdbm(int *id, unsigned char **s, int *len, void *db);
 int     DB_EndReadHeader_gdbm(void *db);
 
 int     DB_InitWriteWords_gdbm(void *db);
 long    DB_GetWordID_gdbm(void *db);
 int     DB_WriteWord_gdbm(char *word, long wordID, void *db);
 int     DB_WriteWordHash_gdbm(char *word, long wordID, void *db);
-long    DB_WriteWordData_gdbm(long wordID, char *worddata, int lendata, void *db);
+long    DB_WriteWordData_gdbm(long wordID, unsigned char *worddata, int lendata, void *db);
 int     DB_EndWriteWords_gdbm(void *db);
 
 int     DB_InitReadWords_gdbm(void *db);
 int     DB_ReadWordHash_gdbm(char *word, long *wordID, void *db);
 int     DB_ReadFirstWordInvertedIndex_gdbm(char *word, char **resultword, long *wordID, void *db);
 int     DB_ReadNextWordInvertedIndex_gdbm(char *word, char **resultword, long *wordID, void *db);
-long    DB_ReadWordData_gdbm(long wordID, char **worddata, int *lendata, void *db);
+long    DB_ReadWordData_gdbm(long wordID, unsigned char **worddata, int *lendata, void *db);
 int     DB_EndReadWords_gdbm(void *db);
 
 
 int     DB_InitWriteFiles_gdbm(void *db);
 int     DB_EndWriteFiles_gdbm(void *db);
-int     DB_WriteFile_gdbm(int filenum, char *filedata,int sz_filedata, void *db);
+int     DB_WriteFile_gdbm(int filenum, unsigned char *filedata,int sz_filedata, void *db);
 int     DB_InitReadFiles_gdbm(void *db);
-int     DB_ReadFile_gdbm(int filenum, char **filedata,int *sz_filedata, void *db);
+int     DB_ReadFile_gdbm(int filenum, unsigned char **filedata,int *sz_filedata, void *db);
 int     DB_EndReadFiles_gdbm(void *db);
 
 int     DB_InitWriteSortedIndex_gdbm(void *db);
-int     DB_WriteSortedIndex_gdbm(int propID, char *data, int sz_data,void *db);
+int     DB_WriteSortedIndex_gdbm(int propID, unsigned char *data, int sz_data,void *db);
 int     DB_EndWriteSortedIndex_gdbm(void *db);
  
 int     DB_InitReadSortedIndex_gdbm(void *db);
-int     DB_ReadSortedIndex_gdbm(int propID, char **data, int *sz_data,void *db);
+int     DB_ReadSortedIndex_gdbm(int propID, unsigned char **data, int *sz_data,void *db);
 int     DB_EndReadSortedIndex_gdbm(void *db);
 
 

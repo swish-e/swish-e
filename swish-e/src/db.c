@@ -1024,7 +1024,7 @@ int     DB_InitWriteFiles(SWISH *sw, void *DB)
    return sw->Db->DB_InitWriteFiles(DB);
 }
 
-int     DB_WriteFile(SWISH *sw, int filenum, char *filedata,int sz_filedata, void *DB)
+int     DB_WriteFile(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB)
 {
    return sw->Db->DB_WriteFile(filenum, filedata, sz_filedata, DB);
 }
@@ -1040,7 +1040,7 @@ int     DB_InitReadFiles(SWISH *sw, void *DB)
    return sw->Db->DB_InitReadFiles(DB);
 }
 
-int     DB_ReadFile(SWISH *sw, int filenum, char **filedata,int *sz_filedata, void *DB)
+int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB)
 {
    return sw->Db->DB_ReadFile(filenum, filedata,sz_filedata, DB);
 }
@@ -1056,7 +1056,7 @@ int     DB_InitWriteSortedIndex(SWISH *sw, void *DB)
    return sw->Db->DB_InitWriteSortedIndex(DB);
 }
 
-int     DB_WriteSortedIndex(SWISH *sw, int propID, char *data, int sz_data,void *DB)
+int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB)
 {
    return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
 }
@@ -1072,7 +1072,7 @@ int     DB_InitReadSortedIndex(SWISH *sw, void *DB)
    return sw->Db->DB_InitReadSortedIndex(DB);
 }
 
-int     DB_ReadSortedIndex(SWISH *sw, int propID, char **data, int *sz_data,void *DB)
+int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB)
 {
    return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
 }
