@@ -170,6 +170,15 @@ sub create_html_version {
     my $verbose         = $Pod::HtmlPsPdf::RunTime::options{verbose};
     my $ra_ordered_srcs = $config->get_param('pod_files');
 
+    use File::Basename;
+    my @basenames;
+    for ( @{$ra_ordered_srcs} ) {
+        my ($name,$path,$suffix) = fileparse($_,'\.pod', '\.pm', '\.cgi', '\.pl');
+
+        push @basenames, "$name/$path";
+    }
+
+
 
     # strip the .pod extension
     my @basenames = map { s/\.pod$//; $_} @{$ra_ordered_srcs};

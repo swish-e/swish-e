@@ -64,7 +64,6 @@ SWISH::Filter - Perl extension for filtering documents with Swish-e
   use SWISH::Filter;
   my $filter = SWISH::Filter->new;
 
-  
   my $was_filtered = $filter->filter(
         document     => \$scalar_ref,  # path or ref to a doc
         content_type => $content_type, # content type if doc reference
@@ -85,7 +84,7 @@ SWISH::Filter - Perl extension for filtering documents with Swish-e
   # Fetch swish-e parser type (TXT*, XML*, HTML*)
   my $doc_type = $filter->swish_parser_type;
 
-  
+
 
 =head1 DESCRIPTION
 
@@ -104,9 +103,13 @@ MS Word document before passing on to the filter that converts from MS Word to t
 
 =head1 METHODS
 
+=over 4
+
 =item $swish_filter = SWISH::Filter->new()
 
 This creates a SWISH::Filter object.  You may pass in options as a list or a hash reference.
+
+=back
 
 =head2 Options
 
@@ -120,10 +123,6 @@ Pass in a reference to a list of filter names to ignore.  For example, if you ha
 "Pdf2HTML" and "Pdf2XML" and want to avoid using "Pdf2XML":
 
     my $swish_filter = SWISH::Filter->new( ignore_filters => ['Pdf2XML'];
-
-=back
-
-
 
 =cut
 
@@ -367,6 +366,8 @@ use:
         print "Document-Type: $type\n";
     }
 
+=back
+
 =cut
 
 sub swish_parser_type {
@@ -503,7 +504,7 @@ Here's a module to index MS Word documents using the program "catdoc":
 
         # We need a file name to pass to the catdoc program
         my $file = $filter->fetch_filename;
-        
+
 
         # Grab output from running program
         my $content = $filter->run_program( 'catdoc', $file );
@@ -752,7 +753,7 @@ It is optional and thus may not always be set.
     my $name = $filter->name || 'Unknown name';
     warn "File '$name': failed to convert -- file may be corrupt\n";
 
-    
+
 =item $filter->user_data
 
 Fetches the the user_data passed in to the filter.

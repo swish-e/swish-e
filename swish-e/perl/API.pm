@@ -24,7 +24,6 @@ SWISH::API - Perl interface to the Swish-e C Library
 
     use SWISH::API;
 
-    
     my $swish = SWISH::API->new( 'index.swish-e' );
 
     $swish->AbortLastError
@@ -42,7 +41,6 @@ SWISH::API - Perl interface to the Swish-e C Library
     # then in a loop 
     my $results = $search->Execute( $query );
 
-    
     # always check for errors (but aborting is not always necessary)
 
     $swish->AbortLastError
@@ -57,24 +55,23 @@ SWISH::API - Perl interface to the Swish-e C Library
         print "No Results\n";
         return;  /* for example *.
     }
-   
+
     print "Found ", $results->Hits, " hits\n";
 
 
     # Seek to a given page - should check for errors
     $results->SeekResult( ($page-1) * $page_size );
-    
 
     while ( my $results = $results->NextResult ) {
         printf("Path: %s\n  Rank: %lu\n  Size: %lu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %lu\n  File   #: %lu\n\n",
-            $result->ResultPropertyStr   ( "swishdocpath" ),
-            $result->ResultPropertyULong ( "swishrank" ),
-            $result->ResultPropertyULong ( "swishdocsize" ),
-            $result->ResultPropertyStr   ( "swishtitle"),
-            $result->ResultPropertyStr   ( "swishdbfile" ),
-            $result->ResultPropertyStr   ( "swishlastmodified" ),
-            $result->ResultPropertyULong ( "swishreccount" ),
-            $result->ResultPropertyULong ( "swishfilenum" )
+            $result->Property( "swishdocpath" ),
+            $result->Property( "swishrank" ),
+            $result->Property( "swishdocsize" ),
+            $result->Property( "swishtitle"),
+            $result->Property( "swishdbfile" ),
+            $result->Property( "swishlastmodified" ),
+            $result->Property( "swishreccount" ),
+            $result->Property( "swishfilenum" )
         );
     }
 
@@ -138,7 +135,7 @@ This can be used in calls below that require specifying the index file name.
 =item @header_names = $swish->HeaderNames;
 
 Returns a list of possible header names.  These can be used to lookup
-header values.  See L<SwishHeaderValue> method below.
+header values.  See C<SwishHeaderValue> method below.
 
 =item $value = $swish->HeaderValue( $index_file, $header_name );
 

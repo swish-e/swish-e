@@ -175,16 +175,20 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
 {
     int         index_count;
     IndexFILE  *indexf = sw->indexlist;
+
     
     SEARCH_OBJECT *srch = (SEARCH_OBJECT *)emalloc( sizeof(SEARCH_OBJECT) );
     memset( srch, 0, sizeof(SEARCH_OBJECT) );
+
+    reset_lasterror( sw );
+    
 
     srch->sw = sw;  /* parent object */
     srch->PhraseDelimiter = PHRASE_DELIMITER_CHAR;
     srch->structure = IN_FILE;
 
     if ( query )
-        set_query( srch, query );
+        SwishSetQuery( srch, query );
 
 
     index_count = 0;
@@ -243,8 +247,7 @@ void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
     StringList  *slsort = NULL;
     int          i;
 
-    
-    if ( !srch || !sort || *sort )
+    if ( !srch || !sort || !*sort )
         return;
 
     if ( srch->sort_params )
@@ -255,7 +258,7 @@ void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
         return;
 
     for (i = 0; i < slsort->n; i++)
-        addswline( srch->sort_params, slsort->word[i] );
+        srch->sort_params = addswline( srch->sort_params, slsort->word[i] );
 
     freeStringList(slsort);
 
@@ -284,6 +287,7 @@ void Free_Search_Object( SEARCH_OBJECT *srch )
     if ( srch->query )
         efree( srch->query );
 
+
     if ( srch->sort_params )
         freeswline( srch->sort_params );
 
@@ -309,7 +313,7 @@ void Free_Search_Object( SEARCH_OBJECT *srch )
 
 
 
-void set_query(SEARCH_OBJECT *srch, char *words )
+void SwishSetQuery(SEARCH_OBJECT *srch, char *words )
 {
     if ( srch->query )
         efree( srch->query );
@@ -339,6 +343,9 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
     IndexFILE       *indexf;
     DB_RESULTS      *last = NULL;
     int             indexf_count;
+
+    reset_lasterror( srch->sw );
+    
     
     results = (RESULTS_OBJECT *)emalloc( sizeof(RESULTS_OBJECT) );
     memset( results, 0, sizeof(RESULTS_OBJECT) );
@@ -404,6 +411,7 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
     int cur_length = 0;    /* array size */
     struct metaEntry *m;
 
+    reset_lasterror( db_results->indexf->sw );
 
 
     /* If none set then default to rank $$$ maybe can avoid this in the sort code?? */
@@ -423,7 +431,6 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
         return 1;
     }
         
-
 
     while ( sort_word )
     {
@@ -686,7 +693,7 @@ RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words)
 
     /* Allow words to be passed in */
     if ( words )
-        set_query( srch, words );
+        SwishSetQuery( srch, words );
 
 
 
@@ -905,6 +912,9 @@ int     SwishSeekResult(RESULTS_OBJECT *results, int pos)
     int    i;
     RESULT *cur_result = NULL;
 
+    reset_lasterror( results->sw );
+    
+
     if (!results)
         return (results->sw->lasterror = INVALID_RESULTS_HANDLE);
 
@@ -968,6 +978,7 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
     DB_RESULTS *db_results_winner = NULL;
     SWISH   *sw = results->sw;
     
+    reset_lasterror( results->sw );
 
     /* Seems like we should error here if there are no results */
     if ( !results->db_results )

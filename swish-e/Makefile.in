@@ -44,18 +44,14 @@ swish-search: swish-e
 	@echo 'swish-search done'
 
 
-perllib:
-	@echo 'making Perl library for Swish-E'
-	(cd perl;$(PERL) Makefile.PL PREFIX=$(libdir);$(MAKE)) 
-
 test:
 	(cd src; $(MAKE) test)
 
 install:
-	cp src/swish-e $(bindir)/swish-e
+	(cd src; $(MAKE) install)
 
 install-lib:
-	cp src/libswish-e.a $(libdir)/libswish-e.a
+	(cd src; $(MAKE) install-lib)
 
 
 #-- Cleanup tags --

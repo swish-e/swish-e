@@ -68,7 +68,7 @@ SwishHeaderNames(self)
 
 
 void
-SwishHeaderValue(self, index_file, header_name)
+SwishXHeaderValue(self, index_file, header_name)
     SW_HANDLE self
     char * index_file
     char * header_name
@@ -122,6 +122,89 @@ SwishHeaderValue(self, index_file, header_name)
         }
 
 
+# test
+
+void
+SwishHeaderValue(swish_handle, index_file, header_name)
+    SW_HANDLE swish_handle
+    char * index_file
+    char * header_name
+
+    PREINIT:
+        SWISH_HEADER_TYPE  header_type;
+        SWISH_HEADER_VALUE head_value;
+        int i;
+
+    PPCODE:
+        head_value = SwishHeaderValue( swish_handle, index_file, header_name, &header_type );
+
+        PUSHMARK(SP);
+        XPUSHs((SV *)swish_handle);
+        XPUSHs((SV *)&head_value);
+        XPUSHs((SV *)&header_type);
+        PUTBACK;
+        i = call_pv( "SWISH::API::decode_header_value", G_ARRAY );
+        SPAGAIN;
+#        PUTBACK;
+
+
+void decode_header_value( swish_handle, header_value, header_type )
+        SV *swish_handle
+        SV *header_value
+        SV *header_type
+
+
+    PREINIT:        
+        const char **string_list;
+        SWISH_HEADER_VALUE *head_value;
+
+    PPCODE:
+        head_value = (SWISH_HEADER_VALUE *)header_value;
+
+        switch ( *(SWISH_HEADER_TYPE *)header_type )
+        {
+            case SWISH_STRING:
+                if ( head_value->string )
+                    XPUSHs(sv_2mortal(newSVpv( head_value->string,0 )));
+                else
+                    XSRETURN_UNDEF;
+                break;
+
+            case SWISH_NUMBER:
+                XPUSHs(sv_2mortal(newSVuv( head_value->number )));
+                break;
+
+            case SWISH_BOOL:
+                // how about pushing &PL_sv_yes and &PL_sv_no or using boolSV()?
+                XPUSHs(sv_2mortal(newSViv( head_value->boolean ? 1 : 0 )));
+                break;
+
+            case SWISH_LIST:
+                string_list = head_value->string_list;
+
+                if ( !string_list ) /* Don't think this can happen */
+                    XSRETURN_UNDEF;
+
+            
+                while ( *string_list )
+                {
+                    XPUSHs(sv_2mortal(newSVpv( *string_list ,0 )));
+                    string_list++;
+                }
+                break;
+
+            case SWISH_HEADER_ERROR:
+                SwishAbortLastError( (SW_HANDLE)swish_handle );
+                break;
+
+            default:
+                croak(" Unknown header type '%d'\n", header_type );
+        }
+
+
+
+
+
 
 # Error Management
 
@@ -154,7 +237,7 @@ SwishCriticalError(self)
 # Return a search object
 
 SW_SEARCH
-New_Search_Object(swish_handle, query)
+New_Search_Object(swish_handle, query = NULL)
     SW_HANDLE swish_handle
     char *query
 
@@ -166,7 +249,7 @@ New_Search_Object(swish_handle, query)
 # Returns a results object
 
 SW_RESULTS
-SwishQuery( swish_handle, query )
+SwishQuery( swish_handle, query = NULL )
     SW_HANDLE swish_handle
     char *query
 
@@ -235,7 +318,7 @@ SwishSetSort(search, sort_string)
 # Returns a result object 
 
 SW_RESULTS
-SwishExecute( search, query )
+SwishExecute( search, query = NULL )
     SW_SEARCH search
     char *query
 

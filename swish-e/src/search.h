@@ -181,6 +181,7 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query );
 void SwishSetStructure( SEARCH_OBJECT *srch, int structure );
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter );
 void SwishSetSort( SEARCH_OBJECT *srch, char *sort );
+void SwishSetQuery( SEARCH_OBJECT *srch, char *query );
 void Free_Search_Object( SEARCH_OBJECT *srch );
 
 
@@ -194,7 +195,6 @@ void Free_Results_Object( RESULTS_OBJECT *results );
 
 RESULT *SwishNextResult(RESULTS_OBJECT *results);
 int     SwishSeekResult(RESULTS_OBJECT *results, int pos);
-void set_query(SEARCH_OBJECT *srch, char *words );
 int isMetaNameOpNext(struct swline *);
 
 #ifdef __cplusplus

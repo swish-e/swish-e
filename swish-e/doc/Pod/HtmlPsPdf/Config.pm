@@ -19,6 +19,7 @@ sub set_config_file{
 
 } # end of sub set_config_file
 
+
 ########
 sub new{
     my ($class) = shift;
@@ -61,11 +62,20 @@ sub _init{
 
     # setting the filenames to process and checking their existance
     $self->{pod_files}    = $c{ordered_pod_files} || cnf_err('$c{ordered_pod_files}');
+
+    $self->fixup_pm_files;
+
+
+
+    
     $self->{nonpod_files} = $c{non_pod_files}     || cnf_err('$c{non_pod_files}');
     for (@{$self->{pod_files}}, @{$self->{nonpod_files}}) {
 	croak "Can't find @{[$self->{src_root}]}/$_: $!" 
 	    unless -r $self->{src_root}."/$_";
     }
+
+    
+
 
     # set and check that we can read the template files
     my @tmpl_files = qw(index_html index_ps page_html page_ps page_split_html);
@@ -91,6 +101,56 @@ sub _init{
     return $self;
     
 } # end of sub _init
+
+use File::Basename;
+
+# HACK ALERT
+
+sub fixup_pm_files {
+    my $self = shift;
+
+    my @remove_files;
+
+    for ( @{$self->{pod_files}} ) {
+        next unless /\.(pm|cgi|pl)$/;
+        my $orig_file = "$self->{src_root}/$_";
+
+        my ($name,$path,$suffix) = fileparse($_,'\.pm', '\.cgi', '\.pl');
+
+        $_ = "$name.pod";
+
+        my $out_file = "$self->{src_root}/$_";
+
+        open(IN,"<$orig_file")   or die "Can't open $orig_file: $!";
+        open(OUT, ">$out_file" ) or die "Failed to open '$out_file':$!";
+
+        push @remove_files, $out_file;
+
+        my $cut = 1;
+        local $_;
+        while (my $line = <IN>) {
+            $cut = $1 eq 'cut' if $line =~ /^=(\w+)/;
+            next if $cut;
+            print OUT $line
+                or die "Can't print $out_file: $!";
+        }
+        close OUT;
+    }
+
+    $self->{remove_files} = \@remove_files if @remove_files;
+}
+
+sub DESTROY {
+    my $self = shift;
+
+    if ( $self->{remove_files} ) {
+        print "Removing temporary pod files [@{$self->{remove_files}}]\n";
+
+        unlink @{$self->{remove_files}};
+    }
+}
+
+
 
 # user configuration parsing errors reporter
 ############
