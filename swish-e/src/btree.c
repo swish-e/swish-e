@@ -22,7 +22,7 @@
 
 
 /* Round in BTREE_MinPageSize */
-#define BTREE_RoundPageSize(n) (((n) + BTREE_MinPageSize - 1) & (~(BTREE_MinPageSize - 1)))
+#define BTREE_RoundPageSize(n) (sw_off_t)(((sw_off_t)(n) + (sw_off_t)(BTREE_MinPageSize - 1)) & (sw_off_t)(~(BTREE_MinPageSize - 1)))
 
 #define BTREE_PageHeaderSize (6 * SizeInt32) 
 
@@ -59,8 +59,8 @@ int BTREE_WritePageToDisk(FILE *fp, BTREE_Page *pg)
     BTREE_SetNumKeys(pg,pg->n);
     BTREE_SetFlags(pg,pg->flags);
     BTREE_SetDataEnd(pg,pg->data_end);
-    fseek(fp,pg->page_number * BTREE_MinPageSize,SEEK_SET);
-    return fwrite(pg->data,pg->size,1,fp);
+    sw_fseek(fp,(sw_off_t)((sw_off_t)pg->page_number * (sw_off_t)BTREE_MinPageSize),SEEK_SET);
+    return sw_fwrite(pg->data,pg->size,1,fp);
 }
 
 int BTREE_WritePage(BTREE *b, BTREE_Page *pg)
@@ -143,8 +143,8 @@ BTREE_Page *BTREE_ReadPageFromDisk(FILE *fp, unsigned long page_number)
 {
 BTREE_Page *pg = (BTREE_Page *)emalloc(sizeof(BTREE_Page) + BTREE_MinPageSize);
 
-    fseek(fp,page_number * BTREE_MinPageSize,SEEK_SET);
-    fread(pg->data,BTREE_MinPageSize, 1, fp);
+    sw_fseek(fp,(sw_off_t)((sw_off_t)page_number * (sw_off_t)BTREE_MinPageSize),SEEK_SET);
+    sw_fread(pg->data,BTREE_MinPageSize, 1, fp);
 
     BTREE_GetNextPage(pg,pg->next);
     BTREE_GetPrevPage(pg,pg->prev);
@@ -185,7 +185,7 @@ BTREE_Page *tmp;
 BTREE_Page *BTREE_NewPage(BTREE *b, unsigned int size, unsigned int flags)
 {
 BTREE_Page *pg;
-long offset;
+sw_off_t offset;
 FILE *fp = b->fp;
 int hash;
     /* Round up size */
@@ -195,16 +195,16 @@ int hash;
         return NULL;
 
     /* Get file pointer */
-    if(fseek(fp,0,SEEK_END) !=0)
+    if(sw_fseek(fp,0,SEEK_END) !=0)
     {
         printf("mal\n");
     }
-    offset = ftell(fp);
+    offset = sw_ftell(fp);
     /* Round up file pointer */
     offset = BTREE_RoundPageSize(offset);
 
     /* Set new file pointer - data will be aligned */
-    if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
+    if(sw_fseek(fp,offset, SEEK_SET)!=0 || offset != sw_ftell(fp))
     {
         printf("mal\n");
     }
@@ -212,7 +212,7 @@ int hash;
     pg = (BTREE_Page *)emalloc(sizeof(BTREE_Page) + size);
     memset(pg,0,sizeof(BTREE_Page) + size);
     /* Reserve space in file */
-    if(fwrite(pg->data,1,size,fp)!=size || ((long)size + offset) != ftell(fp))
+    if(sw_fwrite(pg->data,1,size,fp)!=size || ((sw_off_t)size + offset) != sw_ftell(fp))
     {
         printf("mal\n");
     }
@@ -224,7 +224,7 @@ int hash;
     pg->data_end = BTREE_PageHeaderSize;
     pg->n = 0;
 
-    pg->page_number = offset/BTREE_MinPageSize;
+    pg->page_number = (unsigned long)((sw_off_t)offset/(sw_off_t)BTREE_MinPageSize);
 
     /* add to cache */
     pg->modified = 1;
@@ -892,10 +892,10 @@ int found_len;
 
     goto test2;
 
-    fp = fopen("kkkkk",F_WRITE_BINARY);
-    fwrite("asjhd",1,5,fp);
-    fclose(fp);
-    fp = fopen("kkkkk",F_READWRITE_BINARY);
+    fp = sw_fopen("kkkkk",F_WRITE_BINARY);
+    sw_fwrite("asjhd",1,5,fp);
+    sw_fclose(fp);
+    fp = sw_fopen("kkkkk",F_READWRITE_BINARY);
 
 printf("\n\nIndexing\n\n");
 
@@ -919,12 +919,12 @@ printf("\n\nIndexing\n\n");
     }
 
     root_page = BTREE_Close(bt);
-    fclose(fp);
+    sw_fclose(fp);
 
 search:;
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",F_READ_BINARY);
+    fp = sw_fopen("kkkkk",F_READ_BINARY);
     bt = BTREE_Open(fp,15,root_page);
 
     for(i=0;i<N_TEST;i++)
@@ -938,16 +938,16 @@ printf("\n\nSearching\n\n");
             printf("%d             \r",i);
     }
 
-    fclose(fp);
+    sw_fclose(fp);
 
 test2:;
 
 
-    fp = fopen("kkkkk",F_WRITE_BINARY);
-    fclose(fp);
-    fp = fopen("kkkkk",F_READWRITE_BINARY);
+    fp = sw_fopen("kkkkk",F_WRITE_BINARY);
+    sw_fclose(fp);
+    fp = sw_fopen("kkkkk",F_READWRITE_BINARY);
 
-    fwrite("aaa",1,3,fp);
+    sw_fwrite("aaa",1,3,fp);
 
 printf("\n\nIndexing\n\n");
 
@@ -969,11 +969,11 @@ printf("\n\nIndexing\n\n");
     }
 
     root_page = BTREE_Close(bt);
-    fclose(fp);
+    sw_fclose(fp);
 
 printf("\n\nSearching\n\n");
 
-    fp = fopen("kkkkk",F_READ_BINARY);
+    fp = sw_fopen("kkkkk",F_READ_BINARY);
     bt = BTREE_Open(fp,15,root_page);
 
     for(i=0;i<N_TEST;i++)
@@ -986,7 +986,7 @@ printf("\n\nSearching\n\n");
     }
 
 
-    fclose(fp);
+    sw_fclose(fp);
 }
 
 #endif

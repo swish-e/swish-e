@@ -11,11 +11,11 @@
 **           Creates a db hash file in file fp
 **           Returns a pointer to hash db file
 **
-**       FHASH *FHASH_Open(FILE *fp, unsigned long start);
+**       FHASH *FHASH_Open(FILE *fp, sw_off_t start);
 **           Opens an existing hash db file in file fp, starting at offset
 **               start.
 **           Returns a pointer to hash db file
-**       unsigned long FHASH_Close(FHASH *f);
+**       sw_off_t FHASH_Close(FHASH *f);
 **           Closes and writes the hash table to the file
 **           Returns the pointer to the db hash file inside the file
 **
@@ -53,27 +53,27 @@ FHASH *FHASH_Create(FILE *fp)
 {
 FHASH *f;
 unsigned int i;
-unsigned long tmp = 0;
+sw_off_t tmp = (sw_off_t)0;
 
     f = (FHASH *) emalloc(sizeof(FHASH));
 
     /* Init hash table */
     for(i = 0; i < FHASH_SIZE; i++)
-       f->hash_offsets[i] = 0;
+       f->hash_offsets[i] = (sw_off_t)0;
 
     /* Go to the end of the file */
-    if(fseek(fp,0,SEEK_END) !=0)
+    if(sw_fseek(fp,(sw_off_t)0,SEEK_END) !=0)
         progerrno("Failed to seek to eof: ");
 
     /* Get pointer to hash table */
-    f->start = ftell(fp);
+    f->start = sw_ftell(fp);
 
     /* Pack tmp */
-    tmp = PACKLONG(tmp);
+    tmp = PACKOFFSET(tmp);
 
     /* Write an empty hash table - Preserve space on disk */
     for(i = 0; i < FHASH_SIZE; i++)
-        fwrite((unsigned char *)&tmp,sizeof(long),1,fp);
+        sw_fwrite((unsigned char *)&tmp,sizeof(tmp),1,fp);
 
     f->fp = fp;
 
@@ -81,42 +81,42 @@ unsigned long tmp = 0;
 }
 
 
-FHASH *FHASH_Open(FILE *fp, unsigned long start)
+FHASH *FHASH_Open(FILE *fp, sw_off_t start)
 {
 FHASH *f;
 unsigned int i;
-unsigned long tmp;
+sw_off_t tmp;
 
     f = (FHASH *) emalloc(sizeof(FHASH));
     f->start = start;
     f->fp = fp;
 
     /* put file pointer at start of hash table */
-    fseek(fp,start,SEEK_SET);
+    sw_fseek(fp,start,SEEK_SET);
 
     /* Read hash table */
     for(i = 0; i < FHASH_SIZE ; i++)
     {
-        fread((unsigned char *)&tmp,sizeof(unsigned long), 1, fp);
-        f->hash_offsets[i] = UNPACKLONG(tmp);
+        sw_fread((unsigned char *)&tmp,sizeof(tmp), 1, fp);
+        f->hash_offsets[i] = UNPACKOFFSET(tmp);
     }
     return f;
 }
 
-unsigned long FHASH_Close(FHASH *f)
+sw_off_t FHASH_Close(FHASH *f)
 {
-unsigned long start = f->start;
-unsigned long tmp;
+sw_off_t start = f->start;
+sw_off_t tmp;
 FILE *fp = f->fp;
 int i;
     /* put file pointer at start of hash table */
-    fseek(fp,start,SEEK_SET);
+    sw_fseek(fp,start,SEEK_SET);
 
     /* Read hash table */
     for(i = 0; i < FHASH_SIZE ; i++)
     {
-        tmp = PACKLONG(f->hash_offsets[i]);
-        fwrite((unsigned char *)&tmp,sizeof(unsigned long), 1, fp);
+        tmp = PACKOFFSET(f->hash_offsets[i]);
+        sw_fwrite((unsigned char *)&tmp,sizeof(tmp), 1, fp);
     }
 
     /* release memory */
@@ -154,20 +154,20 @@ unsigned int FHASH_hash(unsigned char *s, int len)
 int FHASH_Insert(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
 {
 unsigned int hashval = FHASH_hash(key,key_len);
-unsigned long new,next;
+sw_off_t new,next;
 FILE *fp = f->fp;
 
-    fseek(fp,0,SEEK_END);
-    new = ftell(fp);
+    sw_fseek(fp,(sw_off_t)0,SEEK_END);
+    new = sw_ftell(fp);
 
     next = f->hash_offsets[hashval];
-    next = PACKLONG(next);
+    next = PACKOFFSET(next);
 
-    fwrite((unsigned char *)&next,sizeof(unsigned long), 1, fp);
+    sw_fwrite((unsigned char *)&next,sizeof(next), 1, fp);
     compress1(key_len,fp,fputc);
-    fwrite((unsigned char *)key, key_len, 1, fp);
+    sw_fwrite((unsigned char *)key, key_len, 1, fp);
     compress1(data_len,fp,fputc);
-    fwrite((unsigned char *)data, data_len, 1, fp);
+    sw_fwrite((unsigned char *)data, data_len, 1, fp);
     f->hash_offsets[hashval] = new;
     return 0;
 }
@@ -175,29 +175,29 @@ FILE *fp = f->fp;
 int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
 {
 unsigned int hashval = FHASH_hash(key,key_len);
-unsigned long next = f->hash_offsets[hashval];
+sw_off_t next = f->hash_offsets[hashval];
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
 int read_key_len, read_data_len;
-unsigned long tmp;
+sw_off_t tmp;
     while(next)
     {
-        fseek(fp,next,SEEK_SET);
-        fread((unsigned char *)&tmp,sizeof(unsigned long),1,fp);
-        next = UNPACKLONG(tmp);
+        sw_fseek(fp,next,SEEK_SET);
+        sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
+        next = UNPACKOFFSET(tmp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
         else
             read_key = stack_buffer;
         
-        fread((unsigned char *)read_key,read_key_len,1,fp);
+        sw_fread((unsigned char *)read_key,read_key_len,1,fp);
         if(FHASH_CompareKeys(read_key, read_key_len, key, key_len) == 0)
         {
             read_data_len = uncompress1(fp,fgetc);
             if(read_data_len > data_len)
                  read_data_len = data_len;
-            fread((unsigned char *)data,read_data_len,1,fp);
+            sw_fread((unsigned char *)data,read_data_len,1,fp);
 
             if(read_key != stack_buffer)
                 efree(read_key);
@@ -213,29 +213,29 @@ unsigned long tmp;
 int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
 {
 unsigned int hashval = FHASH_hash(key,key_len);
-unsigned long next = f->hash_offsets[hashval];
+sw_off_t next = f->hash_offsets[hashval];
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
 int read_key_len, read_data_len;
-unsigned long tmp;
+sw_off_t tmp;
     while(next)
     {
-        fseek(fp,next,SEEK_END);
-        fread((unsigned char *)&tmp,sizeof(unsigned long),1,fp);
-        next = UNPACKLONG(tmp);
+        sw_fseek(fp,next,SEEK_END);
+        sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
+        next = UNPACKOFFSET(tmp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
         else
             read_key = stack_buffer;
 
-        fread((unsigned char *)read_key,read_key_len,1,fp);
+        sw_fread((unsigned char *)read_key,read_key_len,1,fp);
         if(FHASH_CompareKeys(read_key, read_key_len, key, key_len) == 0)
         {
             read_data_len = uncompress1(fp,fgetc);
             if(read_data_len > data_len)
                  read_data_len = data_len;
-            fwrite((unsigned char *)data,read_data_len,1,fp);
+            sw_fwrite((unsigned char *)data,read_data_len,1,fp);
 
             if(read_key != stack_buffer)
                 efree(read_key);
@@ -250,32 +250,32 @@ unsigned long tmp;
 int FHASH_Delete(FHASH *f, unsigned char *key, int key_len)
 {
 unsigned int hashval = FHASH_hash(key,key_len);
-unsigned long next = f->hash_offsets[hashval];
-unsigned long prev = 0;
+sw_off_t next = f->hash_offsets[hashval];
+sw_off_t prev = 0;
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
 int read_key_len;
-unsigned long tmp;
+sw_off_t tmp;
     while(next)
     {
-        fseek(fp,next,SEEK_END);
-        fread((unsigned char *)&tmp,sizeof(unsigned long),1,fp);
+        sw_fseek(fp,next,SEEK_END);
+        sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
         else
             read_key = stack_buffer;
 
-        fread((unsigned char *)read_key,read_key_len,1,fp);
+        sw_fread((unsigned char *)read_key,read_key_len,1,fp);
         if(FHASH_CompareKeys(read_key, read_key_len, key, key_len) == 0)
         {
-            next = UNPACKLONG(tmp);
+            next = UNPACKOFFSET(tmp);
             if(!prev)
                 f->hash_offsets[hashval] = next;
             else
             {
-                fseek(fp,prev,SEEK_SET);
-                fwrite((unsigned char *)&tmp,sizeof(long),1,fp);
+                sw_fseek(fp,prev,SEEK_SET);
+                sw_fwrite((unsigned char *)&tmp,sizeof(tmp),1,fp);
             }
             if(read_key != stack_buffer)
                 efree(read_key);
@@ -285,7 +285,7 @@ unsigned long tmp;
             efree(read_key);
 
         prev =next;
-        next = UNPACKLONG(tmp);
+        next = UNPACKOFFSET(tmp);
     }
     return 1;
 }
