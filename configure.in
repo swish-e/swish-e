@@ -55,7 +55,7 @@ dnl so why bother?
 dnl AC_HEADER_STDC
 
 dnl Check for some headers
-AC_CHECK_HEADERS(unistd.h stdlib.h sys/timeb.h)
+AC_CHECK_HEADERS(unistd.h stdlib.h string.h sys/timeb.h windows.h)
 
 AC_HEADER_SYS_WAIT
 
