@@ -53,6 +53,7 @@ $Id$
 */
 #include "result_sort.h"
 #include "db.h"
+#include "extprog.h"
 
 
 /* Reads the configuration file and puts all the right options
@@ -562,15 +563,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             else
                 progerr("%s: requires size parameter in bytes", w0);
         }
-        else if (strcasecmp(w0, "SwishProgParameters") == 0)
-        {
-            if (sl->n > 1)
-            {
-                grabCmdOptions(sl, 1, &sw->progparameterslist);
-            }
-            else
-                progerr("%s: requires at least one value", w0);
-        }
+
         else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
@@ -581,6 +574,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_DB(sw, sl)); /* jmruiz */
         else if (configModule_Search(sw, sl)); /* jmruiz */
         else if (configModule_Index(sw, sl)); /* jmruiz */
+        else if (configModule_Prog(sw, sl));
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);

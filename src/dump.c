@@ -78,154 +78,165 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     for(i = 0; i < indexf->header.totalfiles; i++)
         indexf->filearray[i] = NULL;
 
-    resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_HEADER) )
+        resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
 
     fieldnum = 0;
 
-    printf("\n-----> WORD INFO <-----\n");
-
-    DB_InitReadWords(sw, indexf->DB);
-
-    for(j=0;j<256;j++)
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL)  )
     {
-        word[0] = (unsigned char) j; word[1] = '\0';
-        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+        printf("\n-----> WORD INFO <-----\n");
 
-        while(wordID)
+        DB_InitReadWords(sw, indexf->DB);
+
+        for(j=0;j<256;j++)
         {
-            printf("%s:",resultword);
+            word[0] = (unsigned char) j; word[1] = '\0';
+            DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-                /* Read Word's data */
-            DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
-
-                /* parse and print word's data */
-            s = worddata;
-
-            x = uncompress2(&s);     /* tfrequency */
-            x = uncompress2(&s);     /* metaname */
-            metaname = x;
-            if (metaname)
+            while(wordID)
             {
-                nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
-                x = uncompress2(&s); /* First file */
-            }
-            while (x)
-            {
-                filenum = x;
-                index_structfreq = uncompress2(&s);
-                frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
-                index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
-                structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
+                printf("%s:",resultword);
 
-                // if (sw->verbose >= 4)
-                if (DEBUG_MASK & DEBUG_INDEX_FULL)
+                    /* Read Word's data */
+                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
+
+                    /* parse and print word's data */
+                s = worddata;
+
+                x = uncompress2(&s);     /* tfrequency */
+                x = uncompress2(&s);     /* metaname */
+                metaname = x;
+                if (metaname)
                 {
-                    struct file *fileInfo;
-
-                    printf(" Meta:%d", metaname);
-                    fileInfo = readFileEntry(sw, indexf, filenum);
-                    printf(" %s", fileInfo->fi.filename);
-                    printf(" Strct:%x", structure);
-                    printf(" Freq:%d", frequency);
-                    printf(" Pos:");
+                    nextposmetaname = UNPACKLONG2(s); s += sizeof(long);
+                    x = uncompress2(&s); /* First file */
                 }
-                else
+                while (x)
                 {
-                    printf(" %d", metaname);
-                    printf(" %d", filenum);
-                    printf(" %d", structure);
-                    printf(" %d", frequency);
-                }
-                for (i = 0; i < frequency; i++)
-                {
-                    x = uncompress2(&s);
+                    filenum = x;
+                    index_structfreq = uncompress2(&s);
+                    frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
+                    index_structure = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[1];
+                    structure = indexf->header.structurelookup->all_entries[index_structure - 1]->val[0];
 
-                    if (DEBUG_MASK & DEBUG_INDEX_FULL)
-                    //if (sw->verbose >= 4)
+                    // if (sw->verbose >= 4)
+                    if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
-                        if (i)
-                            printf(",%d", x);
-                        else
-                            printf("%d", x);
+                        struct file *fileInfo;
+
+                        printf(" Meta:%d", metaname);
+                        fileInfo = readFileEntry(sw, indexf, filenum);
+                        printf(" %s", fileInfo->fi.filename);
+                        printf(" Strct:%x", structure);
+                        printf(" Freq:%d", frequency);
+                        printf(" Pos:");
                     }
                     else
-                        printf(" %d", x);
-                }
-                if ((unsigned long)(s - worddata) == nextposmetaname)
-                {
-                    x = uncompress2(&s);
-                    metaname = x;
-                    if (metaname)
                     {
-                        nextposmetaname = UNPACKLONG2(s); 
-                        s += sizeof(long);
+                        printf(" %d", metaname);
+                        printf(" %d", filenum);
+                        printf(" %d", structure);
+                        printf(" %d", frequency);
+                    }
+                    for (i = 0; i < frequency; i++)
+                    {
                         x = uncompress2(&s);
+
+                        if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS_FULL))
+                        //if (sw->verbose >= 4)
+                        {
+                            if (i)
+                                printf(",%d", x);
+                            else
+                                printf("%d", x);
+                        }
+                        else
+                            printf(" %d", x);
+                    }
+                    if ((unsigned long)(s - worddata) == nextposmetaname)
+                    {
+                        x = uncompress2(&s);
+                        metaname = x;
+                        if (metaname)
+                        {
+                            nextposmetaname = UNPACKLONG2(s); 
+                            s += sizeof(long);
+                            x = uncompress2(&s);
+                        }
+                        else
+                            nextposmetaname = 0L;
                     }
                     else
-                        nextposmetaname = 0L;
+                        x = uncompress2(&s);
                 }
-                else
-                    x = uncompress2(&s);
-            }
-            putchar((int) '\n');
+                putchar((int) '\n');
 
-            efree(worddata);
-            efree(resultword);
-            DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+                efree(worddata);
+                efree(resultword);
+                DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+            }
         }
+        DB_EndReadWords(sw, indexf->DB);
     }
-    DB_EndReadWords(sw, indexf->DB);
+
+
 
     /* Decode Stop Words: All them are in just one line */
-    printf("\n\n-----> STOP WORDS <-----\n");
-    for(i=0;i<indexf->header.stopPos;i++)
-        printf("%s ",indexf->header.stopList[i]);
-    putchar((int) '\n');
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_STOPWORDS)  )
+    {
+        printf("\n\n-----> STOP WORDS <-----\n");
+        for(i=0;i<indexf->header.stopPos;i++)
+            printf("%s ",indexf->header.stopList[i]);
+        putchar((int) '\n');
+    }
+
+
 
     /* Decode File Info */
-    printf("\n\n-----> FILES <-----\n");
-    fflush(stdout);
-    for (i = 0; i < indexf->header.totalfiles; i++)
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
     {
-        fi = readFileEntry(sw, indexf, i + 1);
-
-        strftime(ISOTime, sizeof(ISOTime), "%Y/%m/%d %H:%M:%S", (struct tm *) localtime((time_t *) & fi->fi.mtime));
-
+        printf("\n\n-----> FILES <-----\n");
         fflush(stdout);
-        if (fi->fi.summary)
+        for (i = 0; i < indexf->header.totalfiles; i++)
         {
-            printf("%s \"%s\" \"%s\" \"%s\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
-            fflush(stdout);     /* filename */
+            fi = readFileEntry(sw, indexf, i + 1);
+
+            strftime(ISOTime, sizeof(ISOTime), "%Y/%m/%d %H:%M:%S", (struct tm *) localtime((time_t *) & fi->fi.mtime));
+
+            fflush(stdout);
+            if (fi->fi.summary)
+            {
+                printf("%s \"%s\" \"%s\" \"%s\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
+                fflush(stdout);     /* filename */
+            }
+            else
+            {
+                printf("%s \"%s\" \"%s\" \"\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
+                fflush(stdout);     /* filename */
+            }
+            for (docProperties = fi->docProperties; docProperties; docProperties = docProperties->next)
+            {
+                printf(" PROP_%d: \"%s\"", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
+            }
+            putchar((int) '\n');
+            fflush(stdout);
+            freefileinfo(fi);
         }
-        else
+        printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
+        fflush(stdout);
+    }
+
+    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_METANAMES)  )
+    {
+        printf("\n\n-----> METANAMES <-----\n");
+        for(i = 0; i < indexf->header.metaCounter; i++)
         {
-            printf("%s \"%s\" \"%s\" \"\" %d %d", fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
-            fflush(stdout);     /* filename */
-        }
-        for (docProperties = fi->docProperties; docProperties; docProperties = docProperties->next)
-        {
-            printf(" PROP_%d: \"%s\"", docProperties->metaID, getDocPropAsString(indexf, fi, docProperties->metaID));
+            printf("%s\"%d\"%d ",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
         }
         putchar((int) '\n');
-        fflush(stdout);
-        freefileinfo(fi);
     }
-    printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
-    fflush(stdout);
-
-    printf("\n\n-----> METANAMES <-----\n");
-    for(i = 0; i < indexf->header.metaCounter; i++)
-    {
-        printf("%s\"%d\"%d ",indexf->header.metaEntryArray[i]->metaName,indexf->header.metaEntryArray[i]->metaID,indexf->header.metaEntryArray[i]->metaType);
-    }
-    putchar((int) '\n');
 
     DB_Close(sw, indexf->DB);
-
-    // if (sw->verbose != 4)
-    //     printf("\nUse -v 4 for a more complete info\n");
-
-    if ( ! (DEBUG_MASK & DEBUG_INDEX_FULL) )
-        printf("\nUse '-T INDEX_FULL' for more complete info\n");
 
 }

@@ -630,6 +630,7 @@ typedef struct
     struct MOD_FS            *FS;             /* FileSystem Index module data */
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
     struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
+    struct MOD_Prog          *Prog;           /* For extprog.c */
 
 
     /* 08/00 Jose Ruiz Values for document type support */
@@ -684,9 +685,6 @@ typedef struct
     /* MetaName indexing options */
     int     ReqMetaName;
     int     OkNoMeta;
-
-    /* prog system specific configuration parameters */
-    struct swline *progparameterslist;
 
 }
 SWISH;
@@ -780,9 +778,22 @@ int     SwishSeek(SWISH * sw, int pos);
 int     getnumPropertiesToDisplay(SWISH *);
 
 
+/* These are only checked in dump.c */
+#define DEBUG_INDEX_HEADER 1<<0
+#define DEBUG_INDEX_WORDS 1<<1
+#define DEBUG_INDEX_WORDS_FULL 1<<2
+#define DEBUG_INDEX_STOPWORDS 1<<3
+#define DEBUG_INDEX_FILES 1<<4
+#define DEBUG_INDEX_METANAMES 1<<5
+#define DEBUG_INDEX_ALL 1<<6
 
-#define DEBUG_INDEX 1<<0
-#define DEBUG_INDEX_FULL 1<<2
-#define DEBUG_WORDS 1<<3
-#define DEBUG_PARSED_WORDS 1<<4
+/* These are only checked while indexing */
+#define DEBUG_WORDS 1<<0
+#define DEBUG_PARSED_WORDS 1<<1
+
+/* These are only checked while searching */
+
+/* These are are checked everywhere (can't share bits) */
+
+
 extern unsigned int DEBUG_MASK;
