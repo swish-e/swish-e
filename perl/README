@@ -1,0 +1,40 @@
+SWISH::API - Perl interface to the Swish-e C search library
+
+$Id$
+
+DESCRIPTION
+
+SWISH::API is an Object Oriented interface to the swish-e C library.
+This can be used to embed the swish-e search code into your perl program
+avoiding the need to run the swish-e binary for searching.
+
+The real difference is that search speed is improved since you may
+attach to a swish-e index once and then run many queries on that open
+"swish handle".  This speed comes at a cost of memory added to your program.
+
+
+INSTALLATION
+
+1) Download, build and install swish-e
+
+    See http://swish-e.org for instructions.
+
+    Swish is also available as a binary package from some
+    operating system distributions (e.g. Debian).
+
+2) Build the module in the normal way
+
+    perl Makefile.PL
+    make
+    make test
+
+
+PROBLEMS
+
+    If you have problems or need help please contact the swish-e
+    discussion list.  The list is low traffic and is the place
+    to get help with this module or swish-e in general.
+    
+    
+
+
