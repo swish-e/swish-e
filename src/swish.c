@@ -608,7 +608,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
         if (c == 'p')
         {
             if ( !is_another_param( argv ) )
-                progerr(" '-s' requires list of properties.");
+                progerr(" '-p' requires list of properties.");
                 
             while ( (w = next_param( &argv )) )
                 addSearchResultDisplayProperty(sw, w);
