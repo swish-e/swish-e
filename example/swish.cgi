@@ -33,28 +33,35 @@ This is an example CGI script for searching with the SWISH-E search engine.  It 
 much, but shows you how to use SWISH-E to search an index, displaying a few results at a time, and
 to sort your results by different Properties.
 
+This script is not meant to be a complete solution to your searching needs.  Rather, an example of a
+working script that can be easily modified to meet your needs.
+
 This program uses a number of modules to make work easy: the standard CGI module to handle form data,
 the SWISH (and SWISH::Fork) module to run swish, HTML::Template and HTML::FillInForm to keep the
-perl code separated from the presentation code.  Sys::Signal is required by the SWISH::Fork module.
+perl code separated from the presentation code.  
 
-Time::HiRes is not needed for this module, but is somewhat interesting for looking at the time required to fork
-perl and exec swish-e.  Running a script in a persistent environment (such as under mod_perl) will improve
+Time::HiRes is not needed for this module.  But, it is somewhat interesting for looking at the time required to fork
+perl, exec swish-e, and read all results, compared to just the time to run the query.
+Running a script in a persistent environment (such as under mod_perl) will improve
 the response time seen by your web clients and reduce load on your server.
 
 Time::HiRes may not install on all systems, and if yours
-falls into this category then you will need to comment out a few lines in the module -- it should be obvious by
+falls into this category then you must comment out a few lines in this script -- it should be obvious by
 looking at the code.
 
+Sys::Signal is required by the SWISH::Fork module to properly handle timeouts.
+
 Many people shy away from installing extra modules
-for fear of bloating their code or making their CGI scripts run slowly.  This is misguided.
+for fear of bloating their code or making their CGI scripts run slowly.
+This is misguided.
+Code reuse, especially tested and peer reviewed code, and modular design are good things.
 
 There are a number of other modules that should be considered when designing your CGI scripts, in general.
 POE is interesting and is well suited for this type of application.
 Template::Toolkit is also highly recommended, and CGI::Application may make your scripts easier to
 design and maintain.  If you must return all results with each swish query, you may wish to look at File::Cache
 to cache your search results to disk.
-Check them out.
-
+Check them all out.
 
 To run this code you must:
 
@@ -70,8 +77,9 @@ Create a SWISH-E index file
 
 =item *
 
-Adjust the parameters in this program to point to your index file and to define
-any properties defined in your index that you wish to return with your search results.
+Adjust the parameters in this program to point to your index file and list
+any properties you wish to sort on and display, and list metanames for limiting
+your search to parts of your document.
 
 =item *
 
@@ -83,14 +91,16 @@ Please see http://sunsite.berkeley.edu/SWISH-E for more information about SWIHS-
 
 =head1 INSTALLATION
 
-You will need to install the required modules.  If you have CPAN.pm setup on your computer then
+Install the required modules:  If you have CPAN.pm setup on your computer then
 installation will be straight forward and not require much effort.  If you don't know what this is
-then it may be just as easy to install the modules manually.  If installing modules sound difficult
+then it may be just as easy to install the modules manually.  If installing modules sounds difficult
 then you just need a few tips to get started.
 
-Assuming you don't have CPAN.pm setup on your machine, you will need to download and install the
+Assuming you don't have CPAN.pm setup on your machine, download and install the
 modules manually.  Any decent perl installation will have the LWP bundle installed.  This bundle will include a
-program called C<lwp-download>.  See http://search.cpan.org to locate the modules.
+program called C<lwp-download>.  The C<wget> program is another option for downloading from CPAN.
+
+See http://search.cpan.org to locate the modules.
 
 The download and installation cycle for modules goes something like this:
 
@@ -107,11 +117,11 @@ The download and installation cycle for modules goes something like this:
    % cd ..
 
 Use the PREFIX if you do not have root access or you want to install the modules
-in a local library.  You will need to add a C<use lib> statement to the program
+in a local library.  Add a C<use lib> statement to the program
 if you use a PREFIX to install the modules in a non-standard location.
 
-You will need to repeat the above for all the required modules.  If you install a module yet trying to run
-the program says that the module cannot be found in @INC, then carefully check the directories specified
+Repeat the above for all the required modules.  If you install a module but trying to run
+the program returns an error says that the module cannot be found in @INC, then carefully check the directories specified
 in your C<use lib> statement.
 
 Next, copy the swish.cgi script to your cgi-bin directory where .cgi scripts are automatically
@@ -124,7 +134,8 @@ The HTML::Template files should be easy to understand (if not then: perldoc HTML
 and should be easy enough to customize to your look.  You may need to fixup the link to the
 documents returned by swish (or use swish's ReplaceRules configuration directive during indexing).
 
-Don't forget to check the web server's error log for details if you have any problems.
+Don't forget to check the web server's error log for details if you have any problems.  In general, debug
+CGI scripts from the command line instead of via the web server.
 
 =head1 MOD_PERL
 
@@ -134,7 +145,8 @@ convert it to a normal mod_perl response handler.
 If running under mod_perl then you may wish to cache the template.  See the HTML::Template FAQ for
 more information.
 
-To set this script up as an Apache::Registry script:
+To set this script up as an Apache::Registry script use something similar to
+the following (perhaps inside a <Directory> block):
 
     <files swish.cgi>
         SetHandler perl-script
@@ -145,10 +157,20 @@ In general, it's a good idea to pre-load modules by using C<PerlModule> statemen
 by C<use>ing the module in a startup.pl script.
 
 
-
 =head1 DISCLAIMER
 
 Please use at your own risk, of course.
+
+This script has been tested and uses without problems, but you should still be aware that
+any code running on your server represents a risk.  If you have any concerns please carefully
+review the code.
+
+=head1 SUPPORT
+
+The SWISH-E discussion list is the place to ask for any help regarding SWISH-E.
+http://sunsite.berkeley.edu/SWISH-E/
+
+Please do not contact the author directly.  
 
 =head1 LICENSE
 
@@ -185,6 +207,10 @@ use Time::HiRes qw(gettimeofday tv_interval);
 #------------ Configuration ----------------------
 
     # Set these to as needed for your system and your index file
+
+    # You might want to read these in from a file (based on
+    # the script name or extra path info), or use PerlSetVars
+    # under mod_perl to pass in the parameters.
 
     use vars qw/
         $Swish_Binary $Swish_Index $Tmpl_Path @PropertyNames
@@ -257,6 +283,8 @@ sub run_query {
             ? { MESSAGE => 'Please enter a query string' }
             : {};
     }
+
+    $q->param('query', $query );  # clean up the query, if needed.
 
     # prepend metaname to search, if set.
     $query = $q->param('metaname') . "=($query)" if $q->param('metaname');
@@ -349,13 +377,21 @@ sub run_query {
         QUERY   => $q->escapeHTML( $query ),
     } unless $hits;
 
+    # Build href for repeated search
+
+    my $href = $q->script_name . '?' .
+        join( '&amp;',
+            map { "$_=" . $q->escape( $q->param($_) ) }
+                grep { $q->param($_) }  qw/query metaname sort reverse/
+        );
+
 
     # Return the template fields
 
     my $result = {
         FILES       => \@results,
         QUERY       => $q->escapeHTML( $query ),
-        QUERY_HREF  => $q->escape( $query ),
+        QUERY_HREF  => $href,
         TOTAL_TIME  => $elapsed,
         MY_URL      => $q->script_name,
         SHOWING     => $hits,
@@ -468,11 +504,10 @@ sub set_page {
         $results->{PAGES} =
             join ' ', map {
                 my $page_start = $_ * $Page_Size;
-                my $url = $q->script_name;
                 my $page = $_ + 1;
                 $page_start == $start
                 ? $page
-                : qq[<a href="$url?query=$results->{QUERY_HREF};start=$page_start">$page</a>];
+                : qq[<a href="$results->{QUERY_HREF}&amp;start=$page_start">$page</a>];
                         } @pages;
     }
 
