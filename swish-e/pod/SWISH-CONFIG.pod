@@ -247,6 +247,10 @@ L<UseStemming|/"item_UseStemming"> [yes|no]
 
 =item *
 
+L<UseSoundex|/"item_UseSoundex"> [yes|no]
+
+=item *
+
 L<WordCharacters|/"item_WordCharacters"> *string of characters*
 
 =back
@@ -642,6 +646,26 @@ yet searching for "runn*" looks for words that start with "runn".
 It's a good idea to create both a stemmed and non-stemmed index and allow your search interface select which index
 to use.
 
+=item UseSoundex [yes|no]
+
+When UseSoundex is set to C<yes> every word is converted to a Soundex code before placing it in to the index.
+
+Soundex was developed in the 1880s so records for people with similar sounding names could be
+found more readily.  Soundex is a coded surname based on the way a surname sounds rather than spelling.
+Surnames that sound similar, like Smith and Smyth, are filed together under the same Soundex code.
+This is mostly useful for US English.
+
+Soundex should not be used to search for sound-alike words.
+Metaphone would be more appropriate for generic sound matching of words.
+Soundex should only be used where you need to search multiple documents for proper names which sound similar.
+This is primarily used for indexing genealogical records.
+This may be useful for indexing other collections of data consisting mostly of names.
+Many common name variations are matched by Soundex.
+The only notable exception is the first letter of the name.
+The first letter is not matched for sound.
+
+It may be a good idea to create both a Soundex and non-Soundex index and allow your search interface
+select which index to use.
 
 =item IgnoreTotalWordCountWhenRanking [yes|no]
 
