@@ -36,6 +36,7 @@ void printStandardResultProperties(SWISH *, FILE *, RESULT *);
 
 void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 
+// char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname);
 char *getResultPropAsString(SWISH *, RESULT *, int);
 char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop );
 void getSwishInternalProperties(FileRec *, IndexFILE *);

@@ -19,13 +19,29 @@ $Id$
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **---------------------------------------------------------
+*
+*   Example program for interfacing a C program with the Swish-e C library.
+*
+*   ./libtest [optional index file]
+*
+*   use quotes for more than one file
+*       ./libtest index.swish-e
+*       ./libtest 'index1 index2 index3'
+*
+*   See the perl/SWISHE.xs file for more detail
+*
 */
 
 
 #include <stdio.h>
 #include "swish.h"
 #include "error.h"
-#include "mem.h"
+#include "mem.h"   // for mem_summary only
+
+#define DISPLAY_COUNT 10  // max to display
+
+
+void show_results( SWISH *swish_handle, int );
 
 int     main(int argc, char **argv)
 {
@@ -34,46 +50,125 @@ int     main(int argc, char **argv)
     int     structure   = IN_FILE;
     char   *properties  = NULL;
     char   *sortspec    = NULL;
+    char    input_buf[200];   
 
-    if ( argc < 2 )
+
+
+
+    /* Connect to the indexes specified */
+   
+    swish_handle = SwishInit( argv[1] && *(argv[1]) ? argv[1] : "index.swish-e");
+
+    /* Now, let's send all warnings and error messages to stderr instead of stdout (the default) */
+    SwishErrorsToStderr();  /* Global.  Must be set after calling SwishInit() */
+
+
+
+    /* how to check for errors */
+
+    if ( SwishError( swish_handle ) )
     {
-        fprintf(stderr, "err: Enter a search word\n");
+        /* Now, there's a few ways to do this */
+
+        SwishAbortLastError( swish_handle ); // The easy way.  Format, print message and aborts.
+
+        /* Or for more control */
+
+        {
+            int   number  = SwishError( swish_handle );
+            char *message = SwishErrorString( swish_handle );
+            char *comment = SwishLastErrorMsg( swish_handle );
+
+            fprintf(stderr, "err: Number [%d], Type [%s],  Optional String [%s]\n", number, message, comment );
+        }
+
+        /* Now if you want to exit */
         exit(1);
+
+        /* Otherwise, to continue you need to clean up memory */
+        SwishClose( swish_handle );
+        // return;  // for example
     }
 
-    /* This would have likely been a fatal error and not return */
-    if ( !(swish_handle = SwishOpen("index.swish-e index.swish-e")) )
+
+    while ( 1 )
     {
-        fprintf(stderr, "err: Failed to create swish handle\n");
-        exit(1);
+        printf("Enter search words: ");
+        if ( !fgets( input_buf, 200, stdin ) )
+            break;
+
+
+        num_results = SwishSearch(swish_handle, input_buf,structure,properties,sortspec);
+
+        /* SwishSearch return:
+        *    Number of hits if positive
+        *    Zero on no results
+        *    A negative number (the error number) on fail.
+        */
+
+        if ( num_results >= 0 )
+        {
+            printf("Total Results: %d\n", num_results );
+
+            if ( num_results > 0 )
+                show_results( swish_handle, DISPLAY_COUNT );
+        }
+
+
+        /* Deal with errors */
+        
+        if ( num_results < 0 && SwishError( swish_handle ) )
+        {
+            if ( SwishCriticalError( swish_handle ) )
+                SwishAbortLastError( swish_handle );
+            else
+                printf("Error: %s %s\n", SwishErrorString( swish_handle ), SwishLastErrorMsg( swish_handle ) );
+        }
+
+        Mem_Summary("At end of loop", 0);
+
     }
 
-    num_results = SwishSearch(swish_handle, argv[1],structure,properties,sortspec);
-
-
-    /* Or would it be better to call abort_last_error() */
-    /* These require error.h */
-    
-    if ( num_results <= 0 )
-    {
-        int     error_num = SwishError( swish_handle );
-        char   *error_str = SwishErrorString( error_num );
-        char   *last_error = SwishLastError( swish_handle );
-
-        fprintf(stderr, "err: (%d) %s: %s\n", error_num, error_str, last_error);
-        exit(1);
-
-        /* or optionally - but doesn't print the error number */
-        abort_last_error( swish_handle );
-    }
-
-    printf("Total Results: %d\n", num_results );
-
+    Mem_Summary("Before Free", 0);
     SwishClose( swish_handle );
 
+    /* Look for memory leaks -- must change settings in mem.h and recompile swish */
     Mem_Summary("At end of program", 1);
 
     return 0;
     
 }
+
+/* Display some standard properties -- see perl/SWISHE.xs for how to get at the data */
+
+void show_results( SWISH *swish_handle, int max_display )
+{
+    RESULT *result;
+
+
+    while ( max_display-- && (result = SwishNext( swish_handle )) )
+    {
+
+        /* This SwishResultPropertyStr() will work for all types of props */
+        /* But SwishResultPropertyULong() can be used to return numeric types */
+        /* Should probably check for errors after every call  */
+        /* SwishResultPropertyULong will return ULONG_MAX if the value cannot be returned */
+        /* that could mean an error, or just that there was not a property assigned (which is not an error) */
+
+        printf("%lu %s '%s' %lu %s\n",
+            SwishResultPropertyULong (swish_handle, result, "swishrank" ),
+            SwishResultPropertyStr (swish_handle, result, "swishdocpath" ),
+            SwishResultPropertyStr (swish_handle, result, "swishtitle"),
+            SwishResultPropertyULong (swish_handle, result, "swishdocsize" ),
+            SwishResultPropertyStr (swish_handle, result, "swishlastmodified" )
+        );
+    }
+
+    
+}
+
+            
+
+     
+    
 

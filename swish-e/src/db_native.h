@@ -56,6 +56,8 @@ struct Handle_DBNative
        /* points to the start of offsets to words in the file */
    int offsetstart;
 
+   SWISH *sw;  /* for reporting errors back */
+
 #ifndef USE_BTREE
        /* points to the start of hashoffsets to words in the file */
    int hashstart;
@@ -158,8 +160,8 @@ void initModule_DBNative (SWISH *);
 void freeModule_DBNative (SWISH *);
 int configModule_DBNative (SWISH *sw, StringList *sl);
 
-void   *DB_Create_Native (char *dbname);
-void   *DB_Open_Native (char *dbname, int mode);
+void   *DB_Create_Native (SWISH *sw, char *dbname);
+void   *DB_Open_Native (SWISH *sw, char *dbname, int mode);
 void    DB_Close_Native(void *db);
 void    DB_Remove_Native(void *db);
 

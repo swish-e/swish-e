@@ -279,6 +279,146 @@ char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 }
 
 /*******************************************************************
+*   SwishResultPropertyStr - Returns a string for the property *name* supplied
+*   Numbers are zero filled
+*
+*   ** Library interface call **
+*
+*   Call with:
+*       *sw
+*       *RESULT
+*       char * property name
+*
+*   Returns:
+*       A string -- caller does not need to free as the strings are
+*       cleaned up on every call
+*
+*
+********************************************************************/
+
+char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
+{
+    char                *s = NULL;
+    propEntry           *prop;
+    struct metaEntry    *meta_entry = NULL;
+    IndexFILE           *indexf;
+    
+	if( !result )
+	{
+	    sw->lasterror = SWISH_LISTRESULTS_EOF;
+	    return "";  // when would this happen?
+	}
+
+
+	indexf = result->indexf;
+
+
+    /* Ok property name? */
+
+    if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
+    {
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, sw, "Invalid property name '%s'", pname );
+        return "(null)";
+    }
+
+
+
+
+    /* Does this results have this property? */
+    
+    if ( !(prop = getDocProperty(sw, result, &meta_entry, 0 )) )
+        return "";
+
+    s = DecodeDocProperty( meta_entry, prop );
+
+    freeProperty( prop );
+
+    if ( !*s )
+    {
+        efree( s );
+        return "";
+    }
+
+    /* create a place to store the strings */
+
+	if ( ! indexf->prop_string_cache )
+	{
+	    indexf->prop_string_cache = (char **)emalloc( indexf->header.metaCounter * sizeof( char *) );
+	    memset( indexf->prop_string_cache, 0, indexf->header.metaCounter * sizeof( char *) );
+	}
+
+    /* Free previous, if needed  -- note the metaIDs start at one */
+
+    if ( indexf->prop_string_cache[ meta_entry->metaID-1 ] )
+        efree( indexf->prop_string_cache[ meta_entry->metaID-1 ] );
+
+    indexf->prop_string_cache[ meta_entry->metaID-1 ] = s;
+    return s;
+}
+
+
+/*******************************************************************
+*   SwishResultPropertyULong - Returns an unsigned long for the property *name* supplied
+*
+*   ** Library interface call **
+*
+*   Call with:
+*       *sw
+*       *RESULT
+*       char * property name
+*
+*   Returns:
+*       unsigned long 
+*       ULONG_MAX on error
+*
+*
+********************************************************************/
+
+unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
+{
+    struct metaEntry    *meta_entry = NULL;
+    IndexFILE           *indexf;
+    PropValue           *pv;
+    unsigned long       value;
+    
+	if( !result )
+	{
+	    sw->lasterror = SWISH_LISTRESULTS_EOF;
+            return ULONG_MAX;
+	}
+
+
+	indexf = result->indexf;
+
+
+    /* Ok property name? */
+
+    if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
+    {
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, sw, "Invalid property name '%s'", pname );
+        return ULONG_MAX;
+    }
+
+
+    /* make sure it's a numeric prop */
+    if ( !is_meta_number(meta_entry) &&  !is_meta_date(meta_entry)  )
+    {
+        set_progerr(INVALID_PROPERTY_TYPE, sw, "Property '%s' is not numeric", pname );
+        return ULONG_MAX;
+    }
+    
+    pv = getResultPropValue (sw, result, pname, 0 );
+
+    value = pv->value.v_ulong;
+
+    efree( pv );
+
+    return value;
+}
+
+
+
+/*******************************************************************
 *   Returns a property as a *propValue, which is a union of different
 *   data types, with a flag to indicate the type
 *   Can be called with either a metaname, or a metaID.

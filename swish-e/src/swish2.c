@@ -54,11 +54,11 @@
 /* Moved here so it's in the library */
 unsigned int DEBUG_MASK = 0;
 
+
+
 /* 
   -- init swish structure 
 */
-
-
 
 SWISH  *SwishNew()
 {
@@ -127,6 +127,9 @@ void    SwishResetSearch(SWISH * sw)
     /* Free sort stuff */
     resetModule_Search(sw);
     resetModule_ResultSort(sw);
+
+    sw->lasterror = RC_OK;
+    sw->lasterrorstr[0] = '\0';
 }
 
 void    SwishClose(SWISH * sw)
@@ -183,6 +186,20 @@ void    SwishClose(SWISH * sw)
 
 
         while (tmpindexlist) {
+
+            /* free the property string cache, if used */
+            if ( tmpindexlist->prop_string_cache )
+            {
+                int i;
+                for ( i=0; i<tmpindexlist->header.metaCounter; i++ )
+                    if ( tmpindexlist->prop_string_cache[i] )
+                        efree( tmpindexlist->prop_string_cache[i] );
+
+                efree( tmpindexlist->prop_string_cache );
+                tmpindexlist->prop_string_cache = NULL;
+            }
+
+            
             /* free the meteEntry array */
             if (tmpindexlist->header.metaCounter)
                 freeMetaEntries(&tmpindexlist->header);
@@ -206,6 +223,7 @@ void    SwishClose(SWISH * sw)
                 if (tmpindexlist->keywords[i])
                     efree(tmpindexlist->keywords[i]);
 
+
             tmpindexlist = tmpindexlist->next;
         }
 
@@ -224,34 +242,116 @@ void    SwishClose(SWISH * sw)
     }
 }
 
+/**************************************************
+* SwishOpen - Create a swish handle
+* Returns a swish handle
+* Caller much check sw->lasterror for errors
+* and call SwishClose() to free memory
+**************************************************/
 
-SWISH  *SwishOpen(char *indexfiles)
+
+SWISH  *SwishInit(char *indexfiles)
 {
     StringList *sl = NULL;
     SWISH  *sw;
     int     i;
 
-    if (indexfiles && indexfiles[0]) {
-        sw = SwishNew();
+    sw = SwishNew();
+    if (!indexfiles || !*indexfiles)
+    {
+        set_progerr(INDEX_FILE_ERROR, sw, "No index file supplied" );
+        return sw;
+    }
+    
 
-        /* Parse out index files, and append to indexlist */
-        sl = parse_line(indexfiles);
+    /* Parse out index files, and append to indexlist */
+    sl = parse_line(indexfiles);
 
-        for (i = 0; i < sl->n; i++)
-            sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, sl->word[i]);
+    if ( 0 == sl->n )
+    {
+        set_progerr(INDEX_FILE_ERROR, sw, "No index file supplied" );
+        return sw;
+    }
 
-        if ((i = SwishAttach(sw, 0)) < 0) {
-            SwishClose(sw);
-            sw = NULL;
-        }
-    } else
-        sw = NULL;
+    
+
+    for (i = 0; i < sl->n; i++)
+        sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, sl->word[i]);
 
     if (sl)
         freeStringList(sl);
 
+    if ( !sw->lasterror )
+        SwishAttach(sw);
+
     return sw;
 }
+
+
+/**************************************************
+* SwishOpen - Create a swish handle
+* Returns NULL on error -- no error message available
+* Frees memory on error
+* This is depreciated form
+**************************************************/
+
+
+SWISH  *SwishOpen(char *indexfiles)
+{
+    SWISH  *sw = SwishInit( indexfiles );
+
+    if ( sw->lasterror )
+    {
+        SwishClose(sw);
+        sw = NULL;
+    }
+
+    return sw;
+}
+
+
+
+/**************************************************
+* SwishAttach - Connect to the database
+* Returns false on Failure
+**************************************************/
+
+int     SwishAttach(SWISH * sw)
+{
+    struct MOD_Search *srch = sw->Search;
+    IndexFILE *indexlist;
+
+    IndexFILE *tmplist;
+ 
+    indexlist = sw->indexlist;
+    sw->TotalWords = 0;
+    sw->TotalFiles = 0;
+
+
+    /* First of all . Read header default values from all index fileis */
+    /* With this, we read wordchars, stripchars, ... */
+    for (tmplist = indexlist; tmplist;)
+    {
+        sw->commonerror = RC_OK;
+        srch->bigrank = 0;
+
+        tmplist->DB = (void *)DB_Open(sw, tmplist->line, DB_READ);
+        if ( sw->lasterror )
+            return 0;
+
+        read_header(sw, &tmplist->header, tmplist->DB);
+
+
+        sw->TotalWords += tmplist->header.totalwords;
+        sw->TotalFiles += tmplist->header.totalfiles;
+        tmplist = tmplist->next;
+    }
+
+    return ( sw->lasterror == 0 ); 
+}
+
+
+
 
 int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *sort)
 {
@@ -267,6 +367,7 @@ int     SwishSearch(SWISH * sw, char *words, int structure, char *props, char *s
         sw->lasterror = INVALID_SWISH_HANDLE;
         return INVALID_SWISH_HANDLE;
     }
+
 
     /* If previous search - reset its values (results, props ) */
     SwishResetSearch(sw);
@@ -320,8 +421,11 @@ int     SwishSeek(SWISH * sw, int pos)
     if (!sw)
         return INVALID_SWISH_HANDLE;
 
-    if (!sw->Search->db_results)
-        return ((sw->lasterror = SWISH_LISTRESULTS_EOF));
+    if ( !sw->Search->db_results )
+    {
+        set_progerr(SWISH_LISTRESULTS_EOF, sw, "Attempted to SwishSeek before searching");
+        return SWISH_LISTRESULTS_EOF;
+    }
 
     /* Check if only one index file -> Faster SwishSeek */
 

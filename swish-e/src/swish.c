@@ -148,6 +148,7 @@ int     main(int argc, char **argv)
     setlocale(LC_CTYPE, "");
 
 
+
     /* Start a session */
     sw = SwishNew();            /* Get swish handle */
 
@@ -622,7 +623,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 progerr("-L requires three parameters <propname> <lorange> <highrange>");
 
             if ( !SetLimitParameter(sw, argv[1], argv[2], argv[3]) )
-                abort_last_error( sw );
+                SwishAbortLastError( sw );
 
             argv += 3;
 
@@ -1078,6 +1079,9 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     {
         /* Open the index file for read/write */
         sw->indexlist->DB = (void *) DB_Open(sw, sw->indexlist->line,DB_READWRITE);
+        if ( sw->lasterror )
+            SwishAbortLastError( sw );
+        
 
         /* Read the header and overwrite the '-c' option  and feault values - In other 
         ** words, the header values are the good ones */
@@ -1097,6 +1101,8 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     {
         /* Create an empty File - before indexing to make sure can write to the index */
         sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
+        if ( sw->lasterror )
+            SwishAbortLastError( sw );
     }
 
 
@@ -1154,7 +1160,8 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
 
     /* Open all the index files for reading */
-    SwishAttach(sw_input, 1);
+    if ( !SwishAttach(sw_input) )
+        SwishAbortLastError( sw_input );
 
 
     /* Check output file */
@@ -1176,6 +1183,8 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     /* Create an empty File - before indexing to make sure can write to the index */
     sw_out->indexlist->DB = (void *) DB_Create(sw_out, params->merge_out_file);
+    if ( sw_out->lasterror )
+        SwishAbortLastError( sw_out );
 
 
     merge_indexes( sw_input, sw_out );
@@ -1250,7 +1259,8 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
     if (sw->Search->maxhits <= 0)
         sw->Search->maxhits = -1;
 
-    SwishAttach(sw, 1);
+    if ( !SwishAttach(sw) ) 
+        SwishAbortLastError( sw );
 
 
     resultHeaderOut(sw, 1, "%s\n", INDEXHEADER);
@@ -1266,7 +1276,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
     rc = search(sw, params->wordlist, params->structure);
 
     if ( rc < 0 )
-        abort_last_error( sw );
+        SwishAbortLastError( sw );
 
     resultHeaderOut(sw, 2, "#\n");
 
@@ -1381,6 +1391,8 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
         /* First reopen the property file in read only mode for seek speed */
         DB_Reopen_PropertiesForRead( sw, sw->indexlist->DB  );
+        if ( sw->lasterror )
+            SwishAbortLastError( sw );
 
         /* This does it all */
         sortFileProperties(sw,sw->indexlist);

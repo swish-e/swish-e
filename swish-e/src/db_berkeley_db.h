@@ -52,8 +52,8 @@ void initModule_DB_db (SWISH *);
 void freeModule_DB_db (SWISH *);
 int configModule_DB_db (SWISH *sw, StringList *sl);
 
-void   *DB_Create_db (char *dbname);
-void   *DB_Open_db (char *dbname);
+void   *DB_Create_db (SWISH *sw, char *dbname);
+void   *DB_Open_db (SWISH *sw, char *dbname);
 void    DB_Close_db(void *db);
 void    DB_Remove_db(void *db);
 

@@ -4,23 +4,100 @@ SWISH-LIBRARY - Interface to the Swish-e C library
 
 =head1 What is the Swish-e C library
 
-It is a C library implementation based on swish-e-2.0 beta4, but many of
+It is a C library implementation based on swish-e-2.1-dev, but many of
 the functions have been rewritten in order to get a thread safe library.
+That's is not to say that it is currently thread safe.
 
-=head1 Syntax of the functions of the library
 
-At this moment (Aug 2000) there are 6 functions defined:
+The advantage of the library is that the index file(s) can be opened one time
+and many queries made on the open index.  This saves the startup time required
+to fork and run the swish-e binary, and the expensive time of opening up the
+index file.  Some benchmarks have shown a three fold increase in speed.
+
+The downside is that your program now has more code and data in it (the index tables can
+use quite a bit of memory), and if a fatal error happens in swish it will bring down your
+program.  These are things to think about, especially if embedding swish into a web server
+such as Apache where there are many processes serving requests.
+
+The best way to learn about the library is to look at two files included with
+the swish-e distribution that make use of the library.
+
 
 =over 4
 
-=item struct SWISH *SwishOpen(char *IndexFiles);
+=item src/libtest.c
+
+This file gives a basic overview of linking a C program with the Swish-e library.
+Not all available functions are used in that example, but it should give you a good overview
+of building a program with swish-e.
+
+To build libtest run and run libtest:
+
+    $ make libtest
+    $ ./libtest [optional name of index file(s)]
+
+You will be prompted for the search words.  The default index used is F<index.swish-e>.
+This can be overridden by placing a list of index files in a quote-protected string.
+
+    $ ./libtest 'index1 index2 index3'
+
+=item perl/SWISHE.xs
+
+The F<SWISHE.xs> file contains more examples of how to read from the perl library.  It includes
+example code for reading additional information from the index files.
+
+=back
+
+Not all available functions are documented here.  That's both do to laziness, and the hope
+that a better interface will be created for these functions.  Check the above files for details.
+
+You should check for errors after every call.  See the F<src/libtest.c> file for examples.
+
+=head1 Available Functions
+
+
+=over 4
+
+=item struct SWISH *SwishInit(char *IndexFiles);
+
+This functions opens and reads the header info of the index files
+included in IndexFiles string.  The string should contain a space separated
+list of index files.
+
+    SWISH *myhandle;
+    myhandle = SwishOpen("file1.idx");
+
+This function will return a swish handle.  You must check for errors, and on
+error free the memory used by the handle, or abort.
+
+Here's an example of aborting:
+
+    SWISH *swish_handle;
+    swish_handle = SwishInit("file1.idx file2.idx");
+    if ( SwishError( swish_handle ) )
+        SwishAbortLastError( swish_handle );
+
+And here's an example of catching the error:        
+
+    SWISH *swish_handle;
+    swish_handle = SwishInit("file1.idx file2.idx");
+    if ( SwishError( swish_handle ) )
+    {
+        printf("Failed to connect to swish. %s\n", SwishErrorString( swish_handle ) );
+        SwishClose( swish_handle );  /* free the memory used */
+        return 0;
+    }
+
+
+=item struct SWISH *SwishOpen(char *IndexFiles);  [depreciated]
 
 This functions opens and reads header info of the index files
 included in IndexFiles
 
-    myhandle=SwishOpen("file1.idx");
+    myhandle = SwishOpen("file1.idx");
 
-Returns NULL on error
+Returns NULL on error.  This function is depreciated since there is no way to
+find out what error caused an error.  Use SwishInit() instead.
 
 =item void SwishClose(struct SWISH *handle);
 
@@ -28,45 +105,143 @@ This function closes and frees the memory of a Swish handle
 
 =item int SwishSearch(struct SWISH *handle,char *words,int structure,char *properties,char *sortspec);
 
-This function executes a search for a handle
+This function executes a search for a handle.
 
 Input data:
 
-    handle:  value returned by SwishOpen
-    words: the search string
-    structure: At this moment always one ( it will implement
-        the -t option of Swish-e)
-    properties: Optional. Properties to display. Use NULL if
-                no properties
-    sortspec: Sort specs for the results. Use NULL if sort by rank
+    handle      : value returned by SwishOpen
+    words       : the search string
+    structure   : At this moment always one (it will implement the -t option of Swish-e)
+    properties  : [Depreciated]  Set as NULL.  See text for comments.
+    sortspec    : Sort specs for the results. Use NULL if sort by rank
 
-Returns the number of hits or a negative value on error
+Returns the number of hits or a negative value on error.
 
-    results=SwishSearch(handle,"tit=test",1,"tit","date desc");
-      
+    num_results = SwishSearch(swish_handle, "title=test", 1, NULL, "date desc");
+
 There is a new feature here that it is not included in swish-e-2.0: 
 You can specify several sorting properties including a combination
 of descending and ascending fields.
 
-    field1 asc field2 desc 
+    field1 asc field2 desc
+
+Currently, when num_results is zero there is also an error condition set ("Word not found").
+Therefore, only check and report errors if num_results is a negative number.
+
+    if ( num_results < 0 && SwishError( swish_handle ) )
+        SwishAbortLastError( swish_handle );
+
+The B<properties> parameter:
+
+In general, you will find it easiest to use the functions described below to fetch properties:
+
+    SwishResultPropertyStr()
+    SwishResultPropertyULong()
+
+You can also pass in a space-separated list of properties to the SwishSearch() function.
+This will parse and cache the list of properites and then the property IDs can be used
+to fetch the property values.  This saves the time of converting the property names from
+a string to a property ID value for each result.  It's unlikely that the speed-up is
+sigificant.  See the perl/SWISHE.xs code for an example how this can be done.
+
+=item int SwishSeek(struct SWISH *handle, int n)
+
+This function puts the results pointer on the nth result.  The first result is
+number zero.  Returns n if operation goes OK or a negative number on error.
+After calling SwishSeek() call SwishNext() to fetch the first record at the position
+selected by SwishSeek();
+
+Example:
+
+    SwishSeek( swish_handle, 0 );  /* start at the beginning */
+    SwishSeek( swish_handle, 5 );  /* start at the sixth record */
+
+If you always read results from the very start you do not need to call SwishSeek().
+After a query the position is set to the start of the result list.
 
 =item struct result *SwishNext(struct SWISH *handle)
 
 This function returns next result. It must be executed after SwishSearch.
-Returns NULL on error or when no more results are available
+Returns NULL on error or when no more results are available.  Call SwishError()
+to check for errors.
 
-=item int SwishSeek(struct SWISH *handle,int n)
+The value returned is used to fetch the various I<properties> for a given file (e.g. rank,
+title, path name).  Typically, SwishNext() is called in a loop to fetch and display all the
+properties.
 
-This function puts the results pointer on the nth result.  Returns n if
-operation goes OK or a negative number on error.
+=item char *SwishResultPropertyStr (SWISH *handle, RESULT *result, char *property )
+
+Once you have a result returned from SwishNext() you can call this function to fetch
+a string value of any property.
+
+    printf("path = %s\n", SwishResultPropertyStr (swish_handle, result, "swishdocpath" ) );
+
+If the property named is not defined (invalid name supplied) swish will return the string "(null)".
+If the property does not exist for this result the null string will be returned.
+
+You must not free the memory returned by the call, and you must copy the string to a new
+memory location if you wish to keep the string around longer than just while processing the
+current result.
+
+Currently, a cache of one result's properties (per index) are stored in memory.
+
+=item unsigned long SwishResultPropertyULong (SWISH *handle, RESULT *result, char *property )
+
+This will return numeric (and date) properties as an unsigned long.
+
+It will return ULONG_MAX on error, which can mean either that the property name specified was
+invalid, the property specified was not a numeric or date property, or simply that the no value
+exists for the current result.  Check SwishError() to determine if it's a real error vs. just
+that the result does not have the property.
 
 =item int SwishError(struct SWISH *handle)
 
-This function returns the last error
+This function returns the last error code.  It's often used as a test to see
+if any errors happened on the last operation.
 
-=item Stem(word)
+=item char *SwishErrorString(struct SWISH *handle)
 
-XXX add
+Returns the string version of the error code.  See F<src/error.c>
+for possible errors.  This is a generic error class.  See
+SwishLastErrorMsg() for possible specific messages.
+
+
+=item char *SwishLastErrorMsg(struct SWISH *handle)
+
+This can return additional (more specific) information about the last error.
+For example, SwishErrorString() might return:
+
+    Index file error
+
+But SwishLastErrorMsg might give details like:
+
+    Couldn't open the property file "index1.prop": No such file or directory
+
+=item SwishAbortLastError( SWISH *handle )
+
+This will abort the program, and format and print any error messages.
+
+=item SwishErrorsToStderr(void)
+
+Call this after calling SwishInit() and any messages or warning will be sent to
+stderr (standard error) instead of to stdout.  This might be important when
+running swish-e in a web server environment.
+
+=item SetLimitParameter(handle,propertyname,low,hi)
+
+This is used to set the limit ranges on a property (as is done with the -L switch
+when running swish from the command line.
+
+=item ClearLimitParameter(handle)
+
+Clears the limits set by SetLimitParameter().  If you use limits you
+will need to clear them after each request.
+
+=item Stem(char **inword, int *lenword)
+
+This can be used to convert a word to its stem.  Word is modified in place (or reallocated if
+needed.
+
 
 =back
 
@@ -80,6 +255,8 @@ Feel also free to improve or enhance this feature.
 Aug 2000
 Jose Ruiz
 jmruiz@boe.es
+
+Updated: Aug 22, 2002 - Bill Moseley
 
 =head1 Document Info
 

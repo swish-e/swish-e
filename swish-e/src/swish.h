@@ -131,9 +131,9 @@ extern "C" {
 #define ENDCHARSPARAMNAME "EndCharacters"
 #define IGNOREFIRSTCHARPARAMNAME "IgnoreFirstChar"
 #define IGNORELASTCHARPARAMNAME "IgnoreLastChar"
-#define STEMMINGPARAMNAME "Stemming"
-#define SOUNDEXPARAMNAME "Soundex"
-#define FUZZYMODEPARAMNAME "FuzzyMode"
+#define STEMMINGPARAMNAME "UseStemming"
+#define SOUNDEXPARAMNAME "UseSoundex"
+#define FUZZYMODEPARAMNAME "FuzzyIndexingMode"
 
 #define FILECOUNTPARAMNAME "FileCount"
 
@@ -426,6 +426,9 @@ typedef enum {
 } FuzzyIndexType;
 
 
+
+
+
 typedef struct
 {
     /* vars for WordCharacters */
@@ -542,6 +545,9 @@ typedef struct IndexFILE
     unsigned long total_bytes;  /* Just to show total size when indexing */
     unsigned long total_word_positions;
 
+
+    char   **prop_string_cache;  /* place to cache a result's string properties */
+                                 /* so caller (library) won't need to free */
 
     /* DB handle */
     void   *DB;
@@ -952,6 +958,7 @@ VAR struct _indexing_data_source_def *IndexingDataSource;
 
 void    allocatedefaults(void);
 
+int SwishAttach(SWISH *);
 SWISH  *SwishNew(void);
 void    SwishFree(SWISH *);
 
@@ -979,12 +986,16 @@ void    SwishFree(SWISH *);
 
 
 /* C library prototypes */
-SWISH  *SwishOpen(char *);
+SWISH  *SwishOpen(char *);  // depreciated
+SWISH  *SwishInit(char *);
 void    SwishClose(SWISH *);
 void    SwishResetSearch(SWISH *);
 RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
+char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname);
+unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname);
+
 
 
 /* These are only checked in dump.c */

@@ -27,6 +27,7 @@
 #include "metanames.h"
 #include "string.h"
 
+
 struct swline *addswline(struct swline *rp, char *line)
 {
 struct swline *newnode;

@@ -41,10 +41,9 @@
     my $handle = SwishOpen( $indexfiles )
         or die "Failed to SwishOpen '$indexfiles'";
 
-
     # Get a few headers from the index files for display
 
-    my @headers = ( qw/WordCharacters BeginCharacters EndCharacters IndexedOn FileCount/ );
+    my @headers = ( qw/WordCharacters BeginCharacters EndCharacters IndexedOn FileCount FuzzyIndexingMode/ );
   
     for my $header ( @headers ) {
         print_header("Header '$header'");

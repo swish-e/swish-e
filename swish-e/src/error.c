@@ -46,6 +46,11 @@ void set_error_handle( FILE *where )
     error_handle = where;
 }
 
+void SwishErrorsToStderr( void )
+{
+    error_handle = stderr;
+}
+
 
 void progerr(char *msgfmt,...)
 {
@@ -138,29 +143,46 @@ void progwarnno(char *msgfmt,...)
   va_end   (args);
  }
 
-
+typedef struct
+{
+    int     critical;   /* If true the calling code needs to call SwishClose */
+    int     error_num;
+    char    *message_string;
+} error_msg_map;
 
 /* See errors.h to the correspondant numerical value */
-static char *swishErrors[]={
-"",                                                         /* RC_OK */
-"Could not open index file",                                /*INDEX_FILE_NOT_FOUND */
-"Unknown index file format",                                /* UNKNOWN_INDEX_FILE_FORMAT */
-"No search words specified",                                /* NO_WORDS_IN_SEARCH */
-"All search words too common to be useful",                 /* WORDS_TOO_COMMON */
-"Index file(s) is empty",                                   /* INDEX_FILE_IS_EMPTY */
-"Unknown property name in display properties",              /* UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY */
-"Unknown property name to sort by",                         /* UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT */
-"Unknown metaname",                                         /* UNKNOWN_METANAME */
-"Single wildcard not allowed as word",                      /* UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD */
-"Word not found",                                           /* WORD_NOT_FOUND */
-"No more results",                                          /* SWISH_LISTRESULTS_EOF */
-"Invalid swish handle",                                     /* INVALID_SWISH_HANDLE */
-"Search word exceeded maxwordlimit setting",                /* SEARCH_WORD_TOO_BIG */
-"Syntax error in query (missing end quote or unbalanced parenthesis?)",	/* QUERY_SYNTAX_ERROR */
-"Failed to setup limit by property",                        /* PROP_LIMIT_ERROR */
-NULL};
+static error_msg_map swishErrors[]={
+    { 0, RC_OK,                                    "" },
+    { 0, NO_WORDS_IN_SEARCH,                       "No search words specified" },
+    { 0, WORDS_TOO_COMMON,                         "All search words too common to be useful" },
+    { 0, UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY,  "Unknown property name in display properties" },
+    { 0, UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT,     "Unknown property name to sort by" },
+    { 0, INVALID_PROPERTY_TYPE,                    "Invalid property type" },
+    { 0, UNKNOWN_METANAME,                         "Unknown metaname" },
+    { 0, UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD,      "Single wildcard not allowed as word" },
+    { 0, WORD_NOT_FOUND,                           "Word not found" },
+    { 0, SEARCH_WORD_TOO_BIG,                      "Search word exceeded maxwordlimit setting" },
+    { 0, QUERY_SYNTAX_ERROR,                       "Syntax error in query (missing end quote or unbalanced parenthesis?)" },
+    { 0, PROP_LIMIT_ERROR,                         "Failed to setup limit by property"},
+    { 0, SWISH_LISTRESULTS_EOF,                    "No more results" },
+    { 1, INDEX_FILE_NOT_FOUND,                     "Could not open index file" },
+    { 1, UNKNOWN_INDEX_FILE_FORMAT,                "Unknown index file format" },
+    { 1, INDEX_FILE_IS_EMPTY,                      "Index file(s) is empty" },
+    { 1, INDEX_FILE_ERROR,                         "Index file error" },
+    { 1, INVALID_SWISH_HANDLE,                     "Invalid swish handle" },
+};
 
 
+/*****************************************************************
+* SwishError
+*
+*   Pass:
+*       SWISH *sw
+*
+*   Returns:
+*       value of the last error number, or zero
+*
+******************************************************************/
 
 int     SwishError(SWISH * sw)
 {
@@ -169,35 +191,175 @@ int     SwishError(SWISH * sw)
     return (sw->lasterror);
 }
 
-char   *SwishErrorString(int errornumber)
+
+
+/*****************************************************************
+* SwishErrorString
+*
+*   Pass:
+*       SWISH *sw
+*
+*   Returns:
+*       pointer to string of generic error message related to
+*       the last error number
+*
+******************************************************************/
+
+
+char   *SwishErrorString(SWISH *sw)
 {
-    return (getErrorString(errornumber));
+    return getErrorString(sw ? sw->lasterror : INVALID_SWISH_HANDLE);
 }
 
-char   *SwishLastError(SWISH *sw )
+
+
+/*****************************************************************
+* SwishLastErrorMsg
+*
+*   Pass:
+*       SWISH *sw
+*
+*   Returns:
+*       pointer to the string comment of the last error message, if any
+*
+******************************************************************/
+
+
+char   *SwishLastErrorMsg(SWISH *sw )
 {
     return sw->lasterrorstr;
 }
 
 
 
+
+
+/*****************************************************************
+* getErrorString
+*
+*   Pass:
+*       error number
+*
+*   Returns:
+*       value of the last error number, or zero
+*
+******************************************************************/
+
+
 char *getErrorString(int number)
 {
-int i;
-	number=abs(number);
+    int i;
+    static char message[50];
+    
+    for (i = 0; i < sizeof(swishErrors) / sizeof(swishErrors[0]); i++)
+        if ( number == swishErrors[i].error_num )
+            return swishErrors[i].message_string;
 
-	/* To avoid buffer overruns lets count the strings */
-	for(i=0;swishErrors[i];i++);
-    	if ( number>=i ) return( "Unknown Error Number" );
-
-	return(swishErrors[number]);
+    sprintf( message, "Invalid error number '%d'", number );
+    return( message );
 }
 
-void abort_last_error(SWISH *sw)
+/*****************************************************************
+* SwishCriticalError
+*
+*   This returns true if the last error was critical and means that
+*   the swish object should be destroyed
+*
+*   Pass:
+*       *sw
+*
+*   Returns:
+*       true if the current sw->lasterror is a critical error
+*       or if the number is invalid or the sw is null
+*
+******************************************************************/
+
+
+int SwishCriticalError(SWISH *sw)
+{
+    int i;
+
+    if ( !sw )
+        return 1;
+    
+    for (i = 0; i < sizeof(swishErrors) / sizeof(swishErrors[0]); i++)
+        if ( sw->lasterror == swishErrors[i].error_num )
+            return swishErrors[i].critical;
+
+    return 1;
+}
+
+
+
+
+/*****************************************************************
+* SwishAbortLastError
+*
+*   Aborts with the error message type, and the optional comment message
+*
+*   Pass:
+*       SWISH *sw
+*
+*   Returns:
+*       nope
+*
+******************************************************************/
+
+void SwishAbortLastError(SWISH *sw)
 {
     if ( sw->lasterror < 0 )
-        progerr( "%s: %s", getErrorString( SwishError( sw ) ), SwishLastError( sw ) );
+    {
+        if ( *(SwishLastErrorMsg( sw )) )
+            progerr( "%s: %s", SwishErrorString( sw ), SwishLastErrorMsg( sw ) );
+        else
+            progerr( "%s", SwishErrorString( sw ) );
+    }
 
     progerr("Swish aborted with non-negative lasterror");
 }
+
+typedef struct
+{
+    FuzzyIndexType  fuzzy_mode;
+    char            *name;
+}
+FUZZY_OPTS;
+
+static FUZZY_OPTS fuzzy_opts[] = {
+
+    { FUZZY_NONE, "None" },
+    { FUZZY_STEMMING, "Stemming" },
+    { FUZZY_STEMMING, "Stem" },
+    { FUZZY_SOUNDEX, "Soundex" },
+    { FUZZY_METAPHONE, "Metaphone" },
+    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone" }
+};
+
+FuzzyIndexType set_fuzzy_mode( char *param )
+{
+    int     i;
+    
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
+            return fuzzy_opts[i].fuzzy_mode;
+
+
+    progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
+    return FUZZY_NONE;
+}
+
+
+
+
+
+char *fuzzy_mode_to_string( FuzzyIndexType mode )
+{
+    int     i;
+    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
+        if ( mode == fuzzy_opts[i].fuzzy_mode )
+            return fuzzy_opts[i].name;
+
+    return "Unknown FuzzyIndexingMode";
+}
+
 

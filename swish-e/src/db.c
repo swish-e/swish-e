@@ -1138,12 +1138,12 @@ INDEXDATAHEADER *header = &indexf->header;
 
 void   *DB_Create (SWISH *sw, char *dbname)
 {
-   return sw->Db->DB_Create(dbname);
+   return sw->Db->DB_Create(sw, dbname);
 }
 
 void   *DB_Open (SWISH *sw, char *dbname, int mode)
 {
-   return sw->Db->DB_Open(dbname,mode);
+   return sw->Db->DB_Open(sw, dbname,mode);
 }
 
 void    DB_Close(SWISH *sw, void *DB)

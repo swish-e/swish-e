@@ -173,7 +173,12 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
     swish_magic = readlong(DB->fp, fread);
 
     if (swish_magic != SWISH_MAGIC)
-        progerr("File \"%s\" has an unknown format.", DB->cur_index_file);
+    {
+        set_progerr(INDEX_FILE_ERROR, DB->sw, "File \"%s\" has an unknown format.", DB->cur_index_file);
+        return;
+    }
+
+
 
     {   
            long
@@ -189,36 +194,53 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
         prop = readlong(DB->prop, fread);
 
         if (DB->unique_ID != prop)
-            progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file);
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file);
+            return;
+        }
 
 #ifdef USE_BTREE
         btree = readlong(DB->fp_btree, fread);
         if (DB->unique_ID != btree)
-            progerr("Index file '%s' and btree file '%s' are not related.", DB->cur_index_file, DB->cur_btree_file);
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and btree file '%s' are not related.", DB->cur_index_file, DB->cur_btree_file);
+            return;
+        }
 
         worddata = readlong(DB->fp_worddata, fread);
         if (DB->unique_ID != worddata)
-            progerr("Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
+            return;
+        }
 
         array = readlong(DB->fp_array, fread);
         if (DB->unique_ID != array)
-            progerr("Index file '%s' and array file '%s' are not related.", DB->cur_index_file, DB->cur_array_file);
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and array file '%s' are not related.", DB->cur_index_file, DB->cur_array_file);
+            return;
+        }
 
         presorted = readlong(DB->fp_presorted, fread);
 
         if (DB->unique_ID != presorted)
-            progerr("Index file '%s' and presorted index file '%s' are not related.", DB->cur_index_file, DB->cur_presorted_file);
+        {
+            set_progerr(INDEX_FILE_ERROR, DB->sw, "Index file '%s' and presorted index file '%s' are not related.", DB->cur_index_file, DB->cur_presorted_file);
+            return;
+        }
 #endif
     }
 
 }
 
-struct Handle_DBNative *newNativeDBHandle(char *dbname)
+static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
 {
     struct Handle_DBNative *DB;
 
     /* Allocate structure */
     DB = (struct Handle_DBNative *) emalloc(sizeof(struct Handle_DBNative));
+
+    DB->sw = sw;  /* for error messages */
 
     DB->offsetstart = 0;
 #ifndef USE_BTREE
@@ -304,7 +326,7 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
 }
 
 
-void   *DB_Create_Native(char *dbname)
+void   *DB_Create_Native(SWISH *sw, char *dbname)
 {
     int     i;
     long    swish_magic;
@@ -316,7 +338,7 @@ void   *DB_Create_Native(char *dbname)
 
     swish_magic = SWISH_MAGIC;
    /* Allocate structure */
-    DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
+    DB = (struct Handle_DBNative *) newNativeDBHandle(sw, dbname);
     DB->mode = DB_CREATE;
     DB->unique_ID = (long) time(NULL); /* Ok, so if more than one index is created the second... */
 
@@ -461,7 +483,7 @@ void   *DB_Create_Native(char *dbname)
 *
 *******************************************************************/
 
-void   *DB_Open_Native(char *dbname,int mode)
+void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 {
     struct Handle_DBNative *DB;
     int     i;
@@ -483,12 +505,15 @@ void   *DB_Open_Native(char *dbname,int mode)
         openRoutine = openIndexFILEForRead;
     }
 
-    DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
+    DB = (struct Handle_DBNative *) newNativeDBHandle(sw, dbname);
     DB->mode = mode;
 
     /* Open index File */
     if (!(DB->fp = openRoutine(dbname)))
-        progerrno("Could not open the index file '%s': ", dbname);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Could not open the index file '%s': ", dbname);
+        return (void *) DB;
+    }
 
     DB->cur_index_file = estrdup(dbname);
 
@@ -498,7 +523,10 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, PROPFILE_EXTENSION);
 
     if (!(DB->prop = openRoutine(s)))
-        progerrno("Couldn't open the property file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the property file \"%s\": ", s);
+        return (void *) DB;
+    }
 
     DB->cur_prop_file = s;
 
@@ -510,7 +538,13 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, BTREE_EXTENSION);
 
     if (!(fp_tmp = openRoutine(s)))
-        progerrno("Couldn't open the btree file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the btree file \"%s\": ", s);
+        return (void *) DB;
+    }
+        
+
+
     DB->fp_btree = fp_tmp;      
     DB->cur_btree_file = s;
 
@@ -520,7 +554,11 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, PRESORTED_EXTENSION);
 
     if (!(DB->fp_presorted = openRoutine(s)))
-        progerrno("Couldn't open the presorted index file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the presorted index file \"%s\": ", s);
+        return (void *) DB;
+    }
+        
 
     DB->cur_presorted_file = s;
     
@@ -532,7 +570,11 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, WORDDATA_EXTENSION);
 
     if (!(fp_tmp = openRoutine(s)))
-        progerrno("Couldn't open the worddata file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the worddata file \"%s\": ", s);
+        return (void *) DB;
+    }
+        
 
     DB->fp_worddata = fp_tmp;
     DB->cur_worddata_file = s;
@@ -543,7 +585,10 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, ARRAY_EXTENSION);
 
     if (!(fp_tmp = openRoutine(s)))
-        progerrno("Couldn't open the array file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the array file \"%s\": ", s);
+        return (void *) DB;
+    }
           
     DB->fp_array = fp_tmp;
     DB->cur_array_file = s;
@@ -554,7 +599,10 @@ void   *DB_Open_Native(char *dbname,int mode)
     strcat(s, PRESORTED_EXTENSION);
 
     if (!(DB->fp_presorted = openRoutine(s)))
-        progerrno("Couldn't open the presorted index file \"%s\": ", s);
+    {
+        set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the presorted index file \"%s\": ", s);
+        return (void *) DB;
+    }
 
     DB->cur_presorted_file = s;
     
@@ -562,6 +610,8 @@ void   *DB_Open_Native(char *dbname,int mode)
 
     /* Validate index files */
     DB_CheckHeader(DB);
+    if ( DB->sw->lasterror )
+        return (void *) DB;
 
     /* Read offsets lookuptable */
     DB->offsetstart = ftell(DB->fp);

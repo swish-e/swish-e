@@ -133,7 +133,7 @@ int configModule_DBgdbm  (SWISH *sw, StringList *sl)
 
 
 
-void *DB_Create_gdbm (char *dbname)
+void *DB_Create_gdbm (SWISH *sw, char *dbname)
 {
    char *tmp;
    struct Handle_DBgdbm *DB;
@@ -167,7 +167,7 @@ void *DB_Create_gdbm (char *dbname)
    return (void *)DB;
 }
 
-void *DB_Open_gdbm (char *dbname)
+void *DB_Open_gdbm (SWISH *sw, char *dbname)
 {
    char *tmp;
    struct Handle_DBgdbm *DB;

@@ -633,7 +633,7 @@ For example, to return just the title, one per line, in the search results:
 
 Note: the C<\n> may need to be protected from your shell.
 
-See also the C<ResultExtFormatName> in L<SWISH-CONFIG|SWISH-CONFIG> for a way to define I<named>
+See also L<ResultExtFormatName|SWISH-CONFIG/"item_ResultExtFormatName"> for a way to define I<named>
 format strings in the swish configuration file.
 
 B<Format of "formatstring":>

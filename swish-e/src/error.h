@@ -26,6 +26,7 @@
 
 
 void set_error_handle( FILE *where );
+void SwishErrorsToStderr( void );
 
 void progerr (char *msgfmt, ...);
 void progerrno (char *msgfmt, ...);
@@ -40,29 +41,36 @@ void progwarnno (char *msgfmt, ...);
 
 char *getErrorString(int);
 int  SwishError(SWISH * sw);
-char *SwishErrorString(int errornumber);
-char *SwishLastError(SWISH *sw);
-void abort_last_error(SWISH *sw);
+char *SwishErrorString(SWISH *sw);
+char *SwishLastErrorMsg(SWISH *sw);
+void SwishAbortLastError(SWISH *sw);
+int SwishCriticalError(SWISH *sw);
+
+
+char *fuzzy_mode_to_string( FuzzyIndexType mode );
+FuzzyIndexType set_fuzzy_mode( char *param );
+
 
 #define RC_OK 0
-#define ERROR_BASE RC_OK
 
-#define INDEX_FILE_NOT_FOUND ERROR_BASE-1
-#define UNKNOWN_INDEX_FILE_FORMAT ERROR_BASE-2
-#define NO_WORDS_IN_SEARCH ERROR_BASE-3
-#define WORDS_TOO_COMMON ERROR_BASE-4
-#define INDEX_FILE_IS_EMPTY ERROR_BASE-5
-#define UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY ERROR_BASE-6
-#define UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT ERROR_BASE-7
-#define UNKNOWN_METANAME ERROR_BASE-8
-#define UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD ERROR_BASE-9
-#define WORD_NOT_FOUND ERROR_BASE-10
-#define SWISH_LISTRESULTS_EOF ERROR_BASE-11
-#define INVALID_SWISH_HANDLE ERROR_BASE-12
-#define SEARCH_WORD_TOO_BIG ERROR_BASE-13
-#define QUERY_SYNTAX_ERROR ERROR_BASE-14
-#define PROP_LIMIT_ERROR ERROR_BASE-15
-
-
+enum {
+    INDEX_FILE_NOT_FOUND = -255,
+    UNKNOWN_INDEX_FILE_FORMAT,
+    NO_WORDS_IN_SEARCH,
+    WORDS_TOO_COMMON,
+    INDEX_FILE_IS_EMPTY,
+    INDEX_FILE_ERROR,
+    UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY,
+    UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT,
+    INVALID_PROPERTY_TYPE,
+    UNKNOWN_METANAME,
+    UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD,
+    WORD_NOT_FOUND,
+    SWISH_LISTRESULTS_EOF,
+    INVALID_SWISH_HANDLE,
+    SEARCH_WORD_TOO_BIG,
+    QUERY_SYNTAX_ERROR,
+    PROP_LIMIT_ERROR
+};    
 #endif
 

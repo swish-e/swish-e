@@ -63,24 +63,6 @@ $Id$
 #endif
 
 
-typedef struct
-{
-    FuzzyIndexType  fuzzy_mode;
-    char            *name;
-}
-FUZZY_OPTS;
-
-static FUZZY_OPTS fuzzy_opts[] = {
-
-    { FUZZY_NONE, "None" },
-    { FUZZY_STEMMING, "Stemming" },
-    { FUZZY_STEMMING, "Stem" },
-    { FUZZY_SOUNDEX, "Soundex" },
-    { FUZZY_METAPHONE, "Metaphone" },
-    { FUZZY_DOUBLE_METAPHONE, "DoubleMetaphone" }
-};
-
-
 
 
 static int read_integer( char *string,  char *message, int low, int high );
@@ -92,7 +74,6 @@ static void readusewordsfile(SWISH *, IndexFILE *, char *);
 static void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 static int parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
-static FuzzyIndexType set_fuzzy_mode( char *param );
 
 
 
@@ -1692,29 +1673,5 @@ void freeSwishConfigOptions( SWISH *sw )
       
         
 }
-
-static FuzzyIndexType set_fuzzy_mode( char *param )
-{
-    int     i;
-    
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
-        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
-            return fuzzy_opts[i].fuzzy_mode;
-
-
-    progerr("Invalid FuzzyIndexingMode '%s' in configuation file", param);
-    return FUZZY_NONE;
-}
-
-char *fuzzy_mode_to_string( FuzzyIndexType mode )
-{
-    int     i;
-    for (i = 0; i < sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0]); i++)
-        if ( mode == fuzzy_opts[i].fuzzy_mode )
-            return fuzzy_opts[i].name;
-
-    return "Unknown FuzzyIndexingMode";
-}
-
 
 
