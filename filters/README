@@ -10,7 +10,7 @@ easy.  It's uses a plug-in type of system where new filters
 can be added with little effort.
 
 SWISH::Filter (and associated plug-in filter modules) do not
-normally do the actual filtering.  This system provides
+normally do the actual filtering.  This system provides only
 an interface to the programs that do the filtering.
 
 For example, the Swish-e distribution includes a filter plug-in
@@ -19,9 +19,13 @@ install the xpdf package that includes the pdftotext and pdfinfo
 programs.  SWISH::Filters::Pdf2HTML only provides a unified interface
 to this programs.
 
+If a filter loads that requires additional perl modules to be installed
+you will see a warning, and the filter will not be linked into the filter
+chain.
+
 In addition to installing the required filter programs, you will need
 to set the path to the SWISH::Filter modules before indexing.  For example,
-if you unpaced the Swish-e distribution into $HOME/swish-e-2.2 directory
+if you unpacked the Swish-e distribution into $HOME/swish-e-2.2 directory
 you could do (with bourne type of shell):
 
     export PERL5LIB=$HOME/swish-e-2.2/filters
@@ -34,11 +38,23 @@ See also src/swishspider and prog-bin/spider.pl for examples of how
 to use the SWISH::Filter module.
 
 
-
 Swish-e has another filter system.
 The FileFilter directive that can be used to
 filter documents through an external program while indexing.
 That system requires a separate filter setup for each type
 of document. See the SWISH-CONFIG page for information
 on that type of filtering.
+
+Current filters distributed with Swish-e:
+-----------------------------------------
+
+All of these filters require installation of helper programs and/or Perl modules.
+See the individual module's documentation for dependencies.
+
+    SWISH::Filters::Doc2txt     - converts MS Word documents to text
+    SWISH::Filters::Pdf2HTML    - converts PDF files to HTML with info tags as metanames
+    SWISH::Filters::ID3toHTML   - extracts out ID3 (v1 and v2) tags from MP3 files
+    SWISH::Filters::XLtoHTML    - converts MS Excel to HTML
+
+See perldoc SWISH::Filter for instructions on creating filters.
 
