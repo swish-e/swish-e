@@ -52,6 +52,7 @@
 **                   moved some parts to config.h
 **
 ** 2001-03-16 rasc   truncateDocSize
+** 2001-03-17 rasc   fprop enhanced by real_filename
 ** 
 */
 
@@ -264,6 +265,7 @@ typedef struct  {
 	FILE   *fp;	/* may be also a filter stream or NULL if not opened */
 	char   *real_path;	/* org. path/URL to indexed file */
 	char   *work_path;	/* path to file to index (may be tmpfile or real_path) */
+      char   *real_filename;	/* basename() of real_path  */
 	long   fsize;		/* size of the original file (not filtered) */
 	time_t mtime;           /* Date of last mod of or. file */
 	int    doctype;		/* Type of document HTML, TXT, XML, ... */

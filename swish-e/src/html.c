@@ -27,6 +27,8 @@ $Id$
 ** fixed cast to int problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
+** 2001-03-17  rasc  save real_filename as title (instead full real_path)
+**                   was: compatibility issue to v 1.x.x
 ** 
 */
 
@@ -113,13 +115,10 @@ static unsigned char *entities[] =
 
 char *parsetitle(char *buffer, char *alttitle)
 {
-char *q,*shorttitle,*title;
-	if ((q=strrchr(alttitle, '/'))) 
-		q++;
-	else
-		q=alttitle;
-	shorttitle = estrdup(q);
-	
+char *shorttitle,*title;
+
+
+	shorttitle = estrdup(alttitle);	
 	if (!buffer) {
 		return shorttitle;
 	}
@@ -181,7 +180,7 @@ struct file *thisFileEntry = NULL;
 struct metaEntry *metaNameEntry;
 IndexFILE *indexf=sw->indexlist;
 char *Content=NULL,*Name=NULL,*summary=NULL;
-char *title=parsetitle(buffer,fprop->real_path);
+char *title=parsetitle(buffer,fprop->real_filename);
 
 	if(!isoktitle(sw,title))
 	{

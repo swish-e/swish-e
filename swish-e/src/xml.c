@@ -1,3 +1,10 @@
+/*
+**
+**
+** 2001-03-17  rasc  save real_filename as title (instead full real_path)
+**                   was: compatibility issue to v 1.x.x
+*/
+
 #include "swish.h"
 #include "xml.h"
 #include "html.h"
@@ -123,7 +130,7 @@ char *summary=NULL;
 	if(fprop->stordesc)
 		summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, start, size, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_filename, summary, start, size, &thisFileEntry);
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
 	positionMeta = (int *)emalloc(metaNamelen*sizeof(int));
