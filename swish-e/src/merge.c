@@ -55,11 +55,7 @@
 ** zipping up both index files into one.
 */
 
-void readmerge(file1, file2, outfile, verbose)
-char *file1;
-char *file2;
-char *outfile;
-int verbose;
+void readmerge(char *file1, char *file2, char *outfile, int verbose)
 {
 int i, indexfilenum1, indexfilenum2, wordsfilenum1, wordsfilenum2, result, totalfiles, totalwords, skipwords, skipfiles;
 long fileinfo1, fileinfo2, offsetstart, hashstart;
@@ -183,7 +179,7 @@ struct file *fi;
 	/* Create the merged list and modify the
 	   individual ones with the new meta index
 	*/
-	indexf->metaEntryArray = createMetaMerge(metaFile1, metaFile2);
+	indexf->metaEntryArray = createMetaMerge(metaFile1, metaFile2,&indexf->metaCounter);
 	
 	if (verbose) printf("\nReading file 1 info ...");
 	fflush(stdout);
@@ -350,9 +346,7 @@ struct file *fi;
 ** file numbers in file 2 before merging.
 */
 
-void addfilenums(ip, num)
-ENTRY *ip;
-int num;
+void addfilenums(ENTRY *ip, int num)
 {
 int i;
 	for(i=0;i<ip->u1.max_locations;i++)
@@ -364,9 +358,7 @@ int i;
 ** in a result structure.
 */
 
-ENTRY *readindexline(indexf, metaFile)
-IndexFILE *indexf;
-struct metaMergeEntry *metaFile;
+ENTRY *readindexline(IndexFILE *indexf, struct metaMergeEntry *metaFile)
 {
 int i, j, x, tfrequency, filenum, structure,metaID, metaID2, frequency, *position, index_structure,index_structfreq;
 static int filewordlen=0;
@@ -463,19 +455,7 @@ FILE *fp=indexf->fp;
 ** we find redundant file information.
 */
 
-void addindexfilelist(sw, num, filename, mtime, title, summary, start, size, docProperties, totalfiles, ftotalwords, metaFile)
-SWISH *sw;
-int num;
-char *filename;
-time_t mtime;
-char *title;
-char *summary;
-int start;
-int size;
-struct docPropertyEntry *docProperties;
-int *totalfiles;
-int ftotalwords;
-struct metaMergeEntry *metaFile;
+void addindexfilelist(SWISH *sw, int num, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct docPropertyEntry *docProperties, int *totalfiles, int ftotalwords, struct metaMergeEntry *metaFile)
 {
 int i,hashval;
 struct file *thisFileEntry = NULL;
@@ -517,10 +497,7 @@ struct mergeindexfileinfo *ip;
 /* This returns the file number corresponding to a pathname.
 */
 
-int lookupindexfilepath(path,start,size)
-char *path;
-int start;
-int size;
+int lookupindexfilepath(char *path,int start,int size)
 {
 unsigned hashval;
 struct mergeindexfileinfo *ip;
@@ -540,10 +517,7 @@ struct mergeindexfileinfo *ip;
 ** to a word found in both index files.
 */
 
-ENTRY *mergeindexentries(ip1, ip2, num)
-ENTRY *ip1;
-ENTRY *ip2;
-int num;
+ENTRY *mergeindexentries(ENTRY *ip1, ENTRY *ip2, int num)
 {
 ENTRY *ep;
 int i,j=0;
@@ -575,9 +549,7 @@ int i,j=0;
 ** files to a new merged index file.
 */
 
-void remap(oldnum, newnum)
-int oldnum;
-int newnum;
+void remap(int oldnum, int newnum)
 {
 	unsigned hashval;
 	struct mapentry *mp;
@@ -594,8 +566,7 @@ int newnum;
 /* This retrieves the number associated with another.
 */
 
-int getmap(num)
-int num;
+int getmap(int num)
 {
 	unsigned hashval;
 	struct mapentry *mp;
@@ -614,8 +585,7 @@ int num;
 /* This marks a number as having been printed.
 */
 
-void marknum(num)
-int num;
+void marknum(int num)
 {
 	unsigned hashval;
 	struct markentry *mp;
@@ -632,8 +602,7 @@ int num;
 /* Has a number been printed?
 */
 
-int ismarked(num)
-int num;
+int ismarked(int num)
 {
 	unsigned hashval;
 	struct markentry *mp;
@@ -737,10 +706,7 @@ void initmapentrylist()
 /* Reads the meta names from the index. Needs to be different from
 ** readMetaNames because needs to zero out the counter.
 */
-struct metaMergeEntry* readMergeMeta(sw,metaCounter,metaEntryArray)
-SWISH *sw;
-int metaCounter;
-struct metaEntry **metaEntryArray;
+struct metaMergeEntry* readMergeMeta(SWISH *sw,int metaCounter,struct metaEntry **metaEntryArray)
 {
 struct metaMergeEntry *mme=NULL, *tmp=NULL, *tmp2=NULL;
 int i;
@@ -764,9 +730,7 @@ int i;
 
 /* Creates a list of all the meta names in the indexes
 */
-struct metaEntry **createMetaMerge(metaFile1, metaFile2)
-struct metaMergeEntry *metaFile1;
-struct metaMergeEntry *metaFile2;
+struct metaEntry **createMetaMerge(struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2, int *metaCounter)
 {
 struct metaMergeEntry* tmpEntry;
 int counter;
@@ -777,6 +741,7 @@ struct metaEntry **metaEntryArray = NULL;
 	
 	for (tmpEntry=metaFile2;tmpEntry;tmpEntry=tmpEntry->next)
 		metaEntryArray = addMetaMergeArray(metaEntryArray,tmpEntry,&counter);
+	*metaCounter=counter;
 	return metaEntryArray;
 }
 
@@ -784,10 +749,7 @@ struct metaEntry **metaEntryArray = NULL;
  ** new index in the idividual file entry
  */
 
-struct metaEntry **addMetaMergeArray(metaEntryArray,metaFileEntry,count)
-struct metaEntry **metaEntryArray;
-struct metaMergeEntry* metaFileEntry;
-int* count;
+struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray,struct metaMergeEntry *metaFileEntry,int *count)
 {
 int newMetaID;
 struct metaEntry* newEntry;
@@ -839,18 +801,20 @@ int i;
 			metaEntryArray=(struct metaEntry **)erealloc(metaEntryArray,((*count)+1)*sizeof(struct metaEntry *));
 			newEntry = (struct metaEntry*) emalloc(sizeof(struct metaEntry));
 			newEntry->metaName = (char*)estrdup(metaWord);
-			newEntry->metaID = (*count)+2;
+			newEntry->metaID = (*count)+AUTOPROP_ID__DOCPATH;
 			newEntry->metaType = metaType;
-			metaFileEntry->newMetaID = (*count)+2;
+			newEntry->sorted_data = NULL;
+			metaFileEntry->newMetaID = (*count)+AUTOPROP_ID__DOCPATH;;
 			metaEntryArray[(*count)++] = newEntry;
 		}
 	} else {
 		metaEntryArray=(struct metaEntry **)emalloc(sizeof(struct metaEntry *));
 		newEntry=(struct metaEntry*) emalloc(sizeof(struct metaEntry));
 		newEntry->metaName = (char*)estrdup(metaWord);
-		newEntry->metaID = 2;
+		newEntry->metaID = AUTOPROP_ID__DOCPATH;
 		newEntry->metaType = metaType;
-		metaFileEntry->newMetaID = 2;
+		newEntry->sorted_data = NULL;
+		metaFileEntry->newMetaID = AUTOPROP_ID__DOCPATH;;
 		*count=1;
 		metaEntryArray[0] = newEntry;
 	}

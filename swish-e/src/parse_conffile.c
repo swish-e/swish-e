@@ -324,8 +324,8 @@ char *w0;
 				else if(strcasecmp(sl->word[1],"XML")==0) {
 					DocType=XML;
 				}
-				else if(strcasecmp(sl->word[1],"MULTITXT")==0) {
-					DocType=MULTITXT;
+				else if(strcasecmp(sl->word[1],"LST")==0) {
+					DocType=LST;
 				}
 				else if(strcasecmp(sl->word[1],"WML")==0) {
 					DocType=WML;
@@ -353,8 +353,8 @@ char *w0;
 				else if(strcasecmp(sl->word[1],"XML")==0) {
 					DocType=XML;
 				}
-				else if(strcasecmp(sl->word[1],"MULTITXT")==0) {
-					DocType=MULTITXT;
+				else if(strcasecmp(sl->word[1],"LST")==0) {
+					DocType=LST;
 				}
 				else if(strcasecmp(sl->word[1],"WML")==0) {
 					DocType=WML;
@@ -397,8 +397,8 @@ char *w0;
 				else if(strcasecmp(sl->word[1],"XML")==0) {
 					DocType=XML;
 				}
-				else if(strcasecmp(sl->word[1],"MULTITXT")==0) {
-					DocType=MULTITXT;
+				else if(strcasecmp(sl->word[1],"LST")==0) {
+					DocType=LST;
 				}
 				else if(strcasecmp(sl->word[1],"WML")==0) {
 					DocType=WML;

@@ -112,7 +112,7 @@ char *getword(char *s, int *skiplen)
       strncpy (word,wstart,len);
       *(word+len) = '\0';
 
-      if (*s == quotechar) s++;
+      if (*s && *s == quotechar) s++;
       *skiplen = s - start;
 
       return word;

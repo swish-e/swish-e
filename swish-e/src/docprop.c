@@ -196,8 +196,6 @@ IndexFILE *indexf;
 		} else {
 			sw->currentMaxPropertiesToDisplay=5;
 			sw->propNameToDisplay=(char **)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(char *));
-			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-				indexf->propIDToDisplay=(int *)emalloc(sw->currentMaxPropertiesToDisplay*sizeof(int));
 		}
 	}
 	sw->propNameToDisplay[sw->numPropertiesToDisplay++] = estrdup(propName);
@@ -219,8 +217,6 @@ IndexFILE *indexf;
 		} else {
 			sw->currentMaxPropertiesToSort=5;
 			sw->propNameToSort=(char **)emalloc(sw->currentMaxPropertiesToSort*sizeof(char *));
-			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-				indexf->propIDToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
 			sw->propModeToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
 		}
 	}
@@ -379,6 +375,9 @@ int i;
 
 	if (sw->numPropertiesToDisplay == 0)
 		return RC_OK;
+	for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+		indexf->propIDToDisplay=(int *)emalloc(sw->numPropertiesToDisplay*sizeof(int));
+
 	for (i = 0; i<sw->numPropertiesToDisplay; i++)
 	{
 		makeItLow(sw->propNameToDisplay[i]);

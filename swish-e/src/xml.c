@@ -98,7 +98,11 @@ struct metaEntry* e;
 */
 
 int countwords_XML(SWISH *sw, FileProp *fprop, char *buffer)
+{
+	return _countwords_XML(sw,fprop,buffer,0,fprop->fsize);
+}
 
+int _countwords_XML(SWISH *sw, FileProp *fprop, char *buffer, int start, int size)
 {
 int ftotalwords;
 int *metaName;
@@ -119,7 +123,7 @@ char *summary=NULL;
 	if(fprop->stordesc)
 		summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_path, summary, start, size, &thisFileEntry);
 		/* Init meta info */
 	metaName=(int *)emalloc((metaNamelen=1)*sizeof(int));
 	positionMeta =(int *)emalloc(metaNamelen*sizeof(int));

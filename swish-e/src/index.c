@@ -117,6 +117,7 @@
 #include "html.h"
 #include "xml.h"
 #include "txt.h"
+#include "lst.h"
 #include "metanames.h"
 #include "result_sort.h"
 #include "filter.h"
@@ -178,9 +179,9 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 			wordcount = countwords_XML(sw, fprop, rd_buffer); 
 			break;
 
-		      case MULTITXT:
-			if(sw->verbose == 3) printf(" - Using MULTITXT filter - ");
-			wordcount = countwords_HTML(sw, fprop, rd_buffer); 
+		      case LST:
+			if(sw->verbose == 3) printf(" - Using LST filter - ");
+			wordcount = countwords_LST(sw, fprop, rd_buffer); 
 			break;
 
 		      case WML:
@@ -485,6 +486,18 @@ unsigned long int tmp;
 		if(is_meta_property(q))
 		{
 			tmp=size;
+			PACKLONG(tmp);    /* make it portable */
+			addDocProperty(&newnode->docProperties,q->metaID,(unsigned char *)&tmp,sizeof(tmp));
+		}
+	}
+
+                        /* Check if size is internal swish metadata */
+	if((q=indexf->startProp))
+	{
+                        /* Check if it is also a property (META_PROP flag) */
+		if(is_meta_property(q))
+		{
+			tmp=start;
 			PACKLONG(tmp);    /* make it portable */
 			addDocProperty(&newnode->docProperties,q->metaID,(unsigned char *)&tmp,sizeof(tmp));
 		}
