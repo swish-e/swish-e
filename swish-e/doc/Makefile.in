@@ -19,8 +19,8 @@ html:
 	@bin/build
 
 pod:
-	chmod 644 src/*.pod
-	chmod 644 ../*.pod ../README
+	-chmod 644 src/*.pod
+	-chmod 644 ../*.pod ../README
 	cp src/*.pod ..
 	pod2text src/README.pod > ../README
 	chmod 444 ../*.pod ../README
@@ -43,12 +43,23 @@ pdf:
 	@echo "swish-e_documentation.pdf"
 
 
+clean:
+	rm -rf rel_ps
+	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
+	rm -rf ../html/split
 
 realclean: clean
 	rm Makefile
 
-clean:
-	rm -rf rel_ps
-	rm -f ../swish-e_documentation.pdf ../swish-e_documentation.ps
-	rm -rf man
+ultraclean: realclean
+	rm -rf ../*.pod readme src/*.1 ../html
+
+split:
+	@echo "Checking for swish binary..."
+	test -x ../src/swish-e
+	bin/build -s
+	cp ../src/swish-e ../html/split/swish-e
+	../html/split/swish-e -c split.conf
+	chmod 755 ../html/split/search.cgi
+
 
