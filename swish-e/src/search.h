@@ -52,6 +52,7 @@ struct MOD_Search
 
 void initModule_Search (SWISH *);
 void freeModule_Search (SWISH *);
+void resetModule_Search (SWISH *);
 int  configModule_Search (SWISH *, StringList *);
 
 

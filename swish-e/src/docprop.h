@@ -31,8 +31,6 @@ char **getResultProperties (RESULT *);
 
 docPropertyEntry *DupProps (docPropertyEntry *);
 
-void FreeOutputPropertiesVars (SWISH *);
-
 char *getResultPropAsString(RESULT *, int);
 
 char *getDocPropAsString(IndexFILE*, struct file *, int);
