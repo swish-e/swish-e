@@ -1,0 +1,81 @@
+[% WRAPPER page_layout %]
+
+    [% IF result %]
+        [% IF result.message %]
+            <span class="message">[% result.message %]</span>
+        [% ELSIF ! result.hits %]
+            <span class="message">No Results Found</span>
+        [% END %]
+    [% END %]
+
+
+    [% PROCESS form %]
+    <p>
+    [% IF result.shown %]
+        [% PROCESS results_header %]
+        [% PROCESS display_results %]
+        <p>
+        [% PROCESS next_links %]
+    [% END %]
+
+[% END %]
+
+[% BLOCK form %]
+    <form method="get" action="[% request.myself %]" enctype="application/x-www-form-urlencoded">
+        <input type="text" name="query" value="" size="40" maxlength="200" />
+        <input type="submit" name="submit" value="Search!" /><br>
+        Limit search to:
+        <input type="radio" name="metaname" value="swishdefault" checked value="swishdefault"/>Body and Title
+        <input type="radio" name="metaname" value="swishtitle" />Just Title
+        <input type="radio" name="metaname" value="swishdocpath" />Path
+    </form>
+[% END %]
+
+
+[% BLOCK results_header %]
+<div class="header">
+    Showing page [% result.page %] 
+    ([% result.start +1 %] - [% (result.start + result.shown) %] of [% result.hits %] hits) 
+    for <b>[% request.query | html %]</b><br>
+
+    [% USE myurl = url( request.myself, query=request.query, metaname=request.metaname, size=request.pagesize ) %]
+
+    [% PROCESS next_links %]
+
+</div>
+[% END %]
+
+[% BLOCK next_links %]
+
+    [% IF result.prev %]
+       <a href="[% myurl( page=result.prev ) %]">Previous</a>
+    [% END %]
+    [% IF result.next %]
+       <a href="[% myurl( page=result.next ) %]">Next</a> 
+    [% END %]
+[% END %]
+
+[% BLOCK display_results %]
+    [% USE date %]
+    [% FOREACH item = result.results %]
+        <div class="title">
+            <a href="[% item.Property('swishdocpath') | uri | html %]">
+                [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle') %]</a>
+
+            <span class="rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
+        </div>
+
+        <div class="description">
+            [% item.Property('swishdescription') || "No description" | highlight('swishdefault') %]
+        </div>
+
+        <div class="metadata">
+            Path: <a href="[% item.Property('swishdocpath') | uri | html %]">
+                [% item.Property('swishdocpath') | highlight('swishdocpath') %]</a>
+                - [% item.Property('swishdocsize') %] bytes<br>
+            Date: [% date.format( item.Property('swishlastmodified')) %]<br>
+        </div>
+    [% END %]
+[% END %]
+
+

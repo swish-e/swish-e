@@ -1,0 +1,17 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+[% # This template defines the layout of the site %]
+<head>
+    <style type="text/css">
+        [% INSERT style.css %]
+    </style>
+
+    <title>[% config.title %]</title>
+</head>
+<body>
+    [% PROCESS common_header %]
+    [% content %]
+    [% PROCESS common_footer %]
+</body>
+</html>
+

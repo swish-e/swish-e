@@ -9,11 +9,13 @@ swish.gif   - Swish-e logo.
 
 swish.tmpl  - HTML::Template file for use with swish.cgi.
 
-search.tt   - Template::Toolkit example template file.
+swish.tt    - Template::Toolkit example template file for swish.cgi
+              (renamed from search.tt Jun 3, 2004)
 
 modules     - Directory containing required modules for use with swish.cgi.
               The modules are installed into $libexecdir/swish-e/perl.
 
+templates   - Directory with templates for the search.cgi example script.
 
 
 SWISH-Stemmer-0.05.tar.gz

@@ -97,7 +97,7 @@ use vars '$speedy_config';  # Global for caching in persistent environment such 
 #
 #           template => {
 #            package         => 'SWISH::TemplateToolkit',
-#            file            => 'search.tt',
+#            file            => 'swish.tt',
 #            options         => {
 #                INCLUDE_PATH    => '/home/user/swish-e/example',
 #            },
@@ -459,7 +459,7 @@ sub default_config {
 
         xtemplate => {
             package         => 'SWISH::TemplateToolkit',
-            file            => 'search.tt',
+            file            => 'swish.tt',
             options         => {
                 INCLUDE_PATH    => '@@pkgdatadir@@',
                 #PRE_PROCESS     => 'config',
@@ -2916,7 +2916,8 @@ See http://search.cpan.org.
 Two basic templates are provided as examples for generating output using these templating systems.
 The example templates are located in the F<example> directory.
 The module F<SWISH::TemplateHTMLTemplate> uses the file F<swish.tmpl> to generate its output, while the
-module F<SWISH::TemplateToolkit> uses the F<search.tt> file.
+module F<SWISH::TemplateToolkit> uses the F<swish.tt> file.
+(Note: swish.tt was renamed from search.tt Jun 03, 2004.)
 
 To use either of these modules you will need to adjust the "template" configuration setting.  Examples for
 both templating systems are provided in the configuration settings near the top of the F<swish.cgi> program.

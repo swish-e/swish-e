@@ -4,8 +4,17 @@ libexec_SCRIPTS = swish.cgi search.cgi
 
 
 pkgdata_DATA = \
-	search.tt \
-	swish.tmpl
+    swish.tt \
+    swish.tmpl
+
+templatedir = $(pkgdatadir)/templates
+
+template_DATA = \
+    templates/search.tt \
+    templates/page_layout \
+    templates/common_header \
+    templates/common_footer \
+    templates/style.css
 
 
 perlmodule_SCRIPTS = \
@@ -38,6 +47,7 @@ search.cgi: search.cgi.in
 		-e 's,@@swishbinary@@,$(bindir)/swish-e$(EXEEXT),' \
 		-e 's,@@perlbinary@@,$(PERL),' \
 		-e 's,@@pkgdatadir@@,$(pkgdatadir),' \
+		-e 's,@@templatedir@@,$(templatedir),' \
 			 $(srcdir)/search.cgi.in > search.cgi
 
 
@@ -45,9 +55,9 @@ search.cgi: search.cgi.in
 EXTRA_DIST = \
     README \
     SWISH-Stemmer-0.05.tar.gz \
-    search.tt \
     swish.cgi.in \
     search.cgi.in \
     swish.gif \
-    swish.tmpl \
+    $(pkgdata_DATA) \
+    $(template_DATA) \
     $(perlmodule_SCRIPTS)
