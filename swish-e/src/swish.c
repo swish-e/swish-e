@@ -229,7 +229,7 @@ struct stat stat_buf;
 		{
 			index = 1;
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
-				sw->dirlist = (struct swline *)addswline(sw->dirlist, (++argv)[0]);
+				sw->dirlist = addswline(sw->dirlist, (++argv)[0]);
 				argc--;
 			}
 		}
@@ -308,8 +308,7 @@ struct stat stat_buf;
 		{
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
 			{
-				sw->indexlist = (IndexFILE *)
-					addindexfile(sw->indexlist, (++argv)[0]);
+				sw->indexlist = addindexfile(sw->indexlist, (++argv)[0]);
 				argc--;
 			}
 		}
@@ -318,16 +317,14 @@ struct stat stat_buf;
 			index = 1;
 			hasconf = 1;
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
-				conflist = (struct swline *)
-					addswline(conflist, (++argv)[0]);
+				conflist = addswline(conflist, (++argv)[0]);
 				argc--;
 			}
 		}
 		else if (c == 'C') {
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-')
 			{
-				conflist = (struct swline *)
-					addswline(conflist, (++argv)[0]);
+				conflist = addswline(conflist, (++argv)[0]);
 				argc--;
 			}
 			if (conflist == NULL)
@@ -406,8 +403,7 @@ struct stat stat_buf;
 		else if (c == 'M') {
 			merge = 1;
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
-				sw->indexlist = (IndexFILE *)
-					addindexfile(sw->indexlist, (++argv)[0]);
+				sw->indexlist = addindexfile(sw->indexlist, (++argv)[0]);
 				argc--;
 			}
 		}
@@ -431,8 +427,7 @@ struct stat stat_buf;
 		else if (c == 'D') {
 
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
-				sw->indexlist = (IndexFILE *)
-					addindexfile(sw->indexlist, (++argv)[0]);
+				sw->indexlist = addindexfile(sw->indexlist, (++argv)[0]);
 				argc--;
 			}
 		}
@@ -524,7 +519,7 @@ struct stat stat_buf;
 	if ( Dump_Index )
 	{
 		if (!hasindex)
-			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
 		
 		while (sw->indexlist != NULL) {
 			
@@ -555,7 +550,7 @@ struct stat stat_buf;
 		}
 
 		if (!hasindex)
-			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
 
 		if (!hasdir)
 			progerr("Specify directories or files to index.");
@@ -731,7 +726,7 @@ struct stat stat_buf;
 	else if(keychar)
 	{
 		if (!hasindex) {
-			sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
 		}
 		OutputKeyChar (sw, (int)(unsigned char)keychar);
 	}
@@ -741,8 +736,7 @@ struct stat stat_buf;
 	else 
 	{
 		if (!hasindex)
-			sw->indexlist = (IndexFILE *)
-			addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = addindexfile(sw->indexlist, INDEXFILE);
 		
 		if(tmpprops)
 		{
@@ -863,7 +857,6 @@ struct stat stat_buf;
 			resultHeaderOut(sw,1, "err: no results\n.\n");
 		}
 			/* Free conflist */
-		freeswline(conflist);
 		if(lenword) efree(word);
 		if(lenmaxhitstr) efree(maxhitstr);
 		if(lenbeginhitstr) efree(beginhitstr);
@@ -872,7 +865,11 @@ struct stat stat_buf;
 
 /* common exit for all functions */
 
+	if (sw->dirlist) freeswline(sw->dirlist);
+
 	SwishClose(sw);
+
+	if (conflist) freeswline(conflist);
 
 	if(index1) efree(index1);
 	if(index2) efree(index2);

@@ -27,9 +27,7 @@
 #include "metanames.h"
 #include "string.h"
 
-struct swline *addswline(rp, line)
-struct swline *rp;
-char *line;
+struct swline *addswline(struct swline *rp, char *line)
 {
 struct swline *newnode;
 	newnode = (struct swline *) emalloc(sizeof(struct swline));
@@ -46,8 +44,7 @@ struct swline *newnode;
 	return rp;
 }
 
-struct swline *dupswline(rp)
-struct swline *rp;
+struct swline *dupswline(struct swline *rp)
 {
 struct swline *tmp=NULL, *tmp2=NULL;
 struct swline *newnode;
@@ -67,9 +64,7 @@ struct swline *newnode;
 	return tmp;
 }
 
-IndexFILE *addindexfile(rp, line)
-IndexFILE *rp;
-char *line;
+IndexFILE *addindexfile(IndexFILE *rp, char *line)
 {
 IndexFILE *newnode;
 int i;

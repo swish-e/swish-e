@@ -218,7 +218,6 @@ void freeModule_Index (SWISH *sw)
 
   if(idx->lentmpdir) efree(idx->tmpdir);        
 
-          /* Free compression info */    
         /* Free compression buffer */    
   efree(idx->compression_buffer);
         /* free worddata buffer */
@@ -1328,10 +1327,13 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 write_worddata(sw, epi, indexf);
             }
             efree(epi->word);
+			efree(epi->locationarray);
             efree(epi);
         }
         
     DB_EndWriteWords(sw, indexf->DB);
+
+	efree(ep->elist);
 
     }
 }

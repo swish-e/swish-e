@@ -98,10 +98,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             freeStringList(sl);
             continue;
         }
-        w0 = sl->word[0];       /* Config Direct. = 1. word */
 
+        w0 = sl->word[0];       /* Config Direct. = 1. word */
         if (w0[0] == '#')
+		{
+			freeStringList(sl);
             continue;           /* comment */
+		}
 
         if (strcasecmp(w0, "IndexDir") == 0)
         {

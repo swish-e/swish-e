@@ -432,6 +432,7 @@ struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticm
     int     i;
     struct metaEntry *e = NULL;
 
+	/*** $$$ NOTE: memory for "word" is never freed... ***/
     if (!lenword)
         word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
 
