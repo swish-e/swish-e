@@ -101,7 +101,7 @@ $Id$
 ** 2001-03-02 rasc   Header: write translatecharacters
 ** 2001-03-14 rasc   resultHeaderOutput  -H n
 ** 2001-03-24 rasc   timeroutines rearranged
-**
+** 2001-06-08 wsm    Store word after ENTRY to save memory
 **
 */
 
@@ -454,7 +454,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 		if (sw->Index->hashentriesdirty[i])
 		{
 			sw->Index->hashentriesdirty[i] = 0;
-			for (ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
+			for (ep = sw->Index->hashentries[i]; ep; ep = ep->next)
 			{
 				CompressCurrentLocEntry(sw, indexf, ep);
 				ep->currentlocation = ep->u1.max_locations;
@@ -540,6 +540,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     LOCATION *tp;
     int     hashval;
     IndexFILE *indexf = sw->indexlist;
+	struct MOD_Index *idx = sw->Index;
 
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
@@ -556,33 +557,33 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         printf(" )\n");
     }
 
-    if (!sw->Index->entryArray)
+    if (!idx->entryArray)
     {
-        sw->Index->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
-        sw->Index->entryArray->numWords = 0;
-        sw->Index->entryArray->elist = NULL;
+        idx->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
+        idx->entryArray->numWords = 0;
+        idx->entryArray->elist = NULL;
     }
     /* Compute hash value of word */
     hashval = searchhash(word);
     /* Look for the word in the hash array */
-    for (efound = sw->Index->hashentries[hashval]; efound; efound = efound->nexthash)
+    for (efound = idx->hashentries[hashval]; efound; efound = efound->next)
         if (strcmp(efound->word, word) == 0)
             break;
 
 	/* flag hash entry used this pass */
-	sw->Index->hashentriesdirty[hashval] = 1;
+	idx->hashentriesdirty[hashval] = 1;
 
     if (!efound)
     {
-        en = (ENTRY *) emalloc(sizeof(ENTRY));
-        en->word = (char *) estrdup(word);
+        en = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(word) + 1);
+        strcpy(en->word, word);
         en->tfrequency = 1;
         en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
-        tp = (LOCATION *) emalloc(sizeof(LOCATION));
         en->currentlocation = 0;
         en->u1.max_locations = 1;
-        en->nexthash = sw->Index->hashentries[hashval];
-        sw->Index->hashentries[hashval] = en;
+        en->next = idx->hashentries[hashval];
+        idx->hashentries[hashval] = en;
+        tp = (LOCATION *) emalloc(sizeof(LOCATION));
         tp->filenum = filenum;
         tp->frequency = 1;
         tp->structure = structure;
@@ -591,7 +592,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
         en->locationarray[0] = tp;
 
-        sw->Index->entryArray->numWords++;
+        idx->entryArray->numWords++;
         indexf->header.totalwords++;
     }
     else
@@ -621,7 +622,6 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         {                       /* Found filenum and metaname */
             tp = efound->locationarray[l];
             tp = erealloc(tp, sizeof(LOCATION) + tp->frequency * sizeof(int));
-
             tp->position[tp->frequency++] = position;
             tp->structure |= structure;
             efound->locationarray[l] = tp;
@@ -936,7 +936,7 @@ int     removestops(SWISH * sw)
        ** the hash array */
     for (i = 0; i < SEARCHHASHSIZE; i++)
     {
-        for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
+        for (ep2 = NULL, ep = sw->Index->hashentries[i]; ep; ep = ep->next)
         {
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= idx->plimit && ep->tfrequency >= idx->flimit)
@@ -946,9 +946,9 @@ int     removestops(SWISH * sw)
                 stopwords++;
                 /* Remove entry from  the hash array */
                 if (ep2)
-                    ep2->nexthash = ep->nexthash;
+                    ep2->next = ep->next;
                 else
-                    sw->Index->hashentries[i] = ep->nexthash;
+                    sw->Index->hashentries[i] = ep->next;
                 totalwords--;
                 sw->Index->entryArray->numWords--;
                 indexf->header.totalwords--;
@@ -1015,7 +1015,6 @@ int     removestops(SWISH * sw)
             }
 
             /* Free Memory used by stopword */
-            efree(e->word);
             for (m = 0; m < e->u1.max_locations; m++)
             {
                 efree(e->locationarray[m]);
@@ -1036,7 +1035,7 @@ int     removestops(SWISH * sw)
            ** I could achieve!! */
         for (i = 0; i < SEARCHHASHSIZE; i++)
         {
-            for (ep = sw->Index->hashentries[i]; ep; ep = ep->nexthash)
+            for (ep = sw->Index->hashentries[i]; ep; ep = ep->next)
             {
                 if (sw->verbose >= 3)
                 {
@@ -1313,7 +1312,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                     /* If it is not a stopword write it */
                     if (epi->u1.fileoffset >= 0L)  
                         DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
-                    epi = epi->nexthash;
+                    epi = epi->next;
                 }
             }
         }
@@ -1326,7 +1325,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             {
                 write_worddata(sw, epi, indexf);
             }
-            efree(epi->word);
 			efree(epi->locationarray);
             efree(epi);
         }
@@ -1791,7 +1789,7 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
 
     /* Fill the array with all the entries */
     for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
-        for (e = sw->Index->hashentries[i]; e; e = e->nexthash)
+        for (e = sw->Index->hashentries[i]; e; e = e->next)
             sw->Index->entryArray->elist[j++] = e;
 
     /* Sort them */

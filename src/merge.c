@@ -217,8 +217,8 @@ int is_first1, is_first2;
 			{
 				if(endip1)
 					ip1 = NULL;
-				else ip1 = (ENTRY *) 
-					readindexline(sw1, indexf1, metaFile1, j, &is_first1);
+				else 
+					ip1 = readindexline(sw1, indexf1, metaFile1, j, &is_first1);
 				if (ip1 == NULL) 
 				{
 					endip1 = 1;
@@ -234,8 +234,8 @@ int is_first1, is_first2;
 			{
 				if(endip2)
 					ip2 = NULL;
-				else ip2 = (ENTRY *) 
-					readindexline(sw2, indexf2, metaFile2, j, &is_first2);
+				else 
+					ip2 = readindexline(sw2, indexf2, metaFile2, j, &is_first2);
 				if (ip2 == NULL) 
 				{
 					endip2=1;
@@ -376,8 +376,8 @@ int sz_buffer;
 	if(!wordID)   /* No more words */
 		return NULL;
 
-	ip = (ENTRY *) emalloc(sizeof(ENTRY));
-	ip->word = resultword;
+	ip = (ENTRY *) emalloc(sizeof(ENTRY) + strlen(resultword) + 1);
+	strcpy(ip->word, resultword);
     ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
 	ip->u1.max_locations=0;
 	ip->currentlocation=0;
@@ -505,27 +505,32 @@ struct mergeindexfileinfo *ip;
 ENTRY *mergeindexentries(ENTRY *ip1, ENTRY *ip2, int num)
 {
 ENTRY *ep;
-int i,j=0;
-	ep = (ENTRY *) emalloc(sizeof(ENTRY));
-	ep->locationarray=(LOCATION **)emalloc((ip1->u1.max_locations+ip2->u1.max_locations)*sizeof(LOCATION *));
-	for(j=0;j<ip1->u1.max_locations;j++)
-		ep->locationarray[j]=ip1->locationarray[j];
-	for(i=0;i<ip2->u1.max_locations;i++)
+LOCATION **lap;
+int i,j;
+
+	lap = (LOCATION **)emalloc((ip1->u1.max_locations+ip2->u1.max_locations)*sizeof(LOCATION *));
+	for(j=0; j<ip1->u1.max_locations; j++)
+		lap[j] = ip1->locationarray[j];
+	for(i=0; i<ip2->u1.max_locations; i++)
 	{
 		if(ip2->locationarray[i]->filenum > num) 
 		{
-			ep->locationarray[j++]=ip2->locationarray[i];
+			lap[j++] = ip2->locationarray[i];
 		}
 	}
-	ep->u1.max_locations=j;
-	ep->currentlocation=0;
+
+	ep = (ENTRY *)emalloc(sizeof(ENTRY) + strlen(ip1->word) + 1);
+	strcpy(ep->word, ip1->word);
+	ep->locationarray = lap;
+	ep->u1.max_locations = j;
+	ep->currentlocation = 0;
 	ep->tfrequency=ip1->tfrequency+ip2->tfrequency;
-	ep->word = ip1->word;
+
 	efree(ip1->locationarray);
 	efree(ip1);
-	efree(ip2->word);
 	efree(ip2->locationarray);
 	efree(ip2);
+
 	return ep;
 }
 
@@ -811,25 +816,24 @@ void addentryMerge(SWISH *sw, ENTRY *ip)
 int hashval;
 IndexFILE *indexf=sw->indexlist;
 
-        if(!sw->Index->entryArray)
-        {
-                sw->Index->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
-                sw->Index->entryArray->numWords=0;
-                sw->Index->entryArray->elist=NULL;
-        }
-                /* Compute hash value of word */
-        hashval=searchhash(ip->word);
+    if(!sw->Index->entryArray)
+    {
+        sw->Index->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
+        sw->Index->entryArray->numWords=0;
+        sw->Index->entryArray->elist=NULL;
+    }
+        /* Compute hash value of word */
+    hashval=searchhash(ip->word);
 		/* Add to the array of hashes */
-	ip->nexthash=sw->Index->hashentries[hashval];
+	ip->next=sw->Index->hashentries[hashval];
 	sw->Index->hashentries[hashval]=ip;
 
-        sw->Index->entryArray->numWords++;
-        indexf->header.totalwords++;
+    sw->Index->entryArray->numWords++;
+    indexf->header.totalwords++;
 
-                /* In merge there is no dup !!! */
-        CompressCurrentLocEntry(sw,indexf,ip);
-        ip->currentlocation=ip->u1.max_locations; /* Avoid compress again in printindex */
-
+        /* In merge there is no dup !!! */
+    CompressCurrentLocEntry(sw,indexf,ip);
+    ip->currentlocation=ip->u1.max_locations; /* Avoid compress again in printindex */
 
 }
 
