@@ -1798,7 +1798,7 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
             result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
             rp = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
             memset( rp, 0, result_size );
-
+printf("matching file in or -- new result\n");
 
             rp->fi.filenum = rp->filenum = r1->filenum;
 
@@ -2058,7 +2058,7 @@ static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfreq
     result_size = sizeof(RESULT) + ((frequency - 1) * sizeof(int));
     newnode = (RESULT *) Mem_ZoneAlloc( results->resultSearchZone, result_size );
     memset( newnode, 0, result_size );
-    
+printf("allocated a result\n");    
     newnode->fi.filenum = newnode->filenum = filenum;
 
     newnode->rank = rank;
