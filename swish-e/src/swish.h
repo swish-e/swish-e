@@ -701,6 +701,10 @@ typedef struct {
     /* If true. Swap part of the info to disk while indexing */
     /* Save memory */
     int swap_flag;
+
+    /* Flag to apply ascii7 translation (rasc) */
+    int applyAscii7;
+
     /* Filenames of the swap files */
     char *swap_file_name;   /* File and properties file */
     char *swap_location_name;   /* Location info file */

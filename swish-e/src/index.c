@@ -291,10 +291,9 @@ int structure;
 int metaID;
 int position;
 {
-int i,j,k,l,lenword;
-int isbigger;
+int l;
 ENTRY *en,*efound;
-LOCATION *tp, *oldtp;
+LOCATION *tp;
 int hashval;
 IndexFILE *indexf=sw->indexlist;
 	if(!sw->entryArray)
@@ -623,7 +622,7 @@ IndexFILE *indexf=sw->indexlist;
 
 	totalwords=indexf->header.totalwords;
 
-	if(!ep || !totalwords || sw->plimit>=NO_PLIMIT) return stopwords;
+	if(!totalwords || sw->plimit>=NO_PLIMIT) return stopwords;
 
 	if(sw->verbose)
 		printf("Warning: This proccess can take some time. For a faster one, use IgnoreWords instead of IgnoreLimit\n");
@@ -638,10 +637,8 @@ IndexFILE *indexf=sw->indexlist;
 	{
 		for(ep2=NULL,ep=sw->hashentries[i];ep;ep=ep->nexthash)
 		{
-printf("%d %p %p %p %s\n",i,ep,ep->word,ep->nexthash,ep->word);
 			percent = (ep->tfrequency * 100 )/ totalfiles;
 			if (percent >= sw->plimit && ep->tfrequency >= sw->flimit) {
-printf("-->%p %p %p %p\n",ep2,ep,ep->word,ep->nexthash);
 				addStopList(indexf,ep->word);
 					addstophash(indexf,ep->word);
 				stopwords++;
@@ -1101,7 +1098,7 @@ struct docPropertyEntry **docProperties;
 int *sz_buffer;
 int lookup_path;
 {
-int len,len_filename;
+int len_filename;
 unsigned char *buffer1,*buffer2,*buffer3,*p;
 int lenbuffer1;
 int datalen1, datalen2,datalen3;
@@ -1132,9 +1129,9 @@ IndexFILE *indexf;
 int filenum;
 {
 long pos;
-int total_len,len1,len2,len3,len4,mtime,bytes,begin,lookup_path;
+int total_len,len1,len4,lookup_path;
 char *buffer,*p;
-char *buf1,*buf2,*buf3;
+char *buf1;
 struct file *fi;
 FILEOFFSET *fo;
 FILE *fp=indexf->fp;
@@ -1171,7 +1168,7 @@ FILE *fp=indexf->fp;
 	memcpy(fi->fi.filename,indexf->pathlookup->all_entries[lookup_path]->val,len4);
 	memcpy(fi->fi.filename+len4,buf1,len1);
 	fi->fi.filename[len1+len4]='\0';
-	if(buf1 != buf2) efree(buf1);
+	efree(buf1);
 
 	/* read the document properties section  */
 	fi->docProperties = fetchDocProperties( p);
@@ -1838,6 +1835,11 @@ IndexFILE *indexf=sw->indexlist;
 
 				/* Translate chars */
 				TranslateChars(indexf->header,word);
+
+				/* Call to ISO8 -> ISO7 (rasc) */
+				if(sw->applyAscii7)
+					word = str_ISO_normalize(word);
+				
 
 				if (indexf->header.applyStemmingRules)
 				{

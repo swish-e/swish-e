@@ -24,7 +24,10 @@
 #include "mem.h"
 #include "list.h"
 #include "string.h"
+#include "file.h"
 #include "metanames.h"
+#include "hash.h"
+#include "error.h"
 #include "parse_conffile.h"
 
 
@@ -44,7 +47,7 @@ int i;
 void getdefaults(SWISH *sw, char *conffile, int *hasdir, int *hasindex, int hasverbose)
 {
 int i, gotdir, gotindex;
-char *c, line[MAXSTRLEN];
+char line[MAXSTRLEN];
 FILE *fp;
 int linenumber = 0;
 int baddirective = 0;
@@ -239,12 +242,15 @@ unsigned char *StringValue=NULL;
 		}
 		else if (strcasecmp(sl->word[0], "TranslateCharacters")== 0)  
 		{
-			if(sl->n==3) {
+			if(sl->n==2 && strcasecmp(sl->word[1],":ascii7:")==0) {
+					/* Flag to use ISO8 -> ISO7 conversion as coded by rasc */ 
+				sw->applyAscii7=1;  
+			} else if(sl->n==3) {
 				indexf->header.translatechars1=SafeStrCopy(indexf->header.translatechars1,sl->word[1],&indexf->header.lentranslatechars1);
 				indexf->header.translatechars2=SafeStrCopy(indexf->header.translatechars2,sl->word[2],&indexf->header.lentranslatechars2);
 				if(strlen(indexf->header.translatechars1)!=strlen(indexf->header.translatechars2)) progerr("TranslateCharacters option requires two values of the same length");
 				
-			} else progerr("TranslateCharacters requires two values");
+			} else progerr("TranslateCharacters requires two values (like in tr) or the value :ascii7:");
 		}
 		else if (strcasecmp(sl->word[0], "PropertyNames")== 0)
 		{
