@@ -6,22 +6,63 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.2rc2 - September ??, 2002
+=head2 Version 2.2.1 - September 26, 2002
+
+=over 4
+
+=item * No-Contents with -S prog
+
+Failed to use the correct default parser when using the No-Contents header
+and libxml2 linked in. [moseley]
+
+=item * Add tests for IRIX and sparc machines
+
+8-byte alignment in mem_zones is is required for these machine [moseley]
+
+
+=item * Fixed code when removing files
+
+Was not correctly removing words from index when parser aborted [jmruiz]
+
+=item * Merge segfault
+
+Fixed segfault caused by trying to print null dates while merging
+duplicate files. [moseley]
+
+=item * Documentation patches
+
+Spelling corrections to the SWISH-CONFIG pod page [Steve Eckert]
+
+=item * Configure corrections
+
+Fixed a zlib test error that used "==" in a test [Steve Eckert]
+
+=item * Updates to VMS build
+
+The VMS build was updated [Jean-François PIÉRONNE]
+
+=item * MANIFEST corrections
+
+Added missing filters and vms build file into MANIFEST [moseley]
+
+=back
+
+=head2 Version 2.2 - September 18, 2002
 
 
 =over 4
 
-=item Default parser
+=item * Default parser
 
 Swish-e will now use the HTML2 (libxml2) parser by default if libxml2 is
 installed and DefaultContents or IndexContents is not used.
 
-=item Selecting parsers
+=item * Selecting parsers
 
 Allow HTML*, XML*, and TXT* to automatically select the libxml2-based parsers
 if libxml2 is linked with Swish-e, otherwise fallback to the built-in parsers.
 
-=item SwishSpider and Filters
+=item * SwishSpider and Filters
 
 Filters (FileFilter directive) did not work correctly when spidering
 with the -S http method.  A new filter system was developed and now
@@ -31,21 +72,21 @@ by the src/SwishSpider program.
 When indexing with the -S http method only documents of content-type "text/*"
 are indexed.  Other documents must be converted to text by using the filter system.
 
-=item Buffer overflow in xml.c
+=item * Buffer overflow in xml.c
 
 Fixed bug in xml.c reported by Rodney Barnett when very long words
 were indexed. [moseley]
 
-=item configure script updates
+=item * configure script updates
 
 Updated from _WIN32 checks to feature checks using autoconf [moseley, norris]
 
-=item updates to run on Alpha (Linux 2.4 (Debian 3.0))
+=item * updates to run on Alpha (Linux 2.4 (Debian 3.0))
 
 Fixed a cast error when calling zlib, and the calls to read/write a packed longs
 to disk. [jmruiz, moseley]
 
-=item COALESCE_BUFFER_MAX_SIZE
+=item * COALESCE_BUFFER_MAX_SIZE
 
 Some people were seeing the following error:
 

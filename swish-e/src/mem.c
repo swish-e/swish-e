@@ -38,9 +38,13 @@ $Id$
 
 
 /* Alignment size in bytes */
+/* $$$ This needs to be fixed -- need an autoconf macro that will detect the correct value. */
+/* Check the Postgres configure script for a macro that may work */
 
-#ifdef __sparc__
-/* This is not exactly correct because not all sparc machines require 8, but minor difference in memory usage */
+#if defined(__sparc__) || defined(__mips64)
+/* __sparc__ is not exactly correct because not all sparc machines require 8, but minor difference in memory usage */
+/* __mips64 it to catch IRIX 6.5 */
+
 #define PointerAlignmentSize 8
 
 #else

@@ -66,7 +66,7 @@ xmltok.obj : [.expat.xmltok]xmltok.c
 
 xmlrole.obj : [.expat.xmltok]xmlrole.c
 
-snprintf.obj : [.vms.sprintf_2_2]snprintf.c
+snprintf.obj : [.vms.snprintf]snprintf.c
 
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
         link/exe=$(MMS$TARGET) $(LINKFLAGS) -
@@ -84,7 +84,7 @@ libswish-e.olb : $(OBJS)
 swish-search.exe : $(NAME)
 	copy $(NAME) swish-search.exe
 
-regex.obj : [.vms]regex.c [.vms]descrip.mms
+regex.obj : [.vms]regex.c [.vms]descrip_vax.mms
 
 acconfig.h : [.vms]acconfig.h_vms
 	copy $(MMS$SOURCE) $(MMS$TARGET)
@@ -111,9 +111,9 @@ test :	$(NAME)
 	mc [-.src]swish-e -f test.index -w """three little pigs"""
 
 
-$(OBJS) :	[.vms]descrip.mms config.h swish.h acconfig.h
+$(OBJS) :	[.vms]descrip_vax.mms config.h swish.h acconfig.h
 
-swish.obj :	[.vms]descrip.mms config.h swish.h acconfig.h
+swish.obj :	[.vms]descrip_vax.mms config.h swish.h acconfig.h
 
 install :	
 	!
