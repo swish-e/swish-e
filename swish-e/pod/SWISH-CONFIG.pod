@@ -18,7 +18,22 @@ Comments are any line that begin with a "#".
 
     # This is a comment
 
-Commented example configuration files are included in the F<config> directory of the SWISH-E distribution.
+Directives may take more than one parameter.  Enclose single parameters that include whitespace
+in quotes (single or double).  You may use a backslash to escape the next character.
+
+    ReplaceRules append "foo bar"   <- define "foo bar" as a single word
+    ReplaceRules append foo\ bar    <- same thing
+
+If you need to include a quote character in the value either use a backslash to escape it, or
+enclose it in quotes of the other type.
+
+    FileFilter .foo foofilter "'%p'"  <- unix
+    FileFilter .foo foofilter \'%p\'  <- unix same thing
+    FileFilter .foo foofilter '"%p"'  <- windows uses double-quotes
+
+    
+Commented example configuration files are included in the F<config> directory of the
+SWISH-E distribution.
 
 Typically, configuration file the directives are grouped together
 in some logical order -- that is, directives that control the source of the documents would be grouped
@@ -770,7 +785,7 @@ The B<MetaNames> directive is a space separated list.  For example:
     MetaNames meta1 meta2 keywords subjects
 
 You may also use L<UndefinedMetaTags|/"item_UndefinedMetaTags"> to specify automatic extraction of meta names
-from your HTML and XML documents.
+from your HTML and XML documents, and also to ignore indexing content of meta tags.
 
 META tags can have two formats in your B<HTML> source documents:
 
@@ -782,7 +797,7 @@ and
         some content
     </meta1>
 
-But this second version is invalid HTML, and will generate a warning if ParserWarningLevel is set.    
+But this second version is invalid HTML, and will generate a warning if ParserWarningLevel is set (libxml2 only).    
 
 And in B<XML> documents, use the format:
 
@@ -807,9 +822,43 @@ You may nest the XML and the start/end tag versions:
 
 Then you can search in both tag2 and tag2 with:
 
-  swish-e -w 'keywords=(query words)'
+    swish-e -w 'keywords=(query words)'
 
-MetaNames are case sensitive in XML documents.
+Swish indexes all text as some metaname.  The default is C<swishdefault>, so these two queries are the same:
+
+    swish-e -w foo
+    swish-e -w swishdefault=foo
+
+When indexing HTML swish indexes the HTML title as default text, so when searching swish will find matches
+in both the HTML body and the HTML title.  Swish also, by default, indexes content of meta tags.  So:
+
+    swish-e -w foo
+
+will find "foo" in the body, the title, or any meta tags.
+
+Currently, there's no way do prevent swish from indexing the title contents along with the body contents,
+but see L<UndefinedMetaTags|/"item_UndefinedMetaTags"> for how to control the indexing of meta tags.
+
+If you would like to search just the title text, you may use:
+
+    MetaNames swishtitle
+
+This will index the title text separately under the built-in swish internal meta name "swishtitle".
+You may then search like
+
+    swish-e -w foo  -- search for "foo" in title, body (and undefined meta tags)
+    swish-e -w swishtitle=foo -- search for "foo" in title only
+
+In addition to swishtitle, you can limit searches to documents' path with:
+
+   MetaNames swishdocpath
+
+Then to search for "foo" but also limit searches to documents that include "manual" or "tutorial" in thier path:
+
+   swish-e -w foo swishdocpath=(manual or tutorial)
+
+See also L<ExtractPath|/"item_ExtractPath">.
+
 
 =item MetaNameAlias *meta name* *list of aliases*
 

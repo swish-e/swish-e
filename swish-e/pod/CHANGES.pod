@@ -129,6 +129,18 @@ is the same as a wildcard search.  This may be fixed in the future.
 Searching for buzzwords with those characters will still require backslashing.  This also may change to allow
 some un-escaped operator characters, but some will always need to be escaped (e.g. the double-quote phrase character).
 
+=item * Quotes and Backslash in strings
+
+A bug was fixed in the C<parse_line()> function (in F<string.c>) where backslashes were
+not escaping the next character.  C<parse_line()> is used to parse a string of text into
+tokens (words).  Normally splitting is done at whitespace.  You may use quotes (single or double)
+to define a string (that might include whitespace) as a single parameter.  The backslash can
+also be used to escape the following character.
+
+    ReplaceRules append "foo bar"   <- define "foo bar" as a single word
+    ReplaceRules append foo\ bar    <- same thing
+    
+
 =item * Example C<user.config> file removed.
 
 Previous versions of swish included a configuration file called C<user.config> which
@@ -199,6 +211,10 @@ decide where to write temporary files.
 The configuration setting of L<TmpDir|SWISH-CONFIG/"item_TmpDir"> will be used if none of the
 environment variables are set.  Swish uses the current directory otherwise; there is no
 default temporary directory.
+
+Since the environment variables override the configuration settings, a warning will be issued if
+you set L<TmpDir|SWISH-CONFIG/"item_TmpDir"> in the configuration file and there's also an environment
+variable set.
 
 Temporary files begin with the letters "swtmp" (which can be changed in F<config.h>), followed
 by two or more letters that indicate the type of temporary file, and some random characters to
