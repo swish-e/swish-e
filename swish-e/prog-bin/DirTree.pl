@@ -49,7 +49,7 @@ sub get_content {
     my $path = shift;
 
     my ( $size, $mtime )  = (stat $path )[7,9];
-    open FH, $path or die "$path: $!";
+    open FH, $path or warn "$path: $!";
 
     my $content =  <<EOF;
 Content-Length: $size
