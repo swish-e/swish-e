@@ -221,6 +221,11 @@ But SwishLastErrorMsg might give details like:
 
 This will abort the program, and format and print any error messages.
 
+=item SwishCriticalError( SWISH *handle )
+
+This will return true if the last error was critical.  A critical error means
+swish is in an unstable state and you must call SwishClose() on the handle.
+
 =item SwishErrorsToStderr(void)
 
 Call this after calling SwishInit() and any messages or warning will be sent to
