@@ -39,7 +39,14 @@ $Id$
 /* Global module data */
 
 struct MOD_#modulename# {
-   .... here module data...
+   /* public:  */
+   .... module private data, can be accessed outside the module
+   .... use it with care. Most data should be private, if possible.
+   .... use functions/methods instead to access/modify these data.
+
+   /* private: don't use outside this module! */
+   .... here private module data...
+   .... don't use this data outside this module!
 };
 
 

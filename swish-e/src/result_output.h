@@ -44,11 +44,15 @@ struct ResultExtFmtStrList
    -- global module data structure
 */
 
-struct MOD_ResultOutput
-{                               /* -x extended format by defined names */
+struct MOD_ResultOutput {
+   /* public:  */
+    int     headerOutVerbose;   /* -H <n> print extended header info */
+                                /* should be private, of proper method is defined */
+
+   /* private: don't use outside this module! */
+                                /* -x extended format by defined names */
     char   *extendedformat;     /* -x "fmt", holds fmt or NULL */
     char   *stdResultFieldDelimiter; /* -d <c> delimiter , (def: config.h) v1.x output style */
-    int     headerOutVerbose;   /* -H <n> print extended header info */
 
     /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList *resultextfmtlist;
