@@ -90,14 +90,23 @@ split into indexing and searching code (volunteers welcome).
 
 =head3 Does Swish-e include a CGI interface?
 
-An example CGI script is included in the C<example> directory.
-(Type C<perldoc swish.cgi> in the C<example> directory for instructions.)
+Yes.  Kind of.
 
-Please be careful when picking a CGI script to use with Swish-e.  Quite a
-few of the scripts that have been available for it are insecure and
-should not be used.
+There's two example CGI scripts included, swish.cgi and search.cgi.
+Both are installed at F<$prefix/lib/swish-e>.
 
-The included example CGI script was designed with security in mind.
+Both require a bit of work to setup and use.  Swish.cgi is probably what most
+people will want to use as it contains more features.  Search.cgi is for those
+that want to start with a small script and customize it to fit their needs.
+
+An example of using swish.cgi is given in
+the L<INSTALL|INSTALL> man page, and it the swish.cgi documentation.
+Like often is the case, it will be easier to use if you first read the documentation.
+
+Please use caution about CGI scripts found on the Internet for use with Swish-e.
+Some are not secure.
+
+The included example CGI scripts were designed with security in mind.
 Regardless, you are encouraged to have your local Perl expert review it
 (and all other CGI scripts you use) before placing it into production.
 This is just a good policy to follow.
@@ -519,6 +528,7 @@ file and then run an external program.
 The Swish-e distribution contains a couple of example -S prog programs.  F<spider.pl> is a reasonably
 full-featured web spider that offers many more options than the -S http method.  And it is much faster
 than running -S http, too.
+
 The spider has a perl configuration file, which means you can add programming logic right into the
 configuration file without editing the spider program.  One bit of logic that is provided in the
 spider's configuration file is a "call-back" function that allows you to filter the content.
@@ -527,8 +537,8 @@ a simple subroutine in the spider's configuration file passing the document and 
 The subroutine can then look at the content type and decide if the document needs to be filtered.
 
 For example, when processing a document of type "application/msword" the call-back subroutine
-would call the doc2txt.pm perl module, and a document of type
-"appliation/pdf" would use the pdf2html.pm module.  The F<prog-bin/SwishSpiderConfig.pl> file
+might call the doc2txt.pm perl module, and a document of type
+"appliation/pdf" could use the pdf2html.pm module.  The F<prog-bin/SwishSpiderConfig.pl> file
 shows this usage.
 
 This system works reasonably well, but also means that more work is required
@@ -554,13 +564,17 @@ For example, the PDF conversion
 module calls the pdfinfo and pdftotext programs.  Those programs (part of the Xpfd package)
 must be installed separately from the filters.
 
-The F<prog-bin/SwishSpiderConfig.pl> also shows an example of using the SWISH::Filter module for filtering.
-All that is required is setting Perl's @INC array to point to the directory that contains the SWISH::Filter module
-and associated filters.
+The SwishSpiderConfig.pl examle spider configuration file shows how to use the SWISH::Filter module for filtering.
+This file is installed at $prefix/share/doc/swish-e/examples/prog-bin, where $prefix is normally /usr/local on
+unix-type machines.
 
 The SWISH::Filter method of filtering can also be used with the -S http method of indexing.  By default
 the F<swishspider> program (the Perl helper script that fetches documents from the web) will attempt to
-use the SWISH::Filter module.  Therefore, all that's required to use this system with -S http is setting
+use the SWISH::Filter module if it can be found in Perls library path.  This path is set automatically for
+spider.pl but not for swishspider (because it would slow down a method that's already slow and spider.pl is
+recommended over the -S http method).
+
+Therefore, all that's required to use this system with -S http is setting
 the @INC array to point to the filter directory.
 
 For example, if the swish-e distribution was unpacked into ~/swish-e:
@@ -578,10 +592,14 @@ This prevents the program from attempting to use the SWISH::Filter module for ev
 URL that is fetched.  Of course, if you are concerned with indexing speed you should be using
 the -S prog method with spider.pl instead of -S http.
 
+If you are not spidering, but you still want to make use of the SWISH::Filter module for
+filtering you can use the DirTree.pl program (in $prefix/lib/swish-e).  This is a simple
+program that traverses the file system and uses SWISH::Filter for filtering.
+
 
 Here's two examples of how to run a filter program, one using Swish-e's
 C<FileFilter> directive, another using a C<prog> input method program.
-See the F<prog-bin/SwishSpiderConfig.pl> file for an example of using the SWISH::Filter
+See the F<SwishSpiderConfig.pl> file for an example of using the SWISH::Filter
 module.
 
 These filters simply use the program C</bin/cat> as a filter and only
@@ -598,7 +616,7 @@ and index with the command
 
     swish-e -c swish.conf -v 1
 
-Now, the same thing with using the C<prog> document source input method
+Now, the same thing with using the C<-S prog> document source input method
 and a Perl program called catfilter.pl.  You can see that's it's much
 more work than using the C<FileFilter> method above, but provides a
 place to do additional processing.  In this example, the C<prog> method
@@ -662,22 +680,13 @@ more information.
 =head3 Eh, but I just want to know how to index PDF documents!
 
 See the examples in the F<conf> directory and the comments in
-the F<prog-bin/SwishSpiderConfig.pl> file.
+the F<SwishSpiderConfig.pl> file.
 
 See the previous question for the details on filtering.  The method you decide to use
 will depend on how fast you want to index, and your comfort level with using Perl modules.
 
 Regardless of the filtering method you use you will need to install the Xpdf packages
 available from http://www.foolabs.com/xpdf/.
-
-=head3 I'm using the prog method to index PDF documents, but the file
-contents are not indexed.
-
-The some of the examples in the F<prog-bin> directory use a module to
-convert the PDF files into XML.  So you must tell Swish-e that you are
-indexing XML files for the PDF extension.
-
-    IndexContents XML .pdf
 
 =head3 I'm using Windows and can't get Filters or the prog input method
 to work!
@@ -697,6 +706,7 @@ Or run a filter like:
 
     FileFilter .foo e:/perl/bin/perl.exe 'myscript.pl "%p"'
 
+It's often easier to just install Linux.
 
 =head3 How do I index non-English words?
 
@@ -705,7 +715,8 @@ character set, and includes many non-English letters (and symbols).
 As long as they are listed in C<WordCharacters> they will be indexed.
 
 Actually, you probably can index any 8-bit character set, as long as
-you don't mix character sets in the same index.
+you don't mix character sets in the same index and don't use libxml2 for
+parsing (see below).
 
 The C<TranslateCharacters> directive (L<SWISH-CONFIG|SWISH-CONFIG>)
 can translate characters while indexing and searching.  You may

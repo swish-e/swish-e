@@ -77,6 +77,12 @@ static void readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file);
 static void word_hash_config(StringList *sl, WORD_HASH_TABLE *table_ptr );
 
 
+void fuzzy_or_die( IndexFILE *indexf, char *mode )
+{
+    indexf->header.fuzzy_data = set_fuzzy_mode( indexf->header.fuzzy_data, mode );
+    if ( !indexf->header.fuzzy_data )
+        progerr("Invalid FuzzyIndexingMode '%s' in config file", mode );
+}
 
 /* Reads the configuration file and puts all the right options
 ** in the right variables and structures.
@@ -440,14 +446,15 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
                 stem_tmp = (char *) emalloc(strlen("Stemming_") + strlen(sl->word[1]) + 1);
                 sprintf(stem_tmp,"Stemming_%s",sl->word[1]);
-                set_fuzzy_mode( &indexf->header.fuzzy_data, stem_tmp );
+                fuzzy_or_die( indexf, stem_tmp );
+
                 efree(stem_tmp);
             /*
             }
             */
 #else
             if ( getYesNoOrAbort(sl, 1, 1) )
-                set_fuzzy_mode( &indexf->header.fuzzy_data, "Stemming_en" );
+                fuzzy_or_die( indexf, "Stemming_en" );
 #endif
                     
             continue;
@@ -456,7 +463,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "UseSoundex") == 0)
         {
             if ( getYesNoOrAbort(sl, 1, 1) )
-                set_fuzzy_mode( &indexf->header.fuzzy_data, "Soundex" );
+                fuzzy_or_die( indexf, "Soundex" );
 
             continue;
         }
@@ -467,7 +474,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n != 2)
                 progerr("%s: requires one value", w0);
 
-            set_fuzzy_mode( &indexf->header.fuzzy_data, sl->word[1] );
+            fuzzy_or_die( indexf, sl->word[1] );
             continue;
         }
 

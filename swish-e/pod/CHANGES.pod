@@ -6,7 +6,60 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.0 - ????????? ??, ????
+=head2 Version 2.4.1 - December 17, 2003
+
+=over 4
+
+=item * Added new example CGI script
+
+search.cgi is a new skeleton CGI script that uses SWISH::API for searching.
+It is installed in the same location as swish.cgi.
+
+=item * Add Fuzzy access to C and Perl interfaces
+
+Added a number of functions to the C API (and SWISH::API)
+to access the stemmer used when indexing a given index.
+
+=item * Commas in numbers
+
+Added commas to summary display at end of indexing.
+
+=item * Insert whitespace between tags
+
+Parser.c was updated to flush the text buffer before and after
+every (non-inline HTML) tag.
+
+The problem was that:
+
+    foo<tag>bar</tag>baz
+
+would index as a single word "foobarbaz".
+
+=item * DirTree.pl
+
+DirTree.pl was updated to work with SWISH::Filter and to work on Windows.
+DirTree.pl is a program to fetch files from the file system and works with
+the -S prog input method.
+
+=item * Problem with --enable-incremental option
+
+Fixed configure script to build incremental option.  Note that this is still
+experimental.  But testers are welcome.
+
+=item * headers.c bug
+
+Mark Fletcher with the help of valgrind found a bug in headers.c
+function SwishIndexHeaderNames used by the C API.
+
+=item * Clarify documentation regarding search order
+
+At the prompting of Doralyn Rossmann updated SEARCH.pod to
+try and make the explanation of searching clearer, and to fix an error
+in the description of nested searches.
+
+=back
+
+=head2 Version 2.4.0 - October 27, 2003
 
 =over 4
 

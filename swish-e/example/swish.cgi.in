@@ -1723,6 +1723,10 @@ sub run_swish {
     unshift @properties, 'swishreccount';
 
 
+    $self->swish_command( -x => join( '\t', map { "<$_>" } @properties ) . '\n' );
+    $self->swish_command( -H => 9 );
+
+
     if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
         require Data::Dumper;
         print STDERR "---- Swish parameters ----\n";
@@ -1739,12 +1743,6 @@ sub run_swish {
     
     return $self->run_library( @properties )
         if $self->config('use_library');
-
-
-
-    $self->swish_command( -x => join( '\t', map { "<$_>" } @properties ) . '\n' );
-
-    $self->swish_command( -H => 9 );
 
 
     my $fh = $^O =~ /Win32/i

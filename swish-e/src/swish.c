@@ -382,6 +382,7 @@ static SWISH  *swish_new()
 
 
 
+
     /* Make rest of lookup tables */
     makeallstringlookuptables(sw);
     return (sw);
@@ -1630,7 +1631,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
 
     if (sw->verbose)
-        printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
+        printf("%s unique word%s indexed.\n", comma_long( sw->indexlist->header.totalwords ), (sw->indexlist->header.totalwords == 1) ? "" : "s");
 
 
     /* Sort properties -> Better search performance */
@@ -1652,8 +1653,14 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     if (sw->verbose)
     {
         if (totalfiles)
-            printf("%d file%s indexed.  %lu total bytes.  %lu total words.\n",
-                totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes, sw->indexlist->total_word_positions);
+        {
+            printf("%s file%s indexed.  ",
+                    comma_long( totalfiles ), (totalfiles == 1) ? "" : "s");
+
+            printf("%s total bytes.  ", comma_long(sw->indexlist->total_bytes) );
+
+            printf("%s total words.\n", comma_long(sw->indexlist->total_word_positions) );
+        }
         else
             printf("no files indexed.\n");
 
@@ -1667,6 +1674,8 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     }
 
 }
+
+
 
 
 /*****************************************************************

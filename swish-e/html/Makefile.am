@@ -58,6 +58,7 @@ source_files = \
 	$(top_srcdir)/perl/API.pm \
 	$(top_srcdir)/prog-bin/spider.pl.in \
 	$(top_srcdir)/example/swish.cgi.in \
+	$(top_srcdir)/example/search.cgi.in \
 	$(top_srcdir)/filters/SWISH/Filter.pm.in
 
 # Extra files for creating the search page for the docs:

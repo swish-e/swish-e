@@ -932,7 +932,6 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
     if (!is_html_tag && !isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
         parse_data->word_pos++;
 
-
     /* check for ignore tag (should probably remove char handler for speed) */
     // Should specific property names and meta names override this?
     
@@ -993,8 +992,14 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
         if ( sw->UndefinedMetaTags == UNDEF_META_ERROR )
                 progerr("Found meta name '%s' in file '%s', not listed as a MetaNames in config", tag, parse_data->fprop->real_path);
 
-        else if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
-            debug_show_tag( tag, parse_data, 1, "(undefined meta name - no action)" );
+        else {
+            /* In general a single word doesn't span tags */
+//            append_buffer( &parse_data->text_buffer, " ", 1 );
+              flush_buffer( parse_data, 1 );
+
+            if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
+                debug_show_tag( tag, parse_data, 1, "(undefined meta name - no action)" );
+        }
     }
             
 
@@ -1048,6 +1053,12 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
     /* Don't allow matching across tag boundry */
     if (!is_html_tag && !isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
         parse_data->word_pos++;
+
+    /* Tag normally separate words */
+    if (!is_html_tag)
+//        append_buffer( &parse_data->text_buffer, " ", 1 );
+          flush_buffer( parse_data, 1 );
+
 
 
 

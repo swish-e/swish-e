@@ -11,7 +11,7 @@ typedef void * SW_HANDLE;
 typedef void * SW_SEARCH;
 typedef void * SW_RESULTS;
 typedef void * SW_RESULT;
-
+typedef void * SW_FUZZYWORD;  /* access to the swish-e stemmers */
 
 
 /* These must match headers.h */
@@ -126,8 +126,18 @@ void SwishErrorsToStderr( void );
 
 /* Returns all words that begin with the specified char */
 const char *SwishWordsByLetter(SW_HANDLE, char *filename, char c);
-char *SwishStemWord( SW_HANDLE, char *word );
 
+
+/* Stemming Interface */
+
+char *SwishStemWord( SW_HANDLE, char *word );  /* Really this is depreciated */
+
+SW_FUZZYWORD SwishFuzzyWord( SW_RESULT r, char *word );
+const char **SwishFuzzyWordList( SW_FUZZYWORD fw );
+int SwishFuzzyWordCount( SW_FUZZYWORD fw );
+int SwishFuzzyWordError( SW_FUZZYWORD fw );
+void SwishFuzzyWordFree( SW_FUZZYWORD fw );
+const char *SwishFuzzyMode( SW_RESULT r );
 
 /* For low-level access to a property */
 
