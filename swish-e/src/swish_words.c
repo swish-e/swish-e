@@ -156,16 +156,16 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
 }
 
 
-static int next_swish_word(INDEXDATAHEADER header, char **buf, char **word, int *lenword )
+static int next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, int *lenword )
 {
     int     i;
 
     /* skip non-wordchars */
-    while ( **buf && !iswordchar(header, **buf ) )
+    while ( **buf && !header->wordcharslookuptable[tolower((unsigned char)(**buf))] )
         (*buf)++;
 
     i = 0;
-    while ( **buf && iswordchar(header, **buf) )
+    while ( **buf && header->wordcharslookuptable[tolower((unsigned char)(**buf))] )
     {
         /* reallocate buffer, if needed */
         if ( i + 1 == *lenword )
@@ -182,8 +182,8 @@ static int next_swish_word(INDEXDATAHEADER header, char **buf, char **word, int 
 
     if ( i )
     {
-        stripIgnoreLastChars( &header, *word);
-        stripIgnoreFirstChars(&header, *word);
+        stripIgnoreLastChars( header, *word);
+        stripIgnoreFirstChars(header, *word);
 
 
         return **word ? 1 : 0;
@@ -195,7 +195,7 @@ static int next_swish_word(INDEXDATAHEADER header, char **buf, char **word, int 
 
 /* Convert a word into swish words */
 
-static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char *word )
+static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, char *word )
 {
     struct  swline  *swish_words = NULL;
     char   *curpos;
@@ -207,7 +207,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char
 
 
     /* Translate chars */
-    TranslateChars(header.translatecharslookuptable, word);
+    TranslateChars(header->translatecharslookuptable, word);
 
 
 
@@ -216,11 +216,11 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char
     {
 
         /* Check Begin & EndCharacters */
-        if (!header.begincharslookuptable[(int) ((unsigned char) self->word[0])])
+        if (!header->begincharslookuptable[(int) ((unsigned char) self->word[0])])
             continue;
 
 
-        if (!header.endcharslookuptable[(int) ((unsigned char) self->word[strlen(self->word) - 1])])
+        if (!header->endcharslookuptable[(int) ((unsigned char) self->word[strlen(self->word) - 1])])
             continue;
 
 
@@ -233,11 +233,11 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER header, char
         - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
 
-        if (header.applyStemmingRules)
+        if (header->applyStemmingRules)
             Stem(&self->word, &self->lenword);
 
         /* This needs fixing, no?  The soundex could might be longer than the string */
-        if (header.applySoundexRules)
+        if (header->applySoundexRules)
             soundex(self->word);
 
 
@@ -312,21 +312,21 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
 }
 
 
-static int checkbuzzword(INDEXDATAHEADER header, char *word )
+static int checkbuzzword(INDEXDATAHEADER *header, char *word )
 {
-    if ( !header.buzzwords_used_flag )
+    if ( !header->buzzwords_used_flag )
         return 0;
 
         
     /* only strip when buzzwords are being used since stripped again as a "swish word" */
-    stripIgnoreLastChars( &header, word );
-    stripIgnoreFirstChars( &header, word );
+    stripIgnoreLastChars( header, word );
+    stripIgnoreFirstChars( header, word );
     
     if ( !*word ) /* stripped clean? */
         return 0;
 
 
-    return isbuzzword( &header, word);
+    return isbuzzword( header, word);
 }
 
 /* I hope this doesn't live too long */
@@ -363,7 +363,7 @@ static void fudge_wildcard( struct swline **original, struct swline *entry )
     
 /******************** Public Functions *********************************/
 
-const char *isBooleanOperatorWord( char * word )
+char *isBooleanOperatorWord( char * word )
 {
     /* don't need strcasecmp here, since word should alrady be lowercase -- need to check alt-search first */
     if (!strcasecmp( word, _AND_WORD))
@@ -375,12 +375,12 @@ const char *isBooleanOperatorWord( char * word )
     if (!strcasecmp( word, _NOT_WORD))
         return NOT_WORD;
 
-    return NULL;
+    return (char *)NULL;
 }
 
 
 
-struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER header )
+struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *header )
 {
     char   *curpos;               /* current position in the words string */
     struct  swline *tokens = NULL;
@@ -391,24 +391,28 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
     struct  MOD_Search *srch = sw->Search;
     unsigned char PhraseDelimiter;
     int     max_size;
+    int     inphrase;
 
     if ( !words || !*words )
         progerr("Please enter a search string.");
 
 
     PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
-    max_size        = header.maxwordlimit;
+    max_size        = header->maxwordlimit;
 
     curpos = words;  
 
+    /* split into words by whitespace and by the swish operator characters */
     while ( next_token( &curpos, &self->word, &self->lenword, PhraseDelimiter, max_size ) )
         tokens = (struct swline *) addswline( tokens, self->word );
-
 
 
     /* no search words found */
     if ( !tokens )
         return tokens;
+
+
+    inphrase = 0;
 
     temp = tokens;
     while ( temp )
@@ -418,7 +422,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
 
         if ( isMetaNameOpNext(temp->next) )
         {
-            if( !getMetaNameData( &header, temp->line ) )
+            if( !getMetaNameData( header, temp->line ) )
                 progerr("Meta name '%s' is invalid.", temp->line );
 
             /* this might be an option with XML */
@@ -432,6 +436,10 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
         /* skip operators */
         if ( strlen( temp->line ) == 1 && isSearchOperatorChar( (unsigned char) temp->line[0], PhraseDelimiter ) )
         {
+
+            if ( (unsigned char) temp->line[0] == PhraseDelimiter )
+                inphrase = !inphrase;
+
             temp = temp->next;
             continue;
         }
@@ -440,11 +448,33 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
         strtolower( temp->line );
 
 
-        /* check Boolean operators -- currently doesn't change (search.c) does */
-        if ( isBooleanOperatorWord( temp->line ) )
+        /* check Boolean operators -- currently doesn't change it (search.c does) */
+        if ( !inphrase )
         {
-            temp = temp->next;
-            continue;
+            char *operator, *nextoperator;
+
+            if ( (operator = isBooleanOperatorWord( temp->line )) )
+            {
+                /* replace the common "and not" with simply not" */
+                /* probably not the best place to do this level of processing */
+                /* since should also check for things like "and this" and "and and and not this" */
+                /* should probably be moved to end and recursively check for these (to catch "and and not") */
+                if (
+                    temp->next
+                    && ( strcmp( operator, AND_WORD ) == 0)
+                    && ( (nextoperator = isBooleanOperatorWord( temp->next->line)))
+                    && ( strcmp( nextoperator, NOT_WORD ) == 0)
+                ) {
+                    struct swline *andword = temp; /* save position */
+
+                    temp = temp->next;  /* now point to "not" word */
+                    replace_swline( &tokens, andword, (struct swline *)NULL ); /* cut it out */
+                    continue;
+                }
+
+                temp = temp->next;
+                continue;
+            }
         }
     
 
@@ -454,6 +484,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER he
             temp = temp->next;
             continue;
         }
+
 
 
         /* query words left.  Turn into "swish_words" */

@@ -409,7 +409,7 @@ int     search_2(SWISH * sw, char *words, int structure)
 
 
         /* tokenize the query into swish words */
-        if (!(searchwordlist = tokenize_query_string(sw, tmpwords, indexlist->header)))
+        if (!(searchwordlist = tokenize_query_string(sw, tmpwords, &indexlist->header)))
         {
             indexlist = indexlist->next;
             efree(tmpwords);
@@ -707,10 +707,10 @@ struct swline *expandphrase(struct swline *sp, char delimiter)
             }
             else
             {
-                const char *operator;
+                char *operator;
 
                 if ( ( operator = isBooleanOperatorWord( tmp->line )) )
-                    newp = (struct swline *) addswline(newp, (char *)operator);
+                    newp = (struct swline *) addswline(newp, operator);
                 else
                     newp = (struct swline *) addswline(newp, tmp->line);
             }
