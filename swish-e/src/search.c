@@ -1167,7 +1167,6 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
         
         word = SafeStrCopy(word, (*searchwordlist)->line, &lenword);
 
-
         if (rulenum == NO_RULE)
             rulenum = DEFAULT_RULE;
 

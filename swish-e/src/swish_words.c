@@ -53,6 +53,20 @@ static struct swline *fixnot2(struct swline *);
 static struct swline *expandphrase(struct swline *, char);
 
 
+static print_swline( char *msg, struct swline *word_list )
+{
+#ifdef SWISH_WORDS_DEBUG
+    struct swline *sl = word_list;
+    printf("%s: ", msg );
+    while ( sl )
+    {
+        printf("%s ", sl->line );
+        sl = sl->next;
+    }
+    printf("\n");
+
+#endif
+}
 
 struct MOD_Swish_Words
 {
@@ -235,7 +249,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
 
     /* Some initial adjusting of the word */
 
-
     TranslateChars(header->translatecharslookuptable, (unsigned char *)word);
 
 
@@ -367,6 +380,7 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
         {
             new_words->nodep->next = temp->next;
             new_words->nodep = temp->nodep;
+             
             *original = new_words;
         } 
         else /* just delete first node */
@@ -503,10 +517,12 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     {
         tokens = (struct swline *) addswline( tokens, self->word );
 
-
         if ( self->word[0] == PhraseDelimiter && !self->word[1] )
             inphrase = !inphrase;
     }
+
+
+
 
 
     /* no search words found */
@@ -519,7 +535,6 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     temp = tokens;
     while ( temp )
     {
-
         /* do look-ahead processing first -- metanames */
 
         if ( !inphrase && isMetaNameOpNext(temp->next) )
@@ -556,7 +571,9 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
         strtolower( temp->line );
 
 
-        /* check Boolean operators -- currently doesn't change it (search.c does) */
+
+        /* check Boolean operators -- and replace with the operator string */
+       
         if ( !inphrase )
         {
             char *operator, *nextoperator;
@@ -573,18 +590,31 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
                     && ( (nextoperator = isBooleanOperatorWord( temp->next->line)))
                     && ( strcmp( nextoperator, NOT_WORD ) == 0)
                 ) {
-                    struct swline *andword = temp; /* save position */
-
+                    struct swline *andword = temp; /* save position of entry to remove */
                     temp = temp->next;  /* now point to "not" word */
+
+                    /* Replace the string with the operator string */
+                    efree( temp->line );
+                    temp->line = estrdup( nextoperator );
+
                     replace_swline( &tokens, andword, (struct swline *)NULL ); /* cut it out */
+
+                    temp = temp->next;  /* past the "not" */
                     continue;
                 }
+
+                /* otherwise, just replace it */
+
+                /* Replace the string with the operator string */
+                efree( temp->line );
+                temp->line = estrdup( operator );
+
 
                 temp = temp->next;
                 continue;
             }
         }
-    
+
 
         /* buzzwords */
         if ( checkbuzzword( header, temp->line ) )
@@ -592,7 +622,6 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
             temp = temp->next;
             continue;
         }
-
 
 
         /* query words left.  Turn into "swish_words" */
@@ -611,14 +640,15 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
         
     }
 
+
     /* fudge wild cards back onto preceeding word */
     /* $$$ This is broken because a query of "foo *" ends up "foo*" */
+    /* Also doesn't check for an operator followed by "*" */
 
     
     for ( temp = tokens ; temp; temp = temp->next )
         if ( temp->next && strcmp( temp->next->line, "*") == 0 )
             fudge_wildcard( &tokens, temp );
-
 
     return tokens;
 }
@@ -650,7 +680,6 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
 *       Sep 29, 2002 - moseley
 *
 ***********************************************************************************/
-
 struct swline *parse_swish_query( DB_RESULTS *db_results )
 {
     struct swline *searchwordlist;
@@ -667,6 +696,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
         return NULL;
 
 
+    print_swline("after tokenize", searchwordlist );
 
 
     /* Remove stopwords from the query -- also sets db_results->removed_stopwords */
@@ -676,6 +706,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     /* This is a bit ugly */
 
     searchwordlist = ignore_words_in_query(db_results, searchwordlist);
+
   
     if ( !searchwordlist || srch->sw->lasterror )
     {
@@ -699,12 +730,14 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     searchwordlist = fixnot2(searchwordlist);
 
 
+    print_swline("Final", searchwordlist );
+
     return searchwordlist;
 }
 
-static int     u_isrule(char *word)
+static int     isrule(char *word)
 {
-    if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
+    if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD))
         return 1;
     else
         return 0;
@@ -718,13 +751,6 @@ static int     isnotrule(char *word)
         return 0;
 }
 
-static int     u_isnotrule(char *word)
-{
-    if (!strcmp(word, _NOT_WORD))
-        return 1;
-    else
-        return 0;
-}
 
 
 
@@ -831,16 +857,16 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
 
             /* Look for AND OR NOT - remove AND OR at start, and remove second of doubles */
 
-            if ( u_isrule(cur_token->line)  )
+            if ( isrule(cur_token->line)  )
             {
                 if ( prev_token )
                 {
                     /* remove double tokens */
-                    if ( u_isrule(prev_token->line ) )
+                    if ( isrule(prev_token->line ) )
                         remove = 1;
                 }
                 /* allow NOT at the start */
-                else if ( !u_isnotrule(cur_token->line) )
+                else if ( !isnotrule(cur_token->line) )
                     remove = 1;
 
                 break;
@@ -1130,6 +1156,7 @@ static struct swline *expandphrase(struct swline *sp, char delimiter)
         }
         else
         {
+
             if (inphrase)
             {
                 if (inphrase > 1)
@@ -1138,14 +1165,9 @@ static struct swline *expandphrase(struct swline *sp, char delimiter)
                 newp = (struct swline *) addswline(newp, tmp->line);
             }
             else
-            {
-                char *operator;
+                newp = (struct swline *) addswline(newp, tmp->line);
 
-                if ( ( operator = isBooleanOperatorWord( tmp->line )) )
-                    newp = (struct swline *) addswline(newp, operator);
-                else
-                    newp = (struct swline *) addswline(newp, tmp->line);
-            }
+
         }
         tmp = tmp->next;
     }
