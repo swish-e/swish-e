@@ -2,19 +2,21 @@
 
 SWISH-LIBRARY - Interface to the Swish-e C library
 
-=head1 What is the Swish-e C library
+=head1 What is the Swish-e C library?
 
-It is a C library implementation based on swish-e-2.3-dev, but many of
-the functions have been rewritten in order to get a thread safe library.
-That's is not to say that it is currently thread safe.
+The C library in an interface to the Swish-e search code.  It provides
+a way to embed Swish-e into your applications.
+This API is based on Swish-e version 2.3.
 
-B<This is a NEW API as of Swish-e version 2.3.>  The interface has changed
-as has the perl interface to Swish-e.  The old SWISHE perl module
-has been rewritten to work with the new API.  The SWISHE perl module
+B<Note:> This is a NEW API as of Swish-e version 2.3.
+The C language interface has changed as has the perl interface to Swish-e.
+The new Perl interface is the SWISH::API module and is included with the Swish-e
+distribution.
+The old SWISHE perl module has been rewritten to work with the new API.  The SWISHE perl module
 is no longer included with the Swish-e distribution, but can be downloaded
 from the Swish-e web site.
 
-The advantage of the library is that the index file(s) can be opened one time
+The advantage of the library is that the index files or files can be opened one time
 and many queries made on the open index.  This saves the startup time required
 to fork and run the swish-e binary, and the expensive time of opening up the
 index file.  Some benchmarks have shown a three fold increase in speed.
@@ -25,7 +27,7 @@ program.  These are things to think about, especially if embedding swish into a 
 such as Apache where there are many processes serving requests.
 
 The best way to learn about the library is to look at two files included with
-the swish-e distribution that make use of the library.
+the Swish-e distribution that make use of the library.
 
 
 =over 4
@@ -34,12 +36,12 @@ the swish-e distribution that make use of the library.
 
 This file gives a basic overview of linking a C program with the Swish-e library.
 Not all available functions are used in that example, but it should give you a good overview
-of building a program with swish-e.
+of building a C program with swish-e.
 
-To build libtest run and run libtest:
+To build and run libtest chdir to the src directory and run the commands:
 
     $ make libtest
-    $ ./libtest [optional name of index file(s)]
+    $ ./libtest [optional name of index file]
 
 You will be prompted for the search words.  The default index used is F<index.swish-e>.
 This can be overridden by placing a list of index files in a quote-protected string.
@@ -48,15 +50,14 @@ This can be overridden by placing a list of index files in a quote-protected str
 
 =item perl/API.xs
 
-The F<API.xs> file contains more examples of how to read from the perl library.  It includes
-example code for reading additional information from the index files.
+The F<API.xs> file is a Perl "xsub" interface to the C library and is part of the
+SWISH::API Perl module.  This is an object-oriented interface to the Swish-e library
+and demonstrates how the various search "objects" are created by C calls and how
+they are destroyed when no longer needed.
 
 =back
 
-Not all available functions are documented here.  That's both do to laziness, and the hope
-that a better interface will be created for these functions.  Check the above files for details.
-
-=head1 Installing the Swish-e library.
+=head1 Installing the Swish-e library
 
 The Swish-e library is installed when you run "make install-lib".
 You may need to be root or superuser to install the library in the standard location.
@@ -66,29 +67,36 @@ only a static library is created.
 
 =head1 Library Overview
 
-The search library is object oriented, in that you will work with differnt "objects" at
-different stages of searching.  When you first attach to an index file (or files) you
-are returned a "swish handle".  
-
-From the handle you create a "search object" which holds
+When you first attach to an index file (or index files) you are returned a "swish handle".
+From the handle you create one or more "search objects" which holds
 the parameters to query the index, such as the query string, sort order, search phrase delimiter,
-limit parameters and HTML structure bits.
+limit parameters and HTML structure bits.  The "object" is really just a pointer to a C structure, but
+it's helpful to think of it as an object that data and functionality associated with it.
 
 The search object is used to query the index.  A query returns a "results object".
 The results object holds the number of hits, the parsed query per index, and the result set.
-The results object keeps track of the position in the result set.
+The results object keeps track of the current position in the result set.
 You may "seek" to a specific record within the result set (useful for displaying a page of results).
 
 Finally, a result object represents a single result from the result list.  A result object provides
 access to the result's properties (such as file name, rank, etc.).
 
 In addition to results, there are functions available to access the header values stored
-in the index file.
+in the index file, functions to check and report errors, and a few utility functions.
 
 
 =head1 Available Functions
 
-You should check for errors after every call.  See the F<src/libtest.c> file for examples.
+Below is the list of available function included in the Swish-e C language API.
+
+These functions (and typedefs) are defined in the F<swish-e.h> header file.
+The common objects (e.g. structures) used are:
+
+    SW_HANDLE  - swish handle that associates with an index file
+    SW_SEARCH  - search "object" that holds search parameters
+    SW_RESULTS - results "object" that holds a result set
+    SW_RESULT  - a single result used for accessing the result's properties
+    
 
 =head2 Searching
 
@@ -97,7 +105,7 @@ You should check for errors after every call.  See the F<src/libtest.c> file for
 =item SW_HANDLE SwishInit(char *IndexFiles);
 
 This functions opens and reads the header info of the index files
-included in IndexFiles string.  The string should contain a space separated
+included in IndexFiles string.  The string should contain a space-separated
 list of index files.
 
     SW_HANDLE myhandle;
@@ -127,8 +135,10 @@ And here's an example of catching the error:
         return 0;
     }
 
+You may have more than one handle active at a time.
+
 Swish-e will not tell you if the index file changes on disk (such as after reindexing).
-In a persistent environment (e.g mod_perl) the calling program should check to see if
+In a persistent environment (e.g. mod_perl) the calling program should check to see if
 the index file has changed on disk.  A common way to do this is to store the inode
 number before opening the index file(s), and then stat the file name every so often
 and reopen the index files if the inode number changes.
@@ -137,13 +147,15 @@ and reopen the index files if the inode number changes.
 =item void SwishClose(SW_HANDLE handle);
 
 This function closes and frees the memory of a Swish handle.
+Every swish handle should be freed when done searching the index.
+Failing to close the handle will result in a memory leak.
 
 =item SW_SEARCH New_Search_Object(SW_HANDLE handle, const char *query);
 
-Returns a new search object.  The search object holds the parameters used for searching
+Returns a new search "object".  The search object holds the parameters used for searching
 an index.  A single search object can be used to query the index multiple times.
 The available settings listed below are "sticky" in that they remain set on the search
-object.
+object until change.
 
 =item void SwishSetStructure( SW_SEARCH srch, int structure );
 
@@ -167,13 +179,15 @@ it can be set when creating the search object or when executing a query.
 
 =item void SwishSetSearchLimit( SW_SEARCH srch, char *propertyname, char *low, char *hi);
 
-Sets the limit parameters for a search.  Provides the same functionallity as the -L command
+Sets the limit parameters for a search.  Provides the same functionality as the -L command
 line switch.
-You may specify a range of properties that search results must be within.
+You may specify a range of property values that search results must be within.
 You may call SwishSetSearchLimit() only one time for each property (but can set
 limits on more than one property at a time).
 
-To clear the limits set you must call SwishResetSearchLimit();
+Unlike the other settings on the search object, once you run a query on the
+search object you must call SwishResetSearchLimit() to change or clear
+the limit parameters.
 
 =item void SwishResetSearchLimit( SW_SEARCH srch );
 
@@ -186,21 +200,26 @@ search object.  Generally, you can reuse a search object for
 multiple queries so typically you would call this right before
 calling SwishClose().
 
-You should be able to free the search object before freeing and
-generated restuls objects, but is not recommended since the 
-results object does link to the search object.
+You may free the search object before freeing and
+generated results objects.
 
 =item SW_RESULTS SwishExecute( SW_SEARCH search, const char *query);
 
 Searches the index or indexes based on the parameters in the search object.
-Returns a results object.
+Returns a results object.  See below for functions to access the data stored
+in the results object.
+
+You should always check for errors after calling SwishExecute().
+
 
 =item SW_RESULTS SwishQuery(SW_HANDLE, const char *words );
 
 This is a short-cut function that bypasses the creation of a
-search object.  This only allows passing in a query string.
-Other search parameters cannot be set.  The results are sorted
-by rank.
+search object (actually, bypasses the need to create and free a search object).
+This only allows passing in a query string; other search parameters cannot be set.
+The results are sorted by rank.
+
+You should always check for errors after calling SwishQuery().
 
 =back
 
@@ -221,24 +240,27 @@ program.
 The "index_name" is the name of the index supplied in the SwishInit() function call.
 
 Returns a SWISH_HEADER_VALUE union of type SWISH_LIST which is a char **.
-See src/libtest.c for an example of accessing the strings in this list.
+See src/libtest.c for an example of accessing the strings in this list, but in
+general you may cast this to a (char **).
 
 =item SWISH_HEADER_VALUE SwishRemovedStopwords( SW_RESULTS, const char *index_name );
 
 Returns a list of stopwords removed from the input query.
 
+Returns a SWISH_HEADER_VALUE union of type SWISH_LIST which is a char **.
+See src/libtest.c for an example of accessing the strings in this list, but in
+general you may cast this to a (char **).
 
 =item int SwishSeekResult( SW_RESULTS, int position );
 
 Sets the current seek position in the list of results, with position zero
 being the first record (unlike -b where one is the first result).
 
-Returns the position or a negative number on error.  
-
+Returns the position or a negative number on error.
 
 =item SW_RESULT SwishNextResult( SW_RESULTS );
 
-Returns the next result, if any.
+Returns the next result, or NULL if not more results are available.
 
 The result object returned does not need to be freed after use
 (unlike the swish handle, search object, and results object).
@@ -263,13 +285,16 @@ formatted.
 Returns a numeric property as an unsigned long.  Returns UMAX_LONG on
 errors.  Use the error checking functions to determine the exact error.
 
+Numeric properties are used for both PropertyNamesNumeric and PropertyNamesDate
+type of properties.
+
 =item PropValue *getResultPropValue (RESULT *r, char *pname, int ID );
 
 This is a low-level function to fetch a property regardless of type.
 The return PropValue is a structure that contains a flag to indicate the
 type, and a union that holds the property value.  
 
-The property must be copied locally and the returned value must be freed by 
+The property must be copied locally and the returned "PropValue" value must be freed by 
 calling freeResultPropValue().  See perl/API.xs for an example.
 
 =item void freeResultPropValue(void)
@@ -302,7 +327,7 @@ headers without having to list them in your program.
 =item const char **SwishIndexNames( SW_HANDLE );
 
 Returns a list of index files opened.  This is just the list of index files
-specified passed to the SwishInit() call.  You need the name of the index file
+specified in the SwishInit() call.  You need the name of the index file
 to access a specific index's header values.
 
 =item SWISH_HEADER_VALUE SwishHeaderValue( SW_HANDLE, const char *index_name, const  char *cur_header, SWISH_HEADER_TYPE *type );
@@ -329,7 +354,7 @@ the error flags).
 
 Currently, some errors are flagged as "critical" errors.  In these cases you should
 destroy (by calling the SwishClose() function ) the current swish handle.  If you have
-other objects in scope (e.g a search object or results object) destroy those first.
+other objects in scope (e.g. a search object or results object) destroy those first.
 
 The types of errors that are critical can be seen in src/error.c.
 Currently the list includes:
@@ -346,7 +371,7 @@ Currently the list includes:
 =item int  SwishError( SW_HANDLE );
 
 This returns true if an error condition exists.  It returns the error number, which
-is a integer less than zero.  This should be checked before calling any of the other
+is a integer less than zero on error.  This should be checked before calling any of the other
 error functions below.
 
 =item const char *SwishErrorString( SW_HANDLE );
@@ -355,7 +380,7 @@ This returns a general text description of the current error.
 
 =item const char *SwishLastErrorMsg( SW_HANDLE );
 
-In some cases this will return a string with specififics about the current error.
+In some cases this will return a string with specifics about the current error.
 For example, SwishErrorString() may return "Unknown metaname", but SwishLastErrorMsg()
 will return a string with the name of the unknown metaname.
 
@@ -367,7 +392,7 @@ as swish may be in an unstable state.
 
 =item void SwishAbortLastError( SW_HANDLE );
 
-This is a convience function that will format and print the last error message, and
+This is a convenience  function that will format and print the last error message, and
 then abort the program.
 
 
@@ -379,7 +404,7 @@ sent to stdout.
 
 =item void SwishErrorsToStderr( void );
 
-A convience method to send errors to stderr instead of stdout.
+A convenience method to send errors to stderr instead of stdout.
 
 =back
 
@@ -412,6 +437,4 @@ Interface redesigned for Swish-e version 2.3 Oct 17, 2002 - Bill Moseley
 $Id$
 
 .
-
-
 
