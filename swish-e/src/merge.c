@@ -582,7 +582,12 @@ static struct metaMergeEntry *readMergeMeta(SWISH * sw, int metaCounter, struct 
 
 /* Adds an entry to the merged meta names list and changes the
  ** new index in the idividual file entry
+ **
+ ** 2001-10 jmruiz Fix to store metanames and properties with
+ **                different ID
  */
+
+
 
 static void addMetaMergeArray(IndexFILE *indexf, struct metaMergeEntry *metaFileEntry)
 {
@@ -607,31 +612,31 @@ static void addMetaMergeArray(IndexFILE *indexf, struct metaMergeEntry *metaFile
 
             if (strcmp(tmpEntry->metaName, metaWord) == 0)
             {
-                newMetaID = tmpEntry->metaID;
-
-                /*
-                 * Keep the docProperties fields in synch.
-                 * The semantics we want for the metaEntry are:
-                 * set META_PROP if either index is using as PropertyName
-                 * set META if either index is using as MetaName
-                 */
-
-                if (metaType & META_PROP) /* new entry is docProp, so assert it */
-                    tmpEntry->metaType |= META_PROP;
-
-                if (metaType & META_INDEX) /* new entry is not *only* docProp, so unassert that */
-                    tmpEntry->metaType |= META_INDEX;
-
-
-                /* Finally check that the rest of the */
-                /* metaType does match */
-
-                if (!match_meta_type(metaType, tmpEntry->metaType))
+                if(is_meta_property(metaFileEntry))
                 {
-                    fprintf(stderr, "Couldn't merge: metaname \"%s\" :", metaWord);
-                    progerr("types do not match.");
+                    if(is_meta_property(tmpEntry))
+                    {
+                        /* Both are META_PROP - Check for types */
+                        if( match_meta_type(metaType,tmpEntry->metaType))
+                        {
+                            newMetaID = tmpEntry->metaID;
+                            break;
+                        }
+                        else
+                        {
+                            progerr("Couldn't merge: metaname \"%s\" : types do not match.", metaWord);
+                        }
+                    }
                 }
-                break;
+                else 
+                {
+                    if(!is_meta_property(tmpEntry))
+                    {
+                        /* Both are META_INDEX */
+                        newMetaID = tmpEntry->metaID;
+                        break;
+                    }
+                }    
             }
         }
 
@@ -656,6 +661,8 @@ static void addMetaMergeArray(IndexFILE *indexf, struct metaMergeEntry *metaFile
         addNewMetaEntry( &indexf->header, metaWord, metaType, 0);
     }
 }
+
+
 
 
 static void    addentryMerge(SWISH * sw, ENTRY * ip)
@@ -979,9 +986,9 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
 #endif
 
             /* Now save ip for later (so we can load the properties) */
-            sw->indexlist->filearray[ip->filenum - 1]->currentSortProp = (struct metaEntry *)ip;
-
-
+            // Bill, here is the fix... ip->num and sw->Index->filenum are different
+            sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+            
             ip->mtime = mtime;
             ip->indexf = indexf;
             remap(ip->filenum, num);
@@ -1043,7 +1050,8 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
 #endif
 
         /* Now save ip for later (so we can load the properties) */
-        sw->indexlist->filearray[ip->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+        // Bill, here is the fix... ip->num and sw->Index->filenum are different
+        sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
 
 
     }
@@ -1086,6 +1094,8 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
            *indexf;
     struct file *fi;
     METAS   metas;
+
+    int     oldnum;
 
     if (verbose)
         printf("Opening and reading file 1 header...\n");
@@ -1225,14 +1235,15 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 // If not PROPFILE then docProperites are already attached to the file entry, right?
 
 
-
 #ifdef PROPFILE
         /* Attach properties from the old index file, and write them back to the new index file */
 
+        oldnum = getold(i);
+
         if(ip->indexf == indexf1)
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, getold(i) );
+            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, oldnum );
         else
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, getold(i) - indexfilenum1 );
+            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, oldnum - indexfilenum1);
 
         /* write properties to disk, and release memory */
         WritePropertiesToDisk( sw , i );
@@ -1240,15 +1251,15 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
         /* Now clean up the file entry */
         if(ip->indexf == indexf1)
         {
-            indexf1->filearray[i - 1]->docProperties = NULL;
-            freefileinfo(indexf1->filearray[i - 1]);
-            indexf1->filearray[i - 1] = NULL;
+            indexf1->filearray[oldnum - 1]->docProperties = NULL;
+            freefileinfo(indexf1->filearray[oldnum - 1]);
+            indexf1->filearray[oldnum - 1] = NULL;
         }
         else 
         {
-            indexf2->filearray[i - indexfilenum1 - 1]->docProperties = NULL;
-            freefileinfo(indexf2->filearray[i - indexfilenum1 - 1]); 
-            indexf2->filearray[i - indexfilenum1 - 1] = NULL;
+            indexf2->filearray[oldnum - indexfilenum1 - 1]->docProperties = NULL;
+            freefileinfo(indexf2->filearray[oldnum -indexfilenum1 - 1]); 
+            indexf2->filearray[oldnum - indexfilenum1 - 1] = NULL;
         }
 #endif
     }
