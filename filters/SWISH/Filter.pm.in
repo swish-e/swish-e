@@ -1113,8 +1113,13 @@ sub run_program {
          : $self->real_fork( @_ );
 
     local $/ = undef;
+    my $output = <$fh>;
+    close $fh;
 
-    return <$fh>;
+    # When using IPC::Open3 need to reap the processes.
+    waitpid $self->{pid}, 0 if delete $self->{pid};
+
+    return $output;
 }
 
 
