@@ -137,7 +137,11 @@ L<FileInfoCompression|/"item_FileInfoCompression"> [yes|NO]
 
 =item *
 
-L<FileRules|/"item_FileRules"> [contains|is] *regular expression*
+L<FileMatch|/"item_FileMatch"> [contains|is|regex] *regular expression*
+
+=item *
+
+L<FileRules|/"item_FileRules"> [contains|is|regex] *regular expression*
 
 =item *
 
@@ -466,8 +470,8 @@ and B<prog> for reading files from an external program.
 The C<-S> command line argument is used to select the file access method.
 
     swish-e -c swish.config -S fs    - file system
-    swish-e -c swish.config -S http  - spider
-    swish-e -c swish.config -S prog  - external program
+    swish-e -c swish.config -S http  - internal http spider
+    swish-e -c swish.config -S prog  - external program of any type
     
 
 For the B<File system> method of access B<IndexDir> is a
@@ -475,6 +479,10 @@ space-separated list of files and directories to index.
 You may specify more than one B<IndexDir> directive.
 
 Any sub-directories of any listed directory will also be indexed.
+
+Note: While I<processing> directories, swish-e will ignore any files or directories that
+begin with a dot (".").  You may index files or directories that begin with a dot by
+specifying their name with C<IndexDir> or C<-i>.
 
 Examples:
 
@@ -584,6 +592,11 @@ Examples:
 
     ReplaceRules regex  "#^#http://localhost/www#
     ReplaceRules prepend "http://localhost/www"  (same thing)
+
+    # Remove all extensions from C source files
+    ReplaceRules remove .c    # ERROR! That "." is *any char*
+    ReplaceRules remove \.c   # much better...
+    
 
 =item IndexContents [TXT|HTML|XML|WML]  *file extensions*
 
@@ -1265,11 +1278,14 @@ These directives are only valid when using the B<File system> method of indexing
 
 =item IndexOnly *list of file suffixes*
 
-This directive specifies the allowable file suffixes (extensions) while indexing.  The default
-is to index all files specified in B<IndexDir>.
+This directive specifies the allowable file suffixes (extensions) while indexing.
+The default is to index all files specified in B<IndexDir>.
 
     # Only index .html .htm and .q files
     IndexOnly .html .htm .q
+
+C<IndexOnly> checks that the file end in the characters listed.  It does not check
+"extensions".  C<IndexOnly> is tested right before C<FileRules> is processed.
 
 =item FollowSymLinks [yes|NO]
 
@@ -1285,20 +1301,206 @@ by setting this to C<yes>.
 
 See also the C<-l> switch in L<SWISH-RUN|SWISH-RUN>.
 
-=item FileRules [contains|is] *regular expression*
+=item FileRules [type] [contains|is|regex] *regular expression*
 
-Files matching the specified criteria will B<not> be indexed.  C regex.h library
-regular expression pattern matching is allowed.
+=item FileMatch [type] [contains|is|regex] *regular expression*
+
+FileRules and FileMatch are used to, respectively, exclude and include files
+and directories to index.  Since, by default, swish indexes all files and recurses
+all directories you will typically only use C<FileRules>.
+C<FileMatch> is useful, for example, to override the behavior of C<IndexOnly>.
+Some examples are included below.
+
+The regular expression is a C regex.h extended regular expression.
+You may supply more than one regular expression per line, or use separate directives.
+Preceeding the regular expression with the word "not" negates the match.
+
+The regular expression is compared against B<[type]> as described below.
+
+For historical reasons, you can specify C<contains> or C<is>.  C<is> simply
+forces the regular expression to match at the start and end of the string
+(by internally prepending "^" and appending "$" to the regular expression).
+
+The C<regex> option requires delimiter characters:
+
+    FileRules title regex /^private/i
+
+The only advantage of C<regex> is if you want to do case insensitive matches, or
+simply like your regular expressions to look like perl regular expressions.
+You must use matching delimiters; (), {}, and [], are not currently supported
+for no good reason.
+
+Use double quotes around a pattern if it contains any white space; 
+otherwise, it will be considered as two or more patterns.
+For example, these sets generate the same regular expressions.
+
+    FileRules title is hello
+    FileRules title contains ^hello$
+    FileRules title regex /^hello$/
+
+    FileRules title is "hello there"
+    FileRules title contains "^hello there$"
+    FileRules title regex !^hello there$!
+
+B<Matching Types>
+
+The following types of match strings my be supplied:
+
+    FileRules pathname
+    FileRules dirname
+    FileRules filename
+    FileRules directory
+    FileRules title
+    
+    FileMatch pathname
+    FileMatch filename
+    FileMatch dirname
+    FileMatch directory
+
+B<pathname> matches the regular expression against the current pathname.
+The pathname may or may not be absolute depending on what you supplied to
+C<IndexDir>.
+
+Example:
+
+    # Don't index paths that start with private or hidden
+    FileRules pathname contains "^/(private|hidden)"
+
+    # Don't index exe files
+    FileRules pathname contains "\.exe$"
+
+B<dirname> and B<filename> split the path name by the last delimiter character
+into a directory name, and a file name.  Then these are compared against the patterns
+supplied.
+
+The delimiter used by swish to split the path is set in F<config.h>, and is platform dependent.
+Using C<pathname> will avoid any possible mismatches from what swish thinks your delimter
+should be vs. what it actually is.  B<dirname> and B<filename> will probably fail miserably
+on many platforms.  Patches are welcome.
+
+Example:
+
+    # Same as last example - don't index *.exe files.
+    FileRules filename contains "\.exe$"
+
+    # Don't index any file called test.html files
+    FileRules filename contains "^test\.html$"
+    # Same thing
+    FileRules filename is "test\.html"
+
+    # Don't index any directoires that contain "old"  (/usr/local/myold/docs)
+    FileRules dirname contains old
+
+    # Don't index any directories that contain the path segment "old" (/usr/local/old/foo)
+    FileRules dirname contains /old/  
+
+    # Index only .htm, .html, plus any all-digit file names
+    IndexOnly .htm .html
+    FileMatch filename contains "^\d+$"
+
+    # Same as previous, but maybe a little slower
+    FileRules filename regex not !\.(htm|html)$!
+    FileMatch filename contains "^\d+$"
+
+Swish checks these settings in the order of C<pathname>, C<dirname>, and
+C<filename>, and C<FileMatch> patterns are checked before C<FileRules>, in general.
+This allows you to exclude most files with C<FileRules>, yet allow in a few
+special cases with C<FileMatch>. For example:
+
+    # Exclude all files of .exe, .bin, and .bat
+    FileRules filename contains "\.(exe|bin|bat)$"
+    # But, let these two in
+    FileMatch filename is "baseball\.bat" "incoming_mail.bin"
+
+    # Same, but as a single pattern
+    FileMatch filename is (baseball\.bat|incoming_mail\.bin)
+
+The C<directory> type is somewhat unique. When swish recurses into a directory
+it will compare all the I<files> in the directory with the pattern and then decide
+if that entire directory should or should not be indexed (or recursed).  Note that
+you are matching against file names in a directory -- and some of those names may
+be directory names.
+
+A C<FileRules directory> match will cause swish to ignore all files and sub-directories
+within the directory where the match occured.
+
+Warning: C<FileMatch directory> says to index B<everything> in the current directory
+and B<ignore> any FileRules for this directory.
 
 
-    FileRules pathname contains .*dir1
-    FileRules filename contains # % ~ .bak .orig .old old.
+Example:
+
+    # Don't index any directories (and sub directories) that contain
+    # a file (or sub-directory) called "index.skip"
+    FileRules directory contains "^index\.skip$"
+
+    # Don't index directories that contain a .htaccess file.
+    FileRules directory contains ^\.htaccess
+
+Note: While I<processing> directories, swish-e will ignore any files or directories that
+begin with a dot (".").  You may index files or directories that begin with a dot by
+specifying their name with C<IndexDir> or C<-i>.
+
+C<title> checks for a pattern match in an HTML title.
+
+Example:
+
     FileRules title contains construction example pointers
-    FileRules directory contains .htaccess
-    FileRules filename is index
+
+    # This example says to ignore case
+    FileRules title regex "/^Internal document/i"
 
 Note: C<FileRules title> works for any input method (fs, prog, or http) that is parsed as HTML, and
 where a title was found in the document.
+
+In case this seems a bit confusing, processing a directory happens in the followin order.
+Remember, directory names will have a trailing path delimiter.
+
+First the directory name is checked:
+
+    FileRules dirname - reject entire directory if matches
+
+Next the directory is scanned and each file (or sub-directory) is checked:
+    
+    FileRules directory - reject entire dir if any files match
+    FileMatch directory - accept *entire* dir if any files match
+
+Then, unless C<FileMatch directory> matched, each file is tested with FileMatch.
+A match says to index the file without further testing (i.e. overrides FileRules and
+IndexOnly):
+
+    FileMatch pathname  \
+    FileMatch dirname   - file is accepted if any match
+    FileMatch filename  /
+
+otherwise    
+
+    IndexOnly - file is checked for the correct file extension
+
+    FileRules pathname  \
+    FileRules dirname   - file is rejected if any match
+    FileRules filename  /
+
+finally, the file is indexed.
+
+
+Files (not directories) listed with C<IndexDir> or C<-i> are processed
+in a similar way:
+    
+    FileMatch pathname  \
+    FileMatch dirname   - file is accepted if any match
+    FileMatch filename  /
+
+otherwise, the file is rejected if it doesn't have the correct extension
+or a FileRules matches.
+
+    IndexOnly - file is checked for the correct file extension
+
+    FileRules pathname  \
+    FileRules dirname   - file is rejected if any match
+    FileRules filename  /
+ 
+
 
 =back    
 
