@@ -26,7 +26,7 @@
 #define HAVE_STRING_H   /* For mkstemp from libiberty  */
 
 /* Macros which rewrite values  */
-#define SWISH_VERSION "2.1-dev-25"	/* Should we find a better way to handle this */
+#define SWISH_VERSION "2.1-dev-26"	/* Should we find a better way to handle this */
 
 /* Internal SWISH-E File Access Modes */
 #define FILEMODE_READ		"rb"	/* Read only */
