@@ -105,7 +105,7 @@ sub show_form {
     my $form = $q->script_name;
     
     return <<EOF;
-    <form method="post" action="$form" enctype="application/x-www-form-urlencoded" class="form">
+    <form method="get" action="$form" enctype="application/x-www-form-urlencoded" class="form">
         <input maxlength="200" value="$query" size="32" type="text" name="query"/>
         <input value="Search!" type="submit" name="submit"/><br>
 
