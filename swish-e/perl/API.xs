@@ -131,7 +131,7 @@ void decode_header_value( swish_handle, header_value, header_type )
                 string_list = head_value->string_list;
 
                 if ( !string_list ) /* Don't think this can happen */
-                    XSRETURN_UNDEF;
+                    XSRETURN_EMPTY;
 
             
                 while ( *string_list )

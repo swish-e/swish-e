@@ -43,6 +43,12 @@ failed to index the path names because the default parser
 (HTML2 when libxml2 is linked with swish-e)
 was not finding any text in the binary files. [moseley]
 
+=item * Updates to swish.cgi
+
+The example/swish.cgi script can now use the SWISH::API module
+for searching an index.  Combined with mod_perl this module
+can improve search performance many times.
+
 =back
 
 =head2 Version 2.2.1 - September 26, 2002
