@@ -1073,6 +1073,8 @@ int     getDocTypeOrAbort(StringList * sl, int n)
         {"WML", WML},
         {"XML2", XML2 },
         {"HTML2", HTML2 },
+        {"HTML3", HTML3 },
+        {"XML3", XML3 },
         {NULL, NODOCTYPE}
     };
 
