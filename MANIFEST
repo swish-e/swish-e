@@ -20,6 +20,7 @@ conf/example9.config
 conf/example9.pl
 configure
 configure.in
+install-sh
 doc/Makefile.in
 doc/Pod/HtmlPsPdf.pm
 doc/Pod/HtmlPsPdf/Book.pm
