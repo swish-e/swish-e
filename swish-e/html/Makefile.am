@@ -60,18 +60,26 @@ source_files = \
 	$(top_srcdir)/example/swish.cgi.in \
 	$(top_srcdir)/filters/SWISH/Filter.pm.in
 
+# Extra files for creating the search page for the docs:
+search_doc_files = \
+	.htaccess \
+	search.html \
+	.swishcgi.conf \
+	swish.conf \
+	split.pl
+	
 
 # These are what get installed -- they will also be 
 # a dependency of the all-am target (because of _DATA)
 
-html_DATA  = $(targets)
+html_DATA  = $(targets) $(search_doc_files)
 image_DATA = $(image_targets)
 
 
 
 # These are all placed in the distribution
 
-EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp)
+EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp) $(search_doc_files)
 
 
 ## Here's the work 
@@ -115,3 +123,13 @@ $(timestamp) : $(source_files)
 	@touch $(timestamp)
 
 endif
+
+#	@(cd $(htmldir) && $(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf -v0)
+
+
+# Target to build searchable HTML docs
+searchdoc :
+	cp $(libexecdir)/swish.cgi $(htmldir)
+	( cd $(htmldir) && \
+		$(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf && \
+		$(PERL) -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a target="_parent" href="search.html">Search The Documentation</a>]</center>}' index.html index_long.html)

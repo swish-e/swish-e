@@ -15,6 +15,7 @@ perlmodule_SCRIPTS = \
     modules/SWISH/SimpleHighlight.pm \
     modules/SWISH/TemplateDefault.pm \
     modules/SWISH/TemplateDumper.pm \
+    modules/SWISH/TemplateFrame.pm \
     modules/SWISH/TemplateHTMLTemplate.pm \
     modules/SWISH/TemplateToolkit.pm \
     modules/SWISH/ParseQuery.pm
