@@ -948,7 +948,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 /* Adds a word to the master index tree.
 */
 
-void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID, int position)
+ENTRY  *addentry(SWISH * sw, char *word, int filenum, int structure, int metaID, int position)
 {
     int     found;
     ENTRY  *en,
@@ -1023,7 +1023,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         idx->entryArray->numWords++;
         indexf->header.totalwords++;
 
-        return;  /* all done here */
+        return en;  /* all done here */
     }
 
     /* Word found -- look for same metaID and filename */
@@ -1067,7 +1067,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
             efound->u1.last_filenum = filenum;
         }
 
-        return; /* all done */
+        return efound; /* all done */
     }
 
 
@@ -1097,6 +1097,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     tp->posdata[tp->frequency++] = SET_POSDATA(position,structure);
 
+    return efound;
 }
 
 
@@ -2134,7 +2135,7 @@ static void addword( char *word, SWISH * sw, int filenum, int structure, int num
 
     /* Add the word for each nested metaname. */
     for (i = 0; i < numMetaNames; i++)
-        addentry(sw, word, filenum, structure, metaID[i], *word_position);
+        (void) addentry(sw, word, filenum, structure, metaID[i], *word_position);
 
     (*word_position)++;
 }

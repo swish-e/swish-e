@@ -45,8 +45,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input );
 static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output );
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map );
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata );
-static void compress_entries( SWISH *sw );
+static ENTRY *write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata );
 
 
 // #define DEBUG_MERGE
@@ -153,10 +152,6 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
         dump_index(sw_input, cur_index, sw_output, file_num_map );
 
-        /* Compress the entries ?  */
-//        compress_entries( sw_output );
-
-
         /* free the maps */
         efree( file_num_map );
         efree( cur_index->meta_map );
@@ -166,8 +161,6 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
     }
 
-    /* if I compress after each index I get a segfault in some cases */
-    compress_entries( sw_output );    
 
 #ifdef DEBUG_MERGE
     printf("----- Final Output Header ----------\n");
@@ -751,10 +744,12 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
     int         frequency = 0;
     int         tmpval;
     int         filenum;
+    int         local_posdata[MAX_STACK_POSITIONS];
     int        *posdata;
     int         sz_worddata;
     int         metaname = 0;
     int         word_count = 0;
+    int         loc_count = 0;
     char        word[2];
     char       *resultword;
     long        wordID;
@@ -762,6 +757,8 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
     unsigned char   *worddata;
     unsigned char   *s;
     unsigned char   flag;
+    ENTRY      *e, *tmp;
+    int         hash;
 
     
 
@@ -769,19 +766,19 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 
 
 
+    printf("Processing words in index '%s': %3d words\r", indexf->line, word_count);
+    fflush(stdout);
     
     for(j=0;j<256;j++)
     {
-        printf("Processing words in index '%s': %3d%%\r", indexf->line, (word_count * 100)/indexf->header.totalwords);
-        fflush(stdout);
-
         
         word[0] = (unsigned char) j; word[1] = '\0';
         DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
         while(wordID)
         {
-            word_count++;
+            e = NULL;
+            loc_count = 0;
             
             /* Read Word's data */
             DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
@@ -805,15 +802,44 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
             {                   /* Read on all items */
                 uncompress_location_values(&s,&flag,&tmpval,&frequency);
                 filenum += tmpval;
-                posdata = (int *) emalloc(frequency * sizeof(int));
+                if(frequency > MAX_STACK_POSITIONS)
+                    posdata = (int *) emalloc(frequency * sizeof(int));
+                else
+                    posdata = local_posdata;
+
                 uncompress_location_positions(&s,flag,frequency,posdata);
 
 
                 /* now we have the word data */
-                for (i = 0; i < frequency; i++)
-                    write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, posdata[i]);
- 
-                efree(posdata);
+                for (i = 0; i < frequency; i++, loc_count++)
+                {
+                    tmp = write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, posdata[i]);
+                    /* get the pointer to entry for later compress */
+                    if(!e)
+                        e = tmp;
+                }
+
+                if(e)
+                {
+                    /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
+                    ** to time to help addentry.
+                    ** If we do not do this, addentry routine will have to run linked lists 
+                    ** of positions with thousands of elements and makes the merge proccess
+                    ** very slow
+                    */
+                    if(!(loc_count % 100))
+                    {
+                        hash = verybighash(e->word);
+                        if(sw_output->Index->hashentriesdirty[hash])
+                        {
+                            sw_output->Index->hashentriesdirty[hash] = 0;
+                            CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+                        }
+                    }
+                }
+
+                if(posdata != local_posdata)
+                    efree(posdata);
 
                 if ((s - worddata) == sz_worddata)
                     break;   /* End of worddata */
@@ -832,14 +858,45 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
                 }
             }
 
+            if(e)
+            {
+                /* Reset the hashentriesdirty flag - Not needed by merge */
+                sw_output->Index->hashentriesdirty[verybighash(e->word)] = 0;
+                CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+
+                word_count++;
+            }
+
+
+            /* Let's coalesce location from time to time to save memory */
+            if(!(word_count % 1000))
+            {
+                printf("Processing words in index '%s': %6d words\r", indexf->line, word_count);
+                fflush(stdout);
+
+                coalesce_all_word_locations(sw_output, sw_output->indexlist);
+
+                /* Make zone available for reuse */
+                Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
+                sw_output->Index->freeLocMemChain = NULL;
+
+            }
+
             efree(worddata);
             efree(resultword);
             DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
         }
     }
-    printf("Processing words in index '%s': %3d words\n", indexf->line, word_count);
+    printf("Processing words in index '%s': %6d words\n", indexf->line, word_count);
 
     DB_EndReadWords(sw, indexf->DB);
+
+    /* Coalesce pending work*/
+    coalesce_all_word_locations(sw_output, sw_output->indexlist);
+
+    /* Make zone available for reuse */
+    Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
+    sw_output->Index->freeLocMemChain = NULL;
 }
 
 /****************************************************************************
@@ -848,7 +905,7 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 *
 ****************************************************************************/
 
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata )
+static ENTRY  *write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata )
 {
     int         new_file;
     int         new_meta;
@@ -861,18 +918,18 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
     if ( !(new_file = file_num_map[ filenum ]) )
     {
         printf("  file: %d **File deleted!**\n", filenum);
-        return;
+        return NULL;
     }
 
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
     {
         printf("  file: %d **Failed to map meta ID **\n", filenum);
-        return;
+        return NULL;
     }
 
     printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
 
-    addentry( sw_output, resultword, new_file, structure, metaID, position );
+    return addentry( sw_output, resultword, new_file, structure, metaID, position );
 
 
 
@@ -883,57 +940,16 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
 
 
     if ( !(new_file = file_num_map[ filenum ]) )
-        return;
+        return NULL;
 
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
-        return;
+        return NULL;
 
-    addentry( sw_output, resultword, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
+    return addentry( sw_output, resultword, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
 
 
-    /* Compress the entries ?  */
-    //compress_entries( sw_output );  // maybe after every 1000 words or so?
-    // * but does this make it so addentry can't lookup a word?
 #endif
 
 
-}
-
-/****************************************************************************
-*  Compress Entries - how often?  Is this the fix?
-*  This should be a common function used by index and merge
-*
-****************************************************************************/
-
-static void compress_entries( SWISH *sw )
-{
-    IndexFILE   *indexf = sw->indexlist;
-    struct MOD_Index *idx = sw->Index;
-    ENTRY       *ep;
-    int         i;
-
-    /* walk the hash list, and compress entries */
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-    {
-        if (idx->hashentriesdirty[i])
-        {
-            idx->hashentriesdirty[i] = 0;
-            for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                CompressCurrentLocEntry(sw, indexf, ep);
-        }
-    }
-
-    /* Coalesce word positions int a more optimal schema to avoid maintain the location data contiguous */
-    if(idx->filenum && ((!(idx->filenum % idx->chunk_size)) || (Mem_ZoneSize(idx->currentChunkLocZone) > idx->optimalChunkLocZoneSize)))
-    {
-        for (i = 0; i < VERYBIGHASHSIZE; i++)
-            for (ep = idx->hashentries[i]; ep; ep = ep->next)
-                coalesce_word_locations(sw, indexf, ep);
-
-        /* Make zone available for reuse */
-        Mem_ZoneReset(idx->currentChunkLocZone);
-        idx->freeLocMemChain = NULL;
-
-    }
 }
 

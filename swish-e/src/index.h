@@ -129,7 +129,7 @@ int     configModule_Index(SWISH *, StringList *);
 
 void    do_index_file(SWISH * sw, FileProp * fprop);
 
-void    addentry(SWISH *, char *, int, int, int, int);
+ENTRY  *addentry(SWISH *, char *, int, int, int, int);
 
 void    addCommonProperties(SWISH * sw, FileProp * fprop, FileRec * fi, char *title, char *summary, int start);
 
