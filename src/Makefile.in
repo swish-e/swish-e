@@ -65,7 +65,7 @@ EXTPROG_OBJS        = extprog.o
 INPUT_METHODS_OBJS  = $(FILESYSTEM_OBJS) $(HTTP_OBJS) $(EXTPROG_OBJS) methods.o
 
 #--- Parsers ---
-PARSER_OBJS         = parser.o html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
+PARSER_OBJS         = html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
                       
 
 #--- Indexing modules ---
