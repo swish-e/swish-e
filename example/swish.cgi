@@ -2,7 +2,19 @@
 package SwishSearch;
 use strict;
 
-use lib qw( modules );  ### This must be adjusted!
+use lib qw( modules );  ### This may need to be adjusted!
+                        ### It should point to the location of the
+                        ### associated script modules directory
+
+
+$SwishSearch::DEBUG_BASIC       = 1;  # Show command used to run swish
+$SwishSearch::DEBUG_COMMAND     = 2;  # Show command used to run swish
+$SwishSearch::DEBUG_HEADERS     = 4;  # Swish output headers
+$SwishSearch::DEBUG_OUTPUT      = 8;  # Swish output besides headers
+$SwishSearch::DEBUG_SUMMARY     = 16;  # Summary of results parsed
+$SwishSearch::DEBUG_DUMP_DATA   = 32;  # dump data that is sent to templating modules
+
+
 
 
 ####################################################################################
@@ -37,6 +49,7 @@ use lib qw( modules );  ### This must be adjusted!
 
 # This is written this way so the script can be used as a CGI script or a mod_perl
 # module without any code changes.
+
 
 
 # use CGI ();  # might not be needed if using Apache::Request
@@ -102,7 +115,8 @@ sub handler {
 
 
 #==================================================================================
-#   This sets the default configuration
+#   This sets the default configuration parameters
+#
 #   Any configuration read from disk is merged with these settings.
 #
 #   Only a few settings are actually required.  Some reasonable defaults are used
@@ -333,7 +347,7 @@ sub default_config {
         #swish_index     => [ qw/ index.swish-e index.other index2.other index3.other index4.other / ], 
 
         Xselect_indexes  => {
-            #method  => 'radio_group',  # pico radio_group, popup_menu, or checkbox_group
+            #method  => 'radio_group',  # pick radio_group, popup_menu, or checkbox_group
             method  => 'checkbox_group',
             #method => 'popup_menu',
             columns => 3,
@@ -463,15 +477,56 @@ sub default_config {
 sub merge_read_config {
     my $config = shift;
 
+    $config->{debug} = 0;
+    set_debug($config) if $ENV{SWISH_DEBUG};
+
     return $config unless $config->{config_file};
 
     my $return = do $config->{config_file};
 
     return $config unless ref $return eq 'HASH';
 
+    if ( $config->{debug} || $return->{debug} ) {
+        require Data::Dumper;
+        print STDERR "\n---------- Read config parameters from '$config->{config_file}' ------\n",
+              Data::Dumper::Dumper($return),
+              "-------------------------\n";
+    }
+        
+
     # Merge settings
     return { %$config, %$return };
 }
+
+sub set_debug {
+    my $conf = shift;
+    
+    my %debug = (
+        basic       => [$SwishSearch::DEBUG_BASIC,   'Basic debugging'],
+        command     => [$SwishSearch::DEBUG_COMMAND, 'Show command used to run swish'],
+        headers     => [$SwishSearch::DEBUG_HEADERS, 'Show headers returned from swish'],
+        output      => [$SwishSearch::DEBUG_OUTPUT,  'Show output from swish'],
+        summary     => [$SwishSearch::DEBUG_SUMMARY, 'Show summary of results'],
+        dump        => [$SwishSearch::DEBUG_DUMP_DATA, 'Show all data available to templates'],
+    );
+
+    $conf->{debug} = 1;
+
+    for ( split /\s*,\s*/, $ENV{SWISH_DEBUG} ) {
+        if ( exists $debug{ lc $_ } ) {
+            $conf->{debug} |= $debug{ lc $_ }->[0];
+            next;
+        }
+
+        print STDERR "Unknown debug option '$_'.  Must be one of:\n",
+             join( "\n", map { sprintf('  %10s: %10s', $_, $debug{$_}->[1]) } sort { $debug{$a}->[0] <=> $debug{$b}->[0] }keys %debug),
+             "\n\n";
+        exit;
+    }
+
+    print STDERR "Debug level set to: $conf->{debug}\n";
+}
+        
 
 #============================================================================
 #
@@ -487,16 +542,62 @@ sub process_request {
     $request_package =~ s[::][/]g;
     require "$request_package.pm";
 
+    my $request_object = $conf->{request_package} ? $conf->{request_package}->new : CGI->new;
+
+    if ( $conf->{debug} ) {
+        print STDERR 'Enter a query [all]: ';
+        my $query = <STDIN>;
+        chomp $query;
+        unless ( $query ) {
+            print STDERR "Using 'not asdfghjklzxcv' to match all records\n";
+            $query = 'not asdfghjklzxcv';
+        }
+
+        $request_object->param('query', $query );
+
+        print STDERR 'Enter max results to display [1]: ';
+        my $max = <STDIN>;
+        chomp $max;
+        $max = 1 unless $max && $max =~/^\d+$/;
+
+        $conf->{page_size} = $max;
+    }
+        
+
 
     # create search object
     my $search = SwishQuery->new(
         config    => $conf,
-        request   => ($conf->{request_package} ? $conf->{request_package}->new : CGI->new),
+        request   => $request_object,
     );
 
 
     # run the query
     my $results = $search->run_query;  # currently, results is the just the $search object
+
+    if ( $conf->{debug} ) {
+        if ( $conf->{debug} & $SwishSearch::DEBUG_DUMP_DATA ) {
+            require Data::Dumper;
+            print STDERR "\n------------- Results structure passed to template ------------\n",
+                  Data::Dumper::Dumper( $results ),
+                  "--------------------------\n";
+        } elsif ( $conf->{debug} & $SwishSearch::DEBUG_SUMMARY ) {
+            print STDERR "\n------------- Results Summary ------------\n";
+            if ( $results->{hits} ) {
+                require Data::Dumper;
+                print STDERR "Showing $results->{navigation}{showing} of $results->{navigation}{hits}\n",
+                    Data::Dumper::Dumper( $results->{_results} );
+            } else {
+                print STDERR "** NO RESULTS **\n";
+            }
+
+            print STDERR "--------------------------\n";
+        } else {
+            print STDERR ( ($results->{hits} ? "Found $results->{hits} results\n" : "Failed to find any results\n" ),"\n" );
+        }
+    }
+    
+    
 
     my $template = $conf->{template} || { package => 'TemplateDefault' };
 
@@ -665,6 +766,7 @@ sub run_query {
         };
 
         if ( $@ ) {
+            print STDERR "\n*** $$ Failed to run swish: '$@' ***\n" if $conf->{debug};
             $self->errstr( $@ );
             return $self;
         }
@@ -867,9 +969,13 @@ sub get_date_limits {
 
     eval { require DateRanges };
     if ( $@ ) {
-        $self->errstr( $@ );
+        print STDERR "\n------ Can't use DateRanges feature ------------\n",
+                     "\nScript will run, but you can't use the date range feature\n", 
+                     $@,
+                     "\n--------------\n" if $conf->{debug};
+            
         delete $conf->{date_ranges};
-        return;
+        return 1;
     }
     
     my $q = $self->{q};
@@ -927,15 +1033,17 @@ sub set_sort_order {
     # Now set sort option - if a valid option submitted (or you could let swish-e return the error).
     my %sorts = map { $_, 1 } @$sorts_array;
 
-    if ( $q->param('sort') && $sorts{ $q->param('sort') } ) {
+    my $sortby =  $q->param('sort') || 'swishrank';
 
-        my $direction = $q->param('sort') eq 'swishrank'
+    if ( $sortby && $sorts{ $sortby } ) {
+
+        my $direction = $sortby eq 'swishrank'
             ? $q->param('reverse') ? 'asc' : 'desc'
             : $q->param('reverse') ? 'desc' : 'asc';
                 
-        $self->swish_command( '-s', $q->param('sort'), $direction );
+        $self->swish_command( '-s', $sortby, $direction );
 
-        if ( $conf->{secondary_sort} && $q->param('sort') ne $conf->{secondary_sort}[0] ) {
+        if ( $conf->{secondary_sort} && $sortby ne $conf->{secondary_sort}[0] ) {
                 $self->swish_command(ref $conf->{secondary_sort} ? @{ $conf->{secondary_sort} } : $conf->{secondary_sort} );
         }
 
@@ -1088,7 +1196,6 @@ sub run_swish {
     my $q       = $self->{q};
 
 
-
     
     my @properties;
     my %seen;
@@ -1119,8 +1226,25 @@ sub run_swish {
 
     die "Failed to fork: $!\n" unless defined $pid;
 
+    if ( $pid && $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
+        print STDERR "---- Running swish with the following command and parameters ----\n";
+
+        if ( $^O =~ /Win32/i ) {
+            print STDERR join( ' ', map { /[^.\-\w\d]/ ? qq["$_"] : $_ }  $self->{prog}, $self->swish_command );
+        } else {
+            print STDERR join( "  \\\n", map { /[^\/.\-\w\d]/ ? qq['$_'] : $_ }  $self->{prog}, $self->swish_command );
+        }
+        
+
+        print STDERR "\n-----------------------------------------------\n";
+    }
+     
+
     if ( !$pid ) {  # in child
-        exec $self->{prog},  $self->swish_command or die "Failed to exec '$self->{prog}' Error:$!";
+        unless ( exec $self->{prog},  $self->swish_command ) {
+            warn "Child process Failed to exec '$self->{prog}' Error: $!";
+            exit;
+        }
     }
 
     $self->{COMMAND} = join ' ', $self->{prog},  $self->swish_command;
@@ -1139,13 +1263,19 @@ sub run_swish {
     # Loop through values returned from swish.
 
     my %stops_removed;
-    
+
+    my $unknown_output;
+
+
     while (<$fh>) {
 
         chomp;
 
         # This will not work correctly with multiple indexes when different values are used.
         if ( /^# ([^:]+):\s+(.+)$/ ) {
+
+            print STDERR "$_\n" if $conf->{debug} & $SwishSearch::DEBUG_HEADERS;
+
             my $h = lc $1;
             my $value = $2;
             $self->{_headers}{$h} = $value;
@@ -1153,7 +1283,10 @@ sub run_swish {
             push @{$self->{_headers}{'removed stopwords'}}, $value if $h eq 'removed stopword' && !$stops_removed{$value}++;
 
             next;
+        } elsif ( $conf->{debug} & $SwishSearch::DEBUG_OUTPUT ) {
+            print STDERR "$_\n";
         }
+        
 
 
         # return errors as text
@@ -1214,12 +1347,21 @@ sub run_swish {
                 }
             }
     
+        } elsif ( /^\.$/ ) {
+            last;
+
+        } else {
+            next if /^#/;
         }
 
-        # Might check for "\n." for end of results.
+        $unknown_output++;
+
+
 
         
     }
+
+    die "Swish returned unknown output\n" if $unknown_output;
 
     $self->{hits} = @results;
     $self->{_results} = \@results if @results;
@@ -1344,11 +1486,15 @@ swish.cgi -- Example Perl script for searching with the SWISH-E search engine.
 
 =head1 DESCRIPTION
 
-C<swish.cgi> is an example CGI script for searching with the SWISH-E search engine version 2.1-dev and above.
+C<swish.cgi> is a CGI script for searching with the SWISH-E search engine version 2.1-dev and above.
 It returns results a page at a time, with matching words from the source document highlighted, showing a
 few words of content on either side of the highlighted word.
 
-The standard configuration should work with most swish index files.  Customization of the parameters will be
+The script is highly configurable; you can search multiple (or selectable) indexes, limit searches to
+part of the index, allow sorting by a number of different properties, limit results to a date range, and so on.
+
+The standard configuration (i.e. not using a config file) should work with most swish index files.
+Customization of the parameters will be
 needed if you are indexing special meta data and want to search and/or display the meta data.  The
 configuration can be modified by editing this script directly, or by using a configuration file (.swishcgi.conf
 by default).
@@ -1356,126 +1502,231 @@ by default).
 The script is modular in design.  Both the highlighting code and output generation is handled by modules, which
 are included in the F<example/modules> directory.  This allows for easy customization of the output without
 changing the main CGI script.  A module exists to generate standard HTML output.  There's also modules and
-template examples to use with the popular templating systems HTML::Template and Template-Toolkit.  This allows
+template examples to use with the popular Perl templating systems HTML::Template and Template-Toolkit.  This allows
 you to tightly integrate this script with the look of an existing template-driven web site.
 
 This scipt can also run basically unmodified as a mod_perl handler, providing much better performance than
 running as a CGI script.
 
-Due to the forking nature of this program and its use of signals,
-this script probably will not run under Windows without some modifications.
-There's plan to change this soon.
+=head1 REQUIREMENTS
+
+You should be running a reasonably current version of Perl.  5.00503 or above is recommended (anything older
+will not be supported).
+
+If you wish to use the date range feature you will need to install the Date::Calc module.  This is available
+from http://search.cpan.org.
 
 
 =head1 INSTALLATION
 
-Installing a CGI application is dependent on your specific web server's configuration.
-For this discussion we will assume you are using Apache in a typical configuration.  For example,
-a common location for the DocumentRoot is C</usr/local/apache/htdocs>.  If you are installing this
-on your shell account, your DocumentRoot might be C<~yourname/public_html>.
+Here's an example installation session.
 
-For the sake of this example we will assume the following:
+The script's default settings are setup for initial testing.  By default the settings expect to find
+most files and the swish-e binary in the same directory as the script.
+For I<security> reasons, once you have tested the script you will want to change settings to limit access
+to some of these files by the web server
+(either by moving them out of web space, or using access control such as F<.htaccess>).
+An example of using F<.htaccess> on Apache is given below.
 
-    /usr/local/apache/htdocs        - Document root
-    /usr/local/apache/cgi-bin       - CGI directory
+It's expected that you have already unpacked the swish-e distribution
+and built the swish-e binary (if using a source distribution).
 
-=head2 Move the files to their locations
+Below is a (unix) session where we create a directory, move required files into this directory, adjust
+permissions, and symlink into the web server.
 
 =over 4
 
-=item Copy the swish.cgi file to your CGI directory
+=item 1 Move required files:
 
-Most web servers have a directory where CGI programs are kept.
-Copy the C<swish.cgi> perl script into that directory if this is the case on your
-server.  You will need to provide read
-and execute permisssions to the file.  Exactly what permissions are needed again depends on
-your specific configuration.  For example, under Unix:
+    ~ >mkdir swishdir
+    ~ >cd swishdir
+    ~/swishdir >cp ~/swish-e/example/swish.cgi .
+    ~/swishdir >cp -rp ~/swish-e/example/modules .
+    ~/swishdir >cp ~/swish-e/src/swish-e .
+    ~/swishdir >chmod 755 swish.cgi
+    ~/swishdir >chmod 644 modules/*
 
-    chmod 0755 swish.cgi
+=item 2 Create an index
 
-This gives the file owner (that's you) write access, and everyone read and execute access.    
+This step you will create a simple configuration file.  In this example the Apache documentation
+is indexed.  Last we run a simple query to test swish.
 
-Note that you are not required to use a cgi-bin directory with Apache.  You may place the
-CGI script in any directory accessible via the web server and
-enable it as a CGI script with something like the following
-(place either in httpd.conf or in .htaccess):
+    ~/swishdir >cat swish.conf            
+    IndexDir /usr/local/apache/htdocs
+    IndexOnly .html .htm
+    DefaultContents HTML
+    StoreDescription HTML <body> 200000
+    MetaNames swishdocpath swishtitle
 
-    <Files swish.cgi>
-        Allow from all
+    ~/swishdir >./swish-e -c swish.conf   
+    Indexing Data Source: "File-System"
+    Indexing "/usr/local/apache/htdocs"
+    Removing very common words...
+    no words removed.
+    Writing main index...
+    Sorting words ...
+    Sorting 7005 words alphabetically
+    Writing header ...
+    Writing index entries ...
+      Writing word text: Complete
+      Writing word hash: Complete
+      Writing word data: Complete
+    7005 unique words indexed.
+    5 properties sorted.                                              
+    124 files indexed.  1485844 total bytes.  171704 total words.
+    Elapsed time: 00:00:02 CPU time: 00:00:02
+    Indexing done!
+
+    ~/swishdir >./swish-e -w install -m 1
+    # SWISH format: 2.1-dev-25
+    # Search words: install
+    # Number of hits: 14
+    # Search time: 0.001 seconds
+    # Run time: 0.040 seconds
+    1000 /usr/local/apache/htdocs/manual/dso.html "Apache 1.3 Dynamic Shared Object (DSO) support" 17341
+    .
+
+Let's see what files we have now:
+
+    ~/swishdir >ls -1 -F
+    index.swish-e
+    index.swish-e.prop
+    modules/
+    swish-e*
+    swish.cgi*
+    swish.conf
+
+=item 3 Test the CGI script
+
+This is a simple step, but often overlooked.  You should test from the command line instead of jumpping
+ahead and testing with the web server.  See the C<DEBUGGING> section below for more information.
+
+    ~/swishdir >./swish.cgi | head
+    Content-Type: text/html; charset=ISO-8859-1
+
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html>
+        <head>
+           <title>
+              Search our site
+           </title>
+        </head>
+        <body>
+
+The above shows that the script can be run directly, and generates a correct HTTP header and HTML.
+
+If you run the above and see something like this:
+
+    ~/swishdir >./swish.cgi
+    bash: ./swish.cgi: No such file or directory
+
+then you probably need to edit the script to point to the correct location of your perl program.
+
+    ~/swishdir >which perl
+    /usr/local/bin/perl
+
+    ~/swishdir >/usr/local/bin/perl -v   
+    This is perl, v5.6.0 built for i586-linux
+    ...
+
+Good! We are using a reasonably current version of perl.  You should be running
+at least perl 5.005 (5.00503 really).  You will may have problems otherwise.
+
+Now that we know perl is at F</usr/local/bin/perl> we can adjust the "shebang" line
+in the perl script (e.g. the first line of the script):
+
+    ~/swishdir >pico swish.cgi
+    (edit the #! line)
+    ~/swishdir >head -1 swish.cgi
+    #!/usr/local/bin/perl -w
+
+=item 4 Test with your web server
+
+How you do this is completely dependent on your web server, and you may need to talk to your web
+server admin to get this working.  Often files with the .cgi extension are automatically set up to
+run as CGI scripts, but not always.  In other words, this step is really up to you to figure out!
+
+    ~/swishdir >su -c 'ln -s /home/bill/swishdir /usr/local/apache/htdocs/swishdir'
+    Password: *********
+
+I happen to have Apache setup on a local port:
+
+    ~/swishdir >GET http://localhost:8000/swishdir/swish.cgi | head -3
+    #!/usr/local/bin/perl -w
+    package SwishSearch;
+    use strict;
+
+Oh, darn. It looks like Apache is not running the script.  In my case F<.htaccess> comes to the rescue:
+
+    ~/swishdir >cat .htaccess 
+
+    # Deny everything by default
+    Deny From All
+
+    # But allow just CGI script
+    <files swish.cgi>
+        Options ExecCGI
+        Allow From All
         SetHandler cgi-script
-        Options +ExecCGI
-    </Files>        
+    </files>
 
-Using this method you don't even need to use the C<.cgi> extension.  For example, rename
-the script to "search" and then use that in the C<Files> directive.  Take to your web
-administrator for further information.
+    ~/swishdir >GET http://localhost:8000/swishdir/swish.cgi | head
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <html>
+        <head>
+           <title>
+              Search our site
+           </title>
+        </head>
+        <body>
+            <h2>
+            <a href="http://swish-e.org">
 
-=item Copy the modules directory
+That looks better.  Now use your web browser to test.
 
-Copying the modules directory is optional, but the script needs to find additional modules so you will
-need to edit the script to point to the modules directory.  Unlike CPAN modules that need to
-be uncompressed, built, and installed, all you need to do is make sure the modules are some place where
-the web server can read them.  You may decide to leave them where you uncompressed the swish-e distribution,
-or you may wish to move them to your perl library.
+Make sure you look at your web server's error log file while testing the script.
+
+BTW - "GET" is a program included with Perl's LWP library.  If you do no have this you might
+try something like:
+
+    wget -O - http://localhost:8000/swishdir/swish.cgi | head
+
+=back
+
+If you have problems check the C<DEBUGGING> section below.
+
 
 =head1 CONFIGURATION
 
-=head2 Configure the swish.cgi program
+If you want to change the location of files, use multiple indexes, add additional metanames and properties,
+change the default highlighting behavior, etc. you will need to adjust the script's configuration settings.
 
-Use a text editor and open the C<swish.cgi> program.
+Please get a test setup working with the default parameters before making changes to any configuration settings.
+Better to debug one thing at a time...
 
-=over 4
+In general, you will need to adjust the script's settings to match the index file you are searching.  For example,
+if you are indexing a hypermail list archive you may want to make the script
+use metanames/properties of Subject, Author, and, Email address.  Or you may wish to provide a way to limit
+searches to parts of your index file (e.g. parts of your directory tree).
 
-=item 1 Check the C<shebang> line
-
-The first line of the program must point to the location of your perl program.  Typical
-examples are:
-
-    #!/usr/local/bin/perl -w
-    #!/usr/bin/perl -w
-    #!/opt/perl/bin/perl -w
-
-=item 2 Set the perl library path
-
-The script must find the modules that the script is distributed with.  These modules handle
-the highlighting of the search terms, and the output generation.  Again, where you place the
-modules is up to you, and the only requirement is that the web server can access those files.
-
-You tell perl the location of the modules with the "use lib" directive.  The default for this script is:
-
-    use lib qw( modules );
-
-This says to look for the modules in the F<modules> directory of the current directory.
-
-For example, say you want to leave the modules where you unpacked the swish-e distribution.  If
-you unpacked in your home directory of F</home/yourname/swish-e> then you must add this to the
-script:
-
-    use lib qw( /home/yourname/swish-e/example/modules );
-
-    
-
-=item 3 Set the configuration parameters
-
-To make things somewhat simple, the configuration parameters are included at the top of the program.
+To make things somewhat simple, the configuration parameters are included near the top of the program.
 The parameters are all part of a perl C<hash> structure, and the comments at the top of the program should
 get you going.
 
-You will probably need to specify at least the location of the swish-e binary, your index file or files,
-and a title.
-
-You have two options for changing the configuration settings from their default:
+You have two options for changing the configuration settings from their default values:
 you may edit the script directly, or you may use a configuration file.  In either case, the configuration
 settings are a basic perl hash reference.
 
 Using a configuration file is described below.
 
-The configuration settings might look like:
+There are many configuation settings, and some of them are commented out (by modifying the text of the key).
+
+A basic configuration setup might look like:
 
     return {
         title           => 'Search the Swish-e list',   # Title of your choice.
         swish_binary    => './swish-e',                 # Location of swish-e binary
-        swish_index     => '../index.swish-e',          # Location of your index file
+        swish_index     => 'index.swish-e',             # Location of your index file
     };
 
 Or if searching more than one index:
@@ -1483,26 +1734,14 @@ Or if searching more than one index:
     return {
         title           => 'Search the Swish-e list',
         swish_binary    => './swish-e',
-        swish_index     => ['../index.swish-e', '../index2'],
+        swish_index     => ['index.swish-e', 'index2'],
     };
 
 Both of these examples return a reference to a perl hash ( C<return {...}> ).  Again, this same format is
 used either at the top of this program, or in a configuration file.
 
-The examples above place the swish index file(s)
-in the directory above the C<swish.cgi> CGI script.  If using the example paths above
-of C</usr/local/apache/cgi-bin> for the CGI bin directory, that means that the index file
-is in C</usr/local/apache>.  That places the index out of web space (e.g. cannot be accessed
-via the web server), yet relative to where the C<swish.cgi> script is located.
-
-(If running under mod_perl you will most likely specify absolute paths for your index files.)
-
-There's more than one way to do it, of course.
-One option is to place the index in the same directory as the <swish.cgi> script, but
-then be sure to use your web server's configuration to prohibit access to the index directly.
-
-Another common option is to maintain a separate directory of the all your swish index files.  This decision is
-up to you.
+Note that the swish-e binary file is relative to the current directory.
+If running under mod_perl you will typically need to use absolute paths.
 
 As mentioned above, you can either edit this script directly and modify the configuration settings, or
 use an external configuration file.  The settings in the configuration file are merged with (override)
@@ -1518,62 +1757,19 @@ in the script.  Simply create a file called F<.swishcgi.conf> in the same direct
        title => 'Search Our Mailing List Archive',
     };
 
-Look at the default configuration settings at the top of this program for information on the available settings.    
+The settings you use will depend on the index you create with swish.  Here's a basic configuation:
 
-=item 4 Create your index
-
-You must index your web site before you can begin to use the C<swish.cgi> script.
-Create a configuration file called C<swish.conf> in the directory where you will store
-the index file.
-
-This next example uses the file system to index your web documents.
-In general, you will probably wish to I<spider> your web site if your web pages do not
-map exactly to your file system, and to only index files available from links on you web
-site.
-
-See B<Spidering> below for more information.
-
-Example C<swish.conf> file:
-
-    # Define what to index
-    IndexDir /usr/local/apache/htdocs
-    IndexOnly .html .htm
-
-    # Tell swish how to parse .html and .html documents
-    IndexContents HTML .html .htm
-    # And just in case we have files without an extension
-    DefaultContents HTML
-
-    # Replace the path name with a URL
-    ReplaceRules replace /usr/local/apache/htdocs/ http://www.myserver.name/
-
-    # Allow limiting search to titles and URLs.
-    MetaNames swishdocpath swishtitle
-
-    # Optionally use stemming for "fuzzy" searches
-    #UseStemming yes
-
-Now to index you simply run:
-
-    swish-e -c swish.conf
-
-The default index file C<index.swish-e> will be placed in the current directory.
-
-Note that the above swish-e configuration defines two MetaNames "swishdocpath" and "swishtitle".
-This allows searching just the document path or the title instead of the document's content.
-
-Here's an expanded C<swish.cgi> configuration to make use of the above settings used while indexing:
-
-    return {
+   return {
         title           => 'Search the Apache documentation',
         swish_binary    => './swish-e',
         swish_index     => 'index.swish-e',
         metanames       => [qw/swishdefault swishdocpath swishtitle/],
-        display_props   => [qw/swishlastmodified swishdocsize swishdocpath/],
-        title_property  => 'swishtitle',  # Not required, but recommended
+        display_props   => [qw/swishtitle swishlastmodified swishdocsize swishdocpath/],
+        title_property  => 'swishdocpath',
+        prepend_path    => 'http://myhost/apachedocs', 
 
         name_labels => {
-            swishdefault        => 'Body & Title',
+            swishdefault        => 'Search All',
             swishtitle          => 'Title',
             swishrank           => 'Rank',
             swishlastmodified   => 'Last Modified Date',
@@ -1592,56 +1788,63 @@ date of the file), the document size, and path with the search results.
 The parameter "name_labels" is a hash (reference)
 that is used to give friendly names to the metanames.
 
-Swish-e can store part of all of the contents of the documents as they are indexed, and this
-"document description" can be returned with search results.
-
-    # Store the text of the documents within the swish index file
-    StoreDescription HTML <body> 100000
-
-Adding the above to your C<swish.conf> file tells swish-e to store up to 100,000 characters from the body of each document within the
-swish-e index.  To display this information in search results, highlighting search terms,
-use the follow configuration in C<swish.cgi>:
+Here's another example.  Say you want to search either (or both) the Apache 1.3 documentation or the
+Apache 2.0 documentation:
 
     return {
-        title           => 'Search the Apache documentation',
-        swish_binary    => './swish-e',
-        swish_index     => 'index.swish-e',
-        metanames       => [qw/swishdefault swishdocpath swishtitle/],
-        display_props   => [qw/swishlastmodified swishdocsize swishdocpath/],
-        title_property  => 'swishtitle',  # Not required, but recommended
-        description_prop=> 'swishdescription',
-
-        name_labels => {
-            swishdefault        => 'Body & Title',
-            swishtitle          => 'Title',
-            swishrank           => 'Rank',
-            swishlastmodified   => 'Last Modified Date',
-            swishdocpath        => 'Document Path',
-            swishdocsize        => 'Document Size',
+       title       => 'Search the Apache Documentation',
+       date_ranges => 0,
+       swish_index => [ qw/ index.apache index.apache2 / ],
+       select_indexes  => {
+            method  => 'checkbox_group',
+            labels  => [ '1.3.23 docs', '2.0 docs' ],  # Must match up one-to-one to swish_index
+            description => 'Select: ',              
         },
-        highlight       => {
-            package         => 'PhraseHighlight',
-            meta_to_prop_map => {   # this maps search metatags to display properties
-                swishdefault    => [ qw/swishtitle swishdescription/ ],
-                swishtitle      => [ qw/swishtitle/ ],
-                swishdocpath    => [ qw/swishdocpath/ ],
-            },
-       }
 
     };
 
-
-Other C<swish.cgi> configuration settings are available, and are listed at the top of the F<swish.cgi>
-script.
+Now you can select either or both sets of documentation while searching.    
 
 
-=back
+Please refer to the default configuration settings near the top of the script for details on
+the available settings.
 
-You should now be ready to run your search engine.  Point your browser to:
+=head1 CHANGING THE SCRIPT'S LOOK
 
-    http://www.myserver.name/cgi-bin/swish.cgi
+The script uses a module to generate ouput.  By default it uses the TemplateDefault.pm module.
+The module used can be selected in the configuration file.
 
-adjusting the server and URL to match your system, of course.    
+If you want to make simple changes, copy the TemplateDefault.pm module and edit away.
+
+If you are designing a site, or if your site is already created with one of the perl templating systems,
+then you can use one of the modules that uses templates.
+
+The template modules are passed a hash with the results from the search, plus other data use to create the
+output page.  You can see this hash by using the debugging option "dump" or by using the TemplateDumper.pm
+module:
+
+    ~/swishtest >cat .swishcgi.conf 
+        return {
+           title       => 'Search the Apache Documentation',
+           template => {
+                package     => 'TemplateDumper',
+            },
+        };
+
+And run a query.  For example:
+
+    http://localhost:8000/swishtest/swish.cgi?query=install
+
+Three are three highlighting modules included.  Each is a trade-off of speed vs. accuracy:
+
+    DefaultHighlight.pm - reasonably fast, but does not highlight phrases
+    PhraseHighlight.pm  - reasonably slow, but is reasonably accurate
+    SimpleHighlight.pm  - fast, some phrases, but least accurate
+
+Eh, the default is actually "PhraseHighlight.pm".  Oh well.
+
+Optimizations to these modules are welcome!
+
 
 =head1 MOD_PERL
 
@@ -1715,7 +1918,141 @@ and Options.
 If an error is reported (such as Internal Server Error or Forbidden)
 you need to locate your web server's error_log file
 and carefully read what the problem is.  Contact your web administrator for help.
-    
+
+The script does offer some basic debugging options that allow debugging from the command line.
+The debugging options are enabled by setting
+an environment variable "SWISH_DEBUG".  How that is set depends on your operating system and the
+shell you are using.  These examples are using the "bash" shell syntax.
+
+You can list the available debugging options like this:
+
+    >SWISH_DEBUG=help ./swish.cgi >outfile
+    Unknown debug option 'help'.  Must be one of:
+           basic: Basic debugging
+         command: Show command used to run swish
+         headers: Show headers returned from swish
+          output: Show output from swish
+         summary: Show summary of results
+            dump: Show all data available to templates
+
+As you work your self down the list you will get more detail output.  You can combine
+options like:
+
+    >SWISH_DEBUG=command,headers,summary ./swish.cgi >outfile
+
+You will be asked for an input query and the max number of results to return.  You can use the defaults
+in most cases.  It's a good idea to redirect output to a file.  Any error messages are sent to stderr, so
+those will still be displayed (unless you redirect stderr, too).
+
+Here are some examples:
+
+    ~/swishtest >SWISH_DEBUG=basic ./swish.cgi >outfile
+    Debug level set to: 1
+    Enter a query [all]: 
+    Using 'not asdfghjklzxcv' to match all records
+    Enter max results to display [1]: 
+
+    ------ Can't use DateRanges feature ------------
+
+    Script will run, but you can't use the date range feature
+    Can't locate Date/Calc.pm in @INC (@INC contains: modules /usr/local/lib/perl5/5.6.0/i586-linux /usr/local/lib/perl5/5.6.0 /usr/local/lib/perl5/site_perl/5.6.0/i586-linux /usr/local/lib/perl5/site_perl/5.6.0 /usr/local/lib/perl5/site_perl/5.005/i586-linux /usr/local/lib/perl5/site_perl/5.005 /usr/local/lib/perl5/site_perl .) at modules/DateRanges.pm line 107, <STDIN> line 2.
+    BEGIN failed--compilation aborted at modules/DateRanges.pm line 107, <STDIN> line 2.
+    Compilation failed in require at ./swish.cgi line 971, <STDIN> line 2.
+
+    --------------
+    Can't exec "./swish-e": No such file or directory at ./swish.cgi line 1245, <STDIN> line 2.
+    Child process Failed to exec './swish-e' Error: No such file or directory at ./swish.cgi line 1246, <STDIN> line 2.
+    Failed to find any results
+
+The above told me about two problems.  First, it's telling me that the Date::Calc module is not installed.
+The Date::Calc module is needed to use the date limiting feature of the script.
+
+The second problem is a bit more serious.  It's saying that the script can't find the swish-e binary file.
+I simply forgot to copy it.
+
+    ~/swishtest >cp ~/swish-e/src/swish-e .
+    ~/swishtest >cat .swishcgi.conf
+        return {
+           title       => 'Search the Apache Documentation',
+           date_ranges => 0,
+        };
+
+Now, let's try again:
+
+    ~/swishtest >SWISH_DEBUG=basic ./swish.cgi >outfile
+    Debug level set to: 1
+
+    ---------- Read config parameters from '.swishcgi.conf' ------
+    $VAR1 = {
+              'date_ranges' => 0,
+              'title' => 'Search the Apache Documentation'
+            };
+    -------------------------
+    Enter a query [all]: 
+    Using 'not asdfghjklzxcv' to match all records
+    Enter max results to display [1]: 
+    Found 1 results
+
+    Can't locate TemplateDefault.pm in @INC (@INC contains: modules /usr/local/lib/perl5/5.6.0/i586-linux /usr/local/lib/perl5/5.6.0 /usr/local/lib/perl5/site_perl/5.6.0/i586-linux /usr/local/lib/perl5/site_perl/5.6.0 /usr/local/lib/perl5/site_perl/5.005/i586-linux /usr/local/lib/perl5/site_perl/5.005 /usr/local/lib/perl5/site_perl .) at ./swish.cgi line 608.
+
+Bother.  I fixed the first two problems, but now there's this new error.  Oh, I somehow forgot to
+copy the modules directory.  The obvious way to fix that is to copy the directory.  But, there may
+be times where you want to put the module directory in another location.  So, let's modify the
+F<.swishcgi.conf> file and add a "use lib" setting:
+
+    ~/swishtest >cat .swishcgi.conf
+    use lib '/home/bill/swish-e/example/modules';
+
+    return {
+       title       => 'Search the Apache Documentation',
+       date_ranges => 0,
+    };
+
+    ~/swishtest >SWISH_DEBUG=basic ./swish.cgi >outfile
+    Debug level set to: 1
+
+    ---------- Read config parameters from '.swishcgi.conf' ------
+    $VAR1 = {
+              'date_ranges' => 0,
+              'title' => 'Search the Apache Documentation'
+            };
+    -------------------------
+    Enter a query [all]: 
+    Using 'not asdfghjklzxcv' to match all records
+    Enter max results to display [1]: 
+    Found 1 results
+
+Now were talking.
+
+Here's a common problem.  Everything check out, but when you run the script you see the message:
+
+    Swish returned unknown output
+
+Ok, let's find out what output it is returning:
+
+    ~/swishtest >SWISH_DEBUG=headers,output ./swish.cgi >outfile
+    Debug level set to: 13
+
+    ---------- Read config parameters from '.swishcgi.conf' ------
+    $VAR1 = {
+              'swish_binary' => '/usr/local/bin/swish-e',
+              'date_ranges' => 0,
+              'title' => 'Search the Apache Documentation'
+            };
+    -------------------------
+    Enter a query [all]: 
+    Using 'not asdfghjklzxcv' to match all records
+    Enter max results to display [1]: 
+      usage: swish [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]
+      ...
+    version: 2.0
+       docs: http://sunsite.berkeley.edu/SWISH-E/
+
+    *** 9872 Failed to run swish: 'Swish returned unknown output' ***
+    Failed to find any results
+
+Oh, looks like /usr/local/bin/swish-e is version 2.0 of swish.  We need 2.1-dev and above!
+
     
 =head1 Spidering
 
@@ -1841,7 +2178,7 @@ Before posting please review:
 
     http://swish-e.org/2.2/docs/INSTALL.html#When_posting_please_provide_the_
 
-Please do not contact the author directly.
+Please do not contact the author or any of the swish-e developers directly.
 
 =head1 LICENSE
 
@@ -1863,6 +2200,8 @@ GNU General Public License for more details.
 =head1 AUTHOR
 
 Bill Moseley -- search@hank.org
+
+
 
 =cut
 
