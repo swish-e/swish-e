@@ -129,11 +129,23 @@ rpm_dir = \
     rpm/swish-e.xpm
 
 
+debian_dir = \
+	README.Debian \
+	changelog \
+	compat \
+	control \
+	copyright \
+	files \
+	rules \
+	swish-e.doc-base \
+	swish-e.substvars
+
 
 EXTRA_DIST = \
     $(config_dir) $(doc_dir) $(perl_dir) \
     $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
+    $(debian_dir) \
     win32.nsi \
     win32src.nsi
 

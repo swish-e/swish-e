@@ -1,5 +1,6 @@
 if BUILDDOCS
 man_MANS = \
+    $(srcdir)/swish-e.1 \
     $(srcdir)/SWISH-CONFIG.1 \
     $(srcdir)/SWISH-FAQ.1 \
     $(srcdir)/SWISH-LIBRARY.1 \
@@ -7,7 +8,9 @@ man_MANS = \
 endif
 
 
-SUFFIXES = .1 .pod
+$(srcdir)/swish-e.1 : $(top_srcdir)/pod/swish-e.pod
+	-rm -f $@
+	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $<  > $@
 
 $(srcdir)/SWISH-CONFIG.1 : $(top_srcdir)/pod/SWISH-CONFIG.pod
 	-rm -f $@

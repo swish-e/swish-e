@@ -1,0 +1,12 @@
+Document: swish-e
+Title: Swish-e documentation
+Author: 
+Abstract: SWISH-Enhanced is a fast, powerful, flexible, free, and easy to use
+ system for indexing collections of Web pages, XML or other text files. Key
+ features include the ability to limit searches to certain HTML tags
+ (META, TITLE, comments, etc.). 
+Section: Apps/Text
+
+Format: HTML
+Index: /usr/share/doc/swish-e/html/index.html
+Files: /usr/share/doc/swish-e/html/*.html
