@@ -1843,7 +1843,7 @@ Here's one way to find out where perl is located (again, on unix):
     ...
 
 Good! We are using a reasonably current version of perl.  You should be running
-at least perl 5.005 (5.00503 really).  You will may have problems otherwise.
+at least perl 5.005 (5.00503 really).  You may have problems otherwise.
 
 Now that we know perl is at F</usr/local/bin/perl> we can adjust the "shebang" line
 in the perl script (e.g. the first line of the script):
