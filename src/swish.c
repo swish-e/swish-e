@@ -352,16 +352,14 @@ static CMDPARAMS *new_swish_params()
 {
     CMDPARAMS *params = (CMDPARAMS *)emalloc( sizeof( CMDPARAMS ) );
 
-
-    params->run_mode = MODE_SEARCH;  /* default run mode */
-    params->wordlist = NULL;  /* list of -w words */
+    params->run_mode = MODE_SEARCH; /* default run mode */
+    params->wordlist = NULL;        /* list of -w words */
     params->keychar = 0;
-
     params->tmpsortprops = NULL;
     params->conflist = NULL;
-
     params->hasverbose = 0;         /* flag if -v was used */
-
+    params->index_read_only = 0;
+    params->swap_mode = 0;          /* swap mode defaults off */
     params->structure = IN_FILE;    /* look in the file, by default */
 
     return params;
