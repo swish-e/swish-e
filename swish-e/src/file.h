@@ -42,6 +42,8 @@ char *read_stream(FILE *fp, long len, long truncate_size);
 
 /* Get/eval properties for file  (2000-11 rasc) */
 FileProp *file_properties (char *real_path, char *work_path, SWISH *sw);
+FileProp *init_file_properties (SWISH *sw);
+void init_file_prop_settings( SWISH *sw, FileProp *fprop );
 void     free_file_properties (FileProp *fprop);
 
  

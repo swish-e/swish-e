@@ -147,8 +147,10 @@ void do_index_file (SWISH *sw, FileProp *fprop)
 {
 int      wordcount;
 char     *rd_buffer=NULL;	/* complete file read into buffer */
+int      external_program;
 
 	wordcount = -1;
+	external_program = 0;
 
     /* skip file is the last_mod date is newer than the check date */
 
@@ -162,20 +164,25 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 
 	if (fprop->work_path) {
 
-                /*
-                  -- jeek! simple filter hack!
-                  -- if no filter defined, call file-open
-                */
+        /*
+          -- jeek! simple filter hack!
+          -- if no filter defined, call file-open
+        */
 
-                if (fprop->filterprog) {
-                    fprop->fp = FilterOpen(fprop);
-                } else {
-						/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
-                    fprop->fp = fopen(fprop->work_path, FILEMODE_READ );
-                }
-		
+        if ( fprop->fp ) {
+            external_program++;
 
-                if (fprop->fp) {
+        } else {
+            if (fprop->filterprog) {
+                fprop->fp = FilterOpen(fprop);
+            } else {
+            		/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
+                fprop->fp = fopen(fprop->work_path, FILEMODE_READ );
+            }
+        }
+
+
+        if (fprop->fp) {
 
 		    /* -- Read  all data  (len = 0 if filtered...) */
 		    rd_buffer = read_stream(fprop->fp,
@@ -214,11 +221,13 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 			break;
 		    }
 
-		    if (fprop->filterprog) {
-			FilterClose(fprop->fp); /* close filter pipe */
-		    } else {
-			fclose (fprop->fp);  /* close file */
-		    }
+            if ( !external_program ) {
+    		    if (fprop->filterprog) {
+                    FilterClose(fprop->fp); /* close filter pipe */
+                } else {
+                    fclose (fprop->fp);  /* close file */
+                }
+            }
 
 		}
 		efree(rd_buffer);
