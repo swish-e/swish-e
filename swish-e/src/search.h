@@ -46,6 +46,8 @@ struct MOD_Search
     /* All Results per index file */
     struct DB_RESULTS *db_results;
 
+    /* Hash array for merging results */
+    RESULT *resulthashlist[BIGHASHSIZE];
 };
 
 void initModule_Search (SWISH *);
@@ -106,6 +108,9 @@ struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *translatechars_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist);
 struct swline *parse_search_string(SWISH *sw, char *words,INDEXDATAHEADER header);
+
+void initresulthashlist (SWISH *sw);
+void mergeresulthashlist (SWISH *sw, RESULT *r);
 
 #endif
 

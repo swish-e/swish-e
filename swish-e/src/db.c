@@ -39,8 +39,8 @@
 void initModule_DB (SWISH  *sw)
 {
           /* Allocate structure */
-   initModule_DBNative(sw);
-  return;
+   initModule_DBgdbm(sw);
+   return;
 }
 
 
@@ -50,7 +50,7 @@ void initModule_DB (SWISH  *sw)
 
 void freeModule_DB (SWISH *sw)
 {
-   freeModule_DBNative(sw);
+  freeModule_DBgdbm(sw);
   return;
 }
 

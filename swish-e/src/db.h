@@ -99,7 +99,7 @@ struct MOD_DB
 {
     char *DB_name; /* short name for data source */
 
-	void * (*DB_Create) (char *dbname);
+    void * (*DB_Create) (char *dbname);
     void * (*DB_Open) (char *dbname);
     void   (*DB_Close) (void *DB);
     void   (*DB_Remove) (void *DB);

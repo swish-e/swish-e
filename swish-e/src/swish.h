@@ -660,8 +660,6 @@ typedef struct
     /* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
 
-    RESULT *resulthashlist[BIGHASHSIZE];
-
     /* Compression Work buffer while compression locations in index
        ** proccess */
     unsigned char *compression_buffer;
