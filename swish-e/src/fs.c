@@ -102,7 +102,7 @@ struct direct *dp;
 struct dirent *dp;
 #endif
 int lens;
-char *s,*p;
+char *s;
 DOCENTRYARRAY *sortfilelist, *sortdirlist;
 struct swline *tmplist;
 int ilen1,ilen2;
@@ -225,7 +225,6 @@ int ilen1,ilen2;
 void indexafile(SWISH *sw, char *path)
 {
 int badfile;
-char *t;
 char *filename;
 struct swline *tmplist;
 	

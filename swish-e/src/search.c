@@ -114,14 +114,8 @@
 #include "compress.h"
 #include "deflate.h"
 #include "metanames.h"
+#include "result_sort.h"
 
-/* 01/2001 Jose Ruiz */
-/* Compare RESULTS using RANK */
-/* This routine is used by qsort */
-int compResultsByRank(const void *s1,const void *s2)
-{
-	return((*(RESULT* const*)s1)->rank - (*(RESULT* const*)s2)->rank);
-}
 
 /* 01/2001 Jose Ruiz */
 /* Compare RESULTS using RANK */
@@ -147,9 +141,7 @@ int rc,*p1,*p2;
 	}
 }
 
-int SwishAttach(sw,printflag)
-SWISH *sw;
-int printflag;
+int SwishAttach(SWISH *sw,int printflag)
 {
 IndexFILE *indexlist;
 int merge;
@@ -298,11 +290,7 @@ IndexFILE *tmplist;
 }
 
 
-int search(sw, words, structure)
-SWISH *sw;
-char *words;
-int structure;
-
+int search(SWISH *sw, char *words, int structure)
 {
 int i, j, k, metaID, indexYes, totalResults;
 char word[MAXWORDLEN];
@@ -409,6 +397,9 @@ unsigned char PhraseDelimiterString[2];
 	
 	if (!sw->searchwordlist)  return (sw->lasterror=NO_WORDS_IN_SEARCH);
 
+	if ((rc=initSearchResultProperties(sw))) return rc;
+	if ((rc=initSortResultProperties(sw))) return rc;
+
 	while (indexlist != NULL) {
 		sw->bigrank = 0;
 		
@@ -421,9 +412,6 @@ unsigned char PhraseDelimiterString[2];
 		}
 		else
 		{ indexYes = 1; /*There is a non-empty index */ }
-		if ((rc=initSearchResultProperties(sw))) return rc;
-		if (isSortProp(sw))
-			if ((rc=initSortResultProperties(sw))) return rc;
 
 		tmpresultlist=NULL;
 		tmplist=NULL;
@@ -464,11 +452,6 @@ unsigned char PhraseDelimiterString[2];
 		{
 			tmplist2=tmplist;
 			tmpresultlist = (RESULT *) parseterm(sw,0,metaID,indexlist,&tmplist2);
-
-			/* 04/00 Jose Ruiz-Get properties first before sorting. 
-			** In this way we can sort results by metaName
-			*/
-			if(tmpresultlist) tmpresultlist = (RESULT *) getproperties(sw,indexlist,tmpresultlist);
 		}
 		if(tmplist) freeswline(tmplist);
 
@@ -491,10 +474,11 @@ unsigned char PhraseDelimiterString[2];
 /* 
 04/00 Jose Ruiz - Sort results by rank or by properties
 */
-	if (isSortProp(sw)) 
-		sw->sortresultlist = (RESULT *) sortresultsbyproperty(sw, structure);
-	else
-		sw->sortresultlist = (RESULT *) sortresultsbyrank(sw, structure);
+	sw->sortresultlist = sortresults(sw, structure);
+	//if (isSortProp(sw)) 
+	//	sw->sortresultlist = (RESULT *) sortresultsbyproperty(sw, structure);
+	//else
+	//	sw->sortresultlist = (RESULT *) sortresultsbyrank(sw, structure);
 	if (!sw->sortresultlist) {
 		if (!sw->commonerror) totalResults=0;
 	} else {
@@ -515,8 +499,7 @@ unsigned char PhraseDelimiterString[2];
 ** It does it both for 'not' and '='; the '=' is used for the METADATA (GH)
 */
 
-struct swline *fixnot(sp)
-struct swline *sp;
+struct swline *fixnot(struct swline *sp)
 {
 int openparen, hasnot;
 int openMeta, hasMeta;
@@ -672,8 +655,7 @@ int inphrase;
 
 #define ReadHeaderInt(itmp,fp) uncompress1(itmp,fp); itmp--;
 
-void readheader(indexf)
-IndexFILE *indexf;
+void readheader(IndexFILE *indexf)
 {
 long swish_magic;
 int id,len,itmp;
@@ -785,8 +767,7 @@ FILE *fp=indexf->fp;
 The file pointer is set by readheader */
 
 
-void readoffsets(indexf)
-IndexFILE *indexf;
+void readoffsets(IndexFILE *indexf)
 {
 int i;
 	for (i=0;i<MAXCHARS;i++) 
@@ -798,8 +779,7 @@ int i;
 /*Jose Ruiz 04/00
 Reads the hash index
 The file pointer is set by readoffsets */
-void readhashoffsets(indexf)
-IndexFILE *indexf;
+void readhashoffsets(IndexFILE *indexf)
 {
 int i;
 	for (i=0;i<SEARCHHASHSIZE;i++) 
@@ -811,8 +791,7 @@ int i;
 /* Reads the stopwords in the index file.
 */
 
-void readstopwords(indexf)
-IndexFILE *indexf;
+void readstopwords(IndexFILE *indexf)
 {
 int len;
 int lenword=0;
@@ -839,13 +818,13 @@ FILE *fp=indexf->fp;
 /* Reads the metaNames from the index
 */
 
-void readMetaNames(indexf)
-IndexFILE *indexf;
+void readMetaNames(IndexFILE *indexf)
 {
 int len;
 int dummy;
-int wordlen,metaType;
+int wordlen,metaType,metaID;
 char *word;
+long sort_offset;
 FILE *fp=indexf->fp;
 
 	wordlen = MAXWORDLEN;
@@ -860,12 +839,16 @@ FILE *fp=indexf->fp;
 			word = (char *) erealloc(word,wordlen+1);
 		}
 		fread(word,len,1,fp);
-		word[len]='\0';
-			/* It was saved as Style+1 */
+		word[len]='\0';	
+			/* Read metaID */
+		uncompress1(metaID,fp);
+			/* metaType was saved as metaType+1 */
 		uncompress1(metaType,fp);
 		metaType--;
+			/* Read offset to sorted table of filenums */
+		sort_offset=readlong(fp);
 			/* add the meta tag */
-		addMetaEntry(indexf, word, metaType, &dummy); 
+		addMetaEntry(indexf, word, metaType, metaID, sort_offset, &dummy); 
 
 		uncompress1(len,fp);
 	}
@@ -875,8 +858,7 @@ FILE *fp=indexf->fp;
 /* Reads the file offset table in the index file.
 */
 
-void readfileoffsets(indexf)
-IndexFILE *indexf;
+void readfileoffsets(IndexFILE *indexf)
 {
 long pos, totwords;
 struct file *filep;
@@ -971,12 +953,7 @@ char *tmp;
 ** parseone tells the function to only operate on one word or term.
 */
 
-RESULT *parseterm(sw, parseone, metaID, indexf, searchwordlist)
-SWISH *sw;
-int parseone;
-int metaID;
-IndexFILE *indexf;
-struct swline **searchwordlist;
+RESULT *parseterm(SWISH *sw, int parseone, int metaID, IndexFILE *indexf, struct swline **searchwordlist)
 {
 int rulenum;
 char *word;
@@ -1110,15 +1087,7 @@ FILE *fp=indexf->fp;
 ** it calls getfileinfo(), which does the real searching.
 */
 
-RESULT *operate(sw, rp, rulenum, wordin, fp, metaID, andLevel, indexf)
-SWISH *sw;
-RESULT *rp;
-int rulenum;
-char *wordin;
-FILE *fp;
-int metaID;
-int andLevel;
-IndexFILE *indexf;
+RESULT *operate(SWISH *sw, RESULT *rp, int rulenum, char *wordin, FILE *fp, int metaID, int andLevel, IndexFILE *indexf)
 {
 /* int i, found; indexchars stuff removed */
 RESULT *newrp, *returnrp;
@@ -1178,11 +1147,7 @@ indexchars stuff removed */
 ** Also solves stars. Faster!! It can even found "and", "or"
 ** when looking for "an*" or "o*" if they are not stop words
 */
-RESULT *getfileinfo(sw, word, indexf, metaID)
-SWISH *sw;
-char *word;
-IndexFILE *indexf;
-int metaID;
+RESULT *getfileinfo(SWISH *sw, char *word, IndexFILE *indexf, int metaID)
 {
 int i, j, x, filenum, structure, frequency,  *position, tries, found, len, curmetaID, index_structure, index_structfreq;
 int filewordlen = 0;
@@ -1388,10 +1353,7 @@ FILE *fp=indexf->fp;
 }
 
 /* 11/00 Function to read all words starting with a character */
-char *getfilewords(sw, c, indexf)
-SWISH *sw;
-IndexFILE *indexf;
-char c;
+char *getfilewords(SWISH *sw, char c, IndexFILE *indexf)
 {
 int i,j;
 int wordlen;
@@ -1443,8 +1405,7 @@ FILE *fp=indexf->fp;
 /* Is a word a rule?
 */
 
-int isrule(word)
-char *word;
+int isrule(char *word)
 {
 	if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
 		return 1;
@@ -1452,8 +1413,7 @@ char *word;
 		return 0;
 }
 
-int _isrule(word)
-char *word;
+int _isrule(char *word)
 {
 	if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
 		return 1;
@@ -1461,8 +1421,7 @@ char *word;
 		return 0;
 }
 
-int isnotrule(word)
-char *word;
+int isnotrule(char *word)
 {
 	if (!strcmp(word,NOT_WORD) )
 		return 1;
@@ -1470,8 +1429,7 @@ char *word;
 		return 0;
 }
 
-int _isnotrule(word)
-char *word;
+int _isnotrule(char *word)
 {
 	if (!strcmp(word,_NOT_WORD) )
 		return 1;
@@ -1483,8 +1441,7 @@ char *word;
 /* Is a word a boolean rule?
 */
 
-int isbooleanrule(word)
-char *word;
+int isbooleanrule(char *word)
 {
 	if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
 		return 1;
@@ -1495,8 +1452,7 @@ char *word;
 /* Is a word a unary rule?
 */
 
-int isunaryrule(word)
-char *word;
+int isunaryrule(char *word)
 {
 	if (!strcmp(word, NOT_WORD))
 		return 1;
@@ -1507,8 +1463,7 @@ char *word;
 /* Return the number for a rule.
 */
 
-int getrulenum(word)
-char *word;
+int getrulenum(char *word)
 {
 	if (!strcmp(word, AND_WORD))
 		return AND_RULE;
@@ -1526,11 +1481,7 @@ char *word;
 /* Takes two lists of results from searches and ANDs them together.
 */
 
-RESULT *andresultlists(sw, r1, r2, andLevel)
-SWISH *sw;
-RESULT *r1;
-RESULT *r2;
-int andLevel;
+RESULT *andresultlists(SWISH *sw, RESULT *r1, RESULT *r2, int andLevel)
 {
 RESULT *tmpnode, *newnode, *r1b, *r2b;
 int res=0;
@@ -1596,10 +1547,7 @@ int res=0;
 /* Takes two lists of results from searches and ORs them together.
 */
 
-RESULT *orresultlists(sw, r1, r2)
-SWISH *sw;
-RESULT *r1;
-RESULT *r2;
+RESULT *orresultlists(SWISH *sw, RESULT *r1, RESULT *r2)
 {
 int i;
 RESULT *rp, *tmp;
@@ -1646,10 +1594,7 @@ RESULT *newnode=NULL;
 ** marked (GH)
 */
 
-RESULT *notresultlist(sw, rp, indexf)
-SWISH *sw;
-RESULT *rp;
-IndexFILE *indexf;
+RESULT *notresultlist(SWISH *sw, RESULT *rp, IndexFILE *indexf)
 {
 int i, filenums;
 RESULT *newp;
@@ -1672,11 +1617,7 @@ RESULT *newp;
 	return newp;
 }
 
-RESULT *phraseresultlists(sw, r1, r2, distance)
-SWISH *sw;
-RESULT *r1;
-RESULT *r2;
-int distance;
+RESULT *phraseresultlists(SWISH *sw, RESULT *r1, RESULT *r2, int distance)
 {
 RESULT *tmpnode, *newnode, *r1b, *r2b;
 int i, j, found, newRank, *allpositions;
@@ -1744,15 +1685,7 @@ int res=0;
 /* Adds a file number and rank to a list of results.
 */
 
-RESULT *addtoresultlist(rp, filenum, rank, structure, frequency, position,indexf,sw)
-RESULT *rp;
-int filenum;
-int rank;
-int structure;
-int frequency;
-int *position;
-IndexFILE *indexf;
-SWISH *sw;
+RESULT *addtoresultlist(RESULT *rp, int filenum, int rank, int structure, int frequency, int *position,IndexFILE *indexf,SWISH *sw)
 {
 RESULT *newnode;
 	newnode = (RESULT *) emalloc(sizeof(RESULT));
@@ -1770,7 +1703,9 @@ RESULT *newnode;
 	newnode->next = NULL;
 	newnode->Prop = NULL;
 	newnode->PropSort = NULL;
+	newnode->iPropSort = NULL;
 	newnode->indexf = indexf;
+	newnode->read = 0;
 	newnode->sw = (struct SWISH *)sw;
 	
 	if (rp == NULL)
@@ -1783,36 +1718,12 @@ RESULT *newnode;
 	return rp;
 }
 
-/* Adds the results of a search, sorts them by rank.
-*/
-
-/* Jose Ruiz 04/00
-** Complete rewrite
-** Sort was made before calling this function !! -> FASTER!!
-** This one just reverses order
-*/
-RESULT *addsortresult(sw, sphead, r)
-SWISH *sw;
-RESULT *sphead;
-RESULT *r;
-{
-	if (r->rank > sw->bigrank)
-		sw->bigrank = r->rank;
-	if (sphead == NULL) {
-		r->nextsort = NULL;
-	}
-	else {
-		r->nextsort = sphead;
-	}
-	return r;
-}
 
 /* Counts the number of files that are the result
    of a search
 */
 
-int countResults(sp)
-RESULT *sp;
+int countResults(RESULT *sp)
 {
 	int tot = 0;
 	
@@ -1838,6 +1749,11 @@ double  num;
 		if (tmp->rank >= 999) tmp->rank = 1000;
 		else if (tmp->rank <1) tmp->rank = 1;
 		sw->currentresult = tmp->nextsort;
+			/* 02/2001 jmruiz - Read file data here */
+			/* Doing it here we get better performance if maxhits specified
+				and not all the results data (only read maxhits) */
+
+		tmp=getproperties(tmp);
 	}
 	if(!tmp)sw->lasterror=SWISH_LISTRESULTS_EOF;
 	return tmp;
@@ -1847,8 +1763,7 @@ double  num;
 /* Does an index file have a readable format?
 */
 
-int isokindexheader(fp)
-FILE *fp;
+int isokindexheader(FILE *fp)
 {
 long swish_magic;
 	fseek(fp, 0, 0);
@@ -1865,8 +1780,7 @@ long swish_magic;
 /* Checks if the next word is "="
 */
 
-int isMetaName (searchWord)
-struct swline* searchWord;
+int isMetaName (struct swline *searchWord)
 {
 	if (searchWord == NULL)
 		return 0;
@@ -1876,8 +1790,7 @@ struct swline* searchWord;
 }
 
 /* funtion to free all memory of a list of results */
-void freeresultlist(sw)
-SWISH *sw;
+void freeresultlist(SWISH *sw)
 {
 RESULT *rp;
 RESULT *tmp;
@@ -1891,9 +1804,7 @@ RESULT *tmp;
 }
 
 /* funtion to free the memory of one result */
-void freeresult(sw,rp)
-SWISH *sw;
-RESULT *rp;
+void freeresult(SWISH *sw,RESULT *rp)
 {
 int i;
 	if(rp) 
@@ -1912,57 +1823,22 @@ int i;
 				efree(rp->PropSort[i]);
 			efree(rp->PropSort);
 		}
+		if(sw->numPropertiesToSort && rp->iPropSort) {
+			efree(rp->iPropSort);
+		}
+
 		efree(rp);
 	}
 }
 
-/* 
-04/00 Jose Ruiz - Sort results by rank
-Uses an array and qsort for better performance
-*/
-RESULT *sortresultsbyrank(sw, structure)
-SWISH *sw;
-int structure;
-{ 
-int i, j;
-RESULT **ptmp;
-RESULT *rtmp;
-RESULT *sortresultlist;
-RESULT *rp;
-		rp=sw->resultlist;
-	              /* Very trivial case */
-		if(!rp) return NULL;
-			/* Compute results */
-		for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next) 
-			if (rtmp->structure & structure) i++;
-	              /* Another very trivial case */
-		if (!i) return NULL;
-			/* Compute array wide */
-		sortresultlist = NULL;
-			/* Compute array size */
-		ptmp=(void *)emalloc(i*sizeof(RESULT *));
-			/* Build an array with the elements to compare
-				 and pointers to data */
-		for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next) 
-			if (rtmp->structure & structure) ptmp[j++]=rtmp;
-			/* Sort them */
-		qsort(ptmp,i,sizeof(RESULT *),&compResultsByRank);
-			/* Build the list */
-		for(j=0;j<i;j++){
-				sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);
-		}
-			/* Free the memory od the array */
-		efree(ptmp);
-		return sortresultlist;
-}
+
 
 /* 
 06/00 Jose Ruiz - Sort results by filenum
 Uses an array and qsort for better performance
 Used for faster "and" and "phrase" of results
 */
-RESULT *sortresultsbyfilenum(rp)
-RESULT *rp;
+RESULT *sortresultsbyfilenum(RESULT *rp)
 { 
 int i, j;
 RESULT **ptmp;
@@ -1994,49 +1870,39 @@ RESULT *rtmp;
 		return rp;
 }
 
-RESULT *getproperties(sw,indexf,rp)
-SWISH *sw;
-IndexFILE *indexf;
-RESULT *rp;
+RESULT *getproperties(RESULT *rp)
 {
-RESULT *tmp;
+IndexFILE *indexf=rp->indexf;
+SWISH *sw=(SWISH *)rp->sw;
 struct file *fileInfo;
+	if(rp->read) return rp;    /* Read it before */
 
-	tmp = rp;
-	while(tmp) {
-		fileInfo = readFileEntry(indexf, tmp->filenum);
-		tmp->filename=estrdup(fileInfo->fi.filename);
+	fileInfo = readFileEntry(indexf, rp->filenum);
+	rp->read=1;
+	rp->filename=estrdup(fileInfo->fi.filename);
 
-//$$ISOTime  		strftime(tmp->ISOTime,sizeof(tmp->ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fileInfo->fi.mtime));
-//$$ New:
-		tmp->last_modified = fileInfo->fi.mtime;
+	rp->last_modified = fileInfo->fi.mtime;
 
-			/* Just to save some little memory */
-		if(fileInfo->fi.filename==fileInfo->fi.title)
-			tmp->title=tmp->filename;
-		else
-			tmp->title=estrdup(fileInfo->fi.title);
-		if(!fileInfo->fi.summary) 
-			tmp->summary=estrdup("");
-		else 
-			tmp->summary=estrdup(fileInfo->fi.summary);
-		tmp->start=fileInfo->fi.start;
-		tmp->size=fileInfo->fi.size;
-		if (sw->numPropertiesToDisplay)
-			tmp->Prop=getResultProperties(sw,indexf,fileInfo->docProperties);
-		if (sw->numPropertiesToSort)
-			tmp->PropSort=getResultSortProperties(sw,indexf,fileInfo->docProperties);
-		tmp = tmp->next;
-	}
+		/* Just to save some little memory */
+	if(fileInfo->fi.filename==fileInfo->fi.title)
+		rp->title=rp->filename;
+	else
+		rp->title=estrdup(fileInfo->fi.title);
+	if(!fileInfo->fi.summary) 
+		rp->summary=estrdup("");
+	else 
+		rp->summary=estrdup(fileInfo->fi.summary);
+	rp->start=fileInfo->fi.start;
+	rp->size=fileInfo->fi.size;
+	if (sw->numPropertiesToDisplay)
+		rp->Prop=getResultProperties(rp);
+
 	return rp;
 }
 
 /* 06/00 Jose Ruiz
 ** returns all results in r1 that not contains r2 */
-RESULT *notresultlists(sw, r1, r2)
-SWISH *sw;
-RESULT *r1;
-RESULT *r2;
+RESULT *notresultlists(SWISH *sw, RESULT *r1, RESULT *r2)
 {
 RESULT *tmpnode, *newnode, *r1b, *r2b;
 int res=0;
@@ -2132,11 +1998,7 @@ void freefileinfo(struct file *f)
 
 /* 02/2001 Jose Ruiz */
 /* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */
-struct swline *ignore_words_in_query(sw,indexf,searchwordlist,phrase_delimiter)
-SWISH *sw;
-IndexFILE *indexf;
-struct swline *searchwordlist;
-unsigned char phrase_delimiter;
+struct swline *ignore_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist,unsigned char phrase_delimiter)
 {
 struct swline *pointer1, *pointer2, *pointer3;
 int inphrase=0,ignore=0;
@@ -2206,10 +2068,7 @@ int inphrase=0,ignore=0;
 	return searchwordlist;
 }
 
-struct swline *stem_words_in_query(sw,indexf,searchwordlist)
-SWISH *sw;
-IndexFILE *indexf;
-struct swline *searchwordlist;
+struct swline *stem_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist)
 {
 struct swline *tmplist;
 int len,lenword;
@@ -2244,10 +2103,7 @@ char *word,*tmp;
 	return searchwordlist;
 }
 
-struct swline *soundex_words_in_query(sw,indexf,searchwordlist)
-SWISH *sw;
-IndexFILE *indexf;
-struct swline *searchwordlist;
+struct swline *soundex_words_in_query(SWISH *sw,IndexFILE *indexf,struct swline *searchwordlist)
 {
 struct swline *tmplist;
 int len,lenword;

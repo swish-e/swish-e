@@ -29,37 +29,37 @@ char *getthedate(void);
 int countwordstr (SWISH *, char *, int);
 int parsecomment (SWISH *, char *, int, int, int, int *);
 int removestops (SWISH *, int);
-int getrank _AP ((SWISH *, int, int, int, int));
-void printheader _AP ((INDEXDATAHEADER *, FILE *, char *, int, int, int));
-void printindex _AP ((SWISH *, IndexFILE *));
-void printword _AP ((SWISH *, ENTRY *, IndexFILE *));
-void printworddata _AP ((SWISH *, ENTRY *, IndexFILE *));
-void printhash _AP ((ENTRY **, IndexFILE *));
-void printfilelist _AP ((SWISH *, IndexFILE *));
-void printstopwords _AP ((IndexFILE *));
-void printfileoffsets _AP ((IndexFILE *));
-void printlocationlookuptables _AP ((IndexFILE *));
-void printpathlookuptable _AP ((IndexFILE *));
-void decompress _AP ((SWISH *, IndexFILE *));
-char *ruleparse _AP ((SWISH *, char *));
-void stripIgnoreFirstChars _AP ((INDEXDATAHEADER, char *));
-int stripIgnoreLastChars _AP ((INDEXDATAHEADER, char *));
+int getrank(SWISH *, int, int, int, int);
+void printheader(INDEXDATAHEADER *, FILE *, char *, int, int, int);
+void printindex(SWISH *, IndexFILE *);
+void printword(SWISH *, ENTRY *, IndexFILE *);
+void printworddata(SWISH *, ENTRY *, IndexFILE *);
+void printhash(ENTRY **, IndexFILE *);
+void printfilelist(SWISH *, IndexFILE *);
+void printstopwords(IndexFILE *);
+void printfileoffsets(IndexFILE *);
+void printlocationlookuptables(IndexFILE *);
+void printpathlookuptable(IndexFILE *);
+void decompress(SWISH *, IndexFILE *);
+char *ruleparse(SWISH *, char *);
+void stripIgnoreFirstChars(INDEXDATAHEADER, char *);
+int stripIgnoreLastChars(INDEXDATAHEADER, char *);
 
 #define isIgnoreFirstChar(header,c) header.ignorefirstcharlookuptable[(int)((unsigned char)c)]
 #define isIgnoreLastChar(header,c) header.ignorelastcharlookuptable[(int)((unsigned char)c)]
 #define isBumpPositionCounterChar(header,c) header.bumpposcharslookuptable[(int)((unsigned char)c)]
 
-unsigned char *buildFileEntry _AP ((char *, FILE *, struct docPropertyEntry **, int, int *));
-struct file *readFileEntry _AP ((IndexFILE *,int));
+unsigned char *buildFileEntry(char *, FILE *, struct docPropertyEntry **, int, int *);
+struct file *readFileEntry(IndexFILE *,int);
 
-void computehashentry _AP ((ENTRY **,ENTRY *));
-void TranslateChars _AP ((INDEXDATAHEADER, char *));
+void computehashentry(ENTRY **,ENTRY *);
+void TranslateChars(INDEXDATAHEADER, char *);
 
-void sortentry _AP ((SWISH *, IndexFILE *, ENTRY *));
+void sortentry(SWISH *, IndexFILE *, ENTRY *);
 
-int indexstring _AP ((SWISH*, char *, int, int, int, int *, int *));
+int indexstring(SWISH*, char *, int, int, int, int *, int *);
 
-void addtofwordtotals _AP ((IndexFILE *, int, int));
-void addsummarytofile _AP ((IndexFILE *, int, char *));
+void addtofwordtotals(IndexFILE *, int, int);
+void addsummarytofile(IndexFILE *, int, char *);
 
 void BuildSortedArrayOfWords(SWISH *,IndexFILE *);

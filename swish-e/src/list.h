@@ -22,9 +22,9 @@
 ** <return value> <functionname> _AP( (<arg prototypes>) );
 */
 
-struct swline *addswline _AP ((struct swline *, char *));
-struct swline *dupswline _AP ((struct swline *));
-IndexFILE *addindexfile _AP ((IndexFILE *, char *));
-struct filter *addfilter _AP((struct filter *rp, char *FilterSuffix, char *FilterProg, char *FilterDir)); 
-void init_header _AP ((INDEXDATAHEADER *));
-void free_header _AP ((INDEXDATAHEADER *));
+struct swline *addswline (struct swline *, char *);
+struct swline *dupswline (struct swline *);
+IndexFILE *addindexfile (IndexFILE *, char *);
+struct filter *addfilter (struct filter *rp, char *FilterSuffix, char *FilterProg, char *FilterDir); 
+void init_header (INDEXDATAHEADER *);
+void free_header (INDEXDATAHEADER *);

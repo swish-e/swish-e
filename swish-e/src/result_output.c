@@ -20,9 +20,11 @@
 #include <time.h>
 #include <stdio.h>
 #include "swish.h"
+#include "mem.h"
 #include "string.h"
 #include "merge.h"
 #include "docprop.h"
+#include "error.h"
 #include "result_output.h"
 
 
@@ -476,8 +478,6 @@ struct ResultExtFmtStrList *addResultExtFormatStr (
 
 {
 struct ResultExtFmtStrList *newnode;
-char *buf;
-int len1,len2;
 
 
    newnode = (struct ResultExtFmtStrList *) 

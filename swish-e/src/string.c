@@ -361,19 +361,18 @@ char *orig;
 int *initialsize;
 {
 int len,oldlen;
-	len=strlen(orig);
-	oldlen=*initialsize;
-	if(len > oldlen) {
-		*initialsize=len + 200;
-		if(oldlen)
-			dest = (char *) erealloc(dest,*initialsize + 1);
-		else
-			dest = (char *) emalloc(*initialsize + 1);
-	}
-	strcpy(dest,orig);
-	return(dest);
+        len=strlen(orig);
+        oldlen=*initialsize;
+        if(len > oldlen) {
+                *initialsize=len + 200;   /* 200 extra chars!!! */
+                if(oldlen)
+                        efree(dest);
+                dest = (char *) emalloc(*initialsize + 1);
+        }
+        memcpy(dest,orig,len);
+        *(dest+len)='\0';
+        return(dest);
 }
-
 
 /* Comparison routine to sort a string - See sortstring */
 int ccomp(const void *s1,const void *s2)
@@ -424,6 +423,7 @@ void makeallstringlookuptables(SWISH *sw)
 }
 
 /* 06/00 Jose Ruiz- Parses a line into a StringList
+** 02/2001 Jose Ruiz - Added extra NULL at the end
 */
 StringList *parse_line(char *line)
 {
@@ -435,7 +435,7 @@ char *p;
 		*p='\0';
 	cursize=0;
 	sl=(StringList *)emalloc(sizeof(StringList));
-	sl->word=(char **)emalloc((maxsize=1)*sizeof(char *));
+	sl->word=(char **)emalloc((maxsize=2)*sizeof(char *));
 	p=line;
 	skiplen=1;
 	while(skiplen && *(p=(char *)getword(line,&skiplen))) 
@@ -446,6 +446,11 @@ char *p;
 		line+=skiplen;
 	}
 	sl->n=cursize;
+		/* Add an extra NULL */
+	if(cursize==maxsize)
+		sl->word=(char **)erealloc(sl->word,(maxsize+=1)*sizeof(char *));
+	sl->word[cursize]=NULL;
+	
 	return sl;
 }
 
@@ -493,7 +498,7 @@ limiting the scan to the first max_lines lines (0 means all lines) */
 char *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive)
 {
 register int c, d;
-register char *p,*q,*r;
+register char *p,*r;
 char *tag;
 int lencontent;
 char *content;
@@ -647,6 +652,8 @@ char *p,*q;
 		{
 			case '<':
 				intag=1;
+					/* jmruiz 02/2001 change <tag> by a space */
+				*p++=' ';
 				break;
 			case '>':
 				intag=0;

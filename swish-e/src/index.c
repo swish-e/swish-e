@@ -114,9 +114,11 @@
 #include "file.h"
 #include "compress.h"
 #include "deflate.h"
+#include "html.h"
 #include "xml.h"
 #include "txt.h"
 #include "metanames.h"
+#include "result_sort.h"
 
 
 /*
@@ -160,8 +162,8 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
                     fprop->fp = popen (filtercmd,"r");  /* Open stream */
 
                 } else {
-
-                    fprop->fp = fopen(fprop->work_path, "r" );
+						/* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
+                    fprop->fp = fopen(fprop->work_path, FILEMODE_READ );
 
                 }
 		
@@ -239,9 +241,7 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 ** indexed alphabetically. No big whoop.
 */
 
-DOCENTRYARRAY *addsortentry(e, filename)
-DOCENTRYARRAY *e;
-char *filename;
+DOCENTRYARRAY *addsortentry(DOCENTRYARRAY *e, char *filename)
 {
 int i,j,k,isbigger;
 	
@@ -283,13 +283,7 @@ int i,j,k,isbigger;
 /* Adds a word to the master index tree.
 */
 
-void addentry(sw, word, filenum, structure, metaID, position)
-SWISH *sw;
-char *word;
-int filenum;
-int structure;
-int metaID;
-int position;
+void addentry(SWISH *sw, char *word, int filenum, int structure, int metaID, int position)
 {
 int l;
 ENTRY *en,*efound;
@@ -366,16 +360,7 @@ IndexFILE *indexf=sw->indexlist;
 /* Adds a file to the master list of files and file numbers.
 */
 
-void addtofilelist(sw,indexf,filename, mtime, title, summary, start, size,  newFileEntry)
-SWISH *sw;
-IndexFILE *indexf;
-char *filename;
-time_t mtime;
-char *title;
-char *summary;
-int start;
-int size;
-struct file ** newFileEntry;
+void addtofilelist(SWISH *sw,IndexFILE *indexf,char *filename, time_t mtime, char *title, char *summary, int start, int size,  struct file ** newFileEntry)
 {
 struct file *newnode;
 FILEOFFSET *newnode2;
@@ -426,6 +411,8 @@ unsigned long int tmp;
 		*p3=c;
 		ruleparsedfilename=p3;
 	}
+
+	newnode->fi.filenum = indexf->fileoffsetarray_cursize+1;  /* filenum starts in 1 */
 	newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
 	/* Not used in indexing mode - They are in properties */
 	/* NULL must be set to not get a segfault in freefileinfo */
@@ -525,8 +512,7 @@ unsigned long int tmp;
 ** counts 'em.
 */
 
-int getfilecount(indexf)
-IndexFILE *indexf;
+int getfilecount(IndexFILE *indexf)
 {
 	return indexf->fileoffsetarray_cursize;
 }
@@ -554,10 +540,7 @@ time_t time;
 ** HTML title.
 */
 
-int countwordstr(sw, s, filenum)
-SWISH *sw;
-char *s;
-int filenum;
+int countwordstr(SWISH *sw, char *s, int filenum)
 {
 int position=1;    /* Position of word */
 int metaID=1;
@@ -568,13 +551,7 @@ int structure=IN_FILE;
 /* Parses the words in a comment.
 */
 
-int parsecomment(sw, tag, filenum, structure, metaID, position)
-SWISH *sw;
-char *tag;
-int filenum;
-int structure;
-int metaID;
-int *position;
+int parsecomment(SWISH *sw, char *tag, int filenum, int structure, int metaID, int *position)
 {
 	structure |= IN_COMMENTS;
 	return indexstring(sw, tag+1, filenum, structure, 1, &metaID, position);
@@ -593,9 +570,7 @@ int *position;
 ** looking at all word's positions for each automatic stop word
 ** and decrement its position
 */
-int removestops(sw, totalfiles)
-SWISH *sw;
-int totalfiles;
+int removestops(SWISH *sw, int totalfiles)
 {
 int i, j, k, l, m, n, percent, stopwords, stoppos, res;
 LOCATION *lp, *lpstop;
@@ -747,12 +722,7 @@ IndexFILE *indexf=sw->indexlist;
 ** work). Fudging with the ranks doesn't seem to make much difference.
 */
 
-int getrank(sw, freq, tfreq, words, structure)
-SWISH *sw;
-int freq;
-int tfreq;
-int words;
-int structure;
+int getrank(SWISH *sw, int freq, int tfreq, int words, int structure)
 {
 double d, e, f;
 int tmprank;
@@ -793,13 +763,7 @@ int emphasized;
 #define PrintHeaderStr(ID,TXT,fp) id=ID;compress1(id,fp);len=strlen(TXT)+1; compress1(len,fp);fwrite(TXT,len,1,fp);
 #define PrintHeaderInt(ID,INT,fp) id=ID;compress1(id,fp);itmp=INT+1; compress1(itmp,fp);
 
-void printheader(header, fp, filename, totalwords, totalfiles, merged)
-INDEXDATAHEADER *header;
-FILE *fp;
-char *filename;
-int totalwords;
-int totalfiles;
-int merged;
+void printheader(INDEXDATAHEADER *header, FILE *fp, char *filename, int totalwords, int totalfiles, int merged)
 {
 char *c,*tmp;
 int id,len;
@@ -866,10 +830,7 @@ long itmp;
 
 
 /* Sort entry by MetaName, FileNum */
-void sortentry(sw,indexf,e)
-SWISH *sw;
-IndexFILE *indexf;
-ENTRY *e;
+void sortentry(SWISH *sw,IndexFILE *indexf,ENTRY *e)
 {
 int i, j, k, num;
 unsigned char *ptmp,*ptmp2,*compressed_data;
@@ -915,9 +876,7 @@ int *pi=NULL;
 /* Print the index entries that hold the word, rank, and other information.
 */
 
-void printindex(sw,indexf)
-SWISH *sw;
-IndexFILE *indexf;
+void printindex(SWISH *sw,IndexFILE *indexf)
 {
 int i;
 ENTRYARRAY *ep;
@@ -967,10 +926,7 @@ int totalwords;
 /* Jose Ruiz 11/00
 ** Function to write a word to the index file
 */
-void printword(sw, ep,indexf)
-SWISH *sw;
-ENTRY *ep;
-IndexFILE *indexf;
+void printword(SWISH *sw, ENTRY *ep,IndexFILE *indexf)
 {
 int i,wordlen,hashval;
 long f_offset;
@@ -1001,10 +957,7 @@ FILE *fp=indexf->fp;
 /* Jose Ruiz 11/00
 ** Function to write all word's data to the index file
 */
-void printworddata(sw, ep,indexf)
-SWISH *sw;
-ENTRY *ep;
-IndexFILE *indexf;
+void printworddata(SWISH *sw, ENTRY *ep,IndexFILE *indexf)
 {
 int i,index,wordlen,curmetaID;
 long tmp,curmetanamepos,f_offset;
@@ -1073,8 +1026,7 @@ FILE *fp=indexf->fp;
 /* Prints the list of stopwords into the index file.
 */
 
-void printstopwords(indexf)
-IndexFILE *indexf;
+void printstopwords(IndexFILE *indexf)
 {
 int hashval,len;
 struct swline *sp=NULL;
@@ -1093,12 +1045,7 @@ FILE *fp=indexf->fp;
 	fputc(0,fp);
 }
 
-unsigned char *buildFileEntry(filename, fp, docProperties,lookup_path,sz_buffer)
-char *filename;
-FILE *fp;
-struct docPropertyEntry **docProperties;
-int *sz_buffer;
-int lookup_path;
+unsigned char *buildFileEntry(char *filename, FILE *fp,struct docPropertyEntry ** docProperties,int lookup_path,int *sz_buffer)
 {
 int len_filename;
 unsigned char *buffer1,*buffer2,*buffer3,*p;
@@ -1126,9 +1073,7 @@ int datalen1, datalen2,datalen3;
 	return(buffer3);
 }
 
-struct file *readFileEntry(indexf, filenum)
-IndexFILE *indexf;
-int filenum;
+struct file *readFileEntry(IndexFILE *indexf, int filenum)
 {
 long pos;
 int total_len,len1,len4,lookup_path;
@@ -1172,6 +1117,7 @@ FILE *fp=indexf->fp;
 	fi->fi.filename[len1+len4]='\0';
 	efree(buf1);
 
+	fi->fi.filenum=filenum-1;
 	/* read the document properties section  */
 	fi->docProperties = fetchDocProperties( p);
 
@@ -1199,9 +1145,7 @@ FILE *fp=indexf->fp;
 /* Prints the list of files, titles, and sizes into the index file.
 */
 
-void printfilelist(sw, indexf)
-SWISH *sw;
-IndexFILE *indexf;
+void printfilelist(SWISH *sw, IndexFILE *indexf)
 {
 int i;
 struct file *filep;
@@ -1231,21 +1175,26 @@ struct buffer_pool *bp=NULL;
 		}
 
 		efree(buffer);
-		freefileinfo(filep);
-		indexf->filearray[i]=NULL;
 	}
 	if(indexf->header.applyFileInfoCompression)
 	{
 		zfflush(bp,fp);
 		printdeflatedictionary(bp,indexf);
 	}
+		/* Sort properties -> Better search performance */
+	sortFileProperties(indexf);
+		/* Free memory */
+	for(i=0;i<indexf->filearray_cursize;i++)
+	{
+		freefileinfo(indexf->filearray[i]);
+		indexf->filearray[i]=NULL;
+	}
 }
 
 /* Prints the list of metaNames into the file index
 */
 
-void printMetaNames(indexf)
-IndexFILE *indexf;
+void printMetaNames(IndexFILE *indexf)
 {
 struct metaEntry* entry=NULL;
 int i,len;
@@ -1266,7 +1215,9 @@ FILE *fp=indexf->fp;
 		len = strlen(entry->metaName);
 		compress1(len,fp);
 		fwrite(entry->metaName,len,1,fp);
+		compress1(entry->metaID,fp);
 		compress1(entry->metaType,fp);
+		printlong(fp,entry->sort_offset);
 	}
 	/* End of metanames */
 	fputc(0,fp);   /* write 0 delimiter */
@@ -1277,8 +1228,7 @@ FILE *fp=indexf->fp;
 /* Prints the list of file offsets into the index file.
  */
 
-void printfileoffsets(indexf)
-IndexFILE *indexf;
+void printfileoffsets(IndexFILE *indexf)
 {
 int i;
 long offset, totwords;
@@ -1362,9 +1312,7 @@ FILE *fp=indexf->fp;
 
 /* Prints out the decompressed values in an index file.*/
 
-void decompress(sw,indexf)
-SWISH *sw;
-IndexFILE *indexf;
+void decompress(SWISH *sw,IndexFILE *indexf)
 {
 int i, c, x, wordlen, fieldnum, frequency, metaname, index_structure, structure,  index_structfreq, filenum;
 long pos;
@@ -1515,7 +1463,7 @@ char ISOTime[20];
 			printf("%s \"%s\" \"%s\" \"\" %d %d",fi->fi.filename,ISOTime, fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
 		}
 		for(docProperties=fi->docProperties;docProperties;docProperties=docProperties->next) {
-			printf(" PROP_%d: \"%s\"",docProperties->metaID, getPropAsString(indexf,docProperties)); 
+			printf(" PROP_%d: \"%s\"",docProperties->metaID,getDocPropAsString(indexf, fi, docProperties->metaID));
 		}
 		putchar((int)'\n');fflush(stdout);
 		freefileinfo(fi);
@@ -1533,8 +1481,11 @@ char ISOTime[20];
 			putchar((int)'\"');
 			uncompress1(i,fp);
 /* #### Line modified */
-			printf("%d",i);
+			printf("%d\"",i);
 /* #### */
+			uncompress1(i,fp);
+			printf("%d",i);
+			readlong(fp);   /* sort_offset -> ignored */
 			putchar((int)' ');
 			uncompress1(wordlen,fp);
 		}
@@ -1548,9 +1499,7 @@ char ISOTime[20];
 /* Parses lines according to the ReplaceRules directives.
 */
 
-char *ruleparse(sw, line)
-SWISH *sw;
-char *line;
+char *ruleparse(SWISH *sw,char *line)
 {
 static int lenrule=0;
 static char *rule=NULL;
@@ -1722,9 +1671,7 @@ ENTRY *e;
 ** Jose Ruiz 04/00
 ** Store a portable long with just four bytes
 */
-void printlong(fp, num)
-FILE *fp;
-long num;
+void printlong(FILE *fp, long num)
 {
 	PACKLONG(num);     /* Make the number portable */
 	fwrite(&num,MAXLONGLEN,1,fp);
@@ -1734,8 +1681,7 @@ long num;
 ** Jose Ruiz 04/00
 ** Read a portable long (just four bytes)
 */
-long readlong(fp)
-FILE *fp;
+long readlong(FILE *fp)
 {
 long num;
 	fread(&num,MAXLONGLEN,1,fp);
@@ -1745,9 +1691,7 @@ long num;
 
 /* Jose Ruiz 04/00 */
 /* Function to print to the index file the hash table with all the words */
-void printhash(hashentries, indexf)
-ENTRY **hashentries;
-IndexFILE *indexf;
+void printhash(ENTRY **hashentries, IndexFILE *indexf)
 {
 int i, wordlen;
 ENTRY *ep, *epn;
@@ -1790,14 +1734,7 @@ char *p,*q;
 
 
 
-int indexstring(sw, s, filenum, structure, numMetaNames, metaID, position)
-SWISH *sw;
-char *s;
-int filenum;
-int structure;
-int numMetaNames;
-int *metaID;
-int *position;
+int indexstring(SWISH *sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
 int i, j, k, inword, wordcount;
 int c;
@@ -1921,10 +1858,7 @@ IndexFILE *indexf=sw->indexlist;
 	return wordcount;
 }
 
-void addtofwordtotals(indexf, filenum, ftotalwords)
-IndexFILE *indexf;
-int filenum;
-int ftotalwords;
+void addtofwordtotals(IndexFILE *indexf, int filenum, int ftotalwords)
 {
         if(filenum>indexf->fileoffsetarray_cursize)
                 progerr("Internal error in addtofwordtotals");
@@ -1933,10 +1867,7 @@ int ftotalwords;
 }
 
 
-void addsummarytofile(indexf, filenum, summary)
-IndexFILE *indexf;
-int filenum;
-char *summary;
+void addsummarytofile(IndexFILE *indexf, int filenum, char * summary)
 {
         if(filenum>indexf->fileoffsetarray_cursize)
                 progerr("Internal error in addsummarytofile");

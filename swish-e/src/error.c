@@ -22,6 +22,7 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include "error.h"
 
@@ -44,7 +45,7 @@ void progerr(char *msgfmt,...)
   vfprintf (stderr, msgfmt, args);
   fprintf  (stderr, "\n.\n");
   va_end   (args);
-  exit (1);
+  exit(1);
  }
 
 
@@ -70,7 +71,6 @@ NULL};
 
 char *getErrorString(int number)
 {
-char *s;
 int i;
 	number=abs(number);
 	/* To avoid buffer overruns lets count the strings */

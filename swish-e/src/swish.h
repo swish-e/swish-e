@@ -221,9 +221,13 @@ struct metaEntry {
 	char* metaName;   /* MetaName string */
 	int metaID;      /* Meta ID */
 	int metaType;    /* See metanames.h for values */
+	long sort_offset;  /* Offset in index file to sorted file data */
+						/* If 0, files are not sorted by this metaName/property */
+	int *sorted_data;   /* Sorted data . NULL if not read */
 };
 
 typedef struct {
+	int filenum;
 	int lookup_path;
 	char *filename;
 	unsigned long mtime;
@@ -240,6 +244,7 @@ typedef struct {
 
 struct file {
 	FILEINFO fi;
+	struct metaEntry *currentSortProp;
 	int read;
 	struct docPropertyEntry* docProperties;
 };
@@ -440,7 +445,9 @@ typedef struct RESULT {
 	/* file position where this document's properties are stored */
 	char **Prop;
 	char **PropSort;
+	int *iPropSort;   /* Used for presorted data */
 	IndexFILE *indexf;
+	int read;    /* 0 if file data and properties have not yet been readed from the index file */
 	struct SWISH *sw;
 } RESULT;
 

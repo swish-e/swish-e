@@ -859,7 +859,7 @@ int i;
 
 void addentryMerge(SWISH *sw, ENTRY *ip)
 {
-int hashval,lenword;
+int hashval;
 IndexFILE *indexf=sw->indexlist;
 
         if(!sw->entryArray)

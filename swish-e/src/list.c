@@ -23,6 +23,7 @@
 #include "swish.h"
 #include "list.h"
 #include "mem.h"
+#include "metanames.h"
 #include "string.h"
 
 struct swline *addswline(rp, line)

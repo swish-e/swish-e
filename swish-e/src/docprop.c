@@ -43,23 +43,6 @@
 #include "metanames.h"
 
 
-/* 01/01 Jose Ruiz */
-/* function for comparing data in order to
-get sorted results with qsort (including combinations of asc and descending
-fields */
-int compResultsBySortProps(const void *s1,const void *s2)
-{
-RESULT *r1=*(RESULT* const *)s1;
-RESULT *r2=*(RESULT* const *)s2;
-int i,rc,num_fields,sortmode;
-SWISH *sw=(SWISH *)r1->sw;
-	num_fields=sw->numPropertiesToSort;
-	for(i=0;i<num_fields;i++){
-		sortmode=sw->propModeToSort[i];
-		if((rc=sortmode*strcmp(r1->PropSort[i],r2->PropSort[i])))return rc;
-	}
-        return 0;
-}
 
 void freeDocProperties(docProperties)
      docPropertyEntry **docProperties;
@@ -246,58 +229,6 @@ IndexFILE *indexf;
 }
 
 
-int initSortResultProperties(SWISH *sw)
-{
-int i;
-IndexFILE *indexf;
-        if (sw->numPropertiesToSort == 0)
-                return RC_OK;
-        for (i = 0; i<sw->numPropertiesToSort; i++)
-        {
-                makeItLow(sw->propNameToSort[i]);
-		/* Get ID for each index file */
-		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-		{
-                	indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
-                	if (indexf->propIDToSort[i] == 1)
-                	{
-				progerr ("Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
-				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
-                	}
-		}
-        }
-	return RC_OK;
-}
-
-int isSortProp(SWISH *sw)
-{
-	return sw->numPropertiesToSort;
-}
-
-int initSearchResultProperties(SWISH *sw)
-{
-IndexFILE *indexf;
-int i;
-	/* lookup selected property names */
-
-	if (sw->numPropertiesToDisplay == 0)
-		return RC_OK;
-	for (i = 0; i<sw->numPropertiesToDisplay; i++)
-	{
-		makeItLow(sw->propNameToDisplay[i]);
-		/* Get ID for each index file */
-		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-		{
-			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
-			if (indexf->propIDToDisplay[i] == 1)
-			{
-				progerr ("Unknown Display property name \"%s\"", sw->propNameToDisplay[i]);
-				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
-			}
-		}
-	}
-	return RC_OK;
-}
 
 
 /*
@@ -341,48 +272,25 @@ int i;
 	}
 }
 
-char **getResultProperties(SWISH *sw, IndexFILE *indexf, docPropertyEntry *docProperties)
+char **getResultProperties(RESULT *r)
 {
 int i;
 char **props;      /* Array to Store properties */
-docPropertyEntry *p;
+IndexFILE *indexf=r->indexf;
+SWISH *sw=(SWISH *)r->sw;
 
-	if (sw->numPropertiesToDisplay == 0)
-		return NULL;
-
-	props=(char **)emalloc(sw->numPropertiesToDisplay * sizeof(char *));
+    if (sw->numPropertiesToDisplay == 0) return NULL;
+	
+	props=(char **) emalloc(sw->numPropertiesToDisplay*sizeof(char *));
 	for (i = 0; i<sw->numPropertiesToDisplay; i++)
 	{
-		for(p=docProperties;p;p=p->next)
-		{
-			if(indexf->propIDToDisplay[i]==p->metaID) break;
-		}
-                props[i] = getPropAsString(indexf,p);
+		props[i] = getResultPropAsString(r, indexf->propIDToDisplay[i]);
 	}
 	return props;
 }
 
 
-char **getResultSortProperties(SWISH *sw, IndexFILE *indexf, docPropertyEntry *docProperties)
-{
-int i;
-char **props=NULL;      /* Array to Store properties */
-docPropertyEntry *p;
 
-        if (sw->numPropertiesToSort == 0)
-                return NULL;
-	
-	props=(char **) emalloc(sw->numPropertiesToSort*sizeof(char *));
-        for (i = 0; i<sw->numPropertiesToSort; i++)
-	{
-		for(p=docProperties;p;p=p->next)
-		{
-			if(indexf->propIDToSort[i]==p->metaID) break;
-		}
-                props[i] = getPropAsString(indexf,p);
-	}
-	return props;
-}
 
 void swapDocPropertyMetaNames(docProperties, metaFile)
      docPropertyEntry *docProperties;
@@ -408,52 +316,7 @@ void swapDocPropertyMetaNames(docProperties, metaFile)
 	}
 }
 
-/* Jose Ruiz 04/00
-** Sort results by property
-*/
-RESULT *sortresultsbyproperty(sw, structure)
-SWISH *sw;
-int structure;
-{ 
-int i, j;
-RESULT **ptmp;
-int tmp;
-RESULT *rtmp;
-RESULT *sortresultlist;
-RESULT *rp;
-	rp=sw->resultlist;
-		/* Trivial case */
-	if (!rp) return NULL;
-	sortresultlist = NULL;
-		/* Compute number of results */
-	for(i=0,rtmp=rp;rtmp;rtmp = rtmp->next) {
-		if (rtmp->structure & structure) {
-			i++;
-		}
-	}
-		/* Another trivial case */
-	if (!i) return NULL;
 
-		/* Compute array size */
-	ptmp=(RESULT **)emalloc(i*sizeof(RESULT *));
-		/* Build an array with the elements to compare
-			 and pointers to data */
-	for(j=0,rtmp=rp;rtmp;rtmp = rtmp->next,j++) {
-		if (rtmp->structure & structure) {
-			ptmp[j]=rtmp;
-		}
-	}
-		/* Sort them */
-	qsort(ptmp,i,sizeof(RESULT *),&compResultsBySortProps);
-		/* Build the list */
-	for(j=0;j<i;j++){
-		sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);
-	}
-		/* Free the memory of the array */
-	efree(ptmp);
-
-	return sortresultlist;
-}
 
 /* Duplicates properties (used by merge) */
 docPropertyEntry *DupProps(docPropertyEntry *dp)
@@ -507,33 +370,65 @@ IndexFILE *tmpindexlist;
 	}
 }
 
+/* For faster proccess, get de ID of the properties to sort */
+int initSearchResultProperties(SWISH *sw)
+{
+IndexFILE *indexf;
+int i;
+	/* lookup selected property names */
 
+	if (sw->numPropertiesToDisplay == 0)
+		return RC_OK;
+	for (i = 0; i<sw->numPropertiesToDisplay; i++)
+	{
+		makeItLow(sw->propNameToDisplay[i]);
+		/* Get ID for each index file */
+		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+		{
+			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
+			if (indexf->propIDToDisplay[i] == 1)
+			{
+				progerr ("Unknown Display property name \"%s\"", sw->propNameToDisplay[i]);
+				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
+			}
+		}
+	}
+	return RC_OK;
+}
 
-/* #### Function to format the property as a string */
-char *getPropAsString(IndexFILE *indexf,docPropertyEntry *p)
+/* #### Function to format the property of a doc as a string. Th property must be in the index file */
+char *getDocPropAsString(IndexFILE *indexf, struct file *p, int ID)
 {
 char *s=NULL;
 unsigned long i;
 struct metaEntry *q;
+docPropertyEntry *d;
 	if(!p) return estrdup("");
-	q=getMetaIDData(indexf,p->metaID); 
+	q=getMetaIDData(indexf,ID); 
 	if(!q) return estrdup("");
+		/* Search the property */
+	for(d=p->docProperties;d;d=d->next)
+		if(d->metaID==ID) break;
+		/* If not found return */
+	if(!d) return estrdup("");
 
 	if(is_meta_string(q))      /* check for ascii/string data */
 	{
-		s=bin2string(p->propValue,p->propLen);
-	} else if(is_meta_date(q))  /* check for a date */
+		s=bin2string(d->propValue,d->propLen);
+	} 
+	else if(is_meta_date(q))  /* check for a date */
 	{
 		s=emalloc(20);
-		i=*(unsigned long *)p->propValue;  /* read binary */
-						  /* as unsigned long */
+		i=*(unsigned long *)d->propValue;  /* read binary */
+									  /* as unsigned long */
 		UNPACKLONG(i);     /* Convert the portable number */
-				/* Convert to ISO datetime */
+			/* Convert to ISO datetime */
 		strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
-	} else if(is_meta_number(q))  /* check for a number */
+	}
+	else if(is_meta_number(q))  /* check for a number */
 	{
 		s=emalloc(14);
-		i=*(unsigned long *)p->propValue;  /* read binary */
+		i=*(unsigned long *)d->propValue;  /* read binary */
 						  /* as unsigned long */
 		UNPACKLONG(i);     /* Convert the portable number */
 				/* Convert to string */
@@ -543,10 +438,93 @@ struct metaEntry *q;
 }
 
 
+
+/* #### Function to format the property of a result as a string */
+char *getResultPropAsString(RESULT *p, int ID)
+{
+char *s=NULL;
+unsigned long i;
+IndexFILE *indexf=p->indexf;
+struct metaEntry *q;
+docPropertyEntry *d;
+	if(!p) return estrdup("");
+	switch(ID)
+	{
+		case AUTOPROP_ID__REC_COUNT:   /* BTW this is nonsense - Added just to avoid memory problems */
+			i=0;
+			s=emalloc(14);
+  			sprintf(s,"%.013lu",i);
+			break;
+		case AUTOPROP_ID__RESULT_RANK:
+			i=p->rank;
+			s=emalloc(14);
+  			sprintf(s,"%.013lu",i);
+			break;
+		case AUTOPROP_ID__DOCPATH:
+			s=estrdup(p->filename);
+			break;
+		case AUTOPROP_ID__STARTPOS:
+			i=p->start;
+			s=emalloc(14);
+  			sprintf(s,"%.013lu",i);
+			break;
+		case AUTOPROP_ID__INDEXFILE:
+			s=estrdup(p->indexf->line);
+			break; 
+		case AUTOPROP_ID__DOCSIZE:
+			i=p->size;
+			s=emalloc(14);
+  			sprintf(s,"%.013lu",i);
+			break;
+		case AUTOPROP_ID__LASTMODIFIED:
+			s=emalloc(20);
+				/* Convert to ISO datetime */
+			strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&p->last_modified));
+			break;
+		case AUTOPROP_ID__TITLE:
+			s=estrdup(p->title);
+			break;
+		case AUTOPROP_ID__SUMMARY:
+			s=estrdup(p->summary);
+			break;
+		default:   /* User properties */
+			q=getMetaIDData(indexf,ID); 
+			if(!q) return estrdup("");
+				/* Search the property */
+			for(d=indexf->filearray[p->filenum-1]->docProperties;d;d=d->next)
+				if(d->metaID==ID) break;
+				/* If not found return */
+			if(!d) return estrdup("");
+
+			if(is_meta_string(q))      /* check for ascii/string data */
+			{
+				s=bin2string(d->propValue,d->propLen);
+			} 
+			else if(is_meta_date(q))  /* check for a date */
+			{
+				s=emalloc(20);
+				i=*(unsigned long *)d->propValue;  /* read binary */
+											  /* as unsigned long */
+				UNPACKLONG(i);     /* Convert the portable number */
+					/* Convert to ISO datetime */
+				strftime(s,20,"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
+			}
+			else if(is_meta_number(q))  /* check for a number */
+			{
+				s=emalloc(14);
+				i=*(unsigned long *)d->propValue;  /* read binary */
+								  /* as unsigned long */
+				UNPACKLONG(i);     /* Convert the portable number */
+						/* Convert to string */
+				sprintf(s,"%.013lu",i);
+			} else s=estrdup("");
+	}
+	return s;
+}
+
+
 void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
 {
-int i;
-char **props;      /* Array to Store properties */
 docPropertyEntry *p;
 	for(p=fi->docProperties;p;p=p->next)
 	{
@@ -607,7 +585,6 @@ PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
 {
   int       i;
   int       prop_id;
-  char      *propdata;  /* default value to NULL */
   PropValue *pv;
 
 
