@@ -288,28 +288,6 @@ int matchARegex( char *str, char *pattern)
 
 
 
-/* 
-   -- strtolower (make this string to lowercase)
-   -- The string itself will be converted
-   -- Return: ptr to string
-   -- 2001-02-09  rasc:  former makeItLow() been a little optimized
-
-$$$: THIS has to be enhanced!
-     e.g. most tolower() don't map umlauts, etc. so there has to be
-     an ISO to lower map...
-*/
-
-char *strtolower (char *s)
-{
-  char *p = s;
-
-  while (*p) {
-     *p = tolower(*p);
-     p++;
-  }
-  return s; 
-}
-
 
 
 /*----------------------------------------------------*/
@@ -683,3 +661,111 @@ unsigned char *s=NULL;
 	return(s);
 }
 /* #### */
+
+
+
+
+
+
+
+
+
+
+
+/*
+  -- Skip white spaces...
+  -- position to non space character
+  -- return: ptr. to non space char or \0
+  -- 2001-01-30  rasc
+*/
+
+char *str_skip_ws (char *s)
+
+{
+   while (*s && isspace(*s)) s++;
+   return s;
+}
+
+
+
+
+
+
+
+/*
+  -- character decode excape sequence
+  -- input: ptr to \... escape sequence (C-escapes)
+  -- return: character code
+             se:  string ptr to char after control sequence.
+                 (ignore, if NULL ptr)
+  -- 2001-02-04  rasc
+*/
+
+
+char charDecode_C_Escape (char *s, char **se) 
+
+{
+  char c, *se2;
+
+  if (*s != '\\') {
+                                       /* no escape   */		  
+     c = *s;                           /* return char */
+
+  } else {
+
+    switch (*(++s)) {			   /* can be optimized ... */
+	case 'a':   c = '\a';  break;
+	case 'b':   c = '\b';  break;
+	case 'f':   c = '\f';  break;
+	case 'n':   c = '\n';  break;
+	case 'r':   c = '\r';  break;
+	case 't':   c = '\t';  break;
+	case 'v':   c = '\v';  break;
+
+	case 'x':				  /* Hex  \xff  */
+		c = (char) strtoul (++s, &se2, 16);
+		s = --se2;
+		break;
+
+	case '0':				/* Oct  \0,  \012 */
+		c = (char) strtoul (s, &se2, 8);
+		s = --se2;
+		break;
+
+	default: 
+		c =  *s;		/* print the escaped character */
+		break;
+   }
+
+  }
+
+ if (se) *se = s+1;
+ return c;
+}
+
+
+
+
+
+/* 
+   -- strtolower (make this string to lowercase)
+   -- The string itself will be converted
+   -- Return: ptr to string
+   -- 2001-02-09  rasc:  former makeItLow() been a little optimized
+
+$$$: THIS has to be enhanced!
+     e.g. most tolower() don't map umlauts, etc. so there has to be
+     an ISO to lower map...
+*/
+
+char *strtolower (char *s)
+{
+  char *p = s;
+
+  while (*p) {
+     *p = tolower(*p);
+     p++;
+  }
+  return s; 
+}
+
