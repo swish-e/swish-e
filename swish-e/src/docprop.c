@@ -745,13 +745,13 @@ struct MOD_Search *srch = sw->Search;
 
 
 
-docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntry *metaFile)
+void swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntry *metaFile)
 {
     int metaID;
     propEntry *prop;
     struct docProperties *tmpDocProperties;
 
-    if(!docProperties) return NULL;
+    if(!docProperties) return;
 
 
 	tmpDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
