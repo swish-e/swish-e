@@ -530,10 +530,8 @@ int http_parseconfline(SWISH *sw,char *line)
 				sw->spiderdirectory=erealloc(sw->spiderdirectory,++sw->lenspiderdirectory+1);
 			strcat(sw->spiderdirectory, "/");
 		}
-		if(!isdirectory(sw->spiderdirectory))
-		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in SpiderDirectory. %s is not a directory",sw->spiderdirectory);
-			progerr(sw->errorstr);
+		if(!isdirectory(sw->spiderdirectory)) {
+			progerr("SpiderDirectory. %s is not a directory",sw->spiderdirectory);
 		}
     	}
 	else if (strncasecmp(line, es, sizeof(es) - 1) == 0) 

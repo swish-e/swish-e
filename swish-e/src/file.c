@@ -38,6 +38,8 @@
 ** file_properties retrieves last mod date, filesize, and evals some swish
 ** config flags for this file!
 **
+** 2001-02-12 rasc   errormsg "print" changed...
+**
 **
 */
 
@@ -240,10 +242,8 @@ IndexFILE *indexf=NULL;
 	gotdir = gotindex = 0;
 	
 	if ((fp = fopen(conffile, "r")) == NULL  ||
-		!isfile(conffile) ) 
-	{
-		sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't open the configuration file \"%s\".", conffile);
-		progerr(sw->errorstr);
+		!isfile(conffile) ) {
+		progerr("Couldn't open the configuration file \"%s\".", conffile);
 	}
 
 	/* Init default index file */
@@ -316,10 +316,8 @@ IndexFILE *indexf=NULL;
                 else if (grabYesNoField(line, "UseSoundex", &indexf->header.applySoundexRules))        {}      /* 09/01/99 DN */
                 else if ((StringValue=grabStringValueField(line, "FilterDir")))    {      /* 1999-05-05 rasc */
 			sw->filterdir = SafeStrCopy(sw->filterdir,StringValue,&sw->lenfilterdir);
-			if(!isdirectory(sw->filterdir)) 
-			{
-				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in FilterDir. %s is not a directory",sw->filterdir);
-				progerr(sw->errorstr);
+			if(!isdirectory(sw->filterdir)) {
+				progerr("FilterDir. %s is not a directory",sw->filterdir);
 			}
 			efree(StringValue);
 		}
@@ -529,10 +527,8 @@ IndexFILE *indexf=NULL;
 		}
 		else if ((StringValue=grabStringValueField(line, "tmpdir")))    		{
 			sw->tmpdir = SafeStrCopy(sw->tmpdir,StringValue,&sw->lentmpdir);
-			if(!isdirectory(sw->tmpdir)) 
-			{
-				sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error in TempDir. %s is not a directory",sw->tmpdir);
-				progerr(sw->errorstr);
+			if(!isdirectory(sw->tmpdir)) {
+				progerr("TempDir. %s is not a directory",sw->tmpdir);
 			}
 		}
 /* #### Added UndefinedMetaTags as defined by Bill Moseley */
@@ -645,13 +641,8 @@ StringList *sl;
 int   i;
 
 
-#ifdef DEBUG
-	   printf ("Open StopWordfile:  %s\n",stopw_file);
-#endif
-
   if ((fp=fopen(stopw_file, "r")) == NULL || !isfile(stopw_file) ) {
-      sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't open the stopword file \"%s\".", stopw_file);
-      progerr(sw->errorstr);
+      progerr("Couldn't open the stopword file \"%s\".", stopw_file);
   }
 
 
@@ -664,10 +655,7 @@ int   i;
       if(sl && sl->n) {
 	for(i=0;i<sl->n;i++) {
 	   addstophash(indexf,sl->word[i]);
-#ifdef DEBUG
-	   printf ("  %s\n",sl->word[i]);
-#endif
-        }
+	}
 	freeStringList(sl);
       }
   }
@@ -697,10 +685,8 @@ char* filename;
 void CreateEmptyFile(SWISH *sw,char *filename)
 {
 FILE *fp;
-	if(!(fp=openIndexFILEForWrite(filename)))
-	{
-		sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't write the file \"%s\".", filename);
-		progerr(sw->errorstr);
+	if(!(fp=openIndexFILEForWrite(filename))) {
+		progerr("Couldn't write the file \"%s\".", filename);
 	}
 	fclose(fp);
 }
@@ -765,13 +751,8 @@ StringList *sl;
 int   i;
 
 
-#ifdef DEBUG
-	   printf ("Open StopWordfile:  %s\n",usew_file);
-#endif
-
   if ((fp=fopen(usew_file, "r")) == NULL || !isfile(usew_file) ) {
-      sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't open the useword file \"%s\".", usew_file);
-      progerr(sw->errorstr);
+      progerr("Couldn't open the useword file \"%s\".", usew_file);
   }
 
 
@@ -784,10 +765,7 @@ int   i;
       if(sl && sl->n) {
 	for(i=0;i<sl->n;i++) {
 	   addusehash(indexf,sl->word[i]);
-#ifdef DEBUG
-	   printf ("  %s\n",sl->word[i]);
-#endif
-        }
+	}
 	freeStringList(sl);
       }
   }

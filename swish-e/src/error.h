@@ -15,15 +15,14 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+**
+** 2001-02-12 rasc   some parts rewritten (progerr uses vargs, now)
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
-char *BuildErrorString _AP ((char *,int *,char *,char *));
-void progerr _AP ((char *));
+void progerr (char *msgfmt, ...);
+char *getErrorString(int);
 
 #define RC_OK 0
 #define ERROR_BASE RC_OK
@@ -41,5 +40,4 @@ void progerr _AP ((char *));
 #define SWISH_LISTRESULTS_EOF ERROR_BASE-11
 #define INVALID_SWISH_HANDLE ERROR_BASE-12
 
-void progerr(char *);
-char *getErrorString(int);
+

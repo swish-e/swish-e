@@ -15,6 +15,9 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+** 2001-02-12 rasc   errormsg "print" changed...
+**
 */
 
 #include "swish.h"
@@ -152,10 +155,8 @@ long pos;
 	if(sw->plimit!=NO_PLIMIT) 
 		return (long)buf;  /* do nothing */
 	if(!sw->fp_loc_write)sw->fp_loc_write=fopen(sw->swap_location_name,FILEMODE_WRITE);
-	if (!sw->fp_loc_write)
-	{
-		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s",sw->swap_location_name);
-		progerr(sw->errorstr);
+	if (!sw->fp_loc_write) {
+		progerr("Could not create temp file %s",sw->swap_location_name);
 	}
 	pos=ftell(sw->fp_loc_write);
 	if(fwrite(&lenbuf,1,sizeof(int),sw->fp_loc_write)!=sizeof(int))
@@ -182,10 +183,8 @@ int lenbuf;
 	{
 		fclose(sw->fp_loc_write);
 		sw->fp_loc_read=fopen(sw->swap_location_name,FILEMODE_READ);
-		if (!sw->fp_loc_read)
-		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s",sw->swap_location_name);
-			progerr(sw->errorstr);
+		if (!sw->fp_loc_read) {
+			progerr("Could not open temp file %s",sw->swap_location_name);
 		}
 	}
 	fseek(sw->fp_loc_read,pos,SEEK_SET);
@@ -204,10 +203,8 @@ void SwapFileData(SWISH *sw, struct file *filep)
 unsigned char *buffer;
 int sz_buffer,tmp;
 	if (!sw->fp_file_write) sw->fp_file_write=fopen(sw->swap_file_name,FILEMODE_WRITE);
-	if (!sw->fp_file_write)
-	{
-		sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not create temp file %s",sw->swap_file_name);
-		progerr(sw->errorstr);
+	if (!sw->fp_file_write)	{
+		progerr("Could not create temp file %s",sw->swap_file_name);
 	}
 		
 	buffer=buildFileEntry(filep->fi.filename, sw->fp_file_write, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
@@ -235,10 +232,8 @@ char *buf1,*buf2,*buf3;
 	{
 		fclose(sw->fp_file_write);
 		sw->fp_file_read=fopen(sw->swap_file_name,FILEMODE_READ);
-		if (!sw->fp_file_read)
-		{
-			sw->errorstr=BuildErrorString(sw->errorstr,&sw->lenerrorstr,"Error: Could not open temp file %s",sw->swap_file_name);
-			progerr(sw->errorstr);
+		if (!sw->fp_file_read) {
+		   progerr("Could not open temp file %s",sw->swap_file_name);
 		}
 	}
 	uncompress1(len,sw->fp_file_read);

@@ -15,32 +15,39 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+**
+** 2001-02-12 rasc   rewritten (progerr uses vargs, now)
+**
 */
 
-#include "swish.h"
-#include "mem.h"
+#include <stdio.h>
+#include <stdarg.h>
 #include "error.h"
 
-/* Function to avoid snprintf (not ANSI C) when building an error string */ 
-char *BuildErrorString(char *buffer,int *bufferlen,char *fmt,char *var)
-{
-	if((strlen(fmt)+strlen(var))>(unsigned)*bufferlen)
-	{
-		*bufferlen=strlen(fmt)+strlen(var);
-		buffer=erealloc(buffer,*bufferlen+1);
-	}
-	sprintf(buffer,fmt,var);
-	return buffer;
-}
 
-/* Whoops, something bad happened...
+
+/*
+  -- print programm error message  (like printf)
+  -- exit (1)
+  -- 2001-02-12 rasc   rewritten to use va_args,
+  --                     get rid of BuildErrorString
 */
 
-void progerr(char *errstring)
+
+void progerr(char *msgfmt,...)
 {
-	fprintf(stderr, "err: %s\n.\n", errstring);
-	exit(-1);
-}
+  va_list args;
+
+  va_start (args,msgfmt);
+  fprintf  (stderr, "err: ");
+  vfprintf (stderr, msgfmt, args);
+  fprintf  (stderr, "\n.\n");
+  va_end   (args);
+  exit (1);
+ }
+
+
 
 /* See errors.h to the correspondant numerical value */
 static char *swishErrors[]={
@@ -58,6 +65,8 @@ static char *swishErrors[]={
 "No more results",          /* SWISH_LISTRESULTS_EOF */
 "Invalid swish handle",          /* INVALID_SWISH_HANDLE */
 NULL};
+
+
 
 char *getErrorString(int number)
 {

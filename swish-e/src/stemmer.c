@@ -530,7 +530,7 @@ int Stem_it( word )
             /* Part 1: Check to ensure the word is all alphabetic */
    for ( end = (*word); *end != EOS; end++ )
       if ( !isalpha((int)((unsigned char)*end)) ) return( FALSE ); /* cast to int 2/22/00 */
-      else *end = tolower( *end );
+      else *end = tolower( (unsigned char)*end );
    end--;
 
                 /*  Part 2: Run through the Porter algorithm */

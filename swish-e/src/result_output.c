@@ -287,7 +287,7 @@ char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r)
 	case 't':  t=AUTOPROPERTY_TITLE; break;
 
 	case '%':  if (f) fputc ('%',f); break;
-	default:   fprintf (stderr,"err-unkown-abbrev '%%%c'",*s); break;
+	default:   progerr ("Formatstring: unkown abbrev '%%%c'",*s); break;
 
  }
 
@@ -330,7 +330,7 @@ char *parsePropertyResultControl (char *s, char **propertyname, char **subfmt)
 
   s1 = s;
   while (*s) {				/* read to end of propertyname */
-    if ((*s=='>')|| isspace(*s)) {  	/* delim > or whitespace ? */
+    if ((*s=='>')|| isspace((unsigned char)*s)) {  	/* delim > or whitespace ? */
 	break;  			/* break on delim */
     }
     s++;
@@ -393,7 +393,6 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
   char      *s;
   int       n;
   
-// fprintf (stdout,"!out: propname: _%s_ subfmt=_%s_!",propname,(subfmt)?subfmt:"NULL");
 
   pv = getResultPropertyByName (sw, propname, r);
   if (! pv) {
@@ -410,7 +409,11 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 
 	case STRING:
 		fmt = (subfmt) ? subfmt: "%s";
-		/* $$$ ToDo: escaping of delimiter characters  $$$ */ 
+		/* -- get rid of \n\r in string! */
+		for (s=pv->value.v_str; *s; s++) {
+		   if (isspace((unsigned char) *s)) *s=' ';
+		}
+		/* $$$ ToDo: escaping of delimiter characters  $$$ */
 		if (f) fprintf (f,fmt,(char *)pv->value.v_str); 
 		break;
 

@@ -580,9 +580,10 @@ int found,lensummary;
 		tmp=estrdup(p);
 		remove_newlines(tmp);
 		remove_tags(tmp);
-		convsummary=convertentities(tmp, sw);
-		if(convsummary!=tmp) efree(tmp); 
-		tmp=convsummary;
+//$$$ Jose, have a look on these IMO should be removed (rasc 2001-02-12)
+//$$$		convsummary=convertentities(tmp, sw);
+//$$$		if(convsummary!=tmp) efree(tmp); 
+//$$$		tmp=convsummary;
 
 		/* use only the required memory -save those not used */
 		summary=estrdup(tmp);
@@ -701,9 +702,10 @@ int found,lensummary;
 	{
 		remove_newlines(summary);
 		remove_tags(summary);
-		convsummary=convertentities(summary,sw);
-		if(convsummary!=summary) efree(summary);
-		summary=convsummary;
+//$$$ Jose, have a look on these IMO should be removed (rasc 2001-02-12)
+//$$$		convsummary=convertentities(summary,sw);
+//$$$		if(convsummary!=summary) efree(summary);
+//$$$		summary=convsummary;
         }
         if(summary && size && ((int)strlen(summary))>size) 
                 summary[size]='\0';

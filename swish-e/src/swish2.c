@@ -105,8 +105,7 @@ int i;
 		sw->swap_file_name=tempnam(NULL,"swfi");
 		sw->swap_location_name=tempnam(NULL,"swlo");
 	}
-		/* Make size for errorstr */
-	sw->errorstr=emalloc((sw->lenerrorstr=MAXSTRLEN)+1);
+
 		/* Load Default Values */
 	SwishDefaults(sw);
 		/* Make rest of lookup tables */
@@ -238,8 +237,7 @@ if(sw) {
 		/* Free compression buffer */	
 		efree(sw->compression_buffer);
 		
-		/* Free errorstr buffer */
-		efree(sw->errorstr);	
+
 		/* Free SWISH struct */
 		efree(sw);
 	}

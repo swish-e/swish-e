@@ -43,7 +43,8 @@
 ** 2001-01-xx Rainer Scherg (rasc) Added property type structures, etc.
 ** 2001-01-xx Rainer Scherg (rasc) cmd-opt should be own structure in SWISH * (started)
 **
-** 2001-02-05 rasc replaced ISOTime by binary value
+** 2001-02-05 rasc   replaced ISOTime by binary value
+** 2001-02-12 rasc   removed SWISH.errorstr, etc. 
 **
 */
 
@@ -633,8 +634,6 @@ typedef struct {
 	/* Error vars */
     int commonerror;
     int lasterror;
-    int lenerrorstr;
-    char *errorstr;
 
     int indexComments;
 	/* Custom delimiter vars */
@@ -849,4 +848,4 @@ void SwishResetSearch _AP ((SWISH *));
 RESULT * SwishNext _AP ((SWISH *));
 int SwishSearch _AP ((SWISH *, char *, int , char *, char *));
 int getnumPropertiesToDisplay _AP ((SWISH *));
-char *BuildErrorString(char *,int *,char *,char *);
+

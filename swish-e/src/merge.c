@@ -28,6 +28,9 @@
 ** added safestrcpy() macro to avoid corruption from strcpy overflow
 ** SRE 11/17/99
 **
+** 2001-02-12 rasc   errormsg "print" changed...
+**
+**
 */
 
 #include <assert.h> /* for bug hunting */
@@ -70,18 +73,14 @@ struct file *fi;
 
 	if (verbose) printf("Opening and reading file 1 header...\n");
 
-	if(!(sw1 = SwishOpen(file1)))
-	{
-		sw1->errorstr=BuildErrorString(sw1->errorstr, &sw1->lenerrorstr, "Couldn't read the index file \"%s\".", file1);
-		progerr(sw1->errorstr);
+	if(!(sw1 = SwishOpen(file1))) {
+		progerr("Couldn't read the index file \"%s\".", file1);
 	}
 
 	if (verbose) printf("Opening and reading file 2 header...\n");
 
-	if(!(sw2 = SwishOpen(file2)))
-	{
-		sw2->errorstr=BuildErrorString(sw2->errorstr, &sw2->lenerrorstr, "Couldn't read the index file \"%s\".", file2);
-		progerr(sw2->errorstr);
+	if(!(sw2 = SwishOpen(file2))) {
+		progerr("Couldn't read the index file \"%s\".", file2);
 	}
 	
 	indexf1=sw1->indexlist;
@@ -94,8 +93,7 @@ struct file *fi;
 	CreateEmptyFile(sw,outfile);
 		/* and open it for read/write */
 	if ((indexf->fp = openIndexFILEForReadAndWrite(outfile)) == NULL) {
-		sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Couldn't write the merged index file \"%s\".", outfile);
-		progerr(sw->errorstr);
+		progerr("Couldn't write the merged index file \"%s\".", outfile);
 	}
 		/* Force the economic mode to save memory */
 	sw->swap_flag=1;
