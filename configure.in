@@ -1,7 +1,8 @@
 
 dnl set version (or would AM_INIT_AUTOMAKE(package_name, package_version) be better?
+dnl to update the version, modify here and run "autoconf" to generate a new ./configure script
 AC_SUBST(VERSION)
-VERSION=2.1-dev-20
+VERSION=2.1-dev-21
 
 AC_SUBST(PROJECT)
 PROJECT=swish-e
