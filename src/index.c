@@ -338,6 +338,11 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     int     wordcount;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
     int     external_program = 0;
+                               /* pointer to parsing routine */
+    int     (*countwords)(SWISH *,FileProp *,char *);
+    IndexFILE *indexf = sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+    char    strType[30];
 
     wordcount = -1;
 
@@ -401,54 +406,48 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     {
 
     case TXT:
-        if (sw->verbose >= 3)
-            printf(" - Using TXT filter - ");
-
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_TXT(sw, fprop, rd_buffer);
+        strcpy(strType,"TXT");
+        countwords = countwords_TXT;
         break;
 
     case HTML:
-        if (sw->verbose >= 3)
-            printf(" - Using HTML parser - ");
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        strcpy(strType,"HTML");
+        countwords = countwords_HTML;
         break;
 
     case XML:
-        if (sw->verbose >= 3)
-            printf(" - Using XML parser - ");
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_XML(sw, fprop, rd_buffer);
+        strcpy(strType,"XML");
+        countwords = countwords_XML;
         break;
 
     case LST:
-        if (sw->verbose >= 3)
-            printf(" - Using LST parser - ");
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_LST(sw, fprop, rd_buffer);
+        strcpy(strType,"LST");
+        countwords = countwords_LST;
         break;
 
     case WML:
-        if (sw->verbose >= 3)
-            printf(" - Using WML parser - ");
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        strcpy(strType,"WML");
+        countwords = countwords_HTML;
         break;
 
     default:
-        if (sw->verbose >= 3)
-            printf(" - Using DEFAULT parser (HTML) - ");
-        if (sw->verbose >= 4)
-            printf("\n");
-        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        strcpy(strType,"DEFAULT (HTML)");
+        countwords = countwords_HTML;
         break;
     }
+
+    if (sw->verbose >= 3)
+        printf(" - Using %s parser - ",strType);
+    if (sw->verbose >= 4)
+        printf("\n");
+
+    wordcount = countwords(sw, fprop, rd_buffer);
+
+       /* Swap file info if it set */
+       /* LST method is built on top of XML - it needs to issue several */
+       /* calls to SwapFileData - So let it do the job */
+    if(idx->swap_filedata && fprop->doctype != LST)
+        SwapFileData(sw, indexf->filearray[idx->filenum-1]);
 
     if (!external_program)
     {
@@ -462,7 +461,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         }
     }
 
-        efree(rd_buffer);
+    efree(rd_buffer);
 
     if (sw->verbose >= 3)
     {
