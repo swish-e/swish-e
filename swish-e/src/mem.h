@@ -70,6 +70,8 @@ extern size_t memory_trace_counter;
 void Mem_bp(int n);
 #endif
 
+void *ecalloc(size_t nelem, size_t size);
+
 #if MEM_DEBUG | MEM_TRACE | MEM_STATISTICS
 
 #define emalloc(size) Mem_Alloc(size, __FILE__, __LINE__)

@@ -57,6 +57,18 @@ $Id$
 
 /* simple cases first ... */
 
+
+/* emalloc - malloc a block of memory */
+void *ecalloc(size_t nelem, size_t size)
+{
+    void *p;
+
+    p = emalloc(nelem * size);
+    memset(p,0,size);
+
+    return p;
+}
+
 #if ! (MEM_DEBUG | MEM_TRACE | MEM_STATISTICS)
 
 

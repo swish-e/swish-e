@@ -21,4 +21,5 @@ int Stem (char **, int *);
 char *fuzzy_mode_to_string( FuzzyIndexType mode );
 void set_fuzzy_mode( FUZZY_INDEX *fi, char *param );
 void get_fuzzy_mode( FUZZY_INDEX *fi, int fuzzy );
-
+void free_fuzzy_mode( FUZZY_INDEX *fi );
+int stemmer_applied( INDEXDATAHEADER *header );
