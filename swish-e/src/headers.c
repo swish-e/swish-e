@@ -252,6 +252,8 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
     SWISH_HEADER_VALUE value;
     INDEXDATAHEADER    *header = &indexf->header;
 
+    value.string = NULL;
+
     *data_type = header_map->data_type;
 
     switch ( header_map->data_type )
@@ -308,12 +310,12 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
             else
                 progerr("Invalid OTHER header '%s'", header_map->description );
 
-            return value;
 
         default:
             progerr("Invalid HEADER type '%d'", header_map->data_type );
-            return value;
     }
+
+    return value;  /* make MS compiler happy */
 }
 
 /************************************************************
