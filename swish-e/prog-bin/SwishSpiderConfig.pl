@@ -6,44 +6,83 @@ SwishSpiderConfig.pl - Sample swish-e spider configuration
 
 =head1 DESCRIPTION
 
-This is a sample configuation file for the spider.pl program provided
-with the swish-e distribution.
+This is a sample configuration file for the spider.pl program provided
+with the swish-e distribution. 
 
-It contains settings for spidering three servers (two are the same server).
-All are disabled (skip => 1) to prevent every new swish user from spidering these sites.
+A spider.pl configuration file is not required as spider.pl has reasonable
+defaults.  In fact, it's recommended that you only use a spider.pl
+configuration file *after* successfully indexing with spider.pl's default
+settings.  To use the default settings set in your *swish-e* config file:
 
-These are just examples.  Please spider your own web site.
+   SwishProgParameters default <url to spider>
+   IndexDir spider.pl
 
-**Also, please don't use this exact file as your configuration file.**
+The "default" parameter instructs spider.pl to use its
+default parameters.  To specify a spider configuration file use:
 
-Trim your file down to just the content you need, especially
-if posting your config to the Swish-e list requesting for help.  Remove these comments
-and remove everything below that you are not using.
+   SwishProgParameters <path to config file>
+   IndexDir spider.pl
 
-The first example is relativly simple.  It just spiders any URL that
-ends in C<.html>.
+If no parameters are passed to spider.pl (i.e. SwishProgParameters is not used)
+then spider.pl will look for a file called F<SwishSpiderConfig.pl> in the current
+directory.
 
-The second example is a bit more advanced and shows how to filter content.
+A spider.pl config file is useful when you need to change the default
+behavior of the way spider.pl operates.  For example, you may wish to index
+just part of your site, or tell the spider that example.com,
+www.example.com and web.example.com are all the same site.
 
-First, this the spider doesn't request image files (files that end in .gif or .jpeg)
-then only indexes files with of C<text/html text/plain application/pdf application/msword> content
-type.
+The configuration file is actually Perl code.  This makes it possible to do
+reasonably complicated things directly within the config file. For example,
+parse HTML content into sections and index each section as a separate "document"
+allowing searches to be targeted. 
 
-C<application/pdf> and C<application/msword> are then run through filters to extract
-out their content.  The example filter subroutines are included below, as well.
+The spider.pl config file must set an array called "@servers".
+The "@servers" array holds one or more descriptions of a server
+to index.  In other words, you may define multiple configurations to index
+different servers (or different parts of the same server) and group then
+together in the @servers array.
+Each server description is contained in a single Perl hash.
 
-This config is set to only spider 100 URLs, or index 20 files, which ever comes first.
+For example, to index two sites define two Perl hashes:
 
-The third example shows more options (which are listed in C<perldoc spider.pl>), and how you might use
-subroutine calls for checking URLs, content, and filtering instead of inlined subroutines shown in
-the first two examples.
+	my %main_site = (
+	    base_url   => 'http://example.com',
+	    same_hosts => 'www.example.com',
+	    email      => 'admin@example.com',
+	);
 
 
-Please see C<perldoc spider.pl> for more information.
+	my %news_site = (
+	    base_url   => 'http://news.example.com',
+	    email      => 'admin@example.com',
+	);
+
+	@servers = ( \%main_site, \%news_site );
+        1;
+
+	
+The above defines two Perl hashes (%main_site and %news_site) and then places
+a *reference* (the backslash before the name of the hash) to each of those
+hashes in the @servers array.  The "1;" at the end is required at the end
+of the file (Perl must see a true value at the end of the file).
+
+Below are two example configurations, but included in the same @servers
+array (as anonymous Perl hashes).  They both have the skip flag set which
+disables their use (this is just an example after all).
+
+The first is a simple example of a few parameters, and shows the use of
+a "test_url" function to limit what files are fetched from the server (in
+this example only .html files are fetched).
+
+The second example is slightly more complex and makes use the the
+SWISH::Filter module to filter documents (such as PDF and MS Word).
+
+Note: The examples below are outside "pod" documentation -- if you are reading
+this with the "perldoc" command you will not see the examples below.
 
 =cut
 
-#--------------------- Global Config ----------------------------
 
 #  @servers is a list of hashes -- so you can spider more than one site
 #  in one run (or different parts of the same tree)
@@ -74,62 +113,29 @@ Please see C<perldoc spider.pl> for more information.
         keep_alive  => 1,         # enable keep alives requests
     },
 
-
-    #=============================================================================
-    # This is a more advanced example that uses more features,
-    # such as ignoring some file extensions, and only indexing
-    # some content-types, plus filters PDF and MS Word docs.
-    # The call-back subroutines are explained a bit more below.
-    {
-        skip        => 1,  # skip spidering this server
-        debug       => DEBUG_URL,  # print some debugging info to STDERR                                  
-
-        base_url        => 'http://www.swish-e.org/',
-        email           => 'swish@domain.invalid',
-        link_tags       => [qw/ a frame /],
-        delay_sec       => 30,        # Delay in seconds between requests
-        max_files       => 50,         
-        max_indexed     => 20,        # Max number of files to send to swish for indexing
-
-        max_size        => 1_000_000,  # limit to 1MB file size
-        max_depth       => 10,         # spider only ten levels deep
-        keep_alive      => 1,
-
-        test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg)$/ },
-
-        test_response   => sub {
-            my $content_type = $_[2]->content_type;
-            my $ok = grep { $_ eq $content_type } qw{ text/html text/plain application/pdf application/msword };
-
-            # This might be used if you only wanted to index PDF files, yet spider still spider.
-            #$_[1]->{no_index} = $content_type ne 'application/pdf';
-
-            return 1 if $ok;
-            print STDERR "$_[0] wrong content type ( $content_type )\n";
-            return;
-        },
-
-        filter_content  => [ \&pdf, \&doc ],
-    },
-
-
     #=============================================================================
     # This example just shows more settings, and makes use of the SWISH::Filter
-    # module for converting documents.
-    
-    {
-        skip        => 1,         # Flag to disable spidering this host.
+    # module for converting documents.  Some sites require cookies, so this
+    # config enables spider.pl's use of cookies, and also enables MD5
+    # checksums to catch duplicate pages (i.e. if / and /index.html point
+    # to the same page).
+    # This example also only indexes the "docs" sub-tree of the swish-e
+    # site by checking the path of the URLs
 
-        base_url    => 'http://swish-e.org/index.html',
+    {
+        skip        => 0,         # Flag to disable spidering this host.
+
+        base_url    => 'http://swish-e.org/current/docs/',
         same_hosts  => [ qw/www.swish-e.org/ ],
         agent       => 'swish-e spider http://swish-e.org/',
         email       => 'swish@domain.invalid',
         keep_alive  => 1,         # Try to keep the connection open
         max_time    => 10,        # Max time to spider in minutes
         max_files   => 20,        # Max files to spider
+	delay_secs  => 2,         # Delay in seconds between requests
         ignore_robots_file => 0,  # Don't set that to one, unless you are sure.
 
-        use_cookies => 0,         # True will keep cookie jar
+        use_cookies => 1,         # True will keep cookie jar
                                   # Some sites require cookies
                                   # Requires HTTP::Cookies
 
@@ -140,17 +146,17 @@ Please see C<perldoc spider.pl> for more information.
                                   # content.  Will trap / and /index.html,
                                   # for example.
 
-        debug       => DEBUG_URL | DEBUG_SKIPPED | DEBUG_HEADERS,  # print some debugging info to STDERR                                  
+	# This will generate A LOT of debugging information to STDOUT
+        debug       => DEBUG_URL | DEBUG_SKIPPED | DEBUG_HEADERS,
 
 
         # Here are hooks to callback routines to validate urls and responses
         # Probably a good idea to use them so you don't try to index
         # Binary data.  Look at content-type headers!
         
-        test_url        => \&test_url,
-        test_response   => \&test_response,
+ #       test_url        => \&test_url,
+ #       test_response   => \&test_response,
         filter_content  => \&filter_content,        
-        
     },
 
 
@@ -165,7 +171,7 @@ Please see C<perldoc spider.pl> for more information.
 #  Use these to adjust skip/ignore based on filename/content-type
 #  Or to filter content (pdf -> text, for example)
 #
-#  Remember to include the code references in the config, above.
+#  Remember to include the code references in the config as above.
 #
 #----------------------------------------------------------------------
 
@@ -180,36 +186,52 @@ sub test_url {
     # return 0;  # No, don't index or spider;
 
     # ignore any common image files
-    return $uri->path !~ /\.(gif|jpg|jpeg|png)?$/;
+    return if $uri->path =~ /\.(gif|jpg|jpeg|png)?$/;
+
+    # make sure that the path is limited to the docs path
+    return $uri->path =~ m[^/current/docs/];
     
 }
+
+
 
 # This routine is called when the *first* block of data comes back
 # from the server.  If you return false no more content will be read
 # from the server.  $response is a HTTP::Response object.
-
+# It's useful for checking the content type of documents.
+#
+# For example, say we have a lot of audio files linked our our site that we
+# do not want to index.  But we also have a lot of image files that we want
+# to index the path name only.
 
 sub test_response {
     my ( $uri, $server, $response ) = @_;
 
-    $server->{no_contents}++ unless $response->content_type =~ m[^text/html];
+    return if $response->content_type =~ m[^audio/];
+
+    # In this example set the "no_contents" flag for 
+    $server->{no_contents}++ unless $response->content_type =~ m[^image/];
     return 1;  # ok to index and spider
 }
 
+
+
 # This is an example of how to use the SWISH::Filter module included
-# with the swish-e distribution.  Make sure that SWISH::Filter is
-# in the @INC path (e.g. set PERL5LIB before running swish).
+# with the swish-e distribution.
 #
 # Returns:
 #      true if content-type is text/* or if the document was filtered
 #      false if document was not filtered
-#      aborts if module or filter object cannot be created.
+#      aborts if module cannot be loaded or filter object cannot be created.
 #
 
 my $filter;  # cache the object.
 
 sub filter_content {
     my ( $uri, $server, $response, $content_ref ) = @_;
+
+    # Uncomment this to enable debugging of SWISH::Filter
+    # $ENV{FILTER_DEBUG} = 1;
 
     my $content_type = $response->content_type;
 
@@ -233,7 +255,7 @@ sub filter_content {
 
     # If not filtered return false and doc will be ignored (not indexed)
     
-    my $doc = $filter->content(
+    my $doc = $filter->convert(
         document => $content_ref,
         name     => $response->base,
         content_type => $content_type,
@@ -242,7 +264,6 @@ sub filter_content {
     # return unless $doc->was_filtered # could do this since checking for text/* above
     return if $doc->is_binary;
 
-    # nicer to use **char...
     $$content_ref = ${$doc->fetch_doc};
 
     # let's see if we can set the parser.
@@ -251,8 +272,7 @@ sub filter_content {
     return 1;
 }
 
-
-# Must return true...
+## Must return a true value!!
 
 1;
 
