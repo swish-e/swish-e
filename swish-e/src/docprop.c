@@ -453,6 +453,7 @@ void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
 *       *metaEntry
 *       **encodedStr (destination)
 *       *string
+*       *error_flag - integer to indicate the difference between an error and a blank property
 *
 *   Returns:
 *       malloc's a new string, stored in **encodedStr.  Caller must call free().
@@ -468,7 +469,7 @@ void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
 *       What about convert entities here?
 *
 ********************************************************************/
-static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring )
+static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring, int *error_flag )
 {
     unsigned long int num;
     char     *newstr;
@@ -478,6 +479,8 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     
     string = propstring;
 
+    *error_flag = 0;
+
     /* skip leading white space */
     while ( isspace( (int)*string) )
         string++;
@@ -485,7 +488,11 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     if ( !string || !*string )
     {
         // progwarn("Null string passed to EncodeProperty for meta '%s'", meta_entry->metaName);
+#ifdef BLANK_PROP_VALUE
+        string = BLANK_PROP_VALUE;  // gets dup'ed below
+#else        
         return 0;
+#endif        
     }
 
 
@@ -512,6 +519,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         {
             progwarnno("Attempted to convert '%s' to a number", string );
             efree(string);
+            (*error_flag)++;
             return 0;
         }
 
@@ -519,6 +527,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         {
             progwarn("Invalid char '%c' found in string '%s'", badchar[0], string);
             efree(string);
+            (*error_flag)++;
             return 0;
         }
         /* I'll bet there's an easier way */
@@ -558,6 +567,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 *       *propLen    - length of string to add
 *       preEncoded  - flag saying the data is already encoded
 *                     (that's for filesize, last modified, start position)
+*       *error_flag - integer to indicate the difference between an error and a blank property
 *
 *   Returns:
 *       pointer to a newly created document property
@@ -565,7 +575,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 *
 *
 ********************************************************************/
-propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag )
 {
     propEntry *docProp;
 
@@ -574,7 +584,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
     {
         char *tmp;
         
-        propLen = EncodeProperty( meta_entry, &tmp, propValue );
+        propLen = EncodeProperty( meta_entry, &tmp, propValue, error_flag );
 
         if ( !propLen )  /* Error detected in encode */
             return NULL;
@@ -623,6 +633,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 	struct docProperties *dp = *docProperties; 
     propEntry *docProp;
 	int i;
+	int error_flag;
 
 
     /* Allocate or extend the property array, if needed */
@@ -654,9 +665,10 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 
 
     /* create the document property */
+    /* Ignore some errors */
 
-    if ( !(docProp = CreateProperty( meta_entry, propValue, propLen, preEncoded )) )
-        return 0;
+    if ( !(docProp = CreateProperty( meta_entry, propValue, propLen, preEncoded, &error_flag )) )
+        return error_flag ? 0 : 1;
     
 	docProp->next = dp->propEntry[meta_entry->metaID];	
 	dp->propEntry[meta_entry->metaID] = docProp;	/* update head-of-list ptr */
@@ -675,9 +687,8 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 *   Returns:
 *       0 - two properties are the same
 *      -1 - docPropertyEntry1 < docPropertyEntry2
-*       1 - docPropertyEntry1 ? docPropertyEntry2
+*      +1 - docPropertyEntry1 > docPropertyEntry2
 *
-*   QUESTION: ??? what if it's not string, date, or number?
 *
 ********************************************************************/
 int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
