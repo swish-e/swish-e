@@ -33,7 +33,8 @@ $Id$
 */
 
 
-
+//** should really "compile" the -x format string for each index, which means
+//   basically looking up the properties only once for each index.
 
 
 /* Prints the final results of a search.

@@ -268,7 +268,7 @@ struct metaEntry *getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
     int     i;
 
     for (i = 0; i < header->metaCounter; i++)
-        if (is_meta_index(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+        if (is_meta_index(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i];
 
     return NULL;
@@ -285,7 +285,7 @@ struct metaEntry *getMetaNameByName(INDEXDATAHEADER * header, char *word)
     int     i;
 
     for (i = 0; i < header->metaCounter; i++)
-        if (is_meta_index(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+        if (is_meta_index(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i]->alias
                    ? getMetaNameByID( header, header->metaEntryArray[i]->alias )
                    : header->metaEntryArray[i];
@@ -318,7 +318,7 @@ struct metaEntry *getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
     int     i;
 
     for (i = 0; i < header->metaCounter; i++)
-        if (is_meta_property(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+        if (is_meta_property(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i];
 
     return NULL;
@@ -336,7 +336,7 @@ struct metaEntry *getPropNameByName(INDEXDATAHEADER * header, char *word)
 
 
     for (i = 0; i < header->metaCounter; i++)
-        if (is_meta_property(header->metaEntryArray[i]) && !strcmp(header->metaEntryArray[i]->metaName, word))
+        if (is_meta_property(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
             return header->metaEntryArray[i]->alias
                    ? getPropNameByID( header, header->metaEntryArray[i]->alias )
                    : header->metaEntryArray[i];
@@ -444,7 +444,7 @@ char *tmptag;
     while(tmplist)
     {
     
-        if( strcmp(tmptag,tmplist->line)==0 )
+        if( strcasecmp(tmptag,tmplist->line)==0 )
         {
             efree(tmptag);
             return 1;
