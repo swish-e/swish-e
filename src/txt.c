@@ -28,8 +28,8 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 
 {
 int ftotalwords;
-int metaName[1];
-int positionMeta[1];    /* Position of word in file */
+int metaID;
+int positionMeta;    /* Position of word in file */
 int structure,currentmetanames;
 struct file *thisFileEntry = NULL;
 IndexFILE *indexf=sw->indexlist;
@@ -52,8 +52,8 @@ char *summary=NULL;
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
 	currentmetanames= 0; /* No metanames in TXT */
-	metaName[0]=1; positionMeta[0]=1; /* No metanames in TXT */
-	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, metaName, positionMeta);
+	metaID=1; positionMeta=1; /* No metanames in TXT */
+	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, &metaID, &positionMeta);
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
