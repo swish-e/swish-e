@@ -1055,7 +1055,7 @@ sw_off_t    DB_GetWordID_Native(void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
-    sw_off_t    pos = 0;
+    sw_off_t    pos = (sw_off_t)0;
 
     if (WRITE_WORDS_RAMDISK)
     {
@@ -1357,11 +1357,11 @@ int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db)
             break;              /* Found !! */
         else if (!offset)
         {
-            dataoffset = 0;
+            dataoffset = (sw_off_t)0;
             break;
         }
     }
-    *wordID = dataoffset;
+    *wordID = (sw_off_t)dataoffset;
     return 0;
 }
 
@@ -1974,7 +1974,7 @@ sw_off_t readfileoffset(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE
 {
     sw_off_t num;
 
-    f_read(&num, sizeof(sw_off_t), 1, fp);
+    f_read(&num, sizeof(num), 1, fp);
     return UNPACKFILEOFFSET(num);     /* Make the number readable */
 }
 
@@ -2246,7 +2246,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     ** for 32 bit architectures and 8 bytes for 64bit ones, so 4 or 8 bytes
     ** bytes are need for seek
     */
-    seek_pos = ((fi->filenum - 1) * sizeof(sw_off_t) * count)  + DB->offsets[FILELISTPOS];
+    seek_pos = (sw_off_t)(((sw_off_t)(fi->filenum - 1)) * ((sw_off_t)sizeof(sw_off_t)) * ((sw_off_t)(count))  + (sw_off_t)DB->offsets[FILELISTPOS]);
 
 
     /* and seek to table */
@@ -2281,7 +2281,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 #else
 
     /* now calculate index */
-    seek_pos = (fi->filenum - 1) * count;
+    seek_pos = (sw_off_t)(((sw_off_t)(fi->filenum - 1)) * ((sw_off_t)count));
 
     /* Read in the prop indexes */
     for ( i=0; i < count; i++ )

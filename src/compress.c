@@ -760,8 +760,8 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
     if ( zlib_status != Z_OK )
     {
         // $$$ make sure this works ok if returning null $$$
-        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
-            zlib_status, new_buf_size, buf_size );
+        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d saved_bytes: %d\n",
+            zlib_status, new_buf_size, *buf_size, saved_bytes );
         return;
     }
     efree(*buf);
