@@ -23,11 +23,12 @@
 
 
 #ifndef __HasSeenModule_DBNative
-#define __HasSeenModule_DBNative	1
+#define __HasSeenModule_DBNative    1
 
 
 #ifdef USE_BTREE
 #include "btree.h"
+#include "array.h"
 #define MAXCHARS 5            /* Only 5 are needed when BTREE is used */
 
 #else
@@ -117,6 +118,17 @@ struct Handle_DBNative
    FILE    *worddata;
    int      tmp_worddata;
    char    *cur_worddata_file;
+
+   int      n_presorted_array;
+   unsigned long *presorted_root_node;
+   unsigned long *presorted_propid;
+   ARRAY  **presorted_array;
+   FILE    *presorted;
+   int      tmp_presorted;
+   char    *cur_presorted_file;
+
+   unsigned long cur_presorted_propid;
+   ARRAY   *cur_presorted_array;
 #endif
 };
 
@@ -167,13 +179,18 @@ int     DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedat
 int     DB_EndReadFiles_Native(void *db);
 
 
-
+#ifdef USE_BTREE
+int     DB_InitWriteSortedIndex_Native(void *db , int n_props);
+int     DB_WriteSortedIndex_Native(int propID, int *data, int sz_data,void *db);
+#else
 int     DB_InitWriteSortedIndex_Native(void *db );
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
+#endif
 int     DB_EndWriteSortedIndex_Native(void *db);
  
 int     DB_InitReadSortedIndex_Native(void *db);
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
+int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
 
 void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);

@@ -18,7 +18,7 @@
 
 
    -- 2001-02-12 rasc    minor changes, concering the tolower problem 
-				 (unsigned char) problem!!!
+                 (unsigned char) problem!!!
 
 */
 
@@ -398,8 +398,10 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
         efree( meta->metaName );
 
+#ifndef USE_BTREE
         if ( meta->sorted_data)
             efree( meta->sorted_data );
+#endif
 
         if ( meta->inPropRange )
             efree( meta->inPropRange);
@@ -430,23 +432,23 @@ int isDontBumpMetaName( struct swline *tmplist, char *tag)
 {
 char *tmptag;
 
-	if (!tmplist) return 0;
-	if (strcmp(tmplist->line,"*")==0) return 1;
-	
-	tmptag=estrdup(tag);
-	tmptag=strtolower(tmptag);
-	while(tmplist)
-	{
-	
-		if( strcmp(tmptag,tmplist->line)==0 )
-		{
-			efree(tmptag);
-			return 1;
-		}
-		tmplist=tmplist->next;
-	}
-	efree(tmptag);
-	return 0;
+    if (!tmplist) return 0;
+    if (strcmp(tmplist->line,"*")==0) return 1;
+    
+    tmptag=estrdup(tag);
+    tmptag=strtolower(tmptag);
+    while(tmplist)
+    {
+    
+        if( strcmp(tmptag,tmplist->line)==0 )
+        {
+            efree(tmptag);
+            return 1;
+        }
+        tmplist=tmplist->next;
+    }
+    efree(tmptag);
+    return 0;
 
 }
 

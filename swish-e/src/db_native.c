@@ -96,6 +96,7 @@ void    initModule_DBNative(SWISH * sw)
 
     Db->DB_InitReadSortedIndex = DB_InitReadSortedIndex_Native;
     Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
+    Db->DB_ReadSortedData = DB_ReadSortedData_Native;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
 
     Db->DB_WriteProperty = DB_WriteProperty_Native;
@@ -169,6 +170,7 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
         long    index,
 #ifdef USE_BTREE
                 worddata,
+                presorted,
 #endif
                 prop;
 
@@ -183,6 +185,11 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
 
         if (index != worddata)
             progerr("Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
+
+        presorted = readlong(DB->presorted, fread);
+
+        if (index != presorted)
+            progerr("Index file '%s' and presorted index file '%s' are not related.", DB->cur_index_file, DB->cur_presorted_file);
 #endif
     }
 
@@ -209,7 +216,6 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
 #endif
 
     DB->worddata_counter = 0;
-    DB->mode = 1;
     DB->lastsortedindex = 0;
     DB->next_sortedindex = 0;
 
@@ -229,6 +235,15 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
     DB->tmp_worddata = 0;
     DB->cur_worddata_file = NULL;
     DB->worddata = NULL;
+    DB->presorted_array = NULL;
+    DB->presorted_root_node = NULL;
+    DB->presorted_propid = NULL;
+    DB->n_presorted_array = 0;
+    DB->tmp_presorted = 0;
+    DB->cur_presorted_file = NULL;
+    DB->presorted = NULL;
+    DB->cur_presorted_array = NULL;
+    DB->cur_presorted_propid = 0;
 #endif
 
 
@@ -274,14 +289,15 @@ void   *DB_Create_Native(char *dbname)
 
     /* Allocate structure */
     DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
+    DB->mode = 1;
 
 #ifdef USE_TEMPFILE_EXTENSION
-    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
     strcpy(filename, dbname);
     strcat(filename, USE_TEMPFILE_EXTENSION);
     DB->tmp_index = 1;
 #else
-    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
     strcpy(filename, dbname);
 #endif
 
@@ -328,6 +344,21 @@ void   *DB_Create_Native(char *dbname)
 
     DB->cur_worddata_file = estrdup(filename);
 
+    /* Create PreSorted Index File */
+    strcpy(filename, dbname);
+    strcat(filename, PRESORTED_EXTENSION);
+
+#ifdef USE_TEMPFILE_EXTENSION
+    strcat(filename, USE_TEMPFILE_EXTENSION);
+    DB->tmp_presorted = 1;
+#endif
+
+    CreateEmptyFile(filename);
+    if (!(DB->presorted = openIndexFILEForWrite(filename)))
+        progerrno("Couldn't create the presorted index file \"%s\": ", filename);
+
+    DB->cur_presorted_file = estrdup(filename);
+
 #endif
 
     efree(filename);
@@ -351,6 +382,7 @@ void   *DB_Create_Native(char *dbname)
 
 #ifdef USE_BTREE
     printlong(DB->worddata, unique_ID, fwrite);
+    printlong(DB->presorted, unique_ID, fwrite);
 #endif
 
 
@@ -381,6 +413,7 @@ void   *DB_Open_Native(char *dbname)
     int     i;
 
     DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
+    DB->mode = 0;
 
     /* Create index File */
     if (!(DB->fp = openIndexFILEForRead(dbname)))
@@ -412,6 +445,16 @@ void   *DB_Open_Native(char *dbname)
             progerrno("Couldn't open the worddata file \"%s\": ", s);
 
         DB->cur_worddata_file = s;
+
+        s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
+
+        strcpy(s, dbname);
+        strcat(s, PRESORTED_EXTENSION);
+
+        if (!(DB->presorted = openIndexFILEForRead(s)))
+            progerrno("Couldn't open the presorted index file \"%s\": ", s);
+
+        DB->cur_presorted_file = s;
     }
 #endif
 
@@ -497,6 +540,23 @@ void    DB_Close_Native(void *db)
     if(DB->bt)
         DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
+    /* Close (and rename) presorted index file, if it's open */
+    if(DB->presorted)
+        DB_Close_File_Native(&DB->presorted, &DB->cur_presorted_file, &DB->tmp_presorted);
+    if(DB->presorted_array)
+    {
+        for(i = 0; i < DB->n_presorted_array; i++)
+        {
+            if(DB->presorted_array[i])
+                ARRAY_Close(DB->presorted_array[i]);
+            DB->presorted_array[i] = NULL;
+        }
+        efree(DB->presorted_array);
+    }
+    if(DB->presorted_root_node)
+        efree(DB->presorted_root_node);
+    if(DB->presorted_propid)
+        efree(DB->presorted_propid);
 #endif
 
     if (DB->mode)               /* If we are indexing update offsets to words and files */
@@ -645,12 +705,14 @@ int     DB_EndWriteWords_Native(void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = (FILE *) DB->fp;
+#ifndef USE_BTREE
     int     i,
             wordlen;
     long    wordID,
             f_hash_offset,
             f_offset,
             word_pos;
+#endif
 
 #ifdef USE_BTREE
 
@@ -1270,7 +1332,139 @@ int     DB_EndReadFiles_Native(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
+#ifdef USE_BTREE
+int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->presorted;
+   int i;
 
+   DB->offsets[SORTEDINDEX] = ftell(fp);
+
+   /* Write number of properties */
+   printlong(fp,(unsigned long) n_props, fwrite);
+
+   DB->n_presorted_array = n_props;
+   DB->presorted_array = (ARRAY **)emalloc(n_props * sizeof(ARRAY *));
+   DB->presorted_root_node = (unsigned long *)emalloc(n_props * sizeof(unsigned long));
+   for(i = 0; i < n_props ; i++)
+   {
+       DB->presorted_array[i] = NULL;
+       DB->presorted_root_node[i] = 0;
+       /* Reserve space for propidx and Array Pointer */
+       printlong(fp,(unsigned long) 0, fwrite);
+       printlong(fp,(unsigned long) 0, fwrite);
+   }
+   DB->next_sortedindex = 0;
+   return 0;
+}
+
+int     DB_WriteSortedIndex_Native(int propID, int *data, int n,void *db)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->presorted;
+   ARRAY *arr;
+   int i;
+
+   arr = ARRAY_Create(fp);
+   for(i = 0 ; i < n ; i++)
+   {
+       ARRAY_Put(arr,i,data[i]);
+/*
+       if(!(i%10000))
+       {
+            ARRAY_FlushCache(arr);
+            printf("%d %d            \r",propID,i);
+       }
+*/
+   }
+
+   DB->presorted_root_node[DB->next_sortedindex] = ARRAY_Close(arr);
+
+   fseek(fp,DB->offsets[SORTEDINDEX] + (1 + 2 * DB->next_sortedindex) *sizeof(unsigned long),SEEK_SET);
+   printlong(fp,(unsigned long) propID, fwrite);
+   printlong(fp,(unsigned long) DB->presorted_root_node[DB->next_sortedindex], fwrite);
+
+   DB->next_sortedindex++;
+
+   return 0;
+}
+
+int     DB_EndWriteSortedIndex_Native(void *db)
+{
+   return 0;
+}
+
+ 
+int     DB_InitReadSortedIndex_Native(void *db)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->presorted;
+   int i;
+
+   fseek(fp,DB->offsets[SORTEDINDEX],SEEK_SET);
+
+   /* Read number of properties */
+   DB->n_presorted_array = readlong(fp,fread);
+
+   DB->presorted_array = (ARRAY **)emalloc(DB->n_presorted_array * sizeof(ARRAY *));
+   DB->presorted_root_node = (unsigned long *)emalloc(DB->n_presorted_array * sizeof(unsigned long));
+   DB->presorted_propid = (unsigned long *)emalloc(DB->n_presorted_array * sizeof(unsigned long));
+   for(i = 0; i < DB->n_presorted_array ; i++)
+   {
+       DB->presorted_array[i] = NULL;
+       DB->presorted_propid[i] = readlong(fp,fread);
+       DB->presorted_root_node[i] = readlong(fp,fread);
+   }
+   return 0;
+
+}
+
+int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
+{
+   struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = DB->presorted;
+   int i;
+
+   if(!DB->cur_presorted_array || DB->cur_presorted_propid != (unsigned long)propID)
+   {
+       for(i = 0; i < DB->n_presorted_array ; i++)
+       {
+           if((unsigned long)propID == DB->presorted_propid[i])
+           {
+               DB->cur_presorted_propid = propID;
+               DB->cur_presorted_array = DB->presorted_array[i] = ARRAY_Open(fp,DB->presorted_root_node[i]);
+               break;
+           }
+       }
+   }
+   if(DB->cur_presorted_array)
+   {
+       *data = (unsigned char *)DB->cur_presorted_array;
+       *sz_data = sizeof(DB->cur_presorted_array);
+   }
+   else
+   {
+       *data = NULL;
+       *sz_data = 0;
+   }
+
+   return 0;
+}
+
+
+int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
+{
+    *value = ARRAY_Get((ARRAY *)data,index);
+    return 0;
+}
+
+int     DB_EndReadSortedIndex_Native(void *db)
+{
+   return 0;
+}
+
+#else
 int     DB_InitWriteSortedIndex_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -1294,7 +1488,7 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
 
    printlong(fp,(long)0,fwrite);  /* Pointer to next table if any */
 
-	/* Write ID */
+    /* Write ID */
    compress1(propID,fp,fputc);
 
    /* Write len of data */
@@ -1375,13 +1569,19 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    return 0;
 }
 
+int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
+{
+    *value = data[index];
+    return 0;
+}
+
 int     DB_EndReadSortedIndex_Native(void *db)
 {
    return 0;
 }
 
 
-
+#endif
 
 
 
