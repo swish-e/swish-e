@@ -54,39 +54,8 @@
 #include "metanames.h"
 #include "parse_conffile.h"
 #include "result_output.h"
-
-
-#ifdef HAVE_BSDGETTIMEOFDAY
-#define gettimeofday BSDgettimeofday
-#endif
-
-
-#ifdef NO_GETTOD
-
-double TimeHiRes(void)  /* How about GetLocalTime() for WIN32 */
-{
-
-    return  ((double) clock()) / CLOCKS_PER_SEC;
-}
-    
-#else
-
-#include <sys/time.h>
-
-double TimeHiRes(void)
-{
-struct timeval t;
-int i;
-
-    i = gettimeofday( &t, NULL );
-    if ( i ) return 0;
-
-    return (double)( t.tv_sec + t.tv_usec / 1000000.0 );
-}
-#endif
-
-
-
+#include "keychar_out.h"
+#include "date_time.h"
 
 
 /*
@@ -126,9 +95,6 @@ int INDEX_READ_ONLY;
 char *tmp;
 int swap_mode=0; /* No swap */
 char keychar=0;
-int keychar2;
-char *keywords=NULL;
-IndexFILE *tmpindexlist=NULL;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 double search_starttime, run_starttime, endtime;
 
@@ -689,41 +655,10 @@ double search_starttime, run_starttime, endtime;
 	}
 	else if(keychar)
 	{
-		if (!hasindex)
-			sw->indexlist = (IndexFILE *)
-			addindexfile(sw->indexlist, INDEXFILE);
-		rc=SwishAttach(sw,1);
-		switch(rc) {
-			case INDEX_FILE_NOT_FOUND:
-				resultHeaderOut(sw,1, "# Name: unknown index\n");
-				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
-				exit(-1);
-				break;
-			case UNKNOWN_INDEX_FILE_FORMAT:
-				progerr("the index file format is unknown");
-				break;
+		if (!hasindex) {
+			sw->indexlist = (IndexFILE *)	addindexfile(sw->indexlist, INDEXFILE);
 		}
-
-		resultHeaderOut(sw,1, "%s\n", INDEXHEADER);
-			/* print out "original" search words */
-		for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
-		{
-			resultHeaderOut(sw,1, "%s:",tmpindexlist->line);
-			if(keychar=='*')
-			{
-				for(keychar2=1;keychar2<256;keychar2++)
-				{
-					keywords=getfilewords(sw,(unsigned char )keychar2,tmpindexlist);
-					for(;keywords && keywords[0];keywords+=strlen(keywords)+1)
-						resultHeaderOut(sw,1, " %s",keywords);
-				}
-			} else {
-				keywords=getfilewords(sw,keychar,tmpindexlist);
-				for(;keywords && keywords[0];keywords+=strlen(keywords)+1)
-						resultHeaderOut(sw,1, " %s",keywords);
-			}
-			resultHeaderOut(sw,1, "\n");
-		}
+		OutputKeyChar (sw, (int)(unsigned char)keychar);
 		SwishClose(sw);
 	}
 	else 
