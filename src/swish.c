@@ -165,7 +165,6 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
 
 static SWISH  *swish_new();
 static void    swish_close(SWISH * sw);
-static void set_path( void );
 
 
 struct _indexing_data_source_def *IndexingDataSource;
@@ -207,7 +206,6 @@ int     main(int argc, char **argv)
 
         case MODE_INDEX:
         case MODE_UPDATE:
-            set_path();
             cmd_index( sw, params );
             break;
 
@@ -1730,30 +1728,3 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
 }
 
 
-static void set_path( void )
-{
-#if defined(HAVE_SETENV) && defined(PATH_SEPARATOR)
-
-    char pathbuf[1000];
-    char *path = getenv("PATH");
-    char *execdir = get_libexec();  /* Should free */
-	
-    if ( !path )
-    {
-        setenv("PATH", execdir , 1 );
-        efree( execdir );
-        return;
-    }
-
-    if ( (strlen( path ) + strlen( execdir ) + strlen( PATH_SEPARATOR ) + 1 ) > 1000 )
-    {
-        efree( execdir );
-        return;
-    }
-
-    sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, execdir );
-    setenv( "PATH", pathbuf, 1 );
-    efree( execdir );
-
-#endif
-}

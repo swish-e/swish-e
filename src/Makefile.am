@@ -1,7 +1,8 @@
 SUBDIRS = expat replace snowball
 
-AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  -DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" \
-		 $(Z_CFLAGS) $(PCRE_CFLAGS) $(LIBXML2_CFLAGS) -Ireplace
+AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  \
+		-DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" \
+		$(Z_CFLAGS) $(PCRE_CFLAGS) $(LIBXML2_CFLAGS) -Ireplace
 
 bin_PROGRAMS = swish-e
 swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
