@@ -130,15 +130,15 @@ SwishNext(handle)
 
             switch (pv->datatype)
             {
-                case INTEGER:
+                case PROP_INTEGER:
                     XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
                     break;
 
-                case ULONG:
+                case PROP_ULONG:
                     XPUSHs(sv_2mortal(newSViv(pv->value.v_ulong)));
                     break;
 
-                case STRING:
+                case PROP_STRING:
                     XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
                     /* Free the string, if neede */
                     if ( pv->destroy )
@@ -146,7 +146,7 @@ SwishNext(handle)
                     break;
 
                 /* Let perl format the data, if needed */
-                case DATE:
+                case PROP_DATE:
                     XPUSHs(sv_2mortal(newSViv(pv->value.v_date)));
                     break;
 
