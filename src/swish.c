@@ -276,6 +276,25 @@ static void    usage()
     putchar('\n');
     printf("options: defaults are in brackets\n");
 
+    printf("         -b : begin results at this number\n");
+    printf("         -c : configuration file(s) to use for indexing\n");
+    printf("         -d : next param is delimiter.\n");
+    printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
+    printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
+    printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
+    printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
+    printf("         -i : create an index from the specified files\n");
+    printf("         -k : Print words starting with a given char.\n");
+    printf("         -l : follow symbolic links when indexing\n");
+    printf("         -M : merges index files\n");
+    printf("         -m : the maximum number of results to return [defaults to all results]\n");
+    printf("         -N : index only files with a modification date newer than path supplied\n");
+    printf("         -P : next param is Phrase delimiter.\n");
+    printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
+    printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
+#ifdef USE_BTREE
+	printf("         -r : remove: remove files from index\n");
+#endif
 
     printf("         -S : specify which indexing system to use.\n");
     printf("              Valid options are:\n");
@@ -297,36 +316,20 @@ static void    usage()
     if (!*defaultIndexingSystem)
         defaultIndexingSystem = "http";
 #endif
-
     printf("              The default value is: \"%s\"\n", defaultIndexingSystem);
 
-    printf("         -i : create an index from the specified files\n");
+
+    printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
+    printf("         -T : Trace options ('-T help' for info)\n");
+    printf("         -t : tags to search in - specify as a string\n");
+    printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
 #ifdef USE_BTREE
     printf("         -u : update: adds files to existing index\n");
 #endif
-    printf("         -w : search for words \"word1 word2 ...\"\n");
-    printf("         -t : tags to search in - specify as a string\n");
-    printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
-    printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
-    printf("         -c : configuration file(s) to use for indexing\n");
-    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
-    printf("         -T : Trace options ('-T help' for info\n");
-    printf("         -l : follow symbolic links when indexing\n");
-    printf("         -b : begin results at this number\n");
-    printf("         -m : the maximum number of results to return [defaults to all results]\n");
-    printf("         -M : merges index files\n");
-    printf("         -N : index only files with a modification date newer than path supplied\n");
-    printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
-    printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
-    printf("         -d : next param is delimiter.\n");
-    printf("         -P : next param is Phrase delimiter.\n");
-    printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
     printf("         -V : prints the current version\n");
-    printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
+    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
+    printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
-    printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
-    printf("         -k : Print words starting with a given char.\n");
-    printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("\n");
     printf("version: %s\n docs: http://swish-e.org\n Scripts and Modules at: (libexecdir) = %s\n", VERSION, get_libexec());
     exit(1);

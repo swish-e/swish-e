@@ -6,13 +6,16 @@
 #
 #
 #	0.01	initial public release . Wed Sep 15 12:07:55 CDT 2004 . karman@cray.com
+#
 #	0.02	--srcdir works; IRIX fixes; --quiet fixes
+#
 #	0.03	chdir to $Bin to check for cvs build
-#		include $installdir in -I when checking for preinstalled libxml2
-#		linux fixes
-#		added --disable-shared to libxml2 build
-#		--force actually works
-#		added --static to make --disable-shared optional
+#			include $installdir in -I when checking for preinstalled libxml2
+#			linux fixes
+#			added --disable-shared to libxml2 build
+#			--force actually works
+#			added --static to make --disable-shared optional
+#
 #	0.04	fixed swishdir/installdir bug
 #			thanks to chyla@knihovnabbb.cz
 #
@@ -23,6 +26,14 @@
 #			added --progress option to print a few messages under --quiet
 #			added --make option for when you can't symlink make -> gmake
 #			libxml2-2.6.16  --- still need to get 'latest' support
+#
+#	0.06	Wed Nov 17 08:18:05 CST 2004
+#			arrgg. need to read my email more thoroughly; libxml 2.6.16 fails
+#				because of unannounced api change. reverting to .13
+#			--errlog option; errors now print to stderr instead of to log by default
+#			SWISHBIN replaced by SWISHBINDIR for making SWISH::API
+#			--perllib to indicate specific install dir, otherwise defaults to perl Config
+#			usage fixes
 #
 ################################################################################
 $| = 1;
@@ -35,7 +46,7 @@ use Config qw( %Config );
 use File::Path qw( mkpath );
 use FindBin qw($Bin);
 
-my $Version 	= '0.05';
+my $Version 	= '0.06';
 
 # there must be a better way to dynamically retrieve the latest version
 # of a sw package, other than hardcoding urls. help?
@@ -44,7 +55,7 @@ my %URLs	= (
 
 'swish-e' 	=> 'http://swish-e.org/Download/latest.tar.gz',
 'zlib'		=> 'http://www.zlib.net/zlib-1.2.1.tar.gz',
-'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.16.tar.gz',
+'libxml2'	=> 'http://xmlsoft.org/sources/libxml2-2.6.13.tar.gz',
 
 );
 
@@ -57,12 +68,15 @@ my $defdir 	= '/usr/local/swish-e/latest';
 my $deftmp 	= $ENV{TMPDIR} || $ENV{TMP} || '/tmp';
 
 my $opts 	= {};
+
+my $usage_gutter = 25;
  
-my $allopts = {
+my $allopts =
+{
         
 	'quiet'		=> "run non-interactively",
 	'cvs'		=> "use latest CVS version of SWISH-E",
-	'swish|swish-e|swishe=s'	=> "use <X> as swish-e source -- either URL, tar.gz or directory",
+	'swish|swish-e|swishe=s'	=> "use <X> as SWISH-E source -- either URL, tar.gz or directory",
 	'libxml2=s'	=> "use <X> as libxml2 source -- either URL, tar.gz or directory",
 	'zlib=s'	=> "use <X> as zlib source -- either URL, tar.gz or directory",
 	'prevzlib=s'	=> "use already-installed zlib in directory <X>",
@@ -75,10 +89,12 @@ my $allopts = {
 	'opts'		=> "print options and description",
 	'force'		=> "install zlib and libxml2 no matter what",
 	'debug'		=> "lots of on-screen verbage",
-	'sudo'      => "run 'make' commands with sudo\n\t!! must be interactive if sudo expects a password !!",
+	'sudo'      => "run 'make' commands with sudo\n".' 'x$usage_gutter."!! must be interactive if sudo expects a password !!",
 	'static'	=> "build with static library paths",
 	'progress'	=> "with --quiet, will print a few important progress messages to stdout",
 	'make=s'	=> "use <X> as make command (useful if your GNU make is named gmake)",
+	'errlog=s'	=> 'write build errors to <X> file instead of stderr',
+	'perllib=s'	=> "install SWISH::API in <X>\n".' 'x$usage_gutter."[ $Config{sitearch} ]",
 	
 };
 
@@ -121,8 +137,9 @@ $nogcc 		= "I refuse to compile without gcc\nCheck out http://gcc.gnu.org\n";
 $min_gcc 	= '2.95';
 $tmpdir 	= $opts->{tmpdir} || $deftmp;
 $outlog 	= $tmpdir . '/buildswishe.log';
-$errlog		= $tmpdir . '/buildswishe.err.log';
-$output 	= $opts->{verbose} ? '' : " 1>>$outlog 2>>$errlog ";
+$errlog		= $opts->{errlog} || '';
+$output 	= $opts->{verbose} ? '' : " 1>>$outlog";
+$output 	.= " 2>>$errlog " if $errlog;
 
 $cmdout		= $opts->{quiet} ? ' 1>/dev/null 2>/dev/null ' : '';
 
@@ -158,7 +175,7 @@ int main( void )
 
 EOF
 
-
+# because xml-config doesn't always exist...
 $libxml2_test =<<EOF;
 #include <stdio.h>
 #include "libxml/xmlversion.h"
@@ -210,9 +227,22 @@ my %routines = (
 	
 for ( qw( zlib libxml2 swish swish::api ) ) {
 
+	my $prevout;
+	if ( $opts->{progress} ) {
+	
+		$prevout = select STDOUT;
+
+	}
 	print '=' x 60 . "\n";
 	print "building $_ ...\n";
 	print '~' x 60 . "\n";
+	
+	if ( $opts->{progress} ) {
+	
+		select $prevout;
+		
+	}
+	
 	my $f = $routines{$_};
 	&$f;
 	
@@ -234,18 +264,17 @@ END
 sub printopts
 {	
 	print "\n$0 options\n", '-' x 30 , "\n";
-	my $buf = 20;
+	print "defaults print in [ ] \n";
 	for (sort keys %$allopts) {
 		
 		(my $o = $_) =~ s,[:=]s,=<X>,g;
 		
-		my $space = ' ' x ( $buf - length($o) );
+		my $space = ' ' x ( $usage_gutter - length($o) );
 		
 		print "  --$o $space $allopts->{$_}\n" ;
 	}
 	print "\n\n";
 	exit;
-	
 }
 
 
@@ -261,7 +290,7 @@ sub usage
 sub checkenv
 {
 
-	if ( $opts->{quiet} and ! $opts->{progress} ) {
+	if ( $opts->{quiet} ) {
 	
 		open(QUIET, ">/dev/null") or die "can't write to /dev/null: $!\n";
 		select(QUIET);	# should send all default print()s to oblivion
@@ -412,8 +441,8 @@ sub test_for_prior_libxml2
 sub cleanup
 {
 
-	print "swish-e was installed in $installdir\n";
-	print "SWISH::API was installed in $installdir/lib/$arch\n";
+	print STDOUT "swish-e was installed in $installdir\n";
+	print STDOUT "SWISH::API was installed in $installdir/lib/$arch\n";
 
 }
 
@@ -855,7 +884,9 @@ sub test_make
 sub configure
 {
 
-	make_clean();
+	#make_clean();	# do we really need to make clean each time?
+					# if source changes, make will figure that out.
+					
 	#print "I'm in ";
 	#system("pwd");
 	my $arg = join(' ',@_) || '';
@@ -889,13 +920,13 @@ sub make_test
 {
 	my $c = shift || "$Make test";
 	print "running $c ...\n";
-	if (system("$c $output")) {
-		warn "$c failed\n";
-		if (! $opts->{verbose}) {
-			warn "running again so you can see output\n";
-			system("$c");
-		}
+	if ( system("$c $output") ) {
+		warn "\aWARNING: $c failed\n";
+		warn "make install should run anyway but results are unpredictable.\n";
 	}
+	
+	1;	# always return true from make test so make install will work
+		# we assume user will read the err message if make test failed
 	
 }
 
@@ -1003,19 +1034,21 @@ sub swishe
 	   }
 		
 	   system($cvs_cmd);
-	   $opts->{swishe} = "$tmpdir/swish-e";
+	   $swishdir = "$tmpdir/swish-e";
 		
-	} elsif ( -x 'configure' and -d 'src' ) {
+	} elsif ( -x 'configure' and -d 'src' and -d 'man' and -d 'perl' and -d 'pod' ) {
 	
 # if we are building from source dir (i.e., this script is in the source distrib)
 # adjust accordingly
 	
 # a better way?
-		$opts->{swishe} = $Bin;
+		$swishdir = $Bin;
+		
+	} else {
+
+		$swishdir = get_src( 'swish-e' );
 		
 	}
-
-	$swishdir = get_src( 'swish-e' );
 
 	chdir($swishdir) || die "can't chdir to $swishdir: $!\n";
 	
@@ -1028,7 +1061,8 @@ sub swishe
 	$zlibdir ||= $installdir;
 	$libxml2dir ||= $installdir;
 	
-	my @arg = (	"--with-zlib=$zlibdir",
+	my @arg = (
+			"--with-zlib=$zlibdir",
 			"--with-libxml2=$libxml2dir",
 			"LDFLAGS='$ld_opts'",
 			"CPPFLAGS='-I$zlibdir/include -I$libxml2dir/include'",
@@ -1044,28 +1078,33 @@ sub swishe
 
 sub swish_api
 {
-
 	chdir("$swishdir/perl");
 	my $arg = join ' ', (	
 				"PREFIX=$installdir",
-				"LIB=$installdir/lib",
+				#"LIB=$installdir/lib",
 				"LIBS='-L$installdir/lib -lswish-e -lz'",
 				"LDFLAGS='-L$installdir'",
 				"CCFLAGS='-I$installdir/include'"
 				);
 				
-	$ENV{SWISHBIN} = "$installdir/bin/swish-e";
+	$arg .= $opts->{perllib} ? ' LIB='. $opts->{perllib} : '';
+				
+	$ENV{SWISHBINDIR} = "$installdir/bin";
 	
-	print "env SWISHBIN set to '$installdir/bin/swish-e'\n";
+	print "env SWISHBINDIR set to '$installdir/bin'\n";
 	print "configuring with:\n";
 	print "$^X Makefile.PL $arg\n";
 				
+	# once 2.4.3 becomes 'latest' we can use $output on this Makefile.PL
+	# call since that should support SWISHBINDIR by default
+	# and we'll no longer need to see stdout.
+				
+	#nice_exit() if system("$^X Makefile.PL $arg $output");
 	nice_exit() if system("$^X Makefile.PL $arg");
 	make();
 	make_test();
 	make_install();
-
-
+	
 }
 
 
@@ -1076,6 +1115,7 @@ sub test_api
 	delete $ENV{PERL5LIB};	# just in case we have it somewhere else...
 	my $inc = "-I$installdir/lib -I$installdir/lib/$arch";
 	nice_exit() if system("$^X $inc -MSWISH::API -e '\$c = new SWISH::API(\"foo\")'");
+	
 }
 
 
@@ -1104,18 +1144,18 @@ of Unix and Linux.
 
 =head1 SYNOPSIS
 
-	# run interactively
-	perl buildswishe.pl
-	
-	# run with all defaults (non-interactive)
-	perl buildswishe.pl --quiet
-	
-	# to see this doc and options (at end)
-	perl buildswishe.pl --help
-	
-	# to see options
-	perl buildswishe.pl --opts
-	
+  # run interactively
+  perl buildswishe.pl
+  	
+  # run with all defaults (non-interactive)
+  perl buildswishe.pl --quiet
+  
+  # to see this doc and options (at end)
+  perl buildswishe.pl --help
+  	
+  # to see options
+  perl buildswishe.pl --opts
+
 	
 =head1 REQUIREMENTS
 
