@@ -513,9 +513,15 @@ sub write_split_index_html_file{
         Pod::HtmlPsPdf::Common::read_file($index_file,\@content);
 
         foreach (@content) {
-            s|<LI><A HREF="(.+)\.html"|<LI><A HREF="$1/index.html"|gi;
-            s|<LI><A.HREF="(.+)\.html#([^\"]*)"|<LI><A HREF="$1/$2.html"|gsi;
-            s|HREF="(.+)\.html#([^\"]*)"|HREF="$1/$2.html"|gsi;
+
+            # The =head1 NAME it the title, this become the index.html file for that section
+            s|<LI><A HREF="(.+?)\.html"|<LI><A HREF="$1/index.html"|gsi;
+
+            # Convert the sub-sections into links to their own pages
+            s|<LI><A HREF="(.+?)\.html#([^\"]*)"|<LI><A HREF="$1/$2.html"|gsi;
+
+            # I don't know which links this is suppose to catch...
+            s|HREF="(.+?)\.html#([^\"]*)"|HREF="$1/$2.html"|gsi;
         }
 
         $index_file = "$split_root/$_.html";

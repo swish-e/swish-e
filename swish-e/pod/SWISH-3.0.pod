@@ -113,6 +113,11 @@ content types then the swish internal parser would accept the document for index
     
 Perhaps the FilterDocument directive would be listed in order to allow chaining, but prevent loops.
 
+=head1 Buzzword feature
+
+Supply a list of words to swish that will be indexed as-is.  So words like
+C++ can be indexed and searched even if "+" is not a WordCharacter.
+
 =head1 Enhanced the PropertyNames directive
 
 Moseley: Updated Jan 13, 2001
