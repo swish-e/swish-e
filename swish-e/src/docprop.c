@@ -546,7 +546,14 @@ docPropertyEntry *d;
   			sprintf(s,"%.013lu",i);
 			break;
 		case AUTOPROP_ID__DOCPATH:
-			s=estrdup(p->filename);
+			if(!p->filename)
+			{
+				if(indexf->filearray[p->filenum-1] == NULL)
+					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
+				s=estrdup(indexf->filearray[p->filenum-1]->fi.filename);
+			} 
+			else
+				s=estrdup(p->filename);
 			break;
 		case AUTOPROP_ID__STARTPOS:
 			i=p->start;
@@ -567,10 +574,24 @@ docPropertyEntry *d;
 			strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&p->last_modified));
 			break;
 		case AUTOPROP_ID__TITLE:
-			s=estrdup(p->title);
+			if(!p->title)
+			{
+				if(indexf->filearray[p->filenum-1] == NULL)
+					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
+				s=estrdup(indexf->filearray[p->filenum-1]->fi.title);
+			} 
+			else
+				s=estrdup(p->title);
 			break;
 		case AUTOPROP_ID__SUMMARY:
-			s=estrdup(p->summary);
+			if(!p->summary)
+			{
+				if(indexf->filearray[p->filenum-1] == NULL)
+					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
+				s=estrdup(indexf->filearray[p->filenum-1]->fi.summary);
+			} 
+			else
+				s=estrdup(p->summary);
 			break;
 		default:   /* User properties */
 			q=getMetaIDData(&indexf->header,ID); 
