@@ -233,7 +233,6 @@ static void _php_swishe_search_close(zend_rsrc_list_entry *rsrc)
 {
 php_swishe_search *search = (php_swishe_search *)rsrc->ptr;
 
-    Free_Search_Object(search->swishe_search_handle);
     efree(search);
 }
 
@@ -242,7 +241,6 @@ static void _php_swishe_results_close(zend_rsrc_list_entry *rsrc)
 {
 php_swishe_results *results = (php_swishe_results *)rsrc->ptr;
 
-    Free_Results_Object(results->swishe_results_handle);
     efree(results);
 }
 
