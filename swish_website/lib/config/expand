@@ -4,6 +4,9 @@
 DEFAULT page.trail = [ ];
 DEFAULT navigation = {};
 
+this_level = 0;
+first_item = 0;
+
 # List of menu items we're constructing.
 map.items = [ ];
 
@@ -117,7 +120,9 @@ FOREACH id IN map.menu;
 
 END;  # Foreach
 
+
 IF this_level && !( navigation.First || navigation.Last );
+#IF this_level;
     SET navigation.First = first_item IF first_item && !first_item.here;
     SET navigation.Last  = last_item UNLESS last_item.here;
 END;
