@@ -502,11 +502,7 @@ sort descending by title, ascending by name
 
 B<This is an experimental feature!>
 
-The -L switch can be used to limit search results to a range of properties
-(properties are defined with the PropertyNames* family of directives).
-Properties must be presorted for this feature to work.
-(Presorted properties is the default swish behavior.)
-This feature will not work with C<swishrank> or C<swishdbfile> properties.
+The C<-L> switch can be used to limit search results to a range of property values
 
 Example:
 
@@ -514,6 +510,10 @@ Example:
 
 finds all documents that contain the word C<foo>, and where the
 document's title is in the range of C<a> to C<m>, inclusive.
+By default, the case of the property is ignored, but this can be
+changed by using L<PropertyNamesCompareCase|SWISH-CONFIG/"item_PropertyNamesCompareCase">
+configuation directive.
+
 Limiting may be done with user-defined properties, as well.
 
 For example, if you indexed documents that contain a created timestamp in a meta tag:
@@ -540,8 +540,21 @@ Two special formats can be used:
     -L swishtitle >= m
 
 Finds titles less than or equal, or grater than or equal to the letter C<m>.
-Case is ignored when comparing strings.
 
+This feature will not work with C<swishrank> or C<swishdbfile> properties.
+
+This feature takes advantages of the pre-sorted tables built by swish during indexing to
+make this feature fast while searching.  
+You should see in the indexing output a line such as:
+
+   6 properties sorted.
+
+That indicates that six pre-sorted tables were built during indexing.   
+By default, all properties are presorted while indexing.
+What properties are pre-sorted can be controlled by the configuration parameter C<PreSortedIndex>.
+
+Using the C<-L> switch on a property that was not pre-sorted will still work, but may be I<much>
+slower during searching.
 
 This is an experimental feature, and its use and interface are subject to change.
 
@@ -612,28 +625,35 @@ Swish defines a number of "Auto" properties for each document indexed.
 These are available for output when using the C<-x> format.
 
     Name               Type     Contents
+    --------------     -------  ----------------------------------------------
     swishreccount      Integer  Result record counter
-    swishtitle         String   Document title (html only)
+    swishtitle         String   Document title
     swishrank          Integer  Result rank for this hit
     swishdocpath       String   URL or filepath to document
     swishdocsize       Integer  Document size in bytes
-    swishlastmodified  Date     Last mod. date of document
+    swishlastmodified  Date     Last modified date of document
     swishdescription   String   Description of document (see:StoreDescription)
-    swishstartpos      Integer  [not yet used]
     swishdbfile        String   Path of swish database indexfile
 
-The Auto properties can also be specified using shortcuts:    
+The Auto properties can also be specified using shortcuts:
 
-    %c     = <swishreccount>        (c-ount)
-    %d     = <swishdescription>
-    %D     = <swishlastmodified>    (D-ate)
-    %I     = <swishdbfile>          (I-ndex)
-    %p     = <swishdocpath>         (P-ath)
-    %r     = <swishrank>
-    %l     = <swishdocsize>         (lentgh)
-    %S     = <swishstartpos>
-    %t     = <swishtitle>
-    %%     = %
+    Shortcut    Property Name        
+    --------    --------------
+      %c        swishreccount
+      %d        swishdescription
+      %D        swishlastmodified
+      %I        swishdbfile
+      %p        swishdocpath
+      %r        swishrank
+      %l        swishdocsize
+      %t        swishtitle
+
+For example, these are equivalent:
+
+   -x '<swishrank>:<swishdocpath>:<swishtitle>\n'
+   -x '%r:%p:%t\n'
+
+Use a double percent sign "%%" to enter a literal percent sign in the output.
 
 
 B<Formatstrings of properties:>
@@ -643,6 +663,8 @@ These "propertyformats" are used to control how the contents of the associated p
 Property formats are used like C-language printf formats.
 The property format is specified by including the attribute "fmt" within the property tag.
 
+Format strings cannot be used with the "%" shortcuts described above.
+
 General syntax:
 
     -x '<propertyname fmt="propfmtstr">'
@@ -651,19 +673,21 @@ where C<subfmt> controls the output format of C<propertyname>.
 
 Examples of property format strings:
 
-        date type:    ...fmt='%d.%m.%Y'
-        string type:  ...fmt='%-40.20s'
-        integer type: ...fmt=/%8.8d/
+        date type:    <swishlastmodified fmt="%d.%m.%Y">
+        string type:  <swishtitle fmt="%-40.35s">
+        integer type: <swishreccount fmt=/%8.8d/>
 
 Please see the manual pages for strftime(3) and sprintf(3) for an explanation of
-format strings.
+format strings.  Note: some versions of strftime do not offer the %s format string
+(number of seconds since the Epoch), so swish provides a special format string "%ld"
+to display the number of seconds since the Epoch.
 
-The first character of a property format string defines the delimiter for this format string.
+The first character of a property format string defines the delimiter for the format string.
 For example,
 
-    swish -x  "<author  fmt=\"%20s\"> ...\n"
-    swish -x  "<author  fmt='%20s'> ...\n"
-    swish -x  "<author  fmt=/%20s/> ...\n"
+    -x  "<author  fmt=[%20s]> ...\n"
+    -x  "<author  fmt='%20s'> ...\n"
+    -x  "<author  fmt=/%20s/> ...\n"
 
 
 B<Standard predefined formats:>
@@ -674,10 +698,7 @@ If you ommit the sub-format, the following formats are used:
     Integer type:      "%d"  (like printf int)
     Float type:        "%f"  (like printf double) 
     Date type:         "%Y-%m-%d %H:%M:%S" (like strftime)
-                        special: fixed format string "%ld" = print seconds since epoch
                                    
-
-
 
 B<Text in "formatstring" or "propfmtstr":>
 
@@ -688,7 +709,7 @@ the Newline-Character "\n" at the end of "fmtstr".
 
     -x "<swishreccount>|<swishrank>|<swishdocpath>\n"
     -x "Count=<swishreccount>, Rank=<swishrank>\n"
-    -x "\<p\>Title=\<b\><swishtitle>\<p\>"
+    -x "Title=\<b\><swishtitle>\</b\>"
     -x 'Date: <swishlastmodified fmt="%m/%d/%Y">\n'
     -x 'Date in seconds: <swishlastmodified fmt=/%ld/>\n'
 
