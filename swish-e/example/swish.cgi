@@ -118,15 +118,16 @@ sub default_config {
     ##>>  Send a small example, without all the comments.
 
     #======================================================================
-    # NOTE: Items beginning with an "x" or "#" are commented out
-    #       the "x" form simply renames (hides) that setting.  It's used
-    #       to make it easy to disable a mult-line configuation setting.
+    #                   *** NOTES ****
+    #   Items beginning with an "x" or "#" are commented out
+    #   the "x" form simply renames (hides) that setting.  It's used
+    #   to make it easy to disable a mult-line configuation setting.
     #
     #   If you do not understand a setting then best to leave the default.
     #
     #   Please follow the documentation (perldoc swish.cgi) and set up
     #   a test using the defaults before making changes.  It's much easier
-    #   to modify a working example than to try to get a modified example to work ;)
+    #   to modify a working example than to try to get a modified example to work...
     #
     #   Again, this is a Perl hash structure.  Commas are important.
     #======================================================================
@@ -144,7 +145,7 @@ sub default_config {
         # The location of your index file.  Typically, this would not be in
         # your web tree.
         # If you have more than one index to search then specify an array
-        # reference.  e.g. swish_index =>[ qw/ index1 index2 index3 /],
+        # reference.  e.g. swish_index =>[ qw( index1 index2 index3 )],
         
         swish_index     => 'index.swish-e',    # Location of your index file
                                                 
@@ -218,12 +219,15 @@ sub default_config {
         # To use this feature you must define MetaNames while indexing.
 
         # The special "swishdefault" says to search any text that was not indexed
-        # as a metaname (e.g. the body of a HTML document).
+        # as a specific metaname (e.g. typically the body of a HTML document and its title).
 
         # To see how this might work, add to your config file:
         #   MetaNames swishtitle swishdocpath
-        # and try:
-        metanames       => [qw/swishdefault swishtitle swishdocpath/],
+        # reindex and try:
+
+        metanames       => [qw/swishdefault swishtitle swishdocpath /],
+
+        # Add "all" to metanames to test the meta_groups feature described below
         
         
 
@@ -232,11 +236,45 @@ sub default_config {
         # you might use:
         #metanames       => [qw/body subject name email/],
 
+
         # Note that you can do a real "all" search if you use nested metanames in your source documents.
         # Nesting metanames is most common with XML documents.
+
+        # You can also group metanames into "meta-metanames".
+        # Example: Say you defined metanames "author", "comment" and "keywords"
+        # You want to allow searching "author", "comment" and the document body ("swishdefault")
+        # But you would also like an "all" search that searches all metanames, including "keywords":
+        #     
+        #   metanames  => [qw/swishdefault author comment all/],
+        #
+        # Now, the "all" metaname is not a real metaname.  It must be expanded into its
+        # individual metanames
+        #
+        #  "meta_groups" maps a fake metaname to a list of real metanames
+        #
+        #   meta_groups => {
+        #       all => [qw/swishdefault author comment keywords / ],
+        #   },
+        #
+        #  swish.cgi will then take a query like
+        #
+        #       all=(query words)
+        #
+        #  into the query
+        #
+        #       swishdefault=(query words) OR author=(query words) OR comment=(query words) OR keywords=(query words)
+        #
+        #  This is not ideal, but should work for most cases
+        #  (might fail under windows since the query is passed through the shell).
+
+        # To enable this group add "all" to the list of metanames
+        meta_groups => {
+            all =>  [qw/swishdefault swishtitle swishdocpath/],
+        },
+        
         
 
-        # These are used to map MetaNames and PropertyNames to user-friendly names
+        # "name_labels" is used to map MetaNames and PropertyNames to user-friendly names
         # on the form.
 
         name_labels => {
@@ -246,11 +284,12 @@ sub default_config {
             swishlastmodified   => 'Last Modified Date',
             swishdocpath        => 'Document Path',
             swishdocsize        => 'Document Size',
-            subject             => 'Message Subject',
+            all                 => 'All',              # group of metanames
+            
+            subject             => 'Message Subject',  # other examples
             name                => "Poster's Name",
             email               => "Poster's Email",
             sent                => 'Message Date',
-            ALL                 => 'Message text',
         },
 
 
@@ -271,6 +310,9 @@ sub default_config {
 
 
         # This structure defines term highlighting, and what type of highlighting to use
+        # If you are using metanames in your searches and they map to properties that you
+        # will display, you may need to adjust the "meta_to_prop_map".
+        
         highlight       => {
 
             # Pick highlighting module -- you must make sure the module can be found
@@ -295,10 +337,13 @@ sub default_config {
             #highlight_off  => '</b>',
             highlight_on    => '<font style="background:#FFFF99">',
             highlight_off   => '</font>',
-            meta_to_prop_map => {   # this maps search metatags to display properties
+
+            # This maps search metatags to display properties.  
+            meta_to_prop_map => {  
                 swishdefault    => [ qw/swishtitle swishdescription/ ],
                 swishtitle      => [ qw/swishtitle/ ],
                 swishdocpath    => [ qw/swishdocpath/ ],
+                all             => [ qw/swishtitle swishdescription swishdocpath/ ],
             },
         },
 
@@ -526,6 +571,8 @@ sub merge_read_config {
     return $config unless $config->{config_file};
 
     my $return = do $config->{config_file};
+
+    die "Failed to compile swish.cgi config file: $@\n" if !defined $return && $@;
 
     return $config unless ref $return eq 'HASH';
 
@@ -963,15 +1010,27 @@ sub build_query {
     my $conf = $self->{config};
     my @metas = ('swishdefault');
     push @metas, @{ $self->config('metanames')} if $self->config('metanames');
-    unless ( grep { $metaname eq $_ } @metas  ) {
+    my %meta_lookup = map { $_ => 1 } @metas;
+
+    unless ( $meta_lookup{$metaname}  ) {
         $self->errstr('Bad MetaName provided');
         return;
     }
 
     # prepend metaname to query
-    $query = $metaname . "=($query)";
+
+    if ( $conf->{meta_groups} && $conf->{meta_groups}{$metaname} ) {
+        $query = join ' OR ', map { "$_=($query)" } @{$conf->{meta_groups}{$metaname}};
+
+        # This is used to create a fake entry in the parsed query so highlighting
+        # can find the query words
+        $self->{real_metaname} = $conf->{meta_groups}{$metaname}[0];
+    } else {
+        $query = $metaname . "=($query)";
+    }
 
     # save the metaname so we know what field to highlight
+    # Note that this might be a fake metaname
     $self->{metaname} = $metaname;
 
 
@@ -1516,7 +1575,6 @@ sub extract_query_match {
 
     my $query = $self->header('parsed words');  # grab query parsed by swish
 
-    
 
     my %query_match;  # kewords broken down by layer and field.
     $self->{query_match} = \%query_match;
@@ -1577,6 +1635,13 @@ sub extract_query_match {
     }
 
 
+    # Here's a hack to make metaname expansion work
+    # this will make an entry like all => [qw/ query words /]; for use with fake metanames
+    
+    $query_match{text}{ $self->{metaname} } = $query_match{text}{$self->{real_metaname}}
+        if $self->{real_metaname} && $query_match{text}{$self->{real_metaname}};
+
+
 
     # Now, sort in desending order of phrase lenght
 
@@ -1596,6 +1661,11 @@ sub extract_query_match {
             }
         }
     }
+
+
+    #  display parsed query instead of the title for debugging
+    #  use Data::Dumper;
+    #  $self->config('title',"<pre><font size=3>Query:\n$query\n"  . Dumper(\%query_match) . '</font></pre>');  
 
 
     return \%query_match;
@@ -1898,7 +1968,25 @@ be referred to the swish-e discussion list.
 
 The parameters are all part of a perl C<hash> structure, and the comments at the top of the program should
 get you going.  The perl hash structure may seem a bit confusing, but it makes it easy to create nested and complex
-parameters. 
+parameters.   Syntax is important, so cut-n-paste should be your best defense if you are not a perl programmer.
+
+By the way, Perl has a number of quote operators.  For example, to quote a string you might write:
+
+    title => 'Search My Site',
+
+Some options take more than one parameter, where each parameter must be quoted.  For example:
+
+    metanames => [ 'swishdefault', 'swishtitle',  'swishdocpath' ],
+
+Which assigns an array ( [...] ) of three strings to the "metanames" variable.
+Lists of quotes strings are so common in perl that there's a special operator called "qw" (quote word):
+    
+    metanames => [ qw/ swishdefault swishtitle swishdocpath / ],
+
+or to use the parenthesis as the quote character (you can pick any):
+
+    metanames => [ qw( swishdefault swishtitle swishdocpath ) ],
+
 
 You have two options for changing the configuration settings from their default values:
 you may edit the script directly, or you may use a configuration file.  In either case, the configuration
