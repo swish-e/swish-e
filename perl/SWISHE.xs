@@ -146,6 +146,17 @@ SwishNext(handle)
         PUTBACK;
     }
 
+
+void
+SetLimitParameter(handle,propertyname,low,hi)
+     void *handle;
+     char *propertyname;
+     char *low;
+     char *hi;
+     CODE:
+     SetLimitParameter((SWISH *)handle,propertyname,low,hi);
+
+
 int 
 SwishSeek(handle,number)
      void *handle

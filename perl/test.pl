@@ -101,6 +101,14 @@
             sort    => '',
             context => 1,   # Search the entire file
         },
+        {
+            title   => 'Limit to title',
+            query   => 'test or meta1=m* or meta2=m* or meta3=m*',
+            props   => 'meta1 meta2 meta3',
+            sort    => '',
+            context => 1,   # Search the entire file
+            limit   => [ 'swishtitle', '<=', 'If you are seeing this, the test' ],
+        },
     );
 
     # Need an array in perl to deliver the above hash contents to swish in
@@ -130,6 +138,11 @@
         print_header( "$search->{title} - Query: '$search->{query}'" );
 
         # Here's the actual query
+
+        if ( $search->{limit} ) {
+            print "limiting to @{$search->{limit}}\n\n";
+            SetLimitParameter( $handle, ,@{$search->{limit}});
+        }
         
         my $num_results = SwishSearch( $handle, @{$search}{ @settings } );
 
@@ -158,6 +171,7 @@
             print "-----------\n";
         }
     }
+
 
     print_header('Other Functions');
 

@@ -4,12 +4,24 @@ require Exporter;
 require DynaLoader;
 
 @ISA = qw(Exporter DynaLoader);
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
+
+# Probably shouldn't export everything 
 @EXPORT = qw(
-SwishOpen SwishSearch SwishClose SwishNext SwishSeek SwishError SwishHeaderParameter SwishStopWords SwishWords SwishStem SwishErrorString SwishHeaders
+    SwishOpen
+    SwishSearch
+    SwishClose
+    SwishNext
+    SwishSeek
+    SwishError
+    SwishHeaderParameter
+    SwishStopWords
+    SwishWords
+    SwishStem
+    SwishErrorString
+    SwishHeaders
+    SetLimitParameter
 );
+
 $VERSION = '0.01';
 
 bootstrap SWISHE $VERSION;
