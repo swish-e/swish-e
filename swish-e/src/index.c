@@ -203,11 +203,8 @@ void initModule_Index (SWISH  *sw)
     idx->swap_getc = NULL;
     idx->swap_putc = NULL;
 
-	if (RAM_DISK)
-		idx->locZone = NULL;
-	else
-		idx->locZone = Mem_ZoneCreate("Locators", 0, 0);
-
+	/* memory zones for common structures */
+	idx->locZone = Mem_ZoneCreate("Locators", 0, 0);
 	idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
 
     return;
@@ -1392,7 +1389,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     {
         pi = (int *) ptmp2;
 
-		if (RAM_DISK)
+		if (sw->Index->swap_locdata)
 			e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
         compressed_data = (unsigned char *)e->locationarray[k];
