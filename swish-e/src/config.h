@@ -41,12 +41,16 @@
 
 #ifdef __VMS
 #define PROPFILE_EXTENSION "_prop"
-#define WORDDATA_EXTENSION "_wdat"
+#define WORDDATA_EXTENSION "_wdata"
 #define PRESORTED_EXTENSION "_psort"
+#define BTREE_EXTENSION "_btree"
+#define ARRAY_EXTENSION "_array"
 #else
 #define PROPFILE_EXTENSION ".prop"
-#define WORDDATA_EXTENSION ".wdat"
+#define WORDDATA_EXTENSION ".wdata"
 #define PRESORTED_EXTENSION ".psort"
+#define BTREE_EXTENSION ".btree"
+#define ARRAY_EXTENSION ".array"
 #endif
 
 /* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 
@@ -330,7 +334,7 @@
 
 /* 2001/10 jmruiz -- Added BTREE schema to store words */
 
-// #define USE_BTREE
+//#define USE_BTREE
 
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk

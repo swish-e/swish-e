@@ -274,8 +274,7 @@ static void    usage()
     printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
     printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
     printf("         -c : configuration file(s) to use for indexing\n");
-    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
-    printf("         -T : Trace options ('-T help' for info\n");
+    printf("         -v : verbosity level (0 to 3) [-v %d]\n", VERBOSE);
     printf("         -l : follow symbolic links when indexing\n");
     printf("         -b : begin results at this number\n");
     printf("         -m : the maximum number of results to return [defaults to all results]\n");
@@ -290,8 +289,9 @@ static void    usage()
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
     printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
     printf("         -k : Print words starting with a given char.\n");
-    printf("\n");
-    printf("version: %s  docs: http://swish-e.org\n", SWISH_VERSION);
+    printf("         -T : Trace options\n\n");
+    printf("\nversion: %s\n", SWISH_VERSION);
+    printf("   docs: http://swish-e.org/\n");
     exit(1);
 }
 
@@ -1041,8 +1041,11 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         progerr("Specify directories or files to index.");
 
 
+    /* What's the point of this? */
     if (sw->verbose < 0)
         sw->verbose = 0;
+    if (sw->verbose > 4)
+        sw->verbose = 4;
 
     /* Update Economic mode */
     sw->Index->swap_locdata = params->swap_mode;
@@ -1063,7 +1066,9 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         /* Adjust filenum to totalfiles */
         sw->Index->filenum = sw->TotalFiles;
 
-        progerr("Invalid operation mode '%d': Update mode is not yet ", (int)params->run_mode);
+#ifndef USE_BTREE
+        progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
+#endif
 
     }
     else
@@ -1074,8 +1079,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
 
     /* This should be printed by the module that's reading the source */
-    if (sw->verbose >= 1)
-        printf("Indexing Data Source: \"%s\"\n", IndexingDataSource->IndexingDataSourceName);
+    printf("Indexing Data Source: \"%s\"\n", IndexingDataSource->IndexingDataSourceName);
 
     tmpswline = sw->dirlist;
     while (tmpswline != NULL)
@@ -1331,10 +1335,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
             printf("Writing header ...\n");
         fflush(stdout);
 
-        if(is_update)
-            update_header(sw,sw->indexlist->DB,sw->indexlist->header.totalwords, totalfiles);
-        else
-            write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, merge);
+        write_header(sw, &sw->indexlist->header, sw->indexlist->DB, sw->indexlist->line, sw->indexlist->header.totalwords, totalfiles, merge);
 
         fflush(stdout);
 
@@ -1376,8 +1377,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
         printf("\n");
     }
 
-    if (sw->verbose >= 1)
-        printf("Indexing done!\n");
+    printf("Indexing done!\n");
 
 
 #ifdef INDEXPERMS

@@ -691,7 +691,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     if (sw->mtime_limit && fprop->mtime < sw->mtime_limit)
     {
-        if (sw->verbose >= 3)
+        if (sw->verbose >= 4)
             progwarn("Skipping %s: last_mod date is too old\n", fprop->real_path);
 
         /* external program must seek past this data (fseek fails) */
@@ -899,16 +899,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Save total words per file */
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
-        INDEXDATAHEADER *header = &indexf->header;
-        int idx = fi.filenum - 1;
 
-        if ( !header->TotalWordsPerFile || idx >= header->TotalWordsPerFileMax )
-        {
-            header->TotalWordsPerFileMax += 20000;  /* random guess -- could be a config setting */
-            header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(int) );
-        }
-
-        header->TotalWordsPerFile[idx] = wordcount;
+        setTotalWordsPerFile(sw, indexf, fi.filenum - 1,wordcount);
     }
 
     
@@ -967,6 +959,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     indexf->total_word_positions++;
 
+    // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
         struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);

@@ -155,46 +155,8 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 #endif
 
     DB_EndWriteHeader(sw, DB);
-
-#ifdef USE_BTREE
-            /* Write the total words per file array, if used */
-    if ( !header->ignoreTotalWordCountWhenRanking )
-    {
-        DB_InitWriteTotalWordsPerFileArray(sw, DB);
-        DB_WriteTotalWordsPerFileArray(sw, header->TotalWordsPerFile, totalfiles, DB);
-        DB_EndWriteTotalWordsPerFileArray(sw, DB);
-    }
-#endif
-
 }
 
-/* 2002/03 jmruiz */
-/* Routine used by MODE_UPDATE to update the totalwords and totalfiles in the header  */
-void    update_header(SWISH *sw, void * DB, int totalwords, int totalfiles)
-{
-    int   id,
-          len;
-    unsigned char *buffer;
-
-    DB_InitReadHeader(sw, DB);
-
-    DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
-
-    while (id)
-    {
-        /* This is  a bad way to update the header. For now, it works 
-        ** It is based on the idea that SAVEDASHEADER_ID is before 
-        ** COUNTSHEADER_ID - This must be fixed */
-        if (id == SAVEDASHEADER_ID)
-        {
-            write_header_int2(sw, COUNTSHEADER_ID, totalwords, totalfiles, DB);
-            break;
-        }
-        efree(buffer);
-        DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
-    }
-    DB_EndReadHeader(sw, DB);
-}
 
 /* Jose Ruiz 11/00
 ** Function to write a word to the index DB
@@ -426,7 +388,7 @@ unsigned char r_flag, *w_flag;
          sw->Index->len_worddata_buffer = maxtotsize + 2000;
          sw->Index->worddata_buffer = (unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer); 
     }
-    /* Preserve new data in a local copy - sw->Index->worddata_buffer is thefinal destination
+    /* Preserve new data in a local copy - sw->Index->worddata_buffer is the final destination
     ** of data
     */
     if(sw->Index->sz_worddata_buffer > sizeof(stack_buffer))
@@ -461,7 +423,7 @@ unsigned char r_flag, *w_flag;
 
     while(curmetaID_1 && curmetaID_2)
     {            
-        p = compress3(min(curmetaID_1,curmetaID_1),p);
+        p = compress3(min(curmetaID_1,curmetaID_2),p);
 
         curmetanamepos = p - sw->Index->worddata_buffer;
                 /* Store 0 and increase pointer */
@@ -551,9 +513,8 @@ unsigned char r_flag, *w_flag;
                 p2 += sizeof(long);
                 curmetanamepos_2 = p2 - newdata;
             }
-            /* Put nextmetaname offset in result if there is a next one */
-            if(curmetaID_1 || curmetaID_2)
-                PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
+            /* Put nextmetaname offset */
+            PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
         }
         else if (curmetaID_1 < curmetaID_2)
         {
@@ -593,7 +554,6 @@ unsigned char r_flag, *w_flag;
                 p += sz_newdata - (p2 - newdata);
                 curmetaID_2 = 0;
             }
-
             PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
         }
         
@@ -669,6 +629,9 @@ unsigned char r_flag, *w_flag;
 
     if(newdata != stack_buffer)
         efree(newdata);
+
+    /* Save the new size */
+    sw->Index->sz_worddata_buffer = p - sw->Index->worddata_buffer;
 }
 
 /* Writes the list of metaNames into the DB index
@@ -948,16 +911,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
     }
     DB_EndReadHeader(sw, DB);
-#ifdef USE_BTREE
-            /* Read the total words per file array, if used */
-    if ( !header->ignoreTotalWordCountWhenRanking )
-    {
-        DB_InitReadTotalWordsPerFileArray(sw, DB);
-        DB_ReadTotalWordsPerFileArray(sw, &header->TotalWordsPerFile, DB);
-        DB_EndReadTotalWordsPerFileArray(sw, DB);
-    }
-#endif
-
 }
 
 /* Reads the metaNames from the index
@@ -1155,6 +1108,37 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     return (indexf->keywords[j]);
 }
 
+void setTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int wordcount)
+{
+INDEXDATAHEADER *header = &indexf->header;
+#ifdef USE_BTREE
+        DB_WriteTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
+
+#else
+
+        if ( !header->TotalWordsPerFile || idx >= header->TotalWordsPerFileMax )
+        {
+            header->TotalWordsPerFileMax += 20000;  /* random guess -- could be a config setting */
+            if(! header->TotalWordsPerFile)
+               header->TotalWordsPerFile = emalloc( header->TotalWordsPerFileMax * sizeof(int) );
+            else
+               header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(int) );
+        }
+
+        header->TotalWordsPerFile[idx] = wordcount;
+#endif
+}
+
+
+void getTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int *wordcount)
+{
+#ifdef USE_BTREE
+        DB_ReadTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
+#else
+INDEXDATAHEADER *header = &indexf->header;
+        *wordcount = header->TotalWordsPerFile[idx];
+#endif
+}
 
 
 /*------------------------------------------------------*/
@@ -1386,39 +1370,18 @@ void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB )
 
 
 #ifdef USE_BTREE
-int	   DB_InitWriteTotalWordsPerFileArray(SWISH *sw, void *DB)
+
+int    DB_WriteTotalWordsPerFile(SWISH *sw, int idx, int wordcount, void *DB)
 {
-    return sw->Db->DB_InitWriteTotalWordsPerFileArray(sw, DB);
+    return sw->Db->DB_WriteTotalWordsPerFile(sw, idx, wordcount, DB);
 }
 
-int    DB_WriteTotalWordsPerFileArray(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB)
-{
-    return sw->Db->DB_WriteTotalWordsPerFileArray(sw, totalWordsPerFile, totalfiles, DB);
-}
 
-int    DB_EndWriteTotalWordsPerFileArray(SWISH *sw, void *DB)
+int	   DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
 {
-    return sw->Db->DB_EndWriteTotalWordsPerFileArray(sw, DB);
-}
-
-int	   DB_InitReadTotalWordsPerFileArray(SWISH *sw, void *DB)
-{
-    return sw->Db->DB_InitReadTotalWordsPerFileArray(sw, DB);
-}
-
-int	   DB_ReadTotalWordsPerFileArray(SWISH *sw, int **data, void *DB)
-{
-    return sw->Db->DB_ReadTotalWordsPerFileArray(sw, data, DB);
-}
-
-int    DB_EndReadTotalWordsPerFileArray(SWISH *sw, void *DB)
-{
-    return sw->Db->DB_EndReadTotalWordsPerFileArray(sw, DB);
+    return sw->Db->DB_ReadTotalWordsPerFile(sw, index, value, DB);
 }
 
 #endif
 
-int    DB_ReadTotalWordsPerFile(SWISH *sw, int *totalWords, int index, int *value, void *DB)
-{
-    return sw->Db->DB_ReadTotalWordsPerFile(sw, totalWords, index, value , DB);
-}
+
