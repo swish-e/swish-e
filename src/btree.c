@@ -7,7 +7,7 @@
 #include "compress.h"
 #include "mem.h"
 #include "btree.h"
-
+#include "error.h"
 
 /* A BTREE page cannot be smaller than BTREE_MinPageSize */
 #define BTREE_MinPageSize 4096

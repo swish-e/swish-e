@@ -272,7 +272,6 @@ WORDDATA_Page *tmp;
 WORDDATA *WORDDATA_New(FILE *fp)
 {
 WORDDATA *b;
-int i;
     b = (WORDDATA *) emalloc(sizeof(WORDDATA));
     memset(b,0,sizeof(WORDDATA));
     b->fp = fp;
