@@ -75,7 +75,7 @@
 #include <setjmp.h>
 
 
-#define SWISH_VERSION "2.1-dev17"
+#define SWISH_VERSION "2.1-dev18"
 
 #define SWISH_MAGIC 21076321L
 
@@ -83,9 +83,9 @@
 
 #define BASEHEADER 1
 
-#define INDEXHEADER "# SWISH format: 2.1-dev17"
+#define INDEXHEADER "# SWISH format: 2.1-dev18"
 #define INDEXHEADER_ID BASEHEADER + 1 
-#define INDEXVERSION "# Swish-e format: 2.1-dev17"
+#define INDEXVERSION "# Swish-e format: 2.1-dev18"
 #define INDEXVERSION_ID BASEHEADER + 2
 
 
@@ -412,6 +412,14 @@ typedef struct IndexFILE {
 		/* props IDs */
 	int *propIDToDisplay;
 	int *propIDToSort;
+		/* Internal Swish meta/props */
+	struct metaEntry *filenameProp;
+	struct metaEntry *titleProp;
+	struct metaEntry *filedateProp;
+	struct metaEntry *startProp;
+	struct metaEntry *sizeProp;
+	struct metaEntry *summaryProp;
+
 } IndexFILE;
 
 typedef struct RESULT {

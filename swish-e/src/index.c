@@ -456,23 +456,10 @@ unsigned long int tmp;
 		ruleparsedfilename=p3;
 	}
 	newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
-			/* Just to save a little memory */
-	if(strcmp(title,newnode->fi.filename)==0)
-	{
-		newnode->fi.title = newnode->fi.filename;
-	} else {
-		newnode->fi.title = (char *) estrdup(title);
-	}
-	if(summary)
-		newnode->fi.summary= (char *) estrdup(summary);
-	else
-		newnode->fi.summary=NULL;
-
-		/* The datetime of the doc */
-	newnode->fi.mtime=(unsigned long)mtime;
-
-	newnode->fi.start = start;
-	newnode->fi.size = size;
+	/* Not used in indexing mode - They are in properties */
+	/* NULL must be set to not get a segfault in freefileinfo */
+	newnode->fi.title=newnode->fi.summary=NULL;
+	/* Init docproperties */
 	newnode->docProperties = NULL;
 
 /* #### Added summary,filename, title and mtime as properties if specified */
@@ -499,7 +486,7 @@ unsigned long int tmp;
 	if(title)
 	{
                         /* Check if title is internal swish metadata */
-		if((q=getMetaNameData(indexf,META_TITLE)))
+		if((q=indexf->titleProp))
 		{
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))
@@ -518,7 +505,7 @@ unsigned long int tmp;
 	if(summary)
 	{
                         /* Check if summary is internal swish metadata */
-		if((q=getMetaNameData(indexf,META_SUMMARY)))
+		if((q=indexf->summaryProp))
 		{
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))
@@ -534,8 +521,8 @@ unsigned long int tmp;
 			}
 		}
 	}
-                        /* Check if mtime is internal swish metadata */
-	if((q=getMetaNameData(indexf,META_FILEDATE)))
+                        /* Check if filedate is an internal swish metadata */
+	if((q=indexf->filedateProp))
 	{
                         /* Check if it is also a property (META_PROP flag) */
 		if(is_meta_property(q))
@@ -545,8 +532,8 @@ unsigned long int tmp;
 			addDocProperty(&newnode->docProperties,q->index,(unsigned char *)&tmp,sizeof(tmp));
 		}
 	}
-                        /* Check if mtime is internal swish metadata */
-	if((q=getMetaNameData(indexf,META_SIZE)))
+                        /* Check if size is internal swish metadata */
+	if((q=indexf->sizeProp))
 	{
                         /* Check if it is also a property (META_PROP flag) */
 		if(is_meta_property(q))
@@ -1131,31 +1118,19 @@ FILE *fp=indexf->fp;
 	fputc(0,fp);
 }
 
-unsigned char *buildFileEntry(filename, mtime, title, summary, start, size, fp, docProperties,lookup_path,sz_buffer)
+unsigned char *buildFileEntry(filename, fp, docProperties,lookup_path,sz_buffer)
 char *filename;
-time_t mtime;
-char *title;
-char *summary;
-int start;     
-int size;     
 FILE *fp;
 struct docPropertyEntry **docProperties;
 int *sz_buffer;
 int lookup_path;
 {
-int len,len_filename,lentitle,lensummary;
+int len,len_filename;
 unsigned char *buffer1,*buffer2,*buffer3,*p;
 int lenbuffer1;
 int datalen1, datalen2,datalen3;
-unsigned long lmtime;
-	lmtime=(unsigned long)mtime;
 	len_filename = strlen(filename)+1;
-	lentitle = strlen(title)+1;
-	if(summary)
-		lensummary=strlen(summary)+1;
-	else
-		lensummary=0;
-	lenbuffer1=len_filename+lentitle+lensummary+7*6;
+	lenbuffer1=len_filename+2*6;
 	buffer1=emalloc(lenbuffer1);
 	p=buffer1;
 	lookup_path++;   /* To avoid the 0 problem in compress increase 1 */
@@ -1164,31 +1139,6 @@ unsigned long lmtime;
 		it also writes the null terminator */
 	compress3(len_filename,p);
 	memcpy(p,filename,len_filename);p+=len_filename;
-	compress3(lmtime,p);
-	if(lentitle==len_filename)
-	{
-		if(memcmp(filename,title,lentitle)==0)
-		{
-			lentitle=0;  /* Flag to indicate that filename
-					** and title are identical */
-		}
-	}
-	if(lentitle)
-	{
-		compress3(lentitle,p);
-		memcpy(p,title,lentitle);p+=lentitle;
-	} else *p++='\0';
-	if(summary)
-	{
-		compress3(lensummary,p);
-		memcpy(p,summary,lensummary);p+=lensummary;
-	} else *p++='\0';
-	len = start +1;    /* We store start + 1 to avoid problems with
-			  * files with start 0 */
-	compress3(len,p);
-	len = size +1;    /* We store size + 1 to avoid problems with
-			  * files with size 0 */
-	compress3(len,p);
 	datalen1=p-buffer1;
 	buffer2=storeDocProperties(*docProperties, &datalen2);
 	buffer3=emalloc((datalen3=datalen1+datalen2+1));
@@ -1201,10 +1151,9 @@ unsigned long lmtime;
 	return(buffer3);
 }
 
-struct file *readFileEntry(indexf, filenum, readdocproperties)
+struct file *readFileEntry(indexf, filenum)
 IndexFILE *indexf;
 int filenum;
-int readdocproperties;
 {
 long pos;
 int total_len,len1,len2,len3,len4,mtime,bytes,begin,lookup_path;
@@ -1215,8 +1164,7 @@ FILEOFFSET *fo;
 FILE *fp=indexf->fp;
 	fi=indexf->filearray[filenum-1];
 	fo=indexf->fileoffsetarray[filenum-1];
-	if(fi->read && (fi->docProperties || !readdocproperties)) 
-		return fi;   /* Read it previously */
+	if(fi->read) return fi;   /* Read it previously */
 	pos=fo->filelong;
 
 	fseek(fp, pos, 0);
@@ -1238,28 +1186,6 @@ FILE *fp=indexf->fp;
 	buf1 = emalloc(len1);  /* Includes NULL terminator */
 	memcpy(buf1,p,len1);   /* Read filename */
 	p+=len1;
-	uncompress2(mtime,p);  /* Read DateTime of doc */
-	uncompress2(len2,p);   /* Read length of title */
-		/* If 0 then filename == title */
-	if(!len2)
-		buf2=buf1;
-	else {
-		buf2 = emalloc(len2);
-		memcpy(buf2,p,len2);   /* Read title */
-		p+=len2;
-	}
-	uncompress2(len3,p);   /* Read length of summary */
-	if(!len3)
-		buf3=NULL;
-	else {
-		buf3 = emalloc(len3);
-		memcpy(buf3,p,len3);   /* Read summary */
-		p+=len3;
-	}
-	uncompress2(begin,p);           /* Read start */
-	begin--;
-	uncompress2(bytes,p);           /* Read size */
-	bytes--;
 
 	fi->fi.lookup_path = lookup_path;
 		/* Add the path to filename */
@@ -1270,17 +1196,26 @@ FILE *fp=indexf->fp;
 	memcpy(fi->fi.filename+len4,buf1,len1);
 	fi->fi.filename[len1+len4]='\0';
 	if(buf1 != buf2) efree(buf1);
-	fi->fi.mtime= (unsigned long)mtime;
-	fi->fi.title = buf2;
-	fi->fi.summary = buf3;
-	fi->fi.start = begin;
-	fi->fi.size = bytes;
+
+	/* read the document properties section  */
+	fi->docProperties = fetchDocProperties( p);
+
+	/* Read internal swish properties */
+	/* first init them */
+	fi->fi.mtime= (unsigned long)0L;
+	fi->fi.title = NULL;
+	fi->fi.summary = NULL;
+	fi->fi.start = 0;
+	fi->fi.size = 0;
+
+	/* Read values */
+	getSwishInternalProperties(fi, indexf);
+
+	/* Add empty strings if NULL */
+	if(!fi->fi.title) fi->fi.title=estrdup("");
+	if(!fi->fi.summary) fi->fi.summary=estrdup("");
 	fi->read=1;
 
-	/* read (or skip over) the document properties section  */
-	fi->docProperties=NULL;
-	if (readdocproperties) 
-		fi->docProperties = fetchDocProperties( p);
 
 	efree(buffer);
 	return fi;
@@ -1308,7 +1243,7 @@ struct buffer_pool *bp=NULL;
 		else
 			filep=indexf->filearray[i];
 		fileo=indexf->fileoffsetarray[i];
-		buffer=buildFileEntry(filep->fi.filename, filep->fi.mtime, filep->fi.title, filep->fi.summary, filep->fi.start, filep->fi.size, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
+		buffer=buildFileEntry(filep->fi.filename, fp, &filep->docProperties,filep->fi.lookup_path,&sz_buffer);
 		if(indexf->header.applyFileInfoCompression)
 		{
 			bp=zfwrite(bp,buffer,sz_buffer,&fileo->filelong,fp);
@@ -1535,7 +1470,7 @@ char ISOTime[20];
 				struct file *fileInfo;
 				printf(" Meta:%d", metaname);
 				pos = ftell(fp);
-				fileInfo = readFileEntry(indexf, filenum,0);
+				fileInfo = readFileEntry(indexf, filenum);
 				printf(" %s", fileInfo->fi.filename);
 				fseek(fp, pos, 0);
 				printf(" Strct:%d", structure);
@@ -1588,7 +1523,7 @@ char ISOTime[20];
 	fflush(stdout);
 	for (i=0; i<indexf->filearray_cursize; i++)
 	{
-		fi=readFileEntry(indexf,i+1,1);
+		fi=readFileEntry(indexf,i+1);
 		
   		strftime(ISOTime,sizeof(ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fi->fi.mtime));
 

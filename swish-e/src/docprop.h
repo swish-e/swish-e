@@ -42,3 +42,5 @@ void FreeOutputPropertiesVars (SWISH *);
 char * getResultPropertyByName (SWISH *, char *, RESULT *);
 
 char *getPropAsString(IndexFILE *, docPropertyEntry *);
+
+void getSwishInternalProperties(struct file *, IndexFILE *);

@@ -111,6 +111,7 @@
 #include "error.h"
 #include "compress.h"
 #include "deflate.h"
+#include "metanames.h"
 
 /* 04/00 Jose Ruiz */
 /* Simple routing for comparing pointers to integers in order to
@@ -831,7 +832,7 @@ IndexFILE *indexf;
 {
 int len;
 int dummy;
-int wordlen,docPropStyle;
+int wordlen,metaType;
 char *word;
 FILE *fp=indexf->fp;
 
@@ -848,21 +849,11 @@ FILE *fp=indexf->fp;
 		}
 		fread(word,len,1,fp);
 		word[len]='\0';
-		docPropStyle=0;
-			/* parse the meta name style:
-			 * <name>"0   -> normal meta name [default]
-			 * <name>"1   -> doc property name
-			 * <name>"2   -> both
-			 */
 			/* It was saved as Style+1 */
-		uncompress1(docPropStyle,fp);
-		docPropStyle--;
-			/* add the meta tag, possible twice */
-		if ((docPropStyle == 0) || (docPropStyle == 2))
-			addMetaEntry(indexf, word, 0, &dummy); /* as metaName */
-
-		if ((docPropStyle == 1) || (docPropStyle == 2))
-			addMetaEntry(indexf, word, 1, &dummy);	/* as docProp */
+		uncompress1(metaType,fp);
+		metaType--;
+			/* add the meta tag */
+		addMetaEntry(indexf, word, metaType, &dummy); 
 
 		uncompress1(len,fp);
 	}
@@ -1361,7 +1352,7 @@ FILE *fp=indexf->fp;
 					/* dump diagnostic info */
 					long curFilePos;
 					curFilePos = ftell(fp);	/* save */
-					fi = readFileEntry(indexf, filenum, 0);
+					fi = readFileEntry(indexf, filenum);
 					printf("# diag\tFILE: %s\tWORD: %s\tRANK: %d\tFREQUENCY: %d\t HASH ITEM: %d\n", fi->fi.filename, word, getrank(sw, frequency, tfrequency,indexf->fileoffsetarray[filenum-1]->ftotalwords,structure), frequency, tries);
 					fseek(fp, curFilePos, 0); /* restore */
 				}
@@ -2109,10 +2100,7 @@ struct file *fileInfo;
 
 	tmp = rp;
 	while(tmp) {
-		if (sw->numPropertiesToDisplay || sw->numPropertiesToSort)
-			fileInfo = readFileEntry(indexf, tmp->filenum, 1);
-		else
-			fileInfo = readFileEntry(indexf, tmp->filenum, 0);
+		fileInfo = readFileEntry(indexf, tmp->filenum);
 		tmp->filename=estrdup(fileInfo->fi.filename);
 
   		strftime(tmp->ISOTime,sizeof(tmp->ISOTime),"%Y/%m/%d %H:%M:%S",(struct tm *)localtime((time_t *)&fileInfo->fi.mtime));

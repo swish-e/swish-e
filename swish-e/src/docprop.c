@@ -619,3 +619,34 @@ struct metaEntry *q;
 	} else s=estrdup("");
 	return s;
 }
+
+
+void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
+{
+int i;
+char **props;      /* Array to Store properties */
+docPropertyEntry *p;
+	for(p=fi->docProperties;p;p=p->next)
+	{
+		if(indexf->filenameProp->index==p->metaName) {}
+		else if(indexf->titleProp->index==p->metaName) 
+			fi->fi.title=bin2string(p->propValue,p->propLen);
+		else if(indexf->filedateProp->index==p->metaName) 
+		{
+			fi->fi.mtime=*(unsigned long *)p->propValue;
+			UNPACKLONG(fi->fi.mtime);
+		}
+		else if(indexf->startProp->index==p->metaName) 
+		{
+			fi->fi.start=*(unsigned long *)p->propValue;
+			UNPACKLONG(fi->fi.start);
+		}
+		else if(indexf->sizeProp->index==p->metaName) 
+		{
+			fi->fi.size=*(unsigned long *)p->propValue;
+			UNPACKLONG(fi->fi.size);
+		}
+		else if(indexf->summaryProp->index==p->metaName) 
+			fi->fi.summary=bin2string(p->propValue,p->propLen);
+	}
+}
