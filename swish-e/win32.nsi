@@ -29,9 +29,18 @@ ComponentText "Which components do you require?"
 Section "Program" ; (default, required section)
 SetOutPath "$INSTDIR"
 File COPYING
+
+; SWISH-E Executable, static, and dynamic libraries
 File src\win32\*.exe
+File src\win32\*.lib
+File src\Win32\*.dll
+
+; Expat, LibXML2, and ZLib
 File src\expat\bin\*.dll
 File ..\libxml2\win32\dsp\libxml2\*.dll
+File ..\zlib\zlib.dll
+
+; Misc SWISH-E Support Files
 File src\swishspider
 File /r filter-bin
 File /r prog-bin
