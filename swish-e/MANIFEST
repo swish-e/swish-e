@@ -33,10 +33,14 @@ doc/tmpl/indexps.tmpl
 doc/tmpl/page.tmpl
 doc/tmpl/pageps.tmpl
 doc/tmpl/splitpage.tmpl
+example/README
+example/swish.cgi
+example/swish.tmpl
 filter-bin/README
 filter-bin/_binfilter.sh
-filter-bin/_docfilter.sh
-filter-bin/_pdffilter.sh
+filter-bin/_doc2text.sh
+filter-bin/_pdf2html.pl
+filter-bin/_pdf2text.sh
 html/CHANGES.html
 html/INSTALL.html
 html/README.html
