@@ -4,51 +4,55 @@ CHANGES - List of revisions
 
 =head1 Revision History
 
-This document contains list of bug fixes and feature additions to SWISH-E.
+This document contains list of bug fixes and feature additions to Swish-e.
 
 =head2 Version 2.2
 
 Release Date: ???????
 
-Many large changes were made internally in the code, some for performance reasons, some for feature
-changes and additions, and some to prepare for new features in later versions of SWISH-E.
+Many large changes were made internally in the code, some for performance
+reasons, some for feature changes and additions, and some to prepare
+for new features in later versions of Swish-e.
 
 =over 4
 
 =item * Documentation!
 
-Documentation is now included in the source distribution as .pod (perldoc) files, and as HTML files.
-In addition, the distribution can now generate PDF, postscript, and unix man pages from the source
-.pod files.  See L<README|README> for more information.
+Documentation is now included in the source distribution as .pod
+(perldoc) files, and as HTML files.  In addition, the distribution can now
+generate PDF, postscript, and unix man pages from the source .pod files.
+See L<README|README> for more information.
 
 =item * Indexing and searching speed
 
-The indexing process has been imporoved.  Depending on a number of factors, you may see
-a significant improvement in indexing speed, especially if upgrading from version 1.x.
+The indexing process has been imporoved.  Depending on a number of
+factors, you may see a significant improvement in indexing speed,
+especially if upgrading from version 1.x.
 
-Searching speed has also been improved.  Properties are not loaded until results are displayed,
-and properties are pre-sorted during indexing to speed up sorting results by properties while searching.
+Searching speed has also been improved.  Properties are not loaded until
+results are displayed, and properties are pre-sorted during indexing to
+speed up sorting results by properties while searching.
 
 =item * Properties are written to a sepearte file
 
-Swish now stores document properties in a separate file.  This means there are now two
-files that make up a swish index.
-The default files are C<index.swish-e> and C<index.swish-e.prop>.
+Swish-e now stores document properties in a separate file.  This means
+there are now two files that make up a Swish-e index.  The default files
+are C<index.swish-e> and C<index.swish-e.prop>.
 
-This change frees memory while indexing, allowing larger collections to be indexed in memory.
+This change frees memory while indexing, allowing larger collections to
+be indexed in memory.
 
 =item * Internal data stored as Properties
 
-Pre 2.2 some internal data was stored in fixed locations within the index, namely the
-file name, file size, and title.
-2.2 introduced new internal data such as the last modified date, and
-document summaries.
+Pre 2.2 some internal data was stored in fixed locations within the
+index, namely the file name, file size, and title.  2.2 introduced new
+internal data such as the last modified date, and document summaries.
 This data is considered I<meta data> since it is data about a document.
 
 Instead of adding new data to the internal structure of the index file,
-it was decided to use the MetaNames and PropertyNames feature of swish
-to store this meta information.
-This allows for new meta data to be added at a later time (e.g. Content-type), and provides an easy and customizable
+it was decided to use the MetaNames and PropertyNames feature of Swish-e
+to store this meta information.  This allows for new meta data to be added
+at a later time (e.g. Content-type), and provides an easy and customizable
 way to print results with the C<-p> switch and the new C<-x> switch.
 In addition, search results can now be sorted and limited by properties.
 
@@ -59,14 +63,16 @@ For example, to sort by the rank and title:
 
 =item * The header display has been slightly reorganized.
 
-If you are parsing output headers in a program then you may need to adjust your code.
-There's a new switch <-H> to control the level of header output when searching.
+If you are parsing output headers in a program then you may need to
+adjust your code.  There's a new switch <-H> to control the level of
+header output when searching.
 
 =item * Results are now combined when searching more than one index.
 
-Swish now merges (and sorts) the results from multiple indexes when using C<-f> to specify
-more than one index.  This change effects the way maxhits (C<-m>) works.
-Here's a summary of the way swish works for the different versions.
+Swish-e now merges (and sorts) the results from multiple indexes when
+using C<-f> to specify more than one index.  This change effects the way
+maxhits (C<-m>) works.  Here's a summary of the way it works for the
+different versions.
 
 
     1.3.2 - MaxHits returns first N results starting from the first index.
@@ -87,9 +93,10 @@ Here's a summary of the way swish works for the different versions.
 =item * New B<prog> document source indexing method
 
 You can now use -S prog to use an external program to supply documents
-to swish.  This external program can be used to spider web servers, index databases,
-or to convert any type of document into html, xml, or text, so it can be
-indexed by swish.  Examples are given in the C<prog-bin> directory.
+to Swish-e.  This external program can be used to spider web servers,
+index databases, or to convert any type of document into html, xml,
+or text, so it can be indexed by Swish-e.  Examples are given in the
+C<prog-bin> directory.
 
 =item * The indexing parser was rewritten to be more logical.
 
@@ -98,27 +105,29 @@ TranslateCharacters now is done before WordCharacters is checked.  For example,
     WordCharacters abcdefghijklmnopqrstuvwxyz
     TranslateCharacters ñ n
 
-Now C<El Niño> will be indexed as El Nino (el and nino), even though C<ñ> is
-not listed in WordCharacters.
+Now C<El Niño> will be indexed as El Nino (el and nino), even though C<ñ>
+is not listed in WordCharacters.
 
-Previously, stopwords were checked after stemming and
-soundex conversions, as well as most of the other word checks (WordCharacters, min/max length
-and so on).  This meant that the stopword list probably didn't work as expected when using stemming.
+Previously, stopwords were checked after stemming and soundex conversions,
+as well as most of the other word checks (WordCharacters, min/max length
+and so on).  This meant that the stopword list probably didn't work as
+expected when using stemming.
 
 =item * The search parser was rewritten to be more logical
 
-The search parser was rewritten to correct a number of logic errors.  Swish
-did not differentiate between meta names, swish operators and search words when parsing
-the query.  This meant, for example, that metanames might be broken up by the WordCharacters
-setting, and that they could be stemmed.
+The search parser was rewritten to correct a number of logic errors.
+Swish-e did not differentiate between meta names, Swish-e operators
+and search words when parsing the query.  This meant, for example,
+that metanames might be broken up by the WordCharacters setting, and
+that they could be stemmed.
 
-Swish operator characters C<"*()=> can now be searched by escaping with a backslash.
-For example:
+Swish-e operator characters C<"*()=> can now be searched by escaping
+with a backslash.  For example:
 
     ./swish-e -w 'this\=odd\)word'
 
-will end up searching for the word C<this=odd)word>.  To search for a backslash character
-preceed it with a backslash.
+will end up searching for the word C<this=odd)word>.  To search for a
+backslash character preceed it with a backslash.
 
 Currently, searching for:
 
@@ -126,16 +135,20 @@ Currently, searching for:
 
 is the same as a wildcard search.  This may be fixed in the future.    
 
-Searching for buzzwords with those characters will still require backslashing.  This also may change to allow
-some un-escaped operator characters, but some will always need to be escaped (e.g. the double-quote phrase character).
+Searching for buzzwords with those characters will still require
+backslashing.  This also may change to allow some un-escaped operator
+characters, but some will always need to be escaped (e.g. the double-quote
+phrase character).
 
 =item * Quotes and Backslash escapes in strings
 
-A bug was fixed in the C<parse_line()> function (in F<string.c>) where backslashes were
-not escaping the next character.  C<parse_line()> is used to parse a string of text into
-tokens (words).  Normally splitting is done at whitespace.  You may use quotes (single or double)
-to define a string (that might include whitespace) as a single parameter.  The backslash can
-also be used to escape the following character when *within* quotes (e.g. to escape an embedded quote character).
+A bug was fixed in the C<parse_line()> function (in F<string.c>) where
+backslashes were not escaping the next character.  C<parse_line()> is used
+to parse a string of text into tokens (words).  Normally splitting is done
+at whitespace.  You may use quotes (single or double) to define a string
+(that might include whitespace) as a single parameter.  The backslash
+can also be used to escape the following character when *within* quotes
+(e.g. to escape an embedded quote character).
 
     ReplaceRules append "foo bar"   <- define "foo bar" as a single word
     ReplaceRules append "foo\"bar"  <- escape the quotes
@@ -144,31 +157,34 @@ also be used to escape the following character when *within* quotes (e.g. to esc
 
 =item * Example C<user.config> file removed.
 
-Previous versions of swish included a configuration file called C<user.config> which
-contained examples of all directives.
-This has been replaced by a series of example configuration files located in the C<conf>
-directory.  The configuration directives are now described in L<SWISH-CONFIG|SWISH-CONFIG>.
+Previous versions of Swish-e included a configuration file called
+C<user.config> which contained examples of all directives.  This has
+been replaced by a series of example configuration files located in the
+C<conf> directory.  The configuration directives are now described in
+L<SWISH-CONFIG|SWISH-CONFIG>.
 
 =item * Ports to Win32 and VMS
 
-David Norris has included the files required to build swish under Windows.  See C<src/win32>.
-A self-extracting Windows version is available from the Download page of the swish-e.org web site.
+David Norris has included the files required to build Swish-e under
+Windows.  See C<src/win32>.  A self-extracting Windows version is
+available from the Download page of the swish-e.org web site.
 
-Jean-François Piéronne has provided the files required to build swish under OpenVMS.  See C<src/vms>
-for more information.
+Jean-François Piéronne has provided the files required to build Swish-e
+under OpenVMS.  See C<src/vms> for more information.
 
 =item * String properties are concatenated
 
 Multiple I<string> properties of the same name in a document are now
-concatenated into one property.  A space character is added between the strings
-if needed.  A warning will be generated if multiple numeric or date properties are
-found in the same document, and the additional properties will be ignored.
+concatenated into one property.  A space character is added between
+the strings if needed.  A warning will be generated if multiple numeric
+or date properties are found in the same document, and the additional
+properties will be ignored.
 
-Previously, properties of the same name were added to the index, but could not be
-retrieved.
+Previously, properties of the same name were added to the index, but
+could not be retrieved.
 
-To do: remove the C<next> pointer, and allow user-defined character to place between
-properties.
+To do: remove the C<next> pointer, and allow user-defined character to
+place between properties.
 
 =item * regex type added to ReplaceRules
 
@@ -177,19 +193,21 @@ A more general purpose pattern replacement syntax.
 
 =item * New Parsers
 
-Swish's XML parser was replaced with James Clark's expat XML parser library.
+Swish-e's XML parser was replaced with James Clark's expat XML parser
+library.
 
-Swish can now use Daniel Veillard's libxml2 library for parsing HTML and XML.
-This requires installation of the library before building swish-e.  See the INSTALL
-document for information.  libxml2 is not required, but is strongly recommended for
-parsing HTML over swish-e's internal HTML parser, and provides more features for both
-HTML and XML parsing.
+Swish-e can now use Daniel Veillard's libxml2 library for parsing HTML and
+XML.  This requires installation of the library before building Swish-e.
+See the L<INSTALL|INSTALL> document for information.  libxml2 is not
+required, but is strongly recommended for parsing HTML over Swish-e's
+internal HTML parser, and provides more features for both HTML and
+XML parsing.
 
 =item * Support for zlib
 
-Swish can be compiled with zlib.  This is useful for compressing large
-properties.  Building swish with zlib is stronly recommended if you use
-swish-e's C<StoreDescription> feature.
+Swish-e can be compiled with zlib.  This is useful for compressing large
+properties.  Building Swish-e with zlib is stronly recommended if you
+use its C<StoreDescription> feature.
 
 =item * LST type of document no longer supported
 
@@ -197,52 +215,57 @@ LST allowed indexing of files that contained multiple documents.
 
 =item * Temporary files
 
-To improve security swish-e now uses the C<mkstemp(3)> function to create temporary files.
-Temporary files are used while indexing only.
-This may result in some portability issues, but the security issues were overriding.
+To improve security Swish-e now uses the C<mkstemp(3)> function to
+create temporary files.  Temporary files are used while indexing only.
+This may result in some portability issues, but the security issues
+were overriding.
 
 (Currently this does not apply to the -S http indexing method.)
 
-C<mkstemp> opens the temporary with O_EXCL|O_CREAT flags.  This prevents overwriting
-existing files.  In addition, the name of the file created is a lot harder to guess
-by attackers.  The temporary file is created with only owner permissions.
+C<mkstemp> opens the temporary with O_EXCL|O_CREAT flags.  This prevents
+overwriting existing files.  In addition, the name of the file created
+is a lot harder to guess by attackers.  The temporary file is created
+with only owner permissions.
 
-Please report any portability issues on the swish-e discussion list.
+Please report any portability issues on the Swish-e discussion list.
 
 =item * Temporary file locations
 
-Swish now uses the environment variables C<TMPDIR>, C<TMP>, and C<TEMP> (in that order) to
-decide where to write temporary files.
-The configuration setting of L<TmpDir|SWISH-CONFIG/"item_TmpDir"> will be used if none of the
-environment variables are set.  Swish uses the current directory otherwise; there is no
-default temporary directory.
+Swish-e now uses the environment variables C<TMPDIR>, C<TMP>, and
+C<TEMP> (in that order) to decide where to write temporary files.
+The configuration setting of L<TmpDir|SWISH-CONFIG/"item_TmpDir"> will
+be used if none of the environment variables are set.  Swish-e uses the
+current directory otherwise; there is no default temporary directory.
 
-Since the environment variables override the configuration settings, a warning will be issued if
-you set L<TmpDir|SWISH-CONFIG/"item_TmpDir"> in the configuration file and there's also an environment
-variable set.
+Since the environment variables override the configuration settings,
+a warning will be issued if you set L<TmpDir|SWISH-CONFIG/"item_TmpDir">
+in the configuration file and there's also an environment variable set.
 
-Temporary files begin with the letters "swtmp" (which can be changed in F<config.h>), followed
-by two or more letters that indicate the type of temporary file, and some random characters to
-complete the file name.
-If indexing is aborted for some reason you may find these temporary files left behind.
+Temporary files begin with the letters "swtmp" (which can be changed in
+F<config.h>), followed by two or more letters that indicate the type of
+temporary file, and some random characters to complete the file name.
+If indexing is aborted for some reason you may find these temporary
+files left behind.
 
 
 =back
 
-Changes to Configuration File Directives.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for
-more info.
+Changes to Configuration File Directives.  Please see
+L<SWISH-CONFIG|SWISH-CONFIG> for more info.
 
 =over 4
 
 =item * New directives: IndexContents and DefaultContents
 
-The IndexContents directive assigns internal Swish document parsers
-to files based on their file type.  The DefaultContents directive assigns
-a parser to be used on file that are not assigned a parser with IndexContents.
+The IndexContents directive assigns internal Swish-e document parsers
+to files based on their file type.  The DefaultContents directive
+assigns a parser to be used on file that are not assigned a parser with
+IndexContents.
 
 =item * New directive: UndefinedMetaTags [error|ignore|index|auto]
 
-This describes what to do when a meta tag is found in a document that is not listed in the MetaNames directive.
+This describes what to do when a meta tag is found in a document that
+is not listed in the MetaNames directive.
 
 =item * New directive: IgnoreTags
 
@@ -250,7 +273,7 @@ Will ignore listed tags in XML files
 
 =item * New directive: SwishProgParameters *list of words*
 
-Passes words listed to the external swish-e program when running with
+Passes words listed to the external Swish-e program when running with
 C<-S prog> document source method.
 
 =item * New directive: ConvertHTMLEntities [yes|no]
@@ -259,8 +282,8 @@ Controls parsing and conversion of HTML entities.
 
 =item * New directive: DontBumpPositionOnMetaTags
 
-The word position is now bumped when a new metatag is found -- this
-is to prevent phrases from matching across meta tags.  This directive will
+The word position is now bumped when a new metatag is found -- this is
+to prevent phrases from matching across meta tags.  This directive will
 disable this behavior for the listed tags.
 
 This directive works for HTML and XML documents.
@@ -271,12 +294,12 @@ This has been changed such that comments are not indexed by default.
 
 =item * Changed directive: IgnoreWords
 
-The builtin list of stopwords has been removed. Use of the SwishDefault word
-will generate a warning, and no stop words will be used.  You must now specify
-a list of stopwords, or specify a file of stopwords.
+The builtin list of stopwords has been removed. Use of the SwishDefault
+word will generate a warning, and no stop words will be used.  You must
+now specify a list of stopwords, or specify a file of stopwords.
 
-A sample file C<stopwords.txt> has been included in the F<conf/stopwords> directory
-of the distribution, and can be used by the directive:
+A sample file C<stopwords.txt> has been included in the F<conf/stopwords>
+directory of the distribution, and can be used by the directive:
 
     IgnoreWords File: /path/to/stopwords.txt
 
@@ -286,34 +309,38 @@ The default is now "yes".
 
 =item * New directive: Buzzwords
 
-Buzzwords are words that should be indexed as-is, without checking for stopwords,
-word length, WordCharacters, or any other of the word limiting features.  This allows indexing
-of things like C<C++> when "+" is not listed in WordCharacters.
+Buzzwords are words that should be indexed as-is, without checking
+for stopwords, word length, WordCharacters, or any other of the word
+limiting features.  This allows indexing of things like C<C++> when "+"
+is not listed in WordCharacters.
 
-Currenly, IgnoreFirstChar and IgnoreLastChar will be stripped before processing Buzzwords.
+Currenly, IgnoreFirstChar and IgnoreLastChar will be stripped before
+processing Buzzwords.
 
-In the future we may use separate IgnoreFirst/Last settings for buzzwords since, for example, you may wish to
-index all C<+> within swish words, but strip C<+> from the start/end of swish words, 
-but not from the buzzword C<C++>.
+In the future we may use separate IgnoreFirst/Last settings for buzzwords
+since, for example, you may wish to index all C<+> within Swish-e words,
+but strip C<+> from the start/end of Swish-e words, but not from the
+buzzword C<C++>.
 
 =item * New directives: PropertyNamesNumeric PropertyNamesDate
 
-Before Swish 2.2 all user-defined document properties were stored in the index
-as strings.  PropertyNamesNumeric and PropertyNamesDate tells swish that
-a property should be stored in binary format.  This allows for correct sorting
-of numeric properties.
+Before Swish-e 2.2 all user-defined document properties were stored in
+the index as strings.  PropertyNamesNumeric and PropertyNamesDate tell
+it that a property should be stored in binary format.  This allows
+for correct sorting of numeric properties.
 
-Currenly, only integers can be stored, such as a unix timestamp.
-(Swish uses C<strtoul> to convert the number to an unsigned long internally.)
+Currenly, only integers can be stored, such as a unix timestamp.  (Swish-e
+uses C<strtoul> to convert the number to an unsigned long internally.)
 
-PropertyNamesDate only indicates to swish that a number is a unix timestamp, and
-to display the property as a formatted time when printing results.
-Swish does not currently parse date strings; you must provide a unix timestamp.
+PropertyNamesDate only indicates to Swish-e that a number is a unix
+timestamp, and to display the property as a formatted time when printing
+results.  Swish does not currently parse date strings; you must provide
+a unix timestamp.
 
 =item * New directive: MetaNameAlias
 
-You may now create alias names for MetaNames.  This allow you to map or group
-multiple names to the same MetaName.
+You may now create alias names for MetaNames.  This allow you to map or
+group multiple names to the same MetaName.
 
 =item * New directive: PropertyNameAlias
 
@@ -331,20 +358,19 @@ Available only with libxml2 parser.
 =item * New directive: ImageLinksMetaName
 
 Defines a metaname to use for indexing src links in <img> tags.
-Allow you to search image pathnames within HTML pages.
-Available only with libxml2 parser.
+Allow you to search image pathnames within HTML pages.  Available only
+with libxml2 parser.
 
 =item * New directive: AbsoluteLinks
 
-Attempts to convert relative links indexed with HTMLLinksMetaName and ImageLinksMetaName
-to absolute links.
-Available only with libxml2 parser.
+Attempts to convert relative links indexed with HTMLLinksMetaName and
+ImageLinksMetaName to absolute links.  Available only with libxml2 parser.
 
 =item * New directive: ExtractPath
 
-Allows you to use a regular expression to extract out part of the path of each file
-and index it with a meta name.
-For example, this allows searches to be limited to parts of your file tree.
+Allows you to use a regular expression to extract out part of the path
+of each file and index it with a meta name.  For example, this allows
+searches to be limited to parts of your file tree.
 
 =item * New directive: FileMatch
 
@@ -353,7 +379,8 @@ files and directoires, FileMatch is used to I<include> files.
 
 =item * New directive: PreSortedIndex
 
-Controls which properties are pre-sorted while indexing.  All properties are sorted by default.
+Controls which properties are pre-sorted while indexing.  All properties
+are sorted by default.
 
 =item * New directive: ParserWarnLevel
 
@@ -361,55 +388,60 @@ Sets the level of warning printed when using libxml2.
 
 =item * New directive: obeyRobotsNoIndex [yes|NO]
 
-When using libxml2 to parse HTML, swish-e will skip files marked as NOINDEX.
+When using libxml2 to parse HTML, Swish-e will skip files marked as
+NOINDEX.
 
     <meta name="robots" content="noindex">
 
 =item * New directive: UndefinedXMLAttributes
 
-This describes how the content of XML attributes should be indexed, if at all.  
-This is similar to UndefinedMetaTags, but is only for XML attributes and when parsed by libxml2.
-The default is to not index XML attributes.
+This describes how the content of XML attributes should be indexed,
+if at all.  This is similar to UndefinedMetaTags, but is only for XML
+attributes and when parsed by libxml2.  The default is to not index
+XML attributes.
 
 =item * New directive: XMLClassAttributes
 
-XMLClassAttributes can specify a list of attribute names whose content is
-combined with the element name to form metanames.
+XMLClassAttributes can specify a list of attribute names whose content
+is combined with the element name to form metanames.
 
 =item * New directive: PropCompressionLevel [0-9]
 
-If compiled with zlib, Swish uses this setting to control the level of
-compression applied to properties.  Properties must be long enough
+If compiled with zlib, Swish-e uses this setting to control the level
+of compression applied to properties.  Properties must be long enough
 (defined in config.h) to be compressed.  Useful for StoreDescription.
 
 =item * Experimental directive: IgnoreNumberChars
 
-Defines a set of characters.  If a word is made of of *only* those characters the word
-will not be indexed.
+Defines a set of characters.  If a word is made of of *only* those
+characters the word will not be indexed.
 
 =back
 
-Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for documentation on these
-switches.
+Changes to command line arguments.  See L<SWISH-RUN|SWISH-RUN> for
+documentation on these switches.
 
 =over 4
 
 =item * New command line argument C<-H>
 
-Controls the level (verbosity) of header information printed with search results.
+Controls the level (verbosity) of header information printed with
+search results.
 
 =item * New command line argument C<-x>
 
-Provides additional header output and allows for a I<format string> to describe what data to print.
+Provides additional header output and allows for a I<format string>
+to describe what data to print.
 
 =item * New command line argument C<-k>
 
-Prints words stored in the swish index.
+Prints words stored in the Swish-e index.
 
 =item * New command line argument C<-N>
 
-Provides a way to do incremental indexing by comparing last modification dates.
-You pass C<-N> a path to a file and only files newer than the last modified date of that file will be indexed.
+Provides a way to do incremental indexing by comparing last modification
+dates.  You pass C<-N> a path to a file and only files newer than the
+last modified date of that file will be indexed.
 
 =item * Removed command line argument C<-D>
 
@@ -421,7 +453,8 @@ C<-T> is used for debugging indexing and searching.
 
 =item * Enhanced command line argument C<-d>
 
-Now C<-d> can accept some back-slashed characters to be used as output separators.
+Now C<-d> can accept some back-slashed characters to be used as output
+separators.
 
 =item * Enhanced command line argument C<-P>
 
@@ -429,8 +462,9 @@ Now -P sets the phrase delimiter character in searches.
 
 =item * New command line argument C<-L>
 
-Swish 2.2 contains an B<experimental> feature to limit results by a range
-of property values.  This behavior of this feature may change in the future.
+Swish-e 2.2 contains an B<experimental> feature to limit results by a
+range of property values.  This behavior of this feature may change in
+the future.
 
 
 =back
