@@ -34,8 +34,6 @@ docProperties *DupProps (docProperties *);
 
 char *getResultPropAsString(RESULT *, int);
 
-char *getDocPropAsString(IndexFILE*, struct file *, int);
-
 void getSwishInternalProperties(struct file *, IndexFILE *);
 
 

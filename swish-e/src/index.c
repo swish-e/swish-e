@@ -1507,6 +1507,9 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         }
         else
             filep = indexf->filearray[i];
+
+
+
         buffer = buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
 
         /* Deflate stuff removed due to patents 

@@ -90,11 +90,11 @@ static char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     char *s;
     unsigned long i;
     
-    if( is_meta_string(meta_entry) )      /* check for ascii/string data */
+    if  ( is_meta_string(meta_entry) )      /* check for ascii/string data */
         return bin2string(prop->propValue,prop->propLen);
 
 
-    if( is_meta_date(meta_entry) )
+    if ( is_meta_date(meta_entry) )
     {
         s=emalloc(20);
         i = *(unsigned long *) prop->propValue;  /* read binary */
@@ -105,7 +105,7 @@ static char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 
 
     
-    if( is_meta_number(meta_entry) )
+    if ( is_meta_number(meta_entry) )
     {
         s=emalloc(14);
         i=*(unsigned long *)prop->propValue;  /* read binary */
@@ -116,6 +116,238 @@ static char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 
     progwarn("Invalid property type for property '%s'\n", meta_entry->metaName );
     return estrdup("");
+}
+
+/*******************************************************************
+*   Returns a property (really the head of the list)
+*   for the specified property
+*
+*   Call with:
+*       *RESULT
+*       *metaEntry - pointer to related meta entry
+*       metaID - OR, if metaEntry is NULL uses this to lookup metaEntry
+*
+*   Returns:
+*       *propEntry
+*
+*   Warning:
+*       Only returns first property in list (which is the last property added)
+*
+*
+********************************************************************/
+
+static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID )
+{
+    IndexFILE *indexf = result->indexf; 
+    propEntry *prop = NULL;
+    struct file *fi;
+    SWISH *sw = (SWISH *) result->sw;
+
+
+    /* Grab the meta structure for this ID, unless one was passed in */
+
+    if ( *meta_entry )
+        metaID = (*meta_entry)->metaID;
+
+    else if( !(*meta_entry = getMetaIDData(&indexf->header, metaID )) )
+        return NULL;
+
+
+    /* Read in the file info for this file - this can be a cached read */
+
+    if ( ! (fi = readFileEntry( sw, indexf, result->filenum)) )
+        return NULL;
+
+
+    /* is there a property this high? */
+    if ( metaID > fi->docProperties->n -1  )
+        return NULL;
+
+
+    if ( (prop = fi->docProperties->propEntry[metaID]))
+        return prop;
+
+    return NULL;
+}
+
+
+/*******************************************************************
+*   Returns a string for the property ID supplied
+*   Numbers are zero filled
+*
+*   Call with:
+*       *RESULT
+*       metaID
+*
+*   Returns:
+*       malloc's a new string.  Caller must call free().
+*
+*   Bugs:
+*       Only returns first property in list (which is the last property)
+*
+*
+********************************************************************/
+
+char *getResultPropAsString(RESULT *result, int ID)
+{
+    char *s=NULL;
+
+    
+	if( !result )
+	    return estrdup("");  // when would this happen?
+
+
+    /* Deal with internally generated props */
+    
+    if ( ID == AUTOPROP_ID__REC_COUNT )
+    {
+    	s=emalloc(14);
+    	sprintf(s,"%.013lu", (unsigned long)0 );
+    	return s;
+    }
+
+    if ( ID == AUTOPROP_ID__RESULT_RANK )
+    {
+        s=emalloc(14);
+        sprintf(s,"%.013lu", (unsigned long)result->rank );
+        return s;
+    }
+
+    if ( ID == AUTOPROP_ID__INDEXFILE )
+        return estrdup( result->indexf->line );
+
+
+    /* "Real" properties */
+    {
+        propEntry *prop;
+        struct metaEntry *meta_entry = NULL;
+
+        if ( !(prop = getDocProperty( result, &meta_entry, ID )) )
+            return estrdup("");
+
+        /* $$$ Ignores other properties! */
+        return DecodeDocProperty( meta_entry, prop );
+    }
+}
+
+/*******************************************************************
+*   Returns a property as a *propValue, which a union of different
+*   data types, with a flag to indicate the type
+*
+*   Call with:
+*       *SWISH
+*       *metaName
+*       *RESULT
+*
+*   Returns:
+*       pointer to a propValue structure if found -- caller MUST free
+*
+*
+********************************************************************/
+
+PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
+{
+    PropValue *pv;
+    struct metaEntry *meta_entry;
+    int       ID;
+
+
+    /* create a propvalue to return to caller */
+    pv = (PropValue *) emalloc (sizeof (PropValue));
+    pv->datatype = UNDEFINED;
+
+    ID = isAutoProperty ( pname );  // I'd rather that everything had a metaEntry!
+            
+    if ( ID == AUTOPROP_ID__REC_COUNT )
+    {
+        pv->datatype = INTEGER;
+        pv->value.v_int = r->count;
+        return pv;
+    }
+
+    if ( ID == AUTOPROP_ID__RESULT_RANK )
+    {
+        pv->datatype = INTEGER;
+        pv->value.v_int = r->rank;
+        return pv;
+    }
+
+    if ( ID == AUTOPROP_ID__INDEXFILE )
+    {
+        pv->datatype = STRING;
+        pv->value.v_str = r->indexf->line;
+        return pv;
+    }
+
+
+    /* meta name exists? */
+    if ( !(meta_entry = getMetaNameData( &r->indexf->header, pname ) ))
+        return NULL;
+
+
+    /* Now return a "real" property */
+    {
+        propEntry *prop;
+
+        /* This may return false */
+        prop = getDocProperty( r, &meta_entry, 0 );
+            
+
+        if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
+        {
+            if ( !prop )
+            {
+                pv->datatype = STRING;
+                pv->value.v_str = "";
+                return pv;
+            }
+
+            /******** MEMORY LEAK ***********/
+            pv->datatype = STRING;
+            pv->value.v_str = bin2string(prop->propValue,prop->propLen);
+            return pv;
+        }
+
+
+        /* dates and numbers should return null to tell apart from zero */
+        if ( !prop )
+        {
+            efree( pv );
+            return NULL;
+        }
+
+
+        if ( is_meta_number(meta_entry) )
+        {
+            unsigned long i;
+            i = *(unsigned long *) prop->propValue;  /* read binary */
+            i = UNPACKLONG(i);     /* Convert the portable number */
+//          pv->datatype = ULONG;
+//          pv->value.v_ulong = i;
+            pv->datatype = INTEGER;
+            pv->value.v_int = (int)i;
+            return pv;
+        }
+
+   
+        if ( is_meta_date(meta_entry) )
+        {
+            unsigned long i;
+            i = *(unsigned long *) prop->propValue;  /* read binary */
+            i = UNPACKLONG(i);     /* Convert the portable number */
+            pv->datatype = DATE;
+            pv->value.v_int = (int)i;
+            return pv;
+        }
+    }
+
+ 
+	if (pv->datatype == UNDEFINED) {	/* nothing found */
+	  efree (pv);
+	  pv = NULL;
+	}
+
+	return pv;
 }
 
 
@@ -226,8 +458,25 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *props
     return 0;
 }
 
+/*******************************************************************
+*   Adds a document property to the list of properties.
+*   Creates or extends the list, as necessary
+*
+*   Call with:
+*       **docProperties - pointer to list of properties
+*       *metaEntry
+*       *propValue  - string to add
+*       *propLen    - length of string to add
+*       preEncoded  - flag saying the data is already encoded
+*                     (that's for filesize, last modified, start position)
+*
+*   Returns:
+*       true if added property
+*       sets address of **docProperties, if list changes size
+*
+*
+********************************************************************/
 
-/* Add the given file/metaName/propValue data to the File object */
 int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
 {
 	struct docProperties *dp = *docProperties; 
@@ -314,20 +563,24 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 /* #### Modified to use propLen */
 unsigned char *storeDocProperties(docProperties *docProperties, int *datalen)
 {
-int propID;
-int len;
-char *buffer,*p,*q;
-int lenbuffer;
-propEntry *prop;
+    int propID;
+    int len;
+    char *buffer,*p,*q;
+    int lenbuffer;
+    propEntry *prop;
+
 	buffer=emalloc((lenbuffer=MAXSTRLEN));
+
 	*datalen=0;
-	for(propID=0;propID<docProperties->n;propID++)
+
+	for( propID = 0; propID < docProperties->n; propID++ )
 	{
 		prop = docProperties->propEntry[propID];
 		while (prop)
 		{
 			/* the length of the property value */
 			len = prop->propLen;
+
 			/* Realloc buffer size if needed */
 			if(lenbuffer<(*datalen+len+8*2))
 			{
@@ -335,12 +588,15 @@ propEntry *prop;
 				buffer=erealloc(buffer,lenbuffer);
 			}
 			p= q = buffer + *datalen;
+
 			/* Do not store 0!! - compress does not like it */
-			propID++;
-			p = compress3(propID,p);
+			p = compress3(propID+1,p);
+
 			/* including the length will make retrieval faster */
 			p = compress3(len,p);
+
 			memcpy(p,prop->propValue, len);
+
 			*datalen += (p-q)+len;
 			prop = prop->next;
 		}
@@ -565,23 +821,28 @@ propEntry *prop = NULL, *tmp = NULL, *newProp = NULL;
 /* For faster proccess, get de ID of the properties to sort */
 int initSearchResultProperties(SWISH *sw)
 {
-IndexFILE *indexf;
-int i;
-struct MOD_Search *srch = sw->Search;
+    IndexFILE *indexf;
+    int i;
+    struct MOD_Search *srch = sw->Search;
+
+
 	/* lookup selected property names */
 
 	if (srch->numPropertiesToDisplay == 0)
 		return RC_OK;
+
 	for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		indexf->propIDToDisplay=(int *)emalloc(srch->numPropertiesToDisplay*sizeof(int));
 
-	for (i = 0; i<srch->numPropertiesToDisplay; i++)
+	for (i = 0; i < srch->numPropertiesToDisplay; i++)
 	{
 		makeItLow(srch->propNameToDisplay[i]);
+
 		/* Get ID for each index file */
 		for(indexf=sw->indexlist;indexf;indexf=indexf->next)
 		{
 			indexf->propIDToDisplay[i] = getMetaNameID(indexf, srch->propNameToDisplay[i]);
+
 			if (indexf->propIDToDisplay[i] == 1)
 			{
 				progerr ("Unknown Display property name \"%s\"", srch->propNameToDisplay[i]);
@@ -592,156 +853,7 @@ struct MOD_Search *srch = sw->Search;
 	return RC_OK;
 }
 
-/* #### Function to format the property of a doc as a string. Th property must be in the index file */
-char *getDocPropAsString(IndexFILE *indexf, struct file *p, int ID)
-{
-char *s=NULL;
-unsigned long i;
-struct metaEntry *q;
-propEntry *prop;
-	if(!p) return estrdup("");
-	q=getMetaIDData(&indexf->header,ID); 
-	if(!q) return estrdup("");
 
-		/* Get the first property for the ID*/
-	prop = p->docProperties->propEntry[ID];
-
-		/* If not found return */
-	if(!prop) return estrdup("");
-
-	if(is_meta_string(q))      /* check for ascii/string data */
-	{
-		s=bin2string(prop->propValue,prop->propLen);
-	} 
-	else if(is_meta_date(q))  /* check for a date */
-	{
-		s=emalloc(20);
-		i=*(unsigned long *)prop->propValue;  /* read binary */
-									  /* as unsigned long */
-		i = UNPACKLONG(i);     /* Convert the portable number */
-			/* Convert to ISO datetime */
-		strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
-	}
-	else if(is_meta_number(q))  /* check for a number */
-	{
-		s=emalloc(14);
-		i=*(unsigned long *)prop->propValue;  /* read binary */
-						  /* as unsigned long */
-		i = UNPACKLONG(i);     /* Convert the portable number */
-				/* Convert to string */
-		sprintf(s,"%.013lu",i);
-	} else s=estrdup("");
-	return s;
-}
-
-
-
-/* #### Function to format the property of a result as a string */
-char *getResultPropAsString(RESULT *p, int ID)
-{
-char *s=NULL;
-unsigned long i;
-IndexFILE *indexf=p->indexf;
-SWISH *sw=(SWISH *)p->sw;
-struct metaEntry *q;
-propEntry *prop;
-	if(!p) return estrdup("");
-	switch(ID)
-	{
-		case AUTOPROP_ID__REC_COUNT:   /* BTW this is nonsense - Added just to avoid memory problems */
-			i=0;
-			s=emalloc(14);
-  			sprintf(s,"%.013lu",i);
-			break;
-		case AUTOPROP_ID__RESULT_RANK:
-			i=p->rank;
-			s=emalloc(14);
-  			sprintf(s,"%.013lu",i);
-			break;
-		case AUTOPROP_ID__DOCPATH:
-			if(!p->filename)
-			{
-				if(indexf->filearray[p->filenum-1] == NULL)
-					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
-				s=estrdup(indexf->filearray[p->filenum-1]->fi.filename);
-			} 
-			else
-				s=estrdup(p->filename);
-			break;
-		case AUTOPROP_ID__STARTPOS:
-			i=p->start;
-			s=emalloc(14);
-  			sprintf(s,"%.013lu",i);
-			break;
-		case AUTOPROP_ID__INDEXFILE:
-			s=estrdup(p->indexf->line);
-			break; 
-		case AUTOPROP_ID__DOCSIZE:
-			i=p->size;
-			s=emalloc(14);
-  			sprintf(s,"%.013lu",i);
-			break;
-		case AUTOPROP_ID__LASTMODIFIED:
-			s=emalloc(20);
-				/* Convert to ISO datetime */
-			strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&p->last_modified));
-			break;
-		case AUTOPROP_ID__TITLE:
-			if(!p->title)
-			{
-				if(indexf->filearray[p->filenum-1] == NULL)
-					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
-				s=estrdup(indexf->filearray[p->filenum-1]->fi.title);
-			} 
-			else
-				s=estrdup(p->title);
-			break;
-		case AUTOPROP_ID__SUMMARY:
-			if(!p->summary)
-			{
-				if(indexf->filearray[p->filenum-1] == NULL)
-					indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
-				s=estrdup(indexf->filearray[p->filenum-1]->fi.summary);
-			} 
-			else
-				s=estrdup(p->summary);
-			break;
-		default:   /* User properties */
-			q=getMetaIDData(&indexf->header,ID); 
-			if(!q) return estrdup("");
-				/* Search the property */
-			if(indexf->filearray[p->filenum-1] == NULL)
-				indexf->filearray[p->filenum-1] = readFileEntry(sw, indexf, p->filenum);
-				/* Get the first property for this ID*/
-			prop = indexf->filearray[p->filenum-1]->docProperties->propEntry[ID];
-				/* If not found return */
-			if(!prop) return estrdup("");
-
-			if(is_meta_string(q))      /* check for ascii/string data */
-			{
-				s=bin2string(prop->propValue,prop->propLen);
-			} 
-			else if(is_meta_date(q))  /* check for a date */
-			{
-				s=emalloc(20);
-				i=*(unsigned long *)prop->propValue;  /* read binary */
-											  /* as unsigned long */
-				i = UNPACKLONG(i);     /* Convert the portable number */
-					/* Convert to ISO datetime */
-				strftime(s,20,"%Y-%m-%d %H:%M:%S",(struct tm *)localtime((time_t *)&i));
-			}
-			else if(is_meta_number(q))  /* check for a number */
-			{
-				s=emalloc(14);
-				i=*(unsigned long *)prop->propValue;  /* read binary */
-								  /* as unsigned long */
-				i = UNPACKLONG(i);     /* Convert the portable number */
-						/* Convert to string */
-				sprintf(s,"%.013lu",i);
-			} else s=estrdup("");
-	}
-	return s;
-}
 
 
 void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
@@ -781,122 +893,6 @@ propEntry *p;
 
 
 
-/* ------ new property handling with data types --------- */
-
-
-/* 
-  -- Returns the contents of the property "propertyname" of result r
-  -- This routines returns properties in their origin. representation.
-  -- This routines knows all internal (auto) and user properties!
-
-  -- Return: NULL if not found, or ptr to alloced structure
-             property value and type (structure has to be freed()!)..
-
-  -- 2000-12  jruiz -- inital coding
-  -- 2001-01  rasc  -- value and type structures, AutoProperties, rewritten
- */
-
-
-
-
- /*
-    -- case insensitive  check...
-    -- (XML props should be case sensitive, but does a user understand this?
-    --  ==> user properties are not case sensitive)
-    -- 2001-02-11  rasc  (result of develop discussion)
- */
-
-PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
-{
-  int       i;
-  int       prop_id;
-  PropValue *pv;
-
-
-
-
-		/* Search for the property name */
-
-	pv = (PropValue *) emalloc (sizeof (PropValue));
-	pv->datatype = UNDEFINED;
-
-	/*
-	  -- check for auto properties ( == internal metanames)
-	  -- for speed: use internal PropID, instead name
-	 */
-
-	prop_id = isAutoProperty (pname);
-
-	switch (prop_id) {
-		case  AUTOPROP_ID__TITLE:
- 			pv->datatype = STRING;
-			pv->value.v_str = r->title;
-			break;
-
-		case  AUTOPROP_ID__DOCPATH:
-			pv->datatype = STRING;
-			pv->value.v_str = r->filename;
-			break;
-
-		case  AUTOPROP_ID__SUMMARY:
-			pv->datatype = STRING;
-			pv->value.v_str = r->summary;
-			break;
-
-		case  AUTOPROP_ID__DOCSIZE:
-			pv->datatype = INTEGER;
-			pv->value.v_int = r->size;
-			break;
-
-		case  AUTOPROP_ID__LASTMODIFIED:
-			pv->datatype = DATE;
-			pv->value.v_date = r->last_modified;
-			break;
-
-		case  AUTOPROP_ID__STARTPOS:
-			pv->datatype = INTEGER;
-			pv->value.v_int = r->start;
-			break;
-
-		case  AUTOPROP_ID__INDEXFILE:
-			pv->datatype = STRING;
-			pv->value.v_str = r->indexf->line;
-			break;
-
-		case  AUTOPROP_ID__RESULT_RANK:
-			pv->datatype = INTEGER;
-			pv->value.v_int = r->rank;
-			break;
-
-		case  AUTOPROP_ID__REC_COUNT:
-			pv->datatype = INTEGER;
-			pv->value.v_int = r->count;
-			break;
-
-		default:
-
-		    /* User defined Properties
-		       -- so far we only know STRING types as user properties
-		       -- $$$ ToDO: other types...
-		    */
-
-		   for(i=0;i<sw->Search->numPropertiesToDisplay;i++) {
-			if(!strcasecmp(pname,sw->Search->propNameToDisplay[i])) {
-				pv->datatype = STRING;
-				pv->value.v_str = r->Prop[i];
-				break;
-			}
-		   }
-		   break;
-	}
- 
-	if (pv->datatype == UNDEFINED) {	/* nothing found */
-	  efree (pv);
-	  pv = NULL;
-	}
-
-	return pv;
-}
 
 
 /*
