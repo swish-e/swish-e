@@ -18,11 +18,11 @@
 */
 
 
-struct swline *addswline (struct swline *, char *);
-struct swline *dupswline (struct swline *);
-IndexFILE *addindexfile (IndexFILE *, char *);
+struct swline *addswline (struct swline *rp, char *line);
+struct swline *dupswline (struct swline *rp);
+IndexFILE *addindexfile (IndexFILE *rp, char *line);
 void freeswline (struct swline *ptr);
 void freeindexfile (IndexFILE *ptr);
-void init_header (INDEXDATAHEADER *);
-void free_header (INDEXDATAHEADER *);
-void splitswline(struct swline *, int );
+void init_header (INDEXDATAHEADER *header);
+void free_header (INDEXDATAHEADER *header);
+void splitswline (struct swline *rp, int c);

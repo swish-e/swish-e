@@ -716,6 +716,7 @@ int DB_EndWriteFiles_Native(void *db)
        printlong(fp, offset);
    }
    printlong(fp, (long) 0);
+   efree(DB->fileoffsetarray);
    return 0;
 }
 
