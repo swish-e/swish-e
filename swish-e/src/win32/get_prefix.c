@@ -2,16 +2,19 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
-
+#define libexecdir "/usr/lib/swish-e"
 /* return 0 for success, 1 for failure */
-int
-get_prefix(char *fn){
+/* Flip any backslashes to forward slashes, and remove trailing slash */
+char *
+get_prefix(void){
+	char *fn;
+	#ifdef _WIN32
 	char *tr;
 	int pos;
-
+    fn = malloc(MAX_PATH+1);
 	/* get the full name of the executable */
 	if(!GetModuleFileNameA(NULL,fn,MAX_PATH))
-		return 1;
+		return(libexecdir);
 	
 	/* get the base directory */
 	tr = strrchr(fn, '\\');
@@ -24,18 +27,20 @@ get_prefix(char *fn){
 	/* if we're in bin we'll assume prefix is up one level */
 	if(!strncasecmp(&fn[pos+1], "bin\0", 4))
 		fn[pos]='\0';
+	#else
+	fn = malloc(strlen(libexecdir)+1);
+	strcpy(fn,libexecdir);
+	#endif
 	
-	return 0;
+	return(fn);
 }
 
-/*
+
 int
 main(int argc, char *argv[])
 {
-	char *filename;
-	if(get_prefix(filename)) return 1;
-	printf("Path: %s\n", filename );
+	printf("Path: %s\n", get_prefix() );
 	return 0;
 }
-*/
+
 

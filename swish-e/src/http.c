@@ -84,14 +84,15 @@ void    initModule_HTTP(SWISH * sw)
 {
     struct MOD_HTTP *http;
     int     i;
+	char *execdir = get_libexec();
 
     http = (struct MOD_HTTP *) emalloc(sizeof(struct MOD_HTTP));
 
     sw->HTTP = http;
 
-    http->lenspiderdirectory = strlen(libexecdir); 
+    http->lenspiderdirectory = strlen(execdir); 
     http->spiderdirectory = (char *) emalloc(http->lenspiderdirectory + 1);
-    strcpy( http->spiderdirectory, libexecdir );
+    strcpy( http->spiderdirectory, execdir );
 
     for (i = 0; i < BIGHASHSIZE; i++)
         http->url_hash[i] = NULL;

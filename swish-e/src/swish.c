@@ -322,11 +322,7 @@ static void    usage()
     printf("         -k : Print words starting with a given char.\n");
     printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("\n");
-#ifdef libexecdir
-    printf("version: %s\n docs: http://swish-e.org\n Scripts and Modules at: (libexecdir) = %s\n", VERSION, libexecdir);
-#else
-    printf("version: %s\n docs: http://swish-e.org\n", VERSION);
-#endif
+    printf("version: %s\n docs: http://swish-e.org\n Scripts and Modules at: (libexecdir) = %s\n", VERSION, get_libexec());
     exit(1);
 }
 
@@ -1726,21 +1722,22 @@ static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
 
 static void set_path( void )
 {
-#if defined(HAVE_SETENV) && defined(PATH_SEPARATOR) && defined(libexecdir)
+#if defined(HAVE_SETENV) && defined(PATH_SEPARATOR)
 
     char pathbuf[1000];
     char *path = getenv("PATH");
-
+    char *execdir = get_libexec();
+	
     if ( !path )
     {
-        setenv("PATH", libexecdir, 1 );
+        setenv("PATH", execdir , 1 );
         return;
     }
 
-    if ( (strlen( path ) + strlen( libexecdir ) + strlen( PATH_SEPARATOR ) + 1 ) > 1000 )
+    if ( (strlen( path ) + strlen( execdir ) + strlen( PATH_SEPARATOR ) + 1 ) > 1000 )
         return;
 
-    sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, libexecdir );
+    sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, execdir );
     setenv( "PATH", pathbuf, 1 );
 
 #endif
