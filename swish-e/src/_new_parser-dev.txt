@@ -1,0 +1,153 @@
+2001-06-03  rasc:
+
+
+Hi!
+
+as promised a kind of an EBNF for the new parser.
+The next seems to be a good job for "yacc"...
+
+ok here it comes: 
+
+
+--------------------------------------------------------------------------------------
+
+Parser for SWISH (>2.2):
+
+   swishSearchRequest:=   
+              search_expr;
+
+
+   search_expr :=
+              "(" search_expr ")"
+              unary_search_expr
+              binary_search_exr
+              post_search_expr
+              word_expr;
+      
+
+   binary_search_exr:
+              search_expr  "<AND>"    search_expr            // Logical AND
+              search_expr  "<OR>"     search_expr            // Logical OR
+              search_expr  "<ANDNOT>" search_expr;           // Swish   AND_NOT
+
+   unary_search_expr:
+              "<NOT>"    search_expr                         // Logical NOT
+              "<PLUS>"   word_expr                           // AltaVista "+"    ???
+              "<MINUS>"  word_expr;                          // AltaVista "-"    ???
+
+   post_search_expr:                                         // Postprocess current search result list
+              "<NARROW>"  property_expr;                     // select from result list
+
+   property_expr:
+              "(" property_expr ")"
+              unary_property_expr
+              binary_property_expr
+              property_word_expr;
+
+   binary_property_expr:
+              property_expr "<AND>" property_expr
+              property_expr "<OR>"  property_expr;
+
+   unary_property_expr:
+              "<NOT>" property_expr;
+
+
+   property_word_expr:
+              propertyname "="  regexpr
+              propertyname "="  phrase
+              propertyname ">"  phrase
+              propertyname ">=" phrase
+              propertyname "<"  phrase
+              propertyname "<=" phrase
+
+
+   word_expr:
+              "<TRUE>"                                        // Logical True, (e.g for stopwords)
+              "<FALSE>"                                       // Logical False  (usage ?)
+              metaname "=" phrase                             // ------ also ">" "<" ">=" "<=" ?????
+              metaname ">"  phrase
+              metaname ">=" phrase
+              metaname "<"  phrase
+              metaname "<=" phrase
+              phrase;
+
+   phrase:
+              word
+              "\""string"\""
+              wild_expr;
+
+
+   wild_expr:
+              standard_wild_expr                             //   word*
+              extended_wild_expr                             //   word?and*wild*
+              regular_expr;                                  //   (\w[a-z])hello.*
+
+   string:
+             printable character and whitespace;
+
+   word:
+             printable character without whitespace;
+
+   
+
+Operator Priorities:
+
+     ( )                      
+     =
+     >=
+     <=
+     >
+     <
+    <PLUS>
+    <MINUS>
+    <NOT>
+    <NARROW>
+    <AND>
+    <ANDNOT>
+    <OR>
+
+
+----
+
+Additive:
+
+-   metaname and propertyname implies a possible datatype conversion
+    of word. (should be done with a routine, which may be dummy as
+    long we don't have datatypes)
+
+-   swish works only with internal operators  "<NOT>", "<AND>", etc.
+    there has to be a mapping between uservisible operators  "and"
+    to internal operators "<AND>" prior to any parsing.
+
+
+ 
+
+Possible search request:
+
+
+    author="Joe" AND (NOT "foo bar") NARROW 
+          (swishlastmodified>=2001-05-01 AND swishdocname=".*/swishdir/.*")
+  
+
+
+
+
+    
+---------------------------------------------------------------------------
+
+
+Please have a look on it.
+I tried to have a clear syntax structure tree.
+So it should be possible to have recursive parser routine
+calls, which makes the search request processing a little easier.
+
+
+cu - rainer
+
+
+
+---------------------------------------------------------------------------
+
+Comments:
+
+
