@@ -10,6 +10,10 @@
 #   define newSVuv(i) newSViv(i)
 #endif
 
+#ifndef call_pv
+#   define call_pv(i,j) perl_call_pv(i,j)
+#endif
+
 
 
 MODULE = SWISH::API        PACKAGE = SWISH::API    PREFIX = Swish
@@ -49,7 +53,7 @@ SwishIndexNames(self)
         index_name = SwishIndexNames( self );
         while ( *index_name )
         {
-            XPUSHs(sv_2mortal(newSVpv( *index_name ,0 )));
+            XPUSHs(sv_2mortal(newSVpv( (char *)*index_name ,0 )));
             index_name++;
         }
         
@@ -66,7 +70,7 @@ SwishHeaderNames(self)
         name = SwishHeaderNames( self );
         while ( *name )
         {
-            XPUSHs(sv_2mortal(newSVpv( *name ,0 )));
+            XPUSHs(sv_2mortal(newSVpv( (char *)*name ,0 )));
             name++;
         }
 
@@ -93,10 +97,10 @@ SwishHeaderValue(swish_handle, index_file, header_name)
         PUTBACK;
         i = call_pv( "SWISH::API::decode_header_value", G_ARRAY );
         SPAGAIN;
-#        PUTBACK;
 
 
-void decode_header_value( swish_handle, header_value, header_type )
+void
+decode_header_value( swish_handle, header_value, header_type )
         SV *swish_handle
         SV *header_value
         SV *header_type
@@ -113,7 +117,7 @@ void decode_header_value( swish_handle, header_value, header_type )
         {
             case SWISH_STRING:
                 if ( head_value->string &&  head_value->string[0] )
-                    XPUSHs(sv_2mortal(newSVpv( head_value->string,0 )));
+                    XPUSHs(sv_2mortal(newSVpv( (char *)head_value->string,0 )));
                 else
                     ST(0) = &PL_sv_undef;
                 break;
@@ -136,7 +140,7 @@ void decode_header_value( swish_handle, header_value, header_type )
             
                 while ( *string_list )
                 {
-                    XPUSHs(sv_2mortal(newSVpv( *string_list ,0 )));
+                    XPUSHs(sv_2mortal(newSVpv( (char *)*string_list ,0 )));
                     string_list++;
                 }
                 break;
