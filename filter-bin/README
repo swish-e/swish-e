@@ -9,7 +9,10 @@ Here are some very basic filter scripts
         Filter uses the xpdf package's programs pdfinfo and pdftotext
         to convert a PDF file into html.
 
-        
+
+    swish_filter.pl
+        Uses the SWISH::Filter module to filter a number of different types
+        of documents with the same script.        
 
 
 
