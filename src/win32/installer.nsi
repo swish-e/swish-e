@@ -15,7 +15,7 @@ ShowInstDetails hide ; (can be show to have them shown, or nevershow to disable)
 SetDateSave on ; (can be on to have files restored to their orginal date)
 
 LicenseText "You may redistribute SWISH-E under the following terms:"
-LicenseData "src\win32\COPYING.txt"
+LicenseData "COPYING.txt"
 
 InstallDir "$PROGRAMFILES\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
@@ -29,21 +29,21 @@ ComponentText "Which components do you require?"
 Section "Program" ; (default, required section)
 SectionIn 1
 SetOutPath "$INSTDIR"
-File src\win32\COPYING.txt
+File COPYING.txt
 
 ; SWISH-E executable
-File src\swish-e.exe
+File ../swish-e.exe
 
 ; Expat, LibXML2, and ZLib
-File ..\libxml2\lib\*.dll
-File ..\zlib\bin\*.dll
-File ..\pcre\bin\*.dll
+File ../../../libxml2/lib/*.dll
+File ../../../zlib/bin/*.dll
+File ../../../pcre/bin/*.dll
 
 ; Misc SWISH-E Support Files
-File src\swishspider
-File /r filter-bin
-File /r prog-bin
-File /r filters
+File ../swishspider
+File /r ../../filter-bin
+File /r ../../prog-bin
+File /r ../../filters
 
 ; Create shorcuts on the Start Menu
 SetOutPath "$SMPROGRAMS\SWISH-E\"
@@ -59,7 +59,7 @@ Section "Documentation"
 SectionIn 1
 SetOutPath "$INSTDIR"
 RMDIR /r "$INSTDIR\html"
-File /r html
+File /r ../../html
 
 ; Create shorcuts on the Start Menu
 SetOutPath "$SMPROGRAMS\SWISH-E\Documentation\"
@@ -81,8 +81,8 @@ SectionIn 1
 SetOutPath "$INSTDIR"
 RMDIR /r "$INSTDIR\example"
 RMDIR /r "$INSTDIR\conf"
-File /r example
-File /r conf
+File /r ../../example
+File /r ../../conf
 
 ; Rename text files so Windows has a clue
 Rename "$INSTDIR\conf\README" "$INSTDIR\conf\README.txt"
