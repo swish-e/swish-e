@@ -446,6 +446,38 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        if (strcasecmp(w0, "AliasTags") == 0)
+        {
+            struct metaEntry *meta_entry;
+            struct metaEntry *new_meta;
+            
+            if (sl->n < 3)
+                progerr("%s: requires at least two values", w0);
+
+            for (i = 1; i < sl->n; i++)
+                if ( strcasecmp( sl->word[i], "automatic" ) == 0 )
+                    progerr("%s: 'automatic' is a reserved word.", w0);
+
+            if ( !(meta_entry = getMetaNameDataNoAlias( &indexf->header, sl->word[1]) ) )
+                progerr("%s - meta name '%s' not a meta name", w0, sl->word[1] );
+
+            if ( meta_entry->alias )                
+                progerr("%s - meta name '%s' cannot be an alias", w0, sl->word[1] );
+                
+            for (i = 2; i < sl->n; i++)
+            {
+                if ( getMetaNameDataNoAlias( &indexf->header, sl->word[i]) )
+                    progerr("%s - name '%s' is already an metaname", w0, sl->word[i] );
+                    
+                new_meta = addMetaEntry(&indexf->header, sl->word[i], meta_entry->metaType, 0, NULL, &sw->applyautomaticmetanames);
+                new_meta->alias = meta_entry->metaID;
+            }
+
+            continue;
+        }
+
+
+
 
         if (strcasecmp(w0, "IgnoreWords") == 0)
         {

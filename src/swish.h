@@ -239,15 +239,15 @@ docProperties;
 
 struct metaEntry
 {
-    char   *metaName;           /* MetaName string */
-    int     metaID;             /* Meta ID */
-    int     metaType;           /* See metanames.h for values */
-    /* If 0, files are not sorted by this metaName/property */
-    int    *sorted_data;        /* Sorted data . NULL if not read/done */
-
-    int    *inPropRange;          /* Used for limiting to a range */
-    propEntry *loPropRange;
-    propEntry *hiPropRange;
+    char       *metaName;           /* MetaName string */
+    int         metaID;             /* Meta ID */
+    int         metaType;           /* See metanames.h for values */
+    int        *inPropRange;        /* Used for limiting to a range */
+    propEntry  *loPropRange;
+    propEntry  *hiPropRange;
+    int         alias;              /* if non-zero, this is an alias to the listed metaID */
+    int        *sorted_data;        /* Sorted data . NULL if not read/done */
+                                    /* If 0, files are not sorted by this metaName/property */
 };
 
 
