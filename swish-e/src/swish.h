@@ -292,13 +292,13 @@ typedef struct
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
     char   *real_filename;      /* basename() of real_path  */
     long    fsize;              /* size of the original file (not filtered) */
+    long    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
+    int     external_program;   /* Flag to only read fsize bytes from stream */
     time_t  mtime;              /* Date of last mod of or. file */
     int     doctype;            /* Type of document HTML, TXT, XML, ... */
     int     index_no_content;   /* Flag, index "filename/real_path" only! */
-    struct StoreDescription *stordesc;
-    /* Null if no description/summary */
-    struct FilterList *hasfilter;
-    /* NULL if no filter for this file */
+    struct StoreDescription *stordesc;   /* Null if no description/summary */
+    struct FilterList *hasfilter;       /* NULL if no filter for this file */
 }
 FileProp;
 

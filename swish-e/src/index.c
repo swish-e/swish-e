@@ -428,6 +428,12 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
         else
             title = "";
     }
+
+
+    if (fprop->doctype == HTML3)
+        return parse_HTML_push( sw, fprop, buffer );
+            
+
 #endif
 
 
@@ -636,7 +642,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 {
     int     wordcount;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
-    int     external_program = 0;
                                /* pointer to parsing routine */
     int     (*countwords)(SWISH *,FileProp *,char *);
     IndexFILE *indexf = sw->indexlist;
@@ -657,17 +662,14 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
         /* external program must seek past this data (fseek fails) */
         if (fprop->fp)
-        {
-            rd_buffer = read_stream(sw,fprop->real_path, fprop->fp, fprop->fsize, 0);
-//***JMRUIZ            efree(rd_buffer);
-        }
+            flush_stream( fprop );
 
         return;
     }
 
 
     /* Upon entry, if fprop->fp is non-NULL then it's already opened and ready to be read from.
-       This is the case with "prog" external programs, except when a filter is selected for the file type.
+       This is the case with "prog" external programs, *except* when a filter is selected for the file type.
        If a filter is used with "prog" a temporary file was created (fprop->work_file), and
        fprop->fp will be NULL (as is with http and fs access methods).
        2001-05-13 moseley
@@ -697,7 +699,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         }
     }
     else  /* Already open - flag to prevent closing the stream used with "prog" */
-        external_program++;
+        fprop->external_program++;
 
 
 if ( fprop->doctype == HTML3 || fprop->doctype == XML3 )
@@ -779,17 +781,22 @@ else
     wordcount = countwords(sw, fprop, rd_buffer);
 
 
-    if (!external_program)
+    if (!fprop->external_program)  /* external_program is not set if a filter is in use */
     {
         if (fprop->hasfilter)
-        {
-            FilterClose(fprop->fp); /* close filter pipe */
-        }
+            FilterClose(fprop->fp); /* close filter pipe - should the filter be flushed? */
         else
-        {
             fclose(fprop->fp); /* close file */
-        }
     }
+    /* Else, it's -S prog so make sure we read all the bytes we are suppose to read! */
+    /* Can remove the check for fprop->bytes_read once read_stream is no longer used */
+
+    else if ( fprop->bytes_read && fprop->bytes_read < fprop->fsize )
+        flush_stream( fprop );
+
+        
+
+
 
 //***JMRUIZ    efree(rd_buffer);
 
