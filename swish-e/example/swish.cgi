@@ -501,6 +501,7 @@ sub default_config {
 
         no_first_page_navigation   => 0,
         no_last_page_navigation    => 0,
+        num_pages_to_show          => 12,  # number of pages to offer
 
 
 
@@ -540,6 +541,20 @@ sub default_config {
             default         => 'All',
             date_range      => 1,
         },
+
+
+        # This is suppose to reduce the load on systems if hit with a large number
+        # of requests.  Although this will limit the number of swish-e processes run
+        # it will not limit the number of CGI requests.  I feel like a better solution
+        # is to use mod_perl (with the SWISH::API module).
+        # I also think that running /bin/ps for every is not ideal.
+
+        # This only works on unix-based systems when running the swish-e binary.
+        # It greps /swish-e/ from the output of ps and aborts if the count is < limit_procs
+        
+        # Set max number of swish-e binaries and ps command to run
+        limit_procs     => 0,  # max number of swish process to run (zero to not limit)
+        ps_prog         => '/bin/ps -Unobody -ocommand',  # command to list number of swish binaries
 
     };
 
@@ -657,7 +672,8 @@ sub set_default_debug_flags {
     $SwishSearch::DEBUG_HEADERS     = 4;  # Swish output headers
     $SwishSearch::DEBUG_OUTPUT      = 8;  # Swish output besides headers
     $SwishSearch::DEBUG_SUMMARY     = 16;  # Summary of results parsed
-    $SwishSearch::DEBUG_DUMP_DATA   = 32;  # dump data that is sent to templating modules
+    $SwishSearch::DEBUG_RESULTS     = 32;  # Detail of results parsed
+    $SwishSearch::DEBUG_DUMP_DATA   = 64;  # dump data that is sent to templating modules
 }
 
 
@@ -678,14 +694,18 @@ sub set_debug {
         headers     => [$SwishSearch::DEBUG_HEADERS, 'Show headers returned from swish'],
         output      => [$SwishSearch::DEBUG_OUTPUT,  'Show output from swish'],
         summary     => [$SwishSearch::DEBUG_SUMMARY, 'Show summary of results'],
+        results     => [$SwishSearch::DEBUG_RESULTS, 'Show detail of results'],
         dump        => [$SwishSearch::DEBUG_DUMP_DATA, 'Show all data available to templates'],
     );
 
 
     $conf->{debug} = 1;
 
+    my @debug_str;
+
     for ( split /\s*,\s*/, $ENV{SWISH_DEBUG} ) {
         if ( exists $debug{ lc $_ } ) {
+            push @debug_str, lc $_;
             $conf->{debug} |= $debug{ lc $_ }->[0];
             next;
         }
@@ -696,7 +716,7 @@ sub set_debug {
         exit;
     }
 
-    print STDERR "Debug level set to: $conf->{debug}\n";
+    print STDERR "Debug level set to: $conf->{debug} [", join( ', ', @debug_str), "]\n";
 }
         
 
@@ -711,6 +731,15 @@ sub set_debug {
 
 sub process_request {
     my $conf = shift;  # configuration parameters
+
+
+
+    # Limit number of requests - questionable value
+    limit_swish( $conf->{limit_procs}, $conf->{ps_prog} )
+        if $conf->{limit_procs} && $conf->{limit_procs} =~ /^\d+$/ && $conf->{ps_prog};
+    
+
+    
 
     # Use CGI.pm by default
     my $request_package = $conf->{request_package} || 'CGI';
@@ -752,6 +781,35 @@ sub process_request {
 
     $template->{package}->show_template( $template, $search );
 }
+
+
+# For limiting number of swish-e binaries
+
+sub limit_swish {
+    my ( $limit_procs, $ps_prog ) = @_;
+
+    
+    my $num_procs = scalar grep { /swish-e/ } `$ps_prog`;
+    return if $num_procs <= $limit_procs;
+
+    warn "swish.cgi - limited due to too many currently running swish-e binaries: $num_procs running is more than $limit_procs\n";
+
+    ## Abort
+    print <<EOF;
+Status: 503 Too many requests
+
+<html>
+<head><title>Too Many Requests</title></head>
+<body>
+Too Many Requests -- Try back later
+</body>
+</html>
+EOF
+
+    exit;
+}
+        
+
 
 
 #============================================================================
@@ -813,25 +871,54 @@ sub set_debug_input {
 #==================================================================
 sub show_debug_output {
     my ( $conf, $results ) = @_;
+
+    require Data::Dumper;
+
+
+    if ( $results->hits ) {
+        print STDERR "swish.cgi: returned a page of $results->{navigation}{showing} results of $results->{navigation}{hits} total hits\n";
+    } else {
+        print STDERR "swish.cgi: no results\n";
+    }
+
+    if ($conf->{debug} & $SwishSearch::DEBUG_HEADERS ) {
+        print STDERR "\n------------- Index Headers ------------\n";
+        if ( $results->{_headers} ) {
+            print STDERR Data::Dumper::Dumper( $results->{_headers} );
+        } else {
+            print STDERR "No headers\n";
+        }
+
+        print STDERR "--------------------------\n";
+    }
+    
+
+
+    
         
     if ( $conf->{debug} & $SwishSearch::DEBUG_DUMP_DATA ) {
-        require Data::Dumper;
         print STDERR "\n------------- Results structure passed to template ------------\n",
               Data::Dumper::Dumper( $results ),
               "--------------------------\n";
+
     } elsif ( $conf->{debug} & $SwishSearch::DEBUG_SUMMARY ) {
-        print STDERR "\n------------- Results Summary ------------\n";
+        print STDERR "\n------------- Results summary ------------\n";
         if ( $results->{hits} ) {
-            require Data::Dumper;
-            print STDERR "Showing $results->{navigation}{showing} of $results->{navigation}{hits}\n",
-                Data::Dumper::Dumper( $results->{_results} );
+            print STDERR "$_->{swishrank} $_->{swishdocpath}\n" for @{ $results->{_results}};
+
+        } else {
+            print STDERR "** NO RESULTS **\n";
+        }
+
+    } elsif ( $conf->{debug} & $SwishSearch::DEBUG_RESULTS ) {
+        print STDERR "\n------------- Results detail ------------\n";
+        if ( $results->{hits} ) {
+            print STDERR Data::Dumper::Dumper( $results->{_results} );
         } else {
             print STDERR "** NO RESULTS **\n";
         }
 
         print STDERR "--------------------------\n";
-    } else {
-        print STDERR ( ($results->{hits} ? "Found $results->{hits} results\n" : "Failed to find any results\n" . $results->errstr . "\n" ),"\n" );
     }
 }
 
@@ -1047,6 +1134,7 @@ sub set_query {
     return 1;
 
 }    
+
 
 
     
@@ -1409,25 +1497,30 @@ sub set_page {
     my ( $self, $Page_Size ) = @_;
 
     my $q = $self->{q};
+    my $config = $self->{config};
 
     my $navigation = $self->{navigation};
     
         
-    my $start = $navigation->{from} - 1;   # Current starting record
+    my $start = $navigation->{from} - 1;   # Current starting record index
     
-        
+
+    # Set start number for "prev page" and the number of hits on the prev page
+    
     my $prev = $start - $Page_Size;
     $prev = 0 if $prev < 0;
 
     if ( $prev < $start ) {
         $navigation->{prev} = $prev;
-        $navigation->{prev_count} = $start - $prev;
+        $navigation->{prev_count} = $start - $prev;  
     }
 
     
     my $last = $navigation->{hits} - 1;
 
-    
+
+    # Set start number for "next page" and number of hits on the next page
+
     my $next = $start + $Page_Size;
     $next = $last if $next > $last;
     my $cur_end   = $start + $self->{hits} - 1;
@@ -1440,26 +1533,45 @@ sub set_page {
 
 
     # Calculate pages  ( is this -1 correct here? )
+    # Build an array of a range of page numbers.
     
-    my $pages = int (($navigation->{hits} -1) / $Page_Size);
-    if ( $pages ) {
+    my $total_pages = int (($navigation->{hits} -1) / $Page_Size);  # total pages for all results.
+    
+    if ( $total_pages ) {
 
-        my @pages = 0..$pages;
+        my @pages = 0..$total_pages;
 
-        my $max_pages = 10;
+        my $show_pages = $config->{num_pages_to_show} || 12;
 
-        if ( @pages > $max_pages ) {
-            my $current_page = int ( $start / $Page_Size - $max_pages/2) ;
-            $current_page = 0 if $current_page < 0;
-            if ( $current_page + $max_pages - 1 > $pages ) {
-                $current_page = $pages - $max_pages;
-            }
+        # To make the number always work
+        $show_pages-- unless $config->{no_first_page_navigation};
+        $show_pages-- unless $config->{no_last_page_navigation};
+
+
+        # If too many pages then limit
+        
+        if ( @pages > $show_pages ) {
+
+            my $start_page = int ( $start / $Page_Size - $show_pages/2) ;
+            $start_page = 0 if $start_page < 0;
+
+            # if close to the end then move of center
+            $start_page = $total_pages - $show_pages
+                if $start_page + $show_pages - 1 > $total_pages;
             
-            @pages = $current_page..$current_page + $max_pages - 1;
-            unshift @pages, 0 if $current_page && !$self->{config}{no_first_page_navigation};
-            push @pages, $pages unless $current_page + $max_pages - 1 == $pages || $self->{config}{no_last_page_navigation}
+            @pages = $start_page..$start_page + $show_pages - 1;
+
+
+            # Add first and last pages, unless config says otherwise
+            unshift @pages, 0
+                unless $start_page == 0 || $config->{no_first_page_navigation};
+                
+            push @pages, $total_pages
+                unless $start_page + $show_pages - 1 == $total_pages || $config->{no_last_page_navigation}
         }
 
+
+        # Build "canned" pages HTML
     
         $navigation->{pages} =
             join ' ', map {
@@ -1469,6 +1581,22 @@ sub set_page {
                 ? $page
                 : qq[<a href="$self->{query_href}&amp;start=$page_start">$page</a>];
                         } @pages;
+
+
+        # Build just the raw data - an array of hashes
+        # for custom page display with templates
+        
+        $navigation->{page_array} = [
+            map {
+                    {
+                        page_number     => $_ + 1,  # page number to display
+                        page_start      => $_ * $Page_Size,
+                        cur_page        => $_ * $Page_Size == $start,  # flag
+                    }
+                } @pages
+        ];
+                    
+                    
     }
 
 }
@@ -1550,6 +1678,17 @@ sub run_swish {
     unshift @properties, 'swishreccount';
 
 
+    if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
+        require Data::Dumper;
+        print STDERR "---- Swish parameters ----\n";
+        print STDERR Data::Dumper::Dumper($self->swish_command);
+        print STDERR "\n-----------------------------------------------\n";
+    }
+
+
+    
+
+
 
     # Use the swish-e library?
     
@@ -1578,12 +1717,14 @@ sub run_swish {
     while (<$fh>) {
 
         chomp;
+
+        print STDERR "$_\n" if $conf->{debug} & $SwishSearch::DEBUG_OUTPUT;
+
+
         tr/\r//d;
 
         # This will not work correctly with multiple indexes when different values are used.
         if ( /^# ([^:]+):\s+(.+)$/ ) {
-
-            print STDERR "$_\n" if $conf->{debug} & $SwishSearch::DEBUG_HEADERS;
 
             my $h = lc $1;
             my $value = $2;
@@ -1592,8 +1733,6 @@ sub run_swish {
             push @{$self->{_headers}{'removed stopwords'}}, $value if $h eq 'removed stopword' && !$stops_removed{$value}++;
 
             next;
-        } elsif ( $conf->{debug} & $SwishSearch::DEBUG_OUTPUT ) {
-            print STDERR "$_\n";
         }
         
 
@@ -1708,6 +1847,8 @@ sub run_library {
     my $indexes = join ' ', $self->swish_command('-f');
 
 
+    print STDERR "swish.cgi: running library thus no 'output' available -- try 'summary'\n"
+        if ($self->{config}{debug} || 0) & $SwishSearch::DEBUG_OUTPUT;
 
     eval { require Time::HiRes };
     my $start_time = [Time::HiRes::gettimeofday()] unless $@;
@@ -1865,16 +2006,8 @@ sub real_fork {
 
     die "Failed to fork: $!\n" unless defined $pid;
 
-     
 
     if ( !$pid ) {  # in child
-        if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
-            print STDERR "---- Running swish with the following command and parameters ----\n";
-            print STDERR join( "  \\\n", map { /[^\/.\-\w\d]/ ? qq['$_'] : $_ }  $self->{prog}, $self->swish_command_array );
-            print STDERR "\n-----------------------------------------------\n";
-        }
-
-
         unless ( exec $self->{prog},  $self->swish_command_array ) {
             warn "Child process Failed to exec '$self->{prog}' Error: $!";
             print "Failed to exec Swish";  # send this message to parent.
@@ -1893,12 +2026,6 @@ sub real_fork {
 sub windows_fork {
     my ( $conf, $self ) = @_;
 
-    if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
-        print STDERR "---- Running swish with the following command and parameters ----\n";
-        print STDERR join( ' ', map { /[^.\-\w\d]/ ? qq["$_"] : $_ } map { s/"/\\"/g; $_ }  $self->{prog}, $self->swish_command_array );
-        print STDERR "\n-----------------------------------------------\n";
-    }
-    
 
     require IPC::Open2;
     my ( $rdrfh, $wtrfh );
