@@ -411,7 +411,7 @@ $swish->HeaderValue(), but the index file is not specified
 
 =over 4
 
-=item $stemmed_word = $swish->Stem( $word );
+=item $stemmed_word = $swish->StemWord( $word );
 
 Returns the stemmed version of the passed in word.
 
