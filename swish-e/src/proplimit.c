@@ -616,8 +616,8 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
 
     /* allocate a place to save the lookup table */
     /* What size is best for speed?  bitvector for size would be good */
-    
-    prop_limits->inPropRange = (char *) emalloc( size * sizeof(char) );
+
+    prop_limits->inPropRange = (unsigned char *) emalloc( size * sizeof(char) );
 
     /* populate the array in the metaEntry */
     for (i = 0; i < size; i++)

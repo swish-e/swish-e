@@ -24,7 +24,13 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef __VMS
+#include <unistd.h>
+#include <string.h>
+#else
 #include <sys/param.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <signal.h>
@@ -115,7 +121,11 @@ vsnprintf(str, n, fmt, ap)
 	int ret = n + 1;	/* if we bail, indicated we overflowed */
 
 	memset(&nsa, 0, sizeof nsa);
+#ifdef __VMS
+	nsa.sa_handler = (void (*)(int))mcatch;
+#else
 	nsa.sa_handler = mcatch;
+#endif
 	sigemptyset(&nsa.sa_mask);
 
 	p = msetup(str, n);

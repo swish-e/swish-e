@@ -5,10 +5,10 @@ $ dev = f$parse(proc,,,"DEVICE")
 $ dir = f$parse(proc,,,"DIRECTORY")
 $ set default 'dev''dir'
 $ set default [-]
-$ if p2 .eqs. "LIBXML" 
+$ if p1 .eqs. "LIBXML2" 
 $ then
 $! Don't work on VAX
-$   mms/descr=[.vms]descrip_libxml.mms 'p1'
+$   mms/descr=[.vms]descrip_libxml2.mms 'p2'
 $ else
-$   mms/descr=[.vms]descrip_'arch_name'.mms 'p1'
+$   mms/descr=[.vms]descrip_'arch_name'.mms 'p2'
 $ endif
