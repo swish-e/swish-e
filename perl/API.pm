@@ -300,7 +300,7 @@ is double-quotes (").
 
 =item $search-E<gt>SetSearchLimit( $property, $low, $high );
 
-Sets a range from $low to $high inclusive that the give $property must be in
+Sets a range from $low to $high inclusive that the given $property must be in
 to be selected as a result.  Call multiple times to set more than one limit
 on different properties.
 Limits are ANDed, that is, a result must be within the range of all limits
@@ -311,16 +311,15 @@ For example to limit searches to documents modified in the last 48 hours:
     my $start = time - 48 * 60 * 60;
     $search->SetSearchLimit( 'swishlastmodified', $start, time() );
 
-An error will be set if the property
-has already been specified or if $high < $low.
+An error will be set if the property has already been specified or if 
+$high E<lt> $low.
 
-Other errors may not be reported until running the query, such as
-the property name is invalid or if $low or $high are not
-numeric and the property specified is a numeric property.
+Other errors may not be reported until running the query, such as the property
+name is invalid or if $low or $high are not numeric and the property specified
+is a numeric property.
 
-Once a query is run
-you cannot change the limit settings without calling the ResetSearchLimit
-method first.
+Once a query is run you cannot change the limit settings for the search object
+without calling the ResetSearchLimit method first.
 
 =item $search-E<gt>ResetSearchLimit;
 
