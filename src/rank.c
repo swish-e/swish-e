@@ -232,10 +232,13 @@ static RankFactor ranks[] = {
 /******************************************************************************
 * build_struct_map
 *
-*   Builds an array to hold all possible structure bits
-*   to adjust the rank by structure faster
+*   Builds an array to hold all possible structure values
+*   (where the value is determined by the bits set in the structure flag)
+*   This is just to provide a faster adjustment of rank based on structure.
 *
-*   Words always have a value of one.  
+*   A word's rank value is one plus the sum of the strucutre bit values.
+*   The value of each structure bit is stored in the RankFactor array, and the
+*   defaults for each RANK_* are in config.h.
 *
 *******************************************************************************/
 static void build_struct_map( SWISH *sw )
@@ -296,20 +299,25 @@ getrank( RESULT *r )
     posdata = r->posdata;
 
 
-    /* Get bias for the given metaID */
+    /* Get bias for the current metaID - metaID is stored in the rank for ease here */
+    /* Currently, the rankbias is a number from -10 to +10.  It's an arbitrary range. */
+    /* MetaBias is added to the word value for *each* word position, so it's multipied */
+    /* times the number of words in the document (r->frequency). */
+
     metaID = r->rank * -1;
     meta_bias = indexf->header.metaEntryArray[ metaID - 1 ]->rank_bias;
 
 
     /* pre-build the structure map array */
+    /* this maps a word's structure to a rank value */
     if ( !sw->structure_map_set )
         build_struct_map( sw );
 
 
-    
 
+    /* Add up the raw word values for each word found in the current document. */
+    /* Notice the meta_bias added to each position */
 
-    /* Add up the raw word values for each word position */
     /* Might also bias words with low position values, for example */
     /* Should really consider r->tfrequency, which is the number of files that have */
     /*  this word.  If the word is not found in many files then it should be ranked higher */
@@ -322,18 +330,23 @@ getrank( RESULT *r )
 
     }
 
+    /* Ranks could end up less than zero -- but since the *final* rank is calcualted here */
+    /* we can't know the *lowest* value to use an offset.  It might be better to track */
+    /* the lowest value and delay actual final rank calculation/scaling to when the rank */
+    /* is printed.  Especially when AND or OR'ing resutls. */
 
     if ( rank < 1 )
         rank = 1;
 
 
-    /* Scale the rank - this was originally based on frequency, so with "rank" more likely to be over 1000 */
+    /* Scale the rank - this was originally based on frequency */
+    /* Uses lookup tables for values <= 1000, otherwise calculate */
 
     rank = rank > 1000
         ? (int)(10000 * (floor(log((double)rank) + 0.5)))
         : swish_log[rank] + 100000;  /* 100000 = 10 * 10000 */
 
-    /* This is off by default */
+    /* Return if IgnoreTotalWordCountWhenRanking is true (the default) */
     if ( indexf->header.ignoreTotalWordCountWhenRanking )
         return ( r->rank = rank / 100);  
             
