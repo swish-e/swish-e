@@ -335,6 +335,8 @@ char *SwishErrorString(int errornumber)
     return(getErrorString(errornumber));
 }
 
+char tmp_header_buffer[50];  /*  Not thread safe $$$ */
+
 char *SwishHeaderParameter(IndexFILE *indexf,char *parameter_name)
 {
     if(!strcasecmp(parameter_name,WORDCHARSPARAMNAME)) 
@@ -378,6 +380,11 @@ char *SwishHeaderParameter(IndexFILE *indexf,char *parameter_name)
     } else if(!strcasecmp(parameter_name,SOUNDEXPARAMNAME)) {
         if(indexf->header.applySoundexRules)return "1";
         else return "0";
+
+    } else if (!strcasecmp(parameter_name, FILECOUNTPARAMNAME)) {
+            sprintf(tmp_header_buffer, "%d", indexf->header.totalfiles);
+            return tmp_header_buffer;
+
     } else
         return "";
 }

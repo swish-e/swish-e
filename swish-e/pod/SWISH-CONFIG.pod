@@ -1566,6 +1566,13 @@ For example:
 
     ./swish-e -w 'web\=http'
 
+Buzzwords are found by splitting the text on whitespace, removing C<IgnoreFirstChar> and C<IgnoreLastChar>
+characters from the word, and then comparing with the list of C<Buzzwords>.
+Therefore, if adding C<Buzzwords> to an index you will probably want to define
+C<IgnoreFirstChar> and C<IgnoreLastChar> settings.
+
+Note: Buzzwords specific settings for C<IgnoreFirstChar> and C<IgnoreLastChar> may be used in the future.
+
 
 =item IgnoreWords [*list of stop words*|File: path]
 
