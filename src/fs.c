@@ -52,7 +52,6 @@ DOCENTRYARRAY;
 #define MAXKEYLEN 34            /* Hash key -- allow for 64 bit inodes */
 
 
-static void add_regex_patterns( char *name, regex_list **reg_list, char **params, int regex_pattern );
 static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist );
 static int check_FileTests( unsigned char *path, PATH_LIST *test );
 static void indexadir(SWISH *, char *);
@@ -235,67 +234,6 @@ static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist )
     return 1;
 }    
 
-
-static void add_regex_patterns( char *name, regex_list **reg_list, char **params, int regex_pattern )
-{
-    int     negate;
-    char    *word;
-    char    *pos;
-    char    *ptr;
-    int     delimiter;
-    int     cflags;
-    int     global;
-    
-
-    while ( *params )
-    {
-        negate = 0;
-        global = 0;
-        cflags = REG_EXTENDED;
-
-        
-        if ( (strcasecmp( *params, "not" ) == 0) && *(params+1) )
-        {
-            negate = 1;
-            params++;
-        }
-
-        /* Simple case of a string pattern */
-        if ( !regex_pattern )
-        {
-            add_regular_expression( reg_list, *params, NULL, cflags, global, negate );
-            params++;
-            continue;
-        }
-
-        word = *params;       
-        delimiter = (int)*word;
-
-        word++; /* past the first delimiter */
-
-        if ( !(pos = strchr( word, delimiter )))
-            progerr("%s regex: failed to find search pattern delimiter '%c' in pattern '%s'", name, (char)delimiter, *params );
-
-        *pos = '\0';            
-
-
-        /* now check for flags */
-        for ( ptr = pos + 1; *ptr; ptr++ )
-        {
-            if ( *ptr == 'i' )
-                cflags |= REG_ICASE;
-            else if ( *ptr == 'm' )
-                cflags |= REG_NEWLINE;
-            else
-                progerr("%s regexp %s: unknown flag '%c'", name, *params, *ptr );
-        }
-
-        add_regular_expression( reg_list, word, NULL, cflags, global, negate );
-
-        *pos = delimiter;  /* put it back */
-        params++;
-    }
-}
 
         
         

@@ -28,13 +28,15 @@ $Id$
 /* Module data and structures */
 
 
-struct FilterList {	/* Store filtersprogs and extension */
-    char *suffix;
-    char *prog;
-    char *options;       /* 2001-04-09 rasc */
-    struct FilterList *next;
-    struct FilterList *nodep;
-};
+
+typedef struct FilterList  /* 2002-03-16 moseley */
+{
+    struct FilterList   *next;
+    char                *prog;      /* program name to run */
+    char                *options;   /* options list */
+    regex_list          *regex;     /* list of regular expressions */
+    char                *suffix;    /* or plain text suffix */
+} FilterList;
 
 
 
@@ -46,8 +48,9 @@ struct MOD_Filter {
    /* none */
    
    /* private: don't use outside this module! */
-    struct FilterList *filterlist;  /* 1998-08-07 rasc */
-    char   *filterdir;              /* 1998-08-07 rasc */
+    char   *filterdir;              /* 1998-08-07 rasc */ /* depreciated */
+    FilterList *filterlist;  /* 2002-03-16 moseley */
+
 };
 
 

@@ -98,9 +98,8 @@ char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
 
 
-int match_regex_list( char *str, regex_list *regex );
-char *process_regex_list( char *str, regex_list *regex, int *matched );
+/* Make life easy for now */
+#include "swregex.h"
 
-void free_regex_list( regex_list **reg_list );
-void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global, int negate );
+
 

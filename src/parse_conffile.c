@@ -1258,7 +1258,6 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
     char *replace = NULL;
     int   cflags = REG_EXTENDED;
     int   global = 0;
-    char *ptr;
 
     params++;
 
@@ -1293,42 +1292,13 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
     }
 
 
+    /* This should probably be moved to swregex.c */
     else if  ( strcasecmp( params[0], "regex") == 0 )
     {
-        char    *word = params[1];
-        int     delimiter = (int)*word;
-        char    *pos;
-
-        word++; /* past the first delimiter */
-
-        if ( !(pos = strchr( word, delimiter )))
-            progerr("%s regex: failed to find search pattern delimiter '%c' in pattern '%s'", name, (char)delimiter, word );
-
-        *pos = '\0';            
-        pattern = estrdup(word);
-
-        word = pos + 1;  /* now at replace pattern */
-
-        if ( !(pos = strchr( word, delimiter )))
-            progerr("%s regex: failed to find replace pattern delimiter '%c' in pattern '%s'", name, (char)delimiter, word );
-
-        *pos = '\0';            
-        replace = estrdup(word);
-
-        /* now check for flags */
-        for ( ptr = pos + 1; *ptr; ptr++ )
-        {
-            if ( *ptr == 'i' )
-                cflags |= REG_ICASE;
-            else if ( *ptr == 'm' )
-                cflags |= REG_NEWLINE;
-            else if ( *ptr == 'g' )
-                global++;
-            else
-                progerr("%s regexp %s: unknown flag '%c'", name, params[1], *word );
-        }
-        
+        add_replace_expression( name, reg_list, params[1] );
+        return;
     }
+        
 
     else
         progerr("%s: unknown argument '%s'.  Must be prepend|append|remove|replace|regex.", name, params[0] );

@@ -42,9 +42,9 @@ $Id$
 
 /* private module prototypes */
 
-static struct FilterList *addfilter (struct FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
-static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fp);
-static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop);
+static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
+static char *filterCallCmdOptParam2(char *str, char param, FileProp * fp);
+static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop);
 
 
 
@@ -53,17 +53,16 @@ static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop);
   -- init structures for filters
 */
 
-void initModule_Filter (SWISH  *sw)
+void    initModule_Filter(SWISH * sw)
+ {
+    struct MOD_Filter *md;
 
-{
-   struct MOD_Filter *md;
+    md = (struct MOD_Filter *) emalloc(sizeof(struct MOD_Filter));
 
-      md = (struct MOD_Filter *) emalloc(sizeof(struct MOD_Filter));
-      sw->Filter = md;
+    memset( md, 0, sizeof( struct MOD_Filter ) );
 
-      md->filterdir = NULL;    /* init FilterDir  */
-      md->filterlist = NULL;   /* init FileFilter */
-   return;
+    sw->Filter = md;
+    return;
 }
 
 
@@ -73,30 +72,44 @@ void initModule_Filter (SWISH  *sw)
   -- 2001-04-09 rasc
 */
 
-void freeModule_Filter (SWISH *sw)
+void    freeModule_Filter(SWISH * sw)
+ {
+    struct MOD_Filter *md = sw->Filter;
 
-{
-  struct MOD_Filter *md = sw->Filter;
-  struct FilterList *f, *fn;
+               
 
 
-   if(md->filterdir)
-      efree(md->filterdir);	/* free FilterDir */
+    if (md->filterdir)
+        efree(md->filterdir);   /* free FilterDir */
 
-   f = md->filterlist;
-   while (f) {			/* free FileFilter List */
-      efree (f->suffix);
-      efree (f->options);
-      efree (f->prog);
-      fn = f->next;
-      efree (f);
-      f = fn;
-   }
-   md->filterlist = NULL;
 
-   efree (sw->Filter);   /* free modul data structure */
-   sw->Filter = NULL;
-   return;
+    /* Free the FileFilterMatch selections */
+    if ( md->filterlist )
+    {
+        FilterList *fm = md->filterlist;
+        FilterList *fm2;
+        
+        while( fm )
+        {
+            efree( fm->prog );
+            free_regex_list( &fm->regex );
+            if ( fm->options )
+                efree( fm->options );
+            if ( fm->suffix )
+                efree( fm->suffix );
+                
+            fm2 = fm;
+            fm = fm->next;
+            efree( fm2 );
+        }
+
+        md->filterlist = NULL;
+    }
+            
+
+    efree(sw->Filter);          /* free modul data structure */
+    sw->Filter = NULL;
+    return;
 }
 
 
@@ -108,36 +121,68 @@ void freeModule_Filter (SWISH *sw)
  -- return: 0/1 = none/config applied
 */
 
-int configModule_Filter  (SWISH *sw, StringList *sl)
+int     configModule_Filter(SWISH * sw, StringList * sl)
+ {
+    struct MOD_Filter *md = sw->Filter;
+    char   *w0 = sl->word[0];
 
-{
-  struct MOD_Filter *md = sw->Filter;
-  char *w0;
-  int  retval;
+    if (strcasecmp(w0, "FilterDir") == 0) { /* 1999-05-05 rasc */
+        if (sl->n == 2) {
+            md->filterdir = estrredup(md->filterdir, sl->word[1]);
+            if (!isdirectory(md->filterdir)) {
+                progerr("%s: %s is not a directory", w0, md->filterdir);
+            }
+        } else
+            progerr("%s: requires one value", w0);
+
+        return 1;
+    }
 
 
-  w0 = sl->word[0];
-  retval = 1;
+    if (strcasecmp(w0, "FileFilter") == 0) { /* 1999-05-05 rasc */
+        /* FileFilter fileextension  filterprog  [options] */
+        if (sl->n == 3 || sl->n == 4) {
+            md->filterlist = (FilterList *) addfilter(md->filterlist, sl->word[1], sl->word[2], sl->word[3], md->filterdir);
+        } else
+            progerr("%s: requires \"extension\" \"filter\" \"[options]\"", w0);
 
-  if (strcasecmp(w0, "FilterDir")==0) {      /* 1999-05-05 rasc */
-      if (sl->n==2) {
-          md->filterdir = estrredup(md->filterdir,sl->word[1]);
-          if (!isdirectory(md->filterdir)) {
-             progerr("%s: %s is not a directory",w0,md->filterdir);
-          }
-      } else progerr("%s: requires one value",w0);
-  }
-  else if (strcasecmp(w0, "FileFilter")==0) {  /* 1999-05-05 rasc */
-                               /* FileFilter fileextension  filterprog  [options] */
-      if (sl->n==3 || sl->n==4) {
-          md->filterlist = (struct FilterList *) addfilter(md->filterlist,sl->word[1],sl->word[2],sl->word[3],md->filterdir);
-      } else progerr("%s: requires \"extension\" \"filter\" \"[options]\"",w0);
-  }
-  else {
-      retval = 0;	            /* not a filter directive */
-  }
+        return 1;
+    }
 
-  return retval;
+
+    /* added March 16, 2002 - moseley */
+
+    if ( strcasecmp( w0, "FileFilterMatch") == 0 )
+    {
+        FilterList *filter;
+        
+        if ( sl->n < 3 )
+            progerr("%s requires at least three parameters: 'filterprog' 'options' 'regexp' ['regexp'...]\n");
+
+
+        filter = (FilterList *)emalloc( sizeof( FilterList ) );
+        memset( filter, 0, sizeof( FilterList ) );
+
+        filter->prog    = estrdup( sl->word[1] );
+        filter->options = estrdup( sl->word[2] );
+        add_regex_patterns( w0, &filter->regex, &(sl->word[3]), 1 );
+
+        if ( !md->filterlist )
+            md->filterlist = filter;
+        else
+        {
+            /* add to end of list */
+            FilterList *f = md->filterlist;
+            while ( f->next )
+                f = f->next;
+
+            f->next = filter;
+        }
+
+        return 1;
+    }
+
+    return 0;                   /* not a filter directive */
 }
 
 
@@ -152,45 +197,54 @@ int configModule_Filter  (SWISH *sw, StringList *sl)
 */
 
 
-static struct FilterList *addfilter(struct FilterList *rp,
-			 char *suffix, char *prog, char *options, char *filterdir)
+static FilterList *addfilter(FilterList *rp, char *suffix, char *prog, char *options, char *filterdir)
+ {
+    FilterList *newnode;
+    char   *buf;
+    char   *f_dir;
+    int     ilen1,
+            ilen2;
 
-{
- struct FilterList *newnode;
- char *buf;
- char *f_dir;
- int ilen1,ilen2;
+    newnode = (FilterList *) emalloc(sizeof(FilterList));
+    memset( newnode, 0, sizeof( FilterList ) );
 
-	newnode = (struct FilterList *) emalloc(sizeof(struct FilterList));
-	newnode->suffix= (char *) estrdup(suffix);
-	newnode->options = (options) ? (char *) estrdup(options) : NULL;
+    newnode->suffix = (char *) estrdup(suffix);
+    newnode->options = (options) ? (char *) estrdup(options) : NULL;
 
-      /* absolute path and filterdir check  */
-	f_dir = (filterdir && (*prog != DIRDELIMITER)) ? filterdir : "";
+    /* absolute path and filterdir check  */
+    f_dir = (filterdir && (*prog != DIRDELIMITER)) ? filterdir : "";
 
 
-	ilen1=strlen(f_dir);
-	ilen2=strlen(prog);
-	buf = (char *)emalloc(ilen1+ilen2+2);
-	memcpy(buf,f_dir,ilen1);
+    ilen1 = strlen(f_dir);
+    ilen2 = strlen(prog);
+    buf = (char *) emalloc(ilen1 + ilen2 + 2);
+    memcpy(buf, f_dir, ilen1);
 
-		/* If filterdir exists and not ends in DIRDELIMITER 
-		** (/ in Unix or \\ in WIN32) add it
-		*/
-	if(ilen1 && buf[ilen1-1]!=DIRDELIMITER) buf[ilen1++]=DIRDELIMITER;
-	memcpy(buf+ilen1,prog,ilen2);
-	buf[ilen1+ilen2]='\0';
+    /* If filterdir exists and not ends in DIRDELIMITER 
+       ** (/ in Unix or \\ in WIN32) add it
+     */
 
-	newnode->prog= buf;
-	newnode->next = NULL;
+    if (ilen1 && buf[ilen1 - 1] != DIRDELIMITER)
+        buf[ilen1++] = DIRDELIMITER;
 
-	if (rp == NULL)
-		rp = newnode;
-	else
-		rp->nodep->next = newnode;
+    memcpy(buf + ilen1, prog, ilen2);
+    buf[ilen1 + ilen2] = '\0';
 
-	rp->nodep = newnode;
-	return rp;
+    newnode->prog = buf;
+    newnode->next = NULL;
+
+    if (rp == NULL)
+        rp = newnode;
+    else
+    {
+        /* add to end of list */
+        FilterList *f = rp;
+        while ( f->next )
+            f = f->next;
+
+        f->next = newnode;
+    }
+    return rp;
 }
 
 
@@ -202,31 +256,46 @@ static struct FilterList *addfilter(struct FilterList *rp,
  -- Returns NULL or path to filter prog according conf file.
  -- 1999-08-07 rasc
  -- 2001-02-28 rasc  rewritten, now possible: search for ".pdf.gz", etc.
- -- 3002-05-04 rasc  adapted to new module design
+ -- 3002-05-04 rasc  adapted to new module design (wow, and way into the future!)
+ -- 2002-03-16 moseley added regexp check (other code not reviewed)
 */
 
-struct FilterList *hasfilter (SWISH *sw, char *filename)
+FilterList *hasfilter(SWISH * sw, char *filename)
 {
-  struct MOD_Filter *md = sw->Filter;
-  struct FilterList *fl;
-  char *s, *fe;
+    struct MOD_Filter *md = sw->Filter;
+    FilterList *fl;
+    char   *s,
+           *fe;
+
+    fl = md->filterlist;
+
+    if (!fl)
+        return (FilterList *) NULL;
 
 
-   fl = md->filterlist;
-   if (! fl) return (struct FilterList *)NULL;
-   fe = (filename + strlen(filename));
+    fe = (filename + strlen(filename));
 
-   while (fl != NULL) {
-      s = fe - strlen (fl->suffix);
-      if (s >= filename) {   /* no negative overflow! */
-         if (! strcasecmp(fl->suffix, s)) {
-             return fl;
-         }
-      }
-      fl = fl->next;
-   }
+    while (fl != NULL) {
 
-   return (struct FilterList *)NULL;
+        /* added regex check - moseley */
+        if ( fl->regex )
+        {
+            if ( match_regex_list( filename, fl->regex ) )
+                return fl;
+        }
+        else
+        {
+            s = fe - strlen(fl->suffix);
+            if (s >= filename) {    /* no negative overflow! */
+                if (!strcasecmp(fl->suffix, s)) {
+                    return fl;
+                }
+            }
+        }
+        fl = fl->next;
+    }
+
+    return (FilterList *) NULL;
 }
 
 
@@ -237,21 +306,22 @@ struct FilterList *hasfilter (SWISH *sw, char *filename)
   -- Return: FILE *  (filter stream) or NULL
 */
 
-FILE *FilterOpen (FileProp *fprop)
+FILE   *FilterOpen(FileProp * fprop)
 {
-  char   *filtercmd;
-  struct FilterList *fi;
-  char   *cmd_opts, *opt_mask;
-  FILE   *fp;
-  int    len;
+    char   *filtercmd;
+    FilterList *fi;
+    char   *cmd_opts,
+           *opt_mask;
+    FILE   *fp;
+    int     len;
 
-   /*
-      -- simple filter call "filter 'work_file' 'real_path_url'"
-      -- or call filter "filter  user_param"
-      --    > (decoded output =stdout)
-   */
+    /*
+       -- simple filter call "filter 'work_file' 'real_path_url'"
+       -- or call filter "filter  user_param"
+       --    > (decoded output =stdout)
+     */
 
-   fi = fprop->hasfilter;
+    fi = fprop->hasfilter;
 
 // old code (rasc, leave it for checks and speed benchmarks)
 //      len =  strlen(fi->prog)+strlen(fprop->work_path)+strlen(fprop->real_path);
@@ -261,21 +331,21 @@ FILE *FilterOpen (FileProp *fprop)
 //                 fprop->work_path, fprop->real_path);
 
 
-   /* if no filter cmd param given, use default */
+    /* if no filter cmd param given, use default */
 
-   opt_mask = (fi->options) ? fi->options : "'%p' '%P'";
-   cmd_opts = filterCallCmdOptStr (opt_mask, fprop);
+    opt_mask = (fi->options && *(fi->options) ) ? fi->options : "'%p' '%P'";
+    cmd_opts = filterCallCmdOptStr(opt_mask, fprop);
 
-   len = strlen (fi->prog) + strlen (cmd_opts);
-   filtercmd=emalloc(len + 2);
-   sprintf(filtercmd, "%s %s", fi->prog, cmd_opts);
+    len = strlen(fi->prog) + strlen(cmd_opts);
+    filtercmd = emalloc(len + 2);
+    sprintf(filtercmd, "%s %s", fi->prog, cmd_opts);
 
-   fp = popen (filtercmd, F_READ_TEXT);  /* Open stream */
+    fp = popen(filtercmd, F_READ_TEXT); /* Open stream */
 
-   efree (filtercmd);
-   efree (cmd_opts);
+    efree(filtercmd);
+    efree(cmd_opts);
 
-   return fp;
+    return fp;
 }
 
 
@@ -284,9 +354,9 @@ FILE *FilterOpen (FileProp *fprop)
   -- return: errcode
 */
 
-int FilterClose (FILE *fp)
+int     FilterClose(FILE * fp)
 {
-  return pclose (fp);
+    return pclose(fp);
 }
 
 
@@ -301,93 +371,96 @@ int FilterClose (FILE *fp)
   -- 2001-04-10 rasc
 */
 
-static char *filterCallCmdOptStr (char *opt_mask, FileProp *fprop)
+static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop)
+ {
+    char   *cmdopt,
+           *co,
+           *om;
 
-{
-  char *cmdopt, *co, *om;
 
+    cmdopt = (char *) emalloc(MAXSTRLEN * 3);
+    *cmdopt = '\0';
 
-  cmdopt = (char *)emalloc (MAXSTRLEN * 3);
-  *cmdopt = '\0';
+    co = cmdopt;
+    om = opt_mask;
+    while (*om) {
 
-  co = cmdopt;
-  om = opt_mask;
-  while (*om) {
+        switch (*om) {
 
-    switch (*om) {
+        case '\\':
+            *(co++) = charDecode_C_Escape(om, &om);
+            break;
 
-      case '\\':
-         *(co++) = charDecode_C_Escape (om, &om);
-	   break;
+        case '%':
+            ++om;
+            co = filterCallCmdOptParam2(co, *om, fprop);
+            if (*om)
+                om++;
+            break;
 
-      case '%':
-	   ++om;
-         co = filterCallCmdOptParam2 (co, *om, fprop);
-         if (*om) om++;
-         break;       
+        default:
+            *(co++) = *(om++);
+            break;
+        }
 
-      default:
-         *(co++) = *(om++);
-         break;
     }
 
-  }
-
-  *co = '\0';
-  return cmdopt;
+    *co = '\0';
+    return cmdopt;
 }
 
 
-static char *filterCallCmdOptParam2 (char *str, char param, FileProp *fprop)
+static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
+ {
+    static char *nul = "_NULL_"; // $$$ wouldn't "" be better?  Be easier to check for in the filter
+    char   *x;
 
-{
-  static char *nul = "_NULL_";  // $$$ wouldn't "" be better?  Be easier to check for in the filter
-  char        *x;
 
+    switch (param) {
 
-   switch (param) {
+    case 'P':                  /* Full Doc Path/URL */
+        strcpy(str, (fprop->real_path) ? fprop->real_path : nul);
+        break;
 
-      case 'P':              /* Full Doc Path/URL */
-           strcpy (str,(fprop->real_path) ? fprop->real_path : nul);    
-           break;
+    case 'p':                  /* Full Path TMP/Work path */
+        strcpy(str, (fprop->work_path) ? fprop->work_path : nul);
+        break;
 
-      case 'p':              /* Full Path TMP/Work path */
-           strcpy (str,(fprop->work_path) ? fprop->work_path : nul);    
-           break;
+    case 'F':                  /* Basename Doc Path/URL */
+        strcat(str, (fprop->real_filename) ? fprop->real_filename : nul);
+        break;
 
-      case 'F':              /* Basename Doc Path/URL */
-           strcat (str,(fprop->real_filename) ? fprop->real_filename : nul);
-           break;
+    case 'f':                  /* basename Path TMP/Work path */
+        strcpy(str, (fprop->work_path) ? str_basename(fprop->work_path) : nul);
+        break;
 
-      case 'f':              /* basename Path TMP/Work path */
-           strcpy (str,(fprop->work_path) ? str_basename (fprop->work_path) : nul);    
-           break;
+    case 'D':                  /* Dirname Doc Path/URL */
+        x = (fprop->real_path) ? cstr_dirname(fprop->real_path) : nul;
+        strcpy(str, x);
+        efree(x);
+        break;
 
-      case 'D':              /* Dirname Doc Path/URL */
-           x = (fprop->real_path) ? cstr_dirname (fprop->real_path) : nul;   
-           strcpy (str,x);
-           efree (x);
-           break;
+    case 'd':                  /* Dirname TMP/Work Path */
+        x = (fprop->work_path) ? cstr_dirname(fprop->work_path) : nul;
+        strcpy(str, x);
+        efree(x);
+        break;
 
-      case 'd':              /* Dirname TMP/Work Path */
-           x = (fprop->work_path) ? cstr_dirname (fprop->work_path) : nul;   
-           strcpy (str,x);
-           efree (x);
-           break;
- 
-      case '%':              /* %% == print %    */
-           *str = param;
-           *(str+1) = '\0';
-           break;
+    case '%':                  /* %% == print %    */
+        *str = param;
+        *(str + 1) = '\0';
+        break;
 
-      default:               /* unknown, print  % and char */
-           *str = '%';
-           *(str+1) = param;   
-           *(str+2) = '\0';
-           break;
-   }
+    default:                   /* unknown, print  % and char */
+        *str = '%';
+        *(str + 1) = param;
+        *(str + 2) = '\0';
+        break;
+    }
 
-   while (*str) str++;   /* Pos to end of string */
-   return str;
+    while (*str)
+        str++;                  /* Pos to end of string */
+    return str;
 }
+
 
