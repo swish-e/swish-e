@@ -1161,7 +1161,6 @@ int     removestops(SWISH * sw)
                 addStopList(&indexf->header, ep->word); /* For printing list of words */
                 addstophash(&indexf->header, ep->word); /* Lookup hash */
                 stopwords++;
-printf("Removing %s\n", ep->word );
                 /* unlink the ENTRY from the hash */
                 if (ep2)
                     ep2->next = ep->next;
