@@ -1406,20 +1406,27 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long
 
     while (wordlen)
     {
-        fread(fileword, 1, wordlen, fp);
+        int bytes_read = (int)fread(fileword, 1, wordlen, fp);
+        if ( bytes_read != wordlen )
+            progerr("Read %d bytes, expected %d in DB_ReadFirstWordInvertedIndex_Native", bytes_read, wordlen);
+
         fileword[wordlen] = '\0';
         readlong(fp, fread);    /* jump hash offset */
         dataoffset = readlong(fp, fread); /* Get offset to word's data */
+
         if (!(res = strncmp(word, fileword, len))) /*Found!! */
         {
             DB->nextwordoffset = ftell(fp); /* preserve next word pos */
             break;
         }
-        if (res < 0)
+
+        /* check if past current word or at end */
+        if (res < 0 || ftell(fp) ==  DB->offsets[ENDWORDPOS] )
         {
             dataoffset = 0;
             break;
         }
+
         /* Go to next value */
         wordlen = uncompress1(fp, fgetc); /* Next word */
         if (!wordlen)
@@ -1430,6 +1437,7 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long
         efree(fileword);
         fileword = (char *) emalloc(wordlen + 1);
     }
+
     if (!dataoffset)
     {
         efree(fileword);
@@ -1437,6 +1445,7 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, long
     }
     else
         *resultword = fileword;
+
     *wordID = dataoffset;
 
     return 0;
