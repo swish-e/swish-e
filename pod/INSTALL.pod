@@ -389,28 +389,7 @@ an index file in the F<tests> directory and run a number of searches
 against this index.  At this time, the tests really just make sure that swish-e
 was compiled correctly and runs.
 
-You may optionally "build" the F<swish-search> executable.  This is
-a version of Swish-e that cannot write to the index file.  This
-version may provide somewhat improved security in a CGI environment.
-The binaries F<swish-e> and F<swish-search> are the same files -- the
-additional security is enabled when the binary is named I<swish-search>.
-F<swish-search> is not a substitute for good file system and CGI security.
-Please review the many CGI security papers available on-line.
-
-Again, this is an optional step:
-
-   make swish-search
-
-which simply copies the file F<swish-e> to F<swish-search>.
-
 =item 4 Install Swish-e
-
-Move the F<swish-e> (and/or F<swish-search>) executable to its final
-location (normally /usr/local/bin).  You may simply copy the program
-anywhere you see fit, or you may use the C<make install> command to
-install it to the location defined by the F<configure> script:
-
-You may need to superuser privileges:
 
    su root
    make install
