@@ -53,6 +53,7 @@ html/CHANGES.html
 html/INSTALL.html
 html/README.html
 html/SWISH-3.0.html
+html/SWISH-BUGS.html
 html/SWISH-CONFIG.html
 html/SWISH-FAQ.html
 html/SWISH-LIBRARY.html
@@ -83,6 +84,7 @@ pod/CHANGES.pod
 pod/INSTALL.pod
 pod/README.pod
 pod/SWISH-3.0.pod
+pod/SWISH-BUGS.pod
 pod/SWISH-CONFIG.pod
 pod/SWISH-FAQ.pod
 pod/SWISH-LIBRARY.pod
