@@ -712,9 +712,10 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
                indexf->filearray[i]->currentSortProp = m; /* waste of space */
 #ifdef PROPFILE
                indexf->filearray[i]->SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, m->metaID, MAX_SORT_STRING_LEN );
-printf(" i = %d, filenum = %d\n",  i, indexf->filearray[i]->filenum );              
 #endif;               
             }
+
+
            /* Sort them using qsort. The main work is done by compFileProps */
 
            /* NOTE: This messes up the order of file entries, so you cannot lookup
@@ -723,7 +724,9 @@ printf(" i = %d, filenum = %d\n",  i, indexf->filearray[i]->filenum );
 
            swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
+
            /* Build the sorted table */
+
            for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
 		   {
                /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
@@ -734,11 +737,19 @@ printf(" i = %d, filenum = %d\n",  i, indexf->filearray[i]->filenum );
                        k++;
 			   }
                sortFilenums[indexf->filearray[i]->filenum - 1] = k;
+		   }
+
 
 #ifdef PROPFILE
-               freeProperty( indexf->filearray[i]->SortProp );
-#endif               
-		   }
+        /* Now free properties */
+        for (i = 0; i < indexf->filearray_cursize; i++)
+            if ( indexf->filearray[i]->SortProp )
+            {
+                freeProperty( indexf->filearray[i]->SortProp );
+                indexf->filearray[i]->SortProp = NULL;
+            }
+#endif            
+
 
            /* Store the integer array of presorted data */
            m->sorted_data = sortFilenums;
@@ -753,6 +764,8 @@ printf(" i = %d, filenum = %d\n",  i, indexf->filearray[i]->filenum );
            break;
 		}
     }
+
+
 }
 
 
