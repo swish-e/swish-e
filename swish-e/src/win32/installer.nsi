@@ -19,7 +19,7 @@ LicenseData "src\win32\COPYING.txt"
 
 InstallDir "$PROGRAMFILES\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" ""
-DirShow show ; (make this hide to not let the user change it)
+# DirShow show ; (make this hide to not let the user change it)
 DirText "Select location where to install SWISH-E:"
 
 InstType "Full"
@@ -27,6 +27,7 @@ InstType "Full"
 ComponentText "Which components do you require?"
 
 Section "Program" ; (default, required section)
+SectionIn 1
 SetOutPath "$INSTDIR"
 File src\win32\COPYING.txt
 
