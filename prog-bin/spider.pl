@@ -158,7 +158,7 @@ sub process_server {
     }
         
     $server->{ua} = $ua;  # save it for fun.
-    $ua->parse_head(0);   # Don't parse the content
+    # $ua->parse_head(0);   # Don't parse the content
 
     $ua->cookie_jar( HTTP::Cookies->new ) if $server->{use_cookies};
 
@@ -214,9 +214,6 @@ sub spider {
 #----------- Process a url and return links -----------------------
 sub process_link {
     my ( $server, $uri, $parent, $depth ) = @_;
-
-
-    thin_dots( $uri, $server ) if $server->{thin_dots};
 
 
     $server->{counts}{'Unique URLs'}++;
@@ -294,6 +291,18 @@ sub process_link {
         print STDERR "-Skipped $depth $uri: ", $response->status_line,"\n" if $server->{debug}&DEBUG_SKIPPED;
         $server->{counts}{'robots.txt'}++;
         return;
+    }
+
+    # And check for meta robots tag
+    # -- should probably be done in request sub to avoid fetching docs that are not needed
+
+    unless ( $server->{ignore_robots_file} ) {
+        if ( my $directives = $response->header('X-Meta-ROBOTS') ) {
+            my %settings = map { lc $_, 1 } split /\s*,\s*/, $directives;
+            $server->{no_contents}++ if exists $settings{nocontents};  # an extension for swish
+            $server->{no_index}++    if exists $settings{noindex};
+            $server->{no_spider}++   if exists $settings{nofollow};
+        }
     }
 
 
@@ -452,16 +461,17 @@ sub extract_links {
             if ( $attr{ $_ } ) {  # ok tag
 
                 my $u = URI->new_abs( $attr{$_},$base );
-                $u->fragment( undef );
-                return if $seen{$u}++;  # this won't report duplicates
 
-                unless ( $u->scheme =~ /^http$/ ) {  # no https at this time.
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not http\n] if $server->{debug} & DEBUG_LINKS;
-                    next;
+                $u->fragment( undef );
+
+                # Ignore duplicates on the same page
+                if ( $seen{$u}++ ) {
+                    $server->{counts}{Duplicates}++;
+                    return;
                 }
 
                 unless ( $u->host ) {
-                    print STDERR qq[ ?? <$tag $_="$u"> skipped because not no host name\n] if $server->{debug} & DEBUG_LINKS;
+                    print STDERR qq[ ?? <$tag $_="$u"> skipped because missing host name\n] if $server->{debug} & DEBUG_LINKS;
                     next;
                 }
 
@@ -473,9 +483,9 @@ sub extract_links {
                 
                 $u->authority( $server->{authority} );  # Force all the same host name
 
-                # Don't add the link if already seen
+                # Don't add the link if already seen  - these are so common that we don't report
                 if ( $visited{ $u->canonical }++ ) {
-                    $server->{counts}{Skipped}++;
+                    #$server->{counts}{Skipped}++;
                     $server->{counts}{Duplicates}++;
                     next;
                 }
@@ -528,37 +538,6 @@ sub output_content {
 }
         
 
-# This is not very good...
-
-sub thin_dots {
-    my ( $uri, $server ) = @_;
-
-
-    my $p = $uri->path;
-
-    my $c = 0;
-    my @new;
-
-    my $trailing_slash = substr( $p, -1, 1 ) eq '/';
-
-    foreach ( split m[/+], $p ) {
-        /^\.\.$/ && do {
-            pop @new;
-            $c--;
-            next;
-        };
-
-            $new[$c++] = $_;
-    }
-    $uri->path( join '/', @new );
-
-    $uri->path( $uri->path . '/' ) if $trailing_slash;  # cough, hack, cough.
-
-
-    if ( $server->{debug} & DEBUG_INFO && $p ne $uri->path ) {
-        print STDERR "thin_dots: $p -> ", $uri->path, "\n";
-    }
-}
 
 sub commify {
     local $_  = shift;
@@ -601,7 +580,22 @@ spider.pl - Example Perl program to spider web servers
 
 =head1 SYNOPSIS
 
- ~/swish-e/docsource > ../src/swish-e -S prog -i ./spider.pl
+  swish.config:
+    IndexDir ./spider.pl
+    SwishProgParameters spider.config
+    # other swish-e settings
+
+  spider.config:
+    @servers = (
+        {
+            base_url    => 'http://myserver.com/',
+            email       => 'me@myself.com',
+            # other spider settings described below
+        },
+    );
+
+  begin indexing:
+    swish-e -S prog -c swish.config
 
 =head1 DESCRIPTION
 
@@ -609,33 +603,86 @@ This is a swish-e "prog" document source program for spidering
 web servers.  It can be used instead of the C<http> method for
 spidering with swish.
 
+The spider typically uses a configuration
+file that lists the URL(s) to spider, and configuration parameters that control
+the behavior of the spider.  In addition, you may define I<callback> perl functions
+in the configuration file that can dynamically change the behavior of the spider
+based on URL, HTTP response headers, or the content of the fetched document.  These
+callback functions can also be used to filter or convert documents (e.g. PDF, gzip, MS Word)
+into a format that swish-e can parse.  Some examples are provided.
+
 You define "servers" to spider, set a few parameters,
 create callback routines, and start indexing as the synopsis above shows.
-All this setup is currently done in a loaded configuration file.
-The associated example is called C<SwishSpiderConfig.pl> and is
-included in this C<prog-bin> directory along with this script.
+The spider requires its own configuration file (unless you want the default values).  This
+is not the same configuration file that swish-e uses.
+
+The example configuration file C<SwishSpiderConfig.pl> is
+included in the C<prog-bin> directory along with this script.  Please just use it as an
+example, as it contains more settings than you probably want to use.  Start with a tiny config file
+and add settings as required by your situation.
 
 The available configuration parameters are discussed below.
 
-This script will not spider files blocked by robots.txt, unless
-explicitly overridden -- something you probably should not do.
+If all that sounds confusing, then you can run the spider with default settings.  In fact, you can
+run the spider without using swish just to make sure it works.  Just run
+
+    ./spider.pl default http://someserver.com/sometestdoc.html
+
+And you should see F<sometestdoc.html> dumped to your screen.  Get ready to kill the script
+if the file you request contains links!
+
+If the first parameter passed to the spider is the word "default" then the spider uses
+the default parameters, and the following parameter(s) are expected to be URL(s) to spider.
+Otherwise, the first parameter is considered to be the name of the configuration file (as described
+below).  When using C<-S prog>, the swish-e configuration setting
+C<SwishProgParameters> is used to pass parameters to the program specified
+with C<IndexDir> or the C<-i> switch.
+
+The spider does require Perl's LWP library and a few other reasonably common modules.
+Most well maintained systems should have these modules installed.  If not, start here:
+
+    http://search.cpan.org/search?dist=libwww-perl
+    http://search.cpan.org/search?dist=HTML-Parser
+
+See more below in C<REQUIREMENTS>.    
+
+=head2 Robots Exclusion Rules and being nice
+
+This script will not spider files blocked by F<robots.txt>.  In addition,
+The script will check for <meta name="robots"..> tags, which allows finer
+control over what files are indexed and/or spidered.
+See http://www.robotstxt.org/wc/exclusion.html for details.
+
+This spider provides an extension to the <meta> tag exclusion, by adding a
+C<NOCONTENTS> attribute.  This attribute turns on the C<no_contents> setting, which
+asks swish-e to only index the document's title (or file name if not title is found).
+
+For example:
+
+      <META NAME="ROBOTS" CONTENT="NOCONTENTS, NOFOLLOW">
+
+says to just index the document's title, but don't index its contents, and don't follow
+any links within the document.  Granted, it's unlikely that this feature will ever be used...
+
+If you are indexing your own site, and know what you are doing, you can disable robot exclusion by
+the C<ignore_robots_file> configuration parameter, described below.  This disables both F<robots.txt>
+and the meta tag parsing.
+
 This script only spiders one file at a time, so load on the web server is not that great.
 And with libwww-perl-5.53_91 HTTP/1.1 keep alive requests can reduce the load on
 the server even more (and potentially reduce spidering time considerably!)
 
 Still, discuss spidering with a site's administrator before beginning.
+Use the C<delay_min> to adjust how fast the spider fetches documents.
+Consider running a second web server with a limited number of children if you really
+want to fine tune the resources used by spidering.
 
-The spider program keeps track of URLs visited, so a file is only indexed
-one time.  There are two features that can be enabled (disabled by default)
-to try to avoid indexing the same file that can be found by different URLs.
+=head2 Duplicate Documents
 
-First, the C<thin_dots> feature tries to make the following URLs the same by
-removing the dots:
+The spider program keeps track of URLs visited, so a document is only indexed
+one time.  
 
-    http://localhost/path/to/some/file.html
-    http://localhost/path/to/../to/some/file.html
-
-Second, the Digest::MD5 module can be used to create a "fingerprint" of every page
+The Digest::MD5 module can be used to create a "fingerprint" of every page
 indexed and this fingerprint is used in a hash to find duplicate pages.
 For example, MD5 will prevent indexing these as two different documents:
 
@@ -655,12 +702,13 @@ Then only that URL will be indexed.
 
 MD5 may slow down indexing a tiny bit, so test with and without if speed is an
 issue (which it probably isn't since you are spidering in the first place).
+This feature will also use more memory.
 
-Note: the "prog" document source in swish bypasses many configuration settings.
+Note: the "prog" document source in swish bypasses many swish-e configuration settings.
 For example, you cannot use the C<IndexOnly> directive with the "prog" document
 source.  This is by design to limit the overhead when using an external program
-for providing documents to swish; it's assumed that the program can filter
-as well as swish can internally.
+for providing documents to swish; after all, with "prog", if you don't want to index a file, then
+don't give it to swish to index in the first place.
 
 So, for spidering, if you do not wish to index images, for example, you will
 need to either filter by the URL or by the content-type returned from the web
@@ -675,20 +723,27 @@ or download libwww-perl-x.xx from CPAN (or via ActiveState's ppm utility).
 Also required is the the HTML-Parser-x.xx bundle of modules also from CPAN
 (and from ActiveState for Windows).
 
+    http://search.cpan.org/search?dist=libwww-perl
+    http://search.cpan.org/search?dist=HTML-Parser
+
 You will also need Digest::MD5 if you wish to use the MD5 feature.
 Other modules may be required (for example, the pod2xml.pm module
 has its own requirementes -- see perldoc pod2xml for info).
 
-The script expects perl to live in /usr/local/bin.  If this is not the case
-then either add a symlink at /usr/local/bin/perl to point to where perl is installed,
+The spider.pl script, like everyone else, expects perl to live in /usr/local/bin.
+If this is not the case then either add a symlink at /usr/local/bin/perl
+to point to where perl is installed
 or modify the shebang (#!) line at the top of the spider.pl program.
 
+Note that the libwww-perl package does not support SSL (Secure Sockets Layer) (https)
+by default.  See F<README.SSL> included in the libwww-perl package for information on
+installing SSL support.
 
 =head1 CONFIGURATION FILE
 
 Configuration is not very fancy.  The spider.pl program simply does a
 C<do "path";> to read in the parameters and create the callback subroutines.
-The C<path> is the first parameter passed to the script, which is set
+The C<path> is the first parameter passed to the spider script, which is set
 by the Swish-e configuration setting C<SwishProgParameters>.
 
 For example, if in your swish-e configuration file you have
@@ -704,7 +759,7 @@ swish will run C</home/moseley/swish-e/prog-bin/spider.pl> and the spider.pl
 program will receive as its first parameter C</path/to/config.pl>, and
 spider.pl will read C</path/to/config.pl> to get the spider configuration
 settings.  If C<SwishProgParameters> is not set, the program will try to
-use C<SwishSpiderConfig.pl>.
+use C<SwishSpiderConfig.pl> by default.
 
 There is a special case of:
 
@@ -807,8 +862,6 @@ LWP::RobotUA man page for more information.  The default is 0.1 (6 seconds),
 but in general you will probably want it much smaller.  But, check with
 the webmaster before using too small a number.
 
-To Do: how to completely disable and spider as fast as possible?
-
 =item max_time
 
 This optional key will set the max minutes to spider.   Spidering
@@ -819,7 +872,7 @@ next server, if any.  The default is to not limit by time.
 
 This optional key sets the max number of files to spider before aborting.
 The default is to not limit by number of files.  This is the number of requests
-made to the remote server, not the total number of files to index (see C<max_indexed).
+made to the remote server, not the total number of files to index (see C<max_indexed>).
 This count is displayted at the end of indexing as C<Unique URLs>.
 
 This feature can (and perhaps should) be use when spidering a web site where dynamic
@@ -834,23 +887,24 @@ swish for indexing (and is reported by C<Total Docs> when spidering ends).
 =item max_size
 
 This optional key sets the max size of a file read from the web server.
-This B<defaults> to 1,000,000 bytes.  If the size is exceeded the resource is
-skipped (and a message is written to STDERR if DEBUG_SKIPPED is set.
+This B<defaults> to 5,000,000 bytes.  If the size is exceeded the resource is
+skipped and a message is written to STDERR if the DEBUG_SKIPPED debug flag is set.
 
 =item keep_alive
 
 This optional parameter will enable keep alive requests.  This can dramatically speed
-us searching and reduce the load on server being spidered.  The default is to not use
+up searching and reduce the load on server being spidered.  The default is to not use
 keep alives, although enabling it will probably be the right thing to do.
 
 To get the most out of keep alives, you may want to set up your web server to
 allow a lot of requests per single connection (i.e MaxKeepAliveRequests on Apache).
-Apache's default is 100, which should be good.  (Note, that you probably do not want
-keep alives enable on a mod_perl-enabled server.)
+Apache's default is 100, which should be good.  (But, in general, don't enable KeepAlives
+on a mod_perl server.)
 
-Also, try to filter as many documents as possible B<before> making the request to the server.  In
+Note: try to filter as many documents as possible B<before> making the request to the server.  In
 other words, use C<test_url> to look for files ending in C<.html> instead of using C<test_response> to look
-for a content type of C<text/html> if possible -- aborting a request from C<test_response> will break the
+for a content type of C<text/html> if possible.
+Do note that aborting a request from C<test_response> will break the
 current keep alive connection.
 
 Note: you must have at least libwww-perl-5.53_90 installed to use this feature.
@@ -878,7 +932,7 @@ Here are basically the levels:
     DEBUG_INFO     more verbose
     DEBUG_LINKS    prints links as they are extracted
 
-For example, to display the urls, failed, and skipped use:
+For example, to display the urls processed, failed, and skipped use:
 
     debug => DEBUG_URL | DEBUG_FAILED | DEBUG_SKIPPED,
 
@@ -908,20 +962,6 @@ pages.
 
 If this is set to true then the robots.txt file will not be checked when spidering
 this server.  Don't use this option unless you know what you are doing.
-
-=item thin_dots
-
-If this optional setting is true then the spider will attempt to remove dots from
-URLs.  For example,
-
-    http://localhost/path/to/../to/../to/my/file.html
-
-will be indexed and spidered as:
-
-    http://localhost/path/to/my/file.html
-
-This should prevent relative URLs in A href tags from looking like different
-pages, when they point to the same document.
 
 =item use_cookies
 
@@ -965,39 +1005,48 @@ subroutine (or kill -HUP yourself).
 The first two parameters passed are a URI object (to have access to the current URL), and
 a reference to the current server hash.  Other parameters may be passes, as described below.
 
-Note that you can create your own counters to display when processing is done by adding a value to
-the hash pointed to by C<$server->{counts}>.  See the example below.
+Note that you can create your own counters to display in the summary list when spidering
+is finished by adding a value to the hash pointed to by C<$server->{counts}>.  See the example below.
 
 Each callback function B<must> return true to continue processing the URL.  Returning false will
-cause processing of this URL to be skipped.  Setting flags in the C<$server> hash can be used for finer
-control over the spidering.  Currently there are three flags:
+cause processing of I<the current> URL to be skipped.
+Setting flags in the passed in C<$server> hash can be used for finer
+control over the spidering.  Currently there are four flags:
 
-    no_contents -- index only the file name, and not the contents
+    no_contents -- index only the title (or file name), and not the contents
     no_index    -- do not index this file, but continue to spider if HTML
     no_spider   -- index, but do not spider this file for links to follow
     abort       -- stop spidering any more files
 
-
 Swish (not this spider) has a configuration directive C<NoContents> that will instruct swish to
-index only the file name, and not the contents.  This is often used when
+index only the title (or file name), and not the contents.  This is often used when
 indexing binary files such as image files, but can also be used with html
 files to index only the document titles.
 
 You can turn this feature on for specific documents by setting a flag in
-the server hash passed into the C<test_response> or C<filter_contents> subroutines:
+the server hash passed into the C<test_response> or C<filter_contents> subroutines.
+For example, in your configuration file you might have the C<test_response> callback set
+as:
 
-    $server{test_response} = sub {
+   
+    test_response => sub {
         my ( $uri, $server, $response ) = @_;
-        $server->{no_contents} =
-            $response->content_type =~ m[^image/];
-        return 1;  # ok to spider, but pass the index_no_contents to swish
+        # tell swish not to index the contents if this is of type image
+        $server->{no_contents} = $response->content_type =~ m[^image/];
+        return 1;  # ok to index and spider this document
     }
 
 The entire contents of the resource is still read from the web server, and passed
 on to swish, but swish will also be passed a C<No-Contents> header which tells
 swish to enable the NoContents feature for this document only.
 
-NoContents only works with HTML type of files (IndexContents) in swish 2.2.
+Note: Swish will index the path name only when C<NoContents> is set, unless the document's
+type (as set by the swish configuration settings C<IndexContents> or C<DefaultContents>) is
+HTML I<and> a title is found in the html document.
+
+Note: In most cases you probably would not want to send a large binary file to swish, just
+to be ignored.  Therefore, it would be smart to use a C<filter_contents> callback routine to
+replace the contents with single character (you cannot use the empty string at this time).
 
 A similar flag may be set to prevent indexing a document at all, but still allow spidering.
 In general, if you want completely skip spidering a file you return false from one of the three
@@ -1015,7 +1064,7 @@ the links to the PDF files.
     }
 
 So, the difference between C<no_contents> and C<no_index> is that C<no_contents> will still index the file
-name, just not the contents, where C<no_index> will still spider the file (if it's C<text/html>) but the
+name, just not the contents.  C<no_index> will still spider the file (if it's C<text/html>) but the
 file will not be processed by swish.
 
 B<Note:> If C<no_index> is set in a C<test_response> callback function then

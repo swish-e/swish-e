@@ -132,8 +132,6 @@ Please see C<perldoc spider.pl> for more information.
                                   # Some sites require cookies
                                   # Requires HTTP::Cookies
 
-        thin_dots   => 1,         # If true will strip /../ from URLs                                  
-
         use_md5     => 1,         # If true, this will use the Digest::MD5
                                   # module to create checksums on content
                                   # This will very likely catch files
