@@ -7,7 +7,8 @@ use strict;
 # file types -- in this example pdf is converted to xml for indexing.
 
 # for the odd chance of running under Windows
-binmode STDOUT;
+# Now extprog.c expects file in text mode so no need to binmode.
+# binmode STDOUT;  
 
 use File::Find;  # for recursing a directory tree
 use pdf2xml;     # example module for pdf to xml conversion

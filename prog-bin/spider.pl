@@ -43,10 +43,6 @@ sub UNIVERSAL::host { '' };
 sub UNIVERSAL::port { '' };
 sub UNIVERSAL::host_port { '' };
 
-# in case running under windows
-
-
-binmode STDOUT;
 
     
 #-----------------------------------------------------------------------
