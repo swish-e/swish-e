@@ -98,6 +98,10 @@ L<Delay|/"item_Delay"> *seconds*
 
 =item *
 
+L<DontBumpPositionOnMetaTags|/"item_DontBumpPositionOnMetaTags"> *list of names*
+
+=item *
+
 L<EndCharacter|/"item_EndCharacters"> *string of characters*
 
 =item *
@@ -127,6 +131,10 @@ L<IgnoreLastChar|/"item_IgnoreLastChar"> *string of characters*
 =item *
 
 L<IgnoreLimit|/"item_IgnoreLimit"> *integer integer*
+
+=item *
+
+L<IgnoreMeta|/"item_IgnoreMeta"> *list of names*
 
 =item *
 
@@ -767,6 +775,36 @@ and add them to B<IngoreWords> in your configuration file.  To do this, use Igno
 the stop words that are found while indexing.  Add this list to IgnoreWords, and then remove IgnoreLimit
 from the configuration file.
 
+=item IgnoreMetaNames *list of names*
+
+C<IgnoreMetaNames> defines a list of metanames to ignore while indexing.  This is useful to avoid indexing
+data from a file.  For example:
+
+    <person>
+        <first_name>
+            William
+        </first_name>
+        <last_name>
+            Shakespeare
+        </last_name>
+        <updated_date>
+            April 25, 1999
+        </updated_date>
+    </person>
+
+In the above example you might B<not> want to index the updated date, and therefore
+prevent finding this record by searching
+
+    -w 'person=(April)'
+
+This is solved by:    
+
+    IgnoreMetanames updated_date
+
+Warning: Any data listed in C<IgnoreMetanames> will not be indexed.  
+
+See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
+
 
 =item IndexComments [yes|no]
 
@@ -803,6 +841,40 @@ You might want to prevent matching "programming apple" in that meta name.
     BumpPositionCounterCharacters |
 
 There is no default, and you may list a string of characters.
+
+=item DontBumpPositionOnMetaTags *list of names*
+
+Since metatags are typically separate data fields, the word position counter is automatically bumped
+between metatags.  This prevents matching a phrase that spans more than one metaname.
+C<DontBumpPositionOnMetaTags> disables this feature for the listed metanames.
+
+For example,
+
+    <person>
+        <first_name>
+            William
+        </first_name>
+        <last_name>
+            Shakespeare
+        </last_name>
+        <updated_date>
+            April 25, 1999
+        </updated_date>
+    </person>
+
+In the conifuration file:
+
+    DontBumpPositionOnMetaTags last_name
+
+This configuration allows this phrase search
+
+    -w 'person=("william shakespeare")'
+
+but this phrase search will faile
+
+    -w 'person=("shakespeare april")'
+    
+
 
 =back
 

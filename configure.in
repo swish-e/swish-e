@@ -10,6 +10,15 @@ PROJECT=swish-e
 dnl Tell configure where the source is
 AC_INIT(src/swish.c)
 
+dnl Header file for -D defines
+AC_CONFIG_HEADER(src/acconfig.h)
+
+dnl Check for gettimeofday()
+AC_CHECK_FUNC(BSDgettimeofday, 
+              [AC_DEFINE(HAVE_BSDGETTIMEOFDAY)],
+              [AC_CHECK_FUNC(gettimeofday, , 
+                             [AC_DEFINE(NO_GETTOD)])])
+
 dnl check for #! (shebang)
 AC_SYS_INTERPRETER
 
