@@ -1306,6 +1306,31 @@ void    printstopwords(IndexFILE * indexf)
     fputc(0, fp);
 }
 
+/* Prints the list of buzzwords into the index file. */
+
+void    printbuzzwords(IndexFILE * indexf)
+{
+    int     hashval,
+            len;
+    struct swline *sp = NULL;
+    FILE   *fp = indexf->fp;
+
+    indexf->offsets[BUZZWORDPOS] = ftell(fp);
+    for (hashval = 0; hashval < HASHSIZE; hashval++)
+    {
+        sp = indexf->hashbuzzwordlist[hashval];
+        while (sp != NULL)
+        {
+            len = strlen(sp->line);
+            compress1(len, fp);
+            fwrite(sp->line, len, 1, fp);
+            sp = sp->next;
+        }
+    }
+    fputc(0, fp);
+}
+
+
 unsigned char *buildFileEntry(char *filename, FILE * fp, struct docPropertyEntry **docProperties, int lookup_path, int *sz_buffer)
 {
     int     len_filename;
@@ -1800,6 +1825,7 @@ void    decompress(SWISH * sw, IndexFILE * indexf)
     fflush(stdout);
     /* Jump File Offsets */
     for (c = fgetc(fp); c != EOF && ftell(fp) != indexf->offsets[METANAMEPOS]; c = fgetc(fp));
+
     if (c != EOF)
     {
         /* Meta Names */
@@ -1940,10 +1966,8 @@ char   *ruleparse(SWISH * sw, char *line)
 **  the ".", but didn't check if the new last character ("'") is also
 **  an ignore character.
 */
-
-int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
+void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
 {
-    int     bump_position_counter_flag = 0;
     int     k,j,i = strlen(word);
 
     /* Get rid of specified last char's */
@@ -1951,9 +1975,8 @@ int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
     /* Iteratively strip off the last character if it's an ignore character */
     while ((i > 0) && (isIgnoreLastChar(header, word[--i])))
     {
-        if (isBumpPositionCounterChar(header, word[i]))
-            bump_position_counter_flag++;
         word[i] = '\0';
+
         /* We must take care of the escaped characeters */
         /* Things like hello\c hello\\c hello\\\c can appear */
         for(j=0,k=i-1;k>=0 && word[k]=='\\';k--,j++);
@@ -1964,7 +1987,6 @@ int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
              word[--i]='\0';    
         }
     }
-    return bump_position_counter_flag;
 }
 
 void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
@@ -2100,139 +2122,207 @@ void    printhash(ENTRY ** hashentries, IndexFILE * indexf)
 }
 
 
-int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
+void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
-    int     i,
-            j,
-            k,
-            inword,
-            wordcount;
-    int     c;
-    static int lenword = 0;
-    static char *word = NULL;
-    int     bump_position_flag = 0;
-    IndexFILE *indexf = sw->indexlist;
+    int     i;
+
+    if ( *bump_position_flag )
+    {
+        for (i = 0; i < numMetaNames; i++)
+            position[i]++;
+
+        *bump_position_flag = 0;
+    }
+
+
+    for (i = 0; i < numMetaNames; i++)
+    {
+        addentry(sw, word, filenum, structure, metaID[i], position[i]);
+        position[i]++;
+    }
+}
+
+/* Gets the next white-space delimited word */
+int next_word( char **buf, char **word, int *lenword )
+{
+    int     i;
+
+    /* skip any whitespace */
+    while ( **buf && isspace( (unsigned char) **buf) )
+        (*buf)++;
 
     i = 0;
+    while ( **buf && !isspace( (unsigned char) **buf) )
+    {
+        /* reallocate buffer, if needed */
+        if ( i == *lenword )
+        {
+            *lenword *= 2;
+            *word = erealloc(*word, *lenword + 1);
+        }
+
+        (*word)[i++] = **buf;
+        (*buf)++;
+    }
+
+    if ( i )
+    {
+        (*word)[i] = '\0';
+        return 1;
+    }
+
+    return 0;
+}
+
+/* Gets the next non WordChars delimited word */
+/* Bumps position if needed */
+int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *bump_position_flag )
+{
+    int     i;
+    IndexFILE *indexf = sw->indexlist;
+
+    /* skip non-wordchars */
+    while ( **buf && !iswordchar(indexf->header, **buf ) )
+    {
+        if (isBumpPositionCounterChar(&indexf->header, (int) **buf))
+            (*bump_position_flag)++;
+            
+        (*buf)++;
+    }
+
+    i = 0;
+    while ( **buf && iswordchar(indexf->header, **buf) )
+    {
+        /* It doesn't really make sense to have a WordChar that's also a bump char */
+        if (isBumpPositionCounterChar(&indexf->header, (int) **buf))
+            (*bump_position_flag)++;
+
+
+        /* reallocate buffer, if needed */
+        if ( i == *lenword )
+        {
+            *lenword *= 2;
+            *word = erealloc(*word, *lenword + 1);
+        }
+
+        (*word)[i++] = **buf;
+        (*buf)++;
+    }
+
+    if ( i )
+    {
+        (*word)[i] = '\0';
+        stripIgnoreLastChars(&indexf->header, *word);
+        stripIgnoreFirstChars(&indexf->header, *word);
+
+        return *word ? 1 : 0;
+    }
+
+    return 0;
+}
+        
+
+
+int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
+{
+    static int lenswishword = 0;
+    static char *swishword = NULL;
+
+    static int lenword = 0;
+    static char *word = NULL;
+
+    int     wordcount = 0;
+    int     bump_position_flag = 0;
+
+    IndexFILE *indexf = sw->indexlist;
+
+    char   *buf_pos;        /* pointer to current position */
+    char   *cur_pos;       /* pointer to position with a word */
+
+
+    /* initialize buffers */
     if (!lenword)
         word = (char *) emalloc((lenword = MAXWORDLEN) + 1);
 
-    for (j = 0, inword = wordcount = 0, c = 1; c; j++)
+    if (!lenswishword)
+        swishword = (char *) emalloc((lenswishword = MAXWORDLEN) + 1);
+
+
+    if (!numMetaNames)
+        numMetaNames = 1;
+
+        
+
+    /* current pointer into buffer */
+    buf_pos = s;
+
+
+    /* get the next word as defined by whitespace */
+    while ( next_word( &buf_pos, &word, &lenword ) )
     {
-        c = (int) ((unsigned char) s[j]);
-        if (!inword)
+        strtolower(word);
+
+        /* is this a useful feature? */
+        if ( indexf->is_use_words_flag )
         {
-            if (!c)
-                break;
-            if (iswordchar(indexf->header, c))
+            if  ( isuseword(indexf, word) )
             {
-                i = 0;
-                word[i++] = c;
-                inword = 1;
+                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                wordcount++;
             }
+
+            continue;                
         }
-        else
+
+        /* Check for buzzwords */
+        if ( isbuzzword(indexf, word) )
         {
-            if (!c || !iswordchar(indexf->header, c))
-            {
-                if (i == lenword)
-                {
-                    lenword *= 2;
-                    word = erealloc(word, lenword + 1);
-                }
-                word[i] = '\0';
+            addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+            wordcount++;
+            continue;
+        }
+        
 
-                /* Now go to lowercase */
-                strtolower(word);
-                /* Get rid of the last char's */
-                bump_position_flag = stripIgnoreLastChars(&indexf->header, word);
+        /* Translate chars */
+        TranslateChars(indexf->header.translatecharslookuptable, word);
 
-                /* Get rid of the first char */
-                stripIgnoreFirstChars(&indexf->header, word);
+        cur_pos = word;
 
-                /* Translate chars */
-                TranslateChars(indexf->header.translatecharslookuptable, word);
 
-                if (indexf->header.applyStemmingRules)
-                {
-                    /* apply stemming algorithm to the word to index */
-                    Stem(&word, &lenword);
-                }
-                if (indexf->header.applySoundexRules)
-                {
-                    /* apply soundex algorithm to the search term */
-                    soundex(word);
-                }
-                if (hasokchars(indexf, word))
-                {
-                    if (isokword(sw, word, indexf))
-                    {
-                        if (!numMetaNames)
-                            numMetaNames = 1;
-                        /* Add word if not UseWords is set or, if set, add it if it is in the hash list */
-                        if (!indexf->is_use_words_flag || isuseword(indexf, word))
-                        {
-                            for (k = 0; k < numMetaNames; k++)
-                            {
-                                addentry(sw, word, filenum, structure, metaID[k], position[k]);
-                            }
-                        }
-                        for (k = 0; k < numMetaNames; k++)
-                        {
-                            position[k]++;
-                            if (bump_position_flag)
-                                position[k]++;
-                        }
-                        wordcount++;
-                    }
-                    else
-                    {
-                        if ((int) strlen(word) < indexf->header.minwordlimit && !isstopword(indexf, word))
-                        {
-                            addStopList(indexf, word);
-                            addstophash(indexf, word);
-                        }
-                    }
-                }
-                /* Move word position */
-                if (isBumpPositionCounterChar(&indexf->header, (int) c))
-                {
-                    for (k = 0; k < numMetaNames; k++)
-                        position[k]++;
-                }
-                else if (c == ' ')
-                {
-                    /* Jump spaces */
-                    for (; s[j + 1] == ' '; j++);
-                    c = (int) ((unsigned char) s[j + 1]);
-                    if (c)
-                    {
-                        if (isBumpPositionCounterChar(&indexf->header, (int) c))
-                        {
-                            for (k = 0; k < numMetaNames; k++)
-                                position[k]++;
-                            if (!iswordchar(indexf->header, c))
-                                j++;
-                        }
-                    }
-                    c = (int) ((unsigned char) s[j]);
-                }
-                inword = 0;
-            }
-            else
-            {
-                if (i == lenword)
-                {
-                    lenword *= 2;
-                    word = erealloc(word, lenword + 1);
-                }
-                word[i++] = c;
-            }
+
+        /* Now split the word up into "swish words" */
+
+        while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, &bump_position_flag ) )
+        {
+
+            /* Check Begin & EndCharacters */
+            if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
+                continue;
+
+            if (!indexf->header.endcharslookuptable[(int) ((unsigned char) swishword[strlen(swishword) - 1])])
+                continue;
+
+
+            /* limit by stopwords, min/max length, max number of digits, ... */
+            if (!isokword(sw, swishword, indexf))
+                continue;
+
+            if (indexf->header.applyStemmingRules)
+                Stem(&swishword, &lenswishword);
+
+
+            /* This needs fixing, no?  The soundex could might be longer than the string */
+            if (indexf->header.applySoundexRules)
+                soundex(swishword);
+
+            addword(swishword, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+            wordcount++;            
         }
     }
-
     return wordcount;
 }
+
+
 
 void    addtofwordtotals(IndexFILE * indexf, int filenum, int ftotalwords)
 {

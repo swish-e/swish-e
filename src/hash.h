@@ -33,3 +33,8 @@ void initresulthashlist (SWISH *sw);
 void addStopList (IndexFILE *, char *);
 void freestophash (IndexFILE *);
 void freeStopList (IndexFILE *);
+void addbuzzwordhash (IndexFILE *, char *);
+void freebuzzwordhash (IndexFILE *);
+int isbuzzword (IndexFILE *, char *);
+void addBuzzWordList (IndexFILE *, char *);
+

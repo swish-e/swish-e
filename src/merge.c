@@ -294,6 +294,11 @@ struct file *fi;
 	if(verbose) printf("Writing stopwords ...\n");
 
 	printstopwords(indexf);
+
+	if(verbose) printf("Writing buzzwords ...\n");
+
+	printbuzzwords(indexf);
+	
 	
 	if (verbose) printf("\nMerging file info... ");
 	

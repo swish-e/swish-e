@@ -36,6 +36,7 @@ void ReadHeaderLookupTable (int table[], int table_size, FILE *fp);
 void readoffsets(IndexFILE *);
 void readhashoffsets(IndexFILE *);
 void readstopwords(IndexFILE *);
+void readbuzzwords(IndexFILE *);
 void readfileoffsets(IndexFILE *);
 void readMetaNames(IndexFILE *);
 void readlocationlookuptables(IndexFILE *);

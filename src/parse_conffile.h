@@ -13,4 +13,5 @@ int getDocTypeOrAbort (StringList *sl, int n);
 void readstopwordsfile(SWISH *, IndexFILE *, char *);
 void readusewordsfile(SWISH *, IndexFILE *, char *);
 int parseconfline(SWISH *, StringList *);
+void readbuzzwordsfile(SWISH *, IndexFILE *, char *);
 

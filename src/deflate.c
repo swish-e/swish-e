@@ -8,6 +8,7 @@
 #include "error.h"
 #include "string.h"
 #include "deflate.h"
+#include "parse_conffile.h"
 
 #define MemCopy memcpy
 #define MemChar memchr

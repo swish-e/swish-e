@@ -67,7 +67,7 @@
 #include <errno.h>
 #include <time.h>
 #ifdef HAVE_CONFIG_H
-#include "acconfig.h"  /* These are defines created by autoconf */
+#include "acconfig.h"           /* These are defines created by autoconf */
 #endif
 #include "config.h"
 
@@ -85,9 +85,9 @@
 #include "vms/regex.h"
 #include <dirent.h>
 #include <stdarg.h>
-extern int snprintf(char *, size_t, const char *, /*args*/ ...);
+extern int snprintf(char *, size_t, const char *, /*args */ ...);
 extern int vsnprintf(char *, size_t, const char *, va_list);
-#else    
+#else
 #include <dirent.h>
 #include <regex.h>
 #endif
@@ -112,7 +112,7 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #else
 #define INDEXHEADER "# SWISH format: " SWISH_VERSION
 #endif
-#define INDEXHEADER_ID BASEHEADER + 1 
+#define INDEXHEADER_ID BASEHEADER + 1
 #ifdef __VMS
 #define INDEXVERSION "# Swish-e format: " ## SWISH_VERSION
 #else
@@ -195,7 +195,7 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define SEARCHHASHSIZE 10001
 #define MAXPAR 10
 #define MAXCHARDEFINED 256
-#define RD_BUFFER_SIZE  65356     /* init size, larger to avoid often reallocs  (2001-03-16 rasc) */
+#define RD_BUFFER_SIZE  65356   /* init size, larger to avoid often reallocs  (2001-03-16 rasc) */
 
 #define NOWORD "thisisnotaword"
 #define SECSPERMIN 60
@@ -210,7 +210,8 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED)
 
 #define MAXLONGLEN 4
-#define MAXCHARS 266    /* 255 for chars plus ten more for other data */
+#define MAXCHARS 266            /* 255 for chars plus ten more for other data */
+#define BUZZWORDPOS (MAXCHARS - 8) /* 2001-04-24 moseley */
 #define METANAMEPOS (MAXCHARS - 7)
 #define STOPWORDPOS (MAXCHARS - 6)
 #define FILELISTPOS (MAXCHARS - 5)
@@ -229,40 +230,46 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define LST 	(BASEDOCTYPE+4)
 #define WML 	(BASEDOCTYPE+5)
 
-typedef struct docPropertyEntry {
-	int metaID;		/* meta field identifier; from getMetaName() */
-	unsigned char *propValue;  /* buffer from META's CONTENTS attribute */
-	unsigned int propLen;	/* Length of buffer */
+typedef struct docPropertyEntry
+{
+    int     metaID;             /* meta field identifier; from getMetaName() */
+    unsigned char *propValue;   /* buffer from META's CONTENTS attribute */
+    unsigned int propLen;       /* Length of buffer */
 
-	struct docPropertyEntry *next;
-} docPropertyEntry;
+    struct docPropertyEntry *next;
+}
+docPropertyEntry;
 
-struct metaEntry {
-	char* metaName;   /* MetaName string */
-	int metaID;      /* Meta ID */
-	int metaType;    /* See metanames.h for values */
-	long sort_offset;  /* Offset in index file to sorted file data */
-						/* If 0, files are not sorted by this metaName/property */
-	int *sorted_data;   /* Sorted data . NULL if not read */
+struct metaEntry
+{
+    char   *metaName;           /* MetaName string */
+    int     metaID;             /* Meta ID */
+    int     metaType;           /* See metanames.h for values */
+    long    sort_offset;        /* Offset in index file to sorted file data */
+    /* If 0, files are not sorted by this metaName/property */
+    int    *sorted_data;        /* Sorted data . NULL if not read */
 };
 
-typedef struct {
-	int filenum;
-	int lookup_path;
-	char *filename;
-	unsigned long mtime;
-	char *title;
-	char *summary;
-	int start;
-	int size;
-} FILEINFO;
+typedef struct
+{
+    int     filenum;
+    int     lookup_path;
+    char   *filename;
+    unsigned long mtime;
+    char   *title;
+    char   *summary;
+    int     start;
+    int     size;
+}
+FILEINFO;
 
 
-struct file {
-	FILEINFO fi;
-	struct metaEntry *currentSortProp;
-	// int read;
-	struct docPropertyEntry* docProperties;
+struct file
+{
+    FILEINFO fi;
+    struct metaEntry *currentSortProp;
+    // int read;
+    struct docPropertyEntry *docProperties;
 };
 
 
@@ -277,243 +284,276 @@ struct file {
   
 */
 
-typedef struct  {
-	FILE   *fp;	/* may be also a filter stream or NULL if not opened */
-	char   *real_path;	/* org. path/URL to indexed file */
-	char   *work_path;	/* path to file to index (may be tmpfile or real_path) */
-      char   *real_filename;	/* basename() of real_path  */
-	long   fsize;		/* size of the original file (not filtered) */
-	time_t mtime;           /* Date of last mod of or. file */
-	int    doctype;		/* Type of document HTML, TXT, XML, ... */
-	int    index_no_content;/* Flag, index "filename/real_path" only! */
-	struct StoreDescription *stordesc;  
-				/* Null if no description/summary */
-	struct FilterList  *hasfilter;
-			     /* NULL if no filter for this file */
-} FileProp;
+typedef struct
+{
+    FILE   *fp;                 /* may be also a filter stream or NULL if not opened */
+    char   *real_path;          /* org. path/URL to indexed file */
+    char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
+    char   *real_filename;      /* basename() of real_path  */
+    long    fsize;              /* size of the original file (not filtered) */
+    time_t  mtime;              /* Date of last mod of or. file */
+    int     doctype;            /* Type of document HTML, TXT, XML, ... */
+    int     index_no_content;   /* Flag, index "filename/real_path" only! */
+    struct StoreDescription *stordesc;
+    /* Null if no description/summary */
+    struct FilterList *hasfilter;
+    /* NULL if no filter for this file */
+}
+FileProp;
 
 
-typedef struct {
-	int metaID;
-	int filenum;
-	int structure;
-	int frequency;
-	int position[1];
-} LOCATION;
+typedef struct
+{
+    int     metaID;
+    int     filenum;
+    int     structure;
+    int     frequency;
+    int     position[1];
+}
+LOCATION;
 
-typedef struct ENTRY {
-	char *word;
-	int tfrequency;
-	LOCATION **locationarray;
-		/* this union is just for saving memory */
-	struct {
-		long fileoffset;
-		int max_locations;
-	} u1;
-	struct ENTRY *nexthash;
-		/* this union is just for saving memory */
-	int currentlocation;
-} ENTRY;
+typedef struct ENTRY
+{
+    char   *word;
+    int     tfrequency;
+    LOCATION **locationarray;
+    /* this union is just for saving memory */
+    struct
+    {
+        long    fileoffset;
+        int     max_locations;
+    }
+    u1;
+    struct ENTRY *nexthash;
+    /* this union is just for saving memory */
+    int     currentlocation;
+}
+ENTRY;
 
-struct swline {
-	char *line;
-	struct swline *next;
-	struct swline *nodep;
+struct swline
+{
+    char   *line;
+    struct swline *next;
+    struct swline *nodep;
 };
 
-typedef struct {
-	/* vars for WordCharacters */
-    int lenwordchars;
-    char *wordchars;
-	/* vars for BeginCharacters */
-    int lenbeginchars;
-    char *beginchars;
-	/* vars for EndCharacters */
-    int lenendchars;
-    char *endchars;
-	/* vars for IgnoreLastChar */
-    int lenignorelastchar;
-    char *ignorelastchar;
-	/* vars for IgnoreFirstChar */
-    int lenignorefirstchar;
-    char *ignorefirstchar;
-	/* vars for WordCharacters */
-    int lenbumpposchars;
-    char *bumpposchars;
-	/* vars for header values */
-    char *savedasheader;
-    int lensavedasheader;
-    int lenindexedon;
-    char *indexedon;
-    int lenindexn;
-    char *indexn;
-    int lenindexd;
-    char *indexd;
-    int lenindexp;
-    char *indexp;
-    int lenindexa;
-    char *indexa;
-    int minwordlimit;
-    int maxwordlimit;
-    int applyStemmingRules;		/* added 11/24/98 - MG */
-    int applySoundexRules;              /* added 09/01/99 - DN */
-    int applyFileInfoCompression;       /* added 10/00 Jose Ruiz */
-		/* Total files and words in index file */
-    int totalwords;
-    int totalfiles;
-	/* var to specify how to ranking while indexing */
-    int ignoreTotalWordCountWhenRanking;	/* added 11/24/98 - MG */
-	/* Lookup tables for fast access */
-    int wordcharslookuptable[256];
-    int begincharslookuptable[256];
-    int endcharslookuptable[256];
-    int ignorefirstcharlookuptable[256];
-    int ignorelastcharlookuptable[256];
-    int bumpposcharslookuptable[256];
-    int translatecharslookuptable[256];	/* $$$ rasc 2001-02-21 */
+typedef struct
+{
+    /* vars for WordCharacters */
+    int     lenwordchars;
+    char   *wordchars;
+    /* vars for BeginCharacters */
+    int     lenbeginchars;
+    char   *beginchars;
+    /* vars for EndCharacters */
+    int     lenendchars;
+    char   *endchars;
+    /* vars for IgnoreLastChar */
+    int     lenignorelastchar;
+    char   *ignorelastchar;
+    /* vars for IgnoreFirstChar */
+    int     lenignorefirstchar;
+    char   *ignorefirstchar;
+    /* vars for WordCharacters */
+    int     lenbumpposchars;
+    char   *bumpposchars;
+    /* vars for header values */
+    char   *savedasheader;
+    int     lensavedasheader;
+    int     lenindexedon;
+    char   *indexedon;
+    int     lenindexn;
+    char   *indexn;
+    int     lenindexd;
+    char   *indexd;
+    int     lenindexp;
+    char   *indexp;
+    int     lenindexa;
+    char   *indexa;
+    int     minwordlimit;
+    int     maxwordlimit;
+    int     applyStemmingRules; /* added 11/24/98 - MG */
+    int     applySoundexRules;  /* added 09/01/99 - DN */
+    int     applyFileInfoCompression; /* added 10/00 Jose Ruiz */
+    /* Total files and words in index file */
+    int     totalwords;
+    int     totalfiles;
+    /* var to specify how to ranking while indexing */
+    int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
+    /* Lookup tables for fast access */
+    int     wordcharslookuptable[256];
+    int     begincharslookuptable[256];
+    int     endcharslookuptable[256];
+    int     ignorefirstcharlookuptable[256];
+    int     ignorelastcharlookuptable[256];
+    int     bumpposcharslookuptable[256];
+    int     translatecharslookuptable[256]; /* $$$ rasc 2001-02-21 */
     /* int indexcharslookuptable[256];  indexchars stuff removed */
-} INDEXDATAHEADER;
+}
+INDEXDATAHEADER;
 
-typedef struct IndexFILE {
-	char *line;     /*Name of the index file */
-		/* Offsets to words */
-	long offsets[MAXCHARS];
-	long hashoffsets[SEARCHHASHSIZE];
-		/* file index info */
-	struct file **filearray;
-	int filearray_cursize;
-	int filearray_maxsize;
-	long *fileoffsetarray;
-	int *filetotalwordsarray;
-	int fileoffsetarray_cursize;
-	int fileoffsetarray_maxsize;
+typedef struct IndexFILE
+{
+    char   *line;               /*Name of the index file */
+    /* Offsets to words */
+    long    offsets[MAXCHARS];
+    long    hashoffsets[SEARCHHASHSIZE];
+    /* file index info */
+    struct file **filearray;
+    int     filearray_cursize;
+    int     filearray_maxsize;
+    long   *fileoffsetarray;
+    int    *filetotalwordsarray;
+    int     fileoffsetarray_cursize;
+    int     fileoffsetarray_maxsize;
 
-		/* Offsets of words in index file */
-	long wordpos; 
-       		 /* Values for fields (metanames) */
-	struct metaEntry **metaEntryArray;
-	int metaCounter;   /* Number of metanames */
-		
-		/* values for handling stopwords */
-	struct swline *hashstoplist[HASHSIZE];
-	char **stopList;
-	int stopMaxSize;
-	int stopPos;
+    /* Offsets of words in index file */
+    long    wordpos;
+    /* Values for fields (metanames) */
+    struct metaEntry **metaEntryArray;
+    int     metaCounter;        /* Number of metanames */
 
-	/* values for handling "use" words - > Unused in the search proccess */
-	int is_use_words_flag;
-	struct swline *hashuselist[HASHSIZE];
+    /* values for handling stopwords */
+    struct swline *hashstoplist[HASHSIZE];
+    char  **stopList;
+    int     stopMaxSize;
+    int     stopPos;
 
-	/* File handle */
-	FILE *fp;
-	
-	/* Header Info */
-	INDEXDATAHEADER header;
+    /* Buzzwords hash */
+    struct swline *hashbuzzwordlist[HASHSIZE];
+    
+    char  **buzzList; /* these are to print the buzzwords when searching */
+    int     buzzMaxSize;
+    int     buzzPos;
+    
 
-	/* Lookup tables for repetitive values of locations (frequency,structureand metaname */
-	/* Index use all of them */
-	/* search does not use locationlookup */
-	struct int_lookup_st *locationlookup;
-	struct int_lookup_st *structurelookup;
-	struct int_lookup_st *structfreqlookup;
-	/* Lookup table for repetitive values of the path */
-	struct char_lookup_st *pathlookup;
+    /* values for handling "use" words - > Unused in the search proccess */
+    int     is_use_words_flag;
+    struct swline *hashuselist[HASHSIZE];
 
-	/* Pointer to cache the keywords */
-	char *keywords[256];
+    /* File handle */
+    FILE   *fp;
 
-	struct IndexFILE *next;
-	struct IndexFILE *nodep;
+    /* Header Info */
+    INDEXDATAHEADER header;
 
-	int n_dict_entries;
-	unsigned char **dict;     /* Used to store the patterns when
-				  ** DEFLATE_FILES is enabled */
-		/* props IDs */
-	int *propIDToDisplay;
-	int *propIDToSort;
-		/* Internal Swish meta/props */
-	struct metaEntry *filenameProp;
-	struct metaEntry *titleProp;
-	struct metaEntry *filedateProp;
-	struct metaEntry *startProp;
-	struct metaEntry *sizeProp;
-	struct metaEntry *summaryProp;
+    /* Lookup tables for repetitive values of locations (frequency,structureand metaname */
+    /* Index use all of them */
+    /* search does not use locationlookup */
+    struct int_lookup_st *locationlookup;
+    struct int_lookup_st *structurelookup;
+    struct int_lookup_st *structfreqlookup;
+    /* Lookup table for repetitive values of the path */
+    struct char_lookup_st *pathlookup;
 
-} IndexFILE;
+    /* Pointer to cache the keywords */
+    char   *keywords[256];
 
-typedef struct RESULT {
-	int count;		  /* result Entry-Counter */
-	int filenum;
-	int rank;
-	int structure;
-	int frequency;
-	int *position;
-	struct RESULT *next;
-	struct RESULT *head;
-	struct RESULT *nextsort;   /* Used while sorting results */
-	char *filename;
-	time_t last_modified;	/* former ISOTime */
-	char *title;
-	char *summary;
-	int start;
-	int size;
-	/* file position where this document's properties are stored */
-	char **Prop;
-	char **PropSort;
-	int *iPropSort;   /* Used for presorted data */
-	IndexFILE *indexf;
-	int read;    /* 0 if file data and properties have not yet been readed from the index file */
-	struct SWISH *sw;
-} RESULT;
+    struct IndexFILE *next;
+    struct IndexFILE *nodep;
 
-struct multiswline {
+    int     n_dict_entries;
+    unsigned char **dict;       /* Used to store the patterns when
+                                   ** DEFLATE_FILES is enabled */
+    /* props IDs */
+    int    *propIDToDisplay;
+    int    *propIDToSort;
+    /* Internal Swish meta/props */
+    struct metaEntry *filenameProp;
+    struct metaEntry *titleProp;
+    struct metaEntry *filedateProp;
+    struct metaEntry *startProp;
+    struct metaEntry *sizeProp;
+    struct metaEntry *summaryProp;
+
+}
+IndexFILE;
+
+typedef struct RESULT
+{
+    int     count;              /* result Entry-Counter */
+    int     filenum;
+    int     rank;
+    int     structure;
+    int     frequency;
+    int    *position;
+    struct RESULT *next;
+    struct RESULT *head;
+    struct RESULT *nextsort;    /* Used while sorting results */
+    char   *filename;
+    time_t  last_modified;      /* former ISOTime */
+    char   *title;
+    char   *summary;
+    int     start;
+    int     size;
+    /* file position where this document's properties are stored */
+    char  **Prop;
+    char  **PropSort;
+    int    *iPropSort;          /* Used for presorted data */
+    IndexFILE *indexf;
+    int     read;               /* 0 if file data and properties have not yet been readed from the index file */
+    struct SWISH *sw;
+}
+RESULT;
+
+struct multiswline
+{
     struct swline *list;
     struct multiswline *next;
 };
 
 
 
-struct ResultExtFmtStrList {  /* -x extended format by defined names */
-        char *name;
-        char *fmtstr;
-        struct ResultExtFmtStrList *next;
-        struct ResultExtFmtStrList *nodep;
+struct ResultExtFmtStrList
+{                               /* -x extended format by defined names */
+    char   *name;
+    char   *fmtstr;
+    struct ResultExtFmtStrList *next;
+    struct ResultExtFmtStrList *nodep;
 };
 
-typedef struct {
-	int numWords;
-	ENTRY **elist;
-} ENTRYARRAY;
+typedef struct
+{
+    int     numWords;
+    ENTRY **elist;
+}
+ENTRYARRAY;
 
 
-typedef struct {
-        int currentsize;
-        int maxsize;
-        char **filenames;
-} DOCENTRYARRAY;
+typedef struct
+{
+    int     currentsize;
+    int     maxsize;
+    char  **filenames;
+}
+DOCENTRYARRAY;
 
-struct dev_ino {
-                dev_t  dev;
-                ino_t  ino;
-                struct dev_ino *next;
+struct dev_ino
+{
+    dev_t   dev;
+    ino_t   ino;
+    struct dev_ino *next;
 };
 
-struct url_info {
-    char *url;
+struct url_info
+{
+    char   *url;
     struct url_info *next;
 };
 
-struct IndexContents {
-	int DocType;
-	struct swline *patt;
-	struct IndexContents *next;
+struct IndexContents
+{
+    int     DocType;
+    struct swline *patt;
+    struct IndexContents *next;
 };
 
-struct StoreDescription {
-	int DocType;
-	char *field;
-	int size;
-	struct StoreDescription *next;
+struct StoreDescription
+{
+    int     DocType;
+    char   *field;
+    int     size;
+    struct StoreDescription *next;
 };
 
 /* These two structs are used for lookuptables in order to save memory */
@@ -523,16 +563,16 @@ struct StoreDescription {
 /* Structure itself can use its own lookuptable */
 struct int_st
 {
-        int index;
-        struct int_st *next;
-        int val[1];
+    int     index;
+    struct int_st *next;
+    int     val[1];
 };
 
 struct int_lookup_st
 {
-        int n_entries;
-        struct int_st *hash_entries[HASHSIZE];
-        struct int_st *all_entries[1];
+    int     n_entries;
+    struct int_st *hash_entries[HASHSIZE];
+    struct int_st *all_entries[1];
 };
 
 /* These two structs are used for lookuptables in order to save memory */
@@ -540,16 +580,16 @@ struct int_lookup_st
 /* and usually have also low values */
 struct char_st
 {
-        int index;
-        struct char_st *next;
-        char *val;
+    int     index;
+    struct char_st *next;
+    char   *val;
 };
 
 struct char_lookup_st
 {
-        int n_entries;
-        struct char_st *hash_entries[HASHSIZE];
-        struct char_st *all_entries[1];
+    int     n_entries;
+    struct char_st *hash_entries[HASHSIZE];
+    struct char_st *all_entries[1];
 };
 
 
@@ -560,12 +600,14 @@ struct char_lookup_st
 */
 
 
-typedef struct {		/* 2001-03-12 rasc */
-   char *and;		/* Logical Search  */
-   char *or;		/* Operators (user)*/
-   char *not;
-   int  defaultrule;	/* missing op == this rule */
-} LOGICAL_OP;
+typedef struct
+{                               /* 2001-03-12 rasc */
+    char   *and;                /* Logical Search  */
+    char   *or;                 /* Operators (user) */
+    char   *not;
+    int     defaultrule;        /* missing op == this rule */
+}
+LOGICAL_OP;
 
 
 /* internal representation,  may not be changed */
@@ -597,11 +639,13 @@ typedef struct {		/* 2001-03-12 rasc */
        (takes some time and code changes)
 */
 
-typedef struct {
-    char *extendedformat;           /* -x "fmt", holds fmt or NULL */
-    char *stdResultFieldDelimiter;	/* -d <c> delimiter , (def: config.h) v1.x output style */
-    int   headerOutVerbose;         /* -H <n> print extended header info */
-} CMDPARAM;
+typedef struct
+{
+    char   *extendedformat;     /* -x "fmt", holds fmt or NULL */
+    char   *stdResultFieldDelimiter; /* -d <c> delimiter , (def: config.h) v1.x output style */
+    int     headerOutVerbose;   /* -H <n> print extended header info */
+}
+CMDPARAM;
 
 
 
@@ -616,21 +660,27 @@ typedef struct {
 */
 
 
-typedef enum {                   /* Property Datatypes */
-    UNDEFINED=-1, UNKNOWN=0, STRING, INTEGER, FLOAT, DATE
-} PropType;
- 
-typedef union {                  /* storage of the PropertyValue */
-	char   *v_str;             /* strings */
-	int     v_int;             /* Integer */
-	time_t  v_date;            /* Date    */
-	double  v_float;           /* Double Float */
-} u_PropValue1; 
+typedef enum
+{                               /* Property Datatypes */
+    UNDEFINED = -1, UNKNOWN = 0, STRING, INTEGER, FLOAT, DATE
+}
+PropType;
 
-typedef struct {                 /* Propvalue with type info */
-	PropType     datatype;
-	u_PropValue1  value;
-} PropValue;
+typedef union
+{                               /* storage of the PropertyValue */
+    char   *v_str;              /* strings */
+    int     v_int;              /* Integer */
+    time_t  v_date;             /* Date    */
+    double  v_float;            /* Double Float */
+}
+u_PropValue1;
+
+typedef struct
+{                               /* Propvalue with type info */
+    PropType datatype;
+    u_PropValue1 value;
+}
+PropValue;
 
 
 
@@ -639,117 +689,119 @@ typedef struct {                 /* Propvalue with type info */
 
 
 /* Structure to hold all results per index */
-struct DB_RESULTS {
+struct DB_RESULTS
+{
     /* Values for handling results */
     RESULT *resultlist;
     RESULT *sortresultlist;
     RESULT *currentresult;
-	struct DB_RESULTS *next;
+    struct DB_RESULTS *next;
 };
 
 
 
 
-typedef struct {
+typedef struct
+{
 
-    CMDPARAM 	opt;			/* Cmdline Options       */
-    LOGICAL_OP	srch_op;		/* search operator words */
+    CMDPARAM opt;               /* Cmdline Options       */
+    LOGICAL_OP srch_op;         /* search operator words */
 
-	/* entry vars */
+    /* entry vars */
     ENTRYARRAY *entryArray;
-    ENTRY *hashentries[SEARCHHASHSIZE];
+    ENTRY  *hashentries[SEARCHHASHSIZE];
 
-	/* 08/00 Jose Ruiz Values for document type support */
-    int DefaultDocType;
+    /* 08/00 Jose Ruiz Values for document type support */
+    int     DefaultDocType;
     struct IndexContents *indexcontents;
-	/* 12/00 Jose Ruiz Values for summary support */
+    /* 12/00 Jose Ruiz Values for summary support */
     struct StoreDescription *storedescription;
 
-	/* structure for handling replace config data while searching */
+    /* structure for handling replace config data while searching */
     struct swline *replacelist;
-	/* structure for handling NoContents config data while searching */
+    /* structure for handling NoContents config data while searching */
     struct swline *nocontentslist;
-	/* structure for handling all the directories while indexing  */
+    /* structure for handling all the directories while indexing  */
     struct swline *dirlist;
-	/* structure for handling IndexOnly config data while indexing */
+    /* structure for handling IndexOnly config data while indexing */
     struct swline *suffixlist;
 
-	/* structure to handle Ignoremeta metanames */
-	struct swline *ignoremetalist;
-	/* Structure for handling metatags from DontBumpPositionOnMetaTags */
-	struct swline *dontbumptagslist;
+    /* structure to handle Ignoremeta metanames */
+    struct swline *ignoremetalist;
+    /* Structure for handling metatags from DontBumpPositionOnMetaTags */
+    struct swline *dontbumptagslist;
 
-	/* structure for handling all the index files while searching  */
+    /* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
 
     RESULT *resulthashlist[BIGHASHSIZE];
 
-	/* Compression Work buffer while compression locations in index
-	** proccess */
+    /* Compression Work buffer while compression locations in index
+       ** proccess */
     unsigned char *compression_buffer;
-    int len_compression_buffer;
+    int     len_compression_buffer;
 
 
-	/* Total words and files in all index files */
-    int TotalWords;
-    int TotalFiles;
-	/* verbose flag */
-    int verbose;
-	/* File counter */
-    int filenum;
-    int bigrank;
-    int beginhits;
-    int maxhits;
-    int followsymlinks;
-	/* Error vars */
-    int commonerror;
-    int lasterror;
+    /* Total words and files in all index files */
+    int     TotalWords;
+    int     TotalFiles;
+    /* verbose flag */
+    int     verbose;
+    /* File counter */
+    int     filenum;
+    int     bigrank;
+    int     beginhits;
+    int     maxhits;
+    int     followsymlinks;
+    /* Error vars */
+    int     commonerror;
+    int     lasterror;
 
-    int indexComments;
-      /* ResultExtendedFormat predefined List see: -x */
-    struct ResultExtFmtStrList   *resultextfmtlist;
-	/* Filter vars */
-    struct FilterList *filterlist;    /* 1998-08-07 rasc */
-    char *filterdir;                  /* 1998-08-07 rasc */
-    int  enableAltSearchSyntax;       /* Alternate search strings 0/1  (rasc) */
-    long truncateDocSize;             /* size of doc, at which it will be truncated (2001-03-16 rasc) */ 
+    int     indexComments;
+    /* ResultExtendedFormat predefined List see: -x */
+    struct ResultExtFmtStrList *resultextfmtlist;
+    /* Filter vars */
+    struct FilterList *filterlist; /* 1998-08-07 rasc */
+    char   *filterdir;          /* 1998-08-07 rasc */
+    int     enableAltSearchSyntax; /* Alternate search strings 0/1  (rasc) */
+    long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
 
-                /* 06/00 Jose Ruiz */
-    int applyautomaticmetanames;
-    int isvowellookuptable[256];
+    /* 06/00 Jose Ruiz */
+    int     applyautomaticmetanames;
+    int     isvowellookuptable[256];
 
-	/* Properties vars */
-    int numPropertiesToDisplay;
-    int currentMaxPropertiesToDisplay;
-    char **propNameToDisplay;
-    int numPropertiesToSort;
-    int currentMaxPropertiesToSort;
-    char **propNameToSort;
-    int *propModeToSort;
-		
-	/* http proccessing */
-    int lentmpdir;
-    char *tmpdir;
+    /* Properties vars */
+    int     numPropertiesToDisplay;
+    int     currentMaxPropertiesToDisplay;
+    char  **propNameToDisplay;
+    int     numPropertiesToSort;
+    int     currentMaxPropertiesToSort;
+    char  **propNameToSort;
+    int    *propModeToSort;
 
-    int lenspiderdirectory;
-    char *spiderdirectory;
+    /* http proccessing */
+    int     lentmpdir;
+    char   *tmpdir;
+
+    int     lenspiderdirectory;
+    char   *spiderdirectory;
 
     /* Values for IgnoreLimit */
-    long plimit;
-    long flimit;
+    long    plimit;
+    long    flimit;
 
     /* Limit indexing by a file date */
-    time_t mtime_limit;
+    time_t  mtime_limit;
 
-	/* All Results per index file */
-	struct DB_RESULTS *db_results;
+    /* All Results per index file */
+    struct DB_RESULTS *db_results;
 
-	/* MetaName indexing options */
-    int ReqMetaName;
-    int OkNoMeta;
-        /* Flag to specify if HTML entities shouuld be converted */
-    int ConvertHTMLEntities;
-    void *EntitiesHashTable;
+    /* MetaName indexing options */
+    int     ReqMetaName;
+    int     OkNoMeta;
+    /* Flag to specify if HTML entities shouuld be converted */
+    int     ConvertHTMLEntities;
+    void   *EntitiesHashTable;
 
     /* file system specific configuration parameters */
     struct swline *pathconlist;
@@ -760,8 +812,8 @@ typedef struct {
     struct dev_ino *inode_hash[BIGHASHSIZE];
 
     /* http system specific configuration parameters */
-    int maxdepth;
-    int delay;
+    int     maxdepth;
+    int     delay;
     struct multiswline *equivalentservers;
     struct url_info *url_hash[BIGHASHSIZE];
 
@@ -769,21 +821,22 @@ typedef struct {
     struct swline *progparameterslist;
 
     /* Phrase delimiter char */
-    int PhraseDelimiter;
+    int     PhraseDelimiter;
 
     /* If true. Swap part of the info to disk while indexing */
     /* Save memory */
-    int swap_flag;
+    int     swap_flag;
 
     /* Filenames of the swap files */
-    char *swap_file_name;   /* File and properties file */
-    char *swap_location_name;   /* Location info file */
+    char   *swap_file_name;     /* File and properties file */
+    char   *swap_location_name; /* Location info file */
     /* handlers for both files */
-    FILE *fp_loc_write;        /* Location (writing) */
-    FILE *fp_loc_read;       /* Location (writing) */
-    FILE *fp_file_write;     /* File (writing) */
-    FILE *fp_file_read;      /* File (read) */
-} SWISH;
+    FILE   *fp_loc_write;       /* Location (writing) */
+    FILE   *fp_loc_read;        /* Location (writing) */
+    FILE   *fp_file_write;      /* File (writing) */
+    FILE   *fp_file_read;       /* File (read) */
+}
+SWISH;
 
 /*
  * This structure defines all of the functions that need to
@@ -795,10 +848,10 @@ typedef struct {
  */
 struct _indexing_data_source_def
 {
-  const char* IndexingDataSourceName;           /* long name for data source */
-  const char* IndexingDataSourceId;             /* short name for data source */
-  void (*indexpath_fn)(SWISH *sw, char *path);             /* routine to index a "path" */
-  int (*parseconfline_fn)(SWISH *sw, void *line);          /* parse config file lines */
+    const char *IndexingDataSourceName; /* long name for data source */
+    const char *IndexingDataSourceId; /* short name for data source */
+    void    (*indexpath_fn) (SWISH * sw, char *path); /* routine to index a "path" */
+    int     (*parseconfline_fn) (SWISH * sw, void *line); /* parse config file lines */
 };
 
 
@@ -816,55 +869,58 @@ struct _indexing_data_source_def
 #ifdef GLOBAL_VARS
 
 VAR struct _indexing_data_source_def *IndexingDataSource;
+
 /* VAR char *indexchars ="abcdefghijklmnopqrstuvwxyz√»Æ´ô⁄úùΩŒı£•Õ∂‘’ÿ€öÉ‹ƒÍ‚ßõÛ˙ì—Ã§âÇÑÄÖáäãàèéå˝ µˇó¸˚∫Ú˘î¢Òπ˜üÀ÷Ü–&#;0123456789_\\|/-+=?!@$%^'\"`~,.<>[]{}"; indexchars stuff removed */
 
 VAR char *defaultstopwords[] = {
-"a", "above", "according", "across", "actually", "adj", "after", 
-"afterwards", "again", "against", "all", "almost", "alone", "along", 
-"already", "also", "although", "always", "among", "amongst", "an", "and", 
-"another", "any", "anyhow", "anyone", "anything", "anywhere", "are", "aren", 
-"aren't", "around", "as", "at", "be", "became", "because", "become", "becomes", 
-"becoming", "been", "before", "beforehand", "begin", "beginning", "behind", 
-"being", "below", "beside", "besides", "between", "beyond", "billion", "both", 
-"but", "by", "can", "can't", "cannot", "caption", "co", "could", "couldn",
-"couldn't", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "don",
-"don't", "down", "during", "each", "eg", "eight", "eighty", "either", "else",
-"elsewhere", "end", "ending", "enough", "etc", "even", "ever", "every",
-"everyone", "everything", "everywhere", "except", "few", "fifty", "first",
-"five", "for", "former", "formerly", "forty", "found", "four", "from",
-"further", "had", "has", "hasn", "hasn't", "have", "haven", "haven't",
-"he", "hence", "her", "here", "hereafter", "hereby", "herein", "hereupon", 
-"hers", "herself", "him", "himself", "his", "how", "however", "hundred", 
-"ie", "i.e.", "if", "in", "inc", "inc.", "indeed", "instead", "into", "is",
-"isn", "isn't", "it", "its", "itself", "last", "later", "latter", "latterly",
-"least", "less", "let", "like", "likely", "ll", "ltd", "made", "make",
-"makes", "many", "maybe", "me", "meantime", "meanwhile", "might", "million",
-"miss", "more", "moreover", "most", "mostly", "mr", "mrs", "much", "must",
-"my", "myself", "namely", "neither", "never", "nevertheless", "next", "nine",
-"ninety", "no", "nobody", "none", "nonetheless", "noone", "nor", "not",
-"nothing", "now", "nowhere", "of", "off", "often", "on", "once", "one",
-"only", "onto", "or", "others", "otherwise", "our", "ours",
-"ourselves", "out", "over", "overall", "own", "per", "perhaps", "rather",
-"re", "recent", "recently", "same", "seem", "seemed", "seeming", "seems",
-"seven", "seventy", "several", "she", "should", "shouldn", "shouldn't",
-"since", "six", "sixty", "so", "some", "somehow", "someone", "something",
-"sometime", "sometimes", "somewhere", "still", "stop", "such", "taking",
-"ten", "than", "that", "the", "their", "them", "themselves", "then",
-"thence", "there", "thereafter", "thereby", "therefore", "therein",
-"thereupon", "these", "they", "thirty", "this", "those", "though",
-"thousand", "three", "through", "throughout", "thru", "thus", "to",
-"together", "too", "toward", "towards", "trillion", "twenty", "two", "under",
-"unless", "unlike", "unlikely", "until", "up", "upon", "us", "used", "using",
-"ve", "very", "via", "was", "wasn", "we", "we", "well", "were", "weren",
-"weren't", "what", "whatever", "when", "whence", "whenever", "where", 
-"whereafter", "whereas", "whereby", "wherein", "whereupon", "wherever", 
-"whether", "which", "while", "whither", "who", "whoever", "whole", "whom", 
-"whomever", "whose", "why", "will", "with", "within", "without", "won", 
-"would", "wouldn", "wouldn't", "yes", "yet", "you", "your", "yours",
-"yourself", "yourselves", NULL };
+    "a", "above", "according", "across", "actually", "adj", "after",
+    "afterwards", "again", "against", "all", "almost", "alone", "along",
+    "already", "also", "although", "always", "among", "amongst", "an", "and",
+    "another", "any", "anyhow", "anyone", "anything", "anywhere", "are", "aren",
+    "aren't", "around", "as", "at", "be", "became", "because", "become", "becomes",
+    "becoming", "been", "before", "beforehand", "begin", "beginning", "behind",
+    "being", "below", "beside", "besides", "between", "beyond", "billion", "both",
+    "but", "by", "can", "can't", "cannot", "caption", "co", "could", "couldn",
+    "couldn't", "did", "didn", "didn't", "do", "does", "doesn", "doesn't", "don",
+    "don't", "down", "during", "each", "eg", "eight", "eighty", "either", "else",
+    "elsewhere", "end", "ending", "enough", "etc", "even", "ever", "every",
+    "everyone", "everything", "everywhere", "except", "few", "fifty", "first",
+    "five", "for", "former", "formerly", "forty", "found", "four", "from",
+    "further", "had", "has", "hasn", "hasn't", "have", "haven", "haven't",
+    "he", "hence", "her", "here", "hereafter", "hereby", "herein", "hereupon",
+    "hers", "herself", "him", "himself", "his", "how", "however", "hundred",
+    "ie", "i.e.", "if", "in", "inc", "inc.", "indeed", "instead", "into", "is",
+    "isn", "isn't", "it", "its", "itself", "last", "later", "latter", "latterly",
+    "least", "less", "let", "like", "likely", "ll", "ltd", "made", "make",
+    "makes", "many", "maybe", "me", "meantime", "meanwhile", "might", "million",
+    "miss", "more", "moreover", "most", "mostly", "mr", "mrs", "much", "must",
+    "my", "myself", "namely", "neither", "never", "nevertheless", "next", "nine",
+    "ninety", "no", "nobody", "none", "nonetheless", "noone", "nor", "not",
+    "nothing", "now", "nowhere", "of", "off", "often", "on", "once", "one",
+    "only", "onto", "or", "others", "otherwise", "our", "ours",
+    "ourselves", "out", "over", "overall", "own", "per", "perhaps", "rather",
+    "re", "recent", "recently", "same", "seem", "seemed", "seeming", "seems",
+    "seven", "seventy", "several", "she", "should", "shouldn", "shouldn't",
+    "since", "six", "sixty", "so", "some", "somehow", "someone", "something",
+    "sometime", "sometimes", "somewhere", "still", "stop", "such", "taking",
+    "ten", "than", "that", "the", "their", "them", "themselves", "then",
+    "thence", "there", "thereafter", "thereby", "therefore", "therein",
+    "thereupon", "these", "they", "thirty", "this", "those", "though",
+    "thousand", "three", "through", "throughout", "thru", "thus", "to",
+    "together", "too", "toward", "towards", "trillion", "twenty", "two", "under",
+    "unless", "unlike", "unlikely", "until", "up", "upon", "us", "used", "using",
+    "ve", "very", "via", "was", "wasn", "we", "we", "well", "were", "weren",
+    "weren't", "what", "whatever", "when", "whence", "whenever", "where",
+    "whereafter", "whereas", "whereby", "wherein", "whereupon", "wherever",
+    "whether", "which", "while", "whither", "who", "whoever", "whole", "whom",
+    "whomever", "whose", "why", "will", "with", "within", "without", "won",
+    "would", "wouldn", "wouldn't", "yes", "yet", "you", "your", "yours",
+    "yourself", "yourselves", NULL
+};
 
 #else
 VAR struct _indexing_data_source_def *IndexingDataSource;
+
 /* VAR char *indexchars; indexchars stuff removed */
 VAR char *defaultstopwords[];
 #endif
@@ -873,26 +929,27 @@ VAR char *defaultstopwords[];
 
 
 
-int main (int, char **);
-void usage (void);
-void printversion (void);
-void printrunning (long, long);
+int     main(int, char **);
+void    usage(void);
+void    printversion(void);
+void    printrunning(long, long);
 
 #endif
 
 
 
-void allocatedefaults (void);
+void    allocatedefaults(void);
 
-SWISH *SwishNew (void);
-void SwishDefaults (SWISH *);
-void SwishFree (SWISH *);
+SWISH  *SwishNew(void);
+void    SwishDefaults(SWISH *);
+void    SwishFree(SWISH *);
 
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from index file
 */
-void printlong (FILE *, long);
-long readlong (FILE *);
+void    printlong(FILE *, long);
+long    readlong(FILE *);
+
 /* strcpy doesn't check for overflow in the 'to' string */
 /* strncpy doesn't guarantee null byte termination */
 /* can't check strlen of 'from' arg since it is sometimes a function call */
@@ -917,11 +974,10 @@ long readlong (FILE *);
 
 
 /* C library prototypes */
-SWISH * SwishOpen (char *);
-void SwishClose (SWISH *);
-void SwishResetSearch (SWISH *);
-RESULT * SwishNext (SWISH *);
-int SwishSearch (SWISH *, char *, int , char *, char *);
-int SwishSeek(SWISH *sw,int pos);
-int getnumPropertiesToDisplay (SWISH *);
-
+SWISH  *SwishOpen(char *);
+void    SwishClose(SWISH *);
+void    SwishResetSearch(SWISH *);
+RESULT *SwishNext(SWISH *);
+int     SwishSearch(SWISH *, char *, int, char *, char *);
+int     SwishSeek(SWISH * sw, int pos);
+int     getnumPropertiesToDisplay(SWISH *);

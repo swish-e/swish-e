@@ -178,6 +178,7 @@ IndexFILE *tmplist;
 		readhashoffsets(tmplist);
 		readfileoffsets(tmplist);
 		readstopwords(tmplist);
+		readbuzzwords(tmplist); 
 		readMetaNames(tmplist);
 		readlocationlookuptables(tmplist);
 		readpathlookuptable(tmplist);
@@ -299,10 +300,17 @@ struct DB_RESULTS *db_results,*db_tmp;
 
 		resultHeaderOut(sw,2, "# Index File: %s\n",indexlist->line);
 		resultPrintHeader(sw,2, &indexlist->header,indexlist->header.savedasheader,0);
+
 		resultHeaderOut(sw,3,"# StopWords:");
 		for (k=0;k<indexlist->stopPos;k++)
 			resultHeaderOut(sw,3, " %s",indexlist->stopList[k]);
 		resultHeaderOut(sw,3, "\n");
+
+		resultHeaderOut(sw,3,"# BuzzWords:");
+		for (k=0;k<indexlist->buzzPos;k++)
+			resultHeaderOut(sw,3, " %s",indexlist->buzzList[k]);
+		resultHeaderOut(sw,3, "\n");
+
 		resultHeaderOut(sw,2, "# Search Words: %s\n",words);
 		resultHeaderOut(sw,2, "# Parsed Words: ");
 		tmplist2=searchwordlist; 
@@ -710,6 +718,7 @@ FILE *fp=indexf->fp;
 	
 	word = (char *) emalloc((lenword=MAXWORDLEN) + 1);
 	fseek(fp, indexf->offsets[STOPWORDPOS], 0);
+
 	uncompress1(len,fp);
 	while (len) {
 		if(len>=lenword) {
@@ -724,6 +733,35 @@ FILE *fp=indexf->fp;
 	}
 	efree(word);
 }
+
+/* read the buzzwords from the index file */
+/* The addBuzzWordList() seems like overkill */
+
+void readbuzzwords(IndexFILE *indexf)
+{
+int len;
+int lenword=0;
+char *word=NULL;
+FILE *fp=indexf->fp;
+	
+	word = (char *) emalloc((lenword=MAXWORDLEN) + 1);
+	fseek(fp, indexf->offsets[BUZZWORDPOS], 0);
+
+	uncompress1(len,fp);
+	while (len) {
+		if(len>=lenword) {
+			lenword*=len + 200;
+			word = (char *) erealloc(word,lenword+1);
+		}
+		fread(word,len,1,fp);
+		word[len]='\0';
+		addBuzzWordList(indexf,word);
+		addbuzzwordhash(indexf,word);
+		uncompress1(len,fp);
+	}
+	efree(word);
+}
+
 
 /* Reads the metaNames from the index
 */

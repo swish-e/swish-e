@@ -38,130 +38,225 @@
 */
 
 unsigned hash(s)
-char *s;
+     char   *s;
 {
-unsigned hashval;
-	
-	for (hashval = 0; *s != '\0'; s++)
-		hashval = (int)((unsigned char) *s) + 31 * hashval;
-	return hashval % HASHSIZE;
+    unsigned hashval;
+
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = (int) ((unsigned char) *s) + 31 * hashval;
+    return hashval % HASHSIZE;
 }
 
 /* Hashes a string for a larger hash table.
 */
 
 unsigned bighash(s)
-char *s;
+     char   *s;
 {
-unsigned hashval;
-	
-	for (hashval = 0; *s != '\0'; s++)
-		hashval = (int)((unsigned char) *s) + 31 * hashval;
-	return hashval % BIGHASHSIZE;
+    unsigned hashval;
+
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = (int) ((unsigned char) *s) + 31 * hashval;
+    return hashval % BIGHASHSIZE;
 }
 
 /* Hashes a int.
 */
 
 unsigned numhash(i)
-int i;
+     int     i;
 {
-	return i % HASHSIZE;
+    return i % HASHSIZE;
 }
 
 /* Hashes a int for a larger hash table.
 */
 
 unsigned bignumhash(i)
-int i;
+     int     i;
 {
-	return i % BIGHASHSIZE;
+    return i % BIGHASHSIZE;
 }
 
 /* Hashes a string for a larger hash table (for search).
 */
 
 unsigned searchhash(s)
-char *s;
+     char   *s;
 {
-unsigned hashval;
-	
-	for (hashval = 0; *s != '\0'; s++)
-		hashval = (int)((unsigned char) *s) + 31 * hashval;
-	return hashval % SEARCHHASHSIZE;
+    unsigned hashval;
+
+    for (hashval = 0; *s != '\0'; s++)
+        hashval = (int) ((unsigned char) *s) + 31 * hashval;
+    return hashval % SEARCHHASHSIZE;
 }
 
 /* Reads the internal list of default stopwords.
 */
 
-void readdefaultstopwords(IndexFILE *indexf)
+void    readdefaultstopwords(IndexFILE * indexf)
 {
-int i;
-	
-	for (i = 0; defaultstopwords[i] != NULL; i++)
-		addstophash(indexf,defaultstopwords[i]);
+    int     i;
+
+    for (i = 0; defaultstopwords[i] != NULL; i++)
+        addstophash(indexf, defaultstopwords[i]);
 }
 
-/* Adds a stop word to the list of removed common words
-*/
-void addStopList(IndexFILE *indexf, char *word)
+/* Adds a stop word to the list of removed common words */
+void    addStopList(IndexFILE * indexf, char *word)
 {
-char* arrayWord;
-	if (isstopword(indexf, word))
-		return;
+    char   *arrayWord;
 
-		/* Another BUG!!  Jose Ruiz 04/00
-		The dimension of the array was not checked 
-		Fixed */
-	if (indexf->stopPos == indexf->stopMaxSize) {
-		indexf->stopMaxSize += 100;
-		if(!indexf->stopList)
-			indexf->stopList = (char **)emalloc(indexf->stopMaxSize * sizeof(char *));
-		else
-			indexf->stopList = (char **)erealloc(indexf->stopList,indexf->stopMaxSize * sizeof(char *));
-	}
-	arrayWord = (char *) estrdup (word);
-	indexf->stopList[indexf->stopPos++] = arrayWord;
+    if (isstopword(indexf, word))
+        return;
+
+    /* Another BUG!!  Jose Ruiz 04/00
+       The dimension of the array was not checked 
+       Fixed */
+    if (indexf->stopPos == indexf->stopMaxSize)
+    {
+        indexf->stopMaxSize += 100;
+        if (!indexf->stopList)
+            indexf->stopList = (char **) emalloc(indexf->stopMaxSize * sizeof(char *));
+
+        else
+            indexf->stopList = (char **) erealloc(indexf->stopList, indexf->stopMaxSize * sizeof(char *));
+    }
+    arrayWord = (char *) estrdup(word);
+    indexf->stopList[indexf->stopPos++] = arrayWord;
 }
 
 
 /* Adds a stop word to a hash table.
 */
 
-void addstophash(IndexFILE *indexf, char *word)
+void    addstophash(IndexFILE * indexf, char *word)
 {
-unsigned hashval;
-struct swline *sp;
-	
-	if (isstopword(indexf, word))
-		return;
-	
-	sp = (struct swline *) emalloc(sizeof(struct swline));
-	sp->line = (char *) estrdup(word);
-	
-	hashval = hash(word);
-	sp->next = indexf->hashstoplist[hashval];
-	indexf->hashstoplist[hashval] = sp;
+    unsigned hashval;
+    struct swline *sp;
+
+    if (isstopword(indexf, word))
+        return;
+
+    sp = (struct swline *) emalloc(sizeof(struct swline));
+
+    sp->line = (char *) estrdup(word);
+
+    hashval = hash(word);
+    sp->next = indexf->hashstoplist[hashval];
+    indexf->hashstoplist[hashval] = sp;
 }
 
 /* Sees if a word is a stop word by looking it up in the hash table.
 */
 
-int isstopword(IndexFILE *indexf, char *word)
+int     isstopword(IndexFILE * indexf, char *word)
 {
-unsigned hashval;
-struct swline *sp;
-	
-	hashval = hash(word);
-	sp = indexf->hashstoplist[hashval];
-	
-	while (sp != NULL) {
-		if (!strcmp(sp->line, word))
-			return 1;
-		sp = sp->next;
-	}
-	return 0;
+    unsigned hashval;
+    struct swline *sp;
+
+    hashval = hash(word);
+    sp = indexf->hashstoplist[hashval];
+
+    while (sp != NULL)
+    {
+        if (!strcmp(sp->line, word))
+            return 1;
+        sp = sp->next;
+    }
+    return 0;
 }
+
+
+
+/* Adds a buzzword to a hash table.*/
+
+void    addbuzzwordhash(IndexFILE * indexf, char *word)
+{
+    unsigned hashval;
+    struct swline *sp;
+
+    if (isbuzzword(indexf, word))
+        return;
+
+    sp = (struct swline *) emalloc(sizeof(struct swline));
+
+    sp->line = (char *) estrdup(word);
+
+    hashval = hash(word);
+    sp->next = indexf->hashbuzzwordlist[hashval];
+    indexf->hashbuzzwordlist[hashval] = sp;
+}
+
+void    freebuzzwordhash(IndexFILE * indexf)
+{
+    int     i;
+    struct swline *sp,
+           *tmp;
+
+    for (i = 0; i < HASHSIZE; i++)
+        if (indexf->hashbuzzwordlist[i])
+        {
+            sp = (struct swline *) indexf->hashbuzzwordlist[i];
+            while (sp)
+            {
+                tmp = sp->next;
+                efree(sp->line);
+                efree(sp);
+                sp = tmp;
+            }
+            indexf->hashbuzzwordlist[i] = NULL;
+        }
+}
+
+
+/* Sees if a word is a buzzword by looking it up in the hash table. */
+
+int     isbuzzword(IndexFILE * indexf, char *word)
+{
+    unsigned hashval;
+    struct swline *sp;
+
+    hashval = hash(word);
+    sp = indexf->hashbuzzwordlist[hashval];
+
+    while (sp != NULL)
+    {
+        if (!strcmp(sp->line, word))
+            return 1;
+        sp = sp->next;
+    }
+    return 0;
+}
+
+/* This is just to build up a list of words for printing when searching -- seem like overkill */
+/* In this case, it would probably be easier to keep a list of pointers into the lookup hash. */
+
+void    addBuzzWordList(IndexFILE * indexf, char *word)
+{
+    char   *arrayWord;
+
+
+    /* only display each word once (which should always be the case) */
+    if (isbuzzword(indexf, word))
+        return;
+
+    if (indexf->buzzPos == indexf->buzzMaxSize)
+    {
+        indexf->buzzMaxSize += 100;
+        if (!indexf->buzzList)
+            indexf->buzzList = (char **) emalloc(indexf->buzzMaxSize * sizeof(char *));
+
+        else
+            indexf->buzzList = (char **) erealloc(indexf->buzzList, indexf->buzzMaxSize * sizeof(char *));
+    }
+
+    arrayWord = (char *) estrdup(word);
+    indexf->buzzList[indexf->buzzPos++] = arrayWord;
+}
+
+
+
 
 /* Adds a file number to a hash table of results.
 ** If the entry's alrady there, add the ranks,
@@ -171,135 +266,161 @@ struct swline *sp;
 ** For better performance in large "or"
 ** keep the lists sorted by filename
 */
-void mergeresulthashlist(sw,r)
-SWISH *sw;
-RESULT *r;
+void    mergeresulthashlist(sw, r)
+     SWISH  *sw;
+     RESULT *r;
 {
-unsigned hashval;
-RESULT *rp, *tmp;
-int *newposition;
-	
-	tmp = NULL;
-	hashval = bignumhash(r->filenum);
-	
-	rp = sw->resulthashlist[hashval];
-	while (rp != NULL) {
-		if (rp->filenum == r->filenum) {
-			rp->rank += r->rank;
-			rp->structure |= r->structure;
-			if(r->frequency) {
-				if (rp->frequency) {
-					newposition = (int *) emalloc((rp->frequency + r->frequency) * sizeof(int));
-					CopyPositions(newposition,0,r->position,0,r->frequency);
-					CopyPositions(newposition,r->frequency,rp->position,0,rp->frequency);
-				} else {
-					newposition = (int *) emalloc(r->frequency * sizeof(int));
-					CopyPositions(newposition,0,r->position,0,r->frequency);
-				}
-				rp->frequency += r->frequency;
-				efree(rp->position);
-				rp->position = newposition;
-			}
-			freeresult(sw,r);
-			return;
-		}
-		else if (r->filenum < rp->filenum) break;
-		tmp =rp;
-		rp = rp->next;
-	}
-	if(!rp) {
-		if(tmp) {
-			tmp->next = r;
-			r->next = NULL;
-		} else {
-			sw->resulthashlist[hashval] = r;
-			r->next = NULL;
-		}
-	} else {
-		if(tmp) {
-			tmp->next = r;
-			r->next = rp;
-		} else {
-			sw->resulthashlist[hashval] = r;
-			r->next = rp;
-		}
-	}
+    unsigned hashval;
+    RESULT *rp,
+           *tmp;
+    int    *newposition;
+
+    tmp = NULL;
+    hashval = bignumhash(r->filenum);
+
+    rp = sw->resulthashlist[hashval];
+    while (rp != NULL)
+    {
+        if (rp->filenum == r->filenum)
+        {
+            rp->rank += r->rank;
+            rp->structure |= r->structure;
+            if (r->frequency)
+            {
+                if (rp->frequency)
+                {
+                    newposition = (int *) emalloc((rp->frequency + r->frequency) * sizeof(int));
+
+                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
+                    CopyPositions(newposition, r->frequency, rp->position, 0, rp->frequency);
+                }
+                else
+                {
+                    newposition = (int *) emalloc(r->frequency * sizeof(int));
+
+                    CopyPositions(newposition, 0, r->position, 0, r->frequency);
+                }
+                rp->frequency += r->frequency;
+                efree(rp->position);
+                rp->position = newposition;
+            }
+            freeresult(sw, r);
+            return;
+        }
+        else if (r->filenum < rp->filenum)
+            break;
+        tmp = rp;
+        rp = rp->next;
+    }
+    if (!rp)
+    {
+        if (tmp)
+        {
+            tmp->next = r;
+            r->next = NULL;
+        }
+        else
+        {
+            sw->resulthashlist[hashval] = r;
+            r->next = NULL;
+        }
+    }
+    else
+    {
+        if (tmp)
+        {
+            tmp->next = r;
+            r->next = rp;
+        }
+        else
+        {
+            sw->resulthashlist[hashval] = r;
+            r->next = rp;
+        }
+    }
 }
 
 /* Initializes the result hash list.
 */
 
-void initresulthashlist(SWISH *sw)
+void    initresulthashlist(SWISH * sw)
 {
-	int i;
-	
-	for (i = 0; i < BIGHASHSIZE; i++)
-		sw->resulthashlist[i] = NULL;
+    int     i;
+
+    for (i = 0; i < BIGHASHSIZE; i++)
+        sw->resulthashlist[i] = NULL;
 }
 
 
-void freestophash(IndexFILE *indexf)
+void    freestophash(IndexFILE * indexf)
 {
-int i;
-struct swline *sp, *tmp;
- 
-        for(i=0;i<HASHSIZE;i++)
-                if(indexf->hashstoplist[i]) {
-			sp = (struct swline *)indexf->hashstoplist[i];
-			while (sp) {
-				tmp = sp->next;
-				efree(sp->line);
-				efree(sp);
-				sp = tmp;
-			}
-			indexf->hashstoplist[i]=NULL;
-		}
+    int     i;
+    struct swline *sp,
+           *tmp;
+
+    for (i = 0; i < HASHSIZE; i++)
+        if (indexf->hashstoplist[i])
+        {
+            sp = (struct swline *) indexf->hashstoplist[i];
+            while (sp)
+            {
+                tmp = sp->next;
+                efree(sp->line);
+                efree(sp);
+                sp = tmp;
+            }
+            indexf->hashstoplist[i] = NULL;
+        }
 }
 
-void freeStopList(IndexFILE *indexf)
+void    freeStopList(IndexFILE * indexf)
 {
-int i;
-        for(i=0;i<indexf->stopPos;i++)
-		efree(indexf->stopList[i]);
-	if (indexf->stopList) efree(indexf->stopList);indexf->stopList=NULL;
-	indexf->stopPos=indexf->stopMaxSize=0;
+    int     i;
+
+    for (i = 0; i < indexf->stopPos; i++)
+        efree(indexf->stopList[i]);
+    if (indexf->stopList)
+        efree(indexf->stopList);
+    indexf->stopList = NULL;
+    indexf->stopPos = indexf->stopMaxSize = 0;
 }
 
 /* Adds a "use" word to a hash table.
 */
 
-void addusehash(IndexFILE *indexf, char *word)
+void    addusehash(IndexFILE * indexf, char *word)
 {
-unsigned hashval;
-struct swline *sp;
-	
-	if (isuseword(indexf, word))
-		return;
-	
-	sp = (struct swline *) emalloc(sizeof(struct swline));
-	sp->line = (char *) estrdup(word);
-	
-	hashval = hash(word);
-	sp->next = indexf->hashuselist[hashval];
-	indexf->hashuselist[hashval] = sp;
+    unsigned hashval;
+    struct swline *sp;
+
+    if (isuseword(indexf, word))
+        return;
+
+    sp = (struct swline *) emalloc(sizeof(struct swline));
+
+    sp->line = (char *) estrdup(word);
+
+    hashval = hash(word);
+    sp->next = indexf->hashuselist[hashval];
+    indexf->hashuselist[hashval] = sp;
 }
 
 /* Sees if a word is a "use" word by looking it up in the hash table.
 */
 
-int isuseword(IndexFILE *indexf, char *word)
+int     isuseword(IndexFILE * indexf, char *word)
 {
-unsigned hashval;
-struct swline *sp;
-	
-	hashval = hash(word);
-	sp = indexf->hashuselist[hashval];
-	
-	while (sp != NULL) {
-		if (!strcmp(sp->line, word))
-			return 1;
-		sp = sp->next;
-	}
-	return 0;
-}
+    unsigned hashval;
+    struct swline *sp;
 
+    hashval = hash(word);
+    sp = indexf->hashuselist[hashval];
+
+    while (sp != NULL)
+    {
+        if (!strcmp(sp->line, word))
+            return 1;
+        sp = sp->next;
+    }
+    return 0;
+}

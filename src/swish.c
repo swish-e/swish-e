@@ -540,6 +540,11 @@ struct stat stat_buf;
 			printf("Writing stopwords ...\n");
 		printstopwords(sw->indexlist);
 
+		if (sw->verbose)
+			printf("Writing buzzwords ...\n");
+		printbuzzwords(sw->indexlist);
+		
+
 		if (sw->verbose) {
 			if (sw->indexlist->header.totalwords)
 				printf("%d unique word%s indexed.\n",
