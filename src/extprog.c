@@ -166,6 +166,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     char   *rd_buffer = NULL;   /* complete file read into buffer */
     size_t  bytes;
     
+    efree( fprop->work_path );
     fprop->work_path = tmpnam( (char *) NULL );
     if ( !fprop->work_path )
         progerrno("Failed to create a temporary file for filtering: ");
@@ -254,7 +255,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             fprop = init_file_properties(sw);
             fprop->real_path = real_path;
-            fprop->work_path = real_path;
+            fprop->work_path = estrdup( real_path );
 
 
             /* set real_path, doctype, index_no_content, filter, stordesc */
@@ -296,7 +297,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 progwarnno("Error removing temporary file '%s': ", fprop->work_path);
 
             free_file_properties(fprop);
-            efree(real_path);
+            // efree(real_path); free_file_properties will free the paths
             real_path = NULL;
             mtime = 0;
             fsize = 0;

@@ -719,6 +719,12 @@ typedef struct
     /* for extracting links into a metaEntry */
     struct metaEntry *links_meta;
 
+    /* for extracting image hrefs into a metaEntry */
+    struct metaEntry *images_meta;
+
+    /* for converting relative links in href's and img src tags absoulte */
+    int               AbsoluteLinks;
+
     /* Error vars */
     int     commonerror;
     int     lasterror;

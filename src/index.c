@@ -682,6 +682,15 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fprop->external_program++;
 
 
+    /* Replace the path for ReplaceRules */
+    if ( sw->replaceRegexps )
+    {
+        int     matched = 0;
+        fprop->real_path = process_regex_list( fprop->real_path, sw->replaceRegexps, &matched );
+    }
+        
+
+
 #ifdef LIBXML2
     if ( fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
         rd_buffer = NULL;
@@ -1121,18 +1130,13 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
 
 static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, char *filename )        
 {
-    unsigned char *ruleparsedfilename;
     struct metaEntry *q;
-    int     matched = 0;  /* flag if any patterns matched */
     unsigned char   *directory;
     unsigned char   *file;
 
-    /* Run ReplaceRules on file name */
-    ruleparsedfilename = process_regex_list( estrdup(filename), sw->replaceRegexps, &matched );
-
 
     /* $$$ To be removed! */
-    split_path( ruleparsedfilename, &directory, &file );
+    split_path( filename, &directory, &file );
     newnode->lookup_path = get_lookup_path(&indexf->header.pathlookup, directory);
     efree( directory );
     newnode->filename = file;  /* This isn't freed at this point */
@@ -1141,7 +1145,7 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
     /* Check if filename is internal swish metadata -- should be! */
 
     if ((q = getPropNameByName(&indexf->header, AUTOPROPERTY_DOCPATH)))
-        addDocProperty(&newnode->docProperties, q, ruleparsedfilename, strlen(ruleparsedfilename),0);
+        addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
 
 
     /* Perhaps we want it to be indexed ... */
@@ -1152,11 +1156,8 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
 
         metaID = q->metaID;
         positionMeta = 1;
-        indexstring(sw, ruleparsedfilename, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+        indexstring(sw, filename, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
     }
-
-
-    efree(ruleparsedfilename);
 
 
     /* This allows extracting out parts of a path and indexing as a separate meta name */
