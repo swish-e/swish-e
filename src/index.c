@@ -397,6 +397,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     int                 n;
     int                 position = 1;       /* Position of word */
     int                 metaID = 1;         /* THIS ASSUMES that that's the default ID number */
+    int                 free_title = 0;
 
 
     /* Look for title if HTML document */
@@ -408,7 +409,28 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
         if (!isoktitle(sw, title))
             return -2;  /* skipped because of title */
     }
-    
+
+
+#ifdef LIBXML2
+    if (fprop->doctype == HTML2)
+    {
+        title = parse_HTML_title( sw , fprop, buffer );
+
+        if ( title )
+        {
+            free_title++;
+            if (!isoktitle(sw, title))
+            {
+                efree( title );
+                return -2;  /* skipped because of title */
+            }
+        }
+        else
+            title = "";
+    }
+#endif
+
+
     idx->filenum++;
     addtofilelist(sw, indexf, fprop->real_path, NULL );
 
@@ -417,6 +439,9 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     n = indexstring( sw, *title == '\0' ? fprop->real_path : title , idx->filenum, IN_FILE, 1, &metaID, &position);
 
     addtofwordtotals(indexf, idx->filenum, n);
+
+    if ( free_title )
+        efree( title );
  
     return n;
 }
