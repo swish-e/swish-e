@@ -237,15 +237,11 @@ typedef struct {
 	int size;
 } FILEINFO;
 
-typedef struct {
-	long filelong;
-	int ftotalwords;
-} FILEOFFSET;
 
 struct file {
 	FILEINFO fi;
 	struct metaEntry *currentSortProp;
-	int read;
+	// int read;
 	struct docPropertyEntry* docProperties;
 };
 
@@ -366,7 +362,8 @@ typedef struct IndexFILE {
 	struct file **filearray;
 	int filearray_cursize;
 	int filearray_maxsize;
-	FILEOFFSET **fileoffsetarray;
+	long *fileoffsetarray;
+	int *filetotalwordsarray;
 	int fileoffsetarray_cursize;
 	int fileoffsetarray_maxsize;
 

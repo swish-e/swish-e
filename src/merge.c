@@ -191,14 +191,14 @@ struct file *fi;
 	fseek(indexf1->fp, fileinfo1, 0);
 	for (i = 1; i <= indexfilenum1; i++) {
 		fi = readFileEntry(indexf1,i);
-		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->fileoffsetarray[i-1]->ftotalwords, metaFile1);
+		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->filetotalwordsarray[i-1], metaFile1);
 	}
 	if (verbose) printf("\nReading file 2 info ...");
 
 	fseek(indexf2->fp, fileinfo2, 0);
 	for (i = 1; i <= indexfilenum2; i++) {
 		fi = readFileEntry(indexf2,i);
-		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->fileoffsetarray[i-1]->ftotalwords, metaFile2);
+		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->filetotalwordsarray[i-1], metaFile2);
 	}
 	
 	if (verbose) printf("\nCreating output file ... ");

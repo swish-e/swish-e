@@ -70,8 +70,10 @@ int compResultsBySortedProps(const void *s1,const void *s2)
 {
 RESULT *r1=*(RESULT* const *)s1;
 RESULT *r2=*(RESULT* const *)s2;
-int i,rc,num_fields,sortmode;
+register int i,num_fields;
+int rc,sortmode;
 SWISH *sw=(SWISH *)r1->sw;
+
 	num_fields=sw->numPropertiesToSort;
 	for(i=0;i<num_fields;i++){
 		sortmode=sw->propModeToSort[i];
@@ -125,7 +127,7 @@ int *getLookupResultSortedProperties(RESULT *r)
 {
 int i;
 int *props=NULL;      /* Array to Store properties Lookups */
-struct metaEntry *m;
+struct metaEntry *m=NULL;
 IndexFILE *indexf=r->indexf;
 SWISH *sw=(SWISH *)r->sw;
 
@@ -253,6 +255,7 @@ int (*compResults)(const void *,const void *);
 
 		/* Sort them */
 	qsort(ptmp,i,sizeof(RESULT *),compResults);
+
 		/* Build the list */
 	for(j=0;j<i;j++){
 		sortresultlist = (RESULT *) addsortresult(sw, sortresultlist, ptmp[j]);

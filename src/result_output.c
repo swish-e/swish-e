@@ -186,7 +186,10 @@ FILE   *f_out;
 	      fprintf(f_out, "\n");
 	   }
 				
-	   if (resultmaxhits > 0) resultmaxhits--; /* Modified DN 08/29/99  */
+	   if (resultmaxhits > 0) {
+		resultmaxhits--; /* Modified DN 08/29/99  */
+		if(!resultmaxhits) break;
+	   }
 	}
 
      r = r->nextsort;
