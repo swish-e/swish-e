@@ -89,8 +89,8 @@ SWISH::Filter - Perl extension for filtering documents with Swish-e
 =head1 DESCRIPTION
 
 SWISH::Filter provides a unified way to convert documents into a type that swish-e
-can index.  Filters are installed as Perl modules under the path SWISH::Filters.
-As expected, the @INC array is used to find the modules.
+can index.  Individual filters are installed as separate perl modules.  For example,
+there might be a filter that converts from PDF format to HTML format.
 
 The filters are automatically loaded when C<SWISH::Filters::new()> is called.  Filters define
 a type and priority that determines the processing order of the filter.  Filters are processed
@@ -100,6 +100,25 @@ Filters use the documents's content type to determine if the filter should handl
 Normally, once a document is filtered processing stops.  Some filters can filter the document
 yet set a flag saying that filtering should continue (for example a filter that uncompresses a
 MS Word document before passing on to the filter that converts from MS Word to text).
+
+The idea is that new filters can be created, and then downloaded and installed to provide new
+filtering capabilities.  For example, if you needed to index MS Excel documents you might be able to
+download a filter from the Swish-e site and magically next time you run indexing MS Excel docs would be
+indexed.
+
+The SWISH::Filter setup can be used with -S prog or -S http.  The -S http method uses a
+Perl helper script called F<swishspider>, which by default will attempt to use the
+SWISH::Filter module.  (This default action can be disabled in the swishspider script.)
+The F<spider.pl> program included for spidering with -S prog method can also use the SWISH::Filter
+module.  See the example provided in the F<prog-bin/SwishSpiderConfig.pl> file.
+You will see better performance using -S prog (i.e. with spider.pl) than with -S http because
+with -S http the modules must be loaded and compiled for every URL processed instead of once
+with -S prog method.
+
+Note: This is just one of a few methods for filtering documents with Swish-e.  Swish-e has
+a FileFilter configuration directive for filtering from within Swish-e.
+Also, the F<prog-bin/SwishSpiderConfig.pl> example spider configuration file shows 
+examples of calling filter modules directly.
 
 =head1 METHODS
 

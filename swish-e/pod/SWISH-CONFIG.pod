@@ -2496,6 +2496,9 @@ With "filters" you can index other types of documents.  For example,
 if all your web pages are in gzip format a filter can uncompress these
 on the fly for indexing.
 
+You may wish to read the Swish-e FAQ question on filtering before continuing here.
+L<How Do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
+
 There are two suggested methods for filtering.
 
 =head3 Filtering with SWISH::Filter
