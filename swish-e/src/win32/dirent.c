@@ -29,7 +29,7 @@
 #include <sys\stat.h> 
 #define _SWISH_PORT
 #include "dirent.h" 
-#include "config.h"
+#include "acconfig.h"
 
 /* 
  *	NT specific 
