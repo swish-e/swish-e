@@ -213,6 +213,7 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
 *
 *****************************************************************************/
 
+// This assumes that the size will always preceed the content.
 typedef struct
 {
     int     len;
@@ -227,8 +228,15 @@ static void compare_header( char *index, char *name, void *in, void *out )
     if ( in_item->len != out_item->len )
         progerr("Header %s in index %s doesn't match length in length with output header", name, index );
 
-    if ( memcmp( (const void *)in_item->str, (const void *)out_item->str, in_item->len ) )
+    if ( strcmp( (const char *)in_item->str, (const char *)out_item->str )) 
         progerr("Header %s in index %s doesn't match output header", name, index );
+    
+    //if ( memcmp( (const void *)in_item->str, (const void *)out_item->str, in_item->len ) )
+    //    progerr("Header %s in index %s doesn't match output header", name, index );
+        
+
+        
+
 }
 
    
