@@ -340,7 +340,7 @@ void    printSortedResults(SWISH * sw)
 
         /* This may or may not be an optimization */
         // not really any more -- used to be able to read all the props, now this just reads them using ReadSingle... 
-        // ReadAllDocPropertiesFromDisk( sw, r->indexf, r->filenum);
+        // ReadAllDocPropertiesFromDisk( r->indexf, r->filenum);
         
 
         if (md->extendedformat)
@@ -359,7 +359,7 @@ void    printSortedResults(SWISH * sw)
                 format = estrdup( "%r %p \"%t\" %l" );
 
             printExtResultEntry(sw, f_out, format, r);
-            printStandardResultProperties(sw, f_out, r);
+            printStandardResultProperties(f_out, r);
 
             fprintf(f_out, "\n");
             efree( format );
@@ -631,7 +631,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
     int     n;
 
 
-    pv = getResultPropValue(sw, r, propname, 0);
+    pv = getResultPropValue(r, propname, 0);
 
     if (!pv)
     {
@@ -645,7 +645,7 @@ static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, cha
     {
         char *c;
         efree( pv );
-        pv = getResultPropValue(sw, r, AUTOPROPERTY_DOCPATH, 0);
+        pv = getResultPropValue(r, AUTOPROPERTY_DOCPATH, 0);
 
         /* Just display the base name */
         if ( pv )

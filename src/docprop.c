@@ -198,7 +198,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *
 ********************************************************************/
 
-static propEntry *getDocProperty( SWISH *sw, RESULT *result, struct metaEntry **meta_entry, int metaID )
+static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID )
 {
     IndexFILE *indexf = result->indexf; 
     int     error_flag;
@@ -243,7 +243,7 @@ static propEntry *getDocProperty( SWISH *sw, RESULT *result, struct metaEntry **
     }
                    
 
-    return ReadSingleDocPropertiesFromDisk(sw, indexf, &result->fi, metaID, 0 );
+    return ReadSingleDocPropertiesFromDisk(indexf, &result->fi, metaID, 0 );
 }
 
 
@@ -264,7 +264,7 @@ static propEntry *getDocProperty( SWISH *sw, RESULT *result, struct metaEntry **
 *
 ********************************************************************/
 
-char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
+char *getResultPropAsString(RESULT *result, int ID)
 {
     char *s = NULL;
     propEntry *prop;
@@ -276,7 +276,7 @@ char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 
 
 
-    if ( !(prop = getDocProperty(sw, result, &meta_entry, ID )) )
+    if ( !(prop = getDocProperty(result, &meta_entry, ID )) )
         return estrdup("");
 
     /* $$$ Ignores possible other properties that are linked to this one */
@@ -294,7 +294,6 @@ char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 *   ** Library interface call **
 *
 *   Call with:
-*       *sw
 *       *RESULT
 *       char * property name
 *
@@ -305,7 +304,7 @@ char *getResultPropAsString(SWISH *sw, RESULT *result, int ID)
 *
 ********************************************************************/
 
-char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
+char *SwishResultPropertyStr(RESULT *result, char *pname)
 {
     char                *s = NULL;
     propEntry           *prop;
@@ -314,7 +313,7 @@ char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
     
 	if( !result )
 	{
-	    sw->lasterror = SWISH_LISTRESULTS_EOF;
+	    result->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
 	    return "";  // when would this happen?
 	}
 
@@ -326,7 +325,7 @@ char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
 
     if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
     {
-        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, sw, "Invalid property name '%s'", pname );
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->indexf->sw, "Invalid property name '%s'", pname );
         return "(null)";
     }
 
@@ -335,7 +334,7 @@ char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
 
     /* Does this results have this property? */
     
-    if ( !(prop = getDocProperty(sw, result, &meta_entry, 0 )) )
+    if ( !(prop = getDocProperty(result, &meta_entry, 0 )) )
         return "";
 
     s = DecodeDocProperty( meta_entry, prop );
@@ -372,7 +371,6 @@ char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
 *   ** Library interface call **
 *
 *   Call with:
-*       *sw
 *       *RESULT
 *       char * property name
 *
@@ -383,7 +381,7 @@ char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname)
 *
 ********************************************************************/
 
-unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
+unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
 {
     struct metaEntry    *meta_entry = NULL;
     IndexFILE           *indexf;
@@ -392,7 +390,7 @@ unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
     
 	if( !result )
 	{
-	    sw->lasterror = SWISH_LISTRESULTS_EOF;
+	    result->indexf->sw->lasterror = SWISH_LISTRESULTS_EOF;
             return ULONG_MAX;
 	}
 
@@ -404,7 +402,7 @@ unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
 
     if ( !(meta_entry = getPropNameByName( &indexf->header, pname )) )
     {
-        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, sw, "Invalid property name '%s'", pname );
+        set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY, result->indexf->sw, "Invalid property name '%s'", pname );
         return ULONG_MAX;
     }
 
@@ -412,11 +410,11 @@ unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
     /* make sure it's a numeric prop */
     if ( !is_meta_number(meta_entry) &&  !is_meta_date(meta_entry)  )
     {
-        set_progerr(INVALID_PROPERTY_TYPE, sw, "Property '%s' is not numeric", pname );
+        set_progerr(INVALID_PROPERTY_TYPE, result->indexf->sw, "Property '%s' is not numeric", pname );
         return ULONG_MAX;
     }
     
-    pv = getResultPropValue (sw, result, pname, 0 );
+    pv = getResultPropValue (result, pname, 0 );
 
     value = pv->value.v_ulong;
 
@@ -433,7 +431,6 @@ unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
 *   Can be called with either a metaname, or a metaID.
 *
 *   Call with:
-*       *SWISH
 *       *RESULT
 *       *metaName -- String name of meta entry
 *       metaID    -- OR - meta ID number
@@ -452,7 +449,7 @@ unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname)
 *
 ********************************************************************/
 
-PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
+PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 {
     PropValue *pv;
     struct metaEntry *meta_entry = NULL;
@@ -473,7 +470,7 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
 
     /* This may return false */
-    prop = getDocProperty( sw, r, &meta_entry, ID );
+    prop = getDocProperty( r, &meta_entry, ID );
 
     if ( !prop )
     {
@@ -568,9 +565,10 @@ void    freeResultPropValue(PropValue *pv)
 *
 *
 ********************************************************************/
-void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
+void printStandardResultProperties(FILE *f, RESULT *r)
 {
     int     i;
+    SWISH  *sw = r->indexf->sw;
     struct  MOD_Search *srch = sw->Search;
     char   *s;
     char   *propValue;
@@ -583,7 +581,7 @@ void printStandardResultProperties(SWISH *sw, FILE *f, RESULT *r)
 
     for ( i = 0; i < srch->numPropertiesToDisplay; i++ )
     {
-        propValue = s = getResultPropAsString( sw, r, metaIDs[ i ] );
+        propValue = s = getResultPropAsString( r, metaIDs[ i ] );
 
         if (sw->ResultOutput->stdResultFieldDelimiter)
             fprintf(f, "%s", sw->ResultOutput->stdResultFieldDelimiter);
@@ -1355,7 +1353,6 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 *   Caller needs to destroy returned property
 *
 *   Call with:
-*       sw      - everyone needs a sw
 *       indexf  - which index to read from
 *       FileRec - which contains filenum (key part 1)
 *       metaID  - which prop (key part 2)
@@ -1366,8 +1363,9 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 *
 *
 *********************************************************************/
-propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRec *fi, int metaID, int max_size )
+propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size )
 {
+    SWISH           *sw = indexf->sw;
     int             propLen;
     int             error_flag;
     struct          metaEntry meta_entry;
@@ -1449,7 +1447,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRe
 *   2001-09 jmruiz Modified to be used by merge.c
 *********************************************************************/
 
-docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
+docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
 {
     FileRec         fi;
     propEntry      *new_prop;
@@ -1481,7 +1479,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     {
         meta_entry.metaID = header->propIDX_to_metaID[propIDX];
 
-        new_prop = ReadSingleDocPropertiesFromDisk( sw, indexf, &fi, meta_entry.metaID, 0);
+        new_prop = ReadSingleDocPropertiesFromDisk( indexf, &fi, meta_entry.metaID, 0);
 
         if ( !new_prop )
             continue;
@@ -1508,7 +1506,7 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
 
 void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
-struct MOD_Search *srch = sw->Search;
+    struct MOD_Search *srch = sw->Search;
 
 	/* add a property to the list of properties that will be displayed */
 	if (srch->numPropertiesToDisplay >= srch->currentMaxPropertiesToDisplay)

@@ -536,9 +536,11 @@ INDEXDATAHEADER;
 typedef struct IndexFILE
 {
     struct IndexFILE *next;
-    struct IndexFILE *nodep;
+    struct IndexFILE *nodep;    /* last */
 
-    char   *line;               /*Name of the index file */
+    struct SWISH *sw;           /* Parent object */
+
+    char   *line;               /* Name of the index file */
 
     unsigned long total_bytes;  /* Just to show total size when indexing */
     unsigned long total_word_positions;
@@ -1003,8 +1005,8 @@ void    SwishResetSearch(SWISH *);
 RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
-char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname);
-unsigned long SwishResultPropertyULong(SWISH *sw, RESULT *result, char *pname);
+char   *SwishResultPropertyStr(RESULT *result, char *pname);
+unsigned long SwishResultPropertyULong(RESULT *result, char *pname);
 
 char  **SwishStopWords(SWISH * sw, char *filename, int *numstops);
 char   *SwishHeaderParameter(IndexFILE * indexf, char *parameter_name);

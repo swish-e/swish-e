@@ -23,7 +23,7 @@ extern "C" {
 
 struct swline *addswline (struct swline *rp, char *line);
 struct swline *dupswline (struct swline *rp);
-IndexFILE *addindexfile (IndexFILE *rp, char *line);
+void addindexfile(struct SWISH *sw, char *line);
 void freeswline (struct swline *ptr);
 void freeindexfile (IndexFILE *ptr);
 void init_header (INDEXDATAHEADER *header);

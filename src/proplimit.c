@@ -63,7 +63,7 @@ static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, 
     fi.filenum = filenum;
     
 
-    d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, metaID, MAX_SORT_STRING_LEN );
+    d = ReadSingleDocPropertiesFromDisk(indexf, &fi, metaID, MAX_SORT_STRING_LEN );
     freefileinfo(&fi);
 
     return d;

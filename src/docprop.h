@@ -32,17 +32,16 @@ unsigned char *fetchDocProperties ( FileRec *, char * );
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
-void printStandardResultProperties(SWISH *, FILE *, RESULT *);
+void printStandardResultProperties(FILE *, RESULT *);
 
 void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 
-// char *SwishResultPropertyStr(SWISH *sw, RESULT *result, char *pname);
-char *getResultPropAsString(SWISH *, RESULT *, int);
+char *getResultPropAsString(RESULT *, int);
 char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop );
 void getSwishInternalProperties(FileRec *, IndexFILE *);
 
 
-PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *name, int ID);
+PropValue *getResultPropValue (RESULT *r, char *name, int ID);
 void    freeResultPropValue(PropValue *pv);
 
 
@@ -50,8 +49,8 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
 void dump_file_properties(IndexFILE * indexf, FileRec *fi );
 
 void     WritePropertiesToDisk( SWISH *sw , FileRec *fi);
-propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, FileRec *fi, int metaID, int max_size );
-docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum );
+propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size );
+docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum );
 
 
 

@@ -107,7 +107,8 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 
 
     /* Init default index file */
-    indexf = sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
+    addindexfile(sw, INDEXFILE);
+    indexf = sw->indexlist;
 
 
     sl = NULL;

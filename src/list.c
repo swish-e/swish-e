@@ -66,32 +66,30 @@ struct swline *newnode;
 	return tmp;
 }
 
-IndexFILE *addindexfile(IndexFILE *rp, char *line)
+void addindexfile(SWISH *sw, char *line)
 {
-    IndexFILE *newnode;
+    IndexFILE *head = sw->indexlist;
+    IndexFILE *indexf = (IndexFILE *) emalloc(sizeof(IndexFILE));
 
-	newnode = (IndexFILE *) emalloc(sizeof(IndexFILE));
-	memset( newnode, 0, sizeof(IndexFILE) );
+	memset( indexf, 0, sizeof(IndexFILE) );
 
-	newnode->line = (char *) estrdup(line);
-
-
-	init_header(&newnode->header);
-
-	newnode->next = NULL;
+	indexf->sw = sw;  /* save parent object */
+	indexf->line = estrdup(line);
+	init_header(&indexf->header);
+	indexf->next = NULL;
 
 
     /* Add default meta names -- these will be replaced if reading from an index file */
-	add_default_metanames(newnode);
+	add_default_metanames(indexf);
 
-	if (rp == NULL)
-		rp = newnode;
+	/* Add index to end of list */
+
+	if ( head == NULL )  /* first entry? */
+		sw->indexlist = head = indexf;
 	else
-		rp->nodep->next = newnode;
+		head->nodep->next = indexf;  /* point the previous last one to the new last one */
 	
-	rp->nodep = newnode;
-	
-	return rp;
+	head->nodep = indexf;  /* set the last pointer */
 }
 
 

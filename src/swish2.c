@@ -276,7 +276,7 @@ SWISH  *SwishInit(char *indexfiles)
     
 
     for (i = 0; i < sl->n; i++)
-        sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, sl->word[i]);
+        addindexfile(sw, sl->word[i]);
 
     if (sl)
         freeStringList(sl);
