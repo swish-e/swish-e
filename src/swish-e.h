@@ -23,7 +23,7 @@ typedef enum {
     SWISH_BOOL,
     SWISH_WORD_HASH,
     SWISH_OTHER_DATA,
-    SWISH_HEADER_ERROR, /* must check error in this case */
+    SWISH_HEADER_ERROR /* must check error in this case */
 } SWISH_HEADER_TYPE;
 
 typedef union

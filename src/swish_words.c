@@ -680,7 +680,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
 
         
     /* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
-    searchwordlist = expandphrase(searchwordlist, srch->PhraseDelimiter);
+    searchwordlist = expandphrase(searchwordlist, (char)srch->PhraseDelimiter);
 
     searchwordlist = fixmetanames(searchwordlist);
     searchwordlist = fixnot1(searchwordlist);
