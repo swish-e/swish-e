@@ -31,6 +31,13 @@ For example, to sort by the rank and title:
 
     swish-e -w foo -s swishrank desc swishtitle asc
 
+=item * New "prog" document source indexing method
+
+You can now use -S prog to use an external program to supply documents
+to swish.  This program can be used to spider web servers, index databases,
+or to convert any type of document into html, xml, or text, so it can be
+indexed by swish.
+
 =back
 
 Changes to Configuration File Directives.  Please see L<SWISH-CONFIG|SWISH-CONFIG> for
@@ -46,6 +53,14 @@ documents.  The IndexContents and DefaultContents tells swish how to index files
 =item * New directive: UndefinedMetaTags [error|ignore|index|auto]
 
 This describes what to do when a meta tag is found in a document that is not listed in the MetaNames directive.
+
+=item * New directive: IgnoreTags
+
+Will ignore listed tags in XML files
+
+=item * New directive: SwishProgParameters *list of words*
+
+Passess words listed to the external swish-e program.
 
 =item * New directive: ConvertHTMLEntities [yes|no]
 
