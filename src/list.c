@@ -95,14 +95,14 @@ void addindexfile(SWISH *sw, char *line)
 
 void freeswline(struct swline *tmplist)
 {
-struct swline *tmplist2;
+    struct swline *tmplist2;
 
-	while (tmplist) {
-		tmplist2 = tmplist->next;
-		efree(tmplist->line);
-		efree(tmplist);
-		tmplist = tmplist2;
-	}
+    while (tmplist) {
+        tmplist2 = tmplist->next;
+        efree(tmplist->line);
+        efree(tmplist);
+        tmplist = tmplist2;
+    }
 }
 
 

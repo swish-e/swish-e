@@ -43,6 +43,16 @@ $Id$
 #include "config.h"         // for _AND_WORD...
 #include "search_alt.h"     // for AND_WORD... humm maybe needs better organization
 
+static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, INDEXDATAHEADER *header );
+static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swline *searchwordlist);
+
+static struct swline *fixmetanames(struct swline *);
+static struct swline *fixnot1(struct swline *);
+static struct swline *fixnot2(struct swline *);
+static struct swline *expandphrase(struct swline *, char);
+
+
+
 struct MOD_Swish_Words
 {
     char   *word;
@@ -446,29 +456,22 @@ char *isBooleanOperatorWord( char * word )
 
 
 
-struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *header )
+static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, INDEXDATAHEADER *header )
 {
     char   *curpos;               /* current position in the words string */
     struct  swline *tokens = NULL;
     struct  swline *temp;
     struct  swline *swish_words;
     struct  swline *next_node;
+    SWISH  *sw = srch->sw;
     struct  MOD_Swish_Words *self = sw->SwishWords;
-    struct  MOD_Search *srch = sw->Search;
     unsigned char PhraseDelimiter;
     int     max_size;
     int     inphrase = 0;
 
 
-    /* Probably won't get to this point */
-    if ( !words || !*words )
-    {
-        sw->lasterror = NO_WORDS_IN_SEARCH;
-        return NULL;
-    }
 
-
-    PhraseDelimiter = (unsigned char) srch->PhraseDelimiter;
+    PhraseDelimiter = (unsigned char) srch->params.PhraseDelimiter;
     max_size        = header->maxwordlimit;
 
     curpos = words;  
@@ -487,7 +490,7 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
     /* no search words found */
     if ( !tokens )
-        return tokens;
+        return NULL;
 
 
     inphrase = 0;
@@ -595,4 +598,539 @@ struct swline *tokenize_query_string( SWISH *sw, char *words, INDEXDATAHEADER *h
 
     return tokens;
 }
+
+/**********************************************************************************
+*  parse_swish_query -- convert a string in a SEARCH_OBJECT into a list of tokens
+*
+*   Pass in:
+*       srch - a search object
+*       db_results - container for the search results for a single index
+*
+*   Returns:
+*       false on error
+*       sets sw->lasterror on fatal errors.
+*
+*       but some errors are cleared and set in the search object to allow
+*       processing to continue.  For example, when searching multiple index
+*       files one index may end up removing all the words in a query (if they
+*       are all stopwords) where another index will not have the same stopword
+*       list and produce a query.  Room for improvement, of course.
+*
+*   Notes:
+*       calls tokenize_query_string() as first pass
+*       ignore_words_in_query() to remove stop words (could be combined with tokenize, I think -- but removing stop words is a bit tricky)
+*       expandpharse() prepares for phrase searching
+*       fixmetanames() fixnot1() and fixnot2() make other adjustments
+*
+*       Clearly, a better query parser is in order.
+*
+*       Sep 29, 2002 - moseley
+*
+***********************************************************************************/
+
+struct swline *parse_swish_query( DB_RESULTS *db_results )
+{
+    struct swline *searchwordlist;
+    IndexFILE     *indexf = db_results->indexf;
+    SEARCH_OBJECT *srch = db_results->srch;
+    
+
+
+    /* tokenize the query into swish words based on this current index */
+    /* returns false if no words or error */
+    /* may set sw->lasterror on unknown metanames or word too big */
+
+    if (!(searchwordlist = tokenize_query_string(srch, srch->params.query, &indexf->header)))
+        return NULL;
+
+
+
+
+    /* Remove stopwords from the query -- also sets db_results->removed_stopwords */
+
+    /* This can set QUERY_SYNTAX_ERROR which should abort */
+    /* WORDS_TOO_COMMON & NO_WORDS_IN_SEARCH should be used if no index files are searched */
+    /* This is a bit ugly */
+
+    searchwordlist = ignore_words_in_query(db_results, searchwordlist);
+  
+    if ( !searchwordlist || srch->sw->lasterror )
+    {
+        if ( searchwordlist )
+            freeswline( searchwordlist );
+        return NULL;
+    }
+
+    db_results->parsed_words = dupswline(searchwordlist);
+
+
+    /* Now hack up the query for searh processing */
+    /* $$$ please fix this!  Let's get a real parser */
+
+        
+    /* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
+    searchwordlist = expandphrase(searchwordlist, srch->params.PhraseDelimiter);
+
+    searchwordlist = fixmetanames(searchwordlist);
+    searchwordlist = fixnot1(searchwordlist);
+    searchwordlist = fixnot2(searchwordlist);
+
+
+    return searchwordlist;
+}
+
+static int     u_isrule(SWISH * sw, char *word)
+{
+    LOGICAL_OP *op;
+
+    op = &(sw->SearchAlt->srch_op);
+    if (!strcmp(word, op->and) || !strcmp(word, op->or) || !strcmp(word, op->not))
+        return 1;
+    else
+        return 0;
+}
+
+static int     isnotrule(char *word)
+{
+    if (!strcmp(word, NOT_WORD))
+        return 1;
+    else
+        return 0;
+}
+
+static int     u_isnotrule(SWISH * sw, char *word)
+{
+    if (!strcmp(word, sw->SearchAlt->srch_op.not))
+        return 1;
+    else
+        return 0;
+}
+
+
+
+/******************************************************************************
+*   Remove the stop words from the tokenized query
+*   rewritten Nov 24, 2001 - moseley
+*   Still horrible!  Need a real parse tree.
+*******************************************************************************/
+
+
+static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swline *searchwordlist)
+{
+    IndexFILE      *indexf = db_results->indexf;
+    SEARCH_OBJECT  *srch = db_results->srch;
+    SWISH          *sw = srch->sw;
+    struct swline  *cur_token = searchwordlist;
+    struct swline  *prev_token = NULL;
+    struct swline  *prev_prev_token = NULL;  // for removing two things
+    int             in_phrase = 0;
+    int             word_count = 0; /* number of search words found */
+    int             paren_count = 0;
+    int             stop_word_removed = 0;
+    unsigned char   phrase_delimiter = (unsigned char)srch->params.PhraseDelimiter;
+    
+
+
+    
+
+    while ( cur_token )
+    {
+        int remove = 0;
+        char first_char = cur_token->line[0];
+
+        if ( cur_token == searchwordlist )
+        {
+            prev_token = prev_prev_token = NULL;
+            word_count = 0;
+            paren_count = 0;
+            in_phrase = 0;
+        }
+
+        while ( 1 )  // so we can use break.
+        {
+
+            /* Can't backslash here -- (because this code should really be include in swish_words.c) */
+            
+            if ( first_char == phrase_delimiter )
+            {
+                in_phrase = !in_phrase;
+
+                if ( !in_phrase && prev_token && prev_token->line[0] == phrase_delimiter )
+                    remove = 2;
+                    
+                break;
+            }
+
+
+            /* leave everything alone inside a pharse */
+            
+            if ( in_phrase )
+            {
+                if (isstopword(&indexf->header, cur_token->line))
+                {
+                    db_results->removed_stopwords = addswline( db_results->removed_stopwords, cur_token->line );
+                    stop_word_removed++;
+                    remove = 1;
+                }
+                else
+                    word_count++;
+
+                break;                    
+            }
+            
+
+            /* Allow operators */
+
+            if ( first_char == '=' )
+                break;
+            
+            if ( first_char == '(' )
+            {
+                paren_count++;
+                break;
+            }
+
+            if ( first_char == ')' )
+            {
+                paren_count--;
+
+                if ( prev_token && prev_token->line[0] == '(' )
+                    remove = 2;
+
+                break;
+            }
+                
+
+
+            /* Allow all metanames */
+            
+            if ( isMetaNameOpNext(cur_token->next) )
+                break;
+
+
+
+            /* Look for AND OR NOT - remove AND OR at start, and remove second of doubles */
+
+            if ( u_isrule(sw, cur_token->line)  )
+            {
+                if ( prev_token )
+                {
+                    /* remove double tokens */
+                    if ( u_isrule( sw, prev_token->line ) )
+                        remove = 1;
+                }
+                /* allow NOT at the start */
+                else if ( !u_isnotrule(sw, cur_token->line) )
+                    remove = 1;
+
+                break;
+            }
+                    
+
+
+            /* Finally, is it a stop word? */
+
+            if ( isstopword(&indexf->header, cur_token->line) )
+            {
+                db_results->removed_stopwords = addswline( db_results->removed_stopwords, cur_token->line );
+                stop_word_removed++;
+                remove = 1;
+            }
+            else
+                word_count++;
+            
+
+            
+            break;
+        }
+
+
+        /* Catch dangling metanames */
+        if ( !remove && !cur_token->next && isMetaNameOpNext( cur_token ) )
+            remove = 2;
+
+
+        if ( remove )
+        {
+            struct swline *tmp = cur_token;
+                
+            if ( cur_token == searchwordlist )      // we are removing first token
+                searchwordlist = cur_token->next;
+            else
+            {
+                prev_token->next = cur_token->next; // remove one in the middle
+                cur_token = prev_token;  // save if remove == 2
+            }
+
+
+            efree( tmp->line );
+            efree( tmp );
+
+            if ( remove == 2 )
+            {
+                tmp = cur_token;
+
+                if ( cur_token == searchwordlist )      // we are removing first token
+                    searchwordlist = cur_token->next;
+                else
+                    prev_prev_token->next = cur_token->next; // remove one in the middle
+                
+                efree( tmp->line );
+                efree( tmp );
+            }
+
+
+            /* start at the beginning again */
+
+            cur_token = searchwordlist;
+            continue;
+        }
+        
+        if ( prev_token )
+            prev_prev_token = prev_token;
+            
+        prev_token = cur_token;
+        cur_token = cur_token->next;
+    }
+
+
+    if ( in_phrase || paren_count )
+        sw->lasterror = QUERY_SYNTAX_ERROR;
+
+    else if ( !word_count )
+        sw->lasterror = stop_word_removed ? WORDS_TOO_COMMON : NO_WORDS_IN_SEARCH;
+
+
+    return searchwordlist;
+
+}
+
+
+/* 2001-09 jmruiz - Rewriting
+** This puts parentheses in the right places around meta searches
+** to avoid problems whith them. Basically "metaname = bla" 
+** becomes "(metanames = bla)" */
+
+static struct swline *fixmetanames(struct swline *sp)
+{
+    int     metapar;
+    struct swline *tmpp,
+           *newp;
+
+    tmpp = sp;
+    newp = NULL;
+
+    /* Fix metanames with parenthesys eg: metaname = bla => (metanames = bla) */
+    while (tmpp != NULL)
+    {
+        if (isMetaNameOpNext(tmpp->next))
+        {
+            /* If it is a metaName add the name and = and skip to next */
+            newp = (struct swline *) addswline(newp, "(");
+            newp = (struct swline *) addswline(newp, tmpp->line);
+            newp = (struct swline *) addswline(newp, "=");
+            tmpp = tmpp->next;
+            tmpp = tmpp->next;
+            if ( !tmpp )
+                return NULL;  /* no more words! */
+            
+            /* 06/00 Jose Ruiz
+               ** Fix to consider parenthesys in the
+               ** content of a MetaName */
+            if (tmpp->line[0] == '(')
+            {
+                metapar = 1;
+                newp = (struct swline *) addswline(newp, tmpp->line);
+                tmpp = tmpp->next;
+                while (metapar && tmpp)
+                {
+                    if (tmpp->line[0] == '(')
+                        metapar++;
+                    else if (tmpp->line[0] == ')')
+                        metapar--;
+                    newp = (struct swline *) addswline(newp, tmpp->line);
+                    if (metapar)
+                        tmpp = tmpp->next;
+                }
+                if (!tmpp)
+                    return (newp);
+            }
+            else
+                newp = (struct swline *) addswline(newp, tmpp->line);
+            newp = (struct swline *) addswline(newp, ")");
+        }
+        else 
+            newp = (struct swline *) addswline(newp, tmpp->line);
+        /* next one */
+        tmpp = tmpp->next;
+    }
+
+    freeswline(sp);
+    return newp;
+}
+
+/* 2001 -09 jmruiz Rewritten 
+** This optimizes some NOT operator to be faster.
+**
+** "word1 not word" is changed by "word1 and_not word2"
+**
+** In the old way the previous query was...
+**    get results if word1
+**    get results of word2
+**    not results of word2 (If we have 100000 docs and word2 is in
+**                          just 3 docs, this means read 99997
+**                          results)
+**    intersect both list of results
+**
+** The "new way"
+**    get results if word1
+**    get results of word2
+**    intersect (and_not_rule) both lists of results
+** 
+*/
+
+static struct swline *fixnot1(struct swline *sp)
+{
+    struct swline *tmpp,
+           *prev;
+
+    if (!sp)
+        return NULL;
+    /* 06/00 Jose Ruiz - Check if first word is NOT_RULE */
+    /* Change remaining NOT by AND_NOT_RULE */
+    for (tmpp = sp, prev = NULL; tmpp; prev = tmpp, tmpp = tmpp->next)
+    {
+        if (tmpp->line[0] == '(')
+            continue;
+        else if (isnotrule(tmpp->line))
+        {
+            if(prev && prev->line[0]!='=' && prev->line[0]!='(')
+            {
+                efree(tmpp->line);
+                tmpp->line = estrdup(AND_NOT_WORD);
+            }
+        }
+    }
+    return sp;
+}
+
+/* 2001 -09 jmruiz - Totally new - Fix the meta=(not ahsg) bug
+** Add parentheses to avoid the way operator NOT confuse complex queries */
+static struct swline *fixnot2(struct swline *sp)
+{
+    int     openparen, found;
+    struct swline *tmpp, *newp;
+    char    *magic = "<__not__>";  /* magic avoids parsing the
+                                   ** "not" operator twice
+                                   ** and put the code in an 
+                                   ** endless loop */                            
+
+    found = 1;
+    while(found)
+    {
+        openparen = 0;
+        found = 0;
+
+        for (tmpp = sp , newp = NULL; tmpp ; tmpp = tmpp->next)
+        {
+            if (isnotrule(tmpp->line))
+            {
+                found = 1;
+                /* Add parentheses */
+                newp = (struct swline *) addswline(newp, "(");
+                /* Change "NOT" by magic to avoid find it in next iteration */
+                newp = (struct swline *) addswline(newp, magic);
+                for(tmpp = tmpp->next; tmpp; tmpp = tmpp->next)
+                {
+                    if ((tmpp->line)[0] == '(')
+                        openparen++;
+                    else if(!openparen)
+                    {
+                        newp = (struct swline *) addswline(newp, tmpp->line);
+                        /* Add parentheses */
+                        newp = (struct swline *) addswline(newp, ")");
+                        break;
+                    }
+                    else if ((tmpp->line)[0] == ')')
+                        openparen--;
+                    newp = (struct swline *) addswline(newp, tmpp->line);
+                }
+                if(!tmpp)
+                    break;
+            }
+            else
+                newp = (struct swline *) addswline(newp, tmpp->line);
+        }
+        freeswline(sp);
+        sp = newp;
+    }
+
+    /* remove magic and put the "real" NOT in place */
+    for(tmpp = newp; tmpp ; tmpp = tmpp->next)
+    {
+        if(!strcmp(tmpp->line,magic))
+        {
+            efree(tmpp->line);
+            tmpp->line = estrdup(NOT_WORD);
+        }
+    }
+
+    return newp;
+}
+
+/* expandstar removed - Jose Ruiz 04/00 */
+
+/* Expands phrase search. Berkeley University becomes Berkeley PHRASE_WORD University */
+/* It also fixes the and, not or problem when they appeared inside a phrase */
+static struct swline *expandphrase(struct swline *sp, char delimiter)
+{
+    struct swline *tmp,
+           *newp;
+    int     inphrase;
+
+    if (!sp)
+        return NULL;
+    inphrase = 0;
+    newp = NULL;
+    tmp = sp;
+    while (tmp != NULL)
+    {
+        if ((tmp->line)[0] == delimiter)
+        {
+            if (inphrase)
+            {
+                inphrase = 0;
+                newp = (struct swline *) addswline(newp, ")");
+            }
+            else
+            {
+                inphrase++;
+                newp = (struct swline *) addswline(newp, "(");
+            }
+        }
+        else
+        {
+            if (inphrase)
+            {
+                if (inphrase > 1)
+                    newp = (struct swline *) addswline(newp, PHRASE_WORD);
+                inphrase++;
+                newp = (struct swline *) addswline(newp, tmp->line);
+            }
+            else
+            {
+                char *operator;
+
+                if ( ( operator = isBooleanOperatorWord( tmp->line )) )
+                    newp = (struct swline *) addswline(newp, operator);
+                else
+                    newp = (struct swline *) addswline(newp, tmp->line);
+            }
+        }
+        tmp = tmp->next;
+    }
+    freeswline(sp);
+    return newp;
+}
+
 

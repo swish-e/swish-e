@@ -43,6 +43,7 @@ COPYRIGHT
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#include "swish.h"  // $$$ yikes, sure brings in a lot
 #include "double_metaphone.h"
 #include "mem.h"
 

@@ -24,6 +24,7 @@ $Id$
 #include "string.h"
 #include "mem.h"
 #include "merge.h"      // why is this needed for docprop.h???
+#include "search.h"
 #include "docprop.h"
 #include "index.h"
 #include "metanames.h"
@@ -111,63 +112,27 @@ typedef struct LOOKUP_TABLE
 } LOOKUP_TABLE;
 
 
-/* This is the list of parameters supplied with the query */
-typedef struct PARAMS
-{
-    struct PARAMS   *next;
-    unsigned char    *propname;
-    unsigned char    *lowrange;
-    unsigned char    *highrange;
-} PARAMS;
-
-
-
-
-struct MOD_PropLimit
-{
-    PARAMS   *params;  /* parameter */
-};
-
 
 
 /*==============================================================*/
 /*                  Code                                        */
 /*==============================================================*/
 
-void initModule_PropLimit (SWISH  *sw)
+
+void ClearLimitParameter (LIMIT_PARAMS *params )
 {
-    /* local data */
-    struct MOD_PropLimit *self;
-    self =(struct MOD_PropLimit *) emalloc(sizeof(struct MOD_PropLimit));
-    sw->PropLimit = self;
+    LIMIT_PARAMS  *tmp;
 
-    self->params = NULL;
-}
-
-void ClearLimitParameter (SWISH *sw)
-{
-    struct MOD_PropLimit *self = sw->PropLimit;
-    PARAMS  *tmp;
-
-    while ( self->params ) {
-        efree( self->params->propname );
-        efree( self->params->lowrange );
-        efree( self->params->highrange );
-        tmp = (PARAMS *)self->params->next;
-        efree( self->params );
-        self->params = tmp;
+    while ( params ) {
+        efree( params->propname );
+        efree( params->lowrange );
+        efree( params->highrange );
+        tmp = (LIMIT_PARAMS *)params->next;
+        efree( params );
+        params = tmp;
     }
 }
 
-
-
-void freeModule_PropLimit (SWISH *sw)
-{
-    ClearLimitParameter( sw );
-    efree( sw->PropLimit );
-    sw->PropLimit = NULL;
-    
-}
 
 
 /*******************************************************************
@@ -179,41 +144,45 @@ void freeModule_PropLimit (SWISH *sw)
 *
 *   Returns:
 *       returns false (0) on failure
-*       pointer to a PARAMS
+*       pointer to a LIMIT_PARAMS
 *       errors do not return (doesn't do many checks)
 *
 *   ToDo:
 *       Error checking, and maybe pass in a StringList
 *
 ********************************************************************/
-int SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
+int SetLimitParameter(SEARCH_OBJECT * srch, char *propertyname, char *low, char *hi)
 {
-    PARAMS *newparam;
-    PARAMS *params;
-    struct MOD_PropLimit *self = sw->PropLimit;
+    LIMIT_PARAMS *newparam;
+    LIMIT_PARAMS *params = srch->params.limit_params;
 
 
     /* Currently, can only limit by one property -- so check that one hasn't already been used */
-    for ( params = self->params; params && (strcmp( (char *)params->propname, propertyname ) != 0); params = (PARAMS *)params->next);
+    while ( params )
+    {
+        if (strcmp( (char *)params->propname, propertyname ) == 0)
+            break;
+        params = (LIMIT_PARAMS *)params->next;
+    }
+
+
     if ( params )
     {
-        set_progerr( PROP_LIMIT_ERROR, sw, "Property '%s' is already limited", propertyname );
+        set_progerr( PROP_LIMIT_ERROR, srch->sw, "Property '%s' is already limited", propertyname );
         return 0;
     }
         
 
 
-    newparam = emalloc( sizeof( PARAMS ) );
+    newparam = emalloc( sizeof( LIMIT_PARAMS ) );
     
     newparam->propname = (unsigned char *)estrdup( propertyname );
     newparam->lowrange = (unsigned char *)estrdup( low );
     newparam->highrange = (unsigned char *)estrdup( hi );
 
-    params = self->params;
-
     /* put at head of list */
-    self->params = newparam;
-    newparam->next = (struct PARAMS *)params;
+    newparam->next = srch->params.limit_params;
+    srch->params.limit_params = newparam;
 
     return 1;
 
@@ -388,7 +357,7 @@ static int binary_search(
 *       pointer to the IndexFile
 *       pointer to the LOOKUP_TABLE
 *       *metaEntry
-*       PARAMS (low/hi range)
+*       LIMIT_PARAMS (low/hi range)
 *
 *   Returns:
 *       true if any in range, otherwise false
@@ -499,7 +468,7 @@ int sortbyfile(const void *s1, const void *s2)
 *       pointer to SWISH
 *       pointer to the IndexFile
 *       *metaEntry
-*       PARAMS (low/hi range)
+*       LIMIT_PARAMS (low/hi range)
 *
 *   Returns:
 *       true if any were marked as found
@@ -574,7 +543,7 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
 *
 *   Call with:
 *       *metaEntry  -> current meta entry 
-*       *PARAMS     -> associated parameters
+*       *LIMIT_PARAMS     -> associated parameters
 *
 *   Returns:
 *       True if a range was found, otherwise false.
@@ -582,7 +551,7 @@ static int create_lookup_array( SWISH *sw, IndexFILE *indexf, struct metaEntry *
 *
 *
 ********************************************************************/
-static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, PARAMS *param )
+static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, LIMIT_PARAMS *param )
 {
     int error_flag;
     unsigned char *lowrange  = param->lowrange;
@@ -650,10 +619,10 @@ static int params_to_props( SWISH *sw, struct metaEntry *meta_entry, PARAMS *par
 *       that you can't OR limits.  Will need fixing at some point
 *
 ********************************************************************/
-static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
+static int load_index( SWISH *sw, IndexFILE *indexf, LIMIT_PARAMS *params )
 {
     struct metaEntry *meta_entry;
-    PARAMS  *curp;
+    LIMIT_PARAMS  *curp;
     int found;
     
 
@@ -721,7 +690,7 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 *   Prepares the lookup tables for every index
 *
 *   Call with:
-*       pointer to SWISH
+*       pointer to SEARCH_OBJECT
 *
 *   Returns:
 *       true if ok to continue search
@@ -732,32 +701,38 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 *   ToDo:
 *       How to deal with non-presorted properties?
 *
+*       This stores data in the indexf's meta entry table.
+*       Should be in the srch object, but it makes it harder
+*       to releate the two -- would have to have a linked list
+*       of index file pointers in the srch object.
+*
+*
 ********************************************************************/
 
-int Prepare_PropLookup(SWISH *sw )
+int Prepare_PropLookup(SEARCH_OBJECT * srch )
 {
     IndexFILE *indexf;
-    struct MOD_PropLimit *self = sw->PropLimit;
     int total_indexes = 0;
     int total_no_docs = 0;
+    LIMIT_PARAMS *params = srch->params.limit_params;
 
 
 
     /* nothing to limit by */
-    if ( !self->params )
+    if ( params )
         return 1;
 
 
 
 
     /* process each index file */
-    for( indexf = sw->indexlist; indexf; indexf = indexf->next)
+    for( indexf = srch->sw->indexlist; indexf; indexf = indexf->next)
     {
         total_indexes++;
         
-        if ( !load_index( sw, indexf, self->params ) )
+        if ( !load_index( srch->sw, indexf, params ) )
         {
-            if ( sw->lasterror )    // check for error
+            if ( srch->sw->lasterror )    // check for error
                 return 0;
                 
             total_no_docs++;
@@ -782,9 +757,10 @@ int Prepare_PropLookup(SWISH *sw )
 *
 *
 ********************************************************************/
-int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
+int LimitByProperty( IndexFILE *indexf, int filenum )
 {
     int j;
+    SWISH *sw = indexf->sw;
     struct metaEntry  *meta_entry;
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
@@ -833,16 +809,4 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
     return 0;  /* don't limit by default */
 }    
 
-/*******************************************************************
-*   Checks to see if ANY -L parameters were set
-*
-*   This is just to avoid processing each result in the result list.
-*
-********************************************************************/
-int is_prop_limit_used( SWISH *sw )
-{
-    struct MOD_PropLimit *self = sw->PropLimit;
-
-    return self->params ? 1 : 0;
-}
 

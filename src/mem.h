@@ -19,6 +19,9 @@ $Id$
 **
 */
 
+#ifndef MEM_H
+#define MEM_H 1
+
 /*
 ** The following settings control the memory allocator. Each setting is independent.
 ** They also affect the actual memory usage of the program, because (currently)
@@ -121,3 +124,4 @@ int Mem_ZoneSize(MEM_ZONE *head);
 #endif /* __cplusplus */
 
 
+#endif /* !MEM_H */

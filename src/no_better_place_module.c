@@ -30,6 +30,10 @@ $Id$
 
 #include "string.h"
 #include "mem.h"
+#include "merge.h"
+#include "metanames.h"
+#include "search.h"
+#include "docprop.h"
 #include "result_output.h"
 
 

@@ -29,6 +29,7 @@
 #include "mem.h"
 #include "merge.h"
 #include "string.h"
+#include "search.h"
 #include "docprop.h"
 #include "metanames.h"
 #include "dump.h"
