@@ -185,16 +185,16 @@ L<IndexDir|SWISH-CONFIG/"item_IndexDir"> directive, or via the C<-i> option.
 The program specified should be an absolute path as swish-e will attempt to stat() the
 program to make sure it exists.  Swish does this to help in error reporting.
 
-If the program specified with -i or IndexDir is not an absolute path (i.e. does not start
-with "/" or ".") then swish-e will prepend the "libexecdir" directory defined during
-configuration.  Typically, libexecdir is set to "$prefix/lib/swish-e"
-(/usr/local/lib/swish-e), but is platform and installation dependent.  Running swish-e -h
-will report the directory.
+If the program specified with -i or IndexDir is not an absolute path (i.e. 
+does not include "/" ) then swish-e will append the "libexecdir" directory
+defined during configuration.  Typically, libexecdir is set to
+"$prefix/lib/swish-e" (/usr/local/lib/swish-e), but is platform and
+installation dependent.  Running swish-e -h will report the directory.
 
 For example, the -S prog program "spider.pl" is a Perl helper program for use with -S prog
 and is installed in libexecdir.
 
-    IndexDire spider.pl
+    IndexDir spider.pl
     SwishProgParameters default http://localhost/index.html
 
 and swish-e will find spider.pl in libexecdir.
@@ -332,11 +332,11 @@ far more feature-rich and offers much more control over indexing.
 If you use the special program name "stdin" with C<-i> or L<IndexDir|SWISH-CONFIG/"item_IndexDir">
 then swish-e will read from standard input instead of from a program.  For example:
 
-    % ./example.pl /path/to/data --count=1000 | ./swish-e -S prog -i stdin
+    % ./example.pl --count=1000 /path/to/data | ./swish-e -S prog -i stdin
 
 This is basically the same as using a swish-e configuration file of:
 
-    SwishProgParameters /path/to/data --count=1000
+    SwishProgParameters --count=1000 /path/to/data
     IndexDir ./example.pl
 
 in a config file and running
@@ -372,8 +372,9 @@ how to easily add document converstion and filtering into your Perl-based progra
 
 B<Notes when using -S prog on MS Windows>
 
-Windows does not use the shebang (#!) line of a program to determine the program to run.  So, when running,
-for example, a perl program you will need to specify the perl.exe binary as the program, and use the
+Windows does not use the shebang (#!) line of a program to determine the
+program to run.  So, when running, for example, a perl program you may need
+to specify the perl.exe binary as the program, and use the
 C<SwishProgParameters> to name the file.
 
     IndexDir e:/perl/bin/perl.exe
