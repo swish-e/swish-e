@@ -21,7 +21,7 @@ use HTML::Parser 3.00;
 use HTML::LinkExtor;
 
     if (scalar(@ARGV) != 2) {
-        print STDERR "Usage: SwishSpider localpath url\n";
+        print STDERR "Usage: $0 localpath url\n";
         exit(1);
     }
 
