@@ -674,6 +674,10 @@ Create a file called C<swish.conf>:
     # Otherwise, use the HTML parser
     DefaultContents HTML*
 
+    # Ask libxml2 to report any parsing errors and warnings or 
+    # any UTF-8 to 8859-1 conversion errors
+    ParserWarnLevel 9
+
 After saving the configuration file, reindex:
 
     swish-e -c swish.conf

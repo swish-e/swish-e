@@ -352,50 +352,27 @@ static void    printversion()
 /*************************************************************************
 * swish_new -- create a general purpose swish structure
 *
-*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish2.c:SwishNew()
-*  This is called when using the binrary.
 *  Note that initModule_* code is called even when it's not going to be used
 *  (e.g. initModule_HTTP is called when searching).
 *
-*  SwishNew is search related only
 *
 **************************************************************************/
 
 static SWISH  *swish_new()
 
 {
-    SWISH  *sw;
+    SWISH  *sw = SwishNew();
 
-    sw = emalloc(sizeof(SWISH));
-    memset(sw, 0, sizeof(SWISH));
 
-    initModule_DB(sw);
+    /* Additional modules needed for indexin (which we are not sure about yet... */
     initModule_ResultSort(sw);
-    initModule_Swish_Words(sw);  /* allocate a buffer */
-
     initModule_Filter(sw);
-    initModule_Entities(sw);
+    initModule_Entities(sw);  /* used only by the old HTML parser -- not long to live */
     initModule_Index(sw);
     initModule_FS(sw);
     initModule_HTTP(sw);
     initModule_Prog(sw);
 
-
-    sw->lasterror = RC_OK;
-    sw->lasterrorstr[0] = '\0';
-    sw->verbose = VERBOSE;
-    sw->headerOutVerbose = 1;
-    sw->DefaultDocType = NODOCTYPE;
-
-#ifdef HAVE_ZLIB
-    sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
-#endif
-
-
-
-
-    /* Make rest of lookup tables */
-    makeallstringlookuptables(sw);
     return (sw);
 }
 

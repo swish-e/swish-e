@@ -48,9 +48,6 @@ unsigned int DEBUG_MASK = 0;
 /*************************************************************************
 * SwishNew -- create a search swish structure
 *
-*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish.c swish_new
-*
-*  $$$ Please join these routines!
 *
 **************************************************************************/
 
@@ -74,8 +71,8 @@ SWISH  *SwishNew()
     sw->lasterror = RC_OK;
     sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
+    sw->parser_warn_level = 2;  /* report if libxml2 aborts processing a document. */
     sw->headerOutVerbose = 1;
-    
     sw->DefaultDocType = NODOCTYPE;
 
 #ifdef HAVE_ZLIB
