@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item MetaNamesRank documentation
+
+Changed the 'not yet implemented' caveat to 'implemented but experimental'.
+
 =item Added Continuation option to config processing
 
 You can now use continuation lines in the config file:
@@ -33,6 +37,7 @@ Words entered in config were not converted to lower case before storing in the i
 Peter Karman found an error when merging indexes where the source indexes had the
 same metanames, but listed in a different order in their config files.  Words
 would then be indexed under the wrong metaID number in the output index.
+
 
 =item SWISH::Filters and spider.pl updates
 
@@ -61,6 +66,8 @@ rank) than those with 'foo'.
 
 The impact is greatest when OR'ing words in a query rather than
 AND'ing them (which is the default).
+
+Also added Rank discussion to the FAQ.
 
 
 =item Updates to the example scripts
