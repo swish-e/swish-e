@@ -42,10 +42,6 @@ AC_PROG_CC
 dnl Resolve ranlib dependencies
 AC_PROG_RANLIB
 
-dnl Checks for libraries.
-dnl Replace `main' with a function in -lm:
-AC_CHECK_LIB(m, main)
-
 dnl Check for vsnprintf in libsnprintf.so
 AC_CHECK_LIB(snprintf, vsnprintf)
 
