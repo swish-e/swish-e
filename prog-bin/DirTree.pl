@@ -20,7 +20,7 @@ use constant DEBUG => 0;
 find(
     {
         wanted => \&wanted,
-        no_chdir => 1,
+        # no_chdir => 1,  # 5.6 feature
     },
     @ARGV,
 );
@@ -28,15 +28,13 @@ find(
 sub wanted {
     return if -d;
 
-    return unless /\.pdf$/;
-
     if ( /\.pdf$/ ) {
         print STDERR "Indexing pdf $File::Find::name\n" if DEBUG;
         print ${ pdf2xml( $File::Find::name ) };
 
     } elsif ( /\.(txt|log|pl|html|htm)$/ ) {
         print STDERR "Indexing $File::Find::name\n" if DEBUG;
-        print ${ get_content( $File::Find::name ) };
+        print ${ get_content( $_ ) };
 
     } else {
         print STDERR "Skipping $File::Find::name\n" if DEBUG;
@@ -53,7 +51,7 @@ sub get_content {
     my $content =  <<EOF;
 Content-Length: $size
 Last-Mtime: $mtime
-Path-Name: $path
+Path-Name: $File::Find::name
 
 EOF
     local $/ = undef;
