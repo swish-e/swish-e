@@ -1741,9 +1741,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
 Also sorts properties
 */
 
-#ifdef PROPFILE
-void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname);
-#endif
 
 
 void    write_file_list(SWISH * sw, IndexFILE * indexf)
@@ -1802,7 +1799,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
 #ifdef PROPFILE
     /* First reopen the property file in read only mode for seek speed */
-    DB_Reopen_PropertiesForRead_Native( indexf->DB, indexf->line );
+    DB_Reopen_PropertiesForRead( sw, indexf->DB  );
 #endif    
 
     sortFileProperties(sw,indexf);

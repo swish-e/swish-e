@@ -91,8 +91,11 @@ void initModule_DBNative (SWISH  *sw)
     Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
 
+#ifdef PROPFILE
     Db->DB_WriteProperty = DB_WriteProperty_Native;
     Db->DB_ReadProperty = DB_ReadProperty_Native;
+    Db->DB_Reopen_PropertiesForRead = DB_Reopen_PropertiesForRead_Native;
+#endif    
 
 
     sw->Db = Db;
@@ -148,7 +151,6 @@ int configModule_DBNative  (SWISH *sw, StringList *sl)
 static void DB_CheckHeader(struct Handle_DBNative *DB)
 {
     long    swish_magic;
-    long    index, prop;
 
     fseek(DB->fp, 0, 0);
     swish_magic = readlong( DB->fp, fread );
@@ -157,11 +159,15 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
         progerr("File \"%s\" has an unknown format.", DB->cur_index_file);
 
 #ifdef PROPFILE
-    index = readlong( DB->fp, fread );
-    prop  = readlong( DB->prop, fread );
+    {
+        long    index, prop;
+    
+        index = readlong( DB->fp, fread );
+        prop  = readlong( DB->prop, fread );
 
-    if ( index != prop )
-        progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file );
+        if ( index != prop )
+            progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file );
+    }
 #endif        
         
 }
@@ -386,6 +392,12 @@ static void DB_Close_File_Native( FILE **fp, char **filename, int *tempflag )
         char *newname = estrdup( *filename );
         newname[ strlen( newname ) - strlen( USE_TEMPFILE_EXTENSION ) ] = '\0';
 
+#if defined(_WIN32) || defined (__VMS)
+        if ( isfile( newname ) )
+            if ( remove( newname ) )
+                progerrno("Failed to unlink '%s' before renaming. : ", newname );
+#endif
+
         if ( rename( *filename, newname ) )
             progerrno("Failed to rename '%s' to '%s' : ", *filename, newname );
 
@@ -399,31 +411,6 @@ static void DB_Close_File_Native( FILE **fp, char **filename, int *tempflag )
 }
 
 
-#ifdef PROPFILE
-/****************************************************************
-*  This routine closes the property file and reopens it as
-*  readonly to improve seek times.
-*  Note: It does not rename the property file.
-*****************************************************************/
-
-void DB_Reopen_PropertiesForRead_Native(void *db, char *dbname)
-{
-    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    int no_rename = 0;
-    char *s = estrdup( DB->cur_prop_file );
-
-
-    /* Close property file */
-    DB_Close_File_Native( &DB->prop, &DB->cur_prop_file, &no_rename );
-  
-
-    if( !(DB->prop = openIndexFILEForRead(s)) )
-        progerrno("Couldn't open the property file \"%s\": ", s);
-
-    DB->cur_prop_file = s; 
-}
-#endif
-
 
 
 void DB_Close_Native(void *db)
@@ -433,8 +420,10 @@ void DB_Close_Native(void *db)
    FILE *fp = DB->fp;
 
 
+#ifdef PROPFILE
     /* Close (and rename) property file, if it's open */
     DB_Close_File_Native( &DB->prop, &DB->cur_prop_file, &DB->tmp_prop );
+#endif    
 
    if(DB->mode)  /* If we are indexing update offsets to words and files */
    {
@@ -1295,6 +1284,31 @@ void DB_ReadProperty_Native( char *buf, long seek_pos, long length, int filenum,
     if ( fread(buf, 1, length, DB->prop) != length )
         progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, filenum );
 }
+
+
+/****************************************************************
+*  This routine closes the property file and reopens it as
+*  readonly to improve seek times.
+*  Note: It does not rename the property file.
+*****************************************************************/
+
+void DB_Reopen_PropertiesForRead_Native(void *db)
+{
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    int no_rename = 0;
+    char *s = estrdup( DB->cur_prop_file );
+
+
+    /* Close property file */
+    DB_Close_File_Native( &DB->prop, &DB->cur_prop_file, &no_rename );
+  
+
+    if( !(DB->prop = openIndexFILEForRead(s)) )
+        progerrno("Couldn't open the property file \"%s\": ", s);
+
+    DB->cur_prop_file = s; 
+}
+
 
 
 #endif
