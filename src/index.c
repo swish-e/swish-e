@@ -208,12 +208,14 @@ void freeModule_Index (SWISH *sw)
   if (isfile(idx->swap_file_name))
   {
       remove(idx->swap_file_name);
-      efree(idx->swap_file_name);
+      /* tempnam internally calls malloc, so must use free not efree */
+      free(idx->swap_file_name);
   }
   if (isfile(idx->swap_location_name))
   {
       remove(idx->swap_location_name);
-      efree(idx->swap_location_name);
+      /* tempnam internally calls malloc, so must use free not efree */
+      free(idx->swap_location_name);
   }
 
   if(idx->lentmpdir) efree(idx->tmpdir);        
@@ -1240,7 +1242,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
         if (idx->economic_flag)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
 
-        compressed_data = (char *) e->locationarray[k];
+        compressed_data = (char *)e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */
         pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
         num = uncompress2(&compressed_data); /* filenum */
