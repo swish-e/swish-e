@@ -66,6 +66,11 @@ Provides additional header output and allows for a I<format string> to describe 
 
 Prints words stored in the swish index.
 
+=item * New command line argument C<-N>
+
+Provides a way to do incremental indexing.  You pass C<-N> a path to a file
+and only files newer than the last modified date of that file will be indexed.
+
 =item * Enhanced command line argument C<-D>
 
 When C<-D> is used with C<-v 4> additional debugging data is printed.

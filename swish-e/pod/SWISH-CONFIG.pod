@@ -86,7 +86,7 @@ L<BumpPositionCounterCharacters|/"item_BumpPositionCounterCharacters"> *string*
 
 =item *
 
-L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [yes|no]
+L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [YES|no]
 
 =item *
 
@@ -114,7 +114,7 @@ L<EquivalentServer|"/item_EquivalentServer"> *server alias*
 
 =item *
 
-L<FileInfoCompression|/"item_FileInfoCompression"> [yes|no]
+L<FileInfoCompression|/"item_FileInfoCompression"> [yes|NO]
 
 =item *
 
@@ -122,7 +122,7 @@ L<FileRules|/"item_FileRules"> [contains|is] *regular expression*
 
 =item *
 
-L<FollowSymLinks|/"item_FollowSymLinks"> [yes|no]
+L<FollowSymLinks|/"item_FollowSymLinks"> [yes|NO]
 
 =item *
 
@@ -143,7 +143,7 @@ L<IgnoreMetaTags|/"item_IgnoreMetaTags"> *list of names*
 =item *
 
 
-L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [yes|no]
+L<IgnoreTotalWordCountWhenRanking|/"item_IgnoreTotalWordCountWhenRanking"> [YES|no]
 
 =item *
 
@@ -159,7 +159,7 @@ L<IndexAdmin|/"item_IndexAdmin"> *text*
 
 =item *
 
-L<IndexComments|/"item_IndexComments"> [yes|no]
+L<IndexComments|/"item_IndexComments"> [YES|no]
 
 =item *
 
@@ -260,11 +260,11 @@ L<UndefinedMetaTags|/"item_UndefinedMetaTags"> [error|ignore|index|auto]
 
 =item *
 
-L<UseStemming|/"item_UseStemming"> [yes|no]
+L<UseStemming|/"item_UseStemming"> [yes|NO]
 
 =item *
 
-L<UseSoundex|/"item_UseSoundex"> [yes|no]
+L<UseSoundex|/"item_UseSoundex"> [yes|NO]
 
 =item *
 
@@ -469,13 +469,19 @@ be indexed, otherwise the file name will be indexed.
 
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
 
-=item FollowSymLinks [yes|no]
+=item FollowSymLinks [yes|NO]
 
 Put "yes" to follow symbolic links in indexing, else "no".
 Default is no.
 
     FollowSymLinks no
     FollowSymLinks yes
+
+Note that when set to C<no> extra stat(2) system calls must be made for each
+file.  For large number of files you may see a small reduction in indexing time
+by setting this to C<yes>.
+
+See also the C<-l> switch in L<SWISH-RUN|SWISH-RUN>.
 
 =item ReplaceRules [replace|remove|prepend|append]
 
@@ -514,10 +520,10 @@ Examples:
     ReplaceRules prepend "http://localhost/"
     ReplaceRules append ".html"
 
-=item IndexContents [TXT|HTML|XML]  *file extensions*
+=item IndexContents [TXT|HTML|XML|LST]  *file extensions*
 
 Swish knows how to parse TXT, HTML, and XML documents.  This directive maps file extensions to
-those types of parsers.
+those types of parsers.  LST are special multiple document XML files, described below.
 
 Example:
 
@@ -539,8 +545,66 @@ should be indexed by the internal HTML parser:
 
 See also L<Document Filter Directives|/"Document Filter Directives">.
 
+LST files are XML files that contain multiple documents.  The documents are separated by the first XML
+tag found in the document (each time that tag is found it is considered a new document).
 
-B<Note:> This may be changed in the future to use content-types.  See L<SWISH-3.0|SWISH-3.0>
+    <tag1>         <== First document
+        bla, bla
+    </tag1>
+    <tag2>
+        bla, bla
+    </tag2>
+    <tag1>         <== Second document
+    ...
+
+When reporting results from a query, swish will still return the document name, but will also return
+a document offset in the property C<swishstartpos>, and the length of the sub-document in C<swishdocsize>
+(these properties are available by using the C<-x> format option).
+
+For example, you could have text files that contain SQL queries, and the queries might generate quite a
+number of results (documents) from a database.  You can instruct swish to "index" these files, and use a
+filter to convert the SQL queries into documents.  In other words, indexes a file, but a swish filter converts
+that file (which contains the SQL query statement) into a query and returns, perhaps, many documents.
+
+For example, the swish config file might look like this:
+
+    IndexDir ./test.sql
+    IndexFile ./test.index
+    MetaNames tag1 tag2 tag3
+    PropertyNames tag2 tag3
+    FilterDir ./
+    # Here is the main part
+    IndexContents LST .sql          
+    FileFilter .sql mysqlfilter.sh       
+    # If you also want a desc use XML not LST
+    StoreDescription XML <meta1> 
+
+
+Then, the *.sql files can contain the queries.  For example,
+
+    select tag1,tag2,tag3 from my_table
+
+The mysqlfilter.sh program should read the *.sql file, proccess the query/select, and 
+format the output in the "LST" style:
+
+    <tag1>
+        data
+    </tag1>
+    <tag2>
+        more data
+    </tag2>
+    <tag3>
+        even more data
+    </tag3>
+    <tag1>
+        start of a new document
+    ...
+
+Care must be taken when returning multiple document files to swish, as swish will load all data
+into memory for each file.  In other words, don't try to index thousands of documents as a single
+LST type of document.
+
+B<Note:> Some of this may be changed in the future to use content-types.  See L<SWISH-3.0|SWISH-3.0>
 
 
 =item DefaultContents [TXT|HTML|XML]
@@ -553,7 +617,7 @@ Example:
 
     DefaultContents HTML
 
-=item FileInfoCompression [yes|no]
+=item FileInfoCompression [yes|NO]
 
 Setting B<FileInfoCompression> to C<yes> will compress the index file to save disk space.  This may result
 in longer indexing times.  The default is C<no>.
@@ -570,7 +634,7 @@ how that information is made available during searching.
 
 =over 4
 
-=item ConvertHTMLEntities [yes|no]
+=item ConvertHTMLEntities [YES|no]
 
 ASCII I<entities> can be converted automatically while indexing documents of type HTML and XML.
 For performance reasons you may wish to set this to C<no> if your documents contain no HTML entities.
@@ -707,7 +771,7 @@ accessing databases, or to limit "runnaway" filters.
 Truncating doc input may destroy document structures for swish-e (e.g.
 swish may miss closing tags for XML or HTML documents).
 
-=item UseStemming [yes|no]
+=item UseStemming [yes|NO]
 
 Put yes to apply word stemming algorithm during indexing,
 else no. 
@@ -729,7 +793,7 @@ yet searching for "runn*" looks for words that start with "runn".
 It's a good idea to create both a stemmed and non-stemmed index and allow your search interface select which index
 to use.
 
-=item UseSoundex [yes|no]
+=item UseSoundex [yes|NO]
 
 When UseSoundex is set to C<yes> every word is converted to a Soundex code before placing it in to the index.
 
@@ -750,7 +814,7 @@ The first letter is not matched for sound.
 It may be a good idea to create both a Soundex and non-Soundex index and allow your search interface
 select which index to use.
 
-=item IgnoreTotalWordCountWhenRanking [yes|no]
+=item IgnoreTotalWordCountWhenRanking [yes|NO]
 
 Put yes to ignore the total number of words in the file
 when calculating ranking. Often better with merges and
@@ -924,7 +988,7 @@ Warning: Any data listed in C<IgnoreMetaTags> will not be indexed.
 See also L<UndefinedMetaTags|/"item_UndefinedMetaTags">.
 
 
-=item IndexComments [yes|no]
+=item IndexComments [YES|no]
 
 This option allows the user decide if to index the contents of HTML comments.
 Default is yes. Set to no if comment indexing is not required.
