@@ -1140,14 +1140,14 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 
         /* If title is a property, turn on the property flag */
         if ( parse_data->titleProp )
-            parse_data->titleProp->in_tag = start ? 1 : 0;
+            parse_data->titleProp->in_tag += bump;
 
 
         /* If title is a metaname, turn on the indexing flag */
         if ( parse_data->titleMeta )
         {
-            parse_data->titleMeta->in_tag = start ? 1 : 0;
-            parse_data->swishdefaultMeta->in_tag = start ? 1 : 0;
+            parse_data->titleMeta->in_tag += bump;
+            parse_data->swishdefaultMeta->in_tag +=bump;
         }
 
 
