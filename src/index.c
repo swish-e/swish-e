@@ -255,7 +255,7 @@ int configModule_Index (SWISH *sw, StringList *sl)
 {
   //struct MOD_Index *srch = sw->Index;
   //char *w0    = sl->word[0];
-  int  retval = 1;
+  int  retval = 0;
 
   return retval;
 }

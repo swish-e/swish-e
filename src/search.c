@@ -215,7 +215,7 @@ int configModule_Search (SWISH *sw, StringList *sl)
 {
   //struct MOD_Search *srch = sw->Search;
   //char *w0    = sl->word[0];
-  int  retval = 1;
+  int  retval = 0;
 
   return retval;
 }
