@@ -310,7 +310,7 @@ propEntry;
 typedef struct docProperties
 {
     int n;  /* to be removed - can just use count of properties */
-	struct propEntry *propEntry[1];  /* Array to hold properties */
+    struct propEntry *propEntry[1];  /* Array to hold properties */
 }
 docProperties;
 
@@ -916,6 +916,11 @@ typedef struct SWISH
     /* Temporary place to store a stemmed word -- so library user doesn't need to free memory */
     char * stemmed_word;
     int    stemmed_word_len;
+
+
+    /* array to map the various possible HTML structure bits for rank */
+    int     structure_map_set; /* flag */
+    int     structure_map[256];
 
 
 } SWISH;

@@ -1005,8 +1005,7 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
             results->db_results->currentresult = res->next;
             
             /* If rank was delayed, compute it now */
-            if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->db_results->indexf, res->filenum );
+            getrank( res );
         }
     }
 
@@ -1021,8 +1020,7 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
         if ((res = db_results_winner->currentresult))
         {
             /* If rank was delayed, compute it now */
-            if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->db_results->indexf, res->filenum );
+            getrank( res );
 
             if ( !res->PropSort )
                 res->PropSort = getResultSortProperties(res);
@@ -1036,10 +1034,7 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
                 continue;
 
             /* If rank was delayed, compute it now */
-
-            if(res2->rank == -1)
-               res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->posdata, res2->db_results->indexf, res2->filenum );
-
+            getrank( res2 );
 
             /* Load the sort properties for this results */
 
@@ -1537,6 +1532,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
         if (curmetaID == metaID) /* found a matching meta value */
         {
+            int meta_rank = metaID * -1;  /*  store metaID in rank value until computed by getrank() */
             filenum = 0;
             start = s;   /* points to the star of data */
             do
@@ -1558,8 +1554,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 /* test (limit by) structure and adjust frequency */
                 frequency = test_structure(structure, frequency, posdata);
 
-                /* Store -1 in rank - In this way, we can delay its computation */
-                /* $$$ This -1 optimization has been removed */
+                /* Store metaID * -1 in rank - In this way, we can delay its computation */
 
                 /* Store result */
                 if(frequency)
@@ -1570,17 +1565,12 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
                     // tfrequency = number of files with this word
                     // frequency = number of times this words is in this document for this metaID
+                    // metarank is the negative of the metaID - for use in getrank()
 
-                    addtoresultlist(l_rp, filenum, -1, tfrequency, frequency, indexf, db_results);
+                    addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, indexf, db_results);
 
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
-
-                    // Temp fix -- fetch the rank and store it in the new result.
-                    {
-                        RESULT *r1 = l_rp->tail;
-                        r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
-                    }
                 }
                 if(posdata != stack_posdata)
                     efree(posdata);
@@ -1693,7 +1683,6 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
     RESULT *r1;
     RESULT *r2;
     int     res = 0;
-    SWISH  *sw = db_results->indexf->sw;
 
 
     /* patch provided by Mukund Srinivasan */
@@ -1723,11 +1712,9 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
             int     newRank = 0;
 
 
-            if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
-
-            if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
+            /* Load ranks if not already done */
+            getrank( r1 );
+            getrank( r2 );
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
             
@@ -1781,7 +1768,6 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
     RESULT *rp,
            *tmp;
     RESULT_LIST *new_results_list = NULL;
-    SWISH  *sw = db_results->indexf->sw;
     RESULTS_OBJECT *results = db_results->results;
 
 
@@ -1817,12 +1803,8 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
             int result_size;
             
             /* Compute rank if not yet computed */
-            if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
-
-            if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
-
+            getrank( r1 );
+            getrank( r2 );
 
             /* Create a new RESULT - Should be a function to creete this, I'd think */
 
@@ -2012,7 +1994,6 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
     int     res = 0;
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1, *r2;
-    SWISH  *sw = db_results->indexf->sw;
                 
 
 
@@ -2047,12 +2028,11 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
             if (found)
             {
                 /* Compute newrank */
-                if(r1->rank == -1)
-                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );
-                if(r2->rank == -1)
-                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->db_results->indexf, r2->filenum );
+                getrank( r1 );
+                getrank( r2 );
 
                 newRank = (r1->rank + r2->rank) / 2;
+
                 /*
                    * Storing positions is neccesary for further
                    * operations 
@@ -2331,7 +2311,6 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
            tot_frequency,
            pos_off,
            filenum;
-    SWISH  *sw = db_results->indexf->sw;
     RESULTS_OBJECT *results = db_results->results;
 
     if(!l_r)
@@ -2406,8 +2385,7 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
                     for(tmp = start, pos_off = 0; tmp!=rp; tmp = tmp->next)
                     {
                         /* Compute rank if not yet computed */
-                        if(tmp->rank == -1)
-                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->posdata, tmp->db_results->indexf, tmp->filenum );
+                        getrank( tmp );
 
                         newnode->rank += tmp->rank;
                         if (tmp->frequency)

@@ -52,6 +52,7 @@ $Id$
 #include "result_sort.h"
 #include "entities.h"
 #include "db.h"
+#include "rank.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif
@@ -220,7 +221,7 @@ static propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry,
     {
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_RESULT_RANK ) )
         {
-            num = PACKLONG( (unsigned long)result->rank );
+            num = PACKLONG( (unsigned long)getrank( result ) );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 

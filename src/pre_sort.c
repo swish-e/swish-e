@@ -45,8 +45,6 @@ $Id$
 #include "swish_qsort.h"
 #include "result_sort.h"
 
-#include "rank.h"
-
 // #define DEBUGSORT 1
 
 /******************************************************
