@@ -631,7 +631,7 @@ unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
 #define TAG_CLOSE 1
 #define TAG_FOUND 2
 
-/* Gets the content between "<parsetag>" and "</parsetag>" from buffer
+/* Gets the content between "<Bparsetag>" and "</parsetag>" from buffer
 limiting the scan to the first max_lines lines (0 means all lines) */
 char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive)
 {
@@ -653,6 +653,8 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
     char   *endtag;
     char   *(*f_strstr) ();
 
+
+
     if (case_sensitive)
         f_strstr = strstr;
     else
@@ -673,6 +675,7 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
     p = content;
     *p = '\0';
 
+
     for (r = buffer;;)
     {
         c = *r++;
@@ -690,6 +693,7 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
             efree(begintag);
             return NULL;
         }
+
         switch (c)
         {
         case '<':
@@ -697,6 +701,7 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
             totaltaglen = 0;
             tag[totaltaglen++] = '<';
 
+            /* Collect until find '>' */
             while (1)
             {
                 d = *r++;
@@ -721,30 +726,43 @@ char   *parsetag(char *parsetag, char *buffer, int max_lines, int case_sensitive
                 }
             }
 
+
             if (f_strstr(tag, endtag))
             {
                 status = TAG_CLOSE;
                 *p = '\0';
+
+                /* nulls to spaces */
                 for (i = 0; content[i]; i++)
                     if (content[i] == '\n')
                         content[i] = ' ';
+
+                /* skip over initial spaces and quotes */
                 for (i = 0; isspace((int) ((unsigned char) content[i])) || content[i] == '\"'; i++)
                     ;
+
+                /* shift buffer to left */
                 for (j = 0; content[i]; j++)
                     content[j] = content[i++];
+
                 content[j] = '\0';
-                for (j = strlen(content) - 1; (j && isspace((int) ((unsigned char) content[j]))) || content[j] == '\0' || content[j] == '\"'; j--)
+
+
+                /* remove trailing spaces, nulls, quotes */
+                for (j = strlen(content) - 1; ( j >= 0 ) && ( isspace((int) ((unsigned char) content[j])) || content[j] == '\0' || content[j] == '\"'); j--)
                     content[j] = '\0';
+
+                /* replace double quotes with single quotes -- why? */
                 for (j = 0; content[j]; j++)
                     if (content[j] == '\"')
                         content[j] = '\'';
+
                 efree(tag);
                 efree(endtag);
                 efree(begintag);
+
                 if (*content)
-                {
                     return (content);
-                }
                 else
                 {
                     efree(content);
