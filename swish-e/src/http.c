@@ -499,33 +499,6 @@ FILE *fp;
 #endif
 
 
-int http_vgetc(void *vp)
-{
-	return fgetc((FILE *)vp);
-}
-
-
-int http_vsize(void *vp)
-{
-	struct stat stbuf;
-	return fstat(fileno((FILE *)vp), &stbuf) ? -1 : stbuf.st_size;
-}
-
-int http_vtell(void *vp)
-{
-        return ftell((FILE *)vp);
-}
-
-int http_vseek(void *vp, long pos)
-{
-        return fseek((FILE *)vp,pos,0);
-}
-
-int http_vread(char *buffer, int len, int size, void *vp)
-{
-        return fread(buffer,len,size,(FILE *)vp);
-}
-
 #ifdef _WIN32
 #define strncasecmp	strnicmp
 #endif
@@ -595,11 +568,6 @@ struct _indexing_data_source_def HTTPIndexingDataSource = {
   "HTTP-Crawler",
   "http",
   http_indexpath,
-  http_vgetc,
-  http_vsize,
-  http_vtell,
-  http_vseek,
-  http_vread,
   http_parseconfline
 };
 

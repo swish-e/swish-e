@@ -612,6 +612,10 @@ typedef struct {
     RESULT *sortresultlist;
     RESULT *currentresult;
 
+	/* MetaName indexing options */
+	int ReqMetaName;
+	int OkNoMeta;
+
     /* file system specific configuration parameters */
     struct swline *pathconlist;
     struct swline *dirconlist;
@@ -652,11 +656,6 @@ struct _indexing_data_source_def
   const char* IndexingDataSourceName;           /* long name for data source */
   const char* IndexingDataSourceId;             /* short name for data source */
   void (*indexpath_fn)(SWISH *sw, char *path);             /* routine to index a "path" */
-  int (*vgetc_fn)(void *vp);                    /* get char from "file" */
-  int (*vsize_fn)(void *vp);                    /* get size of "file" */
-  int (*vtell_fn)(void *vp);                    /* get position in "file" */
-  int (*vseek_fn)(void *vp,long pos);           /* set position in "file" */
-  int (*vread_fn)(char *buffer, int len, int size, void *vp);           /* set position in "file" */
   int (*parseconfline_fn)(SWISH *sw, char *line);          /* parse config file lines */
 };
 
@@ -746,8 +745,7 @@ long readlong _AP ((FILE *));
 /* strcpy doesn't check for overflow in the 'to' string */
 /* strncpy doesn't guarantee null byte termination */
 /* can't check strlen of 'from' arg since it is sometimes a function call */
-#define safestrcpy(n,to,from) \
-  { strncpy(to,from,n); to[n-1]='\0'; }
+#define safestrcpy(n,to,from)  { strncpy(to,from,n); to[n-1]='\0'; }
 
 /* Jose Ruiz 04/00
 ** Macro for copying postions between arrays of integers
@@ -758,8 +756,7 @@ long readlong _AP ((FILE *));
 #define CopyPositions(dest,posdest,orig,posorig,num) \
 {int i;for(i=0;i<num,i++) dest[i+posdest]=orig[i+posorig];}
 */
-#define CopyPositions(dest,posdest,orig,posorig,num) \
-memcpy((char *)((int *)dest+posdest),(char *)((int *)orig+posorig),num*sizeof(int))
+#define CopyPositions(dest,posdest,orig,posorig,num)  memcpy((char *)((int *)dest+posdest),(char *)((int *)orig+posorig),num*sizeof(int))
 
 /* Definitions of word commands and, or, not, ... */
 /* Change them here */

@@ -38,12 +38,12 @@ SWISH *SwishNew()
 SWISH *sw;
 int i;
 	sw=emalloc(sizeof(SWISH));
-        sw->followsymlinks = 0;
-        sw->TotalWords = 0;
-        sw->TotalFiles = 0;
+	sw->followsymlinks = 0;
+	sw->TotalWords = 0;
+	sw->TotalFiles = 0;
 	sw->filenum = 0;
-        sw->useCustomOutputDelimiter = 0;           /* added 11/24/98 */
-        sw->entrylist = NULL;
+	sw->useCustomOutputDelimiter = 0;           /* added 11/24/98 */
+	sw->entrylist = NULL;
         sw->dirlist = NULL;
         sw->indexlist = NULL;
         sw->replacelist = NULL;
@@ -81,6 +81,10 @@ int i;
 	sw->propNameToSort=NULL;
 	sw->propIDToSort=NULL;
 	sw->propModeToSort=NULL;
+
+		/* MetaNames indexing options (default values from config.h)*/
+	sw->ReqMetaName=REQMETANAME;
+	sw->OkNoMeta=OKNOMETA;
 
 		/* File system parameters */
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;

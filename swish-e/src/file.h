@@ -55,10 +55,6 @@ FILE* openIndexFILEForReadAndWrite _AP ((char *));
 void CreateEmptyFile _AP ((SWISH *, char *));
 
 void indexpath _AP((SWISH *, char *));
-int vgetc _AP((void *));
-int vsize _AP((void *));
-int vtell _AP((void *));
-int vseek _AP((void *,long));
 int parseconfline _AP((SWISH *, char *));
 
 

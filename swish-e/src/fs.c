@@ -369,32 +369,6 @@ void fs_indexpath(SWISH *sw, char *path)
     }
 }
 
-int fs_vgetc(void *vp)
-{
-	return fgetc((FILE *)vp);
-}
-
-
-int fs_vsize(void *vp)
-{
-	struct stat stbuf;
-	return fstat(fileno((FILE *)vp), &stbuf) ? -1 : stbuf.st_size;
-}
-
-int fs_vtell(void *vp)
-{
-	return ftell((FILE *)vp);
-}
-
-int fs_vseek(void *vp, long pos)
-{
-	return fseek((FILE *)vp,pos,0);
-}
-
-int fs_vread(char *buffer, int len, int size, void *vp)
-{
-	return fread(buffer,len,size,(FILE *)vp);
-}
 
 int fs_parseconfline(SWISH *sw, char *line)
 {
@@ -414,10 +388,5 @@ struct _indexing_data_source_def FileSystemIndexingDataSource = {
   "File-System",
   "fs",
   fs_indexpath,
-  fs_vgetc,
-  fs_vsize,
-  fs_vtell,
-  fs_vseek,
-  fs_vread,
   fs_parseconfline
 };

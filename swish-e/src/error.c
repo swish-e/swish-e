@@ -24,7 +24,7 @@
 /* Function to avoid snprintf (not ANSI C) when building an error string */ 
 char *BuildErrorString(char *buffer,int *bufferlen,char *fmt,char *var)
 {
-	if((strlen(fmt)+strlen(var))>*bufferlen)
+	if((strlen(fmt)+strlen(var))>(unsigned)*bufferlen)
 	{
 		*bufferlen=strlen(fmt)+strlen(var);
 		buffer=erealloc(buffer,*bufferlen+1);
