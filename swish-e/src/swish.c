@@ -141,7 +141,7 @@ CMDPARAMS;
 
 
 /************* TOC ***************************************/
-static CMDPARAMS *new_swish_params(SWISH *sw);
+static CMDPARAMS *new_swish_params(void);
 static void printTime(double time);
 static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params );
 static void free_command_line_params( CMDPARAMS *params );
@@ -155,7 +155,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params );
 static void cmd_merge( SWISH *sw, CMDPARAMS *params );
 static void cmd_search( SWISH *sw, CMDPARAMS *params );
 static void cmd_keywords( SWISH *sw, CMDPARAMS *params );
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge, int is_update);
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge);
 
 static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
@@ -190,7 +190,7 @@ int     main(int argc, char **argv)
 
     
 
-    params = new_swish_params(sw);
+    params = new_swish_params();
     get_command_line_params(sw, argv, params );
 
 
@@ -455,7 +455,7 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
     if (help)
         printf("\nAvailable debugging options for swish-e:\n");
 
-    for (i = 0; i < sizeof(debug_map) / sizeof(debug_map[0]); i++)
+    for (i = 0; i < (int)(sizeof(debug_map) / sizeof(debug_map[0])); i++)
         if (help)
             printf("  %20s => %s\n", debug_map[i].name, debug_map[i].description);
         else if (strcasecmp(debug_map[i].name, word) == 0)
@@ -488,7 +488,7 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
 *
 **************************************************************************/
 
-static CMDPARAMS *new_swish_params(SWISH *sw)
+static CMDPARAMS *new_swish_params()
 {
     CMDPARAMS *params = (CMDPARAMS *)emalloc( sizeof( CMDPARAMS ) );
     memset( params, 0, sizeof( CMDPARAMS ) );
@@ -1141,7 +1141,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 int     i,j;
                 int     backslash = 0;
 
-                for ( j=0, i=0; i < strlen( w ); i++ )
+                for ( j=0, i=0; i < (int)strlen( w ); i++ )
                 {
                     if ( !backslash )
                     {
@@ -1353,7 +1353,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     fflush(stdout);
 
-    write_index_file( sw, 1, elapsedStart, cpuStart, 0, params->run_mode == MODE_UPDATE?1:0);
+    write_index_file( sw, 1, elapsedStart, cpuStart, 0);
 }
 
 
@@ -1407,7 +1407,7 @@ static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 
     merge_indexes( sw_input, sw_out );
 
-    write_index_file( sw_out, 0, elapsedStart, cpuStart, 1, 0);
+    write_index_file( sw_out, 0, elapsedStart, cpuStart, 1);
 
     swish_close( sw_out );
 
@@ -1537,7 +1537,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 *
 **************************************************************************/
 
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge, int is_update)
+static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge)
 {
     int totalfiles = getfilecount(sw->indexlist);
     int stopwords = 0;
@@ -1601,7 +1601,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     if (sw->verbose)
         printf("Sorting words ...\n");
 
-    sort_words(sw, sw->indexlist);
+    sort_words(sw);
 
 
 

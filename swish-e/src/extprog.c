@@ -284,7 +284,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             /* this was done because file.c assumed that the "file" was on disk */
             /* which has changed over time due to filters, http, and prog */
             
-            fprop = init_file_properties(sw);  
+            fprop = init_file_properties();  
             fprop->real_path = real_path;
             fprop->work_path = estrdup( real_path );
             fprop->orig_path = estrdup( real_path );

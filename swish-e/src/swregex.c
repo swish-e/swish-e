@@ -376,7 +376,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     /* This allow /g processing to match repeatedly */
     /* I'm sure there a way to mess this up and end up with a regex loop... */
     
-    if ( regex->global && last_offset < strlen( newstr ) )
+    if ( regex->global && last_offset < (int)strlen( newstr ) )
         newstr = regex_replace( newstr, regex, last_offset, matched );
 
     return newstr;

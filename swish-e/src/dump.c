@@ -36,7 +36,7 @@
 #include "metanames.h"
 #include "dump.h"
 #include "headers.h"
-
+#include "error.h"
 
 
 void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits ) 
@@ -525,7 +525,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
     i = 0;
     printf(" \"");
 
-    while ( i < strlen( propstr ) )
+    while ( i < (int)strlen( propstr ) )
     {
         if ( 1 ) // ( isprint( (int)propstr[i] ))
             printf("%c", propstr[i] );

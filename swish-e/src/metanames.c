@@ -84,7 +84,7 @@ void    add_default_metanames(IndexFILE * indexf)
 {
     int     i;
 
-    for (i = 0; i < sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0]); i++)
+    for (i = 0; i < (int)(sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0])); i++)
         addMetaEntry(&indexf->header, SwishDefaultMetaNames[i].metaName, SwishDefaultMetaNames[i].metaType, 0);
 }
 

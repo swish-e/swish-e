@@ -260,7 +260,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         - maxwordlen is checked when first tokenizing for security reasons
         - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
-        if ( strlen( self->word ) > max_size )
+        if ( (int)strlen( self->word ) > max_size )
         {
             sw->lasterror = SEARCH_WORD_TOO_BIG;
             return NULL;
@@ -702,7 +702,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     return searchwordlist;
 }
 
-static int     u_isrule(SWISH * sw, char *word)
+static int     u_isrule(char *word)
 {
     if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
         return 1;
@@ -718,7 +718,7 @@ static int     isnotrule(char *word)
         return 0;
 }
 
-static int     u_isnotrule(SWISH * sw, char *word)
+static int     u_isnotrule(char *word)
 {
     if (!strcmp(word, _NOT_WORD))
         return 1;
@@ -831,16 +831,16 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
 
             /* Look for AND OR NOT - remove AND OR at start, and remove second of doubles */
 
-            if ( u_isrule(sw, cur_token->line)  )
+            if ( u_isrule(cur_token->line)  )
             {
                 if ( prev_token )
                 {
                     /* remove double tokens */
-                    if ( u_isrule( sw, prev_token->line ) )
+                    if ( u_isrule(prev_token->line ) )
                         remove = 1;
                 }
                 /* allow NOT at the start */
-                else if ( !u_isnotrule(sw, cur_token->line) )
+                else if ( !u_isnotrule(cur_token->line) )
                     remove = 1;
 
                 break;

@@ -165,7 +165,6 @@ struct Handle_DBNative
 
 void initModule_DBNative (SWISH *);
 void freeModule_DBNative (SWISH *);
-int configModule_DBNative (SWISH *sw, StringList *sl);
 
 void   *DB_Create_Native (SWISH *sw, char *dbname);
 void   *DB_Open_Native (SWISH *sw, char *dbname, int mode);

@@ -792,7 +792,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 
 
     /* Any room to add the property? */
-    if ( meta_entry->max_len &&  p->propLen + add_a_space >=  meta_entry->max_len )
+    if ( meta_entry->max_len &&  (int)p->propLen + add_a_space >=  meta_entry->max_len )
     {
         if ( str )
             efree( str );

@@ -49,7 +49,7 @@ extern "C" {
 /* #define MEM_DEBUG 0 -- enable with --enable-memdebug */
 
 /* MEM_TRACE checks for unfreed memory, and where it is allocated */
-/* #define MEM_TRACE 0 -- use --enable-memtrace
+/* #define MEM_TRACE 0 -- use --enable-memtrace */
 
 /* MEM_STATISTICS gives memory statistics (bytes allocated, calls, etc */
 /* #define MEM_STATISTICS 0 -- use --enable-memstats */

@@ -137,27 +137,6 @@ void    freeModule_DBNative(SWISH * sw)
 
 
 
-/*
- -- Config Directives
- -- Configuration directives for this Module
- -- return: 0/1 = none/config applied
-*/
-
-int     configModule_DBNative(SWISH * sw, StringList * sl)
-{
-    // struct MOD_DBNative *md = sw->DBNative;
-    // char *w0    = sl->word[0];
-    int     retval = 1;
-
-
-    retval = 0;                 // tmp due to empty routine
-
-    return retval;
-}
-
-
-
-
 
 
 /* Does an index file have a readable format?

@@ -109,18 +109,11 @@ void    initModule_ResultSort(SWISH * sw)
   -- release all wired memory for this module
 */
 
-/* Resets memory of vars used by ResultSortt properties configuration */
-void    resetModule_ResultSort(SWISH * sw)
-{
-    return;
-}
 
 /* Frees memory of vars used by ResultSortt properties configuration */
 void    freeModule_ResultSort(SWISH * sw)
 {
     struct MOD_ResultSort *md = sw->ResultSort;
-
-    resetModule_ResultSort(sw);
 
     if (md->presortedindexlist)
         freeswline(md->presortedindexlist);
@@ -298,7 +291,7 @@ int     is_presorted_prop(SWISH * sw, char *name)
 * Pre sort a single property 
 *
 ************************************************************************/
-int *CreatePropSortArray(SWISH *sw, IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache )
+int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache )
 {
     int             *sort_array = NULL;     /* array that gets sorted */
     int             *out_array = NULL;     /* array that gets sorted */
@@ -473,7 +466,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
             fflush(stdout);
         }
 
-        out_array = CreatePropSortArray( sw, indexf, m, &fi, 0 );
+        out_array = CreatePropSortArray( indexf, m, &fi, 0 );
 
 
 #ifdef USE_BTREE

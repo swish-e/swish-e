@@ -45,10 +45,10 @@ static void check_header_match( IndexFILE *in_index, SWISH *sw_output );
 static void make_meta_map( IndexFILE *in_index, SWISH *sw_output);
 static void load_filename_sort( SWISH *sw, IndexFILE *cur_index );
 static IndexFILE *get_next_file_in_order( SWISH *sw_input );
-static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output );
+static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output );
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output );
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata );
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata );
 
 
 // #define DEBUG_MERGE
@@ -140,7 +140,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     filenum_map = create_tempfile(sw_input, F_WRITE_BINARY, "fnum", &tmpfilename, 0 );
 
     while( (cur_index = get_next_file_in_order( sw_input )) )
-        add_file( filenum_map, cur_index, sw_input, sw_output );
+        add_file( filenum_map, cur_index, sw_output );
 
 
 
@@ -232,7 +232,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
                             /* now we have the word data */
                             for (i = 0; i < frequency; i++, loc_count++)
-                                write_word_pos( sw_input, cur_index, sw_output, cur_index->merge_file_num_map, filenum, e, metaID, posdata[i]);
+                                write_word_pos( cur_index, sw_output, cur_index->merge_file_num_map, filenum, e, metaID, posdata[i]);
 
                             if(e->tfrequency)
                             {
@@ -243,7 +243,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                                 ** very slow
                                 */
                                 if(!(loc_count % 100))
-                                    CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+                                    CompressCurrentLocEntry(sw_output, e);
                             }
                         
 
@@ -265,7 +265,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                         }
 
                         if(e->tfrequency)
-                            CompressCurrentLocEntry(sw_output, sw_output->indexlist, e);
+                            CompressCurrentLocEntry(sw_output, e);
 
                         efree(worddata);
                     }
@@ -593,7 +593,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     {
         FileRec fi;
         memset( &fi, 0, sizeof( FileRec ));
-        path_meta->sorted_data = CreatePropSortArray( sw, cur_index, path_meta, &fi, 1 );
+        path_meta->sorted_data = CreatePropSortArray( cur_index, path_meta, &fi, 1 );
     }
 
 
@@ -785,7 +785,7 @@ printf("   Files in order: index %s file# %d winner\n", winner->line, winner->fi
 *       - total words per file, if set
 ****************************************************************************/
 
-static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output )
+static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output )
 {
     FileRec             fi;
     IndexFILE           *indexf = sw_output->indexlist;
@@ -964,7 +964,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 *
 ****************************************************************************/
 
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata )
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, int posdata )
 {
     int         new_file;
     int         new_meta;

@@ -33,7 +33,7 @@
 #endif
 
 
-static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw, int *buf_len, int *uncompressed_len );
+static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_len, int *uncompressed_len );
 
 
 /*******************************************************************
@@ -97,7 +97,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
         if ( !(prop = docProperties->propEntry[propID])) // does this file have this prop?
             continue;
 
-        buf = compress_property( prop, propID, sw, &buf_len, &uncompressed_len );
+        buf = compress_property( prop, sw, &buf_len, &uncompressed_len );
 
         DB_WriteProperty( sw, indexf, fi, propID, (char *)buf, buf_len, uncompressed_len, indexf->DB );
     }
@@ -121,7 +121,6 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 *
 *   Call with:
 *       propEntry       - the in data and its length
-*       propID          - current property
 *       SWISH           - to get access to the common buffer
 *       *uncompress_len - returns the length of the original buffer, or zero if not compressed
 *       *buf_len        - the length of the returned buffer
@@ -132,7 +131,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 *
 *********************************************************************/
 
-static unsigned char *compress_property( propEntry *prop, int propID, SWISH *sw, int *buf_len, int *uncompressed_len )
+static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_len, int *uncompressed_len )
 {
 #ifndef HAVE_ZLIB
     *buf_len = prop->propLen;

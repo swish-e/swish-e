@@ -32,15 +32,13 @@ void PACKLONG2(unsigned long num, unsigned char *buffer);
 unsigned long UNPACKLONG(unsigned long num);
 unsigned long UNPACKLONG2(unsigned char *buffer);
 
-unsigned char *compress_location(SWISH *,IndexFILE *, LOCATION *);
 void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, int *position);
 void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, int *position);
 
-LOCATION *uncompress_location(SWISH *,IndexFILE *,unsigned char *);
 void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency);
 void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, int *position);
 
-void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
+void CompressCurrentLocEntry(SWISH *, ENTRY *);
 
 int compress_worddata(unsigned char *,int );
 void uncompress_worddata(unsigned char **,int *, int);

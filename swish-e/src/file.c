@@ -251,8 +251,9 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
         {
             int i;
             int j = 0;
+            int i_bytes_read = (int)bytes_read;
             
-            for (i = 0; i < bytes_read; ++i) {
+            for (i = 0; i < i_bytes_read; ++i) {
                 if (buffer[i] == '\0') {
                     buffer[i] = '\n';
                     j++;
@@ -346,7 +347,7 @@ void flush_stream( FileProp *fprop )
  *
  */
 
-FileProp *init_file_properties(SWISH * sw)
+FileProp *init_file_properties(void)
 {
     FileProp *fprop;
 
@@ -426,7 +427,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
     /* create an initilized fprop structure */
     
-    fprop = init_file_properties(sw);
+    fprop = init_file_properties();
 
 
     /* Dup these, since the real_path may be reallocated by FileRules */
