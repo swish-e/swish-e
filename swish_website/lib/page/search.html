@@ -93,11 +93,11 @@
     <div class="search-title">
 
         [% IF is_list %]
-            <small>[List Archive]</small>
+            <span class='indxtype'>[List Archive]</span>
         [% ELSIF is_devel %]
-            <small>[Development Docs]</small>
+            <span class='indxtype'>[Development Docs]</span>
         [% ELSIF is_docs %]
-            <small>[Docs]</small>
+            <span class='indxtype'>[Docs]</span>
         [% END %]
 
         <a href="[% item.Property('swishdocpath') %]">

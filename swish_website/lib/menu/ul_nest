@@ -11,7 +11,7 @@ FOREACH item = menu.items;
       link = {
         text     = item.name
         url      = site.topdir _ item.url
-        class    = item.hot ? 'thisfile' : class
+        class    = item.here ? 'thisfile' : class
         title    = item.tooltip
       };
 
@@ -32,7 +32,7 @@ END;
 
 
 <li class="[% class %]">
-    <a href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
-    [% IF item.here; "&#187;"; ELSIF item.hot;  "&#165;"; END; -%]
+    <a class="[% link.class %]" href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
+    [% IF item.here; "&#187;"; ELSIF item.hot;  "&#172;"; END; -%]
 </li>
 [% END -%]

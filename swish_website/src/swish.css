@@ -112,7 +112,7 @@ input.button
 {
 
 	font-size: 80%;
-	font-color: darkblue;
+	color: rgb(61,92,135);
 	border-style: outset;
 	border-width: 1px;
 	border-color: #004186;
@@ -301,7 +301,7 @@ input.button:hover
 
 ul.submenu {
 
-  font-size: 80%;
+  /* font-size: 80%; */
   padding: 0 0 0 0;
   margin: 0;
   list-style-type: circle;
@@ -309,7 +309,8 @@ ul.submenu {
 
 li.submenu {
 
-  font-size: 80%;
+  /* font-size: 80%; */
+  text-indent: 4pt;
   padding: 0 0 0 0;
   margin: 0;
 }
@@ -472,8 +473,8 @@ PRE     {
 div.search-page {  /* enclosing div */
     margin: 2em 2em 0 0em;
     padding: 3px 3px 3px 3px;
-    // background-color:  #eeeeee;
-    // border: 1px solid black;
+    /* background-color:  #eeeeee; */
+    /* border: 1px solid black; */
 }
 
 .search-message { /* error messages, and "No Results" */
@@ -497,6 +498,14 @@ div.search-page {  /* enclosing div */
     margin-bottom: 2em;
 }
 
+/* search links -- is this the right format ?? */
+div.search-result a {
+    text-decoration: none;
+}
+div.search-result a:hover {
+    text-decoration: underline;
+}
+
 .search-title {
     font-size: 1.2em;
 }
@@ -510,7 +519,9 @@ div.search-page {  /* enclosing div */
     margin-bottom: 1em;
     margin-left: 2em;
     max-width: 700px; /* not supported by IE */
-    width:expression(document.body.clientWidth > 600? "600px": "auto" );
+    
+    /* what kind of black magic is this? */
+    /* width:expression(document.body.clientWidth > 600? "600px": "auto" ); */
 }
 
 .search-metadata { 
@@ -525,6 +536,11 @@ div.search-page {  /* enclosing div */
 .highlight { 
     background : #FFFF99;
     font-weight: bold;
+}
+
+span.indxtype {
+/* for ID'ing the search results according to index */
+    font-size: 50%;
 }
 
 
