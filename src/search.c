@@ -1149,7 +1149,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
 
         if (rulenum == NO_RULE)
-            rulenum = AND_RULE;
+            rulenum = DEFAULT_RULE;
 
 
         if (isunaryrule(word))  /* is it a NOT? */
