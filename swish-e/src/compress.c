@@ -44,14 +44,14 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 	/* just to avoid bufferoverruns */
 	/* In the worst case and integer will need 5 bytes */
 	/* but fortunatelly this is very uncommon */
-	max_size=((sizeof(LOCATION)+(l->frequency-1)*sizeof(int))*5)/sizeof(int);
-	if(max_size>sw->len_compression_buffer)
+	max_size=((sizeof(LOCATION)/sizeof(int) + 1)+(l->frequency-1))*5;
+	if(max_size>sw->Index->len_compression_buffer)
 	{
-		sw->len_compression_buffer=max_size+200;
-		sw->compression_buffer=erealloc(sw->compression_buffer,sw->len_compression_buffer);
+		sw->Index->len_compression_buffer=max_size+200;
+		sw->Index->compression_buffer=erealloc(sw->Index->compression_buffer,sw->Index->len_compression_buffer);
 	}
 	
-	p=sw->compression_buffer+sw->len_compression_buffer-1;
+	p=sw->Index->compression_buffer+sw->Index->len_compression_buffer-1;
 	for(i=l->frequency-1;i>=0;i--) {
 		compress2(l->position[i],p);
 	}
@@ -68,9 +68,14 @@ int i,index,index_structure,index_structfreq,max_size,vars[2];
 	vars[0]=l->metaID;
 	vars[1]=index_structfreq;
 	index=get_lookup_index(&indexf->header.locationlookup,2,vars)+1;
+
 	compress2(index,p);
 		/* Get the length of all the data */
-	i=sw->compression_buffer+sw->len_compression_buffer-p-1;
+	i=sw->Index->compression_buffer+sw->Index->len_compression_buffer-p-1;
+
+    if(p < sw->Index->compression_buffer)
+        progerr("Internal error in compress_location routine");
+
 		/* Swap info to file ? */
 		/* If IgnoreLimit is set then no swap is done */
 	if(sw->swap_flag && sw->plimit==NO_PLIMIT)
@@ -123,7 +128,7 @@ int i,max_locations;
 	for(i=e->currentlocation;i<max_locations;i++)
 	{
 			/* Compress until current filenum */
-		if(e->locationarray[i]->filenum==sw->filenum) return;
+		if(e->locationarray[i]->filenum==sw->Index->filenum) return;
 		e->locationarray[i]=(LOCATION *)compress_location(sw,indexf,e->locationarray[i]);
 	}
 }
@@ -156,15 +161,22 @@ long pos;
 		/* to disk because it can be modified later */
 	if(sw->plimit!=NO_PLIMIT) 
 		return (long)buf;  /* do nothing */
-	if(!sw->fp_loc_write)sw->fp_loc_write=fopen(sw->swap_location_name,FILEMODE_WRITE);
-	if (!sw->fp_loc_write) {
-		progerr("Could not create temp file %s",sw->swap_location_name);
+	if(!sw->Index->fp_loc_write)
+	{
+		sw->Index->fp_loc_write = fopen(sw->Index->swap_location_name,FILEMODE_WRITE);
 	}
-	pos=ftell(sw->fp_loc_write);
-	if(fwrite(&lenbuf,1,sizeof(int),sw->fp_loc_write)!=sizeof(int))
+	if (!sw->Index->fp_loc_write) {
+		progerr("Could not create temp file %s",sw->Index->swap_location_name);
+	}
+	pos=ftell(sw->Index->fp_loc_write);
+	if(fwrite(&lenbuf,1,sizeof(int),sw->Index->fp_loc_write)!=sizeof(int))
+	{
 		progerr("Cannot write to swap file");	
-	if(fwrite(buf,1,lenbuf,sw->fp_loc_write)!=(unsigned int)lenbuf)
+	}
+	if(fwrite(buf,1,lenbuf,sw->Index->fp_loc_write)!=(unsigned int)lenbuf)
+	{
 		progerr("Cannot write to swap file");	
+	}
 	return pos;
 }
 
@@ -181,18 +193,18 @@ int lenbuf;
 		/* to disk because it can be modified later */
 	if(sw->plimit!=NO_PLIMIT) 
 		return (unsigned char *)pos;  /* do nothing */
-	if(!sw->fp_loc_read)
+	if(!sw->Index->fp_loc_read)
 	{
-		fclose(sw->fp_loc_write);
-		sw->fp_loc_read=fopen(sw->swap_location_name,FILEMODE_READ);
-		if (!sw->fp_loc_read) {
-			progerr("Could not open temp file %s",sw->swap_location_name);
+		fclose(sw->Index->fp_loc_write);
+		sw->Index->fp_loc_read=fopen(sw->Index->swap_location_name,FILEMODE_READ);
+		if (!sw->Index->fp_loc_read) {
+			progerr("Could not open temp file %s",sw->Index->swap_location_name);
 		}
 	}
-	fseek(sw->fp_loc_read,pos,SEEK_SET);
-	fread(&lenbuf,sizeof(int),1,sw->fp_loc_read);	
+	fseek(sw->Index->fp_loc_read,pos,SEEK_SET);
+	fread(&lenbuf,sizeof(int),1,sw->Index->fp_loc_read);	
 	buf=(unsigned char *)emalloc(lenbuf);
-	fread(buf,lenbuf,1,sw->fp_loc_read);	
+	fread(buf,lenbuf,1,sw->Index->fp_loc_read);	
 	return buf;
 }
 
@@ -204,17 +216,20 @@ void SwapFileData(SWISH *sw, struct file *filep)
 {
 unsigned char *buffer;
 int sz_buffer,tmp;
-	if (!sw->fp_file_write) sw->fp_file_write=fopen(sw->swap_file_name,FILEMODE_WRITE);
-	if (!sw->fp_file_write)	{
-		progerr("Could not create temp file %s",sw->swap_file_name);
+	if (!sw->Index->fp_file_write)
+	{
+		sw->Index->fp_file_write=fopen(sw->Index->swap_file_name,FILEMODE_WRITE);
+	}
+	if (!sw->Index->fp_file_write)	{
+		progerr("Could not create temp file %s",sw->Index->swap_file_name);
 	}
 		
 	buffer=buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path,&sz_buffer);
 	tmp=sz_buffer+1;
-	compress1(tmp,sw->fp_file_write);   /* Write len */
-	fwrite(buffer,sz_buffer,1,sw->fp_file_write);
-	fputc(0,sw->fp_file_write);    /* Important delimiter -> No more props */
-	free(buffer);
+	compress1(tmp,sw->Index->fp_file_write);   /* Write len */
+	fwrite(buffer,sz_buffer,1,sw->Index->fp_file_write);
+	fputc(0,sw->Index->fp_file_write);    /* Important delimiter -> No more props */
+	efree(buffer);
 	freefileinfo(filep);
 }
 
@@ -230,22 +245,23 @@ int len,len1,lookup_path;
 char *buffer,*p;
 char *buf1;
 	fi=(struct file *)emalloc(sizeof(struct file));
-	if (!sw->fp_file_read)
+	if (!sw->Index->fp_file_read)
 	{
-		fclose(sw->fp_file_write);
-		sw->fp_file_read=fopen(sw->swap_file_name,FILEMODE_READ);
-		if (!sw->fp_file_read) {
-		   progerr("Could not open temp file %s",sw->swap_file_name);
+		fclose(sw->Index->fp_file_write);
+		sw->Index->fp_file_read=fopen(sw->Index->swap_file_name,FILEMODE_READ);
+		if (!sw->Index->fp_file_read)
+		{
+		   progerr("Could not open temp file %s",sw->Index->swap_file_name);
 		}
 	}
-	uncompress1(len,sw->fp_file_read);
+	uncompress1(len,sw->Index->fp_file_read);
 	p=buffer=emalloc(len);
-        fread(buffer,len,1,sw->fp_file_read);   /* Read all data */
+    fread(buffer,len,1,sw->Index->fp_file_read);   /* Read all data */
 	uncompress2(lookup_path,p);
 	lookup_path--;
-        uncompress2(len1,p);   /* Read length of filename */
-        buf1 = emalloc(len1);
-        memcpy(buf1,p,len1);   /* Read filename */
+    uncompress2(len1,p);   /* Read length of filename */
+    buf1 = emalloc(len1);
+    memcpy(buf1,p,len1);   /* Read filename */
 	p+=len1;
 
 	fi->fi.lookup_path=lookup_path;

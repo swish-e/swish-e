@@ -558,8 +558,6 @@ struct stat stat_buf;
 			printrunning(starttime, stoptime);
 			printf("Indexing done!\n");
 		}
-		if (isfile(sw->swap_file_name))remove(sw->swap_file_name);
-		if (isfile(sw->swap_location_name))remove(sw->swap_location_name);
 #ifdef INDEXPERMS
 		chmod(sw->indexlist->line, INDEXPERMS);
 #endif
@@ -595,10 +593,10 @@ struct stat stat_buf;
 		if (i < 3)
 			progerr("Specify index files and an output file.");
 		
-		if(sw->tmpdir && sw->tmpdir[0] && isdirectory(sw->tmpdir))
+		if(sw->Index->tmpdir && sw->Index->tmpdir[0] && isdirectory(sw->Index->tmpdir))
 		{
-			tmpindex1=SafeStrCopy(tmpindex1, tempnam(sw->tmpdir,"swme"),&lentmpindex1);
-			tmpindex2=SafeStrCopy(tmpindex2, tempnam(sw->tmpdir,"swme"),&lentmpindex2);
+			tmpindex1=SafeStrCopy(tmpindex1, tempnam(sw->Index->tmpdir,"swme"),&lentmpindex1);
+			tmpindex2=SafeStrCopy(tmpindex2, tempnam(sw->Index->tmpdir,"swme"),&lentmpindex2);
 		} else {
 			tmpindex1=SafeStrCopy(tmpindex1, tempnam(NULL,"swme"),&lentmpindex1);
 			tmpindex2=SafeStrCopy(tmpindex2, tempnam(NULL,"swme"),&lentmpindex2);

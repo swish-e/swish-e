@@ -137,7 +137,8 @@ void freeModule_ResultOutput (SWISH *sw)
  struct ResultExtFmtStrList *l, *ln;
 
 
-   efree (md->stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
+   if(md->stdResultFieldDelimiter)
+      efree (md->stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
   /* was not emalloc!# efree (md->extendedformat);               -x stuff */
 
 

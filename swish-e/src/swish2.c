@@ -22,9 +22,9 @@
 
 #include "swish.h"
 
+#include "string.h"
 #include "error.h"
 #include "list.h"
-#include "string.h"
 #include "search.h"
 #include "index.h"
 #include "file.h"
@@ -58,13 +58,13 @@ int i;
 	initModule_Entities (sw);
     initModule_DB (sw);
     initModule_Search (sw);
+    initModule_Index (sw);
 
 
 	sw->followsymlinks = 0;
 	sw->TotalWords = 0;
 	sw->TotalFiles = 0;
 	sw->filenum = 0;
-	sw->entryArray = NULL;
 	sw->dirlist = NULL;
 	sw->indexlist = NULL;
 	sw->replacelist = NULL;
@@ -81,14 +81,9 @@ int i;
 	sw->mtime_limit = 0;
 
 	sw->applyautomaticmetanames = 0;
-	sw->len_compression_buffer = MAXSTRLEN;  /* For example */
-	sw->compression_buffer=(unsigned char *)emalloc(sw->len_compression_buffer);
 
-	sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
 
     sw->truncateDocSize = 0;      /* default: no truncation of docs    */
-	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
-	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	
 		/* File system parameters */
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
@@ -100,20 +95,8 @@ int i;
 	sw->equivalentservers=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->url_hash[i]=NULL;
 
-		/* Init  hash tables */
-	for (i=0; i<SEARCHHASHSIZE; i++) sw->hashentries[i] = NULL;
 		/* Swap flag and temp files*/
 	sw->swap_flag=SWAP_DEFAULT;
-
-	sw->fp_loc_write=sw->fp_loc_read=sw->fp_file_write=sw->fp_file_read=NULL;
-	if(sw->tmpdir && sw->tmpdir[0] && isdirectory(sw->tmpdir))
-	{
-		sw->swap_file_name=tempnam(sw->tmpdir,"swfi");
-		sw->swap_location_name=tempnam(sw->tmpdir,"swlo");
-	} else {
-		sw->swap_file_name=tempnam(NULL,"swfi");
-		sw->swap_location_name=tempnam(NULL,"swlo");
-	}
 
 		/* Load Default Values */
 	SwishDefaults(sw);
@@ -126,11 +109,7 @@ int i;
 
 void SwishDefaults(SWISH *sw)
 {
-        /* Initialize tmpdir */
-	sw->tmpdir = SafeStrCopy(sw->tmpdir,TMPDIR,&sw->lentmpdir);
 
-        /* Initialize spider directory */
-        sw->spiderdirectory = SafeStrCopy(sw->spiderdirectory,SPIDERDIRECTORY,&sw->lenspiderdirectory);
 	sw->plimit=PLIMIT;
 	sw->flimit=FLIMIT;
 	sw->PhraseDelimiter=PHRASE_DELIMITER_CHAR;
@@ -173,16 +152,13 @@ if(sw) {
 		freeModule_ResultOutput (sw);
 		freeModule_SearchAlt (sw);
 		freeModule_Entities (sw);
-                freeModule_DB (sw);
+		freeModule_DB (sw);
+		freeModule_Index (sw);
 
 		/* Since it is possible to invoke SwishSearch several times
                 ** with the same SWISH handle, the freeModule_ResultSort stuff
                 ** must be in SwishResetSearch */
 		/* freeModule_ResultSort (sw); */
-
-		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
-		if(sw->lentmpdir) efree(sw->tmpdir);		
-
 
                         /* Free file structures */
 		freefileoffsets(sw);
@@ -257,12 +233,6 @@ if(sw) {
 		if (sw->fileconlist) freeswline(sw->fileconlist);
 		if (sw->titconlist) freeswline(sw->titconlist);
 		if (sw->fileislist) freeswline(sw->fileislist);
-
-		/* Free compression info */	
-		/* Free compression buffer */	
-		efree(sw->compression_buffer);
-		
-
 
 		/* Free SWISH struct */
 		efree(sw);

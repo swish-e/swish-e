@@ -319,12 +319,6 @@ int is_first1, is_first2;
 	SwishClose(sw1);
 	SwishClose(sw2);
 
-		/* Remove swap files */
-	if(sw->swap_flag)
-	{
-		if (isfile(sw->swap_file_name))remove(sw->swap_file_name);
-		if (isfile(sw->swap_location_name))remove(sw->swap_location_name);
-	}
 	SwishClose(sw);
 	
 	if (verbose) printf("\nDone.\n");
@@ -359,7 +353,7 @@ long nextposmetaname;
 unsigned char word[2];
 char *resultword;
 long wordID;
-char *buffer, *s;
+unsigned char *buffer, *s;
 int sz_buffer;
 
 	word[0] = (unsigned char) c;
@@ -459,8 +453,8 @@ struct mergeindexfileinfo *ip;
 		return;
 	}
 	
-	sw->filenum++;
-	remap(num, sw->filenum);
+	sw->Index->filenum++;
+	remap(num, sw->Index->filenum);
 
 	ip=(struct mergeindexfileinfo *)emalloc(sizeof(struct mergeindexfileinfo));
 	ip->filenum=num;
@@ -473,14 +467,14 @@ struct mergeindexfileinfo *ip;
 	indexfilehashlist[hashval] = ip;
 
 	addtofilelist(sw,sw->indexlist, filename, mtime, title, summary, start, size, &thisFileEntry);
-	addtofwordtotals(sw->indexlist, sw->filenum, ftotalwords);
+	addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
 	thisFileEntry->docProperties = DupProps(docProperties);
 
 		/* swap meta values for properties */
 	swapDocPropertyMetaNames(docProperties, metaFile);
 
 	if(sw->swap_flag)
-		SwapFileData(sw, sw->indexlist->filearray[sw->filenum-1]);
+		SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum-1]);
 
 }
 
@@ -817,19 +811,19 @@ void addentryMerge(SWISH *sw, ENTRY *ip)
 int hashval;
 IndexFILE *indexf=sw->indexlist;
 
-        if(!sw->entryArray)
+        if(!sw->Index->entryArray)
         {
-                sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
-                sw->entryArray->numWords=0;
-                sw->entryArray->elist=NULL;
+                sw->Index->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
+                sw->Index->entryArray->numWords=0;
+                sw->Index->entryArray->elist=NULL;
         }
                 /* Compute hash value of word */
         hashval=searchhash(ip->word);
 		/* Add to the array of hashes */
-	ip->nexthash=sw->hashentries[hashval];
-	sw->hashentries[hashval]=ip;
+	ip->nexthash=sw->Index->hashentries[hashval];
+	sw->Index->hashentries[hashval]=ip;
 
-        sw->entryArray->numWords++;
+        sw->Index->entryArray->numWords++;
         indexf->header.totalwords++;
 
                 /* In merge there is no dup !!! */

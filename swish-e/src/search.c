@@ -972,8 +972,9 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
            *q,
            *r;
     int     tfrequency = 0;
-	char   *s, *buffer, *resultword;
-	int     sz_buffer;
+    unsigned char   *s, *buffer; 
+    char   *resultword;
+    int     sz_buffer;
 
     x = j = filenum = structure = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     position = NULL;
@@ -1040,8 +1041,8 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     /* If code is here we have found the word !! */
     do
     {
-	DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
-	s = buffer;
+        DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, indexf->DB);
+	    s = buffer;
         /* Get the data of the word */
         uncompress2(tfrequency, s); /* tfrequency */
         /* Now look for a correct Metaname */

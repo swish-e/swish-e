@@ -53,8 +53,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
     struct  docPropertyEntry *docProperties = NULL;
     char    ISOTime[20];
 	unsigned char    word[2];
-	char   *resultword;
-	char   *worddata, *s;
+	unsigned char   *resultword;
+	unsigned char   *worddata, *s;
 	int     sz_worddata;
 	long    wordID;
 	
@@ -90,6 +90,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 	{
 		word[0] = (unsigned char) j; word[1] = '\0';
 		DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+
 		while(wordID)
 		{
 			printf("%s:",resultword);
@@ -153,7 +154,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 					metaname = x;
 					if (metaname)
 					{
-						UNPACKLONG2(nextposmetaname,s); s += sizeof(long);
+						UNPACKLONG2(nextposmetaname,s); 
+                        s += sizeof(long);
 						uncompress2(x, s);
 					}
 					else

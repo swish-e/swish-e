@@ -21,12 +21,13 @@
 */
 
 #include "swish.h"
+#include "string.h"
+#include "index.h"
 #include "hash.h"
 #include "mem.h"
 #include "date_time.h"
 #include "compress.h"
 #include "error.h"
-#include "string.h"
 #include "metanames.h"
 #include "db.h"
 #include "db_native.h"
@@ -185,15 +186,9 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     unsigned char *compressed_data,
            *p,*q;
 
-    static unsigned char *buffer=NULL;
-    static int lenbuffer=0;
-
-    if(!lenbuffer)
-        buffer=(unsigned char *) emalloc((lenbuffer=MAXSTRLEN));
-
     curmetaID=0;
     curmetanamepos=0L;
-    q=buffer;
+    q=sw->Index->worddata_buffer;
         /* Write tfrequency */
     compress3(ep->tfrequency,q);
         /* Write location list */
@@ -208,8 +203,8 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             {
                 /* Write in previous meta (curmetaID)
                 ** file offset to next meta */
-                tmp=q-buffer;
-                PACKLONG2(tmp,buffer+curmetanamepos);
+                tmp=q - sw->Index->worddata_buffer;
+                PACKLONG2(tmp,sw->Index->worddata_buffer+curmetanamepos);
             }
                 /* Check for enough memory */
                 /* 5 is the worst case for a compressed number
@@ -224,12 +219,12 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 ** 1 is for the trailing '\0'
                 */
 
-            tmp=q-buffer;
-            if((long)(tmp + 5 + sizeof(long) + 1) >= (long)lenbuffer)
+            tmp=q - sw->Index->worddata_buffer;
+            if((long)(tmp + 5 + sizeof(long) + 1) >= (long)sw->Index->len_worddata_buffer)
             {
-                lenbuffer=lenbuffer*2+5+sizeof(long)+1;
-                buffer=(unsigned char *) erealloc(buffer,lenbuffer);
-                q=buffer+tmp;   /* reasign pointer inside buffer */
+                sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5+sizeof(long)+1;
+                sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
+                q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
             }
                 /* store metaID in buffer */
             curmetaID=metaID;
@@ -237,10 +232,11 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 /* preserve position for offset to next
                 ** metaname. We do not know its size
                 ** so store it as a packed long */ 
-            curmetanamepos=q-buffer;
+            curmetanamepos=q - sw->Index->worddata_buffer;
                 /* Store 0 and increase pointer */
             tmp=0L;
             PACKLONG2(tmp,q);
+
             q+=sizeof(long);
         }
             /* Write filenum,structure and position information to index file */
@@ -260,12 +256,12 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 **
                 ** 1 is for the trailing '\0';
                 */
-        tmp=q-buffer;  
-        if((tmp + 5 *(2+frequency) + 1) >= (long)lenbuffer)
+        tmp=q - sw->Index->worddata_buffer;  
+        if((tmp + 5 *(2+frequency) + 1) >= (long)sw->Index->len_worddata_buffer)
         {
-            lenbuffer=lenbuffer*2+5*(2+frequency)+1;
-            buffer=(unsigned char *) erealloc(buffer,lenbuffer);
-            q=buffer+tmp;   /* reasign pointer inside buffer */
+            sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5*(2+frequency)+1;
+            sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
+            q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
         }
         compress3(filenum,q);
         compress3(index_structfreq,q);
@@ -278,14 +274,14 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     }
         /* Write in previous meta (curmetaID)
         ** file offset to end of metas */
-    tmp=q-buffer;
-
-    PACKLONG2(tmp,buffer+curmetanamepos);
+    tmp=q - sw->Index->worddata_buffer;
+    PACKLONG2(tmp,sw->Index->worddata_buffer+curmetanamepos);
 
         /* Write trailing '\0' */
     *q++ = '\0';
 
-    DB_WriteWordData(sw, ep->u1.fileoffset,buffer,q-buffer,indexf->DB);
+    DB_WriteWordData(sw, ep->u1.fileoffset,sw->Index->worddata_buffer,q - sw->Index->worddata_buffer,indexf->DB);
+
 }
 
 
@@ -533,7 +529,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
     int     id,
             len,
             tmp, tmp1, tmp2;
-    char   *buffer;
+    unsigned char   *buffer;
 
     DB_InitReadHeader(sw, DB);
 
@@ -933,7 +929,7 @@ int     DB_InitWriteHeader(SWISH *sw, void *DB)
    return sw->Db->DB_InitWriteHeader(DB);
 }
 
-int     DB_WriteHeaderData(SWISH *sw, int id, char *s, int len, void *DB)
+int     DB_WriteHeaderData(SWISH *sw, int id, unsigned char *s, int len, void *DB)
 {
    return sw->Db->DB_WriteHeaderData(id, s,len,DB);
 }
@@ -949,7 +945,7 @@ int     DB_InitReadHeader(SWISH *sw, void *DB)
    return sw->Db->DB_InitReadHeader(DB);
 }
 
-int     DB_ReadHeaderData(SWISH *sw, int *id, char **s, int *len, void *DB)
+int     DB_ReadHeaderData(SWISH *sw, int *id, unsigned char **s, int *len, void *DB)
 {
    return sw->Db->DB_ReadHeaderData(id, s, len, DB);
 }
@@ -980,7 +976,7 @@ int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)
    return sw->Db->DB_WriteWordHash(word, wordID, DB);
 }
 
-long    DB_WriteWordData(SWISH *sw, long wordID, char *worddata, int lendata, void *DB)
+long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int lendata, void *DB)
 {
    return sw->Db->DB_WriteWordData(wordID, worddata, lendata, DB);
 }
@@ -1011,7 +1007,7 @@ int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, l
    return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-long    DB_ReadWordData(SWISH *sw, long wordID, char **worddata, int *lendata, void *DB)
+long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *lendata, void *DB)
 {
    return sw->Db->DB_ReadWordData(wordID, worddata, lendata, DB);
 }
