@@ -22,7 +22,8 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
-** 2001-01-27  rasc   getPropertyByName rewritten, datatypes for properties.
+** 2001-01 rasc   getResultPropertyByName rewritten, datatypes for properties.
+** 2001-02 rasc   isAutoProperty
 */
 
 #include "swish.h"
@@ -215,6 +216,9 @@ int getnumPropertiesToDisplay(SWISH *sw)
 void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 {
 IndexFILE *indexf;
+
+fprintf (stderr,"addSearchResultProp: __%s__\n",propName);
+
 	/* add a property to the list of properties that will be displayed */
 	if (sw->numPropertiesToDisplay >= sw->currentMaxPropertiesToDisplay)
 	{
@@ -236,6 +240,7 @@ IndexFILE *indexf;
 void addSearchResultSortProperty(SWISH *sw, char *propName,int mode)
 {
 IndexFILE *indexf;
+
 	/* add a property to the list of properties that will be displayed */
 	if (sw->numPropertiesToSort >= sw->currentMaxPropertiesToSort)
 	{
@@ -273,7 +278,7 @@ IndexFILE *indexf;
                 	indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
                 	if (indexf->propIDToSort[i] == 1)
                 	{
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Sort property name \"%s\" in one of the index files\n.\n", sw->propNameToSort[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
                 	}
 		}
@@ -303,13 +308,14 @@ int i;
 			indexf->propIDToDisplay[i] = getMetaNameID(indexf, sw->propNameToDisplay[i]);
 			if (indexf->propIDToDisplay[i] == 1)
 			{
-				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "Unknown Display property name \"%s\"", sw->propNameToDisplay[i]);
+				sw->errorstr=BuildErrorString(sw->errorstr, &sw->lenerrorstr, "err: Unknown Display property name \"%s\"\n.\n", sw->propNameToDisplay[i]);
 				return (sw->lasterror=UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY);
 			}
 		}
 	}
 	return RC_OK;
 }
+
 
 void printSearchResultProperties(SWISH *sw, char **prop)
 {
@@ -581,6 +587,8 @@ docPropertyEntry *p;
 
 
 
+/* ------ new property handling with data types --------- */
+
 
 /* 
   -- Returns the contents of the property "propertyname" of result r
@@ -591,23 +599,46 @@ docPropertyEntry *p;
              property value and type (structure has to be freed()!)..
 
   -- 2000-12  jruiz -- inital coding
-  -- 2001-01  rasc  -- value and type structures, Auto(internal) properties, rewritten
+  -- 2001-01  rasc  -- value and type structures, AutoProperties, rewritten
  */
 
-PropValue * getResultPropertyByName (SWISH *sw, char *propertyname, RESULT *r)
+
+ /*
+    -- Case insensitive (lowercase check = LC)
+ */
+
+PropValue * getResultPropertyByNameLC (SWISH *sw, char *propertyname, RESULT *r)
 {
-int       i;
-char      *p,*pname;
-char      *propdata;  /* default value to NULL */
-PropValue *pv;
+  char *p,*pname;
+  PropValue *pv;
+
+    /* To avoid problems and for faster scan make propertyname */
+    /* to lowercase */
+
+    pname=estrdup(propertyname);     /* preserve original value */
+    for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
+
+    pv = getResultPropertyByName (sw, pname, r);
+
+    efree(pname);
+    return pv;
+}
+
+
+ /*
+    -- case sensitive check...
+    -- (XML props should be case sensitive)
+ */
+
+PropValue * getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
+{
+  int       i;
+  int       prop_id;
+  char      *propdata;  /* default value to NULL */
+  PropValue *pv;
 
 
 
-	/* To avoid problems and for faster scan make propertyname */
-	/* to lowercase */
-
-	pname=estrdup(propertyname);     /* preserve original value */
-	for(p=pname;*p;p++)*p=tolower((int)((char)p[0])); /* go lowercase */
 
 		/* Search for the property name */
 
@@ -616,55 +647,74 @@ PropValue *pv;
 
 	/*
 	  -- check for auto properties ( == internal metanames)
+	  -- for speed: use internal PropID, instead name
 	 */
 
-	if (! strcmp (pname, AUTOPROPERTY_TITLE) ) {
- 		pv->datatype = STRING;
-		pv->value.v_str = r->title;
-	} else if (! strcmp (pname, AUTOPROPERTY_DOCPATH)  ) {
-		pv->datatype = STRING;
-		pv->value.v_str = r->filename;
-	} else if (! strcmp (pname, AUTOPROPERTY_SUMMARY)  ) {
-		pv->datatype = STRING;
-		pv->value.v_str = r->summary;
-	} else if (! strcmp (pname, AUTOPROPERTY_DOCSIZE)  ) {
-		pv->datatype = INTEGER;
-		pv->value.v_int = r->size;
-	} else if (! strcmp (pname, AUTOPROPERTY_LASTMODIFIED)  ) {
-		pv->datatype = DATE;
-		pv->value.v_date = r->last_modified;
-	} else if (! strcmp (pname, AUTOPROPERTY_STARTPOS)  ) {
-		pv->datatype = INTEGER;
-		pv->value.v_int = r->start;
-	} else if (! strcmp (pname, AUTOPROPERTY_DOCSIZE)  ) {
-		pv->datatype = INTEGER;
-		pv->value.v_int = r->size;
-	} else if (! strcmp (pname, AUTOPROPERTY_INDEXFILE)  ) {
-		pv->datatype = STRING;
-		pv->value.v_str = r->indexf->line;
-	} else if (! strcmp (pname, AUTOPROPERTY_RESULT_RANK)  ) {
-		pv->datatype = INTEGER;
-		pv->value.v_int = r->rank;
-	} else if (! strcmp (pname, AUTOPROPERTY_REC_COUNT)  ) {
-		pv->datatype = INTEGER;
-		pv->value.v_int = r->count;
-	} else {
+	prop_id = isAutoProperty (pname);
 
-		/* User defined Properties
-		   -- so far we only know STRING types as user properties
-		   -- $$$ ToDO: other types...
-		 */
+	switch (prop_id) {
+		case  AUTOPROP_ID__TITLE:
+ 			pv->datatype = STRING;
+			pv->value.v_str = r->title;
+			break;
 
-		for(i=0;i<sw->numPropertiesToDisplay;i++) {
+		case  AUTOPROP_ID__DOCPATH:
+			pv->datatype = STRING;
+			pv->value.v_str = r->filename;
+			break;
+
+		case  AUTOPROP_ID__SUMMARY:
+			pv->datatype = STRING;
+			pv->value.v_str = r->summary;
+			break;
+
+		case  AUTOPROP_ID__DOCSIZE:
+			pv->datatype = INTEGER;
+			pv->value.v_int = r->size;
+			break;
+
+		case  AUTOPROP_ID__LASTMODIFIED:
+			pv->datatype = DATE;
+			pv->value.v_date = r->last_modified;
+			break;
+
+		case  AUTOPROP_ID__STARTPOS:
+			pv->datatype = INTEGER;
+			pv->value.v_int = r->start;
+			break;
+
+		case  AUTOPROP_ID__INDEXFILE:
+			pv->datatype = STRING;
+			pv->value.v_str = r->indexf->line;
+			break;
+
+		case  AUTOPROP_ID__RESULT_RANK:
+			pv->datatype = INTEGER;
+			pv->value.v_int = r->rank;
+			break;
+
+		case  AUTOPROP_ID__REC_COUNT:
+			pv->datatype = INTEGER;
+			pv->value.v_int = r->count;
+			break;
+
+		default:
+
+		    /* User defined Properties
+		       -- so far we only know STRING types as user properties
+		       -- $$$ ToDO: other types...
+		    */
+
+		   for(i=0;i<sw->numPropertiesToDisplay;i++) {
 			if(!strcmp(pname,sw->propNameToDisplay[i])) {
 				pv->datatype = STRING;
 				pv->value.v_str = r->Prop[i];
 				break;
 			}
-		}
+		   }
+		   break;
 	}
  
-	efree(pname);
 	if (pv->datatype == UNDEFINED) {	/* nothing found */
 	  efree (pv);
 	  pv = NULL;
@@ -673,4 +723,50 @@ PropValue *pv;
 	return pv;
 }
 
+
+/*
+  -- check if a propertyname is an internal property
+  -- (AutoProperty). Check is case sensitive!
+  -- Return: 0 (no AutoProp)  or >0 = ID of AutoProp..
+  -- 2001-02-07 rasc
+*/
+
+
+int isAutoProperty (char *propname)
+
+{
+  static struct {
+	char *name;
+	int  id;
+  }  *ap, auto_props[] = {
+	{ AUTOPROPERTY_REC_COUNT,	AUTOPROP_ID__REC_COUNT },
+	{ AUTOPROPERTY_RESULT_RANK,	AUTOPROP_ID__RESULT_RANK },
+	{ AUTOPROPERTY_TITLE,		AUTOPROP_ID__TITLE },
+	{ AUTOPROPERTY_DOCPATH,		AUTOPROP_ID__DOCPATH },
+	{ AUTOPROPERTY_DOCSIZE,		AUTOPROP_ID__DOCSIZE },
+	{ AUTOPROPERTY_SUMMARY,		AUTOPROP_ID__SUMMARY },
+	{ AUTOPROPERTY_LASTMODIFIED,	AUTOPROP_ID__LASTMODIFIED },
+	{ AUTOPROPERTY_INDEXFILE,	AUTOPROP_ID__INDEXFILE },
+	{ AUTOPROPERTY_STARTPOS,	AUTOPROP_ID__STARTPOS },
+
+        { NULL,				0 }
+  };
+
+
+  /* -- Precheck... fits start of propname? */
+
+  if (strncmp (propname,AUTOPROPERTY__ID_START__,
+		sizeof(AUTOPROPERTY__ID_START__)-1)) {
+	return 0;
+  }
+
+  ap = auto_props;
+  while (ap->name) {
+	if (! strcmp(propname,ap->name)) {
+	   return ap->id;
+	}
+	ap++;
+  }
+  return 0;
+}
 

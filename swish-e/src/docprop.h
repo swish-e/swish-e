@@ -41,13 +41,14 @@ docPropertyEntry *DupProps (docPropertyEntry *);
 
 void FreeOutputPropertiesVars (SWISH *);
 
-PropValue * getResultPropertyByName (SWISH *, char *, RESULT *);
-
 char *getPropAsString(IndexFILE *, docPropertyEntry *);
 
 void getSwishInternalProperties(struct file *, IndexFILE *);
 
 
+PropValue * getResultPropertyByName (SWISH *sw, char *name, RESULT *r);
+PropValue * getResultPropertyByName_CS (SWISH *sw, char *name, RESULT *r);
+int isAutoProperty (char *propname);
 
 
 /*
@@ -55,14 +56,27 @@ void getSwishInternalProperties(struct file *, IndexFILE *);
    -- should be the same
 */
 
-#define AUTOPROPERTY_DOCPATH      "swishdocpath"
-#define AUTOPROPERTY_TITLE        "swishtitle"
-#define AUTOPROPERTY_LASTMODIFIED "swishlastmodified"
-#define AUTOPROPERTY_SUMMARY      "swishdescription"
-#define AUTOPROPERTY_STARTPOS     "swishstartpos"
-#define AUTOPROPERTY_DOCSIZE      "swishdocsize"
-#define AUTOPROPERTY_RESULT_RANK  "swishrank"
-#define AUTOPROPERTY_INDEXFILE    "swishdbfile"
-#define AUTOPROPERTY_REC_COUNT    "swishreccount"
+/* all AutoPropteries start with this string ! */
 
-   
+#define AUTOPROPERTY__ID_START__  "swish"
+
+#define AUTOPROPERTY_REC_COUNT    "swishreccount"
+#define AUTOPROP_ID__REC_COUNT    1
+#define AUTOPROPERTY_RESULT_RANK  "swishrank"
+#define AUTOPROP_ID__RESULT_RANK  2
+#define AUTOPROPERTY_DOCPATH      "swishdocpath"
+#define AUTOPROP_ID__DOCPATH      3
+#define AUTOPROPERTY_TITLE        "swishtitle"
+#define AUTOPROP_ID__TITLE        4
+#define AUTOPROPERTY_DOCSIZE      "swishdocsize"
+#define AUTOPROP_ID__DOCSIZE      5
+#define AUTOPROPERTY_LASTMODIFIED "swishlastmodified"
+#define AUTOPROP_ID__LASTMODIFIED 6
+#define AUTOPROPERTY_SUMMARY      "swishdescription"
+#define AUTOPROP_ID__SUMMARY      7
+#define AUTOPROPERTY_STARTPOS     "swishstartpos"
+#define AUTOPROP_ID__STARTPOS     8
+#define AUTOPROPERTY_INDEXFILE    "swishdbfile"
+#define AUTOPROP_ID__INDEXFILE    9
+
+

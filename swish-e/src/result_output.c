@@ -46,6 +46,65 @@
 
 
 
+/*
+   -- Init the print of result entry in extented output format.
+   -- The parsed propertynames will be stored for result handling
+   -- Only user properties will be stored.
+   -- Routine has to be executed prior to search/result storing...
+   -- (This behavior is for historic reasons and may change)
+   -- ($$ this routine may build the print action list in the future...)
+   2001-02-07   rasc
+*/
+
+void initPrintExtResult (SWISH *sw, char *fmt)
+
+{
+  FILE   *f;
+  char   *propname;
+  char   *subfmt;
+  
+
+  f = (FILE *) NULL;		/* no output, just parsing!!! */
+
+   while (*fmt) {			/* loop fmt string */
+
+     switch (*fmt) {
+
+	case '%':			/* swish abbrevation controls */
+			/* ignore (dummy param), because autoprop */
+		fmt = printTagAbbrevControl (sw, f, fmt, NULL);
+		break;
+
+	case '<':
+		/* -- Property - Control: read Property Tag  <name> */
+		/* -- Save User PropertyNames for result handling   */
+        	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
+		if (! isAutoProperty (propname)) {
+		   addSearchResultDisplayProperty (sw, propname);
+		}
+		efree (subfmt);
+		efree (propname);
+		break;
+
+	case '\\':			/* format controls */
+            fmt = printResultControlChar (f, fmt);
+		break;
+
+
+	default:		/* a output character in fmt string */
+		fmt++;
+		break;
+     }
+
+   }
+
+}
+
+
+
+
+
+/* ------------------------------------------------------------ */
 
 
 /*
@@ -56,8 +115,9 @@
 
 void printResultOutput (SWISH *sw) {
 
-   printsortedresults(sw);
+   printSortedResults(sw);
 }
+
 
 
 
@@ -66,26 +126,30 @@ void printResultOutput (SWISH *sw) {
   -- outputformat depends on some cmd opt settings
 */
 
-void printsortedresults(SWISH *sw)
+void printSortedResults(SWISH *sw)
 
 {
 RESULT *r;
 int    resultmaxhits;
+int    resultbeginhits;
 int    counter;
 char   *delimiter;
+FILE   *f_out;
 
 
-  resultmaxhits=sw->maxhits;
+  resultmaxhits = sw->maxhits;
+  resultbeginhits = sw->beginhits;
   counter = 0;
+  f_out = stdout;
   delimiter = (sw->useCustomOutputDelimiter) ? sw->customOutputDelimiter : " ";
 
   while ((r=SwishNext(sw))) {
      r->count = ++counter;		/* set rec. counter for output */
 
-     if (!sw->beginhits) {
+     if (!resultbeginhits) {
 	if (resultmaxhits) {
 	   if (sw->opt.extendedformat)
-	      print_ext_resultentry (sw, NULL, sw->opt.extendedformat, r);
+	      printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
 	   else {
 					 /* old std output */
 	      printf("%d%s%s%s%s%s%d",
@@ -99,7 +163,7 @@ char   *delimiter;
 	}
      }
 
-     if(sw->beginhits) sw->beginhits--;
+     if(resultbeginhits) resultbeginhits--;
      r = r->nextsort;
   }
 
@@ -118,7 +182,7 @@ char   *delimiter;
    2001-01-01   rasc
 */
 
-void print_ext_resultentry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
+void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 
 {
   FILE   *f;
@@ -145,12 +209,13 @@ void print_ext_resultentry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 		break;
 
 	case '\\':			/* print format controls */
-            	fmt = printResultControlChar (f, fmt);
+		fmt = printResultControlChar (f, fmt);
 		break;
 
 
 	default:		/* just output the character in fmt string */
-		fputc (*(fmt++),f);
+		if (f) fputc (*fmt,f);
+		fmt++;
 		break;
      }
 
@@ -158,8 +223,6 @@ void print_ext_resultentry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 
 
 }
-
-
 
 
 
@@ -206,7 +269,7 @@ char *printResultControlChar (FILE *f, char *s)
  }
 
  s++;
- fputc (c,f);
+ if (f) fputc (c,f);
  return s;
 }
 
@@ -215,8 +278,8 @@ char *printResultControlChar (FILE *f, char *s)
 
 
 /*  -- parse % control and print it
-    --  output on file <f>
     --  in fact expand shortcut to fullnamed autoproperty tag
+    --    output on file <f>, NULL = parse only mode
     --  *s = "%.....
     -- return: string ptr to char after control sequence.
 */
@@ -241,14 +304,15 @@ char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r)
 	case 'S':  t=AUTOPROPERTY_STARTPOS; break;
 	case 't':  t=AUTOPROPERTY_TITLE; break;
 
-	case '%':  fputc ('%',f); break;
-	default:   fprintf (f,"err-unkown-abbrev '%%%c'",*s); break;
+	case '%':  if (f) fputc ('%',f); break;
+	default:   fprintf (stderr,"err-unkown-abbrev '%%%c'",*s); break;
 
  }
 
  if (t) {
     sprintf (buf, "<%s>", t);			/* create <...> tag */
-    print_ext_resultentry  (sw, f, buf, r);
+    if (f) printExtResultEntry  (sw, f, buf, r);
+    else   initPrintExtResult (sw, buf);	/* parse only ! */
  }
  return ++s;
 }
@@ -363,40 +427,41 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 
   pv = getResultPropertyByName (sw, propname, r);
   if (! pv) {
-	fprintf (f, "(NULL)");		/* Null value, no propname */
-        return;
+     if (f) fprintf (f, "(NULL)");		/* Null value, no propname */
+     return;
   }
 
   switch (pv->datatype) {		/* property data type */
 					/* use passed or default fmt */
 	case INTEGER:
 		fmt = (subfmt) ? subfmt: "%d";
-		fprintf (f,fmt,pv->value.v_int); 
+		if (f) fprintf (f,fmt,pv->value.v_int); 
 		break;
 
 	case STRING:
 		fmt = (subfmt) ? subfmt: "%s";
-		fprintf (f,fmt,(char *)pv->value.v_str); 
+		/* $$$ ToDo: escaping of delimiter characters  $$$ */ 
+		if (f) fprintf (f,fmt,(char *)pv->value.v_str); 
 		break;
 
 	case DATE:
 		fmt = (subfmt) ? subfmt: "%Y-%m-%d %H:%M:%S";
 		if (!strcmp (fmt,"%d")) {
 			/* special: Print date as serial int (for Bill) */
-		   fprintf (f,fmt, (int) pv->value.v_date);
+		   if (f) fprintf (f,fmt, (int) pv->value.v_date);
 		} else {
 			/* fmt is strftime format control! */
 		   s = (char *) emalloc(MAXWORDLEN + 1);
 		   n = strftime (s,(size_t) MAXWORDLEN, fmt,
 			   localtime(&(pv->value.v_date)));
-		   if (n) fprintf (f,s);
+		   if (n && f) fprintf (f,s);
 		   efree (s);
 		}
 		break;
 
 	case FLOAT:
 		fmt = (subfmt) ? subfmt: "%f";
-		fprintf (f,fmt,(double) pv->value.v_float); 
+		if (f) fprintf (f,fmt,(double) pv->value.v_float); 
 		break;
 
 	default:
@@ -414,4 +479,5 @@ void printPropertyResultControl (SWISH *sw, FILE *f, char *propname,
 /*
   -------------------------------------------
 */
+
 

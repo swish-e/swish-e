@@ -82,6 +82,7 @@ int i;
 
 
 	sw->opt.extendedformat = NULL;
+	sw->opt.extendedheader = 0;
 
 
 		/* File system parameters */
@@ -401,4 +402,5 @@ IndexFILE *indexf;
         }
         return "";
 }
+
 
