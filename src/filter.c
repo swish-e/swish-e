@@ -155,9 +155,9 @@ FILE *FilterOpen (FileProp *fprop)
   -- return: errcode
 */
 
-int FilterClose (FileProp *fprop)
+int FilterClose (FILE *fp)
 {
-  return pclose (fprop->fp);
+  return pclose (fp);
 }
 
 

@@ -196,7 +196,7 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 		    }
 
 		    if (fprop->filterprog) {
-			FilterClose(fprop); /* close filter pipe */
+			FilterClose(fprop->fp); /* close filter pipe */
 		    } else {
 			fclose (fprop->fp);  /* close file */
 		    }
