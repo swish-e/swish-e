@@ -79,14 +79,19 @@ $(MANPAGES): ../configure
 man: $(MANPAGES)
 
 install-man: man
-	$(MKINSTALLDIRS) $(mandir)
-	$(INSTALL_DATA) $(MANPAGES) $(mandir)
+	@echo "Installing man pages $(MANPAGES) to $(mandir)"
+	@$(MKINSTALLDIRS) $(mandir)
+	@list='$(MANPAGES)'; \
+	for p in $$list; do $(INSTALL_DATA) $$p $(mandir); done
 
 
 install-docs:
-	$(MKINSTALLDIRS) $(docdir)/html/images
-	$(INSTALL_DATA) $(HTMLDOCS) $(docdir)/html
-	$(INSTALL_DATA) $(HTMLIMAGES) $(docdir)/html/images
+	@echo "Instaling HTML files to $(docdir)/html"
+	@$(MKINSTALLDIRS) $(docdir)/html/images
+	@list='$(HTMLDOCS)'; \
+	for p in $$list; do $(INSTALL_DATA) $$p $(docdir)/html; done
+	@list='$(HTMLIMAGES)'; \
+	for p in $$list; do $(INSTALL_DATA) $$p $(docdir)/html/images; done
 	
 # Check to see if the HTML docs exist
 # should always be able to install man because pod2man is part of perl
