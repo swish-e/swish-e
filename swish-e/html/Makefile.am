@@ -20,69 +20,39 @@ html_DATA = \
 	swish.html \
 	Filter.html \
 	index.html \
-	index_long.html style.css
+	index_long.html \
+        style.css
 
-image_DATA = images/dotrule1.gif \
-             images/swish2b.gif \
-             images/swish2.gif \
-             images/swishbanner1.gif \
-             images/swish.gif
+image_DATA = \
+	images/dotrule1.gif \
+	images/swish2b.gif \
+	images/swish2.gif \
+	images/swishbanner1.gif \
+	images/swish.gif
 
 
+depends = \
+	$(pod_dir)/CHANGES.pod \
+	$(pod_dir)/INSTALL.pod \
+	$(pod_dir)/README.pod \
+	$(pod_dir)/SWISH-3.0.pod \
+	$(pod_dir)/SWISH-BUGS.pod \
+	$(pod_dir)/SWISH-CONFIG.pod \
+	$(pod_dir)/SWISH-FAQ.pod \
+	$(pod_dir)/SWISH-LIBRARY.pod \
+	$(pod_dir)/SWISH-RUN.pod \
+	$(pod_dir)/SWISH-SEARCH.pod \
+	$(top_srcdir)/perl/API.pm \
+	$(top_srcdir)/prog-bin/spider.pl \
+	$(top_srcdir)/example/swish.cgi \
+	$(top_srcdir)/filters/SWISH/Filter.pm
 
+all: .html-stamp
 
-$(version_file): $(top_srcdir)/configure
-	rm -f $(version_file)
-	echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
-
-html: $(version_file)
+.html-stamp: $(version_file) $(depends)
 	cd $(srcdir)/../doc && bin/build
-	
-CHANGES.html: $(pod_dir)/CHANGES.pod
-	$(MAKE) html
-
-INSTALL.html: $(pod_dir)/INSTALL.pod
-	$(MAKE) html
-
-README.html: $(pod_dir)/README.pod
-	$(MAKE) html
-
-SWISH-3.0.html: $(pod_dir)/SWISH-3.0.pod
-	$(MAKE) html
-
-SWISH-BUGS.html: $(pod_dir)/SWISH-BUGS.pod
-	$(MAKE) html
-
-SWISH-CONFIG.html: $(pod_dir)/SWISH-CONFIG.pod
-	$(MAKE) html
-
-SWISH-FAQ.html: $(pod_dir)/SWISH-FAQ.pod
-	$(MAKE) html
-
-SWISH-LIBRARY.html: $(pod_dir)/SWISH-LIBRARY.pod
-	$(MAKE) html
-
-SWISH-RUN.html: $(pod_dir)/SWISH-RUN.pod
-	$(MAKE) html
-
-SWISH-SEARCH.html: $(pod_dir)/SWISH-SEARCH.pod
-	$(MAKE) html
-
-API.html: $(top_srcdir)/perl/API.pm
-	$(MAKE) html
-
-spider.html: $(top_srcdir)/prog-bin/spider.pl
-	$(MAKE) html
-
-swish.html: $(top_srcdir)/example/swish.cgi
-	$(MAKE) html
-
-Filter.html: $(top_srcdir)/filters/SWISH/Filter.pm
-	$(MAKE) html
-
-index.html index_long.html style.css:
-	echo "done"
+	@touch $(srcdir)/.html-stamp
 
 
-EXTRA_DIST = $(html_DATA) $(image_DATA)
+EXTRA_DIST = $(html_DATA) $(image_DATA) .html-stamp
 
