@@ -307,10 +307,13 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 */
 void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 {
+    int zlib_size;
+
     /* Get some extra compression */
     remove_worddata_longs(sw->Index->worddata_buffer,&sw->Index->sz_worddata_buffer);
-    /* Write worddata as usual */
-    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,sw->Index->sz_worddata_buffer,indexf->DB);
+    zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer);
+    /* Write worddata */
+    DB_WriteWordData(sw, ep->u1.wordID,sw->Index->worddata_buffer,zlib_size, sw->Index->sz_worddata_buffer - zlib_size ,indexf->DB);
 
 }
 
@@ -800,9 +803,9 @@ int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB)
    return sw->Db->DB_WriteWordHash(word, wordID, DB);
 }
 
-long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int lendata, void *DB)
+long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB)
 {
-   return sw->Db->DB_WriteWordData(wordID, worddata, lendata, DB);
+   return sw->Db->DB_WriteWordData(wordID, worddata, data_size, saved_bytes, DB);
 }
 
 int     DB_EndWriteWords(SWISH *sw, void *DB)

@@ -84,14 +84,14 @@ int     DB_UpdateWordID(SWISH *sw, char *word, long wordID, void *DB);
 int     DB_DeleteWordData(SWISH *sw,long wordID, void *DB);
 #endif
 int     DB_WriteWordHash(SWISH *sw, char *word, long wordID, void *DB);
-long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int lendata, void *DB);
+long    DB_WriteWordData(SWISH *sw, long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
 int     DB_EndWriteWords(SWISH *sw, void *DB);
 
 int     DB_InitReadWords(SWISH *sw, void *DB);
 int     DB_ReadWordHash(SWISH *sw, char *word, long *wordID, void *DB);
 int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB);
 int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, long *wordID, void *DB);
-long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *lendata, void *DB);
+long    DB_ReadWordData(SWISH *sw, long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
@@ -154,14 +154,14 @@ struct MOD_DB
     int    (*DB_DeleteWordData)(long wordID, void *DB);
 #endif
     int    (*DB_WriteWordHash) (char *word, long wordID, void *DB);
-    long   (*DB_WriteWordData) (long wordID, unsigned char *worddata, int lendata, void *DB);
+    long   (*DB_WriteWordData) (long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
     int    (*DB_EndWriteWords) (void *DB);
     
     int    (*DB_InitReadWords) (void *DB);
     int    (*DB_ReadWordHash) (char *word, long *wordID, void *DB);
     int    (*DB_ReadFirstWordInvertedIndex) (char *word, char **resultword, long *wordID, void *DB);
     int    (*DB_ReadNextWordInvertedIndex) (char *word, char **resultword, long *wordID, void *DB);
-    long   (*DB_ReadWordData) (long wordID, unsigned char **worddata, int *lendata, void *DB);
+    long   (*DB_ReadWordData) (long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
     int    (*DB_EndReadWords) (void *DB);
     
     

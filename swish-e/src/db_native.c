@@ -1070,7 +1070,7 @@ int     DB_WriteWord_Native(char *word, long wordID, void *db)
     return 0;
 }
 
-long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
+long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
@@ -1106,8 +1106,11 @@ long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendat
     DB->worddata_counter++;
 
     /* Write the worddata to disk */
-    compress1(lendata, fp, fputc);
-    fwrite(worddata, lendata, 1, fp);
+    /* Write in the form:  <data_size><saved_bytes><worddata> */
+    /* If there is not any compression then saved_bytes is 0 */
+    compress1(data_size, fp, fputc);
+    compress1(saved_bytes, fp, fputc);
+    fwrite(worddata, data_size, 1, fp);
 
     /* A NULL byte to indicate end of word data */
     fputc(0, fp);
@@ -1411,20 +1414,19 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long 
 }
 
 
-long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db)
+long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
 {
-    int     len;
     unsigned char *buffer;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
 
     fseek(fp, wordID, 0);
-    len = uncompress1(fp, fgetc);
-    buffer = emalloc(len);
-    fread(buffer, len, 1, fp);
+    *data_size = uncompress1(fp, fgetc);
+    *saved_bytes = uncompress1(fp, fgetc);
+    buffer = emalloc(*data_size);
+    fread(buffer, *data_size, 1, fp);
 
     *worddata = buffer;
-    *lendata = len;
 
     return 0;
 }

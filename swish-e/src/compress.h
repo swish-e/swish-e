@@ -41,7 +41,8 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
 
 void CompressCurrentLocEntry(SWISH *,IndexFILE *,ENTRY *);
 
-
+int compress_worddata(unsigned char *,int );
+void uncompress_worddata(unsigned char **,int *, int);
 void    remove_worddata_longs(unsigned char *,int *);
 
 /* Here is the worst case size for a compressed number 

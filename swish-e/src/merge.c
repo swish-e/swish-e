@@ -66,6 +66,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     ENTRY       *e, *prev;
     int          hash,
                  sz_worddata,
+                 saved_bytes,
                  tmpval,
                  filenum,
                  metaID = 0,
@@ -197,7 +198,8 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                     if(wordID)
                     {
 
-                        DB_ReadWordData(sw_input, wordID, &worddata, &sz_worddata, cur_index->DB);
+                        DB_ReadWordData(sw_input, wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
+                        uncompress_worddata(&worddata,&sz_worddata,saved_bytes);
 
                         /* Now, parse word's data */
                         s = worddata;

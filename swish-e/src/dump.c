@@ -155,7 +155,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     char    word[2];
     char   *resultword;
     unsigned char   *worddata, *s, *start, flag;
-    int     sz_worddata;
+    int     sz_worddata, saved_bytes;
     long    wordID;
 
 
@@ -241,7 +241,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 printf("\n%s",resultword);
 
                 /* Read Word's data */
-                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, indexf->DB);
+                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
+                uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
 
                 /* parse and print word's data */
                 s = worddata;
