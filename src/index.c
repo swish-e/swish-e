@@ -1321,15 +1321,14 @@ int getNumberOfIgnoreLimitWords(SWISH *sw)
     return sw->Index->nIgnoreLimitWords;
 }
 
+
 void getPositionsFromIgnoreLimitWords(SWISH * sw)
 {
     int     i,
-            j,
             k,
             m,
             stopwords,
             percent,
-            bytes_size,
             chunk_size,
             metaID,
             frequency,
@@ -1426,10 +1425,6 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         for (i = 0; i < totalfiles; i++)
             filepos[i] = NULL;
 
-        /* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
-        for(bytes_size = 0, i = COALESCE_BUFFER_MAX_SIZE; i; i >>= 8)
-            bytes_size++;
-
         /* Process each automatic stop word */
         for (i = 0; i < estopsz; i++)
         {
@@ -1462,9 +1457,8 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
                  metaID = uncompress2(&p);
 
-                 for(chunk_size = 0, k = 0, j = bytes_size - 1; k < bytes_size; k++, j--)
-                     chunk_size |= p[k] << (j * 8);
-                 p += bytes_size;
+                 chunk_size = *(unsigned int *)p;
+                 p += sizeof(unsigned int);
 
                  filenum = 0;
                  while(chunk_size)
@@ -1530,8 +1524,6 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
         printf("\r  Getting IgnoreLimit stopwords: Complete                            \n");
         fflush(stdout);
     }
-
-
 }
 
 /* 2001-08 jmruiz - Adjust positions if there was IgnoreLimit stopwords
@@ -2555,13 +2547,14 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
              curfilenum, filenum,
              frequency,
              num_locs,
-             bytes_size,
              worst_case_size;
-    int      i, j, tmp;
+    unsigned int tmp;
     unsigned char *p, *q, *size_p = NULL;
     unsigned char uflag, *cflag;
     LOCATION *loc, *next;
-    static unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
+    static unsigned char static_buffer[COALESCE_BUFFER_MAX_SIZE];
+    unsigned char *buffer;
+    unsigned int sz_buffer;
     unsigned char *coalesced_buffer;
     int     *posdata;
     int      local_posdata[MAX_STACK_POSITIONS];
@@ -2571,12 +2564,12 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     if(!e->currentChunkLocationList)
         return;
 
-    /* Compute bytes required for size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
-    for(bytes_size = 0, tmp = COALESCE_BUFFER_MAX_SIZE; tmp; tmp >>= 8)
-        bytes_size++;
-
     /* Sort all pending word locations by metaID, filenum */
     sortChunkLocations(sw, indexf, e);
+
+    /* Init buffer to static buffer */
+    buffer = static_buffer;
+    sz_buffer = COALESCE_BUFFER_MAX_SIZE;
 
     /* Init vars */
     curmetaID = 0;
@@ -2604,10 +2597,9 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             {
                 /* add to the linked list and reset values */
                 /* Update the size of chunk's data in *size_p */
-                tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+                tmp = q - (size_p + sizeof(unsigned int));
                 /* Write the size */
-                for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
-                    size_p[i] = tmp >> (j * 8);
+                *(unsigned int *)size_p = tmp;
                 /* Add to the linked list keeping the data sorted by metaname, filenum */
                 /* Allocate memory space */
                 coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
@@ -2622,22 +2614,35 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             q = buffer + sizeof(void *);   /* Make room for linked list pointer */        
             q = compress3(metaID,q);  /* Add metaID */
             size_p = q;      /* Preserve position for size */
-            q += bytes_size;     /* Make room for size */
+            q += sizeof(unsigned int);     /* Make room for size */
             num_locs = 0;
         }
         uncompress_location_values(&p,&uflag,&filenum,&frequency);
         worst_case_size = sizeof(unsigned char *) + (3 + frequency) * MAXINTCOMPSIZE;
 
-        while ((q + worst_case_size) - buffer > sizeof(buffer))
+        while ((q + worst_case_size) - buffer > (int)sz_buffer)
         {
             if(!num_locs)
-                progerr("Buffer too short in coalesce_word_locations. Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.");
+            {
+                //progerr("Buffer too short in coalesce_word_locations. Increase COALESCE_BUFFER_MAX_SIZE in config.h and rebuild.");
+                /* Allocate new buffer */
+                unsigned char * new_buffer = emalloc(sz_buffer * 2 + worst_case_size);
+                memcpy(new_buffer,buffer,sz_buffer);
+                sz_buffer = sz_buffer * 2 +worst_case_size;
+                if(buffer != static_buffer)
+                    efree(buffer);
+                /* Adjust pointers */
+                q = new_buffer + (q - buffer);
+                size_p = new_buffer + (size_p -buffer);
+                /* Asign buffer and continue */
+                buffer = new_buffer;
+                break;
+            }
             /* add to the linked list and reset values */
             /* Update the size of chunk's data in *size_p */
-            tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+            tmp = q - (size_p + sizeof(unsigned int));  /* tmp contains the size */
             /* Write the size */
-            for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
-                size_p[i] = tmp >> (j * 8);
+            *(unsigned int *)size_p = tmp;
             /* Add to the linked list keeping the data sorted by metaname, filenum */
             /* Allocate memory space */
             coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
@@ -2652,7 +2657,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             q = buffer + sizeof(void *);   /* Make room for linked list pointer */
             q = compress3(metaID,q);
             size_p = q;      /* Preserve position for size */
-            q += bytes_size;     /* Make room for size */
+            q += sizeof(unsigned int);     /* Make room for size */
             num_locs = 0;
         }
 
@@ -2681,10 +2686,9 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     {
         /* add to the linked list and reset values */
         /* Update the size of chunk's data in *size_p */
-        tmp = q - (size_p + bytes_size);  /* tmp contains the size */
+        tmp = q - (size_p + sizeof(unsigned int));  /* tmp contains the size */
         /* Write the size */
-        for(i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
-            size_p[i] = tmp >> (j * 8);
+        *(unsigned int *)size_p = tmp;
         /* Add to the linked list keeping the data sorted by metaname, filenum */
         /* Allocate memory space */
         coalesced_buffer = (unsigned char *)Mem_ZoneAlloc(sw->Index->totalLocZone,q-buffer);
@@ -2696,9 +2700,12 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     e->currentChunkLocationList = NULL;
     e->currentlocation = NULL;
 
-        /* If we are swaping locs to file, reset also correspondant memory zone */
-        if(sw->Index->swap_locdata)
-            Mem_ZoneReset(sw->Index->totalLocZone);
+    /* If we are swaping locs to file, reset also correspondant memory zone */
+    if(sw->Index->swap_locdata)
+        Mem_ZoneReset(sw->Index->totalLocZone);
 
+
+    /* Free buffer if not using static buffer */
+    if(buffer != static_buffer)
+        efree(buffer);
 }
-

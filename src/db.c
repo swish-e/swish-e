@@ -200,17 +200,14 @@ void    delete_worddata(SWISH * sw, long wordID, IndexFILE * indexf)
 ** Function to write all word's data to the index DB
 */
 
-
 void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
-    int     i, j,
-            curmetaID,
+    int     curmetaID,
             sz_worddata;
     unsigned long    tmp,
             curmetanamepos;
     int     metaID;
-    int     bytes_size,
-            chunk_size;
+    int     chunk_size;
     unsigned char *compressed_data,
            *p,*q;
     LOCATION *l, *next;
@@ -219,10 +216,6 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     curmetaID=0;
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
-
-        /* Compute bytes required for chunk location size. Eg: 4096 -> 2 bytes, 65535 -> 2 bytes */
-    for(bytes_size = 0, i = COALESCE_BUFFER_MAX_SIZE; i; i >>= 8)
-        bytes_size++;
 
     /* Write tfrequency */
     q = compress3(ep->tfrequency,q);
@@ -238,9 +231,8 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
         metaID = uncompress2(&p);
 
-        for(chunk_size = 0, i = 0, j = bytes_size - 1; i < bytes_size; i++, j--)
-            chunk_size |= p[i] << (j * 8);
-        p += bytes_size;
+        chunk_size = *(unsigned int *)p;
+        p += sizeof(unsigned int);
 
         if(curmetaID!=metaID) 
         {
@@ -328,6 +320,7 @@ void build_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 
     sw->Index->sz_worddata_buffer = sz_worddata;
 }
+
 
 /* 04/2002 jmruiz
 ** New simpler routine to write worddata
