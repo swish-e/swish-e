@@ -158,9 +158,6 @@ void SwishClose(SWISH *sw)
 
         freeModule_PropLimit(sw);
 
-        /* Free file structures */
-        freefileoffsets(sw);
-
 
         /* Free MetaNames and close files */
         tmpindexlist=sw->indexlist;
@@ -179,7 +176,6 @@ void SwishClose(SWISH *sw)
             /* free the meteEntry array */
             if(tmpindexlist->header.metaCounter)
                 freeMetaEntries( &tmpindexlist->header );
-
 
             /* Free stopwords structures */
             freestophash(&tmpindexlist->header);
@@ -212,6 +208,10 @@ void SwishClose(SWISH *sw)
         }
         
         /* Free SWISH struct */
+
+        if ( sw->dirlist )
+            freeswline( sw->dirlist );
+
         efree(sw);
     }
 }

@@ -73,7 +73,7 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
     { AUTOPROPERTY_TITLE,        META_PROP},
     { AUTOPROPERTY_DOCSIZE,      META_PROP | META_NUMBER},
     { AUTOPROPERTY_LASTMODIFIED, META_PROP | META_DATE},
-    { AUTOPROPERTY_SUMMARY,      META_PROP},
+    // { AUTOPROPERTY_SUMMARY,      META_PROP},
     // { AUTOPROPERTY_STARTPOS,     META_PROP | META_NUMBER},  // should be added only if LST is selected
 };
 
@@ -195,6 +195,55 @@ void ClearInMetaFlags(INDEXDATAHEADER * header)
     for (i = 0; i < header->metaCounter; i++)
         header->metaEntryArray[i]->in_tag = 0;
 }
+
+
+
+
+/**************************************************************************
+*   Initialize the property mapping array
+*   Used to get the property seek pointers from the index file
+*
+*   THIS IS TEMPORARY until I break up the metanames and properties
+*
+***************************************************************************/
+
+void init_property_list(INDEXDATAHEADER *header)
+{
+    int i;
+
+    /* only needs to be called one time */
+    if ( header->property_count )
+        return;
+ 
+    if ( header->propIDX_to_metaID )
+        progerr("Called init_property_list with non-null header->propIDX_to_metaID");
+
+    if ( !header->metaCounter )
+    {
+        header->property_count = -1;  
+        return;
+    }
+
+
+    header->propIDX_to_metaID = emalloc( (1 + header->metaCounter) * sizeof( int ) );
+    header->metaID_to_PropIDX = emalloc( (1 + header->metaCounter) * sizeof( int ) );
+
+    for (i = 0; i < header->metaCounter; i++)
+    {
+        if (is_meta_property(header->metaEntryArray[i]) && !header->metaEntryArray[i]->alias && !is_meta_internal(header->metaEntryArray[i]) )
+        {
+            header->metaID_to_PropIDX[header->metaEntryArray[i]->metaID] = header->property_count;
+            header->propIDX_to_metaID[header->property_count++] = header->metaEntryArray[i]->metaID;
+        }
+        else
+            header->metaID_to_PropIDX[header->metaEntryArray[i]->metaID] = -1;
+    }
+
+    if ( !header->property_count )
+        header->property_count = -1;
+}
+
+    
 
 
 /**************************************************************************

@@ -141,7 +141,7 @@ typedef struct {
     INDEXDATAHEADER    *header;
     SWISH              *sw;
     FileProp           *fprop;
-    struct file        *thisFileEntry;
+    FileRec            *thisFileEntry;
     int                 structure[STRUCTURE_END+1];
     int                 parsing_html;
     struct metaEntry   *titleProp;
@@ -170,7 +170,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
 static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append );
 static void end_metaTag( PARSE_DATA *parse_data, char * tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
-static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, xmlSAXHandlerPtr SAXHandler );
+static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  );
 static void free_parse_data( PARSE_DATA *parse_data ); 
 static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
@@ -199,7 +199,8 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
 *
 *********************************************************************/
 
-int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
+int parse_XML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
+
 {
     xmlSAXHandler       SAXHandlerStruct;
     xmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
@@ -207,7 +208,7 @@ int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     init_sax_handler( SAXHandler, sw );
-    init_parse_data( &parse_data, sw, fprop, SAXHandler );
+    init_parse_data( &parse_data, sw, fprop, fi, SAXHandler );
     
 
     /* Now parse the XML file */
@@ -223,14 +224,14 @@ int     parse_XML(SWISH * sw, FileProp * fprop, char *buffer)
 *
 *********************************************************************/
 
-int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
+int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
     htmlSAXHandler       SAXHandlerStruct;
     htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
     PARSE_DATA           parse_data;
 
     init_sax_handler( (xmlSAXHandlerPtr)SAXHandler, sw );
-    init_parse_data( &parse_data, sw, fprop, (xmlSAXHandlerPtr)SAXHandler );
+    init_parse_data( &parse_data, sw, fprop, fi, (xmlSAXHandlerPtr)SAXHandler );
     
 
     parse_data.parsing_html = 1;
@@ -249,17 +250,16 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 *
 *********************************************************************/
 
-int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
+int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
     PARSE_DATA          parse_data;
     int                 res;
     char                chars[READ_CHUNK_SIZE];
-    IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
+
 
 
     /* This does stuff that's not needed for txt */
-    init_parse_data( &parse_data, sw, fprop, NULL );
+    init_parse_data( &parse_data, sw, fprop, fi, NULL );
 
 
     /* Document Summary */
@@ -280,7 +280,6 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
     }
 
     flush_buffer( &parse_data, 1 );
-    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
     free_parse_data( &parse_data );
     return parse_data.total_words;
 }
@@ -295,8 +294,6 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
 static int parse_chunks( PARSE_DATA *parse_data )
 {
     SWISH              *sw = parse_data->sw;
-    IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
     FileProp           *fprop = parse_data->fprop;
     xmlSAXHandlerPtr    SAXHandler = parse_data->SAXHandler;
     int                 res;
@@ -336,7 +333,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
     /* Tell the parser we are done, and free it */
     if ( parse_data->parsing_html )
     {
-        if ( !parse_data->abort ) // bug in libxml
+        if ( !parse_data->abort ) // bug in libxml 2.4.5
             htmlParseChunk( (htmlParserCtxtPtr)ctxt, chars, 0, 1 );
         htmlFreeParserCtxt( (htmlParserCtxtPtr)ctxt);
     }
@@ -366,8 +363,6 @@ static int parse_chunks( PARSE_DATA *parse_data )
     if ( !parse_data->abort )
         flush_buffer( parse_data, 3 );
 
-
-    addtofwordtotals(indexf, idx->filenum, parse_data->total_words);
 
 
     free_parse_data( parse_data );
@@ -473,10 +468,9 @@ static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw )
 *   Must pass in the structure
 *
 *********************************************************************/
-static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, xmlSAXHandlerPtr SAXHandler  )
+static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  )
 {
     IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
     struct StoreDescription *stordesc = fprop->stordesc;
 
     /* Set defaults  */
@@ -485,13 +479,14 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
     parse_data->header      = &indexf->header;
     parse_data->sw          = sw;
     parse_data->fprop       = fprop;
-    parse_data->filenum     = idx->filenum + 1;
+    parse_data->filenum     = fi->filenum;
     parse_data->word_pos    = 1;  /* compress doesn't like zero */
     parse_data->SAXHandler  = SAXHandler;
+    parse_data->thisFileEntry = fi;
 
 
     /* Don't really like this, as mentioned above */
-    if ( stordesc && (parse_data->summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+    if ( stordesc && (parse_data->summary.meta = getPropNameByName(parse_data->header, AUTOPROPERTY_SUMMARY)))
     {
         /* Set property limit size for this document type, and store previous size limit */
         parse_data->summary.save_size = parse_data->summary.meta->max_len;
@@ -520,16 +515,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
             s->ignore_flag++;
     }
 
-
-
-    /* I have no idea why addtofilelist doesn't do this! */
-    idx->filenum++;
-
-    /* Create file entry in index */
-
-    addtofilelist(sw, indexf, fprop, &(parse_data->thisFileEntry) );
-    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
-
+    addCommonProperties(sw, fprop, fi, NULL, NULL, 0);
 }    
 
 
@@ -1622,9 +1608,6 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
     parse_data->SAXHandler->startElement   = (startElementSAXFunc)NULL;
     parse_data->SAXHandler->endElement     = (endElementSAXFunc)NULL;
     parse_data->SAXHandler->characters     = (charactersSAXFunc)NULL;
-
-    // if ( abort_code < 0 )
-    // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
 }
 
 

@@ -34,34 +34,12 @@
 #include "metanames.h"
 #include "dump.h"
 
-void dump_memory_file_list( SWISH *sw, IndexFILE *indexf ) 
-{
-    int     i;
-    struct  file *fi = NULL;
-   
-    printf("\n\n-----> FILES in index %s <-----\n", indexf->line );
-    for (i = 0; i < indexf->filearray_cursize; i++)
-    {
-        fi = indexf->filearray[ i ];
-
-        fflush(stdout);
-        printf("%d\n", i+1);
-
-
-        dump_file_properties( indexf, fi );
-        
-        printf("\n");
-    }
-    printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
-    fflush(stdout);
-}
 
 
 
 void dump_index_file_list( SWISH *sw, IndexFILE *indexf ) 
 {
     int     i;
-    struct  file *fi = NULL;
     int     end = indexf->header.totalfiles;
 
     i = sw->Search->beginhits ? sw->Search->beginhits - 1 : 0;
@@ -86,65 +64,70 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
     for (; i < end; i++)
     {
-        fi = readFileEntry(sw, indexf, i + 1);
+        FileRec fi;
+
+        memset( &fi, 0, sizeof( FileRec ) );
+        
+        fi.filenum = i+1;
 
         fflush(stdout);
         printf("Dumping File Properties for File Number: %d\n", i+1);
 
 
-        dump_file_properties( indexf, fi );
+        dump_file_properties( indexf, &fi );
         printf("\n");
 
 
-#ifdef PROPFILE
         printf("ReadAllDocProperties:\n");
-        fi->docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
-        dump_file_properties( indexf, fi );
+        fi.docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
+        dump_file_properties( indexf, &fi );
+        freefileinfo( &fi );
 
-        if ( fi->docProperties )
-            freeDocProperties( fi->docProperties );
-        fi->docProperties = NULL;
         printf("\n");
 
 
-{
-    propEntry *p;
-    int j;
-    struct metaEntry *meta_entry;
+        /* dump one at a time */
+        {
+            propEntry *p;
+            int j;
+            struct metaEntry *meta_entry;
+            INDEXDATAHEADER *header = &indexf->header;
+            int count = header->property_count;
 
-    printf("ReadSingleDocPropertiesFromDisk:\n");
+            printf("ReadSingleDocPropertiesFromDisk:\n");
 
-    for (j=0; j<= 20; j++) // just for testing
-    {
-        if ( !(p = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, j, 0 )) )
-            continue;
-
-        meta_entry = getPropNameByID( &indexf->header, j );
-        dump_single_property( p, meta_entry );
-
-        { // show compression
-            PropIOBufPtr    buffer;
-            long    length   = fi->propSize[ meta_entry->metaID ];
-
-            if ( (buffer = (PropIOBufPtr)DB_ReadProperty( sw, fi, meta_entry->metaID, indexf->DB )))
+            for (j=0; j< count; j++) // just for testing
             {
-                if ( buffer->propLen )
-                    printf("  %20s: %lu -> %lu (%4.2f%%)\n", "**Compressed**", buffer->propLen, length, (float)length/(float)buffer->propLen * 100.00f );
+                int metaID = header->propIDX_to_metaID[j];
 
-                efree(buffer);
+                if ( !(p = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, metaID, 0 )) )
+                    continue;
+
+                meta_entry = getPropNameByID( &indexf->header, metaID );
+                dump_single_property( p, meta_entry );
+
+                { // show compression
+                    PropIOBufPtr    buffer;
+                    long    length   = fi.prop_index->prop_position[j].length;
+
+                    if ( (buffer = (PropIOBufPtr)DB_ReadProperty( sw, &fi, meta_entry->metaID, indexf->DB )))
+                    {
+                        if ( buffer->propLen )
+                            printf("  %20s: %lu -> %lu (%4.2f%%)\n", "**Compressed**", buffer->propLen, length, (float)length/(float)buffer->propLen * 100.00f );
+
+                        efree(buffer);
+                    }
+                }
+        
+
+        
+                freeProperty( p );
             }
         }
-        
-
-        
-        freeProperty( p );
-    }
-}
-#endif
         printf("\n");
 
 
-        freefileinfo(fi);
+        freefileinfo(&fi);
     }
     printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
     fflush(stdout);
@@ -188,12 +171,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
         /* Read header */
     read_header(sw, &indexf->header, indexf->DB);
     
-        /* Allocate size for fileinfo */
-    indexf->filearray_cursize = indexf->header.totalfiles;
-    indexf->filearray_maxsize = indexf->header.totalfiles;
-    indexf->filearray = emalloc(indexf->header.totalfiles * sizeof(struct file *));
-    for(i = 0; i < indexf->header.totalfiles; i++)
-        indexf->filearray[i] = NULL;
 
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_HEADER) )
         resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
@@ -283,10 +260,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     if (DEBUG_MASK & (DEBUG_INDEX_ALL|DEBUG_INDEX_WORDS_FULL))
                     {
                         struct metaEntry    *m;
-                        struct file         *fileInfo;
                         
                         printf("\n Meta:%d", metaname);
-                        fileInfo = readFileEntry(sw, indexf, filenum);
 
                         
                         /* Get path from property list */
@@ -295,9 +270,12 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                             RESULT r;
                             char  *s;
 
+                            memset( &r, 0, sizeof( RESULT ) );
+
                             r.indexf = indexf;
                             r.sw = (struct SWISH *)sw;
                             r.filenum = filenum;
+                            r.fi.filenum = filenum;
 
                             s = getResultPropAsString( &r, m->metaID);
 

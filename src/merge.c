@@ -865,7 +865,7 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
                              struct metaMergeEntry *metaFile, IndexFILE *indexf)
 {
     int     hashval;
-    struct file *thisFileEntry = NULL;
+    FileRec *thisFileEntry = NULL;
     struct mergeindexfileinfo *ip;
     int     start,
             size;
@@ -897,7 +897,7 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         if(mtime > ip->mtime) /* Current one is newer */
         {
             /* Modify word count */
-            addtofwordtotals(sw->indexlist, getnew(ip->filenum), ftotalwords);
+//???            addtofwordtotals(sw->indexlist, getnew(ip->filenum), ftotalwords);
 
             /* swap meta values for properties */
             swapDocPropertyMetaNames(&docProperties, metaFile);
@@ -905,19 +905,15 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
             /* Get the filenum previously assigned and update the content */
             prev_filenum = getnew(ip->filenum);
 
-#ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
             *dProps = NULL;
 
-            sw->indexlist->filearray[prev_filenum - 1]->docProperties = NULL;
-#else
-            sw->indexlist->filearray[prev_filenum - 1]->docProperties = docProperties;
-#endif
 
             /* Now save ip for later (so we can load the properties) */
             // Bill, here is the fix... ip->num and sw->Index->filenum are different
-            sw->indexlist->filearray[prev_filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+//??? need to find another way to pass
+//            sw->indexlist->filearray[prev_filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
             
             ip->mtime = mtime;
             ip->indexf = indexf;
@@ -931,11 +927,10 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         {
             remap(num, 0);   /* Remap to 0 - word's data of this filenum will be removed later */
 
-#ifdef PROPFILE
             /* Save memory */
             freeDocProperties(docProperties);
             *dProps = NULL;
-#endif
+
             if ( filename )
                 efree( filename );
             return;
@@ -963,33 +958,26 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         ip->next = indexfilehashlist[hashval];
         indexfilehashlist[hashval] = ip;
 
-        addtofilelist(sw, sw->indexlist, &fprop, &thisFileEntry);
+//???        addtofilelist(sw, sw->indexlist, &fprop, &thisFileEntry);
 
         /* don't need to addCommonProperties since they will be copied with the "real" properties */
         // addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
-        addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
+//???        addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
 
         /* swap meta values for properties */
         swapDocPropertyMetaNames(&docProperties, metaFile);
 
-#ifdef PROPFILE
         /* Save memory */
         freeDocProperties(docProperties);
         *dProps =NULL;
         thisFileEntry->docProperties = NULL;
-#else
-        thisFileEntry->docProperties = docProperties;
-#endif
 
         /* Now save ip for later (so we can load the properties) */
         // Bill, here is the fix... ip->num and sw->Index->filenum are different
-        sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
+///???        sw->indexlist->filearray[sw->Index->filenum - 1]->currentSortProp = (struct  metaEntry *)ip;
 
     }
     
-    if (sw->Index->swap_filedata)
-        SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum - 1]);
-
 
     if ( filename )
         efree( filename );
@@ -1023,7 +1011,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     IndexFILE *indexf1,
            *indexf2,
            *indexf;
-    struct file *fi;
+//???    FileRec *fi;
     METAS   metas;
 
     if (verbose)
@@ -1108,16 +1096,16 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
     for (i = 1; i <= indexfilenum1; i++)
     {
-        fi = readFileEntry(sw1, indexf1, i);
+//???        fi = readFileEntry(sw1, indexf1, i);
         /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
 #ifdef PROPFILE
-        fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
+//???        fi->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, i );
 #endif
         
-        addindexfilelist(sw, i, &metas, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
+//        addindexfilelist(sw, i, &metas, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
 
-        freefileinfo(fi);
-        indexf1->filearray[i-1] = NULL;
+//        freefileinfo(fi);
+//???        indexf1->filearray[i-1] = NULL;
     }
 
 
@@ -1132,15 +1120,15 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
     for (i = 1; i <= indexfilenum2; i++)
     {
-        fi = readFileEntry(sw2, indexf2, i);
+///        fi = readFileEntry(sw2, indexf2, i);
         /* 2001-09 jmruiz  - Fix to allow merge and PROPFILE */
 #ifdef PROPFILE
-        fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
+//???        fi->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, i );
 #endif
-        addindexfilelist(sw, i + indexfilenum1, &metas, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
+//        addindexfilelist(sw, i + indexfilenum1, &metas, &fi->docProperties, &totalfiles, indexf2->header.filetotalwordsarray[i - 1], metaFile2,indexf2);
 
-        freefileinfo(fi);
-        indexf2->filearray[i-1] = NULL;
+//        freefileinfo(fi);
+//???        indexf2->filearray[i-1] = NULL;
     }
 
 
@@ -1151,11 +1139,11 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
     for(i = 1; i <= sw->indexlist->header.totalfiles; i++)
     {
-        struct mergeindexfileinfo *ip;
+//???        struct mergeindexfileinfo *ip;
 
-        ip = (struct mergeindexfileinfo *)indexf->filearray[i - 1]->currentSortProp;
+//???        ip = (struct mergeindexfileinfo *)indexf->filearray[i - 1]->currentSortProp;
 
-        if(!ip)
+//???        if(!ip)
             progerr("Internal merge error. File not found while merge");
 
 // Hi Jose,
@@ -1168,28 +1156,28 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
         /* Attach properties from the old index file, and write them back to the new index file */
 
 
-        if(ip->indexf == indexf1)
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, ip->filenum );
-        else
-            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, ip->filenum - indexfilenum1);
+//        if(ip->indexf == indexf1)
+//???            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw1, indexf1, ip->filenum );
+//        else
+//            indexf->filearray[i - 1]->docProperties = ReadAllDocPropertiesFromDisk( sw2, indexf2, ip->filenum - indexfilenum1);
 
         /* write properties to disk, and release memory */
-        WritePropertiesToDisk( sw , i );
+//        WritePropertiesToDisk( sw , i );
 
         /* Now clean up the file entry */
         /* ip->filenum contains the filenum in indexf1 */
         /* ip->filenum contaons the filenum in indexf2 plus indexfilenum1 */
-        if(ip->indexf == indexf1)
+//        if(ip->indexf == indexf1)
         {
-            indexf1->filearray[ip->filenum - 1]->docProperties = NULL;
-            freefileinfo(indexf1->filearray[ip->filenum - 1]);
-            indexf1->filearray[ip->filenum - 1] = NULL;
+//            indexf1->filearray[ip->filenum - 1]->docProperties = NULL;
+ //           freefileinfo(indexf1->filearray[ip->filenum - 1]);
+ //           indexf1->filearray[ip->filenum - 1] = NULL;
         }
-        else 
+//        else 
         {
-            indexf2->filearray[ip->filenum - indexfilenum1 - 1]->docProperties = NULL;
-            freefileinfo(indexf2->filearray[ip->filenum - indexfilenum1 - 1]); 
-            indexf2->filearray[ip->filenum - indexfilenum1 - 1] = NULL;
+//            indexf2->filearray[ip->filenum - indexfilenum1 - 1]->docProperties = NULL;
+ //           freefileinfo(indexf2->filearray[ip->filenum - indexfilenum1 - 1]); 
+  //          indexf2->filearray[ip->filenum - indexfilenum1 - 1] = NULL;
         }
 #endif
     }
@@ -1240,9 +1228,9 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     if (verbose)
         printf("\nMerging file info... ");
 
-    write_file_list(sw, indexf);
+//    write_file_list(sw, indexf);
 
-    write_sorted_index(sw, indexf);
+//??    write_sorted_index(sw, indexf);
 
     skipfiles = (indexfilenum1 + indexfilenum2) - totalfiles;
 

@@ -70,7 +70,7 @@ typedef struct {
     INDEXDATAHEADER *header;
     SWISH      *sw;
     FileProp   *fprop;
-    struct file *thisFileEntry;
+    FileRec    *thisFileEntry;
     
 } PARSE_DATA;
 
@@ -100,16 +100,13 @@ static char *isIgnoreMetaName(SWISH * sw, char *tag);
 *
 *********************************************************************/
 
-int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
+int countwords_XML (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 {
     PARSE_DATA          parse_data;
     XML_Parser          p = XML_ParserCreate(NULL);
     IndexFILE          *indexf = sw->indexlist;
-    struct MOD_Index   *idx = sw->Index;
     struct StoreDescription *stordesc = fprop->stordesc;
 
-    /* I have no idea why addtofilelist doesn't do this! */
-    idx->filenum++;
 
     /* Set defaults  */
     memset(&parse_data, 0, sizeof(parse_data));
@@ -118,12 +115,13 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     parse_data.parser = p;
     parse_data.sw     = sw;
     parse_data.fprop  = fprop;
-    parse_data.filenum = idx->filenum;
+    parse_data.filenum = fi->filenum;
     parse_data.word_pos= 1;  /* compress doesn't like zero */
+    parse_data.thisFileEntry = fi;
 
 
     /* Don't really like this, as mentioned above */
-    if ( stordesc && (parse_data.summary.meta = getPropNameByName(&indexf->header, AUTOPROPERTY_SUMMARY)))
+    if ( stordesc && (parse_data.summary.meta = getPropNameByName(parse_data.header, AUTOPROPERTY_SUMMARY)))
     {
         /* Set property limit size for this document type, and store previous size limit */
         parse_data.summary.save_size = parse_data.summary.meta->max_len;
@@ -132,10 +130,7 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     }
         
     
-
-
-    addtofilelist(sw, indexf, fprop, &(parse_data.thisFileEntry) );
-    addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
+    addCommonProperties(sw, fprop, fi, NULL,NULL, 0);
 
 
 
@@ -172,10 +167,6 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     if ( parse_data.summary.save_size )
         parse_data.summary.meta->max_len = parse_data.summary.save_size;
         
-
-
-    addtofwordtotals(indexf, idx->filenum, parse_data.total_words);
-
     return parse_data.total_words;
 }
     

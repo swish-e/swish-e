@@ -99,8 +99,6 @@ RESULT *notresultlists(SWISH *, RESULT *, RESULT *);
 RESULT *phraseresultlists(SWISH *, RESULT *, RESULT *, int);
 RESULT *addtoresultlist(RESULT *, int, int, int, int, int *, IndexFILE *,SWISH *);
 
-RESULT *getproperties(RESULT *);
-
 
 RESULT *sortresultsbyfilenum(RESULT *);
 
@@ -109,9 +107,7 @@ int wasStemmingAppliedToIndex(FILE *);
 int wasSoundexAppliedToIndex(FILE *);
 
 void freeresultlist(SWISH *sw,struct DB_RESULTS *);
-void freefileoffsets(SWISH *);
 void freeresult(SWISH *,RESULT *);
-void freefileinfo(struct file *);
 struct swline *ignore_words_in_query(SWISH *,IndexFILE *, struct swline *,unsigned char);
 struct swline *stem_words_in_query(SWISH *,IndexFILE *, struct swline *);
 struct swline *soundex_words_in_query(SWISH *,IndexFILE *, struct swline *);

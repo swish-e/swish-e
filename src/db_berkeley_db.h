@@ -97,8 +97,8 @@ int     DB_EndReadSortedIndex_db(void *db);
 
 
 #ifdef PROPFILE
-void    DB_WriteProperty_db( struct file *fi, int propID, char *buffer, int datalen, void *db );
-char  * DB_ReadProperty_db( struct file *fi, int propID, void *db );
+void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen, void *db );
+char  * DB_ReadProperty_db( FileRec *fi, int propID, void *db );
 void    DB_Reopen_PropertiesForRead_db(void *db);
 #endif
 

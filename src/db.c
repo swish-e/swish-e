@@ -143,8 +143,6 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 
 		/* BuzzWords */
     write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);	
-		/* Write array containing the number of words per doc */
-    write_integer_table_to_header(sw, WORDSPERDOC_ID, header->filetotalwordsarray , header->totalfiles , DB);
 
     DB_EndWriteHeader(sw, DB);
 }
@@ -556,10 +554,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case BUZZWORDS_ID:
             parse_buzzwords_from_buffer(header, buffer);
             break;
-        case WORDSPERDOC_ID:
-            header->filetotalwordsarray = emalloc(sizeof(int) * header->totalfiles);
-            parse_integer_table_from_buffer(header->filetotalwordsarray, header->totalfiles, buffer);
-            break;
         default:
             progerr("Severe index error in header");
             break;
@@ -945,15 +939,25 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 }
 
 
-#ifdef PROPFILE
-void DB_WriteProperty(SWISH *sw, struct file *fi, int propID, char *buffer, int datalen, void *DB )
+void DB_WriteProperty( SWISH *sw, FileRec *fi, int propID, char *buffer, int datalen, void *db)
 {
-    sw->Db->DB_WriteProperty( fi, propID, buffer, datalen, DB );
+    sw->Db->DB_WriteProperty( sw, fi, propID, buffer, datalen, db );
 }
 
-char *DB_ReadProperty(SWISH *sw, struct file *fi, int propID, void *DB )
+void    DB_WritePropPositions(SWISH *sw, FileRec *fi, void *db)
 {
-    return sw->Db->DB_ReadProperty( fi, propID, DB );
+    sw->Db->DB_WritePropPositions( sw, fi, db);
+}
+
+void    DB_ReadPropPositions(SWISH *sw, FileRec *fi, void *db)
+{
+    sw->Db->DB_ReadPropPositions( sw, fi, db);
+}
+
+
+char *DB_ReadProperty(SWISH *sw, FileRec *fi, int propID, void *db)
+{
+    return sw->Db->DB_ReadProperty( sw, fi, propID, db );
 }
 
 
@@ -961,5 +965,4 @@ void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB )
 {
     sw->Db->DB_Reopen_PropertiesForRead(DB);
 }
-#endif
 

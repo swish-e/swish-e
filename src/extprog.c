@@ -254,7 +254,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             /* Create the FileProp entry to describe this "file" */
 
             /* This is not great -- really should make creating a fprop more generic */
-            /* this was done because file.c assumed that the "file" was on disk *.
+            /* this was done because file.c assumed that the "file" was on disk */
             /* which has changed over time due to filters, http, and prog */
             
             fprop = init_file_properties(sw);  

@@ -187,7 +187,6 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define METANAMES_ID (BASEHEADER + 27)
 #define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
 #define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
-#define WORDSPERDOC_ID (BASEHEADER + 30)
 
 #define MAXFILELEN 1000
 #define MAXSTRLEN 2000
@@ -257,7 +256,7 @@ propEntry;
 
 typedef struct docProperties
 {
-	int n;                      /* Number of entries in the array */
+    int n;  /* to be removed - can just use count of properties */
 	struct propEntry *propEntry[1];  /* Array to hold properties */
 }
 docProperties;
@@ -279,19 +278,25 @@ struct metaEntry
 };
 
 
-struct file
+
+typedef struct
 {
-    int     filenum;
-    struct  docProperties *docProperties;
-    struct  metaEntry *currentSortProp;
-#ifdef PROPFILE
-    long   *propLocations;          /* array of pointers to properties (less one) */
-    int     propLocationsCount;     /* total size of array of props */
-    long   *propSize;               /* array of how long each property is */
-    long    propTotalLen;           /* total length of all props (for reading all) */
-    propEntry *SortProp;            /* for creating pre-sorted indexes */
-#endif
-};
+    long    length;
+    long    seek;
+} PROP_LOCATION;
+
+typedef struct
+{
+    PROP_LOCATION   prop_position[1];  // there used to be more in there.
+} PROP_INDEX;
+
+
+typedef struct
+{
+    int             filenum;
+    docProperties  *docProperties;  /* list of document props in memory */
+    PROP_INDEX     *prop_index;     /* pointers to properties on disk */
+} FileRec;
 
 
 /*
@@ -323,7 +328,6 @@ typedef struct
     struct FilterList *hasfilter;       /* NULL if no filter for this file */
 }
 FileProp;
-
 
 
 typedef struct LOCATION
@@ -429,6 +433,13 @@ typedef struct
     int     stopMaxSize;
     int     stopPos;
 
+    /* This is an array of properties that are used */
+    int     *propIDX_to_metaID;
+    int     *metaID_to_PropIDX;
+    int     property_count;
+
+
+
     /* Buzzwords hash */
     int    buzzwords_used_flag; /* flag to indicate that buzzwords are being used */
     struct swline *hashbuzzwordlist[HASHSIZE];
@@ -441,10 +452,6 @@ typedef struct
     struct metaEntry **metaEntryArray;
     int     metaCounter;        /* Number of metanames */
 
-
-    /* Array to handle the number of words per doc */
-    int    *filetotalwordsarray;
-
 }
 INDEXDATAHEADER;
 
@@ -455,10 +462,6 @@ typedef struct IndexFILE
 
     char   *line;               /*Name of the index file */
 
-    /* file index info */
-    struct file **filearray;
-    int     filearray_cursize;
-    int     filearray_maxsize;
     int     total_bytes;  /* Just to show total size when indexing */
 
 
@@ -490,7 +493,8 @@ typedef struct RESULT
     struct RESULT *head;
     struct RESULT *nextsort;    /* Used while sorting results */
     int     count;              /* result Entry-Counter */
-    int     filenum;
+    int     filenum;            /* there's an extra four bytes we don't need */
+    FileRec fi;                 /* This is used to cache the properties and the seek index */
     int     rank;
     int     structure;
     int     frequency;
@@ -500,7 +504,6 @@ typedef struct RESULT
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
-    int     read;               /* 0 if file data and properties have not yet been readed from the index file */
     struct SWISH *sw;
 }
 RESULT;

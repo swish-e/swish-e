@@ -38,9 +38,6 @@
 **
 */
 
-#define PROPFILE 1
-
-/* PROPFILE is a development testing option */
 
 #ifdef __VMS
 #define PROPFILE_EXTENSION "_prop"

@@ -45,6 +45,22 @@ $Id$
 #include "result_sort.h"
 
 
+/******************************************************
+* Here's some static data to make the sort arrays smaller
+* I don't think we need to worry about multi-threaded
+* indexing at this time!
+*******************************************************/
+
+typedef struct
+{
+    PROP_INDEX  *prop_index;  /* cache of index pointers for this file */
+    propEntry   *SortProp;    /* current property for this file */
+} PROP_LOOKUP;
+
+static struct metaEntry *CurrentPreSortMetaEntry;
+static PROP_LOOKUP *PropLookup = NULL;
+
+
 
 
 /*
@@ -54,6 +70,8 @@ $Id$
 **
 ** ----------------------------------------------
 */
+
+
 
 
 
@@ -437,10 +455,16 @@ int    *LoadSortedProps(SWISH * sw, IndexFILE * indexf, struct metaEntry *m)
            *s;
     int     sz_buffer;
     int     j;
+    int     propIDX;
+    INDEXDATAHEADER *header = &indexf->header;
+
 
     DB_InitReadSortedIndex(sw, indexf->DB);
 
     /* Get the sorted index of the property */
+
+    /* Convert to a property index */
+    propIDX = header->metaID_to_PropIDX[m->metaID];
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
     /* Table doesn't exist */
@@ -479,15 +503,12 @@ int    *getLookupResultSortedProperties(RESULT * r)
 
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
     {
-
         /* This shouldn't happen -- the meta names should be checked before this */
         if (!(m = getPropNameByID(&indexf->header, indexf->propIDToSort[i])))
         {
             props[i] = 0;
-progerr("result_sort -- not a property lookup %d",indexf->propIDToSort[i] );
             continue;
         }
-
 
         /* Deal with internal meta names */
         if (is_meta_internal(m))
@@ -573,6 +594,7 @@ int     sortresults(SWISH * sw, int structure)
     struct MOD_ResultSort *rs = sw->ResultSort;
     int     presorted_data_not_available = 0;
 
+
     /* Sort each index file's resultlist */
     for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)
     {
@@ -591,9 +613,10 @@ int     sortresults(SWISH * sw, int structure)
                 /* Load the presorted data */
                 tmp->iPropSort = getLookupResultSortedProperties(tmp);
 
-                /* If some of the properties is not presorted, use the
-                   ** old method (ignore presorted index)
-                 */
+
+                /* If some of the properties is not presorted */
+                /* use the old method (ignore presorted index)*/
+
                 if (!tmp->iPropSort)
                 {
                     presorted_data_not_available = 1;
@@ -614,7 +637,6 @@ int     sortresults(SWISH * sw, int structure)
             for (tmp = rp; tmp; tmp = tmp->next)
                 tmp->PropSort = getResultSortProperties(tmp);
         }
-
 
         /* Compute number of results */
         for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
@@ -656,48 +678,32 @@ int     sortresults(SWISH * sw, int structure)
     return TotalResults;
 }
 
-/***********************************************************************
-* qsort compare function to sort the file array by filenum
-*
-************************************************************************/
-int     compFilenums(const void *s1, const void *s2)
-{
-    struct file *r1 = *(struct file * const *) s1;
-    struct file *r2 = *(struct file * const *) s2;
-
-    return r1->filenum - r2->filenum;
-}
 
 /* 01/2001 Jose Ruiz */
 /* function for comparing data in order to
 get sorted results with qsort (including combinations of asc and descending
 fields */
+/***********************************************************************
+* qsort compare function used for presorting the properties
+*
+************************************************************************/
 
-int     compFileProps(const void *s1, const void *s2)
+
+static int     compFileProps(const void *s1, const void *s2)
 {
-    struct file *r1 = *(struct file * const *) s1;
-    struct file *r2 = *(struct file * const *) s2;
-    propEntry *p1,
-           *p2;
-    int     metaID = r1->currentSortProp->metaID;
+    int         *r1 = *(int * const *) s1;
+    int         *r2 = *(int * const *) s2;
+    int         a = (int)r1; 
+    int         b = (int)r2;
 
-#ifdef PROPFILE
-    return Compare_Properties(r1->currentSortProp, r1->SortProp, r2->SortProp);
-#endif
-
-    /* Find the current metaID */
-    if (metaID < r1->docProperties->n)
-        p1 = r1->docProperties->propEntry[metaID];
-    else
-        p1 = NULL;
-
-    if (metaID < r2->docProperties->n)
-        p2 = r2->docProperties->propEntry[metaID];
-    else
-        p2 = NULL;
-
-    return Compare_Properties(r1->currentSortProp, p1, p2);
+    return Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
 }
+
+
+/***********************************************************************
+* Checks if the property is set to be presorted
+*
+************************************************************************/
 
 int     is_presorted_prop(SWISH * sw, char *name)
 {
@@ -722,31 +728,54 @@ int     is_presorted_prop(SWISH * sw, char *name)
 }
 
 
-/* 02/2001 jmruiz */
-/* Routine to sort properties at index time */
+
+/***********************************************************************
+* Pre sort all the properties
+*
+*
+*
+************************************************************************/
+
+
 void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
-    int     i,
-            j,
-            k;
-    int    *sortFilenums;
+    int             i,
+                    k;
+    int             *sort_array = NULL;     /* array that gets sorted */
+    int             *out_array = NULL;     /* array that gets sorted */
+    unsigned char   *out_buffer  = NULL;
+    unsigned char   *cur;
     struct metaEntry *m;
-    int     props_sorted = 0;
+    int             props_sorted = 0;
+    int             total_files = indexf->header.totalfiles;
+    FileRec         fi;
+    INDEXDATAHEADER *header = &indexf->header;
+    int             propIDX;
+
+    memset( &fi, 0, sizeof( FileRec ) );
+    
+
+
+
+    DB_InitWriteSortedIndex(sw, indexf->DB );
+
+    /* Any properties to check? */
+    if ( header->property_count <= 0 )
+    {
+        DB_EndWriteSortedIndex(sw, indexf->DB);
+        return;
+    }
 
 
     /* Execute for each property */
-    for (j = 0; j < indexf->header.metaCounter; j++)
+    for (propIDX = 0; propIDX < header->property_count; propIDX++)
     {
-        if ( !(m = getPropNameByID(&indexf->header, indexf->header.metaEntryArray[j]->metaID)))
-            continue;
+        /* convert the count to a propID (metaID) */
+        int metaID = header->propIDX_to_metaID[propIDX];
+
+        if ( !(m = getPropNameByID(&indexf->header, metaID )))
+            progerr("Failed to lookup propIDX %d (metaID %d)", propIDX, metaID );
             
-        m->sorted_data = NULL;
-
-
-        /* ignore aliase */
-        if ( m->alias )
-            continue;
-
 
         /* Check if this property must be in a presorted index */
         if (!is_presorted_prop(sw, m->metaName))
@@ -758,11 +787,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
             continue;
 
 
-        /* User properties */
-
-        /* only sort properties */
-        if (!(m->metaType & META_PROP))
-            continue;
 
         if (sw->verbose)
         {
@@ -771,72 +795,91 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         }
 
 
-        /* Array of filenums to store the sorted docs (referenced by its filenum) */
-        sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
-
-
-        /* Save the metaEntry in ALL the files */
-        for (i = 0; i < indexf->filearray_cursize; i++)
+        /* Allocate memory for array, if not already done */
+        
+        if ( !sort_array )
         {
-            indexf->filearray[i]->currentSortProp = m; /* waste of space */
-#ifdef PROPFILE
-            indexf->filearray[i]->SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, i + 1, m->metaID, MAX_SORT_STRING_LEN);
-#endif
+            /* Note, we could save memory by only using two array at any given time */
+            out_buffer = emalloc( total_files * 5 ); // ??? Jose, why 5?
+            sort_array = emalloc( total_files * sizeof( long ) );
+            out_array  = emalloc( total_files * sizeof( long ) );
+
+            PropLookup = emalloc( total_files * sizeof( PROP_LOOKUP ));
+            memset( PropLookup, 0, total_files * sizeof( PROP_LOOKUP ) );
+        }
+
+
+        /* This is need to know how to compare the properties */
+        CurrentPreSortMetaEntry = m;
+
+        /* Populate the arrays */
+        for (i = 0; i < total_files; i++)
+        {
+            /* Here's a FileRec where the property index will get loaded */
+            fi.filenum = i + 1;
+
+            /* Used cached seek pointers for this file, if not the first time */
+            if ( PropLookup[i].prop_index ) 
+                fi.prop_index = PropLookup[i].prop_index;
+            else
+                fi.prop_index = NULL;
+
+
+            PropLookup[i].SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, m->metaID, MAX_SORT_STRING_LEN);
+            PropLookup[i].prop_index = fi.prop_index;  // save it for next time
+            sort_array[i] = i;
         }
 
 
         /* Sort them using qsort. The main work is done by compFileProps */
+        swish_qsort( sort_array, total_files, sizeof( int ), &compFileProps);
 
-        /* NOTE: This messes up the order of file entries, so you cannot lookup
-         * properties by filenum after this point.  The file array is resorted after each
-         * metaID so that the property file can be read sequentially.
-         */
 
-        /* Build the sorted table */
-        swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
         /* Build the sorted table */
 
-        for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
+        for (i = 0, k = 1; i < total_files; i++)
         {
             /* 02/2001 We can have duplicated values - So all them may have the same number asigned  - qsort justs sorts */
             if (i)
             {
                 /* If consecutive elements are different increase the number */
-                if ((compFileProps(&indexf->filearray[i - 1], &indexf->filearray[i])))
+                if ((compFileProps( &sort_array[i - 1], &sort_array[i])))
                     k++;
             }
-            sortFilenums[indexf->filearray[i]->filenum - 1] = k;
+
+            out_array[ sort_array[i] ] = k;
+
+
+            /* Free the property */
+            freeProperty( PropLookup[i].SortProp );
         }
 
-#ifdef DEBUGSORT
-        for (i = 0; i < indexf->filearray_cursize; i++)
-        {
-            printf(" Done File num = '%d' sort value = %d", indexf->filearray[i]->filenum, sortFilenums[indexf->filearray[i]->filenum - 1]);
-            dump_single_property(indexf->filearray[i]->SortProp, m);
-        }
-#endif
+        /* Now compress */
+        cur = out_buffer;
 
-#ifdef PROPFILE
-        /* Now free properties */
-        for (i = 0; i < indexf->filearray_cursize; i++)
-            if (indexf->filearray[i]->SortProp)
-            {
-                freeProperty(indexf->filearray[i]->SortProp);
-                indexf->filearray[i]->SortProp = NULL;
-            }
-#endif
+        for (i = 0; i < total_files; i++)
+            cur = compress3( out_array[i], cur );
 
-
-        /* Store the integer array of presorted data */
-        m->sorted_data = sortFilenums;
-
-        /* put the file array back in order */
-        /* This is done so that the property file can be read sequentially */
-        /* It might be faster to just create a mem zone for this instead of sorting each time */
-        swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFilenums);
+        DB_WriteSortedIndex(sw, metaID, out_buffer, cur - out_buffer, indexf->DB);
 
         props_sorted++;
+    }
+
+    DB_EndWriteSortedIndex(sw, indexf->DB);
+
+
+
+    if ( props_sorted )
+    {
+        for (i = 0; i < total_files; i++)
+            if ( PropLookup[i].prop_index )
+                efree( PropLookup[i].prop_index );
+        efree( out_array );
+        efree( out_buffer );
+        efree( sort_array );
+        efree( PropLookup );
+        PropLookup = NULL;
     }
 
     if (sw->verbose)
@@ -848,8 +891,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         else
             printf("%d properties sorted.      %-40s\n", props_sorted, " ");
     }
-
-
 }
 
 
