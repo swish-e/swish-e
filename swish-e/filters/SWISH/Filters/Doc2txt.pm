@@ -18,7 +18,6 @@ sub filter {
     # We need a file name to pass to the catdoc program
     my $file = $filter->fetch_filename;
     
-
     # Grab output from running program
     my $content = $filter->run_program( 'catdoc', $file );
 

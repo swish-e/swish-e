@@ -1,6 +1,7 @@
 MANIFEST
 MANIFEST.SKIP
 Makefile.in
+INSTALL
 README
 conf/stopwords/dutch.txt
 conf/stopwords/english.txt
@@ -58,8 +59,13 @@ example/modules/TemplateDumper.pm
 example/modules/TemplateHTMLTemplate.pm
 example/modules/TemplateToolkit.pm
 filter-bin/README
+filter-bin/swish_filter.pl
 filter-bin/_binfilter.sh
 filter-bin/_pdf2html.pl
+filters/README
+filters/SWISH/Filter.pm
+filters/SWISH/Filters/Doc2txt.pm
+filters/SWISH/Filters/Pdf2HTML.pm
 html/CHANGES.html
 html/INSTALL.html
 html/README.html

@@ -269,8 +269,8 @@ sub filter {
         $doc_object->$method(delete $attr{$_});
 
         if ( $_ eq 'name' ) {
-            $SIG{__DIE__} = sub { die "Error- ", $doc_object->name, ": ", @_ };
-            $SIG{__WARN__} = sub { warn "Warning - ",$doc_object->name, ": ", @_ };
+            $SIG{__DIE__} = sub { die "$$ Error- ", $doc_object->name, ": ", @_ };
+            $SIG{__WARN__} = sub { warn "$$ Warning - ",$doc_object->name, ": ", @_ };
         }
     }
 
@@ -282,10 +282,20 @@ sub filter {
     for my $filter ( @{$self->{filters}} )  {
         $doc_object->continue( 0 );  # reset just in case a non-filtering filter set this
 
+        next if $filter->{disabled};
+
         
         my $filter_function = $filter->{filter_function};
 
-        my $filtered_doc = $filter_function->($doc_object);
+        my $filtered_doc;
+        eval {
+            local $SIG{__DIE__};
+            $filtered_doc = $filter_function->($doc_object);
+        };
+        if ( $@ ) {
+            warn "Problems with filter '$filter->{package}'.  Filter disabled.\n  : $@";
+            $filter->{disabled}++;
+        }
 
         if ( $filtered_doc ) {  # either a file name or a reference to the doc
 
@@ -501,9 +511,13 @@ Here's a module to index MS Word documents using the program "catdoc":
 Filters are linked together in a chain, and have a type and priority that set the order of the
 filter in the chain.  Filters check the content type of the document to see if they should process
 the document.  If the filter processes the document it returns either a file name or a reference to a scalar.
-Normally a reference to a scalar should be returned.
+Normally a reference to a scalar of the converted document should be returned.
 If the filter does not process the document then it returns undef and the next filter in the chain has a chance
 to process the document.
+
+If a filter calls die then the filter is removed from the chain and will not be
+called again I<during the same run>.  Calling die when running with -S http or -S fs has no effect since the
+program is run once per document.
 
 Once a filter returns something other than undef no more filters will be called.  If the filter calls $filter->set_continue
 then processing will continue as if the file was not filtered.  For example, a filter can uncompress data and then
@@ -586,8 +600,7 @@ sub cur_doc {
 sub remove_temp_file {
     my $self = shift;
 
-    unlink $self->{temp_file} if $self->{temp_file};
-    delete $self->{temp_file};
+    unlink delete $self->{temp_file} if $self->{temp_file};
 }
     
 =item $file_name = $filter->fetch_filename;
@@ -823,7 +836,9 @@ sub real_fork {
 
     return $fh if $pid;
 
-    exec @args or die "Failed to exec '$args[0]': $!\n";
+    delete $self->{temp_file};  # in child, so don't want to delete on destroy.
+
+    exec @args or exit;  # die "Failed to exec '$args[0]': $!\n";
 }
 
 
