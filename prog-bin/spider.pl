@@ -65,7 +65,16 @@ binmode STDOUT;
 
     my %visited;  # global -- I suppose would be smarter to localize it per server.
 
-    process_server($_) for @servers;
+    for my $s ( @servers ) {
+        if ( !$s->{base_url} ) {
+            die "You must specify 'base_url' in your spider config settings\n";
+        }
+
+        for (ref $s->{base_url} eq 'ARRAY' ? @{$s->{base_url}} : $s->{base_url} ) {
+            $s->{base_url} = $_;
+            process_server( $s );
+        }
+    }
 
 
 #-----------------------------------------------------------------------
@@ -148,7 +157,7 @@ sub process_server {
 
     # set default agent for log files
 
-    $server->{agent} ||= 'swish-e spider 2.2 http://sunsite.berkeley.edu/SWISH-E/';
+    $server->{agent} ||= 'swish-e spider 2.2 http://swish-e.org/';
 
 
     # get a user agent object
@@ -567,7 +576,7 @@ sub default_urls {
 
     return map {
         {
-            base_url        => $_,
+            base_url        => \@ARGV,
             email           => 'swish@domain.invalid',
             delay_min       => .0001,
             link_tags       => [qw/ a frame /],
@@ -798,8 +807,8 @@ used to prevent spidering the same URL twice.
 Examples:
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu/SWISH-E/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu/ ],
+        base_url    => 'http://swish-e.org/',
+        same_hosts  => [ qw/www.swish-e.org/ ],
         email       => 'my@email.address',
     );
     @servers = ( \%serverA, \%serverB, );
@@ -813,6 +822,11 @@ This describes the required and optional keys in the server configuration hash, 
 =item base_url
 
 This required setting is the starting URL for spidering.
+
+Typically, you will just list one URL for the base_url.  You may specify more than one
+URL as a reference to a list
+
+    base_url => [qw! http://swish-e.org/ http://othersite.org/other/index.html !],
 
 =item same_hosts
 
