@@ -116,7 +116,7 @@ Examples:
       </tr>
     </table>
     <P>
-retrieves files containing either the words ``smilla'' or ``snow''
+Retrieves files containing either the words ``smilla'' or ``snow''.
 
 <P>
 
@@ -128,14 +128,15 @@ retrieves files containing either the words ``smilla'' or ``snow''
         </td>
 
 	<td>
-	  <pre>     swish-e -w &quot;smilla and snow not sense&quot; -f myIndex </pre>
+	  <pre>     swish-e -w &quot;smilla and snow not sense&quot; -f myIndex 
+     swish-e -w &quot;(smilla and snow) and not sense&quot; -f myIndex (same thing)</pre>
         </td>
 	    
       </tr>
     </table>
     <P>
 retrieves first the files that contain both the words ``smilla'' and
-``snow''; then among those the ones that do not contain the word ``sense''
+``snow''; then among those the ones that do not contain the word ``sense''.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -143,8 +144,8 @@ retrieves first the files that contain both the words ``smilla'' and
 <H2><A NAME="Truncation">Truncation</A></H2>
 <P>
 The wildcard (*) is available, however it can only be used at the end of a
-word. Usage at the beginning or in the middle of the word will yield no
-results.
+word: otherwise is is considerd a normal character (i.e. can be searched
+for if included in the WordCharacters directive).
 
 <P>
 
@@ -245,8 +246,7 @@ retrieves files with ``juliet'' and containing neither ``ophelia'' nor
 <HR>
 <H2><A NAME="Meta_Tags">Meta Tags</A></H2>
 <P>
-MetaNames are used to represent <EM>fields</EM> (or columns in a database) and provide a way to search in only parts of a
-document. See <A HREF="././SWISH-CONFIG.html#Document_Contents_Directives">SWISH-CONFIG</A> for a description of MetaNames, and how they are specified in the source
+MetaNames are used to represent <EM>fields</EM> (called <EM>columns</EM> in a database) and provide a way to search in only parts of a document. See <A HREF="././SWISH-CONFIG.html#Document_Contents_Directives">SWISH-CONFIG</A> for a description of MetaNames, and how they are specified in the source
 document.
 
 <P>
@@ -285,7 +285,7 @@ consequently the following are equivalent:
 
 	<td>
 	  <pre>    swish-e -w &quot;metaName=word&quot;
-    swish-e -w &quot;metaName=word&quot; 
+    swish-e -w &quot;metaName = word&quot; 
     swish-e -w &quot;metaName= word&quot; </pre>
         </td>
 	    
@@ -335,10 +335,9 @@ moreover metaName and plain search can be mixed in a single query.
       </tr>
     </table>
     <P>
-This query will retrieve all the files in which the ``metaName1'' is
-associated either with ``a1'' or ``a4'' and that do not contain the words
-``a3'' and ``a7'', where ``a3'' and ``a7'' are not associated to any meta
-name.
+This query will retrieve all the files in which ``a1'' or ``a2'' are found
+in the META tag ``metaName1'' and that do not contain the words ``a3'' and
+``a7'', where ``a3'' and ``a7'' are not associated to any meta name.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]

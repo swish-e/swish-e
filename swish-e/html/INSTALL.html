@@ -41,6 +41,8 @@
 
 		<LI><A HREF="#Downloading_and_unpacking_and_bu">Downloading and unpacking and building</A>
 		<LI><A HREF="#Installing_the_SWISH_E_C_Library">Installing the SWISH-E C Library</A>
+		<LI><A HREF="#Creating_PDF_and_Postscript_docu">Creating PDF and Postscript documentation</A>
+		<LI><A HREF="#Installing_the_SWISH_E_documenta">Installing the SWISH-E documentation as man(1) pages</A>
 	</UL>
 
 	<LI><A HREF="#BASIC_CONFIGURATION_AND_USAGE">BASIC CONFIGURATION AND USAGE</A>
@@ -372,6 +374,140 @@ So <CODE>make install</CODE> will install the <EM>swish-e</EM> binary in <EM>$HO
 will install the <EM>libswish-e.a</EM> library in <EM>$HOME/lib</EM>.
 
 <P>
+Note: You may wish to run <CODE>make realclean</CODE> before running ./configure again.
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Creating_PDF_and_Postscript_docu">Creating PDF and Postscript documentation</A></H2>
+<P>
+The SWISH-E documentation in HTML format was created with Pod::HtmlPsPdf, a
+package of Perl modules written and/modified by Stas Bekman to automate the
+conversion of documents in pod format (see perldoc perlpod) to HTML,
+Postscript, and PDF. A slightly modified version of this package is include
+with the SWISH-E distribution and used for building the HTML.
+
+<P>
+If your system has the necessary tools to build Postscript and the
+converter ps2pdf installed, you may be able to build the Postscript and PDF
+versions of the documentation. After you have run ./configure, type from
+the top-level directory of the distribution:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    make pdf</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+And with any luck you will end up the the the two files in the top-level
+directory:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    swish-e_documentation.pdf
+    swish-e_documentation.ps</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+<STRONG>ask Stas for more info on the requirements.</STRONG>    
+
+    
+
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Installing_the_SWISH_E_documenta">Installing the SWISH-E documentation as man(1) pages</A></H2>
+<P>
+Part of the included SWISH-E documentaiton can be installed as system
+<CODE>man(1)</CODE> pages. Only the reference related pages are installed
+(it's assumed that you don't need to install the README or INSTALL
+documents as man pages). You must have the pod2man program installed on
+your system (which you probably do if you have Perl).
+
+<P>
+To build the man pages and install them into your system, type from the
+top-level directory (after running ./configure):
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    su root
+    make install-man
+    exit</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+You will need to <CODE>su root</CODE> if you do not have write access to the man directory. The man pages are
+installed in the system man directory. This directory is determined by
+running ./configure and can be set by passing the directory when running
+./configure.
+
+<P>
+For example,
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    ./configure --mandir=/usr/local/doc/man</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+Information on running ./configure can be found by typing:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    ./configure --help</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
 <H1><A NAME="BASIC_CONFIGURATION_AND_USAGE">BASIC CONFIGURATION AND USAGE</A></H1>
@@ -403,7 +539,7 @@ used.
 This example will work with the documents in the <EM>tests</EM> directory. You may wish to review the <EM>tests/test.config</EM> configuration file used for the <CODE>make test</CODE> tests.
 
 <P>
-For example, a simple configuration file:
+For example, a simple configuration file (<EM>swish-e.conf</EM>):
 
 <P>
 
@@ -415,7 +551,7 @@ For example, a simple configuration file:
         </td>
 
 	<td>
-	  <pre>   F&lt;swish-e.conf&gt;</pre>
+	  <pre>    # Example SWISH-E Configuration file</pre>
         </td>
 	    
       </tr>
@@ -430,7 +566,8 @@ For example, a simple configuration file:
         </td>
 
 	<td>
-	  <pre>   # Example index file</pre>
+	  <pre>    # Define *what* to index
+    # IndexDir can point to a directories and/or a files</pre>
         </td>
 	    
       </tr>
@@ -445,10 +582,8 @@ For example, a simple configuration file:
         </td>
 
 	<td>
-	  <pre>   # Point to what to index
-   # IndexDir can point to a directory or a file
-   # Here's is pointing to the current directory
-   IndexDir .</pre>
+	  <pre>    # Here it's pointing to the current directory
+    IndexDir .</pre>
         </td>
 	    
       </tr>
@@ -463,8 +598,8 @@ For example, a simple configuration file:
         </td>
 
 	<td>
-	  <pre>   # But only index the .html files
-   IndexOnly .html</pre>
+	  <pre>    # But only index the .html files
+    IndexOnly .html</pre>
         </td>
 	    
       </tr>
@@ -479,16 +614,15 @@ For example, a simple configuration file:
         </td>
 
 	<td>
-	  <pre>   # Show basic info while indexing
-   IndexReport 1</pre>
+	  <pre>    # Show basic info while indexing
+    IndexReport 1</pre>
         </td>
 	    
       </tr>
     </table>
     <P>
-And that's a simple configuration file. The order of the directives is not
-important, but currently each comment or directive must begin in column 1.
-The complete list of all configuration file directives are described in <A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A>.
+And that's a simple configuration file. The complete list of all
+configuration file directives are described in <A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A>.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -531,7 +665,7 @@ Now, change to the <EM>tests</EM> directory and save the above example configura
       </tr>
     </table>
     <P>
-This created the index file <EM>index.swish-e</EM>. This is the default file name used unless the <STRONG>IndexFile</STRONG> directive is specified:
+This created the index file <EM>index.swish-e</EM>. This is the default index file name unless the <STRONG>IndexFile</STRONG> directive is specified in the configuration file:
 
 <P>
 
@@ -553,7 +687,7 @@ This created the index file <EM>index.swish-e</EM>. This is the default file nam
 <HR>
 <H2><A NAME="Step_3_Search">Step 3: Search</A></H2>
 <P>
-You specify your search terms with the <CODE>-w</CODE> switch. For example, to find the files that contain the word <STRONG>sample</STRONG>:
+You specify your search terms with the <CODE>-w</CODE> switch. For example, to find the files that contain the word <STRONG>sample</STRONG> you would issue the command:
 
 <P>
 
@@ -565,14 +699,32 @@ You specify your search terms with the <CODE>-w</CODE> switch. For example, to f
         </td>
 
 	<td>
-	  <pre>    ../src/swish-e -w sample
-    # Swish-e format: 2.1
+	  <pre>    ../src/swish-e -w sample</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+This example assumes that you are in the <EM>tests</EM> directory, and the swish-e binary is in the <EM>../src</EM> directory. Swish returns in response to that command the following:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    # Swish-e format: 2.1
     # 
     # Name: (no name)
     # Saved as: index.swish-e
     # Counts: 57 words, 5 files
     # Indexed on: 13/12/2000 16:33:21 PST
     ...
+    ... (other headers snipped in this example)
     ...
     #
     # Number of hits: 2
@@ -590,6 +742,9 @@ title of the document, and finally the length of the document.
 
 <P>
 The period ``.'' by itself at the end marks the end of results.
+
+<P>
+Much more information may be retrieved while searching by using the <CODE>-x</CODE> switch (see <A HREF="././SWISH-RUN.html">SWISH-RUN</A>) and by using Document Properties (see <A HREF="././SWISH-CONFIG.html">SWISH-CONFIG</A>).
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -622,7 +777,7 @@ For example, under Unix:
       </tr>
     </table>
     <P>
-Or under Windows:
+Or under Windows <EM>command.com</EM> shell.
 
 <P>
 
@@ -640,6 +795,9 @@ Or under Windows:
       </tr>
     </table>
     <P>
+The phrase delimiter can be set with the <CODE>-P</CODE> switch.
+
+<P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
 <H2><A NAME="Boolean_Searching">Boolean Searching</A></H2>
@@ -660,8 +818,22 @@ Here are some examples:
 
 	<td>
 	  <pre>    ../src/swish-e -w 'apples oranges'
-    ../src/swish-e -w 'apples or oranges'  ( Same thing )
-    ../src/swish-e -w 'apples or oranges'</pre>
+    ../src/swish-e -w 'apples and oranges'  ( Same thing )</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    ../src/swish-e -w 'apples or oranges'</pre>
         </td>
 	    
       </tr>
@@ -683,7 +855,30 @@ Here are some examples:
     </table>
     <P>
 retrieves first the files that contain both the words ``smilla'' and
-``snow''; then among those the ones that do not contain the word ``sense'' 
+``snow''; then among those the ones that do not contain the word ``sense''
+
+<P>
+A few other to ponder:
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    ../src/swish-e -w 'apples and oranges or pears'
+    ../src/swish-e -w '(apples and oranges) or pears'  ( Same thing )
+    ../src/swish-e -w 'apples and (oranges or pears)'  ( Not the same thing )</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+See <A HREF="././SWISH-SEARCH.html">SWISH-SEARCH</A> for more information.    
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -755,8 +950,22 @@ For example:
 <HR>
 <H2><A NAME="META_Tags">META Tags</A></H2>
 <P>
-For the last example we will instruct swish to use META tags to define <EM>fields</EM> in your documents. Once META names are defined you can specify to search
-just these areas of your documents. META tags can have three formats:
+For the last example we will instruct swish to use META tags to define <EM>fields</EM> in your documents.  
+
+<P>
+META names are a way to define ``fields'' in your documents. You can use
+the META names in your queries to limit the search to just the words
+contained in that META name of your document. For example, you might have a
+META tagged field in your documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
+documents where ``foo'' is within the <CODE>subjects</CODE> META tag.
+
+<P>
+Document <EM>Properties</EM> are someone related to meta tags: Properties allow the contents of a META
+tag in a source document to be stored within the index, and that text to be
+returned along with search results.
+
+<P>
+META tags can have three formats in your documents.
 
 <P>
 
@@ -768,8 +977,24 @@ just these areas of your documents. META tags can have three formats:
         </td>
 
 	<td>
-	  <pre>    &lt;META NAME=&quot;keyName&quot; CONTENT=&quot;some Content&quot;&gt;
-    &lt;!-- META START NAME=&quot;keyName&quot; --&gt; some Content &lt;!-- META END --&gt;</pre>
+	  <pre>    &lt;META NAME=&quot;keyName&quot; CONTENT=&quot;some Content&quot;&gt;</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    &lt;!-- META START NAME=&quot;keyName&quot; --&gt;
+        some Content
+    &lt;!-- META END --&gt;</pre>
         </td>
 	    
       </tr>

@@ -34,6 +34,7 @@
 	<UL>
 
 		<LI><A HREF="#Alphabetical_Listing">Alphabetical Listing</A>
+		<LI><A HREF="#Directives_that_Control_Swish">Directives that Control Swish</A>
 		<LI><A HREF="#Administrative_Headers_Directive">Administrative Headers Directives</A>
 		<LI><A HREF="#Document_Source_Directives">Document Source Directives</A>
 		<LI><A HREF="#Document_Contents_Directives">Document Contents Directives</A>
@@ -68,8 +69,7 @@ of the directive is not important -- you may use upper, lower, or mixed
 case.
 
 <P>
-Comments and directives currently must start at column 1 in the
-configuration file. Comments are any line that beging with a ``#''.
+Comments are any line that begin with a ``#''.
 
 <P>
 
@@ -91,12 +91,15 @@ Typically, configuration file the directives are grouped together in some
 logical order -- that is, directives that control the source of the
 documents would be grouped together first, and directives that control how
 each document is filtered or its words index in another group of
-directives. (The directives listed below are grouped in this order). You
-may also split your directives up into different configuration files and
-specify more than one configuration file when running swish-e from the
-command line. This allows you to have a master configuration file used for
-many different indexes, and smaller configuration files for each separate
-index.
+directives. (The directives listed below are grouped in this order).
+
+<P>
+You may also split your directives up into different configuration files
+and specify more than one configuration file. This allows you to have a
+master configuration file used for many different indexes, and smaller
+configuration files for each separate index. You can specify the different
+configuration files when running from the command line with the <CODE>-c</CODE> switch, or you may include other Configuration file with the
+<STRONG>IncludeConfig</STRONG> directive.
 
 <P>
 Some command line arguments can override directives specified in the
@@ -153,164 +156,239 @@ index file.
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
 <H2><A NAME="Alphabetical_Listing">Alphabetical Listing</A></H2>
-<P>
-I'm not sure why this should be here -- I added it to look for missing
-directives. How do I get pod2html to create Name tags for items below?
-
 <UL>
 <P><LI>
 <P>
-BeginCharacters <CODE>*string</CODE> of characters*
+<A HREF="#item_BeginCharacters">BeginCharacters</A> <CODE>*string</CODE> of characters*
 
 <P><LI>
 <P>
-BumpPositionCounterCharacters *string*
+<A HREF="#item_BumpPositionCounterCharacte">BumpPositionCounterCharacters</A> *string*
 
 <P><LI>
 <P>
-DefaultContents [TXT|HTML|XML] <CODE>*file</CODE> extensions*
+<A HREF="#item_DefaultContents">DefaultContents</A> [TXT|HTML|XML] <CODE>*file</CODE> extensions*
 
 <P><LI>
 <P>
-Delay *seconds*
+<A HREF="#item_Delay">Delay</A> *seconds*
 
 <P><LI>
 <P>
-EndCharacter <CODE>*string</CODE> of characters*
+<A HREF="#item_EndCharacters">EndCharacter</A> <CODE>*string</CODE> of characters*
 
 <P><LI>
 <P>
-EquivalentServer <CODE>*server</CODE> alias*
+<A HREF="#_item_EquivalentServer">EquivalentServer</A> <CODE>*server</CODE> alias*
 
 <P><LI>
 <P>
-FileInfoCompression [yes|no]
+<A HREF="#item_FileInfoCompression">FileInfoCompression</A> [yes|no]
 
 <P><LI>
 <P>
-FileRules [contains|is] <CODE>*regular</CODE> expression*
+<A HREF="#item_FileRules">FileRules</A> [contains|is] <CODE>*regular</CODE> expression*
 
 <P><LI>
 <P>
-FollowSymLinks [yes|no]
+<A HREF="#item_FollowSymLinks">FollowSymLinks</A> [yes|no]
 
 <P><LI>
 <P>
-IgnoreFirstChar <CODE>*string</CODE> of characters*
+<A HREF="#item_IgnoreFirstChar">IgnoreFirstChar</A> <CODE>*string</CODE> of characters*
 
 <P><LI>
 <P>
-IgnoreLastChar <CODE>*string</CODE> of characters*
+<A HREF="#item_IgnoreLastChar">IgnoreLastChar</A> <CODE>*string</CODE> of characters*
 
 <P><LI>
 <P>
-IgnoreLimit <CODE>*integer</CODE> integer*
+<A HREF="#item_IgnoreLimit">IgnoreLimit</A> <CODE>*integer</CODE> integer*
 
 <P><LI>
 <P>
-IgnoreTotalWordCountWhenRanking [yes|no]
+<A HREF="#item_IgnoreTotalWordCountWhenRan">IgnoreTotalWordCountWhenRanking</A> [yes|no]
 
 <P><LI>
 <P>
-IgnoreWords <CODE>*list</CODE> of stop words*
+<A HREF="#item_IgnoreWords">IgnoreWords</A> <CODE>*list</CODE> of stop words*
 
 <P><LI>
 <P>
-IndexAdmin *text*
+<A HREF="#item_IncludeConfig">IncludeConfig</A>
+
+
 
 <P><LI>
 <P>
-IndexComments [0|1]
+<A HREF="#item_IndexAdmin">IndexAdmin</A> *text*
 
 <P><LI>
 <P>
-IndexDescription *text*
+<A HREF="#item_IndexComments">IndexComments</A> [yes|no]
 
 <P><LI>
 <P>
-IndexDir [URL|directories or files]
+<A HREF="#item_IndexDescription">IndexDescription</A> *text*
 
 <P><LI>
 <P>
-IndexFile *path*
+<A HREF="#item_IndexDir">IndexDir</A> [URL|directories or files]
 
 <P><LI>
 <P>
-IndexName *text*
+<A HREF="#item_IndexFile">IndexFile</A> *path*
 
 <P><LI>
 <P>
-IndexOnly <CODE>*list</CODE> of file suffixes*
+<A HREF="#item_IndexName">IndexName</A> *text*
 
 <P><LI>
 <P>
-IndexPointer *text*
+<A HREF="#item_IndexOnly">IndexOnly</A> <CODE>*list</CODE> of file suffixes*
 
 <P><LI>
 <P>
-IndexReport [0|1|2|3]
+<A HREF="#item_IndexPointer">IndexPointer</A> *text*
 
 <P><LI>
 <P>
-MaxDepth *integer*
+<A HREF="#item_IndexReport">IndexReport</A> [0|1|2|3]
 
 <P><LI>
 <P>
-MaxWordLimit *integer*
+<A HREF="#item_MaxDepth">MaxDepth</A> *integer*
 
 <P><LI>
 <P>
-MetaNames <CODE>*list</CODE> of names*
+<A HREF="#item_MaxWordLimit">MaxWordLimit</A> *integer*
 
 <P><LI>
 <P>
-MinWordLimit *integer*
+<A HREF="#item_MetaNames">MetaNames</A> <CODE>*list</CODE> of names*
 
 <P><LI>
 <P>
-NoContents <CODE>*list</CODE> of file suffixes*
+<A HREF="#item_MinWordLimit">MinWordLimit</A> *integer*
 
 <P><LI>
 <P>
-OkNoMeta [yes|no]
+<A HREF="#item_NoContents">NoContents</A> <CODE>*list</CODE> of file suffixes*
 
 <P><LI>
 <P>
-PropertyNames <CODE>*list</CODE> of meta names*
+<A HREF="#item_OkNoMeta">OkNoMeta</A> [yes|no]
 
 <P><LI>
 <P>
-ReplaceRules [replace|remove|prepend|append]
+<A HREF="#item_PropertyNames">PropertyNames</A> <CODE>*list</CODE> of meta names*
 
 <P><LI>
 <P>
-ReqMetaName [yes|no]
+<A HREF="#item_ReplaceRules">ReplaceRules</A> [replace|remove|prepend|append]
 
 <P><LI>
 <P>
-SpiderDirectory *path*
+<A HREF="#item_ReqMetaName">ReqMetaName</A> [yes|no]
 
 <P><LI>
 <P>
-StoreDescription [XML &lt;tag&gt;|HTML &lt;meta&gt;|TXT size]
+<A HREF="#item_SpiderDirectory">SpiderDirectory</A> *path*
 
 <P><LI>
 <P>
-TmpDir *path*
+<A HREF="#item_StoreDescription">StoreDescription</A> [XML &lt;tag&gt;|HTML &lt;meta&gt;|TXT size]
 
 <P><LI>
 <P>
-TranslateCharacters <CODE>*string1</CODE> string2*
+<A HREF="#item_TmpDir">TmpDir</A> *path*
 
 <P><LI>
 <P>
-UseStemming [yes|no]
+<A HREF="#item_TranslateCharacters">TranslateCharacters</A> <CODE>*string1</CODE> string2*
 
 <P><LI>
 <P>
-WordCharacters <CODE>*string</CODE> of characters*
+<A HREF="#item_UseStemming">UseStemming</A> [yes|no]
+
+<P><LI>
+<P>
+<A HREF="#item_WordCharacters">WordCharacters</A> <CODE>*string</CODE> of characters*
 
 </UL>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Directives_that_Control_Swish">Directives that Control Swish</A></H2>
+<P>
+These configuration directives control the behavior of SWISH-E.
+
+<DL>
+<P><DT><STRONG><A NAME="item_IncludeConfig">IncludeConfig *path to config file*</A></STRONG><DD>
+<P>
+This directive can be used to include configuration directives located in
+another file.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    IncludeConfig /usr/local/swish/conf/site_config.config</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P><DT><STRONG><A NAME="item_IndexReport">IndexReport [0|1|2|3]</A></STRONG><DD>
+<P>
+This is how detailed you want reporting while indexing. You can specify
+numbers 0 to 3 - 0 is totally silent, 3 is the most verbose. The default is
+3, so you probably should define this.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    IndexReport 1</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P>
+This may be overridden from the command line via the <CODE>-v</CODE> switch (see <A HREF="././SWISH-RUN.html">SWISH-RUN</A>).
+
+<P><DT><STRONG><A NAME="item_IndexFile">IndexFile *path*</A></STRONG><DD>
+<P>
+Index file specifies the location of the generated index file. If not
+specified, SWISH-E will create the file <EM>index.swish-e</EM> in the current directory.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    IndexFile /usr/local/swish/site.index</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    </DL>
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>
@@ -466,10 +544,10 @@ appreciate spidering and may block your IP address. You may wish to contact
 the remote site before spidering their web site. More information about
 spidering can be found in <A HREF="#Directives_for_the_HTTP_Access_M">Directives for the HTTP Access Method Only</A> below.
 
-<P><DT><STRONG><A NAME="item_IndexFile">IndexFile *path*</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_IndexOnly">IndexOnly *list of file suffixes*</A></STRONG><DD>
 <P>
-Index file specifies the location of the generated index file. If not
-specified, SWISH-E will create the file <EM>index.swish-e</EM> in the current directory.
+This directive specifies the allowable file suffixes (extensions) while
+indexing. The default is to index all files specified in <STRONG>IndexDir</STRONG>.
 
 <P>
 
@@ -481,7 +559,29 @@ specified, SWISH-E will create the file <EM>index.swish-e</EM> in the current di
         </td>
 
 	<td>
-	  <pre>    IndexFile /usr/local/swish/site.index</pre>
+	  <pre>    # Only index .html .htm and .q files
+    IndexOnly .html .htm .q</pre>
+        </td>
+	    
+      </tr>
+    </table>
+    <P><DT><STRONG><A NAME="item_NoContents">NoContents *list of file suffixes*</A></STRONG><DD>
+<P>
+Files with these suffixes will <STRONG>not</STRONG> have their contents indexed, but their file names will be indexed. File
+names are not normally indexed. If you specify <CODE>.html</CODE> or <CODE>.htm</CODE> then if a &lt;TITLE&gt; section is found those words will be indexed,
+otherwise the file name will be indexed.
+
+<P>
+
+    <table>
+      <tr>
+
+	<td bgcolor="#eeeeee" width="1">
+	  &nbsp;
+        </td>
+
+	<td>
+	  <pre>    NoContents .gif .xbm .au .mov .mpg .pdf .ps</pre>
         </td>
 	    
       </tr>
@@ -639,31 +739,7 @@ Examples:
 	    
       </tr>
     </table>
-    <P><DT><STRONG><A NAME="item_IndexReport">IndexReport [0|1|2|3]</A></STRONG><DD>
-<P>
-This is how detailed you want reporting while indexing. You can specify
-numbers 0 to 3 - 0 is totally silent, 3 is the most verbose. The default is
-3, so you probably should define this.
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    IndexReport 1</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P>
-This may be overridden from the command line via the <CODE>-v</CODE> switch (see <A HREF="././SWISH-RUN.html">SWISH-RUN</A>).
-
-<P><DT><STRONG><A NAME="item_IndexContents">IndexContents [TXT|HTML|XML]  *file extensions*</A></STRONG><DD>
+    <P><DT><STRONG><A NAME="item_IndexContents">IndexContents [TXT|HTML|XML]  *file extensions*</A></STRONG><DD>
 <P>
 Swish knows how to parse TXT, HTML, and XML documents. This directive maps
 file extensions to those types of parsers.
@@ -736,10 +812,14 @@ documents, and how that information is made available during searching.
 <DL>
 <P><DT><STRONG><A NAME="item_MetaNames">MetaNames *list of names*</A></STRONG><DD>
 <P>
-Meta names can be used to limit searches to parts of your documents (see
-also the <CODE>-t</CODE> switch below). This allow you to define keywords or special fields within
-your documents and then limit searches to those areas of your documents.
-The <STRONG>MetaNames</STRONG> is a space separated list:
+META names are a way to define ``fields'' in your documents. You can use
+the META names in your queries to limit the search to just the words
+contained in that META name of your document. (see also the <CODE>-t</CODE> switch below) For example, you might have a META tagged field in your
+documents called <CODE>subjects</CODE> and then you can search your documents for the word ``foo'' but only return
+documents where ``foo'' is within the <CODE>subjects</CODE> META tag.
+
+<P>
+The <STRONG>MetaNames</STRONG> directive is a space separated list:
 
 <P>
 
@@ -775,7 +855,7 @@ If you use the special word <STRONG>automatic</STRONG> then SWISH-E will automat
       </tr>
     </table>
     <P>
-This option should not be used in XML documents.
+This option should not be used in HTML documents.
 
 <P>
 META tags can have three formats in your source documents:
@@ -893,7 +973,10 @@ Then you can search in both tag2 and tag2 with:
 	    
       </tr>
     </table>
-    <P><DT><STRONG><A NAME="item_OkNoMeta">OkNoMeta [yes|no]</A></STRONG><DD>
+    <P>
+MetaNames are case sensitive in XML documents.  
+
+<P><DT><STRONG><A NAME="item_OkNoMeta">OkNoMeta [yes|no]</A></STRONG><DD>
 <P>
 If <STRONG>OkNoMeta</STRONG> is set to <CODE>yes</CODE> (the default) then any meta tag contents found in the document that is not
 defined in the <STRONG>MetaNames</STRONG> directive will be indexed, but the tag contents will be added to the <EM>main index</EM> and not to any meta name. In other words, the words of the meta tag will be
@@ -919,11 +1002,12 @@ file name, title, and document size (see the <CODE>-p</CODE> switch in <A HREF="
 Properties are useful for returning additional data from documents in
 search results -- this saves the effort of reading and parsing the source
 files while reading SWISH-E search results, and is especially useful when
-the source documents are no longer available.
+the source documents are no longer available or slow to access (e.g. over
+http).
 
 <P>
-SWISH-E can also use the PropertyNames for sorting the search results (see
-the <CODE>-s</CODE> switch).
+Another feature of properties is that SWISH-E can use the PropertyNames for
+sorting the search results (see the <CODE>-s</CODE> switch).
 
 <P>
 
@@ -942,7 +1026,7 @@ the <CODE>-s</CODE> switch).
     </table>
     <P>
 Note that the PropertyNames listed must also be listed in the MetaNames
-directive. Property names are case insensitive.
+directive. Property names are case sensitive in XML documents.
 
 <P>
 Use of PropertyNames will increase the size of your index file, sometimes
@@ -987,14 +1071,13 @@ specified will capture the entire contents of the tag.
 
 	<td>
 	  <pre>    StoreDescription HTML &lt;body&gt; 20
-    StoreDescription XML  &lt;desc&gt; 40
- 
-=item UseStemming [yes|no]</pre>
+    StoreDescription XML  &lt;desc&gt; 40</pre>
         </td>
 	    
       </tr>
     </table>
-    <P>
+    <P><DT><STRONG><A NAME="item_UseStemming">UseStemming [yes|no]</A></STRONG><DD>
+<P>
 Put yes to apply word stemming algorithm during indexing, else no. 
 
 <P>
@@ -1308,10 +1391,10 @@ you decided what words are stop words and add them to <STRONG>IngoreWords</STRON
 the stop words that are found while indexing. Add this list to IgnoreWords,
 and then remove IgnoreLimit from the configuration file.
 
-<P><DT><STRONG><A NAME="item_IndexComments">IndexComments [0|1]</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_IndexComments">IndexComments [yes|no]</A></STRONG><DD>
 <P>
-This option allows the user decide if to index the HTML comments. Default
-is 1. Set to 0 if comment indexing is not required.
+This option allows the user decide if to index the contents of HTML
+comments. Default is yes. Set to no if comment indexing is not required.
 
 <P>
 
@@ -1323,7 +1406,7 @@ is 1. Set to 0 if comment indexing is not required.
         </td>
 
 	<td>
-	  <pre>    IndexComments 0</pre>
+	  <pre>    IndexComments no</pre>
         </td>
 	    
       </tr>
@@ -1331,8 +1414,8 @@ is 1. Set to 0 if comment indexing is not required.
     <P><DT><STRONG><A NAME="item_TranslateCharacters">TranslateCharacters *string1 string2*</A></STRONG><DD>
 <P>
 The TranslateCharacters directive maps the characters in string1 to the
-characters listed in string2. This is done after htnl entities are
-converted but before words are defined by WordCharacters.
+characters listed in string2. This is done after converting HTML entities,
+splitting the input into words based on <STRONG>WordCharacters</STRONG>.
 
 <P>
 For example:
@@ -1417,18 +1500,38 @@ the fly for indexing.
 A filter is an external program that swish executes when processing a
 document of a given type. SWISH-E will execute the filter program for each
 file that matches the file extension set in the
-<STRONG>FileFilter</STRONG> directive. SWISH-E calls the external program passing as arguments the file
-path that swish is about to index, and optionally, the URL from the http
-file source method.
+<STRONG>FileFilter</STRONG> directive.
 
+<P>
+SWISH-E calls the external program passing as arguments the file path that
+swish is about to index, and optionally, the URL from the http file source
+method.
+
+<DL>
+<P><DT><STRONG><A NAME="item__0">$0</A></STRONG><DD>
+<P>
+the name of the filter program
+
+<P><DT><STRONG><A NAME="item__1">$1</A></STRONG><DD>
+<P>
+the physical path name of the file to read. This may be a temporary file
+location if indexing by the http method.
+
+<P><DT><STRONG><A NAME="item__2">$2</A></STRONG><DD>
+<P>
+When indexing under the file system this will be the same as
+<CODE>$1</CODE> (the path to the source file), but when indexing under the
+http method this will be the URL of the source document.
+
+</DL>
 <P>
 The filter program must open the file, process its contents, and return it
 to SWISH-E by printing to STDOUT.
 
 <P>
-Note that this can add a significant of time to the indexing process. If
-you have many files to filter you should consider writing your filter in C
-instead of a shell or perl script.
+Note that this can add a significant amount of time to the indexing
+process. If you have many files to filter you should consider writing your
+filter in C instead of a shell or perl script.
 
 <P>
 <STRONG>Note:</STRONG> Filtering in swish may change in the future (see <A HREF="././SWISH-3.0.html">SWISH-3.0</A>).
@@ -1552,49 +1655,7 @@ Some directives have different uses depending on the source of the
 documents. These directives are only valid when using the <STRONG>File system</STRONG> method of indexing.
 
 <DL>
-<P><DT><STRONG><A NAME="item_IndexOnly">IndexOnly *list of file suffixes*</A></STRONG><DD>
-<P>
-This directive specifies the allowable file suffixes (extensions) while
-indexing. The default is to index all files specified in <STRONG>IndexDir</STRONG>.
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    # Only index .html .htm and .q files
-    IndexOnly .html .htm .q</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P><DT><STRONG><A NAME="item_NoContents">NoContents *list of file suffixes*</A></STRONG><DD>
-<P>
-Files with these suffixes will <STRONG>not</STRONG> have their contents indexed, but their file names will be indexed. File
-names are not normally indexed. If you specify <CODE>.html</CODE> or <CODE>.htm</CODE> then if a &lt;TITLE&gt; section is found those words will be indexed,
-otherwise the file name will be indexed.
-
-<P>
-
-    <table>
-      <tr>
-
-	<td bgcolor="#eeeeee" width="1">
-	  &nbsp;
-        </td>
-
-	<td>
-	  <pre>    NoContents .gif .xbm .au .mov .mpg .pdf .ps</pre>
-        </td>
-	    
-      </tr>
-    </table>
-    <P><DT><STRONG><A NAME="item_FileRules">FileRules [contains|is] *regular expression*</A></STRONG><DD>
+<P><DT><STRONG><A NAME="item_FileRules">FileRules [contains|is] *regular expression*</A></STRONG><DD>
 <P>
 Files matching the specified criteria will <STRONG>not</STRONG> be indexed. C regex.h library regular expression pattern matching is
 allowed.
@@ -1672,9 +1733,9 @@ setting allows for more friendly spidering of remote sites. The default is
     </table>
     <P><DT><STRONG><A NAME="item_TmpDir">TmpDir *path*</A></STRONG><DD>
 <P>
-The location of a write-able temp directory on your system. The HTTP access
-method tells the Perl helper to place its files in this location. The
-default is /var/tmp.
+The location of a writable temp directory on your system. The HTTP access
+method tells the Perl helper to place its files in this location, and the <CODE>-e</CODE> switch causes swish to use this directory while indexing. The default is
+/var/tmp.
 
 <P>
 
@@ -1691,7 +1752,11 @@ default is /var/tmp.
 	    
       </tr>
     </table>
-    <P><DT><STRONG><A NAME="item_SpiderDirectory">SpiderDirectory *path*</A></STRONG><DD>
+    <P>
+If this directory does not exist or is not writable SWISH-E will fail with
+an error during indexing.    
+
+<P><DT><STRONG><A NAME="item_SpiderDirectory">SpiderDirectory *path*</A></STRONG><DD>
 <P>
 The location of the Perl helper script called <EM>swishspider</EM>. If you use a relative directory, it is relative to your directory when
 you run SWISH-E, not to the directory that SWISH-E is in. The default is <CODE>./</CODE>
