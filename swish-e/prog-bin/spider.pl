@@ -522,6 +522,12 @@ sub output_content {
 
     $server->{indexed}++;
 
+    unless ( length $$content ) {
+        print STDERR "Warning: document '", $response->request->uri, "' has no content\n";
+        $$content = ' ';
+    }
+
+
     $server->{counts}{'Total Bytes'} += length $$content;
     $server->{counts}{'Total Docs'}++;
 
