@@ -85,7 +85,6 @@ file|SWISH-CONFIG> with the B<IndexDir> directive instead of on the
 command line.  Use of this switch overrides the configuration file
 settings.
 
-
 =item -S [fs|http|prog] (document source/access mode)
 
 This specifies the method to use for accessing documents to index.
@@ -102,8 +101,9 @@ between spidering with the http method vs. using the file system method.
 
 =item fs - file system 
 
-The C<fs> method simply reads files from a local (or networked) drive.  This is the most common
-and fastest way to index documents with Swish.  See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
+The C<fs> method simply reads files from a local (or networked) drive.  This is the default
+method if the C<-S> switch is not specified.
+See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
 directives specific to the C<fs> method.
 
 =item http - spider a web server
@@ -113,11 +113,24 @@ program called F<swishspider> located in the F<src> directory.  Swish needs to b
 this program when using the C<http> method. See L<SWISH-CONFIG|SWISH-CONFIG> for configuration
 directives specific to the C<http> method.
 
+By default, swish looks in the current directory for the F<swishspider> program, or in the directory
+specified by the C<SwishSpiderDir> directive.  The first line of the F<swishspider> program
+(the "shebang" line) must point to the location of the Perl program (if your operating system uses it).
+
+Security Note: Under Windows swish passes the URLs fetched from remote documents through the shell (swish
+uses the system() command for running F<swishspider> under Windows), and this may be considered
+an additional security risk.
+
+The C<http> method is depreciated (or at least not very well appreciated).  Consider using
+the C<prog> method described below for spidering.  There's a spider program available in the
+F<prog-bin> directory for use with the C<prog> method.
+
 =item prog - general purpose access method
 
 The C<prog> method is new to Swish-e version 2.2.  It's designed as a general
 purpose method to feed documents to swish from an external program.
-For example, the program can read a database (e.g. MySQL), spider a web
+
+For example, the external program can read a database (e.g. MySQL), spider a web
 server, or convert documents from one format to another (e.g. pdf to html).  Or,
 you can simply use it to read the files of the file system (like C<-S fs>), yet provide
 you with full control of what files are indexed.
@@ -126,11 +139,22 @@ The external program name to run is passed to swish either by the L<IndexDir|SWI
 or via the C<-i> option.  Additional parameters may be passed to the external program
 via the L<SwishProgParameters|SWISH-CONFIG/"item_SwishProgParameters"> directive.
 
+A special name "stdin" may be used with C<-i> or L<IndexDir|SWISH-CONFIG/"item_IndexDir">
+which tells swish to read from standard input instead of from an external program.  See example below.
+
 The external program prints to standard output (which swish captures)
 a set of headers followed by the content of the file to index.  The output looks similar to
-an email message or a HTTP document returned by a web server in that it includes a name/value pair
-headers, a blank line, and the content.  The content length is determined by a content-length header
+an email message or a HTTP document returned by a web server in that it includes name/value pairs
+of headers, a blank line, and the content.
+
+The content length is determined by a content-length header
 supplied to swish by the program; there is no "end of record" character or flag sent between documents.
+Therefore, it is critical that the content-length header is correct.  This is a common source of errors.
+
+One advantage of this method (over using filters, for example) is that the external program is run only once
+for the entire indexing job, instead of once for every document.  This avoids forking and creating
+a new process for every document, and makes a huge difference when your external program is something like
+perl that has a large startup cost.
 
 Here's a simple example written in Perl:
 
@@ -168,7 +192,7 @@ Here's a simple example written in Perl:
 
 The external program must pass to swish the C<Path-Name:> and C<Content-Length:> headers.
 The optional C<Last-Mtime:> parameter is the last modification time of the file, and must
-be a time stamp (seconds since the epoch on your platform).  You may override swish's
+be a time stamp (seconds since the Epoch on your platform).  You may override swish's
 determination of document type (C<Indexcontents>) by using the C<Document-Type:> header.
 
 The above program only returns one document and exits, which is not very useful.  Normally,
@@ -182,15 +206,51 @@ To index with the above example you need to make sure that the program is execut
 mode, and the name of the program to use for input.
 
     % chmod 755 example.pl
-    % ./swish-e -S prog -i example.pl
+    % ./swish-e -S prog -i ./example.pl
 
-    
+Programs can and should be tested prior to running swish. For example:
+
+    % ./example.pl > test.out
+
 A few more useful example programs are provided in the swish-e distribution
-located in the F<prog-bin> directory.
+located in the F<prog-bin> directory.  Some include documentation:
+
+    % cd prog-bin
+    % perldoc spider.pl
+
+Others are small examples that include comments:
+
+    % cd prog-bin
+    % less DirTree.pl
+
+The F<spider.pl> program can be used as a replacement for the F<-S http> method.
+
+If you use the special program name "stdin" with C<-i> or L<IndexDir|SWISH-CONFIG/"item_IndexDir">
+then swish-e will read from standard input instead of from a program.  For example:
+
+    % ./example.pl /path/to/data --count=1000 | ./swish-e -S prog -i stdin
+
+This is basically the same as using a swish-e configuration file of:
+
+    SwishProgParameters /path/to/data --count=1000
+    IndexDir ./example.pl
+
+in a config file and running
+
+    % ./swish-e -S prog -c swish.conf
+
+This gives an easy way to run swish without a configuration file
+with a C<-S prog> program that requires parameters.
+
+Using "stdin" might also be useful for programs that call swish (instead of swish calling the
+program).
+
+(The reason "stdin" is used instead of the more common "-" dash is due to the rotten way
+swish parses the command line.  This should be fixed in the future.)
 
 The C<prog> method bypasses some of the configuration parameters available
-to the file system method -- settings such as L<IndexDir|SWISH-CONFIG/"item_IndexDir"> and
-L<FileRules|SWISH-CONFIG/"item_FileRules">
+to the file system method -- settings such as
+C<IndexOnly>, C<FileRules>, C<FileMatch> and C<FollowSymLinks>
 are ignored when using the C<prog> method.  It's expected that these operations
 are better accomplished in the external program before passing the document onto swish.  In
 other words, when using the C<prog> method, only send the documents to swish
@@ -615,9 +675,6 @@ Examples of user-defined PropertyNames:
     <reference>
     <id>
 
-Note: In swish-e 2.2 all user properties are String type.
-This may change in future...
-
 
 B<Auto properties:>
 
@@ -787,8 +844,8 @@ At times it can be useful to merge different index files into one file for searc
 This could be because you want to keep separate site indexes and a common one for a global search, or
 because your site is very large and Swish-e runs out of memory if you try to index it directly.
 
-You should merge only indexes that were indexed with common settings.  Otherwise results may
-be confusing (e.g. don't mix stemming and non-stemming indexes, or indexes with different WordCharacter settings).
+You can only merge only indexes that were indexed with common settings
+(e.g. don't mix stemming and non-stemming indexes, or indexes with different WordCharacter settings, etc.).
 
   usage: swish-e [-v (num)] [-c file] -M index1 index2 ... outputfile
 

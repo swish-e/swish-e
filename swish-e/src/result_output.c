@@ -78,7 +78,7 @@ $Id$
 #include "search.h"
 #include "result_output.h"
 #include "no_better_place_module.h"
-
+#include "parse_conffile.h"  // for the fuzzy to string function
 
 
 /* private module prototypes */
@@ -867,8 +867,13 @@ void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char
     resultHeaderOut(sw, v, "%s %s\n", POINTERHEADER, (h->indexp[0] == '\0') ? "(no pointer)" : h->indexp);
     resultHeaderOut(sw, v, "%s %s\n", MAINTAINEDBYHEADER, (h->indexa[0] == '\0') ? "(no maintainer)" : h->indexa);
     resultHeaderOut(sw, v, "%s %s\n", DOCPROPENHEADER, "Enabled");
-    resultHeaderOut(sw, v, "%s %d\n", STEMMINGHEADER, h->applyStemmingRules);
-    resultHeaderOut(sw, v, "%s %d\n", SOUNDEXHEADER, h->applySoundexRules);
+
+    
+    resultHeaderOut(sw, v, "%s %d\n", STEMMINGHEADER, h->fuzzy_mode == FUZZY_STEMMING ? 1 : 0 );
+    resultHeaderOut(sw, v, "%s %d\n", SOUNDEXHEADER, h->fuzzy_mode == FUZZY_SOUNDEX ? 1 : 0 );
+    resultHeaderOut(sw, v, "%s %s\n", FUZZYMODE_HEADER, fuzzy_mode_to_string( h->fuzzy_mode ) );
+
+    
     resultHeaderOut(sw, v, "%s %d\n", IGNORETOTALWORDCOUNTWHENRANKING, h->ignoreTotalWordCountWhenRanking);
     resultHeaderOut(sw, v, "%s %s\n", WORDCHARSHEADER, h->wordchars);
     resultHeaderOut(sw, v, "%s %d\n", MINWORDLIMHEADER, h->minwordlimit);

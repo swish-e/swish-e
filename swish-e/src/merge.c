@@ -37,6 +37,7 @@
 #include "result_sort.h"
 #include "swish_qsort.h"
 #include "result_output.h"
+#include "parse_conffile.h"
 static void dup_header( SWISH *sw_input, SWISH *sw_output );
 static void check_header_match( IndexFILE *in_index, SWISH *sw_output );
 static void make_meta_map( IndexFILE *in_index, SWISH *sw_output);
@@ -248,12 +249,12 @@ static void check_header_match( IndexFILE *in_index, SWISH *sw_output )
     compare_header( in_index->line, "BumpPositionChars", &in_header->lenbumpposchars,  &out_header->lenbumpposchars );
 
 
-    if ( in_header->applyStemmingRules != out_header->applyStemmingRules )
-        progerr("Stemming Rules doesn't match for index %s", in_index->line );
-
-    if ( in_header->applySoundexRules != out_header->applySoundexRules )
-        progerr("Soundex Rules doesn't match for index %s", in_index->line );
-
+    if ( in_header->fuzzy_mode != out_header->fuzzy_mode )
+        progerr("FuzzyIndexingMode in index %s of '%s' doesn't match '%s'",
+            in_index->line,
+            fuzzy_mode_to_string( in_header->fuzzy_mode ),
+            fuzzy_mode_to_string( out_header->fuzzy_mode ) );
+            
         
     if ( in_header->ignoreTotalWordCountWhenRanking != out_header->ignoreTotalWordCountWhenRanking )
         progerr("ignoreTotalWordCountWhenRanking Rules doesn't match for index %s", in_index->line );

@@ -132,6 +132,8 @@ src/db_native.c
 src/db_native.h
 src/db_berkeley_db.c
 src/db_berkeley_db.h
+src/double_metaphone.c
+src/double_metaphone.h
 src/dump.c
 src/dump.h
 src/docprop.c

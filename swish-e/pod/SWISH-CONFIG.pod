@@ -199,6 +199,10 @@ L<FileRules|/"item_FileRules"> [contains|is|regex] *regular expression*
 
 =item *
 
+L<FuzzyIndexingMode|/"item_FuzzyIndexingMode"> NONE|Stemming|Soundex|Metaphone|DoubleMetaphone
+
+=item *
+
 L<FollowSymLinks|/"item_FollowSymLinks"> [yes|NO]
 
 =item *
@@ -327,7 +331,7 @@ L<PropCompressionLevel|/"item_PropCompressionLevel"> [0-9]
 
 =item *
 
-L<PropertyNameAlias|/"item_PropertyNameAliase"> *property name* *list of aliases*
+L<PropertyNameAlias|/"item_PropertyNameAlias"> *property name* *list of aliases*
 
 =item *
 
@@ -343,7 +347,7 @@ L<PropertyNamesIgnoreCase|/"item_PropertyNamesIgnoreCase"> *list of meta names*
 
 =item *
 
-L<PropertyNamesDates|/"item_PropertyNamesDates"> *list of meta names*
+L<PropertyNamesDate|/"item_PropertyNamesDate"> *list of meta names*
 
 =item *
 
@@ -629,9 +633,15 @@ The C<-S> command line argument is used to select the file access method.
     swish-e -c swish.config -S http  - internal http spider
     swish-e -c swish.config -S prog  - external program of any type
 
-For the B<File system> method of access B<IndexDir> is a space-separated
+For the B<fs> method of access B<IndexDir> is a space-separated
 list of files and directories to index.  Use a forward slash as the path
 separator in MS Windows.
+
+For the B<http> method the B<IndexDir> setting is a list of space-separated
+URLs.
+
+For the B<prog> method the B<IndexDir> setting is a list of space-separated
+programs to run (which generate documents for swish to index).
 
 You may specify more than one B<IndexDir> directive.
 
@@ -674,6 +684,11 @@ For the L<prog|SWISH-RUN/"item_prog"> method of access B<IndexDir>
 specifies the path to the program(s) to execute.  The external program
 must correctly format the documents being passed back to Swish-e.
 Examples of external programs are provided in the F<prog-bin> directory.
+
+    IndexDir ./myprogram.pl
+
+See L<prog|SWISH-RUN/"item_prog"> for details.
+
 
 Note: Not all directives work with all methods.
 
@@ -939,7 +954,7 @@ HTML title.  Swish also, by default, indexes content of meta tags.  So:
 
 will find "foo" in the body, the title, or any meta tags.
 
-Currently, there's no way do prevent Swish-e from indexing
+Currently, there's no way to prevent Swish-e from indexing
 the title contents along with the body contents, but see
 L<UndefinedMetaTags|/"item_UndefinedMetaTags"> for how to control the
 indexing of meta tags.
@@ -1587,15 +1602,36 @@ tags for XML or HTML documents).
 TruncateDocSize does not currently work with the C<prog> input source
 method.
 
-=item UseStemming [yes|NO]
+=item FuzzyIndexingMode NONE|Stemming|Soundex|Metaphone|DoubleMetaphone
 
-Put yes to apply word stemming algorithm during indexing, else no.
+Selects the type of index to create.  Only one type of index may be created.
 
-    UseStemming no
-    UseStemming yes
+It's a good idea to create both a normal index and a fuzzy index and
+allow your search interface select which index to use.  Many people find the
+fuzzy searches to be too fuzzy.
 
-When UseStemming is set to C<yes> every word is stemmed before placing
-it in to the index.
+The available fuzzy indexing options are:
+
+=over 4
+
+=item None
+
+Words are stored in the index without any conversion.  This is the default.
+
+=item Stemming
+
+Words are converted using the Porter stemming algorithm.
+
+From: http://www.tartarus.org/~martin/PorterStemmer/
+
+    The Porter stemming algorithm (or ‘Porter stemmer’) is a
+    process for removing the commoner morphological and inflexional
+    endings from words in English. Its main use is as part of a
+    term normalisation process that is usually done when setting up
+    Information Retrieval systems.
+
+
+This will help a search for "running" to also find "run" and "runs", for example.
 
 The stemming function does not convert words to their root, rather
 programmatically removes endings on words in an attempt to make similar
@@ -1609,13 +1645,7 @@ For example, you might expect to find the word "running" by searching for
 "runn*".  But this fails when using a stemmed index, as "running" stems to
 "run", yet searching for "runn*" looks for words that start with "runn".
 
-It's a good idea to create both a stemmed and non-stemmed index and
-allow your search interface select which index to use.
-
-=item UseSoundex [yes|NO]
-
-When UseSoundex is set to C<yes> every word is converted to a Soundex
-code before placing it in to the index.
+=item Soundex
 
 Soundex was developed in the 1880s so records for people with similar
 sounding names could be found more readily.  Soundex is a coded surname
@@ -1632,8 +1662,41 @@ of data consisting mostly of names.  Many common name variations are
 matched by Soundex.  The only notable exception is the first letter of
 the name.  The first letter is not matched for sound.
 
-It may be a good idea to create both a Soundex and non-Soundex index
-and allow your search interface select which index to use.
+=item Metaphone and DoubleMetaphone
+
+Words are transformed into a short series of letters representing the sound of the word (in English).
+Metaphone algorithms are often used for looking up mis-spelled words in dictionary programs.
+
+From: http://aspell.sourceforge.net/metaphone/
+
+    Lawrence Philips' Metaphone Algorithm is an algorithm which returns
+    the rough approximation of how an English word sounds.
+
+The C<DoubleMetaphone> mode will sometimes generate two different metaphones for the same word.
+This is suppose to be useful when a word may be pronounced more than one way.
+
+A metaphone index should give results somewhere in between Soundex and Stemming.    
+
+=back
+
+=item UseStemming [yes|NO]
+
+Put yes to apply word stemming algorithm during indexing, else no.
+
+    UseStemming no
+    UseStemming yes
+
+When UseStemming is set to C<yes> every word is stemmed before placing
+it in to the index.
+
+This option is depreciated.  It has been superceded by L<FuzzyIndexingMode>.
+
+=item UseSoundex [yes|NO]
+
+When UseSoundex is set to C<yes> every word is converted to a Soundex
+code before placing it in to the index.
+
+This option is depreciated.  It has been superceded by L<FuzzyIndexingMode>.
 
 =item IgnoreTotalWordCountWhenRanking [YES|no]
 

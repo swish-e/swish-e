@@ -247,6 +247,11 @@ temporary file, and some random characters to complete the file name.
 If indexing is aborted for some reason you may find these temporary
 files left behind.
 
+=item * New Fuzzy indexing method Double Metaphone
+
+Based on Lawrence Philips' Metaphone algorithm, add two
+new methods of creating a fuzzy index (in addition to Stemming and Soundex).
+
 
 =back
 
@@ -431,6 +436,19 @@ of compression applied to properties.  Properties must be long enough
 
 Defines a set of characters.  If a word is made of of *only* those
 characters the word will not be indexed.
+
+=item * New directive: FuzzyIndexingMode
+
+This configuration directive is used to define the type of "fuzzy" index to create.
+Currently the options are:
+
+    None
+    Stemming
+    Soundex
+    Metaphone
+    DoubleMetaphone
+
+
 
 =back
 
