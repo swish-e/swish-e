@@ -41,6 +41,7 @@
 #include "result_sort.h"
 #include "db.h"
 #include "fs.h"
+#include "swish_words.h"
 
 /* 
   -- init swish structure 
@@ -62,6 +63,7 @@ SWISH *SwishNew()
     initModule_Index (sw);
     initModule_FS (sw);
     initModule_HTTP (sw);
+    initModule_Swish_Words (sw);
 
 
     sw->TotalWords = 0;
@@ -145,6 +147,7 @@ void SwishClose(SWISH *sw)
         freeModule_FS (sw);
         freeModule_HTTP (sw);
         freeModule_Search (sw);
+        freeModule_Swish_Words (sw);
 
                         /* Free file structures */
         freefileoffsets(sw);

@@ -629,6 +629,7 @@ typedef struct
     struct MOD_Index         *Index;          /* Index module data */
     struct MOD_FS            *FS;             /* FileSystem Index module data */
     struct MOD_HTTP          *HTTP;           /* HTTP Index module data */
+    struct MOD_Swish_Words   *SwishWords;     /* For parsing into "swish words" */
 
 
     /* 08/00 Jose Ruiz Values for document type support */
