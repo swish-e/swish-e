@@ -595,6 +595,8 @@ struct stat stat_buf;
 			sw->dirlist = sw->dirlist->next;
 		}
 
+		
+
 		checkmem();
 			/* Create an empty File */
 		sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
@@ -628,6 +630,9 @@ struct stat stat_buf;
 			printf("Writing main index...\n");
 		}
 
+
+
+
 		if (sw->verbose)
 			printf("Sorting words ...\n");
 		sort_words(sw, sw->indexlist);
@@ -640,7 +645,10 @@ struct stat stat_buf;
 		
 		if (sw->verbose)
 			printf("Writing index entries ...\n");
+
+
 		write_index(sw, sw->indexlist);
+
 
 		if (sw->verbose) {
 			if (sw->indexlist->header.totalwords)

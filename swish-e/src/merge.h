@@ -47,11 +47,11 @@ struct markentryMerge {
 };	
 
 struct metaMergeEntry {
+	struct metaMergeEntry* next;
 	char* metaName;
 	int oldMetaID;
 	int newMetaID;
 	int metaType;
-	struct metaMergeEntry* next;
 };
 
 struct mergeindexfileinfo *indexfilehashlist[BIGHASHSIZE];
@@ -63,7 +63,7 @@ struct markentryMerge *markentrylistMerge[BIGHASHSIZE];
 void readmerge (char *, char *, char *, int);
 void addfilenums (ENTRY *, int);
 ENTRY *readindexline (SWISH *, IndexFILE *, struct metaMergeEntry *, int, int *);
-void addindexfilelist (SWISH *, int , char *, time_t, char *, char *, int, int, struct docProperties *, int *, int, struct metaMergeEntry *);
+// void addindexfilelist (SWISH *, int , char *, time_t, char *, char *, int, int, struct docProperties *, int *, int, struct metaMergeEntry *);
 // struct mergeindexfileinfo *lookupindexfilenum (int ,struct docPropertyEntry**);
 ENTRY *mergeindexentries (ENTRY *,ENTRY *, int);
 int lookupindexfilepath (char *, int, int);

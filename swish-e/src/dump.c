@@ -32,6 +32,52 @@
 #include "search.h"
 #include "result_output.h"
 
+void dump_memory_file_list( SWISH *sw, IndexFILE *indexf ) 
+{
+    int     i;
+    struct  file *fi = NULL;
+   
+    printf("\n\n-----> FILES in index %s <-----\n", indexf->line );
+    for (i = 0; i < indexf->filearray_cursize; i++)
+    {
+        fi = indexf->filearray[ i ];
+
+        fflush(stdout);
+        printf("%d: %s\n", i+1, fi->fi.filename);
+
+
+        dump_file_properties( indexf, fi );
+        
+        printf("\n");
+    }
+    printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
+    fflush(stdout);
+}
+
+
+
+void dump_index_file_list( SWISH *sw, IndexFILE *indexf ) 
+{
+    int     i;
+    struct  file *fi = NULL;
+   
+    printf("\n\n-----> FILES in index %s <-----\n", indexf->line );
+    for (i = 0; i < indexf->header.totalfiles; i++)
+    {
+        fi = readFileEntry(sw, indexf, i + 1);
+
+        fflush(stdout);
+        printf("%d: %s\n", i+1, fi->fi.filename);
+
+
+        dump_file_properties( indexf, fi );
+        
+        printf("\n");
+        freefileinfo(fi);
+    }
+    printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
+    fflush(stdout);
+}
 
 
 /* Prints out the data in an index DB */
@@ -50,8 +96,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             index_structfreq,
             filenum;
     unsigned long    nextposmetaname;
-    struct  file *fi = NULL;
-    char    ISOTime[20];
     char    word[2];
     char   *resultword;
     unsigned char   *worddata, *s;
@@ -279,29 +323,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
 
     /* Decode File Info */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
-    {
-        printf("\n\n-----> FILES <-----\n");
-        for (i = 0; i < indexf->header.totalfiles; i++)
-        {
-            fi = readFileEntry(sw, indexf, i + 1);
-
-            strftime(ISOTime, sizeof(ISOTime), "%Y/%m/%d %H:%M:%S", (struct tm *) localtime((time_t *) & fi->fi.mtime));
-
-            fflush(stdout);
-            if (fi->fi.summary)
-                printf("%d: %s \"%s\" \"%s\" \"%s\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size);
-            else
-                printf("%d: %s \"%s\" \"%s\" \"\" %d %d\n", i+1, fi->fi.filename, ISOTime, fi->fi.title, fi->fi.start, fi->fi.size);
-
-
-            dump_file_properties( indexf, fi );
-            
-            printf("\n");
-            freefileinfo(fi);
-        }
-        printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
-        fflush(stdout);
-    }
+        dump_index_file_list( sw, indexf );
 
 
     DB_Close(sw, indexf->DB);

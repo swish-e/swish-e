@@ -27,17 +27,18 @@ $Id$
 int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 
 {
-int ftotalwords;
-int metaID;
-int positionMeta;    /* Position of word in file */
-int structure,currentmetanames;
-struct file *thisFileEntry = NULL;
-IndexFILE *indexf=sw->indexlist;
-struct MOD_Index *idx = sw->Index;
-char *summary=NULL;
+    int ftotalwords;
+    int metaID;
+    int positionMeta;    /* Position of word in file */
+    int structure,currentmetanames;
+    IndexFILE *indexf=sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+    char *summary=NULL;
 
 	idx->filenum++;
-		/* external filters can output control chars. So remove them */
+
+
+	/* external filters can output control chars. So remove them */
 	remove_controls(buffer);
 
 	if(fprop->stordesc && fprop->stordesc->size)    /* Let us take the summary */
@@ -47,16 +48,25 @@ char *summary=NULL;
 		remove_newlines(summary);			/* 2001-03-13 rasc */
 	}
 
-	addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_filename, summary, 0, fprop->fsize, &thisFileEntry);
-		/* Init meta info */
+	addtofilelist(sw, indexf, fprop->real_path, NULL );
+    addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, 0, fprop->fsize );
+
+
+
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
 	currentmetanames= 0; /* No metanames in TXT */
+
 	metaID=1; positionMeta=1; /* No metanames in TXT */
+
 	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, &metaID, &positionMeta);
+
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
+
 	if(idx->economic_flag)
 		SwapFileData(sw, indexf->filearray[idx->filenum-1]);
+
 	if(summary) efree(summary);
+
 	return ftotalwords;
 }

@@ -684,32 +684,38 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
         m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
 		m->sorted_data = NULL;
 
+
 		/* Check if thi property must be in a presorted index */
 		if(is_presorted_prop(sw,m->metaName))
 		{
            switch (indexf->header.metaEntryArray[j]->metaID)
 		   {
+
+		   /* "internal" properties are sorted at runtime */
            case AUTOPROP_ID__REC_COUNT:
            case AUTOPROP_ID__RESULT_RANK:
            case AUTOPROP_ID__DOCPATH:
            case AUTOPROP_ID__INDEXFILE:
-               break;              /* Do nothing : Files are already sorted */
-               /* Rec_count and rank are computed in search */
-           case AUTOPROP_ID__TITLE:
-           case AUTOPROP_ID__DOCSIZE:
-           case AUTOPROP_ID__LASTMODIFIED:
-           case AUTOPROP_ID__SUMMARY:
-           case AUTOPROP_ID__STARTPOS:
-           default:               /* User properties */
+               break;
 
+           default:
+
+                /* User properties */
+
+                /* only sort properties */
+                if ( !(m->metaType & META_PROP) )
+                    break;
+                    
 		       /* Array of filenums to store the sorted docs (referenced by its filenum) */
 		       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
-
+		       
                for (i = 0; i < indexf->filearray_cursize; i++)
                    indexf->filearray[i]->currentSortProp = m;
-
+                   
                /* Sort them using qsort. The main work is done by compFileProps */
+
                qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
+
 
                /* Build the sorted table */
                for (i = 0, k = 1; i < indexf->filearray_cursize; i++)
@@ -723,7 +729,6 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
 				   }
                    sortFilenums[indexf->filearray[i]->fi.filenum - 1] = k;
 			   }
-
                /* Store the integer array of presorted data */
                m->sorted_data = sortFilenums;
               break;

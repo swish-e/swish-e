@@ -48,11 +48,79 @@
 #include "compress.h"
 #include "metanames.h"
 #include "db.h"
+#include "dump.h"
 
 /* The main merge functions - it accepts three file names.
 ** This is a bit hairy. It basically acts as a zipper,
 ** zipping up both index files into one.
 */
+
+static int get_numeric_prop( struct docProperties *docProperties, struct metaEntry *meta_entry )
+{
+    unsigned long i;
+    propEntry   *p;
+    
+	if( (meta_entry->metaID < docProperties->n ) && (p = docProperties->propEntry[ meta_entry->metaID]))
+	{
+		i = *(unsigned long *)p->propValue;
+		return (int) UNPACKLONG( i );
+	}
+
+	return 0;
+}
+
+
+
+static void addindexfilelist(SWISH *sw, int num, char *filename, struct docProperties *docProperties, int *totalfiles, int ftotalwords, struct metaMergeEntry *metaFile)
+{
+    int i,hashval;
+    struct file *thisFileEntry = NULL;
+    struct mergeindexfileinfo *ip;
+    int start, size;
+
+
+	start = get_numeric_prop( docProperties, sw->indexlist->header.startProp );
+	size  = get_numeric_prop( docProperties, sw->indexlist->header.sizeProp);
+   
+
+
+	i = lookupindexfilepath(filename,start,size);
+	if (i != -1) {
+		*totalfiles = *totalfiles - 1;
+		remap(num, i);
+		return;
+	}
+	
+	sw->Index->filenum++;
+	remap(num, sw->Index->filenum);
+
+	ip=(struct mergeindexfileinfo *)emalloc(sizeof(struct mergeindexfileinfo));
+	ip->filenum=num;
+	ip->path=(char *)estrdup(filename);
+	ip->start = start;
+	ip->size  = size;
+
+	hashval = bighash(ip->path);
+	ip->next = indexfilehashlist[hashval];
+	indexfilehashlist[hashval] = ip;
+
+	addtofilelist(sw, sw->indexlist, filename, &thisFileEntry );
+	/* don't need to addCommonProperties since they will be copied with the "real" properties */
+    // addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
+
+
+	addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
+	thisFileEntry->docProperties = DupProps(docProperties);
+
+
+		/* swap meta values for properties */
+	swapDocPropertyMetaNames(docProperties, metaFile);
+
+	if(sw->Index->economic_flag)
+		SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum-1]);
+
+}
+
 
 void readmerge(char *file1, char *file2, char *outfile, int verbose)
 {
@@ -185,13 +253,16 @@ int is_first1, is_first2;
 
 	for (i = 1; i <= indexfilenum1; i++) {
 		fi = readFileEntry(sw1, indexf1,i);
-		addindexfilelist(sw, i, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf1->header.filetotalwordsarray[i-1], metaFile1);
+		addindexfilelist(sw, i, fi->fi.filename,  fi->docProperties, &totalfiles,indexf1->header.filetotalwordsarray[i-1], metaFile1);
 	}
+
+
+
 	if (verbose) printf("\nReading file 2 info ...");
 
 	for (i = 1; i <= indexfilenum2; i++) {
 		fi = readFileEntry(sw2, indexf2,i);
-		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->fi.mtime, fi->fi.title, fi->fi.summary, fi->fi.start, fi->fi.size, fi->docProperties, &totalfiles,indexf2->header.filetotalwordsarray[i-1], metaFile2);
+		addindexfilelist(sw, i + indexfilenum1, fi->fi.filename, fi->docProperties, &totalfiles,indexf2->header.filetotalwordsarray[i-1], metaFile2);
 	}
 	
 	if (verbose) printf("\nCreating output file ... ");
@@ -440,43 +511,6 @@ int sz_buffer;
 ** we find redundant file information.
 */
 
-void addindexfilelist(SWISH *sw, int num, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct docProperties *docProperties, int *totalfiles, int ftotalwords, struct metaMergeEntry *metaFile)
-{
-int i,hashval;
-struct file *thisFileEntry = NULL;
-struct mergeindexfileinfo *ip;
-	
-	i = lookupindexfilepath(filename,start,size);
-	if (i != -1) {
-		*totalfiles = *totalfiles - 1;
-		remap(num, i);
-		return;
-	}
-	
-	sw->Index->filenum++;
-	remap(num, sw->Index->filenum);
-
-	ip=(struct mergeindexfileinfo *)emalloc(sizeof(struct mergeindexfileinfo));
-	ip->filenum=num;
-	ip->path=(char *)estrdup(filename);
-	ip->start=start;
-	ip->size=size;
-
-	hashval = bighash(ip->path);
-	ip->next = indexfilehashlist[hashval];
-	indexfilehashlist[hashval] = ip;
-
-	addtofilelist(sw,sw->indexlist, filename, mtime, title, summary, start, size, &thisFileEntry);
-	addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
-	thisFileEntry->docProperties = DupProps(docProperties);
-
-		/* swap meta values for properties */
-	swapDocPropertyMetaNames(docProperties, metaFile);
-
-	if(sw->Index->economic_flag)
-		SwapFileData(sw, sw->indexlist->filearray[sw->Index->filenum-1]);
-
-}
 
 
 /* This returns the file number corresponding to a pathname.
@@ -722,10 +756,12 @@ int i;
 */
 struct metaEntry **createMetaMerge(struct metaMergeEntry *metaFile1, struct metaMergeEntry *metaFile2, int *metaCounter)
 {
-struct metaMergeEntry* tmpEntry;
-int counter;
-struct metaEntry **metaEntryArray = NULL;
+    struct metaMergeEntry* tmpEntry;
+    int counter;
+    struct metaEntry **metaEntryArray = NULL;
+
 	counter = 0;
+
 	for (tmpEntry=metaFile1;tmpEntry;tmpEntry=tmpEntry->next)
 		metaEntryArray = addMetaMergeArray(metaEntryArray,tmpEntry,&counter);
 	

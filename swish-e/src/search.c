@@ -1518,11 +1518,7 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int f
 
     newnode = (RESULT *) emalloc(sizeof(RESULT));
     newnode->filenum = filenum;
-    newnode->filename = NULL;
-    newnode->title = NULL;
-    newnode->summary = NULL;
-    newnode->start = 0;
-    newnode->size = 0;
+
     newnode->rank = rank;
     newnode->structure = structure;
     newnode->frequency = frequency;
@@ -1692,12 +1688,6 @@ void    freeresult(SWISH * sw, RESULT * rp)
     {
         if (rp->position)
             efree(rp->position);
-        if (rp->title && rp->title != rp->filename)
-            efree(rp->title);
-        if (rp->filename)
-            efree(rp->filename);
-        if (rp->summary)
-            efree(rp->summary);
 
 
         if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
@@ -1772,21 +1762,6 @@ RESULT *getproperties(RESULT * rp)
 
     fileInfo = readFileEntry(sw, indexf, rp->filenum);
     rp->read = 1;
-    rp->filename = estrdup(fileInfo->fi.filename);
-
-    rp->last_modified = fileInfo->fi.mtime;
-
-    /* Just to save some little memory */
-    if (fileInfo->fi.filename == fileInfo->fi.title)
-        rp->title = rp->filename;
-    else
-        rp->title = estrdup(fileInfo->fi.title);
-    if (!fileInfo->fi.summary)
-        rp->summary = estrdup("");
-    else
-        rp->summary = estrdup(fileInfo->fi.summary);
-    rp->start = fileInfo->fi.start;
-    rp->size = fileInfo->fi.size;
 
     return rp;
 }
@@ -1869,6 +1844,7 @@ void    freefileoffsets(SWISH * sw)
     int     i;
     IndexFILE *tmp = sw->indexlist;
 
+
     while (tmp)
     {
         if (tmp->filearray)
@@ -1893,12 +1869,10 @@ void    freefileoffsets(SWISH * sw)
 
 void    freefileinfo(struct file *f)
 {
-    if (f->fi.title && f->fi.title != f->fi.filename)
-        efree(f->fi.title);
+
     if (f->fi.filename)
         efree(f->fi.filename);
-    if (f->fi.summary)
-        efree(f->fi.summary);
+
     if (f->docProperties)
         freeDocProperties(f->docProperties);
     efree(f);

@@ -92,7 +92,11 @@ void do_index_file (SWISH *sw, FileProp *fprop);
 
 DOCENTRYARRAY *addsortentry (DOCENTRYARRAY *, char*);
 void addentry (SWISH *, char*, int, int, int, int );
-void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
+
+void addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size );
+void addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file **newFileEntry);
+
+
 int getfilecount (IndexFILE *);
 int countwordstr (SWISH *, char *, int);
 int removestops (SWISH *);
