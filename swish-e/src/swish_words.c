@@ -81,7 +81,7 @@ static int isSearchOperatorChar( int c, int phrase_delimiter )
 
 
 /* This simply tokenizes by whitespace and by the special characters "()=" */
-/* I think it can be cleaner - moseley 23/05/01 (running a fever) */
+/* Funny how argv was joined into a string just to be split again... */
 
 static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int max_size )
 {
@@ -102,8 +102,7 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
     while ( **buf && !isspace( (unsigned char) **buf) )
     {
 
-        /* don't let searches allocate all memory */
-        if ( i > max_size + 4 )   /* leave a little room for directives */
+        if ( i > max_size + 4 )   /* leave a little room for operators */
             progerr( "Search word exceeded maxwordlimit setting." ); 
 
     
@@ -206,7 +205,6 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
     /* Some initial adjusting of the word */
 
 
-    /* Translate chars */
     TranslateChars(header->translatecharslookuptable, word);
 
 
@@ -236,12 +234,11 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         if (header->applyStemmingRules)
             Stem(&self->word, &self->lenword);
 
-        /* This needs fixing, no?  The soundex could might be longer than the string */
         if (header->applySoundexRules)
             soundex(self->word);
 
 
-        /* word removed */
+        /* word removed? */
         if ( !*self->word )
             continue;
 
@@ -253,8 +250,8 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
 
 }
 
-/* This is really dumb.  swline needs a ->prev entry */
-/* Replaces a give node with another node (or nodes) */
+/* This is really dumb.  swline needs a ->prev entry, really search needs its own linked list */
+/* Replaces a given node with another node (or nodes) */
 
 static void  replace_swline( struct swline **original, struct swline *entry, struct swline *new_words )
 {
