@@ -1067,7 +1067,10 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
         if (found)
         {
             do
-            {                   /* Read on all items */
+            {
+				int rank;
+
+				/* Read on all items */
                 uncompress2(filenum, s);
                 uncompress2(index_structfreq, s);
                 frequency = indexf->header.structfreqlookup->all_entries[index_structfreq - 1]->val[0];
@@ -1080,10 +1083,11 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
                     uncompress2(x, s);
                     position[j] = x;
                 }
+				rank = getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
+                                                       indexf->header.ignoreTotalWordCountWhenRanking);
+				/* printf("Word: %s, file: %d, rank: %d\n", word, filenum, rank); */
                 rp =
-                    (RESULT *) addtoresultlist(rp, filenum,
-                                               getrank(sw, frequency, tfrequency, indexf->header.filetotalwordsarray[filenum - 1], structure,
-                                                       indexf->header.ignoreTotalWordCountWhenRanking), structure, frequency, position, indexf, sw);
+                    (RESULT *) addtoresultlist(rp, filenum, rank, structure, frequency, position, indexf, sw);
             }
             while ((s - buffer) != nextposmetaname);
         }
