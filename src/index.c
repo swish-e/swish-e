@@ -1198,7 +1198,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 
     /* Currently don't allow indexing by date or size or position */
 
-    /* mtime is a time_t, but we don't have an entry for NOT A TIME.  Does anyone care about the first second of 1969-12-31? */
+    /* mtime is a time_t, but we don't have an entry for NOT A TIME.  Does anyone care about the first second of 1970? */
 
     if ( fprop->mtime && (q = getPropNameByName(header, AUTOPROPERTY_LASTMODIFIED)))
     {
