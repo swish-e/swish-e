@@ -20,6 +20,8 @@ typedef struct WORDDATA
 {
     WORDDATA_Page      *last_page;
     struct WORDDATA_Page *cache[WORDDATA_CACHE_SIZE];
+    int      page_counter;
+    unsigned long lastid;
     FILE *fp;
 } WORDDATA;
 

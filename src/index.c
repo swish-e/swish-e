@@ -1971,8 +1971,13 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         if (!isstopword(&indexf->header, epi->word))
         {
             /* Write word to index file */
+#ifdef USE_BTREE
+            write_worddata(sw, epi, indexf);
+            write_word(sw, epi, indexf);
+#else
             write_word(sw, epi, indexf);
             write_worddata(sw, epi, indexf);
+#endif
         }
     }    
 

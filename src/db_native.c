@@ -191,7 +191,7 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
             progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file);
 
 #ifdef USE_BTREE
-        worddata = readlong(DB->worddata, fread);
+        worddata = readlong(DB->worddata->fp, fread);
 
         if (index != worddata)
             progerr("Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
@@ -291,10 +291,11 @@ void   *DB_Create_Native(char *dbname)
 {
     int     i;
     long    swish_magic;
-    FILE   *fp;
     char   *filename;
     long    unique_ID;          /* just because it's called that doesn't mean it is! */
-
+#ifdef USE_BTREE
+    FILE   *fp_tmp;
+#endif
     struct Handle_DBNative *DB;
 
 
@@ -322,7 +323,6 @@ void   *DB_Create_Native(char *dbname)
         progerrno("Couldn't create the index file \"%s\": ", filename);
 
     DB->cur_index_file = estrdup(filename);
-    fp = DB->fp;
 
 
     /* Create property File */
@@ -352,9 +352,10 @@ void   *DB_Create_Native(char *dbname)
 #endif
 
     CreateEmptyFile(filename);
-    if (!(DB->worddata = openIndexFILEForWrite(filename)))
+    if (!(fp_tmp = openIndexFILEForWrite(filename)))
         progerrno("Couldn't create the worddata file \"%s\": ", filename);
 
+    DB->worddata=WORDDATA_Open(fp_tmp);
     DB->cur_worddata_file = estrdup(filename);
 
     /* Create PreSorted Index File */
@@ -394,21 +395,21 @@ void   *DB_Create_Native(char *dbname)
     printlong(DB->prop, unique_ID, fwrite);
 
 #ifdef USE_BTREE
-    printlong(DB->worddata, unique_ID, fwrite);
+    printlong(DB->worddata->fp, unique_ID, fwrite);
     printlong(DB->presorted, unique_ID, fwrite);
 #endif
 
 
 
     /* Reserve space for offset pointers */
-    DB->offsetstart = ftell(fp);
+    DB->offsetstart = ftell(DB->fp);
     for (i = 0; i < MAXCHARS; i++)
-        printlong(fp, (long) 0, fwrite);
+        printlong(DB->fp, (long) 0, fwrite);
 
 #ifndef USE_BTREE
-    DB->hashstart = ftell(fp);
+    DB->hashstart = ftell(DB->fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
-        printlong(fp, (long) 0, fwrite);
+        printlong(DB->fp, (long) 0, fwrite);
 #endif
 
     return (void *) DB;
@@ -422,8 +423,10 @@ void   *DB_Create_Native(char *dbname)
 void   *DB_Open_Native(char *dbname)
 {
     struct Handle_DBNative *DB;
-    FILE   *fp;
     int     i;
+#ifdef USE_BTREE
+    FILE *fp_tmp;
+#endif
 
     DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
     DB->mode = 0;
@@ -454,8 +457,10 @@ void   *DB_Open_Native(char *dbname)
         strcpy(s, dbname);
         strcat(s, WORDDATA_EXTENSION);
 
-        if (!(DB->worddata = openIndexFILEForRead(s)))
+        if (!(fp_tmp = openIndexFILEForRead(s)))
             progerrno("Couldn't open the worddata file \"%s\": ", s);
+          
+        DB->worddata = WORDDATA_Open(fp_tmp);
 
         DB->cur_worddata_file = s;
 
@@ -474,18 +479,16 @@ void   *DB_Open_Native(char *dbname)
     /* Validate index files */
     DB_CheckHeader(DB);
 
-    fp = DB->fp;
-
     /* Read offsets lookuptable */
-    DB->offsetstart = ftell(fp);
+    DB->offsetstart = ftell(DB->fp);
     for (i = 0; i < MAXCHARS; i++)
-        DB->offsets[i] = readlong(fp, fread);
+        DB->offsets[i] = readlong(DB->fp, fread);
 
 #ifndef USE_BTREE
     /* Read hashoffsets lookuptable */
-    DB->hashstart = ftell(fp);
+    DB->hashstart = ftell(DB->fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
-        DB->hashoffsets[i] = readlong(fp, fread);
+        DB->hashoffsets[i] = readlong(DB->fp, fread);
 #endif
 
     return (void *) DB;
@@ -540,7 +543,9 @@ void    DB_Close_Native(void *db)
     int     i;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
-
+#ifdef USE_BTREE
+    FILE   *fp_tmp;
+#endif
 
     /* Close (and rename) property file, if it's open */
     DB_Close_File_Native(&DB->prop, &DB->cur_prop_file, &DB->tmp_prop);
@@ -549,7 +554,11 @@ void    DB_Close_Native(void *db)
 
     /* Close (and rename) worddata file, if it's open */
     if(DB->worddata)
-        DB_Close_File_Native(&DB->worddata, &DB->cur_worddata_file, &DB->tmp_worddata);
+    {
+        fp_tmp =DB->worddata->fp;
+        WORDDATA_Close(DB->worddata);
+        DB_Close_File_Native(&fp_tmp, &DB->cur_worddata_file, &DB->tmp_worddata);
+    }
     if(DB->bt)
         DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
@@ -729,13 +738,18 @@ int     DB_EndWriteWords_Native(void *db)
             f_hash_offset,
             f_offset,
             word_pos;
+#else
+    FILE   *fp_tmp;
 #endif
 
 #ifdef USE_BTREE
 
     /* If we close the BTREE here we can save some memory bytes */
     /* Close (and rename) worddata file, if it's open */
-    DB_Close_File_Native(&DB->worddata, &DB->cur_worddata_file, &DB->tmp_worddata);
+    fp_tmp =DB->worddata->fp;
+    WORDDATA_Close(DB->worddata);
+    DB->worddata=NULL;
+    DB_Close_File_Native(&fp_tmp, &DB->cur_worddata_file, &DB->tmp_worddata);
     DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
     DB->bt = NULL;
@@ -922,9 +936,8 @@ long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendat
 long    DB_GetWordID_Native(void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    FILE   *fp = DB->worddata;
 
-    return ftell(fp);      /* Native database uses worddata offset as the Word ID */
+    return DB->worddata->lastid;
 }
 
 int     DB_WriteWord_Native(char *word, long wordID, void *db)
@@ -941,12 +954,10 @@ int     DB_WriteWord_Native(char *word, long wordID, void *db)
 long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    FILE   *fp = DB->worddata;
     DB->worddata_counter++;
 
     /* Write the worddata to disk */
-    compress1(lendata, fp, fputc);
-    fwrite(worddata, lendata, 1, fp);
+    WORDDATA_Put(DB->worddata,lendata,worddata);
 
     return 0;
 }
@@ -1289,18 +1300,9 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, long 
 
 long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *lendata, void *db)
 {
-    int     len;
-    unsigned char *buffer;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    FILE   *fp = DB->worddata;
 
-    fseek(fp, wordID, 0);
-    len = uncompress1(fp, fgetc);
-    buffer = emalloc(len);
-    fread(buffer, len, 1, fp);
-
-    *worddata = buffer;
-    *lendata = len;
+    *worddata = WORDDATA_Get(DB->worddata,wordID,lendata);
 
     return 0;
 }
