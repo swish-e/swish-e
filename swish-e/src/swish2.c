@@ -65,6 +65,7 @@ int i;
 	sw->suffixlist = NULL;
 	sw->ignoremetalist = NULL;
 	sw->dontbumptagslist = NULL;
+	sw->mtime_limit = 0;
 
 	sw->db_results=NULL;
 

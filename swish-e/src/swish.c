@@ -100,6 +100,7 @@ int swap_mode=0; /* No swap */
 char keychar=0;
 struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 double search_starttime, run_starttime, endtime;
+struct stat stat_buf;
 
     run_starttime = TimeHiRes();
 
@@ -288,6 +289,19 @@ double search_starttime, run_starttime, endtime;
 				argc--;
 			}
 		}
+
+        /* Save the time for limiting indexing by a file date */
+        else if (c == 'N') {
+            if ( (argv + 1)[0] == '\0' || *(argv + 1)[0] == '-')
+                progerr("-N requires a path to a local file");
+
+            if ( stat( (++argv)[0], &stat_buf ) )
+                progerr("Bad path specified with -N");
+
+            sw->mtime_limit = stat_buf.st_mtime;
+            argc--;
+        }
+		
 		else if (c == 't') {
 			if ((argv + 1)[0] == '\0')
 				progerr("Specify tag fields (HBtheca).");
@@ -843,6 +857,7 @@ void usage()
 	printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format]\n");
 	printf("    swish -k (char|*) [-f file1 file2 ...]\n");
 	printf("    swish -M index1 index2 ... outputfile\n");
+	printf("    swish -N /path/to/compare/file\n");
 	printf("    swish -D [-v 4] -f indexfile\n");
 	printf("    swish -V\n");
 	putchar('\n');
@@ -875,6 +890,7 @@ void usage()
 	printf("         -b : begin results at this number\n");
 	printf("         -m : the maximum number of results to return [defaults to all results]\n");
 	printf("         -M : merges index files\n");
+	printf("         -N : index only files with a modification date newer than path supplied\n");
 	printf("         -D : decodes an index file\n");
 	printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");

@@ -150,6 +150,16 @@ char     *rd_buffer=NULL;	/* complete file read into buffer */
 
 	wordcount = -1;
 
+    /* skip file is the last_mod date is newer than the check date */
+
+    if ( sw->mtime_limit && fprop->mtime < sw->mtime_limit ) {
+        if ( sw->verbose >= 4 )
+        printf( "Skipping %s: last_mod date is too old\n", fprop->real_path );
+
+        return;
+    }
+
+
 	if (fprop->work_path) {
 
                 /*
