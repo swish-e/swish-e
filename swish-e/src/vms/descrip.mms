@@ -21,13 +21,13 @@ man1dir = $(mandir)/man1
 
 # Flags for C compiler
 #CWARN=
-CDEF = /def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-22""", -
+CDEF = /def=(LIBXML2, VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-22""", -
 	"XML_SetExternalEntityRefHandlerArg"="XML_SetExternalEntityRefHandArg")
 CINCL= /include=([.expat.xmlparse],[.expat.xmltok])
 CWARN=/warning=disable=(ZEROELEMENTS,PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,QUESTCOMPARE,LONGEXTERN)
 #CDEBUG= /debug/noopt
 CDEBUG=
-CFLAGS = /prefix=all$(CINCL)$(CDEF)$(CWARN)$(CDEBUG)
+CFLAGS = /prefix=all$(CINCL)$(CDEF)$(CWARN)$(CDEBUG)/FLOAT=IEEE_FLOAT
 
 #LINKFLAGS = /debug
 LINKFLAGS =
@@ -44,6 +44,11 @@ FS_OBJS=$(FILESYSTEM_OBJS)
 WEB_OBJS=$(HTTP_OBJS)
 VMS_OBJS = regex.obj
 
+XML_PARSE = xmlparse.obj xmltok.obj xmlrole.obj 
+LIBXML2_LIB = ,libxml.olb/lib
+LIBXML2_OBJS = parser.obj
+SNPRINTF_OBJ = snprintf.obj
+
 OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	hash.obj list.obj mem.obj string.obj merge.obj swish2.obj stemmer.obj \
 	soundex.obj docprop.obj compress.obj xml.obj txt.obj \
@@ -52,10 +57,11 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	keychar_out.obj extprog.obj db.obj db_native.obj dump.obj \
 	entities.obj no_better_place_module.obj swish_words.obj \
 	proplimit.obj swish_qsort.obj ramdisk.obj \
-	xmlparse.obj xmltok.obj xmlrole.obj \
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
+        $(XML_PARSE)\
+	$(LIBXML2_OBJS)\
+	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS) $(SNPRINTF_OBJ)
 
-all :	acconfig.h $(NAME) swish-search.exe testlib
+all :	acconfig.h $(NAME) swish-search.exe ! testlib
 	!
 
 xmlparse.obj : [.expat.xmlparse]xmlparse.c
@@ -64,8 +70,11 @@ xmltok.obj : [.expat.xmltok]xmltok.c
 
 xmlrole.obj : [.expat.xmltok]xmlrole.c
 
+snprintf.obj : [.vms.snprintf_2_2]snprintf.c
+
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
-        link/exe=$(MMS$TARGET) $(LINKFLAGS) swish.obj, libswish-e.olb/lib
+        link/exe=$(MMS$TARGET) $(LINKFLAGS) swish.obj, -
+	libswish-e.olb/lib $(LIBXML2_LIB)
 
 testlib : testlib.exe
 	!
