@@ -339,7 +339,49 @@ int configModule_Index (SWISH *sw, StringList *sl)
   return retval;
 }
 
-/*
+/**************************************************************************
+*  Index just the file name (or the title) for NoContents files
+*
+**************************************************************************/
+static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    IndexFILE          *indexf = sw->indexlist;
+    struct MOD_Index   *idx = sw->Index;
+    char               *title = "";
+    int                 n;
+    int                 free_title = 0;
+
+
+    /* Look for title if HTML document */
+    
+	if (fprop->doctype == HTML)
+	{
+	    free_title++;
+
+	    title = parseHTMLtitle( buffer );
+
+	    if (!isoktitle(sw, title))
+        {
+            efree(title);
+            return -2;  /* skipped because of title */
+        }
+	}
+	
+    idx->filenum++;
+    addtofilelist(sw, indexf, fprop->real_path, NULL );
+
+    addCommonProperties( sw, indexf, fprop->mtime, title, NULL, 0, fprop->fsize );
+
+    n = countwordstr(sw, *title == '\0' ? fprop->real_path : title , idx->filenum);
+    addtofwordtotals(indexf, idx->filenum, n);
+
+    if ( free_title ) 
+        efree(title);
+        
+    return n;
+}
+
+/***********************************************************************
    -- Start the real indexing process for a file.
    -- This routine will be called by the different indexing methods
    -- (httpd, filesystem, etc.)
@@ -348,8 +390,7 @@ int configModule_Index (SWISH *sw, StringList *sl)
    --   - tmpfile or work file (shadow of the real file)
    -- Checks if file has to be send thru filter (file stream)
    -- 2000-11-19 rasc
-*/
-
+***********************************************************************/
 
 void    do_index_file(SWISH * sw, FileProp * fprop)
 {
@@ -420,6 +461,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* -- Read  all data  (len = 0 if filtered...) */
     rd_buffer = read_stream(fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
 
+
+    /* Set which parser to use */
+    
     switch (fprop->doctype)
     {
 
@@ -458,8 +502,15 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     if (sw->verbose >= 3)
         printf(" - Using %s parser - ",strType);
-    if (sw->verbose >= 4)
-        printf("\n");
+
+
+    /* Check for NoContents flag and just save the path name */
+    /* $$$ Note, really need to only read_stream if reading from a pipe. */
+    /* $$$ waste of disk IO and memory if reading from file system */
+
+    if (fprop->index_no_content)
+        countwords = index_no_content;
+
 
     wordcount = countwords(sw, fprop, rd_buffer);
 
@@ -483,13 +534,18 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         if (wordcount > 0)
             printf(" (%d words)\n", wordcount);
         else if (wordcount == 0)
-            printf(" (no words)\n");
+            printf(" (no words indexed)\n");
         else if (wordcount == -1)
             printf(" (not opened)\n");
         else if (wordcount == -2)
-            printf(" (title is not ok)\n");
+            printf(" (Skipped due to 'FileRules title' setting)\n");
         fflush(stdout);
     }
+
+
+    /* Continue if a file was not indexed */
+    if ( wordcount < 0 )
+        return;
 
 
     if ( DEBUG_MASK & DEBUG_PROPERTIES )

@@ -14,4 +14,5 @@ $Id$
 
 int countwords_HTML(SWISH *, FileProp *, char *buffer);
 int parsecomment (SWISH *, char *, int, int, int, int *);
-char   *parsetitle(char *buffer);
+char   *parseHTMLtitle(char *buffer);
+int     isoktitle(SWISH *sw, char *title);

@@ -507,11 +507,25 @@ Note: Not all directives work with all methods.
 
 =item NoContents *list of file suffixes*
 
-Files with these suffixes will B<not> have their contents indexed, but their file names will be indexed.
-File names are not normally indexed.  If you specify C<.html> or C<.htm> then if a <TITLE> section is found those words will
-be indexed, otherwise the file name will be indexed.
+Files with these suffixes will B<not> have their contents indexed.
+
+If the file's type is HTML (as set by C<IndexContents> or C<DefaultContents>) then
+the file will be parsed for a HTML title and that title will be indexed.  Note that
+you must set the file's type:  C<.html> and C<.htm> are NOT type HTML by default.
+
+If a title is found, it will still be checked for C<FileRules title>,
+and the file will be skipped if a match is found.  See C<FileRules>.
+
+If the file's type is not HTML, or it is HTML and no title is found, then the file's
+path will be indexed.  For example, you might wish to search for image files by file name.
+
+Example:
 
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
+
+Note: This feature only works for files that would be indexed in absense of the
+C<NoContents> directive.  That is, if you use C<IndexOnly> then you must specify
+the same suffixes in C<IndexOnly> as in C<NoContents>.
 
 =item ReplaceRules [replace|remove|prepend|append]
 

@@ -944,6 +944,8 @@ sub set_match_regexp {
     $wc .= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';  # Warning: dependent on tolower used while indexing
 
 
+    # Now, wait a minute.  Look at this more, as I'd hope that making a
+    # qr// go out of scope would release the compiled pattern.
 
     return $ENV{MOD_PERL}
     ? (
