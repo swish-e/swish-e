@@ -1166,7 +1166,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     if (sw->verbose)
     {
         if (totalfiles)
-            printf("%d file%s indexed.\n", totalfiles, (totalfiles == 1) ? "" : "s");
+            printf("%d file%s indexed.  %d total bytes.\n", totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes);
         else
             printf("no files indexed.\n");
 

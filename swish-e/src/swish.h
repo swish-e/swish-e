@@ -433,6 +433,7 @@ typedef struct IndexFILE
     struct file **filearray;
     int     filearray_cursize;
     int     filearray_maxsize;
+    int     total_bytes;  /* Just to show total size when indexing */
 
 
     /* DB handle */

@@ -71,7 +71,9 @@ int i;
 	newnode = (IndexFILE *) emalloc(sizeof(IndexFILE));
 	newnode->line = (char *) estrdup(line);
 	newnode->filearray = NULL;
-	newnode->filearray_cursize=newnode->filearray_maxsize=0;
+	newnode->filearray_cursize = 0;
+        newnode->filearray_maxsize = 0;
+        newnode->total_bytes = 0;
 	newnode->DB=NULL;
 
 
