@@ -1,0 +1,44 @@
+Filtering documents with SWISH::Filter
+--------------------------------------
+
+Swish-e knows only how to parse HTML, XML, and text files. 
+Other file types may be indexed with the help of filters.
+
+SWISH::Filter is a Perl module designed to make converting
+documents from one type of content to another type of content
+easy.  It's uses a plug-in type of system where new filters
+can be added with little effort.
+
+SWISH::Filter (and associated plug-in filter modules) do not
+normally do the actual filtering.  This system provides
+an interface to the programs that do the filtering.
+
+For example, the Swish-e distribution includes a filter plug-in
+called SWISH::Filters::Pdf2HTML.  For this filter to work you must
+install the xpdf package that includes the pdftotext and pdfinfo
+programs.  SWISH::Filters::Pdf2HTML only provides a unified interface
+to this programs.
+
+In addition to installing the required filter programs, you will need
+to set the path to the SWISH::Filter modules before indexing.  For example,
+if you unpaced the Swish-e distribution into $HOME/swish-e-2.2 directory
+you could do (with bourne type of shell):
+
+    export PERL5LIB=$HOME/swish-e-2.2/filters
+
+Please see the SWISH::Filter documentation for more information.
+
+    ~/swish-e/filters $ perldoc SWISH::Filter
+
+See also src/swishspider and prog-bin/spider.pl for examples of how
+to use the SWISH::Filter module.
+
+
+
+Swish-e has another filter system.
+The FileFilter directive that can be used to
+filter documents through an external program while indexing.
+That system requires a separate filter setup for each type
+of document. See the SWISH-CONFIG page for information
+on that type of filtering.
+
