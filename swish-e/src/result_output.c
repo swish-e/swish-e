@@ -76,6 +76,7 @@ $Id$
 #include "error.h"
 #include "search.h"
 #include "result_output.h"
+#include "no_better_place_module.h"
 
 
 
