@@ -581,6 +581,7 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
             newEntry->metaID = (*count) + AUTOPROP_ID__DOCPATH;
             newEntry->metaType = metaType;
             newEntry->sorted_data = NULL;
+			newEntry->inPropRange = NULL;
             metaFileEntry->newMetaID = (*count) + AUTOPROP_ID__DOCPATH;;
             metaEntryArray[(*count)++] = newEntry;
         }
@@ -594,6 +595,7 @@ static struct metaEntry **addMetaMergeArray(struct metaEntry **metaEntryArray, s
         newEntry->metaID = AUTOPROP_ID__DOCPATH;
         newEntry->metaType = metaType;
         newEntry->sorted_data = NULL;
+		newEntry->inPropRange = NULL;
         metaFileEntry->newMetaID = AUTOPROP_ID__DOCPATH;;
         *count = 1;
         metaEntryArray[0] = newEntry;
@@ -869,8 +871,8 @@ static void addindexfilelist(SWISH * sw, int num, char *filename, struct docProp
     int     start,
             size;
 
-    addtofilelist(sw, sw->indexlist, filename, &thisFileEntry);
-    return;
+    //addtofilelist(sw, sw->indexlist, filename, &thisFileEntry);
+    //return;
 
     start = get_numeric_prop(docProperties, sw->indexlist->header.startProp);
     size = get_numeric_prop(docProperties, sw->indexlist->header.sizeProp);

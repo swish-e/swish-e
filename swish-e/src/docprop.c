@@ -749,16 +749,16 @@ docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct met
 {
     int metaID;
     propEntry *prop;
-    struct docProperties *newDocProperties;
+    struct docProperties *tmpDocProperties;
 
     if(!docProperties) return NULL;
 
 
-	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
-	newDocProperties->n = docProperties->n;
+	tmpDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
+	tmpDocProperties->n = docProperties->n;
 
-	for ( metaID = 0; metaID < newDocProperties->n; metaID++ )
-		newDocProperties->propEntry[metaID] = NULL;
+	for ( metaID = 0; metaID < tmpDocProperties->n; metaID++ )
+		tmpDocProperties->propEntry[metaID] = NULL;
 
 	/* swap metaName values for properties */
 	for ( metaID = 0 ; metaID < docProperties->n ;metaID++ )
@@ -776,8 +776,8 @@ docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct met
 			{
 				if (metaID == metaFileTemp->oldMetaID)
 				{
-					prop->next = newDocProperties->propEntry[metaFileTemp->newMetaID];
-					newDocProperties->propEntry[metaFileTemp->newMetaID] = prop;
+					prop->next = tmpDocProperties->propEntry[metaFileTemp->newMetaID];
+					tmpDocProperties->propEntry[metaFileTemp->newMetaID] = prop;
 					break;
 				}
 
@@ -786,8 +786,11 @@ docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct met
 			prop = nextOne;
 		}
 	}
-	efree(docProperties);
-	return newDocProperties;
+	/* Reasign new values */
+	for(metaID=0;metaID<docProperties->n;metaID++)
+		docProperties->propEntry[metaID] = tmpDocProperties->propEntry[metaID];
+
+	efree(tmpDocProperties);
 }
 
 
