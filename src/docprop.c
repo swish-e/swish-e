@@ -91,6 +91,7 @@ docPropertyEntry *docProp;
 	{
 		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry));
 		docProp->metaID = metaID;
+		docProp->propValue = propValue;
 		docProp->propValue = (char *)emalloc(propLen);
 		memcpy(docProp->propValue, propValue,propLen);
 		docProp->propLen=propLen;
@@ -150,36 +151,6 @@ int lenbuffer;
 }
 /* #### */
 
-/* #### Added propLen support and simplify it */
-/* Read one entry and return it; also set the metaID.
- * In all cases, metaID will be zero when the end of the
- * set is reached.
- */
-unsigned char* readNextDocPropEntry(char **buf, int *metaID, int *propLen)
-{
-char* propValueBuf=NULL;
-int tempPropID;
-int len;
-char *p=*buf;
-	uncompress2(tempPropID,p);
-	if (!tempPropID) return NULL;		/* end of list */
-
-	*metaID = --tempPropID;
-
-	/* grab the data length */
-	uncompress2(len,p);
-
-	/* allocate buffer for prop value */
-	/* BTW, len must no be 0 */
-	propValueBuf=(char *)emalloc(len);
-	memcpy(propValueBuf, p, len);
-	p+=len;
-	*propLen=len;
-	*buf=p;
-	return propValueBuf;
-}
-/* #### */
-
 /*
  * Read the docProperties section that the buffer pointer is
  * currently pointing to.
@@ -190,14 +161,25 @@ docPropertyEntry *fetchDocProperties(char *buf)
 docPropertyEntry *docProperties=NULL;
 char* tempPropValue=NULL;
 int tempPropLen=0;
-int tempMetaName=0;
+int tempPropID;
 
 	/* read all of the properties */
-	while((tempPropValue = readNextDocPropEntry(&buf, &tempMetaName, &tempPropLen)) && tempMetaName > 0)
+        uncompress2(tempPropID,buf);
+	while(tempPropID > 0)
 	{
+		/* Decrease 1 (it was stored as ID+1 to avoid 0 value ) */
+		tempPropID--;
+
+		/* Get the data length */
+		uncompress2(tempPropLen,buf);
+
+		/* BTW, len must no be 0 */
+	        tempPropValue=buf;
+		buf+=tempPropLen;
+
 			/* add the entry to the list of properties */
-		addDocProperty(&docProperties, tempMetaName, tempPropValue, tempPropLen );
-		efree(tempPropValue);
+		addDocProperty(&docProperties, tempPropID, tempPropValue, tempPropLen );
+        	uncompress2(tempPropID,buf);
 	}
 	return docProperties;
 }
@@ -587,7 +569,9 @@ docPropertyEntry *p;
 			UNPACKLONG(fi->fi.size);
 		}
 		else if(indexf->summaryProp->metaID==p->metaID) 
+		{
 			fi->fi.summary=bin2string(p->propValue,p->propLen);
+		}
 	}
 }
 
