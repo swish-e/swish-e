@@ -29,6 +29,11 @@
 
 void progerr (char *msgfmt, ...);
 void progerrno (char *msgfmt, ...);
+
+void set_progerr(int errornum, SWISH *sw, char *msgfmt,...);
+void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...);
+
+
 void progwarn (char *msgfmt, ...);
 void progwarnno (char *msgfmt, ...);
 char *getErrorString(int);
