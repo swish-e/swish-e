@@ -33,12 +33,6 @@ int islink(char *);
 int getsize(char *);
 
 
-/* use these to open Index files (because they are binary files: Win32)  */
-FILE* openIndexFILEForWrite(char *);
-FILE* openIndexFILEForRead(char *);
-FILE* openIndexFILEForReadAndWrite(char *);
-void CreateEmptyFile(char *);
-
 void indexpath(SWISH *, char *);
 
 char *read_stream(SWISH *, char *name, FILE *fp, long len, long truncate_size);

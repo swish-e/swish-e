@@ -270,6 +270,50 @@ static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
 }
 
 
+/* Open files */
+
+
+static FILE   *openIndexFILEForRead(char *filename) 
+{
+    return fopen(filename, F_READ_BINARY);
+}
+
+static FILE   *openIndexFILEForReadAndWrite(char *filename)
+{  
+    return fopen(filename, F_READWRITE_BINARY);
+}
+
+  
+static FILE   *openIndexFILEForWrite(char *filename)
+{
+    return fopen(filename, F_WRITE_BINARY);
+}
+
+static void    CreateEmptyFile(char *filename)
+{
+    FILE   *fp;
+    
+    if (!(fp = openIndexFILEForWrite(filename)))
+    {
+        progerrno("Couldn't write the file \"%s\": ", filename);
+    }
+    fclose(fp);
+}
+
+static int  is_directory(char *path)
+{
+    struct stat stbuf;
+
+    if (stat(path, &stbuf))
+        return 0;
+    return ((stbuf.st_mode & S_IFMT) == S_IFDIR) ? 1 : 0;
+}
+
+
+/**********************/
+
+
+
 void   *DB_Create_Native(SWISH *sw, char *dbname)
 {
     int     i;
@@ -281,7 +325,7 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     struct Handle_DBNative *DB;
 
 
-    if ( isdirectory( dbname ) )
+    if ( is_directory( dbname ) )
         progerr( "Index file '%s' is a directory", dbname );
 
 

@@ -220,6 +220,47 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
     return srch;
 }
 
+
+/********** Search object methods *************************/
+
+void SwishSetStructure( SEARCH_OBJECT *srch, int structure )
+{
+    if ( srch )
+        srch->structure = structure;
+}
+
+
+void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
+{
+    if ( srch && delimiter && !isspace( (int)delimiter ) )
+        srch->PhraseDelimiter = (int)delimiter;
+}
+
+
+
+void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
+{
+    StringList  *slsort = NULL;
+    int          i;
+
+    
+    if ( !srch || !sort || *sort )
+        return;
+
+    if ( srch->sort_params )
+        freeswline( srch->sort_params );
+
+
+    if ( !(slsort = parse_line(sort)) )
+        return;
+
+    for (i = 0; i < slsort->n; i++)
+        addswline( srch->sort_params, slsort->word[i] );
+
+    freeStringList(slsort);
+
+}
+
 /****************************************************************
 *  Free_Search_Object - Frees a search object
 *
@@ -248,8 +289,7 @@ void Free_Search_Object( SEARCH_OBJECT *srch )
 
 
 
-    ResetLimitParameters( srch );  /* clears data associated with the parameters and the processed data */
-
+    SwishResetSearchLimit( srch );  /* clears data associated with the parameters and the processed data */
 
     /* Free up the limit tables */
 
@@ -420,7 +460,8 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
         m = getPropNameByName(&db_results->indexf->header, field);
         if ( !m )
         {
-            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT, db_results->results->sw, "Property '%' is not defined in index '%s'", field, db_results->indexf->line);
+            set_progerr(UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT, db_results->results->sw, 
+                "Property '%s' is not defined in index '%s'", field, db_results->indexf->line);
             return 0;
         }
 
@@ -433,7 +474,19 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word )
     return 1;
 }
 
-    
+
+/****************** Utility Methods **********************************/
+
+
+int SwishHits( RESULTS_OBJECT *results )
+{
+    if ( !results )
+        return 0;       /* probably should be an error */
+
+
+    return results->total_results;
+}
+
 
 /****************************************************************
 *  Free_Results_Object - Frees all memory associated with search results
@@ -575,9 +628,18 @@ static void dump_result_lists( RESULTS_OBJECT *results, char *message )
 
 RESULTS_OBJECT *SwishQuery(SWISH *sw, char *words )
 {
-    SEARCH_OBJECT *srch = New_Search_Object( sw, words );
-    RESULTS_OBJECT *results = SwishExecute( srch, NULL );
+    SEARCH_OBJECT *srch;
+    RESULTS_OBJECT *results;
+
+    reset_lasterror( sw );
+
+    srch = New_Search_Object( sw, words );
+    if ( sw->lasterror )
+        return NULL;
+        
+    results = SwishExecute( srch, NULL );
     Free_Search_Object( srch );
+    results->srch = NULL;
     return results;
 }
 
@@ -614,6 +676,8 @@ RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words)
         progerr("Passed in NULL search object to SwishExecute");
 
     sw = srch->sw;
+
+    reset_lasterror( sw );
 
 
     /* Allow words to be passed in */
@@ -825,6 +889,8 @@ static void query_index( DB_RESULTS *db_results )
 *
 *   Returns the position or a negative number on error
 *
+*   Position is zero based
+*
 *   
 *
 ****************************************************************************/
@@ -882,7 +948,7 @@ int     SwishSeekResult(RESULTS_OBJECT *results, int pos)
     if (!cur_result)
         return ((results->sw->lasterror = SWISH_LISTRESULTS_EOF));
 
-    return pos;
+    return ( results->cur_rec_number = pos );
 }
 
 
@@ -896,15 +962,8 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
     int     rc;
     DB_RESULTS *db_results = NULL;
     DB_RESULTS *db_results_winner = NULL;
-    int  num;
     SWISH   *sw = results->sw;
     
-
-    if (results->bigrank)
-        num = 10000000 / results->bigrank;
-    else
-        num = 10000;
-
 
     /* Seems like we should error here if there are no results */
     if ( !results->db_results )
@@ -991,11 +1050,17 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
 
 
 
-    /* Normalize rank */
     if (res)
     {
-        res->rank = (int) (res->rank * num)/10000;
-        if (res->rank >= 999)
+        results->cur_rec_number++;
+
+
+
+        /* Normalize rank */
+        
+        res->rank = (int) (res->rank * results->rank_scale_factor)/10000;
+        
+        if (res->rank >= 999)  /* because of rounding error in integer divide */
             res->rank = 1000;
         else if (res->rank < 1)
             res->rank = 1;
@@ -1046,9 +1111,6 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
      */
     int     andLevel = 0;       /* number of terms ANDed so far */
 
-    /* $$$ this should be in the search object */
-    LOGICAL_OP *srch_op = &db_results->results->sw->SearchAlt->srch_op;
-
     word = NULL;
     lenword = 0;
 
@@ -1062,7 +1124,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
 
         if (rulenum == NO_RULE)
-            rulenum = srch_op->defaultrule;
+            rulenum = AND_RULE;
 
 
         if (isunaryrule(word))  /* is it a NOT? */
@@ -1466,11 +1528,11 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 /* read positions */
                 uncompress_location_positions(&s,flag,frequency,posdata);
 
-                /* test structure and adjust frequency */
+                /* test (limit by) structure and adjust frequency */
                 frequency = test_structure(structure, frequency, posdata);
 
                 /* Store -1 in rank - In this way, we can delay its computation */
-                /* This stuff has been removed */
+                /* $$$ This -1 optimization has been removed */
 
                 /* Store result */
                 if(frequency)
@@ -1487,7 +1549,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                     /* Copy positions */
                     memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
 
-                    // Temp fix
+                    // Temp fix -- fetch the rank and store it in the new result.
                     {
                         RESULT *r1 = l_rp->tail;
                         r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->db_results->indexf, r1->filenum );

@@ -65,15 +65,6 @@
 #ifndef SWISH_H
 #define SWISH_H 1
 
-#ifdef __cplusplus
-#  define BEGIN_C_DECLS extern "C" {
-#  define END_C_DECLS   }
-#else
-#  define BEGIN_C_DECLS
-#  define END_C_DECLS
-#endif
-
-
 
 
 #include <stdio.h>
@@ -122,9 +113,12 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #endif
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
-BEGIN_C_DECLS
+
 
 
 #define SWISH_MAGIC 21076321L
@@ -767,7 +761,7 @@ PropValue;
 typedef struct SWISH
 {
     /* New module design structure data */
-    struct MOD_SearchAlt     *SearchAlt;      /* search_alt module data */
+    // struct MOD_SearchAlt     *SearchAlt;      /* search_alt module data */
     struct MOD_ResultOutput  *ResultOutput;   /* result_output module data */
     struct MOD_Filter        *Filter;         /* filter module data */
     struct MOD_ResultSort    *ResultSort;     /* result_sort module data */
@@ -1017,7 +1011,10 @@ extern unsigned int DEBUG_MASK;
 
 
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 #endif /* !SWISH_H */
 

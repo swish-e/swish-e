@@ -45,6 +45,7 @@ char *SwishErrorString(SWISH *sw);
 char *SwishLastErrorMsg(SWISH *sw);
 void SwishAbortLastError(SWISH *sw);
 int SwishCriticalError(SWISH *sw);
+void reset_lasterror(SWISH *sw);
 
 
 char *fuzzy_mode_to_string( FuzzyIndexType mode );

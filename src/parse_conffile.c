@@ -1159,9 +1159,6 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */
         else if (configModule_ResultOutput(sw, sl)); /* rasc */
-        else if (configModule_SearchAlt(sw, sl)); /* rasc */
-		/* Removed , patents ...
-        else if (configModule_Deflate(sw, sl));*/ /* jmruiz */
         else if (configModule_ResultSort(sw, sl)); /* jmruiz */
         else if (configModule_DB(sw, sl)); /* jmruiz */
         else if (configModule_Index(sw, sl)); /* jmruiz */
@@ -1680,5 +1677,6 @@ void freeSwishConfigOptions( SWISH *sw )
       
         
 }
+
 
 

@@ -353,14 +353,10 @@ static SWISH  *swish_new()
 {
     SWISH  *sw;
 
-    /* Default is to write errors to stdout */
-    set_error_handle(stdout);
-
     sw = emalloc(sizeof(SWISH));
     memset(sw, 0, sizeof(SWISH));
 
     initModule_DB(sw);
-    initModule_SearchAlt(sw);
     initModule_ResultSort(sw);
     initModule_Swish_Words(sw);  /* allocate a buffer */
 
@@ -375,6 +371,7 @@ static SWISH  *swish_new()
     sw->lasterror = RC_OK;
     sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
+    sw->headerOutVerbose = 1;
     sw->DefaultDocType = NODOCTYPE;
 
 #ifdef HAVE_ZLIB
@@ -416,7 +413,6 @@ static void    swish_close(SWISH * sw)
 
         freeModule_Swish_Words(sw);
         freeModule_Filter(sw);
-        freeModule_SearchAlt(sw);
         freeModule_Entities(sw);
         freeModule_DB(sw);
         freeModule_Index(sw);
@@ -426,9 +422,6 @@ static void    swish_close(SWISH * sw)
         freeModule_Prog(sw);
 
 
-
-        /* Free MetaNames and close files */
-        tmpindexlist = sw->indexlist;
 
         /* Free ReplaceRules regular expressions */
         free_regex_list(&sw->replaceRegexps);
@@ -445,6 +438,9 @@ static void    swish_close(SWISH * sw)
             sw->IndexAltTagMeta = NULL;
         }
 
+
+        /* Free MetaNames and close files */
+        tmpindexlist = sw->indexlist;
 
 
         while (tmpindexlist)

@@ -41,7 +41,8 @@ $Id$
 #include "error.h"
 #include "metanames.h"
 #include "config.h"         // for _AND_WORD...
-#include "search_alt.h"     // for AND_WORD... humm maybe needs better organization
+//#include "search_alt.h"     // for AND_WORD... humm maybe needs better organization
+#include "swish_words.h"
 
 static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, INDEXDATAHEADER *header );
 static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swline *searchwordlist);
@@ -107,6 +108,12 @@ static int isSearchOperatorChar( int c, int phrase_delimiter, int inphrase )
 
 /* Funny how argv was joined into a string just to be split again... */
 
+
+// $$$ BUG in next_token() is that "search *" or "searh*" becomes two tokens, and then
+//   is patched back to at the end (so "search *" becomes "search*").
+
+
+
 static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int inphrase )
 {
     int     i;
@@ -117,6 +124,7 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
     /* skip any leading whitespace */
     while ( **buf && isspace( (unsigned char) **buf) )
         (*buf)++;
+
 
 
     /* extract out word */
@@ -456,6 +464,7 @@ char *isBooleanOperatorWord( char * word )
 
 
 
+
 static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, INDEXDATAHEADER *header )
 {
     char   *curpos;               /* current position in the words string */
@@ -591,6 +600,9 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     }
 
     /* fudge wild cards back onto preceeding word */
+    /* $$$ This is broken because a query of "foo *" ends up "foo*" */
+
+    
     for ( temp = tokens ; temp; temp = temp->next )
         if ( temp->next && strcmp( temp->next->line, "*") == 0 )
             fudge_wildcard( &tokens, temp );
@@ -680,10 +692,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
 
 static int     u_isrule(SWISH * sw, char *word)
 {
-    LOGICAL_OP *op;
-
-    op = &(sw->SearchAlt->srch_op);
-    if (!strcmp(word, op->and) || !strcmp(word, op->or) || !strcmp(word, op->not))
+    if (!strcmp(word, _AND_WORD) || !strcmp(word, _OR_WORD) || !strcmp(word, _NOT_WORD))
         return 1;
     else
         return 0;
@@ -699,7 +708,7 @@ static int     isnotrule(char *word)
 
 static int     u_isnotrule(SWISH * sw, char *word)
 {
-    if (!strcmp(word, sw->SearchAlt->srch_op.not))
+    if (!strcmp(word, _NOT_WORD))
         return 1;
     else
         return 0;
@@ -1130,6 +1139,72 @@ static struct swline *expandphrase(struct swline *sp, char delimiter)
     }
     freeswline(sp);
     return newp;
+}
+
+
+
+/*  These 2 routines fix the problem when a word ends with mutiple
+**  IGNORELASTCHAR's (eg, qwerty'. ).  The old code correctly deleted
+**  the ".", but didn't check if the new last character ("'") is also
+**  an ignore character.
+*/
+void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
+{
+    int     k,j,i = strlen(word);
+
+    /* Get rid of specified last char's */
+    /* for (i=0; word[i] != '\0'; i++); */
+    /* Iteratively strip off the last character if it's an ignore character */
+    while ((i > 0) && (isIgnoreLastChar(header, word[--i])))
+    {
+        word[i] = '\0';
+
+        /* We must take care of the escaped characeters */
+        /* Things like hello\c hello\\c hello\\\c can appear */
+        for(j=0,k=i-1;k>=0 && word[k]=='\\';k--,j++);
+        
+        /* j contains the number of \ */
+        if(j%2)   /* Remove the escape if even */
+        {
+             word[--i]='\0';    
+        }
+    }
+}
+
+void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
+{
+    int     j,
+            k;
+    int     i = 0;
+
+    /* Keep going until a char not to ignore is found */
+    /* We must take care of the escaped characeters */
+    /* Things like \chello \\chello can appear */
+
+    while (word[i])
+    {
+        if(word[i]=='\\')   /* Jump escape */
+            k=i+1;
+        else
+            k=i;
+        if(!word[k] || !isIgnoreFirstChar(header, word[k]))
+            break;
+        else
+            i=k+1;
+    }
+
+    /* If all the char's are valid, just return */
+    if (0 == i)
+        return;
+    else
+    {
+        for (k = i, j = 0; word[k] != '\0'; j++, k++)
+        {
+            word[j] = word[k];
+        }
+        /* Add the NULL */
+        word[j] = '\0';
+    }
 }
 
 

@@ -158,31 +158,6 @@ int     getsize(char *path)
 
 
 
-FILE   *openIndexFILEForWrite(char *filename)
-{
-    return fopen(filename, F_WRITE_BINARY);
-}
-
-FILE   *openIndexFILEForRead(char *filename)
-{
-    return fopen(filename, F_READ_BINARY);
-}
-
-FILE   *openIndexFILEForReadAndWrite(char *filename)
-{
-    return fopen(filename, F_READWRITE_BINARY);
-}
-
-void    CreateEmptyFile(char *filename)
-{
-    FILE   *fp;
-
-    if (!(fp = openIndexFILEForWrite(filename)))
-    {
-        progerrno("Couldn't write the file \"%s\": ", filename);
-    }
-    fclose(fp);
-}
 
 /*
  * Invoke the methods of the current Indexing Data Source

@@ -31,6 +31,8 @@ ldflags     = @LDFLAGS@
 
 LIBS        = @LIBS@ @LIBXML2_LIB@ @Z_LIBS@ @PCRE_LIBS@
 
+SEARCHLIBS  = @LIBS@ @Z_LIBS@ @PCRE_LIBS@
+
 # Library related 
 AR          = ar
 ARFLAGS     = cr
@@ -71,18 +73,24 @@ PARSER_OBJS         = html.o txt.o xml.o $(XP_OBJ) entities.o @LIBXML2_OBJS@
 #--- Logical Groups of modules ---
 
 INDEXING_OBJS       = $(INPUT_METHODS_OBJS) $(PARSER_OBJS) \
-                      index.o merge.o stemmer.o soundex.o \
-                      filter.o parse_conffile.o swregex.o double_metaphone.o
+                      index.o merge.o  pre_sort.o file.o \
+                      filter.o parse_conffile.o swregex.o \
+                      db_write.o docprop_write.o
 
 
 SEARCHING_OBJS      = swish2.o search.o swish_words.o proplimit.o \
-                      search_alt.o rank.o
+                      rank.o db_read.o result_sort.o
 
-DB_OBJS             = hash.o compress.o db.o db_native.o ramdisk.o btree.o array.o
+# search_alt.o - removed 9/2002, was not implemented                      
 
-UTIL_OBJS           = check.o file.o error.o list.o mem.o string.o \
-                      docprop.o metanames.o result_sort.o \
+#--- Common modules --
+
+DB_OBJS             = hash.o compress.o db_native.o ramdisk.o btree.o array.o
+
+UTIL_OBJS           = check.o error.o list.o mem.o string.o \
+                      docprop.o metanames.o \
                       swish_qsort.o  date_time.o \
+                      double_metaphone.o stemmer.o soundex.o \
                       no_better_place_module.o @LIBOBJS@
 
 
@@ -116,7 +124,7 @@ LDFLAGS     = $(ldflags)
 	
 all:	$(NAME)
 
-$(NAME): libswish-e.a libsearchswish-e.a $(SWISH_BINARY_OBJS)
+$(NAME): libswish-e.a $(SWISH_BINARY_OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(SWISH_BINARY_OBJS) libswish-e.a $(LIBS)
 	chmod 755 $@
 
@@ -128,7 +136,7 @@ swish-search: $(NAME)
 	cp -f $(NAME) swish-search
 
 clean:
-	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a libtest.o
+	rm -f ../tests/*.index ../tests/core core  swish-e swish-search swish.o $(OBJS) libswish-e.a libsearchswish-e.a libtest.o
 
 realclean: clean
 	rm Makefile
@@ -167,8 +175,8 @@ install-lib:
 	cp libswish-e.a $(libdir)/libswish-e.a
 
 
-libtest: all libsearchswish-e.a libtest.o
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libswish-e.a $(LIBS)
+libtest: libsearchswish-e.a libtest.o
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) libtest.o libsearchswish-e.a $(SEARCHLIBS)
 	chmod 755 $@
 
 

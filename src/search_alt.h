@@ -54,22 +54,6 @@ struct MOD_SearchAlt {
 
 
 
-/* internal representation,  may not be changed */
-#define AND_WORD "<and>"
-#define OR_WORD "<or>"
-#define NOT_WORD "<not>"
-#define PHRASE_WORD "<precd>"
-#define AND_NOT_WORD "<andnot>"
-
-/* internal search rule numbers */
-#define NO_RULE 0
-#define AND_RULE 1
-#define OR_RULE 2
-#define NOT_RULE 3
-#define PHRASE_RULE 4
-#define AND_NOT_RULE 5
-
-
 
 
 
@@ -77,10 +61,8 @@ struct MOD_SearchAlt {
 
 void initModule_SearchAlt   (SWISH *sw);
 void freeModule_SearchAlt   (SWISH *sw);
-int  configModule_SearchAlt (SWISH *sw, StringList *sl);
 
-char *convAltSearch2SwishStr (char *str);
-
+int     u_SelectDefaultRulenum(SWISH * sw, char *word);
 
 #endif
 

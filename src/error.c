@@ -39,7 +39,7 @@ $Id$
 
 /* Allow overriding swish-e's old behavior of errors to stdout */
 
-FILE *error_handle;
+FILE *error_handle = NULL;
 
 void set_error_handle( FILE *where )
 {
@@ -55,6 +55,9 @@ void SwishErrorsToStderr( void )
 void progerr(char *msgfmt,...)
 {
   va_list args;
+
+  if ( !error_handle )
+      error_handle = stdout;
 
   va_start (args,msgfmt);
   fprintf  (error_handle, "err: ");
@@ -75,6 +78,9 @@ void progerr(char *msgfmt,...)
 void progerrno(char *msgfmt,...)
 {
   va_list args;
+
+  if ( !error_handle )
+      error_handle = stdout;
 
   va_start (args,msgfmt);
   fprintf  (error_handle, "err: ");
@@ -98,6 +104,11 @@ void set_progerr(int errornum, SWISH *sw, char *msgfmt,...)
   va_end   (args);
 }
 
+void reset_lasterror(SWISH *sw)
+{
+    sw->lasterror = RC_OK;
+    sw->lasterrorstr[0] = '\0';
+}
 
 
 void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...)
@@ -121,6 +132,10 @@ void progwarn(char *msgfmt,...)
 {
   va_list args;
 
+  if ( !error_handle )
+      error_handle = stdout;
+
+
   va_start (args,msgfmt);
   fprintf  (error_handle, "\nWarning: ");
   vfprintf (error_handle, msgfmt, args);
@@ -134,6 +149,9 @@ void progwarn(char *msgfmt,...)
 void progwarnno(char *msgfmt,...)
 {
   va_list args;
+
+  if ( !error_handle )
+      error_handle = stdout;
 
   va_start (args,msgfmt);
   fprintf  (error_handle, "\nWarning: ");

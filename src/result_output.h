@@ -61,6 +61,8 @@ struct MOD_ResultOutput {
 };
 
 
+void addSearchResultDisplayProperty (SWISH *, char* );
+
 
 
 void initModule_ResultOutput (SWISH *sw);

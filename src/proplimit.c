@@ -120,7 +120,7 @@ typedef struct LOOKUP_TABLE
 
 
 /*******************************************************************
-* ResetLimitParameters  -- clears memory used by -L 
+* SwishResetSearchLimit  -- clears memory used by -L 
 *
 *   Call with:
 *       SEARCH_OBJECT
@@ -135,7 +135,7 @@ typedef struct LOOKUP_TABLE
 ********************************************************************/
 
 
-void ResetLimitParameters( SEARCH_OBJECT *srch )
+void SwishResetSearchLimit( SEARCH_OBJECT *srch )
 {
     IndexFILE  *indexf = srch->sw->indexlist;
     int         index_count = 0;
@@ -199,6 +199,8 @@ void ClearLimitParams( LIMIT_PARAMS *params )
 
 
 /*******************************************************************
+*  SwishSetSearchLimit - add a limit parameter
+*
 *   Stores strings away for later processing
 *   called from someplace?
 *
@@ -214,8 +216,10 @@ void ClearLimitParams( LIMIT_PARAMS *params )
 *       Error checking, and maybe pass in a StringList
 *
 ********************************************************************/
-int SetLimitParameter(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
+int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
 {
+    reset_lasterror( srch->sw );
+    
     if ( srch->limits_prepared )
     {
         set_progerr( PROP_LIMIT_ERROR, srch->sw, "Limits have been prepared (and executed) -- call ResetLimitParameters() first" );

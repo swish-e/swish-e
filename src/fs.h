@@ -4,6 +4,12 @@ fs.h
 #ifndef __HasSeenModule_FS
 #define __HasSeenModule_FS       1
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /*
    -- module data
 */
@@ -31,6 +37,10 @@ struct MOD_FS
 void initModule_FS (SWISH *);
 void freeModule_FS (SWISH *);
 int  configModule_FS (SWISH *, StringList *);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 
 
 

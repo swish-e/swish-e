@@ -1,7 +1,11 @@
 #ifndef DOUBLE_METAPHONE__H
 #define DOUBLE_METAPHONE__H
 
-BEGIN_C_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 
 typedef struct
 {
@@ -17,7 +21,10 @@ void
 DoubleMetaphone(char *str,
                 char **codes);
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 
 #endif /* DOUBLE_METAPHONE__H */

@@ -141,8 +141,6 @@ int     getNumberOfIgnoreLimitWords(SWISH *);
 void    getPositionsFromIgnoreLimitWords(SWISH * sw);
 
 char   *ruleparse(SWISH *, char *);
-void    stripIgnoreFirstChars(INDEXDATAHEADER *, char *);
-void    stripIgnoreLastChars(INDEXDATAHEADER *, char *);
 
 #define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
 #define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]

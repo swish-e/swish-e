@@ -89,6 +89,7 @@ static char *printResultControlChar(FILE * f, char *s);
 static char *printTagAbbrevControl(SWISH * sw, FILE * f, char *s, RESULT * r);
 static char *parsePropertyResultControl(char *s, char **propertyname, char **subfmt);
 static void printPropertyResultControl(SWISH * sw, FILE * f, char *propname, char *subfmt, RESULT * r);
+static void printStandardResultProperties(FILE *f, RESULT *r);
 
 static struct ResultExtFmtStrList *addResultExtFormatStr(struct ResultExtFmtStrList *rp, char *name, char *fmtstr);
 
@@ -379,8 +380,6 @@ void    printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits)
     {
         fi = &r->fi;  /* get address of FileRec to store properties and pointers */
         
-        r->count = ++begin;   /* set rec. counter for output */
-
 
         /* This may or may not be an optimization */
         // not really any more -- used to be able to read all the props, now this just reads them using ReadSingle... 
@@ -951,7 +950,7 @@ void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char
 *
 *
 ********************************************************************/
-void printStandardResultProperties(FILE *f, RESULT *r)
+static void printStandardResultProperties(FILE *f, RESULT *r)
 {
     int     i;
     IndexFILE *indexf = r->db_results->indexf;
