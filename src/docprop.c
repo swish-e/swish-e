@@ -334,11 +334,11 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
     if ( is_meta_number(meta_entry) )
     {
-        unsigned long i;
-        i = *(unsigned long *) prop->propValue;  /* read binary */
+        unsigned int i;
+        i = *(unsigned int *) prop->propValue;  /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = ULONG;
-        pv->value.v_ulong = i;
+        pv->value.v_ulong = (long)i;
 #ifdef PROPFILE
         freeProperty( prop );
 #endif        
