@@ -1,16 +1,17 @@
-
 dnl set version (or would AM_INIT_AUTOMAKE(package_name, package_version) be better?
 dnl to update the version, modify here and run "autoconf" to generate a new ./configure script
-AC_SUBST(VERSION)
-VERSION=2.1-dev-25
 
-AC_SUBST(PROJECT)
-PROJECT=swish-e
-
+dnl AC_INIT must be the first macro called.
 dnl Have configure make sure the source code is found
 AC_INIT(src/swish.c)
 
+dnl revision name
+AC_SUBST(VERSION)
+VERSION=2.1-dev-25
 
+dnl Corresponds to NAME in src/Makefile.in
+AC_SUBST(PROJECT)
+PROJECT=swish-e
 
 dnl Check for gettimeofday()
 AC_CHECK_FUNC(BSDgettimeofday, 
@@ -80,7 +81,7 @@ dnl Optional building with libxml2
 dnl Probably should be 2.4.5 + patches
 LIBXML_REQUIRED_VERSION=2.4.3
 
-AC_ARG_WITH(libxml2,[  --with-libxml2[=ARG]    enable libxml2 [ARG=DIR,maybe,no] (maybe) ],,withval=maybe)
+AC_ARG_WITH(libxml2,AC_HELP_STRING([--with-libxml2=DIR],[use libxml2 in DIR (YES if found)]),,withval=maybe)
 
 dnl if the user explicity asked for no libxml2
 if test "$withval" != "no"; then
@@ -122,19 +123,18 @@ else
     dnl
 
     vers=VERSION_TO_NUMBER($XML2_CONFIG --version)
-
+    XML2_VERSION=`$XML2_CONFIG --version`
 
     if test "$vers" -ge VERSION_TO_NUMBER(echo $LIBXML_REQUIRED_VERSION);then
     	LIBXML2_LIB="`$XML2_CONFIG --libs`"
     	LIBXML2_CFLAGS="`$XML2_CONFIG --cflags`"
-    	AC_MSG_RESULT(found version `$XML2_CONFIG --version`)
+    	AC_MSG_RESULT(found version $XML2_VERSION)
     else
     	AC_MSG_ERROR(You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish)
     fi
 
 
     AC_DEFINE(HAVE_LIBXML2)
-    AC_MSG_RESULT([** Enabling libxml2 support -- good choice! **])
 
     LIBXML2_OBJS="parser.o"
     AC_SUBST(LIBXML2_OBJS)
@@ -148,14 +148,24 @@ dnl Checks for zlib library. -- from libxml2 configure.in
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"
 
-AC_ARG_WITH(zlib,[  --with-zlib[=DIR]       use libz in DIR],,withval=no)
+AC_ARG_WITH(zlib,AC_HELP_STRING([--with-zlib=DIR], [use zlib in DIR (YES if found)]),,withval=maybe)
 
+dnl if withval not no or and not yes
 if test "$withval" != "no" -a "$withval" != "yes"; then
     Z_DIR=$withval
     CPPFLAGS="${CPPFLAGS} -I$withval/include"
     LDFLAGS="${LDFLAGS} -L$withval/lib"
 fi
 
+dnl if withval is maybe
+if test "$withval" == "maybe"; then
+    withval="yes"
+    Z_DIR=""
+    CPPFLAGS="${CPPFLAGS}"
+    LDFLAGS="${LDFLAGS}"
+fi
+
+dnl if withval not no then try to enable zlib support
 if test "$withval" != "no"; then
     AC_CHECK_HEADERS(zlib.h,
         AC_CHECK_LIB(z, gzread,[
