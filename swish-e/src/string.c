@@ -881,7 +881,7 @@ unsigned char *StringListToString(StringList *sl,int n)
 int i,j;
 char *s;
 int len_s,len_w;
-	s=emalloc((len_s=2)+1);
+	s=emalloc((len_s=256)+1);
 	/* compute required string size */
 	for(i=n,j=0;i<sl->n;i++) 
 	{
