@@ -118,8 +118,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;                
         }
-        else if (strcasecmp(w0, "IncludeConfigFile") == 0)
+
+        
+        if (strcasecmp(w0, "IncludeConfigFile") == 0)
         {
             if (sl->n == 2)
             {
@@ -127,8 +131,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "NoContents") == 0)
+
+        
+        if (strcasecmp(w0, "NoContents") == 0)
         {
             if (sl->n > 1)
             {
@@ -136,8 +144,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexFile") == 0)
+
+        
+        if (strcasecmp(w0, "IndexFile") == 0)
         {
             if (!(*hasindex))
             {
@@ -151,8 +163,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 else
                     progerr("%s: requires one value", w0);
             }
+            
+            continue;
         }
-        else if (strcasecmp(w0, "IndexReport") == 0)
+
+        
+        if (strcasecmp(w0, "IndexReport") == 0)
         {
             if (sl->n == 2)
             {
@@ -163,8 +179,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "MinWordLimit") == 0)
+
+        if (strcasecmp(w0, "MinWordLimit") == 0)
         {
             if (sl->n == 2)
             {
@@ -172,8 +190,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "MaxWordLimit") == 0)
+
+        if (strcasecmp(w0, "MaxWordLimit") == 0)
         {
             if (sl->n == 2)
             {
@@ -181,8 +201,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexComments") == 0)
+        
+
+        if (strcasecmp(w0, "IndexComments") == 0)
         {
             if (sl->n == 2)
             {
@@ -190,8 +214,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: IndexComments requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "WordCharacters") == 0)
+
+
+        if (strcasecmp(w0, "WordCharacters") == 0)
         {
             if (sl->n == 2)
             {
@@ -201,8 +229,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "BeginCharacters") == 0)
+
+
+        if (strcasecmp(w0, "BeginCharacters") == 0)
         {
             if (sl->n == 2)
             {
@@ -212,8 +244,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "EndCharacters") == 0)
+
+        if (strcasecmp(w0, "EndCharacters") == 0)
         {
             if (sl->n == 2)
             {
@@ -223,8 +257,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreLastChar") == 0)
+
+        
+        if (strcasecmp(w0, "IgnoreLastChar") == 0)
         {
             if (sl->n == 2)
             {
@@ -233,8 +271,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 makelookuptable(indexf->header.ignorelastchar, indexf->header.ignorelastcharlookuptable);
             }                   /* Do nothing */
             /* else progerr("%s: requires one value",w0); */
+
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreFirstChar") == 0)
+        
+        if (strcasecmp(w0, "IgnoreFirstChar") == 0)
         {
             if (sl->n == 2)
             {
@@ -243,8 +284,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 makelookuptable(indexf->header.ignorefirstchar, indexf->header.ignorefirstcharlookuptable);
             }                   /* Do nothing */
             /*  else progerr("%s: requires one value",w0); */
+
+            continue;
         }
-        else if (strcasecmp(w0, "ReplaceRules") == 0)
+
+        
+        if (strcasecmp(w0, "ReplaceRules") == 0)
         {
             if (sl->n > 1)
             {
@@ -253,8 +298,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexName") == 0)
+
+        
+        if (strcasecmp(w0, "IndexName") == 0)
         {
             if (sl->n > 1)
             {
@@ -264,8 +313,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires a value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "IndexDescription") == 0)
+        
+
+        if (strcasecmp(w0, "IndexDescription") == 0)
         {
             if (sl->n > 1)
             {
@@ -275,8 +327,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires a value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexPointer") == 0)
+
+        
+        if (strcasecmp(w0, "IndexPointer") == 0)
         {
             if (sl->n > 1)
             {
@@ -286,8 +342,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires a value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexAdmin") == 0)
+
+        
+        if (strcasecmp(w0, "IndexAdmin") == 0)
         {
             if (sl->n > 1)
             {
@@ -297,20 +357,33 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "UseStemming") == 0)
+
+        
+        if (strcasecmp(w0, "UseStemming") == 0)
         {
             indexf->header.applyStemmingRules = getYesNoOrAbort(sl, 1, 1);
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking") == 0)
+
+        
+        if (strcasecmp(w0, "IgnoreTotalWordCountWhenRanking") == 0)
         {
             indexf->header.ignoreTotalWordCountWhenRanking = getYesNoOrAbort(sl, 1, 1);
+            continue;
         }
-        else if (strcasecmp(w0, "UseSoundex") == 0)
+
+        
+        if (strcasecmp(w0, "UseSoundex") == 0)
         {
             indexf->header.applySoundexRules = getYesNoOrAbort(sl, 1, 1);
+            continue;
         }
-        else if (strcasecmp(w0, "MetaNames") == 0)
+
+        
+        if (strcasecmp(w0, "MetaNames") == 0)
         {
             if (sl->n > 1)
             {
@@ -319,8 +392,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "TranslateCharacters") == 0)
+
+        
+        if (strcasecmp(w0, "TranslateCharacters") == 0)
         {
             if (sl->n >= 2)
             {
@@ -329,8 +405,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     progerr("%s: requires two values (same length) or one translation rule", w0);
                 }
             }
+            continue;
         }
-        else if (strcasecmp(w0, "PropertyNames") == 0)
+
+        
+        if (strcasecmp(w0, "PropertyNames") == 0)
         {
             if (sl->n > 1)
             {
@@ -339,8 +418,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreWords") == 0)
+
+
+
+        if (strcasecmp(w0, "IgnoreWords") == 0)
         {
             if (sl->n > 1)
             {
@@ -363,8 +446,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "BuzzWords") == 0)  /* 2001-04-24 moseley */
+
+
+        if (strcasecmp(w0, "BuzzWords") == 0)  /* 2001-04-24 moseley */
         {
             if (sl->n > 1)
             {
@@ -383,8 +470,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "UseWords") == 0)
+        
+
+        if (strcasecmp(w0, "UseWords") == 0)
         {                       /* 11/00 Jmruiz */
             indexf->header.is_use_words_flag = 1;
             if (sl->n > 1)
@@ -404,8 +495,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreLimit") == 0)
+
+        
+        if (strcasecmp(w0, "IgnoreLimit") == 0)
         {
             if (sl->n == 3)
             {
@@ -414,15 +509,23 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires two values", w0);
+
+            continue;
         }
+
+        
         /* IndexVerbose is supported for backwards compatibility */
-        else if (strcasecmp(w0, "IndexVerbose") == 0)
+        if (strcasecmp(w0, "IndexVerbose") == 0)
         {
             sw->verbose = getYesNoOrAbort(sl, 1, 1);
             if (sw->verbose)
                 sw->verbose = 3;
+
+            continue;
         }
-        else if (strcasecmp(w0, "IndexOnly") == 0)
+
+        
+        if (strcasecmp(w0, "IndexOnly") == 0)
         {
             if (sl->n > 1)
             {
@@ -430,8 +533,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;    
         }
-        else if (strcasecmp(w0, "IndexContents") == 0)
+
+        
+        if (strcasecmp(w0, "IndexContents") == 0)
         {
             if (sl->n > 2)
             {
@@ -449,8 +556,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least two values", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "StoreDescription") == 0)
+
+        
+        if (strcasecmp(w0, "StoreDescription") == 0)
         {
             if (sl->n == 3 || sl->n == 4)
             {
@@ -483,8 +594,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires two or three values", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "DefaultContents") == 0)
+
+        
+        if (strcasecmp(w0, "DefaultContents") == 0)
         {
             if (sl->n > 1)
             {
@@ -492,8 +607,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "BumpPositionCounterCharacters") == 0)
+
+        
+        if (strcasecmp(w0, "BumpPositionCounterCharacters") == 0)
         {
             if (sl->n > 1)
             {
@@ -503,9 +622,13 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-/* #### Added UndefinedMetaTags as defined by Bill Moseley */
-        else if (strcasecmp(w0, "UndefinedMetaTags") == 0)
+
+
+        /* #### Added UndefinedMetaTags as defined by Bill Moseley */
+        if (strcasecmp(w0, "UndefinedMetaTags") == 0)
         {
             if (sl->n == 2)
             {
@@ -535,8 +658,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "IgnoreMetaTags") == 0)
+
+        
+        if (strcasecmp(w0, "IgnoreMetaTags") == 0)
         {
             if (sl->n > 1)
             {
@@ -547,8 +674,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "DontBumpPositionOnMetaTags") == 0)
+
+        
+        if (strcasecmp(w0, "DontBumpPositionOnMetaTags") == 0)
         {
             if (sl->n > 1)
             {
@@ -556,8 +687,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires at least one value", w0);
+
+            continue;
         }
-        else if (strcasecmp(w0, "TruncateDocSize") == 0)
+
+        
+        if (strcasecmp(w0, "TruncateDocSize") == 0)
         {                       /* rasc 2001-03 */
             if (sl->n == 2 && isnumstring(sl->word[1]))
             {
@@ -565,7 +700,10 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             }
             else
                 progerr("%s: requires size parameter in bytes", w0);
+
+            continue;
         }
+
 
         else if (configModule_Entities(sw, sl));
         else if (configModule_Filter(sw, sl)); /* rasc */
