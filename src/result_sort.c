@@ -425,6 +425,7 @@ int    *getLookupResultSortedProperties(RESULT * r)
             props[i] = r->rank;
             break;
         case AUTOPROP_ID__DOCPATH:
+        case AUTOPROP_ID__FILENUM:
             props[i] = r->filenum;
             break;
         case AUTOPROP_ID__INDEXFILE:
@@ -672,6 +673,7 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
            case AUTOPROP_ID__REC_COUNT:
            case AUTOPROP_ID__RESULT_RANK:
            case AUTOPROP_ID__DOCPATH:
+           case AUTOPROP_ID__FILENUM:
            case AUTOPROP_ID__INDEXFILE:
                break;
 
