@@ -386,6 +386,93 @@ int configModule_Index (SWISH *sw, StringList *sl)
 }
 
 /**************************************************************************
+*   Remove a file from the index.  Used when the parser aborts
+*   while indexing.  Typically because of FileRules.
+*
+**************************************************************************/
+
+
+static void remove_last_file_from_list(SWISH * sw, IndexFILE * indexf)
+{
+    struct MOD_Index *idx = sw->Index;
+    int i;
+    ENTRY *ep, *prev_ep;
+    LOCATION *l;
+
+    /* Decrease filenum */
+    idx->filenum--;
+
+    indexf->filearray_cursize--;
+
+    indexf->header.totalfiles--;
+
+    /* Should be removed */
+    if(idx->filenum < 0 || indexf->filearray_cursize < 0 || indexf->header.totalfiles < 0) 
+        progerr("Internal error in remove_last_file_from_list");
+
+    /* Free file data and properties */
+    /* Bill, take a look at this - This should be in addtofilelist */
+    /* I have to add this two lines to avoif freefileinfo crash */
+#ifdef PROPFILE
+    indexf->filearray[indexf->filearray_cursize]->propLocations = NULL;
+    indexf->filearray[indexf->filearray_cursize]->propSize = NULL;
+#endif        
+
+    freefileinfo(indexf->filearray[indexf->filearray_cursize]);
+    indexf->filearray[indexf->filearray_cursize] = NULL;
+
+    indexf->header.filetotalwordsarray[indexf->filearray_cursize] = 0;
+
+    /* walk the hash list to remove words */
+    for (i = 0; i < SEARCHHASHSIZE; i++)
+    {
+        if (idx->hashentriesdirty[i])
+        {
+            idx->hashentriesdirty[i] = 0;
+            for (ep = idx->hashentries[i], prev_ep =NULL; ep; ep = ep->next)
+            {
+                if(ep->currentChunkLocationList)
+                {
+                    /* First of all - Adjust tfrequency */
+                    for(l = ep->currentChunkLocationList; l; l = l->next)
+                    {
+                        ep->tfrequency--;
+                    }
+                    /* Remove locations */                 
+                    /* Do not use efree, locations uses a MemZone (currentChunkLocZone) */
+                    /* Will be freed later */
+                    ep->currentChunkLocationList = NULL;
+                    ep->currentlocation = NULL;
+                    /* If there is no locations we must also remove the word */
+                    /* Do not call efree to remove the entry, entries use
+                    ** a MemZone (perDocTmpZone) - Will be freed later */
+                    if(!ep->allLocationList)
+                    {
+                        if(!prev_ep)
+                        {
+                            idx->hashentries[i] = ep->next;
+                        }
+                        else
+                        {
+                            prev_ep->next = ep->next;
+                        }
+                        /* Adjust word counters */
+                        idx->entryArray->numWords--;
+                        indexf->header.totalwords--;
+                    }
+                } 
+                else
+                {
+                    prev_ep = ep;
+                }
+            }
+        }
+    }
+}
+
+
+
+/**************************************************************************
 *  Index just the file name (or the title) for NoContents files
 *
 **************************************************************************/
@@ -799,7 +886,17 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             printf(" (not opened)\n");
         else if (wordcount == -2)
             printf(" (Skipped due to 'FileRules title' setting)\n");
+        else if (wordcount == -3)
+            printf(" (Skipped due to Robots Excluion Rule in meta tag)\n");
         fflush(stdout);
+    }
+
+
+    /* If indexing aborted, remove the last file entry */
+    if ( wordcount == -3 || wordcount == -2 )
+    {
+        remove_last_file_from_list( sw, indexf );
+        return;
     }
 
 
