@@ -23,6 +23,7 @@
 #define HAVE_PROCESS_H  /* _getpid is here  */
 #define HAVE_VARARGS_H  /* va_list, vsnprintf, etc */
 #define HAVE_LIBXML2 1  /* enable libxml2 XML parser */
+#define HAVE_STRING_H   /* For mkstemp from libiberty  */
 
 /* Macros which rewrite values  */
 #define SWISH_VERSION "2.1-dev-25"	/* Should we find a better way to handle this */
@@ -36,6 +37,7 @@
 #define O_RDWR _O_RDWR
 #define O_CREAT _O_CREAT
 #define O_EXCL _O_EXCL
+#define O_BINARY _O_BINARY
 
 /* Win32 filename lengths  */
 #define SW_MAXPATHNAME 4096
