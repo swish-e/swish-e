@@ -91,6 +91,8 @@ prog-bin/SwishSpiderConfig.pl
 prog-bin/pdf2xml.pm
 prog-bin/pdf2html.pm
 prog-bin/doc2txt.pm
+prog-bin/MySQL.pl
+prog-bin/index_hypermail.pl
 pod/.htaccess
 pod/CHANGES.pod
 pod/INSTALL.pod
