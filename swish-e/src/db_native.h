@@ -29,7 +29,7 @@
 #ifdef USE_BTREE
 #include "btree.h"
 #include "array.h"
-#define MAXCHARS 5            /* Only 5 are needed when BTREE is used */
+#define MAXCHARS 6            /* Only 5 are needed when BTREE is used */
 
 #else
 
@@ -42,6 +42,10 @@
 #define HEADERPOS (MAXCHARS - 3)
 #define WORDPOS (MAXCHARS - 4)
 #define SORTEDINDEX (MAXCHARS - 5)
+
+#ifdef USE_BTREE
+#define TOTALWORDSPERFILEPOS (MAXCHARS - 6)
+#endif
 
 
 struct Handle_DBNative
@@ -129,6 +133,11 @@ struct Handle_DBNative
 
    unsigned long cur_presorted_propid;
    ARRAY   *cur_presorted_array;
+
+   ARRAY   *totwords_array;
+
+   ARRAY   *props_array;
+   int      props_array_index;
 #endif
 };
 
@@ -198,6 +207,18 @@ void    DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);
 void    DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);
 char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
 void    DB_Reopen_PropertiesForRead_Native(void *db);
+
+#ifdef USE_BTREE
+int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
+int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB);
+int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
+int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
+int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **totalWordsPerFile, void *DB);
+int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
+#endif
+
+int    DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int filenum, int *value, void *DB);
+
 
 
 

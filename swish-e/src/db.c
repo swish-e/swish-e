@@ -146,13 +146,24 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
 		/* BuzzWords */
     write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);
 
-
+#ifndef USE_BTREE
     /* Write the total words per file array, if used */
     if ( !header->ignoreTotalWordCountWhenRanking )
         write_integer_table_to_header(sw, TOTALWORDSPERFILE_ID, header->TotalWordsPerFile, totalfiles, DB);
-
+#endif
 
     DB_EndWriteHeader(sw, DB);
+
+#ifdef USE_BTREE
+            /* Write the total words per file array, if used */
+    if ( !header->ignoreTotalWordCountWhenRanking )
+    {
+        DB_InitWriteTotalWordsPerFileArray(sw, DB);
+        DB_WriteTotalWordsPerFileArray(sw, header->TotalWordsPerFile, totalfiles, DB);
+        DB_EndWriteTotalWordsPerFileArray(sw, DB);
+    }
+#endif
+
 }
 
 /* Jose Ruiz 11/00
@@ -563,6 +574,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             parse_buzzwords_from_buffer(header, buffer);
             break;
 
+#ifndef USE_BTREE
         case TOTALWORDSPERFILE_ID:
             if ( !header->ignoreTotalWordCountWhenRanking )
             {
@@ -570,6 +582,8 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
                 parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, buffer);
             }
             break;
+#endif
+
         default:
             progerr("Severe index error in header");
             break;
@@ -578,6 +592,16 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         DB_ReadHeaderData(sw, &id,&buffer,&len,DB);
     }
     DB_EndReadHeader(sw, DB);
+#ifdef USE_BTREE
+            /* Read the total words per file array, if used */
+    if ( !header->ignoreTotalWordCountWhenRanking )
+    {
+        DB_InitReadTotalWordsPerFileArray(sw, DB);
+        DB_ReadTotalWordsPerFileArray(sw, &header->TotalWordsPerFile, DB);
+        DB_EndReadTotalWordsPerFileArray(sw, DB);
+    }
+#endif
+
 }
 
 /* Reads the metaNames from the index
@@ -689,6 +713,7 @@ void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
         table[i] = tmp - 1;
     }
 }
+
 
 /* 11/00 Function to read all words starting with a character */
 char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
@@ -992,3 +1017,41 @@ void    DB_Reopen_PropertiesForRead(SWISH *sw, void *DB )
     sw->Db->DB_Reopen_PropertiesForRead(DB);
 }
 
+
+#ifdef USE_BTREE
+int	   DB_InitWriteTotalWordsPerFileArray(SWISH *sw, void *DB)
+{
+    return sw->Db->DB_InitWriteTotalWordsPerFileArray(sw, DB);
+}
+
+int    DB_WriteTotalWordsPerFileArray(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB)
+{
+    return sw->Db->DB_WriteTotalWordsPerFileArray(sw, totalWordsPerFile, totalfiles, DB);
+}
+
+int    DB_EndWriteTotalWordsPerFileArray(SWISH *sw, void *DB)
+{
+    return sw->Db->DB_EndWriteTotalWordsPerFileArray(sw, DB);
+}
+
+int	   DB_InitReadTotalWordsPerFileArray(SWISH *sw, void *DB)
+{
+    return sw->Db->DB_InitReadTotalWordsPerFileArray(sw, DB);
+}
+
+int	   DB_ReadTotalWordsPerFileArray(SWISH *sw, int **data, void *DB)
+{
+    return sw->Db->DB_ReadTotalWordsPerFileArray(sw, data, DB);
+}
+
+int    DB_EndReadTotalWordsPerFileArray(SWISH *sw, void *DB)
+{
+    return sw->Db->DB_EndReadTotalWordsPerFileArray(sw, DB);
+}
+
+#endif
+
+int    DB_ReadTotalWordsPerFile(SWISH *sw, int *totalWords, int index, int *value, void *DB)
+{
+    return sw->Db->DB_ReadTotalWordsPerFile(sw, totalWords, index, value , DB);
+}

@@ -195,8 +195,10 @@ void free_header(INDEXDATAHEADER *header)
     if ( header->metaID_to_PropIDX )
         efree( header->metaID_to_PropIDX );
 
+#ifndef USE_BTREE
     if ( header->TotalWordsPerFile )
         efree( header->TotalWordsPerFile );
+#endif
 
 }
 

@@ -261,6 +261,13 @@ int configModule_Search (SWISH *sw, StringList *sl)
 }
 
 
+/* Compare two integers */
+/* This routine is used by qsort */
+int     icomp(const void *s1, const void *s2)
+{
+    return (*(int *) s1 - *(int *) s2);
+}
+
 /* 01/2001 Jose Ruiz */
 /* Compare RESULTS using RANK */
 /* This routine is used by qsort */
@@ -363,7 +370,10 @@ static void limit_result_list( SWISH *sw )
     /* Process each index */
     while ( db_results )
     {
-        rp = db_results->resultlist;
+        if(db_results->resultlist)
+            rp = db_results->resultlist->head;
+        else
+            rp = NULL;
 
         last = NULL;
 
@@ -376,7 +386,7 @@ static void limit_result_list( SWISH *sw )
                 freeresult( sw, rp );
 
                 if ( !last )  /* if first in list */
-                    db_results->resultlist = rtmp;
+                    db_results->resultlist->head = rtmp;
                 else
                     last->next = rtmp;
             }
@@ -557,7 +567,7 @@ int     search_2(SWISH * sw, char *words, int structure)
         if (searchwordlist)
         {
             tmplist2 = searchwordlist;
-            db_results->resultlist = (RESULT *) parseterm(sw, 0, metaID, indexlist, &tmplist2);
+            db_results->resultlist = (RESULT_LIST *) parseterm(sw, 0, metaID, indexlist, &tmplist2);
         }
 
 
@@ -879,13 +889,13 @@ void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 ** parseone tells the function to only operate on one word or term.
 */
 
-RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
+RESULT_LIST *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
 {
     int     rulenum;
     char   *word;
     int     lenword;
-    RESULT *rp,
-           *newrp;
+    RESULT_LIST *l_rp,
+           *new_l_rp;
 
     /*
      * The andLevel is used to help keep the ranking function honest
@@ -905,7 +915,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
     word = NULL;
     lenword = 0;
 
-    rp = NULL;
+    l_rp = NULL;
 
     rulenum = OR_RULE;
     while (*searchwordlist)
@@ -917,8 +927,8 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
         if (isunaryrule(word))
         {
             *searchwordlist = (*searchwordlist)->next;
-            rp = (RESULT *) parseterm(sw, 1, metaID, indexf, searchwordlist);
-            rp = (RESULT *) notresultlist(sw, rp, indexf);
+            l_rp = (RESULT_LIST *) parseterm(sw, 1, metaID, indexf, searchwordlist);
+            l_rp = (RESULT_LIST *) notresultlist(sw, l_rp, indexf);
             /* Wild goose chase */
             rulenum = NO_RULE;
             continue;
@@ -939,16 +949,16 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
         {
 
             *searchwordlist = (*searchwordlist)->next;
-            newrp = (RESULT *) parseterm(sw, 0, metaID, indexf, searchwordlist);
+            new_l_rp = (RESULT_LIST *) parseterm(sw, 0, metaID, indexf, searchwordlist);
 
             if (rulenum == AND_RULE)
-                rp = (RESULT *) andresultlists(sw, rp, newrp, andLevel);
+                l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
             else if (rulenum == OR_RULE)
-                rp = (RESULT *) orresultlists(sw, rp, newrp);
+                l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
             else if (rulenum == PHRASE_RULE)
-                rp = (RESULT *) phraseresultlists(sw, rp, newrp, 1);
+                l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
             else if (rulenum == AND_NOT_RULE)
-                rp = (RESULT *) notresultlists(sw, rp, newrp);
+                l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
 
             if (!*searchwordlist)
                 break;
@@ -995,15 +1005,15 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
             }
             else
                 parseone = 1;
-            newrp = (RESULT *) parseterm(sw, parseone, metaID, indexf, searchwordlist);
+            new_l_rp = (RESULT_LIST *) parseterm(sw, parseone, metaID, indexf, searchwordlist);
             if (rulenum == AND_RULE)
-                rp = (RESULT *) andresultlists(sw, rp, newrp, andLevel);
+                l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
             else if (rulenum == OR_RULE)
-                rp = (RESULT *) orresultlists(sw, rp, newrp);
+                l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
             else if (rulenum == PHRASE_RULE)
-                rp = (RESULT *) phraseresultlists(sw, rp, newrp, 1);
+                l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
             else if (rulenum == AND_NOT_RULE)
-                rp = (RESULT *) notresultlists(sw, rp, newrp);
+                l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
 
             if (!*searchwordlist)
                 break;
@@ -1013,7 +1023,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
             continue;
         }
 
-        rp = (RESULT *) operate(sw, rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
+        l_rp = (RESULT_LIST *) operate(sw, l_rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
 
         if (parseone)
         {
@@ -1027,64 +1037,85 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
 
     if (lenword)
         efree(word);
-    return rp;
+    return l_rp;
 }
 
 /* Looks up a word in the index file -
 ** it calls getfileinfo(), which does the real searching.
 */
 
-RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
+RESULT_LIST *operate(SWISH * sw, RESULT_LIST * l_rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
 {
-/* int i, found; indexchars stuff removed */
-    RESULT *newrp,
-           *returnrp;
+    RESULT_LIST *new_l_rp,
+           *return_l_rp;
     char   *word;
     int     lenword;
 
     word = estrdup(wordin);
     lenword = strlen(word);
 
-    newrp = returnrp = NULL;
+    new_l_rp = return_l_rp = NULL;
 
     if (isstopword(&indexf->header, word) && !isrule(word))
     {
-        if (rulenum == OR_RULE && rp != NULL)
-            return rp;
+        if (rulenum == OR_RULE && l_rp != NULL)
+            return l_rp;
         else
             sw->commonerror = 1;
     }
 
     if (rulenum == AND_RULE)
     {
-        newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
-        returnrp = (RESULT *) andresultlists(sw, rp, newrp, andLevel);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        return_l_rp = (RESULT_LIST *) andresultlists(sw, l_rp, new_l_rp, andLevel);
     }
     else if (rulenum == OR_RULE)
     {
-        newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
-        returnrp = (RESULT *) orresultlists(sw, rp, newrp);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        return_l_rp = (RESULT_LIST *) orresultlists(sw, l_rp, new_l_rp);
     }
     else if (rulenum == NOT_RULE)
     {
-        newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
-        returnrp = (RESULT *) notresultlist(sw, newrp, indexf);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        return_l_rp = (RESULT_LIST *) notresultlist(sw, new_l_rp, indexf);
     }
     else if (rulenum == PHRASE_RULE)
     {
-        newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
-        returnrp = (RESULT *) phraseresultlists(sw, rp, newrp, 1);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        return_l_rp = (RESULT_LIST *) phraseresultlists(sw, l_rp, new_l_rp, 1);
     }
     else if (rulenum == AND_NOT_RULE)
     {
-        newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
-        returnrp = (RESULT *) notresultlists(sw, rp, newrp);
+        new_l_rp = (RESULT_LIST *) getfileinfo(sw, word, indexf, metaID);
+        return_l_rp = (RESULT_LIST *) notresultlists(sw, l_rp, new_l_rp);
     }
     efree(word);
-    return returnrp;
+    return return_l_rp;
 }
 
 
+static RESULT_LIST *newResultsList(SWISH *sw)
+{
+    RESULT_LIST *l = (RESULT_LIST *)Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT_LIST));
+    l->head = l->tail = NULL;
+    l->sw = (struct SWISH *)sw;
+
+    return l;
+}
+
+void addResultToList(RESULT_LIST *l_r, RESULT *r)
+{
+    r->next = NULL;
+
+    r->reslist = l_r;
+
+    if(!l_r->head)
+        l_r->head = r;
+    if(l_r->tail)
+        l_r->tail->next = r;
+    l_r->tail = r;
+
+}
 
 
 
@@ -1096,7 +1127,7 @@ RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, in
 ** Also solves stars. Faster!! It can even found "and", "or"
 ** when looking for "an*" or "o*" if they are not stop words
 */
-RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
+RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 {
     int     j,
             x,
@@ -1109,8 +1140,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             index_structure,
             index_structfreq,
             tmpval;
-    RESULT *rp,
-           *rp2;
+    RESULT_LIST *l_rp, *l_rp2;
     long    wordID;
     unsigned long  nextposmetaname;
     char   *p;
@@ -1124,7 +1154,7 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     nextposmetaname = 0L;
 
 
-    rp = rp2 = NULL;
+    l_rp = l_rp2 = NULL;
     /* First: Look for star at the end of the word */
     if ((p = strrchr(word, '*')))
     {
@@ -1216,11 +1246,13 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
 
                     /* Store -1 in rank - This way delay its computation */
                     /* This is very useful if we sorted by other property */
-                rp = (RESULT *) addtoresultlist(
-                    rp, filenum,
+                if(!l_rp)
+                    l_rp = newResultsList(sw);
+                addtoresultlist(
+                    l_rp, filenum,
                     -1,
                     structure, tfrequency, frequency, indexf, sw);
-                uncompress_location_positions(&s,flag,frequency,rp->head->position);
+                uncompress_location_positions(&s,flag,frequency,l_rp->tail->position);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1245,10 +1277,10 @@ RESULT *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     {
         /* Finally, if we are in an sequential search
            merge all results */
-        rp = mergeresulthashlist(sw, rp);
+        l_rp = mergeresulthashlist(sw, l_rp);
     }
     DB_EndReadWords(sw, indexf->DB);
-    return rp;
+    return l_rp;
 }
 
 
@@ -1363,13 +1395,12 @@ int     u_SelectDefaultRulenum(SWISH * sw, char *word)
 
 
 
-static void  make_db_res_and_free(SWISH *sw,RESULT *res) {
+static void  make_db_res_and_free(SWISH *sw,RESULT_LIST *l_res) {
    struct DB_RESULTS tmp;
    memset (&tmp,0,sizeof(struct DB_RESULTS));
-   tmp.resultlist = res;
+   tmp.resultlist = l_res;
    freeresultlist(sw,&tmp);
 }
-
 
 
 
@@ -1378,24 +1409,25 @@ static void  make_db_res_and_free(SWISH *sw,RESULT *res) {
 ** On output, the new result list remains sorted
 */
 
-RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
+RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel)
 {
-    RESULT *newnode;
+    RESULT_LIST *new_results_list = NULL;
+    RESULT *r1;
+    RESULT *r2;
     int     res = 0;
 
     /* patch provided by Mukund Srinivasan */
-    if (r1 == NULL || r2 == NULL)
+    if (l_r1 == NULL || l_r2 == NULL)
     {
-        make_db_res_and_free(sw,r1);
-        make_db_res_and_free(sw,r2);
+        make_db_res_and_free(sw,l_r1);
+        make_db_res_and_free(sw,l_r2);
         return NULL;
     }
 
-    newnode = NULL;
     if (andLevel < 1)
         andLevel = 1;
 
-    for (; r1 && r2;)
+    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
     {
         res = r1->filenum - r2->filenum;
         if (!res)
@@ -1421,11 +1453,12 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
                * in the future
              */
 
-            newnode =
-                (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, 
-                                           r1->indexf, sw);
-            CopyPositions(newnode->head->position, 0, r1->position, 0, r1->frequency);
-            CopyPositions(newnode->head->position, r1->frequency, r2->position, 0, r2->frequency);
+            if(!new_results_list)
+                new_results_list = newResultsList(sw);
+
+            addtoresultlist(new_results_list, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, r1->indexf, sw);
+            CopyPositions(new_results_list->tail->position, 0, r1->position, 0, r1->frequency);
+            CopyPositions(new_results_list->tail->position, r1->frequency, r2->position, 0, r2->frequency);
             r1 = r1->next;
             r2 = r2->next;
         }
@@ -1439,7 +1472,7 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
         }
     }
 
-    return newnode;
+    return new_results_list;
 }
 
 /* Takes two lists of results from searches and ORs them together.
@@ -1451,18 +1484,23 @@ RESULT *andresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int andLevel)
 */
 
 
-RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
+RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 {
     int     rc;
+    RESULT *r1;
+    RESULT *r2;
     RESULT *rp,
            *tmp;
-    RESULT *newnode = NULL;
+    RESULT_LIST *new_results_list = NULL;
 
 
-    if (r1 == NULL)
-        return r2;
-    else if (r2 == NULL)
-        return r1;
+    if (l_r1 == NULL)
+        return l_r2;
+    else if (l_r2 == NULL)
+        return l_r1;
+
+    r1 = l_r1->head;
+    r2 = l_r2->head;
 
     while(r1 && r2)
     {
@@ -1495,7 +1533,6 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
             rp->indexf = r1->indexf;
-            rp->sw = (struct SWISH *) r1->sw;
 
             if (r1->frequency)
             {
@@ -1509,12 +1546,9 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
             r1 = r1->next;
             r2 = r2->next;
         }
-        rp->next = NULL;
-        if(newnode == NULL)
-            newnode = rp;
-        else
-            newnode->head->next = rp;
-        newnode->head = rp;
+        if(!new_results_list)
+            new_results_list = newResultsList(sw);
+        addResultToList(new_results_list,rp);
     }
     /* Add the remaining results */
     tmp = NULL;
@@ -1530,15 +1564,12 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     {
         rp = tmp;
         tmp = tmp->next;
-        rp->next = NULL;
-        if(newnode == NULL)
-            newnode = rp;
-        else
-            newnode->head->next = rp;
-        newnode->head = rp;
+        if(!new_results_list)
+            new_results_list = newResultsList(sw);
+        addResultToList(new_results_list,rp);
     }
 
-    return newnode;
+    return new_results_list;
 }
 
 
@@ -1619,14 +1650,19 @@ void    freemarkentrylist(struct markentry **markentrylist)
 ** marked (GH)
 */
 
-RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
+RESULT_LIST *notresultlist(SWISH * sw, RESULT_LIST * l_rp, IndexFILE * indexf)
 {
     int     i,
             filenums;
-    RESULT *newp;
+    RESULT *rp;
+    RESULT_LIST *new_results_list = NULL;
     struct markentry *markentrylist[BIGHASHSIZE];
 
-    newp = NULL;
+    if(!l_rp)
+        rp = NULL;
+    else
+        rp = l_rp->head;
+
     initmarkentrylist(markentrylist);
     while (rp != NULL)
     {
@@ -1638,16 +1674,19 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
 
     for (i = 1; i <= filenums; i++)
     {
-
         if (!ismarked(markentrylist, i))
-            newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, 0, indexf, sw);
+        {
+            if(!new_results_list)
+                new_results_list = newResultsList(sw);
+            addtoresultlist(new_results_list, i, 1000, IN_ALL, 0, 0, indexf, sw);
+        }
     }
 
     freemarkentrylist(markentrylist);
 
-    newp = sortresultsbyfilenum(newp);
+    new_results_list = sortresultsbyfilenum(new_results_list);
 
-    return newp;
+    return new_results_list;
 }
 
 /* Phrase result routine - see distance parameter. For phrase search this
@@ -1656,22 +1695,21 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
 ** On input, both result lists r1 abd r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
+RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
 {
-    RESULT *newnode;
     int     i,
             j,
             found,
             newRank,
            *allpositions;
     int     res = 0;
+    RESULT_LIST *new_results_list = NULL;
+    RESULT *r1, *r2;
 
-    if (r1 == NULL || r2 == NULL)
+    if (l_r1 == NULL || l_r2 == NULL)
         return NULL;
 
-    newnode = NULL;
-
-    while (r1 && r2)
+    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
     {
         res = r1->filenum - r2->filenum;
         if (!res)
@@ -1698,7 +1736,7 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
             }
             if (found)
             {
-                /* To do: Compute newrank */
+                /* Compute newrank */
                 if(r1->rank == -1)
                     r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
                 if(r2->rank == -1)
@@ -1709,10 +1747,12 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
                    * Storing positions is neccesary for further
                    * operations 
                  */
-                newnode =
-                    (RESULT *) addtoresultlist(newnode, r1->filenum, newRank, r1->structure & r2->structure, 0, found, r1->indexf, sw);
+                if(!new_results_list)
+                    new_results_list = newResultsList(sw);
+                
+                addtoresultlist(new_results_list, r1->filenum, newRank, r1->structure & r2->structure, 0, found, r1->indexf, sw);
 
-                CopyPositions(newnode->head->position, 0, allpositions, 0, found);
+                CopyPositions(new_results_list->tail->position, 0, allpositions, 0, found);
                 efree(allpositions);
             }
             r1 = r1->next;
@@ -1729,14 +1769,14 @@ RESULT *phraseresultlists(SWISH * sw, RESULT * r1, RESULT * r2, int distance)
 
     }
 
-    return newnode;
+    return new_results_list;
 }
 
 /* Adds a file number and rank to a list of results.
 */
 
 
-RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
+void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int structure, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
 
@@ -1750,16 +1790,8 @@ RESULT *addtoresultlist(RESULT * rp, int filenum, int rank, int structure, int t
     newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
     newnode->indexf = indexf;
-    newnode->sw = (struct SWISH *) sw;
 
-    if (rp == NULL)
-        rp = newnode;
-    else
-        rp->head->next = newnode;
-
-    rp->head = newnode;
-
-    return rp;
+    addResultToList(l_rp, newnode);
 }
 
 
@@ -1786,7 +1818,7 @@ RESULT *SwishNext(SWISH * sw)
         if ((res = sw->Search->db_results->currentresult))
         {
             /* Increase Pointer */
-            sw->Search->db_results->currentresult = res->nextsort;
+            sw->Search->db_results->currentresult = res->next;
             /* If rank was delayed, compute it now */
             if(res->rank == -1)
                 res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
@@ -1808,7 +1840,7 @@ RESULT *SwishNext(SWISH * sw)
             if(res->rank == -1)
                 res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
 
-            res->PropSort = getResultSortProperties(res);
+            res->PropSort = getResultSortProperties(sw, res);
         }
 
 
@@ -1822,7 +1854,7 @@ RESULT *SwishNext(SWISH * sw)
                 if(res2->rank == -1)
                    res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->structure, res2->indexf, res2->filenum );
 
-                res2->PropSort = getResultSortProperties(res2);
+                res2->PropSort = getResultSortProperties(sw, res2);
             }
 
             if (!res)
@@ -1841,7 +1873,7 @@ RESULT *SwishNext(SWISH * sw)
         }
 
         if ((res = db_results_winner->currentresult))
-            db_results_winner->currentresult = res->nextsort;
+            db_results_winner->currentresult = res->next;
     }
 
 
@@ -1887,7 +1919,10 @@ void    freeresultlist(SWISH * sw, struct DB_RESULTS *dbres)
     RESULT *rp;
     RESULT *tmp;
 
-    rp = dbres->resultlist;
+    if(dbres->resultlist)
+        rp = dbres->resultlist->head;
+    else
+        rp = NULL;
     while (rp)
     {
         tmp = rp->next;
@@ -1939,43 +1974,47 @@ void    freeresult(SWISH * sw, RESULT * rp)
 Uses an array and qsort for better performance
 Used for faster "and" and "phrase" of results
 */
-RESULT *sortresultsbyfilenum(RESULT * rp)
+RESULT_LIST *sortresultsbyfilenum(RESULT_LIST * l_rp)
 {
     int     i,
             j;
     RESULT **ptmp;
-    RESULT *rtmp;
+    RESULT *rp;
 
     /* Very trivial case */
-    if (!rp)
+    if (!l_rp)
         return NULL;
+
+
     /* Compute results */
-    for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next, i++);
+    for (i = 0, rp = l_rp->head; rp; rp = rp->next, i++);
     /* Another very trivial case */
     if (i == 1)
-        return rp;
+        return l_rp;
     /* Compute array size */
     ptmp = (void *) emalloc(i * sizeof(RESULT *));
     /* Build an array with the elements to compare
        and pointers to data */
-    for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-        ptmp[j++] = rtmp;
+    for (j = 0, rp = l_rp->head; rp; rp = rp->next)
+        ptmp[j++] = rp;
     /* Sort them */
     swish_qsort(ptmp, i, sizeof(RESULT *), &compResultsByFileNum);
     /* Build the list */
     for (j = 0, rp = NULL; j < i; j++)
     {
         if (!rp)
-            rp = ptmp[j];
+            l_rp->head = ptmp[j];
         else
-            rtmp->next = ptmp[j];
-        rtmp = ptmp[j];
-
+            rp->next = ptmp[j];
+        rp = ptmp[j];
     }
-    rtmp->next = NULL;
+    rp->next = NULL;
+    l_rp->tail = rp;
+
     /* Free the memory of the array */
     efree(ptmp);
-    return rp;
+
+    return l_rp;
 }
 
 
@@ -1985,19 +2024,18 @@ RESULT *sortresultsbyfilenum(RESULT * rp)
 ** On input, both result lists r1 and r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
+RESULT_LIST *notresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 {
-    RESULT *newnode, *rp;
+    RESULT *rp, *r1, *r2;
+    RESULT_LIST *new_results_list = NULL;
     int     res = 0;
 
-    if (!r1)
+    if (!l_r1)
         return NULL;
-    if (r1 && !r2)
-        return r1;
+    if (l_r1 && !l_r2)
+        return l_r1;
 
-    newnode = NULL;
-
-    for (; r1 && r2;)
+    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
     {
         res = r1->filenum - r2->filenum;
         if (res < 0)
@@ -2009,12 +2047,9 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
 
             rp = r1;
             r1 = r1->next;
-            rp->next = NULL;
-            if(newnode == NULL)
-                newnode = rp;
-            else
-                newnode->head->next = rp;
-            newnode->head = rp;
+            if(!new_results_list)
+                new_results_list = newResultsList(sw);
+            addResultToList(new_results_list,rp);
         }
         else if (res > 0)
         {
@@ -2031,15 +2066,12 @@ RESULT *notresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     {
         rp = r1;
         r1 = r1->next;
-        rp->next = NULL;
-        if(newnode == NULL)
-            newnode = rp;
-        else
-            newnode->head->next = rp;
-        newnode->head = rp;
+        if(!new_results_list)
+            new_results_list = newResultsList(sw);
+        addResultToList(new_results_list,rp);
     }
 
-    return newnode;
+    return new_results_list;
 }
 
 
@@ -2237,36 +2269,42 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
 
 
 
-
-
-
 /* Adds a file number to a hash table of results.
 ** If the entry's alrady there, add the ranks,
 ** else make a new entry.
-*/
-/* Jose Ruiz 04/00
+**
+** Jose Ruiz 04/00
 ** For better performance in large "or"
 ** keep the lists sorted by filenum
+**
+** Jose Ruiz 2001/11 Rewritten to get better performance
 */
-RESULT *mergeresulthashlist(SWISH *sw, RESULT *r)
+RESULT_LIST *mergeresulthashlist(SWISH *sw, RESULT_LIST *l_r)
 {
     unsigned hashval;
-    RESULT *rp,
+    RESULT *r,
+           *rp,
            *tmp,
            *next,
            *start,
-           *tot_results = NULL,
            *newnode = NULL;
+    RESULT_LIST *new_results_list = NULL;
     int    i,
            tot_frequency,
            pos_off,
            filenum;
 
+    if(!l_r)
+        return NULL;
+
+    if(!l_r->head)
+        return NULL;
+
     /* Init hash table */
     for (i = 0; i < BIGHASHSIZE; i++)
         sw->Search->resulthashlist[i] = NULL;
 
-    for(next = NULL; r; r =next)
+    for(r = l_r->head, next = NULL; r; r =next)
     {
         next = r->next;
 
@@ -2319,7 +2357,6 @@ RESULT *mergeresulthashlist(SWISH *sw, RESULT *r)
                     newnode->tfrequency = 0;
                     newnode->frequency = tot_frequency;
                     newnode->indexf = start->indexf;
-                    newnode->sw = (struct SWISH *) start->sw;
 
                     for(tmp = start, pos_off = 0; tmp!=rp; tmp = tmp->next)
                     {
@@ -2336,15 +2373,14 @@ RESULT *mergeresulthashlist(SWISH *sw, RESULT *r)
                         }
 
                     }
-                    /* Add at the end of total_results */
-                    newnode->next = NULL;
-                    if(!tot_results)
-                        tot_results = newnode;
-                    else
-                        tot_results->head->next = newnode;
-                    tot_results->head = newnode;
-
-
+                    /* Add at the end of new_results_list */
+                    if(!new_results_list)
+                    {
+                        new_results_list = newResultsList(sw);
+                    }
+                    addResultToList(new_results_list,newnode);
+                    /* Sort positions */
+                    swish_qsort(newnode->position,newnode->frequency,sizeof(int),&icomp);
                 }
                 if(rp)
                     filenum = rp->filenum;
@@ -2355,6 +2391,7 @@ RESULT *mergeresulthashlist(SWISH *sw, RESULT *r)
             rp = next;
         }
     }
-    return sortresultsbyfilenum(tot_results);
+            /* Sort results by filenum  and return */
+    return sortresultsbyfilenum(new_results_list);
 }
 

@@ -209,7 +209,9 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
 #define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
 
+#ifndef USE_BTREE
 #define TOTALWORDSPERFILE_ID (BASEHEADER + 30)  /* total words per file array */
+#endif
 
 /* -- end of headers */
 
@@ -530,11 +532,19 @@ typedef struct IndexFILE
 }
 IndexFILE;
 
+
+typedef struct RESULT_LIST
+{
+    struct RESULT *head;
+    struct RESULT *tail;
+    struct SWISH  *sw;
+}
+RESULT_LIST;
+
 typedef struct RESULT
 {
     struct RESULT *next;
-    struct RESULT *head;
-    struct RESULT *nextsort;    /* Used while sorting results */
+
     int     count;              /* result Entry-Counter */
     int     filenum;            /* there's an extra four bytes we don't need */
     FileRec fi;                 /* This is used to cache the properties and the seek index */
@@ -547,7 +557,8 @@ typedef struct RESULT
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
-    struct SWISH *sw;           /* why is this needed? */
+
+    RESULT_LIST *reslist;
 
     int     position[0];
 }
@@ -713,7 +724,7 @@ struct DB_RESULTS
 {
     struct DB_RESULTS *next;
     /* Values for handling results */
-    RESULT *resultlist;
+    RESULT_LIST *resultlist;
     RESULT *sortresultlist;
     RESULT *currentresult;
 };
