@@ -9,4 +9,4 @@ Testing:
 $ @BUILD_SWISH-E test
 
 
-Port made by Piéronne Jean-François (jfp@altavista.net)
+Port made by Piéronne Jean-François (jf.pieronne@laposte.net)

@@ -131,6 +131,7 @@ void freefileinfo(FileRec *fi)
 *
 *   Returns:
 *       malloc's a new string.  Caller must call free().
+*       if passed in prop is null then returns empty string.
 *
 *
 ********************************************************************/
@@ -139,8 +140,16 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 {
     char *s;
     unsigned long i;
+
+    if ( !meta_entry )
+        progerr("DecodeDocProperty passed NULL meta_entry");
+        
+
+    if ( !prop )
+        return estrdup("");
+        
     
-    if  ( is_meta_string(meta_entry) )      /* check for ascii/string data */
+    if ( is_meta_string(meta_entry) )      /* check for ascii/string data */
         return (char *)bin2string(prop->propValue,prop->propLen);
 
 

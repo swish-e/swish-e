@@ -577,6 +577,11 @@ typedef struct IndexFILE
 }
 IndexFILE;
 
+/* Search Results */
+
+
+
+
 
 typedef struct RESULT_LIST
 {
@@ -608,6 +613,20 @@ typedef struct RESULT
     int     posdata[1];
 }
 RESULT;
+
+/* Structure to hold all results per index */
+struct DB_RESULTS
+{
+    struct DB_RESULTS   *next;
+
+    IndexFILE   *indexf;           /* parent object */
+    RESULT_LIST *resultlist;       /* pointer to list of results (indirectly) */
+    RESULT      *sortresultlist;   /* linked list of RESULT  in sort order */
+    RESULT      *currentresult;    /* pointer to the current seek position */
+    struct swline *parsed_words;   /* parsed search query */
+    struct swline *removed_stopwords; /* stopwords that were removed from the query */
+};
+
 
 struct multiswline
 {
@@ -764,15 +783,6 @@ PropValue;
 
 
 
-/* Structure to hold all results per index */
-struct DB_RESULTS
-{
-    struct DB_RESULTS *next;
-    /* Values for handling results */
-    RESULT_LIST *resultlist;
-    RESULT *sortresultlist;
-    RESULT *currentresult;
-};
 
 #define MAX_ERROR_STRING_LEN 500
 
