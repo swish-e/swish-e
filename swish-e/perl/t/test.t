@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 125;
+my $lastcase = 145;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -73,6 +73,26 @@ my $mem_test = 0;
             stem_it($result,"sugar");
             stem_it($result,"");
             stem_it($result,"1234");
+
+
+            # fetch the related metanames and properties
+
+            my @metas = $result->MetaList;
+            for my $meta ( @metas ) {
+                my $name = $meta->Name;
+                my $type = $meta->Type;
+                my $id   = $meta->ID;
+                is_ok("Meta: $name  type=$type  id=$id", $name );
+            }
+            my @props = $result->PropertyList;
+            for my $meta ( @props ) {
+                my $name = $meta->Name;
+                my $type = $meta->Type;
+                my $id   = $meta->ID;
+                is_ok("Prop: $name  type=$type  id=$id", $name );
+            }
+
+
         }
 
     }

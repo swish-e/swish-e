@@ -210,7 +210,6 @@ New_Search_Object(swish_handle, query = NULL)
     OUTPUT:
         RETVAL
 
-
 # Returns a SW_RESULTS object
 
 void
@@ -259,7 +258,7 @@ SwishMetaList( swish_handle, index_name )
 
         /* Make sure a list is returned and it's not empty */
         if ( !meta_list || !*meta_list )
-            XSRETURN_UNDEF;
+            XSRETURN_EMPTY;
 
 
         while ( *meta_list )
@@ -298,7 +297,7 @@ SwishPropertyList( swish_handle, index_name )
 
         /* Make sure a list is returned and it's not empty */
         if ( !meta_list || !*meta_list )
-            XSRETURN_UNDEF;
+            XSRETURN_EMPTY;
 
 
         while ( *meta_list )
@@ -685,6 +684,69 @@ SwishFuzzyWord(result, word)
 const char*
 SwishFuzzyMode(result)
     SW_RESULT result
+
+
+
+MODULE = SWISH::API        PACKAGE = SWISH::API::Result    PREFIX = SwishResult
+
+void
+SwishResultMetaList(result)
+    SW_RESULT result
+
+    PREINIT:
+        char * CLASS = "SWISH::API::MetaName";
+        SWISH_META_LIST meta_list;
+
+    PPCODE:
+        meta_list = SwishResultMetaList( result );
+
+        /* Make sure a list is returned and it's not empty */
+        if ( !meta_list || !*meta_list )
+            XSRETURN_EMPTY;
+
+
+        while ( *meta_list )
+        {
+            /* Create a new object */
+            SV *meta = sv_newmortal();
+            sv_setref_pv( meta, CLASS, (void *)*meta_list );
+
+            /* and push onto list */
+            XPUSHs( meta );
+            meta_list++;
+
+            /* $$$ Need to bump the handle ref count here */
+        }
+
+void
+SwishResultPropertyList(result)
+    SW_RESULT result
+
+    PREINIT:
+         char * CLASS = "SWISH::API::MetaName";
+         SWISH_META_LIST meta_list;
+
+    PPCODE:
+        meta_list = SwishResultPropertyList( result );
+
+        /* Make sure a list is returned and it's not empty */
+        if ( !meta_list || !*meta_list )
+            XSRETURN_EMPTY;
+
+
+        while ( *meta_list )
+        {
+            /* Create a new object */
+            SV *meta = sv_newmortal();
+            sv_setref_pv( meta, CLASS, (void *)*meta_list );
+
+            /* and push onto list */
+            XPUSHs( meta );
+            meta_list++;
+
+            /* $$$ Need to bump the handle ref count here */
+        }
+
 
 
 
