@@ -443,12 +443,15 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
 
 	MemPtr =  Mem_Alloc(Size, file, line);
 
-	Header = (MemHeader *)Address - 1;
-	OldSize = Header->Size;
+    if (Address)
+    {
+    	Header = (MemHeader *)Address - 1;
+	    OldSize = Header->Size;
 
-	memcpy(MemPtr, Address, (OldSize < Size ? OldSize : Size));
+	    memcpy(MemPtr, Address, (OldSize < Size ? OldSize : Size));
 
-	Mem_Free(Address, file, line);
+	    Mem_Free(Address, file, line);
+	}
 
 //	printf("Realloc: %s line %d: Addr: %08X Size: %u to %u\n", file, line, Address, OldSize, Size);
 
