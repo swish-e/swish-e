@@ -115,7 +115,7 @@ char *q,*shorttitle,*title;
 		return shorttitle;
 	}
 
-	if((title=parsetag("title", buffer, TITLETOPLINES)))
+	if((title=parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
 	{
 		efree(shorttitle);
 		return title;
@@ -804,19 +804,29 @@ int wordcount=0; /* Word count */
 char *parseHtmlSummary(char *buffer,char *field,int size)
 {
 char *p,*q,*tag,*endtag,c;
-char *summary,*convsummary,*beginsum,*endsum,*tmp,*tmp2;
+char *summary,*convsummary,*beginsum,*endsum,*tmp,*tmp2,*tmp3;
 int found,lensummary;
 		/* Get the summary if no metaname/field is given */
 	if(!field && size)
 	{
-		tmp=estrdup(buffer);
+		/* Jump title if it exists */
+		if((p=lstrstr(buffer,"</title>")))
+		{
+			p+=8;
+		} else p=buffer;
+		/* Let us try to find <body> */
+		if((q=lstrstr(p,"<body>")))
+		{
+			q+=6;
+		} else q=p;
+		tmp=estrdup(p);
 		remove_newlines(tmp);
 		remove_tags(tmp);
 		convsummary=convertentities(tmp);
 		if(convsummary!=tmp) efree(tmp); 
 		tmp=convsummary;
 
-		/* use only the rquired memory -save those not used */
+		/* use only the required memory -save those not used */
 		summary=estrdup(tmp);
 		efree(tmp);
 		return summary;
@@ -863,18 +873,19 @@ int found,lensummary;
 				} /* Check for META TAG TYPE 2 */
 				else if((tag[0]!='!') && lstrstr(tag,"META") && (tmp=lstrstr(tag,"NAME")) && (tmp2=lstrstr(tag,"CONTENT"))) { 
 					tmp+=4;
-					if(lstrstr(tmp,field)<tmp2)
+					tmp3=lstrstr(tmp,field);
+					if(tmp3 && tmp3<tmp2)
 					{
-						tmp2+=6;
+						tmp2+=7;
 						if((tmp=strchr(tmp2,'=')))
 						{
 							for(++tmp;isspace((int)((unsigned char)*tmp));tmp++);
-							if((tmp2=strchr(tmp,'\"'))) 
+							if(*tmp=='\"')
 							{
-								beginsum=tmp2+1;
-								for(tmp2=endtag-1;tmp2>beginsum;tmp2--) if(*tmp2=='\"') break;
-								if(tmp2==beginsum) endsum=endtag-1;
-								else endsum=tmp2;
+								beginsum=tmp+1;
+								for(tmp=endtag-1;tmp>beginsum;tmp--) if(*tmp=='\"') break;
+								if(tmp==beginsum) endsum=endtag-1;
+								else endsum=tmp;
 							}
 							else 
 							{
@@ -905,13 +916,39 @@ int found,lensummary;
 		summary=emalloc(lensummary+1);
 		memcpy(summary,beginsum,lensummary);
 		summary[lensummary]='\0';
-		remove_newlines(summary);
-		convsummary=convertentities(summary);
-		if(convsummary!=summary)
-			efree(summary);
-		summary=convsummary;
 	}
-	remove_tags(summary);
+		/* If field is set an no metaname is found, let us search */
+		/* for something like <field>bla bla </field> */
+	if(!summary && field)
+        {
+                summary=parsetag(field, buffer, 0,CASE_SENSITIVE_OFF);
+	}
+		/* Finally check for something after title (if exists) and */
+		/* after <body> (if exists) */
+	if(!summary)
+	{
+		/* Jump title if it exists */
+		if((p=lstrstr(buffer,"</title>")))
+		{
+			p+=8;
+		} else p=buffer;
+		/* Let us try to find <body> */
+		if((q=lstrstr(p,"<body>")))
+		{
+			q+=6;
+		} else q=p;
+		summary=estrdup(q);
+	}
+	if(summary)
+	{
+		remove_newlines(summary);
+		remove_tags(summary);
+		convsummary=convertentities(summary);
+		if(convsummary!=summary) efree(summary);
+		summary=convsummary;
+        }
+        if(summary && size && strlen(summary)>size) 
+                summary[size]='\0';
 	return summary;
 }
 
