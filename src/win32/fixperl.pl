@@ -1,16 +1,22 @@
 use File::Find;
 use File::Basename;
+use Win32::Registry;
 
-# we only want one directory
-my $instdir = shift;
+# grab the install dir from registry
+my ($regkey, $type, $instdir);
+$::HKEY_LOCAL_MACHINE->Open("SOFTWARE\\SWISH-E Team\\SWISH-E", $regkey)
+    or die "Can't open SWISH-E registry key: $^E";
+$regkey->QueryValueEx("", $type, $instdir) or die "No SWISH-E install directory! $^E \n";
+print "SWISH-E installed to $instdir\n";
 
 # recurse like the wind
 find( {wanted => \&wanted }, $instdir );
 
-
+# process found files
 sub wanted{ 
     # banish errors to the Land of Wind and Ghosts
-    return if -d;                                                                   return if !-r;
+    return if -d;
+    return if !-r;
 
     # we only want .in files
     if ( /\.in$/ ) {
@@ -21,7 +27,7 @@ sub wanted{
         @line = <INF>;
         open ( OUTF, ">$basename") or return;
 
-		# libexecdir is always $instdir\\lib\\swish-e on Win32
+        # libexecdir is always $instdir\\lib\\swish-e on Win32
         foreach (@line) {
             $_ =~ s/\@\@perlmoduledir\@\@/$instdir\\lib\\swish-e/g;
             print OUTF "$_";
