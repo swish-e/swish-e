@@ -1760,7 +1760,7 @@ sub htmlify {
   $heading =~ s/(\s+)/ /g;
   $heading =~ s/^\s*(.*?)\s*$/$1/s;
   $heading =~ s/ /_/g;
-  $heading =~ s/\A(.{32}).*\Z/$1/s;
+  #$heading =~ s/\A(.{32}).*\Z/$1/s;
   $heading =~ s/\s+\Z//;
   $heading =~ s/_{2,}/_/g;
 
