@@ -259,7 +259,7 @@ sub purge_old_tarballs {
 
 
     for ( @deletes ) {
-        print unlink $_ 
+        print unlink( $_ )
                 ? "Deleted old tar file '$_'\n"
                 : "Failed to delete old tar '$_': $!\n";
     }
