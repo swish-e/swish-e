@@ -129,8 +129,12 @@ src/entities.h
 src/error.c
 src/error.h
 src/expat/COPYING
+src/expat/expat.dsw
+src/expat/gennmtab/gennmtab.c
+src/expat/gennmtab/gennmtab.dsp
 src/expat/xmlparse/xmlparse.c
 src/expat/xmlparse/xmlparse.h
+src/expat/xmlparse/xmlparse.dsp
 src/expat/xmltok/ascii.h
 src/expat/xmltok/asciitab.h
 src/expat/xmltok/iasciitab.h
@@ -145,6 +149,10 @@ src/expat/xmltok/xmltok.h
 src/expat/xmltok/xmltok_impl.c
 src/expat/xmltok/xmltok_impl.h
 src/expat/xmltok/xmltok_ns.c
+src/expat/xmltok/dllmain.c
+src/expat/xmltok/xmltok.dsp
+src/expat/lib/xmlparse.lib
+src/expat/lib/xmltok.lib
 src/extprog.c
 src/extprog.h
 src/file.c
