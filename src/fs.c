@@ -648,9 +648,14 @@ static void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
     if (e)
     {
         /* 2001-08 sorting of filenames moved here - Do we really
-        ** need to sort them? */
+        ** need to sort them?  - Adjust it in config.h */
         if(e->currentsize)
-            swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+        {
+            if(SORT_FILENAMES)
+            {
+                swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+            }
+        }
 
         for (i = 0; i < e->currentsize; i++)
             printfile(sw, e->filenames[i]);
@@ -673,9 +678,14 @@ void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
     if (e)
     {
         /* 2001-08 sorting of dirs moved here - Do we really
-        ** need to sort them? */
+        ** need to sort them? - Adjust it in config.h */
         if(e->currentsize)
-            swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+        {
+            if(SORT_FILENAMES)
+            {
+                swish_qsort(e->filenames, e->currentsize, sizeof(char *), compfilenames);
+            }
+        }
 
         for (i = 0; i < e->currentsize; i++)
         {

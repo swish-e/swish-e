@@ -291,13 +291,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
                         printf(")]");
 
-
-                    if(!s[0])       /* End of chunk mark */
-                    {
-                        filenum = 0;  /* reset filenum */
-                        s++;
-                    }
-
                     if ((s - worddata) == sz_worddata)
                         break;   /* End of worddata */
 
