@@ -415,6 +415,16 @@ static void start_hndl(void *data, const char *el, const char **attr)
     if ( !is_html_tag )
         start_metaTag( parse_data, tag );
 
+
+    /* Look to enable StoreDescription - allow any tag */
+    /* Don't need to flush since this has it's own buffer */
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+
+        if ( summary->tag && (strcmp( tag, summary->tag ) == 0 ))
+            summary->active++;
+    }
+
 }
 
                 
@@ -474,6 +484,14 @@ static void end_hndl(void *data, const char *el)
     
     if ( !is_html_tag )
         end_metaTag( parse_data, tag );
+
+    /* Look to disable StoreDescription */
+    {
+        SUMMARY_INFO    *summary = &parse_data->summary;
+        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
+            summary->active--;
+    }
+
 }    
 
 
@@ -571,15 +589,6 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
         m->in_tag++;
     }
 
-
-    /* Look to enable StoreDescription - allow any tag */
-    /* Don't need to flush since this has it's own buffer */
-    {
-        SUMMARY_INFO    *summary = &parse_data->summary;
-
-        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
-            summary->active++;
-    }
 }    
 
 
@@ -592,7 +601,6 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 {
     struct metaEntry *m = NULL;
     
-
 
     /* Don't allow matching across tag boundry */
     if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
@@ -619,14 +627,6 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
             flush_buffer( parse_data, 1 );
             m->in_tag--;
         }
-
-
-    /* Look to disable StoreDescription */
-    {
-        SUMMARY_INFO    *summary = &parse_data->summary;
-        if ( summary->tag && (strcasecmp( tag, summary->tag ) == 0 ))
-            summary->active--;
-    }
 
 }
 
