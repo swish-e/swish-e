@@ -594,14 +594,14 @@ int *position;
 ** looking at all word's positions for each automatic stop word
 ** and decrement its position
 */
-int removestops(sw, ep, totalfiles)
+int removestops(sw, totalfiles)
 SWISH *sw;
-ENTRYARRAY *ep;
 int totalfiles;
 {
 int i, j, k, l, m, n, percent, stopwords, stoppos, res;
 LOCATION *lp, *lpstop;
 ENTRY *e;
+ENTRY *ep,*ep2;
 ENTRY **estop=NULL;
 int estopsz=0, estopmsz=0;
 int hashval;
@@ -633,30 +633,33 @@ IndexFILE *indexf=sw->indexlist;
 		estop=(ENTRY **)emalloc(estopmsz*sizeof(ENTRY *));
 	}
 		/* this is the easy part: Remove the automatic stopwords from
-		** the array */
-	for(i=0; i<totalwords; ) 
+		** the hash array */
+        for(i=0;i<SEARCHHASHSIZE;i++)
 	{
-		percent = (ep->elist[i]->tfrequency * 100 )/ totalfiles;
-		if (percent >= sw->plimit && ep->elist[i]->tfrequency >= sw->flimit) {
-			addStopList(indexf,ep->elist[i]->word);
-			addstophash(indexf,ep->elist[i]->word);
-			stopwords++;
-			e = ep->elist[i];
-				/* Remove entry from array */
-			/* for(j=i+1;j<totalwords;j++) ep->elist[j-1]=ep->elist[j]; */
-			/* faster!! */
-			memcpy(ep->elist+i,ep->elist+i+1,(totalwords-i-1)*sizeof(ENTRY *));
-			totalwords--;
-			indexf->header.totalwords--;
-			if(estopsz==estopmsz) {  /* More memory? */
-				estopmsz*=2;
-				estop=(ENTRY **)erealloc(estop,estopmsz*sizeof(ENTRY *));
-			}
-				/* estop is an array for storing the
-				** automatic stopwords */
-			estop[estopsz++]=e;
+		for(ep2=NULL,ep=sw->hashentries[i];ep;ep=ep->nexthash)
+		{
+printf("%d %p %p %p %s\n",i,ep,ep->word,ep->nexthash,ep->word);
+			percent = (ep->tfrequency * 100 )/ totalfiles;
+			if (percent >= sw->plimit && ep->tfrequency >= sw->flimit) {
+printf("-->%p %p %p %p\n",ep2,ep,ep->word,ep->nexthash);
+				addStopList(indexf,ep->word);
+					addstophash(indexf,ep->word);
+				stopwords++;
+					/* Remove entry from  the hash array */
+				if(ep2) ep2->nexthash=ep->nexthash;
+				else sw->hashentries[i]=ep->nexthash;
+				totalwords--;
+				sw->entryArray->numWords--;
+				indexf->header.totalwords--;
+				if(estopsz==estopmsz) {  /* More memory? */
+					estopmsz*=2;
+					estop=(ENTRY **)erealloc(estop,estopmsz*sizeof(ENTRY *));
+				}
+					/* estop is an array for storing the
+					** automatic stopwords */
+				estop[estopsz++]=ep;
+			} else ep2=ep;
 		}
-		else i++;
 	}
 		/* If we have automatic stopwords we have to recalculate
 		** word positions */
@@ -667,61 +670,61 @@ IndexFILE *indexf=sw->indexlist;
 				** word in the index array */
 				/* Sorry for the code but it is the fastest
 				** I could achieve!! */
-		for(i=0;i<estopsz;i++) {
+		for(i=0;i<estopsz;i++) 
+		{
 			e=estop[i];
-			if(sw->verbose)
-				printf("\nRemoving word %s (%d occureneces)\n",e->word,e->u1.max_locations);
-			for(j=0;j<totalwords;j++) {
-				if(sw->verbose)
-					printf("Computing new positions for %s (%d occurences)\r",ep->elist[j]->word,ep->elist[j]->u1.max_locations);
-				fflush(stdout);
-				for(m=0,modified=0;m<ep->elist[j]->u1.max_locations;m++)
+			if(sw->verbose) printf("\nRemoving word %s (%d occureneces)\n",e->word,e->u1.max_locations);
+       		 	for(j=0;j<SEARCHHASHSIZE;j++)
+			{
+				for(ep=sw->hashentries[j];ep;ep=ep->nexthash)
 				{
-					if(m<ep->elist[j]->currentlocation)
-						lp=uncompress_location(sw,indexf,(unsigned char *)ep->elist[j]->locationarray[m]);
-					else 
-						lp=ep->elist[j]->locationarray[m];
-					for(n=0;n<e->u1.max_locations;n++)
+					if(sw->verbose) printf("Computing new positions for %s (%d occurences)\r",ep->word,ep->u1.max_locations);
+					fflush(stdout);
+					for(m=0,modified=0;m<ep->u1.max_locations;m++)
 					{
-						if(n<e->currentlocation)
+						if(m<ep->currentlocation)
+							lp=uncompress_location(sw,indexf,(unsigned char *)ep->locationarray[m]);
+						else 
+							lp=ep->locationarray[m];
+						for(n=0;n<e->u1.max_locations;n++)
 						{
-							p=(unsigned char *)e->locationarray[n];
-							uncompress2(lpstop_index,p);
-							lpstop_metaID=indexf->locationlookup->all_entries[lpstop_index-1]->val[0];
-							uncompress2(lpstop_filenum,p);
-						} else {
-							lpstop_filenum=e->locationarray[n]->filenum;
-							lpstop_metaID=e->locationarray[n]->metaID;
+							if(n<e->currentlocation)
+							{
+								p=(unsigned char *)e->locationarray[n];
+								uncompress2(lpstop_index,p);
+								lpstop_metaID=indexf->locationlookup->all_entries[lpstop_index-1]->val[0];
+								uncompress2(lpstop_filenum,p);
+							} else {
+								lpstop_filenum=e->locationarray[n]->filenum;
+								lpstop_metaID=e->locationarray[n]->metaID;
+							}
+							res=lp->filenum-lpstop_filenum;
+							if(res<0) break;
+							if(res==0) {
+								res=lp->metaID-lpstop_metaID;
+								if(res<0) break; 
+								if(res==0)
+						   		{ 
+						      			if(n<e->currentlocation)
+										lpstop=uncompress_location(sw,indexf,(unsigned char *)e->locationarray[n]);
+						      			else
+										lpstop=e->locationarray[n];
+						      			for(k=lpstop->frequency;k;) 
+						         		for(stoppos=lpstop->position[--k],l=lp->frequency;l;) {if(lp->position[--l]>stoppos) lp->position[l]--; else break;}
+									modified=1;
+									if(n<e->currentlocation) efree(lpstop);
+						    		}
+							}
 						}
-						res=lp->filenum-lpstop_filenum;
-						if(res<0) 
-							break;
-						if(res==0) {
-						   res=lp->metaID-lpstop_metaID;
-						   if(res<0) 
-							break;
-						   if(res==0)
-						   {
-						      if(n<e->currentlocation)
-							lpstop=uncompress_location(sw,indexf,(unsigned char *)e->locationarray[n]);
-						      else
-							lpstop=e->locationarray[n];
-						      for(k=lpstop->frequency;k;) 
-						         for(stoppos=lpstop->position[--k],l=lp->frequency;l;) {if(lp->position[--l]>stoppos) lp->position[l]--; else break;}
-						      modified=1;
-						      if(n<e->currentlocation)
-							 efree(lpstop);
-						    }
-						}
+						if(m<ep->currentlocation) 
+						{
+					   		if(modified)  
+					   		{
+								efree(ep->locationarray[m]);
+								ep->locationarray[m]=(LOCATION *)compress_location(sw,indexf,lp);
+							} else efree(lp);
+						} 
 					}
-					if(m<ep->elist[j]->currentlocation) 
-					{
-					   if(modified)  
-					   {
-						efree(ep->elist[j]->locationarray[m]);
-						ep->elist[j]->locationarray[m]=(LOCATION *)compress_location(sw,indexf,lp);
-					   } else efree(lp);
-					} 
 				}
 			}
 				/* Free Memory used by stopword */
