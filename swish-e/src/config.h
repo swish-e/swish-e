@@ -293,24 +293,7 @@ typedef int pid_t;		/* process ID */
 #define FILEMODE_READWRITE      "r+"
 #endif
 
-/* == compiler stuff == */
-#define FUNCTION_PROTOTYPES_INCLUDE_ARGS	/* comment out for non-ANSI compilers */
 
-/*
-** Use the _AP() macro in all function definitions (in header files)
-** to support both ANSI and non-ANSI compilers.
-** Instead of:
-**		 void somefunction();
-** or:
-**		 void somefunction(int, int, int);
-** use:
-**		 void somefunction _AP ((int, int, int));
-*/
-#ifdef FUNCTION_PROTOTYPES_INCLUDE_ARGS
-#define _AP(args) args
-#else
-#define _AP(args) ()
-#endif
 
 /* #define NEXTSTEP */
 

@@ -17,23 +17,19 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
 
-unsigned hash _AP ((char *));
-unsigned numhash _AP ((int));
-unsigned bighash _AP ((char *));
-unsigned bignumhash _AP ((int));
-unsigned searchhash _AP ((char *));
-void readdefaultstopwords _AP ((IndexFILE *));
-void addstophash _AP ((IndexFILE *, char *));
-void addusehash _AP ((IndexFILE *, char *));
-int isstopword _AP ((IndexFILE *, char *));
-int isuseword _AP ((IndexFILE *, char *));
-void mergeresulthashlist _AP ((SWISH *, RESULT *));
-void initresulthashlist _AP ((SWISH *sw));
-void addStopList _AP ((IndexFILE *, char *));
-void freestophash _AP ((IndexFILE *));
-void freeStopList _AP ((IndexFILE *));
+unsigned hash (char *);
+unsigned numhash (int);
+unsigned bighash (char *);
+unsigned bignumhash (int);
+unsigned searchhash (char *);
+void readdefaultstopwords (IndexFILE *);
+void addstophash (IndexFILE *, char *);
+void addusehash (IndexFILE *, char *);
+int isstopword (IndexFILE *, char *);
+int isuseword (IndexFILE *, char *);
+void mergeresulthashlist (SWISH *, RESULT *);
+void initresulthashlist (SWISH *sw);
+void addStopList (IndexFILE *, char *);
+void freestophash (IndexFILE *);
+void freeStopList (IndexFILE *);

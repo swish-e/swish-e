@@ -65,8 +65,8 @@ needs but it you are not sure about them, do not change them */
 
 
 /* The prototypes */
-struct buffer_pool *zfwrite _AP ((struct buffer_pool *, unsigned char *, int, long *, FILE *));
-void zfflush _AP ((struct buffer_pool *, FILE *));
-unsigned char *zfread _AP ((unsigned char **dict,int *,FILE *));
-void printdeflatedictionary _AP ((struct buffer_pool *,IndexFILE *));
-void readdeflatepatterns _AP ((IndexFILE *));
+struct buffer_pool *zfwrite (struct buffer_pool *, unsigned char *, int, long *, FILE *);
+void zfflush (struct buffer_pool *, FILE *);
+unsigned char *zfread (unsigned char **dict,int *,FILE *);
+void printdeflatedictionary (struct buffer_pool *,IndexFILE *);
+void readdeflatepatterns (IndexFILE *);

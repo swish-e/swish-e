@@ -129,39 +129,6 @@ int i;
 }
 
 
-//$$$$$$$$ to be deleted if new routine works >>>>>>>>>>>>>>>
-
-int OLD__getdoctype(char *filename, struct IndexContents *indexcontents)
-{
-char *c, *checksuffix;
-int  lchecksuffix;
-struct IndexContents *ic;
-struct swline *swl;
-	if(!indexcontents)
-		return NODOCTYPE;
-	if (! (c = (char *)strrchr(filename, '.')) ) return NODOCTYPE;
-   
-	lchecksuffix = strlen(c);
-	checksuffix=(char *) emalloc(lchecksuffix + 1);
-	strcpy(checksuffix, c);
-
-	for(ic=indexcontents;ic;ic=ic->next) 
-	{
-		for(swl=ic->patt;swl;swl=swl->next)
-		{
-			if (lstrstr(swl->line, checksuffix)
-			   && ((int)strlen(swl->line)) == lchecksuffix) {
-				efree(checksuffix);
-				return ic->DocType;
-			}
-		}
-	}
-	efree(checksuffix);
-	return NODOCTYPE;
-}
-//$$$$$$ to be deleted <<<<<<<<<<<<<<<<<
-
-
 /*
   -- Determine document type by checking the file extension
   -- of the filename
