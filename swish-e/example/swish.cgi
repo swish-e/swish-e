@@ -38,8 +38,10 @@ use Symbol;
 
 use vars qw/$NotAWord/;
 
+
     # Run the script    
     handler() unless $ENV{MOD_PERL};
+
 
 
 #==================================================================================
@@ -189,9 +191,10 @@ sub process_request {
     $conf->{name_labels} = {} unless $conf->{name_labels};
     $conf->{page_size} ||= 15;
     $conf->{title_property} ||= 'swishtitle';
-    $conf->{title} ||= 'Swish-e Search Form'; 
+    $conf->{title} ||= 'Swish-e Search Form';
 
     my $q = CGI->new;
+
 
     my $results = run_query( $q, $conf );
 
@@ -428,11 +431,13 @@ EOF
 #
 #
 
-my $mod_perl = $ENV{MOD_PERL}
+
+sub footer {
+
+    my $mod_perl = $ENV{MOD_PERL}
                ? '<br><small>Response brought to you by <em>MOD_PERL</em> <a href="http://perl.apache.org">perl.apache.org</a></small>'
                : '';
 
-sub footer {
     return <<EOF;
 
     <hr>
@@ -558,8 +563,7 @@ sub get_date_limits {
         delete $results->{conf}{date_ranges};
         return 0;
     }
-
-
+    
     my %limits;
 
     unless ( DateRanges::DateRangeParse( $q, \%limits ) ) {
@@ -574,19 +578,6 @@ sub get_date_limits {
     # Allow searchs just be date if not "All dates" search
     ${$results->{query}} = $NotAWord if !${$results->{query}} && $limits{DateRanges_time_high};
 
-    
-
-    # Check for GET parameters
-    if (
-        ( $q->param('dl') && $q->param('dh') )
-        && $q->param('dl') =~ /^\d+$/
-        && $q->param('dh') =~ /^\d+$/
-        && $q->param('dl') <= $q->param('dh')
-        )
-    {
-        $results->{DateRanges_time_low} = $q->param('dl');
-        $results->{DateRanges_time_high} = $q->param('dh');
-    }
 
     my $conf = $results->{conf};
     my $sh   = $results->{sh};
@@ -659,7 +650,6 @@ sub run_query {
     my ( $q, $conf ) = @_;
 
 
-
     # set up the query string to pass to swish.
     my $query = $q->param('query') || '';
 
@@ -690,9 +680,6 @@ sub run_query {
         query   => \$query,
         sh      => $sh,     # request hash
     );
-
-
-    
 
 
     # Read in the date limits, if any.
@@ -785,8 +772,12 @@ sub run_query {
                 grep { $q->param($_) }  qw/query metaname sort reverse/
         );
 
-    $href .= "&amp;dl=$results{DateRanges_time_low}" if $results{DateRanges_time_low};
-    $href .= "&amp;dh=$results{DateRanges_time_high}" if $results{DateRanges_time_high};
+            
+
+    if ( $conf->{date_ranges} ) {
+        my $dr = DateRanges::GetDateRangeArgs( $q );
+        $href .= "&amp;" . $dr if $dr;
+    }
 
 
     my $hits = @{$ret->{FILES}};
