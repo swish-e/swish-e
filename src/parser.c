@@ -875,7 +875,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 
         if ( ret == -2 )        // encoding failed
         {
-            if ( parse_data->sw->parser_warn_level >= 1 )
+            if ( parse_data->sw->parser_warn_level >= 3 )
                 xmlParserWarning(parse_data->ctxt, "Failed to convert internal UTF-8 to Latin-1.\nReplacing non ISO-8859-1 char with char '%c'\n", ENCODE_ERROR_CHAR);
 
 

@@ -10,6 +10,16 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Change to default ParserWarnLevel
+
+The default value for ParserWarnLevel was changed form zero to two.  This was to report
+when libxml2 has problems parsing a document (which often times results in libxml2 processing
+only part of a document).  To get the old behaviour set ParserWarnLevel to zero in your
+config file.
+
+Also, to see UTF-8 to 8859-1 conversion errors set ParserWarnLevel to 3 or more.  Previously,
+these warning were issues at ParserWarnLevel of one.
+
 =item Documentation changes
 
 Removed all the target documentation (html, pdf, ps) from cvs.  There's now a separate
