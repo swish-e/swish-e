@@ -965,9 +965,10 @@ an enclosing metatag already in force.
 
 =item *
 
-auto - This method will create meta tags automatically for
-HTML meta names and XML elements.  Using this is the same as specifying all the meta names explicitly in a
-B<MetaNames> directive.
+auto - This method will create meta tags from the combined element and attributes (and XML Class name)
+This options should be used with caution as it can generate a lot of metaname entries.
+
+See also the example below C<XMLClassAttribues>.
 
 
 =back
@@ -1001,6 +1002,55 @@ Will appear to swish as:
 
 How the data is indexed depends on C<MetaNames> and C<UndefinedMetaTags>.
 
+Here's an example using the following configuation which combines the
+two directives C<XMLClassAttributes> and C<UndefinedXMLAttributes>.
+
+    XMLClassAttributes class
+    UndefinedMetaTags auto
+    UndefinedXMLAttributes auto
+    IndexContents XML2 .xml
+    
+The source XML file looks like:    
+
+    <xml>
+    <person class="student" phone="555-1212" age="102">
+       John
+    </person>
+    <person greeting="howdy">Bill</person>
+    </xml>
+
+Swish parses as:
+
+    ./swish-e -c 2 -i 1.xml -T parsed_tags  parsed_text  -v 0
+    Indexing Data Source: "File-System"
+    
+    <xml> (MetaName)
+    
+        <person> (MetaName)
+            <person.student> (MetaName)
+                <person.student.phone> (MetaName)
+                    555-1212
+                </person.student.phone> 
+                <person.student.age> (MetaName)
+                    102
+                </person.student.age> 
+                John
+        </person> 
+    
+        <person> (MetaName)
+            <person.greeting> (MetaName)
+                howdy
+            </person.greeting> 
+            Bill
+        </person> 
+    
+    </xml> 
+    Indexing done!
+
+One thing to note is that the first <person> block finds a class name "student"
+so all metanames that are created from attributes use the combined name "person.student".
+The second <person> block doesn't contain a "class" so, the attribute name is combinded directly
+with the element name (e.g. "person.greeting").
 
 =item ExtractPath *metaname* [replace|remove|prepend|append|regex]
 
