@@ -561,6 +561,9 @@ sub find_binary {
     for ( @path_segments ) {
         my $path = "$_/$prog";
 
+        # For buggy Windows98 that accepts forward slashes if the filename isn't too long
+        $path =~ s[/][\\]g if $^O =~ /Win32/;
+
         if ( -x $path ) {
 
             $self->mywarn(" * Found program at: [$path]\n");
@@ -584,7 +587,12 @@ sub find_binary {
     return; 
 }
 
-# Try and return libexecdir in case programs are installed there (under windows)
+# Try and return libexecdir in case programs are installed there (the case with Windows)
+# Assumes that we are running from libexecdir or bindir
+# The other option under Windows would be to fetch libexecdir from the Windows registry,
+# but that could break if a new (another) swish install was done since the registry
+# would then point to the new install location.
+
 sub get_libexec {
    return unless $FindBin::Bin;
 
