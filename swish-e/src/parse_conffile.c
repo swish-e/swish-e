@@ -411,7 +411,7 @@ char *w0;
 
 		}
 		else if (!parseconfline(sw,sl)) {
-			printf("Bad directive on line #%d: %s", linenumber, line );
+			printf("Bad directive on line #%d: %s\n", linenumber, line );
 			baddirective = 1;
 		}
 		freeStringList(sl);
@@ -491,6 +491,7 @@ int getDocTypeOrAbort (StringList *sl, int n)
    }
 
    progerr ("%s: missing %d. parameter", sl->word[0],n);
+   return 0;  /* never happens */
 }
 
 
