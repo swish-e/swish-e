@@ -287,7 +287,7 @@ char *printTagAbbrevControl (SWISH *sw, FILE *f, char *s, RESULT *r)
 	case 't':  t=AUTOPROPERTY_TITLE; break;
 
 	case '%':  if (f) fputc ('%',f); break;
-	default:   progerr ("Formatstring: unkown abbrev '%%%c'",*s); break;
+	default:   progerr ("Formatstring: unknown abbrev '%%%c'",*s); break;
 
  }
 
