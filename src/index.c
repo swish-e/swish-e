@@ -1457,7 +1457,6 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
                  metaID = uncompress2(&p);
 
-                 chunk_size = *(unsigned int *)p;
                  memcpy((char *)&chunk_size,(char *)p,sizeof(chunk_size));
                  p += sizeof(chunk_size);
 
