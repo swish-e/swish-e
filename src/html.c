@@ -51,7 +51,8 @@ $Id$
 
 /* #### */
 
-static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char *name, char **parsed_tag, char *filename)
+static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, int applyautomaticmetanames, int verbose, int OkNoMeta, char *name,
+                                     char **parsed_tag, char *filename)
 {
     char   *temp;
     static int lenword = 0;
@@ -130,26 +131,26 @@ static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int applyauto
     if ((e = getMetaNameByName(&indexf->header, word)))
         return e;
 
-    if ( applyautomaticmetanames && word && *word )
+    if (applyautomaticmetanames && word && *word)
     {
         if (verbose)
             printf("Adding automatic MetaName '%s' found in file '%s'\n", word, filename);
 
-        return addMetaEntry(&indexf->header, word, META_INDEX, 0 );
+        return addMetaEntry(&indexf->header, word, META_INDEX, 0);
     }
 
     /* If it is ok not to have the name listed, just index as no-name */
     if (!OkNoMeta)
-        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", word, filename );
+        progerr("UndefinedMetaNames=error.  Found meta name '%s' in file '%s', not listed as a MetaNames in config", word, filename);
 
-    return NULL;        
+    return NULL;
 
 }
 
 
 /* Parses the Meta tag */
-static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry,
-                      int *position, char *filename)
+static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry,
+                         int *position, char *filename)
 {
     int     metaName;
     struct metaEntry *metaNameEntry;
@@ -161,7 +162,7 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
 
 
     /* Lookup (or add if "auto") meta name for tag */
-    
+
     metaNameEntry = getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, name, &parsed_tag, filename);
     metaName = metaNameEntry ? metaNameEntry->metaID : 1;
 
@@ -204,23 +205,23 @@ static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int file
              * Probably better to let getHTMLMeta() return the name as a string.
              */
 
-         
-            if(!metaNameEntry || !isDontBumpMetaName( sw->dontbumpstarttagslist, metaNameEntry->metaName ) )
-                    position[0]++;
+
+            if (!metaNameEntry || !isDontBumpMetaName(sw->dontbumpstarttagslist, metaNameEntry->metaName))
+                position[0]++;
 
             wordcount = indexstring(sw, convtag, filenum, structure, 1, &metaName, position);
 
-            if(!metaNameEntry || !isDontBumpMetaName( sw->dontbumpendtagslist, metaNameEntry->metaName ) )
-                    position[0]++;
+            if (!metaNameEntry || !isDontBumpMetaName(sw->dontbumpendtagslist, metaNameEntry->metaName))
+                position[0]++;
 
         }
 
 
         /* If it is a property store it */
-        
-        if ( (metaNameEntry = getPropNameByName( &indexf->header, parsed_tag)))
-            if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag),0) )
-                progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename );
+
+        if ((metaNameEntry = getPropNameByName(&indexf->header, parsed_tag)))
+            if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, convtag, strlen(convtag), 0))
+                progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename);
 
 
 
@@ -259,11 +260,11 @@ char   *parseHTMLtitle(char *buffer)
 */
 /* This is to check "title contains" option in config file */
 
-int     isoktitle(SWISH *sw, char *title)
+int     isoktitle(SWISH * sw, char *title)
 {
     struct MOD_FS *fs = sw->FS;
 
-    return !match_regex_list( title, fs->filerules.title );
+    return !match_regex_list(title, fs->filerules.title);
 }
 
 
@@ -273,7 +274,7 @@ int     isoktitle(SWISH *sw, char *title)
 ** a word is in.
 */
 
-static int     getstructure(char *tag, int structure)
+static int getstructure(char *tag, int structure)
 {
 
 /* int len; *//* not used - 2/22/00 */
@@ -356,7 +357,7 @@ static int     getstructure(char *tag, int structure)
 
 
 
-static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
+static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
 {
     char   *p,
            *q,
@@ -559,14 +560,16 @@ int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int meta
 ** to the appropriate structures.
 */
 
+/* Indexes all the words in a html file and adds the appropriate information
+** to the appropriate structures.
+*/
+
 int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 {
     int     ftotalwords;
     int    *metaID;
     int     metaIDlen;
-    int     positionMeta;       /* Position of word in file */
-    int     position_no_meta = 1; /* Counter for words in doc (excluding metanames) */
-    int     position_meta = 1;  /* Counter for words in doc (only for metanames) */
+    int     position;           /* Position of word in file */
     int     currentmetanames;
     char   *p,
            *newp,
@@ -593,8 +596,8 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     if (fprop->stordesc)
         summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
 
-	addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry );
-    addCommonProperties( sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize );
+    addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry);
+    addCommonProperties(sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize);
 
     /* Init meta info */
     metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
@@ -602,7 +605,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     currentmetanames = ftotalwords = 0;
     structure = IN_FILE;
     metaID[0] = 1;
-    positionMeta = 1;
+    position = 1;
 
     for (p = buffer; p && *p;)
     {
@@ -615,7 +618,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
             if (newp != p)
                 efree(newp);
@@ -644,9 +647,11 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                     structure |= IN_META;
                     if (lstrstr(tag, "START"))
                     {
-                        char *parsed_tag;
-                        
-                        if ((metaNameEntry = getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL, &parsed_tag, fprop->real_path)))
+                        char   *parsed_tag;
+
+                        if (
+                            (metaNameEntry =
+                             getHTMLMeta(indexf, tag, sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL, &parsed_tag, fprop->real_path)))
                         {
                             /* realloc memory if needed */
                             if (currentmetanames == metaIDlen)
@@ -655,18 +660,9 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             /* add metaname to array of current metanames */
                             metaID[currentmetanames] = metaNameEntry->metaID;
 
-                            /* Preserve position */
-                            if (!currentmetanames)
-                            {
-                                position_no_meta = positionMeta;
-                                 /* Init word counter for the metaname */
-                                positionMeta = position_meta;
-                            }
-
-
                             /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                            if( !isDontBumpMetaName( sw->dontbumpstarttagslist, metaNameEntry->metaName ) )
-                                    positionMeta++;
+                            if (!isDontBumpMetaName(sw->dontbumpstarttagslist, metaNameEntry->metaName))
+                                position++;
 
                             currentmetanames++;
 
@@ -674,20 +670,20 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                             p = endtag;
 
                             /* If it is also a property store it until a < is found */
-                            if ( (metaNameEntry = getPropNameByName( &indexf->header, parsed_tag )))
+                            if ((metaNameEntry = getPropNameByName(&indexf->header, parsed_tag)))
                             {
                                 if ((endtag = strchr(p, '<')))
                                     *endtag = '\0';
 
-                                    
+
                                 p = sw_ConvHTMLEntities2ISO(sw, p);
 
                                 remove_newlines(p);  /** why isn't this just done for the entire doc? */
 
-                                if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0) )
-                                    progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, fprop->real_path );
+                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0))
+                                    progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, fprop->real_path);
 
-                                
+
                                 if (endtag)
                                     *endtag = '<';
 
@@ -704,12 +700,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                         {
                             currentmetanames--;
                             if (!currentmetanames)
-                            {
                                 metaID[0] = 1;
-                                position_meta = positionMeta;
-                                /* Restore position counter */
-                                positionMeta = position_no_meta;
-                            }
                         }
                     }
 
@@ -719,13 +710,13 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
                 /* Check for META TAG TYPE 2 */
                 else if ((tag[0] != '!') && lstrstr(tag, "META") && (Name = lstrstr(tag, "NAME")) && (Content = lstrstr(tag, "CONTENT")))
                 {
-                    ftotalwords += parseMetaData(sw, indexf, tag, idx->filenum, structure, Name, Content, thisFileEntry, &position_meta, fprop->real_path);
+                    ftotalwords += parseMetaData(sw, indexf, tag, idx->filenum, structure, Name, Content, thisFileEntry, &position, fprop->real_path);
                     p = endtag;
                 }               /*  Check for COMMENT */
 
                 else if ((tag[0] == '!') && sw->indexComments)
                 {
-                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
+                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &position);
                     p = endtag;
                 }               /* Default: Continue */
 
@@ -744,7 +735,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
             if (newp != p)
                 efree(newp);
@@ -757,9 +748,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     addtofwordtotals(indexf, idx->filenum, ftotalwords);
 
     efree(title);
-    if(summary)
+    if (summary)
         efree(summary);
     return ftotalwords;
 }
-
-
