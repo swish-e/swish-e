@@ -347,8 +347,8 @@ void    printSortedResults(SWISH * sw)
         r->count = ++counter;   /* set rec. counter for output */
 
 
-        /* This may be an optimization */
-        // ReadAllDocPropertiesFromDisk( sw, indexf, r->count );
+        /* This may or man not be an optimization */
+        // ReadAllDocPropertiesFromDisk( sw, r->indexf, r->count);
         
 
         if (md->extendedformat)
@@ -365,6 +365,11 @@ void    printSortedResults(SWISH * sw)
             fprintf(f_out, "\n");
             efree( format );
         }
+
+
+        /* might as well free the memory as we go */
+        freefileinfo( r->indexf->filearray[r->count - 1] );
+        r->indexf->filearray[r->count - 1] = NULL;
 
         if (resultmaxhits > 0)
             resultmaxhits--;

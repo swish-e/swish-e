@@ -805,8 +805,8 @@ void     WritePropertiesToDisk( SWISH *sw )
     {
         if ( !(prop = docProperties->propEntry[propID]))
         {
-            fi->propLocations[ propID ] = 0;
-            fi->propSize[ propID ] = 0;
+            fi->propSize[ propID ] = 0;         // here's the flag!
+            fi->propLocations[ propID ] = 0;    // not here!
             continue;
         }
 		
@@ -839,6 +839,7 @@ void     WritePropertiesToDisk( SWISH *sw )
             p = compress3(len,p);
 
             memcpy(p,prop->propValue, len);
+            
 
             datalen += (p-q) + len;
             prop = prop->next;
@@ -859,8 +860,8 @@ void     WritePropertiesToDisk( SWISH *sw )
             fwrite(buffer, datalen, 1, DB->prop); /* Write data */
         }
         total_len += datalen;
-
     }
+
 
     fi->propTotalLen = total_len;
 
@@ -897,12 +898,9 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
         progerr("Failed to read file entry for file '%d'", filenum );
 
 
+
     /* already loaded? */
     if ( fi->docProperties )
-{
-printf("returning all cached property\n" );
-        return fi->docProperties;
-}        
 
     if ( !fi->propTotalLen )
         return NULL;
@@ -915,12 +913,13 @@ printf("returning all cached property\n" );
     {
         struct Handle_DBNative *DB = (struct Handle_DBNative *) indexf->DB;
 
-        if ( fseek(DB->fp,fi->propLocations[0],0) == -1 )
+        if ( fseek(DB->prop,fi->propLocations[0],0) == -1 )
             progerrno("Failed to seek to properties located at %ld for file number %d", fi->propLocations, filenum );
 
-        if ( fread(buf, 1, fi->propTotalLen, DB->fp) == -1 )
+        if ( fread(buf, 1, fi->propTotalLen, DB->prop) == -1 )
             progerrno("Failed to read properties located at %ld for file number %d", fi->propLocations, filenum );
     }
+
 
     *(buf + fi->propTotalLen) = '\0'; /* flag end of buffer */
 
@@ -955,6 +954,7 @@ printf("returning all cached property\n" );
 
     /* save it in the file entry */
     fi->docProperties = docProperties;
+
     
     return docProperties;
 }
@@ -980,7 +980,6 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
-
     
     /* Any properties? */
     if ( !fi->propTotalLen )
@@ -1013,7 +1012,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 
 
     /* Any for this metaID? */
-    if ( !fi->propLocations[ metaID ] )
+    if ( !fi->propSize[ metaID ] )
         return NULL;
 
 
@@ -1130,8 +1129,7 @@ unsigned char *UnPackPropLocations( struct file *fi, char *buf )
     return buf;
 }
  
-
-#endif
+#else
 
 /*#### */
 
@@ -1231,6 +1229,7 @@ struct metaEntry meta_entry;
 	return buf;
 }
 /* #### */
+#endif
 
 
 /* #### Added propLen support */
