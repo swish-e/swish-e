@@ -43,9 +43,11 @@
 ** 2001-01-xx Rainer Scherg (rasc) Added property type structures, etc.
 ** 2001-01-xx Rainer Scherg (rasc) cmd-opt should be own structure in SWISH * (started)
 **
-** 2001-02-05 rasc   replaced ISOTime by binary value
-** 2001-02-12 rasc   removed SWISH.errorstr, etc. 
+** 2001-02-xx rasc   replaced ISOTime by binary value
+**                   removed SWISH.errorstr, etc. 
+**                   ResultExtFmtStrList & var
 **
+
 */
 
 #include <stdio.h>
@@ -448,11 +450,18 @@ struct multiswline {
 };
 
 
-struct filter {
+struct filter {	/* Store filtersprogs and extension */
         char *suffix;
         char *prog;
         struct filter *next;
         struct filter *nodep;
+};
+
+struct ResultExtFmtStrList {  /* -x extended format by defined names */
+        char *name;
+        char *fmtstr;
+        struct ResultExtFmtStrList *next;
+        struct ResultExtFmtStrList *nodep;
 };
 
 typedef struct {
@@ -640,6 +649,8 @@ typedef struct {
     int useCustomOutputDelimiter;	/* added 11/24/98 - MG */
     int lencustomOutputDelimiter;
     char *customOutputDelimiter;	/* added 11/24/98 - MG */
+      /* ResultExtendedFormat predefined List see: -x */
+    struct ResultExtFmtStrList   *resultextfmtlist;
 	/* Filter vars */
     struct filter *filterlist;                  /* 1998-08-07 rasc */
     int lenfilterdir;

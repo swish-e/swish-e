@@ -20,25 +20,15 @@
 ** SRE 2/22/00
 */
 
-/*
-** use) for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> (<arg prototypes>) );
-*/
 
 
 int isdirectory(char *);
 int isfile(char *);
 int islink(char *);
 int getsize(char *);
-void getdefaults(SWISH *, char *, int *, int *, int);
+
 void checkReplaceList(SWISH *);
 void checkListRegex(struct swline *list);
-
-/*
- * Some handy routines for parsing the Configuration File
- */
-
-int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);
 
 /* use these to open Index files (because they are binary files: Win32)  */
 FILE* openIndexFILEForWrite(char *);
@@ -53,3 +43,10 @@ char *read_stream(FILE *, int );
 /* Get/eval properties for file  (2000-11 rasc) */
 FileProp *file_properties (char *real_path, char *work_path, SWISH *sw);
 void     free_file_properties (FileProp *fprop);
+
+ 
+/*
+ * Some handy routines for parsing the Configuration File
+ */
+
+int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);

@@ -33,6 +33,11 @@
 #include "mem.h"
 #include "hash.h"
 
+
+/* 
+  -- init swish structure 
+*/
+
 SWISH *SwishNew()
 {
 SWISH *sw;
@@ -69,6 +74,7 @@ int i;
 	sw->lenfilterdir=sw->lentmpdir=sw->lenspiderdirectory=MAXSTRLEN;
 	sw->filterdir = (char *)emalloc(sw->lenfilterdir + 1);sw->filterdir[0]='\0';
 	sw->filterlist=NULL;
+	sw->resultextfmtlist=NULL;
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	

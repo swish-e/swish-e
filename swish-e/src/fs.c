@@ -38,6 +38,7 @@
 #include "error.h"
 #include "xml.h"
 #include "txt.h"
+#include "parse_conffile.h"
 
 
 #define MAXKEYLEN 34 /* Hash key -- allow for 64 bit inodes */

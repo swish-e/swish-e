@@ -15,6 +15,9 @@
 ** You should have received a copy of the GNU (Library) General Public License
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+**
+**  2001-02-15   rasc   estrredup, type corrections
+**
 */
 
 #include "swish.h"
@@ -112,8 +115,8 @@ for(j=0;j<MAXMEMARRAY;j++)
 
 #else
 
-void *emalloc(i)
-int i;
+
+void *emalloc(size_t i)
 {
 	void *p;
 	
@@ -122,9 +125,7 @@ int i;
 	return p;
 }
 
-void *erealloc(ptr, i)
-void *ptr;
-int i;
+void *erealloc(void *ptr, size_t i)
 {
 	void *p;
 	
@@ -133,8 +134,7 @@ int i;
 	return p;
 }
 
-char *estrdup(str)
-char *str;
+char *estrdup(char *str)
 {
 	char *p;
 	
@@ -143,8 +143,7 @@ char *str;
 	return p;
 }
 
-void efree(ptr)
-void *ptr;
+void efree(void *ptr)
 {
 	free(ptr);
 }
@@ -185,10 +184,10 @@ int i;
 	efree(e);
 }
 
-char *estrndup(char *s,int n)
+char *estrndup(char *s, size_t n)
 {
-int lens=strlen(s);
-int newlen;
+size_t lens=strlen(s);
+size_t newlen;
 char *news;
 	if(lens<n)
 		newlen=lens;
@@ -199,3 +198,20 @@ char *news;
 	news[newlen]='\0';
 	return news;
 }
+
+
+
+/*
+   -- estrredup
+   -- do free on s1 and make copy of s2
+   -- this is used, when s1 is replaced by s2
+   -- 2001-02-15 rasc
+
+*/
+
+char *estrredup (char *s1, char *s2)
+{
+   if (s1) efree (s1);
+   return estrdup (s2);
+}
+
