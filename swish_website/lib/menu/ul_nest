@@ -42,7 +42,8 @@ END;
 
 [% BLOCK menu_link %]
 
-    <a class="[% link.class %]" href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
-    [% IF item.here; "&#187;";  END; -%]
+    <a class="[% link.class %]" 
+    href="[% link.url %]"
+    [% " title=\"$link.title\"" IF link.title %]>[%- link.text -%][% IF item.here; " &#187;";  END; -%]</a>
 
 [% END -%]
