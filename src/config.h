@@ -356,8 +356,6 @@
 
 #ifdef _WIN32
 #define NO_SYMBOLIC_FILE_LINKS          /* Win32 has no symbolic links */
-#undef INDEXPERMS                       /* Win32 version doesn't use chmod() */
-typedef int pid_t;                      /* process ID */
 #endif
 
 #ifdef __VMS
