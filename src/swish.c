@@ -70,9 +70,7 @@ $Id$
 */
 extern struct _indexing_data_source_def *data_sources[];
 
-int main(argc, argv)
-int argc;
-char **argv;
+int main(int argc, char **argv)
 {
 char c;
 char *word=NULL, *wordlist=NULL, *maxhitstr=NULL, *structstr=NULL, *beginhitstr=NULL;
@@ -150,11 +148,13 @@ struct stat stat_buf;
 	if (argc == 1)
 		usage();
 
+
 	while (--argc > 0) 
 	{
 		++argv;
 		if ((*argv)[0] != '-')
 			usage();
+
 		c = (*argv)[1];
 		
 		if ((*argv)[2] != '\0' && isalpha((int)((unsigned char)(*argv)[2]))) /* cast to int, 2/22/00 */
@@ -170,7 +170,8 @@ struct stat stat_buf;
 		}
 		else if (c == 'w') 
 		{
-			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
+
+			while (*(argv + 1) && *(argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
 			{
 				word = SafeStrCopy(word, (++argv)[0],&lenword);
 				argc--;
