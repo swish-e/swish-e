@@ -1941,7 +1941,7 @@ char   *ruleparse(SWISH * sw, char *line)
 **  an ignore character.
 */
 
-int     stripIgnoreLastChars(INDEXDATAHEADER header, char *word)
+int     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
 {
     int     bump_pocistion_counter_flag = 0;
     int     i = strlen(word);
@@ -1958,7 +1958,7 @@ int     stripIgnoreLastChars(INDEXDATAHEADER header, char *word)
     return bump_pocistion_counter_flag;
 }
 
-void    stripIgnoreFirstChars(INDEXDATAHEADER header, char *word)
+void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
 {
     int     j,
             k;
@@ -2124,10 +2124,10 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                 /* Now go to lowercase */
                 strtolower(word);
                 /* Get rid of the last char's */
-                bump_position_flag = stripIgnoreLastChars(indexf->header, word);
+                bump_position_flag = stripIgnoreLastChars(&indexf->header, word);
 
                 /* Get rid of the first char */
-                stripIgnoreFirstChars(indexf->header, word);
+                stripIgnoreFirstChars(&indexf->header, word);
 
                 /* Translate chars */
                 TranslateChars(indexf->header.translatecharslookuptable, word);
@@ -2174,7 +2174,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     }
                 }
                 /* Move word position */
-                if (isBumpPositionCounterChar(indexf->header, (int) c))
+                if (isBumpPositionCounterChar(&indexf->header, (int) c))
                 {
                     for (k = 0; k < numMetaNames; k++)
                         position[k]++;
@@ -2186,7 +2186,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
                     c = (int) ((unsigned char) s[j + 1]);
                     if (c)
                     {
-                        if (isBumpPositionCounterChar(indexf->header, (int) c))
+                        if (isBumpPositionCounterChar(&indexf->header, (int) c))
                         {
                             for (k = 0; k < numMetaNames; k++)
                                 position[k]++;
