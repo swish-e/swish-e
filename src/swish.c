@@ -293,7 +293,7 @@ static void    usage()
     printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
     printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
 #ifdef USE_BTREE
-	printf("         -r : remove: remove files from index\n");
+        printf("         -r : remove: remove files from index\n");
 #endif
 
     printf("         -S : specify which indexing system to use.\n");
@@ -344,8 +344,8 @@ static void    printversion()
 
 
 
-/* 
-  -- init swish structure 
+/*
+  -- init swish structure
 */
 
 /*************************************************************************
@@ -671,7 +671,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'p':  /* old-style display properties */
             case 'd':  /* old-style custom delimiter */
             case 'o':  /* don't use pre-sorted indexes */
-	    case 'R':  /* Ranking Scheme -- default is 1 */
+            case 'R':  /* Ranking Scheme -- default is 1 */
                 argv = fetch_search_params( sw, argv, params, c );
                 break;
 
@@ -710,7 +710,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 if ( !(w = next_param( &argv )) )
                     progerr(" '-k' requires a character (or '*').");
 
-                if ( strlen( w ) != 1 )                
+                if ( strlen( w ) != 1 )
                     progerr(" '-k' requires a character (or '*').");
 
 
@@ -845,10 +845,11 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
         case 'i':
         {
             if ( !is_another_param( argv ) )
-                progerr(" '-i' requires a list of index files.");
+                progerr(" '-i' requires a list of things to index.");
 
-            if((params->run_mode != MODE_UPDATE) ||
-               (params->run_mode != MODE_REMOVE))   /* Preserve update mode */
+            /* Set run_mode to index, unless in update/remove mode */
+
+            if ( (params->run_mode != MODE_UPDATE) && (params->run_mode != MODE_REMOVE) )
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -891,7 +892,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
                 progerr(" '-c' requires one or more configuration files.");
 
             if((params->run_mode != MODE_UPDATE) ||
-               (params->run_mode != MODE_REMOVE))  /* Preserve update mode */ 
+               (params->run_mode != MODE_REMOVE))  /* Preserve update mode */
                 params->run_mode = MODE_INDEX;
 
             while ( (w = next_param( &argv )) )
@@ -1148,7 +1149,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             while ( (w = next_param( &argv )) )
                 params->disp_props = addswline( params->disp_props, w);
 
-            break;                
+            break;
         }
 
 
@@ -1216,10 +1217,10 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         }
 
 
-	/* Ranking Scheme */
-	case 'R':		
-	    sw->RankScheme = get_param_number( &argv, switch_char );
-	    break;
+        /* Ranking Scheme */
+        case 'R':
+            sw->RankScheme = get_param_number( &argv, switch_char );
+            break;
 
         /* Ignore sorted indexes */
 
@@ -1259,7 +1260,7 @@ static int check_readonly_mode( char *prog )
 
 
 /*************************************************************************
-*   Dumps the index file(s) 
+*   Dumps the index file(s)
 *
 **************************************************************************/
 static void cmd_dump( SWISH *sw, CMDPARAMS *params )
@@ -1336,7 +1337,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         read_header(sw, &sw->indexlist->header, sw->indexlist->DB);
         sw->TotalWords = sw->indexlist->header.totalwords;
         sw->TotalFiles = sw->indexlist->header.totalfiles;
-	sw->TotalWordPos = sw->indexlist->header.total_word_positions;
+        sw->TotalWordPos = sw->indexlist->header.total_word_positions;
 
         /* Adjust filenum to totalfiles */
         sw->Index->filenum = sw->TotalFiles;
@@ -1467,7 +1468,7 @@ static void cmd_keywords( SWISH *sw, CMDPARAMS *params )
         addindexfile(sw, INDEXFILE);
 
     OutputKeyChar(sw, (int) (unsigned char) params->keychar);
-}    
+}
 
 
 /*************************************************************************
@@ -1488,9 +1489,9 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
         addindexfile(sw, INDEXFILE);
 
 
-    /* Open index files */        
+    /* Open index files */
 
-    if ( !SwishAttach(sw) ) 
+    if ( !SwishAttach(sw) )
         SwishAbortLastError( sw );
 
 
@@ -1561,7 +1562,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
         resultHeaderOut(sw, 1, ".\n");
     }
-    else 
+    else
         resultHeaderOut(sw, 1, "err: no results\n.\n");
 
 
@@ -1587,7 +1588,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     int stopwords = 0;
     struct swline *cur_line;
 
-	/* Coalesce all remaining locations */
+        /* Coalesce all remaining locations */
     coalesce_all_word_locations(sw, sw->indexlist);
 
     if ( process_stopwords )
