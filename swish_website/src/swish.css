@@ -100,10 +100,13 @@ dd {
 }
 
 
+/* 
 .smallCaps {
   font-size: 117%;
   font-variant: small-caps;
 }
+
+*/
 
 /* #### search form #### */
 
@@ -366,6 +369,8 @@ on the enclosing <ul> tagset. */
 }
 
 /* ##### Documentation #### */
+/* the Doc defs were originally for a new 'make html'
+build from POD. Keeping here for reference. */
 
 div.doc {
 
@@ -441,35 +446,6 @@ li.submenu {
   
 }
 
-
-
-.newsHeading {
-  color: rgb(61,92,122);
-  background-color: transparent;
-  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
-  font-size: 145%;
-  text-decoration: none;
-  margin: 0;
-  padding: 1ex 0 0 0;
-  display: block;
-}
-
-.newsHeading:hover {
-  color: rgb(117,144,174);
-  background-color: transparent;
-  text-decoration: underline;
-}
-
-.newsDate {
-  font-style: italic;
-  margin: 0 !important;
-  padding: 0;
-}
-
-.newsSummary {
-  margin: 1.5ex 0 2.5ex 0.75ex !important;
-  padding: 0;
-}
 
 .more {
   text-align: right;
