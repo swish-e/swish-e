@@ -405,11 +405,6 @@ static void    indexadir(SWISH * sw, char *dir)
 
         while ((dp = readdir(dfd)) != NULL)
         {
-            /* For security reasons, don't index dot files */
-            if ((dp->d_name)[0] == '.')
-                continue;
-
-        
             if ( match_regex_list( dp->d_name, fs->filerules.dircontains ) )
             {
                 closedir( dfd );
