@@ -22,8 +22,10 @@
 **
 ** 08/00 - Added ascending and descending capabilities in results sorting
 **
-** 2001-01 rasc   getResultPropertyByName rewritten, datatypes for properties.
-** 2001-02 rasc   isAutoProperty
+** 2001-01   rasc   getResultPropertyByName rewritten, datatypes for properties.
+** 2001-02   rasc   isAutoProperty
+**                  printSearchResultProperties changed
+** 
 */
 
 #include "swish.h"
@@ -317,7 +319,13 @@ int i;
 }
 
 
-void printSearchResultProperties(SWISH *sw, char **prop)
+/*
+  -- print properties specified with "-p" on cmd line
+  -- obsolete: new method "-x fmt"
+  -- 2001-02-09 rasc    output on file descriptor
+*/
+
+void printSearchResultProperties(SWISH *sw, FILE *f, char **prop)
 {
 int i;
 	if (sw->numPropertiesToDisplay == 0)
@@ -329,26 +337,26 @@ int i;
 		propValue = prop[i];
 		
 		if (sw->useCustomOutputDelimiter)
-			printf("%s", sw->customOutputDelimiter);
+			fprintf(f, "%s", sw->customOutputDelimiter);
 		else
-			printf(" \"");	/* default is to quote the string, with leading space */
+			fprintf(f, " \"");	/* default is to quote the string, with leading space */
 
 		/* print value, handling newlines and quotes */
 		while (*propValue)
 
 		{
 			if (*propValue == '\n')
-				printf(" ");
+				fprintf(f, " ");
 			else if (*propValue == '\"')	/* should not happen */
-				printf("&quot;");
+				fprintf(f,"&quot;");
 			else
-				printf("%c", *propValue);
+				fprintf(f,"%c", *propValue);
 			propValue++;
 		}
-		printf("%s", propValue);
+		fprintf(f,"%s", propValue);
 
 		if (!sw->useCustomOutputDelimiter)
-			printf("\"");	/* default is to quote the string */
+			fprintf(f,"\"");	/* default is to quote the string */
 	}
 }
 

@@ -68,7 +68,6 @@ RESULT *addsortresult _AP ((SWISH *, RESULT *sp, RESULT *));
 
 RESULT *sortresultsbyrank _AP ((SWISH *, int structure));
 RESULT *sortresultsbyfilenum _AP ((RESULT *rp));
-void printsortedresults (SWISH *);
 
 void getrawindexline _AP ((FILE *));
 int isokindexheader _AP ((FILE *));

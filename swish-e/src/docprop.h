@@ -9,6 +9,7 @@
  * Jose Ruiz 2001/01 many modifications
  *
  * 2001-01-26  rasc  getPropertyByname changed
+ * 2001-02-09  rasc  printSearchResultProperties changed
  */
 
 
@@ -26,7 +27,7 @@ int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
 unsigned char* lookupDocPropertyValue (int , char *, int *);
-void printSearchResultProperties (SWISH *, char **);
+void printSearchResultProperties (SWISH *, FILE *f_out, char **);
 
 void swapDocPropertyMetaNames (docPropertyEntry *pe, struct metaMergeEntry *me);
 

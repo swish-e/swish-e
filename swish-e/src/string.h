@@ -17,11 +17,6 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
-** use _AP() for easier cross-compiler (non-ANSI) porting 
-** <return value> <functionname> _AP( (<arg prototypes>) );
-*/
-
 
 #define CASE_SENSITIVE_ON 1
 #define CASE_SENSITIVE_OFF 0
@@ -34,22 +29,25 @@ typedef struct  {
         char **word;
 } StringList;
 
-char *lstrstr _AP ((char *, char *));
-char *getword _AP ((char *, int *skiplen));
-char *getconfvalue _AP ((char *, char *));
-int isoksuffix _AP ((char *filename, struct swline *rulelist));
-char *replace _AP ((char *, char *, char *));
-void makeItLow _AP ((char *str));
-int matchARegex _AP ((char *str, char *pattern));
-char *SafeStrCopy _AP ((char *,char *, int *));
-void sortstring _AP ((char *));
-char *mergestrings _AP ((char *,char *));
+char *lstrstr (char *, char *);
+char *getword (char *, int *skiplen);
+char *getconfvalue (char *, char *);
+int isoksuffix (char *filename, struct swline *rulelist);
+char *replace (char *, char *, char *);
 
-char *matchAndChange  _AP ((char *str, char *pattern, char *subs));
-char *replaceWild _AP ((char* fileName, char* pattern, char* subs));
+char *strtolower (char *str);
+#define makeItLow(a)    strtolower ((a)) /* map old name to new */
 
-void makelookuptable _AP ((char * ,int *));
-void makeallstringlookuptables _AP ((SWISH *));
+int matchARegex (char *str, char *pattern);
+char *SafeStrCopy (char *,char *, int *);
+void sortstring (char *);
+char *mergestrings (char *,char *);
+
+char *matchAndChange (char *str, char *pattern, char *subs);
+char *replaceWild (char* fileName, char* pattern, char* subs);
+
+void makelookuptable (char * ,int *);
+void makeallstringlookuptables (SWISH *);
 /* 06/00 Jose Ruiz
 ** Macros iswordchar, isvowel
 */
@@ -63,23 +61,24 @@ int icomp2 _AP ((const void *,const void *));
 /* 06/00 Jose Ruiz 
 ** Function to parse a line into a StringList
 */
-StringList *parse_line _AP ((char *));
+StringList *parse_line (char *);
 
 /* 06/00
 ** Function to free memory used by a StringList
 */
-void freeStringList _AP ((StringList *));
+void freeStringList (StringList *);
 
-char *parsetag _AP ((char *, char *, int, int ));
+char *parsetag (char *, char *, int, int );
 
-int isnumstring _AP ((unsigned char*));
-void remove_newlines _AP ((char*));
-void remove_controls _AP ((char*));
-void remove_tags _AP ((char*));
+int isnumstring (unsigned char*);
+void remove_newlines (char*);
+void remove_controls (char*);
+void remove_tags (char*);
 
 unsigned char *bin2string(unsigned char *,int);
 
 #ifdef _WIN32
 #define strncasecmp	strnicmp
 #endif
+
 
