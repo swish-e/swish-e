@@ -287,7 +287,7 @@ specified to be included in a list of results.
 For example to limit searches to documents modified in the last 48 hours:
 
     my $start = time - 48 * 60 * 60;
-    $search->SetSearchLimit( 'swishlastmodified', $start, $time );
+    $search->SetSearchLimit( 'swishlastmodified', $start, time() );
 
 An error will be set if the property 
 has already been specified or if $high > $low.
