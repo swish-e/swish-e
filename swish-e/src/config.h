@@ -325,9 +325,9 @@
 #define SORT_FILENAMES 0
 
 /* 2001/10 jmruiz -- Added BTREE schema to store words */
-/*
-#define USE_BTREE
-*/
+
+// #define USE_BTREE
+
 
 /* 09/00 Jose Ruiz. When set to 1 part of the info is swapped to disk
 ** to save memory in the index proccess

@@ -445,11 +445,29 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                 progerr("%s: requires at least three values: metaname expression type and a expression/strings", w0);
 
             if ( !( m = getMetaNameByName( &indexf->header, sl->word[1])) )
-                progerr("%s - name '%s' is not a MetaName", w0, sl->word[1] );
+                m = addMetaEntry(&indexf->header, sl->word[1], META_INDEX, 0);
 
             words = sl->word;
             words++;  /* past metaname */
             add_ExtractPath( w0, sw, m, words );
+
+            continue;
+        }
+
+        if (strcasecmp(w0, "ExtractPathDefault") == 0)
+        {
+            struct metaEntry *m;
+
+            if (sl->n != 3)
+                progerr("%s: requires two values: metaname default_value", w0);
+
+            if ( !( m = getMetaNameByName( &indexf->header, sl->word[1])) )
+                m = addMetaEntry(&indexf->header, sl->word[1], META_INDEX, 0);
+
+            if ( m->extractpath_default )
+                progerr("%s already defined for meta '%s' as '%s'", w0, m->metaName, m->extractpath_default );
+
+            m->extractpath_default = estrdup( sl->word[2] );
 
             continue;
         }

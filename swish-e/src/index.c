@@ -1237,12 +1237,23 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
     {
         char *str = process_regex_list( estrdup(path), list->regex, &matched );
 
-        if ( !matched )  /* only index if the pattern matched */
-            return;
-        
-        metaID = list->meta_entry->metaID;
-        indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-        efree( str );
+        if ( !matched )
+        {
+            /* use default? */
+            if ( list->meta_entry->extractpath_default )
+            {
+                metaID = list->meta_entry->metaID;
+                indexstring(sw, list->meta_entry->extractpath_default, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+            }
+        }
+        else
+        {
+            metaID = list->meta_entry->metaID;
+            indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+            efree( str );
+        }
+
+        matched = 0;
         list = list->next;
     }
 }

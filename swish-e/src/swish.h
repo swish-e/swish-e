@@ -288,6 +288,7 @@ struct metaEntry
     int        *inPropRange;        /* Used for limiting to a range */
     int         in_tag;             /* Flag to indicate that we are within this tag */
     int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
+    char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
     propEntry  *loPropRange;
     propEntry  *hiPropRange;
     int         alias;              /* if non-zero, this is an alias to the listed metaID */

@@ -193,7 +193,7 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
         if ( strlen( buffer ) < bytes_read )
         {
             int i;
-            progwarn("Substitute possible embedded null character(s) in file '%s'\n", name);
+            progwarn("Substituted possible embedded null character(s) in file '%s'\n", name);
             for (i = 0; i < bytes_read; ++i)
                 if (buffer[i] == '\0') buffer[i] = '\n';
         }
