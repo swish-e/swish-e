@@ -108,15 +108,9 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_Reopen_PropertiesForRead = DB_Reopen_PropertiesForRead_Native;
 
 #ifdef USE_BTREE
-    Db->DB_InitWriteTotalWordsPerFileArray = DB_InitWriteTotalWordsPerFileArray_Native;
-    Db->DB_WriteTotalWordsPerFileArray = DB_WriteTotalWordsPerFileArray_Native;
-    Db->DB_EndWriteTotalWordsPerFileArray = DB_EndWriteTotalWordsPerFileArray_Native;
-    Db->DB_InitReadTotalWordsPerFileArray = DB_InitReadTotalWordsPerFileArray_Native;
-    Db->DB_ReadTotalWordsPerFileArray = DB_ReadTotalWordsPerFileArray_Native;
-    Db->DB_EndReadTotalWordsPerFileArray = DB_EndReadTotalWordsPerFileArray_Native;
-#endif
-
+    Db->DB_WriteTotalWordsPerFile = DB_WriteTotalWordsPerFile_Native;
     Db->DB_ReadTotalWordsPerFile = DB_ReadTotalWordsPerFile_Native;
+#endif
 
     sw->Db = Db;
 
@@ -178,29 +172,38 @@ static void DB_CheckHeader(struct Handle_DBNative *DB)
     if (swish_magic != SWISH_MAGIC)
         progerr("File \"%s\" has an unknown format.", DB->cur_index_file);
 
-    {
-        long    index,
+    {   
+           long
 #ifdef USE_BTREE
+                btree,
                 worddata,
+                array,
                 presorted,
 #endif
                 prop;
 
-        index = readlong(DB->fp, fread);
+        DB->unique_ID = readlong(DB->fp, fread);
         prop = readlong(DB->prop, fread);
 
-        if (index != prop)
+        if (DB->unique_ID != prop)
             progerr("Index file '%s' and property file '%s' are not related.", DB->cur_index_file, DB->cur_prop_file);
 
 #ifdef USE_BTREE
-        worddata = readlong(DB->worddata->fp, fread);
+        btree = readlong(DB->fp_btree, fread);
+        if (DB->unique_ID != btree)
+            progerr("Index file '%s' and btree file '%s' are not related.", DB->cur_index_file, DB->cur_btree_file);
 
-        if (index != worddata)
+        worddata = readlong(DB->fp_worddata, fread);
+        if (DB->unique_ID != worddata)
             progerr("Index file '%s' and worddata file '%s' are not related.", DB->cur_index_file, DB->cur_worddata_file);
 
-        presorted = readlong(DB->presorted, fread);
+        array = readlong(DB->fp_array, fread);
+        if (DB->unique_ID != array)
+            progerr("Index file '%s' and array file '%s' are not related.", DB->cur_index_file, DB->cur_array_file);
 
-        if (index != presorted)
+        presorted = readlong(DB->fp_presorted, fread);
+
+        if (DB->unique_ID != presorted)
             progerr("Index file '%s' and presorted index file '%s' are not related.", DB->cur_index_file, DB->cur_presorted_file);
 #endif
     }
@@ -244,21 +247,30 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
 
 #ifdef USE_BTREE
     DB->bt = NULL;
+    DB->fp_btree = NULL;
+    DB->tmp_btree = 0;
+    DB->cur_btree_file = NULL;
+
+    DB->worddata = NULL;
+    DB->fp_worddata = NULL;
     DB->tmp_worddata = 0;
     DB->cur_worddata_file = NULL;
-    DB->worddata = NULL;
+
+    DB->fp_array = NULL;
+    DB->tmp_array = 0;
+    DB->cur_array_file = NULL;
+
     DB->presorted_array = NULL;
     DB->presorted_root_node = NULL;
     DB->presorted_propid = NULL;
     DB->n_presorted_array = 0;
     DB->tmp_presorted = 0;
     DB->cur_presorted_file = NULL;
-    DB->presorted = NULL;
+    DB->fp_presorted = NULL;
     DB->cur_presorted_array = NULL;
     DB->cur_presorted_propid = 0;
     DB->totwords_array = NULL;
     DB->props_array = NULL;
-    DB->props_array_index = 0;
 #endif
 
 
@@ -294,26 +306,24 @@ void   *DB_Create_Native(char *dbname)
     int     i;
     long    swish_magic;
     char   *filename;
-    long    unique_ID;          /* just because it's called that doesn't mean it is! */
 #ifdef USE_BTREE
     FILE   *fp_tmp;
 #endif
     struct Handle_DBNative *DB;
 
-
-    unique_ID = (long) time(NULL); /* Ok, so if more than one index is created the second... */
-
-    /* Allocate structure */
+    swish_magic = SWISH_MAGIC;
+   /* Allocate structure */
     DB = (struct Handle_DBNative *) newNativeDBHandle(dbname);
     DB->mode = DB_CREATE;
+    DB->unique_ID = (long) time(NULL); /* Ok, so if more than one index is created the second... */
 
 #ifdef USE_TEMPFILE_EXTENSION
-    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(USE_TEMPFILE_EXTENSION) + strlen(PROPFILE_EXTENSION) + strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
     strcpy(filename, dbname);
     strcat(filename, USE_TEMPFILE_EXTENSION);
     DB->tmp_index = 1;
 #else
-    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
+    filename = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + +strlen(BTREE_EXTENSION) + strlen(WORDDATA_EXTENSION) + strlen(ARRAY_EXTENSION) + strlen(PRESORTED_EXTENSION) + 1);
     strcpy(filename, dbname);
 #endif
 
@@ -325,6 +335,8 @@ void   *DB_Create_Native(char *dbname)
         progerrno("Couldn't create the index file \"%s\": ", filename);
 
     DB->cur_index_file = estrdup(filename);
+    printlong(DB->fp, swish_magic, fwrite);
+    printlong(DB->fp, DB->unique_ID, fwrite);
 
 
     /* Create property File */
@@ -341,24 +353,56 @@ void   *DB_Create_Native(char *dbname)
         progerrno("Couldn't create the property file \"%s\": ", filename);
 
     DB->cur_prop_file = estrdup(filename);
+    printlong(DB->prop, DB->unique_ID, fwrite);
 
 
 #ifdef USE_BTREE
+    /* Create Btree File */
+    strcpy(filename, dbname);
+    strcat(filename, BTREE_EXTENSION);
+#ifdef USE_TEMPFILE_EXTENSION
+    strcat(filename, USE_TEMPFILE_EXTENSION);
+    DB->tmp_btree = 1;
+#endif
+    CreateEmptyFile(filename);
+    if (!(fp_tmp = openIndexFILEForReadAndWrite(filename)))
+        progerrno("Couldn't create the btree file \"%s\": ", filename);
+    DB->cur_btree_file = estrdup(filename);
+    printlong(fp_tmp, DB->unique_ID, fwrite);
+    DB->fp_btree = fp_tmp;
+    DB->bt=BTREE_Create(DB->fp_btree,4096);
+
+
     /* Create WordData File */
     strcpy(filename, dbname);
     strcat(filename, WORDDATA_EXTENSION);
-
 #ifdef USE_TEMPFILE_EXTENSION
     strcat(filename, USE_TEMPFILE_EXTENSION);
     DB->tmp_worddata = 1;
 #endif
-
     CreateEmptyFile(filename);
-    if (!(fp_tmp = openIndexFILEForWrite(filename)))
+    if (!(fp_tmp = openIndexFILEForReadAndWrite(filename)))
         progerrno("Couldn't create the worddata file \"%s\": ", filename);
-
-    DB->worddata=WORDDATA_Open(fp_tmp);
+    printlong(fp_tmp, DB->unique_ID, fwrite);
+    DB->fp_worddata = fp_tmp;
     DB->cur_worddata_file = estrdup(filename);
+    DB->worddata=WORDDATA_Open(DB->fp_worddata);
+
+    /* Create Array File */
+    strcpy(filename, dbname);
+    strcat(filename, ARRAY_EXTENSION);
+#ifdef USE_TEMPFILE_EXTENSION
+    strcat(filename, USE_TEMPFILE_EXTENSION);
+    DB->tmp_array = 1;
+#endif
+    CreateEmptyFile(filename);
+    if (!(fp_tmp = openIndexFILEForReadAndWrite(filename)))
+        progerrno("Couldn't create the array file \"%s\": ", filename);
+    printlong(fp_tmp, DB->unique_ID, fwrite);
+    DB->cur_array_file = estrdup(filename);
+    DB->fp_array = fp_tmp;
+    DB->totwords_array = ARRAY_Create(DB->fp_array);
+    DB->props_array = ARRAY_Create(DB->fp_array);
 
     /* Create PreSorted Index File */
     strcpy(filename, dbname);
@@ -370,10 +414,11 @@ void   *DB_Create_Native(char *dbname)
 #endif
 
     CreateEmptyFile(filename);
-    if (!(DB->presorted = openIndexFILEForWrite(filename)))
+    if (!(DB->fp_presorted = openIndexFILEForWrite(filename)))
         progerrno("Couldn't create the presorted index file \"%s\": ", filename);
 
     DB->cur_presorted_file = estrdup(filename);
+    printlong(DB->fp_presorted, DB->unique_ID, fwrite);
 
 #endif
 
@@ -390,16 +435,6 @@ void   *DB_Create_Native(char *dbname)
         DB->lasthashval[i] = 0L;
 #endif
 
-    swish_magic = SWISH_MAGIC;
-    printlong(DB->fp, swish_magic, fwrite);
-
-    printlong(DB->fp, unique_ID, fwrite);
-    printlong(DB->prop, unique_ID, fwrite);
-
-#ifdef USE_BTREE
-    printlong(DB->worddata->fp, unique_ID, fwrite);
-    printlong(DB->presorted, unique_ID, fwrite);
-#endif
 
 
 
@@ -417,6 +452,7 @@ void   *DB_Create_Native(char *dbname)
     return (void *) DB;
 }
 
+
 /*******************************************************************
 *   DB_Open_Native
 *
@@ -427,6 +463,7 @@ void   *DB_Open_Native(char *dbname,int mode)
     struct Handle_DBNative *DB;
     int     i;
     FILE   *(*openRoutine)(char *) = NULL;
+    char   *s;
 #ifdef USE_BTREE
     FILE *fp_tmp;
 #endif
@@ -452,43 +489,72 @@ void   *DB_Open_Native(char *dbname,int mode)
 
     DB->cur_index_file = estrdup(dbname);
 
-    {
-        char   *s = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1);
+    s = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1);
 
-        strcpy(s, dbname);
-        strcat(s, PROPFILE_EXTENSION);
+    strcpy(s, dbname);
+    strcat(s, PROPFILE_EXTENSION);
 
-        if (!(DB->prop = openRoutine(s)))
-            progerrno("Couldn't open the property file \"%s\": ", s);
+    if (!(DB->prop = openRoutine(s)))
+        progerrno("Couldn't open the property file \"%s\": ", s);
 
-        DB->cur_prop_file = s;
-    }
-
+    DB->cur_prop_file = s;
 
 #ifdef USE_BTREE
-    {
-        char   *s = emalloc(strlen(dbname) + strlen(WORDDATA_EXTENSION) + 1);
+    
+    s = emalloc(strlen(dbname) + strlen(BTREE_EXTENSION) + 1);
 
-        strcpy(s, dbname);
-        strcat(s, WORDDATA_EXTENSION);
+    strcpy(s, dbname);
+    strcat(s, BTREE_EXTENSION);
 
-        if (!(fp_tmp = openRoutine(s)))
-            progerrno("Couldn't open the worddata file \"%s\": ", s);
+    if (!(fp_tmp = openRoutine(s)))
+        progerrno("Couldn't open the btree file \"%s\": ", s);
+    DB->fp_btree = fp_tmp;      
+    DB->cur_btree_file = s;
+
+    s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
+
+    strcpy(s, dbname);
+    strcat(s, PRESORTED_EXTENSION);
+
+    if (!(DB->fp_presorted = openRoutine(s)))
+        progerrno("Couldn't open the presorted index file \"%s\": ", s);
+
+    DB->cur_presorted_file = s;
+    
+
+    
+    s = emalloc(strlen(dbname) + strlen(WORDDATA_EXTENSION) + 1);
+
+    strcpy(s, dbname);
+    strcat(s, WORDDATA_EXTENSION);
+
+    if (!(fp_tmp = openRoutine(s)))
+        progerrno("Couldn't open the worddata file \"%s\": ", s);
+
+    DB->fp_worddata = fp_tmp;
+    DB->cur_worddata_file = s;
+
+    s = emalloc(strlen(dbname) + strlen(ARRAY_EXTENSION) + 1);
+
+    strcpy(s, dbname);
+    strcat(s, ARRAY_EXTENSION);
+
+    if (!(fp_tmp = openRoutine(s)))
+        progerrno("Couldn't open the array file \"%s\": ", s);
           
-        DB->worddata = WORDDATA_Open(fp_tmp);
+    DB->fp_array = fp_tmp;
+    DB->cur_array_file = s;
 
-        DB->cur_worddata_file = s;
+    s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
 
-        s = emalloc(strlen(dbname) + strlen(PRESORTED_EXTENSION) + 1);
+    strcpy(s, dbname);
+    strcat(s, PRESORTED_EXTENSION);
 
-        strcpy(s, dbname);
-        strcat(s, PRESORTED_EXTENSION);
+    if (!(DB->fp_presorted = openRoutine(s)))
+        progerrno("Couldn't open the presorted index file \"%s\": ", s);
 
-        if (!(DB->presorted = openRoutine(s)))
-            progerrno("Couldn't open the presorted index file \"%s\": ", s);
-
-        DB->cur_presorted_file = s;
-    }
+    DB->cur_presorted_file = s;
+    
 #endif
 
     /* Validate index files */
@@ -504,6 +570,17 @@ void   *DB_Open_Native(char *dbname,int mode)
     DB->hashstart = ftell(DB->fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
         DB->hashoffsets[i] = readlong(DB->fp, fread);
+#else
+    DB->bt = BTREE_Open(DB->fp_btree,4096,DB->offsets[WORDPOS]);
+    DB->worddata = WORDDATA_Open(DB->fp_worddata);
+    DB->totwords_array = ARRAY_Open(DB->fp_array,DB->offsets[TOTALWORDSPERFILEPOS]);
+    DB->props_array = ARRAY_Open(DB->fp_array,DB->offsets[FILEOFFSETPOS]);
+
+    /* Put the file pointer of props file at the end of the file 
+    ** This is very important because if we are in update mode
+    ** we must avoid the properties to be overwritten
+    */
+    fseek(DB->prop,0,SEEK_END);
 #endif
 
     return (void *) DB;
@@ -558,28 +635,46 @@ void    DB_Close_Native(void *db)
     int     i;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     FILE   *fp = DB->fp;
-#ifdef USE_BTREE
-    FILE   *fp_tmp;
-#endif
 
     /* Close (and rename) property file, if it's open */
     DB_Close_File_Native(&DB->prop, &DB->cur_prop_file, &DB->tmp_prop);
 
 #ifdef USE_BTREE
-
+    /* Close (and rename) array file, if it's open */
+    if(DB->fp_array)
+    {
+        if(DB->totwords_array)
+        {
+            DB->offsets[TOTALWORDSPERFILEPOS] = ARRAY_Close(DB->totwords_array);
+            DB->totwords_array = NULL;
+        }
+        if(DB->props_array)
+        {
+            DB->offsets[FILEOFFSETPOS] = ARRAY_Close(DB->props_array);
+            DB->props_array = NULL;
+        }
+        DB_Close_File_Native(&DB->fp_array, &DB->cur_array_file, &DB->tmp_array);
+    }
     /* Close (and rename) worddata file, if it's open */
     if(DB->worddata)
     {
-        fp_tmp =DB->worddata->fp;
         WORDDATA_Close(DB->worddata);
-        DB_Close_File_Native(&fp_tmp, &DB->cur_worddata_file, &DB->tmp_worddata);
+        DB_Close_File_Native(&DB->fp_worddata, &DB->cur_worddata_file, &DB->tmp_worddata);
+        DB->worddata = NULL;
     }
+    /* Close (and rename) btree file, if it's open */
     if(DB->bt)
+    {
         DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
+        DB_Close_File_Native(&DB->fp_btree, &DB->cur_btree_file, &DB->tmp_btree);
+        DB->bt = NULL;
+    }
 
     /* Close (and rename) presorted index file, if it's open */
-    if(DB->presorted)
-        DB_Close_File_Native(&DB->presorted, &DB->cur_presorted_file, &DB->tmp_presorted);
+    if(DB->fp_presorted)
+    {
+        DB_Close_File_Native(&DB->fp_presorted, &DB->cur_presorted_file, &DB->tmp_presorted);
+    }
     if(DB->presorted_array)
     {
         for(i = 0; i < DB->n_presorted_array; i++)
@@ -594,10 +689,6 @@ void    DB_Close_Native(void *db)
         efree(DB->presorted_root_node);
     if(DB->presorted_propid)
         efree(DB->presorted_propid);
-    if(DB->totwords_array)
-        ARRAY_Close(DB->totwords_array);
-    if(DB->props_array)
-        DB->offsets[FILELISTPOS] = ARRAY_Close(DB->props_array);
 #endif
 
     if (DB->mode == DB_CREATE)     /* If we are indexing update offsets to words and files */
@@ -648,7 +739,21 @@ int     DB_InitWriteHeader_Native(void *db)
 {
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
-    DB->offsets[HEADERPOS] = ftell(DB->fp);
+    if(DB->offsets[HEADERPOS])
+    {
+        /* If DB->offsets[HEADERPOS] is not 0 we are in update mode 
+        ** So, put the pointer file in the header start position to overwrite
+        ** the header 
+        */
+        fseek(DB->fp,DB->offsets[HEADERPOS],SEEK_SET);
+    }
+    else
+    {
+        /* The index file is being created. So put the header in the
+        ** current file position (coincides with the end of the file
+        */
+        DB->offsets[HEADERPOS] = ftell(DB->fp);
+    }
     return 0;
 }
 
@@ -722,18 +827,9 @@ int     DB_EndReadHeader_Native(void *db)
 
 int     DB_InitWriteWords_Native(void *db)
 {
+
+#ifndef USE_BTREE
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-
-
-#ifdef USE_BTREE
-    /* If exits a pointer to a BTREE in WORDPOS,
-    ** we are in update mode. SO we will open the BTREE
-    ** instead of creating a new one */
-    if(DB->offsets[WORDPOS])
-        DB->bt = BTREE_Open(DB->fp,4096,DB->offsets[WORDPOS]);
-    else
-        DB->bt = BTREE_Create(DB->fp, 4096);
-#else
     DB->offsets[WORDPOS] = ftell(DB->fp);
 #endif
 
@@ -771,9 +867,11 @@ int     DB_EndWriteWords_Native(void *db)
     WORDDATA_Close(DB->worddata);
     DB->worddata=NULL;
     DB_Close_File_Native(&fp_tmp, &DB->cur_worddata_file, &DB->tmp_worddata);
-    DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
+    fp_tmp = DB->bt->fp;
+    DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
     DB->bt = NULL;
+    DB_Close_File_Native(&fp_tmp, &DB->cur_btree_file, &DB->tmp_btree);
 
     /* Restore file pointer at the end of file */
     fseek(DB->fp, 0, SEEK_END);
@@ -1063,11 +1161,6 @@ int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
 
 int     DB_InitReadWords_Native(void *db)
 {
-#ifdef USE_BTREE
-    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    if(!DB->bt)
-        DB->bt = BTREE_Open(DB->fp,4096,DB->offsets[WORDPOS]);
-#endif
     return 0;
 }
 
@@ -1385,7 +1478,7 @@ int     DB_EndReadFiles_Native(void *db)
 int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->presorted;
+   FILE *fp = DB->fp_presorted;
    int i;
 
    DB->offsets[SORTEDINDEX] = ftell(fp);
@@ -1411,7 +1504,7 @@ int     DB_InitWriteSortedIndex_Native(void *db, int n_props)
 int     DB_WriteSortedIndex_Native(int propID, int *data, int n,void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->presorted;
+   FILE *fp = DB->fp_presorted;
    ARRAY *arr;
    int i;
 
@@ -1448,7 +1541,7 @@ int     DB_EndWriteSortedIndex_Native(void *db)
 int     DB_InitReadSortedIndex_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->presorted;
+   FILE *fp = DB->fp_presorted;
    int i;
 
    fseek(fp,DB->offsets[SORTEDINDEX],SEEK_SET);
@@ -1472,7 +1565,7 @@ int     DB_InitReadSortedIndex_Native(void *db)
 int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->presorted;
+   FILE *fp = DB->fp_presorted;
    int i;
 
    if(!DB->cur_presorted_array || DB->cur_presorted_propid != (unsigned long)propID)
@@ -1682,9 +1775,11 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
 
 int     DB_InitWriteFiles_Native(void *db)
 {
+#ifndef USE_BTREE
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     DB->offsets[FILELISTPOS] = ftell(DB->fp);
+#endif
     return 0;
 }
 
@@ -1735,7 +1830,7 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 
 
     /* First write the uncompressed size */
-   compress1( uncompressed_len+1, DB->prop, putc);
+    compress1( uncompressed_len+1, DB->prop, putc);
 
 
     if ((written_bytes = fwrite(buffer, 1, buf_len, DB->prop)) != buf_len) /* Write data */
@@ -1781,6 +1876,9 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     int             count = header->property_count;
     int             index_size;
     int             i;
+#ifdef USE_BTREE
+    long            seek_pos;
+#endif
 
 
 
@@ -1793,8 +1891,8 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     }
 
 #ifdef USE_BTREE
-    if ( !DB->props_array )
-        DB->props_array = ARRAY_Create(DB->fp);
+    /* now calculate index */
+    seek_pos = ((fi->filenum - 1) * count) * 2;
 #endif
 
     /* Write out the prop index */
@@ -1808,8 +1906,8 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         printlong( DB->fp, prop_loc->length, fwrite );
         printlong( DB->fp, prop_loc->seek, fwrite );
 #else
-        ARRAY_Put( DB->props_array, DB->props_array_index++, prop_loc->length);
-        ARRAY_Put( DB->props_array, DB->props_array_index++, prop_loc->seek);
+        ARRAY_Put( DB->props_array,seek_pos++, prop_loc->length);
+        ARRAY_Put( DB->props_array,seek_pos++, prop_loc->seek);
 #endif
     }
 
@@ -1864,8 +1962,6 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         prop_loc->seek = readlong( DB->fp, fread );
     }
 #else
-    if ( !DB->props_array )
-        DB->props_array = ARRAY_Open(DB->fp,DB->offsets[FILELISTPOS]);
 
     /* now calculate index */
     seek_pos = ((fi->filenum - 1) * count) * 2;
@@ -1980,105 +2076,26 @@ void    DB_Reopen_PropertiesForRead_Native(void *db)
 
 
 
-#ifndef USE_BTREE
+#ifdef USE_BTREE
 
-int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
-{
-    return 0;
-}
 
-int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB)
-{
-    return 0;
-}
-
-int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
-{
-    return 0;
-}
-
-int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB)
-{
-    return 0;
-}
-
-int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **data, void *DB)
-{
-    return 0;
-}
-
-int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int index, int *value, void *db)
-{
-    *value = data[index];
-    return 0;
-}
-
-int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
-{
-    return 0;
-}
-
-#else
-int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *db)
-{
-    return 0;
-}
-
-int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *data, int n, void *db)
+int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->fp;
-   ARRAY *arr;
-   int i;
 
-   arr = ARRAY_Create(fp);
-   for(i = 0 ; i < n ; i++)
-   {
-       ARRAY_Put(arr,i,data[i]);
-/*
-       if(!(i%10000))
-       {
-            ARRAY_FlushCache(arr);
-            printf("%d %d            \r",propID,i);
-       }
-*/
-   }
-
-   DB->offsets[TOTALWORDSPERFILEPOS] = ARRAY_Close(arr);
+   ARRAY_Put(DB->totwords_array,idx,wordcount);
 
    return 0;
 }
 
-int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *db)
-{
-    return 0;
-}
 
-int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
-{
-    return 0;
-}
-
-int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **data, void *db)
+int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int index, int *value, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
-   FILE *fp = DB->fp;
 
-   DB->totwords_array = ARRAY_Open(fp,DB->offsets[TOTALWORDSPERFILEPOS]);
-
-   *data = (int *)DB->totwords_array;
+   *value = ARRAY_Get((ARRAY *)DB->totwords_array,index);
    return 0;
 }
 
-int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int index, int *value, void *db)
-{
-    *value = ARRAY_Get((ARRAY *)data,index);
-    return 0;
-}
-
-int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *db)
-{
-    return 0;
-}
 
 #endif

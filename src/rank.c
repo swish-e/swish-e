@@ -269,10 +269,9 @@ int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, in
     /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
-        INDEXDATAHEADER *header = &indexf->header;
         int             words;
 
-        DB_ReadTotalWordsPerFile(sw, header->TotalWordsPerFile,filenum-1,&words,indexf->DB);
+        getTotalWordsPerFile(sw, indexf, filenum-1, &words);
 
         if (words <= 10)
             reduction = 10000;    /* 10000 * log10(10) = 10000 */
@@ -323,10 +322,9 @@ int getrank_old(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf
     /* if word count is significant, reduce rank by a number between 1.0 and 5.0 */
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
-        INDEXDATAHEADER *header = &indexf->header;
         int             words;
 
-        DB_ReadTotalWordsPerFile(sw, header->TotalWordsPerFile,filenum-1,&words,indexf->DB);
+        getTotalWordsPerFile(sw, indexf, filenum-1, &words);
 
         if (words < 10) words = 10;
         reduction = log10((double)words);

@@ -119,17 +119,28 @@ struct Handle_DBNative
    char    *cur_index_file;
    char    *cur_prop_file;
 
+   long     unique_ID;          /* just because it's called that doesn't mean it is! */
+
 #ifdef USE_BTREE
    BTREE   *bt;
+   FILE    *fp_btree;
+   int      tmp_btree;
+   char    *cur_btree_file;
+
    WORDDATA    *worddata;
+   FILE    *fp_worddata;
    int      tmp_worddata;
    char    *cur_worddata_file;
+
+   FILE    *fp_array;
+   int      tmp_array;
+   char    *cur_array_file;
 
    int      n_presorted_array;
    unsigned long *presorted_root_node;
    unsigned long *presorted_propid;
    ARRAY  **presorted_array;
-   FILE    *presorted;
+   FILE    *fp_presorted;
    int      tmp_presorted;
    char    *cur_presorted_file;
 
@@ -139,7 +150,6 @@ struct Handle_DBNative
    ARRAY   *totwords_array;
 
    ARRAY   *props_array;
-   int      props_array_index;
 #endif
 };
 
@@ -216,15 +226,14 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 void    DB_Reopen_PropertiesForRead_Native(void *db);
 
 #ifdef USE_BTREE
-int	   DB_InitWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
-int    DB_WriteTotalWordsPerFileArray_Native(SWISH *sw, int *totalWordsPerFile, int totalfiles, void *DB);
-int    DB_EndWriteTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
-int	   DB_InitReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
-int    DB_ReadTotalWordsPerFileArray_Native(SWISH *sw, int **totalWordsPerFile, void *DB);
-int    DB_EndReadTotalWordsPerFileArray_Native(SWISH *sw, void *DB);
+int	   DB_InitWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
+int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void *DB);
+int    DB_EndWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
+int	   DB_InitReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
+int    DB_ReadTotalWordsPerFile_Native(SWISH *sw, int idx, int *wordcount, void *DB);
+int    DB_EndReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
 #endif
 
-int    DB_ReadTotalWordsPerFile_Native(SWISH *sw, int *data,int filenum, int *value, void *DB);
 
 
 
