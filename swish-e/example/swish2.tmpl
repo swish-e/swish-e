@@ -16,11 +16,8 @@
                 <TMPL_IF METANAMES>
                     Limit search to:
                     <TMPL_LOOP METANAMES>
-                        <input type="radio" name="metaname" value="<TMPL_VAR METANAME>"><TMPL_VAR METANAME>
+                        <input type="radio" name="metaname" value="<TMPL_VAR NAME>"><TMPL_VAR LABEL>
                     </TMPL_LOOP>
-                    <TMPL_UNLESS ALL_META>
-                        <input type="radio" name="metaname" value=0>Do not limit
-                    </TMPL_UNLESS>
                     <br>
                 </TMPL_IF>
 
@@ -30,7 +27,7 @@
                     Sort by:
                     <select name="sort">
                         <TMPL_LOOP SORTS>
-                            <option  value="<TMPL_VAR SORT_BY>" ><TMPL_VAR SORT_BY></option>
+                            <option  value="<TMPL_VAR NAME>" ><TMPL_VAR LABEL></option>
                         </TMPL_LOOP>
                     </select>
                     <input type="checkbox" name="reverse" value=1>Reverse Sort

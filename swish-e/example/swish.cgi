@@ -27,8 +27,8 @@ use strict;
 
     use vars qw/
         $Swish_Binary $Swish_Index $Tmpl_Path @PropertyNames
-        @MetaNames $Metaname_Default $All_Meta $Page_Size
-        @Sorts %SortNames $Highlight
+        @MetaNames $Metaname_Default $Page_Size
+        @Sorts %MapNames $Highlight
     /;
 
 
@@ -42,15 +42,6 @@ use strict;
 
 
     ## These paths are normally (and probably should be) outside of webspace
-    ## This is just an example, but...
-
-    ## /usr/local/www/htdocs        - web document root
-    ## /usr/local/www/htdocs/images - e.g. place images here
-    ## /usr/local/www/cgi-bin       - web cgi-bin directory (place swish.cgi here)
-    ## /usr/local/www/templates     - place template file here (out of web space)
-    ## /usr/local/www/swish-e       - place index(es) here
-    
-
 
 
     # Path to the swish-e binary.
@@ -60,13 +51,13 @@ use strict;
 
     # The index file can also be a reference to an array of index files.
 
-    $Swish_Index  = '../swish-e/index.swish-e';
+    $Swish_Index  = '../index.swish-e';
 
 
     # The template file is the one supplied with this example CGI script
     # Modify to meet your design needs
 
-    $Tmpl_Path    = '../templates/swish.tmpl';
+    $Tmpl_Path    = '../swish.tmpl';
 
 
     # This lists the properties that you want to sort by in the form.  You can include
@@ -77,12 +68,14 @@ use strict;
     @Sorts = qw/swishrank swishtitle swishdocpath swishdocsize swishlastmodified/;
 
 
-    # This maps swish "propery names" to friendly names for the sort drop-down box.
-    # These are only the lables -- you must list which sorts to use in the $Sorts variable above.
+    # This maps swish propery and meta names to friendly names for the sort drop-down box
+    # and in limiting by fields (metanames).  Use is not required, but it's helpful.
+    # These are only the labels -- you must list which sorts to use in the $Sorts variable above
+    # and the MetaNames settings below.
     # If a name listed in $Sorts is NOT listed in %SortNames, then the name in $Sorts will be used.
     
 
-    %SortNames = (
+    %MapNames = (
         swishreccount       => 'Record Count',  # Integer  Result record counter
         swishtitle          => 'Title',         # String   Document title (html only)
         swishrank           => 'Rank',          # Integer  Result rank for this hit
@@ -92,6 +85,7 @@ use strict;
         swishdescription    => 'Description',   # String   Description of document (see:StoreDescription)
         swishdbfile         => 'Index',         # String   Path of swish database indexfile
         AddYourPropertyHere => 'Special Sort',  # Add your own like this!
+        ALL                 => 'Do not Limit',  # Special - see MetaNames below
     );
 
 
@@ -101,8 +95,6 @@ use strict;
     # Comment out if not used.  You do not need to add the swish "internal" property names.
 
     #@PropertyNames   = qw/last_name first_name city phone/;
-
-    #( or use if curious and don't have PropertyNames defined in your index )
     #@PropertyNames = qw/swishdocpath swishdocsize/;
 
 
@@ -111,27 +103,22 @@ use strict;
     # Comment out if not used
     # This adds a radio group on the form for limiting your search if more than one
     # MetaName is listed.
+    # If you use the special metaname "ALL" in addition to other meta names then
+    # The search is not limited by meta names.
     
     #@MetaNames = qw/name description/;
-
+    @MetaNames = qw/swishdocpath swishtitle ALL/;
 
     # The $Metaname_Default does two things.  If you set @MetaNames to more than one
     # value, this will set the default radio button selected when the script first starts.
     # If you set MetaNames to the empty list, but set $MetaName_Default to a value, then
     # this value will be used as the metaname for all queries.
 
-    #$Metaname_Default = 'description';  # set the default radio button
+    $Metaname_Default = 'ALL';  # set the default radio button, if some are used.
 
-    # if $All_Meta is set true, and @MetaNames is not the empty list, then
-    # all queries must be a metaname search.
-    # if $All_Meta is set false, the an additional radio button will be added
-    # to allow searching without a metaname prepended to the query.
-    # For HTML docs, it's typically 0, for XML set to 1.
 
-    $All_Meta = 0;
 
     # This does VERY SIMPLE bolding of search word if <swishdescription> is used.
-    # Not really recommended.  See the Swish-e FAQ for more info.
 
     $Highlight = 1;  
 
@@ -458,10 +445,20 @@ sub run_query {
             : {};
     }
 
+    my $query_simple = $query;
+
     $q->param('query', $query );  # clean up the query, if needed.
 
-    # prepend metaname to search, if required.
-    $query = $q->param('metaname') . "=($query)" if $q->param('metaname');
+    my $metaname = $q->param('metaname') || '';
+
+    if ( $metaname && $metaname ne 'ALL' ) {
+
+        return { MESSAGE => 'Bad MetaName provided' }
+            unless grep { $metaname eq $_ } @MetaNames;
+
+        # prepend metaname to search, if required.
+        $query = $q->param('metaname') . "=($query)";
+    }
     
 
     my $t0 = [gettimeofday];  # Time::HiRes - comment out if not needed
@@ -506,13 +503,9 @@ sub run_query {
             push @results, \%h;
 
             # not recommended -- just a very poor example.
-            if ( $Highlight && $h{swishdescription} ) {
-                for my $word ( split /\s+/, $q->param('query') ) {
-                    next if $word =~ /^(and|or|not)$/i;
-                    
-                    $h{swishdescription} =~ s[(\Q$word\E)][<b>$1</b>]ig;
-                }
-            }
+
+            fake_highlight( \%h, @_ ) if $Highlight && $h{swishdescription}
+            
        }
                 
                 
@@ -572,8 +565,8 @@ sub run_query {
     my $result = {
         FILES       => \@results,
         QUERY       => $q->escapeHTML( $query ),
-        QUERY_HREF  => $href,               # for running this query again
-        QUERY_SIMPLE=> scalar $q->param( $query ), # the query w/o any metanames - same as QUERY if metanames are not used
+        QUERY_HREF  => $href,           # for running this query again
+        QUERY_SIMPLE=> $query_simple,   # the query w/o any metanames - same as QUERY if metanames are not used
         TOTAL_TIME  => $elapsed,
         MY_URL      => $q->script_name,
         SHOWING     => $hits,
@@ -608,13 +601,12 @@ sub show_template {
         cache               => 1,
     );
 
+
     $params->{MY_URL} = $q->script_name;
 
     # Allow for sort selection in a <select>
-    $params->{SORTS} = [ map { { SORT_BY => $_, SORT_BY_DESC => ($SortNames{$_} || $_) } } @Sorts ] if @Sorts;
-
-    $params->{METANAMES} = [ map { { METANAME => $_ } } @MetaNames ] if @MetaNames;
-    $params->{ALL_META} = $All_Meta;
+    $params->{SORTS} = [ map { { NAME => $_, LABEL => ($MapNames{$_} || $_) } } @Sorts ] if @Sorts;
+    $params->{METANAMES} = [ map { { NAME => $_, LABEL => ($MapNames{$_} || $_) } } @MetaNames ] if @MetaNames;
 
     $template->param( $params );
     my $page = $template->output;
@@ -697,4 +689,19 @@ sub set_page {
 
 }
 
+#============== Fake highlight ======================
+# Really need to parse the HTML, and this will NOT work when stemming is used
+# unless the source is stemmed too.
+
+sub fake_highlight {
+    my ( $h, $sh, $result ) = @_;
+
+    my $query = $sh->get_header('parsed words', $result->swishdbfile );
+    
+    for ( split /\s+/, $query ) {
+        next if /^(and|or|not|")$/i || /^["()="]/;
+                  
+        $h->{swishdescription} =~ s[(\b\Q$_\E\b)][<b>$1</b>]ig;
+    }
+}
 
