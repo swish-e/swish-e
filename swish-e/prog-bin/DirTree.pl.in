@@ -14,8 +14,8 @@ use Pod::Usage;
 
 
 #--------------- User Configuration Section ------------------------
-# Regular expression that says these files are text
-# even though SWISH::Filter thinks they might be binary
+# File extensions that indicate text files even though SWISH::Filter thinks
+# they might be binary based on mime.types
 
 my @not_binary_extensions = qw/
     .pl
@@ -26,13 +26,15 @@ my @not_binary_extensions = qw/
 /;
 
 
-# Subroutine to validate file names: return true if file is ok to process
-# or false to skip the file.
-# The first parameter passed in is the 
+# Subroutines to validate files and directories.
+# Return true if file is ok to process or false to skip the file/directory
+# The Default for these functions is to return true and process all
+# files and directories.
+
 
 sub check_path {
     my $path = shift;
-    return 1;  # return true to process
+    return 1;  # return true to process this file
 }
 
 sub check_dir {
@@ -81,18 +83,23 @@ $ENV{FILTER_DEBUG} = 1 if $options{debug};
 use constant DEBUG => 0;
 
 # Try to load the filter module
+
 eval { require SWISH::Filter };
+warn "Failed to load SWISH::Filter [$@]\n" if $@ && $options{debug};
 my $filter = SWISH::Filter->new unless $@;
+
 
 
 find(
     {
-        wanted => \&wanted,
-        no_chdir => 1,  # 5.6 feature
-        follow => $options{follow_symlinks},
+        wanted      => \&wanted,
+        no_chdir    => 1,  # 5.6 feature
+        follow      => $options{follow_symlinks},
     },
     @ARGV,
 );
+
+$options{verbose} = 1 if $options{debug};
 
 sub wanted {
     my $path = $File::Find::name;
@@ -101,13 +108,14 @@ sub wanted {
         if ( !check_dir( $path ) ) {
             $File::Find::prune = 1;
             warn "Skipped dir [$path] by user function check_dir()\n"
-                if $options{verbose} || $options{debug};
+                if $options{verbose};
         }
         return;
     }
 
     if ( !-r _ ) {
-        warn "$File::Find::name is not readable\n";
+        warn "$File::Find::name is not readable\n"
+            if $options{verbose};
         return;
     }
 
@@ -116,7 +124,7 @@ sub wanted {
 
     if ( !check_path( $path ) ) {
         warn "Skipped path [$path] by user function check_path()\n"
-            if $options{verbose} || $options{debug};
+            if $options{verbose};
         return;
     }
 
@@ -253,7 +261,7 @@ Here's two examples:
     # Skip all directories that start with a dot (hidden dirs)
     sub check_dir {
         my $dir = shift;
-        return ! m[^\.];  # return true if does not start with a dot
+        return $dir !~  m[^\.];  # return true if does not start with a dot
     }
 
 Those are called for each file or directory processed.  The File::Find module also
