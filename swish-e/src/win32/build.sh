@@ -1,6 +1,9 @@
 #!/bin/sh
 # This script documents how to build SWISH-E for Win32 under Linux
 
+# To jumpstart your development here are pcre, libxml2, and zlib:
+# http://www.webaugur.com/wares/files/swish-e/builddir.zip
+
 # Let's just set the PATH once for the whole script
 PATH=/usr/local/cross-tools/bin:/usr/local/cross-tools/i586-mingw32msvc/bin:$PATH
 
