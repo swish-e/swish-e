@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "swish.h"
+#include "docprop.h"
 
 int main()
 {

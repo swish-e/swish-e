@@ -1,4 +1,5 @@
 /*
+$id$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -770,7 +771,7 @@ struct hashEntity *h;
 		sw->EntitiesHashTable=(void *)buildEntitiesHashTable();
 	t=(struct EntitiesHashTable *)sw->EntitiesHashTable;
 
-	for(p=s;p=strchr(p,'&');)
+	for(p=s; (p=strchr(p,'&')) ;)
 	{
 			/* Search for the end of entity */
 		for(check=0,q=p+t->minSize,i=t->minSize;i<=t->maxSize;q++,i++)

@@ -1,4 +1,5 @@
 /*
+$id$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -624,8 +625,8 @@ void remove_newlines(char *s)
 {
 char *p;
 	if(!s || !*s) return;
-	for(p=s;p;) if(p=strchr(p,'\n')) *p++=' ';
-	for(p=s;p;) if(p=strchr(p,'\r')) *p++=' ';
+	for(p=s;p;) if( (p=strchr(p,'\n')) ) *p++=' ';
+	for(p=s;p;) if( (p=strchr(p,'\r')) ) *p++=' ';
 }
 
 void remove_controls(char *s)

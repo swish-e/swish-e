@@ -1,4 +1,5 @@
 /*
+$id$
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
@@ -499,6 +500,7 @@ int getDocTypeOrAbort (StringList *sl, int n)
    }
 
    progerr ("%s: missing %d. parameter", sl->word[0],n);
+   return 0; /* compiler warning */
 }
 
 
