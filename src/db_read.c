@@ -373,24 +373,21 @@ void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
 
 /* Used by rank.c */
 
+int getTotalWordsInFile( IndexFILE *indexf, int filenum )
+{
+    if ( filenum < 1 || filenum > indexf->header.totalfiles )
+        progerr("getTotalWordsInFile passed an invalied file number");
 
+    /* This is still one too many layers */
 #ifdef USE_BTREE
-void getTotalWordsPerFile(SWISH *sw, IndexFILE *indexf, int idx,int *wordcount)
-{
-        DB_ReadTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
-}
-
+    return DB_CheckFileNum( indexf->sw, filenum, indexf->DB );
 #else
-
-
-void getTotalWordsPerFile(IndexFILE *indexf, int idx,int *wordcount)
-{
-    INDEXDATAHEADER *header = &indexf->header;
-
-    *wordcount = header->TotalWordsPerFile[idx];
-}
-
+    if ( indexf->header.ignoreTotalWordCountWhenRanking )
+        progerr("Can't return total words -- index was not built with IgnoreTotalWordCountWhenRanking");
+    else
+        return indexf->header->TotalWordsPerFile[filenum - 1];
 #endif
+}
 
 /*------------------------------------------------------*/
 /*---------- General entry point of DB module ----------*/

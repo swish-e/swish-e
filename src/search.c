@@ -2029,7 +2029,7 @@ static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST * l_rp, In
 
     for (i = 1; i <= filenums; i++)
     {
-        if (!ismarked(markentrylist, i))
+        if (!ismarked(markentrylist, i) && DB_CheckFileNum( indexf->sw, i, indexf->DB ) )
         {
             if(!new_results_list)
                 new_results_list = newResultsList(db_results);

@@ -796,8 +796,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     existing_filenum = DB_ReadFileNum(sw, fprop->real_path, indexf->DB);
 
     /* If the file already exists then likely will remove the file, so lookup the old word count */
+    /* Assumes that zero words indicates that a file was deleted */
     if ( existing_filenum )
-        existing_word_count = DB_CheckFileNum(sw,existing_filenum,indexf->DB);
+        existing_word_count = getTotalWordsInFile( indexf, existing_filenum );
 
     existing_is_deleted = existing_filenum && ( 0 == existing_word_count);  /* just to make it clear */
 
