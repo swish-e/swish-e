@@ -160,18 +160,24 @@ C<-S prog> document source method.
 
 Controls parsing and conversion of HTML entities.
 
-=item * New directive DontBumpPositionOnMetaTags
+=item * New directive: DontBumpPositionOnMetaTags
 
 The word position is bumped when a new metatag is found -- this
 is to prevent phrases from matching across meta tags.
 
 This currently works only with XML parsing.
 
-=item * Change of default for IndexComments
+=item * Changed directive: IndexComments
 
 This has been changed such that comments are not indexed by default.
 
-=item * New directive Words
+=item * Changed directive: IgnoreWords
+
+The builtin list of stop words has been removed. Use of the SwishDefault word
+will generate a warning. A sample file C<stopwords.txt> has been included if
+you wish to use these default words using C<IgnoreWords File: stopwords.txt>
+
+=item * New directive: Buzzwords
 
 This implementation is not complete yet (and not yet documented).
 
