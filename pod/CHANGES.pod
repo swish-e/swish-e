@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Fixed search parsing bug
+
+Brad Miele reported that the word "andes" was not being found.  It was being
+stemmed to "and" when was then considered an operator.  [moseley]
+
 =item * Add new directive PropertyNamesSortKeyLength
 
 PropertyNamesSortKeyLength sets the sort key length to use when sorting
