@@ -269,7 +269,7 @@ is not listed in the MetaNames directive.
 
 =item * New directive: IgnoreTags
 
-Will ignore listed tags in XML files
+Will ignore text with the listed tags.
 
 =item * New directive: SwishProgParameters *list of words*
 
@@ -465,6 +465,11 @@ Now -P sets the phrase delimiter character in searches.
 Swish-e 2.2 contains an B<experimental> feature to limit results by a
 range of property values.  This behavior of this feature may change in
 the future.
+
+=item * Modified command line argument C<-v>
+
+Now the argument C<-v 0> results in *no* output unless there is an error.
+This is a bit more handy when indexing with cron.
 
 
 =back
