@@ -458,13 +458,17 @@ Properties are defined by the B<ProperNames> directive in the configuration file
 and properties must also be defined in B<MetaNames>.  Swish stores the text of the meta name as a I<property>, and
 then will return this text while searching if this option is used.
 
-This feature is very useful for returning data included in a source documnet without having to re-read
+Properties are very useful for returning data included in a source documnet without having to re-read
 the source document while searching.  For example, this could be used to return a short document description.
-See also see B<Document Summeries> in L<SWISH-CONFIG|SWISH-CONFIG>.
+See also see B<Document Summeries> and L<PropertyNames|SWISH-CONFIG/"item_PropertyNames"> in L<SWISH-CONFIG|SWISH-CONFIG>.
 
 To return the subject and category properties while indexing.
 
     swish-e -w word -p subject category
+
+Properties are returned in double quotes.   If a property contains a double quote it is HTML escaped (&quot;).
+See the C<-x> switch for a more advanced method of returning a list of properties.
+
 
 NOTE: it is necessary to have indexed with the proper
 PropertyNames directive in the user config file in order to
