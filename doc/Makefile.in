@@ -17,6 +17,15 @@ SOURCEPODS = ../pod/CHANGES.pod    ../pod/README.pod   ../pod/SWISH-CONFIG.pod  
              ../pod/SWISH-PERL.pod ../pod/SWISH-SEARCH.pod
 
 MANPAGES = SWISH-RUN.1 SWISH-CONFIG.1 SWISH-RUN.1 SWISH-FAQ.1 SWISH-LIBRARY.1 SWISH-PERL.1
+HTMLDOCS = ../html/API.html ../html/CHANGES.html ../html/Filter.html \
+           ../html/index.html ../html/index_long.html ../html/INSTALL.html \
+           ../html/README.html ../html/search.cgi ../html/spider.html \
+           ../html/style.css ../html/SWISH-3.0.html ../html/SWISH-BUGS.html \
+           ../html/SWISH-CONFIG.html ../html/SWISH-FAQ.html ../html/swish.html \
+           ../html/SWISH-LIBRARY.html ../html/SWISH-PERL.html ../html/SWISH-RUN.html \
+           ../html/SWISH-SEARCH.html ../html/images/dotrule1.gif \
+           ../html/images/swish2b.gif ../html/images/swish2.gif \
+           ../html/images/swishbanner1.gif ../html/images/swish.gif
 
 
 # How portable is .PHONY?
@@ -55,7 +64,9 @@ man: $(MANPAGES)
 install-man: man
 	@INSTALL_DATA@ $(MANPAGES) $(mandir)
 
-
+install-docs: readme installpage html
+	@INSTALL@ -d $(prefix)/share/doc/swish-e/html/images
+	@INSTALL_DATA@ $(HTMLDOCS) $(prefix)/share/doc/swish-e/html
 
 #--- create html pages ------
 
