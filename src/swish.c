@@ -473,7 +473,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 
 		totalfiles = getfilecount(sw->indexlist);
 
-		stopwords = removestops(sw, totalfiles);
+		stopwords = removestops(sw);
 		
 		if (sw->verbose) {
 			if (stopwords) {

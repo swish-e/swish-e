@@ -28,7 +28,7 @@ int getfilecount (IndexFILE *);
 char *getthedate(void);
 int countwordstr (SWISH *, char *, int);
 int parsecomment (SWISH *, char *, int, int, int, int *);
-int removestops (SWISH *, int);
+int removestops (SWISH *);
 int getrank(SWISH *, int, int, int, int);
 void printheader(INDEXDATAHEADER *, FILE *, char *, int, int, int);
 void printindex(SWISH *, IndexFILE *);
