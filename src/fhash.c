@@ -63,9 +63,7 @@ unsigned long tmp = 0;
 
     /* Go to the end of the file */
     if(fseek(fp,0,SEEK_END) !=0)
-    {
-        printf("mal\n");
-    }
+        progerrno("Failed to seek to eof: ");
 
     /* Get pointer to hash table */
     f->start = ftell(fp);

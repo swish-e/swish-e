@@ -46,7 +46,9 @@ int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
     WORDDATA_SetBlocksInUse(pg,pg->used_blocks);
     WORDDATA_SetNumRecords(pg,pg->n);
     fseek(fp,pg->page_number * WORDDATA_PageSize,SEEK_SET);
-    return fwrite(pg->data,WORDDATA_PageSize,1,fp);
+    if ( fwrite(pg->data,WORDDATA_PageSize,1,fp) != 1 )
+        progerrno("Failed to write page to disk: "); 
+    return 1;
 }
 
 int WORDDATA_WritePage(WORDDATA *b, WORDDATA_Page *pg)
@@ -210,22 +212,20 @@ unsigned long page_number =0;
     {
         /* Get file pointer */
         if(fseek(fp,0,SEEK_END) !=0)
-        {
-            printf("mal\n");
-        }
+            progerrno("Internal error seeking: "); 
+
+
         offset = ftell(fp);
         /* Round up file pointer */
         offset = WORDDATA_RoundPageSize(offset);
 
         /* Set new file pointer - data will be aligned */
         if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
-        {
-            printf("mal\n");
-        }
+            progerrno("Internal error seeking: "); 
+
         if(fwrite("\0",1,size,fp)!=size || ((long)size + offset) != ftell(fp))
-        {
-            printf("mal\n");
-        }
+            progerrno("Faild to write page data: ");
+
         page_number = offset/WORDDATA_PageSize;
     }
 
@@ -353,9 +353,8 @@ int i;
     {
         /* Get file pointer */
         if(fseek(fp,0,SEEK_END) !=0)
-        {
-            printf("mal\n");
-        }
+            progerrno("Internal error seeking: "); 
+
         offset = ftell(fp);
         /* Round up file pointer */
         offset = WORDDATA_RoundPageSize(offset);
@@ -366,9 +365,7 @@ int i;
     }
     /* Set new file pointer - data will be aligned */
     if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
-    {
-        printf("mal\n");
-    }
+        progerrno("Internal error seeking: "); 
 
     id = ((unsigned long) (offset / WORDDATA_PageSize)) << 8;
 
@@ -383,9 +380,8 @@ int i;
     offset = WORDDATA_RoundPageSize(offset);
     /* Set new file pointer - data will be aligned */
     if(fseek(fp,offset, SEEK_SET)!=0 || offset != ftell(fp))
-    {
-        printf("mal\n");
-    }
+        progerrno("Internal error seeking: "); 
+
     b->lastid = id;
     return id;
 }
