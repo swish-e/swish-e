@@ -616,6 +616,11 @@ typedef struct {
 	/* structure for handling IndexOnly config data while indexing */
     struct swline *suffixlist;
 
+	/* structure to handle Ignoremeta metanames */
+	struct swline *ignoremetalist;
+	/* Structure for handling metatags from DontBumpPositionOnMetaTags */
+	struct swline *dontbumptagslist;
+
 	/* structure for handling all the index files while searching  */
     IndexFILE *indexlist;
 
