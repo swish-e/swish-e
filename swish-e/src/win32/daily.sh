@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Web directory where we share these builds
-WEBSHARE=/home/httpd/html/swish-e
+WEBSHARE="/home/swish/public"
 
 # Generate a name for this build
 TODAYIS=`date +%Y-%m-%d`
@@ -9,8 +9,8 @@ BUILDNAME="swish-e-${TODAYIS}"
 
 # Set the proper CVSROOT
 export CVS_RSH="ssh"
-alias cvsswish="cvs -d:ext:augur@cvs.swishe.sourceforge.net:/cvsroot/swishe"
-
+#alias cvsswish="cvs -d:ext:augur@cvs.sourceforge.net:/cvsroot/swishe"
+alias cvsswish="cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/swishe"
 
 # Checkout
 cvsswish co -d $BUILDNAME swish-e 2>&1
@@ -31,7 +31,7 @@ DISTNAME=swish-e-${VERSION}-${TODAYIS}
 echo $DISTNAME
 
 # Share via the web
-mv swishsetup.exe ${WEBSHARE}/${DISTNAME}.exe
+mv src/win32/swishsetup.exe ${WEBSHARE}/${DISTNAME}.exe
 # mv swish-e.zip ${WEBSHARE}/${DISTNAME}.zip
 rm -f ${WEBSHARE}/swish-latest.exe
 # rm -f ${WEBSHARE}/swish-latest.zip
