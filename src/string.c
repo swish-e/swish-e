@@ -42,8 +42,10 @@ $Id$
 
 #include <ctype.h>
 #include "swish.h"
-#include "string.h"
+#include "swish_qsort.h"
 #include "mem.h"
+#include "string.h"
+
 
 
 /* Case-insensitive strstr(). */
@@ -379,7 +381,7 @@ void sortstring(char *s)
 {
 int i,j,len;
 	len=strlen(s);
-	qsort(s,len,1,&ccomp);
+	swish_qsort(s,len,1,&ccomp);
 	for(i=1,j=1;i<len;i++) if(s[i]!=s[j-1]) s[j++]=s[i];
 	s[j]='\0';
 
@@ -397,7 +399,7 @@ char *s,*p;
         p= emalloc(ilent+1);
         if (ilen1) memcpy(s,s1,ilen1);
         if (ilen2) memcpy(s+ilen1,s2,ilen2);
-        if (ilent) qsort(s,ilent,1,&ccomp);
+        if (ilent) swish_qsort(s,ilent,1,&ccomp);
         for(i=1,j=1,p[0]=s[0];i<ilent;i++) if(s[i]!=p[j-1]) p[j++]=s[i];
         p[j]='\0';
         efree(s);

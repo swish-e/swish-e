@@ -31,6 +31,7 @@ $Id$
 #include "error.h"
 #include "db.h"
 #include "result_sort.h"
+#include "swish_qsort.h"
 #include "proplimit.h"
 
 /*==================== These should be in other modules ================*/
@@ -625,7 +626,7 @@ static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *m
 
 
     /* now sort by it's sort value */
-    qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbysort);
+    swish_qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbysort);
 
 
 
@@ -650,7 +651,7 @@ static int create_lookup_array( SWISH *sw, IndexFILE*indexf, struct metaEntry *m
 
 
     /* sort back by file number */
-    qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbyfile);
+    swish_qsort(sort_array, size, sizeof(LOOKUP_TABLE), &sortbyfile);
 
 
     /* allocate a place to save the lookup table */

@@ -133,6 +133,7 @@ $Id$
 #include "date_time.h"
 #include "db.h"
 #include "dump.h"
+#include "swish_qsort.h"
 
 
 /* 
@@ -1117,7 +1118,7 @@ int     removestops(SWISH * sw)
         for (i = 0; i < totalfiles; i++)
         {
             if (filepos[i])
-                qsort(filepos[i]->pos, filepos[i]->n, 2 * sizeof(int), &icomp2);
+                swish_qsort(filepos[i]->pos, filepos[i]->n, 2 * sizeof(int), &icomp2);
         }
 
         /* Now we need to recalculate all positions
@@ -1336,7 +1337,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     }
 
     /* Sort them */
-    qsort(ptmp, i, j, &icomp2);
+    swish_qsort(ptmp, i, j, &icomp2);
 
     /* Store results */
     for (k = 0, ptmp2 = ptmp; k < i; k++)
@@ -1859,7 +1860,7 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
             sw->Index->entryArray->elist[j++] = e;
 
     /* Sort them */
-    qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
+    swish_qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
 }
 
 
