@@ -6,6 +6,26 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.2rc2
+
+Release Date: ????
+
+=over 4
+
+=item Buffer overflow in xml.c
+
+Fixed bug in xml.c reported by Rodney Barnett when very long words
+were indexed. [moseley]
+
+=item configure script updates
+
+Updated from _WIN32 checks to feature checks using autoconf [moseley, norris]
+
+
+Moved 
+
+=back
+
 =head2 Version 2.2rc1
 
 Release Date: August 29, 2002
