@@ -170,6 +170,8 @@ src/metanames.h
 src/methods.c
 src/no_better_place_module.c
 src/no_better_place_module.h
+src/parser.c
+src/parser.h
 src/parse_conffile.c
 src/parse_conffile.h
 src/proplimit.c
