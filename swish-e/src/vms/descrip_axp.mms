@@ -21,7 +21,7 @@ man1dir = $(mandir)/man1
 
 # Flags for C compiler
 #CWARN=
-CDEF = /def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-22""", -
+CDEF = /def=(VMS,HAVE_CONFIG_H,STDC_HEADERS,"SWISH_VERSION=""2.1-dev-24""", -
 	"XML_SetExternalEntityRefHandlerArg"="XML_SetExternalEntityRefHandArg")
 CINCL= /include=([.expat.xmlparse],[.expat.xmltok])
 CWARN=/warning=disable=(ZEROELEMENTS,PROTOSCOPE,OUTTYPELEN,PTRMISMATCH1,QUESTCOMPARE,LONGEXTERN)
@@ -51,7 +51,7 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	filter.obj parse_conffile.obj result_output.obj date_time.obj \
 	keychar_out.obj extprog.obj db.obj db_native.obj dump.obj \
 	entities.obj no_better_place_module.obj swish_words.obj \
-	proplimit.obj swish_qsort.obj ramdisk.obj \
+	proplimit.obj swish_qsort.obj ramdisk.obj rank.obj \
 	xmlparse.obj xmltok.obj xmlrole.obj \
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS)
 
