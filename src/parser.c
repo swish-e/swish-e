@@ -180,7 +180,7 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  );
 static void free_parse_data( PARSE_DATA *parse_data ); 
-static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int txtlen );
+static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen );
 static int parse_chunks( PARSE_DATA *parse_data );
 static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
@@ -266,7 +266,7 @@ int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
     PARSE_DATA          parse_data;
     int                 res;
-    char                chars[READ_CHUNK_SIZE];
+    char       chars[READ_CHUNK_SIZE];
 
 
 
@@ -309,7 +309,7 @@ static int parse_chunks( PARSE_DATA *parse_data )
     FileProp           *fprop = parse_data->fprop;
     xmlSAXHandlerPtr    SAXHandler = parse_data->SAXHandler;
     int                 res;
-    char                chars[READ_CHUNK_SIZE];
+    char       chars[READ_CHUNK_SIZE];
     xmlParserCtxtPtr    ctxt;
 
 
@@ -771,7 +771,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 
         
 
-    Convert_to_latin1( parse_data, (unsigned char *)txt, txtlen );
+    Convert_to_latin1( parse_data, (char *)txt, txtlen );
 
 
     if ( DEBUG_MASK & DEBUG_PARSED_TEXT )
@@ -815,13 +815,13 @@ static void Whitespace(void *data, const xmlChar *txt, int txtlen)
 *
 *********************************************************************/
 
-static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int txtlen )
+static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 {
     CHAR_BUFFER     *buf = &parse_data->ISO_Latin1;
     int             inlen = txtlen;
     int             ret;
-    unsigned char  *start_buf;
-    unsigned char  *end_buf = txt + txtlen - 1;
+    char  *start_buf;
+    char  *end_buf = txt + txtlen - 1;
     int             used;
     
 
@@ -844,7 +844,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int t
         start_buf = &buf->buffer[buf->cur];     /* offset into buffer */
         
         /* Returns 0 for OK */
-        ret = UTF8Toisolat1( start_buf, &used, txt, &inlen );
+        ret = UTF8Toisolat1( (unsigned char *)start_buf, &used, (const unsigned char *)txt, &inlen );
 
         if ( used > 0 )         // tally up total bytes consumed
             buf->cur += used;
@@ -862,7 +862,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, unsigned char *txt, int t
 
 
             /* Skip one UTF-8 character -- returns null if not pointing to a UTF-8 char */
-            if (  !(txt = xmlUTF8Strpos(&txt[inlen], 1) ))
+            if (  !(txt = (char *)xmlUTF8Strpos( (const xmlChar *)(&txt[inlen]), 1) ))
                 return;
 
             /* Calculate the remaining length of the input string */

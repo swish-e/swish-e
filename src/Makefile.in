@@ -62,7 +62,7 @@ XP_H   = $(XPDIR)/xmltok/*.h $(XPDIR)/xmlparse/*.h
 
  
 # Flags for C compiler
-CFLAGS      = -Wall @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
+CFLAGS      = -Wall -pedantic @DEFS@ -DSWISH_VERSION=\"$(VERSION)\" $(XP_INC) @LIBXML2_CFLAGS@ @Z_CFLAGS@ $(cflags)
 LDFLAGS     = $(ldflags)
 
 

@@ -229,7 +229,7 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
         buffer[filelen] = '\0';
 
         /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
-        if ( strlen( buffer ) < bytes_read )
+        if ( strlen( (char *)buffer ) < bytes_read )
         {
             int i;
             progwarn("Substituted possible embedded null character(s) in file '%s'\n", name);

@@ -999,7 +999,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
 
     if (!efound)
     {
-        en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word) + 1);
+        en = (ENTRY *) Mem_ZoneAlloc(idx->entryZone, sizeof(ENTRY) + strlen(word));
         strcpy(en->word, word);
         en->tfrequency = 1;
         en->u1.last_filenum = filenum;
@@ -1135,7 +1135,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     /* Check if filename is internal swish metadata -- should be! */
 
     if ((q = getPropNameByName(header, AUTOPROPERTY_DOCPATH)))
-        addDocProperty( properties, q, filename, strlen(filename),0);
+        addDocProperty( properties, q, (unsigned char *)filename, strlen(filename),0);
 
 
     /* Perhaps we want it to be indexed ... */
@@ -1160,7 +1160,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     if ( title )
     {
         if ( (q = getPropNameByName(header, AUTOPROPERTY_TITLE)))
-            addDocProperty(properties, q, title, strlen(title),0);
+            addDocProperty(properties, q, (unsigned char *)title, strlen(title),0);
 
 
          /* Perhaps we want it to be indexed ... */
@@ -1178,7 +1178,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     if ( summary )
     {
         if ( (q = getPropNameByName(header, AUTOPROPERTY_SUMMARY)))
-            addDocProperty(properties, q, summary, strlen(summary),0);
+            addDocProperty(properties, q, (unsigned char *)summary, strlen(summary),0);
 
         
         if ( (q = getMetaNameByName(header, AUTOPROPERTY_SUMMARY)))
@@ -1252,7 +1252,7 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, IN
             indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
 
             if ((q = getPropNameByName(header, list->meta_entry->metaName )))
-                addDocProperty( properties, q, str, strlen(str),0);
+                addDocProperty( properties, q, (unsigned char *)str, strlen(str),0);
             
 
             efree( str );
@@ -2319,7 +2319,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         
 
         /* Translate chars */
-        TranslateChars(indexf->header.translatecharslookuptable, word);
+        TranslateChars(indexf->header.translatecharslookuptable, (unsigned char *)word);
 
         cur_pos = word;
 

@@ -367,7 +367,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 StringValue = StringListToString(sl, 1);
-                indexf->header.indexn = SafeStrCopy(indexf->header.indexn, StringValue, &indexf->header.lenindexn);
+                indexf->header.indexn = SafeStrCopy(indexf->header.indexn, (char *)StringValue, &indexf->header.lenindexn);
                 efree(StringValue);
             }
             else
@@ -381,7 +381,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 StringValue = StringListToString(sl, 1);
-                indexf->header.indexd = SafeStrCopy(indexf->header.indexd, StringValue, &indexf->header.lenindexd);
+                indexf->header.indexd = SafeStrCopy(indexf->header.indexd, (char *)StringValue, &indexf->header.lenindexd);
                 efree(StringValue);
             }
             else
@@ -396,7 +396,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 StringValue = StringListToString(sl, 1);
-                indexf->header.indexp = SafeStrCopy(indexf->header.indexp, StringValue, &indexf->header.lenindexp);
+                indexf->header.indexp = SafeStrCopy(indexf->header.indexp, (char *)StringValue, &indexf->header.lenindexp);
                 efree(StringValue);
             }
             else
@@ -411,7 +411,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             if (sl->n > 1)
             {
                 StringValue = StringListToString(sl, 1);
-                indexf->header.indexa = SafeStrCopy(indexf->header.indexa, StringValue, &indexf->header.lenindexa);
+                indexf->header.indexa = SafeStrCopy(indexf->header.indexa, (char *)StringValue, &indexf->header.lenindexa);
                 efree(StringValue);
             }
             else
@@ -446,7 +446,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         {
             if (sl->n >= 2)
             {
-                if (!BuildTranslateChars(indexf->header.translatecharslookuptable, sl->word[1], sl->word[2]))
+                if (!BuildTranslateChars(indexf->header.translatecharslookuptable, (unsigned char *)sl->word[1], (unsigned char *)sl->word[2]))
                 {
                     progerr("%s: requires two values (same length) or one translation rule", w0);
                 }
@@ -968,7 +968,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
                     i++;
                 }
 
-                if (i < sl->n && isnumstring(sl->word[i]))
+                if (i < sl->n && isnumstring(  (unsigned char *)sl->word[i] ))
                 {
                     sd->size = read_integer( sl->word[i], w0, 0, INT_MAX );
                 }
@@ -1095,7 +1095,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "TruncateDocSize") == 0)
         {                       /* rasc 2001-03 */
-            if (sl->n == 2 && isnumstring(sl->word[1]))
+            if (sl->n == 2 && isnumstring( (unsigned char *)sl->word[1] ))
                 sw->truncateDocSize = atol(sl->word[1]);
             else
                 progerr("%s: requires size parameter in bytes", w0);

@@ -27,7 +27,7 @@
 typedef enum {
     DB_CREATE,
 	DB_READ,
-	DB_READWRITE,
+	DB_READWRITE
 }
 DB_OPEN_MODE;
 

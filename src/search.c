@@ -1679,6 +1679,8 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 
         else /* Matching file number */
         {
+            int result_size;
+            
             /* Compute rank if not yet computed */
             if(r1->rank == -1)
                 r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
@@ -1688,9 +1690,12 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 
 
             /* Create a new RESULT - Should be a function to creeate this, I'd think */
-            
-            rp = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (r1->frequency + r2->frequency) * sizeof(int));
-            memset( rp, 0, sizeof(RESULT));
+
+            result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
+            rp = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, result_size );
+            memset( rp, 0, result_size );
+
+
             rp->fi.filenum = rp->filenum = r1->filenum;
 
             rp->rank = r1->rank + r2->rank;
@@ -1944,10 +1949,12 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
 void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
+    int     result_size;
 
-
-    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + frequency * sizeof(int));
-    memset( newnode, 0, sizeof(RESULT));
+    result_size = sizeof(RESULT) + ((frequency - 1) * sizeof(int));
+    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, result_size );
+    memset( newnode, 0, result_size );
+    
     newnode->fi.filenum = newnode->filenum = filenum;
 
     newnode->rank = rank;
@@ -2509,12 +2516,17 @@ RESULT_LIST *mergeresulthashlist(SWISH *sw, RESULT_LIST *l_r)
                 /* Start of new block, coalesce previous results */
                 if(filenum)
                 {
+                    int result_size;
+                    
                     for(tmp = start, tot_frequency = 0; tmp!=rp; tmp = tmp->next)
                     {
                         tot_frequency += tmp->frequency;                        
                     }
-                    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + tot_frequency * sizeof(int));
-                    memset( newnode, 0, sizeof(RESULT));
+
+                    result_size = sizeof(RESULT) + ((tot_frequency - 1) * sizeof(int));
+                    newnode = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, result_size );
+                    memset( newnode, 0, result_size );
+                    
                     newnode->fi.filenum = newnode->filenum = filenum;
                     newnode->rank = 0;
                     newnode->tfrequency = 0;

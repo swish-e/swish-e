@@ -99,7 +99,9 @@ void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size);
 void Mem_ZoneFree(MEM_ZONE **head); 
 
 /* memory zone statistics */
+#if MEM_STATISTICS
 void Mem_ZoneStatistics(MEM_ZONE *head); 
+#endif
 
 /* make all memory in a zone reusable */
 void Mem_ZoneReset(MEM_ZONE *head); 

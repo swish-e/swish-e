@@ -81,14 +81,14 @@ char   *lstrstr(char *s, char *t)
 
 char   *getword(char **in_buf)
 {
-    unsigned char   quotechar;
-    unsigned char   uc;
-    char           *s = *in_buf;
-    char           *start = *in_buf;
-    char            buf[MAXWORDLEN+1];
-    char           *cur_char = buf;
-    int             backslash = 0;
-    
+    unsigned char quotechar;
+    unsigned char uc;
+    char   *s = *in_buf;
+    char   *start = *in_buf;
+    char    buf[MAXWORDLEN + 1];
+    char   *cur_char = buf;
+    int     backslash = 0;
+
 
     quotechar = '\0';
 
@@ -98,10 +98,10 @@ char   *getword(char **in_buf)
     if (!*s)
     {
         *in_buf = s;
-        return estrdup( "\0" );
+        return estrdup("\0");
     }
 
-        
+
     if (*s == '\"' || *s == '\'')
         quotechar = *s++;
 
@@ -111,7 +111,7 @@ char   *getword(char **in_buf)
     {
         uc = (unsigned char) *s;
 
-        if (uc == '\\' && !backslash && quotechar )  // Mar 17, 2002 - only enable backslash inside of quotes
+        if (uc == '\\' && !backslash && quotechar) // Mar 17, 2002 - only enable backslash inside of quotes
         {
             s++;
             backslash++;
@@ -119,43 +119,42 @@ char   *getword(char **in_buf)
         }
 
         /* Can't see why we would need to escape these, can you? - always fed a single line */
-        if ( uc == '\n' || uc == '\r' )
+        if (uc == '\n' || uc == '\r')
         {
             s++;
             break;
         }
-        
 
-        if ( !backslash )
+
+        if (!backslash)
         {
             /* break on ending quote or unquoted space */
-            
-            if ( uc == quotechar || (!quotechar && isspace((int) uc) ) )
+
+            if (uc == quotechar || (!quotechar && isspace((int) uc)))
             {
-                s++;  // past quote or space char.
+                s++;            // past quote or space char.
                 break;
             }
 
-        }
-        else
+        } else
             backslash = 0;
-           
+
 
         *cur_char++ = *s++;
 
-        if ( cur_char - buf  > MAXWORDLEN )
-            progerr("Parsed word '%s' exceeded max length of %d", start, MAXWORDLEN );
+        if (cur_char - buf > MAXWORDLEN)
+            progerr("Parsed word '%s' exceeded max length of %d", start, MAXWORDLEN);
     }
 
-    if ( backslash )
+    if (backslash)
         *cur_char++ = '\\';
-        
+
 
     *cur_char = '\0';
 
     *in_buf = s;
 
-    return estrdup( buf );
+    return estrdup(buf);
 
 }
 
@@ -199,8 +198,7 @@ char   *getconfvalue(line, var)
         tmpvalue = estrdup(p);
         efree(p);
         return tmpvalue;
-    }
-    else
+    } else
         return NULL;
 }
 
@@ -471,9 +469,9 @@ unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
     {
         *sz_dest = len + off_dest;
         if (dest)
-            dest = (char *) erealloc(dest, *sz_dest);
+            dest = (unsigned char *) erealloc(dest, *sz_dest);
         else
-            dest = (char *) emalloc(*sz_dest);
+            dest = (unsigned char *) emalloc(*sz_dest);
     }
     memcpy(dest + off_dest, orig, len);
     return (dest);
@@ -507,21 +505,6 @@ void    remove_newlines(char *s)
             *p++ = ' ';
 }
 
-void    remove_controls(char *s)
-{
-    unsigned char *p,
-           *q;
-
-    if (s && *s)
-    {
-        for (p = s, q = s; *p; p++)
-        {
-            if (!iscntrl((int) (*p)))
-                *q++ = *p;
-        }
-        *q = '\0';
-    }
-}
 
 void    remove_tags(char *s)
 {
@@ -621,8 +604,7 @@ char    charDecode_C_Escape(char *s, char **se)
         /* no escape   */
         c = *s;                 /* return char */
 
-    }
-    else
+    } else
     {
 
         switch (*(++s))
@@ -690,7 +672,7 @@ char    charDecode_C_Escape(char *s, char **se)
 
 char   *strtolower(char *s)
 {
-    unsigned char *p = s;
+    unsigned char *p = (unsigned char *) s;
 
     while (*p)
     {
@@ -799,7 +781,7 @@ unsigned char *StringListToString(StringList * sl, int n)
 {
     int     i,
             j;
-    char   *s;
+    unsigned char *s;
     int     len_s,
             len_w;
 
@@ -941,8 +923,7 @@ char   *cstr_dirname(char *path)
     {
         dir = (char *) estrdup(" ");
         *dir = (*path == '/') ? '/' : '.';
-    }
-    else
+    } else
     {
         len = s - path;
         dir = emalloc(len + 1);
@@ -953,52 +934,6 @@ char   *cstr_dirname(char *path)
     return dir;
 }
 
-/***************************************************
-*  Note that this is mostly a duplicate of above,
-*  but was designed to work with both path and URLs
-*
-*  Probably should settle on one
-*  Also, this returns "" on empty dirs, where above returns " "
-*  Mar 2002 -- and is only called by fs.c...
-***************************************************/
-
-void split_path( unsigned char *path, unsigned char **directory, unsigned char **file )
-{
-unsigned char  *p1, *p2, *p3;
-
-    /* look for last DIRDELIMITER (FS) and last / (HTTP) */
-    //p1 = strrchr( path, DIRDELIMITER);
-    p1 = strrchr( path, '/');
-    p2 = strrchr( path, '/');
-
-    if (p1 && p2)  /* if both are found, use the longest. */
-    {
-        if (p1 >= p2)
-            p3 = p1;
-        else
-            p3 = p2;
-    }
-    else if (p1 && !p2)
-        p3 = p1;
-    else if (!p1 && p2)
-        p3 = p2;
-    else
-        p3 = NULL;
-
-    /* Set directory */
-    if (!p3)
-        *directory = estrdup("");
-    else
-    {
-        unsigned char  c = *++p3;
-        *p3 = '\0';
-        *directory = estrdup( path );
-        *p3 = c;
-        path = p3;
-    }
-
-    *file = estrdup( path );
-}
 
 
 /* estrdup - like strdup except we call our emalloc routine explicitly
@@ -1031,7 +966,7 @@ char   *estrndup(char *s, size_t n)
     else
         newlen = n;
 
-    if(newlen < n)
+    if (newlen < n)
         news = emalloc(n + 1);
     else
         news = emalloc(newlen + 1);
