@@ -439,11 +439,21 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, 
 {
     int cur_length = 0;    /* array size */
     struct metaEntry *m;
+    struct metaEntry *rank_meta;
+
+
+    /* rank sorting is the default, and is also handled special when ranking */
+
+    rank_meta = getPropNameByName(&db_results->indexf->header, AUTOPROPERTY_RESULT_RANK);
+
+
+
 
     reset_lasterror( db_results->indexf->sw );
 
 
-    /* If none set then default to rank $$$ maybe can avoid this in the sort code?? */
+    /* If no sorts specified set then default to rank */
+
     if ( !sort_word )  /* set the default */
     {
         db_results->num_sort_props = 1;
@@ -452,12 +462,12 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, 
         db_results->sort_data = (SortData *)emalloc( sizeof( SortData ) );
         memset( db_results->sort_data, 0, sizeof( SortData ) );
 
-        m = getPropNameByName(&db_results->indexf->header, AUTOPROPERTY_RESULT_RANK);
-        if ( !m )
+        if ( !rank_meta )
             progerr("Rank is not defined as an auto property - must specify sort parameters");
 
-        db_results->sort_data[0].property = m;
+        db_results->sort_data[0].property = rank_meta;
         db_results->sort_data[0].direction = 1;
+        db_results->sort_data[0].is_rank_sort = 1; /* flag as special -- see result_sort.c */
 
         return 1;
     }
@@ -516,6 +526,10 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, 
 
         db_results->sort_data[db_results->num_sort_props-1].property = m;
         db_results->sort_data[db_results->num_sort_props-1].direction = sortmode;
+
+        /* flag special case of sorting by rank */
+        if ( m == rank_meta )
+            db_results->sort_data[db_results->num_sort_props-1].is_rank_sort = 1;
 
 
         sort_word = sort_word->next;

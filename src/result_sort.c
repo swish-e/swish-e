@@ -71,6 +71,16 @@ static int compare_results_single_index(const void *s1, const void *s2)
         sort_data = &r1->db_results->sort_data[i];
 
 
+        /* special case of sorting by (raw) rank */
+        if ( sort_data->is_rank_sort )
+        {
+            if ( (rc = r1->rank - r2->rank) )
+                return ( rc * sort_data->direction );
+            else
+                continue;
+        }
+
+
         /* If haven't checked this property for a pre-sorted table then try to load the table */
         if ( !sort_data->checked_presorted )
         {
@@ -144,6 +154,22 @@ int compare_results(const void *s1, const void *s2)
     {
         sort_data1 = &r1->db_results->sort_data[i];
         sort_data2 = &r2->db_results->sort_data[i];
+
+
+        /* special case of sorting by (raw) rank */
+        /* this is a bit more questionable because comparing raw ranks between two */
+        /* indexes may not work well -- probably ok now with simple word-count based ranking */
+
+        /* very unlikely that there is a property "swishrank" that was not the rank, so don't check both */
+        if ( sort_data1 ->is_rank_sort )
+        {
+            if ( (rc = r1->rank - r2->rank) )
+                return ( rc * sort_data1->direction );
+            else
+                continue;
+        }
+
+
 
         /* First, does an array exist to hold the pointers to the properties for each result? */
         if ( !sort_data1->key )
@@ -279,6 +305,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
         progerr("called sort_single_index_results without a vaild sort_data struct");
     
 
+
     /* Need to tally up the number of results in this set */
     /* $$$$ can search.c do this when creating results? It's an extra loop */
     /* perhaps it can't be done in search.c -- need to set an index number on the result */
@@ -298,10 +325,17 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     db_results->result_count = results_in_index;  /* needed so we know how big to create arrays */
     
 
+
+
+
     /* Do we need to lookup properties for the first key? */
+    /* Not if sorting by rank (that's in the result) or if there's presorted data available */
+
     sort_data = &db_results->sort_data[0];
 
-    if ( ! sort_data->property->sorted_data )  /* is array already loaded? */
+
+
+    if ( !sort_data->is_rank_sort && !sort_data->property->sorted_data )
         if ( !LoadSortedProps( db_results->indexf, sort_data->property ) )    /* can we load the array? */
         {
             /* otherwise, we must read all the properties off disk */
