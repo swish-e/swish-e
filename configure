@@ -1,7 +1,7 @@
 #! /bin/sh
 
 
-VERSION=2.1-dev-24
+VERSION=2.1-dev-25
 
 
 PROJECT=swish-e
