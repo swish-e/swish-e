@@ -497,7 +497,7 @@ typedef struct RESULT
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */
     IndexFILE *indexf;
-    struct SWISH *sw;
+    struct SWISH *sw;           /* why is this needed? */
 }
 RESULT;
 

@@ -173,7 +173,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
 
     /* Save content to a temporary file */
     efree( fprop->work_path );
-    out = create_tempfile(sw, "swishfil", &fprop->work_path, 0 );
+    out = create_tempfile(sw, "fltr", &fprop->work_path, 0 );
 
     bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
 

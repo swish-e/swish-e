@@ -457,7 +457,7 @@ long    SwapLocData(SWISH * sw, unsigned char *buf, int lenbuf)
 
     if (!idx->fp_loc_write)
     {
-        idx->fp_loc_write = create_tempfile(sw, "swishloc", &idx->swap_location_name, 0 );
+        idx->fp_loc_write = create_tempfile(sw, "loc", &idx->swap_location_name, 0 );
 
         idx->swap_tell = ftell;
         idx->swap_write = fwrite;
