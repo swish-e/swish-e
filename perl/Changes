@@ -2,6 +2,11 @@ Revision history for Perl extension Text::Aspell.
 
 ## $Id$ ##
 
+0.02  Sun May 02, 2004
+
+	Added access to MetaNames and PropertyNames defined 
+	in the index.
+
 0.01  Mon Oct 14, 2002
 
 	Initial module [moseley]
