@@ -1,17 +1,16 @@
 #!/bin/sh
 
 # Web directory where we share these builds
-WEBSHARE=$1
-
-if [ "${WEBSHARE}x" = "x" ]; then echo "Usage: daily.sh <web share>"; fi
-if [ ! -e ${WEBSHARE} ]; then echo "daily.sh: web share not found"; fi
+WEBSHARE=/home/httpd/html/swish-e
 
 # Generate a name for this build
 TODAYIS=`date +%Y-%m-%d`
 BUILDNAME="swish-e-${TODAYIS}"
 
 # Set the proper CVSROOT
-alias cvsswish="cvs -d:pserver:anonymous@cvs.SWISHE.sourceforge.net:/cvsroot/swishe"
+export CVS_RSH="ssh"
+alias cvsswish="cvs -d:ext:augur@cvs.swishe.sourceforge.net:/cvsroot/swishe"
+
 
 # Checkout
 cvsswish co -d $BUILDNAME swish-e 2>&1
@@ -19,13 +18,24 @@ cvsswish co -d $BUILDNAME swish-e 2>&1
 # Build the installer
 cd $BUILDNAME
 src/win32/build.sh || echo "Error Building SWISH-E" 1>&2
+# src/win32/distzip.sh  || echo "Error Creating SWISH-E ZIP File." 1>&2
 src/win32/dist.sh  || echo "Error Creating SWISH-E Installer: Is WINE using ttydrv?" 1>&2
 
 # SWISH-E VERSION
-VERSION=`grep -x VERSION=.* configure | cut -d \= -f 2-`
+# `grep -x VERSION=.* configure | cut -d \= -f 2-`
+export `grep ^MAJOR_VERSION configure`
+export `grep ^MINOR_VERSION configure`
+export `grep ^MICRO_VERSION configure`
+VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
 DISTNAME=swish-e-${VERSION}-${TODAYIS}
 echo $DISTNAME
 
 # Share via the web
 mv swishsetup.exe ${WEBSHARE}/${DISTNAME}.exe
+# mv swish-e.zip ${WEBSHARE}/${DISTNAME}.zip
+rm -f ${WEBSHARE}/swish-latest.exe
+# rm -f ${WEBSHARE}/swish-latest.zip
+ln -s ${WEBSHARE}/${DISTNAME}.exe ${WEBSHARE}/swish-latest.exe
+# ln -s ${WEBSHARE}/${DISTNAME}.zip ${WEBSHARE}/swish-latest.zip
+echo "${DISTNAME}" > ${WEBSHARE}/latest
 
