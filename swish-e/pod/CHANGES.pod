@@ -10,6 +10,21 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item SWISH::Filters and spider.pl updates
+
+The web spider F<spider.pl> was updated to work better with SWISH::Filter
+by default and also make it easier to use the spider default along with
+a spider config file.  See spider.pl for details.
+
+SWISH::Filter was updated.  The way filters are created has changed.
+If you created your own filters you will need to update them.  Take a look
+at SWISH::Filter and the filters included in the distribution.
+
+=item Updates to Documentation
+
+Richard Morin submitted formatting and punctuation dates to the README and
+INSTALL docs.
+
 =item Added -R option to support IDF word weighting in ranking. (karman)
 
 Added Inverse Document Frequency calculation to the getrank() routine.
