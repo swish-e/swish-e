@@ -216,7 +216,8 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 
 
     /* This is a memory leak if not using PROPFILE */
-#define RAW_RANK 1
+
+
     /* Some properties are generated during a search */
     if ( is_meta_internal( *meta_entry ) )
     {
