@@ -142,12 +142,13 @@ struct stat stat_buf;
 	sw=SwishNew();				/* Get swish handle */
 	
 
-
 	/* By default we are set up to use the first data source in the list */
  	IndexingDataSource = data_sources[0];
 	
+
 	if (argc == 1)
 		usage();
+
 	while (--argc > 0) 
 	{
 		++argv;
@@ -157,12 +158,12 @@ struct stat stat_buf;
 		
 		if ((*argv)[2] != '\0' && isalpha((int)((unsigned char)(*argv)[2]))) /* cast to int, 2/22/00 */
 			usage();
+
 		if (c == 'i') 
 		{
 			index = 1;
 			while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') {
-				sw->dirlist = (struct swline *)
-					addswline(sw->dirlist, (++argv)[0]);
+				sw->dirlist = (struct swline *)addswline(sw->dirlist, (++argv)[0]);
 				argc--;
 			}
 		}
@@ -423,10 +424,11 @@ struct stat stat_buf;
 	if (index && merge)
 		index = 0;
 	
+
+	/* -D => give a dump of the contents of index files */
 	if (decode) {
-		
 		if (!hasindex)
-			progerr("Specify the index file to decode.");
+			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
 		
 		while (sw->indexlist != NULL) {
 			
@@ -435,8 +437,10 @@ struct stat stat_buf;
 			
 			sw->indexlist = sw->indexlist->next;
 		}
-		
 	}
+
+
+	/* -i or -c => Index the files */
 	else if (index) 
 	{
 		if(INDEX_READ_ONLY) {
@@ -455,8 +459,7 @@ struct stat stat_buf;
 		}
 
 		if (!hasindex)
-			sw->indexlist = (IndexFILE *) 
-				addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = (IndexFILE *) addindexfile(sw->indexlist, INDEXFILE);
 
 		if (!hasdir)
 			progerr("Specify directories or files to index.");
@@ -560,9 +563,10 @@ struct stat stat_buf;
 #ifdef INDEXPERMS
 		chmod(sw->indexlist->line, INDEXPERMS);
 #endif
-
-
 	}
+
+
+	/* -M => Merge indexes together */
 	else if (merge) 
 	{
 		if(INDEX_READ_ONLY) {
@@ -627,14 +631,19 @@ struct stat stat_buf;
 		if (isfile(tmpindex2)) remove(tmpindex2);
 	
 	}
+
+
+	/* -k => Output all words in index that start with specified letter */
 	else if(keychar)
 	{
 		if (!hasindex) {
-			sw->indexlist = (IndexFILE *)	addindexfile(sw->indexlist, INDEXFILE);
+			sw->indexlist = (IndexFILE *)addindexfile(sw->indexlist, INDEXFILE);
 		}
 		OutputKeyChar (sw, (int)(unsigned char)keychar);
-
 	}
+
+
+	/* anything else => Search for words in the index */
 	else 
 	{
 		if (!hasindex)
@@ -763,9 +772,7 @@ struct stat stat_buf;
 			/* Free conflist */
 		freeswline(conflist);
 		if(lenword) efree(word);
-		if(lenwordlist) efree(wordlist);
 		if(lenmaxhitstr) efree(maxhitstr);
-		if(lenstructstr) efree(structstr);
 		if(lenbeginhitstr) efree(beginhitstr);
 	}
 
@@ -780,6 +787,8 @@ struct stat stat_buf;
 	if(index4) efree(index4);
 	if(tmpindex1) efree(tmpindex1);
 	if(tmpindex2) efree(tmpindex2);
+	if(wordlist) efree(wordlist);
+	if(structstr) efree(structstr);
 
 	checkmem();
 	
