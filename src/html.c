@@ -178,7 +178,7 @@ char *title=parsetitle(buffer,fprop->real_filename);
 			if(endtag) {  
 				*endtag++='\0';
 				if((tag[0]=='!') && lstrstr(tag,"META") && (lstrstr(tag,"START") || lstrstr(tag,"END"))) {    /* Check for META TAG TYPE 1 */
-					structure |= IN_COMMENTS;
+					structure |= IN_META;
 					if(lstrstr(tag,"START")) {
 						if((metaNameEntry=getHTMLMeta(indexf,tag,&sw->applyautomaticmetanames,sw->verbose,sw->OkNoMeta,NULL))) {
 							/* If must be indexed add the metaName to the currentlist of metaNames */
@@ -463,7 +463,7 @@ int wordcount=0; /* Word count */
 		/* Get to the " sign disreguarding other characters */
 	if((temp=strchr(temp,'\"')))
 	{	
-		structure |= IN_COMMENTS;
+		structure |= IN_META;
 
 		start=temp+1;
 
@@ -644,3 +644,11 @@ int found,lensummary;
 	return summary;
 }
 
+/* Parses the words in a comment.
+*/
+
+int parsecomment(SWISH * sw, char *tag, int filenum, int structure, int metaID, int *position)
+{
+    structure |= IN_COMMENTS;
+    return indexstring(sw, tag + 1, filenum, structure, 1, &metaID, position);
+}

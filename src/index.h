@@ -27,7 +27,6 @@ void addentry (SWISH *, char*, int, int, int, int );
 void addtofilelist (SWISH *,IndexFILE *indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size, struct file ** newFileEntry);
 int getfilecount (IndexFILE *);
 int countwordstr (SWISH *, char *, int);
-int parsecomment (SWISH *, char *, int, int, int, int *);
 int removestops (SWISH *);
 int getrank(SWISH *, int, int, int, int, int);
 void write_file_list(SWISH *, IndexFILE *);

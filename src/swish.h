@@ -207,7 +207,8 @@ extern int vsnprintf(char *, size_t, const char *, va_list);
 #define IN_COMMENTS 16
 #define IN_HEADER 32
 #define IN_EMPHASIZED 64
-#define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED)
+#define IN_META 128
+#define IN_ALL (IN_FILE|IN_TITLE|IN_HEAD|IN_BODY|IN_COMMENTS|IN_HEADER|IN_EMPHASIZED|IN_META)
 
 #define MAXLONGLEN 4
 
