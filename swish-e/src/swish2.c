@@ -320,8 +320,9 @@ int SwishSeek(SWISH *sw,int pos)
         /* In this case we have no choice - We need to read the data from disk */
         /* The easy way: Let SwishNext do the job */
 
-        for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
-            sp=SwishNext(sw);
+        for (i=0;i<pos;i++)
+            if(!(sp=SwishNext(sw)))
+                break;
     }
 
     if(!sp)
