@@ -1,4 +1,7 @@
 perlmoduledir = $(libexecdir)/perl
+exampledir = $(datadir)/doc/$(PACKAGE)/examples/filters
+
+example_DATA = README
 
 nobase_perlmodule_SCRIPTS = \
     SWISH/Filter.pm \

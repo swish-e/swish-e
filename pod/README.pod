@@ -166,10 +166,20 @@ Swish-e list.
 
 =head1 The Swish-e Documentation
 
+Documentation is provided as HTML pages installed in 
+$prefix/share/doc/swish-e where $prefix is /usr/local if building from 
+source, or /usr if installed as part of a package from your OS vendor.
+Under Windows $prefix is selected at installation time.
+
+A subset of the documentation is installed as system man pages as well.
+
+Documentation is also available on-line at http://swish-e.org.
+
 Documetation is provided in the Swish-e distribution package in two forms,
 POD (Plain Old Documentation), and in html format.  The POD documentation
 is in the F<pod> directory, and the HTML documentation is in the F<html>
-directory, of course.
+directory, of course.  The HTML documentation is generated from the POD
+files.
 
 If your system includes the required support files and programs, the
 distribution make files can also generate the documentation in these
@@ -177,24 +187,12 @@ formats:
 
     Postscript
     PDF (Adobe Acrobat)
-    system man pages
-
-You may also build a "split" version of the documentation where each
-topic heading is a separate web page.  Building the split version also
-creates a Swish-e index of the documentation that makes the documentation
-searchable via the included Perl CGI program.
-
-Building these other forms of documentation require additional helper
-applications -- most modern Linux distributions will include all that's
-needed (at least mine does...).  You shouldn't have a problem if you have
-kept your Perl and Perl libraries up to date.
-
-Online documentation can be found at the Swish-e web site listed above.
 
 See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
-versions of the documentation, and for information on installing the
-SWISH-* documentation as Unix man(1) pages.
+versions of the documentation.
 
+Patches or updates to the documentation should be done against the POD files 
+located in the pod directory.
 
 =head2 How do I read the Swish-e documentation?
 
@@ -219,165 +217,6 @@ or to make life easier,
 
 Complain to your system administrator if the C<perldoc> command is not
 available on your machine.
-
-=head2  Included Documentation
-
-The following documentation is included in this Swish-e distribution.
-
-If you are new to Swish-e read the L<INSTALL|INSTALL> page to get Swish-e installed
-and tested.  Work through the example in shown in the  L<INSTALL|INSTALL> page, and
-the examples in the F<conf> directory.  Also review the L<SWISH-FAQ|SWISH-FAQ>.
-
-=over 4
-
-=item *
-
-L<README|README> - This file
-
-=item *
-
-L<INSTALL|INSTALL> - Installation and basic usage instructions
-
-=item *
-
-L<SWISH-CONFIG|SWISH-CONFIG> - Configuration File Directives
-
-=item *
-
-L<SWISH-RUN|SWISH-RUN> - Running Swish and Command Line Switches
-
-=item *
-
-L<SWISH-SEARCH|SWISH-SEARCH> - All about Searching with Swish-e
-
-=item *
-
-L<SWISH-FAQ|SWISH-FAQ> - Common questions, and some answers
-
-=item *
-
-L<SWISH-LIBRARY|SWISH-LIBRARY> - Interface to the Swish-e C library
-
-=item *
-
-L<SWISH-PERL|SWISH-PERL> - Instructions for using the Perl library
-
-=item *
-
-L<CHANGES|CHANGES> - List of feature changes and bug fixes
-
-=item *
-
-L<SWISH-BUGS|SWISH-BUGS> - List of known bugs in the release
-
-=back
-
-=head2 Document Generation
-
-The Swish-e documentation in HTML format was created with Pod::HtmlPsPdf,
-a package of Perl modules written and/or modified by Stas Bekman to
-automate the conversion of documents in pod format (see perldoc perlpod)
-to HTML, Postscript, and PDF.  A slightly modified version of this package
-is include with the Swish-e distribution and used for building the HTML.
-As distributed, Swish-e contains only the pod and HTML documentation.
-See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript,
-and PDF formats.
-
-Thanks, Stas, for your help!
-
-=head1 What's included in the Swish-e distribution?
-
-Here's an overview of the directories included in the Swish-e
-distribution:
-
-=over 3
-
-=item conf/
-
-Example Swish-e configuration setups to help you get started.
-After reading the L<INSTALL|INSTALL> page, and its included example, review
-the sample configuration in this directory.
-
-=item conf/stopwords
-
-In the C<conf/stopwords> sub-directory are a number of stopword files for different
-languages.  Use of stopwords is not required with Swish-e.
-
-=item doc/
-
-Contains files required for building the HTML, PDF, and Postscript
-documentation.
-
-=item example/
-
-This contains a sample CGI script (F<swish.cgi>) for searching with Swish-e.
-Documentation for using F<swish.cgi> are included within the script.  Type:
-
-    perldoc example/swish.cgi
-
-from the top-level directory where the Swish-e distribution was unpacked.
-
-=item filters/
-
-The F<filters> directory contains Perl modules to convert documents from a format
-that Swish-e cannot index directly (pdf) to something that Swish-e can index (HTML).
-The modules simply make it easy to add filtering to external programs or to files
-indexed when spidering a remote web site.
-
-See the F<filters/README> file form more information.
-
-=item filter-bin/
-
-Sample programs to use with Swish-e's C<FileFilter> feature.  The C<FileFilter>
-allows running an external program to filter or convert documents before indexing.
-Examples include PDF, MS Word, and binary strings filters.
-Filters often require installing separate document conversion programs (e.g. catdoc or pdftotext).
-
-=item html/
-
-The documentation in HTML format.
-
-=item perl/
-
-The Perl interface to the Swish-e C library.  This Perl module provides direct access to
-Swish-e from within your Perl programs.  See the F<perl/README> file for more information.
-
-=item pod/
-
-The source for all documentation in perldoc (pod) format.
-
-=item prog-bin/
-
-Example programs and modules to use with the "prog" document source
-access method.  Examples include a web spider, a program to index directly from
-a MySQL database, and a program to recurse a directory tree.
-Example Perl modules are provided for converting PDF and MS-Word documents
-into a format usable by Swish-e.  See F<prog-bin/README> for an overview of the
-programs and modules, and check each file for included documentation.
-
-The F<prog-bin/spider.pl> program is a web spider program with many features.
-It contains its own documentation.  Type:
-
-    perldoc example/spider.pl
-
-from the top-level directory where the Swish-e distribution was unpacked.
-
-The "prog" document source feature is very powerful, but can be a challange to
-set up when first using Swish-e.  Please contact the Swish-e disussion list
-if you have any questions.
-
-=item src/
-
-This directory contains the source code for Swish-e.  OS-specific
-directories are also found here.
-
-=item tests/
-
-The documents used for running C<make test>.
-
-
-=back
-
 
 =head1 Where do I get help with Swish-e?
 

@@ -277,7 +277,7 @@ sub show_result {
 
 
         $props = join "\n",
-            '<br><table cellpadding=0 cellspacing=0>',
+            '<br><table cellpadding="0" cellspacing="0">',
             map ( {
                 '<tr><td><small>'
                 . ( $name_labels->{$_} || $_ )

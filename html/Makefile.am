@@ -46,7 +46,7 @@ depends = \
 	$(top_srcdir)/perl/API.pm \
 	$(top_srcdir)/prog-bin/spider.pl.in \
 	$(top_srcdir)/example/swish.cgi.in \
-	$(top_srcdir)/filters/SWISH/Filter.pm.in
+	$(top_srcdir)/filters/SWISH/Filter.pm
 
 if BUILDDOCS
 all-local: $(html_DATA)

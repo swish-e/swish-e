@@ -1,4 +1,9 @@
-Here are some very basic filter scripts
+Here are some very basic filter scripts that could be used with the 
+FileFilter configuration directive.
+
+In general, Swish-e's FileFilter feature is best used with binary programs 
+to avoid the time parsing and compiling a script for each document that 
+needs to be filtered.
 
     _binfilter.sh
         This filter uses the strings(1) command to extract

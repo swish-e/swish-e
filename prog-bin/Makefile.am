@@ -1,8 +1,10 @@
 perlmoduledir = $(libexecdir)/perl
+exampledir = $(datadir)/doc/$(PACKAGE)/examples/prog-bin
+
 
 libexec_SCRIPTS = spider.pl
 
-# Thise are really out dated
+# These are really out dated
 
 perlmodule_SCRIPTS = \
 	doc2txt.pm \
@@ -19,15 +21,22 @@ spider.pl: spider.pl.in
 		-e 's,@@perlbinary@@,$(PERL),' \
 			 $(srcdir)/spider.pl.in > spider.pl
 
-
-EXTRA_DIST = \
-    spider.pl.in \
+other_examples = \
     README \
     file.pl \
     DirTree.pl \
     SwishSpiderConfig.pl \
+    MySQL.pl \
+    index_hypermail.pl \
     pdf2xml.pm \
     pdf2html.pm \
-    doc2txt.pm \
-    MySQL.pl \
-    index_hypermail.pl
+    doc2txt.pm
+
+example_DATA = $(other_examples)
+
+EXTRA_DIST = \
+    spider.pl.in \
+    $(other_examples)
+
+
+

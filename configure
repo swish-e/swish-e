@@ -11709,7 +11709,7 @@ echo "$as_me: Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}" >&6;}
 fi
 
 
-                                                                                                                                  ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile"
+                                                                                                                                                      ac_config_files="$ac_config_files Makefile html/Makefile man/Makefile doc/Makefile src/Makefile src/expat/Makefile src/replace/Makefile perl/Makefile.PL rpm/swish-e.spec tests/Makefile example/Makefile prog-bin/Makefile filters/Makefile conf/Makefile filter-bin/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -12293,6 +12293,8 @@ do
   "example/Makefile" ) CONFIG_FILES="$CONFIG_FILES example/Makefile" ;;
   "prog-bin/Makefile" ) CONFIG_FILES="$CONFIG_FILES prog-bin/Makefile" ;;
   "filters/Makefile" ) CONFIG_FILES="$CONFIG_FILES filters/Makefile" ;;
+  "conf/Makefile" ) CONFIG_FILES="$CONFIG_FILES conf/Makefile" ;;
+  "filter-bin/Makefile" ) CONFIG_FILES="$CONFIG_FILES filter-bin/Makefile" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   "src/acconfig.h" ) CONFIG_HEADERS="$CONFIG_HEADERS src/acconfig.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
