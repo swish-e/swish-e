@@ -136,28 +136,13 @@ SubSection "PERL Support" SubSecPerlSupport
         File ..\..\prog-bin\*.pm
     SectionEnd
     
-    Section /o "PERL CGI" SecPerlCgi
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
-        WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlCgi" "1"
-        SetOutPath "$INSTDIR\lib\swish-e"
-        ; CGI Scripts
-        File ..\..\example\swish.cgi.in
-        File ..\..\example\search.tt
-        File ..\..\example\swish.tmpl
-        File ..\..\example\swish.gif
-        
-        SetOutPath "$INSTDIR\lib\swish-e\perl"
-        File /r ..\..\example\modules\SWISH
-    SectionEnd
-SubSectionEnd
-
 Section "Examples" SecExample
-    SetOutPath "$INSTDIR\share\doc\swish-e\examples\cgi"
+    SetOutPath "$INSTDIR\share\doc\swish-e\examples\"
     File /r ..\..\conf
     File /r ..\..\example
 
     ; Rename text files so Windows has a clue
-    Rename "$INSTDIR\share\doc\swish-e\examples\cgi\conf\README" "$INSTDIR\conf\README.txt"
+    Rename "$INSTDIR\share\doc\swish-e\examples\conf\README" "$INSTDIR\conf\README.txt"
 SectionEnd ; end of section 'Examples'
 
 Section "-post" ; (post install section, happens last after any optional sections)
