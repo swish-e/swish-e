@@ -42,7 +42,7 @@ sub header {
 
 
 #==========================================================================
-#
+# Returns true IF prop was HTML escaped.
 
 sub highlight {
 
@@ -63,6 +63,8 @@ sub highlight {
     my $On = $settings->{highlight_on} || '<b>';
     my $Off = $settings->{highlight_off} || '</b>';
 
+    my $on_flag  = 'sw' . time . 'on';
+    my $off_flag = 'sw' . time . 'off';
 
     my $stemmer_function = $self->{stemmer_function};
 
@@ -97,7 +99,7 @@ sub highlight {
             # Not check if word matches
             if ( $test =~ /$match_regexp/ ) {
 
-                $words[$pos] = "$begin$On$word$Off$end";
+                $words[$pos] = "$begin$on_flag$word$off_flag$end";
 
 
                 my $start = $pos - ($Show_Words-1)* 2;
@@ -124,7 +126,7 @@ sub highlight {
     }
 
 
-    my $dotdotdot = ' <b>...</b> ';
+    my $dotdotdot = ' ... ';
 
 
     my @output;
@@ -173,6 +175,24 @@ sub highlight {
     push @output, $dotdotdot if !$printing;
 
     $$text_ref = join '', @output;
+
+    my %entities = (
+        '&' => '&amp;',
+        '>' => '&gt;',
+        '<' => '&lt;',
+        '"' => '&quot;',
+    );
+    my %highlight = (
+        $on_flag => $On,
+        $off_flag => $Off,
+    );
+
+
+    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;  # " fix emacs
+
+    $$text_ref =~ s/($on_flag|$off_flag)/$highlight{$1}/ge;
+
+    return 1;  # Means that prop was processed AND was html escaped.
 
 
 }

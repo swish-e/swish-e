@@ -49,6 +49,8 @@ sub header {
 
 #=========================================================================
 # Highlight a single property -- returns true if any words highlighted
+# no, no returns true really means that the text was processed and most
+# importantly HTML escaped.
 
 sub highlight {
 
@@ -294,6 +296,7 @@ sub highlight {
 
     $$text_ref =~ s/($on_flag|$off_flag)/$highlight{$1}/ge;
 
+    return 1;  # Means that prop was processed AND was html escaped.
     return $found_phrase;
 
     # $$text_ref = join '', @words;  # interesting that this seems reasonably faster
