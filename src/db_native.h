@@ -59,6 +59,7 @@ struct Handle_DBNative
    char *dbname;
        /* Index FILE handle as returned from fopen */
    FILE *fp;
+   FILE *prop;
 };
 
 

@@ -159,15 +159,33 @@ void *DB_Create_Native (char *dbname)
    FILE *fp;
 
    struct Handle_DBNative *DB;
-          /* Allocate structure */
+
+
+         /* Allocate structure */
    DB= (struct Handle_DBNative  *) emalloc(sizeof(struct Handle_DBNative));
+
           /* Create index File */
    CreateEmptyFile(dbname);
    if(!(DB->fp = openIndexFILEForReadAndWrite(dbname)))
-   {
-	   progerr("Couldn't create the index file \"%s\".", dbname);
-   }
+	   progerrno("Couldn't create the index file \"%s\".", dbname);
+
    fp = DB->fp;
+
+#ifdef PROPFILE
+    {
+        char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
+        strcpy( s, dbname );
+        strcat( s, ".prop" );
+
+        CreateEmptyFile(s);
+        if( !(DB->prop = openIndexFILEForReadAndWrite(s)) )
+            progerrno("Couldn't create the property file \"%s\".", s);
+
+        efree(s);         
+    }
+#endif
+
+   
 
    DB->offsetstart = 0;
    DB->hashstart = 0;
@@ -210,14 +228,28 @@ void *DB_Open_Native (char *dbname)
    DB= (struct Handle_DBNative  *) emalloc(sizeof(struct Handle_DBNative));
           /* Create index File */
    if(!(DB->fp = openIndexFILEForRead(dbname)))
-   {
-      progerr("Couldn't open the index file \"%s\".", dbname);
-   }
+      progerrno("Couldn't open the index file \"%s\".", dbname);
+
+
+#ifdef PROPFILE
+    {
+        char *s = emalloc( strlen(dbname) + strlen(".prop") + 1 );
+        strcpy( s, dbname );
+        strcat( s, ".prop" );
+
+        if( !(DB->prop = openIndexFILEForRead(s)) )
+            progerrno("Couldn't open the property file \"%s\".", s);
+
+        efree(s);         
+    }
+#endif
+
+
    if (!DB_OkHeader(DB->fp)) {
       progerr("File \"%s\" has an unknown format.", dbname);
    }
-   fp = DB->fp;
 
+   fp = DB->fp;
    DB->offsetstart = 0;
    DB->hashstart = 0;
    DB->fileoffsetarray = NULL;

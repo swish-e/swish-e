@@ -397,7 +397,7 @@ struct MOD_Index *idx = sw->Index;
     fi->lookup_path=lookup_path;
     fi->filename = buf1;
 
-    fi->docProperties = fetchDocProperties(p);
+    p = fetchDocProperties(fi, p);
     /* Read internal swish properties */
     /* first init them */
 

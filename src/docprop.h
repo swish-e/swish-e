@@ -22,7 +22,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
 int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 );
 
-docProperties *fetchDocProperties (char * );
+unsigned char *fetchDocProperties ( struct file *, char * );
 
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
@@ -40,7 +40,16 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *name, int ID);
 
 int isAutoProperty (char *propname);
 
+void dump_single_property( propEntry *prop, struct metaEntry *meta_entry );
 void dump_file_properties(IndexFILE * indexf, struct  file *fi );
+
+#ifdef PROPFILE
+void     WritePropertiesToDisk( SWISH *sw );
+docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum );
+propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, int filenum, int metaID, int max_size );
+unsigned char *PackPropLocations( struct file *fi, int *propbuflen );
+unsigned char *UnPackPropLocations( struct file *fi, char *buf );
+#endif
 
 
 

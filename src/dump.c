@@ -31,6 +31,9 @@
 #include "index.h"
 #include "search.h"
 #include "result_output.h"
+#ifdef PROPFILE
+#include "metanames.h"
+#endif
 
 void dump_memory_file_list( SWISH *sw, IndexFILE *indexf ) 
 {
@@ -71,8 +74,33 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
 
 
         dump_file_properties( indexf, fi );
-        
         printf("\n");
+
+
+#ifdef PROPFILE
+        printf("ReadAllDocProperties:\n");
+        ReadAllDocPropertiesFromDisk( indexf, i+1 );
+        dump_file_properties( indexf, fi );
+        printf("\n");
+        printf("ReadSingleDocPropertiesFromDisk:\n");
+
+{
+    propEntry *p;
+    int j;
+    struct metaEntry *meta_entry;
+    
+    for (j=0; j<= 10; j++)
+    {
+        if ( !(p = ReadSingleDocPropertiesFromDisk(indexf, i+1, j, 0 )) )
+            continue;
+        
+        meta_entry = getMetaIDData( &indexf->header, j );
+        dump_single_property( p, meta_entry );
+    }
+}
+#endif        
+        
+        
         freefileinfo(fi);
     }
     printf("\nNumber of File Entries: %d\n", indexf->header.totalfiles);
