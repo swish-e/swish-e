@@ -254,12 +254,38 @@ void freeModule_Index (SWISH *sw)
 int configModule_Index (SWISH *sw, StringList *sl)
 
 {
-  //struct MOD_Index *srch = sw->Index;
-  //char *w0    = sl->word[0];
-  //int  retval = 1;
+  struct MOD_Index *idx = sw->Index;
+  char *w0    = sl->word[0];
+  int  retval = 1;
 
-
-  return 0;
+  if (strcasecmp(w0, "tmpdir") == 0)
+  {
+     if (sl->n == 2)
+     {
+        idx->tmpdir = SafeStrCopy(idx->tmpdir, sl->word[1],&idx->lentmpdir);
+        if (!isdirectory(idx->tmpdir))
+        {
+           progerr("%s: %s is not a directory", w0, idx->tmpdir);
+        }
+        else
+        {
+              /* New names for temporal files */
+           if (idx->swap_file_name)
+              efree(idx->swap_file_name);
+           if (idx->swap_location_name)
+              efree(idx->swap_location_name);
+           idx->swap_file_name = tempnam(idx->tmpdir, "swfi");
+           idx->swap_location_name = tempnam(idx->tmpdir, "swlo");
+        }
+     }
+     else
+        progerr("%s: requires one value", w0);
+  }
+  else 
+  {
+      retval = 0;                   /* not a module directive */
+  }
+  return retval;
 }
 
 /*
