@@ -52,6 +52,9 @@ struct Handle_DBNative
    long nextwordoffset;
    long lastsortedindex;
    
+   int wordhash_counter;
+   long *wordhashdata;
+
    int worddata_counter;
    long *worddata_wordID;
    long *worddata_offset;

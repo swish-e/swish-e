@@ -193,6 +193,8 @@ void *DB_Create_Native (char *dbname)
    DB->nextwordoffset = 0;
    DB->num_docs = 0;
    DB->num_words = 0;
+   DB->wordhash_counter = 0;
+   DB->wordhashdata = NULL;
    DB->worddata_counter = 0;
    DB->worddata_wordID = NULL;
    DB->worddata_offset = NULL;
@@ -261,6 +263,8 @@ void *DB_Open_Native (char *dbname)
    DB->nextwordoffset = 0;
    DB->num_docs = 0;
    DB->num_words = 0;
+   DB->wordhash_counter = 0;
+   DB->wordhashdata = NULL;
    DB->worddata_counter = 0;
    DB->worddata_wordID = NULL;
    DB->worddata_offset = NULL;
@@ -431,6 +435,23 @@ int DB_EndWriteWords_Native(void *db)
          /* Now update word's data offset into the list of words */
          /* Simple check  words and worddata must match */
 
+   if(DB->num_words != DB->wordhash_counter)
+       progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter");
+
+   for(i=0;i<DB->num_words;i++)
+   {
+       wordID = DB->wordhashdata[2 * i];
+//printf("%d\n",wordID);
+       f_offset = DB->wordhashdata[2 * i + 1];
+        /* Position file pointer in word */
+       fseek(fp,wordID,SEEK_SET);
+        /* Jump over word length and word */
+       wordlen = uncompress1(fp,fgetc);   /* Get Word length */
+       fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
+        /* Write offset to word data */
+       printlong(fp,f_offset);
+   }
+
    if(DB->num_words != DB->worddata_counter)
        progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter");
 
@@ -453,6 +474,9 @@ int DB_EndWriteWords_Native(void *db)
    efree(DB->worddata_offset);
    DB->worddata_offset = NULL;
    DB->worddata_counter = 0;
+   efree(DB->wordhashdata);
+   DB->wordhashdata = NULL;
+   DB->wordhash_counter = 0;
        /* Restore file pointer at the end of file */
    fseek(fp,0,SEEK_END);
    return 0;
@@ -525,36 +549,38 @@ long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, 
 
 int DB_WriteWordHash_Native(char *word, long wordID, void *db)
 {
-    int     wordlen,
+    int     i,
             hashval;
     struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
-    FILE   *fp = DB->fp;
+
+    if(!DB->wordhash_counter)
+    {
+        DB->wordhashdata = emalloc(2 * DB->num_words * sizeof(long));
+    }
 
     hashval = searchhash(word);
+
     if(!DB->hashoffsets[hashval])
     {
         DB->hashoffsets[hashval] = wordID;
     }
-    fseek(fp, wordID, SEEK_SET);
-        /* Get wordlen */
-    wordlen = uncompress1(fp,fgetc);
-            /* Jump word */
-    fseek(fp, (long) wordlen, SEEK_CUR);
-            /* Write Null terminator */
-    printlong(fp, (long) 0);
+
+    DB->wordhashdata[2 * DB->wordhash_counter] = wordID;
+    DB->wordhashdata[2 * DB->wordhash_counter + 1] = (long)0;
+    DB->wordhash_counter++;
+
             /* Update previous word in hashlist */
     if(DB->lasthashval[hashval])
     {
-        fseek(fp, DB->lasthashval[hashval], SEEK_SET);
-            /* Get wordlen */
-        wordlen = uncompress1(fp,fgetc);
-            /* Jump word */
-        fseek(fp, (long) wordlen, SEEK_CUR);
-                /* Overwrite previous NULL pointer */
-        printlong(fp, wordID);
+        for(i=0;i<DB->wordhash_counter;i++)
+            if(DB->wordhashdata[2 * i] == DB->lasthashval[hashval])
+                break;
+        if(i==DB->wordhash_counter)
+              progerrno("Internal db_native.c error in DB_WriteWordHash_Native");
 
+        DB->wordhashdata[2 * i + 1] = (long)wordID;
     }
-	DB->lasthashval[hashval] = wordID;
+    DB->lasthashval[hashval] = wordID;
 
     return 0;
 }
