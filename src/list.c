@@ -16,7 +16,8 @@
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
-**1998-07-04  addfilter   ( R. Scherg)
+** 1998-07-04  addfilter   ( R. Scherg)
+** 2001-02-28  rasc  -- addfilter removed here
 **
 */
 

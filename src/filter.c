@@ -15,7 +15,8 @@
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
 **
-** 1999-08-07 rasc    original filter code
+** 1998-07-04 rasc    original filter code
+** 1999-08-07 rasc    
 ** 2001-02-28 rasc    own module started for filters
 **                    some functions rewritten and enhanced...
 **
@@ -27,6 +28,15 @@
 #include "mem.h"
 #include "string.h"
 #include <string.h>
+
+
+#ifdef _WIN32
+#define pclose _pclose
+#define popen _popen
+#endif
+
+
+
 
 /*
  -- Add a filter to the filterlist (file ext -> filter prog)

@@ -846,7 +846,8 @@ B<Note:> Filtering in swish may change in the future (see L<SWISH-3.0|SWISH-3.0>
 =item FilterDir  *path-to-directory*
 
 This is the path to a directory where the filter programs are stored.  Swish looks in this directory to find
-the filter specified in the B<FileFilter> directive.
+the filter specified in the B<FileFilter> directive. If this directive is omitted, you have to specify the
+full path to the filterscript on each FileFilter directive.
 
 Example:
 
@@ -858,11 +859,11 @@ This maps file extensions to a filter program.
 
 Examples:
 
-    FileFilter  .pdf   pdf-filter.sh
-    Filefilter  .gz    gzip-filter.sh
-    Filefilter  .doc   wword-filter.sh
-    Filefilter  .dot   wword-filter.sh
-    Filefilter  .ps    ghostscript-filter.sh
+    FileFilter  .pdf       pdf-filter.sh
+    Filefilter  .html.gz   ungzip-html
+    Filefilter  .doc       wword-filter.sh
+    Filefilter  .dot       wword-filter.sh
+    Filefilter  .ps        ghostscript-filter.pl
 
 Here are some examples of filters.
 
