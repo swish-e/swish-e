@@ -196,9 +196,30 @@ sub copy_the_rest{
     = $config->get_param(qw(nonpod_files src_root));
 
     # Handle the rest of the files
-  foreach my $file (@$nonpod_files){
-    Pod::HtmlPsPdf::Common::copy_file("$src_root/$file",
-				      "$target_root/$file");
+
+  foreach my $file (@$nonpod_files) {
+
+    my $src = "$src_root/$file";
+    my $dst = "$target_root/$file";
+
+    my $base_name = File::Basename::basename $dst;
+
+
+    my $forced = $Pod::HtmlPsPdf::RunTime::options{rebuild_all}
+                 ? ' / forced'
+                 : '';
+
+    if ( !$forced && -e $dst && -M $src > -M $dst ) {
+        printf("--- %-22s: skipping (not modified)\n",$base_name);
+
+    } else {
+
+        $forced ||= 'modified';
+    
+        Pod::HtmlPsPdf::Common::copy_file( $src, $dst );
+        printf("+++ %-22s: processing (%s)\n",$base_name, $forced);
+    }
+
   }
 
 } # end of sub copy_the_rest
