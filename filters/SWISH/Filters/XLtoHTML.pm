@@ -34,7 +34,7 @@ sub filter {
     my ( $self, $filter) = @_;
 
     # Do we care about this document?
-    return unless $filter->content_type =~ m!application/vnd.ms-excel!;
+    return unless $filter->content_type =~ m!(application/vnd.ms-excel|application/excel)!;
 
     # We need a file name to pass to the conversion function
     my $file = $filter->fetch_filename;

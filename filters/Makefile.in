@@ -140,7 +140,11 @@ target_alias = @target_alias@
 perlmoduledir = $(libexecdir)/perl
 exampledir = $(datadir)/doc/$(PACKAGE)/examples/filters
 
+bin_SCRIPTS = swish-filter-test
+
 example_DATA = README
+
+CLEANFILES = swish-filter-test
 
 nobase_perlmodule_SCRIPTS = \
     SWISH/Filter.pm \
@@ -152,6 +156,7 @@ nobase_perlmodule_SCRIPTS = \
 
 EXTRA_DIST = \
     README \
+    swish-filter-test.in \
     SWISH/Filter.pm \
     SWISH/Filters/Doc2txt.pm \
     SWISH/Filters/Pdf2HTML.pm \
@@ -163,7 +168,7 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
 CONFIG_CLEAN_FILES =
-SCRIPTS = $(nobase_perlmodule_SCRIPTS)
+SCRIPTS = $(bin_SCRIPTS) $(nobase_perlmodule_SCRIPTS)
 
 DIST_SOURCES =
 DATA = $(example_DATA)
@@ -177,6 +182,26 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ Makefile.am  $(top_srcdir)/configu
 	  $(AUTOMAKE) --foreign  filters/Makefile
 Makefile: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.in  $(top_builddir)/config.status
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@ $(am__depfiles_maybe)
+binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f"; \
+	    $(binSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(bindir)/$$f; \
+	  else :; fi; \
+	done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f $(DESTDIR)$(bindir)/$$f"; \
+	  rm -f $(DESTDIR)$(bindir)/$$f; \
+	done
 nobase_perlmoduleSCRIPT_INSTALL = $(install_sh_SCRIPT)
 install-nobase_perlmoduleSCRIPTS: $(nobase_perlmodule_SCRIPTS)
 	@$(NORMAL_INSTALL)
@@ -271,7 +296,7 @@ check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 
 installdirs:
-	$(mkinstalldirs) $(DESTDIR)$(perlmoduledir) $(DESTDIR)$(exampledir)
+	$(mkinstalldirs) $(DESTDIR)$(bindir) $(DESTDIR)$(perlmoduledir) $(DESTDIR)$(exampledir)
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -289,6 +314,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-rm -f Makefile $(CONFIG_CLEAN_FILES)
@@ -314,7 +340,7 @@ info-am:
 
 install-data-am: install-exampleDATA install-nobase_perlmoduleSCRIPTS
 
-install-exec-am:
+install-exec-am: install-binSCRIPTS
 
 install-info: install-info-am
 
@@ -338,21 +364,29 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-exampleDATA uninstall-info-am \
-	uninstall-nobase_perlmoduleSCRIPTS
+uninstall-am: uninstall-binSCRIPTS uninstall-exampleDATA \
+	uninstall-info-am uninstall-nobase_perlmoduleSCRIPTS
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
-	dvi-am info info-am install install-am install-data \
-	install-data-am install-exampleDATA install-exec \
+	dvi-am info info-am install install-am install-binSCRIPTS \
+	install-data install-data-am install-exampleDATA install-exec \
 	install-exec-am install-info install-info-am install-man \
 	install-nobase_perlmoduleSCRIPTS install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-exampleDATA uninstall-info-am \
+	uninstall-binSCRIPTS uninstall-exampleDATA uninstall-info-am \
 	uninstall-nobase_perlmoduleSCRIPTS
 
+
+swish-filter-test: swish-filter-test.in
+	@rm -f swish-filter-test
+	@sed \
+		-e 's,@@perlmoduledir@@,$(libexecdir)/perl,' \
+		-e 's,@@swishbindir@@,$(bindir),' \
+		-e 's,@@perlbinary@@,$(PERL),' \
+			$(srcdir)/swish-filter-test.in > swish-filter-test
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

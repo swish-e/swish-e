@@ -702,30 +702,39 @@ Note: Not all directives work with all methods.
 
 =item NoContents *list of file suffixes*
 
-Files with these suffixes will B<not> have their contents indexed.
+Files with these suffixes will B<not> have their contents indexed,
+but will have their path name (file name) indexed instead.
 
-If the file's type is HTML (or HTML2) (as set by C<IndexContents> or
+If the file's type is HTML or HTML2 (as set by C<IndexContents> or
 C<DefaultContents>) then the file will be parsed for a HTML title and
-that title will be indexed.  Note that you must set the file's type:
-C<.html> and C<.htm> are NOT type HTML by default.
+that title will be indexed.  Note that you must set the file's type with
+C<IndexContents> or C<DefaultContents>:
+C<.html> and C<.htm> are NOT type HTML by default.  For example:
 
-If a title is found, it will still be checked for C<FileRules title>,
-and the file will be skipped if a match is found.  See C<FileRules>.
+   IndexContents HTML* .htm .html
+
+If a title is found, it will still be checked for C<FileRules title>, and the file will be
+skipped if a match is found.  See C<FileRules>.
 
 If the file's type is not HTML, or it is HTML and no title is found,
-then the file's path will be indexed.  For example, you might wish to
-search for image files by file name.
+then the file's path will be indexed.
 
-Example:
+For example, this will allow searching by image file name.
 
     NoContents .gif .xbm .au .mov .mpg .pdf .ps
 
-Note: Using this directive will not cause files with those suffixes
+Note: Using this directive will B<not> cause files with those suffixes
 to be indexed.  That is, if you use C<IndexOnly> to limit the types of
 files that are indexed, then you must specify in C<IndexOnly> the same
 suffixes listed in C<NoContents>.
 
-A C<-S prog> program may set the C<No-Contents:> header (to anything)
+This does B<not> work:
+
+    # Wrong!
+    IndexOnly .htm .html
+    NoContents .gif .xbm .au .mov .mpg .pdf .ps
+
+A C<-S prog> program may set the C<No-Contents:> header
 to enable this feature for a specific document (although it would be
 smarter for the C<-S prog> program to simply only send the pathname or
 title to be indexed.
@@ -2570,7 +2579,7 @@ The advantage of this method is that new filtering methods can be installed easi
 
 This system is designed to work with the -S http and -prog methods, but may also be used
 with the C<FileFilter> feature and -S fs indexing method.  See F<filter-bin/swish_filter.pl> for
-and example.
+an example.
 
 See the F<filters/README> file for more information.
 

@@ -4,6 +4,7 @@ use 5.005;
 use strict;
 use File::Basename;
 #use MIME::Types;  # require below
+use Carp;
 
 use vars qw/ $VERSION %extra_methods $testing/;
 
@@ -301,7 +302,6 @@ sub filter {
     if ( ref $doc ) {
         die "Must supply a content type when passing in a reference to a document\n"
             unless $content_type;
-
     } else {
         $content_type ||= $self->decode_content_type( $doc );
         unless ( $content_type ) {
@@ -313,9 +313,11 @@ sub filter {
     }
 
 
+
     my $doc_object = SWISH::Filter::document->new( $doc, $content_type );
     return unless $doc_object;
 
+    $self->{original_content_type} = $doc_object->content_type;
     $self->{content_type} = $doc_object->content_type;
 
     local $SIG{__DIE__};
@@ -422,6 +424,16 @@ Returns the content type of the document after filtering.
 
 sub content_type {
     return $_[0]->{content_type};
+}
+
+=item $type = $swish_filter->original_content_type
+
+Returns the inital content type of the document before filtering.
+
+=cut
+
+sub original_content_type {
+    return $_[0]->{original_content_type};
 }
 
 =item $type = $swish_filter->swish_parser_type
@@ -907,7 +919,7 @@ sub read_file {
     my $sym = gensym();
     open($sym, "<$doc" ) or die "Failed to open file '$doc': $!";
     binmode $sym unless $self->{content_type} =~ /^text/;
-    local $\ = undef;
+    local $/ = undef;
     my $content = <$sym>;
     close $sym;
     $self->{cur_doc} = \$content;
