@@ -232,7 +232,7 @@ void freeModule_Index (SWISH *sw)
 /* we need to call the real free here */
 
 
-  if (isfile(idx->swap_location_name))
+  if (idx->swap_location_name && isfile(idx->swap_location_name))
   {
     if (idx->fp_loc_read)  
         idx->swap_close(idx->fp_loc_read);
@@ -1740,7 +1740,7 @@ void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 */
 
 
-
+#ifndef USE_BTREE
 void    write_index(SWISH * sw, IndexFILE * indexf)
 {
     int     i;
@@ -1888,7 +1888,92 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     efree(ep->elist);
 }
 
+#else
 
+void    write_index(SWISH * sw, IndexFILE * indexf)
+{
+    int     i;
+    ENTRYARRAY *ep;
+    ENTRY  *epi;
+    int     totalwords;
+    int     percent, lastPercent, n;
+
+#define DELTA 10
+
+
+    if ( !(ep = sw->Index->entryArray ))
+        return;  /* nothing to do */
+
+
+    totalwords = ep->numWords;
+
+    DB_InitWriteWords(sw, indexf->DB);
+
+    if (sw->verbose)
+    {
+        printf("  Writing word text: ...");
+        fflush(stdout);
+    }
+
+    /* This is not longer needed. So free it as soon as possible */
+    Mem_ZoneFree(&sw->Index->perDocTmpZone);
+
+    for (i = 0; i < totalwords; i++)
+        coalesce_word_locations(sw, indexf, ep->elist[i]);
+
+    /* This is not longer needed. So free it as soon as possible */
+    Mem_ZoneFree(&sw->Index->currentChunkLocZone);
+
+    /* If we are swaping locs to file, reset memory zone */
+    if(sw->Index->swap_locdata)
+        Mem_ZoneReset(sw->Index->totalLocZone);
+
+    n = lastPercent = 0;
+    for (i = 0; i < totalwords; i++)
+    {
+        if ( sw->verbose && totalwords > 10000 )  // just some random guess
+        {
+            n++;
+            percent = (n * 100)/totalwords;
+            if (percent - lastPercent >= DELTA )
+            {
+                printf("\r  Writing word text: %3d%%", percent );
+                fflush(stdout);
+                lastPercent = percent;
+            }
+        }
+
+        epi = ep->elist[i];
+
+        /* why check for stopwords here?  removestopwords could have remove them */
+        if (!isstopword(&indexf->header, epi->word))
+        {
+            /* Write word to index file */
+            write_word(sw, epi, indexf);
+            write_worddata(sw, epi, indexf);
+        }
+    }    
+
+    if (sw->verbose)
+    {
+        printf("\r  Writing word text: Complete\n" );
+        fflush(stdout);
+    }
+
+
+    DB_EndWriteWords(sw, indexf->DB);
+
+       /* free all ENTRY structs at once */
+    Mem_ZoneFree(&sw->Index->entryZone);
+
+       /* free all location compressed data */
+    Mem_ZoneFree(&sw->Index->totalLocZone);
+
+    efree(ep->elist);
+}
+
+
+#endif
 
 
 
