@@ -206,14 +206,9 @@ int     DB_EndReadWords_Native(void *db);
 
 
 
-int     DB_InitWriteFiles_Native(void *db);
-int     DB_WriteFile_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db);
-int     DB_EndWriteFiles_Native(void *db);
-
-int     DB_InitReadFiles_Native(void *db);
-int     DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedata, void *db);
-int     DB_EndReadFiles_Native(void *db);
-
+int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db);
+int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata,int sz_filedata, void *db);
+int     DB_RemoveFileNum_Native(int filenum, void *db);
 
 #ifdef USE_BTREE
 int     DB_InitWriteSortedIndex_Native(void *db , int n_props);
@@ -229,6 +224,7 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
 int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
 
+int     DB_InitWriteProperties_Native(void *db);
 void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
 void    DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);
 void    DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);

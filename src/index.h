@@ -122,6 +122,8 @@ struct MOD_Index
     MEM_ZONE *currentChunkLocZone;
     MEM_ZONE *totalLocZone;
     MEM_ZONE *entryZone;
+
+    int     update_mode;    /* Set to true when in update mode */
 };
 
 void    initModule_Index(SWISH *);

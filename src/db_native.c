@@ -87,13 +87,9 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_ReadWordData = DB_ReadWordData_Native;
     Db->DB_EndReadWords = DB_EndReadWords_Native;
 
-    Db->DB_InitWriteFiles = DB_InitWriteFiles_Native;
-    Db->DB_WriteFile = DB_WriteFile_Native;
-    Db->DB_EndWriteFiles = DB_EndWriteFiles_Native;
-
-    Db->DB_InitReadFiles = DB_InitReadFiles_Native;
-    Db->DB_ReadFile = DB_ReadFile_Native;
-    Db->DB_EndReadFiles = DB_EndReadFiles_Native;
+    Db->DB_WriteFileNum = DB_WriteFileNum_Native;
+    Db->DB_ReadFileNum = DB_ReadFileNum_Native;
+    Db->DB_RemoveFileNum = DB_RemoveFileNum_Native;
 
     Db->DB_InitWriteSortedIndex = DB_InitWriteSortedIndex_Native;
     Db->DB_WriteSortedIndex = DB_WriteSortedIndex_Native;
@@ -104,6 +100,7 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_ReadSortedData = DB_ReadSortedData_Native;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
 
+    Db->DB_InitWriteProperties = DB_InitWriteProperties_Native;
     Db->DB_WriteProperty = DB_WriteProperty_Native;
     Db->DB_WritePropPositions = DB_WritePropPositions_Native;
     Db->DB_ReadProperty = DB_ReadProperty_Native;
@@ -793,7 +790,7 @@ void    DB_Close_Native(void *db)
     if(DB->presorted_propid)
         efree(DB->presorted_propid);
 
-    /* Close (and rename) hash-filr index file, if it's open */
+    /* Close (and rename) hash-file index file, if it's open */
     if(DB->fp_hashfile)
     {
         DB->offsets[FILEHASHPOS] = FHASH_Close(DB->hashfile);
@@ -1596,40 +1593,61 @@ long    DB_ReadWordData_Native(long wordID, unsigned char **worddata, int *data_
 #endif
 
 
-/*--------------------------------------------*/
-/*--------------------------------------------*/
-/*              FileList  Stuff               */
-/*--------------------------------------------*/
-/*--------------------------------------------*/
+/*--------------------------------------------
+** 2002/12 Jose Ruiz 
+**     FilePath,FileNum  pairs              
+**     Auxiliar hash index
+*/
 
-
-int     DB_EndWriteFiles_Native(void *db)
+/* Routine to write path,filenum */
+int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata, int sz_filedata, void *db)
 {
-    return 0;
-}
+#ifdef USE_BTREE
+    unsigned long tmp = (unsigned long)filenum;
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
-int     DB_WriteFile_Native(int filenum, unsigned char *filedata, int sz_filedata, void *db)
-{
-    return 0;
-}
+    /* Pack tmp */
+    tmp = PACKLONG(tmp);
 
-int     DB_InitReadFiles_Native(void *db)
-{
-    return 0;
-}
-
-int     DB_ReadFile_Native(int filenum, unsigned char **filedata, int *sz_filedata, void *db)
-{
-    return 0;
-}
-
-
-int     DB_EndReadFiles_Native(void *db)
-{
+    /* Write it to the hash index */
+    FHASH_Insert(DB->hashfile, filedata, sz_filedata, (unsigned char *)&tmp, sizeof(long));
+#endif
 
     return 0;
 }
 
+/* Routine to get filenum from path */
+int     DB_ReadFileNum_Native(int *filenum, unsigned char *filedata, int sz_filedata, void *db)
+{
+#ifdef USE_BTREE
+    unsigned long tmp;
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    /* Write it to the hash index */
+    FHASH_Search(DB->hashfile, filedata, sz_filedata, (unsigned char *)&tmp, sizeof(unsigned long));
+
+    /* UnPack tmp */
+    tmp = PACKLONG(tmp);
+
+    *filenum = (int)tmp;
+#endif
+    return 0;
+}
+
+
+/* Routine to remove a filenum */
+/* At this moment, to remove a filenum I am just puting 0 in the number of
+** words */
+int     DB_RemoveFileNum_Native(int filenum, void *db)
+{
+#ifdef USE_BTREE
+    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+
+    ARRAY_Put(DB->totwords_array,filenum - 1,0);
+#endif
+
+    return 0;
+}
 
 /*--------------------------------------------*/
 /*--------------------------------------------*/
@@ -1925,7 +1943,7 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
 *   property file are written sequentially to the main index (which is why
 *   there's a separate .prop file).  
 *
-*   DB_InitWriteFiles is called first time a property is written
+*   DB_InitWriteProperties is called first time a property is written
 *   to save the offset of the property index table in the main index.
 *   It's simply a ftell() of the current position in the index and that
 *   seek position is stored in the main index "offsets" table.
@@ -1946,7 +1964,7 @@ unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE 
 *****************************************************************************/
 
 
-int     DB_InitWriteFiles_Native(void *db)
+int     DB_InitWriteProperties_Native(void *db)
 {
 #ifndef USE_BTREE
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -1954,7 +1972,7 @@ int     DB_InitWriteFiles_Native(void *db)
     DB->offsets[FILELISTPOS] = ftell(DB->fp);
 
 #ifdef DEBUG_PROP
-    printf("InitWriteFiles: Start of property table in main index at offset: %ld\n", DB->offsets[FILELISTPOS] );
+    printf("InitWriteProperties: Start of property table in main index at offset: %ld\n", DB->offsets[FILELISTPOS] );
 #endif
 
 #endif

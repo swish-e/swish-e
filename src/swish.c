@@ -1297,8 +1297,8 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
             SwishAbortLastError( sw );
         
 
-        /* Read the header and overwrite the '-c' option  and feault values - In other 
-        ** words, the header values are the good ones */
+        /* Read the header and overwrite the '-c' option and default values -
+        ** In other words, the header values are the good ones */
         read_header(sw, &sw->indexlist->header, sw->indexlist->DB);
         sw->TotalWords = sw->indexlist->header.totalwords;
         sw->TotalFiles = sw->indexlist->header.totalfiles;
@@ -1309,7 +1309,8 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 #ifndef USE_BTREE
         progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
 #endif
-
+        /* Set update_mode */
+        sw->Index->update_mode = 1;
     }
     else
     {
@@ -1317,6 +1318,8 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         sw->indexlist->DB = (void *) DB_Create(sw, sw->indexlist->line);
         if ( sw->lasterror )
             SwishAbortLastError( sw );
+
+        sw->Index->update_mode = 0;
     }
 
 

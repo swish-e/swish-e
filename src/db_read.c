@@ -446,19 +446,9 @@ int     DB_EndReadWords(SWISH *sw, void *DB)
 }
 
 
-int     DB_InitReadFiles(SWISH *sw, void *DB)
+int     DB_ReadFileNum(SWISH *sw, int *filenum, unsigned char *filedata,int sz_filedata, void *DB)
 {
-   return sw->Db->DB_InitReadFiles(DB);
-}
-
-int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB)
-{
-   return sw->Db->DB_ReadFile(filenum, filedata,sz_filedata, DB);
-}
-
-int     DB_EndReadFiles(SWISH *sw, void *DB)
-{
-   return sw->Db->DB_EndReadFiles(DB);
+   return sw->Db->DB_ReadFileNum(filenum, filedata,sz_filedata, DB);
 }
 
  
