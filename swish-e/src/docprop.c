@@ -537,6 +537,13 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
     if ( is_meta_string(meta_entry) )
     {
+        int len = (int) strlen( string );
+        int i;
+        /* replace all non-printing chars with a space -- this is questionable */
+        for ( i = 0; i < len; i++ )
+            if ( !isprint( string[i] ) )
+                string[i] = ' ';
+            
         *encodedStr = string;
         return (int)strlen( string );
     }
@@ -552,7 +559,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 *   Call with:
 *       *metaEntry
 *       *propValue  - string to add
-*       *propLen    - length of string to add
+*       *propLen    - length of string to add, but can be limited by metaEntry->max_size
 *       preEncoded  - flag saying the data is already encoded
 *                     (that's for filesize, last modified, start position)
 *       *error_flag - integer to indicate the difference between an error and a blank property
@@ -567,6 +574,11 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 {
     propEntry *docProp;
 
+
+    /* limit length */
+    if ( !preEncoded && meta_entry->max_len && propLen > meta_entry->max_len )
+        propLen = meta_entry->max_len;
+
     /* convert string to a document property, if not already encoded */
     if ( !preEncoded )
     {
@@ -576,6 +588,10 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 
         if ( !propLen )  /* Error detected in encode */
             return NULL;
+
+        /* Limit length */
+        if ( is_meta_string(meta_entry) && meta_entry->max_len && propLen > meta_entry->max_len )
+            propLen = meta_entry->max_len;
             
         propValue = tmp;
     }
@@ -604,37 +620,81 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 *       *string
 *       length of string
 *
+*   Will limit property length, if needed.
+*
 *******************************************************************/
-propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *str, int length )
+propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *txt, int length )
 {
-    int         newlen = p->propLen + length;
-    char       *new_str = emalloc( newlen + 2 );
-    propEntry  *new_prop;
-    int         error_flag;
-    int         i,j;
+    int     newlen;
+    int     add_a_space = 0;
+    char   *str;
+    int     error_flag = 0;
 
-    /* Join the two strings */
-    for (i=0,j=0; i < p->propLen; i++ )
-        new_str[j++] = p->propValue[i];
+    length = EncodeProperty( meta_entry, &str, txt, &error_flag );
 
-    new_str[j++] = ' ';
+    if ( !length )
+        return p;
 
-    for (i=0; i < length; i++)
-        if ( !isspace( (int)str[i] ) )
-            break;
+    /* When appending, we separate by a space -- could be a config setting */
+    if ( !isspace( *str ) && !isspace( p->propValue[p->propLen-1] ) )
+        add_a_space++;
 
-    for (; i < length; i++)
-        new_str[j++] = str[i];
+    if ( meta_entry->max_len &&  p->propLen + add_a_space >=  meta_entry->max_len )
+        return p;  // no room to add
 
-    new_str[j++] = '\0';
 
+    newlen = p->propLen + length + add_a_space;
+
+    /* limit length */
+    if ( meta_entry->max_len && newlen >= meta_entry->max_len )
+    {
+        newlen = meta_entry->max_len;
+        length = meta_entry->max_len - p->propLen - add_a_space;
+    }
+
+
+    /* Now reallocate the property */
+    p = (propEntry *) erealloc(p, sizeof(propEntry) + newlen);
+
+    if ( add_a_space )
+        p->propValue[p->propLen++] = ' ';
+
+    memcpy( (void *)&(p->propValue[p->propLen]), str, length );
+    p->propLen = newlen;
+
+    return p;
+}
     
-    new_prop = CreateProperty( meta_entry, new_str, j, 0, &error_flag );
 
+/*******************************************************************
+*   Scans the properties (metaEntry's), and adds a doc property to any that are flagged
+*   Limits size, if needed (for StoreDescription)
+*   Pass in text properties (not pre-encoded binary properties)
+*
+*   Call with:
+*       *INDEXDATAHEADER (to get to the list of metanames)
+*       **docProperties - pointer to list of properties
+*       *propValue  - string to add
+*       *propLen    - length of string to add
+*
+*   Returns:
+*       void, but will warn on failed properties
+*
+*
+********************************************************************/
+void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename )
+{
+    struct metaEntry *m;
+    int     i;
 
-    freeProperty( p );
-    efree( new_str );
-    return new_prop;
+    for ( i = 0; i < header->metaCounter; i++)
+    {
+        m = header->metaEntryArray[i];
+
+        if ( (m->metaType & META_PROP) && m->in_tag )
+            if ( !addDocProperty( docProperties, m, propValue, propLen, 0 ) )
+                progwarn("Failed to add property '%s' in file '%s'", m->metaName, filename );
+    }
 }
     
 

@@ -30,7 +30,7 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
     int ftotalwords;
     int metaID;
     int positionMeta;    /* Position of word in file */
-    int structure,currentmetanames;
+    int structure;
     IndexFILE *indexf=sw->indexlist;
     struct MOD_Index *idx = sw->Index;
     char *summary=NULL;
@@ -55,11 +55,10 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 
 	ftotalwords=0;
 	structure=IN_FILE; /* No HTML tags in TXT , just IN_FILE */
-	currentmetanames= 0; /* No metanames in TXT */
 
 	metaID=1; positionMeta=1; /* No metanames in TXT */
 
-	ftotalwords +=indexstring(sw, buffer, idx->filenum, structure, currentmetanames, &metaID, &positionMeta);
+	ftotalwords += indexstring(sw, buffer, idx->filenum, structure, 1, &metaID, &positionMeta);
 
 	addtofwordtotals(indexf, idx->filenum, ftotalwords);
 

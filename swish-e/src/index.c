@@ -223,6 +223,12 @@ void initModule_Index (SWISH  *sw)
     idx->totalLocZone = Mem_ZoneCreate("All Locators", 0, 0);
     idx->entryZone = Mem_ZoneCreate("struct ENTRY", 0, 0);
 
+    /* table for storing which metaIDs to index */
+    idx->metaIDtable.max = 200;  /* totally random guess */
+    idx->metaIDtable.num = 0;
+    idx->metaIDtable.array = (int *)emalloc( idx->metaIDtable.max * sizeof(int) );
+    idx->metaIDtable.defaultID = -1;
+
     return;
 }
 
@@ -304,9 +310,13 @@ void freeModule_Index (SWISH *sw)
   if (idx->perDocTmpZone)
       Mem_ZoneFree(&idx->perDocTmpZone);
 
+
+  efree( idx->metaIDtable.array );
+
        /* free module data */
   efree (idx);
   sw->Index = NULL;
+
 
   return;
 }
@@ -384,6 +394,8 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
     struct MOD_Index   *idx = sw->Index;
     char               *title = "";
     int                 n;
+    int                 position = 1;       /* Position of word */
+    int                 metaID = 1;         /* THIS ASSUMES that that's the default ID number */
 
 
     /* Look for title if HTML document */
@@ -401,7 +413,8 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
     addCommonProperties( sw, indexf, fprop->mtime, title, NULL, 0, fprop->fsize );
 
-    n = countwordstr(sw, *title == '\0' ? fprop->real_path : title , idx->filenum);
+    n = indexstring( sw, *title == '\0' ? fprop->real_path : title , idx->filenum, IN_FILE, 1, &metaID, &position);
+
     addtofwordtotals(indexf, idx->filenum, n);
  
     return n;
@@ -780,7 +793,10 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
-        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:0x%0X (", word, position, metaID, structure);
+        struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
+
+        printf("    Adding:[%s:%d]   '%s'   Pos:%d  Stuct:0x%0X (", m ? m->metaName : "UNKNOWN", metaID, word, position, structure);
+        
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADING");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
@@ -944,6 +960,7 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
     struct metaEntry *q;
     docProperties   **properties;
     unsigned long   tmp;
+    int             metaID;
 
 
     properties = &indexf->filearray[indexf->filearray_cursize -1 ]->docProperties;
@@ -958,8 +975,7 @@ void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *t
          /* Perhaps we want it to be indexed ... */
         if ( (q = getMetaNameByName(&indexf->header, AUTOPROPERTY_TITLE)))
         {
-            int     metaID,
-                    positionMeta;
+            int     positionMeta;
 
             metaID = q->metaID;
             positionMeta = 1;
@@ -1183,18 +1199,6 @@ int     getfilecount(IndexFILE * indexf)
 }
 
 
-/* Indexes the words in a string, such as a file name or an
-** HTML title.
-*/
-
-int     countwordstr(SWISH * sw, char *s, int filenum)
-{
-    int     position = 1;       /* Position of word */
-    int     metaID = 1;
-    int     structure = IN_FILE;
-
-    return indexstring(sw, s, filenum, structure, 1, &metaID, &position);
-}
 
 /* Removes words that occur in over _plimit_ percent of the files and
 ** that occur in over _flimit_ files (marks them as stopwords, that is).
@@ -2184,7 +2188,8 @@ void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
 }
 
 
-void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *word_position)
+
+static void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *word_position)
 {
     int     i;
 
@@ -2194,7 +2199,6 @@ void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNam
 
     (*word_position)++;
 }
-
 
 
 
@@ -2282,10 +2286,67 @@ int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *word
 
     return 0;
 }
-        
 
-/* 05/2001 Jose Ruiz - Changed word and swishword buffers to make this routine
-** thread safe */
+/******************************************************************
+*  Build the list of metaIDs that need to be indexed
+*
+*  Returns number of IDs found
+*
+*
+******************************************************************/
+static int build_metaID_list( SWISH *sw )
+{
+    struct  MOD_Index   *idx = sw->Index;
+    METAIDTABLE         *metas = &idx->metaIDtable;
+    IndexFILE           *indexf = sw->indexlist;
+    INDEXDATAHEADER     *header = &indexf->header;
+    struct metaEntry    *m;
+    int                 i;
+
+
+    /* cache the default metaID for speed */
+    if ( metas->defaultID == -1 )
+    {
+        m = getMetaNameByName( header, AUTOPROPERTY_DEFAULT );
+        metas->defaultID = m ? m->metaID : 0;
+    }    
+
+
+    metas->num = 0;
+
+
+    /* Would be smart to track number of metas flagged so not to loop through all for every lookup */
+    
+    for ( i = 0; i < header->metaCounter; i++)
+    {
+        m = header->metaEntryArray[i];
+
+        if ( (m->metaType & META_INDEX) && m->in_tag )
+        {
+            if ( ++metas->num > metas->max )
+                metas->array = (int *)erealloc( metas->array, (metas->max = metas->num + 200) );
+
+            metas->array[metas->num - 1] = m->metaID;
+        }
+    }
+
+    /* If no metas found to index, then add default metaID */
+    if ( !metas->num && !sw->ReqMetaName && metas->defaultID  )
+        metas->array[metas->num++] = metas->defaultID;
+
+    return metas->num;
+}
+    
+
+/******************************************************************
+*  Index a string
+*
+*
+******************************************************************/
+
+/* 05/2001 Jose Ruiz - Changed word and swishword buffers to make this routine ** thread safe */
+
+
 int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
     int     wordcount = 0;
@@ -2305,10 +2366,16 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
     char   *swishword = idx->swishword;
     int     lenswishword = idx->lenswishword;
 
-    if (!numMetaNames)
-        numMetaNames = 1;
 
-        
+
+    /* Generate list of metaIDs to index unless passed in */
+    if ( !metaID )
+    {
+        if ( !(numMetaNames = build_metaID_list( sw )) )
+            return 0;
+        else
+            metaID = idx->metaIDtable.array;
+    }
 
     /* current pointer into buffer */
     buf_pos = s;

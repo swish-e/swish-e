@@ -240,12 +240,15 @@ typedef struct docProperties
 }
 docProperties;
 
+/* This structure is for storing both properties and metanames -- probably should be two lists */
 struct metaEntry
 {
     char       *metaName;           /* MetaName string */
     int         metaID;             /* Meta ID */
     int         metaType;           /* See metanames.h for values */
     int        *inPropRange;        /* Used for limiting to a range */
+    int         in_tag;             /* Flag to indicate that we are within this tag */
+    int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
     propEntry  *loPropRange;
     propEntry  *hiPropRange;
     int         alias;              /* if non-zero, this is an alias to the listed metaID */

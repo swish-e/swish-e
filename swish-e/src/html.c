@@ -608,10 +608,12 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     /* Init meta info */
     metaID = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,(metaIDlen = 16) * sizeof(int));
 
-    currentmetanames = ftotalwords = 0;
+    currentmetanames = 0;
+    ftotalwords = 0;
     structure = IN_FILE;
     metaID[0] = 1;
     position = 1;
+    
 
     for (p = buffer; p && *p;)
     {
@@ -624,6 +626,8 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
+            if ( ! currentmetanames )
+                currentmetanames++;
             ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
             /* Now let us look for a not escaped '>' */
@@ -742,6 +746,8 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
             newp = sw_ConvHTMLEntities2ISO(sw, p);
 
+            if ( ! currentmetanames )
+                currentmetanames++;
             ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &position);
 
             p = NULL;
