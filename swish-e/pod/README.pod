@@ -186,6 +186,61 @@ See L<INSTALL|INSTALL> for instructions on creating man(1), Postscript, and PFD 
 
 Thanks, Stas, for your help!
 
+=head2 What's included in the SWISH-E distribution?
+
+Here's an overview of the directories included in the swish-e distribution:
+
+=over 3
+
+=item conf/
+
+Example swish-e configuration setups to help you get started.
+In the C<stopwords> sub-directory are
+a number of stopword files for different languages.
+
+=item doc/
+
+Contains files required for building the HTML, PDF, and Postscript documentation.
+
+=item example/
+
+This contains a sample CGI front-end for running swish-e.
+
+=item filter-bin/
+
+Sample programs to use with swish-e's "filters".  Examples include
+PDF, MS Word, and binary strings filters.
+
+=item html/
+
+The documentation in HTML format.
+
+=item perl/
+
+The perl interface to the swish-e C library.
+
+=item pod/
+
+The documentation in perldoc (pod) format.
+
+=item prog-bin/
+
+Example programs and modules to use with the "prog" document source
+access method.  Examples include a web spider, and a program to filter
+pdf and MS word documents.
+
+=item src/
+
+This directory contains the source code for swish-e.  OS-specific directories are also
+found here.
+
+=item tests/
+
+The documents used for running C<make test>.
+
+
+=back
+
 
 =head1 Where do I get help with SWISH-E?
 

@@ -656,7 +656,7 @@ For example, you might have a META tagged field in your documents called C<subje
 search your documents for the word "foo" but only return documents where "foo" is within the C<subjects> META tag.
 
     swish-e -w subjects=foo
-    
+
 (See also the C<-t> switch in L<SWISH-RUN|SWISH-RUN> for information about I<context> searching in HTML documents.)
 
 The B<MetaNames> directive is a space separated list.  For example:
