@@ -410,7 +410,7 @@ sub process_link {
         print STDERR "-Skipped indexing $uri some callback set 'no_index' flag\n" if $server->{debug}&DEBUG_SKIPPED;
 
     } else {
-        return unless check_user_function( 'filter_content', $uri, $server, $response, \$content );
+        return $links_extracted unless check_user_function( 'content', $uri, $server, $response, \$content );
 
         output_content( $server, \$content, $uri, $response )
             unless $server->{no_index};
