@@ -71,14 +71,13 @@ $Id$
 
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "merge.h"
 #include "metanames.h"
 #include "search.h"
 #include "docprop.h"
 #include "error.h"
 #include "result_output.h"
-#include "no_better_place_module.h"
 #include "parse_conffile.h"  // for the fuzzy to string function
 
 

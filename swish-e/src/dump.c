@@ -26,7 +26,7 @@
 #include "search.h"
 #include "docprop.h"
 #include "hash.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "db.h"
 #include "compress.h"

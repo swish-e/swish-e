@@ -29,7 +29,7 @@ $Id$
 #include "swish.h"
 #include "file.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "error.h"
 #include "filter.h"
 

@@ -19,7 +19,7 @@
 */
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "error.h"
 #include "list.h"
@@ -28,7 +28,7 @@
 #include "merge.h"
 #include "docprop.h"
 #include "hash.h"
-#include "search_alt.h"
+/* #include "search_alt.h" */
 #include "db.h"
 #include "swish_words.h"
 #include "metanames.h"

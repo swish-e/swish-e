@@ -21,7 +21,7 @@
 #include <assert.h>             /* for bug hunting */
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "merge.h"
 #include "error.h"
 #include "search.h"

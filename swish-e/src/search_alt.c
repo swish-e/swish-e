@@ -35,7 +35,7 @@ $Id$
 
 #include <string.h>
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "error.h"
 #include "parse_conffile.h"

@@ -21,7 +21,7 @@
 
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "error.h"
 #include "search.h"
 #include "metanames.h"

@@ -17,7 +17,7 @@
 */
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "mem.h"
 #include "error.h"
 #include "list.h"

@@ -10,7 +10,7 @@ $Id$
 #include "swish.h"
 #include "txt.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "check.h"
 #include "merge.h"
 #include "search.h"

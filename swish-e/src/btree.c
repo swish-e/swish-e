@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "swish.h"
-#include "string.h"
+#include "swstring.h"
 #include "compress.h"
 #include "mem.h"
 #include "btree.h"

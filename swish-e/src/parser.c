@@ -77,7 +77,7 @@ $Id$
 #include "fs.h"  // for the title check
 #include "merge.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "search.h"
 #include "docprop.h"
 #include "error.h"

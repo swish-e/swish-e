@@ -28,7 +28,7 @@
 #include "swish.h"
 #include "mem.h"
 #include "merge.h"
-#include "string.h"
+#include "swstring.h"
 #include "search.h"
 #include "docprop.h"
 #include "metanames.h"

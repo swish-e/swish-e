@@ -30,7 +30,7 @@ $Id$
 #include "mem.h"
 //#include "index.h"
 //#include "swish_qsort.h"
-#include "string.h"
+#include "swstring.h"
 #include "error.h"
 #include "swregex.h"
 

@@ -26,7 +26,7 @@ $Id$
 #include <memory.h>
 #include "swish.h"
 #include "error.h"
-#include "string.h"
+#include "swstring.h"
 
 #include "mem.h"
 

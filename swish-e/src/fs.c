@@ -26,7 +26,7 @@
 
 #include "swish.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "index.h"
 #include "hash.h"
 #include "file.h"

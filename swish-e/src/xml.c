@@ -26,14 +26,14 @@ $Id$
 #include "swish.h"
 #include "merge.h"
 #include "mem.h"
-#include "string.h"
+#include "swstring.h"
 #include "search.h"
 #include "docprop.h"
 #include "error.h"
 #include "index.h"
 #include "metanames.h"
 
-#include "xmlparse.h"   // James Clark's Expat
+#include "expat/xmlparse/xmlparse.h"   // James Clark's Expat
 
 #define BUFFER_CHUNK_SIZE 20000
 
