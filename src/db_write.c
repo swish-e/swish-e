@@ -646,6 +646,7 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
         s = compress3(entry->metaID, s);
         s = compress3(entry->metaType, s);
         s = compress3(entry->alias+1, s);  /* keep zeros away from compress3, I believe */
+        s = compress3(entry->sort_len, s); 
         s = compress3(entry->rank_bias+RANK_BIAS_RANGE+1, s);
     }
     DB_WriteHeaderData(sw, id,buffer,s-buffer,DB);

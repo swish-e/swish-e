@@ -132,7 +132,7 @@ extern "C" {
 #endif
 
 
-#define SWISH_MAGIC 21076321L
+#define SWISH_MAGIC 21076322L
 
 #define INDEXFILE "index.swish-e"
 
@@ -330,6 +330,7 @@ struct metaEntry
     int         metaType;           /* See metanames.h for values */
     int         in_tag;             /* Flag to indicate that we are within this tag */
     int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
+    int         sort_len;            /* sort length used when sorting a property */
     char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
     int         alias;              /* if non-zero, this is an alias to the listed metaID */
     int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */

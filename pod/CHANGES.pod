@@ -10,10 +10,23 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Add new directive PropertyNamesSortKeyLength
+
+PropertyNamesSortKeyLength sets the sort key length to use when sorting
+string properties.  The default is 100 characters.  There was a hard-coded
+100 char limit before, but that was a problem where people were not building
+from source (Windows).  The value of this is questionable -- it's intended to
+limit how much memory is used when sorting while indexing and searching. [moseley]
+
+=item * Fixed sorting issues with multple indexes and reverse sorting
+
+Reworked much of the sorting code.  Still to do is setting the character sort order. 
+[moseley]
+
 =item * Fixed minor memory leak
 
 Fixed leak of not releasing memory of index file name and swish_handle 
-destroy, and fixed SwishStemWord to default to the Stemmer_en.
+destroy, and fixed SwishStemWord to default to the Stemmer_en. [moseley]
 
 Fixed libtest.c example program that was not cleaning up memory after an
 error condition.

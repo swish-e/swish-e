@@ -363,6 +363,10 @@ L<PropertyNamesMaxLength|/"item_PropertyNamesMaxLength"> integer *list of meta n
 
 =item *
 
+L<PropertyNamesSortKeyLength|/"item_PropertyNamesSortKeyLength"> integer *list of meta names*
+
+=item *
+
 L<ReplaceRules|/"item_ReplaceRules"> [replace|remove|prepend|append|regex]
 
 =item *
@@ -1533,6 +1537,15 @@ but StoreDescription allows setting the tag for each parser type.
 collects all the heading text into a single property called "headings", not
 to exceed 1000 characters.
 
+=item PropertyNamesSortKeyLength  integer *list of meta names*
+
+Sets the length of the string used when sorting.
+The default is 100 characters.  The -T metanames debugging option will
+list the current values for an index.
+
+This setting is used when sorting during indexing, and perhaps when sorting
+while searching.  It also effects the order when limiting to a range of values
+with the -L option.
 
 =item PreSortedIndex *list of property names*
 

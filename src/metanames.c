@@ -141,6 +141,7 @@ static struct metaEntry *create_meta_entry( char *name )
 
     memset(newEntry, 0, sizeof(struct metaEntry));
     newEntry->metaName = (char *) estrdup( name );
+    newEntry->sort_len = MAX_SORT_STRING_LEN;  /* default for sorting strings */
     return newEntry;
 }
     
