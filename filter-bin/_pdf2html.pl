@@ -1,4 +1,4 @@
-#! /usr/local/bin/perl -w
+#! /usr/bin/perl -w
 use strict;
 
 # -- Filter PDF to simple HTML for swish
