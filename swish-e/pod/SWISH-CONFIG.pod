@@ -2,6 +2,11 @@
 
 SWISH-CONFIG - Configuration File Directives
 
+=head1 OVERVIEW
+
+This document lists the available configuration directives available in
+Swish-e.
+
 =head1 Swish-e CONFIGURATION FILE
 
 What files Swish-e indexes and how they are indexed, and where the index
@@ -91,37 +96,37 @@ The configuration file directives are listed below in these groups:
 
 =item *
 
-L<"Administrative Headers Directives"> -- You may add administrative
+L<Administrative Headers Directives> -- You may add administrative
 information to the header of the index file.
 
 =item *
 
-L<"Document Source Directives"> -- Directives for selecting the source
+L<Document Source Directives> -- Directives for selecting the source
 documents and the location of the index file.
 
 =item *
 
-L<"Document Contents Directives"> -- Directives that control how a document
+L<Document Contents Directives> -- Directives that control how a document
 content is indexed.
 
 =item *
 
-L<"Directives for the File Access method only"> -- These directives are only
+L<Directives for the File Access method only> -- These directives are only
 applicable to the File Access indexing method.
 
 =item *
 
-L<"Directives for the HTTP Access Method Only"> -- Likewise, these only apply
+L<Directives for the HTTP Access Method Only> -- Likewise, these only apply
 to the HTTP Access method.
 
 =item *
 
-L<"Directives for the prog Access Method Only"> -- These only apply to the prog
+L<Directives for the prog Access Method Only> -- These only apply to the prog
 Access method.
 
 =item *
 
-L<"Document Filter Directives"> -- This is a special section that describes
+L<Document Filter Directives> -- This is a special section that describes
 using document filters with Swish-e.
 
 =back
@@ -132,317 +137,316 @@ using document filters with Swish-e.
 
 =item *
 
-C<AbsoluteLinks> [yes|NO]
+L<AbsoluteLinks|/AbsoluteLinks> [yes|NO]
 
 =item *
 
-C<BeginCharacters> *string of characters*
+L<BeginCharacters|/BeginCharacters> *string of characters*
 
 =item *
 
-C<BumpPositionCounterCharacters> *string*
+L<BumpPositionCounterCharacters|/BumpPositionCounterCharacters> *string*
 
 =item *
 
-C<Buzzwords> [*list of buzzwords*|File: path]
+L<Buzzwords|/Buzzwords> [*list of buzzwords*|File: path]
 
 =item *
 
-C<CompressPositions>  [yes|NO]
-
-
-=item *
-
-C<ConvertHTMLEntities> [YES|no]
+L<CompressPositions|/CompressPositions>  [yes|NO]
 
 =item *
 
-C<DefaultContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
+L<ConvertHTMLEntities|/ConvertHTMLEntities> [YES|no]
 
 =item *
 
-C<Delay> *seconds*
+L<DefaultContents|/DefaultContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
 
 =item *
 
-C<DontBumpPositionOnEndTags> *list of names*
+L<Delay|/Delay> *seconds*
 
 =item *
 
-C<DontBumpPositionOnStartTags> *list of names*
+L<DontBumpPositionOnEndTags|/DontBumpPositionOnEndTags> *list of names*
 
 =item *
 
-C<EnableAltSearchSyntax>  [yes|NO]
+L<DontBumpPositionOnStartTags|/DontBumpPositionOnStartTags> *list of names*
 
 =item *
 
-C<EndCharacters> *string of characters*
+L<EnableAltSearchSyntax|/EnableAltSearchSyntax>  [yes|NO]
 
 =item *
 
-C<EquivalentServer> *server alias*
+L<EndCharacters|/EndCharacters> *string of characters*
 
 =item *
 
-C<ExtractPath> *metaname* [replace|remove|prepend|append|regex]
+L<EquivalentServer|/EquivalentServer> *server alias*
 
 =item *
 
-C<FileFilter> *suffix* *program* [options]
+L<ExtractPath|/ExtractPath> *metaname* [replace|remove|prepend|append|regex]
 
 =item *
 
-C<FileFilterMatch> *program* *options* *regex* [*regex* ...]
+L<FileFilter|/FileFilter> *suffix* *program* [options]
 
 =item *
 
-C<FileInfoCompression> [yes|NO]
+L<FileFilterMatch|/FileFilterMatch> *program* *options* *regex* [*regex* ...]
 
 =item *
 
-C<FileMatch> [contains|is|regex] *regular expression*
+L<FileInfoCompression|/FileInfoCompression> [yes|NO]
 
 =item *
 
-C<FileRules> [contains|is|regex] *regular expression*
+L<FileMatch|/FileMatch> [contains|is|regex] *regular expression*
 
 =item *
 
-C<FuzzyIndexingMode> [NONE|Stemming|Soundex|Metaphone|DoubleMetaphone]
+L<FileRules|/FileRules> [contains|is|regex] *regular expression*
 
 =item *
 
-C<FollowSymLinks> [yes|NO]
+L<FuzzyIndexingMode|/FuzzyIndexingMode> [NONE|Stemming|Soundex|Metaphone|DoubleMetaphone]
 
 =item *
 
-C<HTMLLinksMetaName> *metaname*
+L<FollowSymLinks|/FollowSymLinks> [yes|NO]
 
 =item *
 
-C<IgnoreFirstChar> *string of characters*
+L<HTMLLinksMetaName|/HTMLLinksMetaName> *metaname*
 
 =item *
 
-C<IgnoreLastChar> *string of characters*
+L<IgnoreFirstChar|/IgnoreFirstChar> *string of characters*
 
 =item *
 
-C<IgnoreLimit> *integer integer*
+L<IgnoreLastChar|/IgnoreLastChar> *string of characters*
 
 =item *
 
-C<IgnoreMetaTags> *list of names*
+L<IgnoreLimit|/IgnoreLimit> *integer integer*
 
 =item *
 
-C<IgnoreNumberChars> *list of characters*
+L<IgnoreMetaTags|/IgnoreMetaTags> *list of names*
 
 =item *
 
-C<IgnoreTotalWordCountWhenRanking> [YES|no]
+L<IgnoreNumberChars|/IgnoreNumberChars> *list of characters*
 
 =item *
 
-C<IgnoreWords> [*list of stop words*|File: path]
+L<IgnoreTotalWordCountWhenRanking|/IgnoreTotalWordCountWhenRanking> [YES|no]
 
 =item *
 
-C<ImageLinksMetaName> *metaname*
+L<IgnoreWords|/IgnoreWords> [*list of stop words*|File: path]
 
 =item *
 
-C<IncludeConfigFile>
+L<ImageLinksMetaName|/ImageLinksMetaName> *metaname*
 
 =item *
 
-C<IndexAdmin> *text*
+L<IncludeConfigFile|/IncludeConfigFile>
 
 =item *
 
-C<IndexAltTagMetaName> *tagname*|as-text
+L<IndexAdmin|/IndexAdmin> *text*
 
 =item *
 
-C<IndexComments> [yes|NO]
+L<IndexAltTagMetaName|/IndexAltTagMetaName> *tagname*|as-text
 
 =item *
 
-C<IndexContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file
+L<IndexComments|/IndexComments> [yes|NO]
+
+=item *
+
+L<IndexContents|/IndexContents> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file
 extensions*
 
 =item *
 
-C<IndexDescription> *text*
+L<IndexDescription|/IndexDescription> *text*
 
 =item *
 
-C<IndexDir> [URL|directories or files]
+L<IndexDir|/IndexDir> [URL|directories or files]
 
 =item *
 
-C<IndexFile> *path*
+L<IndexFile|/IndexFile> *path*
 
 =item *
 
-C<IndexName> *text*
+L<IndexName|/IndexName> *text*
 
 =item *
 
-C<IndexOnly> *list of file suffixes*
+L<IndexOnly|/IndexOnly> *list of file suffixes*
 
 =item *
 
-C<IndexPointer> *text*
+L<IndexPointer|/IndexPointer> *text*
 
 =item *
 
-C<IndexReport> [0|1|2|3]
+L<IndexReport|/IndexReport> [0|1|2|3]
 
 =item *
 
-C<MaxDepth> *integer*
+L<MaxDepth|/MaxDepth> *integer*
 
 =item *
 
-C<MaxWordLimit> *integer*
+L<MaxWordLimit|/MaxWordLimit> *integer*
 
 =item *
 
-C<MetaNameAlias> *meta name* *list of aliases*
+L<MetaNameAlias|/MetaNameAlias> *meta name* *list of aliases*
 
 =item *
 
-C<MetaNames> *list of names*
+L<MetaNames|/MetaNames> *list of names*
 
 =item *
 
-C<MinWordLimit> *integer*
+L<MinWordLimit|/MinWordLimit> *integer*
 
 =item *
 
-C<NoContents> *list of file suffixes*
+L<NoContents|/NoContents> *list of file suffixes*
 
 =item *
 
-C<obeyRobotsNoIndex> [yes|NO]
+L<obeyRobotsNoIndex|/obeyRobotsNoIndex> [yes|NO]
 
 =item *
 
-C<ParserWarnLevel> [0|1|2|3]
+L<ParserWarnLevel|/ParserWarnLevel> [0|1|2|3]
 
 =item *
 
-C<PreSortedIndex> *list of property names*
+L<PreSortedIndex|/PreSortedIndex> *list of property names*
 
 =item *
 
-C<PropCompressionLevel> [0-9]
+L<PropCompressionLevel|/PropCompressionLevel> [0-9]
 
 =item *
 
-C<PropertyNameAlias> *property name* *list of aliases*
+L<PropertyNameAlias|/PropertyNameAlias> *property name* *list of aliases*
 
 =item *
 
-C<PropertyNames> *list of meta names*
+L<PropertyNames|/PropertyNames> *list of meta names*
 
 =item *
 
-C<PropertyNamesCompareCase> *list of meta names*
+L<PropertyNamesCompareCase|/PropertyNamesCompareCase> *list of meta names*
 
 =item *
 
-C<PropertyNamesIgnoreCase> *list of meta names*
+L<PropertyNamesIgnoreCase|/PropertyNamesIgnoreCase> *list of meta names*
 
 =item *
 
-C<PropertyNamesNoStripChars> *list of meta names*
+L<PropertyNamesNoStripChars|/PropertyNamesNoStripChars> *list of meta names*
 
 =item *
 
-C<PropertyNamesDate> *list of meta names*
+L<PropertyNamesDate|/PropertyNamesDate> *list of meta names*
 
 =item *
 
-C<PropertyNamesNumeric> *list of meta names*
+L<PropertyNamesNumeric|/PropertyNamesNumeric> *list of meta names*
 
 =item *
 
-C<PropertyNamesMaxLength> integer *list of meta names*
+L<PropertyNamesMaxLength|/PropertyNamesMaxLength> integer *list of meta names*
 
 =item *
 
-C<PropertyNamesSortKeyLength> integer *list of meta names*
+L<PropertyNamesSortKeyLength|/PropertyNamesSortKeyLength> integer *list of meta names*
 
 =item *
 
-C<ReplaceRules> [replace|remove|prepend|append|regex]
+L<ReplaceRules|/ReplaceRules> [replace|remove|prepend|append|regex]
 
 =item *
 
-C<ResultExtFormatName>  name -x format string
+L<ResultExtFormatName|/ResultExtFormatName>  name -x format string
 
 =item *
 
-C<SpiderDirectory> *path*
+L<SpiderDirectory|/SpiderDirectory> *path*
 
 =item *
 
-C<StoreDescription> [XML <tag>|HTML <meta>|TXT size]
+L<StoreDescription|/StoreDescription> [XML <tag>|HTML <meta>|TXT size]
 
 =item *
 
-C<"SwishProgParameters> *list of parameters*
+L<"SwishProgParameters|/"SwishProgParameters> *list of parameters*
 
 =item *
 
-C<SwishSearchDefaultRule>   [<AND-WORD>|<or-word>]
+L<SwishSearchDefaultRule|/SwishSearchDefaultRule>   [<AND-WORD>|<or-word>]
 
 =item *
 
-C<SwishSearchOperators> <and-word> <or-word> <not-word>
+L<SwishSearchOperators|/SwishSearchOperators> <and-word> <or-word> <not-word>
 
 =item *
 
-C<TmpDir> *path*
+L<TmpDir|/TmpDir> *path*
 
 =item *
 
-C<TranslateCharacters> [*string1 string2*|:ascii7:]
+L<TranslateCharacters|/TranslateCharacters> [*string1 string2*|:ascii7:]
 
 =item *
 
-C<TruncateDocSize> *number of characters*
-
-=item * 
-
-C<UndefinedMetaTags> [error|ignore|INDEX|auto]
+L<TruncateDocSize|/TruncateDocSize> *number of characters*
 
 =item *
 
-C<UndefinedXMLAttributes> [DISABLE|error|ignore|index|auto]
+L<UndefinedMetaTags|/UndefinedMetaTags> [error|ignore|INDEX|auto]
 
 =item *
 
-C<UseStemming> [yes|NO]
+L<UndefinedXMLAttributes|/UndefinedXMLAttributes> [DISABLE|error|ignore|index|auto]
 
 =item *
 
-C<UseSoundex> [yes|NO]
+L<UseStemming|/UseStemming> [yes|NO]
 
 =item *
 
-C<UseWords> [*list of words*|File: path]
+L<UseSoundex|/UseSoundex> [yes|NO]
 
 =item *
 
-C<WordCharacters> *string of characters*
+L<UseWords|/UseWords> [*list of words*|File: path]
 
 =item *
 
-C<XMLClassAttributes> *list of XML attribute names*
+L<WordCharacters|/WordCharacters> *string of characters*
+
+=item *
+
+L<XMLClassAttributes|/XMLClassAttributes> *list of XML attribute names*
 
 =back
 

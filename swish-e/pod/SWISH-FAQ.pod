@@ -2,7 +2,10 @@
 
 The Swish-e FAQ - Answers to Common Questions
 
-=head1 Frequently Asked Questions
+=head1 OVERVIEW
+
+List of commonly asked and answered questions.  Please review this
+document before asking questions on the Swish-e discussion list.
 
 =head2 General Questions
 
