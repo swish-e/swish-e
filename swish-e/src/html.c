@@ -602,7 +602,7 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
     if (fprop->stordesc)
         summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
 
-    addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry);
+    addtofilelist(sw, indexf, fprop, &thisFileEntry);
     addCommonProperties(sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize);
 
     /* Init meta info */

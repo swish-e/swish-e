@@ -505,7 +505,7 @@ static int index_no_content(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     idx->filenum++;
-    addtofilelist(sw, indexf, fprop->real_path, NULL );
+    addtofilelist(sw, indexf, fprop, NULL );
 
     addCommonProperties( sw, indexf, fprop->mtime, title, NULL, 0, fprop->fsize );
 
@@ -1253,10 +1253,6 @@ static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, 
     }
 
 
-    /* This allows extracting out parts of a path and indexing as a separate meta name */
-    if ( sw->pathExtractList )
-        index_path_parts( sw, filename, sw->pathExtractList );
-        
 
 }
 /*******************************************************************
@@ -1302,9 +1298,10 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list )
 *
 ********************************************************************/
 
-void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file **newFileEntry)
+void    addtofilelist(SWISH * sw, IndexFILE * indexf, FileProp *fprop,  struct file **newFileEntry)
 {
     struct file *newnode;
+    char        *filename = fprop->real_path;
 
     /* Create the file array */
 
@@ -1347,6 +1344,12 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct fi
     /* path name is special and is always required.  Save it. */
 
     save_pathname( sw, indexf, newnode, filename );
+
+
+    /* This allows extracting out parts of a path and indexing as a separate meta name */
+    if ( sw->pathExtractList )
+        index_path_parts( sw, fprop->orig_path, sw->pathExtractList );
+        
 
 }
 

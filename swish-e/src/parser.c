@@ -527,7 +527,7 @@ static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fpro
 
     /* Create file entry in index */
 
-    addtofilelist(sw, indexf, fprop->real_path, &(parse_data->thisFileEntry) );
+    addtofilelist(sw, indexf, fprop, &(parse_data->thisFileEntry) );
     addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
 
 }    

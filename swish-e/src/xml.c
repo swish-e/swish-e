@@ -134,7 +134,7 @@ int     countwords_XML(SWISH * sw, FileProp * fprop, char *buffer)
     
 
 
-    addtofilelist(sw, indexf, fprop->real_path, &(parse_data.thisFileEntry) );
+    addtofilelist(sw, indexf, fprop, &(parse_data.thisFileEntry) );
     addCommonProperties(sw, indexf, fprop->mtime, NULL,NULL, 0, fprop->fsize);
 
 

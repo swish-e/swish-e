@@ -308,7 +308,8 @@ struct file
 typedef struct
 {
     FILE   *fp;                 /* may be also a filter stream or NULL if not opened */
-    char   *real_path;          /* org. path/URL to indexed file */
+    char   *real_path;          /* path/URL to indexed file - may be modified by ReplaceRules */
+    char   *orig_path;          /* original path provided to swish */
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
     char   *real_filename;      /* basename() of real_path  */
     long    fsize;              /* size of the original file (not filtered) */

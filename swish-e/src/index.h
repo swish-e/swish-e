@@ -131,7 +131,7 @@ void do_index_file (SWISH *sw, FileProp *fprop);
 void addentry (SWISH *, char*, int, int, int, int );
 
 void addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size );
-void addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file **newFileEntry);
+void addtofilelist(SWISH * sw, IndexFILE * indexf, FileProp *fprop,  struct file **newFileEntry);
 
 
 int getfilecount (IndexFILE *);

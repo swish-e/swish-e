@@ -48,7 +48,7 @@ int countwords_TXT(SWISH *sw, FileProp *fprop, char *buffer)
 		remove_newlines(summary);			/* 2001-03-13 rasc */
 	}
 
-	addtofilelist(sw, indexf, fprop->real_path, NULL );
+	addtofilelist(sw, indexf, fprop, NULL );
     addCommonProperties( sw, indexf, fprop->mtime, "", summary, 0, fprop->fsize );
 
 
