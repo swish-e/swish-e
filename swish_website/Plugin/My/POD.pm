@@ -314,6 +314,23 @@ sub show_head {  # all all child nodes
 }
 
 
+#---------------- <pre> sections ----------------------------
+# This just adds a class attribute
+sub view_verbatim {
+    my ($self, $text) = @_;
+    return '' unless $text;
+    for ($text) {
+        s/&/&amp;/g;
+        s/</&lt;/g;
+        s/>/&gt;/g;
+    }
+
+    return qq{<pre class="pre-section">$text</pre>\n};
+}
+
+
+
+
 #----------------- <a name="foo"></a>foo ---------------------
 sub anchor {
     my($self, $title) = @_;
@@ -386,6 +403,7 @@ sub view_seq_link_transform_path {
 #
 # so we take only the first word.  But that breaks if linking to multi-word item.
 #
+# $$$ fix me -- move to using item_ -- fix links in source.
 
 sub view_item {
     my ($self, $item) = @_;
@@ -403,7 +421,8 @@ sub view_item {
             $anchor = $self->escape_name( $anchor );
 
             $self->save_target( $anchor );
-            $title = qq{<a name="$anchor"></a><b>$title</b>};
+            $self->save_target( "item_$anchor" );
+            $title = qq{<a name="item_$anchor"></a><a name="$anchor"></a><b>$title</b>};
         }
     }
 
