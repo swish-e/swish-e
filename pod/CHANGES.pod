@@ -10,6 +10,24 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Added Continuation option to config processing
+
+You can now use continuation lines in the config file:
+
+    IgnoreWords: \
+        the
+        am
+        is
+        are
+        was
+
+The cannot be any characters following the backslash.
+
+=item Fixed Buzzwords (and other word lists intered in the config)
+
+Words entered in config were not converted to lower case before storing in the index.
+
+
 =item Fixed metaname mapping problem in Merge
 
 Peter Karman found an error when merging indexes where the source indexes had the
