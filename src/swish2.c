@@ -303,17 +303,22 @@ char *field;
 
 int SwishSeek(SWISH *sw,int pos)
 {
-int i;
-RESULT *sp=NULL;
-    if(!sw) return INVALID_SWISH_HANDLE;
-    if(!sw->Search->db_results) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
-        /* Check if only one index file -> Faster SwishSeek */
+    int i;
+    RESULT *sp=NULL;
+
+    if(!sw)
+        return INVALID_SWISH_HANDLE;
+
+    if(!sw->Search->db_results)
+        return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+
+    /* Check if only one index file -> Faster SwishSeek */
+
     if(!sw->Search->db_results->next)
-    {      
+    {
         for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
-        {
             sp = sp->nextsort;
-        }
+
         sw->Search->db_results->currentresult=sp;
     }
     else
@@ -321,12 +326,14 @@ RESULT *sp=NULL;
         /* Well, we finally have more than one file */
         /* In this case we have no choice - We need to read the data from disk */
         /* The easy way: Let SwishNext do the job */
-        for (i=0;sp && i<pos;i++)
-        {
+
+        for (i=0,sp=sw->Search->db_results->sortresultlist;sp && i<pos;i++)
             sp=SwishNext(sw);
-        }
     }
-    if(!sp) return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+
+    if(!sp)
+        return((sw->lasterror=SWISH_LISTRESULTS_EOF));
+
     return pos;
 }
 
