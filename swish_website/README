@@ -36,6 +36,12 @@ Building the site
         $ mkdir -p public_html dirs_public/download/old dirs_public/swish-daily
         $ bin/build -swishsrc=$HOME/swish-e -develsrc=$HOME/swish-e
 
+    (Or symlink as needed -- which is what I did.)
+
+    Also in lib/config/site you might want to defined where swish-daily and
+    the download dirs are set.  Currently to /distribution and /swish-daily.
+    The download and swish-daily pages link files to those dirs.
+
     You need Template Toolkit, Pod::POM (from CPAN) and anything else it
     complains about.
 
