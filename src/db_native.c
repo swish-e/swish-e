@@ -1806,7 +1806,7 @@ int     DB_EndReadSortedIndex_Native(void *db)
 
 /* 
 ** Jose Ruiz 04/00
-** Store a portable long with just four bytes
+** Store a portable long in a portable format
 */
 void    printlong(FILE * fp, unsigned long num, size_t(*f_write) (const void *, size_t, size_t, FILE *))
 {
@@ -1816,7 +1816,7 @@ void    printlong(FILE * fp, unsigned long num, size_t(*f_write) (const void *, 
 
 /* 
 ** Jose Ruiz 04/00
-** Read a portable long (just four bytes)
+** Read a portable long from a portable format
 */
 unsigned long readlong(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE *))
 {
