@@ -44,8 +44,12 @@ LOGICAL_OP;
 /* Global module data */
 
 struct MOD_SearchAlt {
+   /* public:  */
     int     enableAltSearchSyntax;         /* Alternate search strings 0/1  */
     LOGICAL_OP srch_op;                    /* search operator words         */
+
+   /* private: don't use outside this module! */
+   /* none */
 };
 
 

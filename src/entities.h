@@ -31,6 +31,10 @@ $Id$
 /* Global module data */
 
 struct MOD_Entities {
+   /* public:  */
+   /* none */
+   
+   /* private: don't use outside this module! */
    int   convertEntities;
 };
 

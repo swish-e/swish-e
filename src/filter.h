@@ -42,6 +42,10 @@ struct FilterList {	/* Store filtersprogs and extension */
 /* Global module data */
 
 struct MOD_Filter {
+   /* public:  */
+   /* none */
+   
+   /* private: don't use outside this module! */
     struct FilterList *filterlist;  /* 1998-08-07 rasc */
     char   *filterdir;              /* 1998-08-07 rasc */
 };

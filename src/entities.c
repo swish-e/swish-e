@@ -46,20 +46,21 @@ $Id$
 ** ----------------------------------------------
 */
 
+/* Prototypes */
+
+static int is_EOE (int c);
+
+
+
 
 #define  MAX_ENTITY_LEN  16           /* max chars after where we have to see the EOE */
 
 /*
   -- Entity encoding/decoding structure 
-  --- the macro IS_EOE (is_End_of_Entity) check for the end of an entity sequence.
-  --- normally this is ';', but we may also allow whitespaces (and punctation)...
 */
 
-
-/* #define  IS_EOE(a)  ((a)==';')                           --  W3C compliant */
-/* #define  IS_EOE(a)  ((a)==';'||isspace((int)(a)))        --  tolerant behavior */
-#define  IS_EOE(a)  (ispunct((int)(a))||isspace((int)(a)))  /*  oh god, accept everything */
-
+/* #define IS_EOE(a)   ((a)==';')    -- be W3C compliant */
+#define IS_EOE(a)   (is_EOE((int)(a))) /* tolerant routine */
 
 
 typedef struct {
@@ -457,8 +458,8 @@ void initModule_Entities (SWISH  *sw)
 
       } /* end init hash block */
 
-
-//$$$ debugModule_Entities ();
+//$$$ uncomment to get a quick module debug!!!
+//$$$  debugModule_Entities ();
 }
 
 
@@ -598,7 +599,6 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
      }
   }
   *d = '\0';
-fprintf (stderr,"DBG: buffer after entity decoding: _%s_\n",buf); //$$$ DEBUG
 
   return buf;
 }
@@ -646,13 +646,12 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
          case 'x':
          case 'X':
               ++s;     /* skip x */
-              code = (int) strtoul (s,(char **)&s,(int)16);
+              code = (int) strtoul (s,(char **)&e_end,(int)16);
               break;
          default:
-              code = (int) strtoul (s,(char **)&s,(int)10); 
+              code = (int) strtoul (s,(char **)&e_end,(int)10); 
               break;
       }
-      e_end = s;
 
   } else {
 
@@ -665,12 +664,13 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
       len = 0;
       t = NULL;
       s1 = s;
-      while (*(++s1) && (len < MAX_ENTITY_LEN)) {
-         s_cmp[len] = *s1;
+      while (len < MAX_ENTITY_LEN) {
+         s_cmp[len] = *(++s1);
          if (IS_EOE(*s1)) {
              t = s1;      /* End of named entity */
              break;
          }
+         if (! *s1) break;   /* maybe this is also checked by is_EOE! */
          len ++;
       }
       s_cmp[len] = '\0';
@@ -689,9 +689,7 @@ int charEntityDecode (unsigned char *s, unsigned char **end)
          hash_pp = & ce_hasharray[*(s+1) & 0x7F];
          last_p   = NULL;
          hash_p  = *hash_pp;
-fprintf (stderr," DBG: entity: _%s_ --> \n",s_cmp); //$$$$ Debug
          while (hash_p) {
-fprintf (stderr," DBG decoding:     --> _%s_\n",hash_p->ce->name); //$$$$ Debug 
              if (!strcmp (hash_p->ce->name,s_cmp)) {
                  code = hash_p->ce->code;
                  if (last_p) {  /* rechain hash sequence list (last found = first) */
@@ -710,8 +708,9 @@ fprintf (stderr," DBG decoding:     --> _%s_\n",hash_p->ce->name); //$$$$ Debug
   } /* end if */
 
 
-  if (!(e_end && IS_EOE(*e_end))) code = *s;
+//$$$  if (!(e_end && IS_EOE(*e_end))) code = *s;
   if (! e_end) {
+     code = *s;
      e_end = s+1;
   } else {
      if (*e_end == ';') e_end++;   /* W3C  EndOfEntity */
@@ -723,12 +722,31 @@ fprintf (stderr," DBG decoding:     --> _%s_\n",hash_p->ce->name); //$$$$ Debug
 }
 
 
+/*
+  -- check if a char is the end of a html entity.
+  -- behavior can be W3C pedantic or tolerant.
+  -- mapped via macro to avoid function calls on strict ==';' behavior
+  -- return: cmp value
+*/
+
+static int is_EOE (int c)
+{
+/* be tolerant ! */
+  return ((!isprint(c))||ispunct(c)||isspace(c))
+          ? 1 : 0;
+}
+
+
+
+
 
 
 /*
 $$$
  --- debug routine
  --- display entity hash
+ --- will be removed on on release version!  (rasc)
+ --- prototype warnings are intended as a reminder
 */
 
 
