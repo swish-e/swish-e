@@ -39,6 +39,13 @@
 */
 
 // #define PROPFILE 1
+#define MAX_SORT_STRING_LEN 50
+
+/* MAX_SORT_STRING_LEN defines the max string length to use
+*  for sorting properties.  Should be long enough to sort ALL
+*  file paths or URLs.  Useful if using StoreDescription to store
+*  a large amount of text.
+*/
 
 #define RAM_DISK 1
 

@@ -43,7 +43,7 @@ $Id$
 #define MEM_TRACE 0
 
 /* MEM_STATISTICS gives memory statistics (bytes allocated, calls, etc */
-#define MEM_STATISTICS 0 
+#define MEM_STATISTICS 0
 
 
 /* The following are the basic malloc/realloc/free replacements */

@@ -54,8 +54,12 @@ $Id$
 
 static propEntry *GetPropertyByFile( SWISH *sw, IndexFILE *indexf, int filenum, int metaID )
 {
-    struct file *fi;
     propEntry *d;
+    struct file *fi;
+
+#ifdef PROPFILE    
+    return  ReadSingleDocPropertiesFromDisk(sw, indexf, filenum, metaID, MAX_SORT_STRING_LEN );
+#endif    
 
     /* this will read all doc data from the index file or from cache */
 
@@ -92,6 +96,10 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, int metaID
         printdocprop( d );
     else
         printf("File %d does not have a property for metaID %d", filenum, metaID );
+
+#ifdef PROPFILE
+    freeProperty( d );
+#endif    
 }
 #endif
     
@@ -277,6 +285,7 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry, propEntry *key, LOOKUP_TABLE *sort_array)
 {
     propEntry *fileprop;
+    int        cmp_value;
 
 #ifdef DEBUGLIMIT
     {
@@ -308,7 +317,12 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 #endif    
 
 
-    return Compare_Properties( meta_entry, key, fileprop  );
+    cmp_value = Compare_Properties( meta_entry, key, fileprop  );
+#ifdef PROPFILE    
+    freeProperty( fileprop );
+#endif
+    return cmp_value;
+    
 }
 
     
@@ -622,7 +636,6 @@ static int params_to_props( struct metaEntry *meta_entry, PARAMS *param )
 
     /* properties do not have leading white space */
 
-    printf("Low '%s' High '%s'\n", lowrange, highrange );
 
     /* Allow <= and >= in limits.  A NULL property means very low/very high */
 
@@ -816,6 +829,7 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
 {
     int j;
     struct metaEntry  *meta_entry;
+    int limit = 0;
 
 
     for ( j = 0; j < indexf->header.metaCounter; j++)
@@ -842,10 +856,16 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
                 (Compare_Properties( meta_entry, prop, meta_entry->loPropRange ) < 0 ) ||
                 (Compare_Properties( meta_entry, prop, meta_entry->hiPropRange ) > 0 )
                )
-                return 1;
+                limit = 1;
+
+#ifdef PROPFILE    
+            freeProperty( prop );
+#endif
+
+
         }
     }
 
-    return 0;
+    return limit;
 }    
 
