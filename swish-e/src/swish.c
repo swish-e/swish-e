@@ -94,6 +94,7 @@ char keychar=0;
 int keychar2;
 char *keywords=NULL;
 IndexFILE *tmpindexlist=NULL;
+struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 
 	starttime=0L;
 
@@ -205,28 +206,15 @@ IndexFILE *tmpindexlist=NULL;
 		  /* -s <property_to_sort> [asc|desc] [<property_to_sort> asc|desc]* */
 		  while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
 			{
-				sortmode=-1; /* Ascendind by default */
-				field=(++argv)[0];
+				tmpsortprops=addswline(tmpsortprops,(++argv)[0]);
 				argc--;
-				if ((argv+1)[0] && *(argv+1)[0]!='-') {
-					if(!strcasecmp((argv+1)[0],"asc")) {
-						sortmode=-1;  /* asc sort */
-						++argv;
-						argc--;
-					} else if(!strcasecmp((argv+1)[0],"desc")){
-						sortmode=1; /* desc sort */
-						++argv;
-						argc--;
-					}
-				}
-				addSearchResultSortProperty(sw,field,sortmode);
 			}
 		}
 		else if (c == 'p') {
 		  /* -p <property_to_display> [<property_to_display>]* */
 		  while ((argv + 1)[0] != '\0' && *(argv + 1)[0] != '-') 
 			{
-				addSearchResultDisplayProperty(sw,(++argv)[0]);
+				tmpprops=addswline(tmpprops,(++argv)[0]);
 				argc--;
 			}
 		}
@@ -685,6 +673,36 @@ IndexFILE *tmpindexlist=NULL;
 			sw->indexlist = (IndexFILE *)
 			addindexfile(sw->indexlist, INDEXFILE);
 		
+		if(tmpprops)
+		{
+			for(tmplist=tmpprops;tmplist;tmplist=tmplist->next)
+			{
+				addSearchResultDisplayProperty(sw,tmplist->line);
+			}
+			freeswline(tmpprops);
+		}
+
+		if(tmpsortprops)
+		{
+
+			sortmode=-1; /* Ascendind by default */
+			for(tmplist=tmpsortprops;tmplist;tmplist=tmplist->next)
+			{
+				field=tmplist->line;
+				if (tmplist->next) {
+					if(!strcasecmp(tmplist->next->line,"asc")) {
+						sortmode=-1;  /* asc sort */
+						tmplist=tmplist->next;		
+					} else if(!strcasecmp(tmplist->next->line,"desc")){
+						sortmode=1; /* desc sort */
+						tmplist=tmplist->next;		
+					}
+				}
+				addSearchResultSortProperty(sw,field,sortmode);
+			}
+			freeswline(tmpsortprops);
+		}
+
 		for (i = 0; structstr[i] != '\0'; i++)
 		{
 			switch (structstr[i]) 
