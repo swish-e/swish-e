@@ -143,6 +143,9 @@ sub process_server {
     $server->{quiet} ||= $ENV{SPIDER_QUIET} || 0;
 
 
+    # Lame Microsoft
+    $URI::ABS_REMOTE_LEADING_DOTS = $server->{remove_leading_dots} ? 1 : 0;
+
     $server->{max_size} ||= MAX_SIZE;
     die "max_size parameter '$server->{max_size}' must be a number\n" unless $server->{max_size} =~ /^\d+$/;
 
@@ -974,7 +977,11 @@ sub output_content {
     # Set the parser type if specified by filtering
     if ( my $type = delete $server->{parser_type} ) {
         $headers .= "Document-Type: $type\n";
-    }
+
+    } elsif ( $response->content_type =~ m!^text/(html|xml|plain)! ) {
+        my $type = $1 eq 'plain' ? 'txt' : $1;
+        $headers .= "Document-Type: $type*\n";
+    }        
 
 
     $headers .= "No-Contents: 1\n" if $server->{no_contents};
@@ -1012,6 +1019,7 @@ sub default_urls {
             base_url        => \@ARGV,
             email           => 'swish@domain.invalid',
             link_tags       => [qw/ a frame /],
+            keep_alive      => 1,
             test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
 
             test_response   => sub {
@@ -1177,6 +1185,21 @@ But the spider happens to find the exact content in this file first:
     http://localhost/developement/test/todo/maybeimportant.html
 
 Then only that URL will be indexed.
+
+=head2 Broken relative links
+
+Some times web page authors use too many C</../> segments in relative URLs which reference
+documents above the document root.  Some web servers such as Apache will return a
+400 Bad Request when requesting a document above the root.  Other web servers such as
+Micorsoft IIS/5.0 will try and "correct" these errors.  This correction will lead to
+loops when spidering.
+
+The spider can fix these above-root links by placing the following in your spider config:
+
+    remove_leading_dots => 1,
+
+It is not on by default so that the spider can report the broken links (as 400 errors on
+sane webservers).
 
 =head2 Compression
 
@@ -1555,6 +1578,12 @@ A username and password supplied in a URL will override this setting.
 
 Sets the number of seconds to wait for user input when prompted for a username or password.
 The default is 30 seconds.
+
+
+=item remove_leading_dots
+
+Removes leading dots from URLs that might reference documents above the document root.
+The default is to not remove the dots.
 
 =back
 
