@@ -1,4 +1,4 @@
-cd /data/_a/internetindexpackage SWISH::Filter;
+package SWISH::Filter;
 
 use 5.005;
 use strict;
