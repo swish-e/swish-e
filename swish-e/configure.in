@@ -301,7 +301,7 @@ LDFLAGS=${_ldflags}
 
 dnl Set a better default for libexecdir -- Thanks to David Norris!
 libexecdiropt=$(echo $ac_option | grep 'libexecdir=')
-if test "x$libexecdiropt" == "x"; then
+if test "x$libexecdiropt" = "x"; then
         libexecdir='${exec_prefix}/lib/${PACKAGE}'
 	AC_MSG_NOTICE([Setting libexecdir to \${exec_prefix}/lib/${PACKAGE}])
 fi
