@@ -126,11 +126,10 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
     hashval = string_hash(word,hash_size);
 
     /* Create a new entry */            
-    sp = (struct swline *) Mem_ZoneAlloc((MEM_ZONE *)table_ptr->mem_zone, sizeof(struct swline));
+    len = strlen(word);
+    sp = (struct swline *) Mem_ZoneAlloc((MEM_ZONE *)table_ptr->mem_zone, sizeof(struct swline) + len);
 
-    len = strlen(word) + 1;
-    sp->line = (char *) Mem_ZoneAlloc((MEM_ZONE *)table_ptr->mem_zone, len);
-    memcpy(sp->line,word,len);
+    memcpy(sp->line,word,len + 1);
 
     /* Add word to head of list */
     

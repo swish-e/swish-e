@@ -29,13 +29,35 @@
 #include "hash.h"
 
 
-struct swline *addswline(struct swline *rp, char *line)
+struct swline *newswline_n(char *line, int size)
 {
 struct swline *newnode;
 
-    newnode = (struct swline *) emalloc(sizeof(struct swline));
-    newnode->line = (char *) estrdup(line);
+    newnode = (struct swline *)emalloc(sizeof(struct swline) + size);
+    strncpy(newnode->line,line,size);
     newnode->next = NULL;
+
+    return newnode;
+}
+
+struct swline *newswline(char *line)
+{
+struct swline *newnode;
+int size = strlen(line);  /* Compute strlen only once */
+
+    newnode = (struct swline *)emalloc(sizeof(struct swline) + size);
+    memcpy(newnode->line,line,size + 1);
+    newnode->next = NULL;
+
+    return newnode;
+}
+
+struct swline *addswline(struct swline *rp, char *line)
+{
+struct swline *newnode;
+int len;
+
+    newnode = newswline(line);
 
     if (rp == NULL)
         rp = newnode;
@@ -51,11 +73,10 @@ struct swline *dupswline(struct swline *rp)
 {
 struct swline *tmp=NULL, *tmp2=NULL;
 struct swline *newnode;
+int len;
     while(rp)
     {
-        newnode = (struct swline *) emalloc(sizeof(struct swline));
-        newnode->line = (char *) estrdup(rp->line);
-        newnode->next = NULL;
+        newnode = newswline(rp->line);
         
         if(!tmp)
             tmp = newnode;
@@ -64,6 +85,7 @@ struct swline *newnode;
         tmp2 = newnode;
         rp=rp->next;
     }
+    tmp->other.nodep = tmp2;  /* Put last in nodep */
     return tmp;
 }
 
@@ -100,7 +122,6 @@ void freeswline(struct swline *tmplist)
 
     while (tmplist) {
         tmplist2 = tmplist->next;
-        efree(tmplist->line);
         efree(tmplist);
         tmplist = tmplist2;
     }

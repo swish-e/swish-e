@@ -7,11 +7,13 @@ extern "C" {
 
 
 /* internal representation,  may not be changed */
-#define AND_WORD "<and>" 
-#define OR_WORD "<or>"
-#define NOT_WORD "<not>"
-#define PHRASE_WORD "<precd>"
-#define AND_NOT_WORD "<andnot>"
+/* BTW, keep strlen(MAGIC_NOT_WORD) >= strlen(NOT_WORD) to avoid string reallocation in the code */
+#define AND_WORD       "<and>" 
+#define OR_WORD        "<or>"
+#define NOT_WORD       "<not>"
+#define MAGIC_NOT_WORD "<__not__>"
+#define PHRASE_WORD    "<precd>"
+#define AND_NOT_WORD   "<andnot>"
 
 /* internal search rule numbers */
 #define NO_RULE 0
