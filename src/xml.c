@@ -366,7 +366,13 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
     /* (re)allocate buf if needed */
     
     if ( buf->cur + txtlen >= buf->max )
-        buf->buffer = erealloc( buf->buffer, ( buf->max += BUFFER_CHUNK_SIZE+1 ) );
+    {
+        buf->max = ( buf->max + BUFFER_CHUNK_SIZE+1 < buf->cur + txtlen )
+                    ? buf->cur + txtlen+1
+                    : buf->max + BUFFER_CHUNK_SIZE+1;
+
+        buf->buffer = erealloc( buf->buffer, buf->max+1 );
+    }
 
 
     memcpy( (void *) &(buf->buffer[buf->cur]), txt, txtlen );
