@@ -698,8 +698,10 @@ static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
 
         newname[strlen(newname) - strlen(USE_TEMPFILE_EXTENSION)] = '\0';
 
-#if defined(_WIN32) || defined (__VMS)
-        if (isfile(newname))
+#if defined(_WIN32)
+	struct stat stbuf;
+	if(!stat(newname, &stbuf) && ((stbuf.st_mode & S_IFMT) == S_IFREG))
+	/* if(isfile(newname)) FIXME: file.c shouldn't rely on indexing structures */
             if (remove(newname))
                 progerrno("Failed to unlink '%s' before renaming. : ", newname);
 #endif
