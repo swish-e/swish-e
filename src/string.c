@@ -26,6 +26,7 @@
 ** fixed cast to int problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
+** 2001-02-09 rasc  makeItLow, strtolower  optimized/new
 **
 */
 
@@ -284,14 +285,33 @@ int matchARegex( char *str, char *pattern)
 	
 	return 1;
 }
-/*-----------------------------------------------------*/
-void makeItLow (char *str)
+
+
+
+/* 
+   -- strtolower (make this string to lowercase)
+   -- The string itself will be converted
+   -- Return: ptr to string
+   -- 2001-02-09  rasc:  former makeItLow() been a little optimized
+
+$$$: THIS has to be enhanced!
+     e.g. most tolower() don't map umlauts, etc. so there has to be
+     an ISO to lower map...
+*/
+
+char *strtolower (char *s)
 {
-  int i;
-  int len = strlen(str);
-  for (i = 0; i < len; i++)
-    str[i] = tolower(str[i]);
+  char *p = s;
+
+  while (*p) {
+     *p = tolower(*p);
+     p++;
+  }
+  return s; 
 }
+
+
+
 /*----------------------------------------------------*/
 
 /* Check if a file with a particular suffix should be indexed

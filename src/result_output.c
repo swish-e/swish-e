@@ -1,9 +1,16 @@
 
 /*
    -- This module does result output for swish-e
-   -- License: GPL
+   -- This module implements some methods about the 
+   -- "-x fmt" cmd option.
+   -- basically: handle output fmts like:  -x "%c|<swishtitle fmt=/%20s/>\n"
+   -- 
+   -- License: see swish licence file
 
    -- 2001-01  R. Scherg  (rasc)   initial coding
+
+   -- 2001-02-09 rasc    make propertynames always lowercase!  (may change) 
+				 this is get same handling as metanames...
 
 */
 
@@ -79,6 +86,7 @@ void initPrintExtResult (SWISH *sw, char *fmt)
 		/* -- Property - Control: read Property Tag  <name> */
 		/* -- Save User PropertyNames for result handling   */
         	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
+		strtolower(propname);	/* $$$ really?  $$$ to be optimzed */
 		if (! isAutoProperty (propname)) {
 		   addSearchResultDisplayProperty (sw, propname);
 		}
@@ -151,12 +159,12 @@ FILE   *f_out;
 	   if (sw->opt.extendedformat)
 	      printExtResultEntry (sw, f_out, sw->opt.extendedformat, r);
 	   else {
-					 /* old std output */
-	      printf("%d%s%s%s%s%s%d",
+					 /* old style std output  (compat) */
+	      fprintf(f_out,"%d%s%s%s%s%s%d",
 			r->rank,  delimiter, r->filename,
 			delimiter, r->title, delimiter, r->size);
-	      printSearchResultProperties(sw, r->Prop);
-	      printf("\n");
+	      printSearchResultProperties(sw, f_out, r->Prop);
+	      fprintf(f_out, "\n");
 	   }
 				
 	   if (resultmaxhits > 0) resultmaxhits--; /* Modified DN 08/29/99  */
@@ -203,6 +211,7 @@ void printExtResultEntry (SWISH *sw, FILE *f_out, char *fmt, RESULT *r)
 	case '<':
 		/* Property - Control: read and print Property Tag  <name> */
         	fmt = parsePropertyResultControl (fmt, &propname, &subfmt);
+		strtolower(propname);	/* $$$ really?  $$ to be optimized */
 		printPropertyResultControl (sw, f, propname, subfmt, r);
 		efree (subfmt);
 		efree (propname);
