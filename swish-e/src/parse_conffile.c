@@ -729,7 +729,8 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (!parseconfline(sw, sl))
         {
             printf("Bad directive on line #%d: %s\n", linenumber, line);
-            baddirective = 1;
+            if ( ++baddirective > 30 )
+                progerr("Too many errors.  Can not continue.");
         }
         freeStringList(sl);
     }

@@ -1678,6 +1678,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     fi->filename[len1 + len4] = '\0';
     efree(buf1);
 
+
     fi->filenum = filenum - 1;
 
 

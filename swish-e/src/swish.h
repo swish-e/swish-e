@@ -731,15 +731,6 @@ struct _indexing_data_source_def
 VAR struct _indexing_data_source_def *IndexingDataSource;
 
 
-#ifdef MAIN_FILE
-
-int     main(int, char **);
-void    usage(void);
-void    printversion(void);
-
-#endif
-
-
 
 void    allocatedefaults(void);
 
