@@ -37,8 +37,15 @@ $Id$
 #undef free
 
 
-/* size of a longword */
-#define longSize (sizeof(long))
+/* Alignment size in bytes */
+
+#ifdef __sparc__
+/* This is not exactly correct because not all sparc machines require 8, but minor difference in memory usage */
+#define PointerAlignmentSize 8
+
+#else
+#define PointerAlignmentSize sizeof(long)
+#endif
 
 /* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
 #define pageSize (1<<12)
@@ -387,7 +394,7 @@ void  Mem_Free (void *Address, char *file, int line)
     {
     MemTail *Tail;
 
-	if ( (long)Address & (~(longSize-1)) != 0 )
+	if ( (long)Address & (~(PointerAlignmentSize-1)) != 0 )
 		MEM_ERROR(("Address %08X not longword aligned\n", (unsigned int)Address));
 
     if (Address != Header->Start)
@@ -516,7 +523,7 @@ void Mem_Summary(char *title, int final)
 */
 
 /* round up to a long word */
-#define ROUND_LONG(n) (((n) + longSize - 1) & (~(longSize - 1)))
+#define ROUND_LONG(n) (((n) + PointerAlignmentSize - 1) & (~(PointerAlignmentSize - 1)))
 
 /* round up to a page */
 #define ROUND_PAGE(n) (((n) + pageSize - 1) & (~(pageSize - 1)))
