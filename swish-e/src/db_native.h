@@ -28,9 +28,13 @@
 
 #ifdef USE_BTREE
 #include "btree.h"
-#endif
+#define MAXCHARS 5            /* Only 5 are needed when BTREE is used */
+
+#else
 
 #define MAXCHARS 266            /* 255 for chars plus ten more for other data */
+
+#endif
 
 #define FILELISTPOS (MAXCHARS - 1)
 #define FILEOFFSETPOS (MAXCHARS - 2)
@@ -44,19 +48,28 @@ struct Handle_DBNative
        /* values used by the index proccess */
        /* points to the start of offsets to words in the file */
    int offsetstart;
+
+#ifndef USE_BTREE
        /* points to the start of hashoffsets to words in the file */
    int hashstart;
+#endif
        /* File Offsets to words */
    long offsets[MAXCHARS];
+
+#ifndef USE_BTREE
    long hashoffsets[SEARCHHASHSIZE];
 
    int lasthashval[SEARCHHASHSIZE];
+   int wordhash_counter;
+#endif
+
    long nextwordoffset;
    long lastsortedindex;
    long next_sortedindex;
    
-   int wordhash_counter;
    int worddata_counter;
+
+#ifndef USE_BTREE
    long *wordhashdata;
 
       /* Hash array to improve wordhashdata performance */
@@ -67,14 +80,19 @@ struct Handle_DBNative
    } *hash[BIGHASHSIZE];
    MEM_ZONE *hashzone;
 
+#endif
+
    int num_words;
 
    int mode;  /* 1 - Create  0 - Open */
 
    char *dbname;
 
+#ifndef USE_BTREE
        /* ramdisk to store words */
    struct ramdisk *rd;
+#endif
+
        /* Index FILE handle as returned from fopen */
 
        /* Pointers to words write/read functions */ 

@@ -105,7 +105,7 @@ int uncompress2(unsigned char **buffer);
 
 
 /* A BTREE page cannot be smaller than BTREE_MinPageSize */
-#define BTREE_MinPageSize 8192
+#define BTREE_MinPageSize 4096
 
 /* A BTREE page can be greater than BTREE_MaxPageSize */
 #define BTREE_MaxPageSize 65536
@@ -871,7 +871,6 @@ unsigned long data_pointer;
     }
     b->levels = i;
     data_pointer = BTREE_GetKeyFromPage(b, pg, key, key_len, &key_k, &key_len_k);
-
 
     if(exact_match)
     {

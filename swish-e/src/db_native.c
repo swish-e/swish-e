@@ -20,9 +20,6 @@
 **
 */
 
-
-#define WRITE_WORDS_RAMDISK 1
-
 #include <time.h>
 #include "swish.h"
 #include "mem.h"
@@ -35,6 +32,12 @@
 #include "swish_qsort.h"
 #include "ramdisk.h"
 #include "db_native.h"
+
+#ifdef USE_BTREE
+#define WRITE_WORDS_RAMDISK 0
+#else
+#define WRITE_WORDS_RAMDISK 1
+#endif
 
 /*
   -- init structures for this module
@@ -64,7 +67,11 @@ void    initModule_DBNative(SWISH * sw)
     Db->DB_InitWriteWords = DB_InitWriteWords_Native;
     Db->DB_GetWordID = DB_GetWordID_Native;
     Db->DB_WriteWord = DB_WriteWord_Native;
+
+#ifndef USE_BTREE
     Db->DB_WriteWordHash = DB_WriteWordHash_Native;
+#endif
+
     Db->DB_WriteWordData = DB_WriteWordData_Native;
     Db->DB_EndWriteWords = DB_EndWriteWords_Native;
 
@@ -187,16 +194,27 @@ struct Handle_DBNative *newNativeDBHandle(char *dbname)
     DB = (struct Handle_DBNative *) emalloc(sizeof(struct Handle_DBNative));
 
     DB->offsetstart = 0;
+#ifndef USE_BTREE
     DB->hashstart = 0;
+#endif
+
     DB->nextwordoffset = 0;
     DB->num_words = 0;
+
+#ifndef USE_BTREE
     DB->wordhash_counter = 0;
     DB->wordhashdata = NULL;
+#endif
+
     DB->worddata_counter = 0;
     DB->mode = 1;
     DB->lastsortedindex = 0;
     DB->next_sortedindex = 0;
+
+#ifndef USE_BTREE
     DB->rd = NULL;
+#endif
+
     DB->tmp_index = 0;          /* flags that the index is opened as create as a temporary file name */
     DB->tmp_prop = 0;
     DB->cur_index_file = NULL;
@@ -315,10 +333,13 @@ void   *DB_Create_Native(char *dbname)
 
     for (i = 0; i < MAXCHARS; i++)
         DB->offsets[i] = 0L;
+
+#ifndef USE_BTREE
     for (i = 0; i < SEARCHHASHSIZE; i++)
         DB->hashoffsets[i] = 0L;
     for (i = 0; i < SEARCHHASHSIZE; i++)
         DB->lasthashval[i] = 0L;
+#endif
 
     swish_magic = SWISH_MAGIC;
     printlong(DB->fp, swish_magic, fwrite);
@@ -337,9 +358,11 @@ void   *DB_Create_Native(char *dbname)
     for (i = 0; i < MAXCHARS; i++)
         printlong(fp, (long) 0, fwrite);
 
+#ifndef USE_BTREE
     DB->hashstart = ftell(fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
         printlong(fp, (long) 0, fwrite);
+#endif
 
     return (void *) DB;
 }
@@ -400,10 +423,12 @@ void   *DB_Open_Native(char *dbname)
     for (i = 0; i < MAXCHARS; i++)
         DB->offsets[i] = readlong(fp, fread);
 
+#ifndef USE_BTREE
     /* Read hashoffsets lookuptable */
     DB->hashstart = ftell(fp);
     for (i = 0; i < SEARCHHASHSIZE; i++)
         DB->hashoffsets[i] = readlong(fp, fread);
+#endif
 
     return (void *) DB;
 }
@@ -480,9 +505,11 @@ void    DB_Close_Native(void *db)
         for (i = 0; i < MAXCHARS; i++)
             printlong(fp, DB->offsets[i], fwrite);
 
+#ifndef USE_BTREE
         fseek(fp, DB->hashstart, 0);
         for (i = 0; i < SEARCHHASHSIZE; i++)
             printlong(fp, DB->hashoffsets[i], fwrite);
+#endif
     }
 
     /* Close (and rename) the index file */
@@ -596,7 +623,7 @@ int     DB_InitWriteWords_Native(void *db)
 
 
 #ifdef USE_BTREE
-    DB->bt = BTREE_Create(DB->fp, 8192);
+    DB->bt = BTREE_Create(DB->fp, 4096);
 #else
     DB->offsets[WORDPOS] = ftell(DB->fp);
 #endif
@@ -627,13 +654,14 @@ int     DB_EndWriteWords_Native(void *db)
 
     /* If we close the BTREE here we can save some memory bytes */
     /* Close (and rename) worddata file, if it's open */
-   DB_Close_File_Native(&DB->worddata, &DB->cur_worddata_file, &DB->tmp_worddata);
-   DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
+    DB_Close_File_Native(&DB->worddata, &DB->cur_worddata_file, &DB->tmp_worddata);
+    DB->offsets[WORDPOS] = BTREE_Close(DB->bt);
 
-   DB->bt = NULL;
+    DB->bt = NULL;
 
-   return 0;
-#endif
+    /* Restore file pointer at the end of file */
+    fseek(DB->fp, 0, SEEK_END);
+#else
 
     /* Free hash zone */
     Mem_ZoneFree(&DB->hashzone);
@@ -703,6 +731,9 @@ int     DB_EndWriteWords_Native(void *db)
     /* Restore file pointer at the end of file */
     fseek(DB->fp, 0, SEEK_END);
     fputc(0, DB->fp);           /* End of words mark */
+
+#endif
+
     return 0;
 }
 
@@ -841,7 +872,7 @@ long    DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendat
 
 #endif
 
-
+#ifndef USE_BTREE
 int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
 {
     int     i,
@@ -906,13 +937,14 @@ int     DB_WriteWordHash_Native(char *word, long wordID, void *db)
 
     return 0;
 }
+#endif
 
 int     DB_InitReadWords_Native(void *db)
 {
 #ifdef USE_BTREE
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
     if(!DB->bt)
-        DB->bt = BTREE_Open(DB->fp,8192,DB->offsets[WORDPOS]);
+        DB->bt = BTREE_Open(DB->fp,4096,DB->offsets[WORDPOS]);
 #endif
     return 0;
 }
