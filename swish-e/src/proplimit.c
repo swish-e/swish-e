@@ -34,6 +34,8 @@ $Id$
 #include "swish_qsort.h"
 #include "proplimit.h"
 
+#define DEBUGLIMIT
+
 /*==================== These should be in other modules ================*/
 
 /* Should be in docprop.c */
@@ -663,33 +665,41 @@ static int load_index( SWISH *sw, IndexFILE *indexf, PARAMS *params )
 
         if ( !(meta_entry = getPropNameByName( &indexf->header, curp->propname )))
             progerr("Specified limit name '%s' is not a PropertyName", curp->propname );
-            
+
+
+        /* This, of course, is not the truth -- but the only slightly useful would be filenum */
+        /* indexfile can be specified on the command line, rank and reccount is not really known */
+       
+        if ( is_meta_internal( meta_entry ) )
+            progerr("Cannot limit by swish result property '%s'", curp->propname );
+
+
         /* see if array has already been allocated (cached) */
         if ( meta_entry->inPropRange )
             continue;
 
 
-            /* Encode the parameters into properties for comparing, and store in the metaEntry */
-            /* $$$ what happens if it fails -- should this progerr? */
+        /* Encode the parameters into properties for comparing, and store in the metaEntry */
+        /* $$$ what happens if it fails -- should this progerr? */
+
+        if ( !params_to_props( meta_entry, curp ) )
+            continue;  /* This means that it failed to set a range */
             
-            if ( !params_to_props( meta_entry, curp ) )
-                continue;  /* This means that it failed to set a range */
-                
 
-            /* load the sorted_data array, if not already done */
-            if ( !meta_entry->sorted_data )
-                if( !LoadSortedProps( sw, indexf, meta_entry ) )
-                    continue;  /* thus it will sort manually without pre-sorted index */
+        /* load the sorted_data array, if not already done */
+        if ( !meta_entry->sorted_data )
+            if( !LoadSortedProps( sw, indexf, meta_entry ) )
+                continue;  /* thus it will sort manually without pre-sorted index */
 
 
-            /* Now create the lookup table in the metaEntry */
-            /* A false return means that an array was built but it was all zero */
-            /* No need to check anything else at this time, since can only AND -L options */
-            /* i.e. = return No Results right away */
-            /* This allows search.c to bail out early */
+        /* Now create the lookup table in the metaEntry */
+        /* A false return means that an array was built but it was all zero */
+        /* No need to check anything else at this time, since can only AND -L options */
+        /* i.e. = return No Results right away */
+        /* This allows search.c to bail out early */
 
-            if ( !create_lookup_array( sw, indexf, meta_entry ) )
-                return 0;
+        if ( !create_lookup_array( sw, indexf, meta_entry ) )
+            return 0;
     }
 
     return 1;  // ** flag that it's ok to continue the search.
@@ -765,13 +775,13 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
         /* Look at all the properties */
-        
+
+        /* Should cache this in the index file, or is this fast enough? */
         if ( !(meta_entry = getPropNameByID( &indexf->header, indexf->header.metaEntryArray[j]->metaID )))
             continue;  /* continue if it's not a property */
 
 
-
-        /* If inPropRange is allocated then it is an array for limiting already created */
+        /* If inPropRange is allocated then there is an array for limiting already created from the presorted data */
         if ( meta_entry->inPropRange )
             return !meta_entry->inPropRange[filenum-1];
 
@@ -782,6 +792,8 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
         {
             int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
+
+
 
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */

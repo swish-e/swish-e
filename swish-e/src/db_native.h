@@ -150,8 +150,8 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
 int     DB_EndReadSortedIndex_Native(void *db);
 
 #ifdef PROPFILE
-long    DB_WriteProperty_Native( int filenum, char *buffer, int datalen, int propID, void *db );
-void    DB_ReadProperty_Native( char *buf, long seek_pos, long length, int filenum, void *db );
+void    DB_WriteProperty_Native( struct file *fi, int propID, char *buffer, int datalen, void *db );
+char  * DB_ReadProperty_Native( struct file *fi, int propID, void *db );
 void    DB_Reopen_PropertiesForRead_Native(void *db);
 #endif
 

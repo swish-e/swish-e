@@ -31,6 +31,7 @@
 #include "metanames.h"
 #include "db.h"
 #include "db_native.h"
+#include "db_berkeley_db.h"
 
 
 /*
@@ -41,6 +42,7 @@ void initModule_DB (SWISH  *sw)
 {
           /* Allocate structure */
    initModule_DBNative(sw);
+   // initModule_DB_db(sw);
    return;
 }
 
@@ -52,6 +54,7 @@ void initModule_DB (SWISH  *sw)
 void freeModule_DB (SWISH *sw)
 {
   freeModule_DBNative(sw);
+  // freeModule_DB_db(sw);
   return;
 }
 
@@ -1108,14 +1111,14 @@ int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 
 
 #ifdef PROPFILE
-long DB_WriteProperty(SWISH *sw, int filenum, char *buffer, int datalen, int propID, void *DB )
+void DB_WriteProperty(SWISH *sw, struct file *fi, int propID, char *buffer, int datalen, void *DB )
 {
-    return sw->Db->DB_WriteProperty( filenum, buffer, datalen, propID, DB );
+    sw->Db->DB_WriteProperty( fi, propID, buffer, datalen, DB );
 }
 
-void DB_ReadProperty(SWISH *sw, char *buf, long seek_pos, long length, int filenum, void *DB )
+char *DB_ReadProperty(SWISH *sw, struct file *fi, int propID, void *DB )
 {
-    sw->Db->DB_ReadProperty( buf, seek_pos, length, filenum, DB );
+    return sw->Db->DB_ReadProperty( fi, propID, DB );
 }
 
 

@@ -81,7 +81,8 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf )
         fi->docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, i+1 );
         dump_file_properties( indexf, fi );
 
-        freeDocProperties( fi->docProperties );
+        if ( fi->docProperties )
+            freeDocProperties( fi->docProperties );
         fi->docProperties = NULL;
         printf("\n");
 
