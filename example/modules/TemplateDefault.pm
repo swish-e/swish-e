@@ -103,8 +103,8 @@ sub show_form {
     
     return <<EOF;
     <form method="post" action="$form" enctype="application/x-www-form-urlencoded" class="form">
-        <input / maxlength="200" value="$query" size="32" type="text" name="query">
-        <input / value="Search!" type="submit" name="submit"><br>
+        <input maxlength="200" value="$query" size="32" type="text" name="query"/>
+        <input value="Search!" type="submit" name="submit"/><br>
 
         $meta_select_list
         $sorts

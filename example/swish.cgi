@@ -50,8 +50,6 @@ $SwishSearch::DEBUG_DUMP_DATA   = 32;  # dump data that is sent to templating mo
 # This is written this way so the script can be used as a CGI script or a mod_perl
 # module without any code changes.
 
-
-
 # use CGI ();  # might not be needed if using Apache::Request
 
 #=================================================================================
@@ -760,9 +758,9 @@ sub run_query {
     if ( $timeout ) {
         eval {
             local $SIG{ALRM} = sub { die "Timed out\n" };
-            alarm ( $self->config('timeout') || 5 );
+            alarm ( $self->config('timeout') || 5 ) unless $^O =~ /Win32/i;
             $self->run_swish;
-            alarm 0;
+            alarm 0  unless $^O =~ /Win32/i;
         };
 
         if ( $@ ) {
@@ -1184,7 +1182,6 @@ sub get_date_ranges {
 #       or possibly a scalar with an error message.
 #
 
-use Symbol;
 
 sub run_swish {
 
@@ -1219,33 +1216,10 @@ sub run_swish {
     $self->swish_command( -x => join( '\t', map { "<$_>" } @properties ) . '\n' );
     $self->swish_command( -H => 9 );
 
+    my $fh = $^O =~ /Win32/i
+             ? windows_fork( $conf, $self )
+             : real_fork( $conf, $self );
 
-    # Run swish 
-    my $fh = gensym;
-    my $pid = open( $fh, '-|' );
-
-    die "Failed to fork: $!\n" unless defined $pid;
-
-    if ( $pid && $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
-        print STDERR "---- Running swish with the following command and parameters ----\n";
-
-        if ( $^O =~ /Win32/i ) {
-            print STDERR join( ' ', map { /[^.\-\w\d]/ ? qq["$_"] : $_ }  $self->{prog}, $self->swish_command );
-        } else {
-            print STDERR join( "  \\\n", map { /[^\/.\-\w\d]/ ? qq['$_'] : $_ }  $self->{prog}, $self->swish_command );
-        }
-        
-
-        print STDERR "\n-----------------------------------------------\n";
-    }
-     
-
-    if ( !$pid ) {  # in child
-        unless ( exec $self->{prog},  $self->swish_command ) {
-            warn "Child process Failed to exec '$self->{prog}' Error: $!";
-            exit;
-        }
-    }
 
     $self->{COMMAND} = join ' ', $self->{prog},  $self->swish_command;
 
@@ -1368,6 +1342,79 @@ sub run_swish {
         
 }
 
+#==================================================================
+# Run swish-e by forking
+#
+
+use Symbol;
+
+sub real_fork {
+    my ( $conf, $self ) = @_;
+
+
+    # Run swish 
+    my $fh = gensym;
+    my $pid = open( $fh, '-|' );
+
+    die "Failed to fork: $!\n" unless defined $pid;
+
+    if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
+        print STDERR "---- Running swish with the following command and parameters ----\n";
+        print STDERR join( "  \\\n", map { /[^\/.\-\w\d]/ ? qq['$_'] : $_ }  $self->{prog}, $self->swish_command );
+        print STDERR "\n-----------------------------------------------\n";
+    }
+     
+
+    if ( !$pid ) {  # in child
+        unless ( exec $self->{prog},  $self->swish_command ) {
+            warn "Child process Failed to exec '$self->{prog}' Error: $!";
+            exit;
+        }
+    }
+
+    return $fh;
+}
+
+
+#=====================================================================================
+#   Windows work around
+#   from perldoc perlfok
+#
+sub windows_fork {
+    my ( $conf, $self ) = @_;
+
+
+    # Run swish 
+    my $fh = gensym;
+
+    # simulate open(FOO, "-|")
+    pipe $fh, my $child or die "Failed to create pipe: $!";
+    my $pid = fork();
+    die "fork() failed: $!" unless defined $pid;
+
+    if ($pid) {
+       close $child;
+       return $fh;  # handle to read from.
+    }
+
+    # In child thread
+
+    close $fh;
+    open(STDOUT, ">&=" . fileno($child)) or die "Failed to dup STDOUT to child write handle: $!";
+
+    if ( $conf->{debug} & $SwishSearch::DEBUG_COMMAND ) {
+        print STDERR "---- Running swish with the following command and parameters ----\n";
+        print STDERR join( ' ', map { /[^.\-\w\d]/ ? qq["$_"] : $_ }  $self->{prog}, $self->swish_command );
+        print STDERR "\n-----------------------------------------------\n";
+    }
+    
+
+    unless ( exec $self->{prog},  $self->swish_command ) {
+        warn "Child process Failed to exec '$self->{prog}' Error: $!";
+    }
+
+    exit;
+}
 
 #=====================================================================================
 # This method parses out the query from the "Parsed words" returned by swish
