@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "tmp/libswishe_Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "..\..\..\zlib" /I "." /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "..\..\..\zlib\include" /I "..\replace" /I "." /I "..\..\..\expat\xmlparse" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /D "HAVE_ZLIB" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "tmp/libswishe_Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /I "..\..\..\expat\xmlparse" /I "..\..\..\expat/xmltok" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../../../zlib" /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "../../../pcre/include" /I "..\..\..\expat/xmltok" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "_LIB" /D "_DEBUG" /D "_MBCS" /D "WIN32" /D "HAVE_ZLIB" /YX /FD /I /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../../../zlib/include" /I "..\replace" /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "../../../pcre/include" /I "..\..\..\expat/xmltok" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "_LIB" /D "_DEBUG" /D "_MBCS" /D "WIN32" /D "HAVE_ZLIB" /YX /FD /I /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -201,7 +201,7 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\mkstemp.c
+SOURCE=..\replace\mkstemp.c
 # End Source File
 # Begin Source File
 
@@ -253,10 +253,6 @@ SOURCE=..\stemmer.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\string.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\swish2.c
 # End Source File
 # Begin Source File
@@ -273,6 +269,10 @@ SOURCE=..\swregex.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\swstring.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\txt.c
 # End Source File
 # Begin Source File
@@ -285,15 +285,15 @@ SOURCE=..\xml.c
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\acconfig.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\_datatypes.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\_module_example.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\acconfig.h
 # End Source File
 # Begin Source File
 
@@ -413,11 +413,7 @@ SOURCE=..\metanames.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\mkstemp.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\mkstemp.h
+SOURCE=..\replace\mkstemp.h
 # End Source File
 # Begin Source File
 
@@ -473,10 +469,6 @@ SOURCE=..\stemmer.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\string.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\swish.h
 # End Source File
 # Begin Source File
@@ -490,6 +482,10 @@ SOURCE=..\swish_words.h
 # Begin Source File
 
 SOURCE=..\swregex.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\swstring.h
 # End Source File
 # Begin Source File
 

@@ -1,19 +1,20 @@
 #ifdef _WIN32
 
-/* We define this in OS-specific code which include's config.h  */
-#ifndef _SWISH_PORT
-#  include "win32/dirent.h"
-#  include "pcreposix.h"
-#  include "mkstemp.h"
-#endif
-
 /* Special Inclusions  */
+#include <windows.h>    /* Win32 API */
 #include <stdlib.h>		/* _sleep() */
 #include <process.h>	/* _getpid() */
 #include <io.h>			/* _umask(), _mktemp, etc */
 #include <fcntl.h>		/* Most io.h functions want this */
 #include <sys/types.h>	/* Most io.h functions want this */
 #include <sys/stat.h>	/* Most io.h functions want this */
+
+/* We define this in OS-specific code which include's config.h  */
+#ifndef _SWISH_PORT
+#  include "dirent.h"
+#  include "pcreposix.h"
+#  include "mkstemp.h"
+#endif
 
 /* ifdef logic  */
 #define NO_GETTOD		/* Win32 has no Get Time Of Day  */
@@ -28,6 +29,8 @@
 
 /* Macros which rewrite values  */
 #define SWISH_VERSION "2.3.4"	/* Should we find a better way to handle this */
+#define VERSION SWISH_VERSION   /* Some things want this  */
+#define libexecdir "/usr/local/lib"  /* Microsoft CPP is brain damaged */
 
 /* Internal SWISH-E File Access Modes */
 #define FILEMODE_READ		"rb"	/* Read only */
