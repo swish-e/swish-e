@@ -2,6 +2,8 @@
 ** Copyright (C) 1995, 1996, 1997, 1998 Hewlett-Packard Company
 ** Originally by Kevin Hughes, kev@kevcom.com, 3/11/94
 **
+** $Id$
+**
 ** This program and library is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU (Library) General Public License
 ** as published by the Free Software Foundation; either version 2
@@ -75,7 +77,9 @@
 #include <setjmp.h>
 
 
+/* -- moved to top-level configure.in
 #define SWISH_VERSION "2.1-dev19"
+*/
 
 #define SWISH_MAGIC 21076321L
 
@@ -83,9 +87,9 @@
 
 #define BASEHEADER 1
 
-#define INDEXHEADER "# SWISH format: 2.1-dev19"
+#define INDEXHEADER "# SWISH format: " SWISH_VERSION
 #define INDEXHEADER_ID BASEHEADER + 1 
-#define INDEXVERSION "# Swish-e format: 2.1-dev19"
+#define INDEXVERSION "# Swish-e format: " SWISH_VERSION
 #define INDEXVERSION_ID BASEHEADER + 2
 
 

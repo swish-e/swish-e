@@ -482,11 +482,14 @@ The default is C<yes>.
 
 META names are a way to define "fields" in your XML and HTML documents.  You can use the META names in your queries
 to limit the search to just the words contained in that META name of your document.
-(see also the C<-t> switch in L<SWISH-RUN|SWISH-RUN>).
 For example, you might have a META tagged field in your documents called C<subjects> and then you can
 search your documents for the word "foo" but only return documents where "foo" is within the C<subjects> META tag.
 
-The B<MetaNames> directive is a space separated list:
+    swish-e -w subjects=foo
+    
+(See also the C<-t> switch in L<SWISH-RUN|SWISH-RUN> for information about I<context> searching in HTML documents.)
+
+The B<MetaNames> directive is a space separated list.  For example:
 
     MetaNames meta1 meta2 keywords subjects
 
