@@ -42,7 +42,6 @@ void readMetaNames _AP ((IndexFILE *));
 void readlocationlookuptables _AP ((IndexFILE *));
 void readpathlookuptable _AP ((IndexFILE *));
 
-int getMetaName _AP ((IndexFILE *, char *));
 int countResults _AP ((RESULT *));
 RESULT *parseterm _AP ((SWISH *, int, int, IndexFILE *, struct swline **));
 RESULT *operate _AP ((SWISH *, RESULT *, int, char *, FILE *, int, int, IndexFILE *));

@@ -48,16 +48,9 @@ struct markentryMerge {
 
 struct metaMergeEntry {
 	char* metaName;
-	int oldIndex;
-	int newIndex;
-
-/* #### Lines removed to use metaType */
-	/* is this meta field a Document Property? */
-	/* char isDocProperty;*/		/* true is doc property */
-	/* char isOnlyDocProperty;*/	/* true if NOT an indexable meta tag (ie: not in MetaNames) */
-
+	int oldMetaID;
+	int newMetaID;
 	int metaType;
-/* #### */
 	struct metaMergeEntry* next;
 };
 
@@ -77,7 +70,6 @@ ENTRY *readindexline _AP ((IndexFILE *, struct metaMergeEntry *));
 void addindexfilelist _AP ((SWISH *, int , char *, time_t, char *, char *, int, int, struct docPropertyEntry *, int *, int, struct metaMergeEntry *));
 struct mergeindexfileinfo *lookupindexfilenum _AP ((int ,struct docPropertyEntry**));
 ENTRY *mergeindexentries _AP ((ENTRY *,ENTRY *, int));
-ENTRYARRAY * addentryMerge _AP ((SWISH *, ENTRY *));
 int lookupindexfilepath _AP ((char *, int, int));
 void remap _AP ((int, int));
 int getmap _AP ((int));
@@ -86,6 +78,8 @@ int ismarked _AP ((int));
 void initmarkentrylist _AP ((void));
 void initindexfilehashlist _AP ((void));
 void initmapentrylist _AP ((void));
-struct metaMergeEntry* readMergeMeta _AP ((SWISH *,struct metaEntry *)); 
-struct metaEntry* createMetaMerge _AP ((struct metaMergeEntry*, struct metaMergeEntry*));
-struct metaEntry* addMetaMergeList _AP ((struct metaEntry*, struct metaMergeEntry*, int*));
+struct metaMergeEntry *readMergeMeta _AP ((SWISH *,int, struct metaEntry **)); 
+struct metaEntry **createMetaMerge _AP ((struct metaMergeEntry *, struct metaMergeEntry*));
+struct metaEntry **addMetaMergeArray _AP ((struct metaEntry **, struct metaMergeEntry*, int*));
+
+void addentryMerge _AP ((SWISH *, ENTRY *));

@@ -272,7 +272,9 @@ int i,j,k,isbigger;
 			e->maxsize +=1000;
 			e->filenames=(char **) erealloc(e->filenames,e->maxsize*sizeof(char *)); 
 		}
-		for(i=e->currentsize;i>k;i--) e->filenames[i]=e->filenames[i-1];
+		/* for(i=e->currentsize;i>k;i--) e->filenames[i]=e->filenames[i-1]; */
+		/* faster!! */
+		memmove(e->filenames+k+1,e->filenames+k,(e->currentsize-1-k)*sizeof(char *));
 		e->filenames[k] = (char *)estrdup(filename);
 	}
 	return e;
@@ -281,115 +283,86 @@ int i,j,k,isbigger;
 /* Adds a word to the master index tree.
 */
 
-ENTRYARRAY *addentry(sw, e, word, filenum, structure, metaName, position)
+void addentry(sw, word, filenum, structure, metaID, position)
 SWISH *sw;
-ENTRYARRAY *e;
 char *word;
 int filenum;
 int structure;
-int metaName;
+int metaID;
 int position;
 {
-int i,j,k,l,isbigger;
-ENTRY *en;
+int i,j,k,l,lenword;
+int isbigger;
+ENTRY *en,*efound;
 LOCATION *tp, *oldtp;
+int hashval;
 IndexFILE *indexf=sw->indexlist;
-	
-	isbigger=0;
-	oldtp=NULL;
-	if (e == NULL) {
-		e = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
-		e->maxsize = SEARCHHASHSIZE;   /* Put what you like */
-		e->elist = (ENTRY **) emalloc(e->maxsize*sizeof(ENTRY *));
-		e->currentsize = 1;
+	if(!sw->entryArray)
+	{
+		sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
+		sw->entryArray->maxWordSize=0;
+		sw->entryArray->elist=NULL;
+	}
+		/* Compute hash value of word */	
+	hashval=searchhash(word);
+		/* Look for the word in the hash array */
+	for(efound=sw->hashentries[hashval];efound;efound=efound->nexthash)
+		if(strcmp(efound->word,word)==0) break;
+
+
+	if (!efound) {
 		en = (ENTRY *) emalloc(sizeof(ENTRY));
 		en->word = (char *) estrdup(word);
 		en->tfrequency = 1;
 		en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
 		tp = (LOCATION *) emalloc(sizeof(LOCATION));
-		en->u2.currentlocation = 0;
+		en->currentlocation = 0;
 		en->u1.max_locations=1;
+		en->nexthash=sw->hashentries[hashval];
+		sw->hashentries[hashval]=en;
 		tp->filenum = filenum;
 		tp->frequency = 1;
 		tp->structure = structure;
-		tp->metaName = metaName;
+		tp->metaID = metaID;
 		tp->position[0]=position;
 
 		en->locationarray[0] = tp;
 
-		e->elist[0]=en;
+		if((lenword=strlen(word))>sw->entryArray->maxWordSize)
+			sw->entryArray->maxWordSize=lenword;
 		indexf->header.totalwords++;
 	}
 	else {
-		/* Look for the position to insert using a binary search */
-		i=e->currentsize-1;
-		j=k=0;
-		while(i>=j) {
-			k=j+(i-j)/2;
-			isbigger = strcmp(word,e->elist[k]->word);
-			if(!isbigger) break;
-			else if(isbigger > 0) j=k+1;
-			else i=k-1;
-		}
-		if (isbigger == 0) {
-			for(l=e->elist[k]->u2.currentlocation; l<e->elist[k]->u1.max_locations; l++) {
-				tp = e->elist[k]->locationarray[l];
-				if (tp->filenum == filenum && tp->metaName == metaName) 
-					break;
-			}
-			if (l == e->elist[k]->u1.max_locations) {  /* filenum and metaname not found */
-				e->elist[k]->locationarray=(LOCATION **) erealloc(e->elist[k]->locationarray,(++e->elist[k]->u1.max_locations)*sizeof(LOCATION *));
-				tp = (LOCATION *) emalloc(sizeof(LOCATION));
-				tp->filenum = filenum;
-				tp->frequency = 1;
-				tp->structure = structure;
-				tp->metaName = metaName;
-				tp->position[0]=position;
-				e->elist[k]->locationarray[l]=tp;
-				if (e->elist[k]->locationarray[e->elist[k]->u2.currentlocation]->filenum != filenum) {
-					/* Compress previous location data */
-					CompressPrevLocEntry(sw,indexf,e->elist[k]);
-					e->elist[k]->tfrequency++;
-					e->elist[k]->u2.currentlocation = l;
-				}
-			}
-			else {    /* Found filenum and metaname */
-				tp=e->elist[k]->locationarray[l];
-				tp=erealloc(tp,sizeof(LOCATION)+tp->frequency*sizeof(int));
-				tp->position[tp->frequency++]=position;
-				tp->structure |= structure;
-				e->elist[k]->locationarray[l]=tp;
-			}
-		}
-		else 
+		for(l=efound->currentlocation; l<efound->u1.max_locations; l++) 
 		{
-			en = (ENTRY *) emalloc(sizeof(ENTRY));
-			en->word = (char *) estrdup(word);
-			en->tfrequency = 1;
-			en->u1.max_locations=1;
-			en->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
+			tp = efound->locationarray[l];
+			if (tp->filenum == filenum && tp->metaID == metaID) 
+				break;
+		}
+		if (l == efound->u1.max_locations) {  /* filenum and metaname not found */
+			efound->locationarray=(LOCATION **) erealloc(efound->locationarray,(++efound->u1.max_locations)*sizeof(LOCATION *));
 			tp = (LOCATION *) emalloc(sizeof(LOCATION));
-			en->u2.currentlocation = 0;
 			tp->filenum = filenum;
 			tp->frequency = 1;
 			tp->structure = structure;
-			tp->metaName = metaName;
+			tp->metaID = metaID;
 			tp->position[0]=position;
-			en->locationarray[0]=tp;
-
-			indexf->header.totalwords++;
-
-			if (isbigger > 0) k++;
-			e->currentsize++;
-			if(e->currentsize==e->maxsize) {
-				e->maxsize += 1000;
-				e->elist=(ENTRY **) erealloc(e->elist,e->maxsize*sizeof(ENTRY *)); 
+			efound->locationarray[l]=tp;
+			if (efound->locationarray[efound->currentlocation]->filenum != filenum) {
+				/* Compress previous location data */
+				CompressPrevLocEntry(sw,indexf,efound);
+				efound->tfrequency++;
+				efound->currentlocation = l;
 			}
-			for(i=e->currentsize;i>k;i--) e->elist[i]=e->elist[i-1];
-			e->elist[k] = en;
+		}
+		else {    /* Found filenum and metaname */
+			tp=efound->locationarray[l];
+			tp=erealloc(tp,sizeof(LOCATION)+tp->frequency*sizeof(int));
+			tp->position[tp->frequency++]=position;
+			tp->structure |= structure;
+			efound->locationarray[l]=tp;
 		}
 	}
-	return e;
 }
 
 /* Adds a file to the master list of files and file numbers.
@@ -472,14 +445,14 @@ unsigned long int tmp;
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))
 			{
-				addDocProperty(&newnode->docProperties,q->index,filename,strlen(filename));
+				addDocProperty(&newnode->docProperties,q->metaID,filename,strlen(filename));
 			}
 			/* Perhaps we want it to be indexed ... */
 			if(is_meta_index(q))
 			{
-				int metaName[1],positionMeta[1];
-				metaName[0]=q->index; positionMeta[0]=1;
-				indexstring(sw, filename, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+				int metaID[1],positionMeta[1];
+				metaID[0]=q->metaID; positionMeta[0]=1;
+				indexstring(sw, filename, sw->filenum, IN_FILE, 1, metaID, positionMeta);
 			}
 		}
 	}
@@ -491,14 +464,14 @@ unsigned long int tmp;
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))
 			{
-				addDocProperty(&newnode->docProperties,q->index,title,strlen(title));
+				addDocProperty(&newnode->docProperties,q->metaID,title,strlen(title));
 			}
 			/* Perhaps we want it to be indexed ... */
 			if(is_meta_index(q))
 			{
-				int metaName[1],positionMeta[1];
-				metaName[0]=q->index; positionMeta[0]=1;
-				indexstring(sw, title, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+				int metaID[1],positionMeta[1];
+				metaID[0]=q->metaID; positionMeta[0]=1;
+				indexstring(sw, title, sw->filenum, IN_FILE, 1, metaID, positionMeta);
 			}
 		}
 	}
@@ -510,14 +483,14 @@ unsigned long int tmp;
                         /* Check if it is also a property (META_PROP flag) */
 			if(is_meta_property(q))
 			{
-				addDocProperty(&newnode->docProperties,q->index,summary,strlen(summary));
+				addDocProperty(&newnode->docProperties,q->metaID,summary,strlen(summary));
 			}
 			/* Perhaps we want it to be indexed ... */
 			if(is_meta_index(q))
 			{
-				int metaName[1],positionMeta[1];
-				metaName[0]=q->index; positionMeta[0]=1;
-				indexstring(sw, summary, sw->filenum, IN_FILE, 1, metaName, positionMeta);
+				int metaID[1],positionMeta[1];
+				metaID[0]=q->metaID; positionMeta[0]=1;
+				indexstring(sw, summary, sw->filenum, IN_FILE, 1, metaID, positionMeta);
 			}
 		}
 	}
@@ -529,7 +502,7 @@ unsigned long int tmp;
 		{
 			tmp=mtime;
 			PACKLONG(tmp);    /* make it portable */
-			addDocProperty(&newnode->docProperties,q->index,(unsigned char *)&tmp,sizeof(tmp));
+			addDocProperty(&newnode->docProperties,q->metaID,(unsigned char *)&tmp,sizeof(tmp));
 		}
 	}
                         /* Check if size is internal swish metadata */
@@ -540,7 +513,7 @@ unsigned long int tmp;
 		{
 			tmp=size;
 			PACKLONG(tmp);    /* make it portable */
-			addDocProperty(&newnode->docProperties,q->index,(unsigned char *)&tmp,sizeof(tmp));
+			addDocProperty(&newnode->docProperties,q->metaID,(unsigned char *)&tmp,sizeof(tmp));
 		}
 	}
 /* #### */
@@ -589,24 +562,24 @@ char *s;
 int filenum;
 {
 int position=1;    /* Position of word */
-int metaName=1;
+int metaID=1;
 int structure=IN_FILE;
-	return indexstring(sw, s, filenum, structure, 1, &metaName, &position);
+	return indexstring(sw, s, filenum, structure, 1, &metaID, &position);
 }
 
 /* Parses the words in a comment.
 */
 
-int parsecomment(sw, tag, filenum, structure, metaName, position)
+int parsecomment(sw, tag, filenum, structure, metaID, position)
 SWISH *sw;
 char *tag;
 int filenum;
 int structure;
-int metaName;
+int metaID;
 int *position;
 {
 	structure |= IN_COMMENTS;
-	return indexstring(sw, tag+1, filenum, structure, 1, &metaName, position);
+	return indexstring(sw, tag+1, filenum, structure, 1, &metaID, position);
 }
 
 /* Removes words that occur in over _plimit_ percent of the files and
@@ -635,7 +608,7 @@ int estopsz=0, estopmsz=0;
 int hashval;
 struct swline *sp;
 unsigned char *p;
-int modified,lpstop_metaName,lpstop_filenum,lpstop_index;
+int modified,lpstop_metaID,lpstop_filenum,lpstop_index,totalwords;
 IndexFILE *indexf=sw->indexlist;
 
         /* Now let's count the number of stopwords!!
@@ -649,7 +622,9 @@ IndexFILE *indexf=sw->indexlist;
                 }
         }
 
-	if(!ep || !ep->currentsize || sw->plimit>=NO_PLIMIT) return stopwords;
+	totalwords=indexf->header.totalwords;
+
+	if(!ep || !totalwords || sw->plimit>=NO_PLIMIT) return stopwords;
 
 	if(sw->verbose)
 		printf("Warning: This proccess can take some time. For a faster one, use IgnoreWords instead of IgnoreLimit\n");
@@ -660,7 +635,7 @@ IndexFILE *indexf=sw->indexlist;
 	}
 		/* this is the easy part: Remove the automatic stopwords from
 		** the array */
-	for(i=0; i<ep->currentsize; ) 
+	for(i=0; i<totalwords; ) 
 	{
 		percent = (ep->elist[i]->tfrequency * 100 )/ totalfiles;
 		if (percent >= sw->plimit && ep->elist[i]->tfrequency >= sw->flimit) {
@@ -669,8 +644,11 @@ IndexFILE *indexf=sw->indexlist;
 			stopwords++;
 			e = ep->elist[i];
 				/* Remove entry from array */
-			for(j=i+1;j<ep->currentsize;j++) ep->elist[j-1]=ep->elist[j];
-			ep->currentsize--;
+			/* for(j=i+1;j<totalwords;j++) ep->elist[j-1]=ep->elist[j]; */
+			/* faster!! */
+			memcpy(ep->elist+i,ep->elist+i+1,(totalwords-i-1)*sizeof(ENTRY *));
+			totalwords--;
+			indexf->header.totalwords--;
 			if(estopsz==estopmsz) {  /* More memory? */
 				estopmsz*=2;
 				estop=(ENTRY **)erealloc(estop,estopmsz*sizeof(ENTRY *));
@@ -694,50 +672,50 @@ IndexFILE *indexf=sw->indexlist;
 			e=estop[i];
 			if(sw->verbose)
 				printf("\nRemoving word %s (%d occureneces)\n",e->word,e->u1.max_locations);
-			for(j=0;j<ep->currentsize;j++) {
+			for(j=0;j<totalwords;j++) {
 				if(sw->verbose)
 					printf("Computing new positions for %s (%d occurences)\r",ep->elist[j]->word,ep->elist[j]->u1.max_locations);
 				fflush(stdout);
 				for(m=0,modified=0;m<ep->elist[j]->u1.max_locations;m++)
 				{
-					if(m<ep->elist[j]->u2.currentlocation)
+					if(m<ep->elist[j]->currentlocation)
 						lp=uncompress_location(sw,indexf,(unsigned char *)ep->elist[j]->locationarray[m]);
 					else 
 						lp=ep->elist[j]->locationarray[m];
 					for(n=0;n<e->u1.max_locations;n++)
 					{
-						if(n<e->u2.currentlocation)
+						if(n<e->currentlocation)
 						{
 							p=(unsigned char *)e->locationarray[n];
 							uncompress2(lpstop_index,p);
-							lpstop_metaName=indexf->locationlookup->all_entries[lpstop_index-1]->val[0];
+							lpstop_metaID=indexf->locationlookup->all_entries[lpstop_index-1]->val[0];
 							uncompress2(lpstop_filenum,p);
 						} else {
 							lpstop_filenum=e->locationarray[n]->filenum;
-							lpstop_metaName=e->locationarray[n]->metaName;
+							lpstop_metaID=e->locationarray[n]->metaID;
 						}
 						res=lp->filenum-lpstop_filenum;
 						if(res<0) 
 							break;
 						if(res==0) {
-						   res=lp->metaName-lpstop_metaName;
+						   res=lp->metaID-lpstop_metaID;
 						   if(res<0) 
 							break;
 						   if(res==0)
 						   {
-						      if(n<e->u2.currentlocation)
+						      if(n<e->currentlocation)
 							lpstop=uncompress_location(sw,indexf,(unsigned char *)e->locationarray[n]);
 						      else
 							lpstop=e->locationarray[n];
 						      for(k=lpstop->frequency;k;) 
 						         for(stoppos=lpstop->position[--k],l=lp->frequency;l;) {if(lp->position[--l]>stoppos) lp->position[l]--; else break;}
 						      modified=1;
-						      if(n<e->u2.currentlocation)
+						      if(n<e->currentlocation)
 							 efree(lpstop);
 						    }
 						}
 					}
-					if(m<ep->elist[j]->u2.currentlocation) 
+					if(m<ep->elist[j]->currentlocation) 
 					{
 					   if(modified)  
 					   {
@@ -941,45 +919,50 @@ SWISH *sw;
 IndexFILE *indexf;
 {
 int i;
-ENTRYARRAY *ep=sw->entrylist;
+ENTRYARRAY *ep;
+ENTRY *epi;
+int totalwords=indexf->header.totalwords;
+	BuildSortedArrayOfWords(sw,indexf);
+	ep=sw->entryArray;
 	if(ep)
 	{
-		for(i=0; i<ep->currentsize; i++) 
+		for(i=0; i<totalwords; i++) 
 		{
-			if (!isstopword(indexf,ep->elist[i]->word)) 
+			epi=ep->elist[i];
+			if (!isstopword(indexf,epi->word)) 
 			{
 		                /* Compress remaining data */
-        			CompressCurrentLocEntry(sw,indexf,ep->elist[i]);
+        			CompressCurrentLocEntry(sw,indexf,epi);
 			}
 		}
-		for(i=0; i<ep->currentsize; i++) 
+		for(i=0; i<totalwords; i++) 
 		{
-			if (!isstopword(indexf,ep->elist[i]->word)) 
+			epi=ep->elist[i];
+			if (!isstopword(indexf,epi->word)) 
 			{
 				/* Sort locationlist by MetaName, Filenum
 				** for faster search */
-				sortentry(sw,indexf,ep->elist[i]);
-				/* Compute hash table for direct search */
-				computehashentry(sw->hashentries,ep->elist[i]);
+				sortentry(sw,indexf,epi);
 				/* Write entry to file */
-				printword(sw,ep->elist[i],indexf);
+				printword(sw,epi,indexf);
 			}
 			else
 			{
 				/* Word content is not longer needed */
-				efree(ep->elist[i]->word);   
-				efree(ep->elist[i]);   
-				ep->elist[i]=NULL;
+				efree(epi->word);   
+				efree(epi);   
+				epi=NULL;
 			}
 		}
 		fputc(0,indexf->fp);   /* End of words mark */
 		printhash(sw->hashentries, indexf);
-		for(i=0; i<ep->currentsize; i++) 
+		for(i=0; i<totalwords; i++) 
 		{
-			if (ep->elist[i])   /* Not a stopword */
+			epi=ep->elist[i];
+			if (epi)   /* Not a stopword */
 			{
-				printworddata(sw,ep->elist[i],indexf);
-				efree(ep->elist[i]);   
+				printworddata(sw,epi,indexf);
+				efree(epi);   
 			}
 		}
 	}
@@ -993,21 +976,19 @@ SWISH *sw;
 ENTRY *ep;
 IndexFILE *indexf;
 {
-int i,wordlen;
+int i,wordlen,hashval;
 long f_offset;
 FILE *fp=indexf->fp;
 
 	f_offset = ftell(fp);
-	for (i = 0; indexchars[i] != '\0'; i++)
-		if ((ep->word)[0] == indexchars[i] && !indexf->offsets[i])
-			indexf->offsets[i] = f_offset;
+	i=(int)((unsigned char)ep->word[0]);
+	if(isindexchar(indexf->header,i) && !indexf->offsets[i])
+		indexf->offsets[i] = f_offset;
 		
 		/* Get HashOffset for direct access */
-	for (i = 0; i<SEARCHHASHSIZE; i++)
-		if (sw->hashentries[i] == ep) {
-			indexf->hashoffsets[i] = f_offset;
-			break;
-		}
+	hashval=searchhash(ep->word);
+	if (sw->hashentries[hashval] == ep) 
+		indexf->hashoffsets[hashval] = f_offset;
 	
 		/* Write word length, word and a NULL offset */
 	wordlen=strlen(ep->word);
@@ -1031,14 +1012,14 @@ SWISH *sw;
 ENTRY *ep;
 IndexFILE *indexf;
 {
-int i,index,wordlen,curmetaname;
+int i,index,wordlen,curmetaID;
 long tmp,curmetanamepos,f_offset;
-int metaName,filenum,frequency,position;
+int metaID,filenum,frequency,position;
 int index_structfreq;
 unsigned char *compressed_data,*p;
 FILE *fp=indexf->fp;
 
-	curmetaname=0;
+	curmetaID=0;
 	curmetanamepos=0L;
 	fseek(fp,0,SEEK_END);
 	f_offset = ftell(fp);
@@ -1057,18 +1038,18 @@ FILE *fp=indexf->fp;
 	{
 		p = compressed_data = (unsigned char *)ep->locationarray[i];
 		uncompress2(index,p);
-		metaName=indexf->locationlookup->all_entries[index-1]->val[0];
-		if(curmetaname!=metaName) {
-			if(curmetaname) {
-				/* Write in previous metaname (curmetaname)
-				** file offset to next metaname */
+		metaID=indexf->locationlookup->all_entries[index-1]->val[0];
+		if(curmetaID!=metaID) {
+			if(curmetaID) {
+				/* Write in previous meta (curmetaID)
+				** file offset to next meta */
 				tmp=ftell(fp);
 				fseek(fp,curmetanamepos,0);
 				printlong(fp,tmp);
 				fseek(fp,tmp,0);
 			}
-			curmetaname=metaName;
-			compress1(curmetaname,fp);
+			curmetaID=metaID;
+			compress1(curmetaID,fp);
 			curmetanamepos=ftell(fp);
 			printlong(fp,(long)0);
 		}
@@ -1085,8 +1066,8 @@ FILE *fp=indexf->fp;
 		}
 		efree(compressed_data);
 	}
-	/* Write in previous metaname (curmetaname)
-	** file offset to end of metanames */
+	/* Write in previous meta (curmetaID)
+	** file offset to end of metas */
 	tmp=ftell(fp);
 	fseek(fp,curmetanamepos,0);
 	printlong(fp,tmp);
@@ -1273,10 +1254,7 @@ void printMetaNames(indexf)
 IndexFILE *indexf;
 {
 struct metaEntry* entry=NULL;
-/* #### style removed 
-int len, style;
-### */
-int len;
+int i,len;
 FILE *fp=indexf->fp;
 	
 /* #### Use new metaType schema - see metanames.h */
@@ -1288,8 +1266,9 @@ FILE *fp=indexf->fp;
 	The list of metanames is delimited by a 0
 	*/
 	indexf->offsets[METANAMEPOS] = ftell(fp);
-	for (entry = indexf->metaEntryList; entry; entry = entry->next)
+	for (i=0;i<indexf->metaCounter;i++)
 	{
+		entry = indexf->metaEntryArray[i];
 		len = strlen(entry->metaName);
 		compress1(len,fp);
 		fwrite(entry->metaName,len,1,fp);
@@ -1299,6 +1278,7 @@ FILE *fp=indexf->fp;
 	fputc(0,fp);   /* write 0 delimiter */
 /* #### */
 }
+
 
 /* Prints the list of file offsets into the index file.
  */
@@ -1541,7 +1521,7 @@ char ISOTime[20];
 			printf("%s \"%s\" \"%s\" \"\" %d %d",fi->fi.filename,ISOTime, fi->fi.title,fi->fi.start,fi->fi.size);fflush(stdout);  /* filename */
 		}
 		for(docProperties=fi->docProperties;docProperties;docProperties=docProperties->next) {
-			printf(" PROP_%d: \"%s\"",docProperties->metaName, getPropAsString(indexf,docProperties)); 
+			printf(" PROP_%d: \"%s\"",docProperties->metaID, getPropAsString(indexf,docProperties)); 
 		}
 		putchar((int)'\n');fflush(stdout);
 		freefileinfo(fi);
@@ -1681,7 +1661,7 @@ int i=strlen(word);
 	/* Get rid of specified last char's */
 	/* for (i=0; word[i] != '\0'; i++); */
 	/* Iteratively strip off the last character if it's an ignore character */
-	while ( isIgnoreLastChar(header, word[--i]) )
+	while ( (i>0) && (isIgnoreLastChar(header, word[--i])) )
 	{
 		if (isBumpPositionCounterChar(header, word[i]))
 			bump_pocistion_counter_flag++;
@@ -1696,7 +1676,7 @@ void stripIgnoreFirstChars(INDEXDATAHEADER header, char *word)
 	int i = 0;
 	
 	/* Keep going until a char not to ignore is found */
-	while ( isIgnoreFirstChar(header,word[i]) )
+	while ( word[i] && isIgnoreFirstChar(header,word[i]) )
 		i++;
 	
 	/* If all the char's are valid, just return */
@@ -1714,22 +1694,42 @@ void stripIgnoreFirstChars(INDEXDATAHEADER header, char *word)
 }
 
 
-/* Jose Ruiz 04/00 */
-/* Function to build a hash table with all the words for direct access */
-void computehashentry(hashentries,e)
-ENTRY **hashentries;
-ENTRY *e;
+/* Builds a sorted array with all of the words */
+void BuildSortedArrayOfWords(SWISH *sw,IndexFILE *indexf)
 {
-unsigned hashval;
-	hashval = searchhash(e->word);
-	if(!hashentries[hashval]) 
-	{
-		hashentries[hashval] = e;
-		e->u2.nexthash = NULL;
-	} else {		
-		e->u2.nexthash = hashentries[hashval];
-		hashentries[hashval] = e;
+int numWords,maxWordSize,i;
+unsigned char *buf,*pbuf;
+ENTRY *e;
+	if(sw->verbose) {
+		printf("Sorting Words alphabetically\n");fflush(stdout);
 	}
+	numWords=indexf->header.totalwords;
+	maxWordSize=sw->entryArray->maxWordSize+1;  /* Includes the extra trailing '\0' */
+		/* Allocate a buffer for sorting with qsort */
+	buf=(unsigned char *)emalloc((maxWordSize+sizeof(void *))*numWords);
+		/* Put all the entries in the buffer */
+	for(pbuf=buf,i=0;i<SEARCHHASHSIZE;i++)
+	{
+		for(e=sw->hashentries[i];e;e=e->nexthash)
+		{
+			memset(pbuf,0,maxWordSize);
+			strcpy(pbuf,e->word);
+			pbuf+=maxWordSize;
+			memcpy(pbuf,(unsigned char *)&e,sizeof(void *));
+			pbuf+=sizeof(void *);
+		}
+	}
+		/* Sort them */
+	qsort(buf,numWords,maxWordSize+sizeof(void *),strcmp);
+		/* Build the array with the output */
+	sw->entryArray->elist=(ENTRY **)emalloc(numWords*sizeof(ENTRY *));
+	for(pbuf=buf,i=0;i<numWords;i++)
+	{
+		pbuf+=maxWordSize;
+		memcpy((unsigned char *)&sw->entryArray->elist[i],pbuf,sizeof(void *));
+		pbuf+=sizeof(void *);
+	}
+	efree(buf);
 }
 
 /* 
@@ -1772,7 +1772,7 @@ FILE *fp=indexf->fp;
 				fseek(fp,ep->u1.fileoffset,0);
 				uncompress1(wordlen,fp);
 				fseek(fp,(long)wordlen,SEEK_CUR);
-				if((epn = ep->u2.nexthash)) {
+				if((epn = ep->nexthash)) {
 					printlong(fp,epn->u1.fileoffset);
 					ep = epn;
 				} else {
@@ -1799,13 +1799,13 @@ char *p,*q;
 
 
 
-int indexstring(sw, s, filenum, structure, numMetaNames, metaName, position)
+int indexstring(sw, s, filenum, structure, numMetaNames, metaID, position)
 SWISH *sw;
 char *s;
 int filenum;
 int structure;
 int numMetaNames;
-int *metaName;
+int *metaID;
 int *position;
 {
 int i, j, k, inword, wordcount;
@@ -1868,7 +1868,7 @@ IndexFILE *indexf=sw->indexlist;
 						{
 							for(k=0;k<numMetaNames;k++)
 							{
-								sw->entrylist = (ENTRYARRAY *) addentry(sw, sw->entrylist, word, filenum, structure, metaName[k], position[k]);
+								addentry(sw, word, filenum, structure, metaID[k], position[k]);
 							}
 						}
 						for(k=0;k<numMetaNames;k++)

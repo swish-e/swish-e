@@ -24,7 +24,7 @@ char* temp;
 static int lenword=0;
 static char *word=NULL;
 int i;
-struct metaEntry* list;
+struct metaEntry* e;
 
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
@@ -55,16 +55,11 @@ struct metaEntry* list;
 	word[i] = '\0';
 	
 	while(1) {
-		for (list = indexf->metaEntryList; list != NULL; list = list->next)
+		if((e=getMetaNameData(indexf,word)))
 		{
-			if (!strcmp(list->metaName, word) )
-			{
-/* #### Use metaType */
-				if ((!is_meta_index(list)) && (*applyautomaticmetanames))
-					list->metaType |=META_INDEX;
-/* #### */
-				return list;
-			}
+			if ((!is_meta_index(e)) && (*applyautomaticmetanames))
+				e->metaType |=META_INDEX;
+			return e;
 		}
 		/* 06/00 Jose Ruiz
 		** If automatic MetaNames enabled add the MetaName
@@ -140,7 +135,7 @@ char *summary=NULL;
 						/* realloc memory if needed */
 						if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen *=2) *sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
 						/* add netaname to array of current metanames */
-						metaName[currentmetanames]=metaNameXML->index;
+						metaName[currentmetanames]=metaNameXML->metaID;
 						/* Preserve position counter */
 						if(!currentmetanames) tmpposition=positionMeta[0];
 						/* Init word counter for the metaname */
@@ -151,7 +146,7 @@ char *summary=NULL;
 					** Only store until a < is found */
 					if(is_meta_property(metaNameXML)) {
 					     if((endtag=strchr(p,'<'))) *endtag='\0';
-					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->index,p,strlen(p));
+					     addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,p,strlen(p));
 					     if(endtag) *endtag='<';
 					} 
 				}  /* Check for end of a XML field */
@@ -159,7 +154,7 @@ char *summary=NULL;
 					/* search for the metaname in the
 				        ** list of currentmetanames */
 					if(currentmetanames) {
-			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML->index) break;
+			        	   	for(i=currentmetanames-1;i>=0;i--) if(metaName[i]==metaNameXML->metaID) break;
 						if(i>=0) currentmetanames=i;
 						if(!currentmetanames) {
 						    metaName[0] = 1;

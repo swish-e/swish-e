@@ -80,8 +80,8 @@ int i;
 	newnode->fileoffsetarray = NULL;
 	newnode->fileoffsetarray_cursize=newnode->fileoffsetarray_maxsize=0;
 	newnode->fp=NULL;
-	newnode->metaEntryList=NULL;
-	newnode->Metacounter=0;
+	newnode->metaEntryArray=NULL;
+	newnode->metaCounter=0;
 	newnode->wordpos=0;
 	newnode->stopPos = 0;
 	newnode->stopMaxSize = 0;
@@ -204,6 +204,8 @@ void init_header(INDEXDATAHEADER *header)
 	header->ignoreTotalWordCountWhenRanking = 0;    /* added 11/24/98 */
 	header->minwordlimit = MINWORDLIMIT;
         header->maxwordlimit = MAXWORDLIMIT;
+		/* Init indexchars lookuptable */
+	makelookuptable(indexchars,header->indexcharslookuptable);
 }
 
 

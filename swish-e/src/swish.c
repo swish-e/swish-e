@@ -456,7 +456,7 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 
 		totalfiles = getfilecount(sw->indexlist);
 
-		entryp = sw->entrylist;
+		entryp = sw->entryArray;
 		stopwords = removestops(sw, entryp, totalfiles);
 		
 		if (sw->verbose) {

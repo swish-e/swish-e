@@ -113,37 +113,11 @@ int hasokchars(indexf, word)
 IndexFILE *indexf;
 char *word;
 {
-	int i;
-	/* Jose Ruiz 06/00
-	** Obsolete. Let's use the lookuptable
-	int i, j;
-	char c;
-	c = word[strlen(word) - 1];
-	for (i = j = 0; beginchars[i] != '\0'; i++)
-		if (word[0] == beginchars[i])
-		j++;
-	if (!j)
-		return 0;
-	*/
+int i;
 	if(!indexf->header.begincharslookuptable[(int)((unsigned char)word[0])]) return 0;
 
-	/* Jose Ruiz 06/00
-	** Obsolete. Let's use the lookuptable
-	for (i = j = 0; endchars[i] != '\0'; i++)
-		if (c == endchars[i])
-		j++;
-	if (!j)
-		return 0;
-	*/
 	if(!indexf->header.endcharslookuptable[(int)((unsigned char)word[strlen(word)-1])]) return 0;
 
-	/* Jose Ruiz 06/00
-	** Obsolete. Let's use the lookuptable
-	for (i = 0; word[i] != '\0'; i++)
-		for (j = 0; wordchars[j] != '\0'; j++)
-		if (word[i] == wordchars[j])
-		return 1;
-	*/
 	for (i = 0; word[i] != '\0'; i++)
 		if(iswordchar(indexf->header,word[i]))
 		return 1;

@@ -55,6 +55,7 @@ void makeallstringlookuptables _AP ((SWISH *));
 */
 #define iswordchar(header,c) header.wordcharslookuptable[tolower(c)]
 #define isvowel(sw,c) sw->isvowellookuptable[tolower(c)]
+#define isindexchar(header,c) header.indexcharslookuptable[c]
 
 /* Functions for comparing integers for qsort */
 int icomp _AP ((const void *,const void *));

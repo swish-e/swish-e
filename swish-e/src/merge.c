@@ -177,15 +177,15 @@ struct file *fi;
 	if (verbose) printf("%d files.\n", indexfilenum1 + indexfilenum2);
 
 	fileinfo1 = indexf1->offsets[FILELISTPOS];
-	metaFile1 = readMergeMeta(sw1,indexf1->metaEntryList);
+	metaFile1 = readMergeMeta(sw1,indexf1->metaCounter,indexf1->metaEntryArray);
 	
 	fileinfo2 = indexf2->offsets[FILELISTPOS];
-	metaFile2 = readMergeMeta(sw2,indexf2->metaEntryList);
+	metaFile2 = readMergeMeta(sw2,indexf2->metaCounter,indexf2->metaEntryArray);
 	
 	/* Create the merged list and modify the
 	   individual ones with the new meta index
 	*/
-	indexf->metaEntryList = createMetaMerge(metaFile1, metaFile2);
+	indexf->metaEntryArray = createMetaMerge(metaFile1, metaFile2);
 	
 	if (verbose) printf("\nReading file 1 info ...");
 	fflush(stdout);
@@ -260,7 +260,7 @@ struct file *fi;
 			ip3 = ip2;
 			buffer2 = NULL;
 		}
-		sw->entrylist = (ENTRYARRAY *)addentryMerge(sw,ip3);
+		addentryMerge(sw,ip3);
 	}
 
 	if (verbose) {
@@ -370,7 +370,7 @@ ENTRY *readindexline(indexf, metaFile)
 IndexFILE *indexf;
 struct metaMergeEntry *metaFile;
 {
-int i, j, x, tfrequency, filenum, structure,metaName, metaName2, frequency, *position, index_structure,index_structfreq;
+int i, j, x, tfrequency, filenum, structure,metaID, metaID2, frequency, *position, index_structure,index_structfreq;
 static int filewordlen=0;
 static char *fileword=NULL;
 LOCATION *loc;
@@ -380,7 +380,7 @@ long nextposmetaname;
 long nextword,worddata;
 FILE *fp=indexf->fp;
 	
-	j=tfrequency=filenum=structure=metaName=frequency=0;
+	j=tfrequency=filenum=structure=metaID=frequency=0;
 	position=NULL;
 	nextposmetaname=0L;
 	if(!filewordlen) fileword = (char *) emalloc((filewordlen=MAXWORDLEN) + 1);
@@ -402,7 +402,7 @@ FILE *fp=indexf->fp;
 	ip->word = (char *) estrdup(fileword);
         ip->locationarray = (LOCATION **) emalloc(sizeof(LOCATION *));
 	ip->u1.max_locations=0;
-	ip->u2.currentlocation=0;
+	ip->currentlocation=0;
 	/* Jump hash offset */
 	readlong(fp);
 	worddata=readlong(fp);
@@ -413,8 +413,8 @@ FILE *fp=indexf->fp;
 	uncompress1(tfrequency,fp);
 	ip->tfrequency = tfrequency;
 
-	uncompress1(metaName,fp);
-	while(metaName) {
+	uncompress1(metaID,fp);
+	while(metaID) {
 		nextposmetaname=readlong(fp);
 		do {
 			uncompress1(filenum,fp);
@@ -431,21 +431,21 @@ FILE *fp=indexf->fp;
 				uncompress1(x,fp);
 				loc->position[j] = x;
 			}
-			/*Need to modify metaName with new list*/
-			metaName2=1;
-			if(metaName!=1)
+			/*Need to modify metaID with new list*/
+			metaID2=1;
+			if(metaID!=1)
 			{
 				for(tmp=metaFile;tmp;tmp=tmp->next) {
-					if (tmp->oldIndex == metaName) {
-						metaName2 = tmp->newIndex;
+					if (tmp->oldMetaID == metaID) {
+						metaID2 = tmp->newMetaID;
 						break;
 					}
 				}
 			}
-				/* Severe bug if metaName not found */
-			if(!tmp && metaName!=1)
+				/* Severe bug if metaID not found */
+			if(!tmp && metaID!=1)
 				progerr("Merge internal error: Could not translate metaname\n.\n");
-			loc->metaName=metaName2;
+			loc->metaID=metaID2;
 
 			if(!ip->u1.max_locations) 
 				ip->locationarray=(LOCATION **) emalloc((++ip->u1.max_locations)*sizeof(LOCATION *)); 
@@ -453,7 +453,7 @@ FILE *fp=indexf->fp;
 				ip->locationarray=(LOCATION **) erealloc(ip->locationarray,(++ip->u1.max_locations)*sizeof(LOCATION *)); 
 			ip->locationarray[ip->u1.max_locations-1]=loc;
 		} while (ftell(fp)!=nextposmetaname);
-		uncompress1(metaName,fp);
+		uncompress1(metaID,fp);
 	}
 		/* restore offset to next word */
 	fseek(fp,nextword,SEEK_SET);
@@ -507,7 +507,7 @@ struct mergeindexfileinfo *ip;
 	addtofwordtotals(sw->indexlist, sw->filenum, ftotalwords);
 	thisFileEntry->docProperties = DupProps(docProperties);
 
-		/* swap metaName values for properties */
+		/* swap meta values for properties */
 	swapDocPropertyMetaNames(docProperties, metaFile);
 
 	if(sw->swap_flag)
@@ -561,7 +561,7 @@ int i,j=0;
 		}
 	}
 	ep->u1.max_locations=j;
-	ep->u2.currentlocation=0;
+	ep->currentlocation=0;
 	ep->tfrequency=ip1->tfrequency+ip2->tfrequency;
 	ep->word = ip1->word;
 	efree(ip1->locationarray);
@@ -570,37 +570,6 @@ int i,j=0;
 	efree(ip2->locationarray);
 	efree(ip2);
 	return ep;
-}
-
-/* This prints a new word entry into the merged index file,
-** removing redundant file information as it goes along.
-*/
-ENTRYARRAY *addentryMerge(sw,ip)
-SWISH *sw;
-ENTRY *ip;
-{
-ENTRYARRAY *e=sw->entrylist;
-IndexFILE *indexf=sw->indexlist;
-	if (e == NULL) {
-		e = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
-		e->maxsize = SEARCHHASHSIZE;   
-		e->elist = (ENTRY **) emalloc(e->maxsize*sizeof(ENTRY *));
-		e->currentsize = 1;
-		e->elist[0]=ip;
-	}
-	else {
-		/* Note that the entries are sorted in the original files */
-		/* So there is no need to sort here */
-		e->currentsize++;
-		if(e->currentsize==e->maxsize) {
-			e->maxsize +=1000;
-			e->elist=(ENTRY **) erealloc(e->elist,e->maxsize*sizeof(ENTRY *)); 
-		}
-		e->elist[e->currentsize-1]=ip;
-	}
-	CompressCurrentLocEntry(sw,indexf,ip);
-	ip->u2.currentlocation=ip->u1.max_locations; /* Avoid compress again in printindex */
-	return e;
 }
 
 /* This associates a number with a new number.
@@ -770,20 +739,20 @@ void initmapentrylist()
 /* Reads the meta names from the index. Needs to be different from
 ** readMetaNames because needs to zero out the counter.
 */
-struct metaMergeEntry* readMergeMeta(sw,metaEntryList)
+struct metaMergeEntry* readMergeMeta(sw,metaCounter,metaEntryArray)
 SWISH *sw;
-struct metaEntry* metaEntryList;
+int metaCounter;
+struct metaEntry **metaEntryArray;
 {
 struct metaMergeEntry *mme=NULL, *tmp=NULL, *tmp2=NULL;
-	while(metaEntryList)
+int i;
+	for(i=0;i<metaCounter;i++)
 	{
 		tmp2=tmp;
 		tmp=(struct metaMergeEntry *)emalloc(sizeof(struct metaMergeEntry));
-		tmp->metaName=(char *)estrdup(metaEntryList->metaName);
-		tmp->oldIndex=metaEntryList->index;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
-		tmp->metaType=metaEntryList->metaType;
-/* #### */
+		tmp->metaName=(char *)estrdup(metaEntryArray[i]->metaName);
+		tmp->oldMetaID=metaEntryArray[i]->metaID;
+		tmp->metaType=metaEntryArray[i]->metaType;
 		tmp->next=NULL;
 		if(!mme)
 			mme=tmp;
@@ -791,71 +760,57 @@ struct metaMergeEntry *mme=NULL, *tmp=NULL, *tmp2=NULL;
 			tmp2->next=tmp;
 			tmp2=tmp;
 		}
-		metaEntryList = metaEntryList->next;
 	}
 	return mme;
 }
 
 /* Creates a list of all the meta names in the indexes
 */
-struct metaEntry* createMetaMerge(metaFile1, metaFile2)
-struct metaMergeEntry* metaFile1;
-struct metaMergeEntry* metaFile2;
+struct metaEntry **createMetaMerge(metaFile1, metaFile2)
+struct metaMergeEntry *metaFile1;
+struct metaMergeEntry *metaFile2;
 {
-	struct metaMergeEntry* tmpEntry;
-	int counter;
-	
-	struct metaEntry *metaEntryList = NULL;
+struct metaMergeEntry* tmpEntry;
+int counter;
+struct metaEntry **metaEntryArray = NULL;
 	counter = 0;
 	for (tmpEntry=metaFile1;tmpEntry;tmpEntry=tmpEntry->next)
-		metaEntryList = addMetaMergeList(metaEntryList,tmpEntry,&counter);
+		metaEntryArray = addMetaMergeArray(metaEntryArray,tmpEntry,&counter);
 	
 	for (tmpEntry=metaFile2;tmpEntry;tmpEntry=tmpEntry->next)
-		metaEntryList = addMetaMergeList(metaEntryList,tmpEntry,&counter);
-	return metaEntryList;
+		metaEntryArray = addMetaMergeArray(metaEntryArray,tmpEntry,&counter);
+	return metaEntryArray;
 }
 
 /* Adds an entry to the merged meta names list and changes the
  ** new index in the idividual file entry
  */
 
-struct metaEntry* addMetaMergeList(metaEntryList,metaFileEntry,count)
-struct metaEntry* metaEntryList;
+struct metaEntry **addMetaMergeArray(metaEntryArray,metaFileEntry,count)
+struct metaEntry **metaEntryArray;
 struct metaMergeEntry* metaFileEntry;
 int* count;
 {
-int wordExists, newIndex;
+int newMetaID;
 struct metaEntry* newEntry;
 struct metaEntry* tmpEntry;
-struct metaEntry* last;
-char *metaWord, *compWord;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+char *metaWord;
 int metaType = 0;
-/* #### */
+int i;
 
-	newIndex=0;
-	last=NULL;	
-	wordExists = 0;
-	if ((*count) <2)
-		*count = 2;
+	newMetaID=0;
 
 	metaWord = metaFileEntry->metaName;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
 	metaType = metaFileEntry->metaType;
-/* #### */
 	
-	if (metaEntryList)
+	if (metaEntryArray)
 	{
-		for(tmpEntry=metaEntryList;tmpEntry;tmpEntry=tmpEntry->next)
+		for(i=0;i<(*count);i++)
 		{
-			if (tmpEntry->next == NULL)
-				last = tmpEntry;
-			compWord = tmpEntry->metaName;
-			if (!strcmp(compWord,metaWord) ) 
+			tmpEntry=metaEntryArray[i];
+			if (strcmp(tmpEntry->metaName,metaWord)==0) 
 			{
-				wordExists = 1;
-				newIndex = tmpEntry->index;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+				newMetaID = tmpEntry->metaID;
 				/*
 				 * Keep the docProperties fields in synch.
 				 * The semantics we want for the metaEntry are:
@@ -874,40 +829,62 @@ int metaType = 0;
 					fprintf(stderr,"Couldn't merge: metaname \"%s\" :",metaWord);
 					progerr("types do not match.");
 				}
-/* #### */
 				break;
 			}
 		}
-		if (wordExists)
+		if (i<(*count))    /* metaname exists */
 		{
-			metaFileEntry->newIndex = newIndex;
+			metaFileEntry->newMetaID = newMetaID;
 		}
 		else 
 		{
+			metaEntryArray=(struct metaEntry **)erealloc(metaEntryArray,((*count)+1)*sizeof(struct metaEntry *));
 			newEntry = (struct metaEntry*) emalloc(sizeof(struct metaEntry));
 			newEntry->metaName = (char*)estrdup(metaWord);
-			newEntry->index = *count;
-			newEntry->next = NULL;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
+			newEntry->metaID = (*count)+2;
 			newEntry->metaType = metaType;
-/* #### */
-			metaFileEntry->newIndex = (*count)++;
-			last->next = newEntry;
+			metaFileEntry->newMetaID = (*count)+2;
+			metaEntryArray[(*count)++] = newEntry;
 		}
 	} else {
+		metaEntryArray=(struct metaEntry **)emalloc(sizeof(struct metaEntry *));
 		newEntry=(struct metaEntry*) emalloc(sizeof(struct metaEntry));
 		newEntry->metaName = (char*)estrdup(metaWord);
-		newEntry->index = *count;
-		newEntry->next = NULL;
-/* #### Changed isDocPoperty and isOnlyDocProperty by metaType */
-			newEntry->metaType = metaType;
-/* #### */
-		metaFileEntry->newIndex = (*count)++;
-		metaEntryList = newEntry;
+		newEntry->metaID = 2;
+		newEntry->metaType = metaType;
+		metaFileEntry->newMetaID = 2;
+		*count=1;
+		metaEntryArray[0] = newEntry;
 	}
-	return metaEntryList;
+	return metaEntryArray;
 }
 
+void addentryMerge(SWISH *sw, ENTRY *ip)
+{
+int hashval,lenword;
+IndexFILE *indexf=sw->indexlist;
 
+        if(!sw->entryArray)
+        {
+                sw->entryArray=(ENTRYARRAY *)emalloc(sizeof(ENTRYARRAY));
+                sw->entryArray->maxWordSize=0;
+                sw->entryArray->elist=NULL;
+        }
+                /* Compute hash value of word */
+        hashval=searchhash(ip->word);
+		/* Add to the array of hashes */
+	ip->nexthash=sw->hashentries[hashval];
+	sw->hashentries[hashval]=ip;
+
+        if((lenword=strlen(ip->word))>sw->entryArray->maxWordSize)
+                sw->entryArray->maxWordSize=lenword;
+        indexf->header.totalwords++;
+
+                /* In merge there is no dup !!! */
+        CompressCurrentLocEntry(sw,indexf,ip);
+        ip->currentlocation=ip->u1.max_locations; /* Avoid compress again in printindex */
+
+
+}
 
   

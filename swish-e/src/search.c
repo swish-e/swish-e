@@ -294,7 +294,7 @@ char *words;
 int structure;
 int extended_info;
 {
-int i, j, k, metaName, indexYes, totalResults;
+int i, j, k, metaID, indexYes, totalResults;
 char word[MAXWORDLEN];
 RESULT *tmpresultlist,*tmpresultlist2;
 struct swline *tmplist, *tmplist2;
@@ -302,7 +302,6 @@ IndexFILE *indexlist;
 int rc=0;
 int PhraseDelimiter;
 unsigned char PhraseDelimiterString[2];
-
 	PhraseDelimiter = sw->PhraseDelimiter;
 	PhraseDelimiterString[0] = (unsigned char)PhraseDelimiter;
 	PhraseDelimiterString[1] = '\0';
@@ -311,7 +310,7 @@ unsigned char PhraseDelimiterString[2];
 	sw->sortresultlist=NULL;
 	j=0;
 	sw->searchwordlist = NULL;
-	metaName = 1;
+	metaID = 1;
 	indexYes =0;
 	totalResults=0;
 
@@ -326,7 +325,7 @@ unsigned char PhraseDelimiterString[2];
 		** Following line modified to extract words according
 		** to wordchars as suggested by Bill Moseley
 		*/
-		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || words[i] == '=' || words[i] == PhraseDelimiter || !(words[i]=='*' || iswordchar(sw->mergedheader,words[i]))) /* cast to int, 2/22/00 */
+		if (isspace((int)((unsigned char)words[i])) || words[i] == '(' || words[i] == ')' || (words[i] == '=') || (words[i] == ((unsigned char)PhraseDelimiter)) || !((words[i]=='*') || iswordchar(sw->mergedheader,words[i]))) /* cast to int, 2/22/00 */
 		{
 			if (words[i] == '=')
 			{
@@ -374,7 +373,7 @@ unsigned char PhraseDelimiterString[2];
 				{
 					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, ")");
 				}
-				if (words[i] == PhraseDelimiter) 
+				if (words[i] == (unsigned char)PhraseDelimiter) 
 				{
 					sw->searchwordlist = (struct swline *) addswline(sw->searchwordlist, PhraseDelimiterString);
 				}
@@ -412,12 +411,12 @@ unsigned char PhraseDelimiterString[2];
 		}
 		else
 		{ indexYes = 1; /*There is a non-empty index */ }
-
 		if ((rc=initSearchResultProperties(sw))) return rc;
 		if (isSortProp(sw))
 			if ((rc=initSortResultProperties(sw))) return rc;
 
 		tmpresultlist=NULL;
+		tmplist=NULL;
 
 		/* make a copy of sw->searchwordlist */
 		tmplist = dupswline(sw->searchwordlist);
@@ -442,23 +441,21 @@ unsigned char PhraseDelimiterString[2];
 			}
 			printf("\n");
 		}
+		/* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
+		tmplist = (struct swline *) expandphrase(tmplist,PhraseDelimiter);
+		tmplist = (struct swline *) fixnot(tmplist); 
+
 		if(tmplist)
-		{	
-			/* Expand phrase search: "kim harlow" becomes (kim PHRASE_WORD harlow) */
-			tmplist = (struct swline *) expandphrase(tmplist,PhraseDelimiter);
-			tmplist = (struct swline *) fixnot(tmplist); 
+		{
 			tmplist2=tmplist;
-		
-			if(tmplist)
-				tmpresultlist = (RESULT *) parseterm(sw,0,metaName,indexlist,&tmplist);
+			tmpresultlist = (RESULT *) parseterm(sw,0,metaID,indexlist,&tmplist2);
+
 			/* 04/00 Jose Ruiz-Get properties first before sorting. 
 			** In this way we can sort results by metaName
 			*/
-			if(tmpresultlist)
-				tmpresultlist = (RESULT *) getproperties(sw,indexlist,tmpresultlist);
-			if(tmplist2)
-                		freeswline(tmplist2);
+			if(tmpresultlist) tmpresultlist = (RESULT *) getproperties(sw,indexlist,tmpresultlist);
 		}
+		if(tmplist) freeswline(tmplist);
 
 		if(!sw->resultlist)
 			sw->resultlist = tmpresultlist;
@@ -473,7 +470,6 @@ unsigned char PhraseDelimiterString[2];
 			}
 
 		}
-	
                 indexlist = indexlist->next;
 	}
 
@@ -484,7 +480,6 @@ unsigned char PhraseDelimiterString[2];
 		sw->sortresultlist = (RESULT *) sortresultsbyproperty(sw, structure);
 	else
 		sw->sortresultlist = (RESULT *) sortresultsbyrank(sw, structure);
-
 	if (!sw->sortresultlist) {
 		if (!sw->commonerror) totalResults=0;
 	} else {
@@ -512,6 +507,7 @@ int openparen, hasnot;
 int openMeta, hasMeta;
 int isfirstnot=0,metapar;
 struct swline *tmpp, *newp;
+	if(!sp) return NULL;
 	/* 06/00 Jose Ruiz - Check if first word is NOT_RULE */
 	/* Change remaining NOT by AND_NOT_RULE */
 	for(tmpp = sp;tmpp;tmpp=tmpp->next) {
@@ -608,6 +604,7 @@ struct swline *expandphrase( struct swline *sp, char delimiter)
 {
 struct swline *tmp,*newp;
 int inphrase;
+	if(!sp) return NULL;
 	inphrase = 0;
 	newp = NULL;
 	tmp = sp;
@@ -959,10 +956,10 @@ char *tmp;
 ** parseone tells the function to only operate on one word or term.
 */
 
-RESULT *parseterm(sw, parseone, metaName, indexf, searchwordlist)
+RESULT *parseterm(sw, parseone, metaID, indexf, searchwordlist)
 SWISH *sw;
 int parseone;
-int metaName;
+int metaID;
 IndexFILE *indexf;
 struct swline **searchwordlist;
 {
@@ -999,7 +996,7 @@ FILE *fp=indexf->fp;
 			rulenum = DEFAULT_RULE;
 		if (isunaryrule(word)) {
 			*searchwordlist = (*searchwordlist)->next;
-			rp = (RESULT *) parseterm(sw, 1, metaName,indexf, searchwordlist);
+			rp = (RESULT *) parseterm(sw, 1, metaID,indexf, searchwordlist);
 			rp = (RESULT *) notresultlist(sw, rp, indexf);
 			/* Wild goose chase */
 			rulenum = NO_RULE;
@@ -1019,7 +1016,7 @@ FILE *fp=indexf->fp;
 		if (word[0] == '(') {
 			
 			*searchwordlist = (*searchwordlist)->next;
-			newrp = (RESULT *) parseterm(sw, 0, metaName, indexf,searchwordlist);
+			newrp = (RESULT *) parseterm(sw, 0, metaID, indexf,searchwordlist);
 			
 			if (rulenum == AND_RULE)
 				rp = (RESULT *)
@@ -1048,8 +1045,8 @@ FILE *fp=indexf->fp;
 		
 		/* Check if the next word is '=' */
 		if ( isMetaName((*searchwordlist)->next) ) {
-			metaName = getMetaName(indexf, word);
-			if (metaName == 1) {
+			metaID = getMetaNameID(indexf, word);
+			if (metaID == 1) {
 				sw->lasterror=UNKNOWN_METANAME;
 				return NULL;
 			}
@@ -1061,7 +1058,7 @@ FILE *fp=indexf->fp;
 				parseone=0;
 			} else 
 				parseone=1;
-			newrp = (RESULT *) parseterm(sw, parseone, metaName, indexf,searchwordlist);
+			newrp = (RESULT *) parseterm(sw, parseone, metaID, indexf,searchwordlist);
 			if (rulenum == AND_RULE)
 				rp = (RESULT *) andresultlists(sw, rp, newrp, andLevel);
 			else if (rulenum == OR_RULE)
@@ -1075,11 +1072,11 @@ FILE *fp=indexf->fp;
 				break;
 			
 			rulenum = NO_RULE;
-			metaName = 1;
+			metaID = 1;
 			continue;
 		}
 	
-		rp = (RESULT *) operate(sw, rp, rulenum, word, fp, metaName, andLevel,indexf);
+		rp = (RESULT *) operate(sw, rp, rulenum, word, fp, metaID, andLevel,indexf);
 		
 		if (parseone) {
 			*searchwordlist = (*searchwordlist)->next;
@@ -1098,13 +1095,13 @@ FILE *fp=indexf->fp;
 ** it calls getfileinfo(), which does the real searching.
 */
 
-RESULT *operate(sw, rp, rulenum, wordin, fp, metaName, andLevel, indexf)
+RESULT *operate(sw, rp, rulenum, wordin, fp, metaID, andLevel, indexf)
 SWISH *sw;
 RESULT *rp;
 int rulenum;
 char *wordin;
 FILE *fp;
-int metaName;
+int metaID;
 int andLevel;
 IndexFILE *indexf;
 {
@@ -1151,15 +1148,10 @@ int lenword;
 		else
 			sw->commonerror = 1;
 	}
+
+        i=(int)((unsigned char)word[0]);
+        found=isindexchar(indexf->header,i);
 	
-	for (i = found = 0; indexchars[i] != '\0'; i++)
-	{
-		if (word[0] == indexchars[i]) 
-		{
-			found = 1;
-			break;
-		}
-	}
 	if (!found) 
 	{
 		if (rulenum == AND_RULE || rulenum == PHRASE_RULE)
@@ -1169,19 +1161,19 @@ int lenword;
 	}
 	
 	if (rulenum == AND_RULE) {
-		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaName);
+		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
 		returnrp = (RESULT *) andresultlists(sw, rp, newrp, andLevel);
 	} else if (rulenum == OR_RULE) {
-		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaName);
+		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
 		returnrp = (RESULT *) orresultlists(sw, rp, newrp);
 	} else if (rulenum == NOT_RULE) {
-		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaName);
+		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
 		returnrp = (RESULT *) notresultlist(sw, newrp, indexf);
 	} else if (rulenum == PHRASE_RULE) {
-		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaName);
+		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
 		returnrp = (RESULT *) phraseresultlists(sw, rp, newrp, 1);
 	} else if (rulenum == AND_NOT_RULE) {
-		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaName);
+		newrp = (RESULT *) getfileinfo(sw, word, indexf, metaID);
 		returnrp = (RESULT *) notresultlists(sw, rp, newrp);
 	}
 	efree(word);
@@ -1196,13 +1188,13 @@ int lenword;
 ** Also solves stars. Faster!! It can even found "and", "or"
 ** when looking for "an*" or "o*" if they are not stop words
 */
-RESULT *getfileinfo(sw, word, indexf, metaName)
+RESULT *getfileinfo(sw, word, indexf, metaID)
 SWISH *sw;
 char *word;
 IndexFILE *indexf;
-int metaName;
+int metaID;
 {
-int i, j, x, filenum, structure, frequency,  *position, tries, found, len, curmetaname, index_structure, index_structfreq;
+int i, j, x, filenum, structure, frequency,  *position, tries, found, len, curmetaID, index_structure, index_structfreq;
 int filewordlen = 0;
 char *fileword = NULL;
 RESULT *rp, *rp2, *tmp;
@@ -1214,7 +1206,7 @@ struct file *fi=NULL;
 int tfrequency=0;
 FILE *fp=indexf->fp;
 
-	x=j=filenum=structure=frequency=tries=len=curmetaname=index_structure=index_structfreq=0;
+	x=j=filenum=structure=frequency=tries=len=curmetaID=index_structure=index_structfreq=0;
 	position=NULL;
 	nextposmetaname=0L;
 
@@ -1266,24 +1258,16 @@ FILE *fp=indexf->fp;
 			return NULL;
 		}
 		len = p - word;
-		for (i = found = 0; indexchars[i] != '\0'; i++) {
-			if (word[0] == indexchars[i]) {
-				if(!indexf->offsets[i])  {
-					efree(fileword);
-					sw->lasterror=WORD_NOT_FOUND;
-					return NULL;
-				}
-				fseek(fp, indexf->offsets[i], 0);
-				found = 1;
-				break;
-			}
-		}
+		
+	        i=(int)((unsigned char)word[0]);
 
-	        if (!found) {
+		if(!indexf->offsets[i])  {
 			efree(fileword);
 			sw->lasterror=WORD_NOT_FOUND;
 			return NULL;
 		}
+		found=1;
+		fseek(fp, indexf->offsets[i], 0);
 
 		/* Look for first occurrence */
 	        uncompress1(wordlen,fp); 
@@ -1325,14 +1309,14 @@ FILE *fp=indexf->fp;
 		fseek(fp,dataoffset,SEEK_SET);
 		uncompress1(tfrequency,fp);  /* tfrequency */
 		/* Now look for a correct Metaname */
-		uncompress1(curmetaname,fp); 
-		while(curmetaname) {
+		uncompress1(curmetaID,fp); 
+		while(curmetaID) {
 			nextposmetaname=readlong(fp);
-			if(curmetaname>=metaName) break;
+			if(curmetaID>=metaID) break;
 			fseek(fp,nextposmetaname,0);
-			uncompress1(curmetaname,fp); 
+			uncompress1(curmetaID,fp); 
 		}
-		if(curmetaname==metaName) found=1;
+		if(curmetaID==metaID) found=1;
 		else found=0;
 		if(found) {
 			do {   /* Read on all items */
@@ -1431,21 +1415,13 @@ FILE *fp=indexf->fp;
 	if(indexf->keywords[j]) 
 		return(indexf->keywords[j]);
 
-	for (i = found = 0; indexchars[i] != '\0'; i++) {
-		if (c == indexchars[i]) {
-			if(!indexf->offsets[i])  {
-				sw->lasterror=WORD_NOT_FOUND;
-				return "";
-			}
-			fseek(fp, indexf->offsets[i], 0);
-			found = 1;
-			break;
-		}
-	}
-	if (!found) {
+        i=(int)((unsigned char)c);
+	if(!indexf->offsets[i])  {
 		sw->lasterror=WORD_NOT_FOUND;
 		return "";
 	}
+	fseek(fp, indexf->offsets[i], 0);
+
 	bufferlen=MAXSTRLEN*10;
 	bufferpos=0;
 	buffer=emalloc(bufferlen+1);
@@ -1915,21 +1891,6 @@ long swish_magic;
 	return 1;
 }
 
-
-/* Returns the value associated with the metaName if it exists
-*/
-
-int getMetaName(indexf, word)
-IndexFILE *indexf;
-char * word;
-{
-struct metaEntry* temp;
-
-	for (temp = indexf->metaEntryList; temp != NULL; temp = temp->next) 
-		if (!strcmp(temp->metaName, word))
-			return temp->index;
-	return 1;
-}
 
 /* Checks if the next word is "="
 */

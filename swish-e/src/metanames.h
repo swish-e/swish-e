@@ -29,3 +29,4 @@ void add_default_metanames(IndexFILE *);
 struct metaEntry * getMetaNameData(IndexFILE *, char *);
 struct metaEntry * getMetaIDData(IndexFILE *, int);
 void addMetaEntry(IndexFILE *, char *, int, int *);
+int getMetaNameID(IndexFILE *, char *);

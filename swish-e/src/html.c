@@ -243,7 +243,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 								/* realloc memory if needed */
 								if(currentmetanames==metaNamelen) {metaName=(int *) erealloc(metaName,(metaNamelen*=2)*sizeof(int));positionMeta=(int *) erealloc(positionMeta,metaNamelen*sizeof(int));}
 								/* add netaname to array of current metanames */
-								metaName[currentmetanames]=metaNameEntry->index;
+								metaName[currentmetanames]=metaNameEntry->metaID;
 								/* Preserve position */
 								if(!currentmetanames) tmpposition=positionMeta[0];
 								/* Init word counter for the metaname */
@@ -253,7 +253,7 @@ char *title=parsetitle(buffer,fprop->real_path);
 							/* If it is also a property store it until a < is found */
 							if(is_meta_property(metaNameEntry)) {
 					     			if((endtag=strchr(p,'<'))) *endtag='\0';
-					    			 addDocProperty(&thisFileEntry->docProperties,metaNameEntry->index,p,strlen(p));
+					    			 addDocProperty(&thisFileEntry->docProperties,metaNameEntry->metaID,p,strlen(p));
 					     			if(endtag) *endtag='<';
 							} 
 						}
@@ -402,7 +402,7 @@ char* temp;
 static int lenword=0;
 static char *word=NULL;
 int i;
-struct metaEntry* list=NULL;
+struct metaEntry *e=NULL;
 	
 	if(!lenword) word =(char *)emalloc((lenword=MAXWORDLEN)+1);
 
@@ -456,18 +456,13 @@ struct metaEntry* list=NULL;
 	word[i] = '\0';
 
 	while(1) {
-		for (list = indexf->metaEntryList; list != NULL; list = list->next)
+		if((e=getMetaNameData(indexf,word)))
 		{
-			if (!strcmp(list->metaName, word) )
-			{
-/* #### Use metaType */
-					/* If automatic metanames apply it */
-				if ((!is_meta_index(list)) && (*applyautomaticmetanames))
-					list->metaType |= META_INDEX;
-/* #### */
-				return list;
-			}
+			if ((!is_meta_index(e)) && (*applyautomaticmetanames))
+				e->metaType |=META_INDEX;
+			return e;
 		}
+
 		/* 06/00 Jose Ruiz
 		** If automatic MetaNames enabled add the metaName
 		** else break
@@ -517,7 +512,7 @@ int wordcount=0; /* Word count */
 	if(!metaNameEntry)
 		metaName=1;
 	else
-		metaName=metaNameEntry->index;
+		metaName=metaNameEntry->metaID;
 
 	temp = (char*) lstrstr((char*) tag,(char*) "CONTENT");
 	
