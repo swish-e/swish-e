@@ -1,0 +1,226 @@
+#!@@perlbinary@@ -w
+use strict;
+
+# This is set to where Swish-e's "make install" installed the helper modules.
+use lib qw( @@perlmoduledir@@ );
+
+
+# This is a short example that basically does the same
+# thing as the default file system access method by
+# recursing directories, but also shows how to process different
+# file types -- in this example pdf is converted to xml for indexing.
+
+# for the odd chance of running under Windows
+# Now extprog.c expects file in text mode so no need to binmode.
+# binmode STDOUT;  
+
+use File::Find;    # for recursing a directory tree
+use Getopt::Long;
+use Pod::Usage;
+
+
+# Regular expression that says these files are text
+
+my $textre = qr/\.(?:pl|pm|c)$/;
+
+
+my %options;
+GetOptions( \%options,
+    'verbose!',
+    'debug!',
+    'path',
+    'man',
+    'no_skip',
+) || pod2usage(2);
+
+pod2usage( -verbose => 2 ) if $options{man};
+
+if ( $options{path} ) {
+    print '@@perlmoduledir@@',"\n";
+    exit;
+}
+
+
+pod2usage("Must supply at least one directory") unless @ARGV;
+
+
+$ENV{FILTER_DEBUG} = 1 if $options{debug};
+
+
+
+# See perldoc File::Find for information on following symbolic links
+# and other important topics.
+
+use constant DEBUG => 0;
+
+# Try to load the filter module
+eval { require SWISH::Filter };
+my $filter = SWISH::Filter->new unless $@;
+
+
+find(
+    {
+        wanted => \&wanted,
+        no_chdir => 1,  # 5.6 feature
+    },
+    @ARGV,
+);
+
+sub wanted {
+    return if -d;
+
+    if ( !-r _ ) {
+        warn "$File::Find::name is not readable\n";
+        return;
+    }
+
+    my $path = $File::Find::name;
+
+    my $mtime = (stat _ )[9];
+
+    if ( $filter ) {
+        my $doc = $filter->convert(
+            document    => $path,
+        );
+        unless ( $doc ) {
+            if ( $options{no_skip} ) {
+                process_file( $path, $mtime );
+                return;
+            }
+
+            warn "Failed to process $path: SWISH::Filter->convert failed.\n"
+                if $options{verbose};
+            return;
+        }
+
+
+        if ( $doc->is_binary && $path !~ /$textre/ ) {  # ignore "binary" files (not text/* mime type)
+            warn "Skipping $path due to content type: " . $doc->content_type .": may be binary\n"
+                if $options{verbose};
+            return;
+        }
+
+        output_document( $path, $doc->fetch_doc, $mtime, $doc->swish_parser_type );
+
+        if ( $options{verbose} ) {
+            print STDERR "$path  ",
+                ($doc->was_filtered ? "Was filtered " : "Not filtered "),
+                $doc->content_type . " ",
+                ($doc->swish_parser_type || 'parser unspecified'),
+                "\n";
+        }
+        return;
+    }
+
+
+    # Otherwise, fetch document manually
+    process_file( $path, $mtime );
+
+}
+
+sub process_file {
+    my ( $path, $mtime ) = @_;
+
+    unless ( open FH, $path ) {
+        warn "Failed to open '$path': $!\n";
+        return;
+    }
+    local $/ = undef;
+    my $content = <FH>;
+    close FH;
+
+    if ( $options{verbose} ) {
+        print STDERR "$path (not processed with SWISH:Filter)\n";
+    }
+
+    output_document( $path, \$content, $mtime );
+}
+
+
+sub output_document {
+    my ( $path, $content_ref, $mtime, $parser_type ) = @_;
+
+    # Get the length of the content - have to worry about multi-byte content
+    # ugly and maybe expensive, but perhaps more portable than "use bytes"
+    my $bytecount = length pack 'C0a*', $$content_ref;
+
+    my $header = "Path-Name: $path\nContent-Length: $bytecount\nLast-Mtime: $mtime\n";
+    $header .= "Document-Type: $parser_type\n" if $parser_type;
+
+    print $header . "\n" . $$content_ref;
+}
+
+__END__
+
+=head1 NAME
+
+DirTree.pl - program to fetch local documents for Swish-e
+
+=head1 SYNOPSIS
+
+DirTree.pl [options] directory <directory...> | swish-e -S prog -i stdin
+
+  Options:
+    -verbose        Display processing info
+    -debug          Enable debugging (including SWISH::Filter debugging)
+    -man            Display documentation
+    -path           Dispaly location lib path set at installation
+    -no_skip        Process documents even if filtering fails
+
+=head1 DESCRIPTION
+
+DirTree.pl is an example Perl script that can be used with Swish-e to
+fetch documents from the local file system.  It works somewhat like
+Swish-e's default -S fs input method (reading from the file system).
+DirTree.pl will attempt to load the SWISH::Filter module for use in filtering
+documents (e.g. PDF or MS Word).
+
+Pass in the directory or directories to process.
+
+Note that when using -S prog many of the features available to select or exclude
+files that can be specified in the swish-e config file will have no effect.
+It's expected that checks on files will be added to the DirTree.pl program.
+This is much more powerful and allows more control, but is not as easy to
+configure.
+
+=head1 REQUIREMENTS
+
+To use the SWISH::Filter module you will need the helper applications installed.
+Check with your OS packages or Google for sources.
+
+    PDF conversionrequires the Xpdf package
+    MS Word conversion requires the Catdoc package
+
+The Windows version of Swish-e includes Xpdf and Catdoc packages.
+
+For content type matching install the Perl Mime::Types module.
+
+=head1 OPTIONS
+
+A few options may be passed to DirTree.pl
+
+=over 8
+
+=item B<-verbose>
+
+Produces information about each file as it is processed.
+
+=item B<-debug>
+
+Enables detailed debugging.  SWISH::Filter debugging is also enabled.
+
+=item B<-no_skip>
+
+When set documents that fail processing with SWISH::Filter will still
+be processed.  Typically this means documents where a content-type could be determined.
+
+=back
+
+=head1 SUPPORT
+
+Contact the Swish-e discussion list.  See:
+
+    http://swish-e.org
+
+
+

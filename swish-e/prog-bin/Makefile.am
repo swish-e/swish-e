@@ -2,7 +2,7 @@ perlmoduledir = $(libexecdir)/perl
 exampledir = $(datadir)/doc/$(PACKAGE)/examples/prog-bin
 
 
-libexec_SCRIPTS = spider.pl
+libexec_SCRIPTS = spider.pl DirTree.pl
 
 # These are really out dated
 
@@ -11,7 +11,7 @@ perlmodule_SCRIPTS = \
 	pdf2html.pm \
 	pdf2xml.pm
 
-CLEANFILES = spider.pl
+CLEANFILES = spider.pl DirTree.pl
 
 spider.pl: spider.pl.in
 	@rm -f spider.pl
@@ -21,10 +21,17 @@ spider.pl: spider.pl.in
 		-e 's,@@perlbinary@@,$(PERL),' \
 			 $(srcdir)/spider.pl.in > spider.pl
 
+DirTree.pl: DirTree.pl.in
+	@rm -f spider.pl
+	@sed \
+		-e 's,@@perlmoduledir@@,$(libexecdir)/perl,' \
+		-e 's,@@swishbindir@@,$(bindir),' \
+		-e 's,@@perlbinary@@,$(PERL),' \
+			 $(srcdir)/DirTree.pl.in > DirTree.pl
+
 other_examples = \
     README \
     file.pl \
-    DirTree.pl \
     SwishSpiderConfig.pl \
     MySQL.pl \
     index_hypermail.pl \
@@ -36,6 +43,7 @@ example_DATA = $(other_examples)
 
 EXTRA_DIST = \
     spider.pl.in \
+    DirTree.pl.in \
     $(other_examples)
 
 
