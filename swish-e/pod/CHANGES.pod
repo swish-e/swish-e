@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Add Fuzzy access to C and Perl interfaces
+
+Added a number of functions to the C API (and SWISH::API)
+to access the stemmer used when indexing a given index.
+
 =item * Commas in numbers
 
 Added commas to summary display at end of indexing.

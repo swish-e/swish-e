@@ -51,7 +51,7 @@ static void print_error_or_abort( SW_HANDLE swish_handle );
 static void print_index_headers( SW_HANDLE swish_handle, SW_RESULTS results );
 static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_HEADER_VALUE head_value, SWISH_HEADER_TYPE head_type );
 static void demo_stemming( SW_RESULTS results );
-
+static void stem_it( SW_RESULT r, char *word );
 
 
 int     main(int argc, char **argv)
@@ -97,7 +97,6 @@ int     main(int argc, char **argv)
 
         Free_Results_Object( results );
     }
-
 
     /* This may change since it only supports 8-bit chars */
     {
@@ -454,7 +453,6 @@ static void demo_stemming( SW_RESULTS results )
     stem_it( r, "abc3def" );
     stem_it( r, "");
     stem_it( r, "sugar" );  /* produces two metaphones */
-
 }
 
 static void stem_it( SW_RESULT r, char *word )

@@ -107,10 +107,6 @@ static IndexFILE *free_index( IndexFILE *indexf )
         freeMetaEntries(&indexf->header);
 
 
-    /* free and close all stemmed related stuff */
-    free_fuzzy_mode(indexf->header.fuzzy_data);
-
-    
     /* free data loaded into header */
     free_header(&indexf->header);
 
