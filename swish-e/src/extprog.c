@@ -37,6 +37,7 @@
 #include "bash.h" /* for locating a program */
 
 static char *find_command_in_path(const char *name, const char *path_list, int *path_index);
+static char *get_env_path_with_libexecdir( void );
 
 
 struct MOD_Prog
@@ -111,13 +112,18 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     size_t  total_len;
     struct swline *progparameterslist = sw->Prog->progparameterslist;
     int    path_index = 0;  /* index into $PATH */
+    char  *env_path = get_env_path_with_libexecdir();
 	
     if ( ! strcmp( prog, "stdin") )
         return stdin;
 
-    full_path = find_command_in_path( (const char *)prog, getenv("PATH"), &path_index );
+    normalize_path( prog );  /* flip backslashes to forward slashes */
+
+    full_path = find_command_in_path( (const char *)prog, env_path, &path_index );
     if ( !full_path )
-        progerr("Failed to find program '%s' in PATH: %s ", prog, getenv("PATH") );
+        progerr("Failed to find program '%s' in PATH: %s ", prog, env_path );
+
+    efree( env_path );
 
     if ( sw->verbose )
         printf("External Program found: %s\n", full_path );
@@ -515,11 +521,27 @@ static char *find_command_in_path(const char *name, const char *path_list, int *
         break;
       }
       else
-          progerr("Found '%s' but is not executable", full_path);
+          progwarn("Found '%s' in PATH but is not executable", full_path);
     }
     xfree(full_path);
   }
 
   return (found);
+}
+
+
+static char *get_env_path_with_libexecdir( void )
+{
+    char *pathbuf;
+    char *path = getenv("PATH");
+    char *execdir = get_libexec();  /* Should free */
+
+    if ( !path )
+        return execdir;
+
+    pathbuf = (char *)emalloc( strlen( path ) + strlen( execdir ) + strlen( PATH_SEPARATOR ) + 1 );
+
+    sprintf(pathbuf, "%s%s%s", path, PATH_SEPARATOR, execdir );
+    return pathbuf;
 }
 

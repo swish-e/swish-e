@@ -100,6 +100,11 @@
 #include <sys/dir.h>
 #endif
 
+#ifndef PATH_SEPARATOR
+#define PATH_SEPARATOR ":"
+#endif
+
+
 
 
 #if defined(__VMS)
