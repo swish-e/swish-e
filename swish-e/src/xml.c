@@ -191,7 +191,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
     /* Bump on all meta names, unless overridden */
     /* Done before the ignore tag check since still need to bump */
 
-    if (!isDontBumpMetaName(sw, tag))
+    if (!isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
         parse_data->word_pos++;
 
 
@@ -291,7 +291,12 @@ static void end_hndl(void *data, const char *el)
         return;
     }
 
-    /* Tags must be ballanced, of course. */
+    /* Don't allow matching across tag boundry */
+    if (!isDontBumpMetaName(parse_data->sw->dontbumpendtagslist, tag))
+       parse_data->word_pos++;
+    
+
+    /* Tags must be balanced, of course. */
 
     /* Exiting a metaID? */
     if ( parse_data->meta_cnt &&  getMetaNameByName( parse_data->header, tag) )

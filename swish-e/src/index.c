@@ -608,7 +608,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     // if (sw->verbose >= 4)
     if ( DEBUG_MASK & DEBUG_WORDS )
     {
-        printf("    Adding:'%s' Pos:%d Meta:%d Stuct:%X (", word, position, metaID, structure);
+        struct metaEntry *m = getMetaNameByID( &indexf->header, metaID );
+        printf("    Adding:(%s) '%s' Pos:%d Meta:%d Stuct:%X (", m->metaName, word, position, metaID, structure);
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADER");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
@@ -2021,27 +2022,20 @@ void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
 }
 
 
-
-void addword( char *word, int *bump_position_flag, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *position)
+void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *word_position)
 {
-    int     i,
-            tmp = *position;
+    int     i;
 
-    if ( *bump_position_flag )
-    {
-        tmp++;
-
-        *bump_position_flag = 0;
-    }
-
-
+    /* Add the word for each nested metaname. */
     for (i = 0; i < numMetaNames; i++)
-    {
-        addentry(sw, word, filenum, structure, metaID[i], *position);
-    }
-    tmp++;
-    *position = tmp;
+        addentry(sw, word, filenum, structure, metaID[i], *word_position);
+
+    (*word_position)++;
 }
+
+
+
+
 
 /* Gets the next white-space delimited word */
 int next_word( char **buf, char **word, int *lenword )
@@ -2077,16 +2071,17 @@ int next_word( char **buf, char **word, int *lenword )
 
 /* Gets the next non WordChars delimited word */
 /* Bumps position if needed */
-int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *bump_position_flag )
+int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *word_position )
 {
     int     i;
     IndexFILE *indexf = sw->indexlist;
+    int     bump_flag = 0;
 
-    /* skip non-wordchars */
+    /* skip non-wordchars and check for bump chars */
     while ( **buf && !iswordchar(indexf->header, **buf ) )
     {
-        if (isBumpPositionCounterChar(&indexf->header, (int) **buf))
-            (*bump_position_flag)++;
+        if (!bump_flag && isBumpPositionCounterChar(&indexf->header, (int) **buf))
+            bump_flag++;
             
         (*buf)++;
     }
@@ -2095,8 +2090,8 @@ int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *bump
     while ( **buf && iswordchar(indexf->header, **buf) )
     {
         /* It doesn't really make sense to have a WordChar that's also a bump char */
-        if (isBumpPositionCounterChar(&indexf->header, (int) **buf))
-            (*bump_position_flag)++;
+        if (!bump_flag && isBumpPositionCounterChar(&indexf->header, (int) **buf))
+            bump_flag++;
 
 
         /* reallocate buffer, if needed */
@@ -2109,6 +2104,10 @@ int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *bump
         (*word)[i++] = **buf;
         (*buf)++;
     }
+
+    /* If any bump chars were found then bump to prevent phrase matching */
+    if ( bump_flag )
+        (*word_position)++;
 
     if ( i )
     {
@@ -2128,7 +2127,6 @@ int next_swish_word(SWISH * sw, char **buf, char **word, int *lenword, int *bump
 int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position)
 {
     int     wordcount = 0;
-    int     bump_position_flag = 0;
 
     IndexFILE *indexf = sw->indexlist;
 
@@ -2168,7 +2166,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         {
             if  ( isuseword(&indexf->header, word) )
             {
-                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                addword(word, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
             }
 
@@ -2188,7 +2186,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         
             if ( isbuzzword(&indexf->header, word) )
             {
-                addword(word, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+                addword(word, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
                 continue;
             }
@@ -2204,7 +2202,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
         /* Now split the word up into "swish words" */
 
-        while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, &bump_position_flag ) )
+        while ( next_swish_word( sw, &cur_pos, &swishword, &lenswishword, position ) )
         {
             /* Check Begin & EndCharacters */
             if (!indexf->header.begincharslookuptable[(int) ((unsigned char) swishword[0])])
@@ -2236,7 +2234,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
             if (indexf->header.applySoundexRules)
                 soundex(swishword);
 
-            addword(swishword, &bump_position_flag, sw, filenum, structure, numMetaNames, metaID, position );
+            addword(swishword, sw, filenum, structure, numMetaNames, metaID, position );
             wordcount++;            
         }
     }

@@ -2,7 +2,19 @@
 /*
    -- This module does metaname handling for swish-e
    -- 
-   -- License: see swish licence file
+** This program and library is free software; you can redistribute it and/or
+** modify it under the terms of the GNU (Library) General Public License
+** as published by the Free Software Foundation; either version 2
+** of the License, or any later version.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+** GNU (Library) General Public License for more details.
+**
+** You should have received a copy of the GNU (Library) General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
    -- 2001-02-12 rasc    minor changes, concering the tolower problem 
@@ -352,16 +364,19 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 ***************************************************************************/
 
 
-int isDontBumpMetaName(SWISH *sw,char *tag)
+int isDontBumpMetaName( struct swline *tmplist, char *tag)
 {
-struct swline *tmplist=sw->dontbumptagslist;
 char *tmptag;
-	if(!tmplist) return 0;
+
+	if (!tmplist) return 0;
+	if (strcmp(tmplist->line,"*")==0) return 1;
+	
 	tmptag=estrdup(tag);
 	tmptag=strtolower(tmptag);
 	while(tmplist)
 	{
-		if(strcmp(tmptag,tmplist->line)==0)
+	
+		if( strcmp(tmptag,tmplist->line)==0 )
 		{
 			efree(tmptag);
 			return 1;
@@ -372,5 +387,6 @@ char *tmptag;
 	return 0;
 
 }
+
 
 

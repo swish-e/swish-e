@@ -90,7 +90,8 @@ SWISH *SwishNew()
     sw->storedescription = NULL;
     sw->suffixlist = NULL;
     sw->ignoremetalist = NULL;
-    sw->dontbumptagslist = NULL;
+    sw->dontbumpstarttagslist = NULL;
+    sw->dontbumpendtagslist = NULL;
     sw->mtime_limit = 0;
 
     sw->applyautomaticmetanames = 0;

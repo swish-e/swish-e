@@ -766,25 +766,30 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
         
-        if (strcasecmp(w0, "DontBumpPositionOnMetaTags") == 0)
+        if (strcasecmp(w0, "DontBumpPositionOnStartTags") == 0)
         {
             if (sl->n > 1)
-            {
-                grabCmdOptions(sl, 1, &sw->dontbumptagslist);
-            }
+                grabCmdOptions(sl, 1, &sw->dontbumpstarttagslist);
             else
                 progerr("%s: requires at least one value", w0);
 
             continue;
         }
 
+        if (strcasecmp(w0, "DontBumpPositionOnEndTags") == 0)
+        {
+            if (sl->n > 1)
+                grabCmdOptions(sl, 1, &sw->dontbumpendtagslist);
+            else
+                progerr("%s: requires at least one value", w0);
+
+            continue;
+        }
         
         if (strcasecmp(w0, "TruncateDocSize") == 0)
         {                       /* rasc 2001-03 */
             if (sl->n == 2 && isnumstring(sl->word[1]))
-            {
                 sw->truncateDocSize = atol(sl->word[1]);
-            }
             else
                 progerr("%s: requires size parameter in bytes", w0);
 
@@ -846,13 +851,13 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
 
     if (n < sl->n)
     {
-        if (!strcasecmp(sl->word[n], "yes") || !strcasecmp(sl->word[n], "1") )
+        if (!strcasecmp(sl->word[n], "yes") || !strcasecmp(sl->word[n], "on") || !strcasecmp(sl->word[n], "1") )
             return 1;
 
-        if (!strcasecmp(sl->word[n], "no") || !strcasecmp(sl->word[n], "0"))
+        if (!strcasecmp(sl->word[n], "no") || !strcasecmp(sl->word[n], "off") ||!strcasecmp(sl->word[n], "0"))
             return 0;
     }
-    progerr("%s requires parameter #%d of \"Yes\" or \"No\" value", sl->word[0], n);
+    progerr("%s requires parameter #%d of yes|on|1 or no|off|0", sl->word[0], n);
     return 0;
 }
 
