@@ -30,6 +30,7 @@
 ** 
 */
 
+#include <limits.h>     // for ULONG_MAX
 #include "swish.h"
 #include "string.h"
 #include "file.h"
@@ -67,22 +68,133 @@ void freeDocProperties(docProperties)
 	*docProperties = NULL;
 }
 
-/* Add the given file/metaName/propValue data to the File object */
-void addDocProperty(docPropertyEntry **docProperties, int metaID, unsigned char *propValue, int propLen)
+/*******************************************************************
+*   Converts a string into a string for saving as a property
+*   Which means will either return a duplicated string,
+*   or a packed unsigned long.
+*
+*   Call with:
+*       *metaEntry
+*       **encodedStr (destination)
+*       *string
+*
+*   Returns:
+*       malloc's a new string, stored in **encodedStr.  Caller must call free().
+*       length of encoded string, or zero if an error
+*       (zero length strings are not for encoding anyway, I guess)
+*
+*   QUESTION: ???
+*       should this return a *docproperty instead?
+*       numbers are unsigned longs.  What if someone
+*       wanted to store signed numbers?
+*
+*   ToDO:
+*       What about convert entities here?
+*
+********************************************************************/
+int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *string )
 {
-docPropertyEntry *docProp;
+    unsigned long int num;
+    char     *newstr;
+    char     *badchar;
+    char     *tmpnum;
+    
+    if ( !string || !*string )
+    {
+        progwarn("Null string passed to EncodeProperty");
+        return 0;
+    }
+
+    if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
+    {
+        int j = strlen( string );
+
+        /* remove trailing white space (strtoul() removes leading) */
+
+        
+        while ( j  && isspace( (int)string[j-1]) )
+            string[--j] = '\0';
+
+        
+
+        newstr = emalloc( sizeof( num ) + 1 );
+        num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
+        if ( num == ULONG_MAX )
+        {
+            progwarnno("Attempted to convert '%s' to a number", string );
+            return 0;
+        }
+
+        if ( *badchar ) // I think this is how it works...
+        {
+            progwarn("Invalid char '%c' found in string '%s'", badchar[0], string);
+            return 0;
+        }
+        /* I'll bet there's an easier way */
+        num = PACKLONG(num);
+        tmpnum = (unsigned char *)&num;
+
+        for ( j=0; j <= sizeof(num)-1; j++ )
+            newstr[j] = (unsigned char)tmpnum[j];
+        
+        newstr[ sizeof(num) ] = '\0';
+
+        *encodedStr = newstr;
+
+        return (int)sizeof(num);
+    }
+        
+
+    if ( is_meta_string(meta_entry) )
+    {
+        *encodedStr = estrdup( string );
+        return (int)strlen( string );
+    }
+
+
+    progwarn("EncodeProperty called but doesn't know the property type :(");
+    return 0;
+}
+
+
+/* Add the given file/metaName/propValue data to the File object */
+int addDocProperty(docPropertyEntry **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+{
+    docPropertyEntry *docProp;
+
+
+    if ( !preEncoded )
+    {
+        char *tmp;
+
+        /* $$$ Just ignore null values -- would probably be better to check before calling */
+        if ( !propValue || !*propValue )
+            return 1;
+        
+        propLen = EncodeProperty( meta_entry, &tmp, propValue );
+        if ( !propLen )
+            return 0;
+        propValue = tmp;
+    }
+
 
 	if(propLen)
 	{
 		docProp=(docPropertyEntry *) emalloc(sizeof(docPropertyEntry) + propLen);
-		memcpy(docProp->propValue, propValue, propLen);
+
+	    memcpy(docProp->propValue, propValue, propLen);
 		docProp->propLen=propLen;
-		docProp->metaID = metaID;
+		docProp->metaID = meta_entry->metaID;
 			
 		/* insert at head of file objects list of properties */
 		docProp->next = *docProperties;	/* "*docProperties" is the ptr to the head of the list */
 		*docProperties = docProp;	/* update head-of-list ptr */
 	}
+
+	if ( !preEncoded )
+	    efree( propValue );
+
+    return 1;	    
 }
 
 /*#### */
@@ -146,6 +258,11 @@ docPropertyEntry *docProperties=NULL;
 char* tempPropValue=NULL;
 int tempPropLen=0;
 int tempPropID;
+struct metaEntry meta_entry;
+
+    meta_entry.metaName = "(default)";
+    
+
 
 	/* read all of the properties */
         tempPropID = uncompress2((unsigned char **)&buf);
@@ -161,8 +278,10 @@ int tempPropID;
 	        tempPropValue=buf;
 		buf+=tempPropLen;
 
-			/* add the entry to the list of properties */
-		addDocProperty(&docProperties, tempPropID, tempPropValue, tempPropLen );
+		/* add the entry to the list of properties */
+		/* Flag as encoded, so won't encode again */
+		meta_entry.metaID = tempPropID;
+		addDocProperty(&docProperties, &meta_entry, tempPropValue, tempPropLen, 1 );
         	tempPropID = uncompress2((unsigned char **)&buf);
 	}
 	return docProperties;

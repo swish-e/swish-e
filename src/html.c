@@ -47,374 +47,11 @@ $Id$
 #include "html.h"
 #include "entities.h"
 #include "fs.h"
+#include "error.h"
 
 /* #### */
 
-
-
-
-/* Extracts anything in <title> tags from an HTML file and returns it.
-** Otherwise, only the file name without its path is returned.
-*/
-
-char   *parsetitle(char *buffer, char *alttitle)
-{
-    char   *shorttitle,
-           *title;
-
-
-    shorttitle = estrdup(alttitle);
-    if (!buffer)
-    {
-        return shorttitle;
-    }
-
-    if ((title = parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
-    {
-        efree(shorttitle);
-        return title;
-    }
-
-    return shorttitle;
-}
-
-
-/* Check if a particular title (read: file!) should be ignored
-** according to the settings in the configuration file.
-*/
-/* This is to check "title contains" option in config file */
-
-int     isoktitle(sw, title)
-     SWISH  *sw;
-     char   *title;
-{
-    int     badfile;
-    struct swline *tmplist;
-    struct MOD_FS *fs = sw->FS;
-
-    badfile = 0;
-    tmplist = fs->titconlist;
-    while (tmplist != NULL)
-    {
-        if (matchARegex(title, tmplist->line))
-        {
-            badfile = 1;
-            break;
-        }
-        tmplist = tmplist->next;
-    }
-    if (badfile)
-        return 0;
-    else
-        return 1;
-}
-
-
-/* Indexes all the words in a html file and adds the appropriate information
-** to the appropriate structures.
-*/
-
-int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
-{
-    int     ftotalwords;
-    int    *metaID;
-    int     metaIDlen;
-    int     positionMeta;       /* Position of word in file */
-    int     position_no_meta = 1; /* Counter for words in doc (excluding metanames) */
-    int     position_meta = 1;  /* Counter for words in doc (only for metanames) */
-    int     currentmetanames;
-    int     n;
-    char   *p,
-           *newp,
-           *tag,
-           *endtag;
-    int     structure;
-    struct file *thisFileEntry = NULL;
-    struct metaEntry *metaNameEntry;
-    IndexFILE *indexf = sw->indexlist;
-    struct MOD_Index *idx = sw->Index;
-    char   *Content = NULL,
-           *Name = NULL,
-           *summary = NULL;
-    char   *title = parsetitle(buffer, fprop->real_filename);
-
-    if (!isoktitle(sw, title))
-    {
-        efree(title);
-        return -2;
-    }
-    idx->filenum++;
-
-    if (fprop->index_no_content)
-    {
-        addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
-        addtofwordtotals(indexf, idx->filenum, 100);
-        if (idx->economic_flag)
-            SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
-        n = countwordstr(sw, title, idx->filenum);
-        efree(title);
-        return n;
-    }
-
-
-    if (fprop->stordesc)
-    {
-        summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
-    }
-
-    addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
-
-    /* Init meta info */
-    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
-
-    currentmetanames = ftotalwords = 0;
-    structure = IN_FILE;
-    metaID[0] = 1;
-    positionMeta = 1;
-
-    for (p = buffer; p && *p;)
-    {
-        /* Look for non escaped '<' */
-        if ((tag = strchr(p, '<')) && ((tag == p) || (*(tag - 1) != '\\')))
-        {
-            /* Index up to the tag */
-            *tag++ = '\0';
-
-            newp = sw_ConvHTMLEntities2ISO(sw, p);
-
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-
-            if (newp != p)
-                efree(newp);
-            structure = IN_FILE;
-
-            /* Now let us look for a not escaped '>' */
-            for (endtag = tag;;)
-                if ((endtag = strchr(endtag, '>')))
-                {
-                    if (*(endtag - 1) != '\\')
-                        break;
-                    else
-                        endtag++;
-                }
-                else
-                    break;
-
-            if (endtag)
-            {
-                *endtag++ = '\0';
-
-                if ((tag[0] == '!') && lstrstr(tag, "META") && (lstrstr(tag, "START") || lstrstr(tag, "END")))
-                {
-                    /* Check for META TAG TYPE 1 */
-                    structure |= IN_META;
-
-                    if (lstrstr(tag, "START"))
-                    {
-                        if ((metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL)))
-                        {
-                            /* If must be indexed add the metaName to the currentlist of metaNames */
-                            if (is_meta_index(metaNameEntry))
-                            {
-                                /* realloc memory if needed */
-                                if (currentmetanames == metaIDlen)
-                                {
-                                    metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
-                                }
-
-                                /* add metaname to array of current metanames */
-                                metaID[currentmetanames] = metaNameEntry->metaID;
-
-                                /* Preserve position */
-                                if (!currentmetanames)
-                                {
-                                    position_no_meta = positionMeta;
-                                     /* Init word counter for the metaname */
-                                    positionMeta = position_meta;
-                                }
-
-
-                                /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
-                                if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
-                                        positionMeta++;
-
-                                currentmetanames++;
-
-
-                                
-                            }
-                            p = endtag;
-
-
-                            /* If it is also a property store it until a < is found */
-                            if (is_meta_property(metaNameEntry))
-                            {
-                                if ((endtag = strchr(p, '<')))
-                                    *endtag = '\0';
-
-                                addDocProperty(&thisFileEntry->docProperties, metaNameEntry->metaID, p, strlen(p));
-                                if (endtag)
-                                    *endtag = '<';
-                            }
-                        }
-
-                    }
-
-                    else if (lstrstr(tag, "END"))
-                    {
-                        /* this will close the last metaname */
-                        if (currentmetanames)
-                        {
-                            currentmetanames--;
-                            if (!currentmetanames)
-                            {
-                                metaID[0] = 1;
-                                position_meta = positionMeta;
-                                /* Restore position counter */
-                                positionMeta = position_no_meta;
-                            }
-                        }
-                        p = endtag;
-                    }
-                }
-
-                /* Check for META TAG TYPE 2 */
-                else if ((tag[0] != '!') && lstrstr(tag, "META") && (Name = lstrstr(tag, "NAME")) && (Content = lstrstr(tag, "CONTENT")))
-                {
-                    ftotalwords += parseMetaData(sw, indexf, tag, idx->filenum, structure, Name, Content, thisFileEntry, &position_meta);
-                    p = endtag;
-                }               /*  Check for COMMENT */
-                else if ((tag[0] == '!') && sw->indexComments)
-                {
-                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
-                    p = endtag;
-                }               /* Default: Continue */
-                else
-                {
-                    structure = getstructure(tag, structure);
-                    p = endtag;
-                }
-            }
-            else
-                p = tag;        /* tag not closed: continue */
-        }
-
-        else
-        {                       /* No more '<' */
-
-            newp = sw_ConvHTMLEntities2ISO(sw, p);
-
-            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
-
-            if (newp != p)
-                efree(newp);
-            p = NULL;
-        }
-    }
-
-    efree(metaID);
-
-    addtofwordtotals(indexf, idx->filenum, ftotalwords);
-
-    if (idx->economic_flag)
-        SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
-
-    efree(title);
-    if(summary)
-        efree(summary);
-    return ftotalwords;
-}
-
-
-
-/* This returns the value corresponding to the HTML structures
-** a word is in.
-*/
-
-int     getstructure(tag, structure)
-     char   *tag;
-     int     structure;
-{
-
-/* int len; *//* not used - 2/22/00 */
-    char    oldChar = 0;
-    char   *endOfTag = NULL;
-    char   *pos;
-
-    pos = tag;
-    while (*pos)
-    {
-        if (isspace((int) ((unsigned char) *pos)))
-        {
-            endOfTag = pos;     /* remember where we are... */
-            oldChar = *pos;     /* ...and what we saw */
-            *pos = '\0';        /* truncate string, for now */
-        }
-        else
-            pos++;
-    }
-    /*      Store Word Context
-       **      Modified DLN 1999-10-24 - Comments and Cleaning
-       **  TODO: Make sure that these allow for HTML attributes
-       * */
-
-    /* HEAD  */
-    if (strcasecmp(tag, "/head") == 0)
-        structure &= ~IN_HEAD;  /* Out  */
-    else if (strcasecmp(tag, "head") == 0)
-        structure |= IN_HEAD;   /* In  */
-    /* TITLE  */
-    else if (strcasecmp(tag, "/title") == 0)
-        structure &= ~IN_TITLE;
-    else if (strcasecmp(tag, "title") == 0)
-        structure |= IN_TITLE;
-    /* BODY */
-    else if (strcasecmp(tag, "/body") == 0)
-        structure &= ~IN_BODY;  /* In */
-    else if (strcasecmp(tag, "body") == 0)
-        structure |= IN_BODY;   /* Out */
-    /* H1, H2, H3, H4, H5, H6  */
-    else if (tag[0] == '/' && tolower(tag[1]) == 'h' && isdigit((int) tag[2])) /* cast to int - 2/22/00 */
-        structure &= ~IN_HEADER; /* In */
-    else if (tolower(tag[0]) == 'h' && isdigit((int) tag[1])) /* cast to int - 2/22/00 */
-        structure |= IN_HEADER; /* Out */
-    /* EM, STRONG  */
-    else if ((strcasecmp(tag, "/em") == 0) || (strcasecmp(tag, "/strong") == 0))
-        structure &= ~IN_EMPHASIZED; /* Out */
-    else if ((strcasecmp(tag, "em") == 0) || (strcasecmp(tag, "strong") == 0))
-        structure |= IN_EMPHASIZED; /* In */
-    /* B, I are seperate for semantics  */
-    else if ((strcasecmp(tag, "/b") == 0) || (strcasecmp(tag, "/i") == 0))
-        structure &= ~IN_EMPHASIZED; /* Out */
-    else if ((strcasecmp(tag, "b") == 0) || (strcasecmp(tag, "i") == 0))
-        structure |= IN_EMPHASIZED; /* In */
-    /* The End  */
-
-    if (endOfTag != NULL)
-    {
-        *endOfTag = oldChar;
-    }
-    return structure;
-}
-
-
-
-/* Get the MetaData index when the whole tag is passed */
-
-/* Patch by Tom Brown */
-/* TAB, this routine is/was somewhat pathetic... but it was pathetic in
- 1.2.4 too ... someone needed a course in defensive programming... there are
- lots of tests below for temp != NULL, but what is desired is *temp != '\0'
- (e.g. simply *temp) ... I'm going to remove some strncmp(temp,constant,1)
- which are must faster as *temp != constant ...
-
- Anyhow, the test case I've got that's core dumping is:
-    <META content=3D"MSHTML 5.00.2614.3401" name=3DGENERATOR>
- no trailing quote, no trailing space... and with the missing/broken check for+  end of string it scribbles over the stack...
-
-*/
-
-struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticmetanames, int verbose, int OkNoMeta, char *name)
+static struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticmetanames, int verbose, int OkNoMeta, char *name)
 {
     char   *temp;
     static int lenword = 0;
@@ -524,9 +161,10 @@ struct metaEntry *getHTMLMeta(IndexFILE *indexf, char *tag, int *applyautomaticm
 
 }
 
+
 /* Parses the Meta tag */
-int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry,
-                      int *position)
+static int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, struct file *thisFileEntry,
+                      int *position, char *filename)
 {
     int     metaName;
     struct metaEntry *metaNameEntry;
@@ -571,9 +209,15 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
         if (temp)
             *temp = '\0';       /* terminate CONTENT, temporarily */
 
+
+
+
         /* If it is a property store it */
         if (metaNameEntry && is_meta_property(metaNameEntry))
-            addDocProperty(&thisFileEntry->docProperties, metaName, start, strlen(start));
+            if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, start, strlen(start),0) )
+                progwarn("prop not added for doc '%s'\n", filename );
+
+
 
         /* Do not index as a metaName */
         if (metaNameEntry && !is_meta_index(metaNameEntry))
@@ -600,7 +244,156 @@ int     parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, in
     return wordcount;
 }
 
-char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
+
+/* Extracts anything in <title> tags from an HTML file and returns it.
+** Otherwise, only the file name without its path is returned.
+*/
+
+char   *parsetitle(char *buffer, char *alttitle)
+{
+    char   *shorttitle,
+           *title;
+
+
+    shorttitle = estrdup(alttitle);
+    if (!buffer)
+    {
+        return shorttitle;
+    }
+
+    if ((title = parsetag("title", buffer, TITLETOPLINES, CASE_SENSITIVE_OFF)))
+    {
+        efree(shorttitle);
+        return title;
+    }
+
+    return shorttitle;
+}
+
+
+/* Check if a particular title (read: file!) should be ignored
+** according to the settings in the configuration file.
+*/
+/* This is to check "title contains" option in config file */
+
+static int     isoktitle(sw, title)
+     SWISH  *sw;
+     char   *title;
+{
+    int     badfile;
+    struct swline *tmplist;
+    struct MOD_FS *fs = sw->FS;
+
+    badfile = 0;
+    tmplist = fs->titconlist;
+    while (tmplist != NULL)
+    {
+        if (matchARegex(title, tmplist->line))
+        {
+            badfile = 1;
+            break;
+        }
+        tmplist = tmplist->next;
+    }
+    if (badfile)
+        return 0;
+    else
+        return 1;
+}
+
+
+
+
+/* This returns the value corresponding to the HTML structures
+** a word is in.
+*/
+
+static int     getstructure(tag, structure)
+     char   *tag;
+     int     structure;
+{
+
+/* int len; *//* not used - 2/22/00 */
+    char    oldChar = 0;
+    char   *endOfTag = NULL;
+    char   *pos;
+
+    pos = tag;
+    while (*pos)
+    {
+        if (isspace((int) ((unsigned char) *pos)))
+        {
+            endOfTag = pos;     /* remember where we are... */
+            oldChar = *pos;     /* ...and what we saw */
+            *pos = '\0';        /* truncate string, for now */
+        }
+        else
+            pos++;
+    }
+    /*      Store Word Context
+       **      Modified DLN 1999-10-24 - Comments and Cleaning
+       **  TODO: Make sure that these allow for HTML attributes
+       * */
+
+    /* HEAD  */
+    if (strcasecmp(tag, "/head") == 0)
+        structure &= ~IN_HEAD;  /* Out  */
+    else if (strcasecmp(tag, "head") == 0)
+        structure |= IN_HEAD;   /* In  */
+    /* TITLE  */
+    else if (strcasecmp(tag, "/title") == 0)
+        structure &= ~IN_TITLE;
+    else if (strcasecmp(tag, "title") == 0)
+        structure |= IN_TITLE;
+    /* BODY */
+    else if (strcasecmp(tag, "/body") == 0)
+        structure &= ~IN_BODY;  /* In */
+    else if (strcasecmp(tag, "body") == 0)
+        structure |= IN_BODY;   /* Out */
+    /* H1, H2, H3, H4, H5, H6  */
+    else if (tag[0] == '/' && tolower(tag[1]) == 'h' && isdigit((int) tag[2])) /* cast to int - 2/22/00 */
+        structure &= ~IN_HEADER; /* In */
+    else if (tolower(tag[0]) == 'h' && isdigit((int) tag[1])) /* cast to int - 2/22/00 */
+        structure |= IN_HEADER; /* Out */
+    /* EM, STRONG  */
+    else if ((strcasecmp(tag, "/em") == 0) || (strcasecmp(tag, "/strong") == 0))
+        structure &= ~IN_EMPHASIZED; /* Out */
+    else if ((strcasecmp(tag, "em") == 0) || (strcasecmp(tag, "strong") == 0))
+        structure |= IN_EMPHASIZED; /* In */
+    /* B, I are seperate for semantics  */
+    else if ((strcasecmp(tag, "/b") == 0) || (strcasecmp(tag, "/i") == 0))
+        structure &= ~IN_EMPHASIZED; /* Out */
+    else if ((strcasecmp(tag, "b") == 0) || (strcasecmp(tag, "i") == 0))
+        structure |= IN_EMPHASIZED; /* In */
+    /* The End  */
+
+    if (endOfTag != NULL)
+    {
+        *endOfTag = oldChar;
+    }
+    return structure;
+}
+
+
+
+/* Get the MetaData index when the whole tag is passed */
+
+/* Patch by Tom Brown */
+/* TAB, this routine is/was somewhat pathetic... but it was pathetic in
+ 1.2.4 too ... someone needed a course in defensive programming... there are
+ lots of tests below for temp != NULL, but what is desired is *temp != '\0'
+ (e.g. simply *temp) ... I'm going to remove some strncmp(temp,constant,1)
+ which are must faster as *temp != constant ...
+
+ Anyhow, the test case I've got that's core dumping is:
+    <META content=3D"MSHTML 5.00.2614.3401" name=3DGENERATOR>
+ no trailing quote, no trailing space... and with the missing/broken check for+  end of string it scribbles over the stack...
+
+*/
+
+
+
+static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
 {
     char   *p,
            *q,
@@ -792,3 +585,223 @@ int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int meta
     structure |= IN_COMMENTS;
     return indexstring(sw, tag + 1, filenum, structure, 1, &metaID, position);
 }
+
+/* Indexes all the words in a html file and adds the appropriate information
+** to the appropriate structures.
+*/
+
+int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
+{
+    int     ftotalwords;
+    int    *metaID;
+    int     metaIDlen;
+    int     positionMeta;       /* Position of word in file */
+    int     position_no_meta = 1; /* Counter for words in doc (excluding metanames) */
+    int     position_meta = 1;  /* Counter for words in doc (only for metanames) */
+    int     currentmetanames;
+    int     n;
+    char   *p,
+           *newp,
+           *tag,
+           *endtag;
+    int     structure;
+    struct file *thisFileEntry = NULL;
+    struct metaEntry *metaNameEntry;
+    IndexFILE *indexf = sw->indexlist;
+    struct MOD_Index *idx = sw->Index;
+    char   *Content = NULL,
+           *Name = NULL,
+           *summary = NULL;
+    char   *title = parsetitle(buffer, fprop->real_filename);
+
+    if (!isoktitle(sw, title))
+    {
+        efree(title);
+        return -2;
+    }
+    idx->filenum++;
+
+    if (fprop->index_no_content)
+    {
+        addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
+        addtofwordtotals(indexf, idx->filenum, 100);
+        if (idx->economic_flag)
+            SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
+        n = countwordstr(sw, title, idx->filenum);
+        efree(title);
+        return n;
+    }
+
+
+    if (fprop->stordesc)
+    {
+        summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
+    }
+
+    addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
+
+    /* Init meta info */
+    metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));
+
+    currentmetanames = ftotalwords = 0;
+    structure = IN_FILE;
+    metaID[0] = 1;
+    positionMeta = 1;
+
+    for (p = buffer; p && *p;)
+    {
+        /* Look for non escaped '<' */
+        if ((tag = strchr(p, '<')) && ((tag == p) || (*(tag - 1) != '\\')))
+        {
+            /* Index up to the tag */
+            *tag++ = '\0';
+
+            newp = sw_ConvHTMLEntities2ISO(sw, p);
+
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+
+            if (newp != p)
+                efree(newp);
+            structure = IN_FILE;
+
+            /* Now let us look for a not escaped '>' */
+            for (endtag = tag;;)
+                if ((endtag = strchr(endtag, '>')))
+                {
+                    if (*(endtag - 1) != '\\')
+                        break;
+                    else
+                        endtag++;
+                }
+                else
+                    break;
+
+            if (endtag)
+            {
+                *endtag++ = '\0';
+
+                if ((tag[0] == '!') && lstrstr(tag, "META") && (lstrstr(tag, "START") || lstrstr(tag, "END")))
+                {
+                    /* Check for META TAG TYPE 1 */
+                    structure |= IN_META;
+
+                    if (lstrstr(tag, "START"))
+                    {
+                        if ((metaNameEntry = getHTMLMeta(indexf, tag, &sw->applyautomaticmetanames, sw->verbose, sw->OkNoMeta, NULL)))
+                        {
+                            /* If must be indexed add the metaName to the currentlist of metaNames */
+                            if (is_meta_index(metaNameEntry))
+                            {
+                                /* realloc memory if needed */
+                                if (currentmetanames == metaIDlen)
+                                {
+                                    metaID = (int *) erealloc(metaID, (metaIDlen *= 2) * sizeof(int));
+                                }
+
+                                /* add metaname to array of current metanames */
+                                metaID[currentmetanames] = metaNameEntry->metaID;
+
+                                /* Preserve position */
+                                if (!currentmetanames)
+                                {
+                                    position_no_meta = positionMeta;
+                                     /* Init word counter for the metaname */
+                                    positionMeta = position_meta;
+                                }
+
+
+                                /* Bump position for all metanames unless metaname in dontbumppositionOnmetatags */
+                                if( !isDontBumpMetaName( sw, metaNameEntry->metaName ) )
+                                        positionMeta++;
+
+                                currentmetanames++;
+
+
+                                
+                            }
+                            p = endtag;
+
+
+                            /* If it is also a property store it until a < is found */
+                            if (is_meta_property(metaNameEntry))
+                            {
+                                if ((endtag = strchr(p, '<')))
+                                    *endtag = '\0';
+
+                                if ( !addDocProperty(&thisFileEntry->docProperties, metaNameEntry, p, strlen(p), 0) )
+                                    progwarn("prop not added for doc '%s'\n", fprop->real_path );
+
+                                
+                                if (endtag)
+                                    *endtag = '<';
+                            }
+                        }
+
+                    }
+
+                    else if (lstrstr(tag, "END"))
+                    {
+                        /* this will close the last metaname */
+                        if (currentmetanames)
+                        {
+                            currentmetanames--;
+                            if (!currentmetanames)
+                            {
+                                metaID[0] = 1;
+                                position_meta = positionMeta;
+                                /* Restore position counter */
+                                positionMeta = position_no_meta;
+                            }
+                        }
+                        p = endtag;
+                    }
+                }
+
+                /* Check for META TAG TYPE 2 */
+                else if ((tag[0] != '!') && lstrstr(tag, "META") && (Name = lstrstr(tag, "NAME")) && (Content = lstrstr(tag, "CONTENT")))
+                {
+                    ftotalwords += parseMetaData(sw, indexf, tag, idx->filenum, structure, Name, Content, thisFileEntry, &position_meta, fprop->real_path);
+                    p = endtag;
+                }               /*  Check for COMMENT */
+                else if ((tag[0] == '!') && sw->indexComments)
+                {
+                    ftotalwords += parsecomment(sw, tag, idx->filenum, structure, 1, &positionMeta);
+                    p = endtag;
+                }               /* Default: Continue */
+                else
+                {
+                    structure = getstructure(tag, structure);
+                    p = endtag;
+                }
+            }
+            else
+                p = tag;        /* tag not closed: continue */
+        }
+
+        else
+        {                       /* No more '<' */
+
+            newp = sw_ConvHTMLEntities2ISO(sw, p);
+
+            ftotalwords += indexstring(sw, newp, idx->filenum, structure, currentmetanames, metaID, &positionMeta);
+
+            if (newp != p)
+                efree(newp);
+            p = NULL;
+        }
+    }
+
+    efree(metaID);
+
+    addtofwordtotals(indexf, idx->filenum, ftotalwords);
+
+    if (idx->economic_flag)
+        SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
+
+    efree(title);
+    if(summary)
+        efree(summary);
+    return ftotalwords;
+}
+
+

@@ -421,6 +421,30 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+        if (strcasecmp(w0, "PropertyNamesNumeric") == 0)
+        {
+            if (sl->n > 1)
+            {
+                for (i = 1; i < sl->n; i++)
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_NUMBER, 0, NULL, &sw->applyautomaticmetanames);
+            }
+            else
+                progerr("%s: requires at least one value", w0);
+            continue;
+        }
+        
+        if (strcasecmp(w0, "PropertyNamesDate") == 0)
+        {
+            if (sl->n > 1)
+            {
+                for (i = 1; i < sl->n; i++)
+                    addMetaEntry(&indexf->header, sl->word[i], META_PROP|META_DATE, 0, NULL, &sw->applyautomaticmetanames);
+            }
+            else
+                progerr("%s: requires at least one value", w0);
+            continue;
+        }
+
 
 
         if (strcasecmp(w0, "IgnoreWords") == 0)

@@ -725,7 +725,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
             {
-                addDocProperty(&newnode->docProperties, q->metaID, filename, strlen(filename));
+                addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
             }
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
@@ -749,7 +749,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
             {
-                addDocProperty(&newnode->docProperties, q->metaID, title, strlen(title));
+                addDocProperty(&newnode->docProperties, q, title, strlen(title),0);
             }
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
@@ -773,7 +773,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             /* Check if it is also a property (META_PROP flag) */
             if (is_meta_property(q))
             {
-                addDocProperty(&newnode->docProperties, q->metaID, summary, strlen(summary));
+                addDocProperty(&newnode->docProperties, q, summary, strlen(summary),0);
             }
             /* Perhaps we want it to be indexed ... */
             if (is_meta_index(q))
@@ -797,7 +797,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         {
             tmp = mtime;
             tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
+            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
         }
     }
 
@@ -810,7 +810,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         {
             tmp = size;
             tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
+            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
         }
     }
 
@@ -823,7 +823,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         {
             tmp = start;
             tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
+            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
         }
     }
 

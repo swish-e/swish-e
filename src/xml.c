@@ -213,7 +213,11 @@ int in_junk=0;
                             tempprop=estrdup(p);
                             remove_newlines(tempprop);
                             remove_tags(tempprop);
-                            addDocProperty(&thisFileEntry->docProperties,metaNameXML->metaID,tempprop,strlen(tempprop));
+
+                            if ( !addDocProperty(&thisFileEntry->docProperties,metaNameXML,tempprop,strlen(tempprop),0) )
+                                progwarn("prop not added for doc '%s'\n", fprop->real_path );
+                                    
+
                             efree(tempprop);
                             if(endtag) *endtag='<';
                         } 

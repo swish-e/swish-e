@@ -16,7 +16,8 @@
 void freeDocProperties (docPropertyEntry **);
 unsigned char *storeDocProperties (docPropertyEntry *, int *);
 
-void addDocProperty (docPropertyEntry **, int , unsigned char* ,int );
+int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *string );
+int addDocProperty (docPropertyEntry **, struct metaEntry * , unsigned char* ,int, int );
 
 docPropertyEntry *fetchDocProperties (char * );
 

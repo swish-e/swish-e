@@ -19,7 +19,6 @@ $Id$
 **
 */
 
-#include <limits.h>     // for ULONG_MAX
 #include "swish.h"
 #include "string.h"
 #include "mem.h"
@@ -182,88 +181,6 @@ static int Compare_Properties( struct metaEntry *meta_entry, char *p1, int len1,
 }
 
 
-/* This probably should be in docprop.c */
-
-/*******************************************************************
-*   Converts a string into a string for saving as a property
-*   Which means will either return a duplicated string,
-*   or a packed unsigned long.
-*
-*   Call with:
-*       *metaEntry
-*       *string
-*
-*   Returns:
-*       pointer to a new string -- caller needs to free the memory
-*       errors return NULL (and a warning was displayed)
-*
-*   QUESTION: ???
-*       should this return a *docproperty instead?
-*       numbers are unsigned longs.  What if someone
-*       wanted to store signed numbers?
-*
-*   ToDO:
-*       need to add a directive so users can mark some properties
-*       as numeric, so they will sort and limit correctly.
-*
-********************************************************************/
-static char * EncodeProperty( struct metaEntry *meta_entry, char *string )
-{
-    unsigned long int num;
-    char     *newstr;
-    char     *badchar;
-    char     *tmpnum;
-    
-    if ( !string || !*string )
-    {
-        progwarn("Null string passed to EncodeProperty");
-        return NULL;
-    }
-
-    if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
-    {
-        int j;
-
-        newstr = emalloc( sizeof( num ) + 1 );
-        num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
-        if ( num == ULONG_MAX )
-        {
-            progwarnno("Attempted to convert '%s' to a number", string );
-            return NULL;
-        }
-
-        if ( *badchar ) // I think this is how it works...
-        {
-            progwarn("Invalid char '%c' found in string '%s'", badchar[0], string);
-            return NULL;
-        }
-
-        /* I'll bet there's an easier way */
-        num = PACKLONG(num);
-        tmpnum = (unsigned char *)&num;
-
-        for ( j=0; j <= sizeof(num)-1; j++ )
-            newstr[j] = (unsigned char)tmpnum[j];
-        
-        newstr[ sizeof(num) ] = '\0';
-
-        return newstr;
-    }
-        
-
-    if ( is_meta_string(meta_entry) )
-        return estrdup( string );
-
-
-    progwarn("EncodeProperty called but doesn't know the property type :(");
-    return NULL;
-}
-            
-            
-
-
-    
-    
 
 /*==============================================================*/
 /*                 typedefs and structures                      */
@@ -383,7 +300,7 @@ void SetLimitParameter(SWISH *sw, char *propertyname, char *low, char *hi)
 
 /* here we lookup a property and compare it with the key */
 
-static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry, char *key, LOOKUP_TABLE *sort_array)
+static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry, char *key, int keyLen, LOOKUP_TABLE *sort_array)
 {
     docPropertyEntry *fileprop;
 
@@ -403,7 +320,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 ***********/    
         
 
-    return Compare_Properties( meta_entry, key, strlen(key), fileprop->propValue, fileprop->propLen  );
+    return Compare_Properties( meta_entry, key, keyLen, fileprop->propValue, fileprop->propLen  );
 }
 
     
@@ -430,7 +347,7 @@ static int test_prop( SWISH *sw, IndexFILE *indexf, struct metaEntry *meta_entry
 *
 ***************************************************************************/
 
-static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, int numelements, char *key, struct metaEntry *meta_entry, int *result)
+static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, int numelements, char *key, int keyLen, struct metaEntry *meta_entry, int *result)
 {
     int low = 0;
     int high = numelements - 1;
@@ -440,13 +357,13 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
     unsigned int half;
 
     /* Not sure if this will be any faster */
-    if ( test_prop( sw, indexf, meta_entry, key, &sort_array[0] ) < 0 )
+    if ( test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[0] ) < 0 )
     {
         *result = 0;
         return 0;
     }
         
-    if ( test_prop( sw, indexf, meta_entry, key, &sort_array[high] ) > 0 )
+    if ( test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[high] ) > 0 )
     {
         *result = num;
         return 0;
@@ -460,7 +377,7 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
             mid = low + (num & 1 ? half : half - 1);
 
 
-            if ( (cmp = test_prop( sw, indexf, meta_entry, key, &sort_array[mid] )) == 0 )
+            if ( (cmp = test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[mid] )) == 0 )
             {
                 *result = mid;  // exact match
                 return 1;
@@ -480,7 +397,7 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
          }
          else if (num)
          {
-            if( (cmp = test_prop( sw, indexf, meta_entry, key, &sort_array[low] )) ==0)
+            if( (cmp = test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[low] )) ==0)
             {
                 *result = low;
                 return 1;
@@ -488,7 +405,7 @@ static int binary_sort(SWISH *sw, IndexFILE *indexf, LOOKUP_TABLE *sort_array, i
             if ( cmp < 0 ) // this breaks need another compare
             {
                 /* less than current, but is is greater */
-                if ( low > 0 && (test_prop( sw, indexf, meta_entry, key, &sort_array[low-1] ) < 0))
+                if ( low > 0 && (test_prop( sw, indexf, meta_entry, key, keyLen, &sort_array[low-1] ) < 0))
                     *result = low - 1;
                 else
                     *result = low;
@@ -533,7 +450,9 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     int low, high, j;
     int foundLo, foundHi;
     char    *paramlo;
+    int     paramloLen;
     char    *paramhi;
+    int     paramhiLen;
     int some_selected = 0;
     
 #ifdef DEBUGLIMIT
@@ -541,35 +460,35 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
 #endif    
 
     /* First convert the input parameters into their packed form */
-    paramlo = EncodeProperty( meta_entry, param->lowrange );
-    paramhi = EncodeProperty( meta_entry, param->highrange );
+    paramloLen = EncodeProperty( meta_entry, &paramlo, param->lowrange );
+    paramhiLen = EncodeProperty( meta_entry, &paramhi, param->highrange  );
 
 
-    /* return false indicating that no match can be made */
+    /* return false indicating an error in one of the parameters */
     if ( !paramlo || !paramhi )
     {
         for ( j = 0; j < num; j++ )
             sort_array[j].sort = 0;
 
-        efree( paramlo );
-        efree( paramhi );
+        if ( paramlo ) efree( paramlo );
+        if ( paramhi ) efree( paramhi );
         return 0;
     }
 
 
-    if ( Compare_Properties( meta_entry, paramlo, strlen(paramlo), paramhi, strlen(paramhi) ) > 0 )
+    if ( Compare_Properties( meta_entry, paramlo, paramloLen, paramhi, paramhiLen ) > 0 )
         progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, param->lowrange, param->highrange );
 
-    foundLo = binary_sort(sw, indexf, sort_array, num, paramlo, meta_entry, &low);
+    foundLo = binary_sort(sw, indexf, sort_array, num, paramlo, paramloLen, meta_entry, &low);
     if ( foundLo ) // exact match
-        while ( low > 0 && (test_prop( sw, indexf, meta_entry, paramlo, &sort_array[low-1] ) == 0))
+        while ( low > 0 && (test_prop( sw, indexf, meta_entry, paramlo, paramloLen, &sort_array[low-1] ) == 0))
             low--;
 
 
 
-    foundHi = binary_sort(sw, indexf, sort_array, num, paramhi, meta_entry, &high);
+    foundHi = binary_sort(sw, indexf, sort_array, num, paramhi, paramhiLen, meta_entry, &high);
     if ( foundHi )
-        while ( high < num-1 && (test_prop( sw, indexf, meta_entry, paramhi, &sort_array[high+1] ) == 0))
+        while ( high < num-1 && (test_prop( sw, indexf, meta_entry, paramhi, paramhiLen, &sort_array[high+1] ) == 0))
             high++;
 
 #ifdef DEBUGLIMIT

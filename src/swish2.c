@@ -43,7 +43,7 @@
 #include "fs.h"
 #include "swish_words.h"
 #include "extprog.h"
-
+#include "metanames.h"
 #include "proplimit.h"
 
 /* 
@@ -68,8 +68,7 @@ SWISH *SwishNew()
     initModule_HTTP (sw);
     initModule_Swish_Words (sw);
     initModule_Prog (sw);
-
-initModule_PropLimit(sw);
+    initModule_PropLimit(sw);
 
     sw->TotalWords = 0;
     sw->TotalFiles = 0;
@@ -152,31 +151,30 @@ void SwishClose(SWISH *sw)
         freeModule_Swish_Words (sw);
         freeModule_Prog (sw);
 
-freeModule_PropLimit(sw);
-                        /* Free file structures */
+        freeModule_PropLimit(sw);
+
+        /* Free file structures */
         freefileoffsets(sw);
-            /* Free MetaNames and close files */
+
+
+        /* Free MetaNames and close files */
         tmpindexlist=sw->indexlist;
+
         while(tmpindexlist)
         {
+            /* free the meteEntry array */
             if(tmpindexlist->header.metaCounter)
-            {
-                for(i=0;i<tmpindexlist->header.metaCounter;i++)
-                {
-                            efree(tmpindexlist->header.metaEntryArray[i]->metaName);
-                            if(tmpindexlist->header.metaEntryArray[i]->sorted_data)
-                                    efree(tmpindexlist->header.metaEntryArray[i]->sorted_data);
-                            efree(tmpindexlist->header.metaEntryArray[i]);
-                }
-                efree(tmpindexlist->header.metaEntryArray);
-            }
-                        /* Free stopwords structures */
+                freeMetaEntries( &tmpindexlist->header );
+
+
+            /* Free stopwords structures */
             freestophash(&tmpindexlist->header);
             freeStopList(&tmpindexlist->header);
 
-             freebuzzwordhash(&tmpindexlist->header);
+            freebuzzwordhash(&tmpindexlist->header);
 
             free_header(&tmpindexlist->header);
+
             /* Free compression lookup tables */
             if(tmpindexlist->header.locationlookup)
             {
@@ -218,6 +216,7 @@ freeModule_PropLimit(sw);
 
             tmpindexlist=tmpindexlist->next;
         }
+
         freeindexfile(sw->indexlist);
         
         /* Free SWISH struct */
