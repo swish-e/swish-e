@@ -33,7 +33,7 @@
 ** SRE 2/22/00
 **
 ** 2001-02-12 rasc    errormsg "print" changed...
-** 2001-03-13 rasc    result header output routine  -X?
+** 2001-03-13 rasc    result header output routine  -X?  (changed -H <n>)
 **
 */
 
@@ -374,20 +374,20 @@ double search_starttime, run_starttime, endtime;
 			/* added 11/24/98 MG */
 			if (((argv + 1)[0] != '\0') && (*(argv + 1)[0] != '-'))
 			{
-				sw->useCustomOutputDelimiter = 1;
-				sw->customOutputDelimiter=SafeStrCopy(sw->customOutputDelimiter, (++argv)[0],&sw->lencustomOutputDelimiter);
-				if (strcmp(sw->customOutputDelimiter, "dq") == 0)
-					{ sw->customOutputDelimiter=SafeStrCopy(sw->customOutputDelimiter, "\"",&sw->lencustomOutputDelimiter); } /* double quote is cool */
-				if (sw->customOutputDelimiter[0]=='\\')
+
+				sw->opt.stdResultFieldDelimiter=estrredup(sw->opt.stdResultFieldDelimiter,(++argv)[0]);
+				if (strcmp(sw->opt.stdResultFieldDelimiter, "dq") == 0)
+					{ sw->opt.stdResultFieldDelimiter=estrredup(sw->opt.stdResultFieldDelimiter, "\""); } /* double quote is cool */
+				if (sw->opt.stdResultFieldDelimiter[0]=='\\')
 				{
-					switch(sw->customOutputDelimiter[1])
+					switch(sw->opt.stdResultFieldDelimiter[1])
 					{
-						case 'f': sw->customOutputDelimiter[0]='\f'; break;
-						case 'n': sw->customOutputDelimiter[0]='\n'; break;
-						case 'r': sw->customOutputDelimiter[0]='\r'; break;
-						case 't': sw->customOutputDelimiter[0]='\t'; break;
+						case 'f': sw->opt.stdResultFieldDelimiter[0]='\f'; break;
+						case 'n': sw->opt.stdResultFieldDelimiter[0]='\n'; break;
+						case 'r': sw->opt.stdResultFieldDelimiter[0]='\r'; break;
+						case 't': sw->opt.stdResultFieldDelimiter[0]='\t'; break;
 					}
-					sw->customOutputDelimiter[1]='\0';
+					sw->opt.stdResultFieldDelimiter[1]='\0';
 				}
 				argc--;
 			}
@@ -416,10 +416,11 @@ double search_starttime, run_starttime, endtime;
 			   usage();
 			}
 		}
-		else if (c == 'X') {
-			  /* rasc 2001-02, 2001-03-13 */
-			if ( (*argv)[2] ) {
-			   sw->opt.X_headerOut = atoi(&((*argv)[2]));
+		else if (c == 'H') {
+			  /* rasc 2001-02, 2001-03 */
+			if ( *(argv+1) && isdigit ((int) **(argv+1)) ) {
+			   sw->opt.headerOutVerbose = atoi(*(++argv));
+			   argc--;
 			} else {
 			   usage();
 			}
@@ -901,7 +902,7 @@ void usage()
 	printf("    swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
 	printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
 	printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
-	printf("          [-m num] [-t str] [-d delim] [-X] [-x output_format]\n");
+	printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format]\n");
 	printf("    swish -k (char|*) [-f file1 file2 ...]\n");
 	printf("    swish -M index1 index2 ... outputfile\n");
 	printf("    swish -D [-v 4] -f indexfile\n");
@@ -931,7 +932,7 @@ void usage()
 	printf("              emphasized, comments\n");
 	printf("         -f : index file to create or search from [%s]\n", INDEXFILE);
 	printf("         -c : configuration file to use for indexing\n");
-	printf("         -v : verbosity level (0 to 3) [%d]\n", VERBOSE);
+	printf("         -v : verbosity level (0 to 3) [-v %d]\n", VERBOSE);
 	printf("         -l : follow symbolic links when indexing\n");
 	printf("         -b : begin results at this number\n");
 	printf("         -m : the maximum number of results to return [defaults to all results]\n");
@@ -939,12 +940,12 @@ void usage()
 	printf("         -D : decodes an index file\n");
 	printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
-	printf("         -d : next param is delimiter. use \"-d dq\" to use a double quote\n");
+	printf("         -d : next param is delimiter.");
 	printf("         -P : next param is Phrase delimiter.\n");
 	printf("         -V : prints the current version\n");
 	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
 	printf("         -x : \"Extended Output Format\": Specify the output format.\n");
-	printf("         -X : \"Extended Search Header Output\": The search proccess gives more info [-X1].\n");
+	printf("         -H : \"Result Header Output\": verbosity (0 to 9)  [1].\n");
 	printf("         -k : Print words starting with a given char.\n\n");
 	printf("version: %s\n", SWISH_VERSION);
 	printf("   docs: http://sunsite.berkeley.edu/SWISH-E/\n");

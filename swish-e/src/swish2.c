@@ -47,7 +47,6 @@ int i;
 	sw->TotalWords = 0;
 	sw->TotalFiles = 0;
 	sw->filenum = 0;
-	sw->useCustomOutputDelimiter = 0;           /* added 11/24/98 */
 	sw->entryArray = NULL;
 	sw->dirlist = NULL;
 	sw->indexlist = NULL;
@@ -80,8 +79,6 @@ int i;
 	sw->tmpdir = (char *)emalloc(sw->lentmpdir + 1);sw->tmpdir[0]='\0';
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	
-	sw->lencustomOutputDelimiter=5;
-	sw->customOutputDelimiter=(char *)emalloc(sw->lencustomOutputDelimiter+1); sw->customOutputDelimiter[0]='\0';
 		/* Properties */
 	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
 	sw->propNameToDisplay=NULL;
@@ -92,7 +89,8 @@ int i;
 		/* cmd options */
 
 	sw->opt.extendedformat = NULL;
-	sw->opt.X_headerOut  = 1;		/* default -X1 = standard header */
+	sw->opt.headerOutVerbose  = 1;		/* default = standard header */
+      sw->opt.stdResultFieldDelimiter = NULL;	/* old 1.1.x result output delimiter */
 
 
 		/* File system parameters */
@@ -175,10 +173,10 @@ if(sw) {
 		/* Free search results and imput parameters */
 		SwishResetSearch(sw);
 
-		if(sw->lencustomOutputDelimiter)efree(sw->customOutputDelimiter);
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
-		efree(sw->filterdir);		
+		efree(sw->filterdir);
+		efree(sw->opt.stdResultFieldDelimiter);	
 
                         /* Free file structures */
 		freefileoffsets(sw);

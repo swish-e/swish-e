@@ -1188,7 +1188,7 @@ FILE *fp=indexf->fp;
 					position[j] = x;
 				}
 				rp = (RESULT *) addtoresultlist(rp, filenum, getrank(sw, frequency, tfrequency,indexf->filetotalwordsarray[filenum-1],structure,indexf->header.ignoreTotalWordCountWhenRanking), structure,frequency,position,indexf,sw);
-				if (sw->opt.X_headerOut >= 9)
+				if (sw->opt.headerOutVerbose >= 9)
 				{
 					/* dump diagnostic info */
 					long curFilePos;

@@ -581,8 +581,9 @@ typedef struct {		/* 2001-03-12 rasc */
 */
 
 typedef struct {
-    char *extendedformat;      /* -x "fmt", holds fmt or NULL */
-    int   X_headerOut;         /* -X? print extended header info */
+    char *extendedformat;           /* -x "fmt", holds fmt or NULL */
+    char *stdResultFieldDelimiter;	/* -d <c> delimiter , (def: config.h) v1.x output style */
+    int   headerOutVerbose;         /* -H <n> print extended header info */
 } CMDPARAM;
 
 
@@ -674,10 +675,6 @@ typedef struct {
     int lasterror;
 
     int indexComments;
-	/* Custom delimiter vars */
-    int useCustomOutputDelimiter;	/* added 11/24/98 - MG */
-    int lencustomOutputDelimiter;
-    char *customOutputDelimiter;	/* added 11/24/98 - MG */
       /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList   *resultextfmtlist;
 	/* Filter vars */

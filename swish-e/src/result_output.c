@@ -168,7 +168,7 @@ FILE   *f_out;
   f_out = stdout;
   resultmaxhits = sw->maxhits;
   resultbeginhits = (sw->beginhits > 0) ? sw->beginhits - 1 : 0;
-  delimiter = (sw->useCustomOutputDelimiter) ? sw->customOutputDelimiter : " ";
+  delimiter = (sw->opt.stdResultFieldDelimiter) ? sw->opt.stdResultFieldDelimiter : " ";
   counter = resultbeginhits;
 
        /* jmruiz 02/2001 SwishSeek is faster because it does not read the
@@ -556,7 +556,7 @@ char *hasResultExtFmtStr (SWISH *sw, char *name)
 /*
   -- print a line for the result output header
   -- the verbose level is checked for output
-  -- <min_verbose> has to be >= sw->...X_headerOut
+  -- <min_verbose> has to be >= sw->...headerOutVerbose
   -- outherwise nothing is outputted
   -- return: 0/1  (not printed/printed)
   -- 2001-03-13  rasc
@@ -568,7 +568,7 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *printfmt, ...)
   va_list args;
 
   /* min_verbose to low, no output */
-  if (min_verbose > sw->opt.X_headerOut) return 0;
+  if (min_verbose > sw->opt.headerOutVerbose) return 0;
 
   /* print header info... */
   va_start (args,printfmt);
