@@ -28,15 +28,14 @@ swish-search: swish-e
 #
 clean:
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
-	src/index.swish src/Makefile Makefile 
+	tests/test.index src/testlib src/Makefile Makefile 
 
 realclean: 
 	rm -f config.cache config.log config.status
 	rm -f src/config.cache src/config.log \
 		 src/config.status
 	rm -f src/swish-e src/swish-search src/libswish-e.a src/*.o \
-	src/index.swish src/Makefile Makefile \
-	src/testlib
+	tests/test.index src/testlib src/Makefile Makefile
 
 test:
 	(cd ./tests;\
