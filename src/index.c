@@ -332,21 +332,19 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     /* Upon entry, if fprop->fp is non-NULL then it's already opened and ready to be read from.
        This is the case with "prog" external programs, except when a filter is selected for the file type.
-       If a file is used with "prog" a temporary file was created (fprop->work_file), and will read from that.
+       If a filter is used with "prog" a temporary file was created (fprop->work_file), and
+       fprop->fp will be NULL (as is with http and fs access methods).
        2001-05-13 moseley
     */
 
 
-    /* to keep from closing the stream used with "prog" */
-    if ( fprop->fp )
-        external_program++;
 
-
+    /* Get input file handle */
     if (fprop->hasfilter)
     {
         fprop->fp = FilterOpen(fprop);
 
-        /* This should be checked in filteropen */
+        /* This should be checked in filteropen because the popen probably won't fail */
         if ( !fprop->fp )
             progerr("Failed to open filter for file '%s'",fprop->real_path);
     }
@@ -362,6 +360,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
             return;
         }
     }
+    else  /* Already open - flag to preven closing the stream used with "prog" */
+        external_program++;
 
 
 
@@ -382,7 +382,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     case HTML:
         if (sw->verbose >= 3)
-            printf(" - Using HTML filter - ");
+            printf(" - Using HTML parser - ");
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_HTML(sw, fprop, rd_buffer);
@@ -390,7 +390,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     case XML:
         if (sw->verbose >= 3)
-            printf(" - Using XML filter - ");
+            printf(" - Using XML parser - ");
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_XML(sw, fprop, rd_buffer);
@@ -398,7 +398,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     case LST:
         if (sw->verbose >= 3)
-            printf(" - Using LST filter - ");
+            printf(" - Using LST parser - ");
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_LST(sw, fprop, rd_buffer);
@@ -406,7 +406,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     case WML:
         if (sw->verbose >= 3)
-            printf(" - Using WML filter - ");
+            printf(" - Using WML parser - ");
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_HTML(sw, fprop, rd_buffer);
@@ -414,7 +414,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 
     default:
         if (sw->verbose >= 3)
-            printf(" - Using DEFAULT filter - ");
+            printf(" - Using DEFAULT parser (HTML) - ");
         if (sw->verbose >= 4)
             printf("\n");
         wordcount = countwords_HTML(sw, fprop, rd_buffer);
@@ -664,6 +664,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
         indexf->filearray_cursize = 0;
     }
+
     if (indexf->filearray_maxsize == indexf->filearray_cursize)
     {
         indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
@@ -676,10 +677,17 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     {
         *newFileEntry = newnode; /* pass object pointer up to caller */
     }
+
+
+
+    /* Run ReplaceRules on file name */
     ruleparsedfilename_tmp = ruleparsedfilename = ruleparse(sw, filename);
+
+
     /* look for last DIRDELIMITER (FS) and last / (HTTP) */
     p1 = strrchr(ruleparsedfilename, DIRDELIMITER);
     p2 = strrchr(ruleparsedfilename, '/');
+
     if (p1 && p2)
     {
         if (p1 >= p2)
@@ -693,6 +701,8 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         p3 = p2;
     else
         p3 = NULL;
+
+    /* Hash everything up to the last delimiter */
     if (!p3)
     {
         newnode->fi.lookup_path = get_lookup_path(&indexf->header.pathlookup, "");
@@ -706,20 +716,19 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         ruleparsedfilename = p3;
     }
 
+
     newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
     newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
 
-          /* free string returned by ruleparse() */
-    if(ruleparsedfilename_tmp != (unsigned char *)filename)
-        efree(ruleparsedfilename_tmp);
 
     /* Not used in indexing mode - They are in properties */
     /* NULL must be set to not get a segfault in freefileinfo */
     newnode->fi.title = newnode->fi.summary = NULL;
+
     /* Init docproperties */
     newnode->docProperties = NULL;
 
-/* #### Added summary,filename, title and mtime as properties if specified */
+    /* #### Added summary,filename, title and mtime as properties if specified */
 
     if (filename)
     {
@@ -739,10 +748,12 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
 
                 metaID[0] = q->metaID;
                 positionMeta[0] = 1;
-                indexstring(sw, filename, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
+                indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, metaID, positionMeta);
             }
         }
     }
+
+
     if (title)
     {
         /* Check if title is internal swish metadata */
@@ -765,6 +776,8 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             }
         }
     }
+
+
     if (summary)
     {
         /* Check if summary is internal swish metadata */
@@ -787,6 +800,8 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             }
         }
     }
+
+
     /* Check if filedate is an internal swish metadata */
     if ((q = indexf->header.filedateProp))
     {
@@ -798,6 +813,8 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
+
+
     /* Check if size is internal swish metadata */
     if ((q = indexf->header.sizeProp))
     {
@@ -810,6 +827,7 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
         }
     }
 
+
     /* Check if size is internal swish metadata */
     if ((q = indexf->header.startProp))
     {
@@ -821,8 +839,15 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
             addDocProperty(&newnode->docProperties, q->metaID, (unsigned char *) &tmp, sizeof(tmp));
         }
     }
+
+
     indexf->filearray[indexf->filearray_cursize++] = newnode;
     indexf->header.totalfiles++;
+
+
+    /* free string returned by ruleparse() */
+    if(ruleparsedfilename_tmp != (unsigned char *)filename)
+        efree(ruleparsedfilename_tmp);
 
 }
 
@@ -1218,13 +1243,16 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
 
     /* Compute array size */
     ptmp = (void *) emalloc(j * i);
+
     /* Build an array with the elements to compare
        and pointers to data */
+
     for (k = 0, ptmp2 = ptmp; k < i; k++)
     {
         pi = (int *) ptmp2;
         if (idx->economic_flag)
             e->locationarray[k] = (LOCATION *) unSwapLocData(sw, (long) e->locationarray[k]);
+
         compressed_data = (char *) e->locationarray[k];
         num = uncompress2(&compressed_data); /* index to lookuptable */
         pi[0] = indexf->header.locationlookup->all_entries[num - 1]->val[0];
@@ -1235,8 +1263,10 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
         memcpy((char *) ptmp2, (char *) &e->locationarray[k], sizeof(LOCATION *));
         ptmp2 += sizeof(void *);
     }
+
     /* Sort them */
     qsort(ptmp, i, j, &icomp2);
+
     /* Store results */
     for (k = 0, ptmp2 = ptmp; k < i; k++)
     {
@@ -1245,6 +1275,7 @@ void    sortentry(SWISH * sw, IndexFILE * indexf, ENTRY * e)
         memcpy((char *) &e->locationarray[k], (char *) ptmp2, sizeof(LOCATION *));
         ptmp2 += sizeof(void *);
     }
+
     /* Free the memory of the array */
     efree(ptmp);
 }
@@ -1271,6 +1302,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         for (i = 0; i < totalwords; i++)
         {
             epi = ep->elist[i];
+
             if (!isstopword(&indexf->header, epi->word))
             {
                 /* Sort locationlist by MetaName, Filenum
@@ -1290,7 +1322,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             {
                 while (epi)
                 {
-                        /* If it is not a stopword write it */
+                    /* If it is not a stopword write it */
                     if (epi->u1.fileoffset >= 0L)  
                         DB_WriteWordHash(sw, epi->word,epi->u1.fileoffset,indexf->DB);
                     epi = epi->nexthash;
@@ -1335,20 +1367,26 @@ unsigned char *buildFileEntry(char *filename, struct docPropertyEntry **docPrope
     p = buffer1;
     lookup_path++;              /* To avoid the 0 problem in compress increase 1 */
     p = compress3(lookup_path, p);
+
     /* We store length +1 to avoid problems with 0 length - So 
        it also writes the null terminator */
+
     p = compress3(len_filename, p);
     memcpy(p, filename, len_filename);
     p += len_filename;
     datalen1 = p - buffer1;
     buffer2 = storeDocProperties(*docProperties, &datalen2);
     buffer3 = emalloc((datalen3 = datalen1 + datalen2 + 1));
+
     memcpy(buffer3, buffer1, datalen1);
+
     if (datalen2)
         memcpy(buffer3 + datalen1, buffer2, datalen2);
     buffer3[datalen1 + datalen2] = '\0';
+
     efree(buffer1);
     efree(buffer2);
+
     *sz_buffer = datalen3;
     return (buffer3);
 }
@@ -1401,6 +1439,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     p += len1;
 
     fi->fi.lookup_path = lookup_path;
+
     /* Add the path to filename */
     len4 = strlen(indexf->header.pathlookup->all_entries[lookup_path]->val);
     len1 = strlen(buf1);
@@ -1411,11 +1450,13 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     efree(buf1);
 
     fi->fi.filenum = filenum - 1;
+
     /* read the document properties section  */
     fi->docProperties = fetchDocProperties(p);
 
     /* Read internal swish properties */
     /* first init them */
+
     fi->fi.mtime = (unsigned long) 0L;
     fi->fi.title = NULL;
     fi->fi.summary = NULL;
@@ -1428,6 +1469,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     /* Add empty strings if NULL */
     if (!fi->fi.title)
         fi->fi.title = estrdup("");
+
     if (!fi->fi.summary)
         fi->fi.summary = estrdup("");
 
@@ -1464,6 +1506,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         else
             filep = indexf->filearray[i];
         buffer = buildFileEntry(filep->fi.filename, &filep->docProperties, filep->fi.lookup_path, &sz_buffer);
+
         /* Deflate stuff removed due to patents 
         if (indexf->header.applyFileInfoCompression)
         {
@@ -1476,20 +1519,26 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
         /* } */
         efree(buffer);
     }
+
+
     /* Deflate stuff removed due to patents 
+
     if (indexf->header.applyFileInfoCompression)
     {
         zfflush(bp, fp);
         printdeflatedictionary(bp, indexf);
     } */
+
     /* Sort properties -> Better search performance */
     sortFileProperties(indexf);
+
     /* Free memory */
     for (i = 0; i < indexf->filearray_cursize; i++)
     {
         freefileinfo(indexf->filearray[i]);
         indexf->filearray[i] = NULL;
     }
+
     DB_EndWriteFiles(sw, indexf->DB);
 }
 
@@ -1504,10 +1553,13 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
     CompressedSortFileProps = (unsigned char *)emalloc(5 * indexf->filearray_cursize);
 
     DB_InitWriteSortedIndex(sw, indexf->DB);
+
     /* Execute for each property */
+
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
         m = getMetaIDData(&indexf->header, indexf->header.metaEntryArray[j]->metaID);
+
         if (m->sorted_data)
         {
             s = CompressedSortFileProps;
@@ -1519,9 +1571,9 @@ void    write_sorted_index(SWISH * sw, IndexFILE * indexf)
             DB_WriteSortedIndex(sw, m->metaID,CompressedSortFileProps, s - CompressedSortFileProps, indexf->DB);
         }
     }
+
     efree(CompressedSortFileProps);
     DB_EndWriteSortedIndex(sw, indexf->DB);
-
 }
 
 
@@ -1555,6 +1607,7 @@ char   *ruleparse(SWISH * sw, char *line)
 
     tmplist = sw->replacelist;
     tmpline = SafeStrCopy(tmpline, line, &lentmpline);
+
     while (1)
     {
         if (tmplist == NULL)
@@ -1565,8 +1618,10 @@ char   *ruleparse(SWISH * sw, char *line)
             efree(line2);
             return tmpline;
         }
+
         rule = SafeStrCopy(rule, tmplist->line, &lenrule);
         tmplist = tmplist->next;
+
         if (tmplist == NULL)
         {
             efree(rule);
@@ -1575,6 +1630,7 @@ char   *ruleparse(SWISH * sw, char *line)
             efree(line2);
             return tmpline;
         }
+
         if (rule == NULL)
         {
             sw->replacelist = tmplist;
@@ -1584,6 +1640,7 @@ char   *ruleparse(SWISH * sw, char *line)
             efree(line2);
             return tmpline;
         }
+
         else
         {
             if (lstrstr(rule, "replace"))
@@ -1606,6 +1663,7 @@ char   *ruleparse(SWISH * sw, char *line)
                 }
                 newtmpline = SafeStrCopy(newtmpline, (char *) matchAndChange(tmpline, line1, line2), &lennewtmpline);
             }
+
             else if (lstrstr(rule, "append"))
             {
                 ilen1 = strlen(tmpline);
@@ -1620,6 +1678,7 @@ char   *ruleparse(SWISH * sw, char *line)
                 newtmpline[ilen1 + ilen2] = '\0';
                 tmplist = tmplist->next;
             }
+
             else if (lstrstr(rule, "prepend"))
             {
                 ilen1 = strlen(tmpline);
@@ -1634,6 +1693,7 @@ char   *ruleparse(SWISH * sw, char *line)
                 newtmpline[ilen1 + ilen2] = '\0';
                 tmplist = tmplist->next;
             }
+
             else if (lstrstr(rule, "remove"))
             {
                 newtmpline = SafeStrCopy(newtmpline, (char *) matchAndChange(tmpline, tmplist->line, ""), &lennewtmpline);
@@ -1731,15 +1791,18 @@ void    BuildSortedArrayOfWords(SWISH * sw, IndexFILE * indexf)
         printf("Sorting Words alphabetically\n");
         fflush(stdout);
     }
+
     if (!sw->Index->entryArray || !sw->Index->entryArray->numWords)
         return;
 
     /* Build the array with the pointers to the entries */
     sw->Index->entryArray->elist = (ENTRY **) emalloc(sw->Index->entryArray->numWords * sizeof(ENTRY *));
+
     /* Fill the array with all the entries */
     for (i = 0, j = 0; i < SEARCHHASHSIZE; i++)
         for (e = sw->Index->hashentries[i]; e; e = e->nexthash)
             sw->Index->entryArray->elist[j++] = e;
+
     /* Sort them */
     qsort(sw->Index->entryArray->elist, sw->Index->entryArray->numWords, sizeof(ENTRY *), &entrystructcmp);
 }
