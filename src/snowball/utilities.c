@@ -10,13 +10,13 @@
 #define CREATE_SIZE 1
 
 extern symbol * create_s(void)
-{   symbol * p = (symbol *) (HEAD + (char *) emalloc(HEAD + (CREATE_SIZE + 1) * sizeof(symbol)));
+{   symbol * p = (symbol *) (HEAD + (char *) malloc(HEAD + (CREATE_SIZE + 1) * sizeof(symbol)));
     CAPACITY(p) = CREATE_SIZE;
     SET_SIZE(p, CREATE_SIZE);
     return p;
 }
 
-extern void lose_s(symbol * p) { efree((char *) p - HEAD); }
+extern void lose_s(symbol * p) { free((char *) p - HEAD); }
 
 extern int in_grouping(struct SN_env * z, unsigned char * s, int min, int max)
 {   if (z->c >= z->l) return 0;
@@ -227,7 +227,7 @@ extern int find_among_b(struct SN_env * z, struct among * v, int v_size)
 
 extern symbol * increase_size(symbol * p, int n)
 {   int new_size = n + 20;
-    symbol * q = (symbol *) (HEAD + (char *) emalloc(HEAD + (new_size + 1) * sizeof(symbol)));
+    symbol * q = (symbol *) (HEAD + (char *) malloc(HEAD + (new_size + 1) * sizeof(symbol)));
     CAPACITY(q) = new_size;
     memmove(q, p, CAPACITY(p) * sizeof(symbol)); lose_s(p); return q;
 }
