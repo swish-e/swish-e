@@ -21,6 +21,9 @@ and searching logic, better filter code, and the ability to index from any data 
 
 Swish-e is not a "turn-key" indexing and searching solution.  The Swish-e distribution contains
 most of the parts to create such a system, but you need to put the parts together as best meets your needs.
+This gives you the power to index and search your documents the way you wish and to seemlessly integrate
+a search engine into your web site or application.
+
 You will need to configure Swish-e to index your documents, create an index by running Swish-e,
 and setup an interface such as a CGI script (a script is included).  Swish uses helper programs
 to index documents of types that Swish-e cannot natively index.  These programs may need to be installed
@@ -51,7 +54,7 @@ Follows Robots Exclusion Rules (including META tags).
 
 =item *
 
-Use an external program to supply documents to Swish-e, such as an
+Can use an external program to supply documents to Swish-e, such as an
 advanced spider for your web server or a program to read and format
 records from a relational database.
 
@@ -105,12 +108,14 @@ Index file is portable between platforms.
 
 =item *
 
-A Swish-e library is provided to allow embedding Swish-e into your applications.
+A Swish-e library is provided to allow embedding Swish-e into your applications for
+very fast searching. 
 A Perl module is available that provides a standard API for accessing Swish-e.
 
 =item *
 
-Includes example search scripts
+Includes example search script with context summaries and search term and phrase highlighting.
+Can be used with popular Perl templating systems.
 
 =item *
 
@@ -144,6 +149,7 @@ this site.
 Read the L<INSTALL|INSTALL> page.
 
 Building from source is recommended.  On most platforms Swish-e should build without problems.
+A list of platforms where Swish-e has been build can be found in the L<INSTALL|INSTALL> page.
 Information on building for VMS and Win32 can be found in sub-directories of the C<src> directory.
 Check the Swish-e site for information about binary distributions (such as for Windows).
 
@@ -153,6 +159,9 @@ of questions that you might someday ask.
 
 Problems or questions about installing Swish-e should be directed to the Swish-e discussion list (see the
 Swish-e web site at http://Swish-e.org).
+
+Please read C<Where do I get help with Swish-e?> below before posting any questions to the
+Swish-e list.
 
 
 =head1 The Swish-e Documentation
@@ -306,13 +315,23 @@ Documentation for using F<swish.cgi> are included within the script.  Type:
 
     perldoc example/swish.cgi
 
-from the top-level directory where the Swish-e distribution was unpacked.    
+from the top-level directory where the Swish-e distribution was unpacked.
+
+=item filters/
+
+The F<filters> directory contains Perl modules to convert documents from a format
+that Swish-e cannot index directly (pdf) to something that Swish-e can index (HTML).
+The modules simply make it easy to add filtering to external programs or to files
+indexed when spidering a remote web site.
+
+See the F<filters/README> file form more information.
 
 =item filter-bin/
 
-Sample programs to use with Swish-e's "filters".  Examples include PDF,
-MS Word, and binary strings filters.
-Filters often require installing separate document conversion programs.
+Sample programs to use with Swish-e's C<FileFilter> feature.  The C<FileFilter>
+allows running an external program to filter or convert documents before indexing.
+Examples include PDF, MS Word, and binary strings filters.
+Filters often require installing separate document conversion programs (e.g. catdoc or pdftotext).
 
 =item html/
 
@@ -386,7 +405,7 @@ Contact the Swish-e list for questions.
 
 =head1 Swish-e's History
 
-SWISH was created by Kevin Hughes to fill the need of the growing number
+SWISH was created by Kevin Hughes circa 1994 to fill the need of the growing number
 of Web administrators on the Internet - many of the indexing systems were
 not well documented, were hard to use and install, and were too complex
 for their own good. The system was widely used for several years, long

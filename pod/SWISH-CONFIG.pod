@@ -147,7 +147,7 @@ L<ConvertHTMLEntities|/"item_ConvertHTMLEntities"> [YES|no]
 
 =item *
 
-L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML|WML]
+L<DefaultContents|/"item_DefaultContents"> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
 
 =item *
 
@@ -259,7 +259,7 @@ L<IndexComments|/"item_IndexComments"> [YES|no]
 
 =item *
 
-L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|WML|TXT2|HTML2|XML2]  *file extensions*
+L<IndexContents|/"item_IndexContents"> [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file extensions*
 
 =item *
 
@@ -790,7 +790,7 @@ Examples:
     ReplaceRules remove "\.c"  # ERROR! "\." -> "." and is *any char*
     
 
-=item IndexContents [TXT|HTML|XML|WML|TXT2|HTML2|XML2]  *file extensions*
+=item IndexContents [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]  *file extensions*
 
 The C<IndexContents> directive assigns one of Swish-e's document parsers
 to a document, based on the its extension.  Swish-e currently knows how
@@ -799,26 +799,31 @@ to parse TXT, HTML, and XML documents.
 The XML2, HTML2, and TXT2 parsers are currently only available when
 Swish-e is configured to use libxml2.
 
+You may use XML*, HTML*, and TXT* to select the parser automatically.
+If libxml2 is installed then it will be used to parse the content.  Otherwise,
+Swish-e's internal parsers will be used.
+
 Documents that are not assigned a parser with C<IndexContents> will, by
-default, use the HTML parser.  The C<DefaultContents> directive may be
+default, use the HTML2 parser if libxml2 is installed, otherwise will
+use Swish-e's internal haml parser.  The C<DefaultContents> directive may be
 used to assign a parser to documents that do not match a file extension
 defined with the C<IndexContents> directive.
 
 Example:
 
-    IndexContents HTML .htm .html .shtml
-    IndexContents TXT  .txt .log .text
-    IndexContents XML  .xml
+    IndexContents HTML* .htm .html .shtml
+    IndexContents TXT*  .txt .log .text
+    IndexContents XML*  .xml
 
-HTML is the default type for all files, unless otherwise specified
+HTML* is the default type for all files, unless otherwise specified
 (and this default can be changed by the B<DefaultContents> directive.
 Swish-e parses titles from HTML files, if available, and keeps track
 of the context of the text for context searching (see C<-t> in
-L<SWISH-RUN|SWISH-RUN>).  HTML and XML files use different tag formats
-for B<MetaNames> and B<PropertyNames>.
+L<SWISH-RUN|SWISH-RUN>).
 
-If using filters to convert documents you should include those extensions,
-too.  For example, if using a filter to conver .pdf to .html, you need
+If using filters (with the C<FileFilter> directive)
+to convert documents you should include those extensions,
+too.  For example, if using a filter to convert .pdf to .html, you need
 to tell Swish-e that .pdf should be indexed by the internal HTML parser:
 
     FileFilter  .pdf   pdf2html
@@ -829,13 +834,17 @@ See also L<Document Filter Directives|/"Document Filter Directives">.
 B<Note:> Some of this may be changed in the future to use content-types
 instead of file extensions.  See L<SWISH-3.0|SWISH-3.0>
 
-=item DefaultContents [TXT|HTML|XML|WML|TXT2|HTML2|XML2]
+=item DefaultContents [TXT|HTML|XML|TXT2|HTML2|XML2|TXT*|HTML*|XML*]
 
 This sets the default parser for documents that are not specified in
 B<IndexContents>. If not specified the default is HTML.
 
 The XML2, HTML2, and TXT2 parsers are currently only available when
 Swish-e is configured to use libxml2.
+
+You may use XML*, HTML*, and TXT* to select the parser automatically.
+If libxml2 is installed then it will be used to parse the content.  Otherwise,
+Swish-e's internal parsers will be used.
 
 
 Example:
@@ -2310,7 +2319,18 @@ file names are checked.  Start with very simple tests!
 
 =head2 Directives for the HTTP Access Method Only
 
-These directives are available when using the HTTP Access Method of indexing.
+The HTTP Access method is enabled by the "-S http" switch when indexing.  It works by
+running a Perl program called SwishSpider which fetches documents from a web server.
+
+Only text files (content-type of "text/*") are indexed with the HTTP Access Method.
+Other document types (e.g. PDF or MSWord) may be indexed as well.  The SwishSpider will
+attempt to make use of the SWISH::Filter module (included with the Swish-e distribution) to
+convert documents into a format that Swish-e can index.
+
+Note: The -S prog method of spidering (using spider.pl) can be a replacement for the -S http method.
+It offers more configuration options and better spidering speed.
+
+These directives below are available when using the HTTP Access Method of indexing.
 
 =over 4
 
@@ -2416,6 +2436,11 @@ using a configuration file:
 
 And the spider program will use default settings for spidering those sites.
 
+Swish-e can read documents from standard input, so another way to run an external program
+with parameters is:
+
+    ./spider.pl spider.conf | ./swish-e -S prog -i stdin
+
 =back
 
 B<Notes when using MS Windows>
@@ -2455,15 +2480,39 @@ program.
 =head2 Document Filter Directives
 
 Internally, Swish-e knows how to parse only text, HTML, and XML documents.
-With Swish-e filters you can index other types of documents.  For example,
+With "filters" you can index other types of documents.  For example,
 if all your web pages are in gzip format a filter can uncompress these
 on the fly for indexing.
+
+There are two suggested methods for filtering.
+
+=head3 Filtering with SWISH::Filter
+
+The Swish-e distribution includes a Perl module called SWISH::Filter and individual
+filters located in the F<filters> directory.  This system uses plug-in filters to
+extend the types of documents that Swish-e can index.  The plug-in filters do not
+actually do the filtering, but rather provide a standard interface for accessing programs that
+can filter or convert documents.  The programs that do the filtering are not part of
+the Swish-e distribution; they must be downloaded and installed separately.
+
+The advantage of this method is that new filtering methods can be installed easily.
+
+This system is designed to work the the -S http and -prog methods, but may also be used
+with the C<FileFilter> feature and -S fs indexing method.  See F<filter-bin/swish_filter.pl> for
+and example.
+
+See the F<filters/README> file for more information.
+
+=head3 Filtering with the FileFilter feature
 
 A filter is an external program that Swish-e executes while processing
 a document of a given type.  Swish-e will execute the filter program
 for each file that matches the file suffix (extension) set in the
 B<FileFilter> or B<FileFilterMatch> directives.  B<FileFilterMatch>
 matches using regular expressions and is described below.
+
+Filters may be used with any type of input method (i.e. -S fs, -S http, or -S prog).
+But because
 
 Swish-e calls the external program passing as B<default> arguments:
 
