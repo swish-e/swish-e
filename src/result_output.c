@@ -124,7 +124,7 @@ void freeModule_ResultOutput (SWISH *sw)
 
 
    efree (sw->opt.stdResultFieldDelimiter);     /* -d :free swish 1.x delimiter */
-  /* was not emalloc!# efree (sw->opt.extendedformat);              /* -x stuff */
+  /* was not emalloc!# efree (sw->opt.extendedformat);               -x stuff */
 
 
    l = sw->resultextfmtlist;	                  /* free ResultExtFormatName */
@@ -196,6 +196,7 @@ int cmdlineModule_ResultOutput_d (SWISH *sw, char opt, char **args)
 
  //$$$ still to do...
  //$$$ move code from swish.c
+ return 0;  /* quiet a warning */
 
 
 }
