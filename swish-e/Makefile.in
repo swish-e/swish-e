@@ -138,7 +138,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = example html man src tests
+SUBDIRS = filters prog-bin example html man src tests
 
 @BUILDDOCS_TRUE@docdir = $(datadir)/doc/$(PACKAGE)
 
@@ -205,13 +205,7 @@ filter_dir = \
     filter-bin/README \
     filter-bin/swish_filter.pl \
     filter-bin/_binfilter.sh \
-    filter-bin/_pdf2html.pl \
-    filters/README \
-    filters/SWISH/Filter.pm \
-    filters/SWISH/Filters/Doc2txt.pm \
-    filters/SWISH/Filters/Pdf2HTML.pm \
-    filters/SWISH/Filters/ID3toHTML.pm \
-    filters/SWISH/Filters/XLtoHTML.pm
+    filter-bin/_pdf2html.pl
 
 
 perl_dir = \
@@ -227,21 +221,6 @@ perl_dir = \
     perl/t/first.html \
     perl/t/second.html \
     perl/t/third.html
-
-
-libexec_SCRIPTS = prog-bin/spider.pl
-
-prog_bin_dir = \
-    prog-bin/README \
-    prog-bin/file.pl \
-    prog-bin/DirTree.pl \
-    prog-bin/spider.pl \
-    prog-bin/SwishSpiderConfig.pl \
-    prog-bin/pdf2xml.pm \
-    prog-bin/pdf2html.pm \
-    prog-bin/doc2txt.pm \
-    prog-bin/MySQL.pl \
-    prog-bin/index_hypermail.pl
 
 
 pod_dir = \
@@ -305,8 +284,8 @@ rpm_dir = \
 
 
 EXTRA_DIST = \
-    $(config_dir) $(conf_dir) $(doc_dir) $(filter_dir) $(perl_dir) \
-    $(prog_bin_dir) $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
+    $(config_dir) $(conf_dir) $(doc_dir) $(perl_dir) \
+    $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) \
     win32.nsi \
     win32src.nsi
@@ -316,8 +295,6 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
 CONFIG_CLEAN_FILES = doc/Makefile perl/Makefile.PL rpm/swish-e.spec
-SCRIPTS = $(libexec_SCRIPTS)
-
 DIST_SOURCES =
 DATA = $(doc_DATA)
 
@@ -357,26 +334,6 @@ perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/perl/Makefile.PL.i
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 rpm/swish-e.spec: $(top_builddir)/config.status $(top_srcdir)/rpm/swish-e.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-libexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-install-libexecSCRIPTS: $(libexec_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(libexecdir)
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f"; \
-	    $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f; \
-	  else :; fi; \
-	done
-
-uninstall-libexecSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f $(DESTDIR)$(libexecdir)/$$f"; \
-	  rm -f $(DESTDIR)$(libexecdir)/$$f; \
-	done
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -540,7 +497,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/conf $(distdir)/conf/stopwords $(distdir)/config $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/filter-bin $(distdir)/filters $(distdir)/filters/SWISH $(distdir)/filters/SWISH/Filters $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/prog-bin $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/vms/sprintf_2_2 $(distdir)/src/win32
+	$(mkinstalldirs) $(distdir)/conf $(distdir)/conf/stopwords $(distdir)/config $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/vms/sprintf_2_2 $(distdir)/src/win32
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -651,10 +608,10 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(SCRIPTS) $(DATA)
+all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs) $(DESTDIR)$(libexecdir) $(DESTDIR)$(docdir)
+	$(mkinstalldirs) $(DESTDIR)$(docdir)
 
 install: install-recursive
 install-exec: install-exec-recursive
@@ -699,7 +656,7 @@ info-am:
 
 install-data-am: install-docDATA
 
-install-exec-am: install-libexecSCRIPTS
+install-exec-am:
 
 install-info: install-info-recursive
 
@@ -724,8 +681,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-docDATA uninstall-info-am \
-	uninstall-libexecSCRIPTS
+uninstall-am: uninstall-docDATA uninstall-info-am
 
 uninstall-info: uninstall-info-recursive
 
@@ -738,16 +694,14 @@ uninstall-info: uninstall-info-recursive
 	install-am install-data install-data-am install-data-recursive \
 	install-docDATA install-exec install-exec-am \
 	install-exec-recursive install-info install-info-am \
-	install-info-recursive install-libexecSCRIPTS install-man \
-	install-recursive install-strip installcheck installcheck-am \
-	installdirs installdirs-am installdirs-recursive \
-	maintainer-clean maintainer-clean-generic \
-	maintainer-clean-recursive mostlyclean mostlyclean-generic \
-	mostlyclean-libtool mostlyclean-recursive pdf pdf-am \
-	pdf-recursive ps ps-am ps-recursive tags tags-recursive \
-	uninstall uninstall-am uninstall-docDATA uninstall-info-am \
-	uninstall-info-recursive uninstall-libexecSCRIPTS \
-	uninstall-recursive
+	install-info-recursive install-man install-recursive \
+	install-strip installcheck installcheck-am installdirs \
+	installdirs-am installdirs-recursive maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
+	mostlyclean-generic mostlyclean-libtool mostlyclean-recursive \
+	pdf pdf-am pdf-recursive ps ps-am ps-recursive tags \
+	tags-recursive uninstall uninstall-am uninstall-docDATA \
+	uninstall-info-am uninstall-info-recursive uninstall-recursive
 
 @BUILDDOCS_TRUE@INSTALL: $(top_srcdir)/pod/INSTALL.pod
 @BUILDDOCS_TRUE@	-rm -f $(top_srcdir)/INSTALL

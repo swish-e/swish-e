@@ -145,26 +145,48 @@ server, or convert documents from one format to another (e.g. pdf to html).  Or,
 you can simply use it to read the files of the file system (like C<-S fs>), yet provide
 you with full control of what files are indexed.
 
-The external program name to run is passed to swish either by the L<IndexDir|SWISH-CONFIG/"item_IndexDir"> directive,
-or via the C<-i> option.  Additional parameters may be passed to the external program
-via the L<SwishProgParameters|SWISH-CONFIG/"item_SwishProgParameters"> directive.
+The external program name to run is passed to swish either by the
+L<IndexDir|SWISH-CONFIG/"item_IndexDir"> directive, or via the C<-i> option.  
+
+The program specified should be an absolute path as swish-e will attempt to stat() the
+program to make sure it exists.  Swish does this to help in error reporting.
+
+If the program specified with -i or IndexDir is not an absolute path (i.e. does not start
+with "/" or ".") then swish-e will prepend the "libexecdir" directory defined during
+configuration.  Typically, libexecdir is set to "$prefix/lib/swish-e"
+(/usr/local/lib/swish-e), but is platform and installation dependent.  Running swish-e -h
+will report the directory.
+
+For example, the -S prog program "spider.pl" is a Perl helper program for use with -S prog
+and is installed in libexecdir.
+
+    IndexDire spider.pl
+    SwishProgParameters default http://localhost/index.html
+
+and swish-e will find spider.pl in libexecdir.
+
+Additional parameters may be passed to the external program via the
+L<SwishProgParameters|SWISH-CONFIG/"item_SwishProgParameters"> directive.
+In the example above swish-e will pass two parameters to spider.pl, "default" and 
+"http://localhost/index.html".
 
 A special name "stdin" may be used with C<-i> or L<IndexDir|SWISH-CONFIG/"item_IndexDir">
-which tells swish to read from standard input instead of from an external program.  See example below.
+which tells swish to read from standard input instead of from an external program.  See
+example below.
 
 The external program prints to standard output (which swish captures)
 a set of headers followed by the content of the file to index.  The output looks similar to
 an email message or a HTTP document returned by a web server in that it includes name/value pairs
 of headers, a blank line, and the content.
 
-The content length is determined by a content-length header
-supplied to swish by the program; there is no "end of record" character or flag sent between documents.
-Therefore, it is critical that the content-length header is correct.  This is a common source of errors.
+The content length is determined by a content-length header supplied to swish by the
+program; there is no "end of record" character or flag sent between documents. Therefore, it
+is critical that the content-length header is correct.  This is a common source of errors.
 
-One advantage of this method (over using filters, for example) is that the external program is run only once
-for the entire indexing job, instead of once for every document.  This avoids forking and creating
-a new process for every document, and makes a huge difference when your external program is something like
-perl that has a large startup cost.
+One advantage of this method (over using filters, for example) is that the external program
+is run only once for the entire indexing job, instead of once for every document.  This
+avoids forking and creating a new process for every document, and makes a huge difference
+when your external program is something like perl that has a large startup cost.
 
 Here's a simple example written in Perl:
 
@@ -288,8 +310,14 @@ in a config file and running
 
     % ./swish-e -S prog -c swish.conf
 
-This gives an easy way to run swish without a configuration file
-with a C<-S prog> program that requires parameters.
+This gives an easy way to run swish without a configuration file with a C<-S prog> program
+that requires parameters.  It also means you can capture data to a file and then index
+more once with the same data:
+
+    % ./example.pl /path/to/data --count=1000 > docs.txt
+    % cat docs.txt | ./swish-e -S prog -i stdin -c normal_index
+    % cat docs.txt | ./swish-e -S prog -i stdin -c fuzzy_index
+    
 
 Using "stdin" might also be useful for programs that call swish (instead of swish calling the
 program).

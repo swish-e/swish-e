@@ -10,6 +10,21 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item * Use SWISH::Filter by default with spider.pl
+
+spider.pl is installed in the libexecdir directory as well as the SWISH::Filter modules. 
+PDF, MS Word, MP3, and XML documents will be indexed automatically if the required helper
+applications (e.g. catdoc, pdftotext) or scripts (e.g. MP3::Tag) are installed.
+
+Swish also knows about libexecdir, so you you specify a relative path with -S prog
+swish-e will look for the program in libexecdir.  This is mostly for spider.pl so
+indexing only requires:
+
+    IndexDir spider.pl
+    SwishProgParameters default http://localhost/index.html
+
+And swish-e will find spider.pl and SWISH::Filter will be used to convert docs.
+
 =item * Fixed Document-Type bug
 
 Document-Type was not being reset after set input from a -S prog program causing

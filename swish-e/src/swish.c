@@ -322,7 +322,11 @@ static void    usage()
     printf("         -k : Print words starting with a given char.\n");
     printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("\n");
-    printf("version: %s  docs: http://swish-e.org\n", VERSION);
+#ifdef libexecdir
+    printf("version: %s\n docs: http://swish-e.org\n Scripts and Modules at: (libexecdir) = %s\n", VERSION, libexecdir);
+#else
+    printf("version: %s\n docs: http://swish-e.org\n", VERSION);
+#endif
     exit(1);
 }
 

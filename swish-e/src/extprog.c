@@ -112,17 +112,35 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 
 
     /* get total length of configuration parameters */
-
-    total_len = strlen(prog);
-
+    total_len = 0;
     while (progparameterslist)
     {
         total_len += strlen(progparameterslist->line) + 1; /* separate by spaces */
         progparameterslist = progparameterslist->next;
     }
 
+
+#ifdef libexecdir
+    total_len += strlen( libexecdir ) + 1;
+#endif
+
+    total_len += strlen(prog);
+
     cmd = emalloc(total_len + 20);
-    strcpy(cmd, prog);
+    cmd[0] = '\0';
+
+/* Prefix libexecdir if path does not start with a "." or "/" */
+#ifdef libexecdir
+    if ( prog[0] != '/' && prog[0] != '.' )
+    {
+        strcat( cmd, libexecdir );
+        if ( cmd[ strlen( cmd ) - 1 ]  != '/' ) 
+           strcat( cmd, "/" );
+    }
+#endif
+
+
+    strcat(cmd, prog);
 
     normalize_path( cmd );  /* for stat calls */
 
