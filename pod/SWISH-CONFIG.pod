@@ -380,13 +380,14 @@ the file F<index.swish-e> in the current directory.
 
 =back
 
-B<The following items are currently not available until Swish can parse a configuration
-file while searching>
+B<NOTE>: The following items are currently not available.
+These items require swish to parse the configuration file while searching.
+
 
 =over 4
 
 =item EnableAltSearchSyntax [yes|NO]
-    
+
 Enable alternate search syntax.
 Allows the usage of a basic "Altavista(c)", "Lycos(c)", etc. like search syntax.
 This means a search query can contain "+" and "-" as syntax parameter.
@@ -397,7 +398,7 @@ Example:
     "+"  = following word has to be in all found documents
     "-"  = following word may not be in any document found
     " "  = following word will be searched in documents
-  
+
 =item SwishSearchOperators <and-word> <or-word> <not-word>
 
 Using this config directive you can change the boolean search operators of
@@ -499,7 +500,6 @@ The C<-S> command line argument is used to select the file access method.
     swish-e -c swish.config -S fs    - file system
     swish-e -c swish.config -S http  - internal http spider
     swish-e -c swish.config -S prog  - external program of any type
-    
 
 For the B<File system> method of access B<IndexDir> is a
 space-separated list of files and directories to index.
@@ -523,7 +523,6 @@ Examples:
     IndexDir ./index.html ./page1.html ./page2.html
     # and index this directory, too
     IndexDir ../public_html
-    
 
 For the B<HTTP> method of access specify the URL's from which
 you want the spidering to begin.
@@ -538,7 +537,7 @@ Be well aware that some sites do not appreciate spidering and may block your IP 
 the remote site before spidering their web site.
 More information about spidering can be found in L<Directives for the HTTP Access Method Only|/"Directives for the HTTP Access Method Only"> below.
 
-For the C<prog> method of access B<IndexDir> specifies the path to the program(s) to execute.
+For the L<prog|SWISH-RUN/"item_prog"> method of access B<IndexDir> specifies the path to the program(s) to execute.
 The external program must correctly format the documents being passed back to swish.  Examples
 of external programs are provided in the F<prog-bin> directory.
 
@@ -564,7 +563,11 @@ Example:
 
 Note: This feature only works for files that would be indexed in absense of the
 C<NoContents> directive.  That is, if you use C<IndexOnly> then you must specify
-the same suffixes in C<IndexOnly> as in C<NoContents>.
+in C<IndexOnly> the same suffixes listed in C<NoContents>.
+
+A C<-S prog> program may set the C<No-Contents:> header (to anything)
+to enable this feature for a specific document (althought it would be smarter
+for the C<-S prog> program to simply only send the pathname or title to be indexed.
 
 =item ReplaceRules [replace|remove|prepend|append|regex]
 
@@ -1617,6 +1620,10 @@ servers.
 This section details the directives that are only available for the "prog" document
 source feature of swish.  The "prog" access method runs an external program that "feeds"
 documents to swish.  This allows indexing and filtering of documents from any source.
+
+See L<prog - general purpose access method|SWISH-RUN/"item_prog"> in
+the SWISH-RUN man page for more information.
+
 
 A number of example programs for use with the "prog" access method are provided in the F<prog-bin> directory.
 Please see those example if you have questions about implementing a "prog" input program.
