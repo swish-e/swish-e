@@ -48,8 +48,7 @@ struct Handle_DBNative
    long   *fileoffsetarray;
    int     fileoffsetarray_maxsize;
 
-   int lasthashval;
-   long lastwordID; 
+   int lasthashval[SEARCHHASHSIZE];
    long nextwordoffset;
    long lastsortedindex;
 

@@ -698,27 +698,6 @@ struct swline *expandphrase(struct swline *sp, char delimiter)
 
 
 
-/*
-  -- some support functions reading header data
-*/
-
-
-void    ReadHeaderLookupTable(int table[], int table_size, FILE * fp)
-{
-    int     i,
-            x;
-
-    for (i = 0; i < table_size; i++)
-    {
-        uncompress1(x, fp);
-        table[i] = x - 1;
-    }
-}
-
-
-
-
-
 /* Print the buzzwords */
 void    printheaderbuzzwords(SWISH *sw, IndexFILE * indexf)
 {
@@ -756,7 +735,6 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
     int     lenword;
     RESULT *rp,
            *newrp;
-    FILE   *fp = (FILE *) indexf->DB;
 
     /*
      * The andLevel is used to help keep the ranking function honest
@@ -870,7 +848,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
             continue;
         }
 
-        rp = (RESULT *) operate(sw, rp, rulenum, word, fp, metaID, andLevel, indexf);
+        rp = (RESULT *) operate(sw, rp, rulenum, word, indexf->DB, metaID, andLevel, indexf);
 
         if (parseone)
         {
@@ -891,7 +869,7 @@ RESULT *parseterm(SWISH * sw, int parseone, int metaID, IndexFILE * indexf, stru
 ** it calls getfileinfo(), which does the real searching.
 */
 
-RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, FILE * fp, int metaID, int andLevel, IndexFILE * indexf)
+RESULT *operate(SWISH * sw, RESULT * rp, int rulenum, char *wordin, void *DB, int metaID, int andLevel, IndexFILE * indexf)
 {
 /* int i, found; indexchars stuff removed */
     RESULT *newrp,

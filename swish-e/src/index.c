@@ -1259,7 +1259,7 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
             len1,
             len4,
             lookup_path;
-    char   *buffer,
+    unsigned char   *buffer,
            *p;
     char   *buf1;
     struct file *fi;
