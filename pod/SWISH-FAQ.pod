@@ -844,14 +844,12 @@ documents in you web area of the file system.  This avoids the overhead
 of spidering a web server and is much faster.  (C<-S fs> is the default
 method if C<-S> is not specified).
 
-If this is impossible (the web server is not local, or documents
-are dynamically generated), Swish-e provides two methods of spidering.
-First, it includes the http method of indexing C<-S http>. A number
-of special configuration directives are available that control spidering
-(see L<Directives for the HTTP Access Method Only|/"Directives for the
-HTTP Access Method Only">).  A perl helper script (swishspider) is
-included in the F<src> directory to assist with spidering web servers.
-There are example configurations for spidering in the F<conf> directory.
+If this is impossible (the web server is not local, or documents are dynamically
+generated), Swish-e provides two methods of spidering. First, it includes the http method
+of indexing C<-S http>. A number of special configuration directives are available that
+control spidering (see L<SWISH-CONFIG/"Directives for the HTTP Access Method Only">).  A perl helper
+script (swishspider) is included in the F<src> directory to assist with spidering web
+servers. There are example configurations for spidering in the F<conf> directory.
 
 As of Swish-e 2.2, there's a general purpose "prog" document source where
 a program can feed documents to it for indexing.  A number of example

@@ -144,7 +144,8 @@ SUBDIRS = filters prog-bin conf filter-bin example html man src tests
 
 @BUILDDOCS_TRUE@doc_DATA = \
 @BUILDDOCS_TRUE@	INSTALL \
-@BUILDDOCS_TRUE@	README
+@BUILDDOCS_TRUE@	README \
+@BUILDDOCS_TRUE@        README.cvs
 
 
 config_dir = \
@@ -677,6 +678,7 @@ uninstall-info: uninstall-info-recursive
 	pdf pdf-am pdf-recursive ps ps-am ps-recursive tags \
 	tags-recursive uninstall uninstall-am uninstall-docDATA \
 	uninstall-info-am uninstall-info-recursive uninstall-recursive
+
 
 @BUILDDOCS_TRUE@INSTALL: $(top_srcdir)/pod/INSTALL.pod
 @BUILDDOCS_TRUE@	-rm -f $(top_srcdir)/INSTALL

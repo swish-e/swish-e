@@ -192,7 +192,7 @@ Here's a simple example written in Perl:
 
     #!/usr/local/bin/perl -w
     use strict;
-    
+
     # Build a document
     my $doc = <<EOF;
     <html>
@@ -204,22 +204,21 @@ Here's a simple example written in Perl:
         </body>
     </html>
     EOF
-    
-    
+
     # Prepare the headers for swish
     my $path = 'Example.file';
     my $size = length $doc;
     my $mtime = time;
-    
+
     # Output the document (to swish)
     print <<EOF;
     Path-Name: $path
     Content-Length: $size
     Last-Mtime: $mtime
     Document-Type: HTML*
-    
+
     EOF
-    
+
         print $doc;
 
 The external program passes to swish a header.  The header is separated from
@@ -317,7 +316,7 @@ more once with the same data:
     % ./example.pl /path/to/data --count=1000 > docs.txt
     % cat docs.txt | ./swish-e -S prog -i stdin -c normal_index
     % cat docs.txt | ./swish-e -S prog -i stdin -c fuzzy_index
-    
+
 
 Using "stdin" might also be useful for programs that call swish (instead of swish calling the
 program).
@@ -348,10 +347,8 @@ C<SwishProgParameters> to name the file.
 
 Swish will replace the forward slashes with backslashes before running the command specified with
 C<IndexDir>.  Swish uses the popen(3) command which passes the command through the shell.
-    
 
 =back
-
 
 =item -f *indexfile* (index file)
 
@@ -428,7 +425,7 @@ indexes that contain just files added since the last full index was created of a
 Example (bad example)
 
     swish-e -c config.file -N index.swish-e -f index.new
-   
+
 This will index as normal, but only files with a modified date newer
 than F<index.swish-e> will be indexed.
 
@@ -836,7 +833,6 @@ If you ommit the sub-format, the following formats are used:
     Integer type:      "%d"  (like printf int)
     Float type:        "%f"  (like printf double) 
     Date type:         "%Y-%m-%d %H:%M:%S" (like strftime)
-                                   
 
 B<Text in "formatstring" or "propfmtstr":>
 

@@ -5,12 +5,12 @@ Swish-e is available via cvs from SourceForge.  See http://swish-e.org for
 links to SourceForge and instructions downloading via cvs.
 
 Much of the documentation is not stored in cvs, but rather built from source 
-files (mostly .pod files in the pod directory).  When using cvs you will
+files (mostly .pod files in the pod directory).  When using cvs you *may*
 need to "bootstrap" the documentation creation system.  This only needs to 
-be done once.
+be done once, *if at all*.
 
-After checking out the cvs code, change directory to the distribution 
-directory (typically "swish-e") and run:
+If you seem to have problems building due to the documentaiton after checking out the cvs
+code, change directory to the distribution directory (typically "swish-e") and run:
 
    ./configure
    cd docs

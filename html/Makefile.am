@@ -1,38 +1,50 @@
-pod_dir = $(srcdir)/../pod
-version_file = $(srcdir)/../doc/Version.pm
+pod_dir 	= $(top_srcdir)/pod
+version_file 	= $(top_srcdir)/doc/Version.pm
+timestamp 	= $(srcdir)/timestamp
+
+htmldir 	= $(datadir)/doc/$(PACKAGE)/html
+imagedir 	= $(datadir)/doc/$(PACKAGE)/html/images
 
 if BUILDDOCS
-htmldir = $(datadir)/doc/$(PACKAGE)/html
-imagedir = $(datadir)/doc/$(PACKAGE)/html/images
 
-html_DATA = \
-	CHANGES.html \
-	INSTALL.html \
-	README.html \
-	SWISH-3.0.html \
-	SWISH-BUGS.html \
-	SWISH-CONFIG.html \
-	SWISH-FAQ.html \
-	SWISH-LIBRARY.html \
-	SWISH-RUN.html \
-	SWISH-SEARCH.html \
-	API.html \
-	spider.html \
-	swish.html \
-	Filter.html \
-	index.html \
-	index_long.html \
-        style.css
+# List of all files that are built by the doc system
 
-image_DATA = \
-	images/dotrule1.gif \
-	images/swish2b.gif \
-	images/swish2.gif \
-	images/swishbanner1.gif \
-	images/swish.gif
+# This is a pain because for non-GNU Make (like on BSD) must specify
+# the srcdir for these targets, which means they must be separated by
+# directory -- and that means need to write things twice below.  All has to do with VPATH...
+
+targets = \
+	$(srcdir)/CHANGES.html \
+	$(srcdir)/INSTALL.html \
+	$(srcdir)/README.html \
+	$(srcdir)/SWISH-3.0.html \
+	$(srcdir)/SWISH-BUGS.html \
+	$(srcdir)/SWISH-CONFIG.html \
+	$(srcdir)/SWISH-FAQ.html \
+	$(srcdir)/SWISH-LIBRARY.html \
+	$(srcdir)/SWISH-RUN.html \
+	$(srcdir)/SWISH-SEARCH.html \
+	$(srcdir)/API.html \
+	$(srcdir)/spider.html \
+	$(srcdir)/swish.html \
+	$(srcdir)/Filter.html \
+        $(srcdir)/style.css \
+	$(srcdir)/index.html \
+	$(srcdir)/index_long.html
+
+image_targets = \
+	$(srcdir)/images/dotrule1.gif \
+	$(srcdir)/images/swish2b.gif \
+	$(srcdir)/images/swish2.gif \
+	$(srcdir)/images/swishbanner1.gif \
+	$(srcdir)/images/swish.gif
+
 endif
 
-depends = \
+# These are the source files -- if any are newer than the timestamp
+# then the docs need to be rebuilt
+
+source_files = \
 	$(pod_dir)/CHANGES.pod \
 	$(pod_dir)/INSTALL.pod \
 	$(pod_dir)/README.pod \
@@ -48,20 +60,58 @@ depends = \
 	$(top_srcdir)/example/swish.cgi.in \
 	$(top_srcdir)/filters/SWISH/Filter.pm
 
+
+# These are what get installed -- they will also be 
+# a dependency of the all-am target (because of _DATA)
+
+html_DATA  = $(targets)
+image_DATA = $(image_targets)
+
+
+
+# These are all placed in the distribution
+
+EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp)
+
+
+## Here's the work 
+
 if BUILDDOCS
-all-local: $(html_DATA)
 
-$(html_DATA): .html-stamp
-	@if test -f $(srcdir)/$@; then :; else chmod 644 $<; rm -f $<; $(MAKE) .html-stamp; fi
 
-$(version_file): $(top_srcdir)/Makefile.in
-	@echo "updating version file"
-        @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
 
-.html-stamp: $(version_file) $(depends)
-	cd $(srcdir)/../doc && bin/build
-	@touch $(srcdir)/.html-stamp
+# Deal with missing targets - which is the case in a fresh CVS checkout
+# Automake automatically adds this target by the "html_DATA" entry above
+# Touch the time-stamp, but make it very old so any source_file will be newer
+# (is touch -t portable?)
+
+
+$(targets) $(image_targets):
+	@touch -t 197001010000 $(timestamp)
+
+
+
+# Make sure the version is up to date -- the version is in configure.in
+
+$(version_file): $(top_srcdir)/configure.in
+	@echo "updating version file $(version_file) = $(VERSION)"
+	@echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
+	@touch -t 197001010000 $(timestamp)
+
+
+# Need some way to have make check the source files against the timestamp
+
+all-local:  $(version_file) $(timestamp)
+
+
+
+
+
+# If any source files are *newer* than the timestamp then
+# run the "build_docs" program, and then update the timestamp
+
+$(timestamp) : $(source_files)
+	@(cd $(top_srcdir)/doc && bin/build)
+	@touch $(timestamp)
+
 endif
-
-EXTRA_DIST = $(html_DATA) $(image_DATA) .html-stamp
-

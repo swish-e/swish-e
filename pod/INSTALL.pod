@@ -12,7 +12,7 @@ This document also provides instructions on how to get help installing and
 using Swish-e (and the important information you should provide when asking
 for help). Please read these instructions before requesting help on the
 Swish-e discussion list.  
-See L<QUESTIONS AND TROUBLESHOOTING|QUESTIONS AND TROUBLESHOOTING>.
+See L<"QUESTIONS AND TROUBLESHOOTING">.
 
 Although building from source is recommended, some OS distributions (e.g.
 Debian) provide pre-compiled binaries.  Check with your distribution for
@@ -858,7 +858,7 @@ computer at http://localhost/apache_docs/index.html
 
 =over 4
 
-=item 1 Create a Working Directory
+=item 1 Make a Working Directory
 
 Create a directory to store the Swish-e configuration and the Swish-e
 index.
@@ -874,19 +874,19 @@ index.
     #
     # Use spider.pl for indexing (location of spider.pl set at installation time)
     IndexDir spider.pl
-    
+
     # Use spider.pl's default configuration and specify the URL to spider
     SwishProgParameters default http://localhost/apache_docs/index.html
-    
+
     # Allow extra searching by title, path
     Metanames swishtitle swishdocpath
-    
+
     # Set StoreDescription for each parser
     #  to display context with search results
     StoreDescription TXT* 10000
     StoreDescription HTML* <body> 10000
 
-=item 3 Create the Index
+=item 3 Generate the Index
 
 Now run swish-e to create the index:
 
