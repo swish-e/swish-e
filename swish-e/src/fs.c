@@ -376,7 +376,7 @@ int rv = 0;
 StringList *sl=(StringList *)l;
 	if (strcasecmp(sl->word[0], "FileRules")==0) 
 	{
-		if (sl->n>4)
+                if (sl->n>3)
 		{
 			if(strcasecmp(sl->word[1],"path")==0 && strcasecmp(sl->word[2],"contains")==0)
 			{

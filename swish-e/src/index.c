@@ -571,30 +571,38 @@ int parsecomment(SWISH *sw, char *tag, int filenum, int structure, int metaID, i
 ** looking at all word's positions for each automatic stop word
 ** and decrement its position
 */
-int removestops(SWISH *sw, int totalfiles)
+/* 2001/02 jose ruiz - rewritten - all the proccess is made in one pass to achieve
+better performance */
+
+
+int removestops(SWISH *sw)
 {
-int i, j, k, l, m, n, percent, stopwords, stoppos, res;
-LOCATION *lp, *lpstop;
+struct filepos
+{
+	int n;   /* Number of entries per file */
+	int *pos;  /* Store metaID1,position1, metaID2,position2 ..... */
+};
+int i, j, k, m, n, percent, stopwords;
+LOCATION *lp;
 ENTRY *e;
 ENTRY *ep,*ep2;
 ENTRY **estop=NULL;
 int estopsz=0, estopmsz=0;
 int hashval;
 struct swline *sp;
-unsigned char *p;
-int modified,lpstop_metaID,lpstop_filenum,lpstop_index,totalwords;
+int modified,totalwords;
 IndexFILE *indexf=sw->indexlist;
+int totalfiles = getfilecount(indexf);
+struct filepos **filepos=NULL;
+struct filepos *fpos;
 
-        /* Now let's count the number of stopwords!!
+printf("DBG: In removestops\n");fflush(stdout);
+        /* Now let's count the current number of stopwords!!
         */
 
-        for (stopwords=0,hashval = 0; hashval < HASHSIZE; hashval++) {
-                sp = indexf->hashstoplist[hashval];
-                while (sp != NULL) {
-                        stopwords++;
-                        sp = sp->next;
-                }
-        }
+	for (stopwords=0,hashval = 0; hashval < HASHSIZE; hashval++)
+		for(sp = indexf->hashstoplist[hashval];sp;sp=sp->next) 
+			stopwords++;
 
 	totalwords=indexf->header.totalwords;
 
@@ -609,14 +617,15 @@ IndexFILE *indexf=sw->indexlist;
 	}
 		/* this is the easy part: Remove the automatic stopwords from
 		** the hash array */
-        for(i=0;i<SEARCHHASHSIZE;i++)
+	for(i=0;i<SEARCHHASHSIZE;i++)
 	{
 		for(ep2=NULL,ep=sw->hashentries[i];ep;ep=ep->nexthash)
 		{
 			percent = (ep->tfrequency * 100 )/ totalfiles;
-			if (percent >= sw->plimit && ep->tfrequency >= sw->flimit) {
+			if (percent >= sw->plimit && ep->tfrequency >= sw->flimit) 
+			{
 				addStopList(indexf,ep->word);
-					addstophash(indexf,ep->word);
+				addstophash(indexf,ep->word);
 				stopwords++;
 					/* Remove entry from  the hash array */
 				if(ep2) ep2->nexthash=ep->nexthash;
@@ -624,7 +633,8 @@ IndexFILE *indexf=sw->indexlist;
 				totalwords--;
 				sw->entryArray->numWords--;
 				indexf->header.totalwords--;
-				if(estopsz==estopmsz) {  /* More memory? */
+				if(estopsz==estopmsz) 
+				{  /* More memory? */
 					estopmsz*=2;
 					estop=(ENTRY **)erealloc(estop,estopmsz*sizeof(ENTRY *));
 				}
@@ -634,85 +644,141 @@ IndexFILE *indexf=sw->indexlist;
 			} else ep2=ep;
 		}
 	}
+
 		/* If we have automatic stopwords we have to recalculate
 		** word positions */
 	if(estopsz)
 	{
-				/* Now we need to recalculate all positions
-				** of words because we have removed the
-				** word in the index array */
-				/* Sorry for the code but it is the fastest
-				** I could achieve!! */
+			/* Build an array with all the files positions to be removed */
+		filepos=(struct filepos **)emalloc(totalfiles*sizeof(struct filepos *));
+		for(i=0;i<totalfiles;i++) filepos[i]=NULL;
 		for(i=0;i<estopsz;i++) 
 		{
 			e=estop[i];
-			if(sw->verbose) printf("\nRemoving word #%d '%s' (%d occurrences)\n",i,e->word,e->u1.max_locations);
-       		 	for(j=0;j<SEARCHHASHSIZE;j++)
+			for(j=0;j<e->u1.max_locations;j++)
 			{
-				for(ep=sw->hashentries[j];ep;ep=ep->nexthash)
+				if(j<e->currentlocation)
+					lp=uncompress_location(sw,indexf,(unsigned char *)e->locationarray[j]);
+				else
+					lp=e->locationarray[j];
+				if(!filepos[lp->filenum-1])
 				{
-					if(sw->verbose) printf("Computing new positions for %s (%d occurrences)                        \r",ep->word,ep->u1.max_locations);
-					fflush(stdout);
-					for(m=0,modified=0;m<ep->u1.max_locations;m++)
+					fpos = (struct filepos *)emalloc(sizeof(struct filepos));
+					fpos->n = lp->frequency;
+					fpos->pos = (int *) emalloc(fpos->n*2*sizeof(int));
+					for(k=0;k<fpos->n;k++)
 					{
-						if(m<ep->currentlocation)
-							lp=uncompress_location(sw,indexf,(unsigned char *)ep->locationarray[m]);
-						else 
-							lp=ep->locationarray[m];
-						for(n=0;n<e->u1.max_locations;n++)
-						{
-							if(n<e->currentlocation)
-							{
-								p=(unsigned char *)e->locationarray[n];
-								uncompress2(lpstop_index,p);
-								lpstop_metaID=indexf->locationlookup->all_entries[lpstop_index-1]->val[0];
-								uncompress2(lpstop_filenum,p);
-							} else {
-								lpstop_filenum=e->locationarray[n]->filenum;
-								lpstop_metaID=e->locationarray[n]->metaID;
-							}
-							res=lp->filenum-lpstop_filenum;
-							if(res<0) break;
-							if(res==0) {
-								res=lp->metaID-lpstop_metaID;
-								if(res<0) break; 
-								if(res==0)
-						   		{ 
-						      			if(n<e->currentlocation)
-										lpstop=uncompress_location(sw,indexf,(unsigned char *)e->locationarray[n]);
-						      			else
-										lpstop=e->locationarray[n];
-						      			for(k=lpstop->frequency;k;) 
-						         		for(stoppos=lpstop->position[--k],l=lp->frequency;l;) {if(lp->position[--l]>stoppos) lp->position[l]--; else break;}
-									modified=1;
-									if(n<e->currentlocation) efree(lpstop);
-						    		}
-							}
-						}
-						if(m<ep->currentlocation) 
-						{
-					   		if(modified)  
-					   		{
-								efree(ep->locationarray[m]);
-								ep->locationarray[m]=(LOCATION *)compress_location(sw,indexf,lp);
-							} else efree(lp);
-						} 
+						m=k*2;
+						fpos->pos[m++]=lp->metaID;
+						fpos->pos[m]=lp->position[k];
 					}
+					filepos[lp->filenum-1] = fpos;
+				} 
+				else
+				{
+					fpos = filepos[lp->filenum-1];
+					fpos->pos = (int *)erealloc(fpos->pos,(fpos->n+lp->frequency)*2*sizeof(int));
+					for(k=0;k<lp->frequency;k++)
+					{
+						m=(fpos->n+k)*2;
+						fpos->pos[m++]=lp->metaID;
+						fpos->pos[m]=lp->position[k];
+					}
+					fpos->n += lp->frequency;
 				}
 			}
 
-			if(sw->verbose) printf("\n");
 				/* Free Memory used by stopword */
 			efree(e->word);
 			for (m=0;m<e->u1.max_locations;m++)
 			{
 				efree(e->locationarray[m]);
 			}
+			efree(e);
 		}
+			/* sort each file entries by metaname/position */
+		for(i=0;i<totalfiles;i++)
+		{
+			if(filepos[i])
+				qsort(filepos[i]->pos,filepos[i]->n,2*sizeof(int),&icomp2);
+		}
+
+				/* Now we need to recalculate all positions
+				** of words because we have removed the
+				** word in the index array */
+				/* Sorry for the code but it is the fastest
+				** I could achieve!! */
+	 	for(i=0;i<SEARCHHASHSIZE;i++)
+		{
+			for(ep=sw->hashentries[i];ep;ep=ep->nexthash)
+			{
+				if(sw->verbose==3) 
+				{
+					printf("Computing new positions for %s (%d occurrences)                        \r",ep->word,ep->u1.max_locations);
+					fflush(stdout);
+				}
+				for(j=0,modified=0;j<ep->u1.max_locations;j++)
+				{
+					if(j<ep->currentlocation)
+						lp=uncompress_location(sw,indexf,(unsigned char *)ep->locationarray[j]);
+					else 
+						lp=ep->locationarray[j];
+					if(filepos[lp->filenum-1])
+					{
+						fpos=filepos[lp->filenum-1];
+						for(m=0,n=0;m<lp->frequency;m++)
+						{
+								/* Search metaID */
+							for(;n<fpos->n;n++)
+							{
+								if(fpos->pos[n*2]>=lp->metaID) break;
+							}
+							if(n==fpos->n || fpos->pos[n*2]>lp->metaID) break;   /* Not found */
+							k=n;
+							for(;n<fpos->n;n++)
+							{
+								if(fpos->pos[n*2]!=lp->metaID) break;
+								if(fpos->pos[n*2+1]>=lp->position[m]) break;
+							}
+							if(n>k)
+							{
+								modified=1;
+								lp->position[m] -= (n-k);
+							}
+						}
+					}
+
+						/* Restore array of positions to its original state */
+					if(j<ep->currentlocation) 
+					{
+				   		if(modified)  
+				   		{
+							efree(ep->locationarray[j]);
+							ep->locationarray[j]=(LOCATION *)compress_location(sw,indexf,lp);
+						} else efree(lp);
+					}
+				}
+			}
+			if(sw->verbose==3) printf("\n");
+		}
+				/* Free the memory used by the table of files */
+		for(i=0;i<totalfiles;i++)
+		{
+			if(filepos[i])
+			{
+				efree(filepos[i]->pos);
+				efree(filepos[i]);
+			}
+		}
+
 	}
 	efree(estop);
+
+printf("DBG: End removestops\n");fflush(stdout);
+
 	return stopwords;
 }
+
 
 /* This is somewhat similar to the rank calculation algorithm
 ** from WAIS (I think). Any suggestions for improvements?
@@ -1774,11 +1840,11 @@ IndexFILE *indexf=sw->indexlist;
 					/* apply stemming algorithm to the word to index */
 					Stem(&word,&lenword);
 				}
-                                if (indexf->header.applySoundexRules)
-                         	{
-                                   /* apply soundex algorithm to the search term */
-                                      	soundex(word);
-                                }
+				if (indexf->header.applySoundexRules)
+				{
+					/* apply soundex algorithm to the search term */
+					soundex(word);
+				}
 				if (hasokchars(indexf,word))
 				{
 					if (isokword(sw,word,indexf))
@@ -1795,7 +1861,7 @@ IndexFILE *indexf=sw->indexlist;
 						for(k=0;k<numMetaNames;k++)
 						{
 							position[k]++;
-                                			if(bump_position_flag)
+							if(bump_position_flag)
 								position[k]++;
 						}
 						wordcount++;

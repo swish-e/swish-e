@@ -92,10 +92,10 @@ int i;
 	for (i=0; i<HASHSIZE; i++) newnode->hashuselist[i] = NULL;
 	for (i=0; i<256; i++) newnode->keywords[i] = NULL;
 
-        newnode->locationlookup=NULL;
-        newnode->structurelookup=NULL;
-        newnode->structfreqlookup=NULL;
-        newnode->pathlookup=NULL;
+	newnode->locationlookup=NULL;
+	newnode->structurelookup=NULL;
+	newnode->structfreqlookup=NULL;
+	newnode->pathlookup=NULL;
 
 
 		/* Props IDs when searching */
@@ -200,9 +200,12 @@ void init_header(INDEXDATAHEADER *header)
 	header->applyFileInfoCompression = 0;			/* added 2000/01/01 jmruiz */
 	header->ignoreTotalWordCountWhenRanking = 0;    /* added 11/24/98 */
 	header->minwordlimit = MINWORDLIMIT;
-        header->maxwordlimit = MAXWORDLIMIT;
+	header->maxwordlimit = MAXWORDLIMIT;
+	makelookuptable("",header->bumpposcharslookuptable); 
+
 		/* Init indexchars lookuptable */
 	/* makelookuptable(indexchars,header->indexcharslookuptable); indexchars stuff removed */
+
 
       BuildTranslateChars(header->translatecharslookuptable,"",""); 
 }
