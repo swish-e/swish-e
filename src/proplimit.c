@@ -778,7 +778,6 @@ int LimitByProperty( SWISH *sw, IndexFILE *indexf, int filenum )
             int limit = 0;
             propEntry *prop = GetPropertyByFile( sw, indexf, filenum, meta_entry->metaID );
 
-printf("checking manually\n");            
             /* Return true (i.e. limit) if the file's prop is less than the low range */
             /* or if its property is greater than the high range */
             if (
