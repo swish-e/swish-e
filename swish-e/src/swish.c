@@ -174,9 +174,9 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			else {
 				argv++;
 				if(!argv || !argv[0])
-					progerr("Specify the starting char or '*' for all words\n.\n");
+					progerr("Specify the starting char or '*' for all words");
 				else if(strlen(argv[0])>1)
-					progerr("Specify the starting char or '*' for all words\n.\n");
+					progerr("Specify the starting char or '*' for all words");
 				keychar = argv[0][0];
 				argc--;
 			}
@@ -646,11 +646,10 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			case INDEX_FILE_NOT_FOUND:
 				printf("# Name: unknown index\n");
 				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
-				exit(0);
+				exit(-1);
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
-				printf("err: the index file format is unknown\n.\n");
-				exit(0);
+				progerr("the index file format is unknown");
 				break;
 		}
 
@@ -750,10 +749,10 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 			case INDEX_FILE_NOT_FOUND:
 				printf("# Name: unknown index\n");
 				printf("err: could not open index file %s errno: %d\n.\n",sw->indexlist->line,errno);
-				exit(0);
+				exit(-1);
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
-				progerr("err: the index file format is unknown\n.\n");
+				progerr("the index file format is unknown");
 				break;
 		}
 
@@ -766,19 +765,19 @@ struct swline *tmpprops=NULL,*tmpsortprops=NULL;
 		switch(rc) {
 			case INDEX_FILE_NOT_FOUND:
 				printf("# Name: unknown index\n");
-				progerr("err: could not open index file\n.\n");
+				progerr("could not open index file");
 				break;
 			case UNKNOWN_INDEX_FILE_FORMAT:
-				progerr("err: the index file format is unknown\n.\n");
+				progerr("the index file format is unknown");
 				break;
 			case NO_WORDS_IN_SEARCH:
-				progerr("err: no search words specified\n.\n");
+				progerr("no search words specified");
 				break;
 			case WORDS_TOO_COMMON:
-				progerr("err: all search words too common to be useful\n.\n");
+				progerr("all search words too common to be useful");
 				break;
 			case INDEX_FILE_IS_EMPTY:
-				progerr("err: the index file(s) is empty\n.\n");
+				progerr("the index file(s) is empty");
 				break;
 			case UNKNOWN_PROPERTY_NAME_IN_SEARCH_DISPLAY:
 			case UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT:
@@ -839,12 +838,15 @@ void usage()
 {
 	const char* defaultIndexingSystem = "";
 
-	printf("  usage: swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
-	printf("         swish [-P phrase_delimiter] [-x] -w word1 word2 ... [-f file1 file2 ...] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] [-m num] [-t str] [-d delim]\n");
-	printf("         swish -k char [-f file1 file2 ...]\n");
-	printf("         swish -M index1 index2 ... outputfile\n");
-	printf("         swish -D file\n");
-	printf("         swish -V\n");
+	printf(" usage:\n");
+	printf("    swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
+	printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
+	printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
+	printf("          [-m num] [-t str] [-d delim] [-X] [-x output_format]\n");
+	printf("    swish -k (char|*) [-f file1 file2 ...]\n");
+	printf("    swish -M index1 index2 ... outputfile\n");
+	printf("    swish -D [-v 4] -f indexfile\n");
+	printf("    swish -V\n");
 	putchar('\n');
 	printf("options: defaults are in brackets\n");
 
@@ -880,9 +882,10 @@ void usage()
 	printf("         -s : sort by these document properties in the output \"prop1 prop2 ...\"\n");
 	printf("         -d : next param is delimiter. use \"-d dq\" to use a double quote\n");
 	printf("         -P : next param is Phrase delimiter.\n");
-	printf("         -V : prints the current version\n\n");
-	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n\n");
-	printf("         -x : \"Extended Search Hedare\": The search proccess gives more info.\n\n");
+	printf("         -V : prints the current version\n");
+	printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
+	printf("         -x : \"Extended Output Format\": Specify the output format.\n");
+	printf("         -X : \"Extended Search Header\": The search proccess gives more info.\n");
 	printf("         -k : Print words starting with a given char.\n\n");
 	printf("version: %s\n", SWISH_VERSION);
 	printf("   docs: http://sunsite.berkeley.edu/SWISH-E/\n");

@@ -82,9 +82,8 @@ struct metaEntry* e;
 		return NULL;
 	}
 	else {
-		printf ("\nerr: INDEXING FAILURE\n");
-		printf ("err: The metaName %s does not exist in the user config file\n", temp);
-		exit(0);
+		printf ("err: INDEXING FAILURE: The metaName %s does not exist in the user config file\n", temp);
+		exit(-1);
 	}
 	
 }

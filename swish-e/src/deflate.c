@@ -522,7 +522,7 @@ unsigned char **dict;
 		{
 			uncompress1(len,fp);
 			if(len>0xFF)
-				progerr("Internal error in readdeflatepatterns\n.\n");
+				progerr("Internal error in readdeflatepatterns");
 			dict[i]=emalloc(len+1);
 			dict[i][0]=(unsigned char)len;
 			fread(dict[i]+1,len,1,fp);

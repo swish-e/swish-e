@@ -773,7 +773,7 @@ FILE *fp=indexf->fp;
 				indexf->header.applyFileInfoCompression = itmp;
 				break;
 			default:
-				progerr("Severe index error in header\n.\n");
+				progerr("Severe index error in header");
 				break;
 		}
 		uncompress1(id,fp);

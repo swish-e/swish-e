@@ -72,7 +72,7 @@ struct file *fi;
 
 	if(!(sw1 = SwishOpen(file1)))
 	{
-		sw1->errorstr=BuildErrorString(sw1->errorstr, &sw1->lenerrorstr, "Couldn't read the index file \"%s\".\n.\n", file1);
+		sw1->errorstr=BuildErrorString(sw1->errorstr, &sw1->lenerrorstr, "Couldn't read the index file \"%s\".", file1);
 		progerr(sw1->errorstr);
 	}
 
@@ -80,7 +80,7 @@ struct file *fi;
 
 	if(!(sw2 = SwishOpen(file2)))
 	{
-		sw2->errorstr=BuildErrorString(sw2->errorstr, &sw2->lenerrorstr, "Couldn't read the index file \"%s\".\n.\n", file2);
+		sw2->errorstr=BuildErrorString(sw2->errorstr, &sw2->lenerrorstr, "Couldn't read the index file \"%s\".", file2);
 		progerr(sw2->errorstr);
 	}
 	
@@ -444,7 +444,7 @@ FILE *fp=indexf->fp;
 			}
 				/* Severe bug if metaID not found */
 			if(!tmp && metaID!=1)
-				progerr("Merge internal error: Could not translate metaname\n.\n");
+				progerr("Merge internal error: Could not translate metaname");
 			loc->metaID=metaID2;
 
 			if(!ip->u1.max_locations) 
