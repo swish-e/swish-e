@@ -84,15 +84,6 @@ typedef struct {
 struct mergeindexfileinfo *indexfilehashlist[BIGHASHSIZE];
 
 
-
-struct markentry
-{
-    struct markentry *next;
-    int     num;
-};
-struct markentry *markentrylist[BIGHASHSIZE];
-
-
 struct markentryMerge
 {
     struct markentryMerge *next;
@@ -108,67 +99,6 @@ static int     getnew(int num);
 
 
 
-/* 2001-09 jmruiz - I do not know why is this code in merge.c
-**                  It should be moved to search.c
-**                  Also seems that it is not thread safe 
-**                  It uses global vars...
-*/
-/*** These three routines are public, and used by search.c */
-
-/* This marks a number as having been printed.
-*/
-
-void    marknum(int num)
-{
-    unsigned hashval;
-    struct markentry *mp;
-
-    mp = (struct markentry *) emalloc(sizeof(struct markentry));
-
-    mp->num = num;
-
-    hashval = bignumhash(num);
-    mp->next = markentrylist[hashval];
-    markentrylist[hashval] = mp;
-}
-
-
-/* Has a number been printed?
-*/
-
-int     ismarked(int num)
-{
-    unsigned hashval;
-    struct markentry *mp;
-
-    hashval = bignumhash(num);
-    mp = markentrylist[hashval];
-
-    while (mp != NULL)
-    {
-        if (mp->num == num)
-            return 1;
-        mp = mp->next;
-    }
-    return 0;
-}
-
-/* Initialize the marking list.
-*/
-
-void    initmarkentrylist()
-{
-    int     i;
-    struct markentry *mp;
-
-    for (i = 0; i < BIGHASHSIZE; i++)
-    {
-        mp = markentrylist[i];  /* minor optimization */
-        if (mp != NULL)
-            efree(mp);
-        markentrylist[i] = NULL;
-    }
-}
 
 /* Private Routines */
 
@@ -254,7 +184,6 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
 
     ip = (ENTRY *) Mem_ZoneAlloc(sw->Index->entryZone,sizeof(ENTRY) + strlen(resultword) + 1);
     strcpy(ip->word, resultword);
-    efree(resultword);
 
     ip->allLocationList = ip->currentChunkLocationList = ip->currentlocation = NULL;
 
@@ -343,7 +272,6 @@ static ENTRY  *readindexline(SWISH * sw, IndexFILE * indexf, struct metaMergeEnt
         }
     }
 
-    efree( worddata );
     return ip;
 }
 
@@ -540,23 +468,6 @@ static void    initmapentrylist()
     }
 }
 
-static void freemapentrylist()
-{
-    int i;
-    struct mapentry *mp, *tmp;
-    
-    for (i = 0; i < BIGHASHSIZE; i++)
-    {
-        mp = mapentrylist[i];
-        while ( mp )
-        {
-            tmp = mp->next;
-            efree( mp );
-            mp = tmp;
-        }
-    }
-}
-
 /* Reads the meta names from the index. Needs to be different from
 ** readMetaNames because needs to zero out the counter.
 */
@@ -586,21 +497,6 @@ static struct metaMergeEntry *readMergeMeta(SWISH * sw, int metaCounter, struct 
     }
     return mme;
 }
-
-static void freeMetaMerge( struct metaMergeEntry *mme )
-{
-    struct metaMergeEntry *tmp = NULL;
-
-    while ( mme )
-    {
-        tmp = mme->next;
-        if ( mme->metaName )
-            efree( mme->metaName );
-        efree( mme );
-        mme = tmp;
-    }
-}
-    
 
 
 /* Adds an entry to the merged meta names list and changes the
@@ -695,7 +591,6 @@ static void    addentryMerge(SWISH * sw, ENTRY * ip)
 
     if (!sw->Index->entryArray)
     {
-        /** $$$ where's this freed? ***/
         sw->Index->entryArray = (ENTRYARRAY *) emalloc(sizeof(ENTRYARRAY));
         sw->Index->entryArray->numWords = 0;
         sw->Index->entryArray->elist = NULL;
@@ -980,7 +875,6 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
     int     prev_filenum;    
 
 
-
     /* Lookup the properties */
     filename = get_string_prop(docProperties, metas->filename );
     start    = get_numeric_prop(docProperties, metas->start );
@@ -1066,13 +960,11 @@ static void addindexfilelist(SWISH * sw, int num, METAS * metas, struct docPrope
         ip->next = indexfilehashlist[hashval];
         indexfilehashlist[hashval] = ip;
 
-
-        addtofilelist(sw, sw->indexlist, NULL, &thisFileEntry);
+        addtofilelist(sw, sw->indexlist, filename, &thisFileEntry);
 
         /* don't need to addCommonProperties since they will be copied with the "real" properties */
         // addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
         addtofwordtotals(sw->indexlist, sw->Index->filenum, ftotalwords);
-
 
         /* swap meta values for properties */
         swapDocPropertyMetaNames(&docProperties, metaFile);
@@ -1149,7 +1041,6 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
     indexf2 = sw2->indexlist;
 
     /* Output data */
-
     sw = SwishNew();
     indexf = sw->indexlist = addindexfile(sw->indexlist, outfile);
 
@@ -1221,6 +1112,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 #endif
         
         addindexfilelist(sw, i, &metas, &fi->docProperties, &totalfiles, indexf1->header.filetotalwordsarray[i - 1], metaFile1, indexf1);
+
         freefileinfo(fi);
         indexf1->filearray[i-1] = NULL;
     }
@@ -1250,6 +1142,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
 
 
+
     /* If we are here, we have all the files, with dups removed from filelist */
     /* So, let's write them to disk if we have PROPFILE */
 
@@ -1261,6 +1154,11 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
 
         if(!ip)
             progerr("Internal merge error. File not found while merge");
+
+// Hi Jose,
+// you only had the #ifdef PROPFILE around the WritePropertiesToDisk( sw , i );
+// The ReadAllDocProperetiesFromDisk is only defined with PROPFILE so I expanded the #ifdef section
+// If not PROPFILE then docProperites are already attached to the file entry, right?
 
 
 #ifdef PROPFILE
@@ -1353,12 +1251,9 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
             printf("no redundant files.\n");
     }
 
-    freeMetaMerge( metaFile1 );
-    freeMetaMerge( metaFile2 );
-    freemapentrylist();
-
     SwishClose(sw1);
     SwishClose(sw2);
+
     SwishClose(sw);
 
     if (verbose)

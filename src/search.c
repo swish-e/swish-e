@@ -251,7 +251,6 @@ int configModule_Search (SWISH *sw, StringList *sl)
 }
 
 
-
 /* 01/2001 Jose Ruiz */
 /* Compare RESULTS using RANK */
 /* This routine is used by qsort */
@@ -1437,6 +1436,85 @@ RESULT *orresultlists(SWISH * sw, RESULT * r1, RESULT * r2)
     return newnode;
 }
 
+
+/* 2001-10 jmruiz - This code was originally at merge.c
+**                  Also made it thread safe 
+*/
+/* These three routines are only used by notresultlist */
+
+struct markentry
+{
+    struct markentry *next;
+    int     num;
+};
+
+/* This marks a number as having been printed.
+*/
+
+void    marknum(struct markentry **markentrylist, int num)
+{
+    unsigned hashval;
+    struct markentry *mp;
+
+    mp = (struct markentry *) emalloc(sizeof(struct markentry));
+
+    mp->num = num;
+
+    hashval = bignumhash(num);
+    mp->next = markentrylist[hashval];
+    markentrylist[hashval] = mp;
+}
+
+
+/* Has a number been printed?
+*/
+
+int     ismarked(struct markentry **markentrylist, int num)
+{
+    unsigned hashval;
+    struct markentry *mp;
+
+    hashval = bignumhash(num);
+    mp = markentrylist[hashval];
+
+    while (mp != NULL)
+    {
+        if (mp->num == num)
+            return 1;
+        mp = mp->next;
+    }
+    return 0;
+}
+
+/* Initialize the marking list.
+*/
+
+void    initmarkentrylist(struct markentry **markentrylist)
+{
+    int     i;
+
+    for (i = 0; i < BIGHASHSIZE; i++)
+        markentrylist[i] = NULL;
+}
+
+void    freemarkentrylist(struct markentry **markentrylist)
+{
+    int     i;
+    struct markentry *mp, *next;
+
+    for (i = 0; i < BIGHASHSIZE; i++)
+    {
+        mp = markentrylist[i];  /* minor optimization */
+        while(mp != NULL)
+        {
+            next = mp->next;
+            efree(mp);
+            mp = next;
+        }
+        markentrylist[i] = NULL;
+    }
+}
+
 /* This performs the NOT unary operation on a result list.
 ** NOTed files are marked with a default rank of 1000.
 **
@@ -1449,12 +1527,13 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
     int     i,
             filenums;
     RESULT *newp;
+    struct markentry *markentrylist[BIGHASHSIZE];
 
     newp = NULL;
-    initmarkentrylist();
+    initmarkentrylist(markentrylist);
     while (rp != NULL)
     {
-        marknum(rp->filenum);
+        marknum(markentrylist, rp->filenum);
         rp = rp->next;
     }
 
@@ -1463,9 +1542,11 @@ RESULT *notresultlist(SWISH * sw, RESULT * rp, IndexFILE * indexf)
     for (i = 1; i <= filenums; i++)
     {
 
-        if (!ismarked(i))
+        if (!ismarked(markentrylist, i))
             newp = (RESULT *) addtoresultlist(newp, i, 1000, IN_ALL, 0, NULL, indexf, sw);
     }
+
+    freemarkentrylist(markentrylist);
 
     return newp;
 }
@@ -1939,6 +2020,7 @@ void    freefileinfo(struct file *f)
 
 /* 02/2001 Jose Ruiz */
 /* Partially rewritten to consider phrase search and "and" "or" and "not" as stopwords */
+/* 2001-10 jmruiz - Added removed_stopwords counter */
 
 struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swline *searchwordlist, unsigned char phrase_delimiter)
 {
@@ -1947,6 +2029,9 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
            *pointer3;
     int     inphrase = 0,
             ignore = 0;
+    struct MOD_Search *srch = sw->Search;
+
+    srch->removed_stopwords = 0;
 
     /* Added JM 1/10/98. */
     /* completely re-written 2/25/00 - SRE - "ted and steve" --> "and steve" if "ted" is stopword --> no matches! */
@@ -1971,6 +2056,9 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
         searchwordlist = pointer2; /* move the head of the list */
 
         resultHeaderOut(sw, 1, "# Removed stopword: %s\n", pointer1->line);
+
+        srch->removed_stopwords++;
+
         /* Free line also !! Jose Ruiz 04/00 */
         efree(pointer1->line);
         efree(pointer1);        /* toss the first point */
@@ -2013,6 +2101,7 @@ struct swline *ignore_words_in_query(SWISH * sw, IndexFILE * indexf, struct swli
             if (ignore)
             {
                 resultHeaderOut(sw, 2, "# Removed stopword: %s\n", pointer2->line); /* keep 1st of 2 rule */
+                srch->removed_stopwords++;
                 pointer1->next = pointer2->next;
                 pointer3 = pointer2->next;
                 efree(pointer2->line);

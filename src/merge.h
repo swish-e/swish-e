@@ -36,11 +36,6 @@ struct metaMergeEntry {
 /* called by swish.c */
 void readmerge (char *, char *, char *, int);
 
-/* called by search.c */
-void marknum (int);
-int ismarked (int);
-void initmarkentrylist (void);
-
 
 #endif
 
