@@ -105,9 +105,6 @@ $Id$
 **
 */
 
-/* following is temp for testing */
-#define MEIER
-
 #include "swish.h"
 #include "string.h"
 #include "index.h"
@@ -448,8 +445,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fflush(stdout);
     }
 
-#ifdef MEIER
-/* walk the list, and compress entries */
+	/* walk the hash list, and compress entries */
 	{
 	ENTRY  *ep;
     int     i;
@@ -467,7 +463,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 		}
 
 	}
-#endif
 
     return;
 }
@@ -575,9 +570,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         if (strcmp(efound->word, word) == 0)
             break;
 
-#ifdef MEIER
+	/* flag hash entry used this pass */
 	sw->Index->hashentriesdirty[hashval] = 1;
-#endif
 
     if (!efound)
     {
@@ -620,14 +614,9 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
             tp->position[0] = position;
             efound->locationarray[l] = tp;
             if (efound->locationarray[efound->currentlocation]->filenum != filenum)
-            {
-#ifndef MEIER
-                /* Compress previous location data */
-                CompressPrevLocEntry(sw, indexf, efound);
-                efound->currentlocation = l;
-#endif
+			{
                 efound->tfrequency++;
-            }
+			}
         }
         else
         {                       /* Found filenum and metaname */
