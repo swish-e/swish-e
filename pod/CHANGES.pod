@@ -14,7 +14,7 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 You can now use continuation lines in the config file:
 
-    IgnoreWords: \
+    IgnoreWords \
         the \
         am \
         is \
