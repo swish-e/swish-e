@@ -1367,6 +1367,12 @@ char *tmp;
 FILE *fp=indexf->fp;
 	
 	indexf->offsets[PATHLOOKUPTABLEPOS] = ftell(fp);
+	if(!indexf->pathlookup)
+	{
+		fclose(fp);  /* Close file */
+		remove(indexf->line); /* Remove file: It is useless */
+		progerr("No valid documents have been found. Check your files, directories and/or urls. Index file removed\n.\n");
+	}
 	n=indexf->pathlookup->n_entries;
 	compress1(n,fp);
 	for(i=0;i<n;i++)

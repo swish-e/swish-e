@@ -357,7 +357,7 @@ typedef struct {
 } INDEXDATAHEADER;
 
 typedef struct IndexFILE {
-	char *line;
+	char *line;     /*Name of the index file */
 		/* Offsets to words */
 	long offsets[MAXCHARS];
 	long hashoffsets[SEARCHHASHSIZE];
