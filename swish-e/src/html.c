@@ -321,9 +321,9 @@ static int getstructure(char *tag, int structure)
     else if (strcasecmp(tag, "body") == 0)
         structure |= IN_BODY;   /* Out */
     /* H1, H2, H3, H4, H5, H6  */
-    else if (tag[0] == '/' && tolower(tag[1]) == 'h' && isdigit((int) tag[2])) /* cast to int - 2/22/00 */
+    else if (tag[0] == '/' && tolower((int)((unsigned char)tag[1])) == 'h' && isdigit((int)((unsigned char)tag[2]))) /* cast to int - 2/22/00 */
         structure &= ~IN_HEADER; /* In */
-    else if (tolower(tag[0]) == 'h' && isdigit((int) tag[1])) /* cast to int - 2/22/00 */
+    else if (tolower((int)((unsigned char)tag[0])) == 'h' && isdigit((int)(unsigned char)tag[1])) /* cast to int - 2/22/00 */
         structure |= IN_HEADER; /* Out */
     /* EM, STRONG  */
     else if ((strcasecmp(tag, "/em") == 0) || (strcasecmp(tag, "/strong") == 0))
