@@ -44,10 +44,6 @@ typedef struct _dirdesc
 } 
 DIR; 
 
-#define FIX_DIRECTORY_NAME(x) fixDirectoryName(x)
-void fixDirectoryName( char *name );
-int my_stat(const char *name, struct _stat *statb);
-
 extern DIR *opendir(char *); 
 extern struct dirent *readdir(DIR *); 
 extern void seekdir(DIR *, long); 
