@@ -71,6 +71,8 @@ void dump_file_properties(IndexFILE * indexf, struct  file *fi );
 #define AUTOPROP_ID__STARTPOS     8
 #define AUTOPROPERTY_INDEXFILE    "swishdbfile"
 #define AUTOPROP_ID__INDEXFILE    9
+#define AUTOPROPERTY_FILENUM      "swishfilenum"
+#define AUTOPROP_ID__FILENUM      10
 
 
 
