@@ -14,6 +14,10 @@
 
 @SET_MAKE@
 
+# $id$
+#
+# Conditionally install the html documentation
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -149,94 +153,44 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-pod_dir = $(top_srcdir)/pod
-version_file = $(top_srcdir)/doc/Version.pm
-timestamp = $(srcdir)/timestamp
 
+# Where docs are installed
 htmldir = $(datadir)/doc/$(PACKAGE)/html
-imagedir = $(datadir)/doc/$(PACKAGE)/html/images
+
+@BUILDDOCS_TRUE@html_DATA = \
+@BUILDDOCS_TRUE@    $(html_files)
 
 
-# List of all files that are built by the doc system
-
-# This is a pain because for non-GNU Make (like on BSD) must specify
-# the srcdir for these targets, which means they must be separated by
-# directory -- and that means need to write things twice below.  All has to do with VPATH...
-@BUILDDOCS_TRUE@targets = \
-@BUILDDOCS_TRUE@	$(srcdir)/CHANGES.html \
-@BUILDDOCS_TRUE@	$(srcdir)/INSTALL.html \
-@BUILDDOCS_TRUE@	$(srcdir)/README.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-3.0.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-BUGS.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-CONFIG.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-FAQ.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-LIBRARY.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-RUN.html \
-@BUILDDOCS_TRUE@	$(srcdir)/SWISH-SEARCH.html \
-@BUILDDOCS_TRUE@	$(srcdir)/API.html \
-@BUILDDOCS_TRUE@	$(srcdir)/spider.html \
-@BUILDDOCS_TRUE@	$(srcdir)/swish.html \
-@BUILDDOCS_TRUE@	$(srcdir)/search.html \
-@BUILDDOCS_TRUE@	$(srcdir)/Filter.html \
-@BUILDDOCS_TRUE@        $(srcdir)/style.css \
-@BUILDDOCS_TRUE@	$(srcdir)/index.html \
-@BUILDDOCS_TRUE@	$(srcdir)/index_long.html
+html_files = \
+    api.html \
+    changes.html \
+    filter.html \
+    index.html \
+    install.html \
+    readme.html \
+    search.cgi.html \
+    spider.html \
+    swish-3.0.html \
+    swish-bugs.html \
+    swish.cgi.html \
+    swish-config.html \
+    swish.css \
+    swish-faq.html \
+    swish-library.html \
+    swish-run.html \
+    swish-search.html
 
 
-@BUILDDOCS_TRUE@image_targets = \
-@BUILDDOCS_TRUE@	$(srcdir)/images/dotrule1.gif \
-@BUILDDOCS_TRUE@	$(srcdir)/images/swish2b.gif \
-@BUILDDOCS_TRUE@	$(srcdir)/images/swish2.gif \
-@BUILDDOCS_TRUE@	$(srcdir)/images/swishbanner1.gif \
-@BUILDDOCS_TRUE@	$(srcdir)/images/swish.gif
+EXTRA_DIST = \
+    $(html_DATA)
 
-
-
-# These are the source files -- if any are newer than the timestamp
-# then the docs need to be rebuilt
-source_files = \
-	$(pod_dir)/CHANGES.pod \
-	$(pod_dir)/INSTALL.pod \
-	$(pod_dir)/README.pod \
-	$(pod_dir)/SWISH-3.0.pod \
-	$(pod_dir)/SWISH-BUGS.pod \
-	$(pod_dir)/SWISH-CONFIG.pod \
-	$(pod_dir)/SWISH-FAQ.pod \
-	$(pod_dir)/SWISH-LIBRARY.pod \
-	$(pod_dir)/SWISH-RUN.pod \
-	$(pod_dir)/SWISH-SEARCH.pod \
-	$(top_srcdir)/perl/API.pm \
-	$(top_srcdir)/prog-bin/spider.pl.in \
-	$(top_srcdir)/example/swish.cgi.in \
-	$(top_srcdir)/example/search.cgi.in \
-	$(top_srcdir)/filters/SWISH/Filter.pm.in
-
-
-# Extra files for creating the search page for the docs:
-search_doc_files = \
-	.htaccess \
-	searchdoc.html \
-	.swishcgi.conf \
-	swish.conf \
-	split.pl
-
-
-
-# These are what get installed -- they will also be 
-# a dependency of the all-am target (because of _DATA)
-html_DATA = $(targets) $(search_doc_files)
-image_DATA = $(image_targets)
-
-
-# These are all placed in the distribution
-EXTRA_DIST = $(targets) $(image_targets) $(source_files) $(timestamp) $(search_doc_files)
 subdir = html
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
 CONFIG_CLEAN_FILES =
 DIST_SOURCES =
-DATA = $(html_DATA) $(image_DATA)
+DATA = $(html_DATA)
 
 DIST_COMMON = $(srcdir)/Makefile.in Makefile.am
 all: all-am
@@ -275,24 +229,6 @@ uninstall-htmlDATA:
 	  echo " rm -f $(DESTDIR)$(htmldir)/$$f"; \
 	  rm -f $(DESTDIR)$(htmldir)/$$f; \
 	done
-imageDATA_INSTALL = $(INSTALL_DATA)
-install-imageDATA: $(image_DATA)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(imagedir)
-	@list='$(image_DATA)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  f="`echo $$p | sed -e 's|^.*/||'`"; \
-	  echo " $(imageDATA_INSTALL) $$d$$p $(DESTDIR)$(imagedir)/$$f"; \
-	  $(imageDATA_INSTALL) $$d$$p $(DESTDIR)$(imagedir)/$$f; \
-	done
-
-uninstall-imageDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(image_DATA)'; for p in $$list; do \
-	  f="`echo $$p | sed -e 's|^.*/||'`"; \
-	  echo " rm -f $(DESTDIR)$(imagedir)/$$f"; \
-	  rm -f $(DESTDIR)$(imagedir)/$$f; \
-	done
 tags: TAGS
 TAGS:
 
@@ -305,7 +241,6 @@ top_distdir = ..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
-	$(mkinstalldirs) $(distdir)/$(pod_dir) $(distdir)/$(srcdir) $(distdir)/$(top_srcdir)/example $(distdir)/$(top_srcdir)/filters/SWISH $(distdir)/$(top_srcdir)/perl $(distdir)/$(top_srcdir)/prog-bin
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -334,10 +269,10 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(DATA) all-local
+all-am: Makefile $(DATA)
 
 installdirs:
-	$(mkinstalldirs) $(DESTDIR)$(htmldir) $(DESTDIR)$(imagedir)
+	$(mkinstalldirs) $(DESTDIR)$(htmldir)
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -378,7 +313,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-htmlDATA install-imageDATA
+install-data-am: install-htmlDATA
 
 install-exec-am:
 
@@ -404,54 +339,18 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
+uninstall-am: uninstall-htmlDATA uninstall-info-am
 
-.PHONY: all all-am all-local check check-am clean clean-generic \
-	clean-libtool distclean distclean-generic distclean-libtool \
-	distdir dvi dvi-am info info-am install install-am install-data \
+.PHONY: all all-am check check-am clean clean-generic clean-libtool \
+	distclean distclean-generic distclean-libtool distdir dvi \
+	dvi-am info info-am install install-am install-data \
 	install-data-am install-exec install-exec-am install-htmlDATA \
-	install-imageDATA install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	uninstall uninstall-am uninstall-htmlDATA uninstall-imageDATA \
-	uninstall-info-am
+	install-info install-info-am install-man install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-htmlDATA uninstall-info-am
 
-
-# Deal with missing targets - which is the case in a fresh CVS checkout
-# Automake automatically adds this target by the "html_DATA" entry above
-# Touch the time-stamp, but make it very old so any source_file will be newer
-# (is touch -t portable?)
-
-@BUILDDOCS_TRUE@$(targets) $(image_targets):
-@BUILDDOCS_TRUE@	@touch -t 197001010000 $(timestamp)
-
-# Make sure the version is up to date -- the version is in configure.in
-
-@BUILDDOCS_TRUE@$(version_file): $(top_srcdir)/configure.in
-@BUILDDOCS_TRUE@	@echo "updating version file $(version_file) = $(VERSION)"
-@BUILDDOCS_TRUE@	@echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
-@BUILDDOCS_TRUE@	@touch -t 197001010000 $(timestamp)
-
-# Need some way to have make check the source files against the timestamp
-
-@BUILDDOCS_TRUE@all-local:  $(version_file) $(timestamp)
-
-# If any source files are *newer* than the timestamp then
-# run the "build_docs" program, and then update the timestamp
-
-@BUILDDOCS_TRUE@$(timestamp) : $(source_files)
-@BUILDDOCS_TRUE@	@(cd $(top_srcdir)/doc && bin/build -f)
-@BUILDDOCS_TRUE@	@touch $(timestamp)
-
-#	@(cd $(htmldir) && $(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf -v0)
-
-# Target to build searchable HTML docs
-searchdoc :
-	cp $(libexecdir)/swish.cgi $(htmldir)
-	( cd $(htmldir) && \
-		$(PERL) split.pl | $(bindir)/swish-e$(EXEEXT) -S prog -i stdin -c swish.conf && \
-		$(PERL) -i.orig -pe 's{<!-- SEARCH -->}{<center>[<a target="_parent" href="searchdoc.html">Search The Documentation</a>]</center>}' index.html index_long.html)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

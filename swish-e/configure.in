@@ -318,15 +318,26 @@ ENABLE_DEFINE([memstats], [MEM_STATISTICS], [(developers only) gives memory stat
 
 
 
+dnl Which files to create (some .in files are handled by Makefile.am files)
 
 AC_CONFIG_FILES(
-       Makefile html/Makefile man/Makefile
-       doc/Makefile src/Makefile src/expat/Makefile
-       src/replace/Makefile src/snowball/Makefile
-       rpm/swish-e.spec tests/Makefile
-       example/Makefile prog-bin/Makefile
-       filters/Makefile filters/SWISH/Makefile
-       conf/Makefile filter-bin/Makefile
-       swish-e.pc swish-config)
+    Makefile
+    html/Makefile
+    pod/Makefile
+    man/Makefile
+    src/Makefile
+    src/expat/Makefile
+    src/replace/Makefile
+    src/snowball/Makefile
+    rpm/swish-e.spec
+    tests/Makefile
+    example/Makefile
+    prog-bin/Makefile
+    filters/Makefile
+    filters/SWISH/Makefile
+    conf/Makefile
+    filter-bin/Makefile
+    swish-e.pc
+    swish-config)
 AC_OUTPUT
 

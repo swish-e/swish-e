@@ -150,14 +150,17 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = filters prog-bin conf filter-bin example html man src tests
+SUBDIRS = filters prog-bin conf filter-bin example html man src tests pod
 
 @BUILDDOCS_TRUE@docdir = $(datadir)/doc/$(PACKAGE)
 
+
+# Install these three in the doc directory
+# INSTALL and README are built at make time from .pod source
 @BUILDDOCS_TRUE@doc_DATA = \
-@BUILDDOCS_TRUE@	$(srcdir)/INSTALL \
-@BUILDDOCS_TRUE@	$(srcdir)/README \
-@BUILDDOCS_TRUE@        README.cvs
+@BUILDDOCS_TRUE@    $(srcdir)/INSTALL \
+@BUILDDOCS_TRUE@    $(srcdir)/README \
+@BUILDDOCS_TRUE@    README.cvs
 
 
 config_dir = \
@@ -167,33 +170,6 @@ config_dir = \
      config/ltmain.sh \
      config/missing \
      config/mkinstalldirs
-
-
-doc_dir = \
-    doc/Makefile.in \
-    doc/Pod/HtmlPsPdf.pm \
-    doc/Pod/HtmlPsPdf/Book.pm \
-    doc/Pod/HtmlPsPdf/Chapter.pm \
-    doc/Pod/HtmlPsPdf/Common.pm \
-    doc/Pod/HtmlPsPdf/Config.pm \
-    doc/Pod/HtmlPsPdf/Html.pm \
-    doc/Pod/HtmlPsPdf/RunTime.pm \
-    doc/Version.pm \
-    doc/bin/build \
-    doc/bin/html2ps \
-    doc/bin/pod2hpp \
-    doc/conf/html2ps-global.conf \
-    doc/conf/html2ps-slides.conf \
-    doc/conf/html2ps.conf \
-    doc/conf/html2ps.html \
-    doc/conf/hyphen.tex \
-    doc/split.conf \
-    doc/swish.conf \
-    doc/tmpl/index.tmpl \
-    doc/tmpl/indexps.tmpl \
-    doc/tmpl/page.tmpl \
-    doc/tmpl/pageps.tmpl \
-    doc/tmpl/splitpage.tmpl
 
 
 perl_dir = \
@@ -210,28 +186,6 @@ perl_dir = \
     perl/t/first.html \
     perl/t/second.html \
     perl/t/third.html
-
-
-pod_dir = \
-    pod/.htaccess \
-    pod/swish-e.pod \
-    pod/CHANGES.pod \
-    pod/INSTALL.pod \
-    pod/README.pod \
-    pod/SWISH-3.0.pod \
-    pod/SWISH-BUGS.pod \
-    pod/SWISH-CONFIG.pod \
-    pod/SWISH-FAQ.pod \
-    pod/SWISH-LIBRARY.pod \
-    pod/SWISH-RUN.pod \
-    pod/SWISH-SEARCH.pod \
-    pod/images/dotrule1.gif \
-    pod/images/swish.gif \
-    pod/images/swish2.gif \
-    pod/images/swish2b.gif \
-    pod/images/swishbanner1.gif \
-    pod/search.cgi \
-    pod/style.css
 
 
 vms_dir = \
@@ -274,15 +228,15 @@ rpm_dir = \
 
 
 debian_dir = \
-	debian/README.Debian \
-	debian/changelog \
-	debian/compat \
-	debian/control \
-	debian/copyright \
-	debian/files \
-	debian/rules \
-	debian/swish-e.doc-base \
-	debian/swish-e.substvars
+    debian/README.Debian \
+    debian/changelog \
+    debian/compat \
+    debian/control \
+    debian/copyright \
+    debian/files \
+    debian/rules \
+    debian/swish-e.doc-base \
+    debian/swish-e.substvars
 
 
 bin_SCRIPTS = swish-config
@@ -290,8 +244,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = swish-e.pc
 
 EXTRA_DIST = \
-    $(config_dir) $(doc_dir) $(perl_dir) \
-    $(pod_dir) $(vms_dir) $(win32_dir) $(rpm_dir)  \
+    $(config_dir) $(perl_dir) \
+    $(vms_dir) $(win32_dir) $(rpm_dir)  \
     $(doc_DATA) swish-config.in swish-e.pc.in\
     $(debian_dir)
 
@@ -299,8 +253,7 @@ subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/acconfig.h
-CONFIG_CLEAN_FILES = doc/Makefile rpm/swish-e.spec swish-e.pc \
-	swish-config
+CONFIG_CLEAN_FILES = rpm/swish-e.spec swish-e.pc swish-config
 SCRIPTS = $(bin_SCRIPTS)
 
 DIST_SOURCES =
@@ -312,8 +265,8 @@ RECURSIVE_TARGETS = info-recursive dvi-recursive pdf-recursive \
 	all-recursive install-data-recursive install-exec-recursive \
 	installdirs-recursive install-recursive uninstall-recursive \
 	check-recursive installcheck-recursive
-DIST_COMMON = README $(srcdir)/Makefile.in $(srcdir)/configure INSTALL \
-	Makefile.am TODO aclocal.m4 config/acinclude.m4 config/compile \
+DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/configure Makefile.am \
+	TODO aclocal.m4 config/acinclude.m4 config/compile \
 	config/config.guess config/config.sub config/depcomp \
 	config/install-sh config/ltmain.sh config/missing \
 	config/mkinstalldirs configure configure.in swish-config.in \
@@ -338,8 +291,6 @@ $(srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(srcdir)/configure.in $(ACLOCAL_M4)
 
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ configure.in 
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
-doc/Makefile: $(top_builddir)/config.status $(top_srcdir)/doc/Makefile.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 rpm/swish-e.spec: $(top_builddir)/config.status $(top_srcdir)/rpm/swish-e.spec.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 swish-e.pc: $(top_builddir)/config.status swish-e.pc.in
@@ -553,7 +504,7 @@ distcleancheck_listfiles = find . -type f -print
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkinstalldirs) $(distdir)/. $(distdir)/config $(distdir)/debian $(distdir)/doc $(distdir)/doc/Pod $(distdir)/doc/Pod/HtmlPsPdf $(distdir)/doc/bin $(distdir)/doc/conf $(distdir)/doc/tmpl $(distdir)/perl $(distdir)/perl/t $(distdir)/pod $(distdir)/pod/images $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/win32
+	$(mkinstalldirs) $(distdir)/. $(distdir)/config $(distdir)/debian $(distdir)/perl $(distdir)/perl/t $(distdir)/rpm $(distdir)/src $(distdir)/src/vms $(distdir)/src/win32
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -764,6 +715,9 @@ uninstall-info: uninstall-info-recursive
 	uninstall-info-am uninstall-info-recursive \
 	uninstall-pkgconfigDATA uninstall-recursive
 
+
+# These create REAME and INSTALL in the top level *source*
+# directory for the distribution.  Created at "make" time.
 
 @BUILDDOCS_TRUE@$(srcdir)/INSTALL: $(top_srcdir)/pod/INSTALL.pod
 @BUILDDOCS_TRUE@	-rm -f $(top_srcdir)/INSTALL
