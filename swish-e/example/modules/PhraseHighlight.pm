@@ -257,7 +257,7 @@ sub highlight_text {
 
             # All done, and mark where to stop looking
             if ( $occurrences-- <= 0 ) {
-                $last = $end;
+                $last = $stop;
                 last WORD;
             }
 
