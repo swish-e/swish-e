@@ -255,11 +255,6 @@ typedef struct
     int     filenum;
     int     lookup_path;
     char   *filename;
-    unsigned long mtime;
-    char   *title;
-    char   *summary;
-    int     start;
-    int     size;
 }
 FILEINFO;
 
@@ -475,12 +470,7 @@ typedef struct RESULT
     struct RESULT *next;
     struct RESULT *head;
     struct RESULT *nextsort;    /* Used while sorting results */
-    char   *filename;
-    time_t  last_modified;      /* former ISOTime */
-    char   *title;
-    char   *summary;
-    int     start;
-    int     size;
+
     /* file position where this document's properties are stored */
     char  **PropSort;
     int    *iPropSort;          /* Used for presorted data */

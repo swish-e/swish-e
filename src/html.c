@@ -441,6 +441,7 @@ static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         efree(tmp);
         return summary;
     }
+
     for (p = buffer, summary = NULL, found = 0, beginsum = NULL, endsum = NULL; p && *p;)
     {
         if ((tag = strchr(p, '<')) && ((tag == p) || (*(tag - 1) != '\\')))
@@ -553,6 +554,7 @@ static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
     }
     /* Finally check for something after title (if exists) and */
     /* after <body> (if exists) */
+
     if (!summary)
     {
         /* Jump title if it exists */
@@ -562,6 +564,7 @@ static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         }
         else
             p = buffer;
+
         /* Let us try to find <body> */
         if ((q = lstrstr(p, "<body")))
         {
@@ -569,13 +572,16 @@ static char   *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         }
         else
             q = p;
+
         summary = estrdup(q);
     }
+
     if (summary)
     {
         remove_newlines(summary);
         remove_tags(summary);
     }
+
     if (summary && size && ((int) strlen(summary)) > size)
         summary[size] = '\0';
     return summary;
@@ -627,7 +633,10 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
     if (fprop->index_no_content)
     {
-        addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, NULL);
+    	addtofilelist(sw, indexf, fprop->real_path, NULL );
+        addCommonProperties( sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize );
+
+
         addtofwordtotals(indexf, idx->filenum, 100);
         if (idx->economic_flag)
             SwapFileData(sw, indexf->filearray[idx->filenum - 1]);
@@ -638,11 +647,10 @@ int     countwords_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
 
     if (fprop->stordesc)
-    {
         summary = parseHtmlSummary(buffer, fprop->stordesc->field, fprop->stordesc->size, sw);
-    }
 
-    addtofilelist(sw, indexf, fprop->real_path, fprop->mtime, title, summary, 0, fprop->fsize, &thisFileEntry);
+	addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry );
+    addCommonProperties( sw, indexf, fprop->mtime, title, summary, 0, fprop->fsize );
 
     /* Init meta info */
     metaID = (int *) emalloc((metaIDlen = 1) * sizeof(int));

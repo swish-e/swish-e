@@ -70,6 +70,8 @@ void freeDocProperties(docProperties *docProperties)
 		}
 	}
 	efree(docProperties);
+
+	
 }
 
 
@@ -257,6 +259,7 @@ PropValue *getResultPropertyByName (SWISH *sw, char *pname, RESULT *r)
     /* create a propvalue to return to caller */
     pv = (PropValue *) emalloc (sizeof (PropValue));
     pv->datatype = UNDEFINED;
+    pv->destroy = 0;
 
     ID = isAutoProperty ( pname );  // I'd rather that everything had a metaEntry!
             
@@ -448,7 +451,7 @@ int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *props
 
     if ( !string || !*string )
     {
-        progwarn("Null string passed to EncodeProperty");
+        // progwarn("Null string passed to EncodeProperty for meta '%s'", meta_entry->metaName);
         return 0;
     }
 
@@ -731,35 +734,31 @@ struct MOD_Search *srch = sw->Search;
 
 
 
-/*
-  -- print properties specified with "-p" on cmd line
-  -- $$$$ routine obsolete: new method "-x fmt"   $$$$
-  -- 2001-02-09 rasc    output on file descriptor
-*/
-
-
-
-
 docProperties *swapDocPropertyMetaNames(docProperties *docProperties, struct metaMergeEntry *metaFile)
 {
-int metaID;
-propEntry *prop;
-struct docProperties *newDocProperties;
+    int metaID;
+    propEntry *prop;
+    struct docProperties *newDocProperties;
+
+    if(!docProperties) return NULL;
+
 
 	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
 	newDocProperties->n = docProperties->n;
 
-	for(metaID=0;metaID<newDocProperties->n;metaID++)
+	for ( metaID = 0; metaID < newDocProperties->n; metaID++ )
 		newDocProperties->propEntry[metaID] = NULL;
 
 	/* swap metaName values for properties */
-	for(metaID=0;metaID<docProperties->n;metaID++)
+	for ( metaID = 0 ; metaID < docProperties->n ;metaID++ )
 	{
 		prop = docProperties->propEntry[metaID];
 		while (prop)
 		{
 			struct metaMergeEntry* metaFileTemp;
 			propEntry *nextOne = prop->next;
+
+
 			/* scan the metaFile list to get the new metaName value */
 			metaFileTemp = metaFile;
 			while (metaFileTemp)
@@ -785,16 +784,16 @@ struct docProperties *newDocProperties;
 /* Duplicates properties (used by merge) */
 docProperties *DupProps(docProperties *docProperties)
 {
-struct docProperties *newDocProperties=NULL;
-int metaID;
-propEntry *prop = NULL, *tmp = NULL, *newProp = NULL;
+    struct docProperties *newDocProperties=NULL;
+    int metaID;
+    propEntry *prop = NULL, *tmp = NULL, *newProp = NULL;
 
 	if(!docProperties) return NULL;
 
 	newDocProperties = (struct docProperties *)emalloc(sizeof(struct docProperties) + docProperties->n * sizeof(propEntry *));
 	newDocProperties->n = docProperties->n;
 
-	for(metaID=0;metaID<newDocProperties->n;metaID++)
+	for( metaID=0; metaID < newDocProperties->n; metaID++ )
 	{
 		newDocProperties->propEntry[metaID] = NULL;
 		prop = docProperties->propEntry[metaID];
@@ -852,46 +851,6 @@ int initSearchResultProperties(SWISH *sw)
 	}
 	return RC_OK;
 }
-
-
-
-
-void getSwishInternalProperties(struct file *fi, IndexFILE *indexf)
-{
-propEntry *p;
-
-	if((indexf->header.titleProp->metaID < fi->docProperties->n) 
-		&& (p = fi->docProperties->propEntry[indexf->header.titleProp->metaID]))
-	{
-		fi->fi.title=bin2string(p->propValue,p->propLen);
-	}
-	if((indexf->header.filedateProp->metaID < fi->docProperties->n) 
-		&& (p = fi->docProperties->propEntry[indexf->header.filedateProp->metaID]))
-	{
-		fi->fi.mtime = *(unsigned long *)p->propValue;
-		fi->fi.mtime = UNPACKLONG(fi->fi.mtime);
-	}
-	if((indexf->header.startProp->metaID < fi->docProperties->n) 
-		&& (p = fi->docProperties->propEntry[indexf->header.startProp->metaID]))
-	{
-		fi->fi.start = *(unsigned long *)p->propValue;
-		fi->fi.start = UNPACKLONG(fi->fi.start);
-	}
-	if((indexf->header.sizeProp->metaID < fi->docProperties->n) 
-		&& (p = fi->docProperties->propEntry[indexf->header.sizeProp->metaID]))
-	{
-		fi->fi.size = *(unsigned long *)p->propValue;
-		fi->fi.size = UNPACKLONG(fi->fi.size);
-	}
-	if((indexf->header.summaryProp->metaID < fi->docProperties->n) 
-		&& (p = fi->docProperties->propEntry[indexf->header.summaryProp->metaID]))
-	{
-		fi->fi.summary=bin2string(p->propValue,p->propLen);
-	}
-}
-
-
-
 
 
 

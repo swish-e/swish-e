@@ -132,6 +132,7 @@ $Id$
 #include "filter.h"
 #include "date_time.h"
 #include "db.h"
+#include "dump.h"
 
 
 /* 
@@ -649,44 +650,147 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
     }
 }
 
-/* Adds a file to the master list of files and file numbers.
-*/
+/*******************************************************************
+*   Adds common file properties to the last entry in the file array
+*   (which should be the current one)
+*
+*
+*   Call with:
+*       *SWISH      - need for indexing words
+*       *IndexFILE  - to get at the cached common metaEntries
+*
+*       mtime       - last modified date
+*       *title      - title of document
+*       *summary    - document summary (why here?)
+*       start       - start position of a sub-document
+*       size        - size in bytes of document
+*
+*   Returns:
+*       void
+*
+*   Note:
+*       Uses cached meta entries (created in metanames.c) to save the
+*       metaEntry lookup by name costs
+*
+********************************************************************/
 
-void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mtime, char *title, char *summary, int start, int size,
-                      struct file **newFileEntry)
+void    addCommonProperties( SWISH *sw, IndexFILE *indexf, time_t mtime, char *title, char *summary, int start, int size )
 {
-    struct file *newnode;
+    struct metaEntry *q;
+    docProperties   **properties;
+    unsigned long   tmp;
+
+
+    properties = &indexf->filearray[indexf->filearray_cursize -1 ]->docProperties;
+
+    /* Check if title is internal swish metadata */
+    if ( title && (q = indexf->header.titleProp))
+    {
+
+        if ( is_meta_property(q) )
+            addDocProperty(properties, q, title, strlen(title),0);
+
+
+        /* Perhaps we want it to be indexed ... */
+
+        if ( is_meta_index(q) )
+        {
+            int     metaID,
+                    positionMeta;
+
+            metaID = q->metaID;
+            positionMeta = 1;
+            indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+        }
+    }
+
+
+    if (summary && (q = indexf->header.summaryProp))
+    {
+        /* Check if it is also a property (META_PROP flag) */
+        if (is_meta_property(q))
+        {
+            addDocProperty(properties, q, summary, strlen(summary),0);
+        }
+        /* Perhaps we want it to be indexed ... */
+        if (is_meta_index(q))
+        {
+            int     metaID,
+                    positionMeta;
+
+            metaID = q->metaID;
+            positionMeta = 1;
+            indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
+        }
+    }
+
+
+    /* Check if filedate is an internal swish metadata */
+    if ((q = indexf->header.filedateProp))
+    {
+        /* Check if it is also a property (META_PROP flag) */
+        if (is_meta_property(q))
+        {
+            tmp = (unsigned long) mtime;
+            tmp = PACKLONG(tmp);      /* make it portable */
+            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        }
+    }
+
+
+    /* Check if size is internal swish metadata */
+    if ((q = indexf->header.sizeProp))
+    {
+        /* Check if it is also a property (META_PROP flag) */
+        if (is_meta_property(q))
+        {
+            tmp = (unsigned long) size;
+            tmp = PACKLONG(tmp);      /* make it portable */
+            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        }
+    }
+
+
+    /* Check if size is internal swish metadata */
+    if ((q = indexf->header.startProp))
+    {
+        /* Check if it is also a property (META_PROP flag) */
+        if (is_meta_property(q))
+        {
+            tmp = (unsigned long) start;
+            tmp = PACKLONG(tmp);      /* make it portable */
+            addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        }
+    }
+
+}
+
+/*******************************************************************
+*   Adds a file name to a struct file entry, and also
+*   optionally adds it to the index and/or as a real property
+*
+*   File name is converted with ReplaceRules
+*
+*   Call with:
+*       *SWISH - for ReplaceRules
+*       *struct file
+*       *filename
+*
+*   Returns:
+*       void
+*
+*
+********************************************************************/
+
+static void save_pathname( SWISH *sw, IndexFILE * indexf, struct file *newnode, char *filename )        
+{
     unsigned char *ruleparsedfilename,
            *ruleparsedfilename_tmp,
            *p1,
            *p2,
            *p3;
-    unsigned char c;
     struct metaEntry *q;
-    unsigned long int tmp;
-
-    if (!indexf->filearray || !indexf->filearray_maxsize)
-    {
-        indexf->filearray = (struct file **) emalloc((indexf->filearray_maxsize = BIGHASHSIZE) * sizeof(struct file *));
-        indexf->header.filetotalwordsarray = (int *) emalloc(indexf->filearray_maxsize * sizeof(int));
-
-        indexf->filearray_cursize = 0;
-    }
-
-    if (indexf->filearray_maxsize == indexf->filearray_cursize)
-    {
-        indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
-        indexf->header.filetotalwordsarray = (int *) erealloc(indexf->header.filetotalwordsarray, indexf->filearray_maxsize * sizeof(long));
-    }
-
-    newnode = (struct file *) emalloc(sizeof(struct file));
-
-    if (newFileEntry != NULL)
-    {
-        *newFileEntry = newnode; /* pass object pointer up to caller */
-    }
-
-
+    unsigned char c;
 
     /* Run ReplaceRules on file name */
     ruleparsedfilename_tmp = ruleparsedfilename = ruleparse(sw, filename);
@@ -725,140 +829,107 @@ void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename, time_t mti
     }
 
 
-    newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
     newnode->fi.filename = (char *) estrdup(ruleparsedfilename);
 
 
-    /* Not used in indexing mode - They are in properties */
-    /* NULL must be set to not get a segfault in freefileinfo */
-    newnode->fi.title = newnode->fi.summary = NULL;
 
-    /* Init docproperties */
-    newnode->docProperties = NULL;
-
-    /* #### Added summary,filename, title and mtime as properties if specified */
-
-    if (filename)
-    {
-        /* Check if filename is internal swish metadata */
-        if ((q = getMetaNameData(&indexf->header, AUTOPROPERTY_DOCPATH)))
-        {
-            /* Check if it is also a property (META_PROP flag) */
-            if (is_meta_property(q))
-            {
-                addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
-            }
-            /* Perhaps we want it to be indexed ... */
-            if (is_meta_index(q))
-            {
-                int     metaID,
-                        positionMeta;
-
-                metaID = q->metaID;
-                positionMeta = 1;
-                indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-            }
-        }
-    }
-
-
-    if (title)
-    {
-        /* Check if title is internal swish metadata */
-        if ((q = indexf->header.titleProp))
-        {
-            /* Check if it is also a property (META_PROP flag) */
-            if (is_meta_property(q))
-            {
-                addDocProperty(&newnode->docProperties, q, title, strlen(title),0);
-            }
-            /* Perhaps we want it to be indexed ... */
-            if (is_meta_index(q))
-            {
-                int     metaID,
-                        positionMeta;
-
-                metaID = q->metaID;
-                positionMeta = 1;
-                indexstring(sw, title, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-            }
-        }
-    }
-
-
-    if (summary)
-    {
-        /* Check if summary is internal swish metadata */
-        if ((q = indexf->header.summaryProp))
-        {
-            /* Check if it is also a property (META_PROP flag) */
-            if (is_meta_property(q))
-            {
-                addDocProperty(&newnode->docProperties, q, summary, strlen(summary),0);
-            }
-            /* Perhaps we want it to be indexed ... */
-            if (is_meta_index(q))
-            {
-                int     metaID,
-                        positionMeta;
-
-                metaID = q->metaID;
-                positionMeta = 1;
-                indexstring(sw, summary, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
-            }
-        }
-    }
-
-
-    /* Check if filedate is an internal swish metadata */
-    if ((q = indexf->header.filedateProp))
+    /* Check if filename is internal swish metadata */
+    if ((q = getMetaNameData(&indexf->header, AUTOPROPERTY_DOCPATH)))
     {
         /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
+
+        if ( is_meta_property(q) )
+            // oh, that was a bug.
+            // addDocProperty(&newnode->docProperties, q, filename, strlen(filename),0);
+            addDocProperty(&newnode->docProperties, q, ruleparsedfilename_tmp, strlen(ruleparsedfilename_tmp),0);
+
+
+        /* Perhaps we want it to be indexed ... */
+        if ( is_meta_index(q) )
         {
-            tmp = mtime;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+            int     metaID,
+                    positionMeta;
+
+            metaID = q->metaID;
+            positionMeta = 1;
+            indexstring(sw, ruleparsedfilename_tmp, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
         }
     }
-
-
-    /* Check if size is internal swish metadata */
-    if ((q = indexf->header.sizeProp))
-    {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
-            tmp = size;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
-        }
-    }
-
-
-    /* Check if size is internal swish metadata */
-    if ((q = indexf->header.startProp))
-    {
-        /* Check if it is also a property (META_PROP flag) */
-        if (is_meta_property(q))
-        {
-            tmp = start;
-            tmp = PACKLONG(tmp);      /* make it portable */
-            addDocProperty(&newnode->docProperties, q, (unsigned char *) &tmp, sizeof(tmp),1);
-        }
-    }
-
-
-    indexf->filearray[indexf->filearray_cursize++] = newnode;
-    indexf->header.totalfiles++;
-
 
 
     /* free string returned by ruleparse() */
     if(ruleparsedfilename_tmp != (unsigned char *)filename)
         efree(ruleparsedfilename_tmp);
+}
+
+/*******************************************************************
+*   Adds a file to the file list
+*   Creates or expands file list, as needed
+*
+*   File name is converted with ReplaceRules
+*
+*   Call with:
+*       *SWISH
+*       *IndexFILE
+*       *filename
+*       **struct file - to return the new file entry created
+*
+*   Returns:
+*       void
+*
+*
+********************************************************************/
+
+void    addtofilelist(SWISH * sw, IndexFILE * indexf, char *filename,  struct file **newFileEntry)
+{
+    struct file *newnode;
+
+    /* Create the file array */
+
+    if (!indexf->filearray || !indexf->filearray_maxsize)
+    {
+        indexf->filearray = (struct file **) emalloc((indexf->filearray_maxsize = BIGHASHSIZE) * sizeof(struct file *));
+        indexf->header.filetotalwordsarray = (int *) emalloc(indexf->filearray_maxsize * sizeof(int));
+        indexf->filearray_cursize = 0;
+
+    }
+
+    /* Extend the file array, if needed */
+
+    if (indexf->filearray_maxsize == indexf->filearray_cursize)
+    {
+        indexf->filearray = (struct file **) erealloc(indexf->filearray, (indexf->filearray_maxsize += 1000) * sizeof(struct file *));
+        indexf->header.filetotalwordsarray = (int *) erealloc(indexf->header.filetotalwordsarray, indexf->filearray_maxsize * sizeof(long));
+    }
+
+
+    /* Create a new file entry */
+
+    newnode = (struct file *) emalloc(sizeof(struct file));
+
+    if (newFileEntry != NULL)
+        *newFileEntry = newnode; /* pass object pointer up to caller */
+
+
+    /* Init structure elements */
+    newnode->docProperties   = NULL;
+    newnode->currentSortProp = NULL;
+    newnode->fi.filenum = indexf->filearray_cursize + 1; /* filenum starts in 1 */
+
+
+    /* And save it in the file array */
+
+    indexf->filearray[indexf->filearray_cursize++] = newnode;
+    indexf->header.totalfiles++;
+
+    /* path name is special and is always required.  Save it. */
+
+    save_pathname( sw, indexf, newnode, filename );
 
 }
+
+
+
 
 /* Just goes through the master list of files and
 ** counts 'em.
@@ -1411,10 +1482,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     fi = (struct file *) emalloc(sizeof(struct file));
 
     fi->fi.filename = NULL;
-    fi->fi.title = NULL;
-    fi->fi.summary = NULL;
-    fi->fi.start = 0;
-    fi->fi.size = 0;
     fi->docProperties = NULL;
 
     indexf->filearray[filenum - 1] = fi;
@@ -1456,24 +1523,6 @@ struct file *readFileEntry(SWISH *sw, IndexFILE * indexf, int filenum)
     /* read the document properties section  */
     fi->docProperties = fetchDocProperties(p);
 
-    /* Read internal swish properties */
-    /* first init them */
-
-    fi->fi.mtime = (unsigned long) 0L;
-    fi->fi.title = NULL;
-    fi->fi.summary = NULL;
-    fi->fi.start = 0;
-    fi->fi.size = 0;
-
-    /* Read values */
-    getSwishInternalProperties(fi, indexf);
-
-    /* Add empty strings if NULL */
-    if (!fi->fi.title)
-        fi->fi.title = estrdup("");
-
-    if (!fi->fi.summary)
-        fi->fi.summary = estrdup("");
 
     efree(buffer);
     return fi;
@@ -1536,6 +1585,7 @@ void    write_file_list(SWISH * sw, IndexFILE * indexf)
 
     /* Sort properties -> Better search performance */
     sortFileProperties(sw,indexf);
+
 
     /* Free memory */
     for (i = 0; i < indexf->filearray_cursize; i++)
@@ -2049,15 +2099,6 @@ void    addtofwordtotals(IndexFILE * indexf, int filenum, int ftotalwords)
         progerr("Internal error in addtofwordtotals");
     else
         indexf->header.filetotalwordsarray[filenum - 1] = ftotalwords;
-}
-
-
-void    addsummarytofile(IndexFILE * indexf, int filenum, char *summary)
-{
-    if (filenum > indexf->filearray_cursize)
-        progerr("Internal error in addsummarytofile");
-    else
-        indexf->filearray[filenum - 1]->fi.summary = estrdup(summary);
 }
 
 

@@ -136,7 +136,10 @@ int in_junk=0;
     if(fprop->stordesc)
         summary=parseXmlSummary(buffer,fprop->stordesc->field,fprop->stordesc->size);
 
-    addtofilelist(sw,indexf, fprop->real_path, fprop->mtime, fprop->real_filename, summary, start, size, &thisFileEntry);
+	addtofilelist(sw, indexf, fprop->real_path, &thisFileEntry );
+    addCommonProperties( sw, indexf, fprop->mtime, fprop->real_filename, summary, start, size );
+
+
         /* Init meta info */
     metaID=(int *)emalloc((metaIDlen=1)*sizeof(int));
     currentmetanames=ftotalwords=0;

@@ -516,6 +516,7 @@ void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
 
 void    fs_indexpath(SWISH * sw, char *path)
 {
+
     if (isdirectory(path))
     {
         if (sw->verbose >= 2)
@@ -528,6 +529,8 @@ void    fs_indexpath(SWISH * sw, char *path)
             printf("\nChecking file \"%s\"...\n", path);
         indexafile(sw, path);
     }
+    else
+        progwarn("Invalid path '%s'\n", path );
 }
 
 
