@@ -12,6 +12,7 @@ extern "C" {
 #include "../src/stemmer.h"
 #include "../src/merge.h"
 #include "../src/docprop.h"
+#include "../src/search.h"
 
 
 MODULE = SWISHE  PACKAGE = SWISHE
@@ -62,7 +63,10 @@ SwishNext(handle)
      {
         sw = (SWISH *) result->sw;
 
-        numPropertiesToDisplay = getnumPropertiesToDisplay(handle);
+        numPropertiesToDisplay = sw->Search->numPropertiesToDisplay
+           ? sw->Search->numPropertiesToDisplay
+           : 0;
+
 
         PUSHMARK(SP);
 
