@@ -44,6 +44,10 @@
 
 
 
+static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline **hash, void *DB);
+
+
+
 
 /* Header routines */
 
@@ -98,13 +102,16 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     write_integer_table_to_header(sw, TRANSLATECHARTABLE_ID, header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), DB);
     
     /* Other header stuff */
-        /* StopWords */
-    write_words_to_header(sw, STOPWORDS_ID, header->hashstoplist, DB);
-        /* Metanames */
+
+    /* StopWords */
+    write_hash_words_to_header(sw, STOPWORDS_ID, header->hashstoplist.hash_array, DB);
+
+
+    /* Metanames */
     write_MetaNames(sw, METANAMES_ID, header, DB);
 
-        /* BuzzWords */
-    write_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist, DB);
+    /* BuzzWords */
+    write_hash_words_to_header(sw, BUZZWORDS_ID, header->hashbuzzwordlist.hash_array, DB);
 
 #ifndef USE_BTREE
     /* Write the total words per file array, if used */
@@ -608,7 +615,7 @@ void    write_MetaNames(SWISH *sw, int id, INDEXDATAHEADER * header, void *DB)
 /* Write a the hashlist of words into the index header file (used by stopwords and buzzwords
 */
 
-int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, void *DB)
+static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline **hash, void *DB)
 {
     int     hashval,
             len,
@@ -617,7 +624,10 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
     char   *buffer, *s;
     struct swline *sp = NULL;
         
-        /* Let's count the words */
+    /* Let's count the words */
+
+    if ( !hash )
+        return 0;
 
     for (sz_buffer = 0, num_words = 0 , hashval = 0; hashval < HASHSIZE; hashval++)
     {
@@ -652,8 +662,8 @@ int    write_words_to_header(SWISH *sw, int header_ID, struct swline **hash, voi
         }
         DB_WriteHeaderData(sw, header_ID, (unsigned char *)buffer, s - buffer, DB);
         efree(buffer);
-}
-return 0;
+    }
+    return 0;
 }
 
 

@@ -47,7 +47,6 @@ void    build_worddata(SWISH *, ENTRY *, IndexFILE *);
 void    write_worddata(SWISH *, ENTRY *, IndexFILE *);
 long    read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **bufer, int *sz_buffer);
 void    add_worddata(SWISH *sw, ENTRY *epi, IndexFILE *indexf, unsigned char *buffer, int sz_buffer);
-int     write_words_to_header(SWISH *, int header_ID, struct swline **hash, void *DB);
 void    write_pathlookuptable_to_header(SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 void    write_MetaNames (SWISH *, int id, INDEXDATAHEADER *header, void *DB);
 int     write_integer_table_to_header(SWISH *, int id, int table[], int table_size, void *DB);
@@ -55,8 +54,6 @@ int     write_integer_table_to_header(SWISH *, int id, int table[], int table_si
 void    read_header(SWISH *, INDEXDATAHEADER *header, void *DB);
 
 void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer);
-void    parse_stopwords_from_buffer(INDEXDATAHEADER *header, char *buffer);
-void    parse_buzzwords_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_pathlookuptable_from_buffer(INDEXDATAHEADER *header, char *buffer);
 void    parse_integer_table_from_buffer(int table[], int table_size, char *buffer);
 char    *getfilewords(SWISH *sw, int, IndexFILE *);

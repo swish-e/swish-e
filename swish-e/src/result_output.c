@@ -887,54 +887,6 @@ int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
 
 
 
-/* 
-  -- print a standard result header (according to -H <n>)
-  -- for the header of an index file
-*/
-
-
-void    resultPrintHeader(SWISH * sw, int min_verbose, INDEXDATAHEADER * h, char *pathname, int merged)
-{
-    char   *fname;
-    int     v;
-
-    v = min_verbose;
-    fname = str_basename(pathname);
-
-    resultHeaderOut(sw, v, "%s\n", INDEXVERSION);
-    /* why the blank merge header? */
-    resultHeaderOut(sw, v, "# %s\n", (merged) ? "MERGED INDEX" : "");
-    resultHeaderOut(sw, v, "%s %s\n", NAMEHEADER, (h->indexn[0] == '\0') ? "(no name)" : h->indexn);
-    resultHeaderOut(sw, v, "%s %s\n", SAVEDASHEADER, fname);
-    resultHeaderOut(sw, v, "%s %d words, %d files\n", COUNTSHEADER, h->totalwords, h->totalfiles);
-    resultHeaderOut(sw, v, "%s %s\n", INDEXEDONHEADER, h->indexedon);
-    resultHeaderOut(sw, v, "%s %s\n", DESCRIPTIONHEADER, (h->indexd[0] == '\0') ? "(no description)" : h->indexd);
-    resultHeaderOut(sw, v, "%s %s\n", POINTERHEADER, (h->indexp[0] == '\0') ? "(no pointer)" : h->indexp);
-    resultHeaderOut(sw, v, "%s %s\n", MAINTAINEDBYHEADER, (h->indexa[0] == '\0') ? "(no maintainer)" : h->indexa);
-    resultHeaderOut(sw, v, "%s %s\n", DOCPROPENHEADER, "Enabled");
-
-    
-    resultHeaderOut(sw, v, "%s %d\n", STEMMINGHEADER, h->fuzzy_mode == FUZZY_STEMMING ? 1 : 0 );
-    resultHeaderOut(sw, v, "%s %d\n", SOUNDEXHEADER, h->fuzzy_mode == FUZZY_SOUNDEX ? 1 : 0 );
-    resultHeaderOut(sw, v, "%s %s\n", FUZZYMODE_HEADER, fuzzy_mode_to_string( h->fuzzy_mode ) );
-
-    
-    resultHeaderOut(sw, v, "%s %d\n", IGNORETOTALWORDCOUNTWHENRANKING, h->ignoreTotalWordCountWhenRanking);
-    resultHeaderOut(sw, v, "%s %s\n", WORDCHARSHEADER, h->wordchars);
-    resultHeaderOut(sw, v, "%s %d\n", MINWORDLIMHEADER, h->minwordlimit);
-    resultHeaderOut(sw, v, "%s %d\n", MAXWORDLIMHEADER, h->maxwordlimit);
-    resultHeaderOut(sw, v, "%s %s\n", BEGINCHARSHEADER, h->beginchars);
-    resultHeaderOut(sw, v, "%s %s\n", ENDCHARSHEADER, h->endchars);
-    resultHeaderOut(sw, v, "%s %s\n", IGNOREFIRSTCHARHEADER, h->ignorefirstchar);
-    resultHeaderOut(sw, v, "%s %s\n", IGNORELASTCHARHEADER, h->ignorelastchar);
-/*
-	resultHeaderOut (sw,v, "%s %d\n", FILEINFOCOMPRESSION, h->applyFileInfoCompression);
-*/
-    translatecharHeaderOut(sw, v, h);
-
-
-    return;
-}
 
 
 

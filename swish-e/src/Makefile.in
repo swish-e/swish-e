@@ -88,7 +88,7 @@ SEARCHING_OBJS      = swish2.o search.o swish_words.o proplimit.o \
 DB_OBJS             = hash.o compress.o db_native.o ramdisk.o btree.o array.o
 
 UTIL_OBJS           = check.o error.o list.o mem.o string.o \
-                      docprop.o metanames.o \
+                      docprop.o metanames.o headers.o \
                       swish_qsort.o  date_time.o \
                       double_metaphone.o stemmer.o soundex.o \
                       no_better_place_module.o @LIBOBJS@

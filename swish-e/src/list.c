@@ -26,44 +26,45 @@
 #include "mem.h"
 #include "metanames.h"
 #include "string.h"
+#include "hash.h"
 
 
 struct swline *addswline(struct swline *rp, char *line)
 {
 struct swline *newnode;
 
-	newnode = (struct swline *) emalloc(sizeof(struct swline));
-	newnode->line = (char *) estrdup(line);
-	newnode->next = NULL;
+    newnode = (struct swline *) emalloc(sizeof(struct swline));
+    newnode->line = (char *) estrdup(line);
+    newnode->next = NULL;
 
-	if (rp == NULL)
-		rp = newnode;
-	else
-		rp->nodep->next = newnode;
-	
-	rp->nodep = newnode;
-	
-	return rp;
+    if (rp == NULL)
+        rp = newnode;
+    else
+        rp->nodep->next = newnode;
+    
+    rp->nodep = newnode;
+    
+    return rp;
 }
 
 struct swline *dupswline(struct swline *rp)
 {
 struct swline *tmp=NULL, *tmp2=NULL;
 struct swline *newnode;
-	while(rp)
-	{
-		newnode = (struct swline *) emalloc(sizeof(struct swline));
-		newnode->line = (char *) estrdup(rp->line);
-		newnode->next = NULL;
-		
-		if(!tmp)
-			tmp = newnode;
-		else
-			tmp2->next=newnode;
-		tmp2 = newnode;
-		rp=rp->next;
-	}
-	return tmp;
+    while(rp)
+    {
+        newnode = (struct swline *) emalloc(sizeof(struct swline));
+        newnode->line = (char *) estrdup(rp->line);
+        newnode->next = NULL;
+        
+        if(!tmp)
+            tmp = newnode;
+        else
+            tmp2->next=newnode;
+        tmp2 = newnode;
+        rp=rp->next;
+    }
+    return tmp;
 }
 
 void addindexfile(SWISH *sw, char *line)
@@ -71,25 +72,25 @@ void addindexfile(SWISH *sw, char *line)
     IndexFILE *head = sw->indexlist;
     IndexFILE *indexf = (IndexFILE *) emalloc(sizeof(IndexFILE));
 
-	memset( indexf, 0, sizeof(IndexFILE) );
+    memset( indexf, 0, sizeof(IndexFILE) );
 
-	indexf->sw = sw;  /* save parent object */
-	indexf->line = estrdup(line);
-	init_header(&indexf->header);
-	indexf->next = NULL;
+    indexf->sw = sw;  /* save parent object */
+    indexf->line = estrdup(line);
+    init_header(&indexf->header);
+    indexf->next = NULL;
 
 
     /* Add default meta names -- these will be replaced if reading from an index file */
-	add_default_metanames(indexf);
+    add_default_metanames(indexf);
 
-	/* Add index to end of list */
+    /* Add index to end of list */
 
-	if ( head == NULL )  /* first entry? */
-		sw->indexlist = head = indexf;
-	else
-		head->nodep->next = indexf;  /* point the previous last one to the new last one */
-	
-	head->nodep = indexf;  /* set the last pointer */
+    if ( head == NULL )  /* first entry? */
+        sw->indexlist = head = indexf;
+    else
+        head->nodep->next = indexf;  /* point the previous last one to the new last one */
+    
+    head->nodep = indexf;  /* set the last pointer */
 }
 
 
@@ -106,66 +107,55 @@ void freeswline(struct swline *tmplist)
 }
 
 
-void freeindexfile(IndexFILE *tmplist)
-{
-IndexFILE *tmplist2;
-
-	while (tmplist) {
-		tmplist2 = tmplist->next;
-		efree(tmplist->line);
-		efree(tmplist);
-		tmplist = tmplist2;
-	}
-}
 
 
 void init_header(INDEXDATAHEADER *header)
 {
 
-	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
+    header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
 
-	header->wordchars = (char *)emalloc(header->lenwordchars + 1);
+    header->wordchars = (char *)emalloc(header->lenwordchars + 1);
         header->wordchars = SafeStrCopy(header->wordchars,WORDCHARS,&header->lenwordchars);
         sortstring(header->wordchars);  /* Sort chars and remove dups */
         makelookuptable(header->wordchars,header->wordcharslookuptable);
 
-	header->beginchars = (char *)emalloc(header->lenbeginchars + 1);
+    header->beginchars = (char *)emalloc(header->lenbeginchars + 1);
         header->beginchars = SafeStrCopy(header->beginchars,BEGINCHARS,&header->lenbeginchars);
         sortstring(header->beginchars);  /* Sort chars and remove dups */
         makelookuptable(header->beginchars,header->begincharslookuptable);
 
-	header->endchars = (char *)emalloc(header->lenendchars + 1);
+    header->endchars = (char *)emalloc(header->lenendchars + 1);
         header->endchars = SafeStrCopy(header->endchars,ENDCHARS,&header->lenendchars);
         sortstring(header->endchars);  /* Sort chars and remove dups */
         makelookuptable(header->endchars,header->endcharslookuptable);
 
-	header->ignorelastchar = (char *)emalloc(header->lenignorelastchar + 1);
+    header->ignorelastchar = (char *)emalloc(header->lenignorelastchar + 1);
         header->ignorelastchar = SafeStrCopy(header->ignorelastchar,IGNORELASTCHAR,&header->lenignorelastchar);
         sortstring(header->ignorelastchar);  /* Sort chars and remove dups */
         makelookuptable(header->ignorelastchar,header->ignorelastcharlookuptable);
 
-	header->ignorefirstchar = (char *)emalloc(header->lenignorefirstchar + 1);
+    header->ignorefirstchar = (char *)emalloc(header->lenignorefirstchar + 1);
         header->ignorefirstchar = SafeStrCopy(header->ignorefirstchar,IGNOREFIRSTCHAR,&header->lenignorefirstchar);
         sortstring(header->ignorefirstchar);  /* Sort chars and remove dups */
         makelookuptable(header->ignorefirstchar,header->ignorefirstcharlookuptable);
 
 
-	header->bumpposchars = (char *)emalloc(header->lenbumpposchars + 1);
-	header->bumpposchars[0]='\0';
+    header->bumpposchars = (char *)emalloc(header->lenbumpposchars + 1);
+    header->bumpposchars[0]='\0';
 
-	header->lenindexedon=header->lensavedasheader=header->lenindexn=header->lenindexd=header->lenindexp=header->lenindexa=MAXSTRLEN;
-	header->indexn = (char *)emalloc(header->lenindexn + 1);header->indexn[0]='\0';
-	header->indexd = (char *)emalloc(header->lenindexd + 1);header->indexd[0]='\0';
-	header->indexp = (char *)emalloc(header->lenindexp + 1);header->indexp[0]='\0';
-	header->indexa = (char *)emalloc(header->lenindexa + 1);header->indexa[0]='\0';
-	header->savedasheader = (char *)emalloc(header->lensavedasheader + 1);header->savedasheader[0]='\0';
-	header->indexedon = (char *)emalloc(header->lenindexedon + 1);header->indexedon[0]='\0';
+    header->lenindexedon=header->lensavedasheader=header->lenindexn=header->lenindexd=header->lenindexp=header->lenindexa=MAXSTRLEN;
+    header->indexn = (char *)emalloc(header->lenindexn + 1);header->indexn[0]='\0';
+    header->indexd = (char *)emalloc(header->lenindexd + 1);header->indexd[0]='\0';
+    header->indexp = (char *)emalloc(header->lenindexp + 1);header->indexp[0]='\0';
+    header->indexa = (char *)emalloc(header->lenindexa + 1);header->indexa[0]='\0';
+    header->savedasheader = (char *)emalloc(header->lensavedasheader + 1);header->savedasheader[0]='\0';
+    header->indexedon = (char *)emalloc(header->lenindexedon + 1);header->indexedon[0]='\0';
 
-	header->ignoreTotalWordCountWhenRanking = 1;
-	header->minwordlimit = MINWORDLIMIT;
-	header->maxwordlimit = MAXWORDLIMIT;
+    header->ignoreTotalWordCountWhenRanking = 1;
+    header->minwordlimit = MINWORDLIMIT;
+    header->maxwordlimit = MAXWORDLIMIT;
 
-	makelookuptable("",header->bumpposcharslookuptable); 
+    makelookuptable("",header->bumpposcharslookuptable); 
 
     BuildTranslateChars(header->translatecharslookuptable,(unsigned char *)"",(unsigned char *)"");
 
@@ -177,21 +167,27 @@ void init_header(INDEXDATAHEADER *header)
 
 void free_header(INDEXDATAHEADER *header)
 {
-	if(header->lenwordchars) efree(header->wordchars);
-	if(header->lenbeginchars) efree(header->beginchars);
-	if(header->lenendchars) efree(header->endchars);
-	if(header->lenignorefirstchar) efree(header->ignorefirstchar);
-	if(header->lenignorelastchar) efree(header->ignorelastchar);
-	if(header->lenindexn) efree(header->indexn);
-	if(header->lenindexa) efree(header->indexa);
-	if(header->lenindexp) efree(header->indexp);
-	if(header->lenindexd) efree(header->indexd);
-	if(header->lenindexedon) efree(header->indexedon);		
-	if(header->lensavedasheader) efree(header->savedasheader);	
-	if(header->lenbumpposchars) efree(header->bumpposchars);
+    if(header->lenwordchars) efree(header->wordchars);
+    if(header->lenbeginchars) efree(header->beginchars);
+    if(header->lenendchars) efree(header->endchars);
+    if(header->lenignorefirstchar) efree(header->ignorefirstchar);
+    if(header->lenignorelastchar) efree(header->ignorelastchar);
+    if(header->lenindexn) efree(header->indexn);
+    if(header->lenindexa) efree(header->indexa);
+    if(header->lenindexp) efree(header->indexp);
+    if(header->lenindexd) efree(header->indexd);
+    if(header->lenindexedon) efree(header->indexedon);        
+    if(header->lensavedasheader) efree(header->savedasheader);    
+    if(header->lenbumpposchars) efree(header->bumpposchars);
 
+    
+    /* Free the hashed word arrays */
+    free_word_hash_table( &header->hashstoplist );
+    free_word_hash_table( &header->hashbuzzwordlist );
+    free_word_hash_table( &header->hashuselist );
+    
 
-    /* ??? temporary until metas and props are seperated */
+    /* $$$ temporary until metas and props are seperated */
     if ( header->propIDX_to_metaID )
         efree( header->propIDX_to_metaID );
 
@@ -206,23 +202,4 @@ void free_header(INDEXDATAHEADER *header)
 }
 
 
-/* 2001/04Jose Ruiz
-Splits a swline struct by char c */
-void splitswline(struct swline *rp, int c)
-{
-struct swline *temp;
-char *p;
-	for(p=rp->line;(p=strrchr(rp->line,c));)
-	{
-		*p='\0';
-		p++;
-		if(*p)
-		{
-			temp=(struct swline *)emalloc(sizeof(struct swline));
-			temp->next=rp->next;
-			temp->line=(char *)estrdup(p);
-			rp->next=temp;
-		}
-	}
-}
 

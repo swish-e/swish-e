@@ -58,7 +58,7 @@ int     isokword(sw, word, indexf)
     if (word[0] == '\0')
         return 0;
 
-    if (isstopword(&indexf->header, word))
+    if ( is_word_in_hash_table( indexf->header.hashstoplist, word ) )
         return 0;
 
     wordlen = strlen(word);

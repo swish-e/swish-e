@@ -175,7 +175,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     
 
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_HEADER) )
-        resultPrintHeader(sw, 0, &indexf->header, indexf->line, 0);
+    {
+        sw->headerOutVerbose = 255;
+        print_index_headers( indexf );
+    }
 
     fieldnum = 0;
 
@@ -373,14 +376,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
 
 
-    /* Decode Stop Words: All them are in just one line */
-    if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_STOPWORDS)  )
-    {
-        printf("\n\n-----> STOP WORDS in %s <-----\n" , indexf->line);
-        for(i=0;i<indexf->header.stopPos;i++)
-            printf("%s ",indexf->header.stopList[i]);
-        printf("\n");
-    }
 
 
 

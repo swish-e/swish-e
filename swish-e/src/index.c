@@ -137,6 +137,7 @@ $Id$
 #include "dump.h"
 #include "swish_qsort.h"
 #include "swish_words.h"
+#include "list.h"
 
 static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
 static void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
@@ -1406,8 +1407,12 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             percent = (ep->tfrequency * 100) / totalfiles;
             if (percent >= idx->plimit && ep->tfrequency >= idx->flimit)
             {
-                addStopList(&indexf->header, ep->word); /* For printing list of words */
-                addstophash(&indexf->header, ep->word); /* Lookup hash */
+                add_word_to_hash_table( &indexf->header.hashstoplist, ep->word);
+
+                /* for printing words removed at the end */
+                idx->IgnoreLimitWords = addswline( idx->IgnoreLimitWords, ep->word);
+                
+
                 stopwords++;
                 /* unlink the ENTRY from the hash */
                 if (ep2)
@@ -1873,7 +1878,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         epi = ep->elist[i];
 
         /* why check for stopwords here?  removestopwords could have remove them */
-        if (!isstopword(&indexf->header, epi->word))
+        if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )
         {
             /* Write word to index file */
             write_word(sw, epi, indexf);
@@ -2044,7 +2049,8 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         epi = ep->elist[i];
 
         /* why check for stopwords here?  removestopwords could have remove them */
-        if (!isstopword(&indexf->header, epi->word))
+
+        if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )
         {
             /* Build worddata buffer */
             build_worddata(sw, epi, indexf);
@@ -2296,9 +2302,9 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
         strtolower(word);
 
         /* is this a useful feature? */
-        if ( indexf->header.is_use_words_flag )
+        if ( indexf->header.hashuselist.count )
         {
-            if  ( isuseword(&indexf->header, word) )
+            if ( is_word_in_hash_table( indexf->header.hashuselist, word ) )
             {
                 addword(word, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;
@@ -2309,7 +2315,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
 
 
         /* Check for buzzwords */
-        if ( indexf->header.buzzwords_used_flag )
+        if ( indexf->header.hashbuzzwordlist.count )
         {
             /* only strip when buzzwords are being used since stripped again as a "swish word" */
             stripIgnoreLastChars(&indexf->header, word);
@@ -2317,8 +2323,7 @@ int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMeta
             if ( !*word ) /* stripped clean? */
                 continue;
 
-        
-            if ( isbuzzword(&indexf->header, word) )
+            if ( is_word_in_hash_table( indexf->header.hashbuzzwordlist, word ) )
             {
                 addword(word, sw, filenum, structure, numMetaNames, metaID, position );
                 wordcount++;

@@ -103,6 +103,8 @@ struct MOD_Index
     int     flimit;
     /* Number of words from IgnoreLimit */
     int     nIgnoreLimitWords;
+    struct swline *IgnoreLimitWords;
+
     /* Positions from stopwords from IgnoreLimit */
     struct IgnoreLimitPositions **IgnoreLimitPositionsArray;
 
