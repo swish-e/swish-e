@@ -101,21 +101,21 @@ int     DB_EndReadWords_Native(void *db);
 
 
 int     DB_InitWriteFiles_Native(void *db);
-int     DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, void *db);
+int     DB_WriteFile_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db);
 int     DB_EndWriteFiles_Native(void *db);
 
 int     DB_InitReadFiles_Native(void *db);
-int     DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, void *db);
+int     DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedata, void *db);
 int     DB_EndReadFiles_Native(void *db);
 
 
 
 int     DB_InitWriteSortedIndex_Native(void *db);
-int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,void *db);
+int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
 int     DB_EndWriteSortedIndex_Native(void *db);
  
 int     DB_InitReadSortedIndex_Native(void *db);
-int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,void *db);
+int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
 int     DB_EndReadSortedIndex_Native(void *db);
 
 

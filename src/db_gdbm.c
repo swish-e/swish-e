@@ -266,7 +266,7 @@ int DB_EndWriteHeader_gdbm(void *db)
    return 0;
 }
 
-int DB_WriteHeaderData_gdbm(int id, char *s, int len, void *db)
+int DB_WriteHeaderData_gdbm(int id, unsigned char *s, int len, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -298,7 +298,7 @@ int DB_InitReadHeader_gdbm(void *db)
    return 0;
 }
 
-int DB_ReadHeaderData_gdbm(int *id, char **s, int *len, void *db)
+int DB_ReadHeaderData_gdbm(int *id, unsigned char **s, int *len, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
    datum key,content;
@@ -365,7 +365,7 @@ int DB_WriteWord_gdbm(char *word, long wordID, void *db)
 }
 
 
-long DB_WriteWordData_gdbm(long wordID, char *worddata, int lendata, void *db)
+long DB_WriteWordData_gdbm(long wordID, unsigned char *worddata, int lendata, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -456,7 +456,7 @@ int DB_ReadNextWordInvertedIndex_gdbm(char *word, char **resultword, long *wordI
 }
 
 
-long DB_ReadWordData_gdbm(long wordID, char **worddata, int *lendata, void *db)
+long DB_ReadWordData_gdbm(long wordID, unsigned char **worddata, int *lendata, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -498,7 +498,7 @@ int DB_EndWriteFiles_gdbm(void *db)
    return 0;
 }
 
-int DB_WriteFile_gdbm(int filenum, char *filedata,int sz_filedata, void *db)
+int DB_WriteFile_gdbm(int filenum, unsigned char *filedata,int sz_filedata, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -524,7 +524,7 @@ int DB_InitReadFiles_gdbm(void *db)
    return 0;
 }
 
-int DB_ReadFile_gdbm(int filenum, char **filedata,int *sz_filedata, void *db)
+int DB_ReadFile_gdbm(int filenum, unsigned char **filedata,int *sz_filedata, void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -571,7 +571,7 @@ int     DB_InitWriteSortedIndex_gdbm(void *db)
    return 0;
 }
 
-int     DB_WriteSortedIndex_gdbm(int propID, char *data, int sz_data,void *db)
+int     DB_WriteSortedIndex_gdbm(int propID, unsigned char *data, int sz_data,void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 
@@ -603,7 +603,7 @@ int     DB_InitReadSortedIndex_gdbm(void *db)
    return 0;
 }
 
-int     DB_ReadSortedIndex_gdbm(int propID, char **data, int *sz_data,void *db)
+int     DB_ReadSortedIndex_gdbm(int propID, unsigned char **data, int *sz_data,void *db)
 {
    struct Handle_DBgdbm *DB = (struct Handle_DBgdbm *)db;
 

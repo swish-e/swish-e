@@ -724,7 +724,7 @@ int DB_EndWriteFiles_Native(void *db)
    return 0;
 }
 
-int DB_WriteFile_Native(int filenum, char *filedata,int sz_filedata, void *db)
+int DB_WriteFile_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
@@ -747,7 +747,7 @@ int DB_InitReadFiles_Native(void *db)
    return 0;
 }
 
-int DB_ReadFile_Native(int filenum, char **filedata,int *sz_filedata, void *db)
+int DB_ReadFile_Native(int filenum, unsigned char **filedata,int *sz_filedata, void *db)
 {
     int     len;
     char   *buffer;
@@ -800,7 +800,7 @@ int     DB_InitWriteSortedIndex_Native(void *db)
    return 0;
 }
 
-int     DB_WriteSortedIndex_Native(int propID, char *data, int sz_data,void *db)
+int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db)
 {
    long tmp1,tmp2;
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
@@ -837,7 +837,7 @@ int     DB_InitReadSortedIndex_Native(void *db)
    return 0;
 }
 
-int     DB_ReadSortedIndex_Native(int propID, char **data, int *sz_data,void *db)
+int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
 {
    long next, id, tmp;
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;

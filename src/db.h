@@ -79,20 +79,20 @@ int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
 int     DB_InitWriteFiles(SWISH *sw, void *DB);
-int     DB_WriteFile(SWISH *sw, int filenum, char *filedata,int sz_filedata, void *DB);
+int     DB_WriteFile(SWISH *sw, int filenum, unsigned char *filedata,int sz_filedata, void *DB);
 int     DB_EndWriteFiles(SWISH *sw, void *DB);
 
 int     DB_InitReadFiles(SWISH *sw, void *DB);
-int     DB_ReadFile(SWISH *sw, int filenum, char **filedata,int *sz_filedata, void *DB);
+int     DB_ReadFile(SWISH *sw, int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
 int     DB_EndReadFiles(SWISH *sw, void *DB);
 
 
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB);
-int     DB_WriteSortedIndex(SWISH *sw, int propID, char *data, int sz_data,void *DB);
+int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_data,void *DB);
 int     DB_EndWriteSortedIndex(SWISH *sw, void *DB);
  
 int     DB_InitReadSortedIndex(SWISH *sw, void *DB);
-int     DB_ReadSortedIndex(SWISH *sw, int propID, char **data, int *sz_data,void *DB);
+int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB);
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB);
 
 struct MOD_DB
@@ -128,19 +128,19 @@ struct MOD_DB
     
     
     int    (*DB_InitWriteFiles) (void *DB);
-    int    (*DB_WriteFile) (int filenum, char *filedata,int sz_filedata, void *DB);
+    int    (*DB_WriteFile) (int filenum, unsigned char *filedata,int sz_filedata, void *DB);
     int    (*DB_EndWriteFiles) (void *DB);
 
     int    (*DB_InitReadFiles) (void *DB);
-    int    (*DB_ReadFile) (int filenum, char **filedata,int *sz_filedata, void *DB);
+    int    (*DB_ReadFile) (int filenum, unsigned char **filedata,int *sz_filedata, void *DB);
     int    (*DB_EndReadFiles) (void *DB);
     
     int    (*DB_InitWriteSortedIndex) (void *DB);
-    int    (*DB_WriteSortedIndex) (int propID, char *data, int sz_data,void *DB);
+    int    (*DB_WriteSortedIndex) (int propID, unsigned char *data, int sz_data,void *DB);
     int    (*DB_EndWriteSortedIndex) (void *DB);
      
     int    (*DB_InitReadSortedIndex) (void *DB);
-    int    (*DB_ReadSortedIndex) (int propID, char **data, int *sz_data,void *DB);
+    int    (*DB_ReadSortedIndex) (int propID, unsigned char **data, int *sz_data,void *DB);
     int    (*DB_EndReadSortedIndex) (void *DB);
 };
 

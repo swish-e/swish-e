@@ -351,7 +351,7 @@ int    *getLookupResultSortedProperties(RESULT * r)
     struct metaEntry *m = NULL;
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
-    char *buffer, *s;
+    unsigned char *buffer, *s;
     int sz_buffer;
 
     props = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
