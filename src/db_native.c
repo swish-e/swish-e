@@ -192,6 +192,11 @@ void *DB_Create_Native (char *dbname)
    DB->fileoffsetarray_maxsize = 0;
    DB->nextwordoffset = 0;
    DB->num_docs = 0;
+   DB->num_words = 0;
+   DB->worddata_counter = 0;
+   DB->worddata_wordID = NULL;
+   DB->worddata_offset = NULL;
+
    DB->mode = 1;
    DB->lastsortedindex = 0;
 
@@ -255,6 +260,10 @@ void *DB_Open_Native (char *dbname)
    DB->fileoffsetarray_maxsize = 0;
    DB->nextwordoffset = 0;
    DB->num_docs = 0;
+   DB->num_words = 0;
+   DB->worddata_counter = 0;
+   DB->worddata_wordID = NULL;
+   DB->worddata_offset = NULL;
    DB->mode = 0;
    DB->lastsortedindex = 0;
 
@@ -412,8 +421,40 @@ int DB_InitWriteWords_Native(void *db)
 int DB_EndWriteWords_Native(void *db)
 {
    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+   FILE *fp = (FILE *) DB->fp;
+   int i, wordlen;
+   long wordID,f_offset;
 
-   fputc(0, DB->fp);   /* End of words mark */
+   fputc(0, fp);   /* End of words mark */
+   
+
+         /* Now update word's data offset into the list of words */
+         /* Simple check  words and worddata must match */
+
+   if(DB->num_words != DB->worddata_counter)
+       progerrno("Internal DB_native error - DB->num_words != DB->worddata_counter");
+
+   for(i=0;i<DB->num_words;i++)
+   {
+       wordID = DB->worddata_wordID[i];
+       f_offset = DB->worddata_offset[i];
+        /* Position file pointer in word */
+       fseek(fp,wordID,SEEK_SET);
+        /* Jump over word length and word */
+       wordlen = uncompress1(fp,fgetc);   /* Get Word length */
+       fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
+        /* Jump also hash pointer */
+       fseek(fp,(long)sizeof(long),SEEK_CUR);  /* Jump Hash pointer */
+        /* Write offset to word data */
+       printlong(fp,f_offset);
+   } 
+   efree(DB->worddata_wordID);
+   DB->worddata_wordID = NULL;
+   efree(DB->worddata_offset);
+   DB->worddata_offset = NULL;
+   DB->worddata_counter = 0;
+       /* Restore file pointer at the end of file */
+   fseek(fp,0,SEEK_END);
    return 0;
 }
 
@@ -447,37 +488,28 @@ int DB_WriteWord_Native(char *word, long wordID, void *db)
     printlong(fp, (long) 0);    /* hash offset */
     printlong(fp, (long) 0);    /* word's data pointer */
 
+    DB->num_words++;
+
     return 0;
 }
 
 
 long DB_WriteWordData_Native(long wordID, unsigned char *worddata, int lendata, void *db)
 {
-    long f_offset;
-    int wordlen;
     struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
 
     FILE *fp = DB->fp;
 
+        /* We must be at the end of the file */
 
-        /* Update word's list with the pointer to word's data */
-    fseek(fp,0,SEEK_END);
-        /* f_offset is the file offset to word's data */
-    f_offset = ftell(fp);
-
-        /* Position file pointer in word */
-    fseek(fp,wordID,SEEK_SET);
-        /* Jump over word length and word */
-    wordlen = uncompress1(fp,fgetc);   /* Get Word length */
-    fseek(fp,(long)wordlen,SEEK_CUR);  /* Jump Word */
-        /* Jump also hash pointer */
-    fseek(fp,(long)sizeof(long),SEEK_CUR);  /* Jump Hash pointer */
-        /* Write offset to word data */
-    printlong(fp,f_offset);
-
-        /* reposition file pointer at the end of file.
-        ** BTW, this is also f_offset */
-    fseek(fp,0,SEEK_END);   /* Come back to the end */
+    if(!DB->worddata_counter)
+    {
+        DB->worddata_wordID = emalloc(DB->num_words * sizeof(long));
+        DB->worddata_offset = emalloc(DB->num_words * sizeof(long));
+    }
+        /* Preserve word's data offset */
+    DB->worddata_wordID[DB->worddata_counter] = wordID;
+    DB->worddata_offset[DB->worddata_counter++] = ftell(fp);
 
         /* Write the worddata to disk */
     compress1(lendata,fp, fputc);

@@ -51,7 +51,12 @@ struct Handle_DBNative
    int lasthashval[SEARCHHASHSIZE];
    long nextwordoffset;
    long lastsortedindex;
+   
+   int worddata_counter;
+   long *worddata_wordID;
+   long *worddata_offset;
 
+   int num_words;
    int num_docs;
 
    int mode;  /* 1 - Create  0 - Open */
