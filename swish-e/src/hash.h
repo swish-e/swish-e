@@ -23,7 +23,6 @@ unsigned numhash (int);
 unsigned bighash (char *);
 unsigned bignumhash (int);
 unsigned searchhash (char *);
-void readdefaultstopwords (INDEXDATAHEADER *);
 void addstophash (INDEXDATAHEADER *, char *);
 void addusehash (INDEXDATAHEADER *, char *);
 int isstopword (INDEXDATAHEADER *, char *);

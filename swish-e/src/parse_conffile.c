@@ -341,7 +341,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             {
                 if (lstrstr(sl->word[1], "SwishDefault"))
                 {
-                    readdefaultstopwords(&indexf->header);
+                    progwarn("SwishDefault is obsolete. See the CHANGES file.");
                 }
                 else if (lstrstr(sl->word[1], "File:"))
                 {               /* 2000-06-15 rasc */
