@@ -93,8 +93,12 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int begin, int maxhits 
         printf("ReadAllDocProperties:\n");
         fi.docProperties =  ReadAllDocPropertiesFromDisk( indexf, i+1 );
         dump_file_properties( indexf, &fi );
-	printf("Filenum and words in this file:");
-	dump_words_per_file( sw, indexf, &fi );
+	
+	if (! indexf->header.ignoreTotalWordCountWhenRanking )
+	{
+		printf("Filenum and words in this file:");
+		dump_words_per_file( sw, indexf, &fi );
+	}
         freefileinfo( &fi );
 
         printf("\n");
