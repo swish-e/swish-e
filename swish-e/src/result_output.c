@@ -349,18 +349,25 @@ void    printSortedResults(SWISH * sw)
         r->count = ++counter;   /* set rec. counter for output */
 
 
-        /* This may or man not be an optimization */
+        /* This may or may not be an optimization */
         // ReadAllDocPropertiesFromDisk( sw, r->indexf, r->filenum);
         
 
         if (md->extendedformat)
             printExtResultEntry(sw, f_out, md->extendedformat, r);
 
-        else
+        else 
         {
-            char *format = emalloc( (3* strlen( delimiter )) + 100 );
+            char *format;
 
-            sprintf( format, "%%r%s%%p%s\"%%t\"%s%%l", delimiter, delimiter, delimiter );
+            if ((delimiter = (md->stdResultFieldDelimiter)) )
+            {
+                format = emalloc( (3* strlen( delimiter )) + 100 );
+                sprintf( format, "%%r%s%%p%s%%t%s%%l", delimiter, delimiter, delimiter );
+            }
+            else
+                format = estrdup( "%r %p \"%t\" %l" );
+
             printExtResultEntry(sw, f_out, format, r);
             printStandardResultProperties(sw, f_out, r);
 
