@@ -180,7 +180,7 @@ void    indexpath(SWISH * sw, char *path)
 
 /* maybe some day this could be chunked reading? */
 
-char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_size)
+char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_size, int is_text)
 {
     long    c,
             offset;
@@ -206,7 +206,7 @@ char   *read_stream(SWISH *sw, char *name, FILE * fp, long filelen, long max_siz
         buffer[filelen] = '\0';
 
         /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
-        if ( strlen( (char *)buffer ) < bytes_read )
+        if ( is_text && strlen( (char *)buffer ) < bytes_read )
         {
             int i;
             progwarn("Substituted possible embedded null character(s) in file '%s'\n", name);

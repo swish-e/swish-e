@@ -773,8 +773,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         rd_buffer = NULL;
     else
 #endif
-    /* -- Read  all data  (len = 0 if filtered...) */
-    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
+    /* -- Read  all data  (len = 0 if filtered...), last 1 is flag that we are expecting text only */
+    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize, 1);
 
 
     /* just for fun so we can show total bytes shown */

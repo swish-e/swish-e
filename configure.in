@@ -7,7 +7,7 @@ AC_INIT(src/swish.c)
 
 dnl revision name
 AC_SUBST(VERSION)
-VERSION=2.3-dev-03
+VERSION=2.3-dev-04
 
 dnl Corresponds to NAME in src/Makefile.in
 AC_SUBST(PROJECT)
