@@ -1,0 +1,93 @@
+=head1 NAME
+
+Interface to the SWISH-E C library
+
+=head1 What is the swish-e C library
+
+It is a C library implementation based on swish-e-2.0 beta4, but
+many of the functions have been rewritten in order to get a 
+thread safe library.
+
+=head1 Syntax of the functions of the library
+
+At this moment (Aug 2000) there are 6 functions defined:
+
+=over 4
+
+=item struct SWISH *SwishOpen(char *IndexFiles);
+
+This functions opens and reads header info of the index files
+included in IndexFiles
+
+    myhandle=SwishOpen("file1.idx");
+
+Returns NULL on error
+
+=item void SwishClose(struct SWISH *handle);
+
+This function closes and frees the memory of a Swish handle
+
+=item int SwishSearch(struct SWISH *handle,char *words,int structure,char *properties,char *sortspec);
+
+This function executes a search for a handle
+
+Input data:
+
+    handle:  value returned by SwishOpen
+    words: the search string
+    structure: At this moment always one ( it will implement
+        the -t option of swish-e)
+    properties: Optional. Properties to display. Use NULL if
+                no properties
+    sortspec: Sort specs for the results. Use NULL if sort by rank
+
+Returns the number of hits or a negative value on error
+
+    results=SwishSearch(handle,"tit=test",1,"tit","date desc");
+      
+There is a new feature here that it is not included in swish-e-2.0: 
+You can specify several sorting properties including a combination
+of descending and ascending fields.
+
+    field1 asc field2 desc 
+
+=item struct result *SwishNext(struct SWISH *handle)
+
+This function returns next result. It must be executed after 
+SwishSearch.
+Returns NULL on error or when no more results are available
+
+=item int SwishSeek(struct SWISH *handle,int n)
+
+This function puts the results pointer in the nth reult
+Returns n if operation goes OK or a negative number on error.
+
+=item int SwishError(struct SWISH *handle)
+
+This function returns the last error
+
+=item Stem(word)
+
+XXX add
+
+=back
+
+=head1 Bug-Reports
+
+Please report bug reports to the swish-e discussion group.
+Feel also free to improve or enhance this feature.
+
+=head1 Author
+ 
+Aug 2000
+Jose Ruiz
+jmruiz@boe.es
+
+=head1 Document Info
+
+$Id$
+
+.
+
+
+

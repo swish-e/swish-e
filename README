@@ -1,17 +1,35 @@
 NAME
     The SWISH-E README File
 
-What is SWISHE?
-    SWISH-Enhanced is a fast, powerful, flexible, free, and easy to use
-    system for indexing collections of documents. The documents may be on a
-    local file system, or remotely accessed via http.
+What is SWISH-E?
+    SWISH-E is Simple Web Indexing System for Humans - Enhanced. SWISH-E can
+    quickly and easily index directories of files or remote web sites and
+    search the generated indexes.
 
-  Key features include
+    SWISH was created by Kevin Hughes to fill the need of the growing number
+    of Web administrators on the Internet - many of the indexing systems
+    were not well documented, were hard to use and install, and were too
+    complex for their own good. The system was widely used for several
+    years, long enough to collect some bug fixes and requests for
+    enhancements.
+
+    In Fall 1996, The Library of UC Berkeley received permission from Kevin
+    Hughes to implement bug fixes and enhancements to the original binary.
+    The result is SWISH-Enhanced or SWISH-E, brought to you by the SWISH-E
+    Development Team.
+
+    SWISH-E version 2 represents a major rewrite of the code and the
+    addition of many new features.
+
+  Key features
 
     *   Quickly index a large number of documents in different formats
-        including text, html, and XML
+        including text, HTML, and XML
 
-    *   Use "filters" to index any type of file such as PDF, gzip
+    *   Includes a web spider for indexing remote documents over HTTP
+
+    *   Use "filters" to index any type of file such as PDF, gzip, or
+        Postscript
 
     *   Document "properties" (some subset of the source document, usually
         defined as a META or XML elements) may be stored in the index and
@@ -35,7 +53,7 @@ What is SWISHE?
 Where do I get SWISH-E?
     The current version of SWISH-E can be found at:
 
-        http://sunsite.berkeley.edu/SWISH-E/
+    http://sunsite.berkeley.edu/SWISH-E/
 
     Please make sure you use a current version of swish-e.
 
@@ -50,48 +68,42 @@ How do I read the SWISH-E documentation?
 
        perldoc INSTALL
 
-    Check with your system adminstrator if this command is not available.
+    Check with your system administrator if this command is not available.
 
     Online documentation can be found at the SWISH-E web site listed above.
-    Optionally, if you have the pod2html utility on your system you can
-    convert the documenation into HTML format for viewing with a web
-    browser. Instructions for converting the documentation can be found in
-    INSTALL.
+    Optionally, you may view the documentation in HTML format in the html
+    directory of the distribution. PDF or Postscript format is also
+    available.
+
+  Included Documentation
 
     The following documentation is included in this SWISH-E distribution:
 
-    README
-        this file
+    *   README -- this file
 
-    INSTALL
-        Installation and basic usage instructions
+    *   INSTALL -- Installation and basic usage instructions
 
-    SWISH-INDEX
-        All about creating a SWISH-E index
+    *   SWISH-CONFIG -- Configuration File Directives
 
-    SWISH-SEARCH
-        All about searching with SWISH-E
+    *   SWISH-INDEX -- Running Swish and Command Line Switches
 
-    SWISH-FAQ
-        Common questions, and some answers
+    *   SWISH-SEARCH --All about Searching with SWISH-E
 
-    SWISH-FILTERS
-        Using filters to index non-standard documents
+    *   SWISH-FAQ -- Common questions, and some answers
 
-    SWISH-LIBRARY
-        Interface to the SWISH-E C library
+    *   SWISH-LIBRARY -- Interface to the SWISH-E C library
 
-    SWISH-PERL
-        Instructions for using the Perl library
+    *   SWISH-PERL -- Instructions for using the Perl library
 
-    CHANGES
-        List of feature changes and bug fixes
+    *   CHANGES -- List of feature changes and bug fixes
 
 Where do I get help with SWISH-E?
     If you need help with installing or using SWISH-E please subscribe to
     the SWISH-E mailing list. See visit the SWISH-E web site listed above
-    for informatation on subscribing to the SWISH-E list.
+    for information on subscribing to the SWISH-E list.
 
-Document revision
+Document Info
     $Id$
+
+    .
 
