@@ -390,6 +390,8 @@ RESULT *addsortresult(sw, sphead, r)
 
     if (r->rank > srch->bigrank)
         srch->bigrank = r->rank;
+
+
     if (sphead == NULL)
     {
         r->nextsort = NULL;
@@ -488,10 +490,10 @@ char  **getResultSortProperties(RESULT * r)
 
     props = (char **) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(char *));
 
+    /* $$$ -- need to pass in the max string length */
     for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
-    {
         props[i] = getResultPropAsString(r, indexf->propIDToSort[i]);
-    }
+
     return props;
 }
 
@@ -513,8 +515,7 @@ int     sortresults(SWISH * sw, int structure)
     struct MOD_ResultSort *rs = sw->ResultSort;
 	int    presorted_data_not_available = 0;
 
-
-    /* Sort each index file resultlist */
+    /* Sort each index file's resultlist */
     for (TotalResults = 0, db_results = sw->Search->db_results; db_results; db_results = db_results->next)
     {
         db_results->sortresultlist = NULL;
@@ -523,7 +524,7 @@ int     sortresults(SWISH * sw, int structure)
 
 		if(rs->isPreSorted)
 		{
-                /* Asign comparison routine to be used by qsort */
+             /* Asign comparison routine to be used by qsort */
             compResults = compResultsBySortedProps;
 
                 /* As we are sorting a unique index file, we can use the presorted data in the index file */
@@ -531,6 +532,7 @@ int     sortresults(SWISH * sw, int structure)
 			{
                 /* Load the presorted data */
                 tmp->iPropSort = getLookupResultSortedProperties(tmp);
+
 				/* If some of the properties is not presorted, use the
 				** old method (ignore presorted index)
 				*/
@@ -541,26 +543,27 @@ int     sortresults(SWISH * sw, int structure)
 				}
 			}
 		} 
+
+
 		if(!rs->isPreSorted || presorted_data_not_available)
 		{
-    			/* We do not have presorted tables or do not want to use them */
-                /* Asign comparison routine to be used by qsort */
+  			/* We do not have presorted tables or do not want to use them */
+            /* Assign comparison routine to be used by qsort */
             compResults = compResultsByNonSortedProps;
-			                /* As we are sorting a unique index file, we can use the presorted data in the index file */
+
+
+            /* Read the property value string(s) for all the sort properties */
             for (tmp = rp; tmp; tmp = tmp->next)
-			{
-                /* Load the presorted data */
                 tmp->PropSort = getResultSortProperties(tmp);
-			}
 		}
+
+
         /* Compute number of results */
         for (i = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-        {
             if (rtmp->structure & structure)
-            {
                 i++;
-            }
-        }
+
+
         if (i)                  /* If there is something to sort ... */
         {
             /* Compute array size */
@@ -568,23 +571,21 @@ int     sortresults(SWISH * sw, int structure)
 
             /* Build an array with the elements to compare and pointers to data */
             for (j = 0, rtmp = rp; rtmp; rtmp = rtmp->next)
-            {
                 if (rtmp->structure & structure)
-                {
                     ptmp[j++] = rtmp;
-                }
-            }
 
             /* Sort them */
             swish_qsort(ptmp, i, sizeof(RESULT *), compResults);
 
             /* Build the list */
             for (j = 0; j < i; j++)
-            {
                 db_results->sortresultlist = (RESULT *) addsortresult(sw, db_results->sortresultlist, ptmp[j]);
-            }
+
+
             /* Free the memory of the array */
             efree(ptmp);
+
+
             if (db_results->sortresultlist)
             {
                 db_results->currentresult = db_results->sortresultlist;
@@ -594,6 +595,17 @@ int     sortresults(SWISH * sw, int structure)
     }
     return TotalResults;
 }
+
+#ifdef RESORTFILES
+int     compFilenums(const void *s1, const void *s2)
+{
+    struct file *r1 = *(struct file * const *) s1;
+    struct file *r2 = *(struct file * const *) s2;
+
+    return r1->filenum - r2->filenum;
+}
+
+#endif
 
 /* 01/2001 Jose Ruiz */
 /* function for comparing data in order to
@@ -689,7 +701,7 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
             /* only sort properties */
             if ( !(m->metaType & META_PROP) )
                 break;
-                
+
 	       /* Array of filenums to store the sorted docs (referenced by its filenum) */
 	       sortFilenums = emalloc(indexf->filearray_cursize * sizeof(int));
 
@@ -699,10 +711,15 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
             {
                indexf->filearray[i]->currentSortProp = m; /* waste of space */
 #ifdef PROPFILE
-               indexf->filearray[i]->SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, m->metaID, 0 );
+               indexf->filearray[i]->SortProp = ReadSingleDocPropertiesFromDisk(sw, indexf, i+1, m->metaID, MAX_SORT_STRING_LEN );
+printf(" i = %d, filenum = %d\n",  i, indexf->filearray[i]->filenum );              
 #endif;               
             }
            /* Sort them using qsort. The main work is done by compFileProps */
+
+           /* NOTE: This messes up the order of file entries, so you cannot lookup
+            * properties by filenum after this point.
+            */
 
            swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFileProps);
 
@@ -725,6 +742,14 @@ void    sortFileProperties(SWISH *sw, IndexFILE * indexf)
 
            /* Store the integer array of presorted data */
            m->sorted_data = sortFilenums;
+
+#ifdef RESORTFILES
+            /* put the file array back in order */
+            /* This is done so that the property file can be read sequentially */
+           swish_qsort(indexf->filearray, indexf->filearray_cursize, sizeof(struct file *), &compFilenums);
+#endif           
+
+           
            break;
 		}
     }
