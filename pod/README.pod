@@ -194,24 +194,14 @@ Swish-e list.
 
 =head1 The Swish-e Documentation
 
-Documentation is provided as HTML pages installed in 
-$prefix/share/doc/swish-e where $prefix is /usr/local if building from 
+Documentation is provided as HTML pages installed in
+$prefix/share/doc/swish-e where $prefix is /usr/local if building from
 source, or /usr if installed as part of a package from your OS vendor.
 Under Windows $prefix is selected at installation time.
 
 A subset of the documentation is installed as system man pages as well.
 
 Documentation is also available on-line at http://swish-e.org.
-
-If your system includes the required support files and programs, the
-distribution make files can also generate the documentation in these
-formats:
-
-    Postscript
-    PDF (Adobe Acrobat)
-
-See L<INSTALL|INSTALL> for information on creating the PDF and Postscript
-versions of the documentation.
 
 Patches or updates to the documentation should be done against the POD files,
 located in the pod directory of the distribution, or (preferably) against
