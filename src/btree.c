@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "swish.h"
+#include "string.h"
+#include "compress.h"
+
 /*
 #define STANDALONE
 #define DEBUG
