@@ -19,6 +19,7 @@
 #define NO_GETTOD		/* Win32 has no Get Time Of Day  */
 #define NO_SYMBOLIC_FILE_LINKS	/* Win32 has no symbolic links */
 #undef INDEXPERMS		/* Win32 has no chmod() - DLN 2001-11-05 Umm, yes it does... */
+#define HAVE_SYS_TIMEB_H /* _ftime(), struct _timeb */ 
 #define HAVE_STDLIB_H	/* We need stdlib.h instead of unistd.h  */
 #define HAVE_PROCESS_H  /* _getpid is here  */
 #define HAVE_VARARGS_H  /* va_list, vsnprintf, etc */

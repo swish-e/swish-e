@@ -43,7 +43,7 @@ $Id$
 
 double TimeElapsed(void)
 {
-#ifdef WIN32
+#ifdef HAVE_SYS_TIMEB_H
 #include <sys/timeb.h>
 
 	struct _timeb ftimebuf;
