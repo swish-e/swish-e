@@ -39,11 +39,29 @@ FILE *open_external_program( SWISH *sw, char *prog )
 {
     char *cmd;
     FILE *fp;
+    size_t total_len;
+    struct swline *tmplist;
 
-    /* $$$ need to add config directive that will pass a string to the program */
-    cmd = emalloc( strlen(prog) + strlen("some string") + 20 );
+    /* get total length of configuration parameters */
 
-    sprintf( cmd, "%s \'%s\'", prog, "some string");
+    total_len = strlen(prog);
+
+    tmplist = sw->progparameterslist ;
+    while (tmplist) {
+        total_len += strlen( tmplist->line ) + 1;  /* separate by spaces */
+        tmplist = tmplist->next;
+	 }
+
+    cmd = emalloc( total_len + 20 );
+    strcpy( cmd, prog );
+
+    tmplist = sw->progparameterslist;
+    while (tmplist) {
+        strcat( cmd, " ");
+        strcat( cmd, tmplist->line );
+        tmplist = tmplist->next;
+	 }
+    
 
     fp = popen( cmd, FILEMODE_READ );
     efree ( cmd );
@@ -112,7 +130,7 @@ long truncate_doc_size;
                  *  program as noramlly is done.  But much smarter to
                  *  simply filter in the prog, after all.  Faster, too.
                  */
-                 
+
                 if ( fprop->filterprog )
                     progerr("Filters currently do not work with 'prog' document source");
 

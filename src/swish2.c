@@ -100,6 +100,9 @@ int i;
 	sw->pathconlist=sw->dirconlist=sw->fileconlist=sw->titconlist=sw->fileislist=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->inode_hash[i]=NULL;
 
+	/* prog system parameters */
+	sw->progparameterslist =  NULL;
+
 	sw->equivalentservers=NULL;
 	for(i=0;i<BIGHASHSIZE;i++) sw->url_hash[i]=NULL;
 

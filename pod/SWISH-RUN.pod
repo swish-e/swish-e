@@ -35,7 +35,7 @@ in L<SEARCHING|/"SEARCHING>.  Also, see L<SWISH-SEARCH|SWISH-SEARCH> for example
 SWISH-E usage:
 
     swish-e [-i dir file ... ] [-c file] [-f file] [-l] \
-            [-v (num)] [-S method(fs)] [-N path]
+            [-v (num)] [-S method(fs|http|prog)] [-N path]
 
 The C<-h> switch (help) will list the available SWISH-E command line arguments:
 
@@ -86,8 +86,17 @@ or via the C<-i> option.
 A few example programs are provided in the swish-e distribution
 located in the C<prog-bin> directory.
 
-Currently, there are a number of special L<configuration file|SWISH-CONFIG> directives that
-control the HTTP indexing method.
+The C<prog> method bypasses most of the configuration parameters available
+to the file system method -- settings such as C<IndexOnly> and C<FileRules>
+are ignored when using the C<prog> method.  This is because the external
+program can filter documents before passing the document onto swish.  In
+other words, when using the C<prog> method, only send the documents to swish
+that you want indexed.
+
+The C<http> method may be removed in the future since the C<prog> method
+can supply this functionality
+(an example web spider is provided in the prog-bin directory).
+
 
 =item -f *indexfile* (index file)
 

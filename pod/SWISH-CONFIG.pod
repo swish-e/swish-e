@@ -235,6 +235,10 @@ L<StoreDescription|/"item_StoreDescription"> [XML <tag>|HTML <meta>|TXT size]
 
 =item *
 
+L<SwishProgParameters|/"item_SwishProgParameters> *list of parameters*
+
+=item *
+
 L<SwishSearchDefaultRule|/"item_SwishSearchDefaultRule">   [<AND-WORD>|<or-word>]
 
 =item *
@@ -751,6 +755,21 @@ the entire contents of the tag.
 
     StoreDescription HTML <body> 20
     StoreDescription XML  <desc> 40
+
+=item SwishProgParameters *list of parameters*
+
+This is a list of parameters that will be sent to the external program when
+running with the "prog" document source method.
+
+    SwishProgParameters /path/to/config hello there
+    IndexDir /path/to/program.pl
+
+Then running:
+
+    swish-e -c config -S prog
+
+swish will execute C</path/to/program.pl> and pass
+C</path/to/config hello there> as three command line arguments to the program.
 
 =item TruncateDocSize *number of characters*
 
