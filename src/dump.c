@@ -415,10 +415,12 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
     {
         meta_entry = indexf->header.metaEntryArray[i];
         
-        printf("%s id:%d type:%d ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
+        printf("%20s : id=%2d type=%2d ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
 
         if ( is_meta_index( meta_entry ) )
-            printf(" META_INDEX");
+            printf(" META_INDEX  Rank Bias=%3d", meta_entry->rank_bias );
+            
+            
 
         if ( is_meta_internal( meta_entry ) )
             printf(" META_INTERNAL");

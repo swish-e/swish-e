@@ -429,7 +429,7 @@ static int get_param_number(char ***argv, char c )
 
     num = strtol( string, &badchar, 10 ); // would base zero be more flexible?
     
-    if ( num == ULONG_MAX )
+    if ( num == LONG_MAX || num == LONG_MIN )
         progerrno("Failed to convert '-%c %s' to a number: ", c, string );
 
     if ( *badchar )

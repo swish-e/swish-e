@@ -47,3 +47,4 @@ void unSwapLocDataEntry(SWISH *,ENTRY *);
 
 
 #define MAXINTCOMPSIZE 5
+
