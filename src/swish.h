@@ -424,6 +424,12 @@ typedef struct
     char   *savedasheader;
     int     lensavedasheader;
 
+    /* vars for numberchars */  /* Not yet stored in the header. */ 
+    int     lennumberchars;     /* Probably don't need it for searching */
+    char   *numberchars;
+    int     numberchars_used_flag;
+    
+
     int     lenindexedon;
     char   *indexedon;
 
@@ -464,6 +470,7 @@ typedef struct
     int     ignorelastcharlookuptable[256];
     int     bumpposcharslookuptable[256];
     int     translatecharslookuptable[256]; /* $$$ rasc 2001-02-21 */
+    int     numbercharslookuptable[256];    /* Dec 12, 2001 - moseley -- mostly for ignoring numbers */
 
     /* values for handling stopwords */
     struct swline *hashstoplist[HASHSIZE];

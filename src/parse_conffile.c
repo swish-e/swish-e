@@ -262,6 +262,22 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         }
 
 
+        if (strcasecmp(w0, "IgnoreNumberChars") == 0)
+        {
+            if (sl->n == 2)
+            {
+                indexf->header.numberchars = SafeStrCopy(indexf->header.numberchars, sl->word[1], &indexf->header.lennumberchars);
+                sortstring(indexf->header.numberchars);
+                makelookuptable(indexf->header.numberchars, indexf->header.numbercharslookuptable);
+                indexf->header.numberchars_used_flag = 1;  /* Flag that it is used */
+            }
+            else
+                progerr("%s: requires one value (a set of characters)", w0);
+
+            continue;
+        }
+
+
         if (strcasecmp(w0, "WordCharacters") == 0)
         {
             if (sl->n == 2)
