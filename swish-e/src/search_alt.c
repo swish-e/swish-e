@@ -42,6 +42,8 @@ $Id$
 #include "search.h"
 #include "search_alt.h"
 
+static char *convAltSearch2SwishStr (char *str);
+
 
 /*
 ** ----------------------------------------------
@@ -95,41 +97,13 @@ void freeModule_SearchAlt (SWISH *sw)
   return;
 }
 
-
-
-/*
-** ----------------------------------------------
-** 
-**  Module config code starts here
-**
-** ----------------------------------------------
-*/
-
-/* 
-  -- Return selected RuleNumber for default rule.
-  -- defined via current Swish Search Boolean OP Settings for user.  
-*/
-
-static int     u_SelectDefaultRulenum(SWISH * sw, char *word)
-{
-    if (!strcasecmp(word, sw->SearchAlt->srch_op.and))
-        return AND_RULE;
-    else if (!strcasecmp(word, sw->SearchAlt->srch_op.or))
-        return OR_RULE;
-    return NO_RULE;
-}
-
-
-
-
-
 /*
  -- Config Directives
  -- Configuration directives for this Module
  -- return: 0/1 = none/config applied
 */
 
-int configModule_SearchAlt  (SWISH *sw, StringList *sl)
+static int configModule_SearchAlt  (SWISH *sw, StringList *sl)
 
 {
   struct MOD_SearchAlt *msa = sw->SearchAlt;
@@ -164,6 +138,36 @@ int configModule_SearchAlt  (SWISH *sw, StringList *sl)
 }
 
 
+
+
+/*
+** ----------------------------------------------
+** 
+**  Module config code starts here
+**
+** ----------------------------------------------
+*/
+
+/* 
+  -- Return selected RuleNumber for default rule.
+  -- defined via current Swish Search Boolean OP Settings for user.  
+*/
+
+int     u_SelectDefaultRulenum(SWISH * sw, char *word)
+{
+    if (!strcasecmp(word, sw->SearchAlt->srch_op.and))
+        return AND_RULE;
+    else if (!strcasecmp(word, sw->SearchAlt->srch_op.or))
+        return OR_RULE;
+    return NO_RULE;
+}
+
+
+
+
+
+
+
 /*
 ** ----------------------------------------------
 ** 
@@ -181,7 +185,7 @@ int configModule_SearchAlt  (SWISH *sw, StringList *sl)
   -- Return: (char *) swish-search-string
 */
 
-char *convAltSearch2SwishStr (char *str) 
+static char *convAltSearch2SwishStr (char *str) 
 {
   StringList *slst;
   char   *sr_new, *p, *tmp;

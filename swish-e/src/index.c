@@ -136,8 +136,12 @@ $Id$
 #include "db.h"
 #include "dump.h"
 #include "swish_qsort.h"
+#include "swish_words.h"
 
 static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
+static void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
+static void unSwapLocData(SWISH *,int, ENTRY *);
+static void sortSwapLocData(SWISH * , ENTRY *);
 
 
 
@@ -2090,72 +2094,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
 
 
-/*  These 2 routines fix the problem when a word ends with mutiple
-**  IGNORELASTCHAR's (eg, qwerty'. ).  The old code correctly deleted
-**  the ".", but didn't check if the new last character ("'") is also
-**  an ignore character.
-*/
-void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
-{
-    int     k,j,i = strlen(word);
-
-    /* Get rid of specified last char's */
-    /* for (i=0; word[i] != '\0'; i++); */
-    /* Iteratively strip off the last character if it's an ignore character */
-    while ((i > 0) && (isIgnoreLastChar(header, word[--i])))
-    {
-        word[i] = '\0';
-
-        /* We must take care of the escaped characeters */
-        /* Things like hello\c hello\\c hello\\\c can appear */
-        for(j=0,k=i-1;k>=0 && word[k]=='\\';k--,j++);
-        
-        /* j contains the number of \ */
-        if(j%2)   /* Remove the escape if even */
-        {
-             word[--i]='\0';    
-        }
-    }
-}
-
-void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
-{
-    int     j,
-            k;
-    int     i = 0;
-
-    /* Keep going until a char not to ignore is found */
-    /* We must take care of the escaped characeters */
-    /* Things like \chello \\chello can appear */
-
-    while (word[i])
-    {
-        if(word[i]=='\\')   /* Jump escape */
-            k=i+1;
-        else
-            k=i;
-        if(!word[k] || !isIgnoreFirstChar(header, word[k]))
-            break;
-        else
-            i=k+1;
-    }
-
-    /* If all the char's are valid, just return */
-    if (0 == i)
-        return;
-    else
-    {
-        for (k = i, j = 0; word[k] != '\0'; j++, k++)
-        {
-            word[j] = word[k];
-        }
-        /* Add the NULL */
-        word[j] = '\0';
-    }
-}
-
-
-
 static void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *word_position)
 {
     int     i;
@@ -2742,3 +2680,196 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     if(buffer != static_buffer)
         efree(buffer);
 }
+
+
+
+/* 09/00 Jose Ruiz
+** Function to swap location data to a temporal file or ramdisk to save
+** memory. Unfortunately we cannot use it with IgnoreLimit option
+** enabled.
+** The data has been compressed previously in memory.
+** Returns the pointer to the file.
+*/
+static void SwapLocData(SWISH * sw, ENTRY *e, unsigned char *buf, int lenbuf)
+{
+    int     idx_swap_file;
+    struct  MOD_Index *idx = sw->Index;
+
+    /* 2002-07 jmruiz - Get de corrsponding swap file */
+    /* Get the corresponding hash value to this word  */
+    /* IMPORTANT!!!! - The routine being used here to compute the hash */  
+    /* must be the same used to store the words */
+    /* Then we must get the corresponding swap file index */
+    /* Since we cannot have so many swap files (VERYBIGHASHSIZE for verybighash */
+    /* routine) we must scale the hash into SWAP_FILES */
+    idx_swap_file = (verybighash(e->word) * (MAX_LOC_SWAP_FILES -1))/(VERYBIGHASHSIZE -1);
+
+    if (!idx->fp_loc_write[idx_swap_file])
+    {
+        idx->fp_loc_write[idx_swap_file] = create_tempfile(sw, F_WRITE_BINARY, "loc", &idx->swap_location_name[idx_swap_file], 0 );
+    }
+
+    compress1(lenbuf, idx->fp_loc_write[idx_swap_file], idx->swap_putc);
+    if (idx->swap_write(buf, 1, lenbuf, idx->fp_loc_write[idx_swap_file]) != (unsigned int) lenbuf)
+    {
+        progerr("Cannot write location to swap file");
+    }
+}
+
+/* 2002-07 jmruiz - New -e schema */
+/* Get location data from swap file */
+/* If e is null, all data will be restored */
+/* If e si not null, only the location for this data will be readed */
+static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
+{
+    unsigned char *buf;
+    int     lenbuf;
+    struct MOD_Index *idx = sw->Index;
+    ENTRY *e;
+    LOCATION *l;
+    FILE *fp;
+
+    /* Check if some swap file is being used */
+    if(!idx->fp_loc_write[idx_swap_file] && !idx->fp_loc_read[idx_swap_file])
+       return;
+
+    /* Check if the file is opened for write and close it */
+    if(idx->fp_loc_write[idx_swap_file])
+    {
+        /* Write a 0 to mark the end of locations */
+        idx->swap_putc(0,idx->fp_loc_write[idx_swap_file]);
+        idx->swap_close(idx->fp_loc_write[idx_swap_file]);
+        idx->fp_loc_write[idx_swap_file] = NULL;
+    }
+
+    /* Reopen in read mode for (for faster reads, I suppose) */
+    if(!idx->fp_loc_read[idx_swap_file])
+    {
+        if (!(idx->fp_loc_read[idx_swap_file] = fopen(idx->swap_location_name[idx_swap_file], F_READ_BINARY)))
+            progerrno("Could not open temp file %s: ", idx->swap_location_name[idx_swap_file]);
+    }
+    else
+    {
+        /* File already opened for read -> reset pointer */
+        fseek(idx->fp_loc_read[idx_swap_file],0,SEEK_SET);
+    }
+
+    fp = idx->fp_loc_read[idx_swap_file];
+    while((lenbuf = uncompress1(fp, idx->swap_getc)))
+    {
+        if(ep == NULL)
+        {
+            buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);
+            idx->swap_read(buf, lenbuf, 1, fp);
+            e = *(ENTRY **)buf;
+            /* Store the locations in reverse order - Faster. They will be
+            ** sorted later */
+            l = (LOCATION *) buf;
+            l->next = e->allLocationList;
+            e->allLocationList = l;
+        }
+        else
+        {
+            idx->swap_read(&e,sizeof(ENTRY *),1,fp);
+            if(ep == e)
+            {
+                buf = (unsigned char *) Mem_ZoneAlloc(idx->totalLocZone,lenbuf);             
+                memcpy(buf,&e,sizeof(ENTRY *));
+                idx->swap_read(buf + sizeof(ENTRY *),lenbuf - sizeof(ENTRY *),1,fp);
+                /* Store the locations in reverse order - Faster. They will be
+                ** sorted later */
+                l = (LOCATION *) buf;
+                l->next = e->allLocationList;
+                e->allLocationList = l;
+            }
+            else
+            {
+                /* Just advance file pointer */
+                idx->swap_seek(fp,lenbuf - sizeof(ENTRY *),SEEK_CUR);
+            }
+        }
+    }
+}
+
+/* 2002-07 jmruiz - Sorts unswaped location data by metaname, filenum */
+static void sortSwapLocData(SWISH * sw, ENTRY *e)
+{
+    int i, j, k, metaID;
+    int    *pi = NULL;
+    unsigned char *ptmp,
+           *ptmp2,
+           *compressed_data;
+    LOCATION **tmploc;
+    LOCATION *l, *prev=NULL, **lp;
+
+    /* Count the locations */
+    for(i = 0, l = e->allLocationList; l;i++, l = l->next);
+    
+    /* Very trivial case */
+    if(i < 2)
+        return;
+
+    /* */
+    /* Now, let's sort by metanum, offset in file */
+
+    /* Compute array wide for sort */
+    j = 2 * sizeof(int) + sizeof(void *);
+
+    /* Compute array size */
+    ptmp = (void *) emalloc(j * i);
+
+    /* Build an array with the elements to compare
+       and pointers to data */
+
+    /* Very important to remind - data was read from the loc
+    ** swap file in reverse order, so, to get data sorted
+    ** by filenum we just need to use a reverse counter (i - k)
+    ** as the other value for sorting (it has the same effect
+    ** as filenum)
+    */
+    for(k=0, ptmp2 = ptmp, l = e->allLocationList ; k < i; k++, l = l->next)
+    {
+        pi = (int *) ptmp2;
+
+        compressed_data = (unsigned char *)l;
+        /* Jump fileoffset */
+        compressed_data += sizeof(LOCATION *);
+
+        metaID = uncompress2(&compressed_data);
+        pi[0] = metaID;
+        pi[1] = i-k;
+        ptmp2 += 2 * sizeof(int);
+
+        lp = (LOCATION **)ptmp2;
+        *lp = l;
+        ptmp2 += sizeof(void *);
+    }
+
+    /* Sort them */
+    swish_qsort(ptmp, i, j, &icomp2);
+
+    /* Store results */
+    for (k = 0, ptmp2 = ptmp; k < i; k++)
+    {
+        ptmp2 += 2 * sizeof(int);
+
+        l = *(LOCATION **)ptmp2;
+        if(!k)
+            e->allLocationList = l;
+        else
+        {
+            tmploc = (LOCATION **)prev;
+            *tmploc = l;
+        }
+        ptmp2 += sizeof(void *);
+        prev = l;
+    }
+    tmploc = (LOCATION **)l;
+    *tmploc = NULL;
+
+    /* Free the memory of the sorting array */
+    efree(ptmp);
+                 
+}
+
+

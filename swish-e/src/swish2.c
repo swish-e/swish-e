@@ -42,6 +42,14 @@
 /* Moved here so it's in the library */
 unsigned int DEBUG_MASK = 0;
 
+/*************************************************************************
+* SwishNew -- create a search swish structure
+*
+*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish.c swish_new
+*
+*  $$$ Please join these routines!
+*
+**************************************************************************/
 
 
 /* 
@@ -59,7 +67,6 @@ SWISH  *SwishNew()
     memset(sw, 0, sizeof(SWISH));
 
     initModule_DB(sw);
-    initModule_SearchAlt(sw);
     initModule_Swish_Words(sw);  /* allocate a buffer */
 
 
@@ -82,74 +89,68 @@ SWISH  *SwishNew()
 }
 
 
-
-
-
 void    SwishClose(SWISH * sw)
 {
     IndexFILE *tmpindexlist;
     int     i;
 
-    if (sw) {
-        /* Close any pending DB */
-        tmpindexlist = sw->indexlist;
-        while (tmpindexlist) {
-            if (tmpindexlist->DB)
-                DB_Close(sw, tmpindexlist->DB);
-            tmpindexlist = tmpindexlist->next;
-        }
+    if ( !sw )
+        return;
 
-        freeModule_Swish_Words(sw);
-        freeModule_SearchAlt(sw);
-        freeModule_DB(sw);
-
-
-
-        /* Free MetaNames and close files */
-        tmpindexlist = sw->indexlist;
-
-
-        while (tmpindexlist)
-        {
-            /* free the meteEntry array */
-            if (tmpindexlist->header.metaCounter)
-                freeMetaEntries(&tmpindexlist->header);
-
-            /* Free stopwords structures */
-            freestophash(&tmpindexlist->header);
-            freeStopList(&tmpindexlist->header);
-
-            freebuzzwordhash(&tmpindexlist->header);
-
-            free_header(&tmpindexlist->header);
-
-            for (i = 0; i < 256; i++)
-                if (tmpindexlist->keywords[i])
-                    efree(tmpindexlist->keywords[i]);
-
-
-            tmpindexlist = tmpindexlist->next;
-        }
-
-        freeindexfile(sw->indexlist);
-
-        if (sw->Prop_IO_Buf) {
-            efree(sw->Prop_IO_Buf);
-            sw->Prop_IO_Buf = NULL;
-        }
-
-        /* Free SWISH struct */
-        efree(sw);
+    /* Close any pending DB */
+    tmpindexlist = sw->indexlist;
+    while (tmpindexlist) {
+        if (tmpindexlist->DB)
+            DB_Close(sw, tmpindexlist->DB);
+        tmpindexlist = tmpindexlist->next;
     }
+
+    freeModule_Swish_Words(sw);
+    freeModule_DB(sw);
+
+
+
+    /* Free MetaNames and close files */
+    tmpindexlist = sw->indexlist;
+
+
+    while (tmpindexlist)
+    {
+        /* free the meteEntry array */
+        if (tmpindexlist->header.metaCounter)
+            freeMetaEntries(&tmpindexlist->header);
+
+        /* Free stopwords structures */
+        freestophash(&tmpindexlist->header);
+        freeStopList(&tmpindexlist->header);
+
+        freebuzzwordhash(&tmpindexlist->header);
+
+        free_header(&tmpindexlist->header);
+
+        for (i = 0; i < 256; i++)
+            if (tmpindexlist->keywords[i])
+                efree(tmpindexlist->keywords[i]);
+
+
+        tmpindexlist = tmpindexlist->next;
+    }
+
+    freeindexfile(sw->indexlist);
+
+    if (sw->Prop_IO_Buf) {
+        efree(sw->Prop_IO_Buf);
+        sw->Prop_IO_Buf = NULL;
+    }
+
+    /* Free SWISH struct */
+    efree(sw);
 }
 
 
 /*************************************************************************
-* SwishInit -- create a search swish structure
+* SwishInit -- create a swish hanlde
 *
-*  NOTE: ANY CHANGES HERE SHOULD ALSO BE MADE IN swish.c swish_new
-*
-*  $$$ Please join these routines!
 *
 **************************************************************************/
 
@@ -313,17 +314,6 @@ char  **SwishStopWords(SWISH * sw, char *filename, int *numstops)
     return NULL;
 }
 
-char   *SwishWords(SWISH * sw, char *filename, char c)
-{
-    IndexFILE *indexf;
 
-    indexf = sw->indexlist;
-    while (indexf) {
-        if (!strcasecmp(indexf->line, filename)) {
-            return getfilewords(sw, c, indexf);
-        }
-    }
-    return "";
-}
 
 

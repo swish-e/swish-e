@@ -22,6 +22,8 @@ void freefileinfo(FileRec *);
 
 unsigned char *storeDocProperties (docProperties *, int *);
 
+unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed );
+
 propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag );
 void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename );
 int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
@@ -29,9 +31,6 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 
 unsigned char *fetchDocProperties ( FileRec *, char * );
 
-void addSearchResultDisplayProperty (SWISH *, char* );
-void addSearchResultSortProperty (SWISH *, char*, int );
-void printStandardResultProperties(FILE *, RESULT *);
 
 void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 

@@ -27,7 +27,9 @@
 #ifndef __HasSeenModule_Search
 #define __HasSeenModule_Search 1
 
-BEGIN_C_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /*
@@ -93,7 +95,7 @@ struct s_RESULT
     RESULT     *next;
     DB_RESULTS *db_results;     /* parent object */
 
-    int         count;          /* result Entry-Counter */
+//    int         count;          /* result Entry-Counter */
     int         filenum;        /* there's an extra four bytes we don't need */
     FileRec     fi;             /* This is used to cache the properties and the seek index */
     int         rank;
@@ -140,6 +142,7 @@ struct s_DB_RESULTS
     RESULT_LIST *resultlist;            /* pointer to list of results (indirectly) */
     RESULT      *sortresultlist;        /* linked list of RESULTs in sort order (actually just points to resultlist->head) */
     RESULT      *currentresult;         /* pointer to the current seek position */
+
     struct swline *parsed_words;        /* parsed search query */
     struct swline *removed_stopwords;   /* stopwords that were removed from the query */
 
@@ -157,12 +160,15 @@ struct s_RESULTS_OBJECT
     char           *query;              /* in case user forgot what they searched for */
 
     DB_RESULTS     *db_results;         /* Linked list of results - one for each index file */
+
+    int             cur_rec_number;     /* current record number in list */
     
     int             total_results;      /* total number of results */
     int             total_files;        /* total number of files in all combined indexes */
     int             search_words_found; /* flag that some search words were found in some index after parsing -- for error message */
     int             lasterror;          /* used to save errors while processing more than one index file */
     int             bigrank;            /* Largest rank found, for scaling */
+    int             rank_scale_factor;  /* for scaling each results rank when fetching with SwishNextResult */
     MEM_ZONE       *resultSearchZone;   /* pool for allocating results */
 
     MEM_ZONE       *resultSortZone;     /* pool for allocating sort keys for each result */
@@ -172,17 +178,29 @@ struct s_RESULTS_OBJECT
 };
 
 SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query );
+void SwishSetStructure( SEARCH_OBJECT *srch, int structure );
+void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter );
+void SwishSetSort( SEARCH_OBJECT *srch, char *sort );
 void Free_Search_Object( SEARCH_OBJECT *srch );
-void Free_Results_Object( RESULTS_OBJECT *results );
+
 
 RESULTS_OBJECT *SwishQuery(SWISH *sw, char *words );
 RESULTS_OBJECT *SwishExecute(SEARCH_OBJECT *srch, char *words);
+
+int SwishHits( RESULTS_OBJECT *results );
+
+
+void Free_Results_Object( RESULTS_OBJECT *results );
+
 RESULT *SwishNextResult(RESULTS_OBJECT *results);
 int     SwishSeekResult(RESULTS_OBJECT *results, int pos);
 void set_query(SEARCH_OBJECT *srch, char *words );
 int isMetaNameOpNext(struct swline *);
 
-END_C_DECLS
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
 
 
 #endif /* __HasSeenModule_Search */
