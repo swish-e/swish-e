@@ -109,7 +109,8 @@ int i;
 
 void init_header(INDEXDATAHEADER *header)
 {
-	int i;
+	/* start everything at 0 or NULL and set what we want */
+	memset(header, 0, sizeof(INDEXDATAHEADER));
 
 	header->lenwordchars=header->lenbeginchars=header->lenendchars=header->lenignorelastchar=header->lenignorefirstchar=header->lenbumpposchars=MAXCHARDEFINED;
 
@@ -149,39 +150,12 @@ void init_header(INDEXDATAHEADER *header)
 	header->indexa = (char *)emalloc(header->lenindexa + 1);header->indexa[0]='\0';
 	header->savedasheader = (char *)emalloc(header->lensavedasheader + 1);header->savedasheader[0]='\0';
 	header->indexedon = (char *)emalloc(header->lenindexedon + 1);header->indexedon[0]='\0';
-	header->totalfiles=header->totalwords=0;
-	header->applyStemmingRules = 0;                 /* added 11/24/98 */
-	header->applySoundexRules = 0;                  /* added DN 09/01/99 */
-/* removed - Patents ..
-	header->applyFileInfoCompression = 0;
-	*/
-	header->ignoreTotalWordCountWhenRanking = 0;    /* added 11/24/98 */
+
+	header->ignoreTotalWordCountWhenRanking = 1;
 	header->minwordlimit = MINWORDLIMIT;
 	header->maxwordlimit = MAXWORDLIMIT;
+
 	makelookuptable("",header->bumpposcharslookuptable); 
-
-	header->metaEntryArray=NULL;
-	header->metaCounter=0;
-
-	header->stopPos = 0;
-	header->stopMaxSize = 0;
-	header->stopList = NULL;
-	for (i=0; i<HASHSIZE; i++)
-	{
-	    header->hashstoplist[i] = NULL;
-        header->hashbuzzwordlist[i] = NULL;
-        header->hashuselist[i] = NULL;
-    }
-
-	header->is_use_words_flag = 0;
-	header->buzzwords_used_flag = 0;
-
-	header->locationlookup=NULL;
-	header->structurelookup=NULL;
-	header->structfreqlookup=NULL;
-	header->pathlookup=NULL;
-
-	header->filetotalwordsarray=NULL;
 
     BuildTranslateChars(header->translatecharslookuptable,"",""); 
 }
@@ -195,9 +169,9 @@ void free_header(INDEXDATAHEADER *header)
 	if(header->lenignorefirstchar) efree(header->ignorefirstchar);
 	if(header->lenignorelastchar) efree(header->ignorelastchar);
 	if(header->lenindexn) efree(header->indexn);
-        if(header->lenindexa) efree(header->indexa);
-        if(header->lenindexp) efree(header->indexp);
-        if(header->lenindexd) efree(header->indexd);
+	if(header->lenindexa) efree(header->indexa);
+	if(header->lenindexp) efree(header->indexp);
+	if(header->lenindexd) efree(header->indexd);
 	if(header->lenindexedon) efree(header->indexedon);		
 	if(header->lensavedasheader) efree(header->savedasheader);	
 	if(header->lenbumpposchars) efree(header->bumpposchars);

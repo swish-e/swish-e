@@ -373,6 +373,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADER");
         if ( structure & IN_COMMENTS ) printf(" COMMENT");
+		if ( structure & IN_META ) printf(" META");
         if ( structure & IN_BODY ) printf(" BODY");
         if ( structure & IN_HEAD ) printf(" HEAD");
         if ( structure & IN_TITLE ) printf(" TITLE");
@@ -657,14 +658,7 @@ int     countwordstr(SWISH * sw, char *s, int filenum)
     return indexstring(sw, s, filenum, structure, 1, &metaID, &position);
 }
 
-/* Parses the words in a comment.
-*/
 
-int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int metaID, int *position)
-{
-    structure |= IN_COMMENTS;
-    return indexstring(sw, tag + 1, filenum, structure, 1, &metaID, position);
-}
 
 /* Removes words that occur in over _plimit_ percent of the files and
 ** that occur in over _flimit_ files (marks them as stopwords, that is).
@@ -913,49 +907,35 @@ int     removestops(SWISH * sw)
 
 /* This is somewhat similar to the rank calculation algorithm
 ** from WAIS (I think). Any suggestions for improvements?
-** Note that ranks can't be smaller than 1, emphasized words
-** (words in titles, headers) have ranks multiplied by at least 5
-** (just a guess), and ranks divisible by 128 are bumped up by one
-** (to make the compression scheme with '\0' as a line delimiter
-** work). Fudging with the ranks doesn't seem to make much difference.
+** Note that ranks can't be smaller than 1.
 */
 
-int     getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCountWhenRanking)
+int getrank(SWISH * sw, int freq, int tfreq, int words, int structure, int ignoreTotalWordCountWhenRanking)
 {
-    double  d,
-            e,
-            f;
-    int     tmprank;
-    int     emphasized;
+    double  rank;
+    int     irank;
+    double  emphasized;
 
-    if ((EMPHASIZECOMMENTS && (structure & IN_COMMENTS)) || (structure & IN_HEADER) || (structure & IN_TITLE))
-        emphasized = 5;
+    if ((EMPHASIZECOMMENTS && (structure & IN_COMMENTS)) || (structure & (IN_HEADER | IN_TITLE | IN_META)))
+        emphasized = 5.0;
     else
-        emphasized = 0;
+        emphasized = 1.0;
 
-    if (freq < 5)
-        freq = 5;
-    d = 1.0 / (double) tfreq;
-    e = (log((double) freq) + 10.0) * d;
+    rank = 1.0 / (double) tfreq;
+    rank = (log((double) freq) + 10.0) * rank;
+
     if (ignoreTotalWordCountWhenRanking)
-    {
-        e /= words;
-    }
+		rank /= 100.0;
     else
-    {
-        /* scale the rank down a bit. a larger has the effect of
-           making small differences in work frequency wash out */
-        e /= 100;
-    }
-    f = e * 10000.0;
+        rank /= words;
 
-    tmprank = (int) f;
-    if (tmprank <= 0)
-        tmprank = 1;
-    if (emphasized)
-        tmprank *= emphasized;
+    rank = rank * 10000.0 * 100.0 * emphasized + 0.5;
 
-    return tmprank;
+    irank = (int) rank;
+    if (irank <= 0)
+        irank = 1;
+
+    return irank;
 }
 
 
