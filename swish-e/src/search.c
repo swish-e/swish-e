@@ -286,8 +286,6 @@ int     SwishAttach(SWISH * sw, int printflag)
     struct MOD_Search *srch = sw->Search;
     IndexFILE *indexlist;
 
-/* 06/00 Jose Ruiz
-** Added to handle several index file headers */
     IndexFILE *tmplist;
  
     indexlist = sw->indexlist;

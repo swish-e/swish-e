@@ -55,6 +55,7 @@ typedef struct
 {
     PROP_INDEX  *prop_index;  /* cache of index pointers for this file */
     propEntry   *SortProp;    /* current property for this file */
+char *file_name;
 } PROP_LOOKUP;
 
 static struct metaEntry *CurrentPreSortMetaEntry;
@@ -696,6 +697,8 @@ static int     compFileProps(const void *s1, const void *s2)
     int         a = (int)r1; 
     int         b = (int)r2;
 
+printf("\n-------------\ncomparing file %d [%s] with %d [%s]\n", a, PropLookup[a].file_name, b, PropLookup[b].file_name );   
+
     return Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
 }
 
@@ -806,6 +809,33 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
             PropLookup = emalloc( total_files * sizeof( PROP_LOOKUP ));
             memset( PropLookup, 0, total_files * sizeof( PROP_LOOKUP ) );
+{
+    propEntry *d;
+    FileRec fi;
+    struct metaEntry *me = getPropNameByName( header, "swishdocpath" );
+    char *s;
+
+
+printf("Reading metaID %d\n\n", me->metaID );    
+
+    for (i = 0; i < total_files; i++)
+    {
+        memset(&fi, 0, sizeof( FileRec ));
+        fi.filenum = i+1;
+
+        d = ReadSingleDocPropertiesFromDisk(sw, indexf, &fi, me->metaID, 0 );
+
+printf("length for %d = %d\n", i, d->propLen );        
+
+        s = emalloc( d->propLen + 1 );
+        memcpy( s, d->propValue, d->propLen );
+        s[d->propLen] = '\0';
+        
+        PropLookup[i].file_name = s;
+    }
+}
+
+            
         }
 
 

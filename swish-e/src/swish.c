@@ -114,6 +114,8 @@ typedef struct
     int         swap_mode;
     int         structure;          /* where in file to search */
 
+    char       *merge_out_file;     /* the output file for merge */
+
 }
 CMDPARAMS;
 
@@ -349,15 +351,9 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
 static CMDPARAMS *new_swish_params()
 {
     CMDPARAMS *params = (CMDPARAMS *)emalloc( sizeof( CMDPARAMS ) );
+    memset( params, 0, sizeof( CMDPARAMS ) );
 
     params->run_mode = MODE_SEARCH; /* default run mode */
-    params->wordlist = NULL;        /* list of -w words */
-    params->keychar = 0;
-    params->tmpsortprops = NULL;
-    params->conflist = NULL;
-    params->hasverbose = 0;         /* flag if -v was used */
-    params->index_read_only = 0;
-    params->swap_mode = 0;          /* swap mode defaults off */
     params->structure = IN_FILE;    /* look in the file, by default */
 
     return params;
@@ -789,7 +785,13 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             params->run_mode = MODE_MERGE;
 
             while ( (w = next_param( &argv )) )
-                sw->indexlist = addindexfile(sw->indexlist, w);
+            {
+                /* Last one listed is the output file */
+                if ( is_another_param( argv + 1  ) )
+                    sw->indexlist = addindexfile(sw->indexlist, w);
+                else
+                    params->merge_out_file = estrdup( *argv );
+            }
 
             continue;
         }
@@ -1054,7 +1056,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     {
         if (sw->verbose)
         {
-            printf("Indexing \"%s\"\n", sw->dirlist->line);
+            printf("Indexing \"%s\"\n", tmpswline->line);
             fflush(stdout);
         }
         indexpath(sw, tmpswline->line);
@@ -1185,136 +1187,43 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 *   Most of this should probably be in merge.c
 *
 **************************************************************************/
-static void cmd_merge( SWISH *sw, CMDPARAMS *params )
+static void cmd_merge( SWISH *sw_input, CMDPARAMS *params )
 {
-    int     lentmpindex1 = 0;
-    char   *tmpindex1 = NULL;
-    int     lentmpindex2 = 0;
-    char   *tmpindex2 = NULL;
-    int     lenindex1 = 0;
-    char   *index1 = NULL;
-    int     lenindex2 = 0;
-    char   *index2 = NULL;
-    int     lenindex3 = 0;
-    char   *index3 = NULL;
-    int     lenindex4 = 0;
-    char   *index4 = NULL;
-    int     hasdir = (sw->dirlist == NULL) ? 0 : 1;
-    int     hasindex = (sw->indexlist == NULL) ? 0 : 1;
-    int     i, j;
-    IndexFILE *tmplistindex;
-
+    SWISH *sw_out;
 
     if ( params->index_read_only )
         progerr("Sorry, this program is in readonly mode");
 
-    index1 = emalloc((lenindex1 = MAXSTRLEN) + 1);
-    index1[0] = '\0';
 
-    index2 = emalloc((lenindex2 = MAXSTRLEN) + 1);
-    index2[0] = '\0';
-
-    index3 = emalloc((lenindex3 = MAXSTRLEN) + 1);
-    index3[0] = '\0';
-
-    index4 = emalloc((lenindex4 = MAXSTRLEN) + 1);
-    index4[0] = '\0';
-
-    tmpindex1 = emalloc((lentmpindex1 = MAXSTRLEN) + 1);
-    tmpindex1[0] = '\0';
-
-    tmpindex2 = emalloc((lentmpindex2 = MAXSTRLEN) + 1);
-    tmpindex2[0] = '\0';
+    if (!sw_input->indexlist)
+        progerr("Failed to list any input files for merging");
 
 
-
-    if (sw->indexlist == NULL)
-        progerr("Specify index files and an output file.");
-
-
-    /* What should be read from config while merging? */
-    while (params->conflist != NULL)
-    {
-        getdefaults(sw, params->conflist->line, &hasdir, &hasindex, params->hasverbose);
-        params->conflist = params->conflist->next;
-    }
-
-    tmplistindex = sw->indexlist;
-    for (i = 0; tmplistindex != NULL; i++)
-    {
-        index4 = SafeStrCopy(index4, tmplistindex->line, &lenindex4);
-        tmplistindex = tmplistindex->next;
-    }
+    /* Open all the index files for reading */
+    SwishAttach(sw_input, 1);
 
 
-    j = i - 2;
-    if (i < 3)
-        progerr("Specify index files and an output file.");
+    /* Check output file */
+    if ( !params->merge_out_file )
+        progerr("Failed to provide merge output file");
+
+    if ( isfile(params->merge_out_file) )
+        progerr("Merge output file '%s' already exists.  Won't overwrite.\n");
+
+    /* create output */
+    sw_out = SwishNew();
+        
+    /* Update Economic mode */
+    sw_out->Index->swap_locdata = params->swap_mode;
 
 
-    /* Create temporary files */
-    
-    if (sw->Index->tmpdir && sw->Index->tmpdir[0] && isdirectory(sw->Index->tmpdir))
-    {
-        tmpindex1 = SafeStrCopy(tmpindex1, tempnam(sw->Index->tmpdir, "swme"), &lentmpindex1);
-        tmpindex2 = SafeStrCopy(tmpindex2, tempnam(sw->Index->tmpdir, "swme"), &lentmpindex2);
-    }
-    else
-    {
-        tmpindex1 = SafeStrCopy(tmpindex1, tempnam(NULL, "swme"), &lentmpindex1);
-        tmpindex2 = SafeStrCopy(tmpindex2, tempnam(NULL, "swme"), &lentmpindex2);
-    }
+    /* Create an empty File - before indexing to make sure can write to the index */
+    sw_out->indexlist->DB = (void *) DB_Create(sw_out, params->merge_out_file);
 
-    i = 1;
-    index1 = SafeStrCopy(index1, sw->indexlist->line, &lenindex1);
-    sw->indexlist = sw->indexlist->next;
-    while (i <= j)
-    {
-        index2 = SafeStrCopy(index2, sw->indexlist->line, &lenindex2);
-        if (i % 2)
-        {
-            if (i != 1)
-            {
-                index1 = SafeStrCopy(index1, tmpindex2, &lenindex1);
-            }
-            index3 = SafeStrCopy(index3, tmpindex1, &lenindex3);
-        }
-        else
-        {
-            index1 = SafeStrCopy(index1, tmpindex1, &lenindex1);
-            index3 = SafeStrCopy(index3, tmpindex2, &lenindex3);
-        }
-        if (i == j)
-        {
-            index3 = SafeStrCopy(index3, index4, &lenindex3);
-        }
-        readmerge(index1, index2, index3, sw->verbose);
-        sw->indexlist = sw->indexlist->next;
-        i++;
-    }
-#ifdef INDEXPERMS
-    chmod(index3, INDEXPERMS);
-#endif
-    if (isfile(tmpindex1))
-        remove(tmpindex1);
-    if (isfile(tmpindex2))
-        remove(tmpindex2);
+    // merge_indexes( sw_input, sw_output );
 
 
-    if (index1)
-        efree(index1);
-    if (index2)
-        efree(index2);
-    if (index3)
-        efree(index3);
-    if (index4)
-        efree(index4);
-
-    if (tmpindex1)
-        efree(tmpindex1);
-    if (tmpindex2)
-        efree(tmpindex2);
-
+    // wrtie_index( sw_out );
 }
 
 
@@ -1380,18 +1289,8 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
     if (sw->Search->maxhits <= 0)
         sw->Search->maxhits = -1;
 
-    rc = SwishAttach(sw, 1);
+    SwishAttach(sw, 1);
 
-    switch (rc)
-    {
-    case INDEX_FILE_NOT_FOUND:
-        resultHeaderOut(sw, 1, "# Name: unknown index\n");
-        progerrno("could not open index file: ");
-        break;
-    case UNKNOWN_INDEX_FILE_FORMAT:
-        progerr("the index file format is unknown");
-        break;
-    }
 
     resultHeaderOut(sw, 1, "%s\n", INDEXHEADER);
 
