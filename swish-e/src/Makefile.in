@@ -19,6 +19,7 @@ VERSION     = @VERSION@
 CC          = @CC@
 
 SHELL       = /bin/sh
+INSTALL     = @INSTALL@
 prefix      = @prefix@
 bindir      = $(prefix)/bin
 exec_prefix = @exec_prefix@
@@ -171,11 +172,11 @@ test:	$(NAME)
 $(LIB_OBJS):	Makefile config.h swish.h
 
 install: $(NAME)
-	cp $(SWISH_BIN) $(bindir)/$(SWISH_BIN)
+	@INSTALL_PROGRAM@ $(SWISH_BIN) $(bindir)/$(SWISH_BIN)
 
 install-lib: libswish-e.a	
-	cp libswish-e.a $(libdir)/libswish-e.a
-	cp swish-e.h $(includedir)/swish-e.h
+	@INSTALL_PROGRAM@ libswish-e.a $(libdir)/libswish-e.a
+	@INSTALL_DATA@ swish-e.h $(includedir)/swish-e.h
 
 
 libtest: libswish-e.a libtest.o
