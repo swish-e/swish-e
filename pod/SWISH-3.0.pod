@@ -13,27 +13,9 @@ this document, but that doesn't mean it will actually happen ;).
 
 =head1 Move from inverted index to a data base
 
-Jose:
-
-=head1 Index and Sort Numbers
-
-Jose:
-
-(Moseley: Dec 29, 2000)
-
-I think this would be a great feature -- it would be nice be able to specify which tags are numeric.
-Something like:
-
-    MetaNames subject title name age
-    PropertyNames name age
-    NumericNames age
-
-Or perhaps
-
-    MetaNames <age type=number> <birthday type=date>
-    MetaNames age:number birthday:date
-
-Then be able to select a range of numbers in a search, (and sort numerically if the tag is also a property).
+The swish index structure currently makes it difficult to do incremental indexing,
+range limiting, and presents limits to indexing due to memory requirements.
+A database may solve some of these issues, at possibly a cost of performance.
 
 =head1 Switch to Content-Types
 
@@ -113,11 +95,6 @@ content types then the swish internal parser would accept the document for index
     
 Perhaps the FilterDocument directive would be listed in order to allow chaining, but prevent loops.
 
-=head1 Buzzword feature
-
-Supply a list of words to swish that will be indexed as-is.  So words like
-C++ can be indexed and searched even if "+" is not a WordCharacter.
-
 =head1 Enhanced the PropertyNames directive
 
 Moseley: Updated Jan 13, 2001
@@ -131,58 +108,26 @@ I'm not clear how to enhance the syntax of Properties and/or Metanames, but here
 that an xml-type of format might be best and commonly understood.  That's a good idea.  Below are some older ideas
 that I had.  But you will get the idea...
 
-=over 4
+The metaname structure could have flags for properties:
 
-=item *
+    1 - limiting to a length
+    2 - stripping HTML
+    3 - encoding HTML entities on output
 
-to specify an upper limit on how many characters to store
+=head1 Alias MetaNames
 
-    PropertyNames meta1 desc:50
+There has been discussion on how to alias meta names.  The idea is that different
+meta tags could all be indexed as the same tag so they could be searched as a group.
 
-That gets all of meta1 and only 50 chars of desc.    
+Also, it might be nice to be able to alias some of the "internal" properties.
+For example, you might wish to use a meta name "title" as the "swishtitle"
+for some documents.  Dealing with merged indexes would be an issue.
 
-=item *
 
-to limit to certain types of files
+=head1 Apache/XML style configuration
 
-    PropertyNames meta1 desc:50/HTML summary/XML
-
-=item *
-
-to extract the text from html (remove html tags)
-
-    PropertyNames desc:50/HTML:text
-
-(ok, that's ugly, but you get the idea)
-
-=item *
-
-to read text documents where there are not tags:
-
-    PropertyNames  desc:50/HTML:text desc:50/TXT
-
-Where desc is a meta name invented for storing the first 50 chars of the
-text files.
-
-=back    
-
-Also, it might be I<nice> to be able to B<alias> meta names so that, say, XML and HTML could have differently named
-meta tags associated with the same meta tag name.
-
-I'm not clear the best way to make an alias:  One way would be to extend the current MetaName syntax:
-
-    MetaNames meta1 meta2 meta2=desc:HTML meta2=summary:XML
-
-So that swish-e -w meta2=(foo) would find foo in the desc meta tag in HTML docs, and find
-foo in the <summary> tag(sic) in XLM documents.
-
-Or another way would be to create a new directive
-
-    AliasMeta meta2=desc:HTML,summary:XML meta3=subject:HTML,type:XML
-
-But I like extending existing syntax than adding new syntax.
-Less chance for errors and keeps settings together in the same place.    
-
+This would be to allow some directives to be set per directory, or perl file
+extenstion (or content-type).
 
 
 =head1 Document Info
