@@ -43,6 +43,7 @@
 #include "compress.h"
 #include "metanames.h"
 #include "result_output.h"
+#include "result_sort.h"
 
 
 
@@ -203,30 +204,6 @@ IndexFILE *indexf;
 	sw->propNameToDisplay[sw->numPropertiesToDisplay++] = estrdup(propName);
 }
 
-void addSearchResultSortProperty(SWISH *sw, char *propName,int mode)
-{
-IndexFILE *indexf;
-
-	/* add a property to the list of properties that will be displayed */
-	if (sw->numPropertiesToSort >= sw->currentMaxPropertiesToSort)
-	{
-		if(sw->currentMaxPropertiesToSort) {
-			sw->currentMaxPropertiesToSort+=2;
-			sw->propNameToSort=(char **)erealloc(sw->propNameToSort,sw->currentMaxPropertiesToSort*sizeof(char *));
-			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
-				indexf->propIDToSort=(int *)erealloc(indexf->propIDToSort,sw->currentMaxPropertiesToSort*sizeof(int));
-			sw->propModeToSort=(int *)erealloc(sw->propModeToSort,sw->currentMaxPropertiesToSort*sizeof(int));
-		} else {
-			sw->currentMaxPropertiesToSort=5;
-			sw->propNameToSort=(char **)emalloc(sw->currentMaxPropertiesToSort*sizeof(char *));
-			sw->propModeToSort=(int *)emalloc(sw->currentMaxPropertiesToSort*sizeof(int));
-		}
-	}
-	sw->propNameToSort[sw->numPropertiesToSort] = estrdup(propName);
-	sw->propModeToSort[sw->numPropertiesToSort++] = mode;
-}
-
-
 
 
 /*
@@ -351,22 +328,16 @@ IndexFILE *tmpindexlist;
 		for(i=0;i<sw->numPropertiesToDisplay;i++)
 			efree(sw->propNameToDisplay[i]);
 		efree(sw->propNameToDisplay);
-		sw->propNameToDisplay=NULL;
 	}
-	if (sw->propNameToSort) 
-	{
-		for(i=0;i<sw->numPropertiesToSort;i++)
-			efree(sw->propNameToSort[i]);
-		efree(sw->propNameToSort);
-		sw->propNameToSort=NULL;
-	}
-	if (sw->propModeToSort) efree(sw->propModeToSort);sw->propModeToSort=NULL;
-	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
+	sw->propNameToDisplay=NULL;
+	sw->numPropertiesToDisplay=0;
+        sw->currentMaxPropertiesToDisplay=0;
 		/* Now the IDs of each index file */
 	for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
 	{
-		if (tmpindexlist->propIDToDisplay) efree(tmpindexlist->propIDToDisplay);tmpindexlist->propIDToDisplay=NULL;
-		if (tmpindexlist->propIDToSort) efree(tmpindexlist->propIDToSort);tmpindexlist->propIDToSort=NULL;
+		if (tmpindexlist->propIDToDisplay) 
+			efree(tmpindexlist->propIDToDisplay);
+		tmpindexlist->propIDToDisplay=NULL;
 	}
 }
 

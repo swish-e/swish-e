@@ -50,11 +50,17 @@ $Id$
 void initModule_ResultSort (SWISH  *sw)
 
 {
-/* Must be uncommented  when completed
-    initSortResultProperties(sw);   Should me moved from swish2.c 
-    initStrCmpTranslationTable(sw->iSortTranslationTable);
-    initStrCaseCmpTranslationTable(sw->iSortCaseTranslationTable);
-*/
+          /* Allocate structure */
+    sw->ResultSort= 
+         (struct MOD_ResultSort *) emalloc(sizeof(struct MOD_ResultSort));
+          /* Init translation sortorder tables */
+    initStrCmpTranslationTable(sw->ResultSort->iSortTranslationTable);
+    initStrCaseCmpTranslationTable(sw->ResultSort->iSortCaseTranslationTable);
+          /* Init data for -s command option */
+    sw->ResultSort->numPropertiesToSort=0;
+    sw->ResultSort->currentMaxPropertiesToSort=0;
+    sw->ResultSort->propNameToSort=NULL;
+    sw->ResultSort->propModeToSort=NULL;
 }
 
 
@@ -62,10 +68,33 @@ void initModule_ResultSort (SWISH  *sw)
   -- release all wired memory for this module
 */
 
+/* Frees memory of vars used by Ouutput properties configuration */
+/* Code moved from FreeOutputPropertiesVars (docprop.c) */
 void freeModule_ResultSort (SWISH *sw)
 
 {
-
+int i;
+IndexFILE *tmpindexlist;
+                /* First the common part to all the index files */
+        if (sw->ResultSort->propNameToSort)
+        {
+                for(i=0;i<sw->ResultSort->numPropertiesToSort;i++)
+                        efree(sw->ResultSort->propNameToSort[i]);
+                efree(sw->ResultSort->propNameToSort);
+        }
+        if (sw->ResultSort->propModeToSort)
+                efree(sw->ResultSort->propModeToSort);
+        sw->ResultSort->propNameToSort=NULL;
+        sw->ResultSort->propModeToSort=NULL;
+        sw->ResultSort->numPropertiesToSort=0;
+        sw->ResultSort->currentMaxPropertiesToSort=0;
+                /* Now free memory for the IDs of each index file */
+        for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
+        {
+                if (tmpindexlist->propIDToSort)
+                        efree(tmpindexlist->propIDToSort);
+                tmpindexlist->propIDToSort=NULL;
+        }
   return;
 }
 
@@ -107,6 +136,34 @@ int configModule_ResultSort  (SWISH *sw, StringList *sl)
 /* ---------------------------------------------- */
 
 
+/* Routine to add the properties specified in -s to the internal structure */
+void addSearchResultSortProperty(SWISH *sw, char *propName,int mode)
+{
+IndexFILE *indexf;
+struct MOD_ResultSort *rs=sw->ResultSort;
+
+	/* add a property to the list of properties that will be displayed */
+	if (rs->numPropertiesToSort >=rs->currentMaxPropertiesToSort)
+	{
+                      /* Allocate memory */
+		if(rs->currentMaxPropertiesToSort) {
+                             /* Reallocate memory */
+			rs->currentMaxPropertiesToSort+=2;
+			rs->propNameToSort=(char **)erealloc(rs->propNameToSort,rs->currentMaxPropertiesToSort*sizeof(char *));
+			for(indexf=sw->indexlist;indexf;indexf=indexf->next)
+				indexf->propIDToSort=(int *)erealloc(indexf->propIDToSort,rs->currentMaxPropertiesToSort*sizeof(int));
+			rs->propModeToSort=(int *)erealloc(rs->propModeToSort,rs->currentMaxPropertiesToSort*sizeof(int));
+		} else {
+                             /* Allocate memory */
+			rs->currentMaxPropertiesToSort=5;
+			rs->propNameToSort=(char **)emalloc(rs->currentMaxPropertiesToSort*sizeof(char *));
+			rs->propModeToSort=(int *)emalloc(rs->currentMaxPropertiesToSort*sizeof(int));
+		}
+                    /* End allocation of memory */
+	}
+	rs->propNameToSort[rs->numPropertiesToSort] = estrdup(propName);
+	rs->propModeToSort[rs->numPropertiesToSort++] = mode;
+}
 
 
 
@@ -119,7 +176,7 @@ int     initSortResultProperties(SWISH * sw)
     int     i;
     IndexFILE *indexf;
 
-    if (sw->numPropertiesToSort == 0)
+    if (sw->ResultSort->numPropertiesToSort == 0)
     {
         /* hack -> If no sort perperties have been specified then
            use rank in descending mode */
@@ -134,25 +191,25 @@ int     initSortResultProperties(SWISH * sw)
         return RC_OK;
     }
     for (indexf = sw->indexlist; indexf; indexf = indexf->next)
-        indexf->propIDToSort = (int *) emalloc(sw->numPropertiesToSort * sizeof(int));
+        indexf->propIDToSort = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
 
-    for (i = 0; i < sw->numPropertiesToSort; i++)
+    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
     {
-        makeItLow(sw->propNameToSort[i]);
+        makeItLow(sw->ResultSort->propNameToSort[i]);
         /* Get ID for each index file */
         for (indexf = sw->indexlist; indexf; indexf = indexf->next)
         {
-            indexf->propIDToSort[i] = getMetaNameID(indexf, sw->propNameToSort[i]);
+            indexf->propIDToSort[i] = getMetaNameID(indexf, sw->ResultSort->propNameToSort[i]);
             if (indexf->propIDToSort[i] == 1)
             {
                 /* Check fot RANK Autoproperty */
-                if (strcasecmp(sw->propNameToSort[i], AUTOPROPERTY_RESULT_RANK) == 0)
+                if (strcasecmp(sw->ResultSort->propNameToSort[i], AUTOPROPERTY_RESULT_RANK) == 0)
                 {
                     indexf->propIDToSort[i] = AUTOPROP_ID__RESULT_RANK;
                 }
                 else
                 {
-                    progerr("Unknown Sort property name \"%s\" in one of the index files", sw->propNameToSort[i]);
+                    progerr("Unknown Sort property name \"%s\" in one of the index files", sw->ResultSort->propNameToSort[i]);
                     return (sw->lasterror = UNKNOWN_PROPERTY_NAME_IN_SEARCH_SORT);
                 }
             }
@@ -160,6 +217,7 @@ int     initSortResultProperties(SWISH * sw)
     }
     return RC_OK;
 }
+
 
 /* 02/2001 Jose Ruiz */
 /* function for comparing data in order to
@@ -175,11 +233,11 @@ int     compResultsByNonSortedProps(const void *s1, const void *s2)
             sortmode;
     SWISH  *sw = (SWISH *) r1->sw;
 
-    num_fields = sw->numPropertiesToSort;
+    num_fields = sw->ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
-        sortmode = sw->propModeToSort[i];
-        if ((rc = sortmode * strcasecmp(r1->PropSort[i], r2->PropSort[i])))
+        sortmode = sw->ResultSort->propModeToSort[i];
+        if ((rc = sortmode * sw_strcasecmp(r1->PropSort[i], r2->PropSort[i], sw->ResultSort->iSortCaseTranslationTable)))
             return rc;
     }
     return 0;
@@ -200,10 +258,10 @@ int     compResultsBySortedProps(const void *s1, const void *s2)
             sortmode;
     SWISH  *sw = (SWISH *) r1->sw;
 
-    num_fields = sw->numPropertiesToSort;
+    num_fields = sw->ResultSort->numPropertiesToSort;
     for (i = 0; i < num_fields; i++)
     {
-        sortmode = sw->propModeToSort[i];
+        sortmode = sw->ResultSort->propModeToSort[i];
         rc = sortmode * (r1->iPropSort[i] - r2->iPropSort[i]);
         if (rc)
             return rc;
@@ -263,9 +321,9 @@ int    *getLookupResultSortedProperties(RESULT * r)
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
 
-    props = (int *) emalloc(sw->numPropertiesToSort * sizeof(int));
+    props = (int *) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(int));
 
-    for (i = 0; i < sw->numPropertiesToSort; i++)
+    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
     {
         switch (indexf->propIDToSort[i])
         {
@@ -311,12 +369,12 @@ char  **getResultSortProperties(RESULT * r)
     IndexFILE *indexf = r->indexf;
     SWISH  *sw = (SWISH *) r->sw;
 
-    if (sw->numPropertiesToSort == 0)
+    if (sw->ResultSort->numPropertiesToSort == 0)
         return NULL;
 
-    props = (char **) emalloc(sw->numPropertiesToSort * sizeof(char *));
+    props = (char **) emalloc(sw->ResultSort->numPropertiesToSort * sizeof(char *));
 
-    for (i = 0; i < sw->numPropertiesToSort; i++)
+    for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
     {
         props[i] = getResultPropAsString(r, indexf->propIDToSort[i]);
     }

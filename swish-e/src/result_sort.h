@@ -33,9 +33,25 @@ $Id$
 
 struct MOD_ResultSort
 {
-   int  empty_to_be_filled_by_jose;
-   //$$$ also maybe some stuff to change in swish.h 
-	
+        /* Sortorder Translation table arrays */
+              /* case sensitive translation table */
+    int iSortTranslationTable[256];
+              /* Ignore Case translarion table */
+    int iSortCaseTranslationTable[256];
+
+        /* In search, the following variables hold the parameters specified */
+        /* in -s command line option */
+              /* Number of properties */
+    int     numPropertiesToSort;    
+              /* Internal variable - holds the max size of the arrays */
+              /* propNameToSort and propModeToSort. It is modified */
+              /* dinamically */
+    int     currentMaxPropertiesToSort;
+              /* Array to hold the names of the props specified in -s */
+    char  **propNameToSort;
+              /* Array to hold the sort mode of the props specified in -s */
+              /* -1 for asc and 1 for desc */
+    int    *propModeToSort;
 };
 
 
@@ -54,10 +70,15 @@ char **getResultSortProperties(RESULT *);
 
 int initSortResultProperties (SWISH *);
 
+void addSearchResultSortProperty (SWISH *, char*, int );
+
 void sortFileProperties(IndexFILE *indexf);
 
 RESULT *addsortresult(SWISH *, RESULT *sp, RESULT *);
 int sortresults (SWISH *, int );
+
+void initStrCmpTranslationTable(int *);
+void initStrCaseCmpTranslationTable(int *);
 
 int sw_strcasecmp(unsigned char *,unsigned char *, int *);
 int sw_strcmp(unsigned char *,unsigned char *, int *);

@@ -23,7 +23,6 @@ docPropertyEntry *fetchDocProperties (char * );
 int initSearchResultProperties (SWISH *);
 void addSearchResultDisplayProperty (SWISH *, char* );
 void addSearchResultSortProperty (SWISH *, char*, int );
-unsigned char* lookupDocPropertyValue (int , char *, int *);
 void printSearchResultProperties (SWISH *, FILE *f_out, char **);
 
 void swapDocPropertyMetaNames (docPropertyEntry *, struct metaMergeEntry *);

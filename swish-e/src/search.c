@@ -2142,13 +2142,13 @@ void    freeresult(SWISH * sw, RESULT * rp)
                 efree(rp->Prop[i]);
             efree(rp->Prop);
         }
-        if (sw->numPropertiesToSort && rp->PropSort)
+        if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
         {
-            for (i = 0; i < sw->numPropertiesToSort; i++)
+            for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)
                 efree(rp->PropSort[i]);
             efree(rp->PropSort);
         }
-        if (sw->numPropertiesToSort && rp->iPropSort)
+        if (sw->ResultSort->numPropertiesToSort && rp->iPropSort)
         {
             efree(rp->iPropSort);
         }

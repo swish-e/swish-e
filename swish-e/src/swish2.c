@@ -37,6 +37,7 @@ $Id$
 #include "filter.h"
 #include "result_output.h"
 #include "search_alt.h"
+#include "result_sort.h"
 
 /* 
   -- init swish structure 
@@ -51,6 +52,7 @@ int i;
 	initModule_Filter (sw);
 	initModule_ResultOutput (sw);
       initModule_SearchAlt (sw);
+	initModule_ResultSort (sw);
 
 
 	sw->followsymlinks = 0;
@@ -88,10 +90,8 @@ int i;
 	sw->spiderdirectory = (char *)emalloc(sw->lenspiderdirectory + 1);sw->spiderdirectory[0]='\0';
 	
 		/* Properties */
-	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=sw->numPropertiesToSort=sw->currentMaxPropertiesToSort=0;
+	sw->numPropertiesToDisplay=sw->currentMaxPropertiesToDisplay=0;
 	sw->propNameToDisplay=NULL;
-	sw->propNameToSort=NULL;
-	sw->propModeToSort=NULL;
 
 
 		/* File system parameters */
@@ -168,8 +168,10 @@ struct DB_RESULTS *tmp,*tmp2;
 		tmp=tmp2;
 	}
 	sw->db_results=NULL;
-		/* Free props arrays */
+		/* Free dsiplay props arrays */
 	FreeOutputPropertiesVars(sw);
+                /* Free sort stuff */
+	freeModule_ResultSort (sw);;
 }
 
 void SwishClose(SWISH *sw)
@@ -184,6 +186,11 @@ if(sw) {
 		freeModule_Filter (sw);
 		freeModule_ResultOutput (sw);
 		freeModule_SearchAlt (sw);
+
+		/* Since it is possible to invoke SwishSearch several times
+                ** with the same SWISH handle, the freeModule_ResultSort stuff
+                ** must be in SwishResetSearch */
+		/* freeModule_ResultSort (sw); */
 
 		if(sw->lenspiderdirectory) efree(sw->spiderdirectory);		
 		if(sw->lentmpdir) efree(sw->tmpdir);		
