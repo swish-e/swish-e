@@ -492,6 +492,64 @@ void SwishFuzzyWordFree( FUZZY_WORD *fw )
 
 
 
+/*******************************************************************************
+
+Stemmer access for SWISH object. idea is to be able to stem a word if an index
+is named specifically, rather than waiting to have a RESULT object.
+
+this is for API, to allow access to stemming functions without searching.
+
+karman - Wed Oct 27 10:51:03 CDT 2004
+
+*********************************************************************************/
+
+
+/* copied indexf_by_name from metanames.c -- shouldn't this kind of function be
+available globally? I see it defined in headers.c as well... */
+
+static IndexFILE *indexf_by_name( SWISH *sw, const char *index_name )
+{
+    IndexFILE *indexf = sw->indexlist;
+
+    while ( indexf )
+    {
+        if (strcmp( index_name, indexf->line ) == 0 )
+            return indexf;
+
+        indexf = indexf->next;
+    }
+    return NULL;
+}
+
+FUZZY_WORD *SwishFuzzy( SWISH *sw, const char *index_name, char *word )
+{
+    
+/* create FUZZY object like SwishFuzzyWord does, but with named index */
+
+    IndexFILE *indexf = indexf_by_name( sw, index_name );
+    
+    if ( !sw )
+      progerr("SwishFuzzy requires a valid swish handle");
+
+    if ( !indexf ) {
+      set_progerr( HEADER_READ_ERROR, sw, "Index file '%s' is not an active index file", index_name );
+      return( NULL );
+    }
+    
+    if ( !word )
+        return NULL;
+	
+
+    return fuzzy_convert( indexf->header.fuzzy_data, word );
+}
+
+
+/* end SWISH stemmer function *************************************************/
+
+
+
+
+
 /* Here's the old porter stemmer */
 
 

@@ -97,6 +97,28 @@ SwishRankScheme(self, scheme)
 
 #############################################
 
+
+# added SwishFuzzy to give access directly from SW object
+# karman - Wed Oct 27 11:16:45 CDT 2004
+# This returns a fuzzy word object based on the result
+
+SW_FUZZYWORD
+SwishFuzzy(swobj, index_name, word)
+    SW_HANDLE swobj;
+    char * index_name;
+    char * word;
+
+    PREINIT:
+        char * CLASS = "SWISH::API::FuzzyWord";
+
+    CODE:
+        RETVAL = SwishFuzzy(swobj, index_name, word);
+		    
+	    
+    OUTPUT:
+        RETVAL
+
+
 void
 SwishHeaderNames(self)
     SW_HANDLE self
@@ -728,6 +750,7 @@ SwishFuzzyWord(result, word)
         RETVAL
 
 
+
 # This returns the name of the stemmer used for this index
 
 const char*
@@ -835,6 +858,8 @@ SwishFuzzyWordList( fw )
             XPUSHs(sv_2mortal( newSVpv( (char *)*list, 0 ) ));
             list++;
         }
+
+
 
 # ********************************************************************
 #

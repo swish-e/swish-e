@@ -5,6 +5,8 @@
 use strict;
 require SWISH::API;
 
+warn "$_ -> $INC{$_}\n" for sort keys %INC;
+
 my $lastcase = 145;
 print "1..$lastcase\n";
 
@@ -70,12 +72,10 @@ my $mem_test = 0;
         {
             is_ok("failed to read a resut -- can't test stemmers", 0);
         } else {
-            stem_it($result,"running");
-            stem_it($result,"runs");
-            stem_it($result,"sugar");
-            stem_it($result,"");
-            stem_it($result,"1234");
-
+	    for my $word (qw/ running runs sugar 1234/, '') {
+            	stem_it($result,$word);
+		swish_stem($swish,$index_names[0],$word);
+	    }
 
             # fetch the related metanames and properties
 
@@ -312,7 +312,8 @@ sub check_error {
 
     my $msg = $swish->ErrorString . ' (' . $swish->LastErrorMsg . ')';
 
-    print "not ok $num $str - $msg\n";
+    #print "not ok $num $str - $msg\n";
+    warn "not ok $num $str - $msg\n";
 
     die "Found critical error" if $swish->CriticalError;
 
@@ -339,5 +340,14 @@ sub stem_it {
     is_ok(" [$word] -> [@words]", scalar @words );
 }
 
+sub swish_stem
+{
+    my ($swish,$index,$word) = @_;
+    my $fw;
+    is_ok("Testing Fuzzy [$word]", ($fw = $swish->Fuzzy($index,$word)) );
+    return unless $fw;
+    my @fuzzed = $fw->WordList;
+    is_ok(" [$word] -> [@fuzzed]", scalar @fuzzed );
 
+}
 
