@@ -1179,13 +1179,18 @@ sub run_query {
     my $conf = $self->{config};
 
     return $self unless $self->swish_command('-w');
-    
+
+    my $time_out_str = 'Timed out';
 
 
     my $timeout = $self->config('timeout') || 0;
 
     eval {
-        local $SIG{ALRM} = sub { die "Timed out\n" };
+        local $SIG{ALRM} = sub {
+            kill 'KILL', $self->{pid} if $self->{pid};
+            die $time_out_str . "\n";
+        };
+
         alarm $timeout if $timeout && $^O !~ /Win32/i;
         $self->run_swish;
         alarm 0  unless $^O =~ /Win32/i;
@@ -1195,8 +1200,13 @@ sub run_query {
     };
 
     if ( $@ ) {
-        warn "$0 $@"; # if $conf->{debug};
-        $self->errstr( "Service currently unavailable" );
+        warn "$0 aborted: $@"; # if $conf->{debug};
+
+        $self->errstr(
+            $@ =~ /$time_out_str/
+            ? "Search timed out after $timeout seconds."
+            : "Service currently unavailable" 
+        );
         return $self;
     }
 }
@@ -2124,6 +2134,8 @@ sub real_fork {
             print "Failed to exec Swish";  # send this message to parent.
             exit;
         }
+    } else {
+        $self->{pid} = $pid;
     }
 
     return $fh;

@@ -536,7 +536,7 @@ Returns the converted words from the stemming/fuzzy operation.  Normally, the ar
 contain a single element, although may contain more (i.e. if DoubleMetaphone is
 used and the input word returns two strings).
 
-In the even that a word does not stem (e.g. trying to stem a number), this method
+In the event that a word does not stem (e.g. trying to stem a number), this method
 will return the original input word specified when $result->FuzzyWord( $word )
 was called.
 
@@ -607,7 +607,7 @@ and/or modify it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-Bill Moseley moseley@hank.org. 2002/2003
+Bill Moseley moseley@hank.org. 2002/2003/2004
 
 =head1 SUPPORT
 

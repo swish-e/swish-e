@@ -1076,12 +1076,12 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         
         if (strcasecmp(w0, "DefaultContents") == 0)
         {
-            if (sl->n > 1)
+            if (sl->n == 2 )
             {
                 sw->DefaultDocType = getDocTypeOrAbort(sl, 1);
             }
             else
-                progerr("%s: requires at least one value", w0);
+                progerr("%s: requires one value -- a parser type", w0);
 
             continue;
         }
