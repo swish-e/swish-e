@@ -163,8 +163,6 @@ src/expat/xmltok/xmltok_impl.h
 src/expat/xmltok/xmltok_ns.c
 src/expat/xmltok/dllmain.c
 src/expat/xmltok/xmltok.dsp
-src/expat/lib/xmlparse.lib
-src/expat/lib/xmltok.lib
 src/extprog.c
 src/extprog.h
 src/file.c
@@ -258,13 +256,8 @@ src/win32/regex.c
 src/win32/regex.h
 src/win32/swishe.dsp
 src/win32/swishe.dsw
-src/win32/swish-e.exe
-src/win32/libswish-e.lib
-src/win32/xmltok.dll
-src/win32/xmlparse.dll
-src/win32/libxml2.dll
-src/win32/iconv.dll
 win32.nsi
+win32src.nsi
 src/xml.c
 src/xml.h
 tests/test.config
