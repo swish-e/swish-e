@@ -73,7 +73,7 @@ OBJS=	@LIBXML2_OBJS@ check.o file.o index.o search.o error.o methods.o\
 	filter.o search_alt.o keychar_out.o date_time.o \
 	extprog.o entities.o no_better_place_module.o \
 	db.o dump.o db_native.o swish_words.o proplimit.o swish_qsort.o \
-	ramdisk.o btree.o \
+	ramdisk.o btree.o array.o \
 	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(XP_OBJ)
 
 
