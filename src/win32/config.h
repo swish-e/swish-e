@@ -25,7 +25,7 @@
 #define HAVE_LIBXML2 1  /* enable libxml2 XML parser */
 
 /* Macros which rewrite values  */
-#define SWISH_VERSION "2.1-dev-24"	/* Should we find a better way to handle this */
+#define SWISH_VERSION "2.1-dev-25"	/* Should we find a better way to handle this */
 #define DIRDELIMITER '\\'		/* Does this work right?  Might explain dir problems which have reported */
 
 /* Internal SWISH-E File Access Modes */
