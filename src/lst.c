@@ -28,9 +28,9 @@
 
 int countwords_LST (SWISH *sw, FileProp *fprop, char *buffer)
 {
-char *begintag,*endtag,*p,*q,*tag;
+char *begintag=NULL,*endtag=NULL,*p,*q,*tag;
 IndexFILE *indexf=sw->indexlist;
-int numwords=0,lentag;
+int numwords=0,lentag=0;
 		/* First time - Look for the first valid tag */
 	for(p=buffer,tag=NULL;p;)
 	{

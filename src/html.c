@@ -560,7 +560,7 @@ int wordcount=0; /* Word count */
 
 char *parseHtmlSummary(char *buffer,char *field,int size,SWISH *sw)
 {
-char *p,*q,*tag,*endtag,c;
+char *p,*q,*tag,*endtag,c='\0';
 char *summary,*beginsum,*endsum,*tmp,*tmp2,*tmp3;
 int found,lensummary;
 		/* Get the summary if no metaname/field is given */
@@ -659,7 +659,8 @@ int found,lensummary;
 					p=endtag;
 				}
 			} else p=NULL;    /* tag not closed ->END */
-			*(endtag-1)=c;
+			if(endtag)
+				*(endtag-1)=c;
 		} else {    /* No more '<' */
 			p=NULL;
 		}
@@ -763,7 +764,7 @@ unsigned char *convertentities(unsigned char *s,SWISH *sw)
 {
 int i,check,hashval;
 unsigned char *p,*q;
-unsigned char tmp;
+unsigned char tmp='\0';
 struct EntitiesHashTable *t;
 struct hashEntity *h;
 

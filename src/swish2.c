@@ -66,7 +66,6 @@ int i;
 	sw->dontbumptagslist = NULL;
 
 	sw->resultlist=NULL;
-	sw->searchwordlist=NULL;
 	sw->sortresultlist=NULL;
 	sw->currentresult=NULL;
 	sw->applyautomaticmetanames = 0;
@@ -156,7 +155,6 @@ void SwishResetSearch(SWISH *sw)
         sw->beginhits = 0;
 		/* Free results from previous search if they exists */
 	if(sw->resultlist) freeresultlist(sw);sw->resultlist=NULL;
-	if(sw->searchwordlist) freeswline(sw->searchwordlist); sw->searchwordlist=NULL;
 		/* Free props arrays */
 	FreeOutputPropertiesVars(sw);
 }
