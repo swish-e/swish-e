@@ -1,13 +1,20 @@
 #!@@perlbinary@@ -w
 #!/usr/bin/speedy -w
+package SwishAPISearch;
 use strict;
 
 ######################################################################
 # Skeleton CGI script for searching a Swsih-e index with SWISH::API.
 # see below for documenation or run "perldoc search.cgi"
 #
-# Copyright 2003 Bill Moseley - All rights reserved.
+# Copyright 2003, 2004 Bill Moseley - All rights reserved.
+#
+# $Id$
+#
 #######################################################################
+
+use vars '$VERSION';
+$VERSION = '1.1';
 
 
 # This needs to be set to where Swish-e installed the Perl modules 
@@ -25,17 +32,31 @@ use Template;               # Template-Toolkit: http://tt2.org or see http://sea
 
 
 
+
 #-------------------- Defaults/Parameters --------------------------
-# Directory where templates are stored (if using an external template)
-use constant INCLUDE_PATH => "/home/moseley/apache";
+# Default config settings
+#
+# The expand_metas maps nested meta names -- that is, meta names that represent
+# multiple metanames (search -w all=foo might really search title=foo and
+# author=foo This expansion is only needed for highlighting
 
+use vars qw/ %config %highlight_settings %site_cache /;
 
-# Cached varilables
-my ($template, $swish, %headers, $highlight_object, $fill_in_object );  
+%config = (
+    INCLUDE_PATH => '@@templatedir@@',  # template path
+    index        => 'index.swish-e',             # path to index file
+    page_size    => 10,                          # numbe of results/page
+    title        => 'Swish Example Search Page',
+    template     => 'search.tt',
+    expand_metas => {
+        swishdefault => [ qw/ swishtitle swishdefault / ],
+    }
+);
 
 
 # Params used for the highlighting modules
-my %highlight_settings = (
+
+%highlight_settings = (
     show_words      => 8,  # number of words to show
     occurrences     => 5,   # number of words to show
     max_words       => 100, # max number of words to show if not highlighted words found
@@ -43,65 +64,100 @@ my %highlight_settings = (
     highlight_off   => '</span>',
 );
 
-
 #--------------------- Code ----------------------------------------
 # Entry point for normal CGI programs.
-process_request();
+# Should be object creation
+
+unless ( $ENV{MOD_PERL} ) {
+
+    $site_cache{_singleton} ||= {
+        config  => \%config,  # no deep copy
+    };
+
+    process_request( $site_cache{_singleton}  );
+}
 
 
-# Entry point for mod_perl (not tested yet)
+# Entry point for mod_perl
 sub handler {
     my $r = shift;
-    process_request();
+
+    require Storable;
+
+    my $id = $r->dir_config('site_id') || '_singleton';
+
+    unless ( $site_cache{ $id } ) {
+
+        $site_cache{ $id } ||= {
+            config => Storable::dclone( \%config ), # deep copy
+        };
+
+        my $config =  $site_cache{ $id }{config};
+
+        for ( qw/ INCLUDE_PATH index page_size title temmplate / ) {
+            my $value = $r->dir_config( $_ );
+            $config->{$_} = $value if defined $value;
+        }
+    }
+
+    process_request( $site_cache{ $id } );
+
+    return Apache::Constants::OK();
 }
 
 
 
+#-------------------------------------------------------------------
+# Process a request
+# Passes in a config hash
+#-------------------------------------------------------------------
+
+
 sub process_request {
+    my ( $instance ) = @_;  # bad name since it persists between requests
+
     my $cgi = CGI->new;  # could also be Apache::Request or other fast access to CGI params
-    my $query = $cgi->param('query');
 
+    my $config = $instance->{config};
 
-    # This data is made available to the template.
-    my %params = (
-        title   => 'Company Name',  # what-ever data
-        index   => 'index.swish-e', # index to search
-        myself  => 'search.cgi',    # for use in generating links back to script
-        pid   => $$,
-    );
+    my $request = {
+        cgi         => $cgi,
+        myself      => $cgi->script_name,
+        query       => $cgi->param('query') || undef,
+        metaname    => $cgi->param('metaname') || undef,
+        page        => $cgi->param('page') || 1,
+        pagesize    => $cgi->param('size') || $config->{page_size} || 10,
+        pid         => $$,
+    };
 
-
-    # Create template object if not cached
-    $template ||= Template->new( INCLUDE_PATH => INCLUDE_PATH );
-    die $template->error unless $template;
+    $instance->{request} = $request;
 
 
     # If a query was passed in then run the search
-    if ( $query ) {
-        my $start = $cgi->param('page') || 1;
-        my $pagesize = 15;
-        $params{search} = run_query( $query, $start, $pagesize, $params{index} );
+    if ( $request->{query} ) {
+
+        #  Limit by metaname
+        $request->{swish_query} = $request->{metaname}
+            ? "$request->{metaname}=( $request->{query} )"
+            : $request->{query};
+
+        $instance->{result} = run_query( $instance );
     }
 
 
-
-    # Generate the output from the template
-
-    print $cgi->header;
-    my $template_output;
-
-    $template->process( \*DATA, \%params, \$template_output) || die $template->error;
-    #$template->process( 'foo.tt', \%params, \$template_output ) || die $template->error;
-
+    # Generate output
+    my $output = generate_view( $instance );
 
 
     # Run output through HTML::FillInForm to make form elements sticky
 
-    $fill_in_object ||= HTML::FillInForm->new;
-    print $fill_in_object->fill( scalarref => \$template_output, fobject => $cgi );
+    my $fill_in_object = HTML::FillInForm->new;
+    print $cgi->header;
+    print $fill_in_object->fill( scalarref => $output, fobject => $cgi );
 
+    delete $instance->{request};  # clean up the request
+    delete $instance->{result};
 }
-
 
 
 
@@ -110,7 +166,13 @@ sub process_request {
 # A better design might be to return an object with methods for accessing the data.
 
 sub run_query {
-    my ($query, $page, $pagesize, $index) = @_;
+    my ( $instance ) = @_;
+
+    my $config = $instance->{config};
+    my $request = $instance->{request};
+
+    my $page = $request->{page};
+    my $pagesize = $request->{pagesize};
 
     $page = 1 unless defined $page  && $page =~ /^\d+$/;
     $pagesize = 15 unless defined $pagesize && $pagesize =~ /^\d+$/ && $pagesize > 0 && $pagesize < 50; 
@@ -119,36 +181,47 @@ sub run_query {
     # Create the swish object if not cached.
     # Also read in the header data and initialize the highlighting module
 
+    my $swish = $instance->{swish};
+
     if ( ! $swish ) {
-        $swish = SWISH::API->new( $index );
+        $swish = SWISH::API->new( $config->{index} );
         die "Failed to create SWISH::API object" unless $swish;
         $swish->AbortLastError if $swish->Error;
 
+        $instance->{swish} = $swish;  # cache for next request or for template
 
-        # Now cache header data (used for highlighting)
-        %headers = map { lc($_) => ($swish->HeaderValue( $index, $_ )||'') } $swish->HeaderNames;
+        # Note, this only works with a single index file
+        my %headers = map { lc($_) => ($swish->HeaderValue( $config->{index}, $_ )||'') } $swish->HeaderNames;
 
         # and cache the highlighting object
-        $highlight_object = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers );
+        $instance->{highlight_object} = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers );
     }
 
 
     # Run the search.  See SWISH::API for more options (like sorting)
 
-    my $results = $swish->Query( $query );
+    my $results = $swish->Query( $request->{swish_query} );
 
     if ( $swish->Error ) {
         $swish->AbortLastError if $swish->CriticalError;
         return {
-            query   => $query,
             message => join( ' ', $swish->ErrorString, $swish->LastErrorMsg ),
         };
     }
+
+    return { hits  => 0 } unless $results->Hits;
 
 
     # Seek to the first record of the page requested
 
     $results->SeekResult( ($page-1) * $pagesize );
+
+    if ( $swish->Error ) {
+        $swish->AbortLastError if $swish->CriticalError;
+        return {
+            message => join( ' ', $swish->ErrorString, $swish->LastErrorMsg ),
+        };
+    }
 
     my @records;
     my $result;
@@ -159,135 +232,113 @@ sub run_query {
     # Store the result objects in an array
     push @records, $result while $cnt-- && ($result = $results->NextResult);
 
+
+    # Return the results structure
+
+    my %result = (
+        results_obj => $results,
+        results     => \@records,
+        hits        => $results->Hits,
+        shown       => scalar @records,
+        page        => $page,
+        start       => ($page-1) * $pagesize,
+    );
+
+
+
+
+    $result{prev} = $page-1 if $page > 1;
+    $result{next} = $page+1 if $result{start} + $pagesize < $result{hits};
+
+    return \%result;
+}
+
+
+# This generates the output from the templates
+
+sub generate_view{
+    my ( $instance ) = @_;
+
+    my $config = $instance->{config};
+    my $result = $instance->{result};
+
+    $instance->{template_object} ||= Template->new( INCLUDE_PATH => $config->{INCLUDE_PATH} ) 
+        || die $Template::ERROR, "\n";
+
+    my $template = $instance->{template_object};
+
+
+    # Create a highlight filter if any results
+    create_highlight_filter( $instance ) if $result->{hits};
+
+
+    my $template_output;
+    $template->process( $config->{template}, $instance, \$template_output ) || die $template->error;
+
+    return \$template_output;
+
+}
+
+# Creates a filter for highlighting search terms
+
+sub create_highlight_filter {
+    my ( $instance ) = @_;
+
+    my $result = $instance->{result};
+    my $config = $instance->{config};
+
+
     # Now create a filter 'highlight' for use in the template to highlight terms
     # Usage requires passing in the *metaname* associated with the property
     # that's being highlighted -- this allows the program to know what
     # search words to use in highlighting 
 
-    my $parsed_query = parse_query( join ' ', $results->ParsedWords( $index ) );
+    my $parsed_query = parse_query( join ' ', $result->{results_obj}->ParsedWords( $config->{index} ) );
+
+    # Expand nested queries
+    # A search for swishdefault or all might really include multiple tags
+    # So expand the keywords to the extra fields
+    #
+
+    my $expand_metas = $config->{expand_metas};
+
+    for my $meta ( keys %$expand_metas ) {
+        next unless $parsed_query->{$meta};
+
+        # Now duplicate
+        # Push to merge any existing, for example is there was a query like:
+        # -w all=foo AND title=bar  then title would end up with both
+        # Not perfect
 
 
-    $template->context->define_filter( 'highlight', sub {
-        my ( $context,  $metaname ) = @_;
-        my $phrases = $parsed_query->{$metaname};
-        return sub {
-            my $text = shift;
-            $highlight_object->highlight( \$text, $phrases);
-            return $text;
+        for my $real_meta ( @{$expand_metas->{$meta}} ) {
+            push @{ $parsed_query->{$real_meta} }, @{$parsed_query->{$meta}};
         }
-    }, 1 );
+    }
+
+    # save for Data::Dumper
+    $result->{parsed_query} = $parsed_query;
+
+    # Now create the Template-Toolkit "filter"
+
+    $instance->{template_object}->context->define_filter( 'highlight',
+        sub {
+            my ( $context,  $metaname ) = @_;
+
+            # Grap parsed phrases based on metaname
+            my $phrases = $parsed_query->{$metaname};
 
 
+            return sub {
+                my $text = shift;
+                $instance->{highlight_object}->highlight( \$text, $phrases);
+                return $text;
+            }
+        }, 
 
-    # Return the results structure
-
-    my %query = (
-        # parse out the query words
-        query   => $query,
-        results => \@records,
-        hits    => $results->Hits,
-        shown   => scalar @records,
-        page    => $page,
-        start   => ($page-1) * $pagesize,
+        1,
     );
-
-
-    $query{prev} = $page-1 if $page > 1;
-    $query{next} = $page+1 if $query{start} + $pagesize < $query{hits}-1;
-
-    return \%query;
 }
-
-
-
-__DATA__
-
-
-<html>
-<head>
-    <title>Search Documents</title>
-
-    <style type="text/css">
-        a:hover { background: #CCC; }
-        body { font-family : verdana,arial,helvetica,sans-serif; }
-        .header { background-color: #EEEEEE; padding-left: 5px; }
-        .title { font-size: 1.2em; margin-top: 1em; }
-        .rank  { color: red; font-size: 0.8em; }
-        .description { 
-            margin-top: 1em; margin-bottom: 1em; margin-left: 2em; 
-            max-width: 700px; /* not supported by IE */
-            width:expression(document.body.clientWidth > 600? "600px": "auto" );
-        }
-        .metadata { margin-left: 2em; font-size: 0.8em; color: green; }
-        .metadata a { text-decoration: none; color: green; }
-        .highlight { background : #FFFF99; font-weight: bold; }
-    </style>
-</head>
-<body>
-
-
-    [% PROCESS form %]
-    <p>
-    [% IF search %]
-        [% IF search.message; '<h2 align="center">'; search.message; "</h2>"; END %]
-
-        [% IF search.shown %]
-            [% PROCESS results_header %]
-            [% PROCESS display_results %]
-        [% END %]
-    [% END %]
-</body>
-
-
-
-[% BLOCK form %]
-    <form method="get" action="[% myself %]" enctype="application/x-www-form-urlencoded">
-        <input type="text" name="query" value="install" size="40" maxlength="200" />
-        <input type="submit" name="submit" value="Search!" />
-    </form>
-[% END %]
-
-
-[% BLOCK results_header %]
-<div class="header">
-    Showing page [% search.page %] 
-    ([% search.start +1 %] - [% (search.start + search.shown) %] of [% search.hits %] hits) 
-    for <b>[% search.query | html %]</b><br>
-
-    [% USE myurl = url( myself, query=search.query ) %]
-
-    [% IF search.prev %]
-       <a href="[% myurl( page=search.prev ) %]">Previous</a> 
-    [% END %]
-    [% IF search.next %]
-       <a href="[% myurl( page=search.next ) %]">Next</a> 
-    [% END %]
-</div>
-[% END %]
-
-[% BLOCK display_results %]
-    [% USE date %]
-    [% FOREACH item = search.results %]
-        <div class="title">
-            <a href="[% item.Property('swishdocpath') | uri | html %]">
-                [%  item.Property('swishtitle') || item.Property('swishdocpath') | html %]</a>
-
-            <span class="rank"> -- rank: <b>[% item.Property('swishrank') %]</b></span>
-        </div>
-
-        <div class="description">
-            [% item.Property('swishdescription') || "No description" | highlight('swishdefault') %]
-        </div>
-
-        <div class="metadata">
-            Path: <a href="[% item.Property('swishdocpath') | uri | html %]">[% item.Property('swishdocpath') | html %]</a>
-            - [% item.Property('swishdocsize') %] bytes<br>
-            Date: [% date.format( item.Property('swishlastmodified')) %]<br>
-        </div>
-    [% END %]
-[% END %]
-[% STOP %]
-
 __END__
 
 =head1 NAME

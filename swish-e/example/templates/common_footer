@@ -1,0 +1,16 @@
+<div class="box">
+    Common footer text here
+</div>
+<pre>
+[% USE Dumper %]
+** config **
+[% Dumper.dump(config) %]
+
+** request **
+[% Dumper.dump(request) %]
+
+** result **
+[% Dumper.dump(result) %]
+
+</pre>
+

@@ -154,8 +154,18 @@ perlmoduledir = $(libexecdir)/perl/SWISH
 libexec_SCRIPTS = swish.cgi search.cgi
 
 pkgdata_DATA = \
-	search.tt \
-	swish.tmpl
+    swish.tt \
+    swish.tmpl
+
+
+templatedir = $(pkgdatadir)/templates
+
+template_DATA = \
+    templates/search.tt \
+    templates/page_layout \
+    templates/common_header \
+    templates/common_footer \
+    templates/style.css
 
 
 perlmodule_SCRIPTS = \
@@ -176,11 +186,11 @@ CLEANFILES = swish.cgi search.cgi
 EXTRA_DIST = \
     README \
     SWISH-Stemmer-0.05.tar.gz \
-    search.tt \
     swish.cgi.in \
     search.cgi.in \
     swish.gif \
-    swish.tmpl \
+    $(pkgdata_DATA) \
+    $(template_DATA) \
     $(perlmodule_SCRIPTS)
 
 subdir = example
@@ -191,7 +201,7 @@ CONFIG_CLEAN_FILES =
 SCRIPTS = $(libexec_SCRIPTS) $(perlmodule_SCRIPTS)
 
 DIST_SOURCES =
-DATA = $(pkgdata_DATA)
+DATA = $(pkgdata_DATA) $(template_DATA)
 
 DIST_COMMON = README $(srcdir)/Makefile.in Makefile.am
 all: all-am
@@ -270,6 +280,24 @@ uninstall-pkgdataDATA:
 	  echo " rm -f $(DESTDIR)$(pkgdatadir)/$$f"; \
 	  rm -f $(DESTDIR)$(pkgdatadir)/$$f; \
 	done
+templateDATA_INSTALL = $(INSTALL_DATA)
+install-templateDATA: $(template_DATA)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(templatedir)
+	@list='$(template_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f="`echo $$p | sed -e 's|^.*/||'`"; \
+	  echo " $(templateDATA_INSTALL) $$d$$p $(DESTDIR)$(templatedir)/$$f"; \
+	  $(templateDATA_INSTALL) $$d$$p $(DESTDIR)$(templatedir)/$$f; \
+	done
+
+uninstall-templateDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(template_DATA)'; for p in $$list; do \
+	  f="`echo $$p | sed -e 's|^.*/||'`"; \
+	  echo " rm -f $(DESTDIR)$(templatedir)/$$f"; \
+	  rm -f $(DESTDIR)$(templatedir)/$$f; \
+	done
 tags: TAGS
 TAGS:
 
@@ -282,7 +310,7 @@ top_distdir = ..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
-	$(mkinstalldirs) $(distdir)/modules/SWISH
+	$(mkinstalldirs) $(distdir)/modules/SWISH $(distdir)/templates
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -314,7 +342,7 @@ check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 
 installdirs:
-	$(mkinstalldirs) $(DESTDIR)$(libexecdir) $(DESTDIR)$(perlmoduledir) $(DESTDIR)$(pkgdatadir)
+	$(mkinstalldirs) $(DESTDIR)$(libexecdir) $(DESTDIR)$(perlmoduledir) $(DESTDIR)$(pkgdatadir) $(DESTDIR)$(templatedir)
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -356,7 +384,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-perlmoduleSCRIPTS install-pkgdataDATA
+install-data-am: install-perlmoduleSCRIPTS install-pkgdataDATA \
+	install-templateDATA
 
 install-exec-am: install-libexecSCRIPTS
 
@@ -383,7 +412,8 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-info-am uninstall-libexecSCRIPTS \
-	uninstall-perlmoduleSCRIPTS uninstall-pkgdataDATA
+	uninstall-perlmoduleSCRIPTS uninstall-pkgdataDATA \
+	uninstall-templateDATA
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
@@ -391,11 +421,12 @@ uninstall-am: uninstall-info-am uninstall-libexecSCRIPTS \
 	install-data-am install-exec install-exec-am install-info \
 	install-info-am install-libexecSCRIPTS install-man \
 	install-perlmoduleSCRIPTS install-pkgdataDATA install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-info-am uninstall-libexecSCRIPTS \
-	uninstall-perlmoduleSCRIPTS uninstall-pkgdataDATA
+	install-templateDATA installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	uninstall uninstall-am uninstall-info-am \
+	uninstall-libexecSCRIPTS uninstall-perlmoduleSCRIPTS \
+	uninstall-pkgdataDATA uninstall-templateDATA
 
 
 swish.cgi: swish.cgi.in
@@ -414,6 +445,7 @@ search.cgi: search.cgi.in
 		-e 's,@@swishbinary@@,$(bindir)/swish-e$(EXEEXT),' \
 		-e 's,@@perlbinary@@,$(PERL),' \
 		-e 's,@@pkgdatadir@@,$(pkgdatadir),' \
+		-e 's,@@templatedir@@,$(templatedir),' \
 			 $(srcdir)/search.cgi.in > search.cgi
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
