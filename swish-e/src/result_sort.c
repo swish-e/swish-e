@@ -198,7 +198,7 @@ static int    *getLookupResultSortedProperties(RESULT * r)
         {
             if (is_meta_entry(m, AUTOPROPERTY_RESULT_RANK))
             {
-                props[i] = getrank( r );
+                props[i] = r->rank;
                 continue;
             }
 
@@ -392,8 +392,7 @@ int  sortresults(RESULTS_OBJECT *results)
 
                 /* Now's a good time to normalize the rank as we are processing each result */
 
-                getrank(r);  /* Make sure the rank is calculated */
-                
+               
                 /* Find the largest rank for scaling */
                 if (r->rank > results->bigrank)
                     results->bigrank = r->rank;
