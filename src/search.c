@@ -175,23 +175,31 @@ void initModule_Search (SWISH  *sw)
 void resetModule_Search (SWISH *sw)
 
 {
- struct DB_RESULTS *tmp,*tmp2;
+ struct DB_RESULTS *tmp;
  struct MOD_Search *srch = sw->Search;
  int i;
  IndexFILE *tmpindexlist;
+
+
 
        /* Default variables for search */
    srch->maxhits = -1;
    srch->beginhits = 0;
 
-        /* Free results from search if they exists */
-   for(tmp=srch->db_results;tmp;)
-   {
-      freeresultlist(sw,tmp);
-      tmp2=tmp->next;
-      efree(tmp);
-      tmp=tmp2;
-   }
+    /* Free results from search if they exists */
+
+    while ( srch->db_results )
+    {
+        tmp = srch->db_results->next;
+        freeresultlist(sw,srch->db_results);
+        efree(srch->db_results);
+        srch->db_results = tmp;
+    }
+
+
+   
+
+
    Mem_ZoneReset(srch->resultSearchZone);
 
 
@@ -201,16 +209,20 @@ void resetModule_Search (SWISH *sw)
    {
       for(i=0;i<srch->numPropertiesToDisplay;i++)
          efree(srch->propNameToDisplay[i]);
+
       efree(srch->propNameToDisplay);
    }
+
    srch->propNameToDisplay=NULL;
    srch->numPropertiesToDisplay=0;
    srch->currentMaxPropertiesToDisplay=0;
+
                 /* Now the IDs of each index file */
    for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
    {
       if (tmpindexlist->propIDToDisplay)
          efree(tmpindexlist->propIDToDisplay);
+
       tmpindexlist->propIDToDisplay=NULL;
    }
 }
@@ -2094,6 +2106,7 @@ void    freeresultlist(SWISH * sw, struct DB_RESULTS *dbres)
         rp = dbres->resultlist->head;
     else
         rp = NULL;
+
     while (rp)
     {
         tmp = rp->next;
@@ -2112,6 +2125,8 @@ void    freeresult(SWISH * sw, RESULT * rp)
 
     if (rp)
     {
+        freefileinfo( &rp->fi );  // may have already been freed
+        
         if (sw->ResultSort->numPropertiesToSort && rp->PropSort)
         {
             for (i = 0; i < sw->ResultSort->numPropertiesToSort; i++)

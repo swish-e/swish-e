@@ -20,6 +20,7 @@ require DynaLoader;
     SwishErrorString
     SwishHeaders
     SetLimitParameter
+    ClearLimitParameter
 );
 
 $VERSION = '0.02';
@@ -91,13 +92,27 @@ SWISH-PERL - Perl Interface to the SWISH-E Library
 
 =head1 ABSTRACT
 
-SWISHE version 2.1.x creates an archive library of the internal SWISHE C functions.
-This perl module provides access to those functions by embedding the SWISHE search code in
+Swish-e version 2.1.x creates an archive library of the internal Swish-e C functions.
+This perl module provides access to those functions by embedding the Swish-e code in
 your application.  The benefits are faster searches (no need to fork/execute an external program)
 and avoids commonly used unsafe system calls.
 
-This module provides direct access to the SWISHE C library functions.  For a higher level, object
+This module provides direct access to the Swish-e C library functions.  For a higher level, object
 oriented interface to SWISH visit http://search.cpan.org/search?mode=module&query=SWISH
+
+=head2 Warnings and Gotchas
+
+The Swish-e library was created from the executable program (instead of the other way around).
+The Swish-e executable program handles errors by printing them to STDOUT and then aborting.
+Not exactly desired behavior from a library.  
+This means you should carefully screen your input data before calling the library.
+
+Another minor issue is that the Swish-e library currently includes all code -- both searching and
+indexing code.  Your program will be larger than needed due to this, but hopefully your OS will
+be smart and share this code across processes and the impact will be minimal.
+
+The library is often the last code to get checked during Swish-e development.  Test
+carefully, and watch for memory leaks if running in a persistent environment.
 
 
 =head1 INSTALLATION
@@ -163,6 +178,12 @@ Open one or more index files and returns a handle.
 
 Returns undefined on an error, but the only errors are typically fatal, so
 will most likely exit the running program.
+
+If running under a persistent framework (such as mod_perl) you may run many queries
+against the $handle.  This results in much faster searches.  For example, on searching
+an index with 24,000 files and returning (the same) 400 results, opening and closing the index
+for each search resulted in about 15 queries per second.  Leaving the index open resulted
+in about 150 queries per second.
 
 
 =item B<SwishClose( $handle );>
@@ -236,6 +257,48 @@ Examples:
     my $sortspec = 'title asc category desc category desc';
 
 =back
+
+=item B<SetLimitParameter( $handle, $property, $low, $high )>
+
+This experimental feature allows limiting results to a range of values
+for a given property.  For example, to limit Titles:
+
+    SetLimitParameter( $handle, 'swishtitle', 'a', 'zzzzzzzzzz' );
+
+Limits titles to the range specified.
+
+Note, if you do not call SwishOpen() and SwishClose() for every search
+you must clear the limit selection with C<ClearLimitParameter>.
+
+
+=item B<ClearLimitParameter( $handle )>
+
+This function must be called before calling SetLimitParameter() again while
+making repeated queries on an open index.
+
+Once a limit is set on an open index, that limit stays in effect.  If you want to
+change the limit, or just remove the limit you must call ClearLimitParameter().
+For example:
+
+    $handle = SwishOpen( $index );
+    while ( $query = next_query() ) {
+        ClearLimitParameter( $handle );
+
+        my @limits = $query->limits;
+        SetLimitParameter( $handle, @limits} ) if @limits;
+
+        SwishSearch($handle, $query->search, 1 );
+
+        ...
+    }
+
+    SwishClose( $handle );
+
+There's no harm in calling ClearLimitParameter() if a limit is not going to be used.
+
+This behavior may change in the future.
+
+
 
 =item B<SwishNext( $handle )>
 

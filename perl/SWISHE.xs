@@ -34,6 +34,11 @@ SwishClose(handle)
      CODE:
      SwishClose(handle);
 
+void
+MemSummary()
+    CODE:
+    Mem_Summary("At end of program", 1);
+
 int
 SwishSearch(handle,words,structure,properties,sortspec)
      void *handle
@@ -60,6 +65,7 @@ SwishNext(handle)
 
      PPCODE:
      result = (RESULT *)SwishNext(handle);
+
      if(result)
      {
         sw = (SWISH *) handle;
@@ -72,51 +78,41 @@ SwishNext(handle)
         PUSHMARK(SP);
 
         if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_RESULT_RANK, 0)) )
+        {
             XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+            freeResultPropValue(pv);
+        }
         else
             XPUSHs(&PL_sv_undef);
 
 
-        /*
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__INDEXFILE)) )
-            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
-        else
-            XPUSHs(&PL_sv_undef);
-        */
 
         if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_DOCPATH, 0)) )
+        {
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+            freeResultPropValue(pv);
+        }
         else
             XPUSHs(&PL_sv_undef);
 
-        /*
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__LASTMODIFIED)) )
-            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
-        else
-            XPUSHs(&PL_sv_undef);
-        */
 
         if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_TITLE, 0)) )
+        {
             XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
+            freeResultPropValue(pv);
+        }
         else
             XPUSHs(&PL_sv_undef);
 
-        /*
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__SUMMARY)) )
-            XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
-        else
-            XPUSHs(&PL_sv_undef);
-
-        if ( (pv = getResultPropValue( sw, result, NULL, AUTOPROP_ID__STARTPOS)) )
-            XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
-        else
-            XPUSHs(&PL_sv_undef);
-
-        */
         if ( (pv = getResultPropValue( sw, result, AUTOPROPERTY_DOCSIZE, 0)) )
+        {
             XPUSHs(sv_2mortal(newSViv(pv->value.v_int)));
+            freeResultPropValue(pv);
+        }
         else
             XPUSHs(&PL_sv_undef);
+
+
 
         metaIDs = result->indexf->propIDToDisplay;
 
@@ -140,9 +136,6 @@ SwishNext(handle)
 
                 case PROP_STRING:
                     XPUSHs(sv_2mortal(newSVpv(pv->value.v_str,0)));
-                    /* Free the string, if neede */
-                    if ( pv->destroy )
-                        efree( pv->value.v_str );
                     break;
 
                 /* Let perl format the data, if needed */
@@ -154,9 +147,14 @@ SwishNext(handle)
                     XPUSHs(&PL_sv_undef);
                     break;
             }
-            efree(pv);
+
+            freeResultPropValue(pv);
         }
         PUTBACK;
+
+        // SwishClose or SwishSearch (which calls SwishResetSearch) should free this
+        // so is optional, but this just frees the memory earlier
+        freefileinfo(&result->fi);
     }
 
 
@@ -169,6 +167,14 @@ SetLimitParameter(handle,propertyname,low,hi)
      CODE:
      SetLimitParameter((SWISH *)handle,propertyname,low,hi);
 
+
+void
+ClearLimitParameter(handle)
+     void *handle;
+     CODE:
+     ClearLimitParameter( (SWISH *)handle );
+
+     
 
 int 
 SwishSeek(handle,number)

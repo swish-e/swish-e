@@ -107,6 +107,7 @@ void freeDocProperties(docProperties *docProperties)
 
 void freefileinfo(FileRec *fi)
 {
+
     if ( fi->docProperties )
     {
         freeDocProperties( fi->docProperties );
@@ -390,6 +391,22 @@ PropValue *getResultPropValue (SWISH *sw, RESULT *r, char *pname, int ID )
 
 	return pv;
 }
+
+/*******************************************************************
+*   Destroys a "pv" returned from getResultPropValue
+*
+*
+********************************************************************/
+void    freeResultPropValue(PropValue *pv)
+{
+    if ( !pv ) return;
+    
+    if ( pv->datatype == PROP_STRING && pv->destroy )
+        efree( pv->value.v_str );
+        
+    efree(pv);
+}
+
 
 /*******************************************************************
 *   Displays the "old" style properties for -p
