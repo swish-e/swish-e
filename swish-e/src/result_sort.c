@@ -507,7 +507,7 @@ int     sortresults(SWISH * sw, int structure)
     RESULT *rp,
            *tmp;
     struct DB_RESULTS *db_results;
-    int     (*compResults) (const void *, const void *);
+    int     (*compResults) (const void *, const void *) = NULL;
     struct MOD_ResultSort *rs = sw->ResultSort;
 	int    presorted_data_not_available = 0;
 
