@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-pdf2xml - swish-e sample module to convert MS Word docs to text
+doc2txt - swish-e sample module to convert MS Word docs to text
 
 =head1 SYNOPSIS
 
