@@ -162,6 +162,7 @@ void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     long    wordID;
 
     wordID = DB_GetWordID(sw, indexf->DB);
+
     DB_WriteWord(sw, ep->word,wordID,indexf->DB);
 	    /* Store word offset for futher hash computing */
     ep->u1.fileoffset = wordID;
@@ -189,9 +190,11 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
     curmetaID=0;
     curmetanamepos=0L;
     q=sw->Index->worddata_buffer;
-        /* Write tfrequency */
+
+    /* Write tfrequency */
     q = compress3(ep->tfrequency,q);
-        /* Write location list */
+
+    /* Write location list */
     for(i=0;i<ep->u1.max_locations;i++) 
     {
         p = compressed_data = (unsigned char *) ep->locationarray[i];
@@ -221,25 +224,31 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
                 */
 
             tmp=q - sw->Index->worddata_buffer;
+
             if((long)(tmp + 5 + sizeof(long) + 1) >= (long)sw->Index->len_worddata_buffer)
             {
                 sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+5+sizeof(long)+1;
                 sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
                 q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
             }
+
                 /* store metaID in buffer */
             curmetaID=metaID;
             q = compress3(curmetaID,q);
+
                 /* preserve position for offset to next
                 ** metaname. We do not know its size
                 ** so store it as a packed long */ 
             curmetanamepos=q - sw->Index->worddata_buffer;
+
                 /* Store 0 and increase pointer */
             tmp=0L;
             PACKLONG2(tmp,q);
 
             q+=sizeof(unsigned long);
         }
+
+
             /* Write filenum,structure and position information to index file */
         filenum = uncompress2(&p);
         index_structfreq=indexf->header.locationlookup->all_entries[index-1]->val[1];
@@ -264,6 +273,7 @@ void    write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
             sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
             q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
         }
+
         q = compress3(filenum,q);
         q = compress3(index_structfreq,q);
         for(;frequency;frequency--)
