@@ -16,6 +16,7 @@ $Id$
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
 ** module to limit within a range of properties
+** Created June 10, 2001 - moseley
 **
 */
 
@@ -449,23 +450,38 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
 {
     int low, high, j;
     int foundLo, foundHi;
-    char    *paramlo;
+    char    *paramlo = NULL;
+    char    *paramhi = NULL;
     int     paramloLen;
-    char    *paramhi;
     int     paramhiLen;
     int some_selected = 0;
     
 #ifdef DEBUGLIMIT
     printf("Looking for %s in range %s - %s\n", meta_entry->metaName, param->lowrange, param->highrange );
-#endif    
+#endif
 
     /* First convert the input parameters into their packed form */
-    paramloLen = EncodeProperty( meta_entry, &paramlo, param->lowrange );
-    paramhiLen = EncodeProperty( meta_entry, &paramhi, param->highrange  );
+
+    if ( (strcmp( "<=", param->lowrange ) == 0)   )
+    {
+        paramloLen = -1;
+        paramhiLen = EncodeProperty( meta_entry, &paramhi, param->highrange  );
+    }
+    else if ( (strcmp( ">=", param->lowrange ) == 0)   )
+    {
+        paramloLen = EncodeProperty( meta_entry, &paramlo, param->highrange);
+        paramhiLen = -1;
+    }
+    else
+    {
+        paramloLen = EncodeProperty( meta_entry, &paramlo, param->lowrange );
+        paramhiLen = EncodeProperty( meta_entry, &paramhi, param->highrange  );
+    }
+    
 
 
     /* return false indicating an error in one of the parameters */
-    if ( !paramlo || !paramhi )
+    if ( !paramloLen || !paramhiLen )
     {
         for ( j = 0; j < num; j++ )
             sort_array[j].sort = 0;
@@ -476,41 +492,59 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
     }
 
 
-    if ( Compare_Properties( meta_entry, paramlo, paramloLen, paramhi, paramhiLen ) > 0 )
-        progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, param->lowrange, param->highrange );
-
-    foundLo = binary_sort(sw, indexf, sort_array, num, paramlo, paramloLen, meta_entry, &low);
-    if ( foundLo ) // exact match
-        while ( low > 0 && (test_prop( sw, indexf, meta_entry, paramlo, paramloLen, &sort_array[low-1] ) == 0))
-            low--;
+    /* Make sure range is in correct order */
+    if ( paramloLen > 0 && paramhiLen > 0 )
+        if ( Compare_Properties( meta_entry, paramlo, paramloLen, paramhi, paramhiLen ) > 0 )
+            progerr("Property '%s' value '%s' must be <= '%s'", meta_entry->metaName, param->lowrange, param->highrange );
 
 
+    if ( paramloLen < 0 )
+    {
+        foundLo = 1;    /* signal exact match */
+        low = 0;        /* and start at beginning */
+    }
+    else
+    {
+        foundLo = binary_sort(sw, indexf, sort_array, num, paramlo, paramloLen, meta_entry, &low);
+        if ( foundLo ) // exact match
+            while ( low > 0 && (test_prop( sw, indexf, meta_entry, paramlo, paramloLen, &sort_array[low-1] ) == 0))
+                low--;
+    }
 
-    foundHi = binary_sort(sw, indexf, sort_array, num, paramhi, paramhiLen, meta_entry, &high);
-    if ( foundHi )
-        while ( high < num-1 && (test_prop( sw, indexf, meta_entry, paramhi, paramhiLen, &sort_array[high+1] ) == 0))
-            high++;
 
+
+    if ( paramhiLen < 0 )
+    {
+        foundHi = 1;    /* signal exact match */
+        high = num -1;  /* and end very end */
+    }
+    else
+    {
+        foundHi = binary_sort(sw, indexf, sort_array, num, paramhi, paramhiLen, meta_entry, &high);
+        if ( foundHi )
+            while ( high < num-1 && (test_prop( sw, indexf, meta_entry, paramhi, paramhiLen, &sort_array[high+1] ) == 0))
+                high++;
+    }
+
+    printf("Returned range %d - %d (exact: %d %d) cnt: %u\n", low, high, foundLo, foundHi, num );
 #ifdef DEBUGLIMIT
-    printf("Returned range %d - %d (exact: %d %d)\n", low, high, foundLo, foundHi );
+    printf("Returned range %d - %d (exact: %d %d) cnt: %u\n", low, high, foundLo, foundHi, num );
 #endif    
 
-    /* both inbetween */
+    /* both inbetween two adjacent entries */
     if ( !foundLo && !foundHi && low == high )
     {
         for ( j = 0; j < num; j++ )
             sort_array[j].sort = 0;
 
-        efree( paramlo );
-        efree( paramhi );
+        if ( paramlo ) efree( paramlo );
+        if ( paramhi ) efree( paramhi );
         return 0;
     }
 
 
     if ( !foundHi && low < high )
         high--;
-
-
 
 
     for ( j = 0; j < num; j++ )
@@ -524,8 +558,8 @@ static int find_prop(SWISH *sw, IndexFILE *indexf,  LOOKUP_TABLE *sort_array, in
             sort_array[j].sort = 0;
     }
 
-    efree( paramlo );
-    efree( paramhi );
+    if ( paramlo ) efree( paramlo );
+    if ( paramhi ) efree( paramhi );
 
     return some_selected;        
 
