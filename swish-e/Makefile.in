@@ -46,6 +46,8 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BTREE_OBJS = @BTREE_OBJS@
+BUILDDOCS_FALSE = @BUILDDOCS_FALSE@
+BUILDDOCS_TRUE = @BUILDDOCS_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -138,11 +140,11 @@ target_alias = @target_alias@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = example html man src tests
 
-docdir = $(datadir)/doc/$(PACKAGE)
+@BUILDDOCS_TRUE@docdir = $(datadir)/doc/$(PACKAGE)
 
-doc_DATA = \
-	INSTALL \
-	README
+@BUILDDOCS_TRUE@doc_DATA = \
+@BUILDDOCS_TRUE@	INSTALL \
+@BUILDDOCS_TRUE@	README
 
 
 config_dir = \
@@ -747,14 +749,13 @@ uninstall-info: uninstall-info-recursive
 	uninstall-info-recursive uninstall-libexecSCRIPTS \
 	uninstall-recursive
 
+@BUILDDOCS_TRUE@INSTALL: $(top_srcdir)/pod/INSTALL.pod
+@BUILDDOCS_TRUE@	-rm -f $(top_srcdir)/INSTALL
+@BUILDDOCS_TRUE@	-pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
 
-INSTALL: $(top_srcdir)/pod/INSTALL.pod
-	-rm -f $(top_srcdir)/INSTALL
-	-pod2text $(top_srcdir)/pod/INSTALL.pod > $(top_srcdir)/INSTALL
-
-README: $(top_srcdir)/pod/README.pod
-	-rm -f $(top_srcdir)/README
-	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
+@BUILDDOCS_TRUE@README: $(top_srcdir)/pod/README.pod
+@BUILDDOCS_TRUE@	-rm -f $(top_srcdir)/README
+@BUILDDOCS_TRUE@	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
 
 .PHONEY: test
 

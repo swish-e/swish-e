@@ -1,8 +1,9 @@
-htmldir = $(datadir)/doc/$(PACKAGE)/html
-imagedir = $(datadir)/doc/$(PACKAGE)/html/images
 pod_dir = $(srcdir)/../pod
 version_file = $(srcdir)/../doc/Version.pm
 
+if BUILDDOCS
+htmldir = $(datadir)/doc/$(PACKAGE)/html
+imagedir = $(datadir)/doc/$(PACKAGE)/html/images
 
 html_DATA = \
 	CHANGES.html \
@@ -29,7 +30,7 @@ image_DATA = \
 	images/swish2.gif \
 	images/swishbanner1.gif \
 	images/swish.gif
-
+endif
 
 depends = \
 	$(pod_dir)/CHANGES.pod \
@@ -47,19 +48,20 @@ depends = \
 	$(top_srcdir)/example/swish.cgi \
 	$(top_srcdir)/filters/SWISH/Filter.pm
 
+if BUILDDOCS
 all-local: $(html_DATA)
 
 $(html_DATA): .html-stamp
-	@if test -f $@; then :; else rm -f $<; $(MAKE) .html-stamp; fi
+	@if test -f $(srcdir)/$@; then :; else chmod 644 $<; rm -f $<; $(MAKE) .html-stamp; fi
 
-$(version_file): $(top_srcdir)/Makefile
+$(version_file): $(top_srcdir)/Makefile.in
 	@echo "updating version file"
         @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
 
 .html-stamp: $(version_file) $(depends)
 	cd $(srcdir)/../doc && bin/build
 	@touch $(srcdir)/.html-stamp
-
+endif
 
 EXTRA_DIST = $(html_DATA) $(image_DATA) .html-stamp
 

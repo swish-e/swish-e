@@ -1,9 +1,10 @@
+if BUILDDOCS
 man_MANS = \
     SWISH-CONFIG.1 \
     SWISH-FAQ.1 \
     SWISH-LIBRARY.1 \
     SWISH-RUN.1
-
+endif
 
 
 SWISH-CONFIG.1: $(srcdir)/../pod/SWISH-CONFIG.pod

@@ -46,6 +46,8 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BTREE_OBJS = @BTREE_OBJS@
+BUILDDOCS_FALSE = @BUILDDOCS_FALSE@
+BUILDDOCS_TRUE = @BUILDDOCS_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -135,37 +137,38 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-htmldir = $(datadir)/doc/$(PACKAGE)/html
-imagedir = $(datadir)/doc/$(PACKAGE)/html/images
 pod_dir = $(srcdir)/../pod
 version_file = $(srcdir)/../doc/Version.pm
 
-html_DATA = \
-	CHANGES.html \
-	INSTALL.html \
-	README.html \
-	SWISH-3.0.html \
-	SWISH-BUGS.html \
-	SWISH-CONFIG.html \
-	SWISH-FAQ.html \
-	SWISH-LIBRARY.html \
-	SWISH-RUN.html \
-	SWISH-SEARCH.html \
-	API.html \
-	spider.html \
-	swish.html \
-	Filter.html \
-	index.html \
-	index_long.html \
-        style.css
+@BUILDDOCS_TRUE@htmldir = $(datadir)/doc/$(PACKAGE)/html
+@BUILDDOCS_TRUE@imagedir = $(datadir)/doc/$(PACKAGE)/html/images
+
+@BUILDDOCS_TRUE@html_DATA = \
+@BUILDDOCS_TRUE@	CHANGES.html \
+@BUILDDOCS_TRUE@	INSTALL.html \
+@BUILDDOCS_TRUE@	README.html \
+@BUILDDOCS_TRUE@	SWISH-3.0.html \
+@BUILDDOCS_TRUE@	SWISH-BUGS.html \
+@BUILDDOCS_TRUE@	SWISH-CONFIG.html \
+@BUILDDOCS_TRUE@	SWISH-FAQ.html \
+@BUILDDOCS_TRUE@	SWISH-LIBRARY.html \
+@BUILDDOCS_TRUE@	SWISH-RUN.html \
+@BUILDDOCS_TRUE@	SWISH-SEARCH.html \
+@BUILDDOCS_TRUE@	API.html \
+@BUILDDOCS_TRUE@	spider.html \
+@BUILDDOCS_TRUE@	swish.html \
+@BUILDDOCS_TRUE@	Filter.html \
+@BUILDDOCS_TRUE@	index.html \
+@BUILDDOCS_TRUE@	index_long.html \
+@BUILDDOCS_TRUE@        style.css
 
 
-image_DATA = \
-	images/dotrule1.gif \
-	images/swish2b.gif \
-	images/swish2.gif \
-	images/swishbanner1.gif \
-	images/swish.gif
+@BUILDDOCS_TRUE@image_DATA = \
+@BUILDDOCS_TRUE@	images/dotrule1.gif \
+@BUILDDOCS_TRUE@	images/swish2b.gif \
+@BUILDDOCS_TRUE@	images/swish2.gif \
+@BUILDDOCS_TRUE@	images/swishbanner1.gif \
+@BUILDDOCS_TRUE@	images/swish.gif
 
 
 depends = \
@@ -260,7 +263,6 @@ top_distdir = ..
 distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
-	$(mkinstalldirs) $(distdir)/images
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -374,18 +376,18 @@ uninstall-am: uninstall-htmlDATA uninstall-imageDATA uninstall-info-am
 	uninstall-info-am
 
 
-all-local: $(html_DATA)
+@BUILDDOCS_TRUE@all-local: $(html_DATA)
 
-$(html_DATA): .html-stamp
-	@if test -f $@; then :; else rm -f $<; $(MAKE) .html-stamp; fi
+@BUILDDOCS_TRUE@$(html_DATA): .html-stamp
+@BUILDDOCS_TRUE@	@if test -f $(srcdir)/$@; then :; else chmod 644 $<; rm -f $<; $(MAKE) .html-stamp; fi
 
-$(version_file): $(top_srcdir)/Makefile
-	@echo "updating version file"
-        @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
+@BUILDDOCS_TRUE@$(version_file): $(top_srcdir)/Makefile.in
+@BUILDDOCS_TRUE@	@echo "updating version file"
+@BUILDDOCS_TRUE@        @echo 'package SWISHE::Doc;$$VERSION=q[$(VERSION)];1' > $(version_file)
 
-.html-stamp: $(version_file) $(depends)
-	cd $(srcdir)/../doc && bin/build
-	@touch $(srcdir)/.html-stamp
+@BUILDDOCS_TRUE@.html-stamp: $(version_file) $(depends)
+@BUILDDOCS_TRUE@	cd $(srcdir)/../doc && bin/build
+@BUILDDOCS_TRUE@	@touch $(srcdir)/.html-stamp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
