@@ -147,10 +147,9 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
 {
     int     wordcount;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
-    int     external_program;
+    int     external_program = 0;
 
     wordcount = -1;
-    external_program = 0;
 
     /* skip file is the last_mod date is newer than the check date */
 
@@ -170,118 +169,111 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     }
 
 
-    if (fprop->work_path)
+    /* Upon entry, if fprop->fp is non-NULL then it's already opened and ready to be read from.
+       This is the case with "prog" external programs, except when a filter is selected for the file type.
+       If a file is used with "prog" a temporary file was created (fprop->work_file), and will read from that.
+       2001-05-13 moseley
+    */
+
+
+    /* to keep from closing the stream used with "prog" */
+    if ( fprop->fp )
+        external_program++;
+
+
+    if (fprop->hasfilter)
+        fprop->fp = FilterOpen(fprop);
+
+    else if ( !fprop->fp )
+        /* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
+        fprop->fp = fopen(fprop->work_path, FILEMODE_READ);
+
+    /* $$$ needs better error reporting -- should this abort? */
+    if ( !fprop->fp )
+        progerr("Failed to open source file!");
+
+
+
+    /* -- Read  all data  (len = 0 if filtered...) */
+    rd_buffer = read_stream(fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
+
+    switch (fprop->doctype)
     {
 
-        /*
-           -- jeek! simple filter hack!
-           -- if no filter defined, call file-open
-         */
+    case TXT:
+        if (sw->verbose >= 3)
+            printf(" - Using TXT filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_TXT(sw, fprop, rd_buffer);
+        break;
 
-        if (fprop->fp)
+    case HTML:
+        if (sw->verbose >= 3)
+            printf(" - Using HTML filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        break;
+
+    case XML:
+        if (sw->verbose >= 3)
+            printf(" - Using XML filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_XML(sw, fprop, rd_buffer);
+        break;
+
+    case LST:
+        if (sw->verbose >= 3)
+            printf(" - Using LST filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_LST(sw, fprop, rd_buffer);
+        break;
+
+    case WML:
+        if (sw->verbose >= 3)
+            printf(" - Using WML filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        break;
+
+    default:
+        if (sw->verbose >= 3)
+            printf(" - Using DEFAULT filter - ");
+        if (sw->verbose >= 4)
+            printf("\n");
+        wordcount = countwords_HTML(sw, fprop, rd_buffer);
+        break;
+    }
+
+    if (!external_program)
+    {
+        if (fprop->hasfilter)
         {
-            external_program++;
-
+            FilterClose(fprop->fp); /* close filter pipe */
         }
         else
         {
-            if (fprop->hasfilter)
-            {
-                fprop->fp = FilterOpen(fprop);
-            }
-            else
-            {
-                /* FIX jmruiz 02/20001 Changed "r" to FILEMODE_READ for WIN32 compatibility */
-                fprop->fp = fopen(fprop->work_path, FILEMODE_READ);
-            }
+            fclose(fprop->fp); /* close file */
         }
+    }
 
-
-        if (fprop->fp)
-        {
-
-            /* -- Read  all data  (len = 0 if filtered...) */
-            rd_buffer = read_stream(fprop->fp, (fprop->hasfilter) ? 0 : fprop->fsize, sw->truncateDocSize);
-
-            switch (fprop->doctype)
-            {
-
-            case TXT:
-                if (sw->verbose >= 3)
-                    printf(" - Using TXT filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_TXT(sw, fprop, rd_buffer);
-                break;
-
-            case HTML:
-                if (sw->verbose >= 3)
-                    printf(" - Using HTML filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_HTML(sw, fprop, rd_buffer);
-                break;
-
-            case XML:
-                if (sw->verbose >= 3)
-                    printf(" - Using XML filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_XML(sw, fprop, rd_buffer);
-                break;
-
-            case LST:
-                if (sw->verbose >= 3)
-                    printf(" - Using LST filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_LST(sw, fprop, rd_buffer);
-                break;
-
-            case WML:
-                if (sw->verbose >= 3)
-                    printf(" - Using WML filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_HTML(sw, fprop, rd_buffer);
-                break;
-
-            default:
-                if (sw->verbose >= 3)
-                    printf(" - Using DEFAULT filter - ");
-                if (sw->verbose >= 4)
-                    printf("\n");
-                wordcount = countwords_HTML(sw, fprop, rd_buffer);
-                break;
-            }
-
-            if (!external_program)
-            {
-                if (fprop->hasfilter)
-                {
-                    FilterClose(fprop->fp); /* close filter pipe */
-                }
-                else
-                {
-                    fclose(fprop->fp); /* close file */
-                }
-            }
-
-        }
         efree(rd_buffer);
 
-        if (sw->verbose >= 3)
-        {
-            if (wordcount > 0)
-                printf(" (%d words)\n", wordcount);
-            else if (wordcount == 0)
-                printf(" (no words)\n");
-            else if (wordcount == -1)
-                printf(" (not opened)\n");
-            else if (wordcount == -2)
-                printf(" (title is not ok)\n");
-            fflush(stdout);
-        }
+    if (sw->verbose >= 3)
+    {
+        if (wordcount > 0)
+            printf(" (%d words)\n", wordcount);
+        else if (wordcount == 0)
+            printf(" (no words)\n");
+        else if (wordcount == -1)
+            printf(" (not opened)\n");
+        else if (wordcount == -2)
+            printf(" (title is not ok)\n");
+        fflush(stdout);
     }
 
     return;

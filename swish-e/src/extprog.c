@@ -34,6 +34,7 @@
 #include "xml.h"
 #include "txt.h"
 #include "parse_conffile.h"
+#include <unistd.h>
 
 FILE   *open_external_program(SWISH * sw, char *prog)
 {
@@ -74,6 +75,49 @@ FILE   *open_external_program(SWISH * sw, char *prog)
     return fp;
 }
 
+/* To make filters work with prog, need to write the file out to a temp file */
+/* It will be faster to do the filtering from within the "prog" program */
+/* This may not be save if running as a threaded app, and I'm not clear on how portable this is */
+/* This also uses read_stream to read in the file -- so the entire file is read into memory instead of chunked to the temp file */
+
+void    save_to_temp_file(FileProp *fprop)
+{
+    FILE   *out;
+    char   *rd_buffer = NULL;   /* complete file read into buffer */
+    size_t  bytes;
+    
+    fprop->work_path = tmpnam( (char *) NULL );
+    if ( !fprop->work_path )
+        progerr("Failed to create a temporary file for filtering");
+
+
+    /* slirp entire file into memory -- yuck */
+    rd_buffer = read_stream(fprop->fp, fprop->fsize, 0);
+        
+
+    out = fopen( fprop->work_path, "w" );  /* is "w" portable? */        
+
+    if ( !out )
+         /* ok, how do I easily get the filename and errno into the string? */
+        progerr("Failed to open temporary filter file");
+
+
+    bytes = fwrite( rd_buffer, 1, fprop->fsize, out );
+
+    if ( bytes != (size_t)fprop->fsize )
+        progerr("Failed to write temporary filter file");
+
+
+    /* hide the fact that it's an external program */
+    fprop->fp = (FILE *) NULL;
+
+
+    efree(rd_buffer);
+    fclose( out );
+   
+}
+
+
 
 void    extprog_indexpath(SWISH * sw, char *prog)
 {
@@ -87,6 +131,7 @@ void    extprog_indexpath(SWISH * sw, char *prog)
     time_t  mtime;
     int     index_no_content;
     long    truncate_doc_size;
+    int     has_filter = 0;
 
     mtime = 0;
     fsize = 0;
@@ -140,7 +185,10 @@ void    extprog_indexpath(SWISH * sw, char *prog)
                  */
 
                 if (fprop->hasfilter)
-                    progerr("Filters currently do not work with 'prog' document source");
+                {
+                    save_to_temp_file( fprop );
+                    has_filter++; /* save locally, in case it gets reset somewhere else */
+                }
 
                 if (sw->verbose >= 3)
                 {
@@ -152,6 +200,9 @@ void    extprog_indexpath(SWISH * sw, char *prog)
                 }
 
                 do_index_file(sw, fprop);
+
+                if ( has_filter )
+                    unlink( fprop->work_path );
 
                 free_file_properties(fprop);
                 efree(real_path);
