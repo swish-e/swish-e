@@ -69,7 +69,7 @@ LIB32=link.exe -lib
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
-# ADD BSC32 /nologo
+# ADD BSC32 /nologo /o"tmp/libswishindex___Win32_Debug/libswishindex.bsc"
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
@@ -86,6 +86,10 @@ LIB32=link.exe -lib
 # Begin Source File
 
 SOURCE=..\db_write.c
+# End Source File
+# Begin Source File
+
+SOURCE=.\dirent.c
 # End Source File
 # Begin Source File
 
@@ -141,7 +145,15 @@ SOURCE=..\methods.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\replace\mkstemp.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\parse_conffile.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\parser.c
 # End Source File
 # Begin Source File
 

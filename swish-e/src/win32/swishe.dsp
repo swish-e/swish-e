@@ -42,7 +42,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W3 /GX /O2 /I "." /I "..\..\..\expat\xmlparse" /I "..\..\..\zlib" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /FR /YX /FD /c
+# ADD CPP /nologo /W3 /GX /O2 /I "." /I "../replace" /I "..\..\..\expat\xmlparse" /I "..\..\..\zlib\include" /I "..\..\..\expat\xmltok" /I "../../../libxml2/include" /I "../../../pcre/include" /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib libswish-e.lib ../../../expat/xmltok/Release/xmltok.lib ../../../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../zlib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /machine:I386 /out:"swish-e.exe"
+# ADD LINK32 kernel32.lib libswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /machine:I386 /out:"swish-e.exe"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "swishe - Win32 Debug"
@@ -67,7 +67,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "..\..\..\expat\xmltok" /I "../../../pcre/include" /I "../../../zlib" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /D "_CONSOLE" /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /I /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "." /I "../replace" /I "..\..\..\expat\xmlparse" /I "../../../libxml2/include" /I "..\..\..\expat\xmltok" /I "../../../pcre/include" /I "../../../zlib" /D "HAVE_PCRE" /D "HAVE_CONFIG_H" /D "HAVE_ZLIB" /D "_CONSOLE" /D "WIN32" /D "_DEBUG" /D "_MBCS" /YX /FD /I /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -75,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib libswish-e.lib ../../../expat/xmltok/Debug/xmltok.lib ../../../expat/xmlparse/Debug/xmlparse.lib ../../../libxml2/win32/dsp/libxml2/libxml2.lib ../../../pcre/lib/libpcre.lib ../../../zlib/zlib.lib /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
+# ADD LINK32 kernel32.lib libswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
@@ -87,6 +87,18 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Source File
+
+SOURCE=..\dump.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\keychar_out.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\result_output.c
+# End Source File
 # Begin Source File
 
 SOURCE=..\swish.c
