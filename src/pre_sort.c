@@ -417,8 +417,8 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
     int             i;
     int             *out_array = NULL;     /* array that gets sorted */
-    unsigned char   *out_buffer  = NULL;
 #ifndef USE_BTREE
+    unsigned char   *out_buffer  = NULL;
     unsigned char   *cur;
 #endif
     struct metaEntry *m;
@@ -479,7 +479,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
 
 #ifdef USE_BTREE
-        DB_WriteSortedIndex(sw, metaID, out_array, total_files, indexf->DB);
+        DB_WriteSortedIndex(sw, metaID, (unsigned char *)out_array, total_files, indexf->DB);
 
         for (i = 0; i < total_files; i++)
             if ( PropLookup[i].SortProp )

@@ -210,7 +210,7 @@ int     DB_EndReadFiles_Native(void *db);
 
 #ifdef USE_BTREE
 int     DB_InitWriteSortedIndex_Native(void *db , int n_props);
-int     DB_WriteSortedIndex_Native(int propID, int *data, int sz_data,void *db);
+int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
 #else
 int     DB_InitWriteSortedIndex_Native(void *db );
 int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);

@@ -6,7 +6,9 @@
 #define DEBUG
 */
 
+#include "swish.h"
 #include "mem.h"
+#include "compress.h"
 #include "worddata.h"
 
 /* WORDDATA page size */
@@ -515,7 +517,7 @@ unsigned char *WORDDATA_Get(WORDDATA *b, unsigned long global_id, unsigned int *
 {
 unsigned long page_number = global_id >> 8;
 int id = (int)(global_id & 0xff);
-int r_id,r_len;
+int r_id=-1,r_len=-1;
 int i;
 unsigned char *p;
 unsigned char *data;
@@ -574,7 +576,7 @@ void WORDDATA_Del(WORDDATA *b, unsigned long global_id, unsigned int *len)
 {
 unsigned long page_number = global_id >> 8;
 int id = (int)(global_id & 0xff);
-int r_id,r_len,tmp;
+int r_id=-1,r_len=-1,tmp;
 int i;
 unsigned char *p, *q;
 int deleted_length;

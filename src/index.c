@@ -2069,6 +2069,9 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
             }
             else
             {
+                 /* Reset last error. It was set in read_worddata if
+                 ** word was not found */
+                 sw->lasterror = RC_OK;
                  /* Write word to index file */
                  write_worddata(sw, epi, indexf);
                  write_word(sw, epi, indexf);

@@ -51,6 +51,19 @@ static const int swish_endian_test_value = 1;
 /* 2001-05 jmruiz */
 /* Routines for compressing numbers - Macros converted to routines */
 
+/* 2002-11 jmruiz */
+/* Get required size in bytes for a given compressed number */
+int sizeofcompint(int number)
+{
+int size = 0;
+    do
+    {
+        size++;
+    } 
+    while ((number >>= 7));
+    return size;
+}
+
 /* Compress a number and writes it to a file */
 void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
 {
@@ -705,7 +718,7 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
         // $$$ make sure this works ok if returning null $$$
         progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
             zlib_status, new_buf_size, buf_size );
-        return NULL;
+        return;
     }
     efree(*buf);
     *buf_size = (int)new_buf_size;
