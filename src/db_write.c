@@ -324,7 +324,7 @@ void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
     remove_worddata_longs(sw->Index->worddata_buffer,&sw->Index->sz_worddata_buffer);
 
     if(sw->compressPositions)
-        zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer);
+        zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer,sw->Index->swap_locdata);
     else
         zlib_size = sw->Index->sz_worddata_buffer;
 
