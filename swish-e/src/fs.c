@@ -22,7 +22,8 @@
 ** and use MAXKEYLEN as string length vs. literal "34"
 ** SRE 11/17/99
 **
-** 2000-11   jruiz,rasc  some redesign
+** 2000-11     jruiz,rasc  some redesign
+** 2001-04-07  rasc        fixed FileRule pathname
 **
 */
 
@@ -370,36 +371,41 @@ void fs_indexpath(SWISH *sw, char *path)
 }
 
 
+
+/*
+   -- add. parsing for index method filesystem
+*/
+
 int fs_parseconfline(SWISH *sw, void *l)
 {
 int rv = 0;
 StringList *sl=(StringList *)l;
-	if (strcasecmp(sl->word[0], "FileRules")==0) 
-	{
-                if (sl->n>3)
-		{
-			if(strcasecmp(sl->word[1],"path")==0 && strcasecmp(sl->word[2],"contains")==0)
-			{
+
+
+	if (strcasecmp(sl->word[0], "FileRules")==0) {
+	   if (sl->n>3) {
+		char *w1;
+		int  is2_contains = !strcasecmp(sl->word[2],"contains");
+
+			w1 = sl->word[1]; 
+
+			if( !(strcasecmp(w1,"path") && strcasecmp(w1,"pathname"))&& is2_contains) {
 				grabCmdOptions(sl,3, &sw->pathconlist);
 				rv = 1;
 			}
-			else if(strcasecmp(sl->word[1],"directory")==0 && strcasecmp(sl->word[2],"contains")==0)
-			{
+			else if(!strcasecmp(w1,"directory") && is2_contains) {
 				grabCmdOptions(sl,3, &sw->dirconlist); 
 				rv = 1;
-			} else if(strcasecmp(sl->word[1],"filename")==0 && strcasecmp(sl->word[2],"contains")==0)
-			{
+			} else if(!strcasecmp(w1,"filename") && is2_contains) {
 				grabCmdOptions(sl,3, &sw->fileconlist); 
 				rv = 1;
-			} else if(strcasecmp(sl->word[1],"title")==0 && strcasecmp(sl->word[2],"contains")==0)
-			{
+			} else if(!strcasecmp(w1,"title") && is2_contains) {
 				grabCmdOptions(sl,3, &sw->titconlist); 
 				rv = 1;
-			} else if(strcasecmp(sl->word[1],"filename")==0 && strcasecmp(sl->word[2],"is")==0)
-			{
+			} else if(!strcasecmp(w1,"filename") && !strcasecmp(sl->word[2],"is"))	{
 				grabCmdOptions(sl,3, &sw->fileislist); 
 				rv = 1;
-			} else progerr("Bad parameter in FileRules");
+			} else progerr("Bad parameter in \"FileRules %s %s\"",sl->word[1],sl->word[2]);
 		} 
 		else progerr("Bad number of parameters in FileRules");
 	}

@@ -18,6 +18,9 @@
 **
 ** fixed non-int subscripting pointed out by "gcc -Wall"
 ** SRE 2/22/00
+**
+** 2001-03-08 rasc   rewritten and enhanced suffix routines
+**
 */
 
 #include "swish.h"
@@ -126,9 +129,9 @@ int i;
 }
 
 
+//$$$$$$$$ to be deleted if new routine works >>>>>>>>>>>>>>>
 
-
-int getdoctype(char *filename, struct IndexContents *indexcontents)
+int OLD__getdoctype(char *filename, struct IndexContents *indexcontents)
 {
 char *c, *checksuffix;
 int  lchecksuffix;
@@ -156,6 +159,48 @@ struct swline *swl;
 	efree(checksuffix);
 	return NODOCTYPE;
 }
+//$$$$$$ to be deleted <<<<<<<<<<<<<<<<<
+
+
+/*
+  -- Determine document type by checking the file extension
+  -- of the filename
+  -- Return: doctype
+  -- 2001-03-08 rasc   rewritten (optimize and match also
+  --                   e.g. ".htm", ".htm.de" or ".html.gz")
+*/
+
+int getdoctype(char *filename, struct IndexContents *indexcontents)
+{
+ struct swline *swl;
+ char *s, *fe;
+
+
+   if(!indexcontents) return NODOCTYPE;
+
+   /* basically do a right to left compare */
+   fe = (filename + strlen(filename));
+   while (indexcontents) {
+	swl=indexcontents->patt;
+
+	while (swl) {
+	   s = fe - strlen (swl->line);
+	   if (s >= filename) {   /* no negative overflow! */
+		if (! strcasecmp(swl->line, s)) {
+			return indexcontents->DocType;;
+		}
+	   }
+	   swl = swl->next;
+	}
+
+	indexcontents = indexcontents->next;
+   }
+
+   return NODOCTYPE;
+}
+
+
+
 
 
 struct StoreDescription *hasdescription(int doctype, struct StoreDescription *sd)

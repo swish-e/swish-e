@@ -42,15 +42,6 @@ $Id$
 #include "parse_conffile.h"
 
 
-/* 02/2001 Rewritten Jmruiz */
-void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords)
-{
-int i;
-	for(i=start;i<sl->n;i++)
-		*listOfWords = (struct swline *) addswline(*listOfWords, sl->word[i]);
-}
-
-
 /* Reads the configuration file and puts all the right options
 ** in the right variables and structures.
 */
@@ -500,7 +491,21 @@ int getDocTypeOrAbort (StringList *sl, int n)
    }
 
    progerr ("%s: missing %d. parameter", sl->word[0],n);
-   return 0; /* compiler warning */
+}
+
+
+/*
+  -- helper routine for misc. indexing methods
+  -- (called via "jump" function array)
+ 02/2001 Rewritten Jmruiz
+ */
+
+void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords)
+{
+ int i;
+	for(i=start;i<sl->n;i++)
+		*listOfWords = (struct swline *) addswline(*listOfWords, sl->word[i]);
+	return;
 }
 
 
