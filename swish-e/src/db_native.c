@@ -272,6 +272,7 @@ void DB_Close_Native(void *db)
    }
    fclose(DB->fp);
    efree(DB->dbname);
+   if(DB->fileoffsetarray) efree(DB->fileoffsetarray);
    efree(DB);
 }
 
@@ -342,11 +343,18 @@ int DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
 
    tmp = uncompress1(fp);
    *id = tmp;
-   tmp = uncompress1(fp);
-   *s = (char *) emalloc( tmp +1);
-   *len = tmp;
-   fread(*s, *len, sizeof(char), fp);
-
+   if(tmp)
+   {
+      tmp = uncompress1(fp);
+      *s = (char *) emalloc( tmp +1);
+      *len = tmp;
+      fread(*s, *len, sizeof(char), fp);
+   }
+   else
+   {
+      len = 0;
+      *s = NULL;
+   }
    return 0;
 }
 
