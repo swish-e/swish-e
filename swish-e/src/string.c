@@ -145,7 +145,7 @@ char   *getword(char *s, int *skiplen)
 
     *cur_char = '\0';
 
-    *skiplen = s - start + 1;
+    *skiplen = s - start;
 
     return estrdup( buf );
 

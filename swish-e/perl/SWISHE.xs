@@ -12,6 +12,7 @@ extern "C" {
 #include "../src/stemmer.h"
 #include "../src/merge.h"
 #include "../src/docprop.h"
+#include "../src/mem.h"
 #include "../src/search.h"
 
 
