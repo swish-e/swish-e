@@ -10,6 +10,7 @@
 #include "mem.h"
 #include "compress.h"
 #include "worddata.h"
+#include "error.h"
 
 /* WORDDATA page size */
 /* !!!! Must no be less than 4096 and not greater than 65536*/

@@ -634,7 +634,7 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
 {
     unsigned char *s1,
            *t;
-    unsigned char *e_end;
+    char *e_end;
     unsigned char s_cmp[MAX_ENTITY_LEN + 1];
     int     len;
     int     code;

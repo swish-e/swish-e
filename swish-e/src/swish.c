@@ -298,6 +298,9 @@ static void    usage()
     printf("              The default value is: \"%s\"\n", defaultIndexingSystem);
 
     printf("         -i : create an index from the specified files\n");
+#ifdef USE_BTREE
+    printf("         -u : update: adds files to existing index\n");
+#endif
     printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -t : tags to search in - specify as a string\n");
     printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
@@ -379,6 +382,7 @@ static SWISH  *swish_new()
 #ifdef HAVE_ZLIB
     sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
 #endif
+
 
 
 
@@ -1630,7 +1634,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
 
     if (sw->verbose)
-        printf("%d unique word%s indexed.\n", sw->indexlist->header.totalwords, (sw->indexlist->header.totalwords == 1) ? "" : "s");
+        printf("%s unique word%s indexed.\n", comma_long( sw->indexlist->header.totalwords ), (sw->indexlist->header.totalwords == 1) ? "" : "s");
 
 
     /* Sort properties -> Better search performance */
@@ -1652,8 +1656,14 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     if (sw->verbose)
     {
         if (totalfiles)
-            printf("%d file%s indexed.  %lu total bytes.  %lu total words.\n",
-                totalfiles, (totalfiles == 1) ? "" : "s", sw->indexlist->total_bytes, sw->indexlist->total_word_positions);
+        {
+            printf("%s file%s indexed.  ",
+                    comma_long( totalfiles ), (totalfiles == 1) ? "" : "s");
+
+            printf("%s total bytes.  ", comma_long(sw->indexlist->total_bytes) );
+
+            printf("%s total words.\n", comma_long(sw->indexlist->total_word_positions) );
+        }
         else
             printf("no files indexed.\n");
 
@@ -1667,6 +1677,8 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
     }
 
 }
+
+
 
 
 /*****************************************************************

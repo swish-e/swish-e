@@ -2177,7 +2177,6 @@ static void    freeresultlist(DB_RESULTS *dbres)
 /* funtion to free the memory of one result */
 static void    freeresult(RESULT * rp)
 {
-    int     i;
     DB_RESULTS *db_results;
 
     if (!rp)

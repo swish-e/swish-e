@@ -101,7 +101,7 @@ void    write_header(SWISH *sw, INDEXDATAHEADER * header, void * DB, char *filen
     DB_WriteHeaderData(sw, MAINTAINEDBYHEADER_ID, (unsigned char *)header->indexa, strlen(header->indexa) + 1,DB);
     write_header_int(sw, DOCPROPENHEADER_ID, 1, DB);
 
-    write_header_int(sw, FUZZYMODEHEADER_ID, header->fuzzy_data.fuzzy_mode, DB);
+    write_header_int(sw, FUZZYMODEHEADER_ID, (int)fuzzy_mode_value(header->fuzzy_data), DB);
 
     write_header_int(sw, IGNORETOTALWORDCOUNTWHENRANKING_ID, header->ignoreTotalWordCountWhenRanking, DB);
     DB_WriteHeaderData(sw, WORDCHARSHEADER_ID, (unsigned char *)header->wordchars, strlen(header->wordchars) + 1, DB);
@@ -740,7 +740,7 @@ int write_integer_table_to_header(SWISH *sw, int id, int table[], int table_size
 void setTotalWordsPerFile(IndexFILE *indexf, int idx,int wordcount)
 {
 #ifdef USE_BTREE
-        DB_WriteTotalWordsPerFile(sw, idx, wordcount, indexf->DB);
+        DB_WriteTotalWordsPerFile(indexf->sw, idx, wordcount, indexf->DB);
 
 #else
 INDEXDATAHEADER *header = &indexf->header;

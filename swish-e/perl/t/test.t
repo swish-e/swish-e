@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 90;
+my $lastcase = 115;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -16,10 +16,10 @@ my $mem_test = 0;
 
 ######################################################################
 
+
 {
     my $swish = SWISH::API->new( 't/index.swish-e' );
     check_error('Call SWISH::API::new', $swish);
-
 
     my @header_names = $swish->HeaderNames;
     is_ok( "header names " . join(':',@header_names), @header_names);
@@ -37,7 +37,6 @@ my $mem_test = 0;
             is_ok( "Header '$header' = '$value'", defined $value );
         }
     }
-
     
 
     # A short-cut way to search
@@ -48,6 +47,19 @@ my $mem_test = 0;
         my $hits = $results->Hits;
 
         is_ok( "returned $hits hits", $hits );
+
+        my $result = $results->NextResult;
+        if ( !$result )
+        {
+            is_ok("failed to read a resut -- can't test stemmers", 0);
+        } else {
+            stem_it($result,"running");
+            stem_it($result,"runs");
+            stem_it($result,"sugar");
+            stem_it($result,"");
+            stem_it($result,"1234");
+        }
+
     }
 
     # A short-cut way to search with a metaname
@@ -98,6 +110,7 @@ my $mem_test = 0;
         swishreccount
         swishfilenum
         age
+        blankdate
         swishdocpath
         swishrank
         swishdocsize
@@ -120,7 +133,7 @@ my $mem_test = 0;
             unless $seen;
 
         my %props;
-        
+
         $props{$_} = $result->Property( $_ ) for @props;
         check_error('Call $result->Property', $swish)
             unless $seen;
@@ -134,7 +147,8 @@ my $mem_test = 0;
 
         for ( @props ) {
             my $propstr = $result->ResultPropertyStr( $_ );
-            is_ok(" ResultPropertyStr($_) = " . $propstr || '??', $propstr );
+            # I don't like this method '
+            is_ok(" ResultPropertyStr($_) = " . $propstr || '??', defined $propstr );
         }
 
         unless ( $seen++ ) {
@@ -145,6 +159,21 @@ my $mem_test = 0;
 
         last if $seen >= 20;
     }
+
+    # Check for catching invalid property name
+    is_ok("Seek to start of results", $results->SeekResult(0) == 0 );
+
+    eval { $results->NextResult->Property('badpropname') };
+    is_ok( "Croak on bad property: " . ($@ || "nope!"), $@ );
+
+    my $strnull = $results->NextResult->ResultPropertyStr('blankdate');
+    # check on blank props using the Str method
+    is_ok( "Returns empty string for ResultPropertyStr: [$strnull]", $strnull eq '' );
+
+    $strnull = $results->NextResult->ResultPropertyStr('badpropname');
+    # check on blank props using the Str method
+    is_ok( "Returns '(null)' string for ResultPropertyStr: [$strnull]", $strnull eq '(null)' );
+
 
 
     $results = $search->Execute('firstbody or secondbody');
@@ -196,7 +225,7 @@ my $mem_test = 0;
         my $flags = 'v';
         my $ttl;
         while ( 1 ) {
-            my $results = $search->Execute("apache");
+            my $results = $search->Execute("not dkdk");
             while ( my $result = $results->NextResult ) {
                 my $path = $result->Property('swishdocpath');
                 $ttl ++;
@@ -260,6 +289,18 @@ sub is_ok {
     print $is_ok ? "ok $num $str\n" : "not ok $num $str\n";
 }
 
+sub stem_it {
+    my ($result, $word) = @_;
+    my $fw;
+    is_ok("Testing FuzzyWord [$word]", ($fw = $result->FuzzyWord($word)) );
+    return unless $fw;
+    my $wc = $fw->WordCount;
+    is_ok(" Word count $wc", $wc );
+    my $error = $fw->WordError;
+    is_ok(" Fuzzy status $error", 1);
+    my @words = $fw->WordList;
+    is_ok(" [$word] -> [@words]", scalar @words );
+}
     
 
     

@@ -1,6 +1,7 @@
 #=======================================================================
 #  Simple Highlighting Code
 #    $Id$
+# This one is not accurate and is more for speed
 #=======================================================================
 package SWISH::SimpleHighlight;
 use strict;
@@ -33,16 +34,25 @@ sub highlight {
     my $settings = $self->{settings};
 
     my $Max_Words = $settings->{max_words} || 100;
+    my $max_chars = 8 * $Max_Words;
 
 
     # first trim down the property - would likely be faster to use substr()
     # limits what is searched, but also means some man not show highlighting
     # is also not limited to the description property
 
-    my @words = split /\s+/, $$text_ref;
-    if ( @words > $Max_Words ) {
-        $$text_ref = join ' ', @words[0..$Max_Words], '<b>...</b>';
-    }
+    my $text = length( $$text_ref ) > $max_chars
+	? substr( $$text_ref, 0, $max_chars ) . " ..."
+        : substr( $$text_ref, 0, $max_chars );
+
+    my $start = "\007";  # Unlikely chars
+    my $end   = "\010";
+
+
+    my @matches = $self->set_match_regexp( $phrase_array, $prop_name );
+    $text =~ s/($_)/${start}$1${end}/gi for @matches;
+
+    # Replace entities
 
     my %entities = (
         '&' => '&amp;',
@@ -51,19 +61,17 @@ sub highlight {
         '"' => '&quot;',
     );
 
-    $$text_ref =~ s/([&"<>])/$entities{$1}/ge;  # " fix emacs
-
-
-
+    $text =~ s/([&"<>])/$entities{$1}/ge;  # " fix emacs
 
     my $On = $settings->{highlight_on} || '<b>';
     my $Off = $settings->{highlight_off} || '</b>';
 
-    my @matches = $self->set_match_regexp( $phrase_array, $prop_name );
+    $text =~ s/$start/$On/g;
+    $text =~ s/$end/$Off/g;
+    my $wc = quotemeta $self->header('wordcharacters');
 
-    for ( @matches ) {
-        $$text_ref =~ s/($_)/$On$1$Off/g;
-    }
+    $$text_ref = $text;
+
 
     return 1;  # return true because the property was trimmed and escaped.
 }
@@ -77,12 +85,7 @@ sub highlight {
 sub set_match_regexp {
     my ( $self, $phrases, $prop_name ) = @_;
 
-    # Already cached?
-    return @{$self->{cache}{$prop_name}}
-	if $self->{cache}{$prop_name};
-
     my $wc = quotemeta $self->header('wordcharacters');
-
 
     my @matches;
 
@@ -101,8 +104,6 @@ sub set_match_regexp {
 
         push @matches, qr/$exp/i;
     }
-
-    $self->{cache}{$prop_name} = \@matches;
 
     return @matches;
 

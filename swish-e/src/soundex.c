@@ -37,6 +37,8 @@
  */
 
 #include "swish.h"
+#include "stemmer.h"  /* For constants */
+#include "swstring.h" /* for estrdup */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,9 +46,10 @@
 
 #include "soundex.h"
 
-int soundex(word)
-   char *word;  /* in/out: Target word  */
+FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
    {
+        FUZZY_WORD *fw = create_fuzzy_word( inword, 1 ); /* create place to store stemmed word */
+        char word[MAXWORDLEN+1];
 	/* Misc Stuff  */
 	char u, l ;
 	int i, j, n;
@@ -80,32 +83,61 @@ int soundex(word)
 	 '2',					/* X  */
 	 0,						/* Y  */
 	 '2'};					/* Z  */
+
+    /* Make sure the word is not too large from the start. */
+    if ( strlen( inword ) >= MAXWORDLEN )
+    {
+        fw->error =  STEM_WORD_TOO_BIG;
+        return fw;
+    }
+
+
+    /* make working copy */
+    strcpy( word, inword );
+
+  
+
 #ifdef _DEBUG
 	/* Debug to console  */
 	printf("# %15s: %s ", "soundex.c", word);
 #endif
 
 	/* Make sure it actually starts with a letter  */
-	if(!isalpha((int)((unsigned char)word[0]))) return soundXit();
+	if(!isalpha((int)((unsigned char)word[0]))) 
+        {
+            fw->error = STEM_NOT_ALPHA;
+            return fw;
+        }
+
 #ifdef _DEBUG
 	/* Debug to console  */
 	printf("isalpha, ");
 #endif
 	
 	/* Get string length and make sure its at least 3 characters  */
-	if((n = (int)strlen(word)) < 3) return soundXit();
+	if((n = (int)strlen(word)) < 3) 
+        {
+            fw->error = STEM_TOO_SMALL;
+            return fw;
+        }
 #ifdef _DEBUG
 	/* Debug to console  */
 	printf("=>3, ");
 #endif
 
         /* If looks like a 4 digit soundex code we don't want to touch it. */
+
+        /* Humm.  Just because it looks like a duck, doesn't mean it is one
+         * The source is suppose to not be soundex, so this doesn't make a lot of sense.  - moseely */
+#ifdef skip_section
+        
         if((n = (int)strlen(word)) == 4){
                 if( isdigit( (int)(unsigned char)word[1] ) 
                  && isdigit( (int)(unsigned char)word[2] ) 
                  && isdigit( (int)(unsigned char)word[3] ) )
-                       return soundXit();
+                       return STEM_OK;  /* Hum, probably not right */
         }
+#endif
 
 	/* Convert chars to lower case and strip non-letter chars  */
 	j = 0;
@@ -141,19 +173,10 @@ int soundex(word)
 			l = u;
 		}
 	}
-	strcpy(word, soundCode);
-#ifdef _DEBUG
-	/* Debug to console  */
-	printf("-> \"%s\"\n", word);
-#endif
 
-	return(1);
-}
 
-int soundXit(void)
-{
-#ifdef _DEBUG
-	printf("was left as is...\n");
-#endif
-	return(1);
+    fw->free_strings = 1; /* flag that we are creating a string */
+    fw->string_list[0] = estrdup( soundCode );
+    return fw;
+
 }

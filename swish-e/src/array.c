@@ -58,6 +58,7 @@
 #include "mem.h"
 #include "compress.h"
 #include "array.h"
+#include "error.h"
 
 
 /* A ARRAY page size */

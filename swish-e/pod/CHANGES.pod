@@ -6,7 +6,139 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.0 - ????????? ??, ????
+=head2 Version 2.4.2 - March 09, 2004
+
+=over 4
+
+=item * UseStemming didn't take no for an answer
+
+UseStemming was coded as an alias for FuzzyIndexingMode when Snowball was
+compiled in (the default), but "no" doesn't always mean no when the Norwegian
+stemmer is available.
+
+=item * Fixed problem building incremental version
+
+Fixed compile problem with building incremental indexing mode.  This is an
+experimental option with swish-e to allow adding files to an index.
+See configure --help for build option.  Incremental indexes are not
+compatible with stanard indexes.
+
+=item * Updated build instructions in INSTALL
+
+Added a few comments about use of CPPFLAGS and LDFLAGS.
+
+=item * Updated the index_hypermail.pl
+
+Updated to work with latest version of hypermail (pre-2.1.9).
+
+
+=item * Time zone in ResultPropertyStr()
+
+Format string for generating date did not include the time zone in location.
+Add strftime format string to config.h
+
+=item * Undefined and Blank Properties and (NULL)
+
+Fixed a few problems with printing properties:
+
+1) Using -p and -x showed different results if a bad property value was given:
+
+    $ swish-e -w not dkdk -p badname -H0
+    err: Unknown Display property name "badname"
+    .
+    $ swish-e -w not dkdk -x '<badname>\n' -H0
+    (NULL)
+
+Now both return an error.
+
+2) Fixed bug where using a "fmt" string with -x output generated (bad) output
+if the result did not have the specified property.
+
+    $ swish-e -w not dkdk -x '<somedate>\n' -H0  # undefined value
+
+    $ swish-e -w not dkdk -x '<somedate fmt="%Y %B %d">\n' -H0
+    %Y %B 1075353525
+
+Now nothing is printed if the property does not exist.
+
+3) Updated SWISH::API to croak() on invalid property names, and to return
+undefined values for missing properties.
+
+4) Updated swish.cgi and search.cgi to not generate warnings on undefined values
+return as properties.  Note that swish.cgi will now die on undefined properties.
+Previously would just display (NULL).
+
+
+=item * Fixed segfault when generating warnings while parsing
+
+Parser.c was incorrectly calling warning() incorrectly.
+And -Wall was not catching this!
+
+=item * Added check for internal property names.
+
+Parser was not checking for use of Swish-e reserved property
+names.
+
+   <swishrank>foo</swishrank>
+
+This will now generate a warning.
+
+=back
+
+=head2 Version 2.4.1 - December 17, 2003
+
+=over 4
+
+=item * Added new example CGI script
+
+search.cgi is a new skeleton CGI script that uses SWISH::API for searching.
+It is installed in the same location as swish.cgi.
+
+=item * Add Fuzzy access to C and Perl interfaces
+
+Added a number of functions to the C API (and SWISH::API)
+to access the stemmer used when indexing a given index.
+
+=item * Commas in numbers
+
+Added commas to summary display at end of indexing.
+
+=item * Insert whitespace between tags
+
+Parser.c was updated to flush the text buffer before and after
+every (non-inline HTML) tag.
+
+The problem was that:
+
+    foo<tag>bar</tag>baz
+
+would index as a single word "foobarbaz".
+
+=item * DirTree.pl
+
+DirTree.pl was updated to work with SWISH::Filter and to work on Windows.
+DirTree.pl is a program to fetch files from the file system and works with
+the -S prog input method.
+
+=item * Problem with --enable-incremental option
+
+Fixed configure script to build incremental option.  Note that this is still
+experimental.  But testers are welcome.
+
+=item * headers.c bug
+
+Mark Fletcher with the help of valgrind found a bug in headers.c
+function SwishIndexHeaderNames used by the C API.
+
+=item * Clarify documentation regarding search order
+
+At the prompting of Doralyn Rossmann updated SEARCH.pod to
+try and make the explanation of searching clearer, and to fix an error
+in the description of nested searches.
+
+=back
+
+=head2 Version 2.4.0 - October 27, 2003
 
 =over 4
 

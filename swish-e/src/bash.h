@@ -11,7 +11,7 @@
 #endif
 
 /* horrible Win32 hack */
-#ifdef _WIN32
+#if defined _WIN32 || defined(__VMS)
 /* Fake group functions... */
 #define GETGROUPS_T int
 #define getegid() 0

@@ -1463,7 +1463,7 @@ Note: A common recommendation is to use a delay of one minute between requests.
 For example, one minute is the default used in the LWP::RobotUA Perl module.
 
 
-=item delay_min  (depreciated)
+=item delay_min  (deprecated)
 
 Set the delay to wait between requests in minutes.  If both delay_sec and
 delay_min are defined, delay_sec will be used.
@@ -1697,12 +1697,13 @@ subroutine (or send a kill -HUP to the spider).
 
 The first two parameters passed are a URI object (to have access to the current URL), and
 a reference to the current server hash.  The C<server> hash is just a global hash for holding data, and
-useful for setting flags as describe belwo.
+useful for setting flags as described below.
 
-Other parameters may be also passes, as described below.
-In perl parameters are passed in an array called "@_".  The first element (first parameter) of
-that array is $_[0], and the second is $_[1], and so on.  Depending on how complicated your
-function is you may wish to shift your parameters off of the @_ list to make working with them
+Other parameters may be also passed in depending the the callback function,
+as described below. In perl parameters are passed in an array called "@_". 
+The first element (first parameter) of that array is $_[0], and the second
+is $_[1], and so on.  Depending on how complicated your function is you may
+wish to shift your parameters off of the @_ list to make working with them
 easier.  See the examples below.
 
 
@@ -1830,8 +1831,9 @@ You can modify the content as needed.  For example you might not like upper case
         return 1;
     },
 
-I more reasonable example would be converting PDF or MS Word documents for parsing by swish.
-Examples of this are provided in the F<prog-bin> directory of the swish-e distribution.
+I more reasonable example would be converting PDF or MS Word documents for
+parsing by swish. Examples of this are provided in the F<prog-bin> directory
+of the swish-e distribution.
 
 You may also modify the URI object to change the path name passed to swish for indexing.
 
@@ -1859,6 +1861,9 @@ Here's a bit more advanced example of indexing text/html and PDF files only:
        return 1;
     }
 
+Note: Swish-e not includes a method of filtering based on the SWISH::Filter 
+Perl modules.  See the SwishSpiderConfig.pl file for an example how to use 
+SWISH::Filter in a filter_content callback function.
 
 
 =back

@@ -96,10 +96,10 @@ unsigned verybighash(char *s)
 *       address of an array of swline pointers
 *
 *   Returns:
-*       void;
+*       swline that was added
 *******************************************************************/
 
-void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
+struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
 {
     struct swline **hash_array = table_ptr->hash_array;
     unsigned hashval;
@@ -120,8 +120,8 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
         table_ptr->count = 0;
     }
     else
-        if ( is_word_in_hash_table( *table_ptr, word ) )
-            return;
+        if ( (sp = is_word_in_hash_table( *table_ptr, word )) )
+            return sp;
 
     hashval = string_hash(word,hash_size);
 
@@ -137,6 +137,8 @@ void add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_si
     hash_array[hashval] = sp;
 
     table_ptr->count++;
+
+    return sp;
 }
 
 /******************************************************************
@@ -184,10 +186,6 @@ struct swline * is_word_in_hash_table( WORD_HASH_TABLE table, char *word)
 void free_word_hash_table( WORD_HASH_TABLE *table_ptr)
 {
     struct swline **hash_array = table_ptr->hash_array;
-    int             hash_size = table_ptr->hash_size;
-    int     i;
-    struct swline *sp,
-           *tmp;
 
     if ( !hash_array )
         return;

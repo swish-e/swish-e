@@ -10,8 +10,8 @@ with pointers to other more advanced examples.
 
 This document also provides instructions on how to get help installing and
 using Swish-e (and the important information you should provide when asking
-for help). Please read these instructions before requesting help on the
-Swish-e discussion list.  
+for help). Please read these instructions B<before requesting help> on the
+Swish-e discussion list.
 See L<"QUESTIONS AND TROUBLESHOOTING">.
 
 Although building from source is recommended, some OS distributions (e.g.
@@ -19,24 +19,34 @@ Debian) provide pre-compiled binaries.  Check with your distribution for
 available packages. Build from source if your distribution does not offer
 the current version of swish-e.
 
-
 Also, please read the Swish-e FAQ L<SWISH-FAQ|SWISH-FAQ> as it answers
 many frequently asked questions.
 
 Swish-e knows how to index HTML, XML, and plain text documents.  Helper applications
 and other tools are used to convert documents such as PDF or MS Word into a format
 that swish-e can index.  These additional applications and tools (listed below) must be installed
-separately.
+separately.  The process of converting douments is called "filtering."
 
 NOTE: Swish-e version 4.2.0 installs a lot more files when running "make install".  Be aware 
 that the Swish-e documentation may thus include errors about where files are located.
+Please notify the swish-e discussion list of any documentation errors.
+
+=head2 Upgrading from previous versions of Swish-e
+
+If upgrading from a previous version of Swish-e read the L<CHANGES|CHANGES> page
+before installing.  The Swish-e index format may have changed and existing indexes
+may not work with the newer version of Swish-e.
+
+If you have existing indexes you may need to reindex your data before running
+the "make install" step described below.  Swish-e may be run from the build directory
+after compiling but before installation.
 
 =head2 Windows Users
 
 A Windows binary version is available as a separate download from the
 Swish-e site (http://swish-e.org).  Many of the installation instructions
 below will not apply to Windows users; the Windows version is pre-compiled
-and includes libxml2, zlib, xpdf and catdoc.  
+and includes libxml2, zlib, xpdf and catdoc.
 
 A number of Perl modules may also be needed.  These can be installed with
 ActiveState's PPM utility.
@@ -47,7 +57,6 @@ ActiveState's PPM utility.
    MIME-Types    - used for filtering documents when not spidering
    HTML-Template - formatting output from swish.cgi (optional)
    HTML-FillInForm (if HTML-Template is used)
-
 
 =head1 SYSTEM REQUIREMENTS
 
@@ -61,15 +70,16 @@ Swish-e is written in C and up to this time has been tested on a number of
 platforms, including Sun/Solaris, Dec Alpha, BSD, Linux, OS X, and Open VMS.
 
 The GNU C compiler, gcc, and GNU make are strongly recommended.
+Repeat: you will find life easier if you use the GNU tools.
 
 =head2 Optional but Recommended Packages
 
-Most of these packages are available as easily installable packages.  Check your
-operating system vendor, or install from source.  Most are very common 
-packages that may already be installed on your computer.
+Most of these packages listed below are available as easily installable
+packages.  Check your operating system vendor, or install from source.  Most
+are very common packages that may already be installed on your computer.
 
 As noted below, some packages need to be installed before building Swish-e
-from source, while others may be added after Swish-e is installed. 
+from source, while others may be added after Swish-e is installed.
 
 =over 4
 
@@ -82,6 +92,12 @@ parser built into swish-e is not as accurate as libxml2.
     http://xmlsoft.org/
 
 For swish-e to use libxml2 it must be installed before building swish-e.
+
+If libzml2 is installed in a non-standard location (e.g. libxml2 is built with
+--prefix $HOME/local) then make sure you add the bin directory to your $PATH
+before building swish-e.  Swish-e's configure script  uses a program created by
+libxml2 (xml2-config) to find the location of libxml2.  Use "which xml2-config" to
+verify the program can be found where expected.
 
 =item * Zlib Compression
 
@@ -99,11 +115,11 @@ Although Swish-e is a compiled C program, many support features use Perl.
 For example, the web spiders are written in Perl, and modules to help
 with filtering documents are also written in Perl.
 
-The following Perl modules may be required.  Check your current Perl 
+The following Perl modules may be required.  Check your current Perl
 installation as many may already be installed.
 
     LWP
-    URL
+    URI
     HTML::Parser
     HTML::Tagset
     MIME::Types (optional)
@@ -127,6 +143,8 @@ install:
 Questions about installing these modules may be sent to the swish-e 
 discussion list.
 
+The "search.cgi" example script requires both Template-Toolkit and HTML::FillInForm.
+
 
 =item * Indexing PDF Documents
 
@@ -143,7 +161,7 @@ Indexing MS Word documents requires the Catdoc program.
 
     http://www.45.free.net/~vitus/ice/catdoc
 
-Catdoc may be added after swish-e is installed
+Catdoc may be added after swish-e is installed.
 
 =item * Indexing MP3 ID3 Tags
 
@@ -175,7 +193,7 @@ lwp-download.  Unpack and build using the following steps:
 
 Note: "swish-e-2.4.0" is used as an example.  Download the most current version
 available and adjust the commands below!  Also, if running Debian, see notes below on
-building a .deb package.
+building a .deb package from the swish-e source package.
 
 The "$" symbol indicates steps run as an unprivileged user.  The "#" 
 indicates steps run as the superuser (root).
@@ -203,44 +221,80 @@ indicates steps run as the superuser (root).
 
 B<IMPORTANT:> Once installed do not run swish-e as the superuser (root) --
 root is only required during the installation step when installing into
-system directories.
+system directories.  Please do not break this rule.
+
+B<NOTE:> If you are upgrading from an older version of swish-e be sure and review
+the L<CHANGES|CHANGES> file.  Old index files may not be compatible with the newer
+version of swish-e.  After building swish-e (before running "make install"), swish-e
+can be run from the build directory:
+
+    $ src/swish-e -V
+
+To minimize downtime, create new index files before running "make install" by using
+swish-e from the build directory.  Then copy the index files to the live location and
+run "make install":
+
+    $ src/swish-e -c /path/to/config -f index.new
+
+Keep in mind that where you index from may effect the paths stored in the index file.
+
+=head2 Installing without root access
 
 Here's another installation example.  This might be used if you do not have
 root access or you wish to install swish someplace other than /usr/local.
 
-This example also shows building Swish-e in a "build" directory separate 
-from where the source files.  This is the recommended way to build Swish-e,
-but requires GNU Make.  Without GNU Make you will likely need to build
+This example also shows building Swish-e in a "build" directory separate from
+where the source files are located.  This is the recommended way to build
+Swish-e, but requires GNU Make.  Without GNU Make you will likely need to build
 from within the source directory as shown in the previous example.
 
     $ tar zxof swish-e-2.4.0.tar.gz  (GNU tar with "z" option)
-    $ mkdir build 
+    $ mkdir build
     $ cd build
 
 Note that the current directory is not where Swish-e was unpacked.
 
-Swish-e uses a F<configure> script.  F<configure> has many options, but reasonable
-and standard defaults.  Running 
+Swish-e uses a F<configure> script.  F<configure> has many options, but uses reasonable
+and standard defaults.  Running
 
     $ ../swish-e-2.4.0/configure --help
 
-will display the options.  Two options are of common interest: --prefix sets
+will display the options.
+
+Two options are of common interest: --prefix sets
 the top-level installation directory, and --disable-shared will link swish-e
 statically, which may be needed on some platforms (Solaris 2.6 perhaps).
 
-Note: On some platfoms (e.g. Solaris) zlib is installed in /usr/local/lib, but the
-linker does not use that path for run-time linkages.  Swish will build correctly
-but make check will fail.  The solution is to set the environment variable 
+Platforms vary on how to link against libraries when libraries are installed
+in non-standard locations.  Swish-e uses the GNU autoconf tools for building the
+package.  Autoconf is good at building and testing, but still requires you to provide
+information appropriate for your platform.  This may mean reading the manual page for your
+compiler and linker to see how to specify non-standard file locations.
 
-    LDFLAGS=-R/usr/local/lib
+For most unix-type platforms you use LDFLAGS and CPPFLAGS environment variables
+to specify paths to include (header) files and libraries not in standard locations.
 
-before running configure.
+Now, in this example we do not have root access, and we have installed libxml2 and libz
+in $HOME/local.  Swish-e will also be installed in $HOME/local (by using the --prefix
+setting).
 
+In this case you would need to add $HOME/local/bin to the start of your shell's 
+PATH setting.  This is required because libxml2 installs a program that is used
+when running the configure script.  Before running configure type:
 
-Now configure and build Swish-e:
+    $ which xml2-config
 
-    $ ../swish-e-2.4.0/configure --prefix=$HOME/swish-e
+And it should list $HOME/local/bin/xml2-config.
+
+Now run configure (remember, we are in a separate "build" directory):
+
+    $ ../swish-e-2.4.0/configure \
+        --prefix=$HOME/local \
+        CPPFLAGS=-I$HOME/local/include \
+        LDFLAGS="-R$HOME/local/lib -L$HOME/local/lib"
+
     $ make >/dev/null  (redirect output to only see warnings and errors)
+
     $ make check
     ...
     ==================
@@ -248,11 +302,26 @@ Now configure and build Swish-e:
     ==================
 
     $ make install
-    $ $HOME/swish-e/bin/swish-e -V 
+    $ $HOME/local/bin/swish-e -V 
     SWISH-E 2.4.0
 
-In this case you would likely want to add $HOME/swish-e/bin to your shell's 
-PATH setting.
+Note the use of dobule quotes in the LDFLAGS line above.  This allows $HOME to be expanded.
+
+=head2 Run-time paths
+
+The -R option says to add that path to the paths used to find shared
+libraries at run time.  This path is stored in the swish-e binary.  When
+swish-e is run it will look in this directory for shared libraries.
+
+Some platforms may not support the -R option and you may instead have to set the
+LD_RUN_PATH environment variable B<before> running make.
+
+Some systems such as Redhad do not look in /usr/local/lib for libraries.  In these
+cases you can either use -R as above when building swish-e or add /usr/local/lib to
+/etc/ld.so.conf and run ldconfig as root.
+
+If all else fails, you may need to actually read the man pages for your platform.
+
 
 =head2 Building a Debian Package
 
@@ -295,7 +364,7 @@ $prefix/lib/swish-e/perl to the PERL5LIB environment variable.
 Documentation can be found in the $prefix/share/doc/swish-e directory.
 Documentation can also be read on-line at the Swish-e web site:
 
-    http://swish-e.org.
+    http://swish-e.org/
 
 =head2 The Swish-e documentation as man(1) pages
 
@@ -314,6 +383,9 @@ directory when running ./configure.
 For example,
 
     ./configure --mandir=/usr/local/doc/man
+
+The man director is relative to the --prefix setting.  If you use --prefix
+you do not normally need to also specify --mandir.
 
 Information on running ./configure can be found by typing:
 
@@ -343,11 +415,11 @@ Do not contact developers directly for help -- always post your question
 to the list.
 
 It's very important to provide the right information when asking
-for help.  
+for help.
 
 Please search the Swish-e list archive before posting a question, and
 check the L<SWISH-FAQ|SWISH-FAQ> to see if your question hasn't already
-been asked.  
+been asked.
 
 Before posting use tools available to narrow down the problem.
 
@@ -372,6 +444,11 @@ results.  Look at the "Parsed Words" header to see what words swish-e is
 searching for.
 
 =head2 When posting please provide the following information:
+
+Use these guidelines when asking for help.  The most important tip is
+to provide the B<least> amount of information that can be used to reproduce
+your problem.  Do not paraphrase output -- copy-and-paste -- but trim text
+that is not necessary. 
 
 =over 4
 
@@ -469,6 +546,11 @@ with B<Swish-e>.  Other examples can be found in the F<conf> directory which wil
 step you through a number of different configurations.
 Also, please review the L<SWISH-FAQ|SWISH-FAQ>.
 
+Swish-e is a command line program.  The program is controlled by passing switches
+on the command line.  A configuration file may be used, but often is not required.
+Swish-e does not include a graphical user interface.  There are example CGI scripts 
+provided in the distribution, but they require additional setup to use.
+
 =head2 Introduction to Indexing and Searching
 
 Swish-e can index files on the local file system.  For example, running:
@@ -533,7 +615,7 @@ verbose level to two.  There are a number of configuration options specific to t
 http input source.  See L<SWISH-CONFIG|SWISH-CONFIG>.  Note that only files of Content-Type
 text/* will be indexed.
 
-The C<-S http> method is depreciated in favor of the next input method.
+The C<-S http> method is deprecated in favor of the next input method.
 
 The other method is a general purpose input method where Swish-e reads input from a program 
 that produces documents in a special format.  The program might read and format data stored 
@@ -1110,21 +1192,71 @@ The spider program F<spider.pl> also has a large number of configuration options
 Documentation is also available in the directory $prefix/share/doc/swish-e or at
 http://swish-e.org.
 
+Note: Also check out the search.cgi script found at the same location as the swish.cgi script.
+This is more of a skeleton script for those that want to create a custom search script.
+
 =back
 
 Now you are ready to search.
 
-=head1 Indexing Other Types of Documents
+=head1 Indexing Other Types of Documents - Filtering
 
 Swish-e can only index HTML, XML and text documents.  In order to index 
 other documents such as PDF or MS Word documents you must use a utility to 
 convert or "filter" those documents.
 
+How documents are filtered with Swish-e has changed over time.  This has
+resulting in a bit of confusion.  It's also a somewhat complex process
+as different programs need to communicate with each other.
+
+You may wish to read the Swish-e FAQ question on filtering before continuing here.
+L<How Do I filter documents?|SWISH-FAQ/"How Do I filter documents?">
+
+=head2 Filtering Overview
+
 There's two ways to filter documents with Swish-e.  Both are described in 
-the L<SWISH-CONFIG|SWISH-CONFIG> man page.
+the L<SWISH-CONFIG|SWISH-CONFIG> man page.  They are using the FileFilter directive
+and the SWISH::Filter perl module.
+
+The FileFilter directive is a general purpose method of filtering.  It allows
+running of an external program for each document processed (based on file extension),
+and requires.  The external programs open an input file, convert as needed, and write
+their output to standard output.  
+
+Previous versions of Swish-e (before 2.4.0) used a collection of filter programs for
+converting files such as PDF or MS Word documents. The external programs call
+other program do to the work of filtering (e.g. pdftotext to extract the contents from PDF
+files).  Although these filter programs are still included with the Swish-e distribution
+as examples, it is not recommended to use the SWISH::Filter method instead.
+
+One disadvantage of using FileFilter is that the filter is called once for every
+document that needs to be filtered.  This can slow down the indexing process.
+
+The SWISH::Filter Perl module works very much like the old system and uses the same helper 
+programs.  But, it provides a single interface for filtering all types of documents.  The
+advantage of SWISH::Filter is that it is built into the program used for spidering web
+sites (spider.pl), so all that's required is installing the filter programs that do the
+actual work of filtering (e.g. catdoc, xpdf).  (The Windows binary includes some of the 
+filter programs.)
+
+But, Swish-e will not use SWISH::Filter by default when using the file system method
+of indexing.  To use SWISH::Filter when indexing by file system method (-S fs) you can use
+a FileFilter directive with the "swish_filter.pl" filter (which is just a program that uses
+SWISH::Filter), or use the -S prog method of indexing and use the DirTree.pl program for
+fetching documents.  DirTree.pl is included with the Swish-e distribution and is designed
+to work with SWISH::Filter.  Using DirTree.pl will likely be faster way to index since
+the SWISH::Filter set of modules do not need to be compiled for every document that needs
+to be filtered.
+
+See the contents of swish_filter.pl and DirTree.pl for specifics on their use.
+
+=head2 Filtering Examples
 
 The FileFilter directive can be used in your config file to convert 
-documents based on their extension.  For example:
+documents based on their extension.  This is the old way of filtering, but
+provides an easy way to add filters to swish-e.
+
+For example:
 
     FileFilter .pdf  pdftotext   "'%p' -"
     IndexContents TXT* .pdf
@@ -1136,7 +1268,7 @@ the text ("TXT") parser.
 The other ways to filter documents is to use a -S prog program and convert 
 the documents before passing them onto Swish-e.
 
-For example, spider.pl makes use of a Perl module included with the Swish-e
+For example, spider.pl makes use of the Perl module included with the Swish-e
 distribution called SWISH::Filter.  SWISH::Filter is passed a document and
 the document's content type and then looks for modules and utilities to
 convert the document into one of the types that Swish-e can index.
@@ -1153,6 +1285,23 @@ This means that if you are using spider.pl to spider your web site and you
 wish to index PDF documents, all that is needed is to install the Xpdf 
 package and Swish-e (with the help of spider.pl) will begin indexing your 
 PDF files.
+
+Ok, so what does all that mean?  For a very simple site you should be able to run this:
+
+    $ /usr/local/lib/swish-e/spider.pl default http://localhost/ | swish-e -S prog -i stdin
+
+which is running the spider with default spider settings, indexing the Web server on
+localhost and piping its output into Swish-e using default indexing settings.  Documents
+will be filtered automatically if you have the required helper applications installed.
+
+Most people will not want to just use the default settings (for one thing the spider
+will take a while because its default is to delay a few seconds between every request).
+So, read the documentation for spider.pl to learn how to use a spider config file.
+And also read  L<SWISH-CONFIG|SWISH-CONFIG> to learn about what configuration options
+can be used with Swish-e.
+
+The SWISH::Filter documentation provides more details on filtering and hints for debugging
+problems when filtering. 
 
 =head1 Document Info
 
