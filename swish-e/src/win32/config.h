@@ -21,6 +21,8 @@
 #undef INDEXPERMS		/* Win32 has no chmod() - DLN 2001-11-05 Umm, yes it does... */
 #define HAVE_STDLIB_H	/* We need stdlib.h instead of unistd.h  */
 #define HAVE_PROCESS_H  /* _getpid is here  */
+#define HAVE_VARARGS_H  /* va_list, vsnprintf, etc */
+#define HAVE_LIBXML2 1  /* enable libxml2 XML parser */
 
 /* Macros which rewrite values  */
 #define SWISH_VERSION "2.1-dev-24"	/* Should we find a better way to handle this */
@@ -49,5 +51,6 @@ typedef int mode_t;         /* file permission mode ID */
 #define getpid		_getpid
 #define umask       _umask
 #define stat        _stat
+#define vsnprintf   _vsnprintf
 
 #endif
