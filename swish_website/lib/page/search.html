@@ -62,7 +62,7 @@
 
 [% BLOCK results_header %]
 <div class="search-header">
-    Results for <b>[% request.query | html %]</b><br>
+    Results for <b>[% request.query | html %]</b><br />
     Showing page [% result.page %] 
     ([% result.start +1 %] - [% (result.start + result.shown) %] of [% result.hits %] hits) 
 
@@ -112,9 +112,9 @@
 
     <div class="search-metadata">
         Path: <a href="[% item.Property('swishdocpath') %]">
-            [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a><br>
-        Size: [% item.Property('swishdocsize') %] bytes<br>
-        Date: [% result_date.format( item.Property('swishlastmodified')) %]<br>
+            [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a><br />
+        Size: [% item.Property('swishdocsize') %] bytes<br />
+        Date: [% result_date.format( item.Property('swishlastmodified')) %]<br />
 
         [% PROCESS show_list_links IF is_list %]
 
@@ -135,7 +135,7 @@
     %]
 
 
-        Poster's Name: <a href="[% name_href %]" title="All posts from this name">[% name | html %]</a><br>
+        Poster's Name: <a href="[% name_href %]" title="All posts from this name">[% name | html %]</a><br />
         Poster's Email: <a href="[% email_href %]" title="All posts from this email">[% email | html %]</a>
 
 [% END %]

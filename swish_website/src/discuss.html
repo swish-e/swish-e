@@ -1,164 +1,178 @@
-[% META
-    title = "Discussion List"
-    id    = 'discuss'
-%]
+    [% META 
+        title = "Discussion List"
+        id = 'discuss'
+    %]
 
-<h1>E-mail Discussion List</h1>
+    <h1>E-mail Discussion List</h1>
 
-<P>The <STRONG>Swish-e</STRONG> e-mail list is for the
-discussion of the Swish-e software and its implementation and use.
-Bug fixes, problem reports, desired features, and more are all appropriate
-topics.
-</p>
+    <p>The <strong>Swish-e</strong> e-mail list is for the
+    discussion of the Swish-e software and its implementation and
+    use. Bug fixes, problem reports, desired features, and more are
+    all appropriate topics.</p>
 
-<p>
+    <p>Read [%
+    link_to_page('install#When%20posting,%20please%20provide%20the%20following%20information:',
+    'these important tips') %] if you want effective and speedy
+    help.</p>
 
-Read [% link_to_page('install#When%20posting,%20please%20provide%20the%20following%20information:', 'these important tips') %]
-if you want effective and speedy help.
-</p>
+    <p>The list is low traffic. A few messages a week, and
+    sometimes a few a day. If you plan on using Swish-e you really
+    should join the list. Email sent directly to developers will
+    likely be ignored.</p>
 
-<p>
-The list is low traffic.  A few messages a week, and sometimes a few a day.  If you plan on using
-Swish-e you really should join the list.  Email sent directly to developers will likely be ignored.
-</p>
+    <p>To subscribe, send the message:</p>
+    <pre>
+subscribe swish-e youraddr@yourdomain
+</pre>
 
-<p>To subscribe, send the message:
-<pre>subscribe swish-e youraddr@yourdomain</pre>
-to
-<A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></i>.
-</P>
+    <p>to <a href=
+    "mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a>.</p>
 
-<H3>Search the Archive</H3>
+    <h3>Search the Archive</h3>
 
-<p>
-You may search the list archive:
-</p>
+    <p>You may search the list archive:</p>
 
-<blockquote>
-<form method="get" action="search/swish.cgi" enctype="application/x-www-form-urlencoded" class="form">
-            <input  maxlength="200" value="" size="32" type="text" name="query" />
+    <blockquote>
+        <form method="get" action="search/swish.cgi" enctype=
+        "application/x-www-form-urlencoded" class="form">
 
-            <input  value="Search!" type="submit" name="submit" /><br>
+        <p>
+            <input maxlength="200" value="" size="32" type="text"
+            name="query" /> <input value="Search!" type="submit"
+            name="submit" /><br />
+            Limit search to: <input value="swishdefault" type=
+            "radio" checked="checked" name="metaname" />Message
+            text <input value="subject" type="radio" name=
+            "metaname" />Message Subject <input value="name" type=
+            "radio" name="metaname" />Poster's Name <input value=
+            "email" type="radio" name="metaname" />Poster's
+            Email<br />
+            Sort by: <select name="sort">
+                <option value="swishrank">
+                    Rank
+                </option>
 
-            Limit search to:
-<input value="swishdefault" type="radio" checked name="metaname"/>Message text
-<input value="subject" type="radio"  name="metaname"/>Message Subject
-<input value="name" type="radio"  name="metaname"/>Poster's Name
-<input value="email" type="radio"  name="metaname"/>Poster's Email
-<br>
-            Sort by:
-<select name="sort">
-<option  value="swishrank">Rank</option>
-<option  value="subject">Message Subject</option>
-<option  value="name">Poster's Name</option>
+                <option value="subject">
+                    Message Subject
+                </option>
 
-<option  value="email">Poster's Email</option>
-<option  value="sent">Message Date</option>
-</select>
-<input value="1" type="checkbox"  name="reverse"/>Reverse Sort
+                <option value="name">
+                    Poster's Name
+                </option>
 
+                <option value="email">
+                    Poster's Email
+                </option>
+
+                <option value="sent">
+                    Message Date
+                </option>
+            </select> <input value="1" type="checkbox" name=
+            "reverse" />Reverse Sort
+          </p>
         </form>
-</blockquote>
+    </blockquote>
 
-<P>A Boolean "and" between words is assumed; that is, documents will be
-retrieved that have <B>all</B> the specified words. If you wish to find
-all the documents that have <B>any</B> word, then use "or"  between your
-search words. To truncate a word, use an asterisk (*) at the end. For
-example, the search "comput*" would retrieve documents that have the words
-"computer", "computing", "computation", etc. Search capability is being
-provided by <A
-HREF="http://swish-e.org/">Swish-e</A>, what else?</P>
+    <p>A Boolean "and" between words is assumed; that is, documents
+    will be retrieved that have <b>all</b> the specified words. If
+    you wish to find all the documents that have <b>any</b> word,
+    then use "or" between your search words. To truncate a word,
+    use an asterisk (*) at the end. For example, the search
+    "comput*" would retrieve documents that have the words
+    "computer", "computing", "computation", etc. Search capability
+    is being provided by <a href="http://swish-e.org/">Swish-e</a>,
+    what else?</p>
 
-<H3><a href="archive">Browse the Archive</a></H3>
+    <h3><a href="archive">Browse the Archive</a></h3>
 
-<P>The Swish-e discussion began on July 9, 1997.
+    <p>The Swish-e discussion began on July 9, 1997.</p>
 
-<A NAME="Policy"><H3>Posting Policy</H3></A>
-<P>The following policy governs all postings to the Swish-e list.
-Offenders will be warned once and removed from the list after a second
-violation of the same policy:</P>
+    <h3><a name="Policy" id="Policy">Posting Policy</a></h3>
 
-<OL>
+    <p>The following policy governs all postings to the Swish-e
+    list. Offenders will be warned once and removed from the list
+    after a second violation of the same policy:</p>
 
-<LI>All messages must relate to Swish-enhanced or issues related to the
-development or implementation of it.
-<LI> Advertisements are not appropriate. However, a simple statement that
-offers a way to follow-up for more information on a service or product is
-tolerated if it accompanies a substantive message discussing a subject
-appropriate to the list.
-<LI> Personal attacks such as name calling and personal insults will not be
-tolerated. Comments that are intended only to
-enrage the recipient rather than contribute to thoughtful discussion are
-prohibited.
+    <ol>
+        <li>All messages must relate to Swish-enhanced or issues
+        related to the development or implementation of it.</li>
 
-<LI> All postings must be free of copyright restrictions that limit
-distribution. For example, posting a significant amount of a copyrighted
-work verbatim requires the permission of the copyright holder. To verify
-that such permission was obtained, all postings of this nature must
-include a statement that this is the case.
-</OL>
+        <li>Advertisements are not appropriate. However, a simple
+        statement that offers a way to follow-up for more
+        information on a service or product is tolerated if it
+        accompanies a substantive message discussing a subject
+        appropriate to the list.</li>
 
-<A NAME="Administration"><H3>Administration</H3></A>
+        <li>Personal attacks such as name calling and personal
+        insults will not be tolerated. Comments that are intended
+        only to enrage the recipient rather than contribute to
+        thoughtful discussion are prohibited.</li>
 
-<P>The <I>Swish-e</I> list is hosted by the UC Berkeley Library. It is an
-un-moderated list, but only subscribers may
-post messages. The software program List Processor (ListProc) 6.0
-is used to provide an
-automated method for persons to subscribe, unsubscribe, etc.
-Questions about the Swish-e list may be directed to <A
-HREF="http://escholarship.cdlib.org/rtennant/">Roy
-Tennant</A> (<A
-HREF="mailto:roy.tennant@ucop.edu">roy.tennant@ucop.edu</A>).
-</P>
+        <li>All postings must be free of copyright restrictions
+        that limit distribution. For example, posting a significant
+        amount of a copyrighted work verbatim requires the
+        permission of the copyright holder. To verify that such
+        permission was obtained, all postings of this nature must
+        include a statement that this is the case.</li>
+    </ol>
 
-<A NAME="Commands"><H3>Command Reference</H3></A>
+    <h3><a name="Administration" id=
+    "Administration">Administration</a></h3>
 
-<P>The mailing list manager for <I>Swish-e</I> is List Processor (ListProc)
-6.0. The basic commands are:</P>
+    <p>The <i>Swish-e</i> list is hosted by the UC Berkeley
+    Library. It is an un-moderated list, but only subscribers may
+    post messages. The software program List Processor (ListProc)
+    6.0 is used to provide an automated method for persons to
+    subscribe, unsubscribe, etc. Questions about the Swish-e list
+    may be directed to <a href=
+    "http://escholarship.cdlib.org/rtennant/">Roy Tennant</a>
+    (<a href=
+    "mailto:roy.tennant@ucop.edu">roy.tennant@ucop.edu</a>).</p>
 
-<P><EM>TO SUBSCRIBE:</EM><BR>
+    <h3><a name="Commands" id="Commands">Command Reference</a></h3>
 
-Send the message "subscribe swish-e youraddr@yourdomain" to
-<A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+    <p>The mailing list manager for <i>Swish-e</i> is List
+    Processor (ListProc) 6.0. The basic commands are:</p>
 
-<P><EM>TO UNSUBSCRIBE:</EM><BR>
+    <p><em>TO SUBSCRIBE:</em><br />
+    Send the message "subscribe swish-e youraddr@yourdomain" to
+    <a href=
+    "mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a></p>
 
-Send the message "unsubscribe swish-e" to <A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+    <p><em>TO UNSUBSCRIBE:</em><br />
+    Send the message "unsubscribe swish-e" to <a href=
+    "mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a></p>
 
-<P><EM>TO CONTRIBUTE TO THE DISCUSSION:</EM><BR>
+    <p><em>TO CONTRIBUTE TO THE DISCUSSION:</em><br />
+    Send your message to <a href=
+    "mailto:swish-e@sunsite.berkeley.edu">swish-e@sunsite.berkeley.edu.</a>
+    For more information on appropriate discussion topics, please
+    see the information below.</p>
 
-Send your message to <A
-HREF="mailto:swish-e@sunsite.berkeley.edu">swish-e@sunsite.berkeley.edu.</A>
-For more information
-on appropriate discussion topics, please see the information below.</P>
+    <p><em>TO RECEIVE A COMPLETE LIST OF LISTPROC
+    COMMANDS:</em><br />
+    Send the message "help" to <a href=
+    "mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a></p>
 
-<P><EM>TO RECEIVE A COMPLETE LIST OF LISTPROC COMMANDS:</EM><BR>
+    <p><em>TO SUSPEND AND RESUME MAIL:</em><br />
+    To <b>suspend</b> mail from Swish-e, send the message 'set
+    swish-e mail postpone' to <a href=
+    "mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a>.
+    To <b>resume</b> mail from Swish-e, send the message "set
+    swish-e mail ack" <b>or</b> "set swish-e mail noack" to
+    <a href="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</a>.
+    "ACK" will acknowledge your list contributions, "NOACK" will
+    not.</p>
+    <hr />
 
-Send the message "help" to <A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A></P>
+    <h4>Full List of Commands</h4>
 
-<P><EM>TO SUSPEND AND RESUME MAIL:</EM><BR>
-To <B>suspend</B> mail from Swish-e, send the message 'set swish-e mail
-postpone' to <A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A>.
-To <B>resume</B> mail from Swish-e, send the message "set swish-e mail
-ack" <B>or</B> "set swish-e mail noack" to <A
-HREF="mailto:listserv@sunsite.berkeley.edu">listserv@sunsite.berkeley.edu</A>.
-"ACK" will acknowledge your list contributions, "NOACK" will not.</P>
-
-<HR>
-<H4>Full List of Commands</H4>
-
-<P>Everything appearing in [ ] below is optional; everything
-appearing in &lt; &gt; is mandatory; all arguments are case insensitive.
-The vertical bar ("|") is used as a logical OR operator between the
-arguments.  Requests may be abbreviated, but you must specify at least the
-first three characters.</P>
-
-<PRE>
+    <p>Everything appearing in [ ] below is optional; everything
+    appearing in &lt; &gt; is mandatory; all arguments are case
+    insensitive. The vertical bar ("|") is used as a logical OR
+    operator between the arguments. Requests may be abbreviated,
+    but you must specify at least the first three characters.</p>
+    <pre>
 help [topic]
 ------------
 Without arguments, this file. Otherwise get specific information on the
@@ -255,7 +269,7 @@ search &lt;archive | path-to-archive&gt;] [/password] [-all] &lt;pattern&gt;
 Search all files of the specified archive (and all of its subarchives if -all
 is specified) for lines that match the pattern. The pattern can be an
 egrep(1)-style regular expression with support for the following additional
-operators: '~' (negation), '|' and '&'' (logical OR and AND), '&lt;' '&gt;'
+operators: '~' (negation), '|' and '&amp;'' (logical OR and AND), '&lt;' '&gt;'
 (group regular expressions). The pattern may be enclosed in single or
 double quotes. Note: . matches any character including new line.
 
@@ -271,5 +285,4 @@ listproc
 --------
 Learn more about this system and list management software in general.
 
-</PRE>
-
+</pre>

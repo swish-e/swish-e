@@ -18,7 +18,9 @@
 </blockquote>
 
 [% BLOCK list_files %]
-    <th class="dirHeader" colspan="3">[% heading %]</th>
+    <tr>
+        <th class="dirHeader" colspan="3">[% heading %]</th>
+    </tr>
 
 
     [% FOREACH file = files %]
