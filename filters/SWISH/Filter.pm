@@ -5,8 +5,9 @@ use strict;
 use File::Basename;
 #use MIME::Types;  # require below
 use Carp;
+use FindBin;  # for locating libexecdir (mostly under windows)
 
-use vars qw/ $VERSION %extra_methods $testing/;
+use vars qw/ $VERSION %extra_methods/;
 
 $VERSION = '0.02';
 
@@ -22,7 +23,6 @@ my %swish_parser_types = (
     'text/plain'    => 'TXT*',
 );
 
-$testing = 0;
 
 
 # For testing only 
@@ -545,24 +545,62 @@ my @path_segments;
 sub find_binary {
     my ( $self, $prog ) = @_;
 
-    warn "Find path of [$prog] in $ENV{PATH}\n" if $testing;
-
     unless ( @path_segments ) {
         my $path_sep = $Config{path_sep} || ':';
 
         @path_segments = split /\Q$path_sep/, $ENV{PATH};
+
+        if ( my $libexecdir = get_libexec() ) {
+            push @path_segments, $libexecdir;
+        }
     }
+
+    $self->mywarn("Find path of [$prog] in " . join ':', @path_segments);
+
     
     for ( @path_segments ) {
         my $path = "$_/$prog";
-        $path .= '.exe' if $^O =~ /Win32/ && $path !~ /\.exe$/;
 
-        warn "Looking at [$path]\n" if $testing;
-        return $path if -x $path;
+        if ( -x $path ) {
+
+            $self->mywarn(" * Found program at: [$path]\n");
+            return $path;
+        }
+        $self->mywarn("  Not found at path [$path]" );
+
+
+        # ok, try Windows extenstions
+        if ( $^O =~ /Win32/ ) {
+            for my $extension ( qw/ exe bat / ) {
+                if ( -x "$path.$extension" ) {
+                    $self->mywarn(" * Found program at: [$path.$extension]\n");
+                    return "$path.$extension";
+                }
+                $self->mywarn("  Not found at path [$path.$extension]" );
+            }
+        }
+
     }
     return; 
 }
-    
+
+# Try and return libexecdir in case programs are installed there (under windows)
+sub get_libexec {
+   return unless $FindBin::Bin;
+
+   # Look for something we expect in libexecdir.
+
+   # Are we in $libexecdir already (like with swishspider or spider.pl)
+   return $FindBin::Bin if -e "$FindBin::Bin/spider.pl";
+   
+   # Are we in $prefix/bin? (swish-filter-test)
+   return "$FindBin::Bin/../lib/swish-e" if -e "$FindBin::Bin/../lib/swish-e/spider.pl";
+
+
+   return;
+
+
+} 
 
 =item $bool = $self->use_modules( @module_list );
 
@@ -582,7 +620,7 @@ sub use_modules {
     my ( $self, @modules ) = @_;
 
     for my $mod ( @modules ) {
-        warn "trying to load [$mod]\n" if $testing;
+        $self->mywarn("trying to load [$mod]");
 
         eval { eval "require $mod" or die "$!\n" };
 
@@ -592,7 +630,7 @@ sub use_modules {
             return;
         }
 
-        warn " ** Loaded $mod **\n" if $testing;
+        $self->mywarn(" ** Loaded $mod **");
 
         # Export back to caller
         $mod->export_to_level( 1 );

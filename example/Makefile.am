@@ -2,6 +2,12 @@ perlmoduledir = $(libexecdir)/perl/SWISH
 
 libexec_SCRIPTS = swish.cgi
 
+
+pkgdata_DATA = \
+	search.tt \
+	swish.tmpl
+
+
 perlmodule_SCRIPTS = \
     modules/SWISH/DateRanges.pm \
     modules/SWISH/DefaultHighlight.pm \
@@ -20,6 +26,7 @@ swish.cgi: swish.cgi.in
 		-e 's,@@perlmoduledir@@,$(libexecdir)/perl,' \
 		-e 's,@@swishbindir@@,$(bindir),' \
 		-e 's,@@perlbinary@@,$(PERL),' \
+		-e 's,@@pkgdatadir@@,$(pkgdatadir),' \
 			 $(srcdir)/swish.cgi.in > swish.cgi
 
 
