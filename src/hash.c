@@ -81,14 +81,14 @@ unsigned bignumhash(i)
 /* Hashes a string for a larger hash table (for search).
 */
 
-unsigned searchhash(s)
+unsigned verybighash(s)
      char   *s;
 {
     unsigned hashval;
 
     for (hashval = 0; *s != '\0'; s++)
         hashval = (int) ((unsigned char) *s) + 31 * hashval;
-    return hashval % SEARCHHASHSIZE;
+    return hashval % VERYBIGHASHSIZE;
 }
 
 

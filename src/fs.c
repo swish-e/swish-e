@@ -694,7 +694,7 @@ static DOCENTRYARRAY *adddocentry(DOCENTRYARRAY * e, char *filename)
     if (e == NULL)
     {
         e = (DOCENTRYARRAY *) emalloc(sizeof(DOCENTRYARRAY));
-        e->maxsize = SEARCHHASHSIZE; /* Put what you like */
+        e->maxsize = VERYBIGHASHSIZE; /* Put what you like */
         e->filenames = (char **) emalloc(e->maxsize * sizeof(char *));
 
         e->currentsize = 1;

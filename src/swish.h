@@ -224,13 +224,13 @@ extern "C" {
 
 // #define HASHSIZE 101
 // #define BIGHASHSIZE 1009
-// #define SEARCHHASHSIZE 10001
+// #define VERYBIGHASHSIZE 10001
 
 // Change as suggested by Jean-François PIÉRONNE <jfp@altavista.net>
 // on Fri, 28 Dec 2001 07:37:26 -0800 (PST)
 #define HASHSIZE 1009
 #define BIGHASHSIZE 10001
-#define SEARCHHASHSIZE 100003
+#define VERYBIGHASHSIZE 100003
 
 
 #define MAXPAR 10

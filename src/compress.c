@@ -586,9 +586,9 @@ void SwapLocData(SWISH * sw, ENTRY *e, unsigned char *buf, int lenbuf)
     /* IMPORTANT!!!! - The routine being used here to compute the hash */  
     /* must be the same used to store the words */
     /* Then we must get the corresponding swap file index */
-    /* Since we cannot have so many swap files (SEARCHHASHSIZE for searchhash */
+    /* Since we cannot have so many swap files (VERYBIGHASHSIZE for verybighash */
     /* routine) we must scale the hash into SWAP_FILES */
-    idx_swap_file = (searchhash(e->word) * (MAX_LOC_SWAP_FILES -1))/(SEARCHHASHSIZE -1);
+    idx_swap_file = (verybighash(e->word) * (MAX_LOC_SWAP_FILES -1))/(VERYBIGHASHSIZE -1);
 
     if (!idx->fp_loc_write[idx_swap_file])
     {
