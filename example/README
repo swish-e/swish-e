@@ -6,14 +6,22 @@ swish.cgi   - example search script that allows displaying results
 
 swish2.cgi -  example script that uses modules such as HTML::Template
               to separate content from program logic, and uses modules
-              as an abstract interface to swish.  Will run under mod_perl.
+              as to abstract the interface to swish.
+              Can easily be adjusted to limit searches by metanames
+              and also sort and display additional properties defined
+              in your index.
+              Will run under mod_perl.
               The CGI script does require Perl modules available
               on CPAN.
-              
+              Type `perldoc swish2.cgi' from the
+              examples directory for instructions.              
+
+swish.gif   - Swish-e logo for the CGI scripts.              
 
 swish.tmpl  - HTML template files for use with swish.cgi.
 swish2.tmpl   These are just simple examples that you can modify
-              to meet your needs.
+              to meet your needs.  They are use with the swish2.cgi
+              example program.
 
 SWISH-Stemmer-0.05.tar.gz
             - Perl module to provide stemming to swish.cgi and swish2.cgi to
