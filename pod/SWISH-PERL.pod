@@ -177,7 +177,7 @@ Not many people use the structure feature.
 =item *
 
 $properties is a string with the properties to be returned separated by spaces.  Properties must
-be defined during indexing.  See B<README-SWISHE> for more information.
+be defined during indexing.  See L<SWISH-CONFIG|SWISH-CONFIG> for more information.
 
 Example:
 
