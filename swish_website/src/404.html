@@ -17,7 +17,7 @@ use File::Basename;
     if ( $_ = $ENV{REDIRECT_SCRIPT_URI} || $ENV{REDIRECT_URL} ) {
         redirect($_) if s[/Download][/download];
         redirect($_) if s[/Discussion/archive][/archive];
-        redirect($_) if s[/Discussion/search/][/search_archive];
+        redirect($_) if s[/Discussion/search/][/search_archive/];
         redirect($_) if s[/Discussion/?.*$][/discuss.html];
 
         redirect("/docs/" . lc( $1 ) . $2) if m[/current/docs/(.+)(\.html.*)$];
