@@ -86,14 +86,14 @@ int soundex(word)
 #endif
 
 	/* Make sure it actually starts with a letter  */
-	if(!isalpha((int)((unsigned char)word[0]))) soundXit();
+	if(!isalpha((int)((unsigned char)word[0]))) return soundXit();
 #ifdef _DEBUG
 	/* Debug to console  */
 	printf("isalpha, ");
 #endif
 	
 	/* Get string length and make sure its at least 3 characters  */
-	if((n = (int)strlen(word)) < 3) soundXit();
+	if((n = (int)strlen(word)) < 3) return soundXit();
 #ifdef _DEBUG
 	/* Debug to console  */
 	printf("=>3, ");
