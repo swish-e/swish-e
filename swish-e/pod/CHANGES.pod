@@ -6,9 +6,9 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.2
+=head2 Version 2.2rc1
 
-Release Date: ???????
+Release Date: August 29, 2002
 
 Many large changes were made internally in the code, some for performance
 reasons, some for feature changes and additions, and some to prepare
