@@ -35,12 +35,11 @@
 /* Environment Stuff */
 #define HAVE_SETENV     /* Enable PATH setting */
 #define PATH_SEPARATOR ";" /* PATH separator string */
-#define setenv(a,b,c) _putenv("a=b"); /* Translate to MicroSpeak */
 
 #define HAVE_STRING_H   /* For mkstemp from libiberty  */
 
 /* Macros which rewrite values  */
-#define SWISH_VERSION "2.4.0-pr1"	/* Should we find a better way to handle this */
+#define SWISH_VERSION "2.4.0-pr3"	/* Should we find a better way to handle this */
 #define VERSION SWISH_VERSION   /* Some things want this  */
 
 #define libexecdir "/usr/local/lib"  /* Microsoft CPP is brain damaged */
