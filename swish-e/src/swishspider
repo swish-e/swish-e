@@ -11,6 +11,14 @@ use strict;
 # Should SWISH::Filter be use for filtering?  This can be left 1 all the time, but
 # will add a little time to processing since.
 
+# Note: Just because USE_FILTERS is true doesn't mean SWISH::Filter is in @INC.
+# To get the path to use (for "use lib") run swish-filter-test -path.  Or another way:
+#
+#  PERL5LIB=`swish-filter-test -path` swish-e -S http -i http://localhost/index.html
+#
+# The @INC path is not set by default in swishspider because loading the SWISH::Filter
+# modules for every URL might be slow.
+
 use constant USE_FILTERS  => 1;  # 1 = yes use SWISH::Filter for filtering, 0 = no. (faster processing if not set)
 use constant FILTER_TEXT  => 0;  # set to one to filter text/* content, 0 will save processing time
 use constant DEBUG_FILTER => 0;  # set to one to report errors on loading SWISH::Filter module.
@@ -138,14 +146,14 @@ sub filter_doc {
 
     my $filter = SWISH::Filter->new;
 
-    my $filtered = $filter->filter(
+    my $doc = $filter->convert(
         document => $content_ref,
         name     => $response->base,
         content_type => $content_type,
     );
 
-    return $filtered
-        ? ( $filter->fetch_doc, $filter->content_type )
+    return $doc && $doc->was_filtered
+        ? ( $doc->fetch_doc, $doc->content_type )
         : ( $content_ref, $content_type );
 }
 
