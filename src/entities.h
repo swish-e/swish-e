@@ -15,6 +15,8 @@ $Id$
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
+** (c) Rainer.Scherg
+**
 **
 ** 2001-05-05 rasc    initial coding
 **
@@ -42,7 +44,7 @@ int  configModule_Entities (SWISH *sw, StringList *sl);
 
 unsigned char *sw_ConvHTMLEntities2ISO(SWISH *sw, unsigned char *s);
 unsigned char *strConvHTMLEntities2ISO (unsigned char *buf);
-int charEntityDecode (unsigned char **buf);
+int charEntityDecode (unsigned char *buf, unsigned char **end);
 
 
 #endif
