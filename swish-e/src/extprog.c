@@ -180,10 +180,14 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     FILE   *out;
     char   *rd_buffer = NULL;   /* complete file read into buffer */
     size_t  bytes;
+    struct FilterList *filter_save = fprop->hasfilter;
     
 
     /* slirp entire file into memory -- yuck */
-    rd_buffer = read_stream(sw, fprop->real_path, fprop->fp, fprop->fsize, 0, 0);        
+    fprop->hasfilter = NULL;  /* force reading fprop->fsize bytes */
+    rd_buffer = read_stream(sw, fprop, 0);
+
+    fprop->hasfilter = filter_save;
 
     /* Save content to a temporary file */
     efree( fprop->work_path );
@@ -279,6 +283,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             fprop->fp = fp; /* stream to read from */
             fprop->fsize = fsize; /* how much to read */
+            fprop->source_size = fsize;  /* original size of input document - should be an extra header! */
             fprop->mtime = mtime;
 
             /* header can force index_no_content */
