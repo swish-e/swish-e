@@ -15,9 +15,37 @@ $Id$
 **
 ** 2001-09-21  new HTML parser using libxml2 (http://www.xmlsoft.org/) Bill Moseley
 **
+**  Parser reads from the stream in READ_CHUNK_SIZE (after an initial 4 byte chunk
+**  to determine the document encoding).  Text is accumulated in a buffer of
+**  BUFFER_CHUNK_SIZE (10K?) size.  The buffer is flushed when a new metatag
+**  is found.  That buffer will grow, if needed, but now it will attempt
+**  to flush upto the last word boundry if > BUFFER_CHUNK_SIZE.
+**
+**  The buffer is really only flushed when a real metaName or PropertyName is
+**  found, or when the strucutre changes -- anything that changes the
+**  properities of the text that might be in the buffer.
+**
+**  An optional arrangement might be to flush the buffer after processing each
+**  READ_CHUNK_SIZE from the stream (flush to last word).  This would limit the
+**  character buffer size.  It might be nice to flush on any meta tag (not just
+**  tags listed as PropertyNames or MetaNames), but for large XML files one would
+**  expect some use of Meta/PropertyNames.  HTML files should flush more often
+**  since the structure will change often.  Exceptions to this are large <pre>
+**  sections, but then the append_buffer() routine will force a flush when the buffer
+**  exceeds BUFFER_CHUNK_SIZE.
+**
+**  The TXT buffer does flush after every chunk read.
+**
+**  I doubt messing with any of these would change much...
+**  
+**
 ** TODO:
 **
 **  - FileRules title (and all abort_parsing calls - define some constants)
+**
+**
+**  - UndefinedMetaTags ignore might throw things like structure off since
+**    processing continues (unlike IgnoreMetaTags).
 **
 **  - There are two buffers that are created for every file, but these could be done once
 **    and only expanded when needed.  If that would make any difference in indexing speed.
@@ -47,7 +75,7 @@ $Id$
 /* Should be in config.h */
 
 #define BUFFER_CHUNK_SIZE 10000 // This is the size of buffers used to accumulate text
-#define READ_CHUNK_SIZE 4096    // The size of chunks read from the stream
+#define READ_CHUNK_SIZE 2048    // The size of chunks read from the stream (4096 seems to cause problems)
 
 /* to buffer text until an end tag is found */
 
@@ -74,9 +102,12 @@ typedef struct {
 
 typedef struct {
     CHAR_BUFFER         text_buffer;    // buffer for collecting text
- // CHAR_BUFFER         prop_buffer;  // someday, may want a separate property buffer if want to collect tags within props
-    SUMMARY_INFO        summary;     // argh.
+ // CHAR_BUFFER         prop_buffer;    // someday, may want a separate property buffer if want to collect tags within props
+    SUMMARY_INFO        summary;        // argh.
     char               *ignore_tag;     // tag that triggered ignore (currently used for both)
+    int                 ignore_cnt;
+    char               *ignore_meta_tag;
+    int                 ignore_meta_cnt;
     int                 total_words;
     int                 word_pos;
     int                 filenum;
@@ -84,8 +115,7 @@ typedef struct {
     SWISH              *sw;
     FileProp           *fprop;
     struct file        *thisFileEntry;
-    int                 structure;
-    int                 in_meta;            // counter of nested metas, so structure will work
+    int                 structure[STRUCTURE_END+1];
     int                 parsing_html;
     struct metaEntry   *titleProp;
     int                 flush_word;         // flag to flush buffer next time there's a white space.
@@ -118,6 +148,7 @@ static int parse_chunks( PARSE_DATA *parse_data );
 static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struct metaEntry *meta_entry );
 static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
 static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
+static int get_structure( PARSE_DATA *parse_data );
 
 
 /*********************************************************************
@@ -165,7 +196,6 @@ int     parse_HTML(SWISH * sw, FileProp * fprop, char *buffer)
 
     parse_data.parsing_html = 1;
     parse_data.titleProp    = getPropNameByName( parse_data.header, AUTOPROPERTY_TITLE );
-    parse_data.structure    = IN_FILE;
     
     /* Now parse the HTML file */
     return parse_chunks( &parse_data );
@@ -189,7 +219,6 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
     struct MOD_Index   *idx = sw->Index;
 
     init_parse_data( &parse_data, sw, fprop, NULL );
-    parse_data.structure    = IN_FILE;
 
 
     /* Document Summary */
@@ -201,6 +230,7 @@ int     parse_TXT(SWISH * sw, FileProp * fprop, char *buffer)
     {
         append_buffer( &parse_data.text_buffer, chars, res );
         flush_buffer( &parse_data, 0 );  // flush upto whitespace
+        
 
         /* turn off summary when we exceed size */
         if ( parse_data.summary.meta && parse_data.summary.meta->max_len && fprop->bytes_read > parse_data.summary.meta->max_len )
@@ -244,29 +274,26 @@ static int parse_chunks( PARSE_DATA *parse_data )
 
     parse_data->ctxt = ctxt; // save
 
+    
 
-    while ( (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
+    while ( !parse_data->abort && (res = read_next_chunk( fprop, chars, READ_CHUNK_SIZE, sw->truncateDocSize )) )
     {
         if ( parse_data->parsing_html )
             htmlParseChunk((htmlParserCtxtPtr)ctxt, chars, res, 0);
         else
             xmlParseChunk(ctxt, chars, res, 0);
 
+        /* Doesn't seem to make much difference to flush here */
+        //flush_buffer( parse_data, 0 );  // flush upto whitespace    
+    }
 
-        /* Check for abort condition set while parsing (isoktitle, NoContents) */
 
-        if ( parse_data->abort )
-        {
-            /* For NoContents add path name if title was not found */
+    /* Check for abort condition set while parsing (isoktitle, NoContents) */
 
-            if ( fprop->index_no_content && !parse_data->total_words )
-            {
-                append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
-                flush_buffer( parse_data, 3 );
-            }
-
-            break;
-        }
+    if ( parse_data->abort && fprop->index_no_content && !parse_data->total_words )
+    {
+        append_buffer( &parse_data->text_buffer, fprop->real_path, strlen(fprop->real_path) );
+        flush_buffer( parse_data, 3 );
     }
 
     /* Tell the parser we are done, and free it */
@@ -446,6 +473,9 @@ static void free_parse_data( PARSE_DATA *parse_data )
     if ( parse_data->text_buffer.buffer )
         efree( parse_data->text_buffer.buffer );
 
+    if ( parse_data->ignore_meta_tag )
+        efree( parse_data->ignore_meta_tag );
+
 
     /* Restore the size in the StoreDescription property */
     if ( parse_data->summary.save_size )
@@ -472,9 +502,11 @@ static void start_hndl(void *data, const char *el, const char **attr)
     int         is_html_tag = parse_data->parsing_html;
 
 
-    /* return if within an ignore block */
+    /* return if within an ignore block since we only are looking for the ending tag */
     if ( parse_data->ignore_tag )
         return;
+
+        
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
@@ -484,6 +516,8 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     strcpy(tag,(char *)el);
     strtolower( tag );
+
+
 
 
     if ( parse_data->parsing_html )
@@ -547,6 +581,8 @@ static void end_hndl(void *data, const char *el)
     int         is_html_tag = parse_data->parsing_html;
 
 
+
+
     if(strlen(el) > MAXSTRLEN)
     {
         progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
@@ -556,12 +592,8 @@ static void end_hndl(void *data, const char *el)
     strcpy(tag,(char *)el);
     strtolower( tag );
 
-    if ( parse_data->ignore_tag )
-    {
-        if  (strcmp( parse_data->ignore_tag, tag ) == 0)
-            parse_data->ignore_tag = NULL;  // don't free since it's a pointer to the config setting
-        return;
-    }
+
+    
 
     if ( parse_data->parsing_html )
     {
@@ -618,7 +650,6 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     /* If currently in an ignore block, then return */
     if ( parse_data->ignore_tag )
         return;
-
 
     /* $$$ this was added to limit the buffer size */
     if ( parse_data->text_buffer.cur + txtlen >= BUFFER_CHUNK_SIZE )
@@ -692,9 +723,9 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
     SWISH *sw = parse_data->sw;
     struct metaEntry *m = NULL;
 
-    /* Bump on all meta names, unless overridden */
-    /* Done before the ignore tag check since still need to bump */
 
+
+    /* Bump on all meta names, unless overridden */
     if (!isDontBumpMetaName(sw->dontbumpstarttagslist, tag))
         parse_data->word_pos++;
 
@@ -702,7 +733,10 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
     /* check for ignore tag (should propably remove char handler for speed) */
     
     if ( (parse_data->ignore_tag = isIgnoreMetaName( sw, tag )))
+    {
+        parse_data->ignore_cnt++;
         return;
+    }
 
 
     /* Check for metaNames */
@@ -712,21 +746,28 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
         flush_buffer( parse_data, 5 );  // flush since it's a new meta tag
         
         m->in_tag++;
-        parse_data->in_meta++;
-        parse_data->structure |= IN_META;
+        parse_data->structure[IN_META_BIT]++;
     }
 
 
-    else if ( sw->applyautomaticmetanames)
+    else if ( sw->applyautomaticmetanames )
     {
         if (sw->verbose)
             printf("**Adding automatic MetaName '%s' found in file '%s'\n", tag, parse_data->fprop->real_path);
 
         flush_buffer( parse_data, 6 );  // flush since it's a new meta tag
         addMetaEntry( parse_data->header, tag, META_INDEX, 0)->in_tag++;
-        parse_data->in_meta++;
-        parse_data->structure |= IN_META;
+        parse_data->structure[IN_META_BIT]++;
     }
+
+    else if ( sw->ReqMetaName )
+    {
+        flush_buffer( parse_data, 66 );  // flush because we must still continue to process, and structures might change
+        parse_data->ignore_meta_tag = estrdup( tag );
+        parse_data->ignore_meta_cnt++;
+    }
+
+
 
 
     /* If set to "error" on undefined meta tags, then error */
@@ -754,19 +795,37 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag )
 static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 {
     struct metaEntry *m = NULL;
+
+    /* End an IgnoreMetaTags block? */
     
+    if ( parse_data->ignore_tag && !strcmp( parse_data->ignore_tag, tag ) )
+    {
+        if  ( --parse_data->ignore_cnt == 0 )
+            parse_data->ignore_tag = NULL;  // don't free since it's a pointer to the config setting
+        return;
+    }
+
 
     /* Flag that we are not in tag anymore - tags must be balanced, of course. */
-
     if ( ( m = getMetaNameByName( parse_data->header, tag) ) )
+    {
         if ( m->in_tag )
         {
             flush_buffer( parse_data, 8 );
             m->in_tag--;
-            parse_data->in_meta--;
-            if ( !parse_data->in_meta )
-                parse_data->structure &= ~IN_META;
+            parse_data->structure[IN_META_BIT]--;
         }
+    }
+
+    else if ( parse_data->ignore_meta_tag && !strcmp( parse_data->ignore_meta_tag, tag) )
+    {
+        if ( --parse_data->ignore_meta_cnt == 0 )
+        {
+            flush_buffer( parse_data, 66 );  // flush since it's a new meta tag
+            efree( parse_data->ignore_meta_tag );
+            parse_data->ignore_meta_tag = NULL;
+        }
+    }
 
 
     if ( ( m = getPropNameByName( parse_data->header, tag) ) )
@@ -793,15 +852,15 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag )
 
 static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 {
-    int     structure = 0;
     int     is_html_tag = 1;
+    int     bump = start ? +1 : -1;
 
     /* Check for structure bits */
 
     if ( strcmp( tag, "head" ) == 0 )
     {
         flush_buffer( parse_data, 10 );
-        structure = IN_HEAD;
+        parse_data->structure[IN_HEAD_BIT] += bump;
 
         /* Check for NoContents - can quit looking now once out of <head> block */
 
@@ -831,20 +890,22 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     
         flush_buffer( parse_data, 11 );
         parse_data->word_pos++;
-        structure = IN_TITLE;
+        parse_data->structure[IN_TITLE_BIT] += bump;
     }
 
     else if ( strcmp( tag, "body" ) == 0 )
     {
         flush_buffer( parse_data, 12 );
-        structure = IN_BODY;
+        parse_data->structure[IN_BODY_BIT] += bump;
         parse_data->word_pos++;
     }
 
+
+    /* This should be split so know different level for ranking */
     else if ( tag[0] == 'h' && isdigit((int) tag[1]))
     {
         flush_buffer( parse_data, 13 );
-        structure = IN_HEADER;
+        parse_data->structure[IN_HEADER_BIT] += bump;
     }
 
     /* These should not be hard coded */
@@ -858,9 +919,9 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
         flush_buffer( parse_data, 0 );  // flush up to current word
 
         if ( start )
-            structure = IN_EMPHASIZED;
+            parse_data->structure[IN_EMPHASIZED_BIT] += bump;
         else
-            parse_data->flush_word = IN_EMPHASIZED;
+            parse_data->flush_word = IN_EMPHASIZED_BIT + 1;  // + 1 because we might need to use zero some day
         
         
     }
@@ -877,14 +938,6 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
             append_buffer( &parse_data->text_buffer, " ", 1 );  // could flush buffer, I suppose
     }
 
-    if ( structure )
-    {
-        if ( start )
-            parse_data->structure |= structure;
-        else
-            parse_data->structure &= ~structure;
-            
-    }
 
     return is_html_tag;
 }
@@ -922,17 +975,17 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **atts )
         /* Robots exclusion: http://www.robotstxt.org/wc/exclusion.html#meta */
         if ( !strcasecmp( metatag, "ROBOTS") && lstrstr( content, "NOINDEX" ) )
         {
-            abort_parsing( parse_data, -3 );
+            if ( parse_data->sw->obeyRobotsNoIndex )
+                abort_parsing( parse_data, -3 );
+
             return;
         }
 
-        /* Process meta tag */
-
-        flush_buffer( parse_data, 99 );  /* just in case it's not a MetaName */
+        /* Process as a start -> end tag sequence */
+        flush_buffer( parse_data, 1 );  // because metatags could be strung together
         start_metaTag( parse_data, metatag );
         char_hndl( parse_data, content, strlen( content ) );
         end_metaTag( parse_data, metatag );
-        flush_buffer( parse_data, 99 );  /* just in case it's not a MetaName */
         
     }
 
@@ -979,21 +1032,21 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 *   Flush buffer - adds words to index, and properties
 *
 *
+*
 *********************************************************************/
 static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 {
     CHAR_BUFFER *buf = &parse_data->text_buffer;
     SWISH       *sw = parse_data->sw;
-    int         structure = parse_data->parsing_html ? parse_data->structure : IN_FILE;
+    int         structure = get_structure( parse_data );
     int         orig_end  = buf->cur;
     char        save_char = '?';
+    char        *c;
 
 
     /* anything to do? */
     if ( !buf->cur )
         return;
-
-
 
 
     /* look back for word boundry */
@@ -1020,20 +1073,31 @@ printf("Warning: File %s has a really long word found\n", parse_data->fprop->rea
     buf->buffer[buf->cur] = '\0';
 
 
-    /* Index the text */
-    parse_data->total_words +=
-        indexstring( sw, buf->buffer, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
+    /* Make sure there some non-whitespace chars to print */
+    
+    c = buf->buffer;
+    while ( *c && isspace( (int)*c ) )
+        c++;
 
 
-    /* Add the properties */
-    addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
-
-
-    /* yuck.  Ok, add to summary, if active */
+    if ( *c )
     {
-        SUMMARY_INFO    *summary = &parse_data->summary;
-        if ( summary->active )
-            addDocProperty( &(parse_data->thisFileEntry->docProperties), summary->meta, (unsigned char *)buf->buffer, buf->cur, 0 );
+        /* Index the text */
+        if ( !parse_data->ignore_meta_tag )
+            parse_data->total_words +=
+                indexstring( sw, c, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
+
+
+        /* Add the properties */
+        addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
+
+
+        /* yuck.  Ok, add to summary, if active */
+        {
+            SUMMARY_INFO    *summary = &parse_data->summary;
+            if ( summary->active )
+                addDocProperty( &(parse_data->thisFileEntry->docProperties), summary->meta, (unsigned char *)buf->buffer, buf->cur, 0 );
+        }
     }
 
 
@@ -1054,7 +1118,7 @@ printf("Warning: File %s has a really long word found\n", parse_data->fprop->rea
     /* This is to allow inline tags to continue to end of word str<b>ON</b>g  */
     if ( parse_data->flush_word )
     {
-        parse_data->structure &= ~parse_data->flush_word;
+        parse_data->structure[parse_data->flush_word-1]--;
         parse_data->flush_word = 0;
     }
 
@@ -1075,6 +1139,7 @@ static void comment_hndl(void *data, const char *txt)
 {
     PARSE_DATA  *parse_data = (PARSE_DATA *)data;
     SWISH       *sw = parse_data->sw;
+    int         structure = get_structure( parse_data );
     
 
     /* Bump position around comments - hard coded, always done to prevent phrase matching */
@@ -1082,7 +1147,7 @@ static void comment_hndl(void *data, const char *txt)
 
     /* Index the text */
     parse_data->total_words +=
-        indexstring( sw, (char *)txt, parse_data->filenum, parse_data->structure | IN_COMMENTS, 0, NULL, &(parse_data->word_pos) );
+        indexstring( sw, (char *)txt, parse_data->filenum, structure | IN_COMMENTS, 0, NULL, &(parse_data->word_pos) );
 
 
     parse_data->word_pos++;
@@ -1159,6 +1224,7 @@ static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struc
 {
     char *href = NULL;
     int  i;
+    int         structure = get_structure( parse_data );
 
 
 
@@ -1171,7 +1237,7 @@ static void extract_html_links( PARSE_DATA *parse_data, const char **atts, struc
 
     /* Index the text */
     parse_data->total_words +=
-        indexstring( parse_data->sw, href, parse_data->filenum, parse_data->structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
+        indexstring( parse_data->sw, href, parse_data->filenum, structure, 1, &meta_entry->metaID, &(parse_data->word_pos) );
 }
 
 /* This doesn't look like the best method */
@@ -1186,4 +1252,21 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
     // if ( abort_code < 0 )
     // $$$ mark_file_deleted( parse_data->indexf, parse_data->filenum );
 }
+
+
+static int get_structure( PARSE_DATA *parse_data )
+{
+    int structure = IN_FILE;
+
+    /* Set structure bits */
+    if ( parse_data->parsing_html )
+    {
+        int i;
+        for ( i = 0; i <= STRUCTURE_END; i++ )
+            if ( parse_data->structure[i] )
+                structure |= ( 1 << i );
+    }
+    return structure;
+}
+
 
