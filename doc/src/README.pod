@@ -5,7 +5,7 @@ The SWISH-E README File
 =head1 What is SWISH-E?
 
 SWISH-E is B<S>imple B<W>eb B<I>ndexing B<S>ystem for B<H>umans - B<E>nhanced.
-With it, you can quickly and easily index directories of files or remote web sites and search the generated
+SWISH-E can quickly and easily index directories of files or remote web sites and search the generated
 indexes.
 
 SWISH was created by Kevin Hughes to fill the need of the growing number of Web administrators on the
@@ -17,6 +17,8 @@ In Fall 1996, The Library of UC Berkeley received permission from Kevin Hughes t
 enhancements to the original binary. The result is SWISH-Enhanced or SWISH-E, brought to you by the
 SWISH-E Development Team.
 
+SWISH-E version 2 represents a major rewrite of the code and the addition of many new features.
+
 =head2 Key features
 
 =over 4
@@ -24,7 +26,7 @@ SWISH-E Development Team.
 =item *
 
 Quickly index a large number of documents in different formats
-including text, html, and XML
+including text, HTML, and XML
 
 =item *
 
@@ -74,7 +76,7 @@ can contribute your fancy new features to the project.
 
 The current version of SWISH-E can be found at:
 
-C<http://sunsite.berkeley.edu/SWISH-E/>
+http://sunsite.berkeley.edu/SWISH-E/
 
 Please make sure you use a current version of swish-e.
 
@@ -94,9 +96,8 @@ For example, to view the installation documentation for swish-e, type
 Check with your system administrator if this command is not available.
 
 Online documentation can be found at the SWISH-E web site listed above.
-Optionally, if you have the pod2html utility on your system you can convert
-the documentation into HTML format for viewing with a web browser.  Instructions
-for converting the documentation can be found in INSTALL.
+Optionally, you may view the documentation in HTML format in the html directory
+of the distribution.  PDF or Postscript format is also available.
 
 =head2  Included Documentation
 
@@ -114,19 +115,19 @@ L<INSTALL|INSTALL>  -- Installation and basic usage instructions
 
 =item *
 
-L<SWISH-INDEX|SWISH-INDEX> -- All about creating a SWISH-E index
+L<SWISH-CONFIG|SWISH-CONFIG> -- Configuration File Directives
 
 =item *
 
-L<SWISH-SEARCH|SWISH-SEARCH> --All about searching with SWISH-E
+L<SWISH-INDEX|SWISH-RUN> -- Running Swish and Command Line Switches
+
+=item *
+
+L<SWISH-SEARCH|SWISH-SEARCH> --All about Searching with SWISH-E
 
 =item *
 
 L<SWISH-FAQ|SWISH-FAQ> -- Common questions, and some answers
-
-=item *
-
-L<SWISH-FILTERS|SWISH-FILTERS> -- Using filters to index non-standard documents
 
 =item *
 
@@ -149,10 +150,14 @@ If you need help with installing or using SWISH-E please subscribe to
 the SWISH-E mailing list.  See visit the SWISH-E web site listed above
 for information on subscribing to the SWISH-E list.
 
-
-=head1 Document revision
+=head1 Document Info
 
 $Id$
+
+.
+
+
+
 
 
 
