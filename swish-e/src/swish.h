@@ -98,6 +98,8 @@
 #include <setjmp.h>
 
 
+
+
 #define SWISH_MAGIC 21076321L
 
 #define INDEXFILE "index.swish-e"
@@ -901,3 +903,8 @@ RESULT *SwishNext(SWISH *);
 int     SwishSearch(SWISH *, char *, int, char *, char *);
 int     SwishSeek(SWISH * sw, int pos);
 int     getnumPropertiesToDisplay(SWISH *);
+
+
+
+
+#include "no_better_place_module.h"			/* $$$ tmp module for reorg. !!! */

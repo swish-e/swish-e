@@ -74,8 +74,6 @@ int resultHeaderOut (SWISH *sw, int min_verbose, char *prtfmt, ...);
 void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h, 
 				char *pathname, int merged);
 
-/* $$$ to be moved to other module! */
-void	translatecharHeaderOut (SWISH *sw, int v, INDEXDATAHEADER *h );
 
 #endif
 

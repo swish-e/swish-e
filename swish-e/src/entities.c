@@ -15,6 +15,7 @@ $Id$
 ** along with this program; if not, write to the Free Software
 ** Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 **
+** (c) Rainer.Scherg
 **
 **
 ** HTML entity routines (encoding, etc.):
@@ -46,7 +47,7 @@ $Id$
 */
 
 
-#define  MAX_ENTITY_LEN  16           /* max chars after where we have to see the ';' */
+#define  MAX_ENTITY_LEN  16           /* max chars after where we have to see the EOE */
 
 /*
   -- Entity encoding/decoding structure 
@@ -55,10 +56,9 @@ $Id$
 */
 
 
-//$$$  gcc warnings are intended! will be corrected later (rasc)
-/* #define  IS_EOE(a)  ((a)==';')                           /* W3C compliant */
-/* #define  IS_EOE(a)  ((a)==';'||isspace((int)(a)))        /* tolerant behavior */
-#define  IS_EOE(a)  (ispunct((int)(a))||isspace((int)(a)))  /* oh god, accept everything */
+/* #define  IS_EOE(a)  ((a)==';')                           --  W3C compliant */
+/* #define  IS_EOE(a)  ((a)==';'||isspace((int)(a)))        --  tolerant behavior */
+#define  IS_EOE(a)  (ispunct((int)(a))||isspace((int)(a)))  /*  oh god, accept everything */
 
 
 
@@ -69,7 +69,7 @@ typedef struct {
 
 
 /*
-  -- CEntity Quick Has structure
+  -- CEntity Quick Hash structure
   -- works like follow: Array of ASCII-7 start "positions" (1. char of entity name)
   -- each entry can have a chain of pointers
   -- e.g.  &quote; --> ['q']->ce(.name .code)
@@ -77,7 +77,7 @@ typedef struct {
   -- lots of slots in the array will be empty because only [A-Z] and [a-z]
   -- is needed. But this cost hardly any memory, and is convenient...  (rasc)
   -- The hash sequence list will be re-sequenced during(!) usage (dynamic re-chaining).
-  -- This brings down compares to mostly 1 strcmp per entity name. 
+  -- This brings down compares to almost 1 strcmp on entity checks. 
   --
   -- Warning: don't change this (ce_hasharray,etc) unless you know how this really works!
   --
@@ -574,7 +574,7 @@ unsigned char *sw_ConvHTMLEntities2ISO(SWISH *sw, unsigned char *s)
 unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
 
 {
-  unsigned char *s;
+  unsigned char *s,*t;
   unsigned char *d;
   int	          code;
 
@@ -586,13 +586,13 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
      /* if not entity start, next */
      if (*s != '&') {
         *d++ = *s++;
-        continue;
+     } else {
+        /* entity found, identify and decode */
+        /* ignore zero entities and UNICODE ! */
+        code = charEntityDecode (s, &t);
+        if (code && (code < 256)) *d++ = (unsigned char)code;
+        s = t;
      }
-
-     /* entity found, identify and decode */
-     /* ignore zero entities and UNICODE ! */
-     code = charEntityDecode (&s);
-     if (code && (code < 256)) *d++ = (unsigned char)code;
   }
   *d = '\0';
 
@@ -603,29 +603,30 @@ unsigned char *strConvHTMLEntities2ISO (unsigned char *buf)
 
 /* 
  -- decode entity string to character code:
- --    &#dec;   &#xhex;   &#Xhex;   &named;
+ --  &#dec;   &#xhex;   &#Xhex;   &named;
+ -- Decoding is hash optimized with dynamic re-chaining for
+ -- performance improvement...
  -- return: entity character (decoded)
- --         position "buf" past entity
- --         on illegal entities, just return the char...
+ --    position "end" (if != NULL) past "entity" or behind ret. char
+ --    on illegal entities, just return the char...
 */
 
-int charEntityDecode (unsigned char **buf)
+int charEntityDecode (unsigned char *s, unsigned char **end)
 
 {
-  unsigned char *s, *s1,*t;
+  unsigned char *s1,*t;
   unsigned char s_cmp[MAX_ENTITY_LEN+1];
   int len;
   int code;
 
 
-  s = *buf;
-
   /*
-   -- if not EOS, pos +1 char (we return a char code anyway)
    -- no entity ctrl start char?, err: return char 
    */
-  if (*s) (*buf)++;
-  if (*s != '&') return (int) *s;
+  if (*s != '&') {
+    if (end) *end = s+1;
+    return (int) *s;
+  }
 
 
 
@@ -683,13 +684,13 @@ int charEntityDecode (unsigned char **buf)
          last_p   = NULL;
          hash_p  = *hash_pp;
          while (hash_p) {
-             fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug
+/*             fprintf (stderr,"entity decoding: _%s_ --> _%s_\n",s_cmp,hash_p->ce->name); //$$$$ Debug */
              if (!strcmp (hash_p->ce->name,s_cmp)) {
                  code = hash_p->ce->code;
                  if (last_p) {  /* rechain hash sequence list (last found = first) */
-                    last_p->next = hash_p->next;   /* take elem out of seq  */
-                    hash_p->next = *hash_pp;       /* old 1. elem = 2. elem */
-                    *hash_pp     = hash_p;         /* found = 1st elem      */
+                    last_p->next = hash_p->next;   /* take elem out of seq */
+                    hash_p->next = *hash_pp;       /* old 1. = 2.          */
+                    *hash_pp     = hash_p;         /* found = 1st          */
                  }
                  break;
              }
@@ -707,7 +708,7 @@ int charEntityDecode (unsigned char **buf)
      code = '&';
   } else {
      if (*t == ';') t++;    /* W3C closing char, pos at behind EOE */
-     (*buf)  = t;
+     if (end) *end = t;
   }
 
   return code;
@@ -754,7 +755,7 @@ void debugModule_Entities (void)
 //----- $$$ manual test routine...
 
 {
- char *s;
+ unsigned char *s,*t;
  char buf[1024];
  int  i;
 
@@ -763,8 +764,8 @@ void debugModule_Entities (void)
      printf ("in: __%s__\n",buf);
      s = buf;
 
-     i = charEntityDecode ((unsigned char **)&s);
-     printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,s);
+     i = charEntityDecode (s, &t );
+     printf ("out: Hex: %04X (%d) _%c_ --> Rest: _%s_\n", i,i, (char)i ,t);
   }
 
  }
