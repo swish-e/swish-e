@@ -41,6 +41,7 @@
 	<UL>
 
 		<LI><A HREF="#Included_Documentation">Included Documentation</A>
+		<LI><A HREF="#Document_Generation">Document Generation</A>
 	</UL>
 
 	<LI><A HREF="#Where_do_I_get_help_with_SWISH_E">Where do I get help with SWISH-E?</A>
@@ -179,6 +180,9 @@ Check with your system administrator if this command is not available.
 Online documentation can be found at the SWISH-E web site listed above.
 Optionally, you may view the documentation in HTML format in the html
 directory of the distribution. PDF or Postscript format is also available.
+See <A HREF="././INSTALL.html">INSTALL</A> for information on creating the PDF and Postscript versions of the
+documentation, and for information on installing the SWISH-* documentation
+as Unix <CODE>man(1)</CODE> pages.
 
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
@@ -202,7 +206,7 @@ The following documentation is included in this SWISH-E distribution:
 
 <P><LI>
 <P>
-<A HREF="././SWISH-RUN.html">SWISH-INDEX</A> -- Running Swish and Command Line Switches
+<A HREF="././SWISH-RUN.html">SWISH-RUN</A> -- Running Swish and Command Line Switches
 
 <P><LI>
 <P>
@@ -225,6 +229,22 @@ The following documentation is included in this SWISH-E distribution:
 <A HREF="././CHANGES.html">CHANGES</A> -- List of feature changes and bug fixes
 
 </UL>
+<P>
+[ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
+<HR>
+<H2><A NAME="Document_Generation">Document Generation</A></H2>
+<P>
+The SWISH-E documentation in HTML format was created with Pod::HtmlPsPdf, a
+package of Perl modules written and/modified by Stas Bekman to automate the
+conversion of documents in pod format (see perldoc perlpod) to HTML,
+Postscript, and PDF. A slightly modified version of this package is include
+with the SWISH-E distribution and used for building the HTML. As
+distributed, SWISH-E contains only the pod and HTML documentation. See <A HREF="././INSTALL.html">INSTALL</A> for instructions on creating <CODE>man(1),</CODE> Postscript, and PFD
+formats.
+
+<P>
+Thanks, Stas, for your help!
+
 <P>
 [ <B><FONT SIZE=-1><A HREF="#toc">TOC</A></FONT></B> ]
 <HR>

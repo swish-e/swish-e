@@ -162,7 +162,8 @@ the index file.
 <P><DT><STRONG><A NAME="item__i">-i *directories and/or files* (input file)</A></STRONG><DD>
 <P>
 This specifies the directories and/or files to index. Directories will be
-indexed recursively. This is typically specified in the <A HREF="././SWISH-CONFIG.html">configuration file</A> with the <STRONG>IndexDir</STRONG> directive instead of on the command line.
+indexed recursively. This is typically specified in the <A HREF="././SWISH-CONFIG.html">configuration file</A> with the <STRONG>IndexDir</STRONG> directive instead of on the command line. Use of this switch overrides the
+configuration file settings.
 
 <P><DT><STRONG><A NAME="item__S">-S [fs|http] (indexing mode)</A></STRONG><DD>
 <P>
@@ -260,7 +261,7 @@ RAM that the computer begins to swap excessively.
 <P><DT><STRONG><A NAME="item__l">-l (symbolic links)</A></STRONG><DD>
 <P>
 Specifying this option tells swish to follow symbolic links when indexing.
-The configuration file value <STRONG>FollowSymLinks</STRONG> will currently override the command-line value.
+The configuration file value <STRONG>FollowSymLinks</STRONG> will override the command-line value.
 
 <P><DT><STRONG><A NAME="item__v">-v [0|1|2|3] (verbosity level)</A></STRONG><DD>
 <P>
@@ -338,9 +339,11 @@ double-quote by default) around the search phrase.
     </table>
     <P>
 Search would should be protected from the shell by quotes. Typically, this
-is single quotes when running under Unix. Under Windows you will may not
-need to use quotes, but you will need to backslash the quotes used to
-delimit phrases:
+is single quotes when running under Unix.
+
+<P>
+Under Windows <EM>command.com</EM> you may not need to use quotes, but you will need to backslash the quotes
+used to delimit phrases:
 
 <P>
 
@@ -352,12 +355,15 @@ delimit phrases:
         </td>
 
 	<td>
-	  <pre>    swihs-e -w \&quot;a phrase\&quot;</pre>
+	  <pre>    swish-e -w \&quot;a phrase\&quot;</pre>
         </td>
 	    
       </tr>
     </table>
     <P>
+The phrase delimiter can be set with the <CODE>-P</CODE> switch.
+
+<P>
 The search may be limited to a <EM>MetaName</EM>. For example:
 
 <P>
@@ -376,7 +382,10 @@ The search may be limited to a <EM>MetaName</EM>. For example:
       </tr>
     </table>
     <P>
-will only search within the <STRONG>meta1</STRONG> tag.    
+will only search within the <STRONG>meta1</STRONG> tag.
+
+<P>
+Please see <A HREF="././SWISH-SEARCH.html">SWISH-SEARCH</A> for a description of MetaNames.
 
 <P><DT><STRONG>-f *file1 file2 ...* (index files)</STRONG><DD>
 <P>
@@ -426,6 +435,9 @@ all HEAD tags, B stands for BODY tags, t is all TITLE tags, h is H1 to H6
 c is HTML comment tags
 
 <P>
+search only in header (&lt;H*&gt;) tags
+
+<P>
 
     <table>
       <tr>
@@ -435,8 +447,7 @@ c is HTML comment tags
         </td>
 
 	<td>
-	  <pre>    # search only in &lt;H?&gt; tags
-    swish-c -w word -t h</pre>
+	  <pre>    swish-c -w word -t h</pre>
         </td>
 	    
       </tr>
@@ -448,10 +459,7 @@ the output fields by a space, and places double-quotes around the document
 title. This output may be hard to parse, so it is recommended to use <CODE>-d</CODE> to specify a character or string used as a separator between fields.
 
 <P>
-The string <CODE>dq</CODE> means ``double-quotes''. Not sure why it's needed.
-<STRONG>How about entering '\t' or 'tab' for a tab?</STRONG>
-
-
+The string <CODE>dq</CODE> means ``double-quotes''.
 
 <P>
 
@@ -467,13 +475,19 @@ The string <CODE>dq</CODE> means ``double-quotes''. Not sure why it's needed.
     swish-e -w word -d ::   # string
     swish-e -w word -d '&quot;'  # double quotes under Unix
     swish-e -w word -d \&quot;   # double quotes under Windows
-    swish-e -w word -d dq   # double quotes
-    </pre>
+    swish-e -w word -d dq   # double quotes</pre>
         </td>
 	    
       </tr>
     </table>
-    <P><DT><STRONG><A NAME="item__p">-p *property1 property2 ...*  (display properties)</A></STRONG><DD>
+    <P>
+The following control characters may also be specified: <CODE>\t \r \n \f</CODE>.
+
+<P><DT><STRONG><A NAME="item__P">-P *character*</A></STRONG><DD>
+<P>
+Sets the delimiter used for phrase searches. The default is double quotes <CODE>&quot;</CODE>.
+
+<P><DT><STRONG><A NAME="item__p">-p *property1 property2 ...*  (display properties)</A></STRONG><DD>
 <P>
 This causes swish to print the listed property in the search results. The
 properties are returned in the order they are listed in the <CODE>-p</CODE> argument.
@@ -523,6 +537,9 @@ sort on more than one key.
 Examples:
 
 <P>
+sort by title property ascending order
+
+<P>
 
     <table>
       <tr>
@@ -532,13 +549,15 @@ Examples:
         </td>
 
 	<td>
-	  <pre>    # sort by title property ascending order
-    -s title</pre>
+	  <pre>    -s title</pre>
         </td>
 	    
       </tr>
     </table>
     <P>
+sort descending by title, ascending by name
+
+<P>
 
     <table>
       <tr>
@@ -548,8 +567,7 @@ Examples:
         </td>
 
 	<td>
-	  <pre>    # sort descending by title, ascending by name
-    -s title desc name asc</pre>
+	  <pre>    -s title desc name asc</pre>
         </td>
 	    
       </tr>
