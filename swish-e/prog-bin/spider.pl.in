@@ -268,8 +268,12 @@ sub process_server {
     $ua->parse_head( 0 ) if $server->{ignore_robots_file} || $server->{ignore_robots_headers};
     
 
-    # Set the timeout on the server and using Windows.
-    $ua->timeout( $server->{max_wait_time} ) if $^O =~ /Win32/i;
+    # Set the timeout - used to only for windows and used alarm, but this
+    # did not always works correctly.  Hopefully $ua->timeout works better in 
+    # current versions of LWP (before DNS could block forever)
+
+    $ua->timeout( $server->{max_wait_time} );
+
 
         
     $server->{ua} = $ua;  # save it for fun.
@@ -468,9 +472,6 @@ sub process_link {
     my $been_here;
     my $callback = sub {
 
-        # Reset alarm;
-        alarm( $server->{max_wait_time} ) unless $^O =~ /Win32/i;
-
         # Cache user/pass
         if ( $server->{cur_realm} && $uri->userinfo ) {
              my $key = $uri->canonical->host_port . ':' . $server->{cur_realm};
@@ -491,15 +492,12 @@ sub process_link {
 
     };
 
-    my $response;
 
-    eval {
-        local $SIG{ALRM} = sub { die "timed out\n" };
-        alarm( $server->{max_wait_time} ) unless $^O =~ /Win32/i;
-        $response = $ua->simple_request( $request, $callback, 4096 );
-        alarm( 0 ) unless $^O =~ /Win32/i;
-    };
+    ## Make Request ##
 
+    # Used to wrap in an eval and use alarm on non-win32 to fix broken $ua->timeout
+
+    my $response = $ua->simple_request( $request, $callback, 4096 );
 
     return if $server->{abort};
 
@@ -917,6 +915,10 @@ sub check_link {
 sub validate_link {
     my ($server, $uri, $base, $response ) = @_;
 
+    $base = URI->new( $base ) unless ref $base;
+    $uri = URI->new_abs($uri, $base) unless ref $uri;
+
+
    # Already checked? 
 
     if ( exists $validated{ $uri->canonical } )
@@ -931,24 +933,9 @@ sub validate_link {
     $validated{ $uri->canonical } = 0;  # mark as checked and ok.
 
     unless ( $response ) {
-        my $ua = LWP::UserAgent->new;
+        my $ua = LWP::UserAgent->new(timeout =>  $server->{max_wait_time} );
         my $request = HTTP::Request->new('HEAD', $uri->canonical );
-
-        eval {
-            local $SIG{ALRM} = sub { die "timed out\n" };
-            alarm( $server->{max_wait_time} ) unless $^O =~ /Win32/i;
-            $response = $ua->simple_request( $request );
-            alarm( 0 ) unless $^O =~ /Win32/i;
-        };
-
-        if ( $@ ) {
-            $server->{counts}{'Bad Links'}++;
-            my $msg = $@;
-            $msg =~ tr/\n//s;
-            $validated{ $uri->canonical } = $msg;
-            push @{$bad_links{ $base->canonical }}, $uri->canonical;
-            return;
-        }
+        $response = $ua->simple_request( $request );
     }
 
     return if $response->is_success;
@@ -1082,7 +1069,6 @@ sub default_urls {
             link_tags       => [qw/ a frame /],
             keep_alive      => 1,
             test_url        => sub { $_[0]->path !~ /\.(?:gif|jpeg|png)$/i },
-
             test_response   => $response_sub,
             filter_content  => $filter_sub,
             validate_links  => $validate,
