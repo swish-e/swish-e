@@ -584,6 +584,19 @@ char   *str_skip_ws(char *s)
     return s;
 }
 
+/*************************************
+* Trim trailing white space
+* Returns void
+**************************************/
+
+void  str_trim_ws(char *string)
+{
+    int i = strlen( string );
+
+    while ( i  && isspace( (int)string[i-1]) )
+        string[--i] = '\0';
+}
+
 
 
 

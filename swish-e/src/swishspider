@@ -1,5 +1,7 @@
 #!/usr/local/bin/perl -w
 
+# print STDERR "spider $$ [@ARGV]\n";
+
 #
 # SWISH-E http method Spider
 # $Id$ 
@@ -34,11 +36,15 @@ my $response = $ua->simple_request( $request );
 open( RESP, ">$localpath.response" ) || die( "Could not open response file $localpath.response" );
 
 print RESP $response->code() . "\n";
+
 if( $response->code() == RC_OK ) {
     print RESP $response->header( "content-type" ) . "\n";
 } elsif( $response->is_redirect() ) {
     print RESP $response->header( "location" ) . "\n";
 }
+
+print RESP ($response->last_modified || 0), "\n";
+
 close( RESP );
 
 #
@@ -67,7 +73,6 @@ sub linkcb {
     my($tag, %links) = @_;
     if (($tag eq "a") && ($links{"href"})) {
 	my $link = $links{"href"};
-
 	#
 	# Remove fragments
 	#
@@ -79,9 +84,6 @@ sub linkcb {
 	#
 	$link =~ s/\.\.\///g;
 
-	# hack for apostrophe -- changes URL, but should work for most clients.
-	$link =~ s/'/%27/g;
-	
 	print LINKS "$link\n";
     }
 }
