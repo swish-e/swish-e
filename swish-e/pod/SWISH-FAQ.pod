@@ -16,7 +16,7 @@ You can use a FileRules operation to exclude the particular file name, or pathna
 certain types of files, they may not have valid text in them (they may be binary files, for instance). You can use NoContents to exclude that
 type of file.
 
-=head2 Swish isn't working and I can't solve the problem myself
+=head2 Swish isn't working and I can't solve the problem myself.
 
 The SWISH-E discussion list is the place to go.  http://sunsite.berkeley.edu/SWISH-E/.
 
@@ -46,14 +46,16 @@ may provide valuable information.  This can be helpful in tracking down segfault
 =head2 Swish isn't indexing a certain word or phrase. 
 
 By default, swish-e tries to make it best guesses as to what it thinks are reasonable words and filters out "garbage" words according to a set
-of rules, for instance, if swish-e encounters a word that has no vowels, it doesn't index it. You can change these rules by editing the conf.h
+of rules, for instance, if swish-e encounters a word that has no vowels, it doesn't index it. You can change these rules by editing the config.h
 file in the src directory of the swish-e distribution package. By editing the rules, you may be able to index quite a few more words, or less,
 depending on your preference.
 
-Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>) C<WordCharacters>, C<BeginCharactes>, C<EndCharacters>,
+Configuration file directives (L<SWISH-CONFIG|SWISH-CONFIG>)
+C<WordCharacters>, C<BeginCharactes>, C<EndCharacters>,
 C<IgnoreFirstChar>, and C<IgnoreLastChar> also control what words swish indexes.
-Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues -- index a single
-file that contains words that are are are not indexing as you expect and use -D -v 4 to out debugging information
+
+Use of the command line arguments C<-k> and C<-D> are useful when debugging these issues --
+index a single file that contains words that are or are not indexing as you expect and use -D -v 4 to out debugging information
 about the index.  A useful command might be:
 
     ./swish-e -f index.swish-e -D -v 4 | grep -v ^0
@@ -72,7 +74,7 @@ Yes, you can. Just remember that swish-e retains capitalization for all characte
 
 Also, the TranslateCharacters directive (L<SWISH-CONFIG|SWISH-CONFIG>) can translate characters while indexing
 and searching.  C<TranslateCharacters :ascii7:> is a predefined set of characters that will translate eight bit characters to ascii7 characters.
-Using the :ascii7: rule will e.g. translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or "celik"
+Using the :ascii7: rule will translate "Ääç" to "aac". This means: searching "Çelik", "çelik" or "celik"
 will all match the same word.  
 
 
@@ -108,19 +110,6 @@ edit the line in your configuration file:
 
     MetaNames DC.subject meta1 meta2
 
-=head2 I want to generate a list of files to be indexed and pass it to swish-e. 
-
-One thing you can do is make a simple script to generate a configuration file full of IndexDir directives.
-For instance, make a separate file called files.conf and put something like this in it:
-
-    IndexDir /this_is_file_1/file.html
-    IndexDir /usr/local/www
-    IndexDir file2.html /some/directory/
-    ...
-
-Then call swish-e like this (assuming you're using a main swish-e.conf file): 
-
-swish-e -c swish-e.conf files.conf
 
 =head2 I run out of memory trying to index my files. 
 
@@ -131,7 +120,9 @@ everything at once. You can then merge all the smaller pieces together with the 
 Another option is use the C<-e> switch.  This will require less memory, but indexing will take longer as
 not all data will be stored in memory while indexing.
 
-=head2 I can't limit search to title/body/comment. I can't search with meta names, all the names are indexed as "plain" 
+=head2 I can't limit search to title/body/comment.
+
+I can't search with meta names, all the names are indexed as "plain" 
 
 Check in the config.h file if #define INDEXTAGS is set to 1. If it is, change it to 0, recompile, and index again. When INDEXTAGS is 1,
 ALL the tags are indexed as plain text, that is you index "title", "h1", and so on, AND they loose their indexing meaning. If INDEXTAGS is
@@ -140,7 +131,7 @@ directive.
 
 =head2 Do I need to reindex my site each time I upgrade to a new Swish-e version? 
 
-Yes. At times it might not strictly necessary, but since you don't really know if anything in the index has changed,
+Yes. At times it might not strictly be necessary, but since you don't really know if anything in the index has changed,
 it is a good rule to reindex anyway. 
 
 =head2 Can I index PDF or Winword documents with swish-e?
@@ -150,6 +141,127 @@ To index other document types you have to install a filter into swish-e using th
 These filters have to translate a document into the swish-e known formats (e.g. text or html). You can use
 "xpdf" or "ghostscript" to convert pdf to text or e.g. "catdoc" to convert winword documents on unix.  
 For details, please have a look on the filter configuration part.
+
+=head2 How do I make swish highlight words in search results?
+
+Swish-e can't because it doesn't have access to the source documents when returning results,
+of course.  But a front-end program of your creation can highlight terms.  Your program can open up the
+source documents and then use regular expressions to replace search terms with highlighted or bolded
+words.
+
+But, that will fail with all but the most simple source documents.  For HTML documents, for example,
+you must parse the doucment into words and tags (and comments).  A word you wish to highlight may span
+mutilple HTML tags, or be a word in a URL and you wish to highlight the entire <A> text.
+
+Perl modules such as HTML::Parser
+and XML::Parser make this possible.  Then you need to consider that swish uses settings such as
+WordCharacters, BeginCharacters, EndCharacters, IgnoreFirstChar, and IgnoreLast, char to define a
+"word".  That is, you can't consider that a string of characters with white space on each side is a word.
+
+Then things like TranslateCharacters, and HTML Entities may transform a source word into something else,
+as far as swish is concerned.  Finally, searches can be limited by metanames, so you may need to
+limit your highlighting to only parts of the source document.
+Throw phrase searches and stopwords into the equation
+and you can see that it's not a trivial problem to solve.
+
+All hope is not lost, thought, as swish does provide some help.
+Using the C<-H> option will return in the headers the current index (or indexes) settings
+for WordCharacters (and others) required to parse your source documents as swish parses them during indexing,
+and will return a "Parsed Words:" header that will show how swish parsed the query internally.
+If you use word stemming then you will also need to stem each word in your document before comparing
+with the "Parsed Words:" returned by swish.  The swish-e stemming code is available either by using
+the swish-e Perl module or C library (included with the swish-e distribution), or by using the SWISH::Stemmer
+module available on CPAN.
+
+=head2 My system admin says swish uses too much of the CPU!
+
+That's a good thing!  That expensive CPU is suppose to be busy.
+
+Indexing takes a lot of work -- to make indexing fast much of the work is done in memory, and
+moving all that memory around requires CPU time.  But, there's two things you can try:
+
+The C<-e> option will run swish in economy mode, which uses the disk to store data while indexing.
+This makes swish run somewhat slower, but also uses less memory.  Since swish is writing to disk more often
+it will be spending more time waiting on I/O and less time in CPU.  Maybe.
+
+The other thing is to simply lower the priority of the job using the nice(1) command:
+
+    /bin/nice -15 swish-e -c search.conf
+
+If concerned about searching time, make sure you are using the -b and -m switches to only return
+a page at a time.  If you know that your result sets will be large, and that you wish to return results
+one page at a time, and that often times many pages of the same query will be requested, you may be smart
+to request all the documents on the first request, and then cache the results to a temporary file.  The
+perl module File::Cache makes this very simple to accomplish.
+
+=head2 How do I pass swish a list of files to index?
+
+Currently, there is not a configuration directive to include a file that contains a list of files to index.
+But, there is a directive to include another configuration file.
+
+    IncludeConfigFile /path/to/other/config
+
+And in C</path/to/other/config> you can say:
+
+    IndexDir file1 file2 file3 file4 file5 ...
+    IndexDir file20 file21 file22
+
+You may also specify more than one configuration file on the command line:
+
+    ./swish-e -c config_one config_two config_three
+
+Another option is to create a directory with symbolic links of the files to index,
+and index just that directory.
+
+
+=head2 How do I use Swish-E on a Windows Server?
+
+Install Linux?
+
+=head2 Can I add/remove files from an index?
+
+Not really.  Swish currently has no way to add or remove items from its index.
+
+About the only way to delete items from the index is to stat(2) all the results to make sure that
+all the files still exist.
+
+Incremental additions can be handled in a couple of ways, depending on your situation.  It's probably
+easiest to create one main index every night (or every week), and then create an index of just the new files
+between main indexing jobs and use the C<-f> option to pass both indexes to swish while searching.
+
+You can merge the indexes into one index (instead of using -f),
+but it's not clear that this has any advantage over searching multiple indexes.  Using C<-f> gives
+access to the individual headers of both indexes, while C<-M> merges the headers, and merging indexes with
+different indexing settings (Stemming, WordCharacters) may produce odd results.
+This is a question for the swish-e discussion list.
+
+How does one create the incremental index?
+
+One method is by using the C<-N> switch to pass a file path to swish when indexing.
+Swish will only index files that have a last modificaiton date newer that the file
+supplied with the C<-N> switch.
+This option has the disadvantage that swish must stat all the files in the directory tree to just
+find a few new files.  Also, if you use the swish index file as the file passed to -N there may be files
+that were added after indexing was started, but before the index file was written.  This could result in
+a file not being added to the index.
+
+Another option is to maintain a parallel directory tree that contains symlinks pointing to the main files.
+When a new file is added you create a symlink to the real file in the parallel directory tree.
+Then just index the symlink directory to generate the incremental index.
+
+This option has the disadvantage that you need to have a central program that creates the new files that can
+can also create the symlinks.  But, indexing is quite fast since swish only has to look at the files that need to
+be indexed.  When you run full indexing you simply unlink (delete) all the symlinks.
+
+Both of these methods have issues where files could end up in both indexes, or files being left out of an index.
+Use of file locks while indexing, and hash lookups during searches can help prevent these problems.
+
+=head2 How do I spider other websites and combine it with my own (filesystem) index?
+
+You can either merge C<-M> two indexes into a single index,
+or use C<-f> to specify more than one index while searching.
+
+
 
 
 =head1 Document Info
