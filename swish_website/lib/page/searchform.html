@@ -1,0 +1,29 @@
+  <!-- noindex -->
+  <div class="subHeader">
+
+   <form method="get"
+        action="[% link_to_page('search','', 1 ) %]"
+        enctype="application/x-www-form-urlencoded"
+        class="srchform">
+
+         <table width='100%'>
+          <tr>
+           <td align='left'>
+            [% link_to_page( 'index' )     %] |
+            [% link_to_page( 'support' )   %] |
+            [% link_to_page( 'download' ) %]
+           </td>
+           <td align='right'>
+
+
+     <input maxlength="200" value="" size="30" name="query" type="text">
+     <input value="search" name="submit" type="submit" class='button'>
+
+                </td>
+           </tr>
+          </table>
+
+   </form>
+
+  </div>
+  <!-- index -->

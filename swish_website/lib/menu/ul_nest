@@ -1,0 +1,38 @@
+<!-- noindex -->
+[%
+
+DEFAULT class = '';
+
+    "<ul class=\"$class\">";
+
+FOREACH item = menu.items;
+
+    INCLUDE menu_link
+      link = {
+        text     = item.name
+        url      = site.topdir _ item.url
+        class    = item.hot ? 'thisfile' : class
+        title    = item.tooltip
+      };
+
+    IF item.subs;
+        INCLUDE menu/ul_nest
+          menu = item
+          class = 'submenu';
+    END;
+
+END;
+
+-%]
+</ul>
+<!-- index -->
+
+
+[% BLOCK menu_link %]
+
+
+<li class="[% class %]">
+    <a href="[% link.url %]"[% " title=\"$link.title\"" IF link.title %]>[%- link.text -%]</a>
+    [% IF item.here; "&#8658;"; ELSIF item.hot;  "&#8659;"; END; -%]
+</li>
+[% END -%]

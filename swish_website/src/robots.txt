@@ -1,0 +1,16 @@
+[% META type = 'text' %]
+# $id$
+#
+#------------------------------------------------------------------------
+User-agent: *
+Disallow: //
+Disallow: /search
+Disallow: /devel/docs
+# off site links
+Disallow: /scripts
+Disallow: /scripts.html
+Disallow: /who
+Disallow: /who.html
+# These are offsite, but alllow
+# Disallow: /demos.html
+

@@ -1,0 +1,375 @@
+#![%- META type = 'text' -%]
+[% locate.in_path( 'foo') || locate.in_path( 'perl' ) %]
+
+package SwishAPISearch;
+use strict;
+use warnings;
+
+######################################################################
+# Skeleton CGI script for searching a Swsih-e index with SWISH::API.
+# see below for documenation or run "perldoc search.cgi"
+#
+# Copyright 2003, 2004 Bill Moseley - All rights reserved.
+#
+# $Id$
+#
+#######################################################################
+
+use vars '$VERSION';
+$VERSION = '1.1';
+
+
+# This needs to be set to where Swish-e installed the Perl modules 
+
+# This is set to where Swish-e's "make install" installed the helper modules.
+use lib qw( [%- locate.swish_perl_lib -%] );
+use lib qw( [%- self.plugin_dir -%] );
+
+#------------------- Modules --------------------------------------
+use SWISH::API;             # for searching the index file
+use SWISH::ParseQuery;      # Parses the query string
+use SWISH::PhraseHighlight; # for highlighting
+use CGI;                    # provides a param() method -- could use Apache::Request, for example.
+use HTML::FillInForm;       # makes the form elements sticky
+use Template;               # Template-Toolkit: http://tt2.org or see http://search.cpan.org
+
+
+
+
+#-------------------- Defaults/Parameters --------------------------
+# Default config settings
+#
+# prop_to_meta defines the metas that are used for searching the text displayed
+# by the give property.  This is only needed when the property name and metaname
+# do not match up.
+# prop_to_meta => {
+#   swishdescription => [ qw/ swishdefault / ],
+#   swishtitle => [ qw/ swishdefault swishtitle / ],
+# },
+# Which says when displaying the swishdescription property use the search words
+# from the swishdefault metaname (if any) for searching.  And when displaying the
+# swishtitle property use words form both swishdefault and swishtitle (when
+# indexing HTML swish indexes the <title> along with the body under the swishdefault
+# metaname).
+
+
+use vars qw/ %config %highlight_settings %site_cache /;
+
+%config = (
+    tt_options => {
+        INCLUDE_PATH    => '[% self.include_path.join(':') %]',
+        PLUGIN_BASE     => ['My'],
+        PRE_PROCESS     => 'config/main',
+        WRAPPER         => 'page/wrapper.tt',
+        RECURSION       => 1,
+    },
+    index        => '[% swish.index_file %]',
+    page_size    => 10,                          # numbe of results/page
+    title        => 'Swish Example Search Page',
+    template     => 'page/search.html',
+    prop_to_meta => {
+        swishdescription => [ qw/ swishdefault / ],
+        swishtitle => [ qw/ swishdefault swishtitle / ],
+    },
+);
+
+
+# Params used for the highlighting modules
+
+%highlight_settings = (
+    show_words      => 8,  # number of words to show
+    occurrences     => 5,   # number of words to show
+    max_words       => 100, # max number of words to show if not highlighted words found
+    highlight_on    => '<span class="highlight">',
+    highlight_off   => '</span>',
+);
+
+#--------------------- Code ----------------------------------------
+# Entry point for normal CGI programs.
+# Should be object creation
+
+unless ( $ENV{MOD_PERL} ) {
+
+    $site_cache{_singleton} ||= {
+        config  => \%config,  # no deep copy
+    };
+
+    process_request( $site_cache{_singleton}  );
+}
+
+
+# Entry point for mod_perl
+sub handler {
+    my $r = shift;
+
+    require Storable;
+
+    my $id = $r->dir_config('site_id') || '_singleton';
+
+    unless ( $site_cache{ $id } ) {
+
+        $site_cache{ $id } ||= {
+            config => Storable::dclone( \%config ), # deep copy
+        };
+
+        my $config =  $site_cache{ $id }{config};
+
+        for ( qw/  index page_size title temmplate / ) {
+            my $value = $r->dir_config( $_ );
+            $config->{$_} = $value if defined $value;
+        }
+
+        if ( my $template_path = $r->dir_config('template_path') ) {
+            unshift @{$config->{INCLUDE_PATH}}, $template_path;
+        }
+    }
+
+    process_request( $site_cache{ $id } );
+
+    return Apache::Constants::OK();
+}
+
+
+
+#-------------------------------------------------------------------
+# Process a request
+# Passes in a config hash
+#-------------------------------------------------------------------
+
+
+sub process_request {
+    my ( $instance ) = @_;  # bad name since it persists between requests
+
+    my $cgi = CGI->new;  # could also be Apache::Request or other fast access to CGI params
+
+    my $config = $instance->{config};
+
+    my $request = {
+        cgi         => $cgi,
+        myself      => $cgi->url(-path=>1),
+        query       => $cgi->param('query') || undef,
+        metaname    => $cgi->param('metaname') || undef,
+        page        => $cgi->param('page') || 1,
+        pagesize    => $cgi->param('size') || $config->{page_size} || 10,
+        pid         => $$,
+    };
+
+    $instance->{request} = $request;
+
+    $instance->{rooturl} = '[% site.url.root %]';
+
+
+    # If a query was passed in then run the search
+    if ( $request->{query} ) {
+
+        #  Limit by metaname
+        $request->{swish_query} = $request->{metaname}
+            ? "$request->{metaname}=( $request->{query} )"
+            : $request->{query};
+
+        $instance->{result} = run_query( $instance );
+    }
+
+
+    # Generate output
+    my $output = generate_view( $instance );
+
+
+    # Run output through HTML::FillInForm to make form elements sticky
+
+    my $fill_in_object = HTML::FillInForm->new;
+    print $cgi->header;
+    print $fill_in_object->fill( scalarref => $output, fobject => $cgi );
+
+    delete $instance->{request};  # clean up the request
+    delete $instance->{result};
+}
+
+
+
+
+# Subroutine to run the Swish query.  Returns a hash reference.
+# A better design might be to return an object with methods for accessing the data.
+
+sub run_query {
+    my ( $instance ) = @_;
+
+    my $config = $instance->{config};
+    my $request = $instance->{request};
+
+    my $page = $request->{page};
+    my $pagesize = $request->{pagesize};
+
+    $page = 1 unless defined $page  && $page =~ /^\d+$/;
+    $pagesize = 15 unless defined $pagesize && $pagesize =~ /^\d+$/ && $pagesize > 0 && $pagesize < 50; 
+
+
+    # Create the swish object if not cached.
+    # Also read in the header data and initialize the highlighting module
+
+    my $swish = $instance->{swish};
+    my $msg;
+
+    if ( ! $swish ) {
+        $swish = SWISH::API->new( $config->{index} );
+        die "Failed to create SWISH::API object" unless $swish;
+        return { message => check_swish_error( $swish ) } if $swish->Error;
+
+        $instance->{swish} = $swish;  # cache for next request or for template
+
+        # Note, this only works with a single index file
+        my %headers = map { lc($_) => ($swish->HeaderValue( $config->{index}, $_ )||'') } $swish->HeaderNames;
+
+        # and cache the highlighting object
+        # Note if searching more than one index with differing settings then need one
+        # highlight object for each index
+        $instance->{highlight_object} = SWISH::PhraseHighlight->new( \%highlight_settings, \%headers, { swish => $swish } );
+    }
+
+
+    # Run the search.  See SWISH::API for more options (like sorting)
+
+    my $results = $swish->Query( $request->{swish_query} );
+
+    return { message => check_swish_error( $swish ) } if $swish->Error;
+    return { hits  => 0 } unless $results->Hits;
+
+
+    # Seek to the first record of the page requested
+
+    $results->SeekResult( ($page-1) * $pagesize );
+
+    return { message => check_swish_error( $swish ) } if $swish->Error;
+
+    my @records;
+    my $result;
+    my $cnt = $pagesize;
+
+
+
+    # Store the result objects in an array
+    push @records, $result while $cnt-- && ($result = $results->NextResult);
+
+
+    # Return the results structure
+
+    my %result = (
+        results_obj => $results,
+        results     => \@records,
+        hits        => $results->Hits,
+        shown       => scalar @records,
+        page        => $page,
+        start       => ($page-1) * $pagesize,
+    );
+
+
+
+
+    $result{prev} = $page-1 if $page > 1;
+    $result{next} = $page+1 if $result{start} + $pagesize < $result{hits};
+
+    return \%result;
+}
+
+
+# Return swish error messages
+
+sub check_swish_error {
+    my $swish = shift;
+
+    return unless $swish->Error;
+    my $message = join( ' ', $swish->ErrorString, $swish->LastErrorMsg );
+    die "$message\n" if $swish->CriticalError;
+    return $message;
+
+}
+
+
+# This generates the output from the templates
+
+sub generate_view{
+    my ( $instance ) = @_;
+
+    my $config = $instance->{config};
+    my $result = $instance->{result};
+
+    $instance->{template_object} ||= Template->new( $config->{tt_options} ) 
+        || die $Template::ERROR, "\n";
+
+    my $template = $instance->{template_object};
+
+
+    # Create a highlight filter if any results
+    create_highlight_filter( $instance ) if $result->{hits};
+
+
+    my $template_output;
+    $template->process( $config->{template}, $instance, \$template_output ) || die $template->error;
+
+    return \$template_output;
+
+}
+
+# Creates a filter for highlighting search terms
+
+sub create_highlight_filter {
+    my ( $instance ) = @_;
+
+    my $result = $instance->{result};
+    my $config = $instance->{config};
+
+
+    # Now create a filter 'highlight' for use in the template to highlight terms
+    # Usage requires passing in the *metaname* associated with the property
+    # that's being highlighted -- this allows the program to know what
+    # search words to use in highlighting 
+
+    my $parsed_query = parse_query( join ' ', $result->{results_obj}->ParsedWords( $config->{index} ) );
+
+
+
+
+    # save for Data::Dumper
+    $result->{parsed_query} = $parsed_query;
+
+    # Now create the Template-Toolkit "filter"
+
+    $instance->{template_object}->context->define_filter( 'highlight',
+        sub {
+            my ( $context,  $property_name, $result_object ) = @_;
+
+            my @phrases;
+
+            # Do we need to map the property name to a metaname?
+            my $metas = $config->{prop_to_meta}{$property_name} || [ $property_name ];
+
+
+            # Now collect the query words used, if any
+            # Might also check for duplicate phrases for a small optimization
+
+            for ( @$metas ) {
+                push @phrases,  @{$parsed_query->{$_}} if $parsed_query->{$_};
+            }
+
+            # Longest phrases first
+            @phrases = sort { @$b <=> @$a } @phrases;
+
+
+            # Here's the filter factory
+            return sub {
+                my $text = shift;
+                $instance->{highlight_object}->highlight( \$text, \@phrases, $property_name, $result_object );
+                return $text;
+            }
+        }, 
+
+        1,
+    );
+}
+
+
+
+# vim: set filetype=perl:
+
+
+
