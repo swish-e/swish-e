@@ -268,6 +268,13 @@ int     icomp(const void *s1, const void *s2)
     return (*(int *) s1 - *(int *) s2);
 }
 
+/* Compare two positions as stored in posdata */
+/* This routine is used by qsort */
+int     icomp_posdata(const void *s1, const void *s2)
+{
+    return (GET_POSITION(*(int *) s1) - GET_POSITION(*(int *) s2));
+}
+
 /* 01/2001 Jose Ruiz */
 /* Compare RESULTS using RANK */
 /* This routine is used by qsort */
@@ -1132,7 +1139,6 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     int     j,
             x,
             filenum,
-            structure,
             frequency,
             found,
             len,
@@ -1150,7 +1156,7 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
     int     sz_buffer;
     unsigned char flag;
 
-    x = j = filenum = structure = frequency = len = curmetaID = index_structure = index_structfreq = 0;
+    x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     nextposmetaname = 0L;
 
 
@@ -1241,18 +1247,18 @@ RESULT_LIST *getfileinfo(SWISH * sw, char *word, IndexFILE * indexf, int metaID)
             filenum = 0;
             do
             {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                uncompress_location_values(&s,&flag,&tmpval,&frequency);
                 filenum += tmpval;
 
-                    /* Store -1 in rank - This way delay its computation */
+                    /* Store -1 in rank - In this way, we can delay its computation */
                     /* This is very useful if we sorted by other property */
                 if(!l_rp)
                     l_rp = newResultsList(sw);
                 addtoresultlist(
                     l_rp, filenum,
                     -1,
-                    structure, tfrequency, frequency, indexf, sw);
-                uncompress_location_positions(&s,flag,frequency,l_rp->tail->position);
+                    tfrequency, frequency, indexf, sw);
+                uncompress_location_positions(&s,flag,frequency,l_rp->tail->posdata);
             }
             while ((unsigned long)(s - buffer) != nextposmetaname);
         }
@@ -1443,9 +1449,9 @@ RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, 
             int     newRank = 0;
 
             if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
             if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->structure, r2->indexf, r2->filenum );
+                r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->indexf, r2->filenum );
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
             /*
@@ -1456,9 +1462,9 @@ RESULT_LIST *andresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2, 
             if(!new_results_list)
                 new_results_list = newResultsList(sw);
 
-            addtoresultlist(new_results_list, r1->filenum, newRank, r1->structure & r2->structure, 0, r1->frequency + r2->frequency, r1->indexf, sw);
-            CopyPositions(new_results_list->tail->position, 0, r1->position, 0, r1->frequency);
-            CopyPositions(new_results_list->tail->position, r1->frequency, r2->position, 0, r2->frequency);
+            addtoresultlist(new_results_list, r1->filenum, newRank, 0, r1->frequency + r2->frequency, r1->indexf, sw);
+            CopyPositions(new_results_list->tail->posdata, 0, r1->posdata, 0, r1->frequency);
+            CopyPositions(new_results_list->tail->posdata, r1->frequency, r2->posdata, 0, r2->frequency);
             r1 = r1->next;
             r2 = r2->next;
         }
@@ -1519,28 +1525,27 @@ RESULT_LIST *orresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
         {
             /* Compute rank if not yet computed */
             if(r1->rank == -1)
-                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+                r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
 
             if(r2->rank == -1)
-                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->structure, r2->indexf, r2->filenum );
+                r2->rank = getrank( sw, r2->frequency, r2->tfrequency, r2->posdata, r2->indexf, r2->filenum );
 
             rp = (RESULT *) Mem_ZoneAlloc(sw->Search->resultSearchZone, sizeof(RESULT) + (r1->frequency + r2->frequency) * sizeof(int));
             memset( rp, 0, sizeof(RESULT));
             rp->fi.filenum = rp->filenum = r1->filenum;
 
             rp->rank = r1->rank + r2->rank;
-            rp->structure = r1->structure | r2->structure;
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
             rp->indexf = r1->indexf;
 
             if (r1->frequency)
             {
-                CopyPositions(rp->position, 0, r1->position, 0, r1->frequency);
+                CopyPositions(rp->posdata, 0, r1->posdata, 0, r1->frequency);
             }
             if (r2->frequency)
             {
-                CopyPositions(rp->position, r1->frequency, r2->position, 0, r2->frequency);
+                CopyPositions(rp->posdata, r1->frequency, r2->posdata, 0, r2->frequency);
             }
 
             r1 = r1->next;
@@ -1678,7 +1683,7 @@ RESULT_LIST *notresultlist(SWISH * sw, RESULT_LIST * l_rp, IndexFILE * indexf)
         {
             if(!new_results_list)
                 new_results_list = newResultsList(sw);
-            addtoresultlist(new_results_list, i, 1000, IN_ALL, 0, 0, indexf, sw);
+            addtoresultlist(new_results_list, i, 1000, 0, 0, indexf, sw);
         }
     }
 
@@ -1720,7 +1725,7 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
             {
                 for (j = 0; j < r2->frequency; j++)
                 {
-                    if ((r1->position[i] + distance) == r2->position[j])
+                    if ((GET_POSITION(r1->posdata[i]) + distance) == GET_POSITION(r2->posdata[j]))
                     {
                         found++;
                         if (allpositions)
@@ -1729,7 +1734,7 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
                         else
                             allpositions = (int *) emalloc(found * sizeof(int));
 
-                        allpositions[found - 1] = r2->position[j];
+                        allpositions[found - 1] = r2->posdata[j];
                         break;
                     }
                 }
@@ -1738,9 +1743,9 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
             {
                 /* Compute newrank */
                 if(r1->rank == -1)
-                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->structure, r1->indexf, r1->filenum );
+                    r1->rank = getrank( sw, r1->frequency, r1->tfrequency, r1->posdata, r1->indexf, r1->filenum );
                 if(r2->rank == -1)
-                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->structure, r2->indexf, r2->filenum );
+                    r2->rank = getrank( sw, r2->frequency, r1->tfrequency, r2->posdata, r2->indexf, r2->filenum );
 
                 newRank = (r1->rank + r2->rank) / 2;
                 /*
@@ -1750,9 +1755,9 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
                 if(!new_results_list)
                     new_results_list = newResultsList(sw);
                 
-                addtoresultlist(new_results_list, r1->filenum, newRank, r1->structure & r2->structure, 0, found, r1->indexf, sw);
+                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, r1->indexf, sw);
 
-                CopyPositions(new_results_list->tail->position, 0, allpositions, 0, found);
+                CopyPositions(new_results_list->tail->posdata, 0, allpositions, 0, found);
                 efree(allpositions);
             }
             r1 = r1->next;
@@ -1776,7 +1781,7 @@ RESULT_LIST *phraseresultlists(SWISH * sw, RESULT_LIST * l_r1, RESULT_LIST * l_r
 */
 
 
-void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int structure, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
+void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, IndexFILE * indexf, SWISH * sw)
 {
     RESULT *newnode;
 
@@ -1786,7 +1791,6 @@ void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int structure, i
     newnode->fi.filenum = newnode->filenum = filenum;
 
     newnode->rank = rank;
-    newnode->structure = structure;
     newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
     newnode->indexf = indexf;
@@ -1821,7 +1825,7 @@ RESULT *SwishNext(SWISH * sw)
             sw->Search->db_results->currentresult = res->next;
             /* If rank was delayed, compute it now */
             if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->indexf, res->filenum );
 
         }
     }
@@ -1838,7 +1842,7 @@ RESULT *SwishNext(SWISH * sw)
         {
             /* If rank was delayed, compute it now */
             if(res->rank == -1)
-                res->rank = getrank( sw, res->frequency, res->tfrequency, res->structure, res->indexf, res->filenum );
+                res->rank = getrank( sw, res->frequency, res->tfrequency, res->posdata, res->indexf, res->filenum );
 
             res->PropSort = getResultSortProperties(sw, res);
         }
@@ -1852,7 +1856,7 @@ RESULT *SwishNext(SWISH * sw)
             {
                             /* If rank was delayed, compute it now */
                 if(res2->rank == -1)
-                   res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->structure, res2->indexf, res2->filenum );
+                   res2->rank = getrank( sw, res2->frequency, res2->tfrequency, res2->posdata, res2->indexf, res2->filenum );
 
                 res2->PropSort = getResultSortProperties(sw, res2);
             }
@@ -2353,7 +2357,6 @@ RESULT_LIST *mergeresulthashlist(SWISH *sw, RESULT_LIST *l_r)
                     memset( newnode, 0, sizeof(RESULT));
                     newnode->fi.filenum = newnode->filenum = filenum;
                     newnode->rank = 0;
-                    newnode->structure = 0;
                     newnode->tfrequency = 0;
                     newnode->frequency = tot_frequency;
                     newnode->indexf = start->indexf;
@@ -2362,13 +2365,12 @@ RESULT_LIST *mergeresulthashlist(SWISH *sw, RESULT_LIST *l_r)
                     {
                         /* Compute rank if not yet computed */
                         if(tmp->rank == -1)
-                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->structure, tmp->indexf, tmp->filenum );
+                            tmp->rank = getrank( sw, tmp->frequency, tmp->tfrequency, tmp->posdata, tmp->indexf, tmp->filenum );
 
                         newnode->rank += tmp->rank;
-                        newnode->structure |= tmp->structure;
                         if (tmp->frequency)
                         {
-                            CopyPositions(newnode->position, pos_off, tmp->position, 0, tmp->frequency);
+                            CopyPositions(newnode->posdata, pos_off, tmp->posdata, 0, tmp->frequency);
                             pos_off += tmp->frequency;
                         }
 
@@ -2380,7 +2382,7 @@ RESULT_LIST *mergeresulthashlist(SWISH *sw, RESULT_LIST *l_r)
                     }
                     addResultToList(new_results_list,newnode);
                     /* Sort positions */
-                    swish_qsort(newnode->position,newnode->frequency,sizeof(int),&icomp);
+                    swish_qsort(newnode->posdata,newnode->frequency,sizeof(int),&icomp_posdata);
                 }
                 if(rp)
                     filenum = rp->filenum;

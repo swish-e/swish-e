@@ -146,10 +146,9 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
             fieldnum,
             frequency,
             metaname,
-            structure,
             tmpval,
             filenum,
-           *position;
+           *posdata;
     unsigned long    nextposmetaname;
     char    word[2];
     char   *resultword;
@@ -251,10 +250,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                 filenum = 0;
                 while(1)
                 {                   /* Read on all items */
-                    uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                    uncompress_location_values(&s,&flag,&tmpval,&frequency);
                     filenum += tmpval;
-                    position = (int *) emalloc(frequency * sizeof(int));
-                    uncompress_location_positions(&s,flag,frequency,position);
+                    posdata = (int *) emalloc(frequency * sizeof(int));
+                    uncompress_location_positions(&s,flag,frequency,posdata);
 
 
                     // if (sw->verbose >= 4)
@@ -287,9 +286,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                             printf(" Failed to lookup meta entry");
                             
 
-                        printf(" Struct:%x", structure);
                         printf(" Freq:%d", frequency);
-                        printf(" Pos:");
+                        printf(" Pos/Struct:");
                     }
                     else if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
                         meta_used[ metaname ]++;
@@ -297,7 +295,6 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                     {
                         printf(" [%d", metaname);
                         printf(" %d", filenum);
-                        printf(" %x", structure);
                         printf(" %d (", frequency);
                     }
                     
@@ -308,20 +305,20 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf)
                         //if (sw->verbose >= 4)
                         {
                             if (i)
-                                printf(",%d", position[i]);
+                                printf(",%d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                             else
-                                printf("%d", position[i]);
+                                printf("%d/%x", GET_POSITION(posdata[i]), GET_STRUCTURE(posdata[i]));
                         }
                         else if ( DEBUG_MASK & DEBUG_INDEX_WORDS)
                         {
                             if (i)
-                                 printf(" %d", position[i]);
+                                 printf(" %d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                             else
-                                 printf("%d", position[i]);
+                                 printf("%d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                         }
                     }
 
-                    efree(position);
+                    efree(posdata);
 
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
                         printf(")]");

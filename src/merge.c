@@ -45,7 +45,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input );
 static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_input, SWISH *sw_output );
 static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *filenum_map );
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int structure, int position );
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata );
 static void compress_entries( SWISH *sw );
 
 
@@ -743,10 +743,9 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
     int         i;
     int         j;
     int         frequency = 0;
-    int         structure;
     int         tmpval;
     int         filenum;
-    int        *position;
+    int        *posdata;
     int         sz_worddata;
     int         metaname = 0;
     int         word_count = 0;
@@ -798,17 +797,17 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 
             while(1)
             {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&structure,&frequency);
+                uncompress_location_values(&s,&flag,&tmpval,&frequency);
                 filenum += tmpval;
-                position = (int *) emalloc(frequency * sizeof(int));
-                uncompress_location_positions(&s,flag,frequency,position);
+                posdata = (int *) emalloc(frequency * sizeof(int));
+                uncompress_location_positions(&s,flag,frequency,posdata);
 
 
                 /* now we have the word data */
                 for (i = 0; i < frequency; i++)
-                    write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, structure, position[i] );
+                    write_word_pos( sw, indexf, sw_output, filenum_map, filenum, resultword, metaname, posdata[i]);
  
-                efree(position);
+                efree(posdata);
 
                 if ((s - worddata) == sz_worddata)
                     break;   /* End of worddata */
@@ -843,7 +842,7 @@ static void dump_index(SWISH * sw, IndexFILE * indexf, SWISH *sw_output, int *fi
 *
 ****************************************************************************/
 
-static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int structure, int position )
+static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, char *resultword, int metaID, int posdata )
 {
     int         new_file;
     int         new_meta;
@@ -883,7 +882,7 @@ static void write_word_pos( SWISH *sw_input, IndexFILE *indexf, SWISH *sw_output
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
         return;
 
-    addentry( sw_output, resultword, new_file, structure, metaID, position );
+    addentry( sw_output, resultword, new_file, GET_STRUCTURE(posdata), metaID, GET_POSITION(posdata) );
 
 
     /* Compress the entries ?  */

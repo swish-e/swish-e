@@ -365,11 +365,16 @@ typedef struct LOCATION
     struct LOCATION *next;
     int     metaID;
     int     filenum;
-    int     structure;
     int     frequency;
-    int     position[1];
+    int     posdata[1];
 }
 LOCATION;
+
+
+/* 2002/01 jmruiz macros for accesing POSITION and structure */
+#define SET_POSDATA(pos,str)  ((pos) << 8 | (str))
+#define GET_POSITION(pos)      ((pos) >> 8)
+#define GET_STRUCTURE(pos)     ((pos) & 0xff)
 
 typedef struct ENTRY
 {
@@ -566,7 +571,6 @@ typedef struct RESULT
     int     filenum;            /* there's an extra four bytes we don't need */
     FileRec fi;                 /* This is used to cache the properties and the seek index */
     int     rank;
-    int     structure;
     int     frequency;
     int     tfrequency;         /* Total frequency of result */
 
@@ -577,7 +581,7 @@ typedef struct RESULT
 
     RESULT_LIST *reslist;
 
-    int     position[0];
+    int     posdata[0];
 }
 RESULT;
 

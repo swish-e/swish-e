@@ -98,7 +98,7 @@ RESULT_LIST *orresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *);
 RESULT_LIST *notresultlist(SWISH *, RESULT_LIST *, IndexFILE *);
 RESULT_LIST *notresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *);
 RESULT_LIST *phraseresultlists(SWISH *, RESULT_LIST *, RESULT_LIST *, int);
-void addtoresultlist(RESULT_LIST *, int, int, int, int, int, IndexFILE *,SWISH *);
+void addtoresultlist(RESULT_LIST *, int, int, int, int, IndexFILE *,SWISH *);
 
 
 RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *);

@@ -1017,9 +1017,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp = (LOCATION *) new_location(idx);
         tp->filenum = filenum;
         tp->frequency = 1;
-        tp->structure = structure;
         tp->metaID = metaID;
-        tp->position[0] = position;
+        tp->posdata[0] = SET_POSDATA(position,structure);
 
         tp->next = NULL;
         en->currentlocation = NULL;
@@ -1059,9 +1058,8 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp = (LOCATION *) new_location(idx);
         tp->filenum = filenum;
         tp->frequency = 1;            /* count of times this word in this file:metaID */
-        tp->structure = structure;
         tp->metaID = metaID;
-        tp->position[0] = position;
+        tp->posdata[0] = SET_POSDATA(position,structure);
 
         /* add the new LOCATION onto the array */
         tp->next = efound->currentChunkLocationList;
@@ -1102,8 +1100,7 @@ void    addentry(SWISH * sw, char *word, int filenum, int structure, int metaID,
         tp = newtp;
     }
 
-    tp->position[tp->frequency++] = position;
-    tp->structure |= structure;  /* Just merged the structure elements! */
+    tp->posdata[tp->frequency++] = SET_POSDATA(position,structure);
 
 }
 
@@ -1320,7 +1317,6 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
             chunk_size,
             metaID,
             frequency,
-            structure,
             tmpval,
             filenum;
     int    *positions;
@@ -1450,7 +1446,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
                  while(chunk_size)
                  {                   /* Read on all items */
                      q = p;
-                     uncompress_location_values(&p,&flag,&tmpval,&structure,&frequency);
+                     uncompress_location_values(&p,&flag,&tmpval,&frequency);
                      filenum += tmpval;
 
                      if(frequency > MAX_STACK_POSITIONS)
@@ -1520,15 +1516,14 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
 {
     int     frequency,
             metaID,
-            structure,
             tmpval,
             r_filenum, 
             w_filenum,
-           *positions;
+           *posdata;
     int     i,j,k;
     unsigned long    r_nextposmeta;
     unsigned char   *w_nextposmeta;
-    int     local_positions[MAX_STACK_POSITIONS];
+    int     local_posdata[MAX_STACK_POSITIONS];
     unsigned char r_flag, *w_flag;
     unsigned char *p, *q;
 
@@ -1544,15 +1539,15 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
     r_filenum = w_filenum = 0;
     while(1)
     {                   /* Read on all items */
-        uncompress_location_values(&p,&r_flag,&tmpval,&structure,&frequency);
+        uncompress_location_values(&p,&r_flag,&tmpval,&frequency);
         r_filenum += tmpval;
        
         if(frequency <= MAX_STACK_POSITIONS)
-            positions = local_positions;
+            posdata = local_posdata;
         else
-            positions = (int *) emalloc(frequency * sizeof(int));
+            posdata = (int *) emalloc(frequency * sizeof(int));
 
-        uncompress_location_positions(&p,r_flag,frequency,positions);
+        uncompress_location_positions(&p,r_flag,frequency,posdata);
 
         if(n_files && ilp && ilp[r_filenum - 1])
         {
@@ -1569,22 +1564,22 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
                     for(k = i; k < ilp[r_filenum - 1]->n ; k++)
                     {
                         if(ilp[r_filenum - 1]->pos[2 * k] != metaID || 
-                           ilp[r_filenum - 1]->pos[2 * k + 1] > positions[j])
+                           ilp[r_filenum - 1]->pos[2 * k + 1] > GET_POSITION(posdata[j]))
                             break;  /* End */
                     }
-                    positions[j] -= (k-i);
+                    posdata[j] = SET_POSDATA(GET_POSITION(posdata[j]) - (k-i), GET_STRUCTURE(posdata[j]));
                 }
             } 
         }
                /* Store the filenum incrementally to save space */
-        compress_location_values(&q,&w_flag,r_filenum - w_filenum,structure,frequency, positions[0]);
+        compress_location_values(&q,&w_flag,r_filenum - w_filenum,frequency, posdata);
         w_filenum = r_filenum;
 
                /* store positions */
-        compress_location_positions(&q,w_flag,frequency,positions);
+        compress_location_positions(&q,w_flag,frequency,posdata);
 
-        if(positions != local_positions)
-            efree(positions);
+        if(posdata != local_posdata)
+            efree(posdata);
 
         if(!p[0])       /* End of chunk mark */
         {
@@ -1691,7 +1686,7 @@ void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
     int     i,
             j,
             k,
-            filenum,metaID,structure,frequency;
+            filenum,metaID,frequency;
     unsigned char flag;
     unsigned char *ptmp,
            *ptmp2,
@@ -1728,7 +1723,7 @@ void    sortChunkLocations(SWISH * sw, IndexFILE * indexf, ENTRY * e)
         compressed_data += sizeof(LOCATION *);
 
         metaID = uncompress2(&compressed_data);
-        uncompress_location_values(&compressed_data,&flag,&filenum,&structure,&frequency);
+        uncompress_location_values(&compressed_data,&flag,&filenum,&frequency);
         pi[0] = metaID;
         pi[1] = filenum;
         ptmp2 += 2 * sizeof(int);
@@ -2432,7 +2427,6 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
 {
     int      curmetaID, metaID,
              curfilenum, filenum,
-             structure,
              frequency,
              num_locs,
              bytes_size,
@@ -2443,8 +2437,8 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
     LOCATION *loc, *next;
     static unsigned char buffer[COALESCE_BUFFER_MAX_SIZE];
     unsigned char *coalesced_buffer;
-    int     *positions;
-    int      local_positions[MAX_STACK_POSITIONS];
+    int     *posdata;
+    int      local_posdata[MAX_STACK_POSITIONS];
 
 
     /* Check for new locations in the current chunk */
@@ -2505,7 +2499,7 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
             q += bytes_size;     /* Make room for size */
             num_locs = 0;
         }
-        uncompress_location_values(&p,&uflag,&filenum,&structure,&frequency);
+        uncompress_location_values(&p,&uflag,&filenum,&frequency);
         worst_case_size = sizeof(unsigned char *) + (3 + frequency) * 5;
 
         while ((q + worst_case_size) - buffer > sizeof(buffer))
@@ -2537,21 +2531,21 @@ void    coalesce_word_locations(SWISH * sw, IndexFILE * indexf, ENTRY *e)
         }
 
         if(frequency > MAX_STACK_POSITIONS)
-            positions = emalloc(frequency * sizeof(int));
+            posdata = emalloc(frequency * sizeof(int));
         else
-            positions = local_positions;
+            posdata = local_posdata;
 
-        uncompress_location_positions(&p,uflag,frequency,positions);
+        uncompress_location_positions(&p,uflag,frequency,posdata);
 
                 /* Store the filenum incrementally to save space */
-        compress_location_values(&q,&cflag,filenum - curfilenum,structure,frequency, positions[0]);
+        compress_location_values(&q,&cflag,filenum - curfilenum,frequency, posdata);
 
         curfilenum = filenum;
 
-        compress_location_positions(&q,cflag,frequency,positions);
+        compress_location_positions(&q,cflag,frequency,posdata);
 
         if(frequency > MAX_STACK_POSITIONS)
-            efree(positions);
+            efree(posdata);
 
         num_locs++;
 

@@ -239,17 +239,23 @@ static RankFactor ranks[] = {
 **                To avoid the loss of precission I use rank *10000,
 **                reduction *10000, factor *10000, etc...
 */
-int getrank(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, int filenum )
+int getrank(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, int filenum )
 {
     int          factor;
     int          rank;
     int          reduction;
+    int          structure;
     int             i;
 
     factor = 1;
 
     /* add up the multiplier factor based on where the word occurs */
-    if(structure != IN_FILE)
+
+    /* 2002/jmruiz - This must be rewritten */
+    for(structure = 0, i = 0; i < freq; i++)
+        structure |= GET_STRUCTURE(posdata[i]);
+
+    if(GET_STRUCTURE(structure) != IN_FILE)
         for (i = 0; i < numRanks; i++)
             if (ranks[i].mask & structure)
                 factor += ranks[i].rank;
@@ -289,12 +295,17 @@ int getrank(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, i
     return rank;
 }
 
-int getrank_old(SWISH * sw, int freq, int tfreq, int structure, IndexFILE *indexf, int filenum )
+int getrank_old(SWISH * sw, int freq, int tfreq, int *posdata, IndexFILE *indexf, int filenum )
 {
     double          factor;
     double          rank;
     double          reduction;
+    int             structure;
     int             i;
+
+    /* 2002/jmruiz - This must be rewritten */
+    for(structure = 0, i = 0; i < freq; i++)
+        structure |= GET_STRUCTURE(posdata[i]);
 
     factor = 1.0;
 
