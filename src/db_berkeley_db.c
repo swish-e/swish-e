@@ -39,41 +39,41 @@
   -- init structures for this module
 */
 
-void initModule_DB_db (SWISH  *sw)
+void    initModule_DB_db(SWISH * sw)
 {
     struct MOD_DB *Db;
 
-    Db = (struct MOD_DB *)emalloc(sizeof(struct MOD_DB));
-    
+    Db = (struct MOD_DB *) emalloc(sizeof(struct MOD_DB));
+
     Db->DB_name = (char *) estrdup("gdbm");
- 
+
     Db->DB_Create = DB_Create_db;
     Db->DB_Open = DB_Open_db;
     Db->DB_Close = DB_Close_db;
     Db->DB_Remove = DB_Remove_db;
-    
+
     Db->DB_InitWriteHeader = DB_InitWriteHeader_db;
     Db->DB_WriteHeaderData = DB_WriteHeaderData_db;
     Db->DB_EndWriteHeader = DB_EndWriteHeader_db;
-    
+
     Db->DB_InitReadHeader = DB_InitReadHeader_db;
     Db->DB_ReadHeaderData = DB_ReadHeaderData_db;
     Db->DB_EndReadHeader = DB_EndReadHeader_db;
-    
+
     Db->DB_InitWriteWords = DB_InitWriteWords_db;
     Db->DB_GetWordID = DB_GetWordID_db;
     Db->DB_WriteWord = DB_WriteWord_db;
     Db->DB_WriteWordHash = DB_WriteWordHash_db;
     Db->DB_WriteWordData = DB_WriteWordData_db;
     Db->DB_EndWriteWords = DB_EndWriteWords_db;
-    
+
     Db->DB_InitReadWords = DB_InitReadWords_db;
     Db->DB_ReadWordHash = DB_ReadWordHash_db;
     Db->DB_ReadFirstWordInvertedIndex = DB_ReadFirstWordInvertedIndex_db;
     Db->DB_ReadNextWordInvertedIndex = DB_ReadNextWordInvertedIndex_db;
     Db->DB_ReadWordData = DB_ReadWordData_db;
     Db->DB_EndReadWords = DB_EndReadWords_db;
-    
+
     Db->DB_InitWriteFiles = DB_InitWriteFiles_db;
     Db->DB_WriteFile = DB_WriteFile_db;
     Db->DB_EndWriteFiles = DB_EndWriteFiles_db;
@@ -81,18 +81,25 @@ void initModule_DB_db (SWISH  *sw)
     Db->DB_InitReadFiles = DB_InitReadFiles_db;
     Db->DB_ReadFile = DB_ReadFile_db;
     Db->DB_EndReadFiles = DB_EndReadFiles_db;
-    
+
     Db->DB_InitWriteSortedIndex = DB_InitWriteSortedIndex_db;
     Db->DB_WriteSortedIndex = DB_WriteSortedIndex_db;
     Db->DB_EndWriteSortedIndex = DB_EndWriteSortedIndex_db;
-     
+
     Db->DB_InitReadSortedIndex = DB_InitReadSortedIndex_db;
     Db->DB_ReadSortedIndex = DB_ReadSortedIndex_db;
     Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_db;
 
+
+#ifdef PROPFILE
+    Db->DB_WriteProperty = DB_WriteProperty_db;
+    Db->DB_ReadProperty = DB_ReadProperty_db;
+    Db->DB_Reopen_PropertiesForRead = DB_Reopen_PropertiesForRead_db;
+#endif
+
     sw->Db = Db;
 
-  return;
+    return;
 }
 
 
@@ -100,11 +107,11 @@ void initModule_DB_db (SWISH  *sw)
   -- release all wired memory for this module
 */
 
-void freeModule_DB_db (SWISH *sw)
+void    freeModule_DB_db(SWISH * sw)
 {
-   efree(sw->Db->DB_name);
-   efree(sw->Db);
-   return;
+    efree(sw->Db->DB_name);
+    efree(sw->Db);
+    return;
 }
 
 
@@ -119,170 +126,235 @@ void freeModule_DB_db (SWISH *sw)
  -- return: 0/1 = none/config applied
 */
 
-int configModule_DB_db  (SWISH *sw, StringList *sl)
+int     configModule_DB_db(SWISH * sw, StringList * sl)
 {
- // struct MOD_DB_db *md = sw->DB_db;
- // char *w0    = sl->word[0];
- int  retval = 1;
+    // struct MOD_DB_db *md = sw->DB_db;
+    // char *w0    = sl->word[0];
+    int     retval = 1;
 
 
-  retval = 0; // tmp due to empty routine
+    retval = 0;                 // tmp due to empty routine
 
-  return retval;
+    return retval;
 }
 
 
 
-struct Handle_DB_db  *open_db_files(char *dbname, u_int32_t flags)
+struct Handle_DB_db *open_db_files(char *dbname, u_int32_t flags)
 {
-   char *tmp;
-   DB *dbp;
-   struct Handle_DB_db *DB;
-   int ret;
+    char   *tmp;
+    DB     *dbp;
+    struct Handle_DB_db *DB;
+    int     ret;
 
-          /* Allocate structure */
-   DB = (struct Handle_DB_db  *) emalloc(sizeof(struct Handle_DB_db));
-   DB->wordcounter = 0;
+    /* Allocate structure */
+    DB = (struct Handle_DB_db *) emalloc(sizeof(struct Handle_DB_db));
 
-   tmp = emalloc(strlen(dbname)+7+1);
-          /* Create index DB */
-     
-          /* db file to store header */
-          /* we will use a hash for the pair values */
-   sprintf(tmp,"%s_hdr.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+    DB->wordcounter = 0;
+
+    tmp = emalloc(strlen(dbname) + 7 + 1);
+
+
+    /* Create index DB */
+
+    /* db file to store header */
+    /* we will use a hash for the pair values */
+
+    sprintf(tmp, "%s_hdr.db", dbname);
+
+
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0) {
+    }
+
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
-   DB->dbf_header = dbp;
+    }
+    DB->dbf_header = dbp;
 
-      /* db file to store words */
-   sprintf(tmp,"%s_wds.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+
+
+    /* db file to store words */
+
+    sprintf(tmp, "%s_wds.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0) {
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
+    }
 
-   DB->dbf_words = dbp;
+    DB->dbf_words = dbp;
 
-      /* db file to store word's data */
-   sprintf(tmp,"%s_wdd.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+
+
+    /* db file to store properties */
+
+    sprintf(tmp, "%s_prp.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0) {
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
-   DB->dbf_worddata = dbp;
+    }
 
-      /* db file to store word's inverted index */
-   sprintf(tmp,"%s_wii.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+    DB->dbf_properties = dbp;
+
+
+
+    /* db file to store word's data */
+
+    sprintf(tmp, "%s_wdd.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_BTREE, flags, 0664)) != 0) {
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
-   DB->dbf_invertedindex = dbp;
+    }
+    DB->dbf_worddata = dbp;
 
-      /* db file to store docs's data */
-   sprintf(tmp,"%s_doc.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+
+
+    /* db file to store word's inverted index */
+
+    sprintf(tmp, "%s_wii.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0) {
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_BTREE, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
-   DB->dbf_docs = dbp;
+    }
+    DB->dbf_invertedindex = dbp;
 
-      /* db file to store sorted indexes */
-   sprintf(tmp,"%s_srt.db",dbname);
-   if ((ret = db_create(&dbp, NULL, 0)) != 0) {
+
+
+    /* db file to store docs's data */
+
+    sprintf(tmp, "%s_doc.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
-   }
-   if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0) {
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
         dbp->err(dbp, ret, "%s", tmp);
         progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
-   }
-   DB->dbf_sorted_indexes = dbp;
+    }
+    DB->dbf_docs = dbp;
 
-   efree(tmp);
 
-   return DB;
+
+    /* db file to store sorted indexes */
+
+    sprintf(tmp, "%s_srt.db", dbname);
+    if ((ret = db_create(&dbp, NULL, 0)) != 0)
+    {
+        progerr("db_berkeley_db.c error in db_create: %s\n", db_strerror(ret));
+    }
+    if ((ret = dbp->open(dbp, tmp, NULL, DB_HASH, flags, 0664)) != 0)
+    {
+        dbp->err(dbp, ret, "%s", tmp);
+        progerr("db_berkeley_db.c error in db->open: %s\n", db_strerror(ret));
+    }
+    DB->dbf_sorted_indexes = dbp;
+
+    efree(tmp);
+
+    return DB;
 }
 
-void *DB_Create_db (char *dbname)
+void   *DB_Create_db(char *dbname)
 {
-   return (void *)open_db_files(dbname, DB_CREATE);
+    return (void *) open_db_files(dbname, DB_CREATE);
 }
 
-void *DB_Open_db (char *dbname)
+void   *DB_Open_db(char *dbname)
 {
-   return (void *)open_db_files(dbname, DB_RDONLY);
+    return (void *) open_db_files(dbname, DB_RDONLY);
 }
 
-void DB_Close_db(void *db)
+void    DB_Close_db(void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
-   int ret;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    int     ret;
 
-   dbp = DB->dbf_header;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_header;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
-   dbp = DB->dbf_words;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_words;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
-   dbp = DB->dbf_worddata;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_worddata;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
-   dbp = DB->dbf_invertedindex;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_invertedindex;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
-   dbp = DB->dbf_docs;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_docs;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
-   dbp = DB->dbf_sorted_indexes;
-   if ((ret = dbp->close(dbp, 0)) != 0) {
+    dbp = DB->dbf_sorted_indexes;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
         progerr("db_berkeley_db.c error in db->close\n");
-   }
+    }
 
 
-   efree(DB);
+    dbp = DB->dbf_properties;
+    if ((ret = dbp->close(dbp, 0)) != 0)
+    {
+        progerr("db_berkeley_db.c error in db->close\n");
+    }
+
+
+    efree(DB);
 }
 
-void DB_Remove_db(void *db)
+void    DB_Remove_db(void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   dbp = DB->dbf_header;
-   dbp = DB->dbf_words;
-   dbp = DB->dbf_worddata;
-   dbp = DB->dbf_invertedindex;
-   dbp = DB->dbf_docs;
-   dbp = DB->dbf_sorted_indexes;
+    dbp = DB->dbf_header;
+    dbp = DB->dbf_words;
+    dbp = DB->dbf_worddata;
+    dbp = DB->dbf_invertedindex;
+    dbp = DB->dbf_docs;
+    dbp = DB->dbf_sorted_indexes;
+    dbp = DB->dbf_properties;
 
-   efree(DB);
+    efree(DB);
 }
 
 
@@ -292,118 +364,122 @@ void DB_Remove_db(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteHeader_db(void *db)
+int     DB_InitWriteHeader_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
 
-int DB_EndWriteHeader_db(void *db)
+int     DB_EndWriteHeader_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-int DB_WriteHeaderData_db(int id, unsigned char *s, int len, void *db)
+int     DB_WriteHeaderData_db(int id, unsigned char *s, int len, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = sizeof(int);
-   key.data = (char *) &id;
+    key.size = sizeof(int);
 
-   content.size = len;
-   content.data = s;
+    key.data = (char *) &id;
 
-   dbp = DB->dbf_header;
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
+    content.size = len;
+    content.data = s;
 
-   if(ret)
-      progerr("Berkeley DB error writing header");
+    dbp = DB->dbf_header;
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+        progerr("Berkeley DB error writing header");
+
+    return 0;
 }
 
 
-int DB_InitReadHeader_db(void *db)
+int     DB_InitReadHeader_db(void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   int ret;
+    int     ret;
 
-   dbp = DB->dbf_header;
+    dbp = DB->dbf_header;
 
-        /* Acquire a cursor for the database. */
-   if ((ret = dbp->cursor(dbp, NULL, &DB->cursor_header, 0)) != 0) {
-       DB->cursor_header = NULL;
-   }
+    /* Acquire a cursor for the database. */
+    if ((ret = dbp->cursor(dbp, NULL, &DB->cursor_header, 0)) != 0)
+    {
+        DB->cursor_header = NULL;
+    }
 
-   return 0;
+    return 0;
 }
 
-int DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db)
+int     DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db)
 {
-   DB *dbp;
-   DBC *dbcp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
-   DBT key,content;
-   int ret;
+    DB     *dbp;
+    DBC    *dbcp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_header;
-   dbcp = DB->cursor_header;
+    dbp = DB->dbf_header;
+    dbcp = DB->cursor_header;
 
 
-   if(!dbcp)
-   {
-       *id = 0;
-       *len = 0;
-       *s = NULL;
-   }
-   else
-   {
+    if (!dbcp)
+    {
+        *id = 0;
+        *len = 0;
+        *s = NULL;
+    }
+    else
+    {
         /* Initialize the key/data pair so the flags aren't set. */
-       memset(&key, 0, sizeof(key));
-       memset(&content, 0, sizeof(content));
+        memset(&key, 0, sizeof(key));
+        memset(&content, 0, sizeof(content));
 
-       ret = dbcp->c_get(dbcp, &key, &content, DB_NEXT);
-       if(!ret)
-       {
-           *id = * (int*) key.data;
-           *len = content.size;
-           *s = emalloc(content.size);
-           memcpy(*s,content.data,content.size);
-           //*s = content.data;
-       }
-       else
-       {
-           *id = 0;
-           *len = 0;
-           *s = NULL;
-       }
-   }
-   return 0;
+        ret = dbcp->c_get(dbcp, &key, &content, DB_NEXT);
+        if (!ret)
+        {
+            *id = *(int *) key.data;
+            *len = content.size;
+            *s = emalloc(content.size);
+            memcpy(*s, content.data, content.size);
+            //*s = content.data;
+        }
+        else
+        {
+            *id = 0;
+            *len = 0;
+            *s = NULL;
+        }
+    }
+    return 0;
 }
 
 
-int DB_EndReadHeader_db(void *db)
-{ 
-   DB *dbp;
-   DBC *dbcp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+int     DB_EndReadHeader_db(void *db)
+{
+    DB     *dbp;
+    DBC    *dbcp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   dbp = DB->dbf_header;
-   dbcp = DB->cursor_header;
+    dbp = DB->dbf_header;
+    dbcp = DB->cursor_header;
 
-   if(dbcp)
-       dbcp->c_close(dbcp);
+    if (dbcp)
+        dbcp->c_close(dbcp);
 
-   return 0;
+    return 0;
 }
 
 /*--------------------------------------------*/
@@ -412,106 +488,112 @@ int DB_EndReadHeader_db(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteWords_db(void *db)
+int     DB_InitWriteWords_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
 
-int DB_EndWriteWords_db(void *db)
+int     DB_EndWriteWords_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-long DB_GetWordID_db(void *db)
+long    DB_GetWordID_db(void *db)
 {
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   return (long) ++(DB->wordcounter);
+    return (long) ++(DB->wordcounter);
 }
 
-int DB_WriteWord_db(char *word, long wordID, void *db)
+int     DB_WriteWord_db(char *word, long wordID, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_invertedindex;
+    dbp = DB->dbf_invertedindex;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = strlen(word) + 1;
-   key.data = (char *) word;
+    key.size = strlen(word) + 1;
+    key.data = (char *) word;
 
-   content.size = sizeof(int);
-   content.data = (char *) &wordID;
+    content.size = sizeof(int);
 
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
+    content.data = (char *) &wordID;
 
-   if(ret)
-      progerr("DB error writing word");
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
 
-   return 0;
-}
+    if (ret)
+        progerr("DB error writing word");
 
-
-long DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, void *db)
-{
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
-
-   DBT key, content;
-   int ret;
-
-   dbp = DB->dbf_worddata;
-
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
-
-   key.size = sizeof(long);
-   key.data = (char *) &wordID;
-
-   content.size = lendata;
-   content.data = worddata;
-
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
-
-   if(ret)
-      progerr("DB error writing word's data");
-
-   return 0;
+    return 0;
 }
 
 
-
-int DB_WriteWordHash_db(char *word, long wordID, void *db)
+long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_words;
+    dbp = DB->dbf_worddata;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = strlen(word) + 1;
-   key.data = (char *) word;
+    key.size = sizeof(long);
 
-   content.size = sizeof(int);
-   content.data = (char *) &wordID;
+    key.data = (char *) &wordID;
 
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
+    content.size = lendata;
+    content.data = worddata;
 
-   if(ret)
-      progerr("DB error writing word");
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+        progerr("DB error writing word's data");
+
+    return 0;
+}
+
+
+
+int     DB_WriteWordHash_db(char *word, long wordID, void *db)
+{
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
+
+    DBT     key,
+            content;
+    int     ret;
+
+    dbp = DB->dbf_words;
+
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
+
+    key.size = strlen(word) + 1;
+    key.data = (char *) word;
+
+    content.size = sizeof(int);
+
+    content.data = (char *) &wordID;
+
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
+
+    if (ret)
+        progerr("DB error writing word");
+
+    return 0;
 }
 
 int     DB_InitReadWords_db(void *db)
@@ -525,167 +607,173 @@ int     DB_EndReadWords_db(void *db)
 }
 
 
-int DB_ReadWordHash_db(char *word, long *wordID, void *db)
+int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_words;
+    dbp = DB->dbf_words;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = strlen(word) + 1;
-   key.data = (char *) word;
+    key.size = strlen(word) + 1;
+    key.data = (char *) word;
 
-   ret = dbp->get(dbp, NULL, &key, &content, 0);
+    ret = dbp->get(dbp, NULL, &key, &content, 0);
 
-   if(ret)
-   {
-      *wordID = 0;
-   }
-   else
-   {
-      *wordID = (long) *(int *)content.data;
-   }
+    if (ret)
+    {
+        *wordID = 0;
+    }
+    else
+    {
+        *wordID = (long) *(int *) content.data;
+    }
 
-   return 0;
+    return 0;
 }
 
 
 
-int DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
 {
-   DB *dbp;
-   DBC *dbcp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
-   DBT key,content;
-   int ret;
-   int len;
+    DB     *dbp;
+    DBC    *dbcp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    DBT     key,
+            content;
+    int     ret;
+    int     len;
 
-   len = strlen(word);
+    len = strlen(word);
 
-   dbp = DB->dbf_invertedindex;
-   dbcp = NULL;
+    dbp = DB->dbf_invertedindex;
+    dbcp = NULL;
 
-   DB->cursor_inverted = NULL;
+    DB->cursor_inverted = NULL;
 
-        /* Acquire a cursor for the database. */
-   if ((ret = dbp->cursor(dbp, NULL, &DB->cursor_inverted, 0)) != 0) {
-       DB->cursor_inverted = NULL;
-   }
-   dbcp = DB->cursor_inverted;
+    /* Acquire a cursor for the database. */
+    if ((ret = dbp->cursor(dbp, NULL, &DB->cursor_inverted, 0)) != 0)
+    {
+        DB->cursor_inverted = NULL;
+    }
+    dbcp = DB->cursor_inverted;
 
+    /* Initialize the key/data pair so the flags aren't set. */
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
+
+    key.size = strlen(word);
+    key.data = word;
+
+    ret = dbcp->c_get(dbcp, &key, &content, DB_SET_RANGE);
+    if (!ret)
+    {
+        if (strncmp(word, key.data, len) == 0)
+        {
+            *resultword = emalloc(key.size + 1);
+            memcpy(*resultword, key.data, key.size);
+            (*resultword)[key.size] = '\0';
+            *wordID = *(long *) content.data;
+            return 0;
+        }
+    }
+    *resultword = NULL;
+    *wordID = 0;
+    dbcp->c_close(dbcp);
+    DB->cursor_inverted = NULL;
+
+    return 0;
+}
+
+int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+{
+    DB     *dbp;
+    DBC    *dbcp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    DBT     key,
+            content;
+    int     ret;
+    int     len;
+
+    len = strlen(word);
+
+    dbp = DB->dbf_invertedindex;
+    dbcp = DB->cursor_inverted;
+
+
+    if (!dbcp)
+    {
+        *resultword = NULL;
+        *wordID = 0;
+    }
+    else
+    {
         /* Initialize the key/data pair so the flags aren't set. */
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+        memset(&key, 0, sizeof(key));
+        memset(&content, 0, sizeof(content));
 
-   key.size=strlen(word);
-   key.data=word;
+        ret = dbcp->c_get(dbcp, &key, &content, DB_NEXT);
+        if (!ret)
+        {
+            if (strncmp(word, key.data, len) == 0)
+            {
 
-   ret = dbcp->c_get(dbcp, &key, &content, DB_SET_RANGE);
-   if(!ret)
-   {
-       if (strncmp(word, key.data, len) == 0)
-       {
-           *resultword = emalloc(key.size + 1);
-           memcpy(*resultword,key.data,key.size);
-           (*resultword)[key.size] = '\0';
-           *wordID = * (long*) content.data;
-           return 0;
-       }
-   }
-   *resultword = NULL;
-   *wordID = 0;
-   dbcp->c_close(dbcp);
-   DB->cursor_inverted = NULL;
-
-   return 0;
-}
-
-int DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
-{
-   DB *dbp;
-   DBC *dbcp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
-   DBT key,content;
-   int ret;
-   int len;
-
-   len = strlen(word);
-
-   dbp = DB->dbf_invertedindex;
-   dbcp = DB->cursor_inverted;
-
-
-   if(!dbcp)
-   {
-       *resultword = NULL;
-       *wordID = 0;
-   }
-   else
-   {
-        /* Initialize the key/data pair so the flags aren't set. */
-       memset(&key, 0, sizeof(key));
-       memset(&content, 0, sizeof(content));
-
-       ret = dbcp->c_get(dbcp, &key, &content, DB_NEXT);
-       if(!ret)
-       {
-           if (strncmp(word, key.data, len) == 0)
-           {
-
-               *resultword = emalloc(key.size + 1);
-               memcpy(*resultword,key.data,key.size);
-               (*resultword)[key.size] = '\0';
-               *wordID = * (long*) content.data;
-               return 0;
-           }
-       }
-       *resultword = NULL;
-       *wordID = 0;
-       dbcp->c_close(dbcp);
-       DB->cursor_inverted = NULL;
-   }
-   return 0;
+                *resultword = emalloc(key.size + 1);
+                memcpy(*resultword, key.data, key.size);
+                (*resultword)[key.size] = '\0';
+                *wordID = *(long *) content.data;
+                return 0;
+            }
+        }
+        *resultword = NULL;
+        *wordID = 0;
+        dbcp->c_close(dbcp);
+        DB->cursor_inverted = NULL;
+    }
+    return 0;
 }
 
 
-long DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, void *db)
+long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_worddata;
+    dbp = DB->dbf_worddata;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = sizeof(long);
-   key.data = (char *) &wordID;
+    key.size = sizeof(long);
 
-   ret = dbp->get(dbp, NULL, &key, &content, 0);
+    key.data = (char *) &wordID;
 
-   if(ret)
-   {
-      *lendata = 0;
-      *worddata = NULL;
-   }
-   else
-   {
-      *lendata = content.size;
-      *worddata = emalloc(content.size);
-      memcpy(*worddata,content.data,content.size);
-      //*worddata = content.data;
-   }
+    ret = dbp->get(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+    {
+        *lendata = 0;
+        *worddata = NULL;
+    }
+    else
+    {
+        *lendata = content.size;
+        *worddata = emalloc(content.size);
+        memcpy(*worddata, content.data, content.size);
+        //*worddata = content.data;
+    }
+
+    return 0;
 }
 
 /*--------------------------------------------*/
@@ -694,89 +782,93 @@ long DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, voi
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int DB_InitWriteFiles_db(void *db)
+int     DB_InitWriteFiles_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
 
-int DB_EndWriteFiles_db(void *db)
+int     DB_EndWriteFiles_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-int DB_WriteFile_db(int filenum, unsigned char *filedata,int sz_filedata, void *db)
+int     DB_WriteFile_db(int filenum, unsigned char *filedata, int sz_filedata, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_docs;
+    dbp = DB->dbf_docs;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = sizeof(int);
-   key.data = (char *) &filenum;
+    key.size = sizeof(int);
 
-   content.size = sz_filedata;
-   content.data = (char *) filedata;
+    key.data = (char *) &filenum;
 
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
+    content.size = sz_filedata;
+    content.data = (char *) filedata;
 
-   if(ret)
-      progerr("DB error writing docs");
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+        progerr("DB error writing docs");
+
+    return 0;
 }
 
-int DB_InitReadFiles_db(void *db)
+int     DB_InitReadFiles_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-int DB_ReadFile_db(int filenum, unsigned char **filedata,int *sz_filedata, void *db)
+int     DB_ReadFile_db(int filenum, unsigned char **filedata, int *sz_filedata, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_docs;
+    dbp = DB->dbf_docs;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-     // This needs to be fixed --> The old compress problem with zeroes
-   filenum--;
+    // This needs to be fixed --> The old compress problem with zeroes
+    filenum--;
 
-   key.size = sizeof(int);
-   key.data = (char *) &filenum;
+    key.size = sizeof(int);
 
-   ret = dbp->get(dbp, NULL, &key, &content, 0);
+    key.data = (char *) &filenum;
 
-   if(ret)
-   {
-      *sz_filedata = 0;
-      *filedata = NULL;
-   }
-   else
-   {
-      *sz_filedata = content.size;
-      *filedata = emalloc(content.size);
-      memcpy(*filedata,content.data,content.size);
-      //*filedata = content.data;
-   }
-   return 0;
+    ret = dbp->get(dbp, NULL, &key, &content, 0);
+
+    if (ret)
+    {
+        *sz_filedata = 0;
+        *filedata = NULL;
+    }
+    else
+    {
+        *sz_filedata = content.size;
+        *filedata = emalloc(content.size);
+        memcpy(*filedata, content.data, content.size);
+        //*filedata = content.data;
+    }
+    return 0;
 }
 
 
-int DB_EndReadFiles_db(void *db)
+int     DB_EndReadFiles_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
 
@@ -792,83 +884,200 @@ int DB_EndReadFiles_db(void *db)
 
 int     DB_InitWriteSortedIndex_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-int     DB_WriteSortedIndex_db(int propID, unsigned char *data, int sz_data,void *db)
+int     DB_WriteSortedIndex_db(int propID, unsigned char *data, int sz_data, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_sorted_indexes;
+    dbp = DB->dbf_sorted_indexes;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = sizeof(int);
-   key.data = (char *) &propID;
+    key.size = sizeof(int);
 
-   content.size = sz_data;
-   content.data = (char *) data;
+    key.data = (char *) &propID;
 
-   ret = dbp->put(dbp, NULL, &key, &content, 0);
+    content.size = sz_data;
+    content.data = (char *) data;
 
-   if(ret)
-      progerr("DB error writing sorted indexes");
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+        progerr("DB error writing sorted indexes");
+
+    return 0;
 }
 
 int     DB_EndWriteSortedIndex_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
- 
+
 int     DB_InitReadSortedIndex_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
-int     DB_ReadSortedIndex_db(int propID, unsigned char **data, int *sz_data,void *db)
+int     DB_ReadSortedIndex_db(int propID, unsigned char **data, int *sz_data, void *db)
 {
-   DB *dbp;
-   struct Handle_DB_db *DB = (struct Handle_DB_db *)db;
+    DB     *dbp;
+    struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-   DBT key, content;
-   int ret;
+    DBT     key,
+            content;
+    int     ret;
 
-   dbp = DB->dbf_sorted_indexes;
+    dbp = DB->dbf_sorted_indexes;
 
-   memset(&key, 0, sizeof(key));
-   memset(&content, 0, sizeof(content));
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
 
-   key.size = sizeof(int);
-   key.data = (char *) &propID;
+    key.size = sizeof(int);
 
-   ret = dbp->get(dbp, NULL, &key, &content, 0);
+    key.data = (char *) &propID;
 
-   if(ret)
-   {
-      *sz_data = 0;
-      *data = NULL;
-   }
-   else
-   {
-      *sz_data = content.size;
-      *data = emalloc(content.size);
-      memcpy(*data,content.data,content.size);
-      //*data = content.data;
-   }
+    ret = dbp->get(dbp, NULL, &key, &content, 0);
 
-   return 0;
+    if (ret)
+    {
+        *sz_data = 0;
+        *data = NULL;
+    }
+    else
+    {
+        *sz_data = content.size;
+        *data = emalloc(content.size);
+        memcpy(*data, content.data, content.size);
+        //*data = content.data;
+    }
+
+    return 0;
 }
 
 int     DB_EndReadSortedIndex_db(void *db)
 {
-   return 0;
+    return 0;
 }
 
+
+#ifdef PROPFILE
+/*--------------------------------------------*/
+/*--------------------------------------------*/
+/*              Properties                    */
+/*--------------------------------------------*/
+/*--------------------------------------------*/
+
+
+typedef union
+{
+    char   skey;
+    struct {
+        int     filenum;
+        int     propID;
+    } key;
+} PropKEY;
+
+
+void    DB_WriteProperty_db( struct file *fi, int propID, char *buffer, int datalen, void *db )
+{
+    DB     *dbp;
+    struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    DBT     key,
+            content;
+    PropKEY propkey;
+    int     ret;
+
+
+    /*** Just until I can get a flag to see if this data is needed ***/
+    /*** create empty space using arrays! ***/
+
+    /* Create places to store the seek positions and lengths if first time */
+    if ( !fi->propSize )
+    {
+        int i;
+
+        fi->propLocationsCount = fi->docProperties->n;
+        fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+        fi->propSize = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+
+        /* Zero array */
+        for( i = 0; i < fi->propLocationsCount; i++ )
+        {
+            fi->propSize[ i ] = 0;         // here's the flag!
+            fi->propLocations[ i ] = 0;    // not here!
+        }
+    }
+    
+
+
+    dbp = DB->dbf_properties;
+
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
+
+    propkey.key.filenum = fi->filenum;
+    propkey.key.propID  = propID;
+    key.size = sizeof(propkey);
+    key.data = (char *) &propkey;
+
+    content.size = datalen;
+    content.data = (char *) buffer;
+
+    ret = dbp->put(dbp, NULL, &key, &content, 0);
+
+    /* error message? */
+    if (ret)
+        progerr("DB error writing properties filenum: %d property %d", fi->filenum, propID);
+}
+
+
+char  * DB_ReadProperty_db( struct file *fi, int propID, void *db )
+{
+    DB     *dbp;
+    struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;
+    DBT     key,
+            content;
+    PropKEY propkey;
+    char   *buffer;
+    int     ret;
+
+
+    dbp = DB->dbf_properties;
+
+    memset(&key, 0, sizeof(key));
+    memset(&content, 0, sizeof(content));
+
+    propkey.key.filenum = fi->filenum;
+    propkey.key.propID  = propID;
+    key.size = sizeof(propkey);
+    key.data = (char *) &propkey;
+
+    ret = dbp->get(dbp, NULL, &key, &content, 0);
+
+    /* No property for this file:id? */
+    if (ret)
+        return NULL;
+
+    buffer = (char *)emalloc(content.size);
+    memcpy(buffer, content.data, content.size);
+
+    return buffer;
+}
+
+
+
+
+void    DB_Reopen_PropertiesForRead_db(void *db)
+{
+    return;
+}
+#endif

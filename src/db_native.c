@@ -1222,40 +1222,81 @@ unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FI
 *
 *****************************************************************************/
 
-long DB_WriteProperty_Native( int filenum, char *buffer, int datalen, int propID, void *db )
+void DB_WriteProperty_Native( struct file *fi, int propID, char *buffer, int datalen, void *db )
 {
-    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
     long    position;
     int     written_bytes;
 
     if ( !DB->prop )
         progerr("Property database file not opened\n");
 
+
+    /* Create places to store the seek positions and lengths if first time */
+    if ( !fi->propSize )
+    {
+        int i;
+
+        fi->propLocationsCount = fi->docProperties->n;
+        fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+        fi->propSize = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+
+        /* Zero array */
+        for( i = 0; i < fi->propLocationsCount; i++ )
+        {
+            fi->propSize[ i ] = 0;         // here's the flag!
+            fi->propLocations[ i ] = 0;    // not here!
+        }
+    }
+
+        
+
+    /* write the property to disk */
+
     if ( (position = ftell( DB->prop )) == -1 )
-        progerrno( "O/S failed to tell me where I am - file number %d metaID %d : ", filenum, propID );
+        progerrno( "O/S failed to tell me where I am - file number %d metaID %d : ", fi->filenum, propID );
         
     if ( (written_bytes = fwrite(buffer, 1, datalen, DB->prop)) != datalen ) /* Write data */
-        progerrno( "Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", filenum, propID, datalen, written_bytes );
+        progerrno( "Failed to write file number %d metaID %d to property file.  Tried to write %d, wrote %d : ", fi->filenum, propID, datalen, written_bytes );
 
-    return position;        
+    /* Save the location */
+    fi->propLocations[ propID ] = position;
+    fi->propSize[ propID ] = datalen;
 }
 
 /****************************************************************************
 *   Reads a property from the property file
 *
 *   Returns:
-*       void
+*       *char (buffer -- must be destoryed by caller)
 *
 *****************************************************************************/
-void DB_ReadProperty_Native( char *buf, long seek_pos, long length, int filenum, void *db )
+char *DB_ReadProperty_Native( struct file *fi, int propID, void *db )
 {
-    struct Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    struct  Handle_DBNative *DB = (struct Handle_DBNative *) db;
+    char   *buffer;
+    long    seek_pos = fi->propLocations[ propID ];
+    long    length   = fi->propSize[ propID ];
+
+
+    /* Any for this metaID? */
+    if ( !length )
+        return NULL;
+
+
+    /* allocate a read buffer */
+	buffer = emalloc( length + 1 );
 
     if ( fseek( DB->prop, seek_pos, 0 ) == -1 )
-        progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, filenum );
+        progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, fi->filenum );
 
-    if ( fread(buf, 1, length, DB->prop) != length )
-        progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, filenum );
+    if ( fread(buffer, 1, length, DB->prop) != length )
+        progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, fi->filenum );
+
+
+    *(buffer + length) = '\0'; /* flag end of buffer - but not currently used! */
+
+    return buffer;
 }
 
 

@@ -26,28 +26,25 @@
 #define __HasSeenModule_DB_db	1
 
 
-#include <db.h>
+//#include <db.h>
+#include "/usr/local/BerkeleyDB.3.2/include/db.h"
 
 struct Handle_DB_db
 {
-      /* word counter - Used to asign WordID's */
-   int wordcounter;
-      /* db file to store header */
-   DB *dbf_header;
-      /* db file to store words */
-   DB *dbf_words;
-      /* db file to store word's data */
-   DB *dbf_worddata;
-      /* db file to store word's inverted index */
-   DB *dbf_invertedindex;
-      /* db file to store docs's data */
-   DB *dbf_docs;
-      /* db file to store sorted indexes */
-   DB *dbf_sorted_indexes;
-      /* cursor to read header data */
-   DBC *cursor_header;
-      /* cursor to read the inverted word data */
-   DBC *cursor_inverted;
+      
+   int wordcounter;         /* word counter - Used to asign WordID's */
+
+   /* How about an array of *DB ? */    
+   DB *dbf_header;          /* db file to store header */
+   DB *dbf_words;           /* db file to store words */
+   DB *dbf_worddata;        /* db file to store word's data */
+   DB *dbf_invertedindex;   /* db file to store word's inverted index */
+   DB *dbf_docs;            /* db file to store docs's data */
+   DB *dbf_sorted_indexes;  /* db file to store sorted indexes */
+   DB *dbf_properties;      /* db file to store properties */
+
+   DBC *cursor_header;      /* cursor to read header data */
+   DBC *cursor_inverted;    /* cursor to read the inverted word data */
 };
 
 
@@ -97,6 +94,13 @@ int     DB_EndWriteSortedIndex_db(void *db);
 int     DB_InitReadSortedIndex_db(void *db);
 int     DB_ReadSortedIndex_db(int propID, unsigned char **data, int *sz_data,void *db);
 int     DB_EndReadSortedIndex_db(void *db);
+
+
+#ifdef PROPFILE
+void    DB_WriteProperty_db( struct file *fi, int propID, char *buffer, int datalen, void *db );
+char  * DB_ReadProperty_db( struct file *fi, int propID, void *db );
+void    DB_Reopen_PropertiesForRead_db(void *db);
+#endif
 
 
 #endif

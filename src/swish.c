@@ -652,7 +652,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
         if (c == 'c')
         {
             if ( !is_another_param( argv ) )
-                progerr(" '-s' requires list of properties.");
+                progerr(" '-c' requires one or more configuration files.");
                 
             params->run_mode = MODE_INDEX;
 

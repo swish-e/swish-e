@@ -28,7 +28,7 @@ $Id$
 **                    printSearchResultProperties changed
 ** 2001-03-15 rasc    Outputdelimiter var name changed
 ** 2001-06-08 wsm     Store propValue at end of docPropertyEntry to save memory
-** 2001-06-14 moseley Much of this was rewritten.
+** 2001-06-14 moseley Most of the code rewritten, and propfile added
 ** 
 */
 
@@ -757,18 +757,17 @@ void     WritePropertiesToDisk( SWISH *sw )
     int datalen;
     int total_len;
 
+    /* $$$ This should be done when a file entry is created (and created in one place) */
+    fi->propLocations = NULL;
+    fi->propSize      = NULL;
+    fi->propTotalLen  = 0;
+
 
     /* any props exist? */
     if ( !fi->docProperties )
         return;
 
     docProperties = fi->docProperties;
-
-    /* create an array to hold the properties */
-
-    fi->propLocationsCount = docProperties->n;
-    fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
-    fi->propSize = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
 
 
     total_len = 0;  
@@ -780,11 +779,7 @@ void     WritePropertiesToDisk( SWISH *sw )
     for( propID = 0; propID < docProperties->n; propID++ )
     {
         if ( !(prop = docProperties->propEntry[propID]))
-        {
-            fi->propSize[ propID ] = 0;         // here's the flag!
-            fi->propLocations[ propID ] = 0;    // not here!
             continue;
-        }
 		
         datalen = 0;  /* length of data packed away */
 
@@ -823,8 +818,8 @@ void     WritePropertiesToDisk( SWISH *sw )
 
         /* Now write this property out to disk */
 
-        fi->propLocations[ propID ] = DB_WriteProperty( sw, indexf->filearray_cursize, buffer, datalen, propID, indexf->DB );
-        fi->propSize[ propID ] = datalen;
+        DB_WriteProperty( sw, fi, propID, buffer, datalen, indexf->DB );
+
         total_len += datalen;
     }
 
@@ -852,6 +847,7 @@ void     WritePropertiesToDisk( SWISH *sw )
 *********************************************************************/
 docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
 {
+#ifdef COMMENT_OUT
     struct file *fi;
     docProperties *docProperties=NULL;
     char   *tempPropValue=NULL;
@@ -862,7 +858,11 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     char   *propbuf;
     long    seek_pos = -1;
     int     i;
+#endif    
 
+return NULL;
+
+#ifdef COMMENT_OUT
     if ( !(fi = readFileEntry(sw, indexf, filenum)) )
         progerr("Failed to read file entry for file '%d'", filenum );
 
@@ -931,8 +931,8 @@ docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int f
     /* save it in the file entry */
     fi->docProperties = docProperties;
 
-    
     return docProperties;
+#endif    
 }
 
 /*******************************************************************
@@ -967,6 +967,8 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 
 
     /* already loaded? -- if so, duplicate the property for the given length */
+    /* This should only happen if ReadAllDocPropertiesFromDisk() was called, and only with db_native.c */
+
     if ( fi->docProperties )
     {
         if ( metaID >= fi->docProperties->n )
@@ -987,25 +989,19 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 
 
 
-    /* Any for this metaID? */
-    if ( !fi->propSize[ metaID ] )
+    if ( !(buffer = DB_ReadProperty( sw, fi, metaID, indexf->DB )))
         return NULL;
 
+	propbuf = buffer;  // save fro efree().
 
-    /* allocate a read buffer */
-	propbuf = buffer = emalloc( fi->propSize[ metaID ] + 1 );
-
-    DB_ReadProperty( sw, buffer, fi->propLocations[ metaID ], fi->propSize[ metaID ], filenum, indexf->DB );
-
-
-    *(buffer + fi->propSize[ metaID ]) = '\0'; /* flag end of buffer - but not currently used! */
+       
 
 
     meta_entry.metaName = "(default)";
 
     if ( !(meta_entry.metaID = uncompress2( (unsigned char **) &buffer )) )
     {
-        efree( buffer );
+        efree( propbuf );
         return NULL;
     }
     
@@ -1039,7 +1035,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int fi
 *********************************************************************/
 unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
 {
-    int i;
+    int     i;
     unsigned char *buf;
     unsigned char *p;
 
@@ -1050,6 +1046,8 @@ unsigned char *PackPropLocations( struct file *fi, int *propbuflen )
 
     p = compress3( fi->propLocationsCount+1, p );
     p = compress3( fi->propTotalLen+1, p);
+
+    /* Need a way to tell if running Berkeley DB, since the position data is not needed */
 
     /* Now save the offsets and sizes - note that this currently saves even the NULLs */
     for ( i = 0; i < fi->propLocationsCount; i++ )
@@ -1086,6 +1084,9 @@ unsigned char *UnPackPropLocations( struct file *fi, char *buf )
     /* allocate memory for storage of seek values, and lengths */
     fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
     fi->propSize      = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+
+
+    /* Need a way to tell if running Berkeley DB, since the position data is not needed */
 
     for ( i = 0; i < fi->propLocationsCount; i++ )
     {
