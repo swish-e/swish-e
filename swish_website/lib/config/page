@@ -1,5 +1,5 @@
 [%-
-    USE Date;
+    USE Date( format = '%a, %d %b %Y %H:%M:%S %Z');
 
     USE locate = PathLocate;
 

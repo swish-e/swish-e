@@ -23,7 +23,7 @@ use FindBin '$Bin';
 #
 #========================================================================
 
-
+$ENV{TZ} = 'UTC';  # Show all dates in UTC
 
 # List of pod files relative to INCLUDE_PATH
 # swish.css is needed for stand-alone html docs.
@@ -408,7 +408,7 @@ sub get_swish_version {
         "$dir/../install/bin/swish-config",  # daily build location
     ) {
         if ( -x ) {
-            $ver = `$_ -version`;
+            $ver = `$_ --version`;
             chomp $ver;
             warn "Found version [$ver] from program $_\n" if $self->config->verbose;
             return $ver if $ver;

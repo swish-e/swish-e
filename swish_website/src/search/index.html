@@ -18,6 +18,9 @@ use warnings;
 use vars '$VERSION';
 $VERSION = '1.1';
 
+# show dates in UTC
+$ENV{TZ} = 'UTC';
+
 
 # This needs to be set to where Swish-e installed the Perl modules 
 
@@ -71,6 +74,7 @@ use vars qw/ %config %highlight_settings %site_cache /;
         swishtitle => [ qw/ swishdefault swishtitle / ],
     },
 );
+
 
 
 # Params used for the highlighting modules
@@ -209,8 +213,17 @@ sub run_query {
     my $swish = $instance->{swish};
     my $msg;
 
+    # $$$ TODO need to test for index file being modified
+    # one trick is to touch public_html/seach/index.html and then speedy will reload.
+
     if ( ! $swish ) {
-        $swish = SWISH::API->new( $config->{index} );
+        my $index = $config->{index};
+
+        # Hack in search for archive index.
+        my $archive_index = '../../../search/index.swish-e';
+        $index = "$index $archive_index" if -f $archive_index;
+
+        $swish = SWISH::API->new( $index );
         die "Failed to create SWISH::API object" unless $swish;
         return { message => check_swish_error( $swish ) } if $swish->Error;
 

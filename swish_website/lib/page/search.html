@@ -19,7 +19,7 @@
     USE myurl = url( request.myself, query=request.query, 
                      metaname=request.metaname, size=request.pagesize );
 
-    USE result_date = Date;  # set date format for results
+    result_date = Date;  # set date format for results
 
 
     UNLESS result;
@@ -85,6 +85,9 @@
 [% BLOCK show_result %]
 
     <div class="search-title">
+        [% IF item.Property('swishdocpath').match('archive') %]
+            List Archive:
+        [% END %]
         <a href="[% item.Property('swishdocpath') %]">
             [%  item.Property('swishtitle') || 'missing title' | highlight('swishtitle', item ) %]</a>
 
@@ -100,7 +103,12 @@
             [% item.Property('swishdocpath') | highlight('swishdocpath', item ) %]</a>
             - [% item.Property('swishdocsize') %] bytes<br>
         Date: [% result_date.format( item.Property('swishlastmodified')) %]<br>
+
+        [% IF  item.Property('swishdocpath').match('devel_docs') %]
+            Warning: <b>** Development Documentation **</b>
+        [% END %]
     </div>
+
 [% END %]
 
 
