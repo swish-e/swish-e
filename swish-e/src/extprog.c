@@ -117,7 +117,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
 
     full_path = find_command_in_path( (const char *)prog, getenv("PATH"), &path_index );
     if ( !full_path )
-        progerr("Failed to find program '%s' in PATH: ", prog );
+        progerr("Failed to find program '%s' in PATH: %s ", prog, getenv("PATH") );
 
     if ( sw->verbose )
         printf("External Program found: %s\n", full_path );

@@ -174,7 +174,7 @@ libswish_e_la_SOURCES = \
 	check.c check.h \
 	error.c error.h \
 	list.c list.h \
-	mem.c mem.h \
+	mem.c mem.h sys.h\
 	swstring.c swstring.h \
 	docprop.c docprop.h \
 	metanames.c metanames.h \
