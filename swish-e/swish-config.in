@@ -12,13 +12,13 @@ Usage: swish-config [OPTION]
 
 Known values for OPTION are:
 
-  --prefix=DIR		swish-e prefix [default $prefix]
-  --exec-prefix=DIR	swish-e exec prefix [default $exec_prefix]
-  --libs		print library linking information
+  --prefix=DIR          swish-e prefix [default $prefix]
+  --exec-prefix=DIR     swish-e exec prefix [default $exec_prefix]
+  --libs                print library linking information
   --libtool-libs        print linking information for use with libtool
-  --cflags		print pre-processor and compiler flags
-  --help		display this help and exit
-  --version		output version information
+  --cflags              print pre-processor and compiler flags
+  --help                display this help and exit
+  --version             output version information
 EOF
 
     exit $1
@@ -39,14 +39,14 @@ while test $# -gt 0; do
 
     case "$1" in
     --prefix=*)
-	prefix=$optarg
-	includedir=$prefix/include
-	libdir=$prefix/lib
-	;;
+        prefix=$optarg
+        includedir=$prefix/include
+        libdir=$prefix/lib
+        ;;
 
     --prefix)
-	echo $prefix
-	;;
+        echo $prefix
+        ;;
 
     --exec-prefix=*)
       exec_prefix=$optarg
@@ -58,30 +58,30 @@ while test $# -gt 0; do
       ;;
 
     --version)
-	echo @VERSION@
-	exit 0
-	;;
+        echo @VERSION@
+        exit 0
+        ;;
 
     --help)
-	usage 0
-	;;
+        usage 0
+        ;;
 
     --cflags)
-       	echo @CFLAGS@ -I${includedir} @Z_CFLAGS@
-       	;;
+        echo @CFLAGS@ -I${includedir} @Z_CFLAGS@
+        ;;
 
     --libtool-libs)
-	echo ${libdir}/libswish-e.la  
+        echo ${libdir}/libswish-e.la
         ;;
 
     --libs)
-	echo -L${libdir} @Z_LIBS@ @LIBS@
-       	;;
+        echo -L${libdir} -lswish-e @Z_LIBS@ @LIBS@
+        ;;
 
     *)
-	usage
-	exit 1
-	;;
+        usage 1
+        exit 1
+        ;;
     esac
     shift
 done

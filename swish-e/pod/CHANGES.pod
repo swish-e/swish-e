@@ -10,6 +10,16 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Added swish-config and pkg-config
+
+Swish now provides a swish-config script and config file for the pkg-config
+utility.  These tools help when building programs that link with the swish-e
+library.
+
+The SWISH::API Makefile.PL program uses swish-config to locate the installation
+directory of swish-e.  This should make building SWISH::API easier when swish-e
+is installed in a non-standard location.
+
 =item Fixed rank bias in merge
 
 Peter van Dijk noticed that MetaNamesRank settings were not being copied to the output

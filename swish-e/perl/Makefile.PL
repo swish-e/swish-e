@@ -4,115 +4,234 @@ use strict;
 use ExtUtils::MakeMaker;
 use Config;         # for path separator
 use File::Spec;     # for catpath
+use File::Basename; # for locating swish-e binary based on location of swish-config
 
 # $Id$
 
-my $tests = 't/*.t';
+#----------------------------------------------------------------------------------
+# Default settings
+
+my %make_maker_opts = (
+    NAME            => 'SWISH::API',
+    VERSION_FROM    => 'API.pm',
+    AUTHOR          => 'Bill Moseley',
+    ABSTRACT        => 'Perl interface to the swish-e search library',
+
+    # Set LIBS and INC from swish-confg
+
+    NORECURS        => 1,          # keep it from recursing into subdirectories
+    DIR             => [],
+    XSPROTOARG      => '-noprototypes',
+    PREREQ_PM       => {
+        'File::Spec'    => '0.8',
+    },
+    test          => {
+        TESTS         => 't/*.t',
+    },
+    clean           => {
+        FILES            => join( ' ', qw(
+            t/index.swish-e
+            t/index.swish-e.prop
+        )),
+    },
+);
+
+
 my $SWISH_BINARY = 'swish-e';
+my $SWISH_CONFIG = 'swish-config';
+my $MIN_VERSION  = '2.4.3';
+
+
+my @valid_params = qw/ SWISHBINDIR SWISHHELP SWISHIGNOREVER SWISHSKIPTEST /;
+
+
+
+
 my $help = <<EOF;
+
+SWISH::API build script.
+
+The swish-config program is required to set libraries and include paths.
+If swish-config is not in your PATH then use SWISHBINDIR
 
 Makefile.PL options:
 
-    SWISHBIN        = full path to swish-e binary
-    SWISHSKIPTEST   = don't abort if binary cannot be found and don't run tests
+    SWISHBINDIR     = full path to swish-e bin directory
+    SWISHIGNOREVER  = don't test swish-e version
     SWISHHELP       = print this message
+    SWISHSKIPTEST   = create dummy tests for make test.  Don't use...
 
 Can be either environment variables or passed on command line like:
 
-    perl Makefile.PL SWISHBIN=/usr/local/bin/swish-e
+    perl Makefile.PL SWISHBINDIR=/usr/local/bin
 
 EOF
 
-my %valid = map { $_ , 1 } qw/ SWISHBIN SWISHSKIPTEST SWISHHELP /;
-
-
 $SIG{__DIE__} = sub {
-    print STDERR "\n** ERROR: ", @_;
-    print STDERR $help;
+    print STDERR "\n  ** ERROR: ", @_;
+    print STDERR "  Run perl Makefile.PL SWISHHELP for options\n\n";
     exit 1;
 };
 
+#----------------------------------------------------------------------------------
 
+# Grab any options passed in on the command line.
+# Swish variables get placed in $ENV.
 
-my %config;
-while( $_ = shift ) {
-    if ( $_ eq 'SWISHHELP' ) {
-        $ENV{SWISHHELP} = 'y';
-        last;
-    }
-
-    my ( $param, $value ) = split /=/;
-    if ( $param =~ /^SWISH/ ) {
-        die "Invalid option '$param'\n" unless $valid{$param};
-        $ENV{$param} = $value || '';
-    } else {
-        $config{$param} = $value || '';
-    }
-}
-
+my %config = load_command_line( @valid_params );
 
 if ( exists $ENV{SWISHHELP} ) {
     print $help;
     exit 0;
 }
 
-my $swish_binary = find_binary();
 
-if ( $swish_binary ) {
-    print "\nUsing swish-e binary '$swish_binary'\n";
+# Grab output from swish-config -- this is required;
 
-    test_version( $swish_binary, '2.4.3' );
+my $swish_config_path = find_swish_config( $SWISH_CONFIG );
+my %swish_config = read_swish_config( $swish_config_path );
+
+$config{$_} ||= $swish_config{$_} for qw/ LIBS INC /;
+
+
+test_version( $swish_config{VERSION}, $MIN_VERSION )
+    or die "Swish version $swish_config{VERSION} is older than required version $MIN_VERSION\n";
+
+
+
+# Create test index -- needed for make test
+
+
+unless ( exists $ENV{SWISHSKIPTEST} ) {
+
+    my $swish_binary = File::Spec->catdir( dirname( $swish_config_path), $SWISH_BINARY );
     create_index( $swish_binary );
 
 } else {
-    die "Failed to find swish-e binary '$SWISH_BINARY'"
-        unless $ENV{SWISHSKIPTEST};
+    $config{test}{TESTS} = 't/dummy.t';
 }
 
-$tests = 't/dummy.t' if $ENV{SWISHSKIPTEST};
-
-WriteMakefile(
-    %config,
-    'NAME'          => 'SWISH::API',
-    'VERSION_FROM'  => 'API.pm',
-    'LIBS'          => ['-lswish-e'],
-    'NORECURS'      => 1,          # keep it from recursing into subdirectories
-    'DIR'           => [],
-    'XSPROTOARG'    => '-noprototypes',
-    'PREREQ_PM'     => {
-        'File::Spec'    => '0.8',
-    },
-    'clean'         => {
-        'FILES'         => join( ' ', qw(
-            t/index.swish-e
-            t/index.swish-e.prop
-        )),
-    },
-    'test'          => {
-        'TESTS'         => $tests,
-    },
-);
 
 
-sub find_binary {
 
-    my $binary = $ENV{SWISHBIN} || find_program_in_path( $SWISH_BINARY );
+WriteMakefile( %make_maker_opts, %config );
 
-    # Could ask here, but might as well just let them set SWISHBIN
-    return unless $binary;
 
-    die "Program '$binary' does not exist: $!" unless -e $binary;
-    die "Program '$binary' cannot be executed: $!" unless -e $binary;
-    die "'$binary' is a directory" if -d $binary;
+#----------------------------------------------------------------------------------
+# Test the swish-e version
+#----------------------------------------------------------------------------------
+sub test_version {
+    my %versions;
+    my %split_vers;
 
+    return 1 if exists $ENV{SWISHIGNOREVER};
+
+    my @tags = qw/ running_swish_version  required_version /;
+    my @versions = qw/ major minor release /;
+
+    @versions{@tags} = @_;
+
+
+    for ( @tags ) {
+        die "Failed to find version for $_\n" unless $versions{$_};
+        die "Failed to parse version ($versions{$_}) for $_\n"
+            unless $versions{$_} =~ /(\d+)\.(\d+)\.(\d+)/;
+
+        @{$split_vers{$_}}{@versions} = ( $1, $2, $3 );
+    }
+
+    for ( @versions ) {
+        return 1 if $split_vers{running_swish_version}{$_} > $split_vers{required_version}{$_};
+        return 0 if $split_vers{running_swish_version}{$_} < $split_vers{required_version}{$_};
+    }
+    return 1;  # same version.
+}
+
+
+
+#----------------------------------------------------------------------------------
+# Reads swish-config and returns hash of values
+#----------------------------------------------------------------------------------
+sub find_swish_config {
+    my $prog = shift;
+
+    my $binary = find_program( $prog );
+
+    if ( $ENV{SWISHBINDIR} ) {
+
+        die "SWISHBINDIR [$ENV{SWISHBINDIR}] is not a directory\n"
+            unless -d $ENV{SWISHBINDIR};
+
+        my $p = find_program( $prog, $ENV{SWISHBINDIR} );
+        die "Failed to find [$prog] in directory $ENV{SWISHBINDIR}: $!" unless $p;
+
+        warn "Using config program [$p], but also noticed you have $binary available in \$PATH\n"
+            if $binary;
+
+        $binary = $p;
+    }
+
+
+    die "Failed to find [$prog] in PATH\n" unless $binary;
+
+    warn "Using swish-config found at [$binary]\n";
     return $binary;
 }
 
+#----------------------------------------------------------------------------------
+# Reads swish-config and returns hash of values
+#----------------------------------------------------------------------------------
+sub read_swish_config {
+    my $binary = shift;
 
-sub find_program_in_path {
-    my $name = shift;
+    my %config;
+    $config{VERSION} = backtick( "$binary --version" );
+    $config{LIBS}    = backtick( "$binary --libs" );
+    $config{INC}     = backtick( "$binary --cflags" );
 
-     for my $dir ( split /$Config{path_sep}/, $ENV{PATH} ) {
+    return %config;
+}
+
+
+#----------------------------------------------------------------------------------
+# Sub to fetch parameters form command line.
+# Sets $ENV for SWISH options, otherwise returns them
+#----------------------------------------------------------------------------------
+
+sub load_command_line {
+    my %valid = map { $_, 1 } @_;
+
+    my %config;
+    while( $_ = shift @ARGV ) {
+        if ( $_ eq 'SWISHHELP' ) {
+            $ENV{SWISHHELP} = 'y';
+            last;
+        }
+
+        my ( $param, $value ) = split /=/, $_, 2;
+
+        if ( $param =~ /^SWISH/ ) {
+            die "Invalid option '$param'\n" unless $valid{$param};
+            $ENV{$param} = $value || '';
+        } else {
+            $config{$param} = $value || '';
+        }
+    }
+
+    return %config;
+}
+
+
+
+#----------------------------------------------------------------------------------
+# Find a program in either $PATH or path/directory passed in.
+#----------------------------------------------------------------------------------
+sub find_program {
+    my ( $name, $search_path ) = @_;
+
+    $search_path ||= $ENV{PATH} || '';
+
+     for my $dir ( split /$Config{path_sep}/, $search_path ) {
         my $path = File::Spec->catfile( $dir, $name );
 
         for my $extension ( '', '.exe' ) {
@@ -124,50 +243,36 @@ sub find_program_in_path {
 }
 
 
-sub get_version {
+#----------------------------------------------------------------------------------
+# Run a program with backtics, checking for errors
+#----------------------------------------------------------------------------------
 
-      my $e = shift;
-      return unless $e && -x $e && $e =~ m!^/!;
-      my $version = `$e -V`;
-      $version =~ tr/[0-9].//cd;
+sub backtick {
+    my ( $command ) = @_;
 
-      die "Failed to get Swish-e version from '$e -V'"
-        unless $version;
+    my $output = `$command`;
 
-      return $version;
+    my $status = $? == 0
+                ? ''
+                : $? == -1
+                    ? "Failed to execute: $!"
+                    : $? & 127
+                        ? sprintf("Child died with signal %d, %s corefile", ($? & 127),  ($? & 128) ? 'with' : 'without' )
+                        : sprintf("chiled exited with value %d", $? >> 8);
+
+    die "Failed to run program [$command]: $status\n" if $status;
+
+    chomp $output;
+    return $output;
 }
 
-sub test_version {
-    my ( $swish, $test_ver ) = @_;
-
-    my $version = get_version($swish);
-    print "Your SWISH-E version: $version\n";
-
-    die "Version is not newer than '$test_ver'" unless version_newer( $test_ver, $version);
-}
-
-# Note that .01 == .1 -- is that correct?
-
-sub version_newer {
-    my ( $test_ver, $check_ver ) = @_;
-
-    my @test_ver = split /\./, $test_ver;
-    my @check_ver = split /\./, $check_ver;
-
-    die "mismatched version formats '$test_ver' and '$check_ver'"
-        unless @test_ver == @check_ver;
-
-    while ( (my $test = shift @test_ver) && (my $check = shift @check_ver ) ) {
-        next if $test == $check;
-        return $check > $test;
-    }
-
-    return 1;  # same version
-}
 
 
 sub create_index {
-    my ($swish, $version) = @_;
+    my ($swish) = @_;
+
+    die "Failed to find swish-e binary [$swish]: $!\n" unless -e $swish;
+    die "Cannot execute swish-e binary [$swish]: $!\n" unless -x $swish;
 
     my $index = 't/index.swish-e';
     my $conf = 't/test.conf';
@@ -178,7 +283,7 @@ sub create_index {
     my @command = ( $swish,  '-c', $conf, '-f', $index, '-v','0' );
 
 
-    print "Creating index...'@command'\n\n";
+    warn "Creating index...'@command'\n\n";
 
     system(@command);
 

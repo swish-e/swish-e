@@ -364,6 +364,8 @@ push_meta_list( s_handle, m_list, m_class )
 
         while ( *meta_list )
         {
+            SV *o;
+
             /* Create a new structure for storing the meta description and the parent SV */
             META_OBJ *object = (META_OBJ *)safemalloc(sizeof(META_OBJ));
 
@@ -375,7 +377,7 @@ push_meta_list( s_handle, m_list, m_class )
             SvREFCNT_inc( object->handle_sv );
 
             /* And create the Perl object and assign the object to it */
-            SV *o = sv_newmortal();
+            o = sv_newmortal();
             sv_setref_pv( o, class, (void *)object );
 
             /* and push onto list */

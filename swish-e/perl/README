@@ -13,17 +13,9 @@ The real difference is that search speed is improved since you may attach to a s
 once and then run many queries on that open "swish handle".  This speed comes at a cost of
 memory added to your program.
 
-Note: This module replaces the SWISHE module available with versions prior to 2.3 of
-Swish-e.  There is a SWISHE interface module available on the Swish-e site if you have
-existing code that depends on previous versions of the SWISHE module.
-
-    http://swish-e.org/Download/SWISHE-0.03.tar.gz
-
-That version is simply an interface to the SWISH::API module.  You must install the
-SWISH::API module to use SWISHE-0.03.tar.gz.
-
-It's recommended to upgrade your Perl code to use the SWISH::API module directly instead of
-using the SWISHE-0.03 interface module if possible.
+Note: This module replaces the SWISHE module available with versions prior to
+2.3 of Swish-e.  It's recommended to upgrade your Perl code to use the
+SWISH::API module.
 
 
 INSTALLATION
@@ -45,36 +37,15 @@ directory.
     make
     make test
 
-
-Makefile.PL will attempt to find the swish-e binary in the path.  If swish-e cannot be
-found the the script will abort.  Be careful that the version found in the path is the
-version you are linking against.  Otherwise, update your PATH or use SWISHBIN.
-
-If swish-e is not in your path then you can specify at build time like this:
-
-    perl Makefile.PL SWISHBIN=$HOME/local/bin/swish-e
-
-SWISHBIN may also be an environment variable.  Bourne-type of shells can do:
-
-    SWISHBIN=$HOME/local/bin/swish-e perl Makefile.PL
-
-The first form (on the command line) will override environment variables.
-
-Other options are:
-
-    perl Makefile.PL SWISHSKIPTEST=1
-
-Will not run noraml test code when running "make test".
-
-    perl Makefile.PL SWISHHELP=1
-
-Display help.
+Makefile.PL requires the "swish-config" program which is created when installing
+swish-e.  It must reside in the same directory as the swish-e binary.  See below
+if installing swish-e in a non-standard location.
 
 
 FAQ
 ---
 
-I do not have root access.  How do I link to the swish-e library?
+1) I do not have root access.  How do I link to the swish-e library?
 
 When building the SWISH::API module the compiler and linker look in locations for header and
 library files.  If swish was installed in a non-standard location you will need to specify
@@ -85,29 +56,35 @@ For example, to install *swish* in $HOME/local:
    $ ./configure --prefix=$HOME/local
    $ make && make install
 
-
-Now to build the SWISH::API module:
+Now build SWISH::API
 
    $ cd perl
 
-   $ perl Makefile.PL PREFIX=$HOME/local \
-     CCFLAGS=-I$HOME/local/include \
-     LIBS="-L$HOME/local/lib -lswish-e"
+Makefile.PL has to find the "swish-config" program.  It does this normally by searching
+your PATH environment variable:
 
-   $ LD_RUN_PATH=$HOME/local/lib make
+   $ PATH=$HOME/local/bin:$PATH perl Makefile.PL
 
-   $ make test && make install
+another way is to specify the path with the SWISHBINDIR parameter:
 
-Remember, use SWISHBIN if your locally installed swish-e binary is not in your PATH.
+   $ perl Makefile.PL SWISHBINDIR=$HOME/local/bin
 
-That last line above is bourne shell syntax.  Other shells may use a different syntax for
-setting the LD_RUN_PATH environment variable before running make.
+(or as an environment variable)
 
-The "PREFIX" parameter to Makefile.PL sets where the module will be installed when running
-"make install".
+   $ SWISHBINDIR=$HOME/local/bin perl Makefile.PL
+
+Since you don't have root access, you should also specify where to install the
+SWISH::API perl module by using the PREFIX parameter:
+
+   $ perl Makefile.PL SWISHBINDIR=$HOME/local/bin PREFIX=$HOME/my_perl_lib
+
+Note, that you can also specify LIBS and INC to override the settings that the
+swish-config program reports.  If you have a reason to do this then you probably
+already know how to override these settings.
 
 
-How do I build a PPM under Windows using MSVC and PERL 5.8?
+2) How do I build a PPM under Windows using MSVC and PERL 5.8?
+
    $ cd perl
 
    $ perl Makefile.PL \
@@ -124,7 +101,7 @@ How do I build a PPM under Windows using MSVC and PERL 5.8?
 Edit SWISH-API.ppd to your liking and upload it and SWISH-API.tar.gz to your repository in the appropriate locations.
 
 PROBLEMS
---------
+========
 
 If you have problems or need help please contact the swish-e discussion list.  The list is
 low traffic and is the place to get help with this module or swish-e in general.
