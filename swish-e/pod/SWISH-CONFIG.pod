@@ -559,6 +559,8 @@ The C<-S> command line argument is used to select the file access method.
 
 For the B<File system> method of access B<IndexDir> is a
 space-separated list of files and directories to index.
+Use a forward slash as the path separator in MS Windows.
+
 You may specify more than one B<IndexDir> directive.
 
 Any sub-directories of any listed directory will also be indexed.
@@ -2137,9 +2139,19 @@ When using variable substitution, use quotes to ensure filename integrity.
 If you don't use this, your system security may be compromised, or filtering
 may not work for these files.
 
-Windows uses double quotes, so reverse.  e.g.
+B<Notes when using MS Windows>
+
+Windows uses double quotes to escape shell metacharacters, so reverse the example above.  e.g.:
 
         '"%f"' --> "file name with spaced.doc"
+
+The filter program is opened with C<popen()> which passes the command through the shell.
+This means that paths to the filter program must be in DOS format and use the backslash as
+the path separator.  Swish, like many shells, use the backslash as an escape character, so you will
+need to specify the filter program like:
+
+    FileFilter .mydoc     "c:\\some\\path\\mydocfilter.exe"  '-d "%d" -example -url "%P" "%f"'
+
 
 Examples of filters:
 
