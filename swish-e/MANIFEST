@@ -90,7 +90,7 @@ html/style.css
 perl/Changes
 perl/MANIFEST
 perl/README
-perl/Makefile.PL
+perl/Makefile.PL.in
 perl/API.pm
 perl/API.xs
 perl/typemap
