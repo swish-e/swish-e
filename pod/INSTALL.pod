@@ -19,10 +19,6 @@ Debian) provide pre-compiled binaries.  Check with your distribution for
 available packages. Build from source if your distribution does not offer
 the current version of swish-e.
 
-A Windows binary version is available as a separate download from the
-Swish-e site (http://swish-e.org).  Many of the installation instructions
-below will not apply to Windows users. One exception is that the Perl LWP
-library is required for spidering remote sites.
 
 Also, please read the Swish-e FAQ L<SWISH-FAQ|SWISH-FAQ> as it answers
 many frequently asked questions.
@@ -34,6 +30,24 @@ separately.
 
 NOTE: Swish-e version 4.2.0 installs a lot more files when running "make install".  Be aware 
 that the Swish-e documentation may thus include errors about where files are located.
+
+=head2 Windows Users
+
+A Windows binary version is available as a separate download from the
+Swish-e site (http://swish-e.org).  Many of the installation instructions
+below will not apply to Windows users; the Windows version is pre-compiled
+and includes libxml2, zlib, xpdf and catdoc.  
+
+A number of Perl modules may also be needed.  These can be installed with
+ActiveState's PPM utility.
+
+   libwww-perl   - the LWP modules (for spidering)
+   HTML-Tagset   - used by web spider
+   HTML-Parser   - used by web spider
+   MIME-Types    - used for filtering documents when not spidering
+   HTML-Template - formatting output from swish.cgi (optional)
+   HTML-FillInForm (if HTML-Template is used)
+
 
 =head1 SYSTEM REQUIREMENTS
 
@@ -79,26 +93,40 @@ in the swish-e index.
 
 Zlib must be installed before building swish-e.
 
-=item * LWP Perl Modules
+=item * Perl Modules
 
-The LWP bundle of Perl modules is used for spidering web servers.  If you
-plan to index documents located on a web server you must have the LWP bundle
-of modules installed. 
+Although Swish-e is a compiled C program, many support features use Perl.
+For example, the web spiders are written in Perl, and modules to help
+with filtering documents are also written in Perl.
 
-Most Perl installations include the LWP Perl modules.  Type "perldoc LWP" to
-see if LWP is installed on your system.  If not, contact your system
-administrator or visit http://search.cpan.org to locate the LWP bundle:
+The following Perl modules may be required.  Check your current Perl 
+installation as many may already be installed.
 
+    LWP
+    URL
+    HTML::Parser
+    HTML::Tagset
+    MIME::Types (optional)
 
+Not that installing Bundle::LWP with the CPAN module
 
-Windows users can use the "ppm" command to install the LWP library (although
-should be installed automatically with current versions of Perl).
+    perl -MCPAN -e 'install Bundle::LWP'
 
-=item * MIME::Types
+will install many of the above.
 
-This Perl module is not requires, but if installed can be helpful in filtering
-(converting) files based on their content-type.  MIME::Types is used by
-the SWISH::Filter module.
+If you wish to use HTML-Template with swish.cgi to generate output:
+
+    HTML::Template
+    HTML::FillInForm
+
+If you wish to use Template-Toolkit with swish.cgi to generate output 
+install:
+
+    Template
+
+Questions about installing these modules may be sent to the swish-e 
+discussion list.
+
 
 =item * Indexing PDF Documents
 
