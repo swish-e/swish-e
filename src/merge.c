@@ -56,7 +56,7 @@
 struct mapentry
 {
     struct mapentry *next;
-	struct mapentry *next2;
+    struct mapentry *next2;
     int     oldnum;
     int     newnum;
 };
@@ -421,9 +421,9 @@ static void    remap(int oldnum, int newnum)
     mp->next = mapentrylist[hashval];
     mapentrylist[hashval] = mp;
 
-	hashval = bignumhash(newnum);
-	mp->next2 = mapentrylist2[hashval];
-	mapentrylist2[hashval] = mp;
+    hashval = bignumhash(newnum);
+    mp->next2 = mapentrylist2[hashval];
+    mapentrylist2[hashval] = mp;
 }
 
 /* This retrieves the number associated with another.
@@ -1127,7 +1127,7 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
         int len_path;
         int len_filename;
         char *filename_buffer;
-		char stack_buffer[4096];   /* To avoid alloc ... */
+        char stack_buffer[4096];   /* To avoid alloc ... */
         /* Add the path to filename */
         len_path = strlen(indexf->header.pathlookup->all_entries[indexf->filearray[i - 1]->lookup_path]->val);
         len_filename = strlen(indexf->filearray[i - 1]->filename);
@@ -1159,8 +1159,8 @@ void    readmerge(char *file1, char *file2, char *outfile, int verbose)
         if(ip->indexf == indexf1)
         {
             indexf1->filearray[i - 1]->docProperties = NULL;
-			freefileinfo(indexf1->filearray[i - 1]);
-			indexf1->filearray[i - 1] = NULL;
+            freefileinfo(indexf1->filearray[i - 1]);
+            indexf1->filearray[i - 1] = NULL;
         }
         else 
         {
