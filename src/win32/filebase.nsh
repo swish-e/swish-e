@@ -197,7 +197,9 @@ Section "-post" ; (post install section, happens last after any optional section
     StrCmp $R0 0 endofpost
     
     ; If both were true we'll run fixperl.pl
-    ExecShell open "$INSTDIR\fixperl.pl"
+    Call ActivePerlLocation
+    Pop $R1
+    Exec "$R1\bin\perl.exe $INSTDIR\fixperl.pl"
     
     endofpost:
 SectionEnd ; end of -post section
