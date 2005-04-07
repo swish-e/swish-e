@@ -193,12 +193,13 @@ int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data,
             /* Will key be null terminated? */
             progerrno( "Failed to seek to offset %ld looking for key '%s' :", next, key );
 
-        retval = sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
+        retval = sw_fread((unsigned char *)&tmp,1,sizeof(tmp),fp);
         if (feof(fp))
             progerrno( "eof() while Attempting to read '%d' bytes from file hash: ", sizeof(tmp) );
 
         if ( sizeof(tmp) != retval )
             progerrno( "Only read '%d' bytes but expected '%d' while reading file hash: ", retval, sizeof(tmp) );
+
 
 
         next = UNPACKFILEOFFSET(tmp);
