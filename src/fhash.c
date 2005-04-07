@@ -175,23 +175,39 @@ FILE *fp = f->fp;
 
 int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
 {
-unsigned int hashval = FHASH_hash(key,key_len);
-sw_off_t next = f->hash_offsets[hashval];
-FILE *fp = f->fp;
-unsigned char stack_buffer[2048], *read_key;
-int read_key_len, read_data_len;
-sw_off_t tmp;
+    /* Calculate the has value for the key passed in and lookup the seek pointer */
+    unsigned int    hashval = FHASH_hash(key,key_len);
+    sw_off_t        next = f->hash_offsets[hashval];
+
+    sw_off_t        tmp;
+
+    FILE            *fp = f->fp;
+    unsigned char   stack_buffer[2048], *read_key;
+    int             read_key_len;
+    int             read_data_len;
+    int             retval;
+
     while(next)
     {
-        sw_fseek(fp,next,SEEK_SET);
-        sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
+        if ( 0 != sw_fseek(fp,next,SEEK_SET) )
+            /* Will key be null terminated? */
+            progerrno( "Failed to seek to offset %ld looking for key '%s' :", next, key );
+
+        retval = sw_fread((unsigned char *)&tmp,sizeof(tmp),1,fp);
+        if (feof(fp))
+            progerrno( "eof() while Attempting to read '%d' bytes from file hash: ", sizeof(tmp) );
+
+        if ( sizeof(tmp) != retval )
+            progerrno( "Only read '%d' bytes but expected '%d' while reading file hash: ", retval, sizeof(tmp) );
+
+
         next = UNPACKFILEOFFSET(tmp);
 
         if((read_key_len = uncompress1(fp,fgetc)) > sizeof(stack_buffer))
             read_key = emalloc(read_key_len);
         else
             read_key = stack_buffer;
-        
+
         sw_fread((unsigned char *)read_key,read_key_len,1,fp);
         if(FHASH_CompareKeys(read_key, read_key_len, key, key_len) == 0)
         {
