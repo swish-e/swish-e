@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed NOT check with incremental indexes
+
+Swish was returning results for deleted files when the NOT operator was used.
+
 =item Fixed bug when using old parsers with zero length input
 
 Thomas Angst reported swish consuming memory when using -S prog
