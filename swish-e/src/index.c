@@ -698,6 +698,210 @@ LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency
         return newp;
 }
 
+/**********************************************************************
+* file_is_newer_than_existing 
+*       - returns true if the new file (based on fprop) is newer than the existing
+*
+* Call with:
+*   fprop - file prop for the new file
+*   sw    - current SWISH
+*   existing_number - file number
+*
+* Returns:
+*   true if new file is newer than existing and existing should be deleted
+*
+***********************************************************************/
+
+static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existing_filenum)
+{
+    IndexFILE   *indexf = sw->indexlist;
+    int         ret;
+    propEntry   *existing_prop;
+    propEntry   *new_prop;
+    FileRec     fi;
+    int         error_flag;
+    unsigned long tmp;
+
+    /* Get the date from the existing file */
+
+
+    /* Fetch metaEntry */
+    if(!indexf->modified_meta)
+        indexf->modified_meta = getPropNameByName( &indexf->header, AUTOPROPERTY_LASTMODIFIED );
+
+
+    memset(&fi, 0, sizeof( FileRec ));
+    fi.filenum = existing_filenum;
+    existing_prop = ReadSingleDocPropertiesFromDisk(indexf, &fi, indexf->modified_meta->metaID, 0 );
+
+    /* Don't need the fi struct any more, but can't call freefileinfo() */
+    if ( fi.prop_index )
+        efree( fi.prop_index );
+
+
+
+    /* Create a property for the new file */
+
+    if ( !fprop->mtime ) /* was a time provided?  */
+        new_prop = NULL;  /* $$$ should be MISSING or NO_PROPERTY */
+
+    else /* create a property */
+    {
+        tmp = PACKLONG(fprop->mtime);
+        new_prop = CreateProperty( indexf->modified_meta, (unsigned char *)&tmp, sizeof( tmp ), 1, &error_flag );
+    }
+
+
+    /* -1 = existing < new_prop | +1 existing > new_prop */
+    ret = Compare_Properties( indexf->modified_meta, existing_prop, new_prop );
+
+
+    /* Skip new file is older or same age as existing file */
+    /* and at least one of the files has a date */
+    /* if neither file has a date then the new one will replace existing */
+
+    if (ret >= 0 && ( existing_prop || new_prop ) )
+    {
+       if (sw->verbose >= 3)
+           printf(" - Update mode - File '%s' same or older than existing filenum: %d - (Skipping it)\n", fprop->real_path, existing_filenum);
+
+        freeProperty( existing_prop );
+        freeProperty( new_prop );
+
+        return 0;
+    }
+
+
+
+    /* new file is newer so replace old file */
+
+    if (sw->verbose >= 3)
+        printf(" - Update mode - File '%s' replaced existing file number %d because %s\n",
+                    fprop->real_path,
+                    existing_filenum,
+                    existing_prop && new_prop
+                        ? "it was newer than the existing file"
+                        : existing_prop || new_prop
+                            ? "only the new file had a date"
+                            : "neither file had a date"
+         );
+
+    freeProperty( existing_prop );
+    freeProperty( new_prop );
+
+    return 1;  /* go ahead and remove */
+}
+
+
+/***************************************************************************
+* check_for_replace -  Tests if replacing a file in update mode
+* Call with:
+*   SWISH       *sw     - the swish object
+*   FileProp    *fprop  - file properties
+*
+* Returns:
+*   true if ok to index new file
+*   false means skip indexing this file
+*
+****************************************************************************/
+static int check_for_replace( SWISH *sw, FileProp * fprop )
+{
+
+#ifndef USE_BTREE
+    return 1;
+#else
+
+    int         existing_filenum;
+    int         existing_is_deleted;
+    int         existing_word_count = 0;
+    IndexFILE   *indexf = sw->indexlist;
+    int         update_mode = sw->Index->update_mode;
+    char        *update_string;
+    int         return_value;
+    int         delete_existing = 0;  /* flag to delete existing file */
+
+    /* Return true if not in update or remove mode */
+    if ( MODE_UPDATE != update_mode && MODE_REMOVE != update_mode )
+        return 1;
+
+
+    update_string = MODE_UPDATE == update_mode ? "Update" : "Remove";
+
+    /* Always skip in remove mode.  In update, skip index if doesn't exist as below */
+
+    return_value  = MODE_UPDATE == update_mode ? 1 : 0;  /* how to exit based on mode */
+
+
+
+    existing_filenum = DB_ReadFileNum(sw, fprop->real_path, indexf->DB);
+
+    /* If the file already exists then likely will remove the file, so lookup the old word count */
+    /* Assumes that zero words indicates that a file was already deleted */
+    if ( existing_filenum )
+        existing_word_count = getTotalWordsInFile( indexf, existing_filenum );
+
+    existing_is_deleted = existing_filenum && ( 0 == existing_word_count);  /* just to make it clear */
+
+
+
+    if ( sw->verbose >= 5 )
+        printf("\nFile %s.  Existing filenum: %d.  Existing is deleted: %d Existing wordcount: %d\n",
+                fprop->real_path, existing_filenum, existing_is_deleted, existing_word_count );
+
+
+
+
+    /* Skip if file does not already exist or has not already been deleted */
+
+    if ( !existing_filenum )
+    {
+        if ( sw->verbose >= 4 )
+            printf(" - %s Mode - File '%s' is a new file and does not exist in the index\n", update_string, fprop->real_path );
+
+        return return_value;
+    }
+
+
+
+    if ( existing_is_deleted )
+    {
+        if ( sw->verbose >= 4 )
+            printf(" - %s Mode - File '%s' has already been deleted from the index\n", update_string, fprop->real_path );
+
+        return return_value;
+
+    }
+
+
+    /* At this point we have an existing file */
+
+
+    /* MODE_REMOVE is always deleted.  In update mode, delete if current file is newer than existing */
+
+
+    delete_existing = MODE_REMOVE == update_mode
+                        ? 1
+                        : file_is_newer_than_existing( sw, fprop, existing_filenum  );
+
+
+    if ( delete_existing )
+    {
+
+        DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
+        indexf->header.removedfiles++;
+        indexf->header.removed_word_positions += existing_word_count;
+
+        return return_value;  /* keep indexing in update mode, other wise don't index */
+
+    }
+
+    return 0;  /* don't index the new file -- we are either keeping or are in remove mode */
+
+#endif
+
+}
+
+
 /***********************************************************************
    -- Start the real indexing process for a file.
    -- This routine will be called by the different indexing methods
@@ -719,11 +923,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     char        strType[30];
     int         i;
     FileRec     fi;  /* place to hold doc properties */
-#ifdef USE_BTREE
-    int existing_filenum;
-    int existing_is_deleted;
-    int existing_word_count = 0;
-#endif
 
     memset( &fi, 0, sizeof( FileRec ) );
 
@@ -790,171 +989,22 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         fprop->real_path = process_regex_list( fprop->real_path, sw->replaceRegexps, &matched );
     }
 
-#ifdef USE_BTREE
-    /* Let's see if file already exits when in update mode */
 
-    existing_filenum = DB_ReadFileNum(sw, fprop->real_path, indexf->DB);
-
-    /* If the file already exists then likely will remove the file, so lookup the old word count */
-    /* Assumes that zero words indicates that a file was deleted */
-    if ( existing_filenum )
-        existing_word_count = getTotalWordsInFile( indexf, existing_filenum );
-
-    existing_is_deleted = existing_filenum && ( 0 == existing_word_count);  /* just to make it clear */
-
-
-
-    if ( sw->verbose >= 5 )
-        printf("\nFile %s.  Existing filenum: %d.  Existing is deleted: %d Existing wordcount: %d\n",
-                fprop->real_path, existing_filenum, existing_is_deleted, existing_word_count );
-
-    switch(sw->Index->update_mode)
+    /* Check for the need to remove an existing file first */
+    if ( !check_for_replace( sw, fprop ) )
     {
+        if ( sw->verbose >= 1 )
+            printf("Skipped this file\n\n");
 
-      case MODE_UPDATE:      /* Update mode */
-
-        /* If the old file has not been deleted, delete it */
-        /* and don't bother checking if no files have been removed yet, or if it's already been deleted */
-
-        if ( !existing_filenum )
-        {
-            if ( sw->verbose >= 4 )
-                printf(" - Update Mode - File '%s' is a new file\n", fprop->real_path );
-
-            break;
-        }
-
-        if ( existing_is_deleted )
-        {
-            if ( sw->verbose >= 4 )
-                printf(" - Update Mode - File '%s' is replacing a file that has already been deleted\n", fprop->real_path );
-
-            break;
-        }
-
-        else  /* existing and not already deleted -- see which one to keep */
-        {
-            IndexFILE   *cur_index = sw->indexlist;
-            int         ret;
-            propEntry   *wp, *cp;
-            FileRec     fi;
-            int         error_flag;
-            unsigned long tmp;
-
-            /* Get the date from the existing file */
-
-
-            if(!cur_index->modified_meta)
-                cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
-
-            memset(&fi, 0, sizeof( FileRec ));
-            fi.filenum = existing_filenum;
-            cp = ReadSingleDocPropertiesFromDisk(cur_index, &fi, cur_index->modified_meta->metaID, 0 );
-
-            /* Don't need the fi struct any more, but can't call freefileinfo() */
-            if ( fi.prop_index )
-                efree( fi.prop_index );
-
-
-            /* Create a property for the new file */
-
-            if ( !fprop->mtime ) /* was a time provided?  */
-                wp = NULL;  /* $$$ should be MISSING or NO_PROPERTY */
-
-            else /* create a property */
-            {
-                tmp = PACKLONG(fprop->mtime);
-                wp = CreateProperty( cur_index->modified_meta, (unsigned char *)&tmp, sizeof( tmp ), 1, &error_flag );
-            }
-
-            ret = Compare_Properties( cur_index->modified_meta, cp, wp );
-
-
-            /* Skip new file if older or same age as existing file */
-            /* and at least one of the files has a date */
-            /* if neither file has a date then the new one will replace existing */
-
-            if (ret >= 0 && ( cp || wp ) )
-            {
-               if (sw->verbose >= 3)
-                   printf(" - Update mode - File '%s' same or older than filenum: %d - (Skipping it)\n", fprop->real_path, existing_filenum);
-
-                freeProperty( cp );
-                freeProperty( wp );
-
-                /* external program must seek past data */
-                if (fprop->fp)
-                    flush_stream( fprop );
-
-                return;
-            }
-
-            else   /* Remove old filenum and continue */
-            {
-                DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
-                cur_index->header.removedfiles++;
-                cur_index->header.removed_word_positions += existing_word_count;
-
-                if (sw->verbose >= 3)
-                    printf(" - Update mode - File '%s' replaced existing file number %d because %s\n",
-                                fprop->real_path,
-                                existing_filenum,
-                                cp && wp
-                                    ? "it was newer than the existing file"
-                                    : cp || wp
-                                        ? "only the new file had a date"
-                                        : "neither file had a date"
-                     );
-            }
-
-            freeProperty( cp );
-            freeProperty( wp );
-        }
-        break;
-
-
-
-      case MODE_REMOVE:      /* Remove mode */
-
-        if ( !existing_filenum )
-        {
-            if ( sw->verbose >= 2 )
-                printf(" - Remove mode - File '%s' is not in the index\n", fprop->real_path);
-
-        }
-
-        else if ( existing_is_deleted )
-        {
-            /* not expected, so verbose level 2 */
-            if ( sw->verbose >= 2 )
-                    printf(" - Remove mode - File '%s' already deleted\n", fprop->real_path);
-        }
-
-        else /* remove the file */
-        {
-            IndexFILE   *cur_index = sw->indexlist;
-            /* Remove old filenum and continue */
-
-            DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
-            cur_index->header.removedfiles++;
-            cur_index->header.removed_word_positions += existing_word_count;
-
-
-            /* This is expected, so set 3 */
-
-            if ( sw->verbose >= 3 )
-                    printf(" - Remove mode - File '%s' deleted\n", fprop->real_path);
-        }
-
-
-        /* external program must seek past data */
         if (fprop->fp)
             flush_stream( fprop );
 
-        return;  /* all done */
+        return;
     }
 
-#endif
+
+
+
 
     /** Read the buffer, if not a stream parser **/
 
