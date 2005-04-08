@@ -183,7 +183,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     char   *rd_buffer = NULL;   /* complete file read into buffer */
     size_t  bytes;
     struct FilterList *filter_save = fprop->hasfilter;
-    
+
 
     /* slirp entire file into memory -- yuck */
     fprop->hasfilter = NULL;  /* force reading fprop->fsize bytes */
@@ -207,7 +207,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
 
 //***JMRUIZ    efree(rd_buffer);
     fclose( out );
-   
+
 }
 
 
@@ -246,7 +246,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
         char    *end;
         char    *line;
         int     has_filter = 0;
-        
+
         line = str_skip_ws(ln); /* skip leading white space */
         end = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
 
@@ -270,14 +270,14 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
             if ( fsize == 0 && sw->verbose >= 2)
                 progwarn("External program returned zero Content-Length when processing file'%s'", real_path);
 
-            
+
 
             /* Create the FileProp entry to describe this "file" */
 
             /* This is not great -- really should make creating a fprop more generic */
             /* this was done because file.c assumed that the "file" was on disk */
             /* which has changed over time due to filters, http, and prog */
-            
+
             fprop = init_file_properties();  
             fprop->real_path = real_path;
             fprop->work_path = estrdup( real_path );
@@ -411,6 +411,13 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 #ifndef USE_BTREE
                 progerr("Cannot use Update-Mode header with this version of Swish-e.  Rebuild with --enable-incremental.");
 #endif
+                /* April 8, 2005 - If update mode is set on the initial indexing job
+                 * then the btree code fails.  So for now restrict this feature for only
+                 * when -r or -r specified on the command line */
+                if ( MODE_UPDATE != original_update_mode && MODE_REMOVE != original_update_mode )
+                    progerr("Cannot use 'Update-Mode' header without -u or -r");
+
+
                 char *x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Update-Mode '%s'", line);
