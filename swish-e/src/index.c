@@ -698,6 +698,7 @@ LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency
         return newp;
 }
 
+#ifdef USE_BTREE
 /**********************************************************************
 * file_is_newer_than_existing 
 *       - returns true if the new file (based on fprop) is newer than the existing
@@ -791,6 +792,7 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
 
     return 1;  /* go ahead and remove */
 }
+#endif
 
 
 /***************************************************************************
@@ -993,7 +995,10 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Check for the need to remove an existing file first */
     if ( !check_for_replace( sw, fprop ) )
     {
-        if ( sw->verbose >= 1 )
+        /* report file skipped if not in remove mode
+         * all files are skipped in remove mode */
+
+        if ( sw->verbose >= 1 && MODE_REMOVE != sw->Index->update_mode )
             printf("Skipped this file\n\n");
 
         if (fprop->fp)
