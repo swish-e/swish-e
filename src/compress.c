@@ -152,12 +152,22 @@ int     uncompress1(FILE * fp, int (*f_getc) (FILE *))
 {
     int     _c;
     int     num = 0;
+    
+    /* printf("uncompress: _c = %d num = %d\n", _c, num); */
 
     do
     {
         _c = (int) f_getc(fp);
+        
+        if (_c < 0) {
+             progerr("_c is < 0 in uncompress1()\n");
+        }
+        
         num <<= 7;
         num |= _c & 127;
+        
+        /* printf("uncompress: _c = %d num = %d\n", _c, num); */
+        
         if (!num)
             break;
     }

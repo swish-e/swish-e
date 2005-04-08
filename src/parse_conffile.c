@@ -223,6 +223,11 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
             continue;
         }
 
+/* karman: it would be nice to be able to override the ParserWarnLevel in
+           conf file via cmd line -W N
+           right now, it is the opposite: conf file overrides -W at cmd line
+*/
+
         if (strcasecmp(w0, "ParserWarnLevel") == 0)
         {
             if (sl->n == 2)

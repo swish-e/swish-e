@@ -330,6 +330,7 @@ static void    usage()
     printf("         -V : prints the current version\n");
     printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
     printf("         -w : search for words \"word1 word2 ...\"\n");
+    printf("         -W : next param is ParserWarnLevel [-W 2]\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
     printf("\n");
     printf("version: %s\n docs: http://swish-e.org\n Scripts and Modules at: (libexecdir) = %s\n", VERSION, get_libexec());
@@ -659,6 +660,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'S':  /* data Source */
             case 'c':  /* config file */
             case 'v':  /* verbose indexing - not really limited to indexing */
+            case 'W':  /* ParserWarnLevel - also configurable in conf file */
             case 'N':  /* limit by date */
             case 'l':  /* follow symbolic links */
             case 'e':  /* economy indexing mode (also for merge) */
@@ -933,6 +935,12 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
             sw->verbose = get_param_number( &argv, switch_char );
             break;
         }
+        
+        
+        /* ParserWarnLevel */
+        case 'W':
+            sw->parser_warn_level = get_param_number( &argv, switch_char );
+            break;
 
 
 
@@ -1211,6 +1219,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         case 'R':
             sw->RankScheme = get_param_number( &argv, switch_char );
             break;
+            
 
         /* Ignore sorted indexes */
 

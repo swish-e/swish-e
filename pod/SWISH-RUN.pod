@@ -305,17 +305,17 @@ for updating the index.  There are three possible values:
     Remove
     Index
 
-"Update" will update the index with the given file if the date of the record is
+"Update" will update the index with the given file if the date of the given file is
 newer than the date of the file already in the index.  Setting to "Update"
 is the same as using -u on the command line.
 
 "Remove" mode will remove the file specified by the Path-Name header.
 Setting "Remove" is the same as using -r on the command line.
 
-"Index" will add the file to the index, not checking to see if the file
+"Index" will add the file to the index. NOTE: swish-e will not check to see if the file
 already exists.
 
-If this header is not specified then it default to the mode specified on
+If this header is not specified, the default is the mode specified on
 the command line (-u, -r, or none).
 
 This option is still experimental and is subject to change in the future.
