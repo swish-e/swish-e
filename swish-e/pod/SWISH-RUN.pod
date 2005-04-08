@@ -296,6 +296,32 @@ one of the types Swish-e understands.  For example,
 
 This header is not required.
 
+=item Update-Mode:
+
+When updating an incremental index this header can be used to select the mode
+for updating the index.  There are three possible values:
+
+    Update
+    Remove
+    Index
+
+"Update" will update the index with the given file if the date of the record is
+newer than the date of the file already in the index.  Setting to "Update"
+is the same as using -u on the command line.
+
+"Remove" mode will remove the file specified by the Path-Name header.
+Setting "Remove" is the same as using -r on the command line.
+
+"Index" will add the file to the index, not checking to see if the file
+already exists.
+
+If this header is not specified then it default to the mode specified on
+the command line (-u, -r, or none).
+
+This option is still experimental and is subject to change in the future.
+Ask on the Swish-e list before using.
+
+
 =back
 
 The above example program only returns one document and exits, which is not very useful.  Normally,
