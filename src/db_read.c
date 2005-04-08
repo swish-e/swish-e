@@ -386,7 +386,9 @@ int getTotalWordsInFile( IndexFILE *indexf, int filenum )
         progerr("Can't return total words -- index was not built with IgnoreTotalWordCountWhenRanking");
     else
         return indexf->header.TotalWordsPerFile[filenum - 1];
+
 #endif
+    return 0;  /* make the compiler quiet */
 }
 
 /*------------------------------------------------------*/
