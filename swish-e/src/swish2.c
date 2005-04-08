@@ -71,7 +71,8 @@ SWISH  *SwishNew()
     sw->lasterror = RC_OK;
     sw->lasterrorstr[0] = '\0';
     sw->verbose = VERBOSE;
-    sw->parser_warn_level = 2;  /* report if libxml2 aborts processing a document. */
+    /* karman added -W opt which will override warn_level default at cmd line */
+    sw->parser_warn_level = 2; /* report if libxml2 aborts processing a document. */
     sw->headerOutVerbose = 1;
     sw->DefaultDocType = NODOCTYPE;
 
