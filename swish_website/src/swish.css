@@ -2,8 +2,8 @@
 
 [%
     font = {
-        body = "verdana, helvetica, arial, sans-serif"
-        text = '"trebuchet ms", verdana, helvetica, arial, sans-seri'
+        body = "arial, helvetica, sans-serif"
+        text = 'arial, helvetica, sans-seri'
     }
 
     color = { # TODO - should these be color names?
@@ -25,7 +25,7 @@
 /* ##### Common Styles ##### */
 
 body {
-  font-family: verdana, helvetica, arial, sans-serif;
+  font-family: arial, helvetica, sans-serif;
   /* font-size: 73%;  *//* Enables font size scaling in MSIE */
   /* karman: but IE is a dinosaur and this makes all other browsers too small ... */
   margin: 0;
@@ -169,7 +169,7 @@ input.button:hover
 }
 
 .headerTitle {
-  font-size: 300%;
+  font-size: 400%;
   margin: 0;
   padding: 0;
 }
@@ -240,11 +240,11 @@ input.button:hover
   list-style-position: inside;
   width: 12em;
   margin: 0;
-  padding: 1ex 0;
+  /* padding: 1ex 0; */
   border: 1px solid rgb(204,204,204);
   position: absolute;
   left: 1.5ex;
-  top: 12em;
+  top: 13em;
   /* top: 9em; */
 }
 
@@ -380,7 +380,7 @@ div.navbar {
 #main-copy h1 {
   color: rgb(117,144,174);
   background-color: transparent;
-  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
+  font-family: arial, helvetica, sans-serif;
   font-size: 186%;
   margin: 0;
   padding: 1.5ex 0 0 0;
@@ -389,7 +389,7 @@ div.navbar {
 #main-copy h2 {
   color: rgb(61,92,122);
   background-color: transparent;
-  font-family: "trebuchet ms", verdana, helvetica, arial, sans-serif;
+  font-family: arial, helvetica, sans-serif;
   font-weight: normal;
   font-size: 151%;
   margin: 0;
@@ -421,7 +421,7 @@ div.navbar {
 .more a {
   color: rgb(61,92,122);
   background-color: transparent;
-  font-size: 92%;
+  /* font-size: 92%; */
   text-decoration: underline;
   margin: 0;
   padding: 0.25ex 0.75ex;
@@ -526,7 +526,7 @@ div.search-result a:hover {
 
 .search-rank {
     color: gray;
-    font-size: 80%;
+    font-size: 85%;
 }
 
 .search-description {
@@ -556,7 +556,7 @@ div.search-result a:hover {
 span.indxtype {
 /* for ID'ing the search results according to index */
     color: gray;
-    font-size: 80%;
+    font-size: 90%;
 }
 
 
