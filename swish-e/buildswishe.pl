@@ -7,13 +7,13 @@
 ################################################################################
 # History
 #
-#    0.01
+#   0.01
 #    initial public release . Wed Sep 15 12:07:55 CDT 2004 . karman@cray.com
 #
-#    0.02
+#   0.02
 #    --srcdir works; IRIX fixes; --quiet fixes
 #
-#    0.03
+#   0.03
 #    chdir to $Bin to check for cvs build
 #    include $installdir in -I when checking for preinstalled libxml2
 #    linux fixes
@@ -21,11 +21,11 @@
 #    --force actually works
 #    added --static to make --disable-shared optional
 #
-#    0.04
+#   0.04
 #    fixed swishdir/installdir bug
 #    thanks to chyla@knihovnabbb.cz
 #
-#    0.05     Tue Nov 16 07:08:56 CST 2004
+#   0.05     Tue Nov 16 07:08:56 CST 2004
 #    rewrote get_src() with a little more reality in mind
 #    fixed swish option to refer to swish-e, swish, or swishe
 #        but look for file called 'swish-e' or 'latest'
@@ -33,7 +33,7 @@
 #    added --make option for when you can't symlink make -> gmake
 #    libxml2-2.6.16  --- still need to get 'latest' support
 #
-#    0.06    Wed Nov 17 08:18:05 CST 2004
+#   0.06    Wed Nov 17 08:18:05 CST 2004
 #    arrgg. need to read my email more thoroughly; libxml 2.6.16 fails
 #        because of unannounced api change. reverting to .13
 #    --errlog option; errors now print to stderr instead of to log by default
@@ -42,7 +42,7 @@
 #        otherwise defaults to perl Config
 #    usage fixes
 #
-#    0.07    Wed Dec  8 15:25:57 CST 2004
+#   0.07    Wed Dec  8 15:25:57 CST 2004
 #    added xpdf to build (mostly for CrayDoc)
 #    fixed get src logic (again)
 #    standardized swish,swish-e,swishe debacle
@@ -57,7 +57,7 @@
 #    fixed SWISH::API LIBS and LDFLAGS opt to work on Solaris
 #    unset LD_LIBRARY_PATH env var to accurately test linking
 #
-#    0.08    Tue Mar 29 14:18:56 CST 2005
+#   0.08    Tue Mar 29 14:18:56 CST 2005
 #    perldoc fixes
 #    -R optional in ::API build
 #    xpdf build fixes -- only include pdftotext and pdfinfo
@@ -68,7 +68,13 @@
 #    URL fix for new swish-e.org site
 #    added /usr/local to default LD_RUN_PATH and -I/path for all include paths
 #
-#
+#   0.09    Tue Apr 26 09:09:10 CDT 2005
+#    added libxml2 to swish-e -I path
+#    fixed xpdf src url
+#    rewrote perllib logic
+#    -W test for all install dirs
+#    thanks to chyla@knihovnabbb.cz for feedback on these fixes/features
+#    
 ################################################################################
 
 $| = 1;
@@ -84,17 +90,18 @@ use File::Path qw( mkpath );
 use File::Spec;
 use FindBin qw( $Bin );
 
-my $Version     = '0.08';
+my $Version     = '0.09';
 
 my %URLs    = (
 
 'swish-e'     => 'http://swish-e.org/distribution/latest.tar.gz',
 'zlib'        => 'http://www.zlib.net/zlib-1.2.2.tar.gz',
 # madler@alumni.caltech.edu assures me that zlib will support a
-# http://www.zlib.net/zlib-current.tar.gz link ...
+# http://www.zlib.net/zlib-current.tar.gz link but no such link as of
+# Tue Apr 26 11:43:40 CDT 2005
 
 'libxml2'    => 'http://xmlsoft.org/sources/LATEST_LIBXML2',
-'xpdf'        => 'http://docs.cray.com/src/xpdf-3.01.tar.gz',
+'xpdf'        => 'http://docs.cray.com/support/xpdf-3.01.tar.gz',
 #'xpdf'        => 'ftp://ftp.foolabs.com/pub/xpdf/xpdf-current.tar.gz',
 
 # NOTE that official xpdf needs patch to 3.01!
@@ -157,7 +164,8 @@ EOF
 usage() unless GetOptions($opts,keys %$allopts);
 usage() if $opts->{help};
 
-if ($opts->{opts}) {
+if ($opts->{opts})
+{
 # print all options and descriptions
     printopts();
     exit;
@@ -170,7 +178,7 @@ use vars qw(
         $outlog $errlog $output $ld_opts $Cout $Cin
         $zlib_test $libxml2_test $ld_test $gcc_test
         $swishdir $fetcher $libxml2dir $zlibdir $MinLibxml2 $cmdout
-        $Make $startdir $swish_api_dir
+        $Make $startdir $swish_api_dir $perllib
         
         );
 
@@ -181,28 +189,28 @@ $libxml2dir    = $opts->{prevxml2} || '';
 # some defaults
 $installdir = $opts->{installdir} || $defdir;
 $installdir =~ s,/+$,,;
-
+$perllib = $opts->{perllib} || "$Config{sitearch}/../"; # must go up one level
 $startdir     = Cwd::cwd();
 $MinLibxml2    = '2.4.3';
 # we ought to be able to retrieve this from swish src somehow
 # but we don't have source till after we've tested for this -- chick and egg
 
-$nogcc         = "I refuse to compile without gcc\nCheck out http://gcc.gnu.org\n";
-$min_gcc     = '2.95';
+$nogcc      = "I refuse to compile without gcc\nCheck out http://gcc.gnu.org\n";
+$min_gcc    = '2.95';
 $tmpdir     = $opts->{tmpdir} || $deftmp;
 $outlog     = $tmpdir . '/buildswishe.log';
-$errlog        = $opts->{errlog} || '';
+$errlog     = $opts->{errlog} || '';
 $output     = $opts->{verbose} ? '' : " 1>>$outlog";
 $output     .= " 2>>$errlog " if $errlog;
 
-$cmdout        = $opts->{quiet} ? ' 1>/dev/null 2>/dev/null ' : '';
+$cmdout     = $opts->{quiet} ? ' 1>/dev/null 2>/dev/null ' : '';
 
-$ld_opts     = '';    # define these based on OS platform
+$ld_opts    = '';    # define these based on OS platform
 
-$Make        = $opts->{make} || 'make';
+$Make       = $opts->{make} || 'make';
 
 # better C tests would be nice. these seem to work.
-$Cout         = "$tmpdir/test";
+$Cout       = "$tmpdir/test";
 $Cin        = "$tmpdir/$$.c";
     
 $zlib_test =<<EOF;
@@ -380,12 +388,28 @@ sub checkenv
 sub makedirs
 {
 
-    my @d = ($installdir,
-         $tmpdir,
+    my @d = (
+        $installdir,
+        $tmpdir,
         "$installdir/lib",
-        "$installdir/include"
+        "$installdir/include",
+        $perllib
         );
     mkpath( \@d, 1, 0755 );
+    for (@d) {
+    
+        if ( $opts->{progress} ) {
+        print STDOUT "checking dir $_ ... ";
+        }
+        unless ( -W $_ )
+        {
+            warn "can't write to $_: $!\n";
+            nice_exit();
+        }
+        if ( $opts->{progress} ) {
+        print STDOUT "\n";
+        }
+    }
     
 }
 
@@ -458,16 +482,21 @@ sub test_c_prog
 
 }
 
-
+# fix from chyla@knihovnabbb.cz
+# Tue Apr 26 09:15:16 CDT 2005
 sub test_for_prior_zlib
 {
-    return undef if $opts->{force};
-    
-    print "testing for already-installed zlib... "; 
-    return get_ld_path('libz', '', \$zlibdir)
-        unless test_c_prog( $zlib_test, '-lz', $ld_opts );
-    
+     return undef if $opts->{force};
+
+     print "testing for already-installed zlib... ";
+
+     my $err = test_c_prog( $zlib_test, '-lz', $ld_opts );
+
+     return get_ld_path('libz', '', \$zlibdir) unless $err;
+
+     return 0;    # 0 indicates failure
 }
+
 
 sub test_for_prior_libxml2
 {
@@ -480,7 +509,7 @@ sub test_for_prior_libxml2
 
     my $path = get_ld_path('libxml2', '', \$libxml2dir)
       unless test_c_prog(
-                  $ld_test,
+                $ld_test,
                 $ld_opts,
                 '-lxml2' );
 
@@ -492,10 +521,9 @@ sub test_for_prior_libxml2
     
     # include $installdir in -I path, since we may be a repeat user
     my $err = test_c_prog(
-                  $libxml2_test,
-                #'-I/usr/local/include/libxml2',
+                $libxml2_test,
                 '-I'. File::Spec->catfile( $installdir, 'include', 'libxml2' ),
-                  '-I'. File::Spec->catfile( $path, 'include', 'libxml2' ),
+                '-I'. File::Spec->catfile( $path, 'include', 'libxml2' ),
                 $ld_opts,
                 '-lxml2',
                 \$MinLibxml2
@@ -1196,8 +1224,6 @@ sub xpdf
 }
 
 
-    system("cp pdftotext $installdir/bin")
-        and die "can't cp pdftotext -> $installdir/bin: $!\n";
 sub swishe
 {
 
@@ -1254,7 +1280,7 @@ sub swishe
             "--with-libxml2=$libxml2dir",
             "--disable-docs",
             "LDFLAGS='$ld_opts'",
-            "CPPFLAGS='-I$zlibdir/include -I$libxml2dir/include'",
+            "CPPFLAGS='-I$zlibdir/include -I$libxml2dir/include -I$libxml2dir/include/libxml2'",
             );
             
     push(@arg, " --disable-shared ") if $opts->{static};
@@ -1282,36 +1308,31 @@ sub swish_api
                 "LIBS='$libs'",
                 #"LDFLAGS='-L$installdir/lib'",
                 #LDFLAGS seems to be ignored by MakeMaker 
-                # or not supported under some versions.
+                # and/or not supported under some versions.
 
-                "CCFLAGS='-I$installdir/include'"
+                "CCFLAGS='-I$installdir/include'",
+                'LIB='.$perllib,
+                'PREFIX='.$perllib
                 );
                 
-    if ( $opts->{perllib} )
-    {
-    
-        push(@a,
-            'LIB='.$opts->{perllib},
-            'PREFIX='.$opts->{perllib}
-            );
-        
-    }
-    
     my $arg = join ' ', @a;
                 
     $ENV{SWISHBINDIR} = "$installdir/bin";
     
-    my $cmd = $swishdir =~ m/2\.4\.[12]/
-      ? "$^X Makefile.PL $arg"
-      : "$^X Makefile.PL $arg $output";
-
+    my $cmd = "$^X Makefile.PL $arg";
+    
+    # 2.4.3 and later support non-interactive perllib
+    if ( $swishdir =~ m/2\.[45]\.[3-9]/ )
+    {
+        $cmd .= " $output";
+    }
+    
     
     print "env SWISHBINDIR set to '$installdir/bin'\n";
     print "configuring with:\n";
-    print "$^X Makefile.PL $arg\n";
+    print "$cmd\n";
                                                                 
     nice_exit() if system( $cmd );
-    # pre-2.4.3 versions need to be interactive
     make();
     make_test();
     make_install();
@@ -1330,13 +1351,10 @@ sub test_api
     my $vers = sprintf("%vd", $^V);
 
     delete $ENV{PERL5LIB};    # just in case we have it somewhere else...
-    my $inc = '';
-    if ( $opts->{perllib} ) {
-        $inc = join ' ',
-            "-I" . File::Spec->catfile( $opts->{perllib}, $vers, $arch ).
-            "-I" . File::Spec->catfile( $opts->{perllib}, 'site_perl', $vers, $arch ),
-            "-I" . File::Spec->catfile( $opts->{perllib}, $arch );
-    }
+    my $inc = join ' ',
+            "-I" . File::Spec->catfile( $perllib, $vers, $arch ).
+            "-I" . File::Spec->catfile( $perllib, 'site_perl', $vers, $arch ),
+            "-I" . File::Spec->catfile( $perllib, $arch );
         
     my $cmd = "$^X $inc -MSWISH::API -e '\$c = new SWISH::API(\"foo\")'";
         
