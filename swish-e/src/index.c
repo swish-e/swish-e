@@ -763,8 +763,13 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
 
     if (ret >= 0 && ( existing_prop || new_prop ) )
     {
-       if (sw->verbose >= 3)
-           printf(" - Update mode - File '%s' same or older than existing filenum: %d - (Skipping it)\n", fprop->real_path, existing_filenum);
+        if (sw->verbose >= 3)
+        {
+           if ( new_prop )
+                printf(" - Update mode - File '%s' same or older than existing filenum: %d - (Skipping it)\n", fprop->real_path, existing_filenum);
+            else
+                printf(" - Update mode - File '%s' exists with date, but new files does not have a date.  Keeping existing file. filenum: %d\n", fprop->real_path, existing_filenum);
+        }
 
         freeProperty( existing_prop );
         freeProperty( new_prop );
@@ -781,10 +786,10 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
                     fprop->real_path,
                     existing_filenum,
                     existing_prop && new_prop
-                        ? "it was newer than the existing file"
+                        ? "it is newer than the existing file"
                         : existing_prop || new_prop
-                            ? "only the new file had a date"
-                            : "neither file had a date"
+                            ? "only the new file has a date"
+                            : "neither file has a date"
          );
 
     freeProperty( existing_prop );
@@ -868,7 +873,7 @@ static int check_for_replace( SWISH *sw, FileProp * fprop )
     if ( existing_is_deleted )
     {
         if ( sw->verbose >= 4 )
-            printf(" - %s Mode - File '%s' has already been deleted from the index\n", update_string, fprop->real_path );
+            printf(" - %s Mode - Existing file '%s' has already been deleted from the index\n", update_string, fprop->real_path );
 
         return return_value;
 
@@ -892,6 +897,9 @@ static int check_for_replace( SWISH *sw, FileProp * fprop )
         DB_RemoveFileNum(sw,existing_filenum,indexf->DB);
         indexf->header.removedfiles++;
         indexf->header.removed_word_positions += existing_word_count;
+
+        if ( sw->verbose >= 3 )
+            printf(" - %s Mode - Removed existing file '%s' (#%d) from index\n", update_string, fprop->real_path, existing_filenum );
 
         return return_value;  /* keep indexing in update mode, other wise don't index */
 
@@ -999,7 +1007,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
          * all files are skipped in remove mode */
 
         if ( sw->verbose >= 1 && MODE_REMOVE != sw->Index->update_mode )
-            printf("Skipped this file\n\n");
+            printf("Document '%s' not added to index.\n\n", fprop->real_path);
 
         if (fprop->fp)
             flush_stream( fprop );
