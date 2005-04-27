@@ -1,3 +1,41 @@
+
+/********************************************************************************************
+ * Here are some comments about how this works...
+ * Note José Manuel Ruiz - April 27. 2005
+ *
+ *
+ * The information is stored in pages. The pages are of fixed size. Its size is
+ * defined by WORDDATA_PageSize. It must be good that this value is identical or
+ * at least multiple of the I/O page size.
+ *
+ * If the size of worddata to be inserted do not fit in 1 page it is stored
+ * en several contigous pages. This is the reason for 2 functions:
+ *
+ * WORDDATA_Put --> For worddata that fits in one page
+ * WORDDATA_PutBig -> For worddata that does not fir in one page
+ *
+ * (There are equivalents for read and delete)
+ *
+ * For data that fits in 1 page...
+ *
+ * The data is stored in chunks of blocks. The size of the basic block is
+ * defined by WORDDATA_BlockSize.
+ *
+ * The worddata is prefixed by 3 bytes:
+ * - The first byte is an id from 1 to 0xff (so we can store up to 255
+ *   worddatas in a page). This number is unique and identifies a worddata
+ *   chunk
+ *
+ * - The bytes 2 and 3 are the size of worddata. To get the size apply: (p[1]
+ *   << 8) + p[2]
+ *
+ * As you see, using a block size of 16 bytes, for a wordata of 14 bytes we
+ * will need 32 bytes (2 blocks of 16 bytes): 1 byte for the id, 2 bytes for
+ * the length (00 0E) and 14 bytes for the data (17 bytes rounded up to 32
+ * bytes). So, in this case we are wasting 15 bytes. But it is the worst case.
+ *
+ ********************************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +54,10 @@
 /* !!!! Must no be less than 4096 and not greater than 65536*/
 #define WORDDATA_PageSize 4096
 /* WORDDATA Block size */
+/* !!!! For a WORDDATA_PageSize of 4096, the Block size is 16 */
 #define WORDDATA_BlockSize (WORDDATA_PageSize >> 8)
+/* Using 1 byte for storing the block id, this leads to only 255 max blocks */
+#define WORDDATA_Max_Blocks_Per_Page 0xff
 
 
 /* Round to WORDDATA_PageSize */
@@ -26,6 +67,7 @@
 #define WORDDATA_RoundBlockSize(n) (((n) + WORDDATA_BlockSize - 1) & (~(WORDDATA_BlockSize - 1)))
 
 /* Let's asign the first block for the header */
+/* Check this if we put more data in the header !!!! */
 #define WORDDATA_PageHeaderSize (WORDDATA_BlockSize) 
 
 /* Max data size to fit in a single page */
@@ -40,10 +82,16 @@
 #define WORDDATA_GetNumRecords(pg,num) ( (num) = UNPACKLONG(*(int *)((pg)->data + 1 * sizeof(int))))
 
 
+/* Routine to write the page to disk 
+*/
 int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
 {
+    /* Set the page basic data*/
+    /* Number of blocks in use */
     WORDDATA_SetBlocksInUse(pg,pg->used_blocks);
+    /* Number of worddata entries in the page */
     WORDDATA_SetNumRecords(pg,pg->n);
+    /* Seek to file pointer and write */
     sw_fseek(fp,(sw_off_t)(pg->page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
     if ( sw_fwrite(pg->data,WORDDATA_PageSize,1,fp) != 1 )
         progerrno("Failed to write page to disk: "); 
@@ -54,7 +102,9 @@ int WORDDATA_WritePage(WORDDATA *b, WORDDATA_Page *pg)
 {
 int hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
+    /* Mark page as modified */
     pg->modified =1;
+    /* If page is already in cache return. If not, add it to the cache */
     if((tmp = b->cache[hash]))
     {
         while(tmp)
@@ -98,6 +148,33 @@ WORDDATA_Page *tmp, *next;
     return 0;
 }
 
+/* Routine to remove the page page_number from the cache */
+void WORDDATA_CleanCachePage(WORDDATA *b,sw_off_t page_number)
+{
+int hash = (int)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+WORDDATA_Page *tmp,*next,*prev = NULL;
+
+    /* Search for page in cache */
+    if((tmp = b->cache[hash]))
+    {
+        while(tmp)
+        {
+            if(tmp->page_number == page_number)
+            {
+                next = tmp->next_cache;
+                efree(tmp);
+                if(prev) 
+                    prev->next_cache = next;
+                else
+                    b->cache[hash] = next;
+                return;
+            }
+            prev = tmp;
+            tmp = tmp->next_cache;
+        }
+    }
+}
+
 int WORDDATA_CleanCache(WORDDATA *b)
 {
 int i;
@@ -122,13 +199,20 @@ WORDDATA_Page *WORDDATA_ReadPageFromDisk(FILE *fp, sw_off_t page_number)
 {
 WORDDATA_Page *pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + WORDDATA_PageSize);
 
-    sw_fseek(fp,(sw_off_t)(page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET);
+    if(sw_fseek(fp,(sw_off_t)(page_number * (sw_off_t)WORDDATA_PageSize),SEEK_SET)!=0 || ((sw_off_t)(page_number * (sw_off_t)WORDDATA_PageSize) != sw_ftell(fp)))
+        progerrno("Failed to read page from disk: "); 
+
     sw_fread(pg->data,WORDDATA_PageSize, 1, fp);
 
+    /* Load  basic data from page */
+    /* Blocks in use */
     WORDDATA_GetBlocksInUse(pg,pg->used_blocks);
+    /* Number of entries */
     WORDDATA_GetNumRecords(pg,pg->n);
 
+    /* Page number */
     pg->page_number = page_number;
+    /* Mark page as not modified */
     pg->modified = 0;
     return pg;
 }
@@ -137,6 +221,8 @@ WORDDATA_Page *WORDDATA_ReadPage(WORDDATA *b, sw_off_t page_number)
 {
 int hash = (int)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
+
+    /* Search for page in cache */
     if((tmp = b->cache[hash]))
     {
         while(tmp)
@@ -149,15 +235,20 @@ WORDDATA_Page *tmp;
         }
     }
 
+    /* Not in cache. Read it from disk */
     tmp = WORDDATA_ReadPageFromDisk(b->fp, page_number);
     tmp->modified = 0;
+
+    /* mark page as being used */
     tmp->in_use = 1;
+
+    /* Add page to cache */
     tmp->next_cache = b->cache[hash];
     b->cache[hash] = tmp;
     return tmp;
 }
 
-
+/* Routine to get a new page */
 WORDDATA_Page *WORDDATA_NewPage(WORDDATA *b)
 {
 WORDDATA_Page *pg;
@@ -402,7 +493,7 @@ WORDDATA_Page *last_page=NULL;
     /* First - Check for a page with a Del Operation */
     if(b->last_del_page)
     {
-        free_blocks = 255 - b->last_del_page->used_blocks;
+        free_blocks = WORDDATA_Max_Blocks_Per_Page - b->last_del_page->used_blocks;
         if(!(required_length > (free_blocks * WORDDATA_BlockSize)))
         {
             last_page = b->last_del_page;
@@ -413,12 +504,12 @@ WORDDATA_Page *last_page=NULL;
         if( b->last_put_page)
         {
             /* Now check for the last page in a put operation */
-            free_blocks = 255 - b->last_put_page->used_blocks;
+            free_blocks = WORDDATA_Max_Blocks_Per_Page - b->last_put_page->used_blocks;
             if(required_length > (free_blocks * WORDDATA_BlockSize))
             {
                 WORDDATA_FreePage(b,b->last_put_page);
 
-                /* Save some memory - Do some flush flush of the data */
+                /* Save some memory - Do some flush of the data */
                 if(!(b->page_counter % WORDDATA_CACHE_SIZE))
                 {
                     WORDDATA_FlushCache(b);
@@ -461,16 +552,23 @@ WORDDATA_Page *last_page=NULL;
         p += WORDDATA_RoundBlockSize((3 + r_len));
     }
     if(!free_id)
-        free_id = last_id + 1;
+        free_id = last_id + 1; /* The first block (0) is for the header */
 
+    /* Let's use a temporal buffer and make the modifications in it */
     q = buffer;
+    /* Init the buffer with the page content */
+    /* p points to the start of the offset for the new worddata in the "real" page */
     memcpy(q,WORDDATA_PageData(last_page), p - WORDDATA_PageData(last_page));
     q += p - WORDDATA_PageData(last_page);
+    /* Put id and size for worddata */
     q[0] = (unsigned char) free_id;
     q[1] = (unsigned char) (len >> 8);
     q[2] = (unsigned char) (len & 0xff);
+    /* Put data */
     memcpy(q+3,data,len);
+    /* Point to the next block */
     q += WORDDATA_RoundBlockSize((3 + len));
+    /* Write worddata with ids greater than the new one after it */
     for(;i < last_page->n; i++)
     {
         /* Get the record length */
@@ -480,11 +578,16 @@ WORDDATA_Page *last_page=NULL;
         p += tmp;
         q += tmp;
     }
+    /* Write the temp buffer into the page */
     memcpy(WORDDATA_PageData(last_page),buffer,q - buffer);
     last_page->n++;
     last_page->used_blocks += required_length / WORDDATA_BlockSize;
     WORDDATA_WritePage(b,last_page);
-    return (b->lastid=(sw_off_t)((sw_off_t)(last_page->page_number << (sw_off_t)8) + (sw_off_t)free_id));
+
+    /* Return the pointer to the data as page_number + id */
+    /* The most significant byte is the id. The rest are for the page number */
+    b->lastid=(sw_off_t)((sw_off_t)(last_page->page_number << (sw_off_t)8) + (sw_off_t)free_id);
+    return(b->lastid);
 }
 
 unsigned char *WORDDATA_GetBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
@@ -502,6 +605,7 @@ unsigned char *data;
 
 unsigned char *WORDDATA_Get(WORDDATA *b, sw_off_t global_id, unsigned int *len)
 {
+/* Get the page number and id from the global_id */
 sw_off_t page_number = global_id >> (sw_off_t)8;
 int id = (int)(global_id & (sw_off_t)0xff);
 int r_id=-1,r_len=-1;
@@ -509,15 +613,19 @@ int i;
 unsigned char *p;
 unsigned char *data;
 
+    /* Special case. If id is null, the data did not fit in a normal page */
+    /* So, go to get a big Worddata */
     if(!id)
     {
         return WORDDATA_GetBig(b,page_number,len);
     }
+    /* reset last_get_page */
     if(b->last_get_page)
         WORDDATA_FreePage(b,b->last_get_page);
 
     b->last_get_page = WORDDATA_ReadPage(b,page_number);
 
+    /* Search for the id in the page */
     for(i = 0, p = WORDDATA_PageData(b->last_get_page); i < b->last_get_page->n; i++)
     {
         /* Get the id */
@@ -529,6 +637,7 @@ unsigned char *data;
         p += WORDDATA_RoundBlockSize((3 + r_len));
     }
 
+    /* If found read worddata */
     if(id == r_id)
     {
         data = (unsigned char *) emalloc(r_len);
@@ -540,7 +649,6 @@ unsigned char *data;
         data = NULL;
         *len = 0;
     }
-
     return data;
 }
 
@@ -615,6 +723,15 @@ int deleted_length;
                 b->Reusable_Pages[b->num_Reusable_Pages].page_number = page_number;
                 b->Reusable_Pages[b->num_Reusable_Pages++].page_size = WORDDATA_PageSize;
             }
+            /* If this page was also used in a put or get operation we must
+            ** also resets it */
+            if(b->last_get_page && b->last_get_page->page_number == b->last_del_page->page_number)
+                 b->last_get_page = 0;
+            if(b->last_put_page && b->last_put_page->page_number == b->last_del_page->page_number)
+                 b->last_put_page = 0;
+            /* Finally remove page from cache if exists */
+            WORDDATA_CleanCachePage(b,b->last_del_page->page_number);
+            /* And resets it */
             b->last_del_page = 0;
         }
         else
