@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed Segfault with updating incremental index
+
+Dobrica Pavlinusic reported a segfaut after updating an index multiple times.
+José provided updated worddata.c.  - April 27, 2005
+
 =item Fixed NOT check with incremental indexes
 
 Swish was returning results for deleted files when the NOT operator was used.
