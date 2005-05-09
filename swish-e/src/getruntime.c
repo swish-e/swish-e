@@ -17,6 +17,18 @@ License along with libiberty; see the file COPYING.LIB.  If
 not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+
+/*
+Mon May  9 15:57:53 CDT 2005
+
+did not update license info here because
+ (a) the original is still ok per GPL
+ (b) the original is lifted from another package and it's better to preserve
+ (c) this file is only used in swish-e binary, not libswish-e
+ 
+*/
+
+
 #include "acconfig.h"
 
 /* For testing */
