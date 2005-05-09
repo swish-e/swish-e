@@ -17,6 +17,7 @@ rm -f config.cross.cache
 # on another OS you will want change these.
 #   libxml2, zlib, pcre are the build directory for each.
 ./configure --cache-file=config.cross.cache \
+	--disable-docs \
         --host=${HA}-mingw32msvc \
         --target=${HA}-mingw32msvc \
         --build=i686-linux \
