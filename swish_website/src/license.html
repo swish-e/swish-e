@@ -342,6 +342,33 @@ for linking against libswish-e (<a href='#special'>see FAQ #1</a>).
 If the new Swish-e License still boggles you and ruins your day, feel free to contact the discussion
 list. We can probably sort something out.
 </p>
+</dd>
+
+<dt>If I write a new API module in [<i>insert your favorite programming
+language here</i>] and take advantage of the Swish-e License's "special exception" to the GPL,
+do I really have to include the Swish-e source code with my module?
+</dt>
+<dd>
+<p>
+Only if your module is precompiled (e.g., a Windows module). If you are just making your module
+available via the machine-readable source files (e.g., in a tar file for downloading
+and compiling on a user's machine),
+then you do not need to include the Swish-e source files. It's a chicken-and-egg situation:
+you haven't actually linked anything if all you are making available is source files, so you aren't required
+to include the Swish-e source code. You are making the files available for someone else
+to compile (and hence link against libswish-e). If <b>that</b> person (the user of your module)
+were to re-distribute the module they just compiled, they would be responsible for also including
+the Swish-e source files.
+</p>
+<p>However, if you compile your module against libswish-e
+and distribute your compiled module as binary code, then you must include the Swish-e source code
+along with it. That's a GPL requirement.
+</p>
+<p>The "special exception" simply allows you to distribute your module, whether in source or binary
+format, under any license you choose. The freedom that the GPL guarantees is the freedom of your
+users to obtain, modify and copy the source (Swish-e) that your module depends upon.
+</p>
+</dd>
 
 </dl>
 
