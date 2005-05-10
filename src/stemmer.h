@@ -1,6 +1,8 @@
 /*
 ** stemmer.h
 
+$Id$
+
     This file is part of Swish-e.
 
     Swish-e is free software; you can redistribute it and/or modify
@@ -61,7 +63,6 @@
 
 typedef enum {
     FUZZY_NONE = 0,
-    FUZZY_STEMMING_EN,
     FUZZY_SOUNDEX,
     FUZZY_METAPHONE,
     FUZZY_DOUBLE_METAPHONE,
