@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item GPL'd all the source files with the new Swish-e License
+
+After a source code review, the developers decided to put Swish-e under the GPL
+with a special exception for linking against libswish-e. See http://swish-e.org/license.html
+for the details.
+
 =item Fixed Segfault with updating incremental index
 
 Dobrica Pavlinusic reported a segfaut after updating an index multiple times.
