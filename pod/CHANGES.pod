@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Removed Stem and Stemmer_en
+
+The legacy Porter stemmer was removed. This had been deprecated some time ago.
+
 =item GPL'd all the source files with the new Swish-e License
 
 After a source code review, the developers decided to put Swish-e under the GPL
