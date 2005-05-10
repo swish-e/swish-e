@@ -230,7 +230,7 @@
 
         # top level menu
         menu    = [
-            'index', 'news', 'download', 'docs', 'support',
+            'index', 'news', 'download', 'license', 'docs', 'support',
             'discuss', 'graphics', 'scripts', 'devel', 'who', 'demos',
             'search',
         ]
@@ -241,6 +241,7 @@
         page    = {
             index       = { name = 'home' }
             download    = download_map
+            license     = { name = 'license' }
             docs        = docs_map
             discuss     = { tooltip = 'email list and list archive' }
             devel       = devel_map
