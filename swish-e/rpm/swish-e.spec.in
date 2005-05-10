@@ -79,16 +79,18 @@ Libraries and header files required for compiling applications based on the SWIS
 %setup -q
 
 %build
-%configure --with-pcre=/usr --with-libxml2=/usr --with-zlib=/usr
+%configure --with-pcre=/usr --with-libxml2=/usr --with-zlib=/usr --libexecdir=%{_libexecdir}/swish-e
 make
 
 # Make SWISH::API
+cp %{_builddir}/%{name}-%{version}/swish-config %{_builddir}/%{name}-%{version}/src/
+chmod +x %{_builddir}/%{name}-%{version}/src/swish-config
 pushd perl
 grep -rsl '^#!.*perl' . |
 grep -v '.bak$' |xargs --no-run-if-empty \
 %__perl -MExtUtils::MakeMaker -e 'MY->fixin(@ARGV)'
 
-CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" %{__perl} Makefile.PL `%{__perl} -MExtUtils::MakeMaker -e ' print qq|PREFIX=%{buildroot}%{_prefix}| if \$ExtUtils::MakeMaker::VERSION =~ /5\.9[1-6]|6\.0[0-5]/ '` 
+CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" SWISHBINDIR="%{_builddir}/%{name}-%{version}/src" %{__perl} Makefile.PL `%{__perl} -MExtUtils::MakeMaker -e ' print qq|PREFIX=%{buildroot}%{_prefix}| if \$ExtUtils::MakeMaker::VERSION =~ /5\.9[1-6]|6\.0[0-5]/ '` 
 
 %{__make} PREFIX=%{buildroot}%{_prefix} LIB='%{_libdir}' LIBS='-L%{_libdir} -L%{buildroot}/src/.libs -lswish-e -lz' 'LDFLAGS=-L%{_libdir} -L%{_builddir}/%{name}-%{version}/src/.libs' 'CCFLAGS=-I%{_builddir}/%{name}-%{version}/src' 'LDDLFLAGS=-shared -L%{_builddir}/%{name}-%{version}/src/.libs/ -lswish-e'
 
@@ -98,6 +100,7 @@ CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" %
 popd
 
 %install
+[ "%{buildroot}" != "/" ] && [ -d %{buildroot} ] && %{__rm} -rf %{buildroot};
 %{__make} DESTDIR=$RPM_BUILD_ROOT prefix=%{prefix} sysconfdir=%{sysconfdir} install
 
 # Install SWISH::API
@@ -130,6 +133,7 @@ find %{buildroot}%{_prefix}             \
     -exec rmdir {} \; 2>/dev/null
 
 # build list of installed SWISH::API files
+mkdir -p %{_tmppath}/%{name}-%{version} 2>/dev/null
 %{__perl} -le '
 use strict;
 use File::Find;
@@ -166,6 +170,7 @@ popd
 %files
 %defattr(-, root, root)
 %{_bindir}/swish-e
+%{_libexecdir}/swish-e
 %{_libdir}/*.so.*
 %{_mandir}/man[^3]/*
 %{_datadir}/doc/swish-e/*
@@ -173,7 +178,7 @@ popd
 %files perl
 %defattr(-, root, root)
 %{_bindir}/swish-filter-test
-%{_libdir}/swish-e/*
+%{_libexecdir}/swish-e/*
 %{_datadir}/swish-e/*
 
 %files perl-api -f %filelist
@@ -188,8 +193,15 @@ popd
 %{_libdir}/*.la
 %{_libdir}/*.a
 %{_libdir}/*.so
+%{_libdir}/pkgconfig/*.pc
+%{_bindir}/swish-config
 
 %changelog
+* Fri Apr 08 2005 Bernhard Weisshuhn <bkw@weisshuhn.de> 2.4.3-5
+- Differentiate between libdir and libexecdir (for x86_64)
+- Use swish-config from builddir for perl-build (pretty crude)
+- remove buildroot prior to install
+- Added pkgconfig and swish-config to devel package
 * Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-4
 - Simplify File::Find script.  Merge HTML docs with swish-e package.
 * Sun Nov 07 2004 David L Norris <dave@webaugur.com> 2.5.2-3
