@@ -2,6 +2,8 @@ package SWISH::Filters::pp2html;
 use strict;
 use vars qw/ $VERSION /;
 $VERSION = '0.01';
+require File::Spec;
+
 sub new {
    my ( $class ) = @_;
    my $self = bless {
@@ -13,6 +15,12 @@ sub new {
 sub filter {
    my ( $self, $doc ) = @_;
    my $content = $self->run_ppthtml( $doc->fetch_filename ) || return;
+   
+   # use just the file name as title with no path
+   my ($title) = ( $content =~ m!<title>(.*?)</title>!io );
+   my ($volume,$directories,$file) = File::Spec->splitpath( $title );
+   $content =~ s,<title>.*?</title>,<title>$file</title>,i;
+ 
    # update the document's content type
    $doc->set_content_type( 'text/html' );
    return \$content;
