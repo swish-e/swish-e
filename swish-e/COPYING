@@ -17,12 +17,13 @@ General Public License cover the whole combination.
 
 As a special exception, the copyright holders of Swish-e give you
 permission to link Swish-e with independent modules that communicate with
-Swish-e solely through the libswish-e API interface, regardless of the license
-terms of these independent modules, and to copy and distribute the
+Swish-e solely through the libswish-e API interface, regardless of the 
+license terms of these independent modules, and to copy and distribute the
 resulting combined work under terms of your choice, provided that
-every copy of the combined work is accompanied by a complete copy of
-the source code of Swish-e (the version of Swish-e used to produce the
-combined work), being distributed under the terms of the GNU General
+every copy of the combined work is accompanied by, or provides a URL link to,
+a complete copy of the source code of Swish-e 
+(the version of Swish-e used to produce the combined work), 
+being distributed under the terms of the GNU General
 Public License plus this exception.  An independent module is a module
 which is not derived from or based on Swish-e.
 
@@ -89,7 +90,7 @@ above, provided that you also meet all of these conditions:
     License.  (Exception: if the Program itself is interactive but
     does not normally print such an announcement, your work based on
     the Program is not required to print an announcement.)
-^L
+
 These requirements apply to the modified work as a whole.  If
 identifiable sections of that work are not derived from the Program,
 and can be reasonably considered independent and separate works in
@@ -147,7 +148,7 @@ access to copy from a designated place, then offering equivalent
 access to copy the source code from the same place counts as
 distribution of the source code, even though third parties are not
 compelled to copy the source along with the object code.
-^L
+  
   4. You may not copy, modify, sublicense, or distribute the Program
 except as expressly provided under this License.  Any attempt
 otherwise to copy, modify, sublicense or distribute the Program is
@@ -204,7 +205,7 @@ impose that choice.
 
 This section is intended to make thoroughly clear what is believed to
 be a consequence of the rest of this License.
-^L
+  
   8. If the distribution and/or use of the Program is restricted in
 certain countries either by patents or by copyrighted interfaces, the
 original copyright holder who places the Program under this License

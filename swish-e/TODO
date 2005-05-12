@@ -3,18 +3,13 @@ A rough to-do list.
 Feel free to add/update items here (and feel freer to write code so that
 we can remove them).
 
+NOTE: This is not the same as the 3.0 planning document. See the pod/ dir for that.
+
+=====================================================================
+
 
 ** Test USE_BTREE and the ARRAY code for both speed and accuracy.
 Wed Feb  9 09:58:28 PST 2005
-
-NOTE: This is not the same as the 3.0 planning document. See the pod/ dir for that.
-
-Mon Nov  8 15:02:02 CST 2004 - karman@cray.com
------------------------------------------------------------
-
-** soundex routines - different languages...
-
-done?
 
 ** Go over config.h
 
@@ -33,13 +28,6 @@ allow to specifiy how search will be done:
 - wildcard search (?, *): e.g.: wor?d*to*tch
 - regexpr. serach: e.g.: [a-z][0-9]*abc$
 
-** apache 2.0 module concept for swish-e 3.0
-
-I don't really understand this one. did the 2.4 release accomplish the same thing?
-
-** Prepend libexecdir in extprog.c
-
-done? I see that libexecdir prints with 'swish-e -h'
 
 ** Code cleanup...
 
@@ -47,16 +35,20 @@ sisyphus would be proud...
 
 ** Dealing with "and" "or: "not" "*" in searches
 
-seems like part of your quest for a better query parser? read any non-sleep-inducing Bison lately?
+seems like part of your quest for a better query parser? 
+read any non-sleep-inducing Bison lately?
 
-** remove duplicated data from the index file
-
-marked as 90% complete, but no mention of the remaining 10%
 
 ** Altavista like search
 
-This is hard to track. Looks like rasc put it in there, but now it looks like it has been removed. Any ideas? It's marked as 95% complete.
+This is hard to track. Looks like rasc put it in there, 
+but now it looks like it has been removed. Any ideas? It's marked as 95% complete.
 
-** Swish-e server
 
-Josh's server seems to fulfill this item. I haven't tried it yet. Do we want to endorse it? or just mention it on the website? 
+
+** licensing issues
+------------------
+
+* files marked with karman note from 5.09.05 re: how original they are
+* is httpserver.c still used?
+
