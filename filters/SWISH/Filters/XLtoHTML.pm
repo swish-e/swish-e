@@ -1,12 +1,6 @@
 package SWISH::Filters::XLtoHTML;
 use strict;
-
-# use Spreadsheet::ParseExcel;
-# use HTML::Entities;
-
-
-
-
+require File::Spec;
 use vars qw/ $VERSION /;
 
 $VERSION = '0.02';
@@ -52,7 +46,9 @@ sub get_xls_content_ref {
     my($iR, $iC, $oWkS, $oWkC, $ExcelWorkBook);
 
     # Here we gather up all the workbook metadata
-    my $ExcelFilename = encode_entities($oBook->{File});
+    
+    my ($vol,$dirs,$filename) = File::Spec->splitpath( $oBook->{File} );
+    my $ExcelFilename = encode_entities( $filename );
     my $ExcelSheetCount = encode_entities($oBook->{SheetCount});
     my $ExcelAuthor = encode_entities($oBook->{Author}) if defined $oBook->{Author};
     my $ExcelVersion = encode_entities($oBook->{Version}) if defined $oBook->{Version};
