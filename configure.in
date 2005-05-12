@@ -31,12 +31,18 @@ fi
 
 
 
-
-AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
-AC_PROG_LIBTOOL
-
 dnl Header file for -D defines and sets @DEFS@ to -DHAVE_CONFIG_H
 AM_CONFIG_HEADER(src/acconfig.h)
+
+AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
+
+dnl Enable DLL builds for Win32.  This must come before AC_PROG_LIBTOOL.
+AC_PROG_CC
+AM_PROG_CC_STDC
+AC_C_CONST
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
+AM_PROG_LIBTOOL
 
 
 
@@ -95,7 +101,6 @@ AC_HEADER_DIRENT
 
 AC_HEADER_STAT
 AC_HEADER_STDC
-
 
 dnl Check for some headers
 AC_CHECK_HEADERS(unistd.h stdlib.h string.h sys/timeb.h windows.h)
