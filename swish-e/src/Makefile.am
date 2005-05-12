@@ -30,7 +30,7 @@ libtest_LDFLAGS = -static
 ## -- will that be a problem on systems?
 
 lib_LTLIBRARIES = libswish-e.la
-libswish_e_la_LDFLAGS = -version-info 2:0:0 $(Z_LIBS) $(PCRE_LIBS)
+libswish_e_la_LDFLAGS = -no-undefined -version-info 2:0:0 $(Z_LIBS) $(PCRE_LIBS)
 libswish_e_la_LIBADD = $(BTREE_OBJS) replace/libreplace.la snowball/libsnowball.la
 
 libswish_e_la_DEPENDENCIES = $(libswish_e_la_LIBADD)

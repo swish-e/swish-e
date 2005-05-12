@@ -23,7 +23,8 @@ rm -f config.cross.cache
         --build=i686-linux \
         --with-libxml2=$PWD/../libxml2 \
         --with-zlib=$PWD/../zlib \
-        --with-pcre=$PWD/../pcre
+        --with-pcre=$PWD/../pcre \
+        --enable-shared
 
 # Build Binaries
 make
