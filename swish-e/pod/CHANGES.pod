@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item filename only in SWISH::Filters
+
+added fix to SWISH::Filters::pp2html and SWISH::Filters::XLtoHTML to 
+save only filename as title without full path
+
 =item Removed Stem and Stemmer_en
 
 The legacy Porter stemmer was removed. This had been deprecated some time ago.
