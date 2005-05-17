@@ -561,6 +561,17 @@ Warnings and errors are reported regardless of the verbosity level.  In addition
 all error and warnings are written to standard out.  This is for historical reasons (many
 scripts exist that parse standard out for error messages).
 
+
+=item -W (0|1|2|3) (parser warning level)
+
+If using the libxml2 parser, the default parser warning level is set at C<2>. Use the C<-W>
+option to override that default. Most often, you might want to turn it off altogether:
+
+  swish-e -W0 -i path/to/files
+
+would fail silently if the parser encountered any errors.
+
+
 =back
 
 =head1 SEARCHING
