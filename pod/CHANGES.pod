@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item updates to SWISH-RUN.1
+
+Added doc for -u and -r options.
+
 =item filename only in SWISH::Filters
 
 added fix to SWISH::Filters::pp2html and SWISH::Filters::XLtoHTML to 

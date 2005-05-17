@@ -519,6 +519,35 @@ or merge the indexes
     mv index.tmp index.swish-e
     swish-e -w foo
 
+=item -r
+
+B<**incremental index format only**>
+The C<-r> option puts swish-e into "removal" mode. Any input files (given with C<-i>
+or the C<IndexDir> parameter) are removed from an existing index.
+
+Example:
+
+  swish-e -r -i file.html
+
+would remove F<file.html> from the existing index.
+
+=item -u
+
+B<**incremental index format only**>
+The C<-u> option puts swish-e into "update" mode. The timestamp of each input 
+file is compared against the corresponding file in the existing index. 
+If swish-e encounters an input file that either
+does not exist yet in the index or exists with a timestamp older than the input file,
+the input file is updated in the index. Any words in the input file
+that have been added or removed are reflected as such in the index.
+
+Example:
+
+  swish-e -i file.html -u
+
+would update the index.swish-e index with the contents of file.html. If file.html
+was new, it would be added. If file.html already existed in the index, its contents
+would be updated in the index.
 
 =item -v [0|1|2|3] (verbosity level)
 
