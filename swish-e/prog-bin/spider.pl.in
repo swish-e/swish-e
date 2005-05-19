@@ -518,7 +518,7 @@ sub spider {
         # Delete any per-request data
         delete $server->{_request};
 
-        my $new_links = process_link( $server, $uri, $parent, $depth );
+        my $new_links = process_link( $server, $uri->clone, $parent, $depth );
 
         push @link_array, map { [ $_, $uri, $depth+1 ] } @$new_links if $new_links;
 
