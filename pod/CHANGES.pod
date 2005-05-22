@@ -22,6 +22,8 @@ save only filename as title without full path
 =item Removed Stem and Stemmer_en
 
 The legacy Porter stemmer was removed. This had been deprecated some time ago.
+A warning will issue if the old stemmer is indicated in config file, and Stemmer_en1
+will be used instead.
 
 =item GPL'd all the source files with the new Swish-e License
 
