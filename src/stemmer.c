@@ -117,7 +117,8 @@ static FUZZY_WORD *double_metaphone( FUZZY_OBJECT *fi, const char *inword);
 static FUZZY_OPTS fuzzy_opts[] = {
 
     /* fuzzy_mode               *name               *routine  *init *free *lang_stem */
-
+    { FUZZY_STEMMING_EN2,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
+    { FUZZY_STEMMING_EN2,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem },
     { FUZZY_NONE,               "None",             no_stem, NULL, NULL, NULL },
     { FUZZY_SOUNDEX,            "Soundex",          soundex, NULL, NULL, NULL },
     { FUZZY_METAPHONE,          "Metaphone",        double_metaphone, NULL, NULL, NULL },
@@ -273,6 +274,13 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
     for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
+            if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" )
+            {
+                fprintf(stderr, "*************\n");
+                fprintf(stderr, "  Old stemmer '%s' is no longer supported -- using Stemmer_en1 instead.\n", fuzzy_opts[i].name);
+                fprintf(stderr, "  Please update your config file.\n*************\n");
+            }
+            
             return create_fuzzy_struct( fi, &fuzzy_opts[i] );
         }
 
