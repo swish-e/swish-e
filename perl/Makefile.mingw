@@ -1,0 +1,74 @@
+#!/usr/bin/make -f
+#
+# File: Makefile.mingw
+# Desc: Build SWISH::API for ActivePerl/Win32 on Linux using 
+#       WINE, ActivePerl, and MinGW
+#
+
+# Some brief notes on how to setup a build environment:
+# 1.) Install mingw (Debian: mingw32, mingw32-runtime, mingw32-binutils)
+# 2.) Install WINE (Debian: wine)
+# 3.) Install ActivePerl on Windows (or WINE if you can)
+# 4.) Copy over the entire Perl tree to Linux (e.g. C:\Perl)
+# 5.) Run the Perl/bin/reloc_perl script to correct the runtime Prefix.
+# 6.) Make sure that your WINE install sets up a binfmt handler
+#     for Windows executables.  (Debian wine does) 
+# 7.) Note: you may wish/need to rebuild Debian wine with debugging 
+#     disabled.  WINE debug output is printed to stdout.  (Why? Why?)
+
+# SWISH-E "install" Location
+SWISH_PREFIX = ../../prefix
+SWISH_BIN = $(SWISH_PREFIX)/bin/swish-e.exe
+
+# PERL Location (Need WINE and ActivePerl on Linux)
+PERL_PREFIX = ../../perl
+PERL_BIN = $(PERL_PREFIX)/bin/perl.exe
+PERL_LIB = $(PERL_PREFIX)/bin/perl58.dll
+
+# Compiler Stuff
+CC=i586-mingw32msvc-gcc
+LIBS=../src/.libs/libswish-e.dll.a $(PERL_LIB)
+
+# OS Commands
+CP = cp -f
+MKDIR = mkdir -p
+TOUCH = touch 
+
+# Perl module directories
+INST_LIB = blib/lib
+INST_ARCHLIB = blib/arch
+API_DLL = $(INST_ARCHLIB)/auto/SWISH/API/API.dll
+
+$(API_DLL): API.c
+	$(MKDIR) $(INST_ARCHLIB)/auto/SWISH/API
+	$(MKDIR) $(INST_LIB)/SWISH
+	$(CC) -shared -o $(API_DLL) -I ../../perl/lib/CORE -I ../src API.c $(LIBS)
+	$(TOUCH) $(INST_ARCHLIB)/auto/SWISH/API/API.bs
+	$(CP) API.pm $(INST_LIB)/SWISH
+
+API.c:
+	$(PERL_BIN) $(PERL_PREFIX)/lib/ExtUtils/xsubpp -noprototypes -typemap $(PERL_PREFIX)/lib/ExtUtils/typemap -typemap typemap API.xs > API.c
+
+
+TEST_VERBOSE=1
+TEST_TYPE=test_$(LINKTYPE)
+TEST_FILE = test.pl
+TEST_FILES = t/test.t
+TEST_CONF = t/test.conf
+TEST_DB = t/index.swish-e
+TESTDB_SW = -d
+
+test: $(API_DLL) index.swish-e
+	# Ugh. API.dll needs pcre, zlib, libxml2, libswish-e, etc.
+	$(CP) ../../test/*.dll $(INST_ARCHLIB)/auto/SWISH/API
+	$(PERL_BIN) "-MExtUtils::Command::MM" "-e" "test_harness($(TEST_VERBOSE), '$(INST_LIB)', '$(INST_ARCHLIB)')" $(TEST_FILES)
+
+
+index.swish-e:
+	$(SWISH_BIN) -c $(TEST_CONF) -f $(TEST_DB) -v0
+
+
+clean:
+	rm -fr API.c API.dll t/index.swish-e* blib
+
+
