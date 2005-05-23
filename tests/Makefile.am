@@ -1,4 +1,4 @@
-TESTS = check_index check_search check_metasearch
+TESTS = check_index check_search check_metasearch check_fuzzy
 
 TESTS_ENVIRONMENT = top_builddir=$(top_builddir)
 
