@@ -147,6 +147,7 @@ $0 usage:
     -include        = add directories to the include path
                       relative to -src unless absolute.
     -ignore         = add regex of files to skip.
+    -check          = used by swish-e configure
 
 
     Script exits false (1) if no files are actually processed.
@@ -176,12 +177,16 @@ my @options = qw(
         abslinks
         develsrc=s
         archive=s
+        check
 );
 
 
 my $config = LoadConfig->new( \%default_config, \@options );
 
-
+if ( $config->{check} ) {
+    print "a-ok\n";
+    exit(0);
+}
 
 
 # Now make the errors a bit more brief
