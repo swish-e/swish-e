@@ -1,4 +1,3 @@
-
 # $id$
 #
 # Conditionally install the html documentation
@@ -7,13 +6,19 @@
 # Where docs are installed
 htmldir = $(datadir)/doc/$(PACKAGE)/html
 
+if BUILDWEB
 
-if BUILDDOCS
+# build the docs from website src
+# name just the first doc since all will get built
+api.html:
+	@($(SWISH_WEB) -swishsrc $(top_srcdir) -poddest $(srcdir) -v -all)
+
 
 html_DATA = \
-    $(html_files)
+	$(html_files)
 
 endif
+
 
 
 html_files = \
