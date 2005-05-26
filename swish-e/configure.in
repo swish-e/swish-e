@@ -20,6 +20,31 @@ AC_ARG_ENABLE(docs,
              docs=yes)
 AM_CONDITIONAL(BUILDDOCS, test x$docs = xyes)
 
+
+
+dnl provide a way to build html docs from website
+
+SWISH_WEB=""
+
+AC_ARG_WITH(website,AC_HELP_STRING([--with-website=DIR],[use swish-e.org website src in DIR (YES if found)]),,withval=no)
+
+if test "$withval" != "no"; then
+    dnl find build program
+    SWISH_WEB="$withval/bin/build"
+    SWISH_WEB_VERS=`$SWISH_WEB -check`
+
+    if test "$SWISH_WEB_VERS" != ""; then
+        AC_MSG_RESULT(SWISH_WEB is $SWISH_WEB_VERS at $SWISH_WEB)
+    else
+        AC_MSG_WARN(problem with $SWISH_WEB -- run '$SWISH_WEB -check')
+    fi
+fi
+
+AM_CONDITIONAL(BUILDWEB, test $SWISH_WEB_VERS != "")
+AC_SUBST(SWISH_WEB)
+
+
+
 AC_ARG_ENABLE(daystamp,
              AC_HELP_STRING([--enable-daystamp], [Adds today's date to version]),
              daystamp=yes,)
