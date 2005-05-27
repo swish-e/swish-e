@@ -5,6 +5,7 @@ TESTS_ENVIRONMENT = top_builddir=$(top_builddir)
 
 EXTRA_DIST = \
     test.config \
+    test.fuzzy_config \
     test.html \
     test.txt \
     test.xml \
