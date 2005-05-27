@@ -166,6 +166,10 @@ target_alias = @target_alias@
 # Where docs are installed
 htmldir = $(datadir)/doc/$(PACKAGE)/html
 
+@BUILDDOCS_TRUE@DISTCLEANFILES = \
+@BUILDDOCS_TRUE@	$(html_DATA)
+
+
 @INSTALLDOCS_TRUE@html_DATA = \
 @INSTALLDOCS_TRUE@	$(html_files)
 
@@ -192,14 +196,6 @@ html_files = \
 
 EXTRA_DIST = \
     $(html_DATA)
-
-
-DISTCLEANFILES = \
-	$(html_DATA)
-
-
-CLEANFILES = \
-	$(html_DATA)
 
 subdir = html
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -307,7 +303,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-rm -f $(CONFIG_CLEAN_FILES)
