@@ -11,7 +11,7 @@ if BUILDDOCS
 # build the docs from website src
 
 $(html_files):
-	@( $(SWISH_WEB) -swishsrc $(top_srcdir) -poddest . -v -all )
+	$(SWISH_WEB) -swishsrc $(top_srcdir) -poddest . -v -all
 
 endif
 
