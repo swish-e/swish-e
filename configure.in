@@ -13,12 +13,13 @@ BINARY_AGE=0
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
 
 
+dnl NOT USED
 dnl provide a way to ignore docs
-AC_ARG_ENABLE(docs,
-             AC_HELP_STRING([--disable-docs], [when building from CVS without doc build tools]),
-             docs=no,
-             docs=yes)
-AM_CONDITIONAL(BUILDDOCS, test x$docs = xyes)
+dnl AC_ARG_ENABLE(docs,
+dnl              AC_HELP_STRING([--disable-docs], [when building from CVS without doc build tools]),
+dnl             docs=no,
+dnl             docs=yes)
+dnl AM_CONDITIONAL(BUILDDOCS, test x$docs = xyes)
 
 
 
@@ -31,18 +32,35 @@ AC_ARG_WITH(website,AC_HELP_STRING([--with-website=DIR],[use swish-e.org website
 if test "$withval" != "no"; then
     dnl find build program
     SWISH_WEB="$withval/bin/build"
-    SWISH_WEB_VERS=`$SWISH_WEB -check`
+    SWISH_WEB_CHK=`$SWISH_WEB -check`
 
-    if test "$SWISH_WEB_VERS" != ""; then
-        AC_MSG_RESULT(SWISH_WEB is $SWISH_WEB_VERS at $SWISH_WEB)
+    if test "$SWISH_WEB_CHK" != ""; then
+        AC_MSG_RESULT(SWISH_WEB is $SWISH_WEB_CHK at $SWISH_WEB)
     else
         AC_MSG_WARN(problem with $SWISH_WEB -- run '$SWISH_WEB -check')
     fi
 fi
 
-AM_CONDITIONAL(BUILDWEB, test $SWISH_WEB_VERS != "")
-AC_SUBST(SWISH_WEB)
+AM_CONDITIONAL(BUILDDOCS, test x$SWISH_WEB_CHK = xa-ok)
 
+installdocs="no"
+if test "$SWISH_WEB_CHK" != ""; then
+    installdocs="yes"
+fi
+
+dnl It would be better not to rely on a specific html file but how else to do it?
+dnl We can 'find' but is that a standard command?
+dnl if test -e "html/api.html"; then
+somehtml=`find html -name '*.html' -print`
+if test "$somehtml" != ""; then
+    installdocs="yes"
+fi
+
+AC_MSG_RESULT(install html docs = $installdocs)
+
+
+AM_CONDITIONAL(INSTALLDOCS, test x$installdocs = xyes)
+AC_SUBST(SWISH_WEB)
 
 
 AC_ARG_ENABLE(daystamp,

@@ -6,13 +6,16 @@
 # Where docs are installed
 htmldir = $(datadir)/doc/$(PACKAGE)/html
 
-if BUILDWEB
+if BUILDDOCS
 
 # build the docs from website src
-# name just the first doc since all will get built
-api.html:
-	@($(SWISH_WEB) -swishsrc $(top_srcdir) -poddest $(srcdir) -v -all)
 
+$(html_files):
+	@( $(SWISH_WEB) -swishsrc $(top_srcdir) -poddest . -v -all )
+
+endif
+
+if INSTALLDOCS
 
 html_DATA = \
 	$(html_files)
@@ -42,3 +45,9 @@ html_files = \
 
 EXTRA_DIST = \
     $(html_DATA)
+
+DISTCLEANFILES = \
+	$(html_DATA)
+    
+CLEANFILES = \
+	$(html_DATA)
