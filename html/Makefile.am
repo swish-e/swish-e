@@ -13,6 +13,9 @@ if BUILDDOCS
 $(html_files):
 	$(SWISH_WEB) -swishsrc $(top_srcdir) -poddest . -v -all
 
+DISTCLEANFILES = \
+	$(html_DATA)
+
 endif
 
 if INSTALLDOCS
@@ -46,8 +49,3 @@ html_files = \
 EXTRA_DIST = \
     $(html_DATA)
 
-DISTCLEANFILES = \
-	$(html_DATA)
-    
-CLEANFILES = \
-	$(html_DATA)
