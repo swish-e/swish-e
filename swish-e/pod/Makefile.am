@@ -8,11 +8,11 @@
 
 poddir = $(datadir)/doc/$(PACKAGE)/pod
 
-if BUILDDOCS
+#if BUILDDOCS
 pod_DATA = \
     $(pod_files)
 
-endif
+#endif
 
 pod_files = \
     CHANGES.pod \

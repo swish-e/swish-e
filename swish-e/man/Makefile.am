@@ -1,4 +1,4 @@
-if BUILDDOCS
+#if BUILDDOCS
 man_MANS = \
     $(srcdir)/swish-e.1 \
     $(srcdir)/SWISH-CONFIG.1 \
@@ -27,6 +27,6 @@ $(srcdir)/SWISH-RUN.1 : $(top_srcdir)/pod/SWISH-RUN.pod
 	-rm -f $@
 	-pod2man --center="SWISH-E Documentation" --lax --release='$(VERSION)'  $(top_srcdir)/pod/SWISH-RUN.pod  > $@
 
-endif
+#endif
 
 EXTRA_DIST = $(man_MANS)
