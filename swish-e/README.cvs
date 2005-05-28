@@ -4,37 +4,45 @@ Using CVS
 Swish-e is available via cvs from SourceForge.  See http://swish-e.org for
 links to SourceForge and instructions downloading via cvs.
 
-The cvs version does not included the HTML documentation (which is pulled form
-various source files (mostly pod) in the distribution).  The tools to build the
-HTML docs can also be fetched via cvs from SourceForge (see the swish_website
-cvs module).
+The buildswishe.pl script can be used to fetch the latest cvs source, along
+with latest libxml2 and zlib sources, and build them all.
 
-The cvs version will not build without the HTML docs.  To avoid the build failing
-configure as so:
+Otherwise, swish-e uses the familiar:
 
-  ./configure --disable-docs
+  ./configure --prefix=/path/to/install
   make
   make check
   make install
-
-This disables the creation and installation of html, pod, and man pages.
+  
+Only 'make install' might require root priviledges, depending on the permissions
+of /path/to/install.
 
 Modifications to any of the build files (Makefile.am, configure.in) requires
 running the bootstrap script.  You will need a full set of developer tools
-for thise to work (autoconf, automake, libtool).
+for these to work (autoconf, automake, libtool).
 
 
 Building with HTML docs
 -----------------------
 
-  cvs co swish-e  # or whatever you need to do
-  mkdir build && chdir build
-  $HOME/swish-e/configure  # maybe --prefix
+The cvs version does not included the HTML documentation.
+The HTML docs are built from the swish_website module (also in cvs)
+using the same templates that http://swish-e.org uses.
+The tools to build the HTML docs can also be fetched via cvs 
+from SourceForge (see the swish_website cvs module).
 
-  # write docs to the just created empty (except for Makefile) html dir
-  $HOME/swish_website/bin/build -swishsrc=$HOME/swish-e -poddest=html -v
-  make && make check
-  make dist
+The swish_website module requires several Perl modules, 
+including Template-Toolkit, Pod::POM and a few others. 
+Once you have swish_website downloaded and can build the site
+using the swish_website/bin/build script, 
+you can then proceed to building Swish-e with:
+
+  ./configure --with-website=path/to/swish_website
+  make
+  make check
+  make install
+  
+See the swish_website/README for more about the HTML documentation.
 
 
 Daily Builds
@@ -42,9 +50,6 @@ Daily Builds
 
 The swish-daily.pl script can be used to build swish-e from cvs (or
 from tarball) via cron.  See script for details.
-
-
-
 
 
 
@@ -60,26 +65,27 @@ Release and Tag
 
 3) Edit the version in configure.in
 
-4) run ./bootstrap to create new makefile.in with new version string
+4) run ./bootstrap to create new Makefile.in with new version string
 
-5) run make distcheck to make sure it all builds correctly.  This will also
-   update the HTML documentation (since CHANGES.pod is newer).  This is
-   IMPORTANT because if the HTML docs are out of date then make on users
-   systems will attempt to build the documentation and they may not have the
-   right tools installed.
+5) Make sure you have the swish_website module available from cvs and that
+   it will build correctly.
 
-6) good idea to upload the tarball created by make distcheck someplace and
+6) run make distcheck to make sure it all builds correctly.
+
+**** Bill TODO: how are HTML docs made now? does distcheck do it? ******
+
+7) good idea to upload the tarball created by make distcheck someplace and
    then test on a few platforms
 
-7)  Check in the updated version Makefiles:
+8) Check in the updated version Makefiles:
 
   $ cvs ci
 
-8) Tag the release.  For example:
+9) Tag the release.  For example:
 
    $ cvs tag rel-2-4-0
 
-9) Upload to swish-e site -- see "Update Site" below for details before doing this.
+10) Upload to swish-e site -- see "Update Site" below for details before doing this.
 
 Now move on to development.  Change version in configure.in (2.5.0 for example),
 run ./bootstrap and check in.
@@ -176,6 +182,7 @@ in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead
 of rel-2-4-0-patches) and then all 2.4.x updates will get added there.
 
 
+************ Bill TODO ***********
 Update Site
 -----------
 
