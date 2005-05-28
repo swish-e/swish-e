@@ -1,4 +1,4 @@
-AC_PREREQ(2.50)
+AC_PREREQ(2.50)/
 AC_INIT(src/swish.c)
 AC_CONFIG_AUX_DIR(config)
 
@@ -34,6 +34,17 @@ AC_ARG_WITH(website,AC_HELP_STRING([--with-website=DIR],[use swish-e.org website
 if test "x$withval" != "xno"; then
     dnl find build program
     SWISH_WEB="$withval/bin/build"
+
+    dnl Not sure how portable -x is (according to the autobook)
+    if test ! -f "$SWISH_WEB"; then
+        AC_MSG_ERROR([Failed to find program to build swish-e html docs "$SWISH_WEB"])
+    fi
+else
+    AC_PATH_PROG([SWISH_WEB],[build-swish-docs])
+fi
+
+if test -n "$SWISH_WEB"; then
+
     SWISH_WEB_CHK=`$SWISH_WEB -check`
 
     if test "x$SWISH_WEB_CHK" = xa-ok; then
