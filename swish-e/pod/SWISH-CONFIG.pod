@@ -1175,23 +1175,23 @@ four choices:
 
 =over 2
 
-=item UndefinedMetaTags error
+=item error
 
 If a meta name is found that is not listed in B<MetaNames>
 then indexing will be halted and an error reported.
 
-=item UndefinedMetaTags ignore
+=item ignore
 
 The contents of the meta tag are ignored and B<not> indexed unless a metaname
 has been defined with the C<MetaNames> directive.
 
-=item UndefinedMetaTags index
+=item index
 
 The contents of the meta tag are indexed, but placed in the
 main index unless there's an enclosing metatag already in force. This
 is the default.
 
-=item UndefinedMetaTags auto
+=item auto
 
 This method create meta tags automatically for HTML meta names
 and XML elements.  Using this is the same as specifying all the meta

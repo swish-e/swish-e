@@ -908,7 +908,7 @@ limit on the features you can add.
 =head3 Why does swish report "./swishspider: not found"?
 
 Does the file F<swishspider> exist where the error message displays?  If not, either
-set the configuration option L<SpiderDirectory|SWISH-CONFIG/"item_SpiderDir">
+set the configuration option L<SpiderDirectory|SWISH-CONFIG/"item_spiderdirectory">
 to point to the directory where the F<swishspider> program is found, or place the
 F<swishspider> program in the current directory when running swish-e.
 
