@@ -9,7 +9,7 @@ use Cwd;
 use IO::Handle;
 
 # Script to build swish-e from cvs (or LWP request tarball)
-# Normally used for the daily builds of the tarball and the development docs
+# Normally used for the daily builds of the tarball
 
 # Default checkout location
 
@@ -28,7 +28,6 @@ my %config = (
         remove          => 1,   # remove tar and build dirs
         logs            => 1,   # write log files
         symlink         => 1,   # create symlink
-        htmldocs        => 'build_swish_docs',  # tool to build the swish docs
 );
 
 #--------------------------------------------------------------------
@@ -50,7 +49,6 @@ GetOptions( \%config,
        symlink!
        help man options
        config_options=s
-       htmldocs=s
     /
 ) or pod2usage(
     {
@@ -69,9 +67,7 @@ if ( $config{dump} ) {
 my @functions = (
     [ \&cvs_checkout, 'Check out from CVS' ],  # can be replaced by a LWP fetch with --fetchtarurl=<url>
     [ \&configure,    'Run configure' ],
-    [ \&builddocs,    'Build HTML docs' ],
     [ \&make_install, 'Run make install' ],
-    # (old docs)[ \&make_docs,    "Run make docs" ],
     [ \&make_dist,    "Run make dist and move tarball to $config{tardir}"  ],
     [ \&set_symlink,  "Make symlink $config{symlink} point to $config{day_dir}" ],
     [ \&remove_day_dir, "Remove old install and build directories" ],
@@ -171,18 +167,6 @@ sub configure {
     run_command( $command );
 }
 
-#======================================================================
-# This creates the HTML docs in the build directory
-
-sub builddocs {
-    my $c = shift;
-
-    my $html_dir = "$c->{builddir}/html";
-
-    log_message( "Build HTML docs in directory $html_dir" );
-
-    run_command( "$c->{htmldocs} -swishsrc=$c->{srcdir} -poddest=$html_dir" );
-}
 
 
 #=======================================================================
@@ -289,21 +273,6 @@ sub purge_old_tarballs {
 
 
 
-#=================================================================================
-# Create HTML docs and index them
-
-
-sub make_docs {
-    my $c = shift;
-    my $options = $c->{configure_options} || '';
-
-    chdir "$c->{builddir}/html" || die "Failed to chdir $c->{builddir}/html: $!";
-    log_message( "Changed to html build directory: $c->{builddir}/html" );
-
-    run_command( "make searchdoc" ) || return;
-
-    return 1;
-}
 
 #===================================================================================
 # Set symlink to point to this directory
@@ -388,7 +357,7 @@ sub set_dependent_vars {
     # and make it absolute
     $config->{topdir} ||= getcwd;
     $config->{topdir} = Cwd::abs_path( $config->{topdir} );
-    die "Failed to set 'topdir': $!\n" unless $config->{topdir};
+    die "Failed to set 'topdir' - perhaps invalid directory: $!\n" unless $config->{topdir};
 
 
     # check for a tardir
@@ -504,7 +473,6 @@ Options:
     -options                list options
     -dump                   dump configuration and exit.  Good for seeing defaults
     -ask                    ask what tasks to run
-    -htmldocs=<program>     the location of the build script for the HTML docs
     -tardir=<path>          where to place tarball when finished
     -tar_keep_days=<int>    number of days to keep old tarballs (default 15 days)
     -build_keep_days=<int>  number of days to key old build directories (default 2 days)
@@ -520,13 +488,14 @@ Options:
     mkdir tardir
     swish-daily.pl \
         -cvsco='cvs -z3 -d:ext:moseley@cvs.sourceforge.net:/cvsroot/swishe' \
-        -htmldocs=$HOME/swish_website/bin/build \
         -tardir=tardir
 
 
 =head1 DESCRIPTION
 
-This script is used to generate a daily build of swish-e from cvs (or tarball).
+This script fetches the swish-e source, either from cvs or from a URL, builds
+swish and creates a tarball.  The script is mostly used for building daily builds,
+but is also used when creating a new release of swish-e.
 
 A build directory is created (using the date and a sequence number).  This directory is
 created under the current directory, or under the directory specified by the topdir option.
@@ -540,13 +509,45 @@ directory and installed into the "install" directory.  Log files "build.log" and
 A tarball is built and copied to the tar directory if "tardir" is specified.  Old
 tar files will be purged (based on tar_keep_days option).
 
-The html docs are indexed using the newly built swish making them searchable.
-
 If all goes well a symlink is created in the topdir pointing to the latest build directory.
 This symlink can be used to link to the latest version of the HTML docs and to the error
 and build log files.
 
 Finally, old build directories are removed (based on build_keep_days option).
+
+=head2 Building HTML documentation
+
+The swish-e configure script
+
+=head2 Examples
+
+A daily script might use:
+
+    swish-daily.pl \
+        --topdir=$HOME/swish_daily_build \\
+        --tardir=$HOME/swish-daily
+
+Which creates a directory structure like:
+
+    $ ls -l swish_daily_build/
+    latest_swish_build -> swish-e-2005-05-29
+    swish-e-2005-05-26
+    swish-e-2005-05-27
+    swish-e-2005-05-28
+    swish-e-2005-05-29
+
+
+When building a release:
+
+    swish-daily.pl \
+        --fetchtarurl=<some url>
+        --topdir=$HOME/swish_release_build \
+        --tardir=$HOME/swish-releases \
+        --noremove \
+        --notimestamp \
+
+Use --noremove to avoid purging old builds, and --notimestamp to prevent adding a time
+stamp to the version (which is done when creating the daily builds).
 
 
 =head1 OPTIONS
@@ -571,16 +572,6 @@ String for checking out from cvs.  Run -dump to see an example.
 
 Specifies a URL where to fetch the tarball.  This will replace the use of cvs for fetching the source.
 
-=item B<-htmldocs>
-
-Lists the "bin/build" program from the "swish_website" cvs module -- used for building the
-html documentation.  This is needed because the html docs are not in cvs.
-
-The default is "build_swish_doc", which could be a shell script to bin/build.
-
-You could set this to "echo" to disable building docs.  You would also need to set
-config_options to include --disable-docs to say it's ok to build without docs.  But then
-you would end up with a broken distribution file.
 
 =item B<-[no]timestamp>
 
@@ -616,7 +607,6 @@ The default is to create the log files.
 Here's an example of a cron entry:
 
   55 1 * * * . $HOME/.bashrc && $HOME/swish-daily.pl --tardir=$HOME/swish-daily --topdir=$HOME/swish_daily_build || echo "Check Swish Daily Build"
-
 
 =head1 COPYRIGHT
 
