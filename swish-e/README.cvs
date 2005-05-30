@@ -1,5 +1,5 @@
 Using CVS
----------
+=========
 
 Swish-e is available via cvs from SourceForge.  See http://swish-e.org for
 links to SourceForge and instructions downloading via cvs.
@@ -13,7 +13,7 @@ Otherwise, swish-e uses the familiar:
   make
   make check
   make install
-  
+
 Only 'make install' might require root priviledges, depending on the permissions
 of /path/to/install.
 
@@ -23,43 +23,79 @@ for these to work (autoconf, automake, libtool).
 
 
 Building with HTML docs
------------------------
+=======================
 
-The cvs version does not included the HTML documentation.
-The HTML docs are built from the swish_website module (also in cvs)
-using the same templates that http://swish-e.org uses.
-The tools to build the HTML docs can also be fetched via cvs 
-from SourceForge (see the swish_website cvs module).
+The cvs version does not included the HTML documentation.  The HTML docs are
+built from the swish_website module (also in cvs) using the same templates that
+http://swish-e.org uses.  Links not pointing to the local documentation are
+adjusted in the distribuiton documentation to point to http://swish-e.org.
 
-The swish_website module requires several Perl modules, 
-including Template-Toolkit, Pod::POM and a few others. 
-Once you have swish_website downloaded and can build the site
-using the swish_website/bin/build script, 
+The tools to build the HTML docs can also be fetched via cvs from SourceForge
+(see the swish_website cvs module).
+
+The swish_website module requires several Perl modules, including
+Template-Toolkit, Pod::POM and a few others.  Once you have swish_website
+downloaded and can build the site using the swish_website/bin/build script,
 you can then proceed to building Swish-e with:
 
-  ./configure --with-website=path/to/swish_website
+  ./configure --with-website=/path/to/swish_website
   make
   make check
   make install
-  
+
+If the program "build-swish-docs" is in your $PATH then you do not need
+to specify --with-website above.  "build-swish-docs" can be a symlink
+to the actual swish_website/bin/build script.
+
+
 See the swish_website/README for more about the HTML documentation.
 
 
 Daily Builds
-------------
+============
 
 The swish-daily.pl script can be used to build swish-e from cvs (or
-from tarball) via cron.  See script for details.
+from tarball) via cron.  In a top-level build directory a dated sub-directory is
+created and the source is fetched, compiled and installed.  For example:
+
+    swish-daily.pl \
+        --topdir=$HOME/swish/swish_daily_build
+        --tardir=$HOME/swish/swish-daily
+
+Which creates a directory structure like:
+
+    $ ls -l swish_daily_build/
+    latest_swish_build -> swish-e-2005-05-29
+    swish-e-2005-05-26
+    swish-e-2005-05-27
+    swish-e-2005-05-28
+    swish-e-2005-05-29
+
+See the documentation in the swish-daily.pl script for more details.
 
 
 
 Developer Notes:
 
 Release and Tag
----------------
+===============
 
-1) Run cvs update to make sure have current sources and cvs -nq update to
-   make sure there's nothing left to check in
+There's two parts to making a release.  One is building the tarball
+and the other is updating the website.  (Plus, announce the relase,
+of course).
+
+Building the tarball is done on your own machine, and then testing that tarball.
+
+Updating the site requires using the swish-daily.pl script to fetch the tarball,
+build it and then update the website.  There's a script called Make_Release.sh that
+automates this process.
+
+
+Building the tarball
+--------------------
+
+1) Run "cvs -nq update" to make sure your copy is up-to-date.
+   Watch carefully for merge errors.
 
 2) Edit the pod/CHANGES.pod file to update the date of the release
 
@@ -67,14 +103,18 @@ Release and Tag
 
 4) run ./bootstrap to create new Makefile.in with new version string
 
-5) Make sure you have the swish_website module available from cvs and that
-   it will build correctly.
+5) Make sure you have the swish_website module available and can build
+   the docs.  See above about building the docs.
 
-6) run make distcheck to make sure it all builds correctly.
+6) Run make distcheck to make sure it all builds correctly.
 
-**** Bill TODO: how are HTML docs made now? does distcheck do it? ******
+    $ mkdir temp && cd temp
+    $ ../swish-e/configure >/dev/null  (/dev/null is up to you)
+    $ make distcheck > /dev/null
 
-7) good idea to upload the tarball created by make distcheck someplace and
+   That will create a tarball in the current directory.
+
+7) Good idea to upload the tarball created by make distcheck someplace and
    then test on a few platforms
 
 8) Check in the updated version Makefiles:
@@ -83,12 +123,72 @@ Release and Tag
 
 9) Tag the release.  For example:
 
-   $ cvs tag rel-2-4-0
+    $ cvs tag rel-2-4-0
 
 10) Upload to swish-e site -- see "Update Site" below for details before doing this.
 
 Now move on to development.  Change version in configure.in (2.5.0 for example),
 run ./bootstrap and check in.
+
+
+Update Site
+-----------
+
+Updating the site for a new release means updating the web site, such as the
+main page to announce the new release, and to build the web site using the new
+release so the on-line documentation is up to date.
+
+This is always a bit more hands-on due to changes in the build system between
+releases.
+
+See swish_website/README for more details on building the web site, but
+basically the swish_website script (bin/build) needs to know where to find the
+source for both the release and the current development builds.  This is currently done by
+two symlinks "swishsrc" and "develsrc".  develsrc points to the daily build directory:
+
+
+For example:
+
+    develsrc -> /home/bmoseley/swish/swish_daily_build/latest_swish_build/source
+
+The daily builds are created with the swish-daily.pl script.  swish-daily.pl fetches the
+source via cvs (with daily builds) or via a URL (for releases), unpacks into the "source"
+directory and builds swish-e.  If all goes well a symlink is created to the
+"latest_swish_build".
+
+This same process can be used to build a release.  But, instead of fetching from cvs[1]
+you fetch a tarball built above and placed in some location to fetch by URL.
+
+The swish_website/Build_Release.sh script does this by running:
+
+    #!/bin/sh
+
+    DIR="${BASE_DIR:=$HOME/swish}"
+
+    if test ! -n "$1"; then
+        echo "Must specify URL to fetch"
+        exit 1
+    fi
+
+    TAR_URL="$1"
+
+    swish-daily.pl \
+        --fetchtarurl="$TAR_URL" \
+        --topdir=$DIR/swish_release_build \
+        --noremove \
+        --notimestamp \
+        --verbose \
+        --tardir=$DIR/swish-releases || exit 1;
+
+So, run that script and pass a URL, swish-daily.pl will fetch the script, attempt to
+build and install swish-e, and then build a tarball and place it in the swish-releases
+directory and upate the latest.tar.gz link.  That basically makes the tarball available in
+the download directory, but it cannot be seen yet until the website is updated.
+
+For that you can run the swish_website/build.sh script, passing -a to tell it to build the
+entire site.
+
+
 
 
 Patching a previous version
@@ -180,57 +280,5 @@ NOTE: The example for naming the branch may not be best.  In this example we
 are fixing a bug in 2.4.0 so will likely release a 2.4.1.  Development is now
 in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead
 of rel-2-4-0-patches) and then all 2.4.x updates will get added there.
-
-
-************ Bill TODO ***********
-Update Site
------------
-
-These are notes from the README on the swish-e.org site (in the builds directory).
-Some of these notes duplicate comments from above.
-
-
-To make a release:
-
-This uses the swish-daily.pl script.  It still needs updating to
-work better with a "release" (namely the script used here has been modified
-to not remove old tarballs and to not copy the build logs to the Download directory.
-
-Need to find time to update the swish-daily script to read params from a soruce file.
-
-To create a release:
-
-1) update configure.in's version number and run a make distcheck.
-     Then cvs ci to update the version in cvs
-     And tag the files:  cvs tar rel-2-4-0
-
-2) I scp the tarball to swish-e.org's top directory (just a place with web access)
-3) run the build scrip:
-
-   ./swish-daily.pl -notimestamp -fetchtarurl=http://swish-e.org/swish-e-2.4.0.tar.gz
-
-(Be careful about permissions here as it does try and move links around)
-
-That will fetch the tarball, unpack into a build directory, and make install into
-an install directory (all this happens in the /data/_a/webdata/SWISH-E/builds directory.
-
-The HTML docs are indexed and the symlink at /data/_a/webdata/SWISH-E/current/docs is
-updated to point to this install directory.
-
-Then make dist is run and the resulting tarball is copied to
-/data/_a/webdata/SWISH-E/Download
-
-The --notimestamp option disables the timestamp option used by configure to add a date to
-the version number.
-
-Note that a "lastinstall" file is used to track the last installation directory.  So next
-time a build is created the old installation directory is removed.
-
-4) Edit Download/HEADER, index.html, swish-daily/HEADER to reflect the right version
-
-5) Announce on list.
-
-6) back at cvs, change to a new dev version by editing configure.in, ./bootstrap and
-checkin.
 
 
