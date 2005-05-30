@@ -16,7 +16,8 @@ Site layout
     ./
         -> src              - web source docs.
         -> public_html      - output files.  This is DocumentRoot
-        -> dirs_public      - download, archive, and swish-daily dirs
+            distribution        - symlink to the swish-releases tarball directory[1]
+            swish-daily         - symlink to swish-daily tarball directory
         -> bin              - bin/build script and other utilities
         -> lib/config       - site config templates.
         -> lib/config/site  - contains swish-e current version (see TODO)
@@ -24,6 +25,12 @@ Site layout
         -> lib/page         - templates that define the look of each page
         -> lib/pod_toc      - top-level index for pod docs
 
+[1] these two (three including the "old" dir) directories are read when
+building the index listings for the downloads, plus they must be avaiable via
+the /distribution and /swish-daily URLs.  Originally, these were outside of
+document root (public_html) in dirs_public and accesed with Alias in
+httpd.conf.  And lib/config/site set their locations for generating the
+index.html pages listing the files.
 
 
 Building the site
