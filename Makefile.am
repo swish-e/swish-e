@@ -2,7 +2,6 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = filters prog-bin conf filter-bin example html man src tests pod
 
 
-if BUILDDOCS
 
 docdir = $(datadir)/doc/$(PACKAGE)
 
@@ -25,7 +24,6 @@ $(srcdir)/INSTALL: $(top_srcdir)/pod/INSTALL.pod
 $(srcdir)/README: $(top_srcdir)/pod/README.pod
 	-rm -f $(top_srcdir)/README
 	-pod2text $(top_srcdir)/pod/README.pod > $(top_srcdir)/README
-endif
 
 config_dir  = \
      config/config.guess \
