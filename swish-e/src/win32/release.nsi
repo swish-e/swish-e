@@ -16,7 +16,7 @@ LicenseData "COPYING.txt"
 
 InstallDir "$PROGRAMFILES\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" ""
-DirShow show ; (make this hide to not let the user change it)
+;DirShow show ; (make this hide to not let the user change it)
 DirText "Select location where to install SWISH-E:"
 
 ComponentText "Which components do you require?"

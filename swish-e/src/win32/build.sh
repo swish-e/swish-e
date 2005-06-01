@@ -8,7 +8,10 @@
 # apt-get install mingw32 mingw32-binutils mingw32-runtime
 
 # Host Arch
-HA=i586
+HA=i586-mingw32msvc
+
+# Build System Arch
+BA=i686-linux
 
 # Remove the cache for our configure script else we will have problems.
 rm -f config.cross.cache
@@ -16,11 +19,12 @@ rm -f config.cross.cache
 # Take note of the host, target and build options.  If you're building
 # on another OS you will want change these.
 #   libxml2, zlib, pcre are the build directory for each.
-./configure --cache-file=config.cross.cache \
+./configure --prefix=${PWD}/../prefix \
+        --cache-file=config.cross.cache \
 	--disable-docs \
-        --host=${HA}-mingw32msvc \
-        --target=${HA}-mingw32msvc \
-        --build=i686-linux \
+        --host=${HA} \
+        --target=${HA} \
+        --build=${BA} \
         --with-libxml2=$PWD/../libxml2 \
         --with-zlib=$PWD/../zlib \
         --with-pcre=$PWD/../pcre \
@@ -28,4 +32,9 @@ rm -f config.cross.cache
 
 # Build Binaries
 make
+
+# Build SWISH::API
+pushd perl
+make -f Makefile.mingw
+popd
 
