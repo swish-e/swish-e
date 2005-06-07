@@ -73,7 +73,6 @@ win32_dir = \
     src/win32/libswishindex.dsp \
     src/win32/swishe.dsp \
     src/win32/swishe.dsw \
-    src/win32/installer.nsi \
     src/win32/release.nsi \
     src/win32/filebase.nsh \
     src/win32/fixperl.pl \
