@@ -8,13 +8,16 @@
 # Some brief notes on how to setup a build environment:
 # 1.) Install mingw (Debian: mingw32, mingw32-runtime, mingw32-binutils)
 # 2.) Install WINE (Debian: wine)
-# 3.) Install ActivePerl on Windows (or WINE if you can)
-# 4.) Copy over the entire Perl tree to Linux (e.g. C:\Perl)
-# 5.) Run the Perl/bin/reloc_perl script to correct the runtime Prefix.
-# 6.) Make sure that your WINE install sets up a binfmt handler
+# 3.) Install xvfb dummy X server (Debian: xvfb)
+# 4.) Install ActivePerl on Windows (or WINE if you can)
+# 5.) Copy over the entire Perl tree to Linux (e.g. C:\Perl)
+# 6.) Run the Perl/bin/reloc_perl script to correct the runtime Prefix.
+# 7.) Make sure that your WINE install sets up a binfmt handler
 #     for Windows executables.  (Debian wine does) 
-# 7.) Note: you may wish/need to rebuild Debian wine with debugging 
+# 8.) Note: you may wish/need to rebuild Debian wine with debugging 
 #     disabled.  WINE debug output is printed to stdout.  (Why? Why?)
+#     Also you need to comment out the "Wine exited with successful status"
+#     line in /usr/bin/wine to prevent corruption of API.c
 
 # SWISH-E "install" Location
 SWISH_PREFIX = ../../prefix
@@ -22,7 +25,7 @@ SWISH_BIN = $(SWISH_PREFIX)/bin/swish-e.exe
 
 # PERL Location (Need WINE and ActivePerl on Linux)
 PERL_PREFIX = ../../perl
-PERL_BIN = $(PERL_PREFIX)/bin/perl.exe
+PERL_BIN = xvfb-run $(PERL_PREFIX)/bin/perl.exe
 PERL_LIB = $(PERL_PREFIX)/bin/perl58.dll
 
 # Compiler Stuff
