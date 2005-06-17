@@ -153,9 +153,7 @@ $Id$
 static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, INDEXDATAHEADER *header, docProperties **properties );
 static void SwapLocData(SWISH *,ENTRY *,unsigned char *,int);
 static void unSwapLocData(SWISH *,int, ENTRY *);
-#ifndef USE_BTREE
 static void sortSwapLocData(ENTRY *);
-#endif
 
 /* 
   -- init structures for this module
@@ -2113,7 +2111,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     if ( !(ep = sw->Index->entryArray ))
         return;  /* nothing to do */
 
-
     totalwords = ep->numWords;
 
     DB_InitWriteWords(sw, indexf->DB);
@@ -2274,6 +2271,8 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     ENTRY  *epi;
     int     totalwords;
     int     percent, lastPercent, n;
+    int     last_loc_swap;
+
     long    old_wordid;
     unsigned char *buffer =NULL;
     int     sz_buffer = 0;
@@ -2306,54 +2305,72 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     if(sw->Index->swap_locdata)
         Mem_ZoneReset(sw->Index->totalLocZone);
 
-    n = lastPercent = 0;
-    for (i = 0; i < totalwords; i++)
+    n = lastPercent = last_loc_swap = -1;
+    for (i = 0; i < VERYBIGHASHSIZE; i++)
     {
-        if ( sw->verbose && totalwords > 10000 )  // just some random guess
+         /* If we are in economic mode -e restore locations */
+        if(sw->Index->swap_locdata)
         {
-            n++;
-            percent = (n * 100)/totalwords;
-            if (percent - lastPercent >= DELTA )
+            if (((i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1)) != last_loc_swap)
             {
-                printf("\r  Writing word text: %3d%%", percent );
-                fflush(stdout);
-                lastPercent = percent;
+                /* Free not longer needed memory */
+                Mem_ZoneReset(sw->Index->totalLocZone);
+                last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
+                unSwapLocData(sw, last_loc_swap, NULL );
             }
         }
-
-        epi = ep->elist[i];
-
-        /* why check for stopwords here?  removestopwords could have remove them */
-
-        if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )
+        if ((epi = sw->Index->hashentries[i]))
         {
-            /* Build worddata buffer */
-            build_worddata(sw, epi);
-            /* let's see if word is already in the index */
-            old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
-            /* If exists, we have to add the new worddata buffer to the old one */
-            if(old_wordid)
+            while (epi)
             {
-                 add_worddata(sw, buffer, sz_buffer);
-                 efree(buffer);
-                 buffer = NULL;
-                 sz_buffer = 0;
-                 delete_worddata(sw, old_wordid, indexf);
-                 write_worddata(sw, epi, indexf);
-                 update_wordID(sw, epi, indexf);
-            }
-            else
-            {
-                 /* Reset last error. It was set in read_worddata if
-                 ** word was not found */
-                 sw->lasterror = RC_OK;
-                 /* Write word to index file */
-                 write_worddata(sw, epi, indexf);
-                 write_word(sw, epi, indexf);
+                /* If we are in economic mode -e we must sort locations by metaID, filenum */
+                if(sw->Index->swap_locdata)
+                {
+                    sortSwapLocData(epi);
+                }
+                if ( sw->verbose && totalwords > 10000 )  // just some random guess
+                {
+                    n++;
+                    percent = (n * 100)/totalwords;
+                    if (percent - lastPercent >= DELTA )
+                    {
+                        printf("\r  Writing word data: %3d%%", percent );
+                        fflush(stdout);
+                        lastPercent = percent;
+                    }
+                }
+                /* why check for stopwords here?  removestopwords could have remove them */
+                if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )                     /* Not a stopword */
+                {
+                    /* Build worddata buffer */
+                    build_worddata(sw, epi);
+                    /* let's see if word is already in the index */
+                    old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
+                    /* If exists, we have to add the new worddata buffer to the old one */
+                    if(old_wordid)
+                    {
+                         add_worddata(sw, buffer, sz_buffer);
+                         efree(buffer);
+                         buffer = NULL;
+                         sz_buffer = 0;
+                         delete_worddata(sw, old_wordid, indexf);
+                         write_worddata(sw, epi, indexf);
+                         update_wordID(sw, epi, indexf);
+                    }
+                    else
+                    {
+                         /* Reset last error. It was set in read_worddata if
+                         ** word was not found */
+                         sw->lasterror = RC_OK;
+                         /* Write word to index file */
+                         write_worddata(sw, epi, indexf);
+                         write_word(sw, epi, indexf);
+                    }
+                }
+                epi = epi->next;
             }
         }
-    }    
-
+    }
     if (sw->verbose)
     {
         printf("\r  Writing word text: Complete\n" );
@@ -3090,7 +3107,6 @@ static void unSwapLocData(SWISH * sw, int idx_swap_file, ENTRY *ep)
     }
 }
 
-#ifndef USE_BTREE
 /* 2002-07 jmruiz - Sorts unswaped location data by metaname, filenum */
 static void sortSwapLocData(ENTRY *e)
 {
@@ -3171,4 +3187,3 @@ static void sortSwapLocData(ENTRY *e)
     efree(ptmp);
 
 }
-#endif
