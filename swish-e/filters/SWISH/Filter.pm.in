@@ -1375,7 +1375,7 @@ sub run_program {
     close $fh;
 
     # When using IPC::Open3 need to reap the processes.
-    waitpid $self->{pid}, 0 if delete $self->{pid};
+    waitpid delete $self->{pid}, 0 if $self->{pid};
 
     return $output;
 }
