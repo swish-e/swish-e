@@ -39,7 +39,9 @@ $headers
 $xml
 </body>
 </html>
-EOF     return \$txt;
+EOF
+
+    return \$txt;
 }
 
 1;
