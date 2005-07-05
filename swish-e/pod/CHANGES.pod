@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item fixed bug when StopWords resulted in no unique words
+
+Added check in db_native.c to check that some words exist before writing index.
+
 =item updates to SWISH-RUN.1
 
 Added doc for -u and -r options.
