@@ -973,6 +973,9 @@ int     DB_EndWriteWords_Native(void *db)
     /* Now update word's data offset into the list of words */
     /* Simple check  words and worddata must match */
 
+    if (! DB->num_words)
+        progerr("No unique words indexed");
+
     if (DB->num_words != DB->wordhash_counter)
         progerrno("Internal DB_native error - DB->num_words != DB->wordhash_counter: ");
 
