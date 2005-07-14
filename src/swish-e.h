@@ -179,7 +179,7 @@ const char *SwishWordsByLetter(SW_HANDLE, char *filename, char c);
 char *SwishStemWord( SW_HANDLE, char *word );  /* Really this is depreciated */
 
 SW_FUZZYWORD SwishFuzzyWord( SW_RESULT r, char *word );
-SW_FUZZYWORD SwishFuzzy( SW_HANDLE sw, const char *index_name, char *word );
+SW_FUZZYWORD SwishFuzzify( SW_HANDLE sw, const char *index_name, char *word );
 const char **SwishFuzzyWordList( SW_FUZZYWORD fw );
 int SwishFuzzyWordCount( SW_FUZZYWORD fw );
 int SwishFuzzyWordError( SW_FUZZYWORD fw );

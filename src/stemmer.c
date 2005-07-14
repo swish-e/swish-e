@@ -520,7 +520,7 @@ karman - Wed Oct 27 10:51:03 CDT 2004
 *********************************************************************************/
 
 
-FUZZY_WORD *SwishFuzzy( SWISH *sw, const char *index_name, char *word )
+FUZZY_WORD *SwishFuzzify( SWISH *sw, const char *index_name, char *word )
 {
     
 /* create FUZZY object like SwishFuzzyWord does, but with named index */
@@ -528,7 +528,7 @@ FUZZY_WORD *SwishFuzzy( SWISH *sw, const char *index_name, char *word )
     IndexFILE *indexf = indexf_by_name( sw, index_name );
     
     if ( !sw )
-      progerr("SwishFuzzy requires a valid swish handle");
+      progerr("SwishFuzzify requires a valid swish handle");
 
     if ( !indexf ) {
       set_progerr( HEADER_READ_ERROR, sw, "Index file '%s' is not an active index file", index_name );
