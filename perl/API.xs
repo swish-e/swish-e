@@ -101,18 +101,20 @@ SwishRankScheme(self, scheme)
 # added SwishFuzzy to give access directly from SW object
 # karman - Wed Oct 27 11:16:45 CDT 2004
 # This returns a fuzzy word object based on the result
+# Thu Jul 14 11:33:27 CDT 2005
+# fixed namespace issue: now SwishFuzzify (called like $swish->Fuzzify)
 
 SW_FUZZYWORD
-SwishFuzzy(swobj, index_name, word)
-    SW_HANDLE swobj;
-    char * index_name;
-    char * word;
+SwishFuzzify(swobj, index_name, word)
+    SW_HANDLE swobj
+    char * index_name
+    char * word
 
     PREINIT:
         char * CLASS = "SWISH::API::FuzzyWord";
 
     CODE:
-        RETVAL = SwishFuzzy(swobj, index_name, word);
+        RETVAL = SwishFuzzify(swobj, index_name, word);
 		    
 	    
     OUTPUT:
