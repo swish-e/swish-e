@@ -5,7 +5,7 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 145;
+my $lastcase = 146;
 print "1..$lastcase\n";
 
 my $test_num = 1;
@@ -285,9 +285,11 @@ my $mem_test = 0;
 
 
     for ( qw/running runs library libraries/ ) {
-        my $fw = $swish->Fuzzify( 'index.swish-e', $_ );
+         my $fw = $swish->fuzzify( 't/index.swish-e', $_ );
         my $stemmed = ( $fw->WordList )[0];
-        # could/should check WordError here instead?
+        if ( $fw->WordError ) {
+	    warn $fw->WordError, $/;
+        }
         is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
     }
 
