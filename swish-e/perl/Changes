@@ -2,6 +2,11 @@ Revision history for Perl extension Text::Aspell.
 
 ## $Id$ ##
 
+0.04  Thu Jul 14 11:59:04 CDT 2005
+        Added perlize() function to make all method names Perl-ish.
+        Fixed namespace issue with SwishFuzzy (now SwishFuzzify)
+
+
 0.03  Wed Sep 01, 2004
 
 	Added RankScheme to access the new RankScheme feature.

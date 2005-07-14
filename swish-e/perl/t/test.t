@@ -285,7 +285,10 @@ my $mem_test = 0;
 
 
     for ( qw/running runs library libraries/ ) {
-        my $stemmed = $swish->StemWord( $_ );
+        my $fw = $swish->Fuzzify( 'index.swish-e', $_ );
+        warn "fw = $fw\n";
+        my $stemmed = ( $fw->WordList )[0];
+        # could/should check WordError here instead?
         is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
     }
 
@@ -341,7 +344,7 @@ sub swish_stem
 {
     my ($swish,$index,$word) = @_;
     my $fw;
-    is_ok("Testing Fuzzy [$word]", ($fw = $swish->Fuzzy($index,$word)) );
+    is_ok("Testing Fuzzy [$word]", ($fw = $swish->Fuzzify($index,$word)) );
     return unless $fw;
     my @fuzzed = $fw->WordList;
     is_ok(" [$word] -> [@fuzzed]", scalar @fuzzed );
