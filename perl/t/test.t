@@ -286,7 +286,6 @@ my $mem_test = 0;
 
     for ( qw/running runs library libraries/ ) {
         my $fw = $swish->Fuzzify( 'index.swish-e', $_ );
-        warn "fw = $fw\n";
         my $stemmed = ( $fw->WordList )[0];
         # could/should check WordError here instead?
         is_ok( "Stemmed: '$_' => '" . ($stemmed||'*failed to stem*') ."'", $stemmed );
