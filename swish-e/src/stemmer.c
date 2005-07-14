@@ -277,7 +277,7 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
             if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" )
             {
                 fprintf(stderr, "*************\n");
-                fprintf(stderr, "  Old stemmer '%s' is no longer supported -- using Stemmer_en1 instead.\n", fuzzy_opts[i].name);
+                fprintf(stderr, "  Old stemmer '%s' is no longer supported -- using Stemming_en1 instead.\n", fuzzy_opts[i].name);
                 fprintf(stderr, "  Please update your config file.\n*************\n");
             }
             
