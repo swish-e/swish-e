@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item fix sparc64 property issue
+
+Sorithy Seng (pourlassi@gmail.com) submitted a patch against docprop.c to fix
+an issue on sparc64 platforms. It is unknown whether this bug affected other 64-bit
+architectures.
+
 =item fixed bug when StopWords resulted in no unique words
 
 Added check in db_native.c to check that some words exist before writing index.
