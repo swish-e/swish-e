@@ -177,7 +177,20 @@ $Id$
 #include <zlib.h>
 #endif
 
-
+/*******************************************************************
+*   Convert a propValue to a unsigned long
+*
+********************************************************************/
+union _conv_ {
+      char            c[sizeof(unsigned long)];
+      unsigned long   l;
+};
+unsigned long convPropValue2ULong(char *propValue)
+{
+      union _conv_ u;
+      memcpy(u.c, propValue, sizeof(unsigned long));
+      return u.l;
+}
 
 
 /*******************************************************************
@@ -276,7 +289,8 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_date(meta_entry) )
     {
         s=emalloc(30);
-        i = *(unsigned long *) prop->propValue;  /* read binary */
+        /* i = *(unsigned long *) prop->propValue; */  /* read binary */ 
+        i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         strftime(s,30, DATE_FORMAT_STRING, (struct tm *)localtime((time_t *)&i));
         return s;
@@ -287,7 +301,8 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_number(meta_entry) )
     {
         s=emalloc(14);
-        i=*(unsigned long *)prop->propValue;  /* read binary */
+        /* i=*(unsigned long *)prop->propValue; */ /* read binary */
+        i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         sprintf(s,"%lu",i);
         return s;
@@ -641,7 +656,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
     if ( is_meta_number(meta_entry) )
     {
         unsigned long i;
-        i = *(unsigned long *) prop->propValue;  /* read binary */
+        /* i = *(unsigned long *) prop->propValue;*/  /* read binary */
+        i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_ULONG;
         pv->value.v_ulong = i;
@@ -653,7 +669,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
     if ( is_meta_date(meta_entry) )
     {
         unsigned long i;
-        i = *(unsigned long *) prop->propValue;  /* read binary */
+        /* i = *(unsigned long *) prop->propValue; */ /* read binary */
+        i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_DATE;
         pv->value.v_date = (time_t)i;
