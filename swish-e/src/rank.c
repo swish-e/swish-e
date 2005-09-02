@@ -631,7 +631,6 @@ getrankIDF( RESULT *r )
 #endif
 
 
-
 /* normalizing term density in a collection.
 
 Amati & Van Rijsbergen "normalization 2" from
@@ -662,6 +661,22 @@ where c > 0 (optimized at 2 ... we think...)
     0       X                           100
     useless sweet                       useless
     */
+
+
+/* if for some reason there are 0 words in this document, we'll get a divide by zero
+error in this next calculation. why might a doc have no words in it, and yet be in the 
+set of matches we're evaluating? maybe because stopwords aren't counted? 
+it's a mystery, just like mankind...
+set words=1 if <1 so that we at least avoid the core dump -- would it be better to somehow
+skip it altogether? throw an error? let's warn on stderr for now, just to alert the user
+that something is awry. */
+
+    if ( words < 1 ) {
+    
+        fprintf(stderr, "Word count for document %d is zero\n", r->filenum );
+        words = 1;
+        
+    }
 
 
     density             = ( ( average_words * 100 ) / words ) * freq;
