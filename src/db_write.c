@@ -620,6 +620,7 @@ unsigned char *q;
             p2+= sizeof(long);
             curmetanamepos_2= p2 - newdata;
         }
+        PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
     }
 
 
