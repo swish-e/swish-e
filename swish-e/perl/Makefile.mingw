@@ -25,7 +25,7 @@ SWISH_BIN = $(SWISH_PREFIX)/bin/swish-e.exe
 
 # PERL Location (Need WINE and ActivePerl on Linux)
 PERL_PREFIX = ../../perl
-PERL_BIN = xvfb-run $(PERL_PREFIX)/bin/perl.exe
+PERL_BIN = xvfb-run /usr/bin/wine $(PERL_PREFIX)/bin/perl.exe
 PERL_LIB = $(PERL_PREFIX)/bin/perl58.dll
 
 # Compiler Stuff
