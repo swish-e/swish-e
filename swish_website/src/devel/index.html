@@ -74,16 +74,93 @@ the [% link_to_page('discuss', 'Swish-e mailing list' ) %].
 </ul>
 </p>
 
+<a name="swish3"></a>
 <h3>Features planned for 3.0</h3>
 
 <p>
-Swish-e 3.0 will be a complete re-write of the code to support UTF-8 (Unicode).
-Other planned features include:
+Swish-e 3.0 (sometimes abbreviated Swish-3) will be a complete overhaul of the code.
+Major feature improvements will include:
 
-<ul>
-None at this time.
-</ul>
+<dl>
+ <dt>Unicode support</dt>
+ <dd>Unicode is the <a href='http://www.unicode.org/unicode/faq/'>international standard 
+ for character encodings</a>. Swish-e will implement
+ support for the <a href='http://www.cl.cam.ac.uk/~mgk25/unicode.html'>UTF-8</a>
+ <a href='http://czyborra.com/utf/'>character encoding</a>,
+ which should handle all major languages in the world (UTF-8 handles up to 
+ 2,147,483,648 unique characters).
+ The Swish-e developers need input from non-English language experts. 
+ Please contribute to the discussion at the
+  
+  [% link_to_page('discuss' , 'Swish-e mailing list' ) %].
+  
+ Some significant known issues include:
+ <p />
+ <dl>
+  <dt>lowercase vs. UPPERCASE</dt>
+  <dd>Version 2.x uses <tt>tolower()</tt> to lowercase all characters
+  before searching and indexing. Should the same approach be used for UTF-8? Will this have
+  significant impact on usability for non-English languages? 
+  </dd>
+  <dt>Wildcards</dt>
+  <dd>Version 2.x uses an internal table to support wildcard searching with <tt>*</tt>.
+  The table assumes 8-bit (non-Unicode) character encoding. That approach will likely need
+  to be re-thought for multibyte encodings like UTF-8.
+  </dd>
+  <dt>WordCharacters</dt>
+  <dd>Version 2.x uses 5 different configuration options to control how a 
+  'word' is defined. The basic assumption is that a word is defined by which characters it
+  <i>includes</i>. That assumption is based on a manageable character set of 256 characters.
+  However, the sheer size of UTF-8 suggests that the basic assumption should be inverted:
+  a word is defined by which characters it <i>excludes</i>. Thus, Swish-3 will likely include
+  3 configuration options instead of the current 5: 
+  IgnoreCharacters, IgnoreStartCharacters, and IgnoreEndCharacters.
+  </dd>
+  
+  <dt>Stemming</dt><dd>The stemmers used will need full international support.
+  </dd>
+  <dt>Configuration format</dt>
+  <dd>Since Swish-e depends on a configuration file for StopWords, Character
+  definitions, etc., the parsing of the configuration file must support UTF-8 as well.
+  The current idea is to switch to XML-style configuration files and use Libxml2 to parse
+  them.
+  </dd>
+ </dl>
+ 
+ </dd>
 
+ <dt>Incremental indexing</dt>
+ <dd>Swish-3 will support true incremental indexing. This will allow for document records
+ to be modified, added and deleted in an existing index. This feature may or may not build
+ on the version 2.x experimental btree/incremental feature.
+ </dd>
+ 
+ <dt>Scaling</dt>
+ <dd>Swish-3 will reliably scale to larger (multimillion) document collections.
+ </dd>
+ 
+ <dt>Indexing API</dt>
+ <dd>Swish-e will include an indexing API in addition to the current searching API.</dd>
+ 
+ <dt>Streamlined feature set</dt>
+ <dd>Swish-3 will not contain several features in the current version:
+ <ul>
+  <li>Expat parsers</li>
+  <li><tt>-S http</tt> indexing method and related configuration options</li>
+  <li>Older stemmers</li>
+  <li>Current native index format</li>
+ </ul>
+ </dd>
+ 
+ <dt>Alternate index backends</dt>
+ <dd>Swish-3 may offer alternate index backends using available open source libraries,
+ such as <a href='http://xapian.org/'>Xapian</a>, 
+ <a href='http://hyperestraier.sourceforge.net/'>HyperEstraier</a>,
+ <a href='http://incubator.apache.org/lucene4c/'>Lucene</a>, or 
+ <a href='http://www.lemurproject.org/'>Lemur</a>.
+ </dd>
+ 
+</dl>
 </p>
 
 <hr />
