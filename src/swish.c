@@ -272,7 +272,8 @@ static void    usage()
     printf("    swish [-e] [-i dir file ... ] [-S system] [-c file] [-f file] [-l] [-v (num)]\n");
     printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
     printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
-    printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format] [-R rank_scheme]\n");
+    printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format] \\\n");
+    printf("          [-R rank_scheme] [-L prop low high]\n");
     printf("    swish -k (char|*) [-f file1 file2 ...]\n");
     printf("    swish -M index1 index2 ... outputfile\n");
     printf("    swish -N /path/to/compare/file\n");
@@ -303,6 +304,7 @@ static void    usage()
 
     printf("         -k : Print words starting with a given char.\n");
     printf("         -l : follow symbolic links when indexing\n");
+    printf("         -L : Limit results to a range of property values\n");
     printf("         -M : merges index files\n");
     printf("         -m : the maximum number of results to return [defaults to all results]\n");
     printf("         -N : index only files with a modification date newer than path supplied\n");
