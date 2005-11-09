@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item fixed bug when using DoubleMetaphone
+
+Fixed problem reported by Andreas Völter where a query that generated a
+two-word query with DoubleMetaphone fuzzy mode was not working.
+
 =item fix sparc64 property issue
 
 Sorithy Seng (pourlassi@gmail.com) submitted a patch against docprop.c to fix

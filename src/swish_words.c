@@ -324,7 +324,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
                 /* yuck! */
                 swish_words = (struct swline *) addswline( swish_words, "(" );
                 swish_words = (struct swline *) addswline( swish_words, fw->string_list[0] );
-                swish_words = (struct swline *) addswline( swish_words, "or" );
+                swish_words = (struct swline *) addswline( swish_words, OR_WORD );
                 swish_words = (struct swline *) addswline( swish_words, fw->string_list[1] );
                 swish_words = (struct swline *) addswline( swish_words, ")" );
             }
