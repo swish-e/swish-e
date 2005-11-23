@@ -558,9 +558,9 @@ and uses a shared memory location in the SW_HANDLE object to store the stemmed
 word.  See below for other stemming options.
 
 
-=item $fuzzy_word = $swish-E<gt>Fuzzy( $indexname, $word );
+=item $fuzzy_word = $swish-E<gt>Fuzzify( $indexname, $word );
 
-Like stem_word used to work, only it uses whatever stemmer is named in $indexname.
+Like stem_word() used to work, only it uses whatever stemmer is named in $indexname.
 Returns the same kind of fuzzy_word object as the fuzzy_word() method.
 
 =item $mode_string = $result-E<gt>fuzzy_mode;
