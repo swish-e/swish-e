@@ -74,7 +74,7 @@ my $poddest_default = File::Spec->catfile( $dest_default, 'docs' );
 
 my %default_config = (
     ignore  => [ '\b(CVS|RCS)\b', '^#', '\.gz$', '\.swp$'],
-    copy    => [ '\.(gif|png|jpe?g|htaccess)$' ],
+    copy    => [ '\.(pdf|gif|png|jpe?g|htaccess)$' ],
     include => ['lib' ],
     src     => $src_default,
     dest    => $dest_default,
