@@ -42,7 +42,7 @@ sub get_xls_content_ref {
     my $oExcel = Spreadsheet::ParseExcel->new;
     return unless $oExcel;
 
-    my $oBook = $oExcel->Parse($file);
+    my $oBook = $oExcel->Parse($file) || return;
     my($iR, $iC, $oWkS, $oWkC, $ExcelWorkBook);
 
     # Here we gather up all the workbook metadata
