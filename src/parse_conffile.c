@@ -1740,6 +1740,9 @@ static char *read_line_from_file( int * linenum, FILE *fp )
 
         /* Look for continuation mark (backslash+\n) and replace with space */
         cur_len = strlen( line );
+
+        if ( cur_len < 2 ) break;
+
         if ( line[cur_len-2] == '\\' && line[cur_len-1] == '\n' )
             line[cur_len-2] = '\0';
         else
