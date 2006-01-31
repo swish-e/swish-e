@@ -128,13 +128,16 @@ sub get_index_select_list {
               && ref $select_config->{labels} eq 'ARRAY'
               && @$indexes == @{$select_config->{labels}};
 
-
+    my $defindex = $select_config->{default_index};
+    my @default = ref $defindex eq 'ARRAY' ? @$defindex : ($defindex);
     my @labels = @{$select_config->{labels}};
-    my %map;
+    my (%map, $map_index);
 
     for ( 0..$#labels ) {
         $map{$_} = $labels[$_];
+        $map_index{$indexes->[$_]} = $_;
     }
+    @default = map exists $map_index{$_} ? $map_index{$_} : 0, @default;
 
     my $method = $select_config->{method} || 'checkbox_group';
     my @cols = $select_config->{columns} ? ('-columns', $select_config->{columns}) : ();
@@ -145,7 +148,7 @@ sub get_index_select_list {
         $q->$method(
         -name   => 'si',
         -values => [0..$#labels],
-        -default=> 0,
+        -default=> \@default,
         -labels => \%map,
         @cols );
 }
