@@ -75,6 +75,10 @@
 #    -W test for all install dirs
 #    thanks to chyla@knihovnabbb.cz for feedback on these fixes/features
 #    
+#
+#   0.10    Thu Feb 23 10:44:26 CST 2006
+#    changed Xpdf URL to peknet patched copy of 3.01pl2
+#
 ################################################################################
 
 $| = 1;
@@ -90,7 +94,7 @@ use File::Path qw( mkpath );
 use File::Spec;
 use FindBin qw( $Bin );
 
-my $Version     = '0.09';
+my $Version     = '0.10';
 
 my %URLs    = (
 
@@ -101,11 +105,7 @@ my %URLs    = (
 # Tue Apr 26 11:43:40 CDT 2005
 
 'libxml2'    => 'http://xmlsoft.org/sources/LATEST_LIBXML2',
-'xpdf'        => 'http://docs.cray.com/support/xpdf-3.01.tar.gz',
-#'xpdf'        => 'ftp://ftp.foolabs.com/pub/xpdf/xpdf-current.tar.gz',
-
-# NOTE that official xpdf needs patch to 3.01!
-# Cray version is pre-patched.
+'xpdf'       => 'http://peknet.com/src/xpdf-3.01pl2.tar.gz',
 
 );
 
