@@ -85,7 +85,7 @@ $Id$
 #endif
 
 /* Cough, hack, cough - convert slash to backslash for programs that are run via the shell */
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 void make_windows_path( char *path )
 {
     char    *c;
@@ -101,7 +101,7 @@ void make_windows_path( char *path )
 char *
 get_libexec(void){
 	char *fn;
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 	char *tr;
 	int pos;
 
@@ -158,7 +158,7 @@ void normalize_path(char *path)
 
     while( len > 1 && path[len-1] == '/' )
     {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
         /* c:/ must end with / but other directories must not */
         if( path[1] == ':' && len == 3 ){
             break;

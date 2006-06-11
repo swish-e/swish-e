@@ -34,7 +34,7 @@ $Id$
 */
 
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 void make_windows_path( char *path );
 #endif
 char *get_libexec(void);

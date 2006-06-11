@@ -341,7 +341,7 @@ FILE   *FilterOpen(FileProp * fprop)
     filtercmd = emalloc(len + 2);
 
     prog = estrdup( fi->prog );
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
     make_windows_path( prog );
 #endif
 
@@ -435,7 +435,7 @@ static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
 
     case 'p':                  /* Full Path TMP/Work path */
         strcpy(str, (fprop->work_path) ? fprop->work_path : nul);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
         make_windows_path( str );
 #endif
         break;
@@ -458,7 +458,7 @@ static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
         x = (fprop->work_path) ? cstr_dirname(fprop->work_path) : nul;
         strcpy(str, x);
         efree(x);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
         make_windows_path( str );
 #endif
         break;

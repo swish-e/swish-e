@@ -152,7 +152,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     efree( full_path );
 
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 
     make_windows_path( cmd );
 
