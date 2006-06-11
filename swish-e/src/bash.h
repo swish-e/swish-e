@@ -32,7 +32,7 @@ $Id$
 #define xrealloc erealloc
 
 #define FS_EXISTS		0x1
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 #define FS_EXECABLE		0x1
 #else
 #define FS_EXECABLE		0x2

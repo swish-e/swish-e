@@ -783,7 +783,7 @@ int deleted_length;
 
 #define N_TEST 5000
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__CYGWIN__)
 #define FILEMODE_READ           "rb"
 #define FILEMODE_WRITE          "wb"
 #define FILEMODE_READWRITE      "rb+"
