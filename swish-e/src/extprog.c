@@ -227,6 +227,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     FILE   *fp;
     char   *ln;
     char   *real_path;
+    char   *x;
     long    fsize;
     time_t  mtime;
     int     index_no_content;
@@ -427,7 +428,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                     progerr("Cannot use 'Update-Mode' header without -u or -r");
 
 
-                char *x = strchr(line, ':');
+                x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Update-Mode '%s'", line);
 
