@@ -227,7 +227,6 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     FILE   *fp;
     char   *ln;
     char   *real_path;
-    char   *x;
     long    fsize;
     time_t  mtime;
     int     index_no_content;
@@ -418,6 +417,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             if (strncasecmp(line, "Update-Mode", 11) == 0)
             {
+				char *x = strchr(line, ':');
 #ifndef USE_BTREE
                 progerr("Cannot use Update-Mode header with this version of Swish-e.  Rebuild with --enable-incremental.");
 #endif
@@ -427,8 +427,6 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 if ( MODE_UPDATE != original_update_mode && MODE_REMOVE != original_update_mode )
                     progerr("Cannot use 'Update-Mode' header without -u or -r");
 
-
-                x = strchr(line, ':');
                 if (!x)
                     progerr("Failed to parse Update-Mode '%s'", line);
 
