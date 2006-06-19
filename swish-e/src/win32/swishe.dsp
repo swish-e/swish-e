@@ -50,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 kernel32.lib libswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /machine:I386 /out:"swish-e.exe"
+# ADD LINK32 kernel32.lib dllswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zdll.lib ../../../pcre/lib/pcreposix.lib /nologo /subsystem:console /machine:I386 /out:"swish-e.exe"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "swishe - Win32 Debug"
@@ -75,7 +75,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib libswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zlib.lib ../../../pcre/lib/libpcre.lib /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
+# ADD LINK32 kernel32.lib libswish-e.lib libswishindex.lib ../expat/xmltok/Release/xmltok.lib ../expat/xmlparse/Release/xmlparse.lib ../../../libxml2/lib/libxml2.lib ../../../zlib/lib/zdll.lib ../../../pcre/lib/pcreposix.lib /nologo /subsystem:console /debug /machine:I386 /out:"swish-e.exe" /pdbtype:sept
 # SUBTRACT LINK32 /pdb:none
 
 !ENDIF 
