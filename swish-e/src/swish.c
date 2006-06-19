@@ -624,6 +624,9 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 {
     char c;
     char *w;
+#if defined(_WIN32) || defined(__CYGWIN__)
+    volatile unsigned int DEBUG_MASK_HACK;
+#endif
 
 
 
@@ -771,12 +774,12 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-		/* 
-		 * DEBUG_MASK: can't sum constants imported from a DLL
-		 * (see: "man ld" under --enable-auto-import)
-		 * 2005-05-12 - David L Norris 
-		 */
-		volatile unsigned int DEBUG_MASK_HACK = DEBUG_MASK;
+    /* 
+     * DEBUG_MASK: can't sum constants imported from a DLL
+     * (see: "man ld" under --enable-auto-import)
+     * 2005-05-12 - David L Norris 
+     */
+     DEBUG_MASK_HACK = DEBUG_MASK;
 		if ( DEBUG_MASK_HACK & DEBUG_LIST_FUZZY )
 #else
                 if ( DEBUG_MASK & DEBUG_LIST_FUZZY )
