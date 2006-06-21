@@ -40,25 +40,25 @@ manual page.
 
 Examples:
 
-    example1.conf   - index only html files, plus
+    example1.config   - index only html files, plus
                       add labels to the index file
                       
-    example2.conf   - include metanames in your index
+    example2.config   - include metanames in your index
 
-    example3.conf   - add descriptive tags to your index
+    example3.config   - add descriptive tags to your index
 
-    example4.conf   - site-wide settings
+    example4.config   - site-wide settings
 
-    example5.conf   - Using "FileRules" to control
+    example5.config   - Using "FileRules" to control
                       what gets indexed
 
-    example6.conf   - spider using "prog" feature
+    example6.config   - spider using "prog" feature
 
-    example7.conf   - spider using the "http" method of indexing
+    example7.config   - spider using the "http" method of indexing
 
-    example8.conf   - using "filters" to convert PDF files.
+    example8.config   - using "filters" to convert PDF files.
 
-    example9.conf   - using the "prog" method for filtering
+    example9.config   - using the "prog" method for filtering
     example9.pl
 
 
