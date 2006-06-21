@@ -2,15 +2,22 @@ package SWISH::API;
 
 # $Id$
 
-require DynaLoader;
-
-use vars qw/  @ISA $VERSION /;
-@ISA = 'DynaLoader';
-
+use vars qw/ @ISA $VERSION /;
 $VERSION = '0.04';
 
-bootstrap SWISH::API;
-#bootstrap SWISH::API $VERSION;
+# prefer XSLoader over DynaLoader
+eval {
+    require XSLoader;
+    XSLoader::load('SWISH::API',$VERSION);
+    1;
+} or do {
+    require DynaLoader;
+    push(@ISA,'DynaLoader');
+    bootstrap SWISH::API $VERSION;
+};
+
+# VERSION sub satisfies some versions of MakeMaker
+sub VERSION { $VERSION }
 
 # create perl-ish aliases for all C method names
 # based on patch contributed by mpeters@plusthree.com
@@ -55,9 +62,6 @@ sub dispSymbols
 # for debugging symbol table
 #dispSymbols( \%SWISH::API:: );
 
-
-
-# Preloaded methods go here.
 
 
 1;
