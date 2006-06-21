@@ -5,14 +5,14 @@
 use strict;
 require SWISH::API;
 
-my $lastcase = 146;
+my $lastcase = 147;
 print "1..$lastcase\n";
 
 my $test_num = 1;
 
 my $mem_test = 0;
 
-
+is_ok( SWISH::API->VERSION, $SWISH::API::VERSION );
 
 ######################################################################
 
