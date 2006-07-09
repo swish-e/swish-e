@@ -52,6 +52,7 @@ sub wanted{
     while ( <INF> ) {
         for my $setting ( @config_options ) {
             $count += s/qw\( \@\@$setting\@\@ \)/'$config->{$setting}'/g;
+            $count += s/\@\@$setting\@\@/$config->{$setting}/g;
         }
         print OUTF;
     }
