@@ -79,6 +79,9 @@
 #   0.10    Thu Feb 23 10:44:26 CST 2006
 #    changed Xpdf URL to peknet patched copy of 3.01pl2
 #
+#   0.11    Fri Jul  7 11:15:41 CDT 2006
+#    changed CVS url per sf.net updates
+#    updated src URLs
 ################################################################################
 
 $| = 1;
@@ -94,23 +97,24 @@ use File::Path qw( mkpath );
 use File::Spec;
 use FindBin qw( $Bin );
 
-my $Version     = '0.10';
+my $Version     = '0.11';
 
 my %URLs    = (
 
 'swish-e'     => 'http://swish-e.org/distribution/latest.tar.gz',
-'zlib'        => 'http://www.zlib.net/zlib-1.2.2.tar.gz',
+'zlib'        => 'http://www.zlib.net/zlib-1.2.3.tar.gz',
 # madler@alumni.caltech.edu assures me that zlib will support a
 # http://www.zlib.net/zlib-current.tar.gz link but no such link as of
-# Tue Apr 26 11:43:40 CDT 2005
+# 7/12/2006
 
-'libxml2'    => 'http://xmlsoft.org/sources/LATEST_LIBXML2',
+'libxml2'    => 'ftp://xmlsoft.org/libxml2/LATEST_LIBXML2',
+# peknet hosts a pre-patched version of XPDF
 'xpdf'       => 'http://peknet.com/src/xpdf-3.01pl2.tar.gz',
 
 );
 
 
-my $swish_cvs     = ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/swishe';
+my $swish_cvs     = ':pserver:anonymous@swishe.cvs.sourceforge.net:/cvsroot/swishe';
 my $cvs_cmd     = "cvs -q -d$swish_cvs co swish-e";
 
 my $defdir     = '/usr/local/swish-e/latest';
