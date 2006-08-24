@@ -43,6 +43,7 @@ extern "C" {
 #define MAGIC_NOT_WORD "<__not__>"
 #define PHRASE_WORD    "<precd>"
 #define AND_NOT_WORD   "<andnot>"
+#define NEAR_WORD      "<near>"
 
 /* internal search rule numbers */
 #define NO_RULE 0
@@ -51,7 +52,7 @@ extern "C" {
 #define NOT_RULE 3
 #define PHRASE_RULE 4
 #define AND_NOT_RULE 5
-
+#define NEAR_RULE 6
 
 
 struct swline *parse_swish_query( DB_RESULTS *db_results );

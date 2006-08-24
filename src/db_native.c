@@ -50,6 +50,13 @@ $Id$
 #define WRITE_WORDS_RAMDISK 1
 #endif
 
+/* MAX_PATH used by Herman's NEAR feature but it seems to be a Windoze thing 
+ * so karman just made this value up so it will compile on *nix
+ */
+#if !defined(_WIN32)
+#define MAX_PATH    255
+#endif
+
 // #define DEBUG_PROP 1
 
 /*
@@ -314,6 +321,8 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     FILE   *fp_tmp;
 #endif
     struct Handle_DBNative *DB;
+    char strTmp[MAX_PATH];
+    char *cPos;
 
 
     if ( is_directory( dbname ) )
@@ -349,7 +358,16 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 
 
     /* Create property File */
-    strcpy(filename, dbname);
+    /* strcpy(filename, dbname); */
+    
+    /* NEAR WORD feature */
+    strcpy(strTmp, dbname);
+    cPos = strchr(strTmp, '.');
+    if (cPos != NULL)
+        *cPos = '\0';
+    strcpy(filename, strTmp);
+    /* end NEAR WORD */
+    
     strcat(filename, PROPFILE_EXTENSION);
 
 #ifdef USE_TEMPFILE_EXTENSION
@@ -495,6 +513,8 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 #ifdef USE_BTREE
     FILE *fp_tmp;
 #endif
+    char    strTmp[MAX_PATH];
+    char    *cPos;
 
     switch(mode)
     {
@@ -522,7 +542,17 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 
     s = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1);
 
-    strcpy(s, dbname);
+    /* strcpy(s, dbname); */
+    
+    /* NEAR WORD feature */
+    strcpy(strTmp, dbname);
+    cPos = strchr(strTmp, '.');
+    if (cPos != NULL)
+        *cPos = '\0';
+    strcpy(s, strTmp);
+    /* end NEAR WORD */
+
+    
     strcat(s, PROPFILE_EXTENSION);
 
     if (!(DB->prop = openRoutine(s)))
