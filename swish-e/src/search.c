@@ -152,13 +152,15 @@ static int getrulenum(char *);
 static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *r);
 
 static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist);
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf);
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf, int distance);
 static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID);
 static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
+static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel, int distance);
 static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
 static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST *, IndexFILE *);
 static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
 static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
+static RESULT_LIST *nearphraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance);
 static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
 static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS * db_results);
 static void freeresultlist(DB_RESULTS *db_results);
@@ -1186,6 +1188,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
     int     lenword;
     RESULT_LIST *l_rp,
            *new_l_rp;
+    int     distance = 0;
 
     /*
      * The andLevel is used to help keep the ranking function honest
@@ -1233,6 +1236,13 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
         else if (isbooleanrule(word))
         {
             rulenum = getrulenum(word);
+            /* NEAR feature */
+            if (rulenum == NEAR_RULE)
+            {
+                distance = atol(word + strlen(NEAR_WORD));
+            }
+            /* end NEAR */
+
             *searchwordlist = (*searchwordlist)->next;
             continue;
         }
@@ -1240,9 +1250,9 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
         /* Bump up the count of AND terms for this level */
         
-        if (rulenum != AND_RULE)
+        if ((rulenum != AND_RULE) && (rulenum != NEAR_RULE))
             andLevel = 0;       /* reset */
-        else if (rulenum == AND_RULE)
+        else if ((rulenum == AND_RULE) || (rulenum == NEAR_RULE))
             andLevel++;
 
 
@@ -1261,6 +1271,9 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
             if (rulenum == AND_RULE)
                 l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
+
+            else if (rulenum == NEAR_RULE)
+                l_rp = nearresultlists(db_results, l_rp, new_l_rp, andLevel, distance);
 
             else if (rulenum == OR_RULE)
                 l_rp = orresultlists(db_results, l_rp, new_l_rp);
@@ -1321,6 +1334,9 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
             if (rulenum == AND_RULE)
                 l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
 
+            else if (rulenum == NEAR_RULE)
+                l_rp = nearresultlists(db_results, l_rp, new_l_rp, andLevel, distance);
+
             else if (rulenum == OR_RULE)
                 l_rp = orresultlists(db_results, l_rp, new_l_rp);
 
@@ -1341,7 +1357,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 
         /* Finally, look up a word, and merge with previous results. */
 
-        l_rp = operate(db_results, l_rp, rulenum, word, metaID, andLevel, indexf);
+        l_rp = operate(db_results, l_rp, rulenum, word, metaID, andLevel, indexf, distance);
 
         if (parseone)
         {
@@ -1363,7 +1379,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 ** it calls getfileinfo(), which does the real searching.
 */
 
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf)
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf, int distance)
 {
     RESULT_LIST     *new_l_rp;
     RESULT_LIST     *return_l_rp;
@@ -1386,7 +1402,10 @@ static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rule
         case AND_RULE:
             return_l_rp = andresultlists(db_results, l_rp, new_l_rp, andLevel);
             break;
-
+        
+        case NEAR_RULE:
+            return_l_rp = nearresultlists(db_results, l_rp, new_l_rp, andLevel, distance);
+            break;
 
         case OR_RULE:
             return_l_rp = orresultlists(db_results, l_rp, new_l_rp);
@@ -1482,6 +1501,11 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             index_structure,
             index_structfreq,
             tmpval;
+    unsigned char remains[100];   // hard-coded !!!?
+    unsigned char myWord[100];
+    int           rLen;
+    int           tLen;
+    char   *q;
     RESULT_LIST *l_rp, *l_rp2;
     sw_off_t    wordID;
     int     metadata_length;
@@ -1510,6 +1534,14 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
         return NULL;
     }
+    
+    /* Never allow to start with a "?", because sequential search like wildcard "*" */
+    if (*word == '?')
+    {
+      // TODO: define a better msg to differentiate with "*"
+        sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+        return NULL;
+    }
 
 
     /* First: Look for star at the end of the word */
@@ -1534,11 +1566,38 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         }
     }
 
-
+    /* Second: Look for question mark somewhere in the word */
+    strcpy(remains, "");
+    rLen = 0;
+    tLen = strlen(word);
+    // Check for first "?" in current word (not reverse)
+    if ((q = strchr(word, '?')))
+    {
+        if (q != word && *(q - 1) == '\\') /* Check for an escaped * */
+        {
+            q = NULL;           /* If escaped it is not a wildcard */
+        }
+        else
+        {
+            /* Check if it is at the end of the word */
+            if (q == (word + strlen(word) - 1))
+            {
+                strcpy(remains, q);   // including the last "?"
+                rLen = strlen(remains);
+                word[strlen(word) - 1] = '\0';
+            }
+            else
+            {
+                strcpy(remains, q);   // including the first "?"
+                rLen = strlen(remains);
+                *q = '\0';
+            }
+        }
+    }
 
 
     DB_InitReadWords(sw, indexf->DB);
-    if (!p)    /* No wildcard -> Direct hash search */
+    if ((!p) && (!q))    /* No wildcard -> Direct hash search */
     {
         DB_ReadWordHash(sw, word, &wordID, indexf->DB);
 
@@ -1569,6 +1628,9 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             // sw->lasterror = WORD_NOT_FOUND;
             return NULL;
         }
+        else
+            strcpy(myWord, resultword);   // Remember the word
+            
         efree(resultword);   /* Do not need it */
     }
 
@@ -1577,6 +1639,76 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
     do
     {
+    
+       // Check if this could be a match (only if "?" is present
+       if (rLen)
+       {
+          char *pw, *ps;
+          int found = 0;
+          pw = &remains[0];
+          ps = &myWord[strlen(word)];
+
+          for (; *pw && *ps; pw++, ps++)
+          {
+            if (*pw == '?')
+            {
+              if (!p)
+              {
+                // no wildcard "*" at end, so length should exactly match
+                if ((pw == (char*)&remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
+                  found = 1;
+                else
+                  continue;
+              }
+              else
+              {
+                // wildcard at end, so ignore length
+                if (pw == (char*)&remains[strlen(remains) - 1])
+                  found = 1;
+                else
+                  continue;
+
+              }
+            }
+
+            if (*pw != *ps)
+              break;
+
+            if (!p)
+            {
+              if ((pw == (char*)&remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
+                found = 1;
+            }
+            else
+            {
+              if (pw == (char*)&remains[strlen(remains) - 1])
+                found = 1;
+            }
+
+          }
+
+          if (!found)
+          {
+            char   *resultword;
+
+            /* Jump to next word */
+            /* No more data for this word but we
+               are in sequential search because of
+               the star (p is not null) */
+            /* So, go for next word */
+            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            if (! wordID)
+                break;          /* no more data */
+            else
+              strcpy(myWord, resultword);
+
+            efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
+
+            continue;
+          }
+       }
+
+
         DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, &saved_bytes , indexf->DB);
         uncompress_worddata(&buffer,&sz_buffer,saved_bytes);
 
@@ -1667,7 +1799,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         efree(buffer);
 
 
-        if (!p)
+        if ((!p) && (!q))
             break;              /* direct access (no wild card) -> break */
 
         else
@@ -1683,6 +1815,9 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             if (! wordID)
                 break;          /* no more data */
 
+            else
+                strcpy(myWord, resultword); // remember the word
+
             efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
         }
 
@@ -1690,7 +1825,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
 
 
-    if (p)
+    if ((p) || (q))
     {
         /* Finally, if we are in an sequential search merge all results */
         l_rp = mergeresulthashlist(db_results, l_rp);
@@ -1715,7 +1850,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
 static int     isbooleanrule(char *word)
 {
-    if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
+    if (!strcmp(word, AND_WORD) || !strncmp(word, NEAR_WORD, strlen(NEAR_WORD)) || !strcmp(word, OR_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
         return 1;
     else
         return 0;
@@ -1739,6 +1874,8 @@ static int     getrulenum(char *word)
 {
     if (!strcmp(word, AND_WORD))
         return AND_RULE;
+    else if (!strncmp(word, NEAR_WORD, strlen(NEAR_WORD)))
+        return NEAR_RULE;
     else if (!strcmp(word, OR_WORD))
         return OR_RULE;
     else if (!strcmp(word, NOT_WORD))
@@ -1750,8 +1887,338 @@ static int     getrulenum(char *word)
     return NO_RULE;
 }
 
+// Check if new position is still valid for ALL other
+// position sequences; at least one position within each
+// sequence should be valid
+// Definition of sequence: one or more positions, where each
+//                         sequence is separated from another
+//                         by means of a "0" (zero)
+static int KeepPos(RESULT *r, int pos, int dist)
+{
+  int i;
+  int pos1;
+  int first;
+  int found;
+  int detect;
+
+  // no earlier "nearx" for this document; so the position
+  // to be checked is always a valid one, otherwise it wouldn't
+  // arrive here
+  if (r->bArea == 0)
+    return(1);
+
+  found = 0;
+  detect = 0;
+  first = 1;
+  for (i = 0; i < r->frequency; i++)
+  {
+    pos1 = GET_POSITION(r->posdata[i]);
+    if (pos1 == 0)
+    {
+      if (first)
+      {
+        found = detect;
+        first = 0;
+      }
+      else
+      {
+        found = found & detect;
+      }
+      detect = 0;
+      continue;
+    }
+    else
+    {
+      if (abs(pos1 - pos) <= dist)
+        detect = 1;
+    }
+  }
+
+  // Also for positions after last 0
+  found = found & detect;
+
+  if (found)
+    return (1);
+
+  return(0);
+}
+
+/* NEAR WORD feature -- proximity hits */
+/* this and other NEAR WORD code contributed by Herman Knoops hk.sw@knoman.com */
+//#define DUMP_NEAR_VALUES  1
+
+// This is a special case of proximity. A sequence of single words/terms connected
+// via nearX, will be checked for proximity on a certain area, e.g. wordA near50
+// wordB near50 wordC will give a hit if all three words are in an area of 50 words.
+
+// A generic nearX can be easily derived from this.
+
+/* Takes two lists of results from searches and ANDs them together.
+** On input, both result lists r1 and r2 must be sorted by filenum
+** On output, the new result list remains sorted
+*/
+static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel, int distance)
+{
+    RESULT_LIST *new_results_list = NULL;
+    RESULT *r1;
+    RESULT *r2;
+    int res = 0;
+    int i, j, pos1, pos2;
+    int found, found1, found2, detect1, detect2;
+    int iZero = 0;
+    int first1, first2;
+    int *posd1 = NULL;
+    int *posd2 = NULL;
+    int cnt1, cnt2;
+#ifdef DUMP_NEAR_VALUES
+    FILE *ofd;
+    int maxneed = 0;
+#endif
+
+    // Check if a valid distance was specified
+    if (distance == 0)
+      return(andresultlists(db_results, l_r1, l_r2, andLevel));
+
+    /* patch provided by Mukund Srinivasan */
+    if (l_r1 == NULL || l_r2 == NULL)
+    {
+        make_db_res_and_free(l_r1);
+        make_db_res_and_free(l_r2);
+        return NULL;
+    }
+
+#ifdef DUMP_NEAR_VALUES
+    // Do not open earlier, otherwise file could be left open !!!
+    ofd = fopen("kmlog.txt", "ab");
+#endif
+
+    if (andLevel < 1)
+        andLevel = 1;
+
+    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
+    {
+        res = r1->filenum - r2->filenum;
+        if (!res)
+        {
+            /*
+             * Computing the new rank is interesting because
+             * we want to weight each of the words that was
+             * previously ANDed equally along with the new word.
+             * We compute a running average using andLevel and
+             * simply scale up the old average (in r1->rank)
+             * and recompute a new, equally weighted average.
+             */
+            int     newRank = 0;
+#ifdef DUMP_NEAR_VALUES
+            int     maxpos;
+
+            // Determine max combinations
+            maxpos = (r1->frequency * r2->frequency);
+
+            if (maxneed > 0)
+            {
+              fprintf(ofd,"  maxneed: %ld\n", maxneed);
+              maxneed = 0; // reset for next to come
+            }
+
+#endif
+            cnt1 = 0;
+            cnt2 = 0;
+
+#ifdef DUMP_NEAR_VALUES
+            // make sure to skip the found entry if not within given proximity
+            fprintf(ofd, "file %ld (andLevel %ld)\n", r1->filenum, andLevel);
+
+            // Detects if there was already a "nearx" executed before, which
+            // means there must be one or more "0" present in positions
+            if (r1->bArea > 0)
+              fprintf(ofd,"  bArea1: %ld\n", r1->bArea);
+            // This can never happen, as long as no parenthesis/brackets
+            // are supported; the complete query is parsed left to right
+            // TODO: modify if priority brackets are going to be supported
+            if (r2->bArea > 0)
+              fprintf(ofd,"  bArea2: %ld\n", r2->bArea);
+
+            fprintf(ofd,"  maxpos: %ld\n", maxpos);
+            fprintf(ofd,"  %s: ", "term1");
+            for (j = 0; j < r1->frequency; j++)
+              fprintf(ofd, "  %ld:", GET_POSITION(r1->posdata[j]));
+            fprintf(ofd,"\n");
+
+            fprintf(ofd,"  %s: ", "term2");
+            for (j = 0; j < r2->frequency; j++)
+              fprintf(ofd, "  %ld:", GET_POSITION(r2->posdata[j]));
+            fprintf(ofd,"\n");
+#endif
+
+            found1 = found2 = 0;
+            detect1 = detect2 = 0;
+            first1 = first2 = 1;
+
+            for (i = 0; i < r1->frequency; i++)
+            {
+              pos1 = GET_POSITION(r1->posdata[i]);
+
+              // Check if "0" is present in a posdata array. If so, there has been one or more
+              // AND combinations already (each separated with "0").
+              if (pos1 == 0)
+              {
+                if (first1 == 1)
+                {
+                  found1 = detect1;
+                  first1 = 0;
+                }
+                else
+                {
+                  found1 = found1 & detect1;
+                }
+                // Reset to start checking next serie after an "0"
+                detect1 = 0;
+                cnt1++;
+
+                // BUGFIX: copy also the 0 in between, otherwise more than
+                // two "and" operator will gor wrong for the 3td, 4th, etc.
+                if (posd1)
+                  posd1 = (int *)erealloc(posd1, cnt1 * sizeof(int));
+                else
+                  posd1 = (int *)emalloc(cnt1 * sizeof(int));
+                posd1[cnt1-1] = r1->posdata[i];
+
+                continue;
+              }
+
+              for (j = 0; j < r2->frequency; j++)
+              {
+                pos2 = GET_POSITION(r2->posdata[j]);
+
+                // Check if "0" is present in a posdata array. If so, there has been one or more
+                // AND combinations already (each separated with "0").
+                if (pos2 == 0)
+                {
+                  if (first2 == 1)
+                  {
+                    found2 = detect2;
+                    first2 = 0;
+                  }
+                  else
+                  {
+                    found2 = found2 & detect2;
+                  }
+                  // Reset to start checking next serie after an "0"
+                  detect2 = 0;
+                  cnt2++;
+
+                  // BUGFIX: copy also the 0 in between, otherwise more than
+                  // two "and" operator will gor wrong for the 3td, 4th, etc.
+                  if (posd2)
+                    posd2 = (int *)erealloc(posd2, cnt2 * sizeof(int));
+                  else
+                    posd2 = (int *)emalloc(cnt2 * sizeof(int));
+                  posd2[cnt2-1] = r2->posdata[j];
+
+                  continue;     // skip 0
+                }
+// enable: maybe if parenthesis support for near is added ???
+// enable ??               if ((abs(pos1 - pos2) <= distance) && (pos1 != pos2))
+                if ((abs(pos1 - pos2) <= distance) && KeepPos(r1, pos2, distance))
+                {
+                  detect1 = detect2 = 1;
+
+#ifdef DUMP_NEAR_VALUES
+                  maxneed++;
+                  fprintf(ofd, "  hit %ld: (%ld - %ld): %ld\n", i, pos1, pos2, abs(pos1 - pos2));
+#endif
+                  cnt1++;
+                  cnt2++;
+                  if (posd1)
+                    posd1 = (int *)erealloc(posd1, cnt1 * sizeof(int));
+                  else
+                    posd1 = (int *)emalloc(cnt1 * sizeof(int));
+                  if (posd2)
+                    posd2 = (int *)erealloc(posd2, cnt2 * sizeof(int));
+                  else
+                    posd2 = (int *)emalloc(cnt2 * sizeof(int));
+                  
+                  posd1[cnt1-1] = r1->posdata[i];
+                  posd2[cnt2-1] = r2->posdata[j];
+                }
+              } // for r2
+            } // for r1
+
+            // Check if this was the first serie of two or more "0" connected patterns.
+            // For single patterns (no "0"), the variable "found" is already filled correctly.
+            if (first1 == 1)
+              found1 = detect1;
+            else
+              found1 = found1 & detect1;
+
+            if (first2 == 1)
+              found2 = detect2;
+            else
+              found2 = found2 & detect2;
+
+            // overall result
+            found = found1 & found2;
 
 
+            // if there was a proximity hit then process it
+            if (found)
+            {
+              newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
+
+              if(!new_results_list)
+                  new_results_list = newResultsList(db_results);
+
+              addtoresultlist(new_results_list, r1->filenum, newRank, 0, cnt1 + cnt2 + 1, db_results);
+
+              new_results_list->tail->bArea = r1->bArea + r2->bArea + 1;
+
+              /* Storing all positions could be useful in the future  */
+              /* BEWARE: an extra zero is inserted to make sure ALL words/terms of a previous near-operation */
+              /*         also have a proximity to this new word/term */
+              /*         Could give side-effects for people, who use the positions for highlighting !!! */ 
+
+              CopyPositions(new_results_list->tail->posdata, 0, posd1, 0, cnt1);
+              CopyPositions(new_results_list->tail->posdata, cnt1, &iZero, 0, 1);
+              CopyPositions(new_results_list->tail->posdata, cnt1 + 1, posd2, 0, cnt2);
+            }
+
+            // Free if allocation has been performed
+            if (posd1 != NULL)
+            {
+              efree(posd1);
+              posd1 = NULL;
+            }
+            if (posd2 != NULL)
+            {
+              efree(posd2);
+              posd2 = NULL;
+            }
+
+            r1 = r1->next;
+            r2 = r2->next;
+        }
+
+        else if (res > 0)
+        {
+            r2 = r2->next;
+        }
+        else
+        {
+            r1 = r1->next;
+        }
+    } // for
+
+
+#ifdef DUMP_NEAR_VALUES
+    if (maxneed > 0)
+      fprintf(ofd,"  maxneed: %ld\n", maxneed);
+
+    fclose(ofd);
+#endif
+
+    return new_results_list;
+}
 
 
 
@@ -2145,6 +2612,91 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
     return new_results_list;
 }
 
+
+/* Phrase result routine - see distance parameter. For phrase search this
+** value must be 1 (consecutive words)
+**
+** On input, both result lists r1 abd r2 must be sorted by filenum
+** On output, the new result list remains sorted
+*/
+static RESULT_LIST *nearphraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
+{
+    int     i,
+            j,
+            found,
+            newRank,
+           *allpositions;
+    int     res = 0;
+    RESULT_LIST *new_results_list = NULL;
+    RESULT *r1, *r2;
+                
+
+
+    if (l_r1 == NULL || l_r2 == NULL)
+    {
+        make_db_res_and_free(l_r1);
+        make_db_res_and_free(l_r2);
+        return NULL;
+    }
+
+    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
+    {
+        res = r1->filenum - r2->filenum;
+        if (!res)
+        {
+            found = 0;
+            allpositions = NULL;
+            for (i = 0; i < r1->frequency; i++)
+            {
+                for (j = 0; j < r2->frequency; j++)
+                {
+                    if ( abs(GET_POSITION(r1->posdata[i]) - GET_POSITION(r2->posdata[j])) <= distance )
+                    {
+                        found++;
+                        if (allpositions)
+                            allpositions = (int *) erealloc(allpositions, found * sizeof(int));
+
+                        else
+                            allpositions = (int *) emalloc(found * sizeof(int));
+
+                        allpositions[found - 1] = r2->posdata[j];
+                        break;
+                    }
+                }
+            }
+            if (found)
+            {
+                newRank = (r1->rank + r2->rank) / 2;
+
+                /*
+                   * Storing positions is neccesary for further
+                   * operations 
+                 */
+                if(!new_results_list)
+                    new_results_list = newResultsList(db_results);
+                
+                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, db_results);
+
+                CopyPositions(new_results_list->tail->posdata, 0, allpositions, 0, found);
+                efree(allpositions);
+            }
+            r1 = r1->next;
+            r2 = r2->next;
+        }
+        else if (res > 0)
+        {
+            r2 = r2->next;
+        }
+        else
+        {
+            r1 = r1->next;
+        }
+
+    }
+
+    return new_results_list;
+}
+
 /* Adds a file number and rank to a list of results.
 */
 
@@ -2163,6 +2715,10 @@ static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfreq
     newnode->rank = rank;
     newnode->tfrequency = tfrequency;
     newnode->frequency = frequency;
+    
+    newnode->bArea = 0;
+    newnode->pArea = NULL;
+    
     newnode->db_results = db_results;
 
     addResultToList(l_rp, newnode);

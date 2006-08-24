@@ -71,6 +71,8 @@ $Id$
 
 /* MIN_PROP_COMPRESS_SIZE sets the limit for which properties are compressed 
  * must be compiled with zlib.
+ *
+ * NEAR WORD feature might benefit from setting these next 2 higher
  */
 #define MIN_PROP_COMPRESS_SIZE 100
 /* Same for worddata */
@@ -175,9 +177,10 @@ $Id$
 ** silent operation.  The default before swish 2.2 was 3
 */
 
-#define _AND_WORD "and"
-#define _OR_WORD "or"
-#define _NOT_WORD "not"
+#define _NEAR_WORD  "near"
+#define _AND_WORD   "and"
+#define _OR_WORD    "or"
+#define _NOT_WORD   "not"
 
 /* 
  ** these are the default boolean operator words used by swish search

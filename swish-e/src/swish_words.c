@@ -234,6 +234,13 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
 static int next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, int *lenword )
 {
     int     i;
+    
+    /* Also set flag for "?" (wildcard), in general set and at end of a term/word
+     * At start there is never a wildcard allowed, because of sequential lookup in index
+     * performance issue !!
+     */
+    header->wordcharslookuptable[63] = 1;
+    header->endcharslookuptable[63] = 1;
 
     /* skip non-wordchars */
     while ( **buf && !header->wordcharslookuptable[tolower((unsigned char)(**buf))] )
@@ -445,6 +452,9 @@ static char *isBooleanOperatorWord( char * word )
     /* don't need strcasecmp here, since word should alrady be lowercase -- need to check alt-search first */
     if (!strcasecmp( word, _AND_WORD))
         return AND_WORD;
+        
+    if (!strncasecmp( word, _NEAR_WORD, strlen(_NEAR_WORD)))
+        return NEAR_WORD;
 
     if (!strcasecmp( word, _OR_WORD))
         return OR_WORD;
@@ -464,6 +474,9 @@ static char *isBooleanOperator( char * word )
 {
     if (!strcasecmp( word, AND_WORD))
         return _AND_WORD;
+        
+    if (!strncasecmp( word, NEAR_WORD, strlen(NEAR_WORD)))
+        return NEAR_WORD;
 
     if (!strcasecmp( word, OR_WORD))
         return _OR_WORD;
@@ -490,9 +503,6 @@ static void switch_back_operators( struct swline *sl )
 
 }
        
-
-
-
 
 
 
@@ -592,6 +602,7 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
         if ( !inphrase )
         {
             char *operator, *nextoperator;
+            char nearop[100];
 
             if ( (operator = isBooleanOperatorWord( temp->line )) )
             {
@@ -612,9 +623,13 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
                     /* Remove the "and" word */
                     replace_swline( &tokens, andword, (struct swline *)NULL ); /* cut it out */
                 }
+                
+                strcpy(nearop, operator);
+                if (!strncasecmp( operator, NEAR_WORD, strlen(NEAR_WORD)))
+                    strcat(nearop, temp->line + strlen(_NEAR_WORD));
 
                 /* Replace the string with the operator string */
-                new = newswline(operator);
+                new = newswline(nearop);
                 new->other.nodep = new;  // Group of 1 node (last is itself)
 
                 replace_swline( &tokens, temp, new ); /* change it */
@@ -751,7 +766,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
 
 static int     isrule(char *word)
 {
-    if (!strcmp(word, AND_WORD) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD))
+    if (!strcmp(word, AND_WORD) || !strncmp(word, NEAR_WORD, strlen(NEAR_WORD)) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD))
         return 1;
     else
         return 0;

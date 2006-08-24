@@ -117,6 +117,10 @@ struct s_RESULT
     int         frequency;
     int         tfrequency;     /* Total frequency of result OR result index */
                                 /* during result sorting tfrequency is used as an index number */
+    /* proximity */
+    int         bArea;     
+    int         *pArea;
+
     unsigned int         posdata[1];     /* used for phrase searches */
 };
 

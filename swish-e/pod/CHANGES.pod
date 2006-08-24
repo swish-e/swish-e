@@ -10,6 +10,35 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item SWISH::API updated to 0.04
+
+Added several fixes, including:
+
+=over
+
+=item
+
+Perlish method names from mpeters@plusthree.com
+
+=item
+
+switched to XSLoader with DynaLoader as fallback
+
+=item
+
+added VERSION method to satisfy some versions of MakeMaker
+
+=item
+
+Fuzzify() method now actually works as advertised
+
+=back
+
+=item added proximity feature and single character wildcard with '?' instead of '*'
+
+Herman Knoops contributed these patches.
+See http://swish-e.org/archive/2006-05/10543.html
+
 =item fixed bug when using DoubleMetaphone
 
 Fixed problem reported by Andreas Völter where a query that generated a
