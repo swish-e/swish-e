@@ -197,7 +197,7 @@
 
             view_cvs    = {
                 name        = 'view cvs'
-                external    = 'http://cvs.sourceforge.net/viewcvs.py/swishe/'
+                external    = 'http://swishe.cvs.sourceforge.net/swishe/'
                 tooltip     = 'Go to the SourceForge.net Swish-e CVS Repository'
             }
         }
