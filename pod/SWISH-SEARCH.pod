@@ -35,7 +35,7 @@ The following section describes various aspects of searching with Swish-e.
 
 =head2 Boolean Operators
 
-You can use the Boolean operators B<and>, B<or> or B<not> in searching.
+You can use the Boolean operators B<and>, B<or>, B<near> or B<not> in searching.
 Without these Boolean operators Swish-e will assume you're B<and>'ing
 the words together.  The operators are not case sensitive.  These three
 searches are the same:
@@ -59,7 +59,7 @@ Parentheses can be used to group searches.
 
 The result is all documents that have none or one term, but not both.
 
-To search for the words B<and>, B<or>, or B<not>, place them in a double quotes.
+To search for the words B<and>, B<or>, B<near> or B<not>, place them in a double quotes.
 Remember to protect the quotes from the shell:
 
     swish-e -w '"not"'
@@ -78,6 +78,19 @@ Retrieves files containing either the words "smilla" or "snow".
 
 retrieves first the files that contain both the words "smilla" and
 "snow"; then among those the ones that do not contain the word "sense".
+
+The B<near> keyword is similar to B<and> but implies a proximity between the
+words. The B<near> keyword takes a integer argument as well, indicating
+the maximum distance between two words to consider a valid match.
+
+Example:
+
+ swish-e -w smilla near5 snow
+
+would match the document if the words C<smilla> and C<snow> appeared within 5
+positions of one another.
+
+A B<near> search with no argument or argument of 0 is the same as an B<and> search.
 
 
 =head2 Truncation
@@ -103,6 +116,18 @@ C<running*> will actually be a search for C<run*>, so C<running*> would
 find C<runway>.  Also, searching for C<runn*> will not find C<running>
 as you might expect, since C<running> stems to C<run> in the index,
 and thus C<runn*> will not find C<run>.
+
+=head2 Single-Character Wildcard
+
+The single-character wildcard character (?) will match any one character
+in a word, except the first character.
+
+Example:
+
+ swish-e -w 's?ow'
+
+will match C<snow> and C<show>.
+
 
 
 =head2 Order of Evaluation
