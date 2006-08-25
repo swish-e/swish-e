@@ -321,9 +321,6 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     FILE   *fp_tmp;
 #endif
     struct Handle_DBNative *DB;
-    char strTmp[MAX_PATH];
-    char *cPos;
-
 
     if ( is_directory( dbname ) )
         progerr( "Index file '%s' is a directory", dbname );
@@ -358,16 +355,7 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 
 
     /* Create property File */
-    /* strcpy(filename, dbname); */
-    
-    /* NEAR WORD feature */
-    strcpy(strTmp, dbname);
-    cPos = strchr(strTmp, '.');
-    if (cPos != NULL)
-        *cPos = '\0';
-    strcpy(filename, strTmp);
-    /* end NEAR WORD */
-    
+    strcpy(filename, dbname);
     strcat(filename, PROPFILE_EXTENSION);
 
 #ifdef USE_TEMPFILE_EXTENSION
@@ -513,8 +501,6 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 #ifdef USE_BTREE
     FILE *fp_tmp;
 #endif
-    char    strTmp[MAX_PATH];
-    char    *cPos;
 
     switch(mode)
     {
@@ -542,17 +528,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 
     s = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1);
 
-    /* strcpy(s, dbname); */
-    
-    /* NEAR WORD feature */
-    strcpy(strTmp, dbname);
-    cPos = strchr(strTmp, '.');
-    if (cPos != NULL)
-        *cPos = '\0';
-    strcpy(s, strTmp);
-    /* end NEAR WORD */
-
-    
+    strcpy(s, dbname);
     strcat(s, PROPFILE_EXTENSION);
 
     if (!(DB->prop = openRoutine(s)))
