@@ -1528,21 +1528,24 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
     l_rp = l_rp2 = NULL;
 
+    /* how would we ever get a word here with faulty wildcards, 
+       since swish_words parses for them already?
+     */
     
     if (*word == '*')
     {
-        sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
-        return NULL;
-    }
-    
-    /* Never allow to start with a "?", because sequential search like wildcard "*" */
-    if (*word == '?')
-    {
-      // TODO: define a better msg to differentiate with "*"
-        sw->lasterror = UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD;
+        sw->lasterror = WILDCARD_NOT_ALLOWED_AT_WORD_START;
         return NULL;
     }
 
+
+    if (*word == '?')   /* ? may not start a word, just like * may not */
+    {
+        sw->lasterror = WILDCARD_NOT_ALLOWED_AT_WORD_START;
+        return NULL;
+    }
+  
+ 
 
     /* First: Look for star at the end of the word */
     if ((p = strrchr(word, '*')))
@@ -1609,7 +1612,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         }
     }        
 
-    else  /* There is a star. So use the sequential approach */
+    else  /* There is a wildcard. So use the sequential approach */
     {       
         char   *resultword;
 

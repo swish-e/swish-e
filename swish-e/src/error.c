@@ -190,6 +190,7 @@ static error_msg_map swishErrors[]={
     { 0, INVALID_PROPERTY_TYPE,                    "Invalid property type" },
     { 0, UNKNOWN_METANAME,                         "Unknown metaname" },
     { 0, UNIQUE_WILDCARD_NOT_ALLOWED_IN_WORD,      "Single wildcard not allowed as word" },
+    { 0, WILDCARD_NOT_ALLOWED_AT_WORD_START,       "Wildcard may not start a word" },
     { 0, WILDCARD_NOT_ALLOWED_WITHIN_WORD,         "Wildcard not allowed within a word" },
     { 0, WORD_NOT_FOUND,                           "Word not found" },
     { 0, SEARCH_WORD_TOO_BIG,                      "Search word exceeded maxwordlimit setting" },

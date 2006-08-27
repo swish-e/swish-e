@@ -122,8 +122,8 @@ void freeModule_Swish_Words (SWISH *sw)
 static int isSearchOperatorChar( int c, int phrase_delimiter, int inphrase )
 {
     return inphrase
-        ? ( '*' == c || c == phrase_delimiter )
-        : ( '(' == c || ')' == c || '=' == c || '*' == c || c == phrase_delimiter );
+        ? ( '*' == c || '?' == c || c == phrase_delimiter )
+        : ( '(' == c || ')' == c || '=' == c || '*' == c || '?' == c || c == phrase_delimiter );
 }
 
 
@@ -192,6 +192,23 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
             (*word)[i++] = **buf;  /* can't this be done in one line? */
             (*buf)++;
         }
+        
+        else if ( **buf == '?' )
+        {
+            /* ? is a search operator so fails first test above
+               but we want to pass it through like a normal word char
+               if it is not the first character in the word
+             */
+             
+            if(!i)
+                return WILDCARD_NOT_ALLOWED_AT_WORD_START;
+                
+            backslash = 0;
+            
+            (*word)[i++] = **buf;  /* can't this be done in one line? */
+            (*buf)++;
+                
+        }
 
         else  /* this is a search operator char */
         {
@@ -209,7 +226,6 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
                         return WILDCARD_NOT_ALLOWED_WITHIN_WORD;
 
             }
-
 
             (*word)[i++] = **buf;  /* save the search operator char as it's own token, and end. */
             (*buf)++;

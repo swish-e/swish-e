@@ -93,19 +93,27 @@ positions of one another.
 A B<near> search with no argument or argument of 0 is the same as an B<and> search.
 
 
-=head2 Truncation
+=head2 Wildcards
 
-The wildcard (*) is available, however it can only be used at the end
-of a word: otherwise is is considered a normal character (i.e. can be
+Two different wildcard characters are available, each evoking different behaviour.
+
+The C<*> means "match zero or more characters."
+
+The C<?> means "match exactly one character."
+
+The wildcard C<*> may only be used at the end
+of a word. Otherwise C<*> is considered a normal character (i.e. can be
 searched for if included in the WordCharacters directive).
 
-     swish-e -w librarian
+Example:
+
+    swish-e -w librarian
 
 this query only retrieves files which contain the given word.
 
 On the other hand:
 
-     swish-e -w 'librarian*'
+    swish-e -w 'librarian*'
 
 retrieves "librarians", "librarianship", etc. along with "librarian".
 
@@ -117,17 +125,20 @@ find C<runway>.  Also, searching for C<runn*> will not find C<running>
 as you might expect, since C<running> stems to C<run> in the index,
 and thus C<runn*> will not find C<run>.
 
-=head2 Single-Character Wildcard
-
-The single-character wildcard character (?) will match any one character
-in a word, except the first character.
+The C<?> wildcard matches exactly one character, but may not be used
+at the start of a word.
 
 Example:
 
- swish-e -w 's?ow'
+    swish-e -w 's?ow'
 
-will match C<snow> and C<show>.
+will match C<snow>, C<slow> and C<show> but B<not> C<strow>.
 
+This:
+
+    swish-e -w '?how'
+
+will throw an error.
 
 
 =head2 Order of Evaluation
