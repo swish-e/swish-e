@@ -3,102 +3,87 @@ Section "Required Components" SecProgram
     SectionIn 1 RO
     
     ; System Files
-    SetOutPath "$SYSDIR"
-    ; Expat, LibXML2, and ZLib
-    File ../../../libxml2/lib/*.dll
-    ;File ../../../libxml2/bin/*.dll
-    File ../../../zlib/bin/*.dll
-    File ../../../pcre/bin/*.dll
-    ;File ../expat/bin/*.dll
-    File ../.libs/*.dll
+    SetOutPath "$INSTDIR\bin\"
+    
+    ; LibXML2, PCRE, and ZLib
+    File "../../../libxml2/bin/libxml2-2.dll"
+    File "../../../zlib/bin/zlib1.dll"
+    File "../../../pcre/bin/pcre.dll"
+    File "../../../pcre/bin/pcreposix.dll"
+    File "../.libs/libswish-e-2.dll"
+    File "../.libs/swish-e.exe"
+    
+    ; We really need to do this instead but NSIS 2.06 segfaults when using UpgradeDLL.
+    ;!define UPGRADEDLL_NOREGISTER 1
+    ;!insertmacro UpgradeDLL "../../../libxml2/bin/libxml2-2.dll" "$SYSDIR\libxml2-2.dll" "$SYSDIR"
+    ;!insertmacro UpgradeDLL "../../../zlib/bin/zlib1.dll" "$SYSDIR\zlib1.dll" "$SYSDIR"
+    ;!insertmacro UpgradeDLL "../../../pcre/bin/pcre.dll" "$SYSDIR\pcre.dll" "$SYSDIR"
+    ;!insertmacro UpgradeDLL "../../../pcre/bin/pcreposix.dll" "$SYSDIR\pcreposix.dll" "$SYSDIR"
+    ;!insertmacro UpgradeDLL "../.libs/libswish-e-2.dll" "$SYSDIR\libswish-e-2.dll" "$SYSDIR"
 
     
+    
     ; Local Files
-    SetOutPath "$INSTDIR"
-    File ../../COPYING.txt
-    File ../.libs/swish-e.exe
-    File fixperl.pl
-    Delete /REBOOTOK "$INSTDIR/*.dll"
+    SetOutPath "$INSTDIR\"
+    File "../../COPYING.txt"
+    File "fixperl.pl"
     
     ; Local Helper Files
-    SetOutPath "$INSTDIR\lib\swish-e"
-    File ../swishspider
-    File ../../prog-bin/spider.pl.in
+    SetOutPath "$INSTDIR\lib\swish-e\"
+    File "../swishspider"
+    File "../../prog-bin/spider.pl.in"
     
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
-    CreateShortcut "$SMPROGRAMS/SWISH-E/Browse Files.lnk" "$INSTDIR/"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
-    CreateShortcut "$SMPROGRAMS/SWISH-E/License.lnk" "$INSTDIR/COPYING.txt"
-    SetOutPath "$SMPROGRAMS\SWISH-E\PERL_Resources"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/PERL_Resources/Install_ActivePerl.url" "InternetShortcut" "URL" "http://www.activestate.com/Products/Download/Download.plex?id=ActivePerl"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/PERL_Resources/CPAN_PERL_Modules.url" "InternetShortcut" "URL" "http://search.cpan.org/"
+    CreateShortcut "$SMPROGRAMS\\SWISH-E\\Browse Files.lnk" "$INSTDIR\\"
+    WriteINIStr "$SMPROGRAMS\\SWISH-E\\Website.url" "InternetShortcut" "URL" "http://swish-e.org/"
+    WriteINIStr "$SMPROGRAMS\\SWISH-E\\Documentation.url" "InternetShortcut" "URL" "http://swish-e.org/docs/"
+    CreateShortcut "$SMPROGRAMS\\SWISH-E\\License.lnk" "$INSTDIR\\COPYING.txt"
+    SetOutPath "$SMPROGRAMS\SWISH-E\PERL_Resources\"
+    WriteINIStr "$SMPROGRAMS\\SWISH-E\\PERL_Resources\\Install_ActivePerl.url" "InternetShortcut" "URL" "http://www.activestate.com/Products/Download/Download.plex?id=ActivePerl"
+    WriteINIStr "$SMPROGRAMS\\SWISH-E\\PERL_Resources\\CPAN_PERL_Modules.url" "InternetShortcut" "URL" "http://search.cpan.org/"
 SectionEnd ; end of default section
 
-Section "Documentation" SecDocs
-    SectionIn 1
-    SetOutPath "$INSTDIR\share\doc\swish-e"
-    RMDIR /r "$INSTDIR/html"
-    File /r ../../html
-    
-    ; Create shorcuts on the Start Menu
-    SetOutPath "$SMPROGRAMS\SWISH-E\Documentation\"
-    ;WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/Docs.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/index.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/Readme.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/README.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/CONFIG-Config_File_Directives.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/SWISH-CONFIG.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/RUN-Command_Line_Switches.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/SWISH-RUN.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/SEARCH-Searching_Instructions.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/SWISH-SEARCH.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/FAQ-Frequently_Asked_Questions.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/SWISH-FAQ.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/CGI-Web_Interfacing.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/swish.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/Spidering_Remote_Websites.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/spider.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/Filtering_Documents.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/Filter.html"
-    WriteINIStr "$SMPROGRAMS/SWISH-E/Documentation/Known_Bugs.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/SWISH-BUGS.html"
-    ;WriteINIStr "$SMPROGRAMS/SWISH-E/Questions_and_Troubleshooting.url" "InternetShortcut" "URL" "file://$INSTDIR/share/doc/swish-e/html/INSTALL.html#QUESTIONS_AND_TROUBLESHOOTING"
-SectionEnd ; end of section 'Documentation'
-
-;Section "ActiveX Control" SecSwishCtl
-    ; System Files
-;    SetOutPath "$SYSDIR"
-    ; SWISH-E Control
-;    File ../../../swishctl/swishctl.dll
-;    RegDLL $SYSDIR/swishctl.dll
-    
-    ; Local Files
-;    SetOutPath "$INSTDIR"
-    ; JavaScript ActiveX Search Example
-;    File /r ../../../swishctl/example
-    
-    ; Create shorcuts on the Start Menu
-;    SetOutPath "$SMPROGRAMS/SWISH-E/"
-;    WriteINIStr "$SMPROGRAMS/SWISH-E/Search_Documentation.url" "InternetShortcut" "URL" "file://$INSTDIR/example/index.htm"
-;    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE/SWISH-E Team/SwishCtl/Options" "DLLVersion" "1007"
-;    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE/SWISH-E Team/SwishCtl/Options" "IndexLocation" "$INSTDIR/example"
-;    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE/SWISH-E Team/SwishCtl/Options" "swishdocs" "docs.idx"
-;SectionEnd ; end of ActiveX section
+; the static libraries are 20 MB.
+;Section "Developer Files" SecDev
+;    SetOutPath "$INSTDIR\lib\"
+;    File "../.libs/libswish-e.a"
+;    File "../.libs/libswish-e.dll.a"
+;    File "../.libs/libswishindex.a"
+;
+;    SetOutPath "$INSTDIR\include\"
+;    File "../swish-e.h"
+;SectionEnd
 
 SubSection "Document Filters" SubSecFilters
-    Section "Word Doc Filters" SecDocFilter
+    Section "MS Office Filters" SecDocFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "catdoc" "1"
-        SetOutPath "$INSTDIR\lib\swish-e"
-
-        ; catdoc
-        File ../../../catdoc/win32/catdoc.exe
-	File /oname=COPYING-catdoc ../../../catdoc/COPYING
-        File /r ../../../catdoc/charsets
-
-	; This needs to be rebuilt against SWISH-E libraries.  I can't really include the binary from GnuWin32.
-	; wvware        
-        ;WriteRedStr HKEY_LOCAL_MACHINE "SOFTWARE/SWISH-E Team/SWISH-E/${VERSION}/Options" "wvware" "1"
-        ;File ../../../wvware/bin/wvware.exe
+        
+        SetOutPath "$INSTDIR\bin\"
+        File "../../../catdoc/catdoc.exe"
+        File "../../../catdoc/catppt.exe"
+        File "../../../catdoc/xls2csv.exe"
+        
+        SetOutPath "$INSTDIR\share\doc\catdoc"
+    	File "../../../catdoc/COPYING"
+    	
+    	SetOutPath "$INSTDIR\charsets\"
+        File "../../../catdoc/charsets/*"
     SectionEnd
     Section "PDF Filter" SecPDFFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "xpdf" "1"
-        SetOutPath "$INSTDIR\lib\swish-e"
-	File /oname=COPYING-xpdf ../../../xpdf/COPYING
-        File ../../../xpdf/pdfinfo.*
-        File ../../../xpdf/pdftotext.*
-        File ../../../xpdf/sample-xpdfrc
-        File ../../../xpdf/xpdfrc.txt
+        
+        SetOutPath "$INSTDIR\bin\"
+        File "../../../xpdf/pdfinfo.exe"
+        File "../../../xpdf/pdftotext.exe"
+        
+        SetOutPath "$INSTDIR\share\doc\xpdf\"
+        File "../../../xpdf/COPYING"
+        File "../../../xpdf/README"
+        File "../../../xpdf/pdfinfo.txt"
+        File "../../../xpdf/pdftotext.txt"
+        File "../../../xpdf/sample-xpdfrc"
+        File "../../../xpdf/xpdfrc.txt"
     SectionEnd
 SubSectionEnd        
     
@@ -108,88 +93,92 @@ SubSection "PERL Support" SubSecPerlSupport
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlApi" "1"
         
         ; SWISH::API Scripts
-        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
-        ; File /r ../../perl/blib/lib/SWISH
-        File ../../perl/API.pm
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH\"
+        File "../../perl/API.pm"
         
         ; SWISH::API Binaries go into $PERL/lib/auto/SWISH/API
         Call ActivePerlLocation
         Pop $R1
-        SetOutPath "$R1\lib"
-        File /r ../../perl/blib/arch/auto
+        SetOutPath "$R1\lib\SWISH\API\"
+        File "../../perl/blib/arch/auto/SWISH/API/*"
     SectionEnd
 
     Section /o "Perl CGI Scripts" SecPerlCgi
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlCgi" "1"
 
         ; swish.cgi scripts
-        SetOutPath "$INSTDIR\lib\swish-e"
-        File ../../example/swish.cgi.in
-        File ../../example/search.cgi.in
+        SetOutPath "$INSTDIR\lib\swish-e\"
+        File "../../example/swish.cgi.in"
+        File "../../example/search.cgi.in"
 
         ; swish.cgi other stuff
-        SetOutPath "$INSTDIR\share\swish-e"
-        File ../../example/swish.tt
-        File ../../example/swish.tmpl
-        File ../../example/swish.gif
-        File ../../example/README.txt
+        SetOutPath "$INSTDIR\share\swish-e\"
+        File "../../example/swish.tt"
+        File "../../example/swish.tmpl"
+        File "../../example/swish.gif"
+        File "../../example/README.txt"
 
         ; swish.cgi templates
-        SetOutPath "$INSTDIR\share\swish-e\templates"
-        File ../../example/templates/search.tt
-        File ../../example/templates/page_layout
-        File ../../example/templates/common_header
-        File ../../example/templates/common_footer
-        File ../../example/templates/style.css
-        File ../../example/templates/markup.css
+        SetOutPath "$INSTDIR\share\swish-e\templates\"
+        File "../../example/templates/search.tt"
+        File "../../example/templates/page_layout"
+        File "../../example/templates/common_header"
+        File "../../example/templates/common_footer"
+        File "../../example/templates/style.css"
+        File "../../example/templates/markup.css"
 
         ; swish.cgi Modules
-        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH"
-        File ../../example/modules/SWISH/DateRanges.pm
-        File ../../example/modules/SWISH/DefaultHighlight.pm
-        File ../../example/modules/SWISH/PhraseHighlight.pm
-        File ../../example/modules/SWISH/SimpleHighlight.pm
-        File ../../example/modules/SWISH/TemplateDefault.pm
-        File ../../example/modules/SWISH/TemplateDumper.pm
-        File ../../example/modules/SWISH/TemplateFrame.pm
-        File ../../example/modules/SWISH/TemplateHTMLTemplate.pm
-        File ../../example/modules/SWISH/TemplateToolkit.pm
-        File ../../example/modules/SWISH/ParseQuery.pm
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH\"
+        File "../../example/modules/SWISH/DateRanges.pm"
+        File "../../example/modules/SWISH/DefaultHighlight.pm"
+        File "../../example/modules/SWISH/PhraseHighlight.pm"
+        File "../../example/modules/SWISH/SimpleHighlight.pm"
+        File "../../example/modules/SWISH/TemplateDefault.pm"
+        File "../../example/modules/SWISH/TemplateDumper.pm"
+        File "../../example/modules/SWISH/TemplateFrame.pm"
+        File "../../example/modules/SWISH/TemplateHTMLTemplate.pm"
+        File "../../example/modules/SWISH/TemplateToolkit.pm"
+        File "../../example/modules/SWISH/ParseQuery.pm"
     SectionEnd
     
     Section /o "PERL Filters" SecPerlFilter
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlFilters" "1"
-        SetOutPath "$INSTDIR"
-        File ../../filters/swish-filter-test.in
+        SetOutPath "$INSTDIR\bin\"
+        File "../../filters/swish-filter-test.in"
         
-        SetOutPath "$INSTDIR\share\doc\swish-e\filter-bin"
+        SetOutPath "$INSTDIR\share\doc\swish-e\filter-bin\"
         ; Example Filter Scripts
-        File ../../filter-bin/_binfilter.sh
-        File ../../filter-bin/_pdf2html.pl
+        File "../../filter-bin/_binfilter.sh"
+        File "../../filter-bin/_pdf2html.pl"
         
 	# Generic SWISH::Filter Filter
-	SetOutPath "$INSTDIR\lib\swish-e"
-	File ../../filter-bin/swish_filter.pl.in 
+	SetOutPath "$INSTDIR\lib\swish-e\"
+	File "../../filter-bin/swish_filter.pl.in"
 
 	# SWISH::Filter API
-        SetOutPath "$INSTDIR\lib\swish-e\perl"
-        File /r ../../filters/SWISH
+        SetOutPath "$INSTDIR\lib\swish-e\perl\"
+        File "../../filters/SWISH/*"
+        SetOutPath "$INSTDIR\lib\swish-e\perl\Filters\"
+        File "../../filters/SWISH/Filters/*"
+
     SectionEnd
     
     Section /o "PERL -S prog Examples" SecPerlMethod
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlMethods" "1"
-        SetOutPath "$INSTDIR\share\doc\swish-e\prog-bin"
-        File ../../prog-bin/*.pl
-        File ../../prog-bin/*.in
-        File ../../prog-bin/*.pm
+        SetOutPath "$INSTDIR\share\doc\swish-e\prog-bin\"
+        File "../../prog-bin/*.pl"
+        File "../../prog-bin/*.in"
+        File "../../prog-bin/*.pm"
     SectionEnd
 SubSectionEnd
  
 Section "Examples" SecExample
-    SetOutPath "$INSTDIR\share\doc\swish-e\"
-    File /r ../../conf
+    SetOutPath "$INSTDIR\share\doc\swish-e\conf\"
+    File "../../conf/*"
+    SetOutPath "$INSTDIR\share\doc\swish-e\conf\stopwords\"
+    File "../../conf/stopwords/*"
 
     ; Rename text files so Windows has a clue
     Rename "$INSTDIR/share/doc/swish-e/conf/README" "$INSTDIR/conf/README.txt"
@@ -217,6 +206,10 @@ Section "-post" ; (post install section, happens last after any optional section
     WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe" "Path" "$INSTDIR;$INSTDIR\lib\swish-e"
     
     WriteUninstaller "uninst.exe"
+    
+    ; Clean out older versions of Swish-e and libs
+    Delete "$INSTDIR/swish-e.exe"
+    Delete "$INSTDIR/*.dll"
     
     ; Is ActivePerl Installed?
     Call IsActivePerlInstalled
