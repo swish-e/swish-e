@@ -14,7 +14,7 @@ SetDateSave on ; (can be on to have files restored to their orginal date)
 LicenseText "You may redistribute SWISH-E under the following terms:"
 LicenseData "../../COPYING.txt"
 
-InstallDir "$PROGRAMFILES\SWISH-E"
+InstallDir "C:\SWISH-E"
 InstallDirRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}" ""
 ;DirShow show ; (make this hide to not let the user change it)
 DirText "Select location where to install SWISH-E:"
@@ -35,5 +35,6 @@ Page instfiles
 ; Installer Sections
 
 ; Basic Sections
+;!include UpgradeDLL.nsh
 !include filebase.nsh
 
