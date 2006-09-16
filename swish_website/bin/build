@@ -485,6 +485,8 @@ sub pods {
 
     shift @$include_path;  # remove source dir.
 
+    return;  # Not sure what happended below to make this not work on sunsite
+
     # Check all the L<> links
     My::Pod::View::HTML::validate_links()
         if $update_index; # and $config->verbose;
