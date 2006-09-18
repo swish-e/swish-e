@@ -259,10 +259,15 @@ sub save_target {
 }
 
 sub validate_links {
-    my $all_files_processed = $My::POD::stash->get( 'self.config.all');
+    # Maybe this was some hack to get at the config??
+    #my $all_files_processed = $My::POD::stash->get( 'self.config.all');
+    my $config = shift;
+    my $all_files_processed = $config->{all};
+
 
     for my $link ( @links ) {
         my ($name, $fragment) = split /#/, $link->{href}, 2;
+
 
         # If processing all files then can check for page links
         if ( $all_files_processed ) {

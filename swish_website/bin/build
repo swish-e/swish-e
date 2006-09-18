@@ -9,7 +9,7 @@ use FindBin qw'$Bin $RealBin';
 # Sat Jan  8 06:56:06 PST 2005 - moseley
 #
 # Script to build the swish-e web site and pod docs.  Based on
-# script written by Peter Karman.  Peter made it look to simple, so
+# script written by Peter Karman.  Peter made it look too simple, so
 # I rewrote it to make it much more complex.
 #
 # The script exits true (zero) if ANY files are processed.
@@ -20,7 +20,7 @@ use FindBin qw'$Bin $RealBin';
 # This roughly follows the examples in the Badger book, chapter 11.
 #
 # Questions/TODO
-#   Should utime the output files to match timestamp of input
+#   Should utime the output files to match timestamp of input?
 #   Might be useful is reading from cvs or where someone's machine
 #   might be off in time
 #
@@ -260,6 +260,8 @@ sub new {
     my $plugin_dir = File::Spec->catfile( $topsrc_abs, 'Plugin' );
     unshift @INC, $plugin_dir;
 
+    require My::POD;
+
 
     # Build include paths - reverse so -includ=foo will be pre-pended to path
     my @includes = map { 
@@ -273,6 +275,9 @@ sub new {
     # Validate dest directory
 
     my $dest = File::Spec->rel2abs( $config->dest );
+
+    mkdir $dest unless -e $dest;
+
     die "destination directory [$dest] does not exist\n" unless -e $dest;
     die "destination directory [$dest] is not a directory\n" unless -d $dest;
     die "destination directory [$dest] is not writable\n" unless -w $dest;
@@ -485,10 +490,9 @@ sub pods {
 
     shift @$include_path;  # remove source dir.
 
-    return;  # Not sure what happended below to make this not work on sunsite
 
     # Check all the L<> links
-    My::Pod::View::HTML::validate_links()
+    My::Pod::View::HTML::validate_links($config)
         if $update_index; # and $config->verbose;
 }
 
