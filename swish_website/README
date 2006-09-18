@@ -26,9 +26,9 @@ Site layout
         -> lib/pod_toc      - top-level index for pod docs
 
 [1] these two (three including the "old" dir) directories are read when
-building the index listings for the downloads, plus they must be avaiable via
+building the index listings for the downloads, plus they must be available via
 the /distribution and /swish-daily URLs.  Originally, these were outside of
-document root (public_html) in dirs_public and accesed with Alias in
+document root (public_html) in dirs_public and accessed with Alias in
 httpd.conf.  And lib/config/site set their locations for generating the
 index.html pages listing the files.
 
@@ -45,14 +45,14 @@ Building the site
 
     (Or symlink as needed -- which is what I did.)
 
-    Also in lib/config/site you might want to defined where swish-daily and
+    Also in lib/config/site you might want to define where swish-daily and
     the download dirs are set.  Currently to /distribution and /swish-daily.
     The download and swish-daily pages link files to those dirs.
 
     You need Template Toolkit, Pod::POM (from CPAN) and anything else it
     complains about.
 
-    Those output directoreis can be overridden.  see bin/build --help  for
+    Those output directories can be overridden.  see bin/build --help  for
     help.  "dirs_public" can be set in lib/conifg/site.
 
     From the top-level directory* (where this README file is located)

@@ -260,8 +260,6 @@ sub new {
     my $plugin_dir = File::Spec->catfile( $topsrc_abs, 'Plugin' );
     unshift @INC, $plugin_dir;
 
-    require My::POD;
-
 
     # Build include paths - reverse so -includ=foo will be pre-pended to path
     my @includes = map { 
@@ -345,13 +343,19 @@ sub new {
         INCLUDE_PATH    => \@includes,
         OUTPUT_PATH     => $dest,
         PLUGIN_BASE     => ['My'],
+
+        # Fix for ignoring case in TT verson 2.15 when loading plugins
+        PLUGINS         => {
+            POD     => 'My::POD',
+        },
+
         PRE_PROCESS     => 'config/main',
         WRAPPER         => 'page/wrapper.tt',
         #PRE_CHOMP       => 1,
         #POST_CHOMP      => 1,
         RECURSION       => 1,
         # DEBUG           => $config->debug ? DEBUG_PROVIDER : 0,
-    } ) || die Tempate->error;
+    } ) || die Template->error;
 
     my $self = bless  {
         topdir          => $topsrc_abs,
@@ -672,6 +676,7 @@ sub process_file {
 
 
     $self->template->process( $in_file, $vars, $output ) || warn  $self->template->error . "\n";
+
 
     $self->logfile('Process', $in_file, length $capture || (stat $outpath)[7]);
     return 1 if $self->config->dryrun;
