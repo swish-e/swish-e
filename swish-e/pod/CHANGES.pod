@@ -16,21 +16,13 @@ Added several fixes, including:
 
 =over
 
-=item
+=item Perlish method names from mpeters@plusthree.com
 
-Perlish method names from mpeters@plusthree.com
+=item switched to XSLoader with DynaLoader as fallback
 
-=item
+=item added VERSION method to satisfy some versions of MakeMaker
 
-switched to XSLoader with DynaLoader as fallback
-
-=item
-
-added VERSION method to satisfy some versions of MakeMaker
-
-=item
-
-Fuzzify() method now actually works as advertised
+=item Fuzzify() method now actually works as advertised
 
 =back
 
