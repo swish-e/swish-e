@@ -623,7 +623,7 @@ sub process_file {
 
     # Locate the input path in the INCLUDE_PATH
     my $inpath  = $self->find_in_include( $in_file );
-    die "Failed to find input path for [$inpath].  Aborting.\n" unless $inpath;
+    die "Failed to find input path for [$in_file].  Aborting.\n" unless $inpath;
 
 
     my $outpath = File::Spec->rel2abs( $out_file, $self->dest_dir );
