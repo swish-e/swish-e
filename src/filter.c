@@ -50,7 +50,7 @@ $Id$
 static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
 static char *filterCallCmdOptParam2(char *str, char param, FileProp * fp);
 static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop);
-
+static void stringQuote(char *str);
 
 
 
@@ -334,7 +334,7 @@ FILE   *FilterOpen(FileProp * fprop)
 
     /* if no filter cmd param given, use default */
 
-    opt_mask = (fi->options && *(fi->options) ) ? fi->options : "'%p' '%P'";
+    opt_mask = (fi->options && *(fi->options) ) ? fi->options : "%p %P";
     cmd_opts = filterCallCmdOptStr(opt_mask, fprop);
 
     len = strlen(fi->prog) + strlen(cmd_opts);
@@ -384,7 +384,7 @@ static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop)
     char   *cmdopt,
            *co,
            *om;
-    int     max = MAXSTRLEN *3;
+    int     max = MAXSTRLEN *4;
 
 
     cmdopt = (char *) emalloc(max);
@@ -395,7 +395,7 @@ static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop)
     while (*om) {
 
         /* Argh! no overflow checking. Fix $$$ - Mar 2002 - moseley */
-
+	
         switch (*om) {
 
         case '\\':
@@ -431,10 +431,12 @@ static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
 
     case 'P':                  /* Full Doc Path/URL */
         strcpy(str, (fprop->real_path) ? fprop->real_path : nul);
+        stringQuote(str);
         break;
 
     case 'p':                  /* Full Path TMP/Work path */
         strcpy(str, (fprop->work_path) ? fprop->work_path : nul);
+        stringQuote(str);
 #if defined(_WIN32) && !defined(__CYGWIN__)
         make_windows_path( str );
 #endif
@@ -480,4 +482,24 @@ static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
     return str;
 }
 
+/*
+ * Fix for Debian: escape all non alphanum characters in paths
+ * --  Ludovic Drolez
+ */
+void stringQuote(char *str)
+{
+    char *copy;
+    
+    copy = (char *) emalloc(strlen(str)+1);
+    strcpy(copy, str);
 
+    for ( ;*copy; ) {
+	if (!isalnum(*copy) && (*copy != '/') ) {
+		*str++ = '\\';	
+	}
+	*str++ = *copy++;
+    }
+    *str = 0;
+    
+    efree(copy);
+}
