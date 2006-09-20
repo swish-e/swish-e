@@ -232,22 +232,22 @@ SectionEnd ; end of -post section
 Section Uninstall
     ; add delete commands to delete whatever files/registry keys/etc you installed here.
     ; UninstallText "This will remove SWISH-E from your system"
-    Delete "$INSTDIR/uninst.exe"
+    Delete "$INSTDIR\uninst.exe"
     DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}"
     DeleteRegValue HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E" "CurrentVersion"
     DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E"
     DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe"
     
-    ; SWISH::API Binaries go into $PERL/lib/auto/SWISH/API
-    Call un.ActivePerlLocation
-    Pop $R1
-    RMDir /r "$R1/lib/auto/SWISH"
-    
-;    UnRegDLL $SYSDIR/swishctl.dll
+;    UnRegDLL "$SYSDIR\swishctl.dll"
     
     ; Other files
     RMDir /r "$INSTDIR"
-    RMDir /r "$SMPROGRAMS/SWISH-E/"
+    RMDir /r "$SMPROGRAMS\SWISH-E"
+    
+    ; SWISH::API Binaries go into $PERL\lib\auto\SWISH\API
+    Call un.ActivePerlLocation
+    Pop $R1
+    RMDir /r "$R1\lib\auto\SWISH" 
 SectionEnd ; end of uninstall section
 
 
