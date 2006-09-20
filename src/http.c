@@ -426,7 +426,11 @@ int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t
         int     num_sec = http->delay - (time(0) - *plastretrieval);
         if ( sw->verbose >= 3 )
             printf("sleeping %d seconds before fetching %s\n", num_sec, url);
+#ifdef _WIN32
+        _sleep(num_sec); 
+#else
         sleep(num_sec);
+#endif
     }
 
     *plastretrieval = time(0);
