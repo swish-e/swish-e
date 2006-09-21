@@ -160,7 +160,6 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_
 static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST *, IndexFILE *);
 static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
 static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
-static RESULT_LIST *nearphraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance);
 static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
 static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS * db_results);
 static void freeresultlist(DB_RESULTS *db_results);
@@ -2616,89 +2615,6 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
 }
 
 
-/* Phrase result routine - see distance parameter. For phrase search this
-** value must be 1 (consecutive words)
-**
-** On input, both result lists r1 abd r2 must be sorted by filenum
-** On output, the new result list remains sorted
-*/
-static RESULT_LIST *nearphraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
-{
-    int     i,
-            j,
-            found,
-            newRank,
-           *allpositions;
-    int     res = 0;
-    RESULT_LIST *new_results_list = NULL;
-    RESULT *r1, *r2;
-                
-
-
-    if (l_r1 == NULL || l_r2 == NULL)
-    {
-        make_db_res_and_free(l_r1);
-        make_db_res_and_free(l_r2);
-        return NULL;
-    }
-
-    for (r1 = l_r1->head, r2 = l_r2->head; r1 && r2;)
-    {
-        res = r1->filenum - r2->filenum;
-        if (!res)
-        {
-            found = 0;
-            allpositions = NULL;
-            for (i = 0; i < r1->frequency; i++)
-            {
-                for (j = 0; j < r2->frequency; j++)
-                {
-                    if ( abs(GET_POSITION(r1->posdata[i]) - GET_POSITION(r2->posdata[j])) <= distance )
-                    {
-                        found++;
-                        if (allpositions)
-                            allpositions = (int *) erealloc(allpositions, found * sizeof(int));
-
-                        else
-                            allpositions = (int *) emalloc(found * sizeof(int));
-
-                        allpositions[found - 1] = r2->posdata[j];
-                        break;
-                    }
-                }
-            }
-            if (found)
-            {
-                newRank = (r1->rank + r2->rank) / 2;
-
-                /*
-                   * Storing positions is neccesary for further
-                   * operations 
-                 */
-                if(!new_results_list)
-                    new_results_list = newResultsList(db_results);
-                
-                addtoresultlist(new_results_list, r1->filenum, newRank, 0, found, db_results);
-
-                CopyPositions(new_results_list->tail->posdata, 0, allpositions, 0, found);
-                efree(allpositions);
-            }
-            r1 = r1->next;
-            r2 = r2->next;
-        }
-        else if (res > 0)
-        {
-            r2 = r2->next;
-        }
-        else
-        {
-            r1 = r1->next;
-        }
-
-    }
-
-    return new_results_list;
-}
 
 /* Adds a file number and rank to a list of results.
 */
