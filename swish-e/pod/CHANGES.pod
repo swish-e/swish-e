@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item quote fix for FileFilter config param
+
+Ludovic Drolez contributed a patch to fix a quoting issue with filenames. This affects
+non-Windows builds only.
+
 =item SWISH::API updated to 0.04
 
 Added several fixes, including:
