@@ -1,3 +1,0 @@
-includes=-I/usr/include
-ldflags=-L/usr/lib 
-libs=-lswish-e -lm 
