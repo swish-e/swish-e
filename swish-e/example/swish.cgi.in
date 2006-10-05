@@ -433,7 +433,7 @@ sub default_config {
             labels  => {
                 misc    => 'General Apache docs',
                 mod     => 'Apache Modules',
-                vhosts  => 'Virutal hosts',
+                vhosts  => 'Virtual hosts',
             },
             description => 'Limit search to these areas: ',
         },
