@@ -1,8 +1,0 @@
-# This is where the relative links don't work
-# because don't know document root when building the site (site is relative)
-ErrorDocument 404 /404.html
-<files 404.html>
-    Options +ExecCGI
-    SetHandler cgi-script
-</files>
-

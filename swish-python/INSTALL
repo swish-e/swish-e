@@ -1,9 +1,0 @@
-
-You need to have python, swig, and swish-e-dev installed.
-
-Then you can run:
-  make && make install
-
-Build Debian package:
-  make deb
-

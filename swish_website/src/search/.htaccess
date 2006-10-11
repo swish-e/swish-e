@@ -1,9 +1,0 @@
-<files index.html>
-    SetEnv LD_LIBRARY_PATH /usr/local/lib
-    Options +ExecCGI
-    SetHandler cgi-script
-</files>
-<files index.swish-e>
-    deny from all
-</files>
-
