@@ -6,14 +6,24 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.4 ??????
+=head2 Version 2.4.4 - 11 Oct 2006
 
 =over 4
+
+=item Version 2.4.4 RC1
+
+Release Candidate 1 for 2.4.4, 2 Oct 2006.
 
 =item quote fix for FileFilter config param
 
 Ludovic Drolez contributed a patch to fix a quoting issue with filenames. This affects
 non-Windows builds only.
+
+=item SWISH::Filter now on CPAN
+
+SWISH::Filter is now available on http://cpan.org/. The version in the distribution is
+B<not> kept in sync with the CPAN version. Install the CPAN version if you want
+the latest and greatest version.
 
 =item SWISH::API updated to 0.04
 
@@ -35,6 +45,8 @@ Added several fixes, including:
 
 Herman Knoops contributed these patches.
 See http://swish-e.org/archive/2006-05/10543.html
+
+Error messages were also changed to better reflect correct use of wildcards.
 
 =item fixed bug when using DoubleMetaphone
 
