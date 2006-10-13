@@ -17,3 +17,12 @@ swish-daily.pl \
     --verbose \
     --tardir=$DIR/swish-releases || exit 1;
 
+
+# TODO FIXME ;)
+# bin/build -swishsrc=/home/bmoseley/swish/swish_release_build/latest_swish_build/swish-e-2.4.4   -all
+
+# swish-daily needs to symlink to the src directory so can do:
+# bin/build -swishsrc=/home/bmoseley/swish/swish_release_build/latest_swish_build/src   -all
+
+
+
