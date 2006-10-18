@@ -357,7 +357,7 @@ karman Mon Aug 30 07:03:35 CDT 2004
 int
 getrankDEF( RESULT *r )
 {
-    int        *posdata;
+    unsigned int        *posdata;
     int         meta_bias;
     IndexFILE  *indexf;
     int         rank;
@@ -515,7 +515,7 @@ int
 getrankIDF( RESULT *r )
 {
 
-    int        *posdata;
+    unsigned int        *posdata;
     int         meta_bias;
     IndexFILE  *indexf;
     int         words;

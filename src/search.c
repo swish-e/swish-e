@@ -1461,7 +1461,7 @@ static int test_structure(int structure, int frequency, unsigned int *posdata)
     int *p,*q;   /* Use pointers to ints instead of arrays for
                  ** faster proccess */
     
-    for(i = j = 0, p = q = posdata; i < frequency; i++, p++)
+    for(i = j = 0, p = q = (int)posdata; i < frequency; i++, p++)
     {
         if(GET_STRUCTURE(*p) & structure)
         {
@@ -1504,7 +1504,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     unsigned char myWord[100];
     int           rLen;
     int           tLen;
-    char   *q;
+    unsigned char   *q;
     RESULT_LIST *l_rp, *l_rp2;
     sw_off_t    wordID;
     int     metadata_length;
@@ -1569,7 +1569,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     }
 
     /* Second: Look for question mark somewhere in the word */
-    strcpy(remains, "");
+    strcpy(remains, (unsigned char)"");
     rLen = 0;
     tLen = strlen(word);
     // Check for first "?" in current word (not reverse)
@@ -1591,7 +1591,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             else
             {
                 strcpy(remains, q);   // including the first "?"
-                rLen = strlen(remains);
+                rLen = strlen((char)remains);
                 *q = '\0';
             }
         }
@@ -1613,7 +1613,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
     else  /* There is a wildcard. So use the sequential approach */
     {       
-        char   *resultword;
+        unsigned char   *resultword;
 
         if (*word == '*')
         {
@@ -1645,7 +1645,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
        // Check if this could be a match (only if "?" is present
        if (rLen)
        {
-          char *pw, *ps;
+          unsigned char *pw, *ps;
           int found = 0;
           pw = &remains[0];
           ps = &myWord[strlen(word)];
@@ -1657,7 +1657,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
               if (!p)
               {
                 // no wildcard "*" at end, so length should exactly match
-                if ((pw == (char*)&remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
+                if ((pw == (char*)&remains[strlen((char)remains) - 1]) && (*(ps + 1) == '\0'))
                   found = 1;
                 else
                   continue;
@@ -1665,7 +1665,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
               else
               {
                 // wildcard at end, so ignore length
-                if (pw == (char*)&remains[strlen(remains) - 1])
+                if (pw == (char*)&remains[strlen((char)remains) - 1])
                   found = 1;
                 else
                   continue;
@@ -1678,12 +1678,12 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
             if (!p)
             {
-              if ((pw == (char*)&remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
+              if ((pw == (char*)&remains[strlen((char)remains) - 1]) && (*(ps + 1) == '\0'))
                 found = 1;
             }
             else
             {
-              if (pw == (char*)&remains[strlen(remains) - 1])
+              if (pw == (char*)&remains[strlen((char)remains) - 1])
                 found = 1;
             }
 
@@ -1691,7 +1691,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
           if (!found)
           {
-            char   *resultword;
+            unsigned char   *resultword;
 
             /* Jump to next word */
             /* No more data for this word but we
@@ -1806,7 +1806,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
         else
         {
-            char   *resultword;
+            unsigned char   *resultword;
 
             /* Jump to next word */
             /* No more data for this word but we

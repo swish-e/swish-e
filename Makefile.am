@@ -40,6 +40,7 @@ perl_dir = \
     perl/MANIFEST \
     perl/README \
     perl/Makefile.PL \
+    perl/Makefile.mingw \
     perl/API.pm \
     perl/API.xs \
     perl/typemap \

@@ -214,7 +214,7 @@ static void    save_to_temp_file(SWISH *sw, FileProp *fprop)
     fprop->fp = (FILE *) NULL;
 
 
-//***JMRUIZ    efree(rd_buffer);
+/* **JMRUIZ    efree(rd_buffer);  */
     fclose( out );
 
 }
