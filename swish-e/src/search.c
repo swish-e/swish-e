@@ -1683,7 +1683,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             }
             else
             {
-              if (pw == (char*)&remains[strlen((char)remains) - 1])
+              if (pw == &remains[strlen(remains) - 1])
                 found = 1;
             }
 
