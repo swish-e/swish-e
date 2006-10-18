@@ -1461,7 +1461,7 @@ static int test_structure(int structure, int frequency, unsigned int *posdata)
     int *p,*q;   /* Use pointers to ints instead of arrays for
                  ** faster proccess */
     
-    for(i = j = 0, p = q = (int)posdata; i < frequency; i++, p++)
+    for(i = j = 0, p = q = (int*)posdata; i < frequency; i++, p++)
     {
         if(GET_STRUCTURE(*p) & structure)
         {
@@ -1500,8 +1500,8 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             index_structure,
             index_structfreq,
             tmpval;
-    unsigned char remains[100];   // hard-coded !!!?
-    unsigned char myWord[100];
+    char remains[100];   // hard-coded !!!?
+    char myWord[100];
     int           rLen;
     int           tLen;
     unsigned char   *q;
@@ -1569,20 +1569,20 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     }
 
     /* Second: Look for question mark somewhere in the word */
-    strcpy(remains, (unsigned char)"");
+    strcpy(remains, (char*)"");
     rLen = 0;
     tLen = strlen(word);
     // Check for first "?" in current word (not reverse)
     if ((q = strchr(word, '?')))
     {
-        if (q != word && *(q - 1) == '\\') /* Check for an escaped * */
+        if (q != (unsigned char*)word && *(q - 1) == '\\') /* Check for an escaped * */
         {
             q = NULL;           /* If escaped it is not a wildcard */
         }
         else
         {
             /* Check if it is at the end of the word */
-            if (q == (word + strlen(word) - 1))
+            if (q == ((unsigned char*)word + strlen(word) - 1))
             {
                 strcpy(remains, q);   // including the last "?"
                 rLen = strlen(remains);
@@ -1591,7 +1591,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             else
             {
                 strcpy(remains, q);   // including the first "?"
-                rLen = strlen((char)remains);
+                rLen = strlen(remains);
                 *q = '\0';
             }
         }
@@ -1622,7 +1622,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         }
 
         
-        DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+        DB_ReadFirstWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
 
         if (!wordID)
         {
@@ -1645,7 +1645,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
        // Check if this could be a match (only if "?" is present
        if (rLen)
        {
-          unsigned char *pw, *ps;
+          char *pw, *ps;
           int found = 0;
           pw = &remains[0];
           ps = &myWord[strlen(word)];
@@ -1657,7 +1657,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
               if (!p)
               {
                 // no wildcard "*" at end, so length should exactly match
-                if ((pw == (char*)&remains[strlen((char)remains) - 1]) && (*(ps + 1) == '\0'))
+                if ((pw == &remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
                   found = 1;
                 else
                   continue;
@@ -1665,7 +1665,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
               else
               {
                 // wildcard at end, so ignore length
-                if (pw == (char*)&remains[strlen((char)remains) - 1])
+                if (pw == &remains[strlen(remains) - 1])
                   found = 1;
                 else
                   continue;
@@ -1678,7 +1678,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
             if (!p)
             {
-              if ((pw == (char*)&remains[strlen((char)remains) - 1]) && (*(ps + 1) == '\0'))
+              if ((pw == &remains[strlen(remains) - 1]) && (*(ps + 1) == '\0'))
                 found = 1;
             }
             else
@@ -1698,7 +1698,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            DB_ReadNextWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
             else
@@ -1813,7 +1813,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            DB_ReadNextWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
 

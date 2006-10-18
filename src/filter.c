@@ -498,9 +498,8 @@ void stringQuote(char *str)
 {
     char *copy,*orig;
     
-    copy = (char *) emalloc(strlen(str)+1);
+    copy = estrdup(str);
     orig = copy;
-    strcpy(copy, str);
 
     for ( ;*copy; ) 
     {
