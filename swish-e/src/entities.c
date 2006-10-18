@@ -647,9 +647,7 @@ unsigned char *strConvHTMLEntities2ISO(unsigned char *buf)
 
 int     charEntityDecode(unsigned char *s, unsigned char **end)
 {
-    unsigned char *s1,
-           *t;
-    char *e_end;
+    unsigned char *s1, *t, *e_end;
     unsigned char s_cmp[MAX_ENTITY_LEN + 1];
     int     len;
     int     code;

@@ -43,6 +43,7 @@ $Id$
 #include "swstring.h"
 #include "error.h"
 #include "filter.h"
+#include <stdlib.h>
 
 
 /* private module prototypes */
@@ -346,6 +347,9 @@ FILE   *FilterOpen(FileProp * fprop)
 #endif
 
     sprintf(filtercmd, "%s %s", prog, cmd_opts);
+    
+    if (getenv("SWISH_DEBUG"))
+        fprintf(stderr, "FilterCmd: %s\n", filtercmd);
 
     fp = popen(filtercmd, F_READ_TEXT); /* Open stream */
 
@@ -492,18 +496,30 @@ static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
  */
 void stringQuote(char *str)
 {
-    char *copy;
+    char *copy,*orig;
     
     copy = (char *) emalloc(strlen(str)+1);
+    orig = copy;
     strcpy(copy, str);
 
-    for ( ;*copy; ) {
-	if (!isalnum(*copy) && (*copy != '/') ) {
-		*str++ = '\\';	
-	}
-	*str++ = *copy++;
+    for ( ;*copy; ) 
+    {
+    /*
+	    if (!   isalnum(*copy) 
+            && (*copy != '/')
+            && (*copy != '_')
+            && (*copy != '-')
+            && (*copy != '.')
+            
+        ) 
+        */
+        if ( (*copy == '\'') || (*copy == '"') )
+        {
+		    *str++ = '\\';	
+	    }
+	    *str++ = *copy++;
     }
     *str = 0;
     
-    efree(copy);
+    efree(orig);
 }

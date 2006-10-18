@@ -185,7 +185,7 @@ union _conv_ {
       char            c[sizeof(unsigned long)];
       unsigned long   l;
 };
-unsigned long convPropValue2ULong(char *propValue)
+unsigned long convPropValue2ULong(unsigned char *propValue)
 {
       union _conv_ u;
       memcpy(u.c, propValue, sizeof(unsigned long));
