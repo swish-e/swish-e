@@ -1,7 +1,5 @@
 /*
 $Id$
-**
-
 
     This file is part of Swish-e.
 
@@ -18,17 +16,17 @@ $Id$
     You should have received a copy of the GNU General Public License
     along  with Swish-e; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-    
+
     See the COPYING file that accompanies the Swish-e distribution for details
     of the GNU GPL and the special exception available for linking against
     the Swish-e library.
-    
+
 ** Mon May  9 15:51:39 CDT 2005
 ** added GPL
 
 **
 ** 1998-07-04 rasc    original filter code
-** 1999-08-07 rasc    
+** 1999-08-07 rasc
 ** 2001-02-28 rasc    own module started for filters
 **                    some functions rewritten and enhanced...
 ** 2001-04-09 rasc    options for filters  (%f, etc)
@@ -45,17 +43,29 @@ $Id$
 #include "filter.h"
 #include <stdlib.h>
 
+#ifdef HAVE_WORKING_FORK
+#include <sys/types.h>
+#include <unistd.h>
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif /* HAVE_SYS_WAIT_H */
+#endif /* HAVE_WORKING_FORK */
+
+
+
+
 
 /* private module prototypes */
 
-static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir);
-static char *filterCallCmdOptParam2(char *str, char param, FileProp * fp);
-static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop);
-static void stringQuote(char *str);
+static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir, char **regex);
+static char *expand_options( FileProp * fprop, char * template );
+static char *join_string( char **string_list );
+static char *expand_percent(  FileProp * fprop, char escape_code );
+#ifdef HAVE_WORKING_FORK
+static FILE *fork_program( char **arg );
+#endif
 
-
-
-/* 
+/*
   -- init structures for filters
 */
 
@@ -72,7 +82,7 @@ void    initModule_Filter(SWISH * sw)
 }
 
 
-/* 
+/*
   -- release structures for filters
   -- release all wired memory
   -- 2001-04-09 rasc
@@ -82,7 +92,7 @@ void    freeModule_Filter(SWISH * sw)
  {
     struct MOD_Filter *md = sw->Filter;
 
-               
+
 
 
     if (md->filterdir)
@@ -94,16 +104,19 @@ void    freeModule_Filter(SWISH * sw)
     {
         FilterList *fm = md->filterlist;
         FilterList *fm2;
-        
+
         while( fm )
         {
             efree( fm->prog );
             free_regex_list( &fm->regex );
+
             if ( fm->options )
-                efree( fm->options );
+                freeStringList( fm->options );
+
             if ( fm->suffix )
                 efree( fm->suffix );
-                
+
+
             fm2 = fm;
             fm = fm->next;
             efree( fm2 );
@@ -111,7 +124,7 @@ void    freeModule_Filter(SWISH * sw)
 
         md->filterlist = NULL;
     }
-            
+
 
     efree(sw->Filter);          /* free modul data structure */
     sw->Filter = NULL;
@@ -136,7 +149,7 @@ int     configModule_Filter(SWISH * sw, StringList * sl)
         if (sl->n == 2) {
             md->filterdir = estrredup(md->filterdir, sl->word[1]);
             normalize_path( md->filterdir );
-            
+
             if (!isdirectory(md->filterdir)) {
                 progerr("%s: %s is not a directory", w0, md->filterdir);
             }
@@ -150,10 +163,7 @@ int     configModule_Filter(SWISH * sw, StringList * sl)
     if (strcasecmp(w0, "FileFilter") == 0) { /* 1999-05-05 rasc */
         /* FileFilter fileextension  filterprog  [options] */
         if (sl->n == 3 || sl->n == 4)
-        {
-            normalize_path( sl->word[2] );  /* trying to keep these close to where there's input */
-            md->filterlist = (FilterList *) addfilter(md->filterlist, sl->word[1], sl->word[2], sl->word[3], md->filterdir);
-        }
+            md->filterlist = addfilter(md->filterlist, sl->word[1], sl->word[2], sl->word[3], md->filterdir, NULL);
         else
             progerr("%s: requires \"extension\" \"filter\" \"[options]\"", w0);
 
@@ -165,32 +175,11 @@ int     configModule_Filter(SWISH * sw, StringList * sl)
 
     if ( strcasecmp( w0, "FileFilterMatch") == 0 )
     {
-        FilterList *filter;
-
         if ( sl->n < 4 )
             progerr("%s requires at least three parameters: 'filterprog' 'options' 'regexp' ['regexp'...]\n");
 
 
-        filter = (FilterList *)emalloc( sizeof( FilterList ) );
-        memset( filter, 0, sizeof( FilterList ) );
-
-        filter->prog    = estrdup( sl->word[1] );
-        normalize_path( filter->prog );
-        
-        filter->options = estrdup( sl->word[2] );
-        add_regex_patterns( w0, &filter->regex, &(sl->word[3]), 1 );
-
-        if ( !md->filterlist )
-            md->filterlist = filter;
-        else
-        {
-            /* add to end of list */
-            FilterList *f = md->filterlist;
-            while ( f->next )
-                f = f->next;
-
-            f->next = filter;
-        }
+        md->filterlist = addfilter(md->filterlist, NULL, sl->word[1], sl->word[2], md->filterdir, &(sl->word[3]) );
 
         return 1;
     }
@@ -206,34 +195,46 @@ int     configModule_Filter(SWISH * sw, StringList * sl)
  -- (filterdir may be NULL)
  -- 1999-08-07 rasc
  -- 2001-02-28 rasc
- -- 2001-04-09 rasc   options, maybe NULL  
+ -- 2001-04-09 rasc   options, maybe NULL
 */
 
 
-static FilterList *addfilter(FilterList *rp, char *suffix, char *prog, char *options, char *filterdir)
- {
+static FilterList *addfilter(FilterList *rp, char *suffix, char *prog, char *options, char *filterdir, char **regex )
+{
     FilterList *newnode;
     char   *buf;
+
+    normalize_path( prog );  /* Don't really see how this is right */
+
 
 
     newnode = (FilterList *) emalloc(sizeof(FilterList));
     memset( newnode, 0, sizeof( FilterList ) );
 
     newnode->suffix = (char *) estrdup(suffix);
-    newnode->options = (options) ? (char *) estrdup(options) : NULL;
 
+    /* Parse the filter options into tokens */
+    newnode->options = parse_line( options ? options : "%p %P" );
+
+    /* If this is a FileFilterMatch then add patterns */
+    if ( regex )
+        add_regex_patterns( prog, &newnode->regex, regex, 1 );
+
+
+    /* Append the directory on */
     if ( filterdir && (*prog != '/' ) )
     {
         buf = emalloc( strlen( filterdir ) + strlen( prog ) + 2 );
         *buf = '\0';
-        strcat( buf, filterdir ); /* don't care about speed here */
+        strcat( buf, filterdir );
         strcat( buf, "/" );
         strcat( buf, prog );
         newnode->prog = buf;
     }
     else
         newnode->prog = estrdup( prog );
-        
+
+
     newnode->next = NULL;
 
     if (rp == NULL)
@@ -309,216 +310,272 @@ FilterList *hasfilter(SWISH * sw, char *filename)
 
 FILE   *FilterOpen(FileProp * fprop)
 {
-    char   *filtercmd;
-    FilterList *fi;
-    char   *cmd_opts,
-           *opt_mask;
-    FILE   *fp;
-    int     len;
-    char   *prog;
-
-    /*
-       -- simple filter call "filter 'work_file' 'real_path_url'"
-       -- or call filter "filter  user_param"
-       --    > (decoded output =stdout)
-     */
-
-    fi = fprop->hasfilter;
-
-// old code (rasc, leave it for checks and speed benchmarks)
-//      len =  strlen(fi->prog)+strlen(fprop->work_path)+strlen(fprop->real_path);
-//
-//      filtercmd=emalloc(len + 6 +1);
-//      sprintf(filtercmd, "%s \'%s\' \'%s\'", fi->prog,
-//                 fprop->work_path, fprop->real_path);
+    FilterList      *fi         = fprop->hasfilter;
+    char            **options   = fi->options->word;
+    int             num_options = fi->options->n;
+    char            **arg;      /* where to store expanded arguments */
+    int             arg_size;
+    FILE            *fp;        /* stream to return */
+#ifndef HAVE_WORKING_FORK
+    char            *command;   /* command string used with popen */
+#endif
+    int             n;
 
 
-    /* if no filter cmd param given, use default */
 
-    opt_mask = (fi->options && *(fi->options) ) ? fi->options : "%p %P";
-    cmd_opts = filterCallCmdOptStr(opt_mask, fprop);
 
-    len = strlen(fi->prog) + strlen(cmd_opts);
-    filtercmd = emalloc(len + 2);
+    /* Create second argument list that gets updated during each run */
+    arg_size = ( num_options + 2 ) * sizeof(char*);
+    arg = emalloc( arg_size );
+    memset( arg, 0, arg_size );
 
-    prog = estrdup( fi->prog );
+    arg[0] = estrdup( fi->prog );  /* arg[0] is the program name by convention */
+
 #if defined(_WIN32) && !defined(__CYGWIN__)
-    make_windows_path( prog );
+    make_windows_path( arg[0] );
 #endif
 
-    sprintf(filtercmd, "%s %s", prog, cmd_opts);
-    
-    if (getenv("SWISH_DEBUG"))
-        fprintf(stderr, "FilterCmd: %s\n", filtercmd);
 
-    fp = popen(filtercmd, F_READ_TEXT); /* Open stream */
+    for ( n = 0; n < num_options; n++ )
+        arg[n+1] = expand_options( fprop, options[n] );
 
-    efree( prog );
-    efree(filtercmd);
-    efree(cmd_opts);
+#ifdef HAVE_WORKING_FORK
+    fp = fork_program( arg );
+
+#else
+    command = join_string( arg );
+    fp = popen(command, F_READ_TEXT); /* Open stream */
+    efree( command );
+#endif /* HAVE_WORKING_FORK */
+
+
+    /* Free up memory used by args list */
+    options = arg;
+    while ( *options ) {
+        efree( *options );
+        options++;
+    }
+    efree( arg );
+
 
     return fp;
 }
 
-
-/* 
-  -- Close filter stream
-  -- return: errcode
-*/
-
-int     FilterClose(FILE * fp)
+static char *join_string( char **string_list )
 {
-    return pclose(fp);
+    int     len = 0;  /* total size of strings */
+    char    **cur_string = string_list;
+    char    *outstr;
+    int     first = 1;
+    char    *quote_char = "\"";
+
+    while ( *cur_string ) {
+        char *str = *cur_string;
+        len += strlen( str ) + 3; /* plus two for the quotes and one for the space */
+        cur_string++;
+    }
+
+    outstr = (char *) emalloc( len + 1 );
+
+    outstr[0] = '\0';
+
+    while ( *string_list ) {
+        if ( !first )
+            strcat( outstr, " " );
+
+        strcat( outstr, quote_char );
+        strcat( outstr, *string_list );
+        strcat( outstr, quote_char );
+
+        first = 0;
+        string_list++;
+    }
+
+    return outstr;
 }
 
 
-
-
-
 /*
-  -- process Filter cmdoption parameters
-  -- Replace variables with the file/document names.
-  -- Variables: please see code below
-  -- return: (char *) new string
-  -- 2001-04-10 rasc
-*/
+ * Expands the % escapes.
+ * Pass in:
+ *      fprop - for file names
+ *      template - string with possibly unexpanded % escapes
+ * Returns:
+ *      pointer to a newly allocated string
+ *
+ */
 
-static char *filterCallCmdOptStr(char *opt_mask, FileProp * fprop)
- {
-    char   *cmdopt,
-           *co,
-           *om;
-    int     max = MAXSTRLEN *4;
+static char *expand_options( FileProp * fprop, char * template )
+{
+    int     cur_size    = strlen( template );
+    char    *outstr     = (char *) emalloc( cur_size + 1 );
+    char    *cur_char   = outstr;
+    char    *tmpstr;
 
 
-    cmdopt = (char *) emalloc(max);
-    *cmdopt = '\0';
-
-    co = cmdopt;
-    om = opt_mask;
-    while (*om) {
-
-        /* Argh! no overflow checking. Fix $$$ - Mar 2002 - moseley */
-	
-        switch (*om) {
+    while( *template ) {
+        switch (*template) {
 
         case '\\':
-            *(co++) = charDecode_C_Escape(om, &om);
+            /* convert encoded char to char */
+            *(cur_char++) = charDecode_C_Escape(template, &template);
             break;
 
         case '%':
-            ++om;
-            co = filterCallCmdOptParam2(co, *om, fprop);
-            if (*om)
-                om++;
+            template++;
+            tmpstr = expand_percent( fprop, *template );
+            template++;
+
+            if ( tmpstr ) {
+                *cur_char = '\0';  /* terminate */
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+                make_windows_path( tmpstr );
+#endif
+                /* expand string to hold new string */
+                cur_size += strlen( tmpstr );
+                outstr = erealloc( outstr, cur_size + 1 );
+
+                /* cat new string on to output string */
+                strcat( outstr, tmpstr );
+
+                efree( tmpstr );
+
+                /* Set current char pointer */
+                cur_char = outstr + strlen( outstr );
+            }
             break;
 
         default:
-            *(co++) = *(om++);
+            *(cur_char++) = *(template++);
             break;
         }
 
     }
 
-    *co = '\0';
-    return cmdopt;
-}
-
-
-static char *filterCallCmdOptParam2(char *str, char param, FileProp * fprop)
- {
-    static char *nul = "_NULL_"; // $$$ wouldn't "" be better?  Be easier to check for in the filter
-    char   *x;
-    
-
-    switch (param) {
-
-    case 'P':                  /* Full Doc Path/URL */
-        strcpy(str, (fprop->real_path) ? fprop->real_path : nul);
-#if !defined(_WIN32)
-        stringQuote(str);
-#endif
-        break;
-
-    case 'p':                  /* Full Path TMP/Work path */
-        strcpy(str, (fprop->work_path) ? fprop->work_path : nul);
-#if !defined(_WIN32)
-        stringQuote(str);
-#endif
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        make_windows_path( str );
-#endif
-        break;
-
-    case 'F':                  /* Basename Doc Path/URL */
-        strcpy(str, (fprop->real_filename) ? fprop->real_filename : nul);
-        break;
-
-    case 'f':                  /* basename Path TMP/Work path */
-        strcpy(str, (fprop->work_path) ? str_basename(fprop->work_path) : nul);
-        break;
-
-    case 'D':                  /* Dirname Doc Path/URL */
-        x = (fprop->real_path) ? cstr_dirname(fprop->real_path) : nul;
-        strcpy(str, x);
-        efree(x);
-        break;
-
-    case 'd':                  /* Dirname TMP/Work Path */
-        x = (fprop->work_path) ? cstr_dirname(fprop->work_path) : nul;
-        strcpy(str, x);
-        efree(x);
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        make_windows_path( str );
-#endif
-        break;
-
-    case '%':                  /* %% == print %    */
-        *str = param;
-        *(str + 1) = '\0';
-        break;
-
-    default:                   /* unknown, print  % and char */
-        *str = '%';
-        *(str + 1) = param;
-        *(str + 2) = '\0';
-        break;
-    }
-
-    while (*str)
-        str++;                  /* Pos to end of string */
-    return str;
+    *cur_char = '\0';
+    return outstr;
 }
 
 /*
- * Fix for Debian: escape all non alphanum characters in paths
- * --  Ludovic Drolez
+ *  expand_percent -- expands escape code into string
+ *  returns a string which must be freed.
  */
-void stringQuote(char *str)
-{
-    char *copy,*orig;
-    
-    copy = estrdup(str);
-    orig = copy;
 
-    for ( ;*copy; ) 
-    {
-    /*
-	    if (!   isalnum(*copy) 
-            && (*copy != '/')
-            && (*copy != '_')
-            && (*copy != '-')
-            && (*copy != '.')
-            
-        ) 
-        */
-        if ( (*copy == '\'') || (*copy == '"') )
-        {
-		    *str++ = '\\';	
-	    }
-	    *str++ = *copy++;
+
+static char *expand_percent(  FileProp * fprop, char escape_code )
+{
+    switch( escape_code ) {
+
+        case 'P':
+            return estrdup( fprop->real_path ? fprop->real_path : "" );
+
+        case 'p':
+            return estrdup( fprop->work_path ? fprop->work_path : "" );
+
+
+        case 'F':
+            return estrdup( fprop->real_filename ? fprop->real_filename : "" );
+
+        case 'f':
+            return estrdup( fprop->work_path ? str_basename( fprop->work_path ) : "" );
+
+
+        /* cstr_dirname allocates memory */
+        case 'D':
+            return fprop->real_path ? cstr_dirname( fprop->real_path ) : estrdup("");
+
+        case 'd':
+            return fprop->work_path ? cstr_dirname( fprop->work_path ) : estrdup("");
+
+
+        case '%':
+            return estrdup( "%" );
+
+        default:
+            progerr("Failed to decode percent escape in FileFilter* directive [%%%c]", escape_code );
     }
-    *str = 0;
-    
-    efree(orig);
+
+    return NULL;
 }
+
+
+/*
+  -- Close filter stream
+  -- return: errcode
+*/
+
+int     FilterClose(FileProp *fprop)
+{
+#ifdef HAVE_WORKING_FORK
+    FilterList  *fl = fprop->hasfilter;
+
+    if ( fclose( fprop->fp ) != 0 )
+        progwarnno("Error closing filter '%s'", fl->options->word[0] );
+
+    return 0;
+
+#else
+    return pclose(fprop->fp);
+#endif
+}
+
+/* This should be elsewhere, but at this time this is the only place
+ * it is used.
+ */
+
+#ifdef HAVE_WORKING_FORK
+static FILE *fork_program( char **arg )
+{
+    pid_t   pid;
+    int     pipe_fd[2];
+    FILE    *fi;
+
+
+    if ( pipe( pipe_fd ) )
+        progerrno( "failed to create pipe for running [%s]: ", *arg );
+
+
+    if ( (pid = fork()) == -1 )
+        progerrno( "failed to fork for running [%s]: ", *arg );
+
+
+
+    if ( !pid ) {   /* child process */
+
+        close( pipe_fd[0] );    /* close the reading end of the pipe */
+
+        /* Make child's stdout go to pipe */
+        if ( dup2( pipe_fd[1], 1 ) == -1 )
+            progerrno( "failed to dup stdout in child process [%s]: ", arg[0] );
+
+
+        /* Set non-buffered output */
+        /* setvbuf(stdout,(char*)NULL,_IONBF,0); */
+
+        /* Now exec */
+        execvp( arg[0], arg );
+        progerrno("Failed to exec program [%s]: ", arg[0] );
+    }
+
+
+    /* in parent */
+    close( pipe_fd[1] );  /* close writing end of pipe */
+
+    fi = fdopen( pipe_fd[0], "r" );
+
+    if ( fi == NULL ) 
+        progerrno( "failed fdopen for filter program [%s]: ", arg[0] );
+
+    return fi;
+
+}
+#endif /* HAVE_WORKING_FORK */
+
+
+
+
+
+
+
+

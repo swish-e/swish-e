@@ -46,9 +46,10 @@ typedef struct FilterList  /* 2002-03-16 moseley */
 {
     struct FilterList   *next;
     char                *prog;      /* program name to run */
-    char                *options;   /* options list */
     regex_list          *regex;     /* list of regular expressions */
     char                *suffix;    /* or plain text suffix */
+    StringList          *options;   /* list of parsed options */
+
 } FilterList;
 
 
@@ -78,7 +79,7 @@ int  configModule_Filter (SWISH *sw, StringList *sl);
 
 struct FilterList *hasfilter (SWISH *sw, char *filename);
 FILE *FilterOpen (FileProp *fprop);
-int FilterClose (FILE *fp);
+int FilterClose (FileProp *fprop);
 
 
 #endif

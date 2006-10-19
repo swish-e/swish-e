@@ -1135,7 +1135,7 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     if (!fprop->external_program)  /* external_program is not set if a filter is in use */
     {
         if (fprop->hasfilter)
-            FilterClose(fprop->fp); /* close filter pipe - should the filter be flushed? */
+            FilterClose(fprop); /* close filter pipe - should the filter be flushed? */
         else
             sw_fclose(fprop->fp); /* close file */
     }
