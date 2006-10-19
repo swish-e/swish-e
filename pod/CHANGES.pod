@@ -6,6 +6,19 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.x -
+
+=over 4
+
+=item Now fork/exec to run filters
+
+FileFilter* was using popen to run the filter, which could pass user
+data though the shell.  Now uses fork/exec if fork is available which
+should be everywhere except Windows.  In windows popen is used but all
+parameters are double-quoted. -- moseley
+
+=back
+
 =head2 Version 2.4.4 - 11 Oct 2006
 
 =over 4

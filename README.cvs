@@ -144,7 +144,8 @@ releases.
 See swish_website/README for more details on building the web site, but
 basically the swish_website script (bin/build) needs to know where to find the
 source for both the release and the current development builds.  This is currently done by
-two symlinks "swishsrc" and "develsrc".  develsrc points to the daily build directory:
+two symlinks "swishsrc" and "develsrc".  develsrc points to the daily build directory.
+The symlinks go in the swish_website directory:
 
 
 For example:
@@ -282,3 +283,18 @@ in 2.5.x.  So it may be better to create the branch as rel-2-4-patches (instead
 of rel-2-4-0-patches) and then all 2.4.x updates will get added there.
 
 
+Developer Hints
+===============
+
+There's a bunch of debugging techniques, but I do this:
+
+$ ./configure --prefix=$HOME/swt --enable-memtrace CFLAGS='-O0 -g'
+$ make install
+
+Then I cd to src and create a test config
+
+$ gdb ~/swt/bin/swish-e
+run -c c -i test.doc
+
+Changes to source in another window and in gdb "make install" will
+build without having to exit.
