@@ -41,16 +41,6 @@ the backslash escapes the next character.
 If you need to include a quote character in the value either use a
 backslash to escape it, or enclose it in quotes of the other type.
 
-For example, under unix you can use quotes to include white space in a
-single parameter.  Here, to protect against path names (%p) that might
-have white space embedded use single quotes (this also protects against
-shell expansion or metacharacters):
-
-    FileFilter .foo foofilter "'%p'"  <- parameter passed through the shell in single quotes
-    FileFilter .foo foofilter '"%p"'  <- windows uses double-quotes
-    FileFilter .foo foofilter '\'%p\''<- silly example
-
-
 Backslashes also have special meaning in regular expressions.
 
     FileFilterMatch pdftotext "'%p' -" /\.pdf$/
@@ -2639,18 +2629,24 @@ it to Swish-e by printing to STDOUT.
 Note that this can add a significant amount of time to the indexing
 process if your external program is a perl or shell script.  If you
 have many files to filter you should consider writing your filter in C
-instead of a shell or perl script, or using the "prog" Access Method.
+instead of a shell or perl script, or using the "prog" Access Method
+along with SWISH::Filter.
 
 =over 4
 
 =item FilterDir  *path-to-directory*
 
+Deprecated.
+
 This is the path to a directory where the filter programs are stored.
 Swish-e looks in this directory to find the filter specified in the
-B<FileFilter> directive. If this directive is omitted, you have to
-specify the full path to the filterscript on each FileFilter directive.
+B<FileFilter> directive.
 
-This feature does *not* apply to the C<FileFilterMatch> directive.
+This directive is not needed if the filter program can be found in
+your system's path.  Even if your filter is not in your system's path
+you can specify the full path to the filter in the FileFilter or
+FileFilterMatch directives.
+
 
 Example:
 
@@ -2662,6 +2658,16 @@ This maps file suffix (extension) to a filter program.  If I<filter-prog>
 starts with a directory delimiter (absolute path), Swish-e doesn't use
 the FilterDir settings, but uses the given I<filter-prog> path directly.
 
+On systems that have a working fork(2) system call the filter program
+is run by forking swish then executing the filter.  This mean the shell
+is not used for running the filter and no arguments are passed through the
+shell.
+
+On other systems (e.g. Windows) the arguments are double-quoted and
+popen(3) is used to run the program.  This does pass argument though
+the shell and may be a security concern depending on the abilities of
+the shell.
+
 Filter options:
 
 Filter options are a string passed as arguments to the I<filter-prog>.
@@ -2669,8 +2675,8 @@ Filter options can contain variables, replaced by Swish-e.  If you omit
 I<filter-options> Swish-e will use default parameters for the options
 listed above.
 
-    Default:      "'%p' '%P'"
-    Which means:  pass   "workfile path" and "documentfile path" to filter (each quoted).
+    Default:      %p %P
+    Which means:  pass   "workfile path" and "documentfile path" to filter.
 
 Variables in filter options:
 
@@ -2691,21 +2697,15 @@ Examples of strings passed:
     %D =     http://myserver/path1
     %d =     /tmp
 
-Important hint for security:
 
-When using variable substitution, use quotes to ensure filename integrity.
 
-        e.g. "'%f'"  -->  'file name with spaces.doc'.
-
-If you don't use this, your system security may be compromised, or
-filtering may not work for these files.
 
 B<Notes when using MS Windows>
 
-Windows uses double quotes to escape shell metacharacters, so reverse
-the quotes in the examples above.  e.g.:
+Windows uses double quotes to escape shell metacharacters, so if you need
+to use quotes then use single quotes around the entire option string.
 
-        '"%f"' --> "file name with spaced.doc"
+    FileFiler .mydoc mydocfilter.exe '--title "text with spaces"'
 
 You can specify the filter program using forward slashes (unix style).
 Swish will convert the slashes to backslashes before running your program.
@@ -2715,10 +2715,10 @@ Swish will convert the slashes to backslashes before running your program.
 
 Examples of filters:
 
-    FileFilter .doc       /usr/local/bin/catdoc "-s8859-1 -d8859-1 '%p'"
-    FileFilter .pdf       pdftotext   "'%p' -"
-    FileFilter .html.gz   gzip  "-c '%p'"
-    FileFilter .mydoc     "/some/path/mydocfilter"  "-d '%d' -example -url '%P' '%f'"
+    FileFilter .doc       /usr/local/bin/catdoc "-s8859-1 -d8859-1 %p"
+    FileFilter .pdf       pdftotext   "%p -"
+    FileFilter .html.gz   gzip  "-c %p"
+    FileFilter .mydoc     "/some/path/mydocfilter"  "-d %d -example -url %P %f"
 
 The above examples are running a I<binary> filter program.  For more
 complicated filtering needs you may use a scripting language such as
@@ -2748,13 +2748,13 @@ C<FileFilter> you B<must> specify the *filter-options*.
 
 Examples:
 
-    FileFilterMatch ./pdftotext "'%p' -" /\.pdf$/
+    FileFilterMatch ./pdftotext "%p -" /\.pdf$/
 
 Note that will also match a file called ".pdf", so you may want to use
 something that requires a filename that has more than just an extension.
 For example:
 
-    FileFilterMatch ./pdftotext "'%p' -" /.\.pdf$/
+    FileFilterMatch ./pdftotext "%p -" /.\.pdf$/
 
 To specify more than one extension:
 
@@ -2765,7 +2765,7 @@ Or a few ways to do the same thing:
     FileFilterMatch ./check_title.pl %p /\.(html|html)$/
     FileFilterMatch ./check_title.pl %p /\.html?$/
 
-And to ignore case:    
+And to ignore case:
 
     FileFilterMatch ./check_title.pl %p /\.html?$/i
 
