@@ -532,7 +532,10 @@ static FILE *fork_program( char **arg )
 
         /* Make child's stdout go to pipe */
         if ( dup2( pipe_fd[1], 1 ) == -1 )
-            progerrno( "failed to dup stdout in child process [%s]: ", arg[0] );
+            fprintf( stderr,
+                "failed to dup stdout in child process [%s]: %s",
+                arg[0], strerror(errno)
+            );
 
 
         /* Set non-buffered output */
@@ -540,7 +543,13 @@ static FILE *fork_program( char **arg )
 
         /* Now exec */
         execvp( arg[0], arg );
-        progerrno("Failed to exec program [%s]: ", arg[0] );
+
+        /* can't use progerr since it writes to stdout by default. */
+        fprintf( stderr,
+            "Failed to exec program [%s]: %s ",
+            arg[0], strerror(errno) 
+        );
+        exit(1);
     }
 
 
