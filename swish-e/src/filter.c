@@ -59,10 +59,11 @@ $Id$
 
 static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterProg, char *options, char *FilterDir, char **regex);
 static char *expand_options( FileProp * fprop, char * template );
-static char *join_string( char **string_list );
 static char *expand_percent(  FileProp * fprop, char escape_code );
 #ifdef HAVE_WORKING_FORK
 static FILE *fork_program( char **arg );
+#else
+static char *join_string( char **string_list );
 #endif
 
 /*
@@ -361,41 +362,6 @@ FILE   *FilterOpen(FileProp * fprop)
     return fp;
 }
 
-static char *join_string( char **string_list )
-{
-    int     len = 0;  /* total size of strings */
-    char    **cur_string = string_list;
-    char    *outstr;
-    int     first = 1;
-    char    *quote_char = "\"";
-
-    while ( *cur_string ) {
-        char *str = *cur_string;
-        len += strlen( str ) + 3; /* plus two for the quotes and one for the space */
-        cur_string++;
-    }
-
-    outstr = (char *) emalloc( len + 1 );
-
-    outstr[0] = '\0';
-
-    while ( *string_list ) {
-        if ( !first ){
-            strcat( outstr, " " );
-            strcat( outstr, quote_char );
-            strcat( outstr, *string_list );
-            strcat( outstr, quote_char );
-        }
-        else {
-            strcat( outstr, *string_list );
-        }
-
-        first = 0;
-        string_list++;
-    }
-
-    return outstr;
-}
 
 
 /*
@@ -512,9 +478,25 @@ int     FilterClose(FileProp *fprop)
 {
 #ifdef HAVE_WORKING_FORK
     FilterList  *fl = fprop->hasfilter;
+    char    *prog    = fl->prog;
+#ifdef HAVE_SYS_WAIT_H
+    int     status;
+
+    wait(&status);
+
+
+    if ( !WIFEXITED(status) )
+        progwarn("filter '%s' did not terminate normally", prog );
+
+    else if ( WEXITSTATUS(status) )
+        progwarn("filter '%s' exited with non-zero status: [%d]", prog, WEXITSTATUS(status));
+
+    else if ( WIFSIGNALED(status) )
+        progwarn("filter '%s' killed by signal: [%d]", prog, WTERMSIG(status) );
+#endif /* HAVE_SYS_WAIT_H */
 
     if ( fclose( fprop->fp ) != 0 )
-        progwarnno("Error closing filter '%s'", fl->options->word[0] );
+        progwarnno("Error closing filter '%s'", prog );
 
     return 0;
 
@@ -572,6 +554,44 @@ static FILE *fork_program( char **arg )
 
     return fi;
 
+}
+
+#else /* HAVE_WORKING_FORK */
+
+static char *join_string( char **string_list )
+{
+    int     len = 0;  /* total size of strings */
+    char    **cur_string = string_list;
+    char    *outstr;
+    int     first = 1;
+    char    *quote_char = "\"";
+
+    while ( *cur_string ) {
+        char *str = *cur_string;
+        len += strlen( str ) + 3; /* plus two for the quotes and one for the space */
+        cur_string++;
+    }
+
+    outstr = (char *) emalloc( len + 1 );
+
+    outstr[0] = '\0';
+
+    while ( *string_list ) {
+        if ( !first ){
+            strcat( outstr, " " );
+            strcat( outstr, quote_char );
+            strcat( outstr, *string_list );
+            strcat( outstr, quote_char );
+        }
+        else {
+            strcat( outstr, *string_list );
+        }
+
+        first = 0;
+        string_list++;
+    }
+
+    return outstr;
 }
 #endif /* HAVE_WORKING_FORK */
 
