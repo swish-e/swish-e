@@ -17,6 +17,16 @@ data though the shell.  Now uses fork/exec if fork is available which
 should be everywhere except Windows.  In windows popen is used but all
 parameters are double-quoted. -- moseley
 
+=item fixed signed/unsigned warnings from gcc 4.x
+
+Cleaned up search.c to catch mismatched signedness warnings from newer GCC versions.
+This issue pre-existed 2.4.4 but the new wildcard features in search.c made for a lot
+more warnings. -- karman
+
+=item Makefile.mingw included in distrib
+
+Modified root Makefile to include the perl/Makefile.mingw file. -- karman
+
 =back
 
 =head2 Version 2.4.4 - 11 Oct 2006
