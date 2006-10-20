@@ -380,12 +380,15 @@ static char *join_string( char **string_list )
     outstr[0] = '\0';
 
     while ( *string_list ) {
-        if ( !first )
+        if ( !first ){
             strcat( outstr, " " );
-
-        strcat( outstr, quote_char );
-        strcat( outstr, *string_list );
-        strcat( outstr, quote_char );
+            strcat( outstr, quote_char );
+            strcat( outstr, *string_list );
+            strcat( outstr, quote_char );
+        }
+        else {
+            strcat( outstr, *string_list );
+        }
 
         first = 0;
         string_list++;
