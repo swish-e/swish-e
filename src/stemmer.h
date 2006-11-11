@@ -42,6 +42,7 @@ $Id$
 
 typedef enum {
     FUZZY_NONE = 0,
+    FUZZY_STEMMING_EN,
     FUZZY_SOUNDEX,
     FUZZY_METAPHONE,
     FUZZY_DOUBLE_METAPHONE,
