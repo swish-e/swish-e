@@ -117,9 +117,9 @@ static FUZZY_WORD *double_metaphone( FUZZY_OBJECT *fi, const char *inword);
 static FUZZY_OPTS fuzzy_opts[] = {
 
     /* fuzzy_mode               *name               *routine  *init *free *lang_stem */
-    { FUZZY_STEMMING_EN2,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
-    { FUZZY_STEMMING_EN2,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem },
     { FUZZY_NONE,               "None",             no_stem, NULL, NULL, NULL },
+    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
+    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem },
     { FUZZY_SOUNDEX,            "Soundex",          soundex, NULL, NULL, NULL },
     { FUZZY_METAPHONE,          "Metaphone",        double_metaphone, NULL, NULL, NULL },
     { FUZZY_DOUBLE_METAPHONE,   "DoubleMetaphone",  double_metaphone, NULL, NULL, NULL },
