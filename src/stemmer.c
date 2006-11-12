@@ -118,8 +118,6 @@ static FUZZY_OPTS fuzzy_opts[] = {
 
     /* fuzzy_mode               *name               *routine  *init *free *lang_stem */
     { FUZZY_NONE,               "None",             no_stem, NULL, NULL, NULL },
-    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
-    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem },
     { FUZZY_SOUNDEX,            "Soundex",          soundex, NULL, NULL, NULL },
     { FUZZY_METAPHONE,          "Metaphone",        double_metaphone, NULL, NULL, NULL },
     { FUZZY_DOUBLE_METAPHONE,   "DoubleMetaphone",  double_metaphone, NULL, NULL, NULL },
@@ -135,7 +133,13 @@ static FUZZY_OPTS fuzzy_opts[] = {
     { FUZZY_STEMMING_SE,        "Stemming_se",      Stem_snowball, swedish_create_env, swedish_close_env, swedish_stem },
     { FUZZY_STEMMING_DK,        "Stemming_dk",      Stem_snowball, danish_create_env, danish_close_env, danish_stem },
     { FUZZY_STEMMING_RU,        "Stemming_ru",      Stem_snowball, russian_create_env, russian_close_env, russian_stem },
-    { FUZZY_STEMMING_FI,        "Stemming_fi",      Stem_snowball, finnish_create_env, finnish_close_env, finnish_stem }
+    { FUZZY_STEMMING_FI,        "Stemming_fi",      Stem_snowball, finnish_create_env, finnish_close_env, finnish_stem },
+
+    /* these next two are deprecated and are identical to Stemming_en1 */
+    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
+    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem }
+
+
 };
 
 
