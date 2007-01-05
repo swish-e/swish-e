@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Fixed 'deflate' handling in spider.pl
+
+spider.pl was using the wrong method do uncompress HTTP responses that were
+'deflate' encoded.
+
 =item re-indexing required
 
 The magic numbers in src/swish.h were changed to require re-indexing from

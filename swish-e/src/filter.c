@@ -61,7 +61,7 @@ static FilterList *addfilter(FilterList *rp, char *FilterSuffix, char *FilterPro
 static char *expand_options( FileProp * fprop, char * template );
 static char *expand_percent(  FileProp * fprop, char escape_code );
 #ifdef HAVE_WORKING_FORK
-static FILE *fork_program( char **arg );
+static void fork_program( FileProp * fprop, char **arg );
 #else
 static char *join_string( char **string_list );
 #endif
@@ -306,21 +306,25 @@ FilterList *hasfilter(SWISH * sw, char *filename)
 /*
   -- open filter (in: file,  out: FILE *)
   -- params are in (FileProp *) - but should be adapted later
-  -- Return: FILE *  (filter stream) or NULL
+  -- Return: fprop->fp
+        Sets:
+            fprop->fp           FILE*
+            fprop->filter_pid   pid of filter, if forked
 */
 
-FILE   *FilterOpen(FileProp * fprop)
+FILE *FilterOpen(FileProp * fprop)
 {
     FilterList      *fi         = fprop->hasfilter;
     char            **options   = fi->options->word;
     int             num_options = fi->options->n;
     char            **arg;      /* where to store expanded arguments */
     int             arg_size;
-    FILE            *fp;        /* stream to return */
 #ifndef HAVE_WORKING_FORK
     char            *command;   /* command string used with popen */
 #endif
     int             n;
+
+    fprop->fp = NULL;
 
 
 
@@ -341,11 +345,11 @@ FILE   *FilterOpen(FileProp * fprop)
         arg[n+1] = expand_options( fprop, options[n] );
 
 #ifdef HAVE_WORKING_FORK
-    fp = fork_program( arg );
+    fork_program( fprop, arg );
 
 #else
     command = join_string( arg );
-    fp = popen(command, F_READ_TEXT); /* Open stream */
+    fprop->fp = popen(command, F_READ_TEXT); /* Open stream */
     efree( command );
 #endif /* HAVE_WORKING_FORK */
 
@@ -359,7 +363,8 @@ FILE   *FilterOpen(FileProp * fprop)
     efree( arg );
 
 
-    return fp;
+    return fprop->fp;
+
 }
 
 
@@ -481,8 +486,24 @@ int     FilterClose(FileProp *fprop)
     char    *prog    = fl->prog;
 #ifdef HAVE_SYS_WAIT_H
     int     status;
+    pid_t   pid;
 
-    wait(&status);
+#ifdef HAVE_KILL
+    pid = waitpid( fprop->filter_pid, &status, WNOHANG );
+
+    /* Is program still running? */
+    if ( 0 == pid )
+    {
+        if ( -1 == kill( fprop->filter_pid, 9 ) )
+            progerrno("Failed to kill filter program with pid %d", fprop->filter_pid );
+
+        /* Now reap killed filter */
+        pid = waitpid( fprop->filter_pid, &status, 0 );
+    }
+#else
+    pid = wait(&status);
+#endif /* HAVE_KILL */
+
 
 
     if ( !WIFEXITED(status) )
@@ -502,7 +523,7 @@ int     FilterClose(FileProp *fprop)
 
 #else
     return pclose(fprop->fp);
-#endif
+#endif /* HAVE_WORKING_FORK */
 }
 
 /* This should be elsewhere, but at this time this is the only place
@@ -510,7 +531,7 @@ int     FilterClose(FileProp *fprop)
  */
 
 #ifdef HAVE_WORKING_FORK
-static FILE *fork_program( char **arg )
+static void fork_program( FileProp * fprop, char **arg )
 {
     pid_t   pid;
     int     pipe_fd[2];
@@ -561,7 +582,9 @@ static FILE *fork_program( char **arg )
     if ( fi == NULL ) 
         progerrno( "failed fdopen for filter program [%s]: ", arg[0] );
 
-    return fi;
+
+    fprop->fp = fi;
+    fprop->filter_pid = pid;
 
 }
 

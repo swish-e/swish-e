@@ -978,10 +978,8 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Get input file handle */
     if (fprop->hasfilter)
     {
-        fprop->fp = FilterOpen(fprop);
-
-        /* This should be checked in filteropen because the popen probably won't fail */
-        if ( !fprop->fp )
+        /* This checks for a non-null file handle -- but may return true with popen regardless */
+        if ( !FilterOpen(fprop) )
             progerr("Failed to open filter for file '%s'",fprop->real_path);
     }
 

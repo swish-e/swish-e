@@ -419,6 +419,7 @@ typedef struct
 typedef struct
 {
     FILE   *fp;                 /* may be also a filter stream or NULL if not opened */
+    pid_t  filter_pid;          /* process id of filter program, if forked */
     char   *real_path;          /* path/URL to indexed file - may be modified by ReplaceRules */
     char   *orig_path;          /* original path provided to swish */
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
