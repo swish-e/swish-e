@@ -1,8 +1,0 @@
-[% # Setup defaults
-
-
-    PROCESS config/page     # define page specific variables
-          + config/site     # define site-wide variables
-          + config/map      # define navigation variables
-          + config/macros   # define site macros
--%]
