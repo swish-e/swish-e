@@ -714,7 +714,9 @@ sub ld_opts
 
     $ENV{LD_RUN_PATH} ||= '.';
 
-    $ENV{LD_RUN_PATH} = join(':', grep { /./ } map { $seen{$_}++ ? '' : $_ } @path, $ENV{LD_RUN_PATH});
+    $ENV{LD_RUN_PATH} = join(':',
+                             grep { /./ } map { $seen{$_}++ ? '' : $_ } @path,
+                             $ENV{LD_RUN_PATH});
 
     # unset LD_LIBRARY_PATH for this script, so that tests accurately reflect what we've linked
     $ENV{LD_LIBRARY_PATH} = '';
@@ -1385,7 +1387,7 @@ sub swish_api
     my @a = (
         "LIBS='$libs'",
 
-        #"LDFLAGS='-L$installdir/lib'",
+        #"LDFLAGS='$ld_opts'",
         #LDFLAGS seems to be ignored by MakeMaker
         # and/or not supported under some versions.
 
@@ -1396,6 +1398,7 @@ sub swish_api
 
     my $arg = join ' ', @a;
 
+    $ENV{SWISHLIBS}   = $libs;
     $ENV{SWISHBINDIR} = "$installdir/bin";
 
     my $cmd = "$^X Makefile.PL $arg";
@@ -1410,7 +1413,7 @@ sub swish_api
     print "configuring with:\n";
     print "$cmd\n";
 
-    nice_exit() if system($cmd );
+    nice_exit() if system($cmd);
     make();
     make_test();
     make_install();
@@ -1428,10 +1431,8 @@ sub test_api
     my $vers = sprintf("%vd", $^V);
 
     delete $ENV{PERL5LIB};    # just in case we have it somewhere else...
-    my $inc = join ' ',
-      "-I"
-      . File::Spec->catfile($perllib, $vers, $arch) . "-I"
-      . File::Spec->catfile($perllib, 'site_perl', $vers, $arch),
+    my $inc = join ' ', "-I" . File::Spec->catfile($perllib, $vers, $arch),
+      "-I" . File::Spec->catfile($perllib, 'site_perl', $vers, $arch),
       "-I" . File::Spec->catfile($perllib, $arch);
 
     my $cmd = "$^X $inc -MSWISH::API -e '\$c = new SWISH::API(\"foo\")'";
