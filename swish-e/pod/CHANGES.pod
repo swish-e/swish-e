@@ -6,14 +6,21 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.x -
+=head2 Version 2.4.5 - 12 Jan 2006
 
 =over 4
+
+=item re-indexing required
+
+The magic numbers in src/swish.h were changed to require re-indexing from
+version 2.4.4 indexes. This should have been done in 2.4.4 as well, and anytime
+the index format changes. -- karman
 
 =item fixed stemmer bug introduced in 2.4.4
 
 stemmer.c had a mix up in the deprecated stemmer assignments for "Stemmer_en"
 and "Stem". Also fixed stemmer.h so that 2.4.3 indexes can be read correctly.
+-- karman
 
 =item Now fork/exec to run filters
 
