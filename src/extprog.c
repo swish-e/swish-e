@@ -377,6 +377,10 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
                 continue;
             }
 
+            if (strncasecmp(line, "Charset", 7) == 0)
+            {
+                continue;
+            }
 
             if (strncasecmp(line, "Path-Name", 9) == 0)
             {

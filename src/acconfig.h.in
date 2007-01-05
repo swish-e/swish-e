@@ -8,7 +8,8 @@
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
 
-/* Check for groups with AC_TYPE_GETGROUPS */
+/* Define to the type of elements in the array set by `getgroups'. Usually
+   this is either `int' or `gid_t'. */
 #undef GETGROUPS_T
 
 /* Define to 1 if you have the `access' function. */
@@ -48,6 +49,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `kill' function. */
+#undef HAVE_KILL
 
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
@@ -157,6 +161,9 @@
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
 
+/* Define to 1 if you have the `waitpid' function. */
+#undef HAVE_WAITPID
+
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
 
@@ -205,7 +212,7 @@
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
+   automatically deduced at runtime.
 	STACK_DIRECTION > 0 => grows toward higher addresses
 	STACK_DIRECTION < 0 => grows toward lower addresses
 	STACK_DIRECTION = 0 => direction of growth unknown */
@@ -238,7 +245,7 @@
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
 
-/* Define to `unsigned' if <sys/types.h> does not define. */
+/* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
 
 /* Define to `int' if <sys/types.h> doesn't define. */

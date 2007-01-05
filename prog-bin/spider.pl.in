@@ -142,9 +142,53 @@ sub UNIVERSAL::userinfo { '' };
     }
 
 
-    # Check if can use zlib compression
+    # RFC2616 Sec. 3.5
+    #   gzip        - RFC1952  (also x-gzip)
+    #   compress    - unix compress format (x-compress)
+    #   deflate     - RFC1951  (zlib 1950 + compress 1951)
+    # 'compress' is not supported by Compress::Zlib or IO-Compress-Zlib
+    my %can_uncompress;
+
+
+    ## Compress-Zlib ##
+
     eval { require Compress::Zlib };
-    my $can_uncompress = 1 unless $@;
+    $can_uncompress{gzip} = sub { Compress::Zlib::memGunzip(shift) } unless $@;
+    $can_uncompress{'x-gzip'} = $can_uncompress{gzip};
+
+
+    ## IO-Compress-Zlib ##
+
+    eval { require IO::Uncompress::RawInflate };
+    unless ( $@ ) {
+        $IO::Uncompress::RawInflat::RawInflateError = 0;  # suppress warnings
+        $can_uncompress{deflate} = sub {
+            my $content = shift;
+            my $output;
+            if ( IO::Uncompress::RawInflate::rawinflate( \$content, \$output ) ) {
+                return $output;
+            }
+            die "Failed to inflate 'deflate' content.  Err: [$IO::Uncompress::RawInflat::RawInflateError]\n";
+        };
+    }
+
+
+    eval { require IO::Uncompress::Gunzip };
+    unless ( $@ ) {
+        $IO::Uncompress::Gunzip::GunzipError = 0;
+        $can_uncompress{gzip} = sub {
+            my $content = shift;
+            my $output;
+            if ( IO::Uncompress::Gunzip::gunzip( \$content, \$output ) ) {
+                return $output;
+            }
+            die "Failed to inflate 'gzip' content.  Err: [$IO::Uncompress::Gunzip::GunzipError]\n";
+        };
+        $can_uncompress{'x-gzip'} = $can_uncompress{gzip};
+    }
+
+
+
 
 
     print STDERR "$0: Reading parameters from '$config'\n" unless $ENV{SPIDER_QUIET};
@@ -358,7 +402,8 @@ sub process_server {
     }
 
     # If ignore robots files also ignore meta ignore <meta name="robots">
-    $ua->parse_head( 0 ) if $server->{ignore_robots_file} || $server->{ignore_robots_headers};
+    # comment out so can find http-equiv charset
+    # $ua->parse_head( 0 ) if $server->{ignore_robots_file} || $server->{ignore_robots_headers};
 
 
     # Set the timeout - used to only for windows and used alarm, but this
@@ -599,7 +644,7 @@ sub process_link {
     # Make request object for this URI
 
     my $request = HTTP::Request->new('GET', $uri );
-    $request->header('Accept-encoding', 'gzip; deflate') if $can_uncompress;
+    $request->header('Accept-encoding', join ', ', keys %can_uncompress) if %can_uncompress;
     $request->header('Referer', $parent ) if $parent;
 
 
@@ -1132,9 +1177,30 @@ sub process_content {
 
 
     # Uncompress content
-    if ( $can_uncompress && (my $encoding = $response->header('Content-Encoding') )  ) {
-         $content = Compress::Zlib::memGunzip($content) if $encoding =~ /gzip/i;
-         $content = Compress::Zlib::uncompress($content) if $encoding =~ /deflate/i;
+    my $encoding = $response->header('Content-Encoding');
+    if ( $encoding && $can_uncompress{$encoding} ) {
+        $content = $can_uncompress{$encoding}->($content);
+    }
+
+
+    # Now decode the content
+    eval { require Encode };
+    unless ( $@ ) {
+        my $charset;
+        for ( $response->header('content-type') ){
+            $charset = $1 if /\bcharset=([^;]+)/;
+        }
+        if ( $charset ) {
+            # Currently, $response->content is not called after this
+            # point, so no need to replace in the response object.
+            eval {
+                $content = Encode::decode( $charset, $content, 0 );
+                $server->{charset} = $charset;
+            };
+            warn "Warning: Failed to decode [$uri] with encoding [$charset].  $@\n"
+                if $@;
+
+        }
     }
 
 
@@ -1390,6 +1456,11 @@ sub output_content {
     }
 
 
+    # Re-encode the data for outside of Perl
+    $$content = Encode::encode( $server->{charset}, $$content )
+        if $server->{charset};
+
+
     $server->{counts}{'Total Bytes'} += length $$content;
     $server->{counts}{'Total Docs'}++;
 
@@ -1420,6 +1491,9 @@ sub output_content {
         'Path-Name: ' .  $path,
         'Content-Length: ' . $bytecount,
         '';
+
+
+    $headers .= 'Charset: ' . delete( $server->{charset}) . "\n" if $server->{charset};
 
     $headers .= 'Last-Mtime: ' . $response->last_modified . "\n"
         if $response->last_modified;
@@ -1797,13 +1871,23 @@ sane webservers).
 
 =head2 Compression
 
+
 If The Perl module Compress::Zlib is installed the spider will send the
 
-   Accept-Encoding: gzip
+   Accept-Encoding: gzip x-gzip
 
 header and uncompress the document if the server returns the header
 
    Content-Encoding: gzip
+   Content-Encoding: x-gzip
+
+If The Perl distribution IO-Compress-Zlib is installed the spider will use
+this module to uncompress "gzip" (x-gzip) and also "deflate" compressed
+documents.
+
+The "compress" method is not supported.
+
+See RFC 2616 section 3.5 for more information.
 
 MD5 checksomes are done on the compressed data.
 
