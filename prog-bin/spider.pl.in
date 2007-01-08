@@ -368,7 +368,7 @@ sub process_server {
 
     # set default agent for log files
 
-    $server->{agent} ||= 'swish-e spider 2.2 http://swish-e.org/';
+    $server->{agent} ||= 'swish-e http://swish-e.org/';
 
 
     # get a user agent object
