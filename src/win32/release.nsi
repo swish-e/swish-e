@@ -35,6 +35,5 @@ Page instfiles
 ; Installer Sections
 
 ; Basic Sections
-;!include UpgradeDLL.nsh
 !include filebase.nsh
 
