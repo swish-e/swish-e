@@ -2,8 +2,15 @@
 Section "Required Components" SecProgram
     SectionIn 1 RO
     
+    ; Make sure there are no old versions hanging around
+    Delete "$INSTDIR\swish-e.exe"
+    Delete "$INSTDIR\bin\libxml2-2.dll"
+    Delete "$INSTDIR\bin\zlib1.dll"
+    Delete "$INSTDIR\bin\pcre*.dll"
+    Delete "$INSTDIR\bin\libswish-e*.dll"
+
     ; System Files
-    SetOutPath "$INSTDIR\bin\"
+    SetOutPath "$SYSDIR"
     
     ; LibXML2, PCRE, and ZLib
     File "../../../libxml2/bin/libxml2-2.dll"
@@ -11,17 +18,10 @@ Section "Required Components" SecProgram
     File "../../../pcre/bin/pcre.dll"
     File "../../../pcre/bin/pcreposix.dll"
     File "../.libs/libswish-e-2.dll"
-    File "../.libs/swish-e.exe"
-    
-    ; We really need to do this instead but NSIS 2.06 segfaults when using UpgradeDLL.
-    ;!define UPGRADEDLL_NOREGISTER 1
-    ;!insertmacro UpgradeDLL "../../../libxml2/bin/libxml2-2.dll" "$SYSDIR\libxml2-2.dll" "$SYSDIR"
-    ;!insertmacro UpgradeDLL "../../../zlib/bin/zlib1.dll" "$SYSDIR\zlib1.dll" "$SYSDIR"
-    ;!insertmacro UpgradeDLL "../../../pcre/bin/pcre.dll" "$SYSDIR\pcre.dll" "$SYSDIR"
-    ;!insertmacro UpgradeDLL "../../../pcre/bin/pcreposix.dll" "$SYSDIR\pcreposix.dll" "$SYSDIR"
-    ;!insertmacro UpgradeDLL "../.libs/libswish-e-2.dll" "$SYSDIR\libswish-e-2.dll" "$SYSDIR"
 
-    
+    ; install swish-e to the bin folder
+    SetOutPath "$INSTDIR\bin\"
+    File "../.libs/swish-e.exe"
     
     ; Local Files
     SetOutPath "$INSTDIR\"
