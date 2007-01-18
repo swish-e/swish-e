@@ -13,7 +13,8 @@ This document contains list of bug fixes and feature additions to Swish-e.
 =item Fixed 'deflate' handling in spider.pl
 
 spider.pl was using the wrong method do uncompress HTTP responses that were
-'deflate' encoded.
+'deflate' encoded.  Also decode content based on the document's charset and
+encode back to charset before outputting.
 
 =item re-indexing required
 
