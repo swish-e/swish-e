@@ -99,7 +99,7 @@ SubSection "PERL Support" SubSecPerlSupport
         ; SWISH::API Binaries go into $PERL/lib/auto/SWISH/API
         Call ActivePerlLocation
         Pop $R1
-        SetOutPath "$R1\lib\SWISH\API\"
+        SetOutPath "$R1\lib\auto\SWISH\API\"
         File "../../perl/blib/arch/auto/SWISH/API/*"
     SectionEnd
 
