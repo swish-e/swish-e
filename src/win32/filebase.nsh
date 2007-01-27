@@ -27,12 +27,20 @@ Section "Required Components" SecProgram
     SetOutPath "$INSTDIR\"
     File "../../COPYING.txt"
     File "fixperl.pl"
+
+    ; Misc Documents
+    SetOutPath "$INSTDIR\share\doc\swish-e"
+    File "../../INSTALL"
+    File "../../README.txt"
+    File "../../README.cvs"
     
     ; Local Helper Files
     SetOutPath "$INSTDIR\lib\swish-e\"
     File "../swishspider"
     File "../../prog-bin/spider.pl.in"
     
+
+
     ; Create shorcuts on the Start Menu
     SetOutPath "$SMPROGRAMS\SWISH-E\"
     CreateShortcut "$SMPROGRAMS\\SWISH-E\\Browse Files.lnk" "$INSTDIR\\"
@@ -43,6 +51,15 @@ Section "Required Components" SecProgram
     WriteINIStr "$SMPROGRAMS\\SWISH-E\\PERL_Resources\\Install_ActivePerl.url" "InternetShortcut" "URL" "http://www.activestate.com/Products/Download/Download.plex?id=ActivePerl"
     WriteINIStr "$SMPROGRAMS\\SWISH-E\\PERL_Resources\\CPAN_PERL_Modules.url" "InternetShortcut" "URL" "http://search.cpan.org/"
 SectionEnd ; end of default section
+
+; User and Developer Documentation
+Section "Documentation" SecDoc
+    SetOutPath "$INSTDIR\share\doc\swish-e\html"
+    File "../../html/*.html"
+    File "../../html/*.css"
+    SetOutPath "$INSTDIR\share\doc\swish-e\pod"
+    File "../../pod/*.pod"
+SectionEnd
 
 ; the static libraries are 20 MB.
 ;Section "Developer Files" SecDev
@@ -147,38 +164,36 @@ SubSection "PERL Support" SubSecPerlSupport
         SetOutPath "$INSTDIR\bin\"
         File "../../filters/swish-filter-test.in"
         
-        SetOutPath "$INSTDIR\share\doc\swish-e\filter-bin\"
+        SetOutPath "$INSTDIR\share\doc\swish-e\examples\filter-bin\"
         ; Example Filter Scripts
         File "../../filter-bin/_binfilter.sh"
         File "../../filter-bin/_pdf2html.pl"
-        
-	# Generic SWISH::Filter Filter
-	SetOutPath "$INSTDIR\lib\swish-e\"
 	File "../../filter-bin/swish_filter.pl.in"
 
 	# SWISH::Filter API
-        SetOutPath "$INSTDIR\lib\swish-e\perl\"
-        File "../../filters/SWISH/*"
-        SetOutPath "$INSTDIR\lib\swish-e\perl\Filters\"
-        File "../../filters/SWISH/Filters/*"
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH\"
+        File "../../filters/SWISH/Filter.pm.in"
+        SetOutPath "$INSTDIR\lib\swish-e\perl\SWISH\Filters"
+        File "../../filters/SWISH/Filters/*.pm"
 
     SectionEnd
     
     Section /o "PERL -S prog Examples" SecPerlMethod
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "Perl" "1"
         WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\SWISH-E Team\SWISH-E\${VERSION}\Options" "PerlMethods" "1"
-        SetOutPath "$INSTDIR\share\doc\swish-e\prog-bin\"
+        SetOutPath "$INSTDIR\share\doc\swish-e\examples\prog-bin\"
         File "../../prog-bin/*.pl"
-        File "../../prog-bin/*.in"
+        File "../../prog-bin/*.pl.in"
         File "../../prog-bin/*.pm"
     SectionEnd
 SubSectionEnd
  
 Section "Examples" SecExample
-    SetOutPath "$INSTDIR\share\doc\swish-e\conf\"
-    File "../../conf/*"
-    SetOutPath "$INSTDIR\share\doc\swish-e\conf\stopwords\"
-    File "../../conf/stopwords/*"
+    SetOutPath "$INSTDIR\share\doc\swish-e\examples\conf\"
+    File "../../conf/*.config"
+    File "../../conf/README.txt"
+    SetOutPath "$INSTDIR\share\doc\swish-e\examples\conf\stopwords\"
+    File "../../conf/stopwords/*.txt"
 
     ; Rename text files so Windows has a clue
     Rename "$INSTDIR/share/doc/swish-e/conf/README" "$INSTDIR/conf/README.txt"
@@ -202,8 +217,8 @@ Section "-post" ; (post install section, happens last after any optional section
     WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\SWISH-E" "UninstallString" '"$INSTDIR\uninst.exe"'
     
     ; Add swish-e.exe to the Win32 Path
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe" "" "$INSTDIR\swish-e.exe"
-    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe" "Path" "$INSTDIR;$INSTDIR\lib\swish-e"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe" "" "$INSTDIR\bin\swish-e.exe"
+    WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\AppPaths\swish-e.exe" "Path" "$INSTDIR\bin;$INSTDIR\lib\swish-e"
     
     WriteUninstaller "uninst.exe"
     
