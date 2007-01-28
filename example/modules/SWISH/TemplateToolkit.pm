@@ -131,7 +131,7 @@ sub get_index_select_list {
     my $defindex = $select_config->{default_index};
     my @default = ref $defindex eq 'ARRAY' ? @$defindex : ($defindex);
     my @labels = @{$select_config->{labels}};
-    my (%map, $map_index);
+    my (%map, %map_index);
 
     for ( 0..$#labels ) {
         $map{$_} = $labels[$_];
