@@ -1022,10 +1022,10 @@ Things you can do to affect ranking:
 
 =over
 
-=item MetaRankBias
+=item MetaNamesRank
 
 You may configure your index to bias certain metaname values more or less than others.
-See the C<MetaRankBias> configuration option in L<SWISH-CONFIG>.
+See the C<MetaNamesRank> configuration option in L<SWISH-CONFIG>.
 
 =item IgnoreTotalWordCountWhenRanking
 
@@ -1083,7 +1083,7 @@ the name is the value to invoke that scheme with C<swish-e -R> or C<RankScheme()
 =item Default (0)
 
 The default ranking scheme considers the number of times a term appears in a 
-document (frequency), the MetaRankBias and the structure value. The rank might be summarized
+document (frequency), the MetaNamesRank and the structure value. The rank might be summarized
 as:
 
  DocRank = Sum of ( structure + metabias )
