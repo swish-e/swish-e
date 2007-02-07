@@ -15,6 +15,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 Fixed a leak if a limit was set and then reset but not prepared.
 Patch provided by Antony Dovgal.
 
+=item New API functions added
+
+Added SwishGetStructure() and SwishGetPhraseDelimiter() functions which return
+relevant properties of the search object.
+Patch provided by Antony Dovgal.
+
+
 
 =back
 

@@ -290,6 +290,10 @@ void SwishSetStructure( SEARCH_OBJECT *srch, int structure )
         srch->structure = structure;
 }
 
+int SwishGetStructure( SEARCH_OBJECT *srch )
+{
+    return srch ? srch->structure : 0;
+}
 
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
 {
@@ -297,6 +301,11 @@ void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
         srch->PhraseDelimiter = (int)delimiter;
 }
 
+
+char SwishGetPhraseDelimiter(SEARCH_OBJECT *srch)
+{
+    return srch ? srch->PhraseDelimiter : 0;
+}
 
 
 void SwishSetSort( SEARCH_OBJECT *srch, char *sort )

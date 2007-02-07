@@ -158,6 +158,22 @@ an index.  A single search object can be used to query the index multiple times.
 The available settings listed below are "sticky" in that they remain set on the search
 object until change.
 
+=item int SwishGetStructure( SW_SEARCH srch );
+
+Returns the "structure" flag of the search object passed or 0 if the search
+object is NULL.
+
+=item void SwishPhraseDelimiter( SW_SEARCH srch, char delimiter );
+
+Sets the phrase delimiter character.  The default is double-quotes.
+
+=item char SwishGetPhraseDelimiter( SW_SEARCH srch );
+
+Returns the phrase delimiter character used in the search object or 0 if the
+search object is NULL.
+
+
+
 =item void SwishSetStructure( SW_SEARCH srch, int structure );
 
 Sets the "structure" flag in the search object.  The structure flag is used to limit

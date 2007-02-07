@@ -129,7 +129,9 @@ void *SwishResult_parent( SW_RESULT result );
 void ResultsSetRefPtr( SW_RESULTS results, void *address );
 
 void SwishSetStructure( SW_SEARCH srch, int structure );
+int  SwishGetStructure( SW_SEARCH srch);
 void SwishPhraseDelimiter( SW_SEARCH srch, char delimiter );
+char SwishGetPhraseDelimiter( SW_SEARCH srch );
 void SwishSetSort( SW_SEARCH srch, char *sort );
 void SwishSetQuery( SW_SEARCH srch, char *query );
 
