@@ -55,7 +55,7 @@ sub page_header {
 
         : ( $results->errstr || $title );
 
-    my $default_logo = '<a href="http://swish-e.org"><img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a> ' ;
+    my $default_logo = '<a href="http://swish-e.org"><img border="0" alt="Swish-e home page" src="http://swish-e.org/grahipcs/swish-e.gif"></a> ' ;
 
 
     my $logo = $results->config('on_intranet')

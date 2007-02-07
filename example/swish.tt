@@ -53,7 +53,7 @@
     <table border="0" cellpadding="0" cellspacing="0">
     <tr><td>
         <a href="http://swish-e.org">
-        <img border="0" alt="Swish-e home page" src="http://swish-e.org/Images/swish-e.gif"></a>
+        <img border="0" alt="Swish-e home page" src="http://swish-e.org/graphics/swish-e.gif"></a>
     </td><td valign="middle">
         <font size="+3">[% search.config('title') || "Search page"  %]</font>
     </td></tr>
