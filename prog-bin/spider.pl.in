@@ -1995,8 +1995,8 @@ against the list of host names in C<same_hosts>.  So, if you specify a port name
 want to specify the port name in the the list of hosts in C<same_hosts>:
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu:4444/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        base_url    => 'http://mytest.site.invalid:4444/',
+        same_hosts  => [ qw/www.mytest.site.invalid:4444/ ],
         email       => 'my@email.address',
     );
 
@@ -2018,8 +2018,8 @@ The default is to only extract links from E<gt>aE<lt> tags.
 For example, to extract tags from C<a> tags and from C<frame> tags:
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu:4444/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        base_url    => 'http://mytest.site.invalid:4444/',
+        same_hosts  => [ qw/www.mytest.site.invalid:4444/ ],
         email       => 'my@email.address',
         link_tags   => [qw/ a frame /],
     );
@@ -2348,8 +2348,8 @@ In perl, a scalar variable can contain a reference to a subroutine.  The config 
 that the configuration parameters are stored in a perl I<hash>.
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu:4444/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        base_url    => 'http://mytest.site.invalid:4444/',
+        same_hosts  => [ qw/www.mytest.site.invalid:4444/ ],
         email       => 'my@email.address',
         link_tags   => [qw/ a frame /],
     );
@@ -2361,8 +2361,8 @@ sub foo {
 }
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu:4444/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        base_url    => 'http://mytest.site.invalid:4444/',
+        same_hosts  => [ qw/www.mytest.site.invalid:4444/ ],
         email       => 'my@email.address',
         link_tags   => [qw/ a frame /],
         test_url    => \&foo,  # a reference to a named subroutine
@@ -2371,8 +2371,8 @@ sub foo {
 Or the subroutine can be coded right in place:
 
     my %serverA = (
-        base_url    => 'http://sunsite.berkeley.edu:4444/',
-        same_hosts  => [ qw/www.sunsite.berkeley.edu:4444/ ],
+        base_url    => 'http://mytest.site.invalid:4444/',
+        same_hosts  => [ qw/www.mytest.site.invalid:4444/ ],
         email       => 'my@email.address',
         link_tags   => [qw/ a frame /],
         test_url    => sub { reutrn 1; },
@@ -2781,7 +2781,7 @@ it under the same terms as Perl itself.
 
 Send all questions to the The SWISH-E discussion list.
 
-See http://sunsite.berkeley.edu/SWISH-E.
+See http://swish-e.org/
 
 =cut
 
