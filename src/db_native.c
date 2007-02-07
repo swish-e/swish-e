@@ -534,6 +534,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(DB->prop = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the property file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 
@@ -549,6 +550,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(fp_tmp = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the btree file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 
@@ -565,6 +567,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(DB->fp_presorted = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the presorted index file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 
@@ -581,6 +584,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(fp_tmp = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the worddata file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 
@@ -597,6 +601,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(fp_tmp = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the hashfile file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 
@@ -613,6 +618,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     if (!(fp_tmp = openRoutine(s)))
     {
         set_progerrno(INDEX_FILE_ERROR, DB->sw, "Couldn't open the array file \"%s\": ", s);
+        efree(s);
         return (void *) DB;
     }
 

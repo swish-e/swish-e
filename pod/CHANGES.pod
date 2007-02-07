@@ -10,6 +10,14 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Patched leaks
+
+Anthony Dovgal patched two leaks.  One when there's a failure to
+open a file the file name was not freed.
+
+SwishSetSearchLimit() was nulling the search limits when an error was
+found in the parameters, but not freeing the existing limits.
+
 =item Leak in SwishResetSearchLimit
 
 Fixed a leak if a limit was set and then reset but not prepared.
@@ -20,7 +28,6 @@ Patch provided by Antony Dovgal.
 Added SwishGetStructure() and SwishGetPhraseDelimiter() functions which return
 relevant properties of the search object.
 Patch provided by Antony Dovgal.
-
 
 
 =back

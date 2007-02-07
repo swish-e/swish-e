@@ -239,6 +239,7 @@ void ClearLimitParams( LIMIT_PARAMS *params )
 ********************************************************************/
 int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
 {
+    LIMIT_PARAMS *params;
     reset_lasterror( srch->sw );
     
     if ( srch->limits_prepared )
@@ -247,9 +248,15 @@ int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char
         return 0;
     }
 
-    srch->limit_params = setlimit_params( srch->sw, srch->limit_params, propertyname, low, hi );
-    return ( srch->sw->lasterror == 0 );
+    /* Add new limit parameter to list */
+    params  = setlimit_params( srch->sw, srch->limit_params, propertyname, low, hi );
 
+    /* Only reset list if no error */
+    if ( params )
+        srch->limit_params = params;
+
+
+    return ( srch->sw->lasterror == 0 );
 }
 
 /* This just sets the LIMIT_PARAMS struct -- useful when don't have a SEARCH_OBJECT */
