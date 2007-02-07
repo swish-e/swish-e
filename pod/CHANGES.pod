@@ -6,6 +6,18 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.x - ?
+
+=over 4
+
+=item Leak in SwishResetSearchLimit
+
+Fixed a leak if a limit was set and then reset but not prepared.
+Patch provided by Antony Dovgal.
+
+
+=back
+
 =head2 Version 2.4.5 - 22 Jan 2007
 
 =over 4

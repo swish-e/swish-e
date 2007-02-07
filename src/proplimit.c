@@ -152,17 +152,18 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
     int         metaID;
     
 
-    if ( !srch->limits_prepared )
-        return;
-
 
     /* Free up the input parameters */
     ClearLimitParams( srch->limit_params );
     srch->limit_params = NULL;
 
-            
 
     /* Free up the stored limits for each meta entry */
+
+    if ( !srch->limits_prepared )
+        return;
+
+
     while ( indexf )
     {
         PROP_LIMITS *index_limits = srch->prop_limits[index_count++];
@@ -187,7 +188,7 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
                 index_limits[metaID].hiPropRange = NULL;
             }
         }
-        
+
 
         indexf = indexf->next;
     }
