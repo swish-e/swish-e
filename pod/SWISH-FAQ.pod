@@ -433,16 +433,18 @@ C<FileRules> directive.  Other than C<FileRules title>, C<FileRules>
 only works with the file system (C<-S fs>) indexing method, not with
 C<-S prog> or C<-S http>.
 
-If you are spidering, use a F<robots.text> file in your document root.
-This is a standard way to excluded files from search engines, and is
-fully supported by Swish-e.  See http://www.robotstxt.org/
+If you are spidering a site you have control over, use a F<robots.txt> file in
+your document root.  This is a standard way to excluded files from search
+engines, and is fully supported by Swish-e.  See http://www.robotstxt.org/
 
-You can also modify the F<spider.pl> spider perl program to skip, index
-content only, or spider only listed web pages.  Type C<perldoc spider.pl>
-in the C<prog-bin> directory for details.
+If spidering a website with the included F<spider.pl> program then add any
+necessary tests to the spider's configuration file.
+Type <perldoc spider.pl> in the C<prog-bin> directory for details or
+see the spider documentation on the Swish-e website.  Look for the section
+on L<callback functions|SWISH-FAQ/"callback_functions">.
 
-If using the libxml2 library for parsing HTML, you may also use the Meta
-Robots Exclusion in your documents:
+If using the libxml2 library for parsing HTML (which you probably are), you may
+also use the Meta Robots Exclusion in your documents:
 
     <meta name="robots" content="noindex">
 
