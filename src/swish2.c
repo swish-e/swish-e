@@ -46,7 +46,7 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 #include "docprop.h"
 #include "hash.h"
 /* #include "search_alt.h" */
-#include "db.h"
+#include "sw_db.h"
 #include "swish_words.h"
 #include "metanames.h"
 #include "proplimit.h"

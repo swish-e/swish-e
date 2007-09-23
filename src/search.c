@@ -134,7 +134,7 @@ $Id$
 #include "error.h"
 #include "compress.h"
 #include "result_sort.h"
-#include "db.h"
+#include "sw_db.h"
 #include "swish_words.h"
 #include "swish_qsort.h"
 
@@ -290,10 +290,6 @@ void SwishSetStructure( SEARCH_OBJECT *srch, int structure )
         srch->structure = structure;
 }
 
-int SwishGetStructure( SEARCH_OBJECT *srch )
-{
-    return srch ? srch->structure : 0;
-}
 
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
 {
@@ -301,11 +297,6 @@ void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
         srch->PhraseDelimiter = (int)delimiter;
 }
 
-
-char SwishGetPhraseDelimiter(SEARCH_OBJECT *srch)
-{
-    return srch ? srch->PhraseDelimiter : 0;
-}
 
 
 void SwishSetSort( SEARCH_OBJECT *srch, char *sort )

@@ -48,7 +48,7 @@ $Id$
 #include "metanames.h"
 #include "compress.h"
 #include "error.h"
-#include "db.h"
+#include "sw_db.h"
 #include "parse_conffile.h"
 #include "swish_qsort.h"
 #include "result_sort.h"
@@ -416,10 +416,8 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
     int             i;
     int             *out_array = NULL;     /* array that gets sorted */
-#ifndef USE_PRESORT_ARRAY
     unsigned char   *out_buffer  = NULL;
     unsigned char   *cur;
-#endif
     struct metaEntry *m;
     int             props_sorted = 0;
     int             total_files = indexf->header.totalfiles;
@@ -429,11 +427,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
     memset( &fi, 0, sizeof( FileRec ) );
 
-#ifdef USE_PRESORT_ARRAY
-    DB_InitWriteSortedIndex(sw, indexf->DB ,header->property_count);
-#else
     DB_InitWriteSortedIndex(sw, indexf->DB );
-#endif
 
     /* Any properties to check? */
     if ( header->property_count <= 0 )
@@ -477,13 +471,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         out_array = CreatePropSortArray( indexf, m, &fi, 0 );
 
 
-#ifdef USE_PRESORT_ARRAY
-        DB_WriteSortedIndex(sw, metaID, out_array, total_files, indexf->DB);
-
-        for (i = 0; i < total_files; i++)
-            if ( PropLookup[i].SortProp )
-                freeProperty( PropLookup[i].SortProp );
-#else
         out_buffer = emalloc( total_files * MAXINTCOMPSIZE );
 
 
@@ -505,7 +492,6 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 
         efree( out_buffer );
 
-#endif
         efree( out_array );
 
         props_sorted++;

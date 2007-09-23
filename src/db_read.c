@@ -39,10 +39,9 @@ $Id$
 #include "compress.h"
 #include "error.h"
 #include "metanames.h"
-#include "db.h"
+#include "sw_db.h"
 #include "db_native.h"
 #include "stemmer.h"
-// #include "db_berkeley_db.h"
 
 #ifndef min
 #define min(a, b)    (a) < (b) ? a : b
@@ -56,7 +55,6 @@ void initModule_DB (SWISH  *sw)
 {
           /* Allocate structure */
    initModule_DBNative(sw);
-   // initModule_DB_db(sw);
    return;
 }
 
@@ -68,7 +66,6 @@ void initModule_DB (SWISH  *sw)
 void freeModule_DB (SWISH *sw)
 {
   freeModule_DBNative(sw);
-  // freeModule_DB_db(sw);
   return;
 }
 
@@ -245,12 +242,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             header->removed_word_positions = tmp;
             break;
 
-/* removed due to patents problems
-        case FILEINFOCOMPRESSION_ID:
-            ReadHeaderInt(itmp, fp);
-            header->applyFileInfoCompression = itmp;
-            break;
-*/
         case TRANSLATECHARTABLE_ID:
             parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), (char *)buffer);
             break;

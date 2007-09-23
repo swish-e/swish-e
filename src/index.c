@@ -144,7 +144,7 @@ $Id$
 #include "result_output.h"
 #include "filter.h"
 #include "date_time.h"
-#include "db.h"
+#include "sw_db.h"
 #include "dump.h"
 #include "swish_qsort.h"
 #include "swish_words.h"
@@ -2342,7 +2342,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 {
                     /* Build worddata buffer */
                     build_worddata(sw, epi);
-                    /* let's see if word is already in the index */
+                    /* let's see if the word is already in the index */
                     old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
                     /* If exists, we have to add the new worddata buffer to the old one */
                     if(old_wordid)
@@ -2374,7 +2374,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         printf("\r  Writing word text: Complete\n" );
         fflush(stdout);
     }
-
 
     DB_EndWriteWords(sw, indexf->DB);
 

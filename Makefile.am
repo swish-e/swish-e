@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 SUBDIRS = filters prog-bin conf filter-bin example html man src tests pod
-
+ACLOCAL_AMFLAGS = -I config
 
 
 docdir = $(datadir)/doc/$(PACKAGE)

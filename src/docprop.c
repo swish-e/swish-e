@@ -171,7 +171,7 @@ $Id$
 #include "result_output.h"
 #include "result_sort.h"
 #include "entities.h"
-#include "db.h"
+#include "sw_db.h"
 #include "rank.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>

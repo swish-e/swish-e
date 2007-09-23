@@ -46,7 +46,7 @@ $Id$
 #include "list.h"
 #include "compress.h"
 #include "metanames.h"
-#include "db.h"
+#include "sw_db.h"
 #include "dump.h"
 #include "result_sort.h"
 #include "swish_qsort.h"
@@ -645,21 +645,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
 
-    /*
-     * Since USE_PRESORT_ARRAY has a different internal format that what is generated
-     * by CreatePropeSortArray() we must ALWAYS create an actual integer
-     * array total_files long.
-     * 
-     * $$$ The problem is that with USE_PRESORT_ARRAY the format is different
-     *     before and after saving the array to disk
-     */
-
-#ifdef USE_PRESORT_ARRAY
-    if ( 1 )
-#else
     if ( !LoadSortedProps( cur_index, path_meta ) )
-#endif
-
     {
         FileRec fi;
         memset( &fi, 0, sizeof( FileRec ));

@@ -29,7 +29,7 @@ $Id$
 */
 
 #include "swish.h"
-#include "db.h"
+#include "sw_db.h"
 #include "rank.h"
 
 /* 1000 precomputed 10000 * log(i) */

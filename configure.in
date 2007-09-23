@@ -6,8 +6,8 @@ PACKAGE=swish-e
 
 dnl version number
 MAJOR_VERSION=2
-MINOR_VERSION=5
-MICRO_VERSION=6
+MINOR_VERSION=7
+MICRO_VERSION=0
 INTERFACE_AGE=0
 BINARY_AGE=0
 VERSION=$MAJOR_VERSION.$MINOR_VERSION.$MICRO_VERSION
@@ -253,24 +253,14 @@ fi
 
 
 
-dnl Provide an option for enabling btree/incremental indexing for development
-AC_ARG_ENABLE(incremental,
-             AC_HELP_STRING([--enable-incremental], [** developer use only **]),btree=yes,)
-
-AC_ARG_ENABLE(psortarray,
-             AC_HELP_STRING([--enable-psortarray], [** and use ARRAY persort arrays (if incremental) ]),psortarray=yes,)
-
-if test x$btree = xyes; then
-    AC_MSG_WARN([** Buidling with developer only incremental indexing code **])
-    BTREE_OBJS="btree.lo array.lo worddata.lo fhash.lo"
-    AC_SUBST(BTREE_OBJS)
-    AC_DEFINE(USE_BTREE,[],[Experimental BTREE support])
-
-    if test "x$psortarray" = xyes; then
-        AC_MSG_WARN([** And using ARRAY presorted tables **])
-        AC_DEFINE(USE_PRESORT_ARRAY,[],[Experimental BTREE PRESORT ARRAYS])
-    fi
-fi
+dnl Berkeley DB check
+dnl this macro defined in m4/ax_path_bdb.m4
+AX_PATH_BDB([3],[
+     LIBS="$BDB_LIBS $LIBS"
+     LDFLAGS="$BDB_LDFLAGS $LDFLAGS"
+     CPPFLAGS="$CPPFLAGS $BDB_CPPFLAGS"
+ ])
+AC_DEFINE(USE_BTREE,[],[BDB support])
 
 
 dnl Checks for zlib library. -- from libxml2 configure.in

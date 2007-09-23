@@ -3,7 +3,7 @@ SUBDIRS = expat replace snowball
 # Using AM_CPPFLAGS instead of per-target flags means object names
 # don't get renamed.  If using per-target _CPPFLAGS then would need
 # to update configure.in to use the prefix names on all optional objects
-# passed in. (e.g. $BTREE_OBJS).
+# passed in.
 
 AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  \
 		-DPATH_SEPARATOR=\"${PATH_SEPARATOR}\" \
@@ -31,7 +31,7 @@ libtest_LDFLAGS = -static
 
 lib_LTLIBRARIES = libswish-e.la
 libswish_e_la_LDFLAGS = -no-undefined -version-info 2:0:0 $(Z_LIBS) $(PCRE_LIBS)
-libswish_e_la_LIBADD = $(BTREE_OBJS) replace/libreplace.la snowball/libsnowball.la
+libswish_e_la_LIBADD = replace/libreplace.la snowball/libsnowball.la
 
 libswish_e_la_DEPENDENCIES = $(libswish_e_la_LIBADD)
 
@@ -44,7 +44,7 @@ libswish_e_la_SOURCES =  \
 	swish_words.c swish_words.h \
 	proplimit.c proplimit.h \
         rank.c rank.h \
-	db_read.c db.h \
+	db_read.c sw_db.h \
 	result_sort.c result_sort.h \
 	hash.c hash.h \
 	compress.c compress.h \
@@ -64,17 +64,12 @@ libswish_e_la_SOURCES =  \
 	stemmer.c stemmer.h \
 	soundex.c soundex.h
 
-EXTRA_libswish_e_la_SOURCES =  \
-	btree.c btree.h \
-	array.c array.h \
-	worddata.c worddata.h \
-	fhash.c fhash.h
 
 ## Convenience lib for indexing code
 
 noinst_LTLIBRARIES = libswishindex.la
 libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS) snowball/libsnowball.la
-libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS) 
+libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS)
 
 ## in case these change
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)

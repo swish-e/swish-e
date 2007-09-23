@@ -54,7 +54,7 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 /* #include "search_alt.h" */
 #include "result_output.h"
 #include "result_sort.h"
-#include "db.h"
+#include "sw_db.h"
 #include "fs.h"
 #include "swish_words.h"
 #include "extprog.h"

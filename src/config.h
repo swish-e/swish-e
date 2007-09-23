@@ -54,18 +54,22 @@ $Id$
 
 
 #ifdef __VMS
+#define HEADER_EXTENSION "_head"
 #define PROPFILE_EXTENSION "_prop"
+#define PROPINDEX_EXTENSION "_propidx"
 #define WORDDATA_EXTENSION "_wdata"
 #define PRESORTED_EXTENSION "_psort"
 #define BTREE_EXTENSION "_btree"
-#define ARRAY_EXTENSION "_array"
+#define TOTWORDS_EXTENSION "_totwords"
 #define HASHFILE_EXTENSION "_file"
 #else
+#define HEADER_EXTENSION ".head"
 #define PROPFILE_EXTENSION ".prop"
+#define PROPINDEX_EXTENSION ".propidx"
 #define WORDDATA_EXTENSION ".wdata"
 #define PRESORTED_EXTENSION ".psort"
 #define BTREE_EXTENSION ".btree"
-#define ARRAY_EXTENSION ".array"
+#define TOTWORDS_EXTENSION ".totwords"
 #define HASHFILE_EXTENSION ".file"
 #endif
 

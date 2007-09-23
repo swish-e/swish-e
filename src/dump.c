@@ -37,7 +37,7 @@
 #include "docprop.h"
 #include "hash.h"
 #include "swstring.h"
-#include "db.h"
+#include "sw_db.h"
 #include "compress.h"
 #include "index.h"
 #include "search.h"
@@ -497,11 +497,9 @@ int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
     /* Get the sorted index of the property */
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
-    /* For incremental index. It will be released when closing indexf->DB */
-#ifndef USE_BTREE
+    /* Free buffer */
     if ( sz_buffer )
         efree( buffer );
-#endif
 
     /* Table doesn't exist */
     return sz_buffer;

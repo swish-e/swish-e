@@ -40,17 +40,12 @@ $Id$
 
 
 #ifdef USE_BTREE
-#include "btree.h"
-#include "array.h"
-#include "worddata.h"
-#include "fhash.h"
-#define MAXCHARS 8            /* Only 8 are needed when BTREE is used */
+
+#include <db.h>   /* Berkeley DB include file */
 
 #else
 
 #define MAXCHARS 266            /* 255 for chars plus ten more for other data */
-
-#endif
 
 #define FILELISTPOS (MAXCHARS - 1)
 #define FILEOFFSETPOS (MAXCHARS - 2)
@@ -59,36 +54,31 @@ $Id$
 #define SORTEDINDEX (MAXCHARS - 5)
 #define ENDWORDPOS (MAXCHARS - 6)
 
-#ifdef USE_BTREE
-#define TOTALWORDSPERFILEPOS (MAXCHARS - 7)
-#define FILEHASHPOS (MAXCHARS - 8)
 #endif
-
 
 
 struct Handle_DBNative
 {
+   SWISH *sw;  /* for reporting errors back */
+
+#ifndef USE_BTREE
+       /* File Offsets to words */
+   sw_off_t offsets[MAXCHARS];
+
        /* values used by the index proccess */
        /* points to the start of offsets to words in the file */
    sw_off_t offsetstart;
 
-   SWISH *sw;  /* for reporting errors back */
-
-#ifndef USE_BTREE
        /* points to the start of hashoffsets to words in the file */
    sw_off_t hashstart;
-#endif
-       /* File Offsets to words */
-   sw_off_t offsets[MAXCHARS];
 
-#ifndef USE_BTREE
    sw_off_t hashoffsets[VERYBIGHASHSIZE];
 
    sw_off_t lasthashval[VERYBIGHASHSIZE];
    int wordhash_counter;
+   sw_off_t nextwordoffset;
 #endif
 
-   sw_off_t nextwordoffset;
    sw_off_t last_sortedindex;
    sw_off_t next_sortedindex;
    
@@ -128,50 +118,50 @@ struct Handle_DBNative
    int     (*w_putc)(int , FILE *);
    int     (*w_getc)(FILE *);
 
+#ifndef USE_BTREE
    FILE *fp;
-   FILE *prop;
+   char    *cur_index_file;
+#endif
+   FILE *fp_prop;
 
    int      tmp_index;      /* These indicates the file is opened as a temporary file */
    int      tmp_prop;
-   char    *cur_index_file;
    char    *cur_prop_file;
 
    long     unique_ID;          /* just because it's called that doesn't mean it is! */
 
 #ifdef USE_BTREE
-   BTREE   *bt;
-   FILE    *fp_btree;
+   DB      *db_btree;    /* DB BTREE handle */
+   DBC     *dbc_btree;    /* DB BTREE handle */
    int      tmp_btree;
    char    *cur_btree_file;
 
-   WORDDATA    *worddata;
-   FILE    *fp_worddata;
+   DB      *db_worddata;
    int      tmp_worddata;
    char    *cur_worddata_file;
 
-   FHASH   *hashfile;
-   FILE    *fp_hashfile;
+   DB      *db_hashfile;
    int      tmp_hashfile;
    char    *cur_hashfile_file;
 
-   FILE    *fp_array;
-   int      tmp_array;
-   char    *cur_array_file;
-
-   int      n_presorted_array;
-   unsigned long *presorted_root_node;
-   unsigned long *presorted_propid;
-   ARRAY  **presorted_array;
    FILE    *fp_presorted;
    int      tmp_presorted;
    char    *cur_presorted_file;
 
    unsigned long cur_presorted_propid;
-   ARRAY   *cur_presorted_array;
 
-   ARRAY   *totwords_array;
+   FILE    *fp_totwords;
+   int      tmp_totwords;
+   char    *cur_totwords_file;
 
-   ARRAY   *props_array;
+   FILE    *fp_propindex;
+   int      tmp_propindex;
+   char    *cur_propindex_file;
+
+   FILE    *fp_header;
+   int      tmp_header;
+   char    *cur_header_file;
+
 #endif
 };
 

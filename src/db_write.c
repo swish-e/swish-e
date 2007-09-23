@@ -39,7 +39,7 @@ $Id$
 #include "compress.h"
 #include "error.h"
 #include "metanames.h"
-#include "db.h"
+#include "sw_db.h"
 #include "db_native.h"
 // #include "db_berkeley_db.h"
 
@@ -134,10 +134,6 @@ void    write_header(SWISH *sw, int merged_flag )
     DB_WriteHeaderData(sw, ENDCHARSHEADER_ID, (unsigned char *)header->endchars, strlen(header->endchars) + 1, DB);
     DB_WriteHeaderData(sw, IGNOREFIRSTCHARHEADER_ID, (unsigned char *)header->ignorefirstchar, strlen(header->ignorefirstchar) + 1, DB);
     DB_WriteHeaderData(sw, IGNORELASTCHARHEADER_ID, (unsigned char *)header->ignorelastchar, strlen(header->ignorelastchar) + 1,DB);
-    /* Removed - Patents
-    write_header_int(FILEINFOCOMPRESSION_ID, header->applyFileInfoCompression, DB);
-    */
-
 
 
     /* Jose Ruiz 06/00 Added this line to delimite the header */
@@ -889,19 +885,6 @@ int     DB_RemoveFileNum(SWISH *sw, int filenum, void *DB)
 }
 
 
-#ifdef USE_PRESORT_ARRAY
-int     DB_InitWriteSortedIndex(SWISH *sw, void *DB, int n_props)
-{
-   return sw->Db->DB_InitWriteSortedIndex(DB, n_props);
-}
-
-int     DB_WriteSortedIndex(SWISH *sw, int propID, int *data, int sz_data,void *DB)
-{
-   return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
-}
-
-
-#else
 int     DB_InitWriteSortedIndex(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitWriteSortedIndex(DB);
@@ -911,7 +894,7 @@ int     DB_WriteSortedIndex(SWISH *sw, int propID, unsigned char *data, int sz_d
 {
    return sw->Db->DB_WriteSortedIndex(propID, data, sz_data,DB);
 }
-#endif
+
 
 int     DB_EndWriteSortedIndex(SWISH *sw, void *DB)
 {

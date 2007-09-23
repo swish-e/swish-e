@@ -41,7 +41,7 @@ $Id$
 #include "metanames.h"
 #include "compress.h"
 #include "error.h"
-#include "db.h"
+#include "sw_db.h"
 #include "parse_conffile.h"
 #include "swish_qsort.h"
 #include "result_sort.h"
@@ -241,13 +241,6 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 
     /* Convert to a property index */
     DB_ReadSortedIndex(indexf->sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
-
-#ifdef USE_PRESORT_ARRAY
-    m->sorted_data = (int *)buffer;
-    DB_EndReadSortedIndex(indexf->sw, indexf->DB);
-    return m->sorted_data;
-
-#endif
 
 
     /* If a table was found, then uncompress */

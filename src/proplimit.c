@@ -39,7 +39,7 @@ $Id$
 #include "metanames.h"
 #include "compress.h"
 #include "error.h"
-#include "db.h"
+#include "sw_db.h"
 #include "result_sort.h"
 #include "swish_qsort.h"
 #include "proplimit.h"
@@ -152,18 +152,17 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
     int         metaID;
     
 
+    if ( !srch->limits_prepared )
+        return;
+
 
     /* Free up the input parameters */
     ClearLimitParams( srch->limit_params );
     srch->limit_params = NULL;
 
+            
 
     /* Free up the stored limits for each meta entry */
-
-    if ( !srch->limits_prepared )
-        return;
-
-
     while ( indexf )
     {
         PROP_LIMITS *index_limits = srch->prop_limits[index_count++];
@@ -188,7 +187,7 @@ void SwishResetSearchLimit( SEARCH_OBJECT *srch )
                 index_limits[metaID].hiPropRange = NULL;
             }
         }
-
+        
 
         indexf = indexf->next;
     }
@@ -239,7 +238,6 @@ void ClearLimitParams( LIMIT_PARAMS *params )
 ********************************************************************/
 int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
 {
-    LIMIT_PARAMS *params;
     reset_lasterror( srch->sw );
     
     if ( srch->limits_prepared )
@@ -248,15 +246,9 @@ int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char
         return 0;
     }
 
-    /* Add new limit parameter to list */
-    params  = setlimit_params( srch->sw, srch->limit_params, propertyname, low, hi );
-
-    /* Only reset list if no error */
-    if ( params )
-        srch->limit_params = params;
-
-
+    srch->limit_params = setlimit_params( srch->sw, srch->limit_params, propertyname, low, hi );
     return ( srch->sw->lasterror == 0 );
+
 }
 
 /* This just sets the LIMIT_PARAMS struct -- useful when don't have a SEARCH_OBJECT */
