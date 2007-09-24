@@ -2579,7 +2579,7 @@ int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void 
    long seek_pos;
 
     /* now calculate index */
-    seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)index;
+    seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)idx;
     sw_fseek(SW_DB->fp_totwords, seek_pos,SEEK_SET);
     printlong(SW_DB->fp_totwords, (long)wordcount, sw_fwrite);
 
