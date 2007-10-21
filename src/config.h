@@ -54,18 +54,22 @@ $Id$
 
 
 #ifdef __VMS
+#define HEADER_EXTENSION "_head"
 #define PROPFILE_EXTENSION "_prop"
+#define PROPINDEX_EXTENSION "_propidx"
 #define WORDDATA_EXTENSION "_wdata"
 #define PRESORTED_EXTENSION "_psort"
 #define BTREE_EXTENSION "_btree"
-#define ARRAY_EXTENSION "_array"
+#define TOTWORDS_EXTENSION "_totwords"
 #define HASHFILE_EXTENSION "_file"
 #else
+#define HEADER_EXTENSION ".head"
 #define PROPFILE_EXTENSION ".prop"
+#define PROPINDEX_EXTENSION ".propidx"
 #define WORDDATA_EXTENSION ".wdata"
 #define PRESORTED_EXTENSION ".psort"
 #define BTREE_EXTENSION ".btree"
-#define ARRAY_EXTENSION ".array"
+#define TOTWORDS_EXTENSION ".totwords"
 #define HASHFILE_EXTENSION ".file"
 #endif
 
@@ -368,12 +372,6 @@ $Id$
 /* 2001/08 jmruiz -- File System sort flag - 0 means that filenames
 ** will not be indexed - 1 means that filenames will be indexed */
 #define SORT_FILENAMES 0
-
-/* 2001/10 jmruiz -- Added BTREE schema to store words */
-
-//#define USE_BTREE  /* use --enable-incremental at configure time */
-
-/* If USE_BTREE then enable the ARRAY code for the pre-sorted indexes */
 
 #define sw_fopen fopen
 #define sw_fclose fclose

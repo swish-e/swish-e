@@ -144,7 +144,7 @@ $Id$
 #include "result_output.h"
 #include "filter.h"
 #include "date_time.h"
-#include "db.h"
+#include "sw_db.h"
 #include "dump.h"
 #include "swish_qsort.h"
 #include "swish_words.h"
@@ -708,7 +708,6 @@ LOCATION *add_position_location(void *oldp, struct MOD_Index *idx, int frequency
         return newp;
 }
 
-#ifdef USE_BTREE
 /**********************************************************************
 * file_is_newer_than_existing 
 *       - returns true if the new file (based on fprop) is newer than the existing
@@ -807,7 +806,6 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
 
     return 1;  /* go ahead and remove */
 }
-#endif
 
 
 /***************************************************************************
@@ -823,19 +821,14 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
 ****************************************************************************/
 static int check_for_replace( SWISH *sw, FileProp * fprop )
 {
-
-#ifndef USE_BTREE
-    return 1;
-#else
-
-    int         existing_filenum;
-    int         existing_is_deleted;
-    int         existing_word_count = 0;
-    IndexFILE   *indexf = sw->indexlist;
-    int         update_mode = sw->Index->update_mode;
-    char        *update_string;
-    int         return_value;
-    int         delete_existing = 0;  /* flag to delete existing file */
+int         existing_filenum;
+int         existing_is_deleted;
+int         existing_word_count = 0;
+IndexFILE   *indexf = sw->indexlist;
+int         update_mode = sw->Index->update_mode;
+char        *update_string;
+int         return_value;
+int         delete_existing = 0;  /* flag to delete existing file */
 
     /* Return true if not in update or remove mode */
     if ( MODE_UPDATE != update_mode && MODE_REMOVE != update_mode )
@@ -850,7 +843,7 @@ static int check_for_replace( SWISH *sw, FileProp * fprop )
 
 
 
-    existing_filenum = DB_ReadFileNum(sw, fprop->real_path, indexf->DB);
+    existing_filenum = DB_ReadFileNum(sw, (unsigned char *)fprop->real_path, indexf->DB);
 
     /* If the file already exists then likely will remove the file, so lookup the old word count */
     /* Assumes that zero words indicates that a file was already deleted */
@@ -916,8 +909,6 @@ static int check_for_replace( SWISH *sw, FileProp * fprop )
     }
 
     return 0;  /* don't index the new file -- we are either keeping or are in remove mode */
-
-#endif
 
 }
 
@@ -1181,21 +1172,10 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     /* Currently this just passes sw, and assumes only one index file when indexing */
     WritePropertiesToDisk( sw , &fi );
 	
-#ifdef USE_BTREE
     /* Add the value pair (real_path, filenum) to the database */
-    DB_WriteFileNum(sw,fi.filenum,fprop->real_path,strlen(fprop->real_path),indexf->DB);
-    /* We always need this value in USE_BTREE mode */
+    DB_WriteFileNum(sw,fi.filenum,(unsigned char *)fprop->real_path,strlen(fprop->real_path),indexf->DB);
+    /* We always need this value */
     setTotalWordsPerFile(indexf, fi.filenum - 1,wordcount);
-#else
-    /* Save total words per file */
-    if ( !indexf->header.ignoreTotalWordCountWhenRanking )
-    {
-        setTotalWordsPerFile(indexf, fi.filenum - 1,wordcount);
-    }
-
-#endif
-    
-
 
     /* Compress the entries */
     {
@@ -2092,188 +2072,15 @@ void    coalesce_all_word_locations(SWISH * sw, IndexFILE * indexf)
 /* Write the index entries that hold the word, rank, and other information.
 */
 
-
-#ifndef USE_BTREE
 void    write_index(SWISH * sw, IndexFILE * indexf)
 {
-    int     i;
-    ENTRYARRAY *ep;
-    ENTRY  *epi;
-    int     totalwords;
-    int     percent, lastPercent, n;
-    int     last_loc_swap;
+int     i;
+ENTRYARRAY *ep;
+ENTRY  *epi;
+int     totalwords;
+int     percent, lastPercent, n;
+int     last_loc_swap;
 
-#define DELTA 10
-
-
-    if ( !(ep = sw->Index->entryArray ))
-        return;  /* nothing to do */
-
-    totalwords = ep->numWords;
-
-    DB_InitWriteWords(sw, indexf->DB);
-
-    if (sw->verbose)
-    {
-        printf("  Writing word text: ...");
-        fflush(stdout);
-    }
-
-    /* This is not longer needed. So free it as soon as possible */
-    Mem_ZoneFree(&sw->Index->perDocTmpZone);
-
-
-    /* This is not longer needed. So free it as soon as possible */
-    Mem_ZoneFree(&sw->Index->currentChunkLocZone);
-
-    /* If we are swaping locs to file, reset memory zone */
-    if(sw->Index->swap_locdata)
-        Mem_ZoneReset(sw->Index->totalLocZone);
-
-    n = lastPercent = 0;
-    for (i = 0; i < totalwords; i++)
-    {
-        if ( sw->verbose && totalwords > 10000 )  // just some random guess
-        {
-            n++;
-            percent = (n * 100)/totalwords;
-            if (percent - lastPercent >= DELTA )
-            {
-                printf("\r  Writing word text: %3d%%", percent );
-                fflush(stdout);
-                lastPercent = percent;
-            }
-        }
-
-        epi = ep->elist[i];
-
-        /* why check for stopwords here?  removestopwords could have remove them */
-        if ( !is_word_in_hash_table( indexf->header.hashstoplist, epi->word ) )
-        {
-            /* Write word to index file */
-            write_word(sw, epi, indexf);
-        }
-        else
-            epi->u1.wordID = (sw_off_t)-1;  /* flag as a stop word */
-    }    
-
-    if (sw->verbose)
-    {
-        printf("\r  Writing word text: Complete\n" );
-        printf("  Writing word hash: ...");
-        fflush(stdout);
-    }
-
-
-
-    n = lastPercent = 0;
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-    {
-        if ( sw->verbose )
-        {
-            n++;
-            percent = (n * 100)/VERYBIGHASHSIZE;
-            if (percent - lastPercent >= DELTA )
-            {
-                printf("\r  Writing word hash: %3d%%", percent );
-                fflush(stdout);
-                lastPercent = percent;
-            }
-        }
-
-
-        if ((epi = sw->Index->hashentries[i]))
-        {
-            while (epi)
-            {
-                /* If it is not a stopword write it */
-                if (epi->u1.wordID > (sw_off_t)0)  
-                    DB_WriteWordHash(sw, epi->word,epi->u1.wordID,indexf->DB);
-                epi = epi->next;
-            }
-        }
-    }
-
-    if (sw->verbose)
-    {
-        printf("\r  Writing word hash: Complete\n" );
-        printf("  Writing word data: ...");
-        fflush(stdout);
-    }
-
-
-    n = lastPercent = last_loc_swap = -1;
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-    {
-         /* If we are in economic mode -e restore locations */
-        if(sw->Index->swap_locdata)
-        {
-            if (((i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1)) != last_loc_swap)
-            {
-                /* Free not longer needed memory */
-                Mem_ZoneReset(sw->Index->totalLocZone);
-                last_loc_swap = (i * (MAX_LOC_SWAP_FILES - 1)) / (VERYBIGHASHSIZE - 1);
-                unSwapLocData(sw, last_loc_swap, NULL );
-            }
-        }
-        if ((epi = sw->Index->hashentries[i]))
-        {
-            while (epi)
-            {
-                /* If we are in economic mode -e we must sort locations by metaID, filenum */
-                if(sw->Index->swap_locdata)
-                {
-                    sortSwapLocData(epi);
-                }
-                if ( sw->verbose && totalwords > 10000 )  // just some random guess
-                {
-                    n++;
-                    percent = (n * 100)/totalwords;
-                    if (percent - lastPercent >= DELTA )
-                    {
-                        printf("\r  Writing word data: %3d%%", percent );
-                        fflush(stdout);
-                        lastPercent = percent;
-                    }
-                }
-                if (epi->u1.wordID > (sw_off_t)0)   /* Not a stopword */
-                {
-                    build_worddata(sw, epi);
-                    write_worddata(sw, epi, indexf);
-                }
-                epi = epi->next;
-            }
-        }
-    }
-    if (sw->verbose)
-        printf("\r  Writing word data: Complete\n" );
-
-
-    DB_EndWriteWords(sw, indexf->DB);
-
-       /* free all ENTRY structs at once */
-    Mem_ZoneFree(&sw->Index->entryZone);
-
-       /* free all location compressed data */
-    Mem_ZoneFree(&sw->Index->totalLocZone);
-
-    efree(ep->elist);
-}
-
-#else
-
-void    write_index(SWISH * sw, IndexFILE * indexf)
-{
-    int     i;
-    ENTRYARRAY *ep;
-    ENTRY  *epi;
-    int     totalwords;
-    int     percent, lastPercent, n;
-    int     last_loc_swap;
-
-    long    old_wordid;
-    unsigned char *buffer =NULL;
-    int     sz_buffer = 0;
 #define DELTA 10
 
 
@@ -2342,28 +2149,12 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
                 {
                     /* Build worddata buffer */
                     build_worddata(sw, epi);
-                    /* let's see if word is already in the index */
-                    old_wordid = read_worddata(sw, epi, indexf, &buffer, &sz_buffer);
-                    /* If exists, we have to add the new worddata buffer to the old one */
-                    if(old_wordid)
-                    {
-                         add_worddata(sw, buffer, sz_buffer);
-                         efree(buffer);
-                         buffer = NULL;
-                         sz_buffer = 0;
-                         delete_worddata(sw, old_wordid, indexf);
-                         write_worddata(sw, epi, indexf);
-                         update_wordID(sw, epi, indexf);
-                    }
-                    else
-                    {
-                         /* Reset last error. It was set in read_worddata if
-                         ** word was not found */
-                         sw->lasterror = RC_OK;
-                         /* Write word to index file */
-                         write_worddata(sw, epi, indexf);
-                         write_word(sw, epi, indexf);
-                    }
+                    /* Reset last error. It was set in read_worddata if
+                    ** word was not found */
+                    sw->lasterror = RC_OK;
+                    /* Write word to index file */
+                    write_worddata(sw, epi, indexf);
+                    write_word(sw, epi, indexf);
                 }
                 epi = epi->next;
             }
@@ -2375,7 +2166,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
         fflush(stdout);
     }
 
-
     DB_EndWriteWords(sw, indexf->DB);
 
        /* free all ENTRY structs at once */
@@ -2386,11 +2176,6 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
 
     efree(ep->elist);
 }
-
-
-#endif
-
-
 
 
 static void addword( char *word, SWISH * sw, int filenum, int structure, int numMetaNames, int *metaID, int *word_position)

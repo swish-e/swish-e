@@ -46,7 +46,7 @@ $Id$
 #include "list.h"
 #include "compress.h"
 #include "metanames.h"
-#include "db.h"
+#include "sw_db.h"
 #include "dump.h"
 #include "result_sort.h"
 #include "swish_qsort.h"
@@ -90,7 +90,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  frequency,
                  loc_count = 0,
                  word_count = 0;
-    sw_off_t     wordID;
+    DB_WORDID   *wordID;
     int          metadata_length = 0;
     unsigned char   *worddata;
     unsigned char   *s, *start;
@@ -211,12 +211,12 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                 cur_index = sw_input->indexlist;
                 while( cur_index )
                 {
-                    DB_ReadWordHash(sw_input, e->word, &wordID, cur_index->DB);
+                    DB_ReadWord(sw_input, e->word, &wordID, cur_index->DB);
                     /* If word exits in the index */
                     if(wordID)
                     {
 
-                        DB_ReadWordData(sw_input, wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
+                        DB_ReadWordData(sw_input, wordID->wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
                         uncompress_worddata(&worddata,&sz_worddata,saved_bytes);
 
                         /* Now, parse word's data */
@@ -645,21 +645,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     cur_index->modified_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_LASTMODIFIED );
 
 
-    /*
-     * Since USE_PRESORT_ARRAY has a different internal format that what is generated
-     * by CreatePropeSortArray() we must ALWAYS create an actual integer
-     * array total_files long.
-     * 
-     * $$$ The problem is that with USE_PRESORT_ARRAY the format is different
-     *     before and after saving the array to disk
-     */
-
-#ifdef USE_PRESORT_ARRAY
-    if ( 1 )
-#else
     if ( !LoadSortedProps( cur_index, path_meta ) )
-#endif
-
     {
         FileRec fi;
         memset( &fi, 0, sizeof( FileRec ));
@@ -1003,7 +989,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
     int         word_count = 0;
     char        word[2];
     char       *resultword;
-    sw_off_t    wordID;
+    DB_WORDID  *wordID;
 
     DB_InitReadWords(sw, indexf->DB);
 

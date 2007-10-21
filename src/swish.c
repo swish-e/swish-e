@@ -54,7 +54,7 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 /* #include "search_alt.h" */
 #include "result_output.h"
 #include "result_sort.h"
-#include "db.h"
+#include "sw_db.h"
 #include "fs.h"
 #include "swish_words.h"
 #include "extprog.h"
@@ -311,9 +311,7 @@ static void    usage()
     printf("         -P : next param is Phrase delimiter.\n");
     printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
     printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
-#ifdef USE_BTREE
-        printf("         -r : remove: remove files from index\n");
-#endif
+    printf("         -r : remove: remove files from index\n");
 
     printf("         -S : specify which indexing system to use.\n");
     printf("              Valid options are:\n");
@@ -342,9 +340,7 @@ static void    usage()
     printf("         -T : Trace options ('-T help' for info)\n");
     printf("         -t : tags to search in - specify as a string\n");
     printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
-#ifdef USE_BTREE
     printf("         -u : update: adds files to existing index\n");
-#endif
     printf("         -V : prints the current version\n");
     printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
     printf("         -w : search for words \"word1 word2 ...\"\n");
@@ -817,9 +813,6 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'u':
             case 'r':
 
-#ifndef USE_BTREE
-                progerr("Must compile swish-e with --enable-incremental to use -%c option",c);
-#else
             {
                 int mode = ( 'u' == c )
                         ? MODE_UPDATE
@@ -840,7 +833,6 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
                 break;
             }
-#endif
 
 
             default:
@@ -1355,9 +1347,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
 
     /* Check for UPDATE_MODE jmruiz 2002/03 */
     if ( MODE_UPDATE == params->run_mode || MODE_REMOVE == params->run_mode )
-#ifndef USE_BTREE
-        progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
-#else
     {
         /* Set update_mode */
         sw->Index->update_mode = params->run_mode;
@@ -1368,7 +1357,6 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
         /* Adjust file number to start after the last file number in the index */
         sw->Index->filenum = sw->indexlist->header.totalfiles;
     }
-#endif
 
 
     else

@@ -64,7 +64,7 @@ $Id$
 #include "deflate.h"
 */
 #include "result_sort.h"
-#include "db.h"
+#include "sw_db.h"
 #include "extprog.h"
 #include "stemmer.h"
 #ifdef HAVE_ZLIB

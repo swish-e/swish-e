@@ -38,7 +38,7 @@ $Id$
 #include "mem.h"
 #include "search.h"
 #include "result_output.h"
-#include "db.h"
+#include "sw_db.h"
 #include "keychar_out.h"
 
 
