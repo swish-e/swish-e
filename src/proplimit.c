@@ -43,7 +43,6 @@ $Id$
 #include "result_sort.h"
 #include "swish_qsort.h"
 #include "proplimit.h"
-#include "array.h"
 
 
 // #define DEBUGLIMIT
