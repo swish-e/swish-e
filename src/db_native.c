@@ -41,14 +41,8 @@ $Id$
 #include "hash.h"
 #include "sw_db.h"
 #include "swish_qsort.h"
-#include "ramdisk.h"
 #include "db_native.h"
 
-#ifdef USE_BTREE
-#define WRITE_WORDS_RAMDISK 0
-#else
-#define WRITE_WORDS_RAMDISK 1
-#endif
 
 /* MAX_PATH used by Herman's NEAR feature but it seems to be a Windoze thing 
  * so karman just made this value up so it will compile on *nix
@@ -70,66 +64,6 @@ void    initModule_DBNative(SWISH * sw)
     Db = (struct MOD_DB *) emalloc(sizeof(struct MOD_DB));
 
     Db->DB_name = (char *) estrdup("native");
-
-    Db->DB_Create = DB_Create_Native;
-    Db->DB_Open = DB_Open_Native;
-    Db->DB_Close = DB_Close_Native;
-    Db->DB_Remove = DB_Remove_Native;
-
-    Db->DB_InitWriteHeader = DB_InitWriteHeader_Native;
-    Db->DB_WriteHeaderData = DB_WriteHeaderData_Native;
-    Db->DB_EndWriteHeader = DB_EndWriteHeader_Native;
-
-    Db->DB_InitReadHeader = DB_InitReadHeader_Native;
-    Db->DB_ReadHeaderData = DB_ReadHeaderData_Native;
-    Db->DB_EndReadHeader = DB_EndReadHeader_Native;
-
-    Db->DB_InitWriteWords = DB_InitWriteWords_Native;
-    Db->DB_GetWordID = DB_GetWordID_Native;
-    Db->DB_WriteWord = DB_WriteWord_Native;
-
-#ifndef USE_BTREE
-    Db->DB_WriteWordHash = DB_WriteWordHash_Native;
-#else
-    Db->DB_UpdateWordID = DB_UpdateWordID_Native;
-    Db->DB_DeleteWordData = DB_DeleteWordData_Native;
-#endif
-
-    Db->DB_WriteWordData = DB_WriteWordData_Native;
-    Db->DB_EndWriteWords = DB_EndWriteWords_Native;
-
-    Db->DB_InitReadWords = DB_InitReadWords_Native;
-    Db->DB_ReadWordHash = DB_ReadWordHash_Native;
-    Db->DB_ReadFirstWordInvertedIndex = DB_ReadFirstWordInvertedIndex_Native;
-    Db->DB_ReadNextWordInvertedIndex = DB_ReadNextWordInvertedIndex_Native;
-    Db->DB_ReadWordData = DB_ReadWordData_Native;
-    Db->DB_EndReadWords = DB_EndReadWords_Native;
-
-    Db->DB_WriteFileNum = DB_WriteFileNum_Native;
-    Db->DB_ReadFileNum = DB_ReadFileNum_Native;
-    Db->DB_CheckFileNum = DB_CheckFileNum_Native;
-    Db->DB_RemoveFileNum = DB_RemoveFileNum_Native;
-
-    Db->DB_InitWriteSortedIndex = DB_InitWriteSortedIndex_Native;
-    Db->DB_WriteSortedIndex = DB_WriteSortedIndex_Native;
-    Db->DB_EndWriteSortedIndex = DB_EndWriteSortedIndex_Native;
-
-    Db->DB_InitReadSortedIndex = DB_InitReadSortedIndex_Native;
-    Db->DB_ReadSortedIndex = DB_ReadSortedIndex_Native;
-    Db->DB_ReadSortedData = DB_ReadSortedData_Native;
-    Db->DB_EndReadSortedIndex = DB_EndReadSortedIndex_Native;
-
-    Db->DB_InitWriteProperties = DB_InitWriteProperties_Native;
-    Db->DB_WriteProperty = DB_WriteProperty_Native;
-    Db->DB_WritePropPositions = DB_WritePropPositions_Native;
-    Db->DB_ReadProperty = DB_ReadProperty_Native;
-    Db->DB_ReadPropPositions = DB_ReadPropPositions_Native;
-    Db->DB_Reopen_PropertiesForRead = DB_Reopen_PropertiesForRead_Native;
-
-#ifdef USE_BTREE
-    Db->DB_WriteTotalWordsPerFile = DB_WriteTotalWordsPerFile_Native;
-    Db->DB_ReadTotalWordsPerFile = DB_ReadTotalWordsPerFile_Native;
-#endif
 
     sw->Db = Db;
 
@@ -160,30 +94,8 @@ void    freeModule_DBNative(SWISH * sw)
 /* Does an index file have a readable format?
 */
 
-static void DB_CheckHeader(struct Handle_DBNative *SW_DB)
+static void _DB_CheckHeader(struct Handle_DBNative *SW_DB)
 {
-#ifndef USE_BTREE
-    long    swish_magic;
-    long prop;
-
-    sw_fseek(SW_DB->fp, (sw_off_t)0, SEEK_SET);
-    swish_magic = readlong(SW_DB->fp, sw_fread);
-
-    if (swish_magic != SWISH_MAGIC)
-    {
-        set_progerr(INDEX_FILE_ERROR, SW_DB->sw, "File \"%s\" has an unknown format.", SW_DB->cur_index_file);
-        return;
-    }
-
-    SW_DB->unique_ID = readlong(SW_DB->fp, sw_fread);
-    prop = readlong(SW_DB->fp_prop, sw_fread);
-
-    if (SW_DB->unique_ID != prop)
-    {
-        set_progerr(INDEX_FILE_ERROR, SW_DB->sw, "Index file '%s' and property file '%s' are not related.", SW_DB->cur_index_file, SW_DB->cur_prop_file);
-        return;
-    }
-#else
     long propindex, totwords, presorted, header;
     SW_DB->unique_ID = readlong(SW_DB->fp_prop, sw_fread);
 
@@ -216,7 +128,6 @@ static void DB_CheckHeader(struct Handle_DBNative *SW_DB)
         set_progerr(INDEX_FILE_ERROR, SW_DB->sw, "Properties file '%s' and header index file '%s' are not related.", SW_DB->cur_prop_file, SW_DB->cur_header_file);
         return;
     }
-#endif
 }
 
 static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
@@ -229,26 +140,13 @@ static struct Handle_DBNative *newNativeDBHandle(SWISH *sw, char *dbname)
 
     SW_DB->sw = sw;  /* for error messages */
 
-    if (WRITE_WORDS_RAMDISK)
-    {
-        SW_DB->w_tell = ramdisk_tell;
-        SW_DB->w_write = ramdisk_write;
-        SW_DB->w_seek = ramdisk_seek;
-        SW_DB->w_read = ramdisk_read;
-        SW_DB->w_close = ramdisk_close;
-        SW_DB->w_putc = ramdisk_putc;
-        SW_DB->w_getc = ramdisk_getc;
-    }
-    else
-    {
-        SW_DB->w_tell = sw_ftell;
-        SW_DB->w_write = sw_fwrite;
-        SW_DB->w_seek = sw_fseek;
-        SW_DB->w_read = sw_fread;
-        SW_DB->w_close = sw_fclose;
-        SW_DB->w_putc = sw_fputc;
-        SW_DB->w_getc = sw_fgetc;
-    }
+    SW_DB->w_tell = sw_ftell;
+    SW_DB->w_write = sw_fwrite;
+    SW_DB->w_seek = sw_fseek;
+    SW_DB->w_read = sw_fread;
+    SW_DB->w_close = sw_fclose;
+    SW_DB->w_putc = sw_fputc;
+    SW_DB->w_getc = sw_fgetc;
 
     SW_DB->dbname = estrdup(dbname);
 
@@ -295,13 +193,28 @@ static int  is_directory(char *path)
     return ((stbuf.st_mode & S_IFMT) == S_IFDIR) ? 1 : 0;
 }
 
-#ifdef USE_BTREE
-DB * OpenBerkeleyFile(char *filename, DBTYPE db_type, u_int32_t db_flags)
+/* Routine to compare packed longs - required to get BTREE duplicate entries
+** sorted by wordID. wordID is a packed long
+*/
+int compare_packed_long(DB *dbp, const DBT *a, const DBT *b)
+{
+    return memcmp(a->data, b->data, sizeof(long)); 
+} 
+
+
+DB * OpenBerkeleyFile(char *filename, DBTYPE db_type, u_int32_t db_flags, int dup)
 {
 DB *dbp;
 int db_ret;
     if((db_ret = db_create(&dbp, NULL, 0)))
         progerrno("Couldn't create BERKELEY DB resource");
+    if(dup)
+    {
+        if((db_ret = dbp->set_flags(dbp, DB_DUPSORT)))
+            progerrno("Couldn't set DB_DUPSORT in DB Berkeley file \"%s\": ", filename);
+        if((db_ret = dbp->set_dup_compare(dbp,compare_packed_long)))
+            progerrno("Couldn't set DB_DUPSORT_ROUTINE in DB Berkeley file \"%s\": ", filename);
+    }
     if((db_ret = dbp->open(dbp,NULL,filename,NULL,db_type,db_flags,0)))
     {
         dbp->err(dbp,db_ret,"Database open failed: \"%s\"", filename);
@@ -311,9 +224,9 @@ int db_ret;
     return dbp;
 }
 
-DB * CreateBerkeleyFile(char *filename,DBTYPE db_type)
+DB * CreateBerkeleyFile(char *filename,DBTYPE db_type, int dup)
 {
-    return OpenBerkeleyFile(filename, db_type, DB_CREATE | DB_TRUNCATE);
+    return OpenBerkeleyFile(filename, db_type, DB_CREATE | DB_TRUNCATE, dup);
 }
 
 void CloseBerkeleyFile(DB **dbp, char **filename, int *tempflag)
@@ -345,21 +258,13 @@ DB     *temp_dbp;
         *filename = NULL;
     }
 }
-#endif
-
-/**********************/
 
 
-
-void   *DB_Create_Native(SWISH *sw, char *dbname)
+void   *_DB_Create(SWISH *sw, char *dbname)
 {
     long    swish_magic;
     char   *filename;
-#ifdef USE_BTREE
     FILE   *fp_tmp;
-#else
-    int     i;
-#endif
     struct Handle_DBNative *SW_DB;
 
     if ( is_directory( dbname ) )
@@ -383,17 +288,6 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
 #endif
 
 
-    /* Create index File */
-#ifndef USE_BTREE
-    CreateEmptyFile(filename);
-    if (!(SW_DB->fp = openIndexFILEForReadAndWrite(filename)))
-        progerrno("Couldn't create the index file \"%s\": ", filename);
-
-    SW_DB->cur_index_file = estrdup(filename);
-    printlong(SW_DB->fp, swish_magic, sw_fwrite);
-    printlong(SW_DB->fp, SW_DB->unique_ID, sw_fwrite);
-#endif
-
     /* Create property File */
     strcpy(filename, dbname);
     strcat(filename, PROPFILE_EXTENSION);
@@ -410,16 +304,15 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     SW_DB->cur_prop_file = estrdup(filename);
     printlong(SW_DB->fp_prop, SW_DB->unique_ID, sw_fwrite);
 
-
-#ifdef USE_BTREE
-    /* Create Btree File */
+    /* Create Btree Index File */
     strcpy(filename, dbname);
     strcat(filename, BTREE_EXTENSION);
 #ifdef USE_TEMPFILE_EXTENSION
     strcat(filename, USE_TEMPFILE_EXTENSION);
     SW_DB->tmp_btree = 1;
 #endif
-    SW_DB->db_btree = CreateBerkeleyFile(filename,DB_BTREE);
+    SW_DB->db_btree = CreateBerkeleyFile(filename,DB_BTREE,1);
+    /* Allow sorted duplicate items */
     SW_DB->cur_btree_file = estrdup(filename);
 
 
@@ -430,7 +323,7 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     strcat(filename, USE_TEMPFILE_EXTENSION);
     SW_DB->tmp_worddata = 1;
 #endif
-    SW_DB->db_worddata = CreateBerkeleyFile(filename,DB_RECNO);
+    SW_DB->db_worddata = CreateBerkeleyFile(filename,DB_RECNO,0);
     SW_DB->cur_worddata_file = estrdup(filename);
 
     /* Create totwords File */
@@ -500,86 +393,44 @@ void   *DB_Create_Native(SWISH *sw, char *dbname)
     strcat(filename, USE_TEMPFILE_EXTENSION);
     SW_DB->tmp_hashfile = 1;
 #endif
-    SW_DB->db_hashfile = CreateBerkeleyFile(filename,DB_HASH);
+    SW_DB->db_hashfile = CreateBerkeleyFile(filename,DB_HASH,0);
     SW_DB->cur_hashfile_file = estrdup(filename);
 
-
-#endif
-
     efree(filename);
-
-#ifndef USE_BTREE
-    for (i = 0; i < MAXCHARS; i++)
-        SW_DB->offsets[i] = (sw_off_t)0;
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-        SW_DB->hashoffsets[i] = (sw_off_t)0;
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-        SW_DB->lasthashval[i] = (sw_off_t)0;
-
-    /* Reserve space for offset pointers */
-    SW_DB->offsetstart = sw_ftell(SW_DB->fp);
-    for (i = 0; i < MAXCHARS; i++)
-        printfileoffset(SW_DB->fp, (sw_off_t) 0, sw_fwrite);
-
-    SW_DB->hashstart = sw_ftell(SW_DB->fp);
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-        printfileoffset(SW_DB->fp, (sw_off_t) 0, sw_fwrite);
-#endif
 
     return (void *) SW_DB;
 }
 
 
 /*******************************************************************
-*   DB_Open_Native
+*   _DB_Open
 *
 *******************************************************************/
 
-void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
+void   *_DB_Open(SWISH *sw, char *dbname,int mode)
 {
     struct Handle_DBNative *SW_DB;
     FILE   *(*openRoutine)(char *) = NULL;
     char   *s;
-#ifdef USE_BTREE
     u_int32_t db_flags;
-#else
-    int     i;
-#endif
 
     switch(mode)
     {
     case DB_READ:
         openRoutine = openIndexFILEForRead;
-#ifdef USE_BTREE
         db_flags = DB_RDONLY;
-#endif
         break;
     case DB_READWRITE:
         openRoutine = openIndexFILEForReadAndWrite;
-#ifdef USE_BTREE
         db_flags = 0;
-#endif
         break;
     default:
         openRoutine = openIndexFILEForRead;
-#ifdef USE_BTREE
         db_flags = DB_RDONLY;
-#endif
     }
 
     SW_DB = (struct Handle_DBNative *) newNativeDBHandle(sw, dbname);
     SW_DB->mode = mode;
-
-#ifndef USE_BTREE
-    /* Open index File */
-    if (!(SW_DB->fp = openRoutine(dbname)))
-    {
-        set_progerrno(INDEX_FILE_ERROR, SW_DB->sw, "Could not open the index file '%s': ", dbname);
-        return (void *) SW_DB;
-    }
-
-    SW_DB->cur_index_file = estrdup(dbname);
-#endif
 
     s = emalloc(strlen(dbname) + strlen(PROPFILE_EXTENSION) + 1);
 
@@ -594,12 +445,10 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 
     SW_DB->cur_prop_file = s;
 
-#ifdef USE_BTREE
-
     s = emalloc(strlen(dbname) + strlen(BTREE_EXTENSION) + 1);
     strcpy(s, dbname);
     strcat(s, BTREE_EXTENSION);
-    SW_DB->db_btree = OpenBerkeleyFile(s, DB_BTREE, db_flags);
+    SW_DB->db_btree = OpenBerkeleyFile(s, DB_BTREE, db_flags, 1);
 
     SW_DB->cur_btree_file = s;
 
@@ -658,34 +507,19 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     s = emalloc(strlen(dbname) + strlen(WORDDATA_EXTENSION) + 1);
     strcpy(s, dbname);
     strcat(s, WORDDATA_EXTENSION);
-    SW_DB->db_worddata = OpenBerkeleyFile(s, DB_RECNO, db_flags);
+    SW_DB->db_worddata = OpenBerkeleyFile(s, DB_RECNO, db_flags, 0);
     SW_DB->cur_worddata_file = s;
 
     s = emalloc(strlen(dbname) + strlen(HASHFILE_EXTENSION) + 1);
     strcpy(s, dbname);
     strcat(s, HASHFILE_EXTENSION);
-    SW_DB->db_hashfile = OpenBerkeleyFile(s, DB_HASH, db_flags);
+    SW_DB->db_hashfile = OpenBerkeleyFile(s, DB_HASH, db_flags, 0);
     SW_DB->cur_hashfile_file = s;
 
-
-#endif
-
     /* Validate index files */
-    DB_CheckHeader(SW_DB);
+    _DB_CheckHeader(SW_DB);
     if ( SW_DB->sw->lasterror )
         return (void *) SW_DB;
-
-#ifndef USE_BTREE
-    /* Read offsets lookuptable */
-    SW_DB->offsetstart = sw_ftell(SW_DB->fp);
-    for (i = 0; i < MAXCHARS; i++)
-        SW_DB->offsets[i] = readfileoffset(SW_DB->fp, sw_fread);
-
-    /* Read hashoffsets lookuptable */
-    SW_DB->hashstart = sw_ftell(SW_DB->fp);
-    for (i = 0; i < VERYBIGHASHSIZE; i++)
-        SW_DB->hashoffsets[i] = readfileoffset(SW_DB->fp, sw_fread);
-#else
 
     /* Put the file pointer of props, propindex and totwords files 
     ** at the end of the files
@@ -695,7 +529,6 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
     sw_fseek(SW_DB->fp_prop,(sw_off_t)0,SEEK_END);
     sw_fseek(SW_DB->fp_propindex,(sw_off_t)0,SEEK_END);
     sw_fseek(SW_DB->fp_totwords,(sw_off_t)0,SEEK_END);
-#endif
 
     return (void *) SW_DB;
 }
@@ -707,7 +540,7 @@ void   *DB_Open_Native(SWISH *sw, char *dbname,int mode)
 *
 *****************************************************************/
 
-static void DB_Close_File_Native(FILE ** fp, char **filename, int *tempflag)
+static void _DB_Close_File(FILE ** fp, char **filename, int *tempflag)
 {
 #if defined(_WIN32) && !defined(__CYGWIN__)
 struct stat stbuf;
@@ -762,37 +595,12 @@ struct stat stbuf;
 
 
 
-void    DB_Close_Native(void *db)
+void    _DB_Close(void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-    int     i;
-    FILE   *fp = SW_DB->fp;
-#endif
-
 
     /* Close (and rename) property file, if it's open */
-    DB_Close_File_Native(&SW_DB->fp_prop, &SW_DB->cur_prop_file, &SW_DB->tmp_prop);
-
-#ifndef USE_BTREE
-
-    if (SW_DB->mode == DB_CREATE || SW_DB->mode == DB_READWRITE)     /* If we are indexing update offsets to words and files */
-    {
-        /* Update internal pointers */
-
-        sw_fseek(fp, SW_DB->offsetstart, SEEK_SET);
-        for (i = 0; i < MAXCHARS; i++)
-            printfileoffset(fp, SW_DB->offsets[i], sw_fwrite);
-
-        sw_fseek(fp, SW_DB->hashstart, SEEK_SET);
-        for (i = 0; i < VERYBIGHASHSIZE; i++)
-            printfileoffset(fp, SW_DB->hashoffsets[i], sw_fwrite);
-    }
-
-    /* Close (and rename) the index file */
-    DB_Close_File_Native(&SW_DB->fp, &SW_DB->cur_index_file, &SW_DB->tmp_index);
-
-#else
+    _DB_Close_File(&SW_DB->fp_prop, &SW_DB->cur_prop_file, &SW_DB->tmp_prop);
 
     /* Close (and rename) worddata file, if it's open */
     CloseBerkeleyFile(&SW_DB->db_worddata, &SW_DB->cur_worddata_file, &SW_DB->tmp_worddata);
@@ -804,36 +612,34 @@ void    DB_Close_Native(void *db)
     if(SW_DB->fp_propindex)
     {
         /* Close (and rename) property file, if it's open */
-        DB_Close_File_Native(&SW_DB->fp_propindex, &SW_DB->cur_propindex_file, &SW_DB->tmp_propindex);
+        _DB_Close_File(&SW_DB->fp_propindex, &SW_DB->cur_propindex_file, &SW_DB->tmp_propindex);
     }
     /* Close (and rename) totwords file, if it's open */
     if(SW_DB->fp_totwords)
     {
         /* Close (and rename) totwords file, if it's open */
-        DB_Close_File_Native(&SW_DB->fp_totwords, &SW_DB->cur_totwords_file, &SW_DB->tmp_totwords);
+        _DB_Close_File(&SW_DB->fp_totwords, &SW_DB->cur_totwords_file, &SW_DB->tmp_totwords);
     }
     /* Close (and rename) presorted index file, if it's open */
     if(SW_DB->fp_presorted)
     {
-        DB_Close_File_Native(&SW_DB->fp_presorted, &SW_DB->cur_presorted_file, &SW_DB->tmp_presorted);
+        _DB_Close_File(&SW_DB->fp_presorted, &SW_DB->cur_presorted_file, &SW_DB->tmp_presorted);
     }
     /* Close (and rename) header index file, if it's open */
     if(SW_DB->fp_header)
     {
-        DB_Close_File_Native(&SW_DB->fp_header, &SW_DB->cur_header_file, &SW_DB->tmp_header);
+        _DB_Close_File(&SW_DB->fp_header, &SW_DB->cur_header_file, &SW_DB->tmp_header);
     }
 
     /* Close (and rename) hash-file index file, if it's open */
     CloseBerkeleyFile(&SW_DB->db_hashfile, &SW_DB->cur_hashfile_file, &SW_DB->tmp_hashfile);
-#endif
-
 
     if (SW_DB->dbname)
         efree(SW_DB->dbname);
     efree(SW_DB);
 }
 
-void    DB_Remove_Native(void *db)
+void    _DB_Remove(void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
@@ -855,33 +661,23 @@ void    DB_Remove_Native(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int     DB_InitWriteHeader_Native(void *db)
+int     _DB_InitWriteHeader(void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-        /* The index file is being created. So put the header in the
-        ** current file position (coincides with the end of the file
-        */
-        SW_DB->offsets[HEADERPOS] = sw_ftell(SW_DB->fp);
-#else
-    long swish_magic;
-        /* Jump over swish_magic ID (long number) */
-        sw_fseek(SW_DB->fp_header, (sw_off_t)0, SEEK_SET);
-        swish_magic = readlong(SW_DB->fp_header, sw_fread);
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+long swish_magic;
+
+    /* Jump over swish_magic ID (long number) */
+    sw_fseek(SW_DB->fp_header, (sw_off_t)0, SEEK_SET);
+    swish_magic = readlong(SW_DB->fp_header, sw_fread);
 
     return 0;
 }
 
 
-int     DB_EndWriteHeader_Native(void *db)
+int     _DB_EndWriteHeader(void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-    FILE   *fp = SW_DB->fp;
-#else
-    FILE   *fp = SW_DB->fp_header;
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE   *fp = SW_DB->fp_header;
 
     /* End of header delimiter */
     if ( putc(0, fp) == EOF )
@@ -890,14 +686,10 @@ int     DB_EndWriteHeader_Native(void *db)
     return 0;
 }
 
-int     DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db)
+int     _DB_WriteHeaderData(int id, unsigned char *s, int len, void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-    FILE   *fp = SW_DB->fp;
-#else
-    FILE   *fp = SW_DB->fp_header;
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE   *fp = SW_DB->fp_header;
 
     compress1(id, fp, sw_fputc);
     compress1(len, fp, sw_fputc);
@@ -908,29 +700,23 @@ int     DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db)
 }
 
 
-int     DB_InitReadHeader_Native(void *db)
+int     _DB_InitReadHeader(void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-    sw_fseek(SW_DB->fp, SW_DB->offsets[HEADERPOS], SEEK_SET);
-#else
-    long swish_magic;
-        /* Jump over swish_magic ID (long number) */
-        sw_fseek(SW_DB->fp_header, (sw_off_t)0, SEEK_SET);
-        swish_magic = readlong(SW_DB->fp_header, sw_fread);
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+long swish_magic;
+
+    /* Jump over swish_magic ID (long number) */
+    sw_fseek(SW_DB->fp_header, (sw_off_t)0, SEEK_SET);
+    swish_magic = readlong(SW_DB->fp_header, sw_fread);
+
     return 0;
 }
 
-int     DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
+int     _DB_ReadHeaderData(int *id, unsigned char **s, int *len, void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifndef USE_BTREE
-    FILE   *fp = SW_DB->fp;
-#else
-    FILE   *fp = SW_DB->fp_header;
-#endif
-    int     tmp;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE   *fp = SW_DB->fp_header;
+int     tmp;
 
     tmp = uncompress1(fp, sw_fgetc);
     *id = tmp;
@@ -950,7 +736,7 @@ int     DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db)
     return 0;
 }
 
-int     DB_EndReadHeader_Native(void *db)
+int     _DB_EndReadHeader(void *db)
 {
     return 0;
 }
@@ -961,14 +747,8 @@ int     DB_EndReadHeader_Native(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int     DB_InitWriteWords_Native(void *db)
+int     _DB_InitWriteWords(void *db)
 {
-
-#ifndef USE_BTREE
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    SW_DB->offsets[WORDPOS] = sw_ftell(SW_DB->fp);
-#endif
-
     return 0;
 }
 
@@ -983,225 +763,19 @@ int     cmp_wordhashdata(const void *s1, const void *s2)
     else return -1;
 }
 
-int     DB_EndWriteWords_Native(void *db)
+int     _DB_EndWriteWords(void *db)
 {
-#ifndef USE_BTREE
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = (FILE *) SW_DB->fp;
-    int     i,
-            wordlen;
-    sw_off_t wordID, word_pos;
-    sw_off_t f_hash_offset, f_offset;
-
-    /* Free hash zone */
-    Mem_ZoneFree(&SW_DB->hashzone);
-
-    /* Now update word's data offset into the list of words */
-    /* Simple check  words and worddata must match */
-
-    if (! SW_DB->num_words)
-        progerr("No unique words indexed");
-
-    if (SW_DB->num_words != SW_DB->wordhash_counter)
-        progerrno("Internal DB_native error - SW_DB->num_words != SW_DB->wordhash_counter: ");
-
-    if (SW_DB->num_words != SW_DB->worddata_counter)
-        progerrno("Internal DB_native error - SW_DB->num_words != SW_DB->worddata_counter: ");
-
-    /* Sort wordhashdata to be written to allow sequential writes */
-    swish_qsort(SW_DB->wordhashdata, SW_DB->num_words, 3 * sizeof(sw_off_t), cmp_wordhashdata);
-
-    if (WRITE_WORDS_RAMDISK)
-    {
-        fp = (FILE *) SW_DB->rd;
-    }
-    for (i = 0; i < SW_DB->num_words; i++)
-    {
-        wordID = SW_DB->wordhashdata[3 * i];
-        f_hash_offset = SW_DB->wordhashdata[3 * i + 1];
-        f_offset = SW_DB->wordhashdata[3 * i + 2];
-
-        word_pos = wordID;
-        if (WRITE_WORDS_RAMDISK)
-        {
-            word_pos -= SW_DB->offsets[WORDPOS];
-        }
-        /* Position file pointer in word */
-        SW_DB->w_seek(fp, word_pos, SEEK_SET);
-        /* Jump over word length and word */
-        wordlen = uncompress1(fp, SW_DB->w_getc); /* Get Word length */
-        SW_DB->w_seek(fp, (sw_off_t) wordlen, SEEK_CUR); /* Jump Word */
-        /* Write offset to next chain */
-        printfileoffset(fp, f_hash_offset, SW_DB->w_write);
-        /* Write offset to word data */
-        printfileoffset(fp, f_offset, SW_DB->w_write);
-    }
-
-    efree(SW_DB->wordhashdata);
-    SW_DB->wordhashdata = NULL;
-    SW_DB->worddata_counter = 0;
-    SW_DB->wordhash_counter = 0;
-
-    if (WRITE_WORDS_RAMDISK)
-    {
-        unsigned char buffer[4096];
-        sw_off_t    ramdisk_size;
-        long    read = 0;
-
-        ramdisk_seek((FILE *) SW_DB->rd, (sw_off_t)0, SEEK_END);
-        ramdisk_size = ramdisk_tell((FILE *) SW_DB->rd);
-        /* Write ramdisk to fp end free it */
-        sw_fseek((FILE *) SW_DB->fp, SW_DB->offsets[WORDPOS], SEEK_SET);
-        ramdisk_seek((FILE *) SW_DB->rd, (sw_off_t)0, SEEK_SET);
-        while (ramdisk_size)
-        {
-            read = ramdisk_read(buffer, 4096, 1, (FILE *) SW_DB->rd);
-            if ( sw_fwrite(buffer, read, 1, SW_DB->fp) != 1 )
-                progerrno("Error while flushing ramdisk to disk:");
-
-            ramdisk_size -= (sw_off_t)read;
-        }
-        ramdisk_close((FILE *) SW_DB->rd);
-    }
-    /* Get last word file offset - For the last word, this will be
-    ** used to delimite the last word in the index file
-    ** In other words. This is the file offset where no more words
-    ** are added.
-    */
-    SW_DB->offsets[ENDWORDPOS] = sw_ftell(SW_DB->fp);
-
-    /* Restore file pointer at the end of file */
-    sw_fseek(SW_DB->fp, (sw_off_t)0, SEEK_END);
-    if ( sw_fputc(0, SW_DB->fp) == EOF )           /* End of words mark */
-        progerrno("sw_fputc() failed writing null: ");
-
-#endif
-
     return 0;
 }
 
-#ifndef USE_BTREE
-sw_off_t    DB_GetWordID_Native(void *db)
-{
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-    sw_off_t    pos = (sw_off_t)0;
-
-    if (WRITE_WORDS_RAMDISK)
-    {
-        if (!SW_DB->rd)
-        {
-            /* ramdisk size as suggested by Bill Meier */
-            SW_DB->rd = ramdisk_create("RAM Disk: write words", 32 * 4096);
-        }
-        pos = SW_DB->offsets[WORDPOS];
-        fp = (FILE *) SW_DB->rd;
-    }
-    pos += SW_DB->w_tell(fp);
-
-    return pos;                 /* Native database uses position as a Word ID */
-}
-
-int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db)
-{
-    int     i,
-            wordlen;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-
-    FILE   *fp = SW_DB->fp;
-
-    i = (int) ((unsigned char) word[0]);
-
-    if (!SW_DB->offsets[i])
-        SW_DB->offsets[i] = wordID;
-
-
-    /* Write word length, word and a NULL offset */
-    wordlen = strlen(word);
-
-    if (WRITE_WORDS_RAMDISK)
-    {
-        fp = (FILE *) SW_DB->rd;
-    }
-    compress1(wordlen, fp, SW_DB->w_putc);
-    SW_DB->w_write(word, wordlen, sizeof(char), fp);
-
-    printfileoffset(fp, (sw_off_t) 0, SW_DB->w_write); /* hash chain */
-    printfileoffset(fp, (sw_off_t) 0, SW_DB->w_write); /* word's data pointer */
-
-    SW_DB->num_words++;
-
-    return 0;
-}
-
-int offsethash(sw_off_t offset)
-{
-    return (int)(offset % (sw_off_t) BIGHASHSIZE);
-}
-
-long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
-{
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-    struct numhash *numhash;
-    int     numhashval;
-
-    /* We must be at the end of the file */
-
-    if (!SW_DB->worddata_counter)
-    {
-        /* We are starting writing worddata */
-        /* If inside a ramdisk we must preserve its space */
-        if (WRITE_WORDS_RAMDISK)
-        {
-            sw_off_t    ramdisk_size;
-
-            ramdisk_seek((FILE *) SW_DB->rd, (sw_off_t)0, SEEK_END);
-            ramdisk_size = ramdisk_tell((FILE *) SW_DB->rd);
-            /* Preserve ramdisk size in DB file  */
-            /* it will be written later */
-            sw_fseek((FILE *) SW_DB->fp, ramdisk_size, SEEK_END);
-        }
-    }
-    /* Search for word's ID */
-    numhashval = offsethash(wordID);
-    for (numhash = SW_DB->hash[numhashval]; numhash; numhash = numhash->next)
-        if (SW_DB->wordhashdata[3 * numhash->index] == wordID)
-            break;
-    if (!numhash)
-        progerrno("Internal db_native.c error in DB_WriteWordData_Native: ");
-    SW_DB->wordhashdata[3 * numhash->index + 2] = sw_ftell(fp);
-
-    SW_DB->worddata_counter++;
-
-    /* Write the worddata to disk */
-    /* Write in the form:  <data_size><saved_bytes><worddata> */
-    /* If there is not any compression then saved_bytes is 0 */
-    compress1(data_size, fp, sw_fputc);
-    compress1(saved_bytes, fp, sw_fputc);
-    if ( sw_fwrite(worddata, data_size, 1, fp) != 1 )
-        progerrno("Error writing to device while trying to write %d bytes: ", data_size );
-
-
-    /* A NULL byte to indicate end of word data */
-    if ( sw_fputc(0, fp) == EOF )
-        progerrno( "sw_fputc() returned error writing null: ");
-
-
-
-    return 0;
-}
-
-#else
-
-sw_off_t    DB_GetWordID_Native(void *db)
+sw_off_t    _DB_GetWordID(void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
     return (sw_off_t) SW_DB->worddata_counter;
 }
 
-int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db)
+int     _DB_WriteWord(char *word, sw_off_t wordID, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
@@ -1217,7 +791,7 @@ int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db)
     data.data = (void *)&wordID;
     data.size = sizeof(wordID);
 
-    ret = SW_DB->db_btree->put(SW_DB->db_btree,NULL,&key,&data,DB_NOOVERWRITE);
+    ret = SW_DB->db_btree->put(SW_DB->db_btree,NULL,&key,&data,0);
 
     if(ret != 0)
     {
@@ -1228,47 +802,14 @@ int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db)
     return 0;
 }
 
-int     DB_UpdateWordID_Native(char *word, sw_off_t new_wordID, void *db)
-{
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-
-    DBT key,data;
-
-    /*Berkeley DB stuff */
-    memset(&key,0,sizeof(DBT));
-    memset(&data,0,sizeof(DBT));
-    key.data = word;
-    key.size = strlen(word);
-    data.data = (void *)&new_wordID;
-    data.size = sizeof(new_wordID);
-    SW_DB->db_btree->del(SW_DB->db_btree,NULL,&key,0);
-    SW_DB->db_btree->put(SW_DB->db_btree,NULL,&key,&data,DB_NOOVERWRITE);
-
-    return 0;
-}
-
-int     DB_DeleteWordData_Native(sw_off_t wordID, void *db)
-{
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-
-    DBT key;
-
-    /*Berkeley DB stuff */
-    memset(&key,0,sizeof(DBT));
-    key.data = (void *)&wordID;
-    key.size = sizeof(wordID);
-    SW_DB->db_worddata->del(SW_DB->db_worddata,NULL,&key,0);
-
-    return 0;
-}
-
-long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
+long    _DB_WriteWordData(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
 {
     unsigned char stack_buffer[8192]; /* just to avoid emalloc,efree overhead */
     unsigned char *buf, *p;
     int buf_size;
     DBT key,data;
     db_recno_t recno;
+    int ret;
 
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
@@ -1285,8 +826,6 @@ long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int da
     /* Put bytes worddata buf */
     memcpy(p,worddata,data_size);
 
-    SW_DB->worddata_counter++;
-
     /* Write the worddata to disk */
     /*Berkeley DB stuff */
     memset(&key,0,sizeof(DBT));
@@ -1295,336 +834,46 @@ long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int da
     key.size = sizeof(SW_DB->worddata_counter);
     data.data = buf;
     data.size = buf_size;
-    SW_DB->db_worddata->put(SW_DB->db_worddata,NULL,&key,&data,DB_APPEND);
-    recno = *(db_recno_t *) key.data;
+    ret = SW_DB->db_worddata->put(SW_DB->db_worddata,NULL,&key,&data,DB_APPEND);
+
+    if(ret == 0)
+    {
+        recno = *(db_recno_t *) key.data;
+        SW_DB->worddata_counter = recno;
+    }
+    else
+    {
+        printf("ERROR %d inserting worddata in Berkeley DB BTREE\n",ret);
+    }
 
     if(buf != stack_buffer)
         efree(buf);
     return 0;
 }
 
-#endif
-
-#ifndef USE_BTREE
-int     DB_WriteWordHash_Native(char *word, sw_off_t wordID, void *db)
-{
-    int     i,
-            hashval,
-            numhashval;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    struct numhash *numhash;
-
-    if (!SW_DB->wordhash_counter)
-    {
-        /* Init hash array */
-        for (i = 0; i < BIGHASHSIZE; i++)
-            SW_DB->hash[i] = NULL;
-        SW_DB->hashzone = Mem_ZoneCreate("WriteWordHash", SW_DB->num_words * sizeof(struct numhash), 0);
-
-        /* If we are here we have finished WriteWord_Native */
-        /* If using ramdisk - Reserve space upto the size of the ramdisk */
-        if (WRITE_WORDS_RAMDISK)
-        {
-            sw_off_t    ram_size = (sw_off_t) (SW_DB->w_seek((FILE *) SW_DB->rd, 0, SEEK_END));
-
-            sw_fseek(SW_DB->fp, ram_size, SEEK_SET);
-        }
-
-        SW_DB->wordhashdata = emalloc(3 * SW_DB->num_words * sizeof(sw_off_t));
-    }
-
-    hashval = verybighash(word);
-
-    if (!SW_DB->hashoffsets[hashval])
-    {
-        SW_DB->hashoffsets[hashval] = wordID;
-    }
-
-    SW_DB->wordhashdata[3 * SW_DB->wordhash_counter] = wordID;
-    SW_DB->wordhashdata[3 * SW_DB->wordhash_counter + 1] = (sw_off_t) 0;
-
-
-    /* Add to the hash */
-    numhash = (struct numhash *) Mem_ZoneAlloc(SW_DB->hashzone, sizeof(struct numhash));
-
-    numhashval = offsethash(wordID);
-    numhash->index = SW_DB->wordhash_counter;
-    numhash->next = SW_DB->hash[numhashval];
-    SW_DB->hash[numhashval] = numhash;
-
-    SW_DB->wordhash_counter++;
-
-    /* Update previous word in hashlist */
-    if (SW_DB->lasthashval[hashval])
-    {
-        /* Search for SW_DB->lasthashval[hashval] */
-        numhashval = offsethash(SW_DB->lasthashval[hashval]);
-        for (numhash = SW_DB->hash[numhashval]; numhash; numhash = numhash->next)
-            if (SW_DB->wordhashdata[3 * numhash->index] == SW_DB->lasthashval[hashval])
-                break;
-        if (!numhash)
-            progerrno("Internal db_native.c error in DB_WriteWordHash_Native: ");
-        SW_DB->wordhashdata[3 * numhash->index + 1] = wordID;
-    }
-    SW_DB->lasthashval[hashval] = wordID;
-
-    return 0;
-}
-#endif
-
-int     DB_InitReadWords_Native(void *db)
+int     _DB_InitReadWords(void *db)
 {
     return 0;
 }
 
-int     DB_EndReadWords_Native(void *db)
+int     _DB_EndReadWords(void *db)
 {
     return 0;
 }
 
-#ifndef USE_BTREE
-int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db)
-{
-    int     wordlen,
-            res,
-            hashval;
-    sw_off_t    offset, dataoffset;
-    char   *fileword = NULL;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-
-
-    /* If there is not a star use the hash approach ... */
-    res = 1;
-
-    /* Get hash file offset */
-    hashval = verybighash(word);
-    if (!(offset = SW_DB->hashoffsets[hashval]))
-    {
-        *wordID = (sw_off_t)0;
-        return 0;
-    }
-    /* Search for word */
-    while (res)
-    {
-        /* Position in file */
-        sw_fseek(fp, offset, SEEK_SET);
-        /* Get word */
-        wordlen = uncompress1(fp, sw_fgetc);
-        fileword = emalloc(wordlen + 1);
-        sw_fread(fileword, 1, wordlen, fp);
-        fileword[wordlen] = '\0';
-        offset = readfileoffset(fp, sw_fread); /* Next hash */
-        dataoffset = readfileoffset(fp, sw_fread); /* Offset to Word data */
-
-        res = strcmp(word, fileword);
-        efree(fileword);
-
-        if (!res)
-            break;              /* Found !! */
-        else if (!offset)
-        {
-            dataoffset = (sw_off_t)0;
-            break;
-        }
-    }
-    *wordID = (sw_off_t)dataoffset;
-    return 0;
-}
-
-int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db)
-{
-    int     wordlen,
-            i,
-            res,
-            len,
-            found;
-    sw_off_t    dataoffset = 0;
-    char   *fileword = NULL;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-
-
-    len = strlen(word);
-
-    i = (int) ((unsigned char) word[0]);
-
-    if (!SW_DB->offsets[i])
-    {
-        *resultword = NULL;
-        *wordID = (sw_off_t)0;
-        return 0;
-    }
-    found = 1;
-    sw_fseek(fp, SW_DB->offsets[i], SEEK_SET);
-
-    /* Look for first occurrence */
-    wordlen = uncompress1(fp, sw_fgetc);
-    fileword = (char *) emalloc(wordlen + 1);
-
-    while (wordlen)
-    {
-        int bytes_read = (int)sw_fread(fileword, 1, wordlen, fp);
-        if ( bytes_read != wordlen )
-            progerr("Read %d bytes, expected %d in DB_ReadFirstWordInvertedIndex_Native", bytes_read, wordlen);
-
-        fileword[wordlen] = '\0';
-        readfileoffset(fp, sw_fread);    /* jump hash offset */
-        dataoffset = readfileoffset(fp, sw_fread); /* Get offset to word's data */
-
-        if (!(res = strncmp(word, fileword, len))) /*Found!! */
-        {
-            SW_DB->nextwordoffset = sw_ftell(fp); /* preserve next word pos */
-            break;
-        }
-
-        /* check if past current word or at end */
-        if (res < 0 || sw_ftell(fp) ==  SW_DB->offsets[ENDWORDPOS] )
-        {
-            dataoffset = 0;
-            break;
-        }
-
-        /* Go to next value */
-        wordlen = uncompress1(fp, sw_fgetc); /* Next word */
-        if (!wordlen)
-        {
-            dataoffset = 0;
-            break;
-        }
-        efree(fileword);
-        fileword = (char *) emalloc(wordlen + 1);
-    }
-
-    if (!dataoffset)
-    {
-        efree(fileword);
-        *resultword = NULL;
-    }
-    else
-        *resultword = fileword;
-
-    *wordID = dataoffset;
-
-    return 0;
-}
-
-int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db)
-{
-    int     len,
-            wordlen;
-    sw_off_t    dataoffset;
-    char   *fileword;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-
-    /* Check for end of words */
-    if (!SW_DB->nextwordoffset || SW_DB->nextwordoffset == SW_DB->offsets[ENDWORDPOS])
-    {
-        *resultword = NULL;
-        *wordID = (sw_off_t)0;
-        return 0;
-    }
-
-    len = strlen(word);
-
-
-    sw_fseek(fp, SW_DB->nextwordoffset, SEEK_SET);
-
-    wordlen = uncompress1(fp, sw_fgetc);
-    fileword = (char *) emalloc(wordlen + 1);
-
-    sw_fread(fileword, 1, wordlen, fp);
-    fileword[wordlen] = '\0';
-    if (strncmp(word, fileword, len))
-    {
-        efree(fileword);
-        fileword = NULL;
-        dataoffset = (sw_off_t)0;         /* No more data */
-        SW_DB->nextwordoffset = (sw_off_t)0;
-    }
-    else
-    {
-        readfileoffset(fp, sw_fread);    /* jump hash offset */
-        dataoffset = readfileoffset(fp, sw_fread); /* Get data offset */
-        SW_DB->nextwordoffset = sw_ftell(fp);
-    }
-    *resultword = fileword;
-    *wordID = dataoffset;
-
-    return 0;
-
-}
-
-
-long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
-{
-    unsigned char *buffer;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    FILE   *fp = SW_DB->fp;
-
-    sw_fseek(fp, wordID, SEEK_SET);
-    *data_size = uncompress1(fp, sw_fgetc);
-    *saved_bytes = uncompress1(fp, sw_fgetc);
-    buffer = emalloc(*data_size);
-    sw_fread(buffer, *data_size, 1, fp);
-
-    *worddata = buffer;
-
-    return 0;
-}
-
-
-#else
-int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db)
+int     _DB_ReadWord(char *word, DB_WORDID **wordID, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
     sw_off_t dummy = 0;
     DBT key,data;
-    int ret;
-
-    /* Berkeley DB stuff */
-    memset(&key,0,sizeof(DBT));
-    memset(&data,0,sizeof(DBT));
-
-    key.data = word;
-    key.size = strlen(word); 
-    data.data = &dummy;
-    data.ulen = sizeof(dummy); 
-    data.flags = DB_DBT_USERMEM;
-   
-    ret = SW_DB->db_btree->get(SW_DB->db_btree,NULL,&key,&data,0);
-
-    if(ret == 0)
-    {
-        *wordID = UNPACKLONG(dummy);
-    }
-    else if (ret == DB_NOTFOUND)
-    {
-        *wordID = (sw_off_t)0;
-    }
-    else
-    {
-        //$$$ unexpected return code
-        printf("Unexpected return code %d from Berkeley BD BTREE while searching for \"%s\"\n",ret,word);
-        *wordID = (sw_off_t)0;
-    }
-
-    return 0;
-}
-
-int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db)
-{
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    int ret, found = 0;
     DBC *dbcp;
-    DBT key, data;
-    int ret;
+    DB_WORDID *head = NULL, *last = NULL, *tmp = NULL;
 
     /* Acquire a cursor for the database. */
-    if ((ret = SW_DB->db_btree->cursor(SW_DB->db_btree, NULL, &dbcp, 0)) != 0) 
+    if ((ret = SW_DB->db_btree->cursor(SW_DB->db_btree, NULL, &dbcp, 0)) != 0)
     {
-        //dbp->err(SW_DB->db_btree, ret, "DB->cursor"); return (1); 
-        *resultword = NULL;
+        //dbp->err(SW_DB->db_btree, ret, "DB->cursor"); return (1);
         *wordID = (sw_off_t)0;
     }
     else
@@ -1632,12 +881,63 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_o
         /* Initialize the key/data pair. */
         memset(&key, 0, sizeof(key));
         memset(&data, 0, sizeof(data));
-        *wordID = 0;
+
+        key.data = word;
+        key.size = strlen(word); 
+        data.data = &dummy;
+        data.ulen = sizeof(dummy); 
+        data.flags = DB_DBT_USERMEM;
+   
+        /* Walk through the database and print out the key/data pairs. */
+        ret = dbcp->c_get(dbcp, &key, &data, DB_SET);
+        if (ret == 0)
+        {
+            found = 1;
+            while(ret == 0)
+            {
+                tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
+                tmp->wordID = UNPACKLONG(dummy);
+                tmp->next = NULL;
+                if(!head) head = tmp;
+                if(last) last->next = tmp;
+                last = tmp;
+                ret = dbcp->c_get(dbcp, &key, &data, DB_NEXT_DUP);
+            }
+        }
+        dbcp->c_close(dbcp);
+    }
+    *wordID = head;
+
+    return 0;
+}
+
+int     _DB_ReadFirstWordInvertedIndex(char *word, char **resultword, DB_WORDID **wordID, void *db)
+{
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    DBC *dbcp;
+    DBT key, data;
+    int ret; 
+    sw_off_t dummy;
+    DB_WORDID *tmp = NULL;
+
+    /* Acquire a cursor for the database. */
+    if ((ret = SW_DB->db_btree->cursor(SW_DB->db_btree, NULL, &dbcp, 0)) != 0) 
+    {
+        //dbp->err(SW_DB->db_btree, ret, "DB->cursor"); return (1); 
+        *resultword = NULL;
+        *wordID = NULL;
+    }
+    else
+    {
+        /* Initialize the key/data pair. */
+        memset(&key, 0, sizeof(key));
+        memset(&data, 0, sizeof(data));
+        dummy = 0;
         key.data = word;
         key.size = strlen(word);
         key.flags = DB_DBT_MALLOC;
-        data.data = wordID;
-        data.ulen = sizeof(*wordID);
+        data.data = &dummy;
+        data.ulen = sizeof(dummy);
         data.flags = DB_DBT_USERMEM;
        
         /* Walk through the database and print out the key/data pairs. */ 
@@ -1647,7 +947,7 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_o
             if((key.size < strlen(word)) || (strncmp(word,key.data,strlen(word))!=0))
             {
                 *resultword = NULL;
-                *wordID = (sw_off_t)0;
+                tmp = NULL;
                 dbcp->c_close(dbcp);
                 SW_DB->dbc_btree = NULL;
             }
@@ -1656,7 +956,10 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_o
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword,key.data,key.size);
                 (*resultword)[key.size]='\0';
-                *wordID = UNPACKLONG(*wordID);
+                dummy = UNPACKLONG(dummy);
+                tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
+                tmp->wordID = dummy;
+                tmp->next = NULL;
                 /* Preserve  cursor */
                 SW_DB->dbc_btree = dbcp;
             }
@@ -1667,31 +970,38 @@ int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_o
         else if (ret == DB_NOTFOUND)
         {
             *resultword = NULL;
-            *wordID = (sw_off_t)0;
+            tmp = NULL;
             dbcp->c_close(dbcp);
             SW_DB->dbc_btree = NULL;
         }
     }
 
+    *wordID = tmp;
+
     return 0;
 }
 
-int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db)
+int     _DB_ReadNextWordInvertedIndex(char *word, char **resultword, DB_WORDID **wordID, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
     DBC *dbcp = SW_DB->dbc_btree;
     DBT key, data;
     int ret;
+    sw_off_t dummy = 0;
+    DB_WORDID *tmp = NULL;
+
+    *resultword = NULL;
+    *wordID = NULL;
 
     if(dbcp)
     {
         /* Initialize the key/data pair. */
         memset(&key, 0, sizeof(key));
         memset(&data, 0, sizeof(data));
-        *wordID = 0;
+        dummy = 0;
         key.flags = DB_DBT_MALLOC;
-        data.data = wordID;
-        data.ulen = sizeof(*wordID);
+        data.data = &dummy;
+        data.ulen = sizeof(dummy);
         data.flags = DB_DBT_USERMEM;
 
         /* Walk through the database and print out the key/data pairs. */
@@ -1702,7 +1012,7 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_of
             if((key.size < strlen(word)) || (strncmp(word,key.data,strlen(word))!=0))
             {
                 *resultword = NULL;
-                *wordID = (sw_off_t)0;
+                *wordID = NULL;
                 dbcp->c_close(dbcp);
                 SW_DB->dbc_btree = NULL;
             }
@@ -1711,22 +1021,27 @@ int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_of
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword,key.data,key.size);
                 (*resultword)[key.size]='\0';
-                *wordID = UNPACKLONG(*wordID);
+                dummy = UNPACKLONG(dummy);
+                tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
+                tmp->wordID = dummy;
+                tmp->next = NULL;
+                *wordID = tmp;
             }
             efree(key.data);
         }
         else if (ret == DB_NOTFOUND)
         {
             *resultword = NULL;
-            *wordID = (sw_off_t)0;
+            *wordID = NULL;
             dbcp->c_close(dbcp);
             SW_DB->dbc_btree = NULL;
         }
     }
+
     return 0;
 }
 
-long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
+long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
 {
     unsigned char *buf;
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
@@ -1762,8 +1077,6 @@ long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *d
     return 0;
 }
 
-#endif
-
 
 /*--------------------------------------------
 ** 2002/12 Jose Ruiz
@@ -1772,12 +1085,12 @@ long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *d
 */
 
 /* Routine to write path,filenum */
-int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata, int sz_filedata, void *db)
+int     _DB_WriteFileNum(int filenum, unsigned char *filedata, int sz_filedata, void *db)
 {
-#ifdef USE_BTREE
-    unsigned long tmp = (unsigned long)filenum;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    DBT key,data;
+unsigned long tmp = (unsigned long)filenum;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+DBT key,data;
+int ret;
 
     /* Pack tmp */
     tmp = PACKLONG(tmp);
@@ -1790,19 +1103,22 @@ int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata, int sz_file
     data.data = (void *)&tmp;
     data.size = sizeof(tmp);
     /* Write it to the hash index */
-    SW_DB->db_hashfile->put(SW_DB->db_hashfile,NULL,&key,&data,0);
-#endif
+    ret = SW_DB->db_hashfile->put(SW_DB->db_hashfile,NULL,&key,&data,0);
+    if(ret != 0)
+    {
+        printf("ERROR %d inserting file \"%s\" in Berkeley DB HASH\n",ret,filedata);
+    }
 
     return 0;
 }
 
 /* Routine to get filenum from path */
-int     DB_ReadFileNum_Native(unsigned char *filedata, void *db)
+int     _DB_ReadFileNum(unsigned char *filedata, void *db)
 {
-#ifdef USE_BTREE
-    unsigned long tmp;
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    DBT key,data;
+unsigned long filenum;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+DBT key,data;
+int ret;
 
     /* Get it from the hash index */
     /*Berkeley DB stuff */
@@ -1810,27 +1126,36 @@ int     DB_ReadFileNum_Native(unsigned char *filedata, void *db)
     memset(&data,0,sizeof(DBT));
     key.data = filedata;
     key.size = strlen((char *)filedata);
-    data.data = &tmp;
-    data.ulen = sizeof(tmp);
+    data.data = &filenum;
+    data.ulen = sizeof(filenum);
     data.flags = DB_DBT_USERMEM;
     /* Read it from the hash index */
-    SW_DB->db_hashfile->get(SW_DB->db_hashfile,NULL,&key,&data,0);
+    ret = SW_DB->db_hashfile->get(SW_DB->db_hashfile,NULL,&key,&data,0);
 
-    /* UnPack tmp */
-    tmp = UNPACKLONG(tmp);
+    if(ret == 0)
+    {
+        filenum = UNPACKLONG(filenum);
+    }
+    else if (ret == DB_NOTFOUND)
+    {
+        filenum = 0;
+    }
+    else
+    {
+        //$$$ unexpected return code
+        printf("Unexpected return code %d from Berkeley BD FILEHASH while searching for \"%s\"\n",ret,filedata);
+        filenum = 0;
+    }
 
-    return (int)tmp;
-#endif
-    return 0;
+    return (int)filenum;
 }
 
 /* Routine to test if filenum was deleted */
-int     DB_CheckFileNum_Native(int filenum, void *db)
+int     _DB_CheckFileNum(int filenum, void *db)
 {
-#ifdef USE_BTREE
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-    unsigned long totwords;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+unsigned long totwords;
 
     /* swish_magic number is in position 0 (first_record) */
     /* filenum starts in 1 (first filenum is 1) */
@@ -1839,19 +1164,16 @@ int     DB_CheckFileNum_Native(int filenum, void *db)
     totwords = readlong(SW_DB->fp_totwords, sw_fread);
  
     return (int) totwords;
-#endif
-    return 1;
 }
 
 
 /* Routine to remove a filenum */
 /* At this moment, to remove a filenum I am just puting 0 in the number of
 ** words */
-int     DB_RemoveFileNum_Native(int filenum, void *db)
+int     _DB_RemoveFileNum(int filenum, void *db)
 {
-#ifdef USE_BTREE
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    long    swish_magic;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+long    swish_magic;
 
     /* Jump swish_magic number */
     sw_fseek(SW_DB->fp_totwords, (sw_off_t)0, SEEK_SET);
@@ -1860,8 +1182,6 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
     /* Go to totalwords position  and write a 0 */
     sw_fseek(SW_DB->fp_totwords, (sw_off_t)(filenum - 1) * sizeof(long), SEEK_CUR);
     printlong(SW_DB->fp_totwords, 0, sw_fwrite);
-
-#endif
 
     return 0;
 }
@@ -1898,9 +1218,9 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 *   the pointer in the previous table to point to the next table.  A zero entry
 *   indicates that there are no more records.
 *
-* DB_InitWriteSortedIndex_Native should probably write a null for the first
+* _DB_InitWriteSortedIndex should probably write a null for the first
 * record's "next table entry" and set next_ and last_ pointers.  Then
-* DB_EndWriteSortedIndex_Native call would not be needed.
+* _DB_EndWriteSortedIndex call would not be needed.
 *
 * Notes/Questions:
 *   Seems like result_sort.c is the only place that loads this -- in LoadSortedProps.
@@ -1912,23 +1232,17 @@ int     DB_RemoveFileNum_Native(int filenum, void *db)
 ********************************************************************************/
 
 
-int     DB_InitWriteSortedIndex_Native(void *db)
+int     _DB_InitWriteSortedIndex(void *db)
 {
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifdef USE_BTREE
-   FILE *fp = SW_DB->fp_presorted;
-#else
-   FILE *fp = SW_DB->fp;
-
-   SW_DB->offsets[SORTEDINDEX] = sw_ftell(fp);
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE *fp = SW_DB->fp_presorted;
 
    SW_DB->next_sortedindex = sw_ftell(fp);
    return 0;
 }
 
 /********************************************************************************
-* DB_WriteSortedIndex
+* _DB_WriteSortedIndex
 *
 * Input:
 *   propID      property id of this table
@@ -1938,15 +1252,11 @@ int     DB_InitWriteSortedIndex_Native(void *db)
 *
 *********************************************************************************/
 
-int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db)
+int     _DB_WriteSortedIndex(int propID, unsigned char *data, int sz_data,void *db)
 {
-   sw_off_t tmp1,tmp2;
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifdef USE_BTREE
-   FILE *fp = SW_DB->fp_presorted;
-#else
-   FILE *fp = SW_DB->fp;
-#endif
+sw_off_t tmp1,tmp2;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE *fp = SW_DB->fp_presorted;
 
    sw_fseek(fp, SW_DB->next_sortedindex, SEEK_SET);
 
@@ -1979,14 +1289,10 @@ int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,
    return 0;
 }
 
-int     DB_EndWriteSortedIndex_Native(void *db)
+int     _DB_EndWriteSortedIndex(void *db)
 {
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifdef USE_BTREE
-   FILE *fp = SW_DB->fp_presorted;
-#else
-   FILE *fp = SW_DB->fp;
-#endif
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE *fp = SW_DB->fp_presorted;
 
    printfileoffset(fp,(sw_off_t)0,sw_fwrite);  /* No next table mark - Useful if no presorted indexes */
          /* NULL meta id- Only useful if no presorted indexes  */
@@ -2001,13 +1307,13 @@ int     DB_EndWriteSortedIndex_Native(void *db)
 /* Non Btree read functions */
 
 
-int     DB_InitReadSortedIndex_Native(void *db)
+int     _DB_InitReadSortedIndex(void *db)
 {
    return 0;
 }
 
 /***********************************************************************************
-*  DB_ReadSortedIndex_Native -
+*  _DB_ReadSortedIndex -
 *
 *  Searches through the sorted indexes looking for one that matches the propID
 *  passed in.  If found then malloc's a table and reads it in.
@@ -2015,30 +1321,22 @@ int     DB_InitReadSortedIndex_Native(void *db)
 *
 ***********************************************************************************/
 
-int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db)
+int     _DB_ReadSortedIndex(int propID, unsigned char **data, int *sz_data,void *db)
 {
-   sw_off_t next;
-   long id, tmp;
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-#ifdef USE_BTREE
-   FILE *fp = SW_DB->fp_presorted;
-   unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-#else
-   FILE *fp = SW_DB->fp;
-   unsigned long first_record = SW_DB->offsets[SORTEDINDEX];
-#endif
-
+sw_off_t next;
+long id, tmp;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+FILE *fp = SW_DB->fp_presorted;
+unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
 
    /* seek to the first record */
    sw_fseek(fp,first_record,SEEK_SET);
-
 
    /* get seek position of the next record, if needed */
    next = readfileoffset(fp,sw_fread);
 
    /* read propID for this record */
    id = uncompress1(fp,sw_fgetc);
-
 
    while(1)
    {
@@ -2067,13 +1365,13 @@ int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data
    return 0;
 }
 
-int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db)
+int     _DB_ReadSortedData(int *data,int index, int *value, void *db)
 {
     *value = data[index];
     return 0;
 }
 
-int     DB_EndReadSortedIndex_Native(void *db)
+int     _DB_EndReadSortedIndex(void *db)
 {
    return 0;
 }
@@ -2132,21 +1430,21 @@ sw_off_t readfileoffset(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE
 
 
 /****************************************************************************
-*   Writing Properites  (not for USE_BTREE)
+*   Writing Properites
 *
 *   Properties are written sequentially to the .prop file.
 *   Fixed length records of the seek position into the
 *   property file are written sequentially to the main index (which is why
 *   there's a separate .prop file).
 *
-*   DB_InitWriteProperties is called first time a property is written
+*   _DB_InitWriteProperties is called first time a property is written
 *   to save the offset of the property index table in the main index.
 *   It's simply a ftell() of the current position in the index and that
 *   seek position is stored in the main index "offsets" table.
 *
-*   DB_WriteProperty writes a property.
+*   _DB_WriteProperty writes a property.
 *
-*   DB_WritePropPositions write the seek pointers to the main index and
+*   _DB_WritePropPositions write the seek pointers to the main index and
 *   *must* be called after processing each file.
 *   This is all done in WritePropertiesToDisk().
 *
@@ -2160,19 +1458,8 @@ sw_off_t readfileoffset(FILE * fp, size_t(*f_read) (void *, size_t, size_t, FILE
 *****************************************************************************/
 
 
-int     DB_InitWriteProperties_Native(void *db)
+int     _DB_InitWriteProperties(void *db)
 {
-#ifndef USE_BTREE
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-
-    SW_DB->offsets[FILELISTPOS] = sw_ftell(SW_DB->fp);
-
-#ifdef DEBUG_PROP
-    printf("InitWriteProperties: Start of property table in main index at offset: %ld\n", SW_DB->offsets[FILELISTPOS] );
-#endif
-
-#endif
-
     return 0;
 }
 
@@ -2199,7 +1486,7 @@ int     DB_InitWriteProperties_Native(void *db)
 *
 *****************************************************************************/
 
-void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
+void    _DB_WriteProperty( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
     size_t             written_bytes;
@@ -2299,22 +1586,18 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 *   since much of the data in the table written to disk could be compressed.
 *
 *****************************************************************************/
-void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
+void _DB_WritePropPositions(IndexFILE *indexf, FileRec *fi, void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    PROP_INDEX      *pindex = fi->prop_index;
-    INDEXDATAHEADER *header = &indexf->header;
-    int             count = header->property_count;
-    int             index_size;
-    int             i;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+PROP_INDEX      *pindex = fi->prop_index;
+INDEXDATAHEADER *header = &indexf->header;
+int             count = header->property_count;
+int             index_size;
+int             i;
 #ifdef DEBUG_PROP
-    sw_off_t            start_seek;
+sw_off_t            start_seek;
 #endif
-#ifdef USE_BTREE
-    sw_off_t            seek_pos;
-#endif
-
-
+sw_off_t            seek_pos;
 
     /* Just in case there were no properties for this file */
     if ( !pindex )
@@ -2324,16 +1607,13 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         memset( pindex, 0, index_size );
     }
 
-#ifdef USE_BTREE
     /* now calculate index  (1 is for uniqueID )*/
     seek_pos = (sw_off_t)sizeof(long) * ((sw_off_t) 1 + (sw_off_t)(fi->filenum - 1) * (sw_off_t)count);
     sw_fseek(SW_DB->fp_propindex, seek_pos,SEEK_SET);
-#endif
 
 #ifdef DEBUG_PROP
     printf("Writing seek positions to index for file %d\n", fi->filenum );
 #endif
-
 
     /* Write out the prop index */
     for ( i = 0; i < count; i++ )
@@ -2341,24 +1621,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         /* make an alias */
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
 
-#ifndef USE_BTREE
-
-#ifdef DEBUG_PROP
-        start_seek = sw_ftell( SW_DB->fp );
-#endif
-
-        /* Write in portable format */
-        printfileoffset( SW_DB->fp, prop_loc->seek, sw_fwrite );
-
-#ifdef DEBUG_PROP
-        printf("  PropIDX: %d  data=[seek: %ld]  main index location: %ld for %ld bytes (one print long)\n",
-                 i,  prop_loc->seek, start_seek, sw_ftell( SW_DB->fp ) - start_seek );
-#endif
-
-
-#else
         printlong(SW_DB->fp_propindex, prop_loc->seek, sw_fwrite);
-#endif
     }
 
     efree( pindex );
@@ -2370,15 +1633,15 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 *
 *
 *****************************************************************************/
-void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
+void _DB_ReadPropPositions(IndexFILE *indexf, FileRec *fi, void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    PROP_INDEX      *pindex = fi->prop_index;
-    INDEXDATAHEADER *header = &indexf->header;
-    int             count = header->property_count;
-    int             index_size;
-    sw_off_t        seek_pos;
-    int             i;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+PROP_INDEX      *pindex = fi->prop_index;
+INDEXDATAHEADER *header = &indexf->header;
+int             count = header->property_count;
+int             index_size;
+sw_off_t        seek_pos;
+int             i;
 
     if ( count <= 0 )
         return;
@@ -2391,51 +1654,9 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
     pindex = fi->prop_index = emalloc( index_size );
     memset( pindex, 0, index_size );
 
-
-#ifndef USE_BTREE
-    /* now calculate seek_pos */
-    /* printlong currently always writes sizeof(long) bytes (usually 4 bytes
-    ** for 32 bit architectures and 8 bytes for 64bit ones, so 4 or 8 bytes
-    ** bytes are need for seek
-    */
-    seek_pos = (sw_off_t)(((sw_off_t)(fi->filenum - 1)) * ((sw_off_t)sizeof(sw_off_t)) * ((sw_off_t)(count))  + (sw_off_t)SW_DB->offsets[FILELISTPOS]);
-
-
-    /* and seek to table */
-    if (sw_fseek(SW_DB->fp, seek_pos, SEEK_SET) == -1)
-        progerrno("Failed to seek to property index located at %ld for file number %d : ", seek_pos, fi->filenum);
-
-
-#ifdef DEBUG_PROP
-        printf("\nFetching seek positions for file %d\n", fi->filenum );
-        printf(" property index table at %ld, this file at %ld\n", SW_DB->offsets[FILELISTPOS], seek_pos );
-#endif
-
-
-    /* Read in the prop indexes */
-    for ( i=0; i < count; i++ )
-    {
-#ifdef DEBUG_PROP
-        sw_off_t    seek_start = sw_ftell( SW_DB->fp );
-#endif
-
-        /* make an alias */
-        PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
-
-        prop_loc->seek = readfileoffset( SW_DB->fp, sw_fread );
-
-#ifdef DEBUG_PROP
-        printf("   PropIDX: %d  data[Seek: %ld] at seek %ld read %ld bytes (one readlong)\n", i, prop_loc->seek, seek_start, sw_ftell( SW_DB->fp ) - seek_start  );
-#endif
-
-
-    }
-#else
-
     /* now calculate index  (1 is for uniqueID )*/
     seek_pos = (sw_off_t)sizeof(long) * ((sw_off_t) 1 + (sw_off_t)(fi->filenum - 1) * (sw_off_t)count);
     sw_fseek(SW_DB->fp_propindex, seek_pos,SEEK_SET);
-
 
     /* Read in the prop indexes */
     for ( i=0; i < count; i++ )
@@ -2444,9 +1665,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         PROP_LOCATION *prop_loc = &pindex->prop_position[ i ];
         prop_loc->seek = readlong(SW_DB->fp_propindex, sw_fread);;
     }
-#endif
 }
-
 
 
 /****************************************************************************
@@ -2460,35 +1679,32 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 *                   no compression was made
 *
 *****************************************************************************/
-char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
+char   *_DB_ReadProperty(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
-    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    PROP_INDEX      *pindex = fi->prop_index;
-    INDEXDATAHEADER *header = &indexf->header;
-    int             count = header->property_count;
-    sw_off_t        seek_pos, prev_seek_pos;
-    int             propIDX;
-    PROP_LOCATION   *prop_loc;
-    char            *buffer;
-    int             saved_bytes;
-
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+PROP_INDEX      *pindex = fi->prop_index;
+INDEXDATAHEADER *header = &indexf->header;
+int             count = header->property_count;
+sw_off_t        seek_pos, prev_seek_pos;
+int             propIDX;
+PROP_LOCATION   *prop_loc;
+char            *buffer;
+int             saved_bytes;
 
     propIDX = header->metaID_to_PropIDX[propID];
 
     if ( count <= 0 )
         return NULL;
 
-
     /* read in the index pointers if not already loaded */
     if ( !pindex )
     {
-        DB_ReadPropPositions_Native( indexf, fi, db);
+        _DB_ReadPropPositions( indexf, fi, db);
         pindex = fi->prop_index;
     }
 
-
     if ( !pindex )
-        progerr("Failed to call DB_ReadProperty_Native with seek positions");
+        progerr("Failed to call _DB_ReadProperty with seek positions");
 
     prop_loc = &pindex->prop_position[ propIDX ];
 
@@ -2511,7 +1727,6 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     printf("Fetching filenum: %d propIDX: %d at seek: %ld\n", fi->filenum, propIDX, seek_pos);
 #endif
 
-
     /* read compressed size (for use in zlib uncompression) */
     *buf_len = uncompress1( SW_DB->fp_prop, sw_fgetc );
 
@@ -2524,16 +1739,13 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     else
         *uncompressed_len = *buf_len + saved_bytes;
 
-
 #ifdef DEBUG_PROP
     printf(" Fetched uncompressed length of %d (%ld bytes storage), now fetching %ld prop bytes from %ld\n",
              *uncompressed_len, sw_ftell( SW_DB->fp_prop ) - seek_pos, *buf_len, sw_ftell( SW_DB->fp_prop ) );
 #endif
 
-
     /* allocate a read buffer */
     buffer = emalloc(*buf_len);
-
 
     if ( (int)sw_fread(buffer, 1, *buf_len, SW_DB->fp_prop) != *buf_len)
         progerrno("Failed to read properties located at %ld for file number %d : ", seek_pos, fi->filenum);
@@ -2551,14 +1763,14 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 *  Note: It does not rename the property file.
 *****************************************************************/
 
-void    DB_Reopen_PropertiesForRead_Native(void *db)
+void    _DB_Reopen_PropertiesForRead(void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
     int     no_rename = 0;
     char   *s = estrdup(SW_DB->cur_prop_file);
 
     /* Close property file */
-    DB_Close_File_Native(&SW_DB->fp_prop, &SW_DB->cur_prop_file, &no_rename);
+    _DB_Close_File(&SW_DB->fp_prop, &SW_DB->cur_prop_file, &no_rename);
 
 
     if (!(SW_DB->fp_prop = openIndexFILEForRead(s)))
@@ -2567,16 +1779,11 @@ void    DB_Reopen_PropertiesForRead_Native(void *db)
     SW_DB->cur_prop_file = s;
 }
 
-
-
-#ifdef USE_BTREE
-
-
-int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void *db)
+int    _DB_WriteTotalWordsPerFile(SWISH *sw, int idx, int wordcount, void *db)
 {
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-   unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-   long seek_pos;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+long seek_pos;
 
     /* now calculate index */
     seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)idx;
@@ -2587,11 +1794,11 @@ int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void 
 }
 
 
-int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int index, int *value, void *db)
+int     _DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *db)
 {
-   struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-   unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-   long seek_pos;
+struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+long seek_pos;
 
     /* now calculate index */
     seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)index;
@@ -2602,4 +1809,3 @@ int     DB_ReadTotalWordsPerFile_Native(SWISH *sw, int index, int *value, void *
 }
 
 
-#endif

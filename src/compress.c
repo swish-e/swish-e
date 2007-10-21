@@ -46,7 +46,6 @@ $Id$
 #include "docprop.h"
 #include "index.h"
 #include "hash.h"
-#include "ramdisk.h"
 #include "swish_qsort.h"
 #include "file.h"
 

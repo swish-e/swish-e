@@ -122,7 +122,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     struct swline *progparameterslist = sw->Prog->progparameterslist;
     int    path_index = 0;  /* index into $PATH */
     char  *env_path = get_env_path_with_libexecdir();
-	
+
     if ( ! strcmp( prog, "stdin") )
         return stdin;
 
@@ -421,10 +421,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
             if (strncasecmp(line, "Update-Mode", 11) == 0)
             {
-				char *x = strchr(line, ':');
-#ifndef USE_BTREE
-                progerr("Cannot use Update-Mode header with this version of Swish-e.  Rebuild with --enable-incremental.");
-#endif
+                char *x = strchr(line, ':');
                 /* April 8, 2005 - If update mode is set on the initial indexing job
                  * then the btree code fails.  So for now restrict this feature for only
                  * when -r or -r specified on the command line */

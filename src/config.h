@@ -373,12 +373,6 @@ $Id$
 ** will not be indexed - 1 means that filenames will be indexed */
 #define SORT_FILENAMES 0
 
-/* 2001/10 jmruiz -- Added BTREE schema to store words */
-
-//#define USE_BTREE  /* use --enable-incremental at configure time */
-
-/* If USE_BTREE then enable the ARRAY code for the pre-sorted indexes */
-
 #define sw_fopen fopen
 #define sw_fclose fclose
 #define sw_fwrite fwrite

@@ -79,42 +79,6 @@ void freeModule_DB (SWISH *sw)
 
 static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer);
 
-
-/* 04/2002 jmruiz
-** Function to read all word's data from the index DB
-*/
-
-
-
-
-
-sw_off_t read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
-{
-sw_off_t wordID;
-char *word = ep->word;
-int saved_bytes = 0;
-
-    DB_InitReadWords(sw, indexf->DB);
-    DB_ReadWordHash(sw, word, &wordID, indexf->DB);
-
-    if(!wordID)
-    {    
-        DB_EndReadWords(sw, indexf->DB);
-        sw->lasterror = WORD_NOT_FOUND;
-        *buffer = NULL;
-        *sz_buffer = 0;
-        return (sw_off_t)0;
-   } 
-   DB_ReadWordData(sw, wordID, buffer, sz_buffer, &saved_bytes, indexf->DB);
-   uncompress_worddata(buffer,sz_buffer,saved_bytes);
-   DB_EndReadWords(sw, indexf->DB);
-   return wordID;
-}
-
-
-
-
-
 /* General read DB routines - Common to all DB */
 
 /* Reads the file offset table in the index file.
@@ -258,16 +222,6 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             load_word_hash_from_buffer(&header->hashbuzzwordlist, (char *)buffer);
             break;
 
-#ifndef USE_BTREE
-        case TOTALWORDSPERFILE_ID:
-            if ( !header->ignoreTotalWordCountWhenRanking )
-            {
-                header->TotalWordsPerFile = emalloc( header->totalfiles * sizeof(int) );
-                parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, (char *)buffer);
-            }
-            break;
-#endif
-
         default:
             progerr("Severe index error in header.  Unknown index header ID: %d", id );
             break;
@@ -380,16 +334,7 @@ int getTotalWordsInFile( IndexFILE *indexf, int filenum )
         progerr("getTotalWordsInFile passed an invalied file number");
 
     /* This is still one too many layers */
-#ifdef USE_BTREE
     return DB_CheckFileNum( indexf->sw, filenum, indexf->DB );
-#else
-    if ( indexf->header.ignoreTotalWordCountWhenRanking )
-        progerr("Can't return total words -- index was not built with IgnoreTotalWordCountWhenRanking");
-    else
-        return indexf->header.TotalWordsPerFile[filenum - 1];
-
-#endif
-    return 0;  /* make the compiler quiet */
 }
 
 /*------------------------------------------------------*/
@@ -398,119 +343,113 @@ int getTotalWordsInFile( IndexFILE *indexf, int filenum )
 
 void   *DB_Open (SWISH *sw, char *dbname, int mode)
 {
-   return sw->Db->DB_Open(sw, dbname,mode);
+   return _DB_Open(sw, dbname,mode);
 }
 
 void    DB_Close(SWISH *sw, void *DB)
 {
-   sw->Db->DB_Close(DB);
+   _DB_Close(DB);
 }
 
 
 int     DB_InitReadHeader(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_InitReadHeader(DB);
+   return _DB_InitReadHeader(DB);
 }
 
 int     DB_ReadHeaderData(SWISH *sw, int *id, unsigned char **s, int *len, void *DB)
 {
-   return sw->Db->DB_ReadHeaderData(id, s, len, DB);
+   return _DB_ReadHeaderData(id, s, len, DB);
 }
 
 int     DB_EndReadHeader(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_EndReadHeader(DB);
+   return _DB_EndReadHeader(DB);
 }
 
 
 
 int     DB_InitReadWords(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_InitReadWords(DB);
+   return _DB_InitReadWords(DB);
 }
 
-int     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB)
+int     DB_ReadWord(SWISH *sw, char *word, DB_WORDID **wordID, void *DB)
 {
-   return sw->Db->DB_ReadWordHash(word, wordID, DB);
+   return _DB_ReadWord(word, wordID, DB);
 }
 
-int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
+int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, DB_WORDID **wordID, void *DB)
 {
-   return sw->Db->DB_ReadFirstWordInvertedIndex(word, resultword, wordID, DB);
+   return _DB_ReadFirstWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
+int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, DB_WORDID **wordID, void *DB)
 {
-   return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
+   return _DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
 long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
 {
-   return sw->Db->DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
+   return _DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
 }
 
 int     DB_EndReadWords(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_EndReadWords(DB);
+   return _DB_EndReadWords(DB);
 }
 
 
 int     DB_CheckFileNum(SWISH *sw, int filenum, void *DB)
 {
-   return sw->Db->DB_CheckFileNum(filenum, DB);
+   return _DB_CheckFileNum(filenum, DB);
 }
 
 int     DB_ReadFileNum(SWISH *sw, unsigned char *filedata, void *DB)
 {
-   return sw->Db->DB_ReadFileNum( filedata, DB);
+   return _DB_ReadFileNum( filedata, DB);
 }
 
  
 int     DB_InitReadSortedIndex(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_InitReadSortedIndex(DB);
+   return _DB_InitReadSortedIndex(DB);
 }
 
 int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB)
 {
-   return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
+   return _DB_ReadSortedIndex(propID, data, sz_data,DB);
 }
 
 /* ******* This is now a macro and accessies the native data by default
 int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB)
 {
-   return sw->Db->DB_ReadSortedData(data,index,value,DB);
+   return _DB_ReadSortedData(data,index,value,DB);
 }
 *******/
 
 int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 {
-   return sw->Db->DB_EndReadSortedIndex(DB);
+   return _DB_EndReadSortedIndex(DB);
 }
 
 
 void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db)
 {
-    sw->Db->DB_ReadPropPositions( indexf, fi, db);
+    _DB_ReadPropPositions( indexf, fi, db);
 }
 
 
 char *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
-    return sw->Db->DB_ReadProperty( indexf, fi, propID, buf_len, uncompressed_len, db );
+    return _DB_ReadProperty( indexf, fi, propID, buf_len, uncompressed_len, db );
 }
 
-
-
-#ifdef USE_BTREE
 
 int       DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
 {
-    return sw->Db->DB_ReadTotalWordsPerFile(sw, index, value, DB);
+    return _DB_ReadTotalWordsPerFile(sw, index, value, DB);
 }
-
-#endif
-
 
 
 /* 11/00 Function to read all words starting with a character */
@@ -523,7 +462,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     int     bufferpos,
             bufferlen;
     unsigned char    word[2];
-    sw_off_t    wordID;
+    DB_WORDID    *wordID;
 
     
 
@@ -547,6 +486,8 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
         sw->lasterror = WORD_NOT_FOUND;
         return "";
     }
+    else 
+        efree(wordID);   //Do not need worddata in this routine
 
     wordlen = strlen(resultword);    
     bufferlen = wordlen + MAXSTRLEN * 10;
@@ -571,6 +512,8 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     DB_ReadNextWordInvertedIndex(sw, (char *)word, &resultword, &wordID, indexf->DB);
     while (wordID)
     {
+        efree(wordID);   //Do not need worddata
+
         wordlen = strlen(resultword);
         if ((bufferpos + wordlen + 1 + 1) > bufferlen)
         {

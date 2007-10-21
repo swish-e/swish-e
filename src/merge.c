@@ -90,7 +90,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  frequency,
                  loc_count = 0,
                  word_count = 0;
-    sw_off_t     wordID;
+    DB_WORDID   *wordID;
     int          metadata_length = 0;
     unsigned char   *worddata;
     unsigned char   *s, *start;
@@ -211,12 +211,12 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                 cur_index = sw_input->indexlist;
                 while( cur_index )
                 {
-                    DB_ReadWordHash(sw_input, e->word, &wordID, cur_index->DB);
+                    DB_ReadWord(sw_input, e->word, &wordID, cur_index->DB);
                     /* If word exits in the index */
                     if(wordID)
                     {
 
-                        DB_ReadWordData(sw_input, wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
+                        DB_ReadWordData(sw_input, wordID->wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
                         uncompress_worddata(&worddata,&sz_worddata,saved_bytes);
 
                         /* Now, parse word's data */
@@ -989,7 +989,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
     int         word_count = 0;
     char        word[2];
     char       *resultword;
-    sw_off_t    wordID;
+    DB_WORDID  *wordID;
 
     DB_InitReadWords(sw, indexf->DB);
 

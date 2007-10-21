@@ -39,73 +39,23 @@ $Id$
 #define __HasSeenModule_DBNative    1
 
 
-#ifdef USE_BTREE
-
 #include <db.h>   /* Berkeley DB include file */
-
-#else
-
-#define MAXCHARS 266            /* 255 for chars plus ten more for other data */
-
-#define FILELISTPOS (MAXCHARS - 1)
-#define FILEOFFSETPOS (MAXCHARS - 2)
-#define HEADERPOS (MAXCHARS - 3)
-#define WORDPOS (MAXCHARS - 4)
-#define SORTEDINDEX (MAXCHARS - 5)
-#define ENDWORDPOS (MAXCHARS - 6)
-
-#endif
 
 
 struct Handle_DBNative
 {
    SWISH *sw;  /* for reporting errors back */
 
-#ifndef USE_BTREE
-       /* File Offsets to words */
-   sw_off_t offsets[MAXCHARS];
-
-       /* values used by the index proccess */
-       /* points to the start of offsets to words in the file */
-   sw_off_t offsetstart;
-
-       /* points to the start of hashoffsets to words in the file */
-   sw_off_t hashstart;
-
-   sw_off_t hashoffsets[VERYBIGHASHSIZE];
-
-   sw_off_t lasthashval[VERYBIGHASHSIZE];
-   int wordhash_counter;
-   sw_off_t nextwordoffset;
-#endif
-
    sw_off_t last_sortedindex;
    sw_off_t next_sortedindex;
    
    int worddata_counter;
-
-#ifndef USE_BTREE
-   sw_off_t *wordhashdata;
-
-      /* Hash array to improve wordhashdata performance */
-   struct numhash
-   {
-      int index;
-      struct numhash *next;
-   } *hash[BIGHASHSIZE];
-   MEM_ZONE *hashzone;
-#endif
 
    int num_words;
 
    DB_OPEN_MODE mode; 
 
    char *dbname;
-
-#ifndef USE_BTREE
-       /* ramdisk to store words */
-   struct ramdisk *rd;
-#endif
 
        /* Index FILE handle as returned from fopen */
 
@@ -118,10 +68,6 @@ struct Handle_DBNative
    int     (*w_putc)(int , FILE *);
    int     (*w_getc)(FILE *);
 
-#ifndef USE_BTREE
-   FILE *fp;
-   char    *cur_index_file;
-#endif
    FILE *fp_prop;
 
    int      tmp_index;      /* These indicates the file is opened as a temporary file */
@@ -130,7 +76,6 @@ struct Handle_DBNative
 
    long     unique_ID;          /* just because it's called that doesn't mean it is! */
 
-#ifdef USE_BTREE
    DB      *db_btree;    /* DB BTREE handle */
    DBC     *dbc_btree;    /* DB BTREE handle */
    int      tmp_btree;
@@ -162,95 +107,76 @@ struct Handle_DBNative
    int      tmp_header;
    char    *cur_header_file;
 
-#endif
 };
 
 void initModule_DBNative (SWISH *);
 void freeModule_DBNative (SWISH *);
 
-void   *DB_Create_Native (SWISH *sw, char *dbname);
-void   *DB_Open_Native (SWISH *sw, char *dbname, int mode);
-void    DB_Close_Native(void *db);
-void    DB_Remove_Native(void *db);
+void   *_DB_Create (SWISH *sw, char *dbname);
+void   *_DB_Open (SWISH *sw, char *dbname, int mode);
+void    _DB_Close (void *db);
+void    _DB_Remove (void *db);
+
+
+int     _DB_InitWriteHeader (void *db);
+int     _DB_EndWriteHeader (void *db);
+int     _DB_WriteHeaderData (int id, unsigned char *s, int len, void *db);
+
+int     _DB_InitReadHeader (void *db);
+int     _DB_ReadHeaderData (int *id, unsigned char **s, int *len, void *db);
+int     _DB_EndReadHeader (void *db);
+int     _DB_InitWriteWords (void *db);
+sw_off_t    _DB_GetWordID (void *db);
+int     _DB_WriteWord (char *word, sw_off_t wordID, void *db);
+long    _DB_WriteWordData (sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
+int     _DB_EndWriteWords (void *db);
+int     _DB_InitReadWords (void *db);
+int     _DB_ReadWord (char *word, DB_WORDID **wordID, void *db);
+int     _DB_ReadFirstWordInvertedIndex (char *word, char **resultword, DB_WORDID **wordID, void *db);
+int     _DB_ReadNextWordInvertedIndex (char *word, char **resultword, DB_WORDID **wordID, void *db);
+long    _DB_ReadWordData (sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
+int     _DB_EndReadWords (void *db);
 
 
 
-int     DB_InitWriteHeader_Native(void *db);
-int     DB_EndWriteHeader_Native(void *db);
-int     DB_WriteHeaderData_Native(int id, unsigned char *s, int len, void *db);
-
-int     DB_InitReadHeader_Native(void *db);
-int     DB_ReadHeaderData_Native(int *id, unsigned char **s, int *len, void *db);
-int     DB_EndReadHeader_Native(void *db);
-
-
-
-int     DB_InitWriteWords_Native(void *db);
-sw_off_t    DB_GetWordID_Native(void *db);
-int     DB_WriteWord_Native(char *word, sw_off_t wordID, void *db);
-
-#ifdef USE_BTREE
-int     DB_UpdateWordID_Native(char *word, sw_off_t new_wordID, void *db);
-int     DB_DeleteWordData_Native(sw_off_t wordID, void *db);
-#endif
-
-int     DB_WriteWordHash_Native(char *word, sw_off_t wordID, void *db);
-long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
-int     DB_EndWriteWords_Native(void *db);
-
-int     DB_InitReadWords_Native(void *db);
-int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db);
-int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
-int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
-long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
-int     DB_EndReadWords_Native(void *db);
-
-
-
-int     DB_WriteFileNum_Native(int filenum, unsigned char *filedata,int sz_filedata, void *db);
-int     DB_ReadFileNum_Native( unsigned char *filedata, void *db);
-int     DB_CheckFileNum_Native(int filenum, void *db);
-int     DB_RemoveFileNum_Native(int filenum, void *db);
+int     _DB_WriteFileNum (int filenum, unsigned char *filedata,int sz_filedata, void *db);
+int     _DB_ReadFileNum ( unsigned char *filedata, void *db);
+int     _DB_CheckFileNum (int filenum, void *db);
+int     _DB_RemoveFileNum (int filenum, void *db);
 
 /** Pre-sorted array access **/
 
 #ifdef USE_PRESORT_ARRAY
-int     DB_InitWriteSortedIndex_Native(void *db , int n_props);
-int     DB_WriteSortedIndex_Native(int propID, int *data, int num_elements,void *db);
+int     _DB_InitWriteSortedIndex (void *db , int n_props);
+int     _DB_WriteSortedIndex (int propID, int *data, int num_elements,void *db);
 #else
-int     DB_InitWriteSortedIndex_Native(void *db );
-int     DB_WriteSortedIndex_Native(int propID, unsigned char *data, int sz_data,void *db);
+int     _DB_InitWriteSortedIndex (void *db );
+int     _DB_WriteSortedIndex (int propID, unsigned char *data, int sz_data,void *db);
 #endif
-int     DB_EndWriteSortedIndex_Native(void *db);
+int     _DB_EndWriteSortedIndex (void *db);
 
-int     DB_InitReadSortedIndex_Native(void *db);
-int     DB_ReadSortedIndex_Native(int propID, unsigned char **data, int *sz_data,void *db);
+int     _DB_InitReadSortedIndex (void *db);
+int     _DB_ReadSortedIndex (int propID, unsigned char **data, int *sz_data,void *db);
 /* Note that a macro is not provided for reading the data */
-int     DB_ReadSortedData_Native(int *data,int index, int *value, void *db);
-int     DB_EndReadSortedIndex_Native(void *db);
+int     _DB_ReadSortedData (int *data,int index, int *value, void *db);
+int     _DB_EndReadSortedIndex (void *db);
 
 
 
 
-int     DB_InitWriteProperties_Native(void *db);
-void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
-void    DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);
-void    DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db);
-char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
-void    DB_Reopen_PropertiesForRead_Native(void *db);
+int     _DB_InitWriteProperties (void *db);
+void    _DB_WriteProperty ( IndexFILE *indexf, FileRec *fi, int propID, char *buffer, int buf_len, int uncompressed_len, void *db);
+void    _DB_WritePropPositions (IndexFILE *indexf, FileRec *fi, void *db);
+void    _DB_ReadPropPositions (IndexFILE *indexf, FileRec *fi, void *db);
+char   *_DB_ReadProperty (IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db);
+void    _DB_Reopen_PropertiesForRead (void *db);
 
-#ifdef USE_BTREE
-int        DB_InitWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
-int    DB_WriteTotalWordsPerFile_Native(SWISH *sw, int idx, int wordcount, void *DB);
-int    DB_EndWriteTotalWordsPerFile_Native(SWISH *sw, void *DB);
-int        DB_InitReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
-int    DB_ReadTotalWordsPerFile_Native(SWISH *sw, int idx, int *wordcount, void *DB);
-int    DB_EndReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
-#endif
-
-
-
-
+int     _DB_InitWriteTotalWordsPerFile (SWISH *sw, void *DB);
+int     _DB_WriteTotalWordsPerFile (SWISH *sw, int idx, int wordcount, void *DB);
+int     _DB_EndWriteTotalWordsPerFile (SWISH *sw, void *DB);
+int     _DB_InitReadTotalWordsPerFile (SWISH *sw, void *DB);
+int     _DB_ReadTotalWordsPerFile (SWISH *sw, int idx, int *wordcount, void *DB);
+int     _DB_EndReadTotalWordsPerFile (SWISH *sw, void *DB);
 
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from a file
