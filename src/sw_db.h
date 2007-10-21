@@ -36,8 +36,8 @@ $Id: db.h,v 1.36 2005/05/12 15:41:04 karman Exp $
 /* Possible Open File modes */
 typedef enum {
     DB_CREATE,
-	DB_READ,
-	DB_READWRITE
+    DB_READ,
+    DB_READWRITE
 }
 DB_OPEN_MODE;
 
