@@ -235,6 +235,12 @@ void free_header(INDEXDATAHEADER *header)
     /* free up the stemmer */
     free_fuzzy_mode( header->fuzzy_data );
 
+
+#ifndef USE_BTREE
+    if ( header->TotalWordsPerFile )
+        efree( header->TotalWordsPerFile );
+#endif
+
 }
 
 

@@ -37,7 +37,7 @@
 #include "docprop.h"
 #include "hash.h"
 #include "swstring.h"
-#include "sw_db.h"
+#include "db.h"
 #include "compress.h"
 #include "index.h"
 #include "search.h"
@@ -180,6 +180,7 @@ void    dump_word_count( SWISH *sw, IndexFILE *indexf, int filenum, int maxhits 
 void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 {
     int     i,
+            j,
             c,
             fieldnum,
             frequency,
@@ -193,7 +194,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     char   *resultword;
     unsigned char   *worddata, *s, *start, flag;
     int     sz_worddata, saved_bytes;
-    DB_WORDID    *wordID;
+    sw_off_t    wordID;
 
 
 
@@ -230,63 +231,69 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
     {
         DB_InitReadWords(sw, indexf->DB);
 
-        word[0] = '\0';
-        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-
-        while(wordID)
+        for( j = 0; j < 256; j++ )
         {
-          if(indexf->header.removedfiles)
-          {
-            /* We need to Read Word's data to check that there is
-            ** at least one file that has not been removed */
-            DB_ReadWordData(sw, wordID->wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
-            uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
+            word[0] = (unsigned char) j;
+            word[1] = '\0';
+            DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            /* parse and print word's data */
-            s = worddata;
+            while(wordID && (((int)((unsigned char)resultword[0]))== j))
+            {
+              if(indexf->header.removedfiles)
+              {
+                /* We need to Read Word's data to check that there is
+                ** at least one file that has not been removed */
+                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
+                uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
 
-            tmpval = uncompress2(&s);     /* tfrequency */
-            metaID = uncompress2(&s);     /* metaID */
-            metadata_length = uncompress2(&s);
+                /* parse and print word's data */
+                s = worddata;
 
-            filenum = 0;
-            start = s;
-            while(1)
-            {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                filenum += tmpval;
-                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
-                uncompress_location_positions(&s,flag,frequency,posdata);
+                tmpval = uncompress2(&s);     /* tfrequency */
+                metaID = uncompress2(&s);     /* metaID */
+                metadata_length = uncompress2(&s);
 
-                /* 2004/09 jmruiz. Need to check for one file not being marked as deleted */
-                if (DB_CheckFileNum(sw,filenum,indexf->DB))
-                {
-                    printf("%s\n",resultword);
-                    break;
+                filenum = 0;
+                start = s;
+                while(1)
+                {                   /* Read on all items */
+                    uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                    filenum += tmpval;
+                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                    uncompress_location_positions(&s,flag,frequency,posdata);
+
+                    /* 2004/09 jmruiz. Need to check for one file not being marked as deleted */
+                    if (DB_CheckFileNum(sw,filenum,indexf->DB))
+                    {
+                        printf("%s\n",resultword);
+                        break;
+                    }
+                    /* Check for end of worddata */
+                    if ((s - worddata) == sz_worddata)
+                        break;   /* End of worddata */
+
+                    /* Check for end of current metaID data */
+                    if ( metadata_length == (s - start))
+                    {
+                        filenum = 0;
+                        metaID = uncompress2(&s);
+                        metadata_length = uncompress2(&s);
+                        start = s;
+                    }
+
                 }
-                /* Check for end of worddata */
-                if ((s - worddata) == sz_worddata)
-                    break;   /* End of worddata */
+                efree(posdata);
+                efree(worddata);
+              }
+              else
+                printf("%s\n",resultword);
 
-                /* Check for end of current metaID data */
-                if ( metadata_length == (s - start))
-                {
-                    filenum = 0;
-                    metaID = uncompress2(&s);
-                    metadata_length = uncompress2(&s);
-                    start = s;
-                }
+              efree(resultword);
+              DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+              if (wordID && ((int)((unsigned char)resultword[0]))!= j)
+                efree(resultword);
 
             }
-            efree(posdata);
-            efree(worddata);
-          }
-          else
-            printf("%s\n",resultword);
-
-          efree(resultword);
-          DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-
         }
         DB_EndReadWords(sw, indexf->DB);
     }
@@ -312,38 +319,40 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
         DB_InitReadWords(sw, indexf->DB);
 
-        word[0] = '\0';
-        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-
-        while(wordID)
+        for(j=1;j<256;j++)
         {
-            /* Flag to know if we must print a word or not */
-            /* Words with all the files marked as deleted shoud not be
-            ** printed */
-            printedword = 0;
-            /* Read Word's data */
-            DB_ReadWordData(sw, wordID->wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
-            uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
+            word[0] = (unsigned char) j; word[1] = '\0';
+            DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            /* parse and print word's data */
-            s = worddata;
+            while(wordID && (((int)((unsigned char)resultword[0]))== j))
+            {
+                /* Flag to know if we must print a word or not */
+                /* Words with all the files marked as deleted shoud not be
+                ** printed */
+                printedword = 0;
+                /* Read Word's data */
+                DB_ReadWordData(sw, wordID, &worddata, &sz_worddata, &saved_bytes, indexf->DB);
+                uncompress_worddata(&worddata, &sz_worddata, saved_bytes);
 
-            tmpval = uncompress2(&s);     /* tfrequency */
-            metaID = uncompress2(&s);     /* metaID */
-            metadata_length = uncompress2(&s);
+                /* parse and print word's data */
+                s = worddata;
 
-            filenum = 0;
-            start = s;
-            while(1)
-            {                   /* Read on all items */
-                uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                filenum += tmpval;
-                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
-                uncompress_location_positions(&s,flag,frequency,posdata);
+                tmpval = uncompress2(&s);     /* tfrequency */
+                metaID = uncompress2(&s);     /* metaID */
+                metadata_length = uncompress2(&s);
 
-                /* 2004/09 jmruiz. Need to check for files marked as deleted */
-                if ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB))
-                {
+                filenum = 0;
+                start = s;
+                while(1)
+                {                   /* Read on all items */
+                    uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                    filenum += tmpval;
+                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                    uncompress_location_positions(&s,flag,frequency,posdata);
+
+                    /* 2004/09 jmruiz. Need to check for files marked as deleted */
+                    if ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB))
+                    {
                     if(!printedword)
                     {
                         printf("\n%s",resultword);
@@ -356,6 +365,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         struct metaEntry    *m;
 
                         printf("\n Meta:%d", metaID);
+
 
                         /* Get path from property list */
                         if ( (m = getPropNameByName( &sw->indexlist->header, AUTOPROPERTY_DOCPATH )) )
@@ -380,6 +390,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         }
                         else
                             printf(" Failed to lookup meta entry");
+
 
                         printf(" Freq:%d", frequency);
                         printf(" Pos/Struct:");
@@ -414,50 +425,59 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
                         printf(")]");
 
-                }  /* End of DB_CheckFileNum */
+                    }  /* End of DB_CheckFileNum */
 
-                efree(posdata);
+                    efree(posdata);
 
-                /* Check for end of worddata */
-                if ((s - worddata) == sz_worddata)
-                    break;   /* End of worddata */
+                    /* Check for end of worddata */
+                    if ((s - worddata) == sz_worddata)
+                        break;   /* End of worddata */
 
-                /* Check for end of current metaID data */
-                if ( metadata_length == (s - start))
-                {
-                    filenum = 0;
-                    metaID = uncompress2(&s);
-                    metadata_length = uncompress2(&s);
-                    start = s;
+                    /* Check for end of current metaID data */
+                    if ( metadata_length == (s - start))
+                    {
+                        filenum = 0;
+                        metaID = uncompress2(&s);
+                        metadata_length = uncompress2(&s);
+                        start = s;
+                    }
                 }
-            }
 
-            if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
-            {
-                for(i = 0; i <= end_meta; i++)
+                if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
                 {
-                    if ( meta_used[i] )
-                        printf( "\t%d", i );
-                    meta_used[i] = 0;
+                    for(i = 0; i <= end_meta; i++)
+                    {
+                        if ( meta_used[i] )
+                            printf( "\t%d", i );
+                        meta_used[i] = 0;
+                    }
                 }
+
+
+                if ( !( DEBUG_MASK & DEBUG_INDEX_WORDS_META ))
+                    printf("\n");
+
+                efree(worddata);
+                efree(resultword);
+                DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+                if (wordID && ((int)((unsigned char)resultword[0]))!= j)
+                  efree(resultword);
             }
-
-
-            if ( !( DEBUG_MASK & DEBUG_INDEX_WORDS_META ))
-                printf("\n");
-
-            efree(worddata);
-            efree(resultword);
-            DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
         }
         DB_EndReadWords(sw, indexf->DB);
 
         efree( meta_used );
     }
 
+
+
+
+
+
     /* Decode File Info */
     if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_FILES)  )
         dump_index_file_list( sw, indexf, begin, maxhits );
+
 
     /* just print filenums and number of words per file for word ranking */
     if (DEBUG_MASK & DEBUG_INDEX_WORD_COUNT )
@@ -477,9 +497,11 @@ int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
     /* Get the sorted index of the property */
     DB_ReadSortedIndex(sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
-    /* Free buffer */
+    /* For incremental index. It will be released when closing indexf->DB */
+#ifndef USE_BTREE
     if ( sz_buffer )
         efree( buffer );
+#endif
 
     /* Table doesn't exist */
     return sz_buffer;

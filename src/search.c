@@ -134,7 +134,7 @@ $Id$
 #include "error.h"
 #include "compress.h"
 #include "result_sort.h"
-#include "sw_db.h"
+#include "db.h"
 #include "swish_words.h"
 #include "swish_qsort.h"
 
@@ -142,6 +142,8 @@ $Id$
 
 #include "rank.h"
 
+/* set in rank.c */
+extern int DEBUG_RANK;
 
 /* ------ static fucntions ----------- */
 static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
@@ -175,7 +177,7 @@ static void make_db_res_and_free(RESULT_LIST *l_res);
 
 void SwishRankScheme(SWISH *sw, int scheme)
 {
-    
+	
     sw->RankScheme = scheme;
     
 }
@@ -290,6 +292,10 @@ void SwishSetStructure( SEARCH_OBJECT *srch, int structure )
         srch->structure = structure;
 }
 
+int SwishGetStructure( SEARCH_OBJECT *srch )
+{
+    return srch ? srch->structure : 0;
+}
 
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
 {
@@ -297,6 +303,11 @@ void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
         srch->PhraseDelimiter = (int)delimiter;
 }
 
+
+char SwishGetPhraseDelimiter(SEARCH_OBJECT *srch)
+{
+    return srch ? srch->PhraseDelimiter : 0;
+}
 
 
 void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
@@ -431,7 +442,7 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
         db_results->results     = results;      /* parent object */
         db_results->indexf      = indexf;
         db_results->index_num   = indexf_count++;
-    db_results->srch        = srch;        /* only valid during the search */
+	db_results->srch        = srch;        /* only valid during the search */
 
 
         if ( !last )
@@ -1506,7 +1517,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     int           tLen;
     unsigned char   *q;
     RESULT_LIST *l_rp, *l_rp2;
-    DB_WORDID    *wordID, *tmp;
+    sw_off_t    wordID;
     int     metadata_length;
     char   *p;
     int     tfrequency = 0;
@@ -1573,24 +1584,24 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     rLen = 0;
     tLen = strlen(word);
     // Check for first "?" in current word (not reverse)
-    if ((q = (unsigned char *)strchr(word, '?')))
+    if ((q = strchr(word, '?')))
     {
-        if (q != (unsigned char *)word && *(q - 1) == '\\') /* Check for an escaped * */
+        if (q != (unsigned char*)word && *(q - 1) == '\\') /* Check for an escaped * */
         {
             q = NULL;           /* If escaped it is not a wildcard */
         }
         else
         {
             /* Check if it is at the end of the word */
-            if (q == ((unsigned char *)word + strlen(word) - 1))
+            if (q == ((unsigned char*)word + strlen(word) - 1))
             {
-                strcpy(remains, (char *)q);   // including the last "?"
+                strcpy(remains, q);   // including the last "?"
                 rLen = strlen(remains);
                 word[strlen(word) - 1] = '\0';
             }
             else
             {
-                strcpy(remains, (char *)q);   // including the first "?"
+                strcpy(remains, q);   // including the first "?"
                 rLen = strlen(remains);
                 *q = '\0';
             }
@@ -1601,7 +1612,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     DB_InitReadWords(sw, indexf->DB);
     if ((!p) && (!q))    /* No wildcard -> Direct hash search */
     {
-        DB_ReadWord(sw, word, &wordID, indexf->DB);
+        DB_ReadWordHash(sw, word, &wordID, indexf->DB);
 
         if(!wordID)
         {    
@@ -1613,7 +1624,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
     else  /* There is a wildcard. So use the sequential approach */
     {       
-        char   *resultword;
+        unsigned char   *resultword;
 
         if (*word == '*')
         {
@@ -1622,7 +1633,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
         }
 
         
-        DB_ReadFirstWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+        DB_ReadFirstWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
 
         if (!wordID)
         {
@@ -1691,18 +1702,18 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
           if (!found)
           {
-            char   *resultword;
+            unsigned char   *resultword;
 
             /* Jump to next word */
             /* No more data for this word but we
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            DB_ReadNextWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
             else
-              strcpy(myWord, (char *)resultword);
+              strcpy(myWord, resultword);
 
             efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
 
@@ -1710,117 +1721,115 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
           }
        }
 
-       for(tmp = wordID, tfrequency = 0; tmp ; tmp = tmp->next)
-       {
-           DB_ReadWordData(sw, tmp->wordID, &buffer, &sz_buffer, &saved_bytes , indexf->DB);
-           uncompress_worddata(&buffer,&sz_buffer,saved_bytes);
 
-           s = buffer;
+        DB_ReadWordData(sw, wordID, &buffer, &sz_buffer, &saved_bytes , indexf->DB);
+        uncompress_worddata(&buffer,&sz_buffer,saved_bytes);
 
-           // buffer structure = <tfreq><metaID><delta to next meta>
+        s = buffer;
 
-           /* Get the data of the word */
-           tfrequency += uncompress2(&s); /* tfrequency - number of files with this word */
+        // buffer structure = <tfreq><metaID><delta to next meta>
 
-           /* Now look for a correct Metaname */
-           curmetaID = uncompress2(&s);
+        /* Get the data of the word */
+        tfrequency = uncompress2(&s); /* tfrequency - number of files with this word */
 
-           while (curmetaID)
-           {
-               metadata_length = uncompress2(&s);
+        /* Now look for a correct Metaname */
+        curmetaID = uncompress2(&s);
+
+        while (curmetaID)
+        {
+            metadata_length = uncompress2(&s);
             
-               if (curmetaID >= metaID)
-                   break;
+            if (curmetaID >= metaID)
+                break;
 
-               /* If this is not the searched metaID jump onto next one */
-               s += metadata_length;
+            /* If this is not the searched metaID jump onto next one */
+            s += metadata_length;
 
-               /* Check if no more meta data */
-               if(s == (buffer + sz_buffer))
-                   break; /* exit if no more meta data */
+            /* Check if no more meta data */
+            if(s == (buffer + sz_buffer))
+                break; /* exit if no more meta data */
 
-               curmetaID = uncompress2(&s);
-           }
+            curmetaID = uncompress2(&s);
+        }
 
-           if (curmetaID == metaID) /* found a matching meta value */
-           {
-               int meta_rank = metaID * -1;  /*  store metaID in rank value until computed by getrank() */
-               filenum = 0;
-               start = s;   /* points to the start of data */
-               do
-               {
-                   /* Read on all items */
-                   uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                   filenum += tmpval;  
+        if (curmetaID == metaID) /* found a matching meta value */
+        {
+            int meta_rank = metaID * -1;  /*  store metaID in rank value until computed by getrank() */
+            filenum = 0;
+            start = s;   /* points to the star of data */
+            do
+            {
+                /* Read on all items */
+                uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                filenum += tmpval;  
 
-                   /* stack_posdata is just to avoid calling emalloc */
-                   /* it should be enough for most cases */
-                   if(frequency > MAX_POSDATA_STACK)
-                      posdata = (unsigned int *)emalloc(frequency * sizeof(int));
-                   else
-                      posdata = stack_posdata;
+                /* stack_posdata is just to avoid calling emalloc */
+                /* it should be enough for most cases */
+                if(frequency > MAX_POSDATA_STACK)
+                    posdata = (unsigned int *)emalloc(frequency * sizeof(int));
+                else
+                    posdata = stack_posdata;
 
-                   /* read positions */
-                   uncompress_location_positions(&s,flag,frequency,posdata);
+                /* read positions */
+                uncompress_location_positions(&s,flag,frequency,posdata);
 
-                   /* test (limit by) structure and adjust frequency */
-                   frequency = test_structure(structure, frequency, posdata);
+                /* test (limit by) structure and adjust frequency */
+                frequency = test_structure(structure, frequency, posdata);
 
-                   /* Store metaID * -1 in rank - In this way, we can delay its computation */
+                /* Store metaID * -1 in rank - In this way, we can delay its computation */
 
-                   /* Store result */
-                   /* 2003-01 jmruiz. Check also if file is deleted */
-                   if(frequency && ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB)))
-                   {
-                       /* This is very useful if we sorted by other property */
-                       if(!l_rp)
-                          l_rp = newResultsList(db_results);
-   
-                       /*
-          	       tfrequency = number of files with this word
+                /* Store result */
+                /* 2003-01 jmruiz. Check also if file is deleted */
+                if(frequency && ((!indexf->header.removedfiles) || DB_CheckFileNum(sw,filenum,indexf->DB)))
+                {
+                    /* This is very useful if we sorted by other property */
+                    if(!l_rp)
+                       l_rp = newResultsList(db_results);
+
+                    /*
+		       tfrequency = number of files with this word
                        frequency = number of times this words is in this document for this metaID
                        metarank is the negative of the metaID - for use in getrank()
-           	      */
+		    */
 
-                      addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, db_results);
+                    addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, db_results);
 
-                      /* Copy positions */
-                      memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
+                    /* Copy positions */
+                    memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
 
-                      /* Calculate rank now -- can't delay as an optimization */
-                      getrank( l_rp->tail );
-                  }
-                  if(posdata != stack_posdata)
-                      efree(posdata);
+                    /* Calculate rank now -- can't delay as an optimization */
+                    getrank( l_rp->tail );
+                }
+                if(posdata != stack_posdata)
+                    efree(posdata);
                     
 
-                } while ((s - start) != metadata_length);
+            } while ((s - start) != metadata_length);
 
-
-             }
-
-             efree(buffer);
 
         }
+
+        efree(buffer);
+
 
         if ((!p) && (!q))
             break;              /* direct access (no wild card) -> break */
 
         else
         {
-            char   *resultword;
+            unsigned char   *resultword;
 
             /* Jump to next word */
             /* No more data for this word but we
                are in sequential search because of
                the star (p is not null) */
             /* So, go for next word */
-            DB_ReadNextWordInvertedIndex(sw, word, &resultword, &wordID, indexf->DB);
+            DB_ReadNextWordInvertedIndex(sw, word, (char**)&resultword, &wordID, indexf->DB);
             if (! wordID)
                 break;          /* no more data */
 
             else
-                strcpy(myWord, (char *)resultword); // remember the word
+                strcpy(myWord, resultword); // remember the word
 
             efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
         }
@@ -2268,9 +2277,11 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
 
 
-#ifdef DEBUG_RANK
-    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, andLevel, newRank );
-#endif
+            if ( DEBUG_RANK )
+            {
+                fprintf( stderr, "File num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", 
+                    r1->filenum, r1->rank, r2->rank, andLevel, newRank );
+            }
             
 
             if(!new_results_list)
@@ -2323,7 +2334,7 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
            *tmp;
     RESULT_LIST *new_results_list = NULL;
     RESULTS_OBJECT *results = db_results->results;
-
+    unsigned int max_rank_size = 256 ^ sizeof(int);
 
 
     /* If either list is empty, just return the other */
@@ -2354,9 +2365,9 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 
         else /* Matching file number */
         {
-            int result_size;
+            int result_size, r1rank, r2rank;
             
-            /* Create a new RESULT - Should be a function to creete this, I'd think */
+            /* Create a new RESULT - Should be a function to create this, I'd think */
 
             result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
             rp = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
@@ -2364,11 +2375,18 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 
             rp->fi.filenum = rp->filenum = r1->filenum;
 
-            rp->rank = ( r1->rank + r2->rank) * 2;  /* bump up the or terms */
-        
-#ifdef DEBUG_RANK
-    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, rp->rank );
-#endif
+            /* TODO *2 breaks sort if rank > 2^32 */
+            
+            r1rank = r1->rank;
+            r2rank = r2->rank;
+                        
+            rp->rank = ( r1rank + r2rank );  /* bump up the or terms */
+	    
+            if (DEBUG_RANK)
+            {
+                fprintf( stderr, "----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n", 
+                    r1->filenum, r1->rank, r2->rank, rp->rank );
+            }
 
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;

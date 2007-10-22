@@ -171,7 +171,7 @@ $Id$
 #include "result_output.h"
 #include "result_sort.h"
 #include "entities.h"
-#include "sw_db.h"
+#include "db.h"
 #include "rank.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -366,7 +366,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
             unsigned long rank_num;
 
             /* scale_factor is zero while sorting, so use the raw rank */
-            /* othersise, scale for display */
+            /* otherwise, scale for display */
 
             if ( scale_factor )
             {

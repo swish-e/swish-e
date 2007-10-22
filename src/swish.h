@@ -156,7 +156,11 @@ binary and the index.
 
 checked in db_native.c (DB_CheckHeader routine) */
 
+#ifdef USE_BTREE
 #define SWISH_MAGIC 05052004L
+#else
+#define SWISH_MAGIC 11282006L
+#endif
 
 #define INDEXFILE "index.swish-e"
 
@@ -265,6 +269,10 @@ checked in db_native.c (DB_CheckHeader routine) */
 #define METANAMES_ID (BASEHEADER + 27)
 #define LOCATIONLOOKUPTABLE_ID (BASEHEADER + 28)
 #define BUZZWORDS_ID (BASEHEADER + 29) /* 2001-04-24 moseley */
+
+#ifndef USE_BTREE
+#define TOTALWORDSPERFILE_ID (BASEHEADER + 30)  /* total words per file array */
+#endif
 
 #define TOTALWORDS_REMOVED_ID (BASEHEADER + 31) /* 2005-01-14 for tracking total words removed */
 

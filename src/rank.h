@@ -33,8 +33,6 @@ karman Mon Aug 30 07:01:31 CDT 2004
 #ifndef RANK_H
 #define RANK_H 1
 
-/* #define DEBUG_RANK 1 */
-
 #include "mem.h"
 #include "search.h"
 

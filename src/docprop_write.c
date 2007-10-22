@@ -35,7 +35,7 @@
 #include "metanames.h"
 #include "merge.h"
 #include "docprop.h"
-#include "sw_db.h"
+#include "db.h"
 #ifdef HAVE_ZLIB
 #include <zlib.h>
 #endif

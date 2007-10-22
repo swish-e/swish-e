@@ -462,6 +462,11 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 
         efree( meta->metaName );
 
+#ifndef USE_PRESORT_ARRAY
+        if ( meta->sorted_data)
+            efree( meta->sorted_data );
+#endif
+
         if ( meta->extractpath_default )
             efree( meta->extractpath_default );
 

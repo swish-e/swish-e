@@ -41,7 +41,7 @@ $Id$
 #include "metanames.h"
 #include "compress.h"
 #include "error.h"
-#include "sw_db.h"
+#include "db.h"
 #include "parse_conffile.h"
 #include "swish_qsort.h"
 #include "result_sort.h"
@@ -241,6 +241,13 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
     /* Convert to a property index */
     DB_ReadSortedIndex(indexf->sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
+#ifdef USE_PRESORT_ARRAY
+    m->sorted_data = (int *)buffer;
+    DB_EndReadSortedIndex(indexf->sw, indexf->DB);
+    return m->sorted_data;
+
+#endif
+
 
     /* If a table was found, then uncompress */
     /* FIX $$$ This should be in db_native.c */
@@ -317,7 +324,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     while ( cur_result )
     {
         /* Set an index number which can be used to point into the sort_data->key array. */
-        /* tfrequency is not after rank calculations (or at all?) */
+        /* tfrequency is not used after rank calculations */
 
         cur_result->tfrequency = results_in_index++;
 
@@ -459,7 +466,10 @@ int  sortresults(RESULTS_OBJECT *results)
     /* set rank scaling factor based on the largest rank found of all results */
 
     if (results->bigrank)
+    {
+        fprintf(stderr, "bigrank found: %d\n", results->bigrank );
         results->rank_scale_factor = 10000000 / results->bigrank;
+    }
     else
         results->rank_scale_factor = 10000;
 
