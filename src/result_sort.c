@@ -45,6 +45,7 @@ $Id$
 #include "parse_conffile.h"
 #include "swish_qsort.h"
 #include "result_sort.h"
+#include "array.h"
 #include "rank.h"
 
 // #define DEBUGSORT 1
