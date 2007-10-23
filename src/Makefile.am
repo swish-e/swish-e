@@ -49,7 +49,6 @@ libswish_e_la_SOURCES =  \
 	hash.c hash.h \
 	compress.c compress.h \
 	db_native.c db_native.h \
-	ramdisk.c ramdisk.h \
 	check.c check.h \
 	error.c error.h \
 	list.c list.h \

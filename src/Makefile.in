@@ -148,7 +148,6 @@ libswish_e_la_SOURCES = \
 	hash.c hash.h \
 	compress.c compress.h \
 	db_native.c db_native.h \
-	ramdisk.c ramdisk.h \
 	check.c check.h \
 	error.c error.h \
 	list.c list.h \
@@ -208,10 +207,9 @@ LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 
 am_libswish_e_la_OBJECTS = search.lo swish2.lo swish_words.lo \
 	proplimit.lo rank.lo db_read.lo result_sort.lo hash.lo \
-	compress.lo db_native.lo ramdisk.lo check.lo error.lo list.lo \
-	mem.lo swstring.lo docprop.lo metanames.lo headers.lo \
-	swish_qsort.lo date_time.lo double_metaphone.lo stemmer.lo \
-	soundex.lo
+	compress.lo db_native.lo check.lo error.lo list.lo mem.lo \
+	swstring.lo docprop.lo metanames.lo headers.lo swish_qsort.lo \
+	date_time.lo double_metaphone.lo stemmer.lo soundex.lo
 libswish_e_la_OBJECTS = $(am_libswish_e_la_OBJECTS)
 am_libswishindex_la_OBJECTS = fs.lo http.lo httpserver.lo extprog.lo \
 	bash.lo methods.lo html.lo txt.lo xml.lo entities.lo index.lo \
@@ -259,8 +257,8 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/methods.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parse_conffile.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parser.Plo ./$(DEPDIR)/pre_sort.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/proplimit.Plo ./$(DEPDIR)/ramdisk.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/rank.Plo ./$(DEPDIR)/result_output.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/proplimit.Plo ./$(DEPDIR)/rank.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/result_output.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/result_sort.Plo ./$(DEPDIR)/search.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/soundex.Plo ./$(DEPDIR)/stemmer.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/swish.Po ./$(DEPDIR)/swish2.Plo \
@@ -455,7 +453,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pre_sort.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proplimit.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ramdisk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rank.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/result_output.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/result_sort.Plo@am__quote@
