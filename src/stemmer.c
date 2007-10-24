@@ -104,14 +104,13 @@ $Id$
 #include "snowball/stem_dk.h"
 #include "snowball/stem_ru.h"
 #include "snowball/stem_fi.h"
+#include "snowball/stem_ro.h"
+#include "snowball/stem_hu.h"
 #include "snowball/api.h"
 
 static FUZZY_WORD *no_stem( FUZZY_OBJECT *fi, const char *inword);
 static FUZZY_WORD *Stem_snowball( FUZZY_OBJECT *fi, const char *inword);
 static FUZZY_WORD *double_metaphone( FUZZY_OBJECT *fi, const char *inword);
-
-
-
 
 
 static FUZZY_OPTS fuzzy_opts[] = {
@@ -121,27 +120,27 @@ static FUZZY_OPTS fuzzy_opts[] = {
     { FUZZY_SOUNDEX,            "Soundex",          soundex, NULL, NULL, NULL },
     { FUZZY_METAPHONE,          "Metaphone",        double_metaphone, NULL, NULL, NULL },
     { FUZZY_DOUBLE_METAPHONE,   "DoubleMetaphone",  double_metaphone, NULL, NULL, NULL },
-    { FUZZY_STEMMING_ES,        "Stemming_es",      Stem_snowball, spanish_create_env, spanish_close_env, spanish_stem },
-    { FUZZY_STEMMING_FR,        "Stemming_fr",      Stem_snowball, french_create_env, french_close_env, french_stem },
-    { FUZZY_STEMMING_IT,        "Stemming_it",      Stem_snowball, italian_create_env, italian_close_env, italian_stem },
-    { FUZZY_STEMMING_PT,        "Stemming_pt",      Stem_snowball, portuguese_create_env, portuguese_close_env, portuguese_stem },
-    { FUZZY_STEMMING_DE,        "Stemming_de",      Stem_snowball, german_create_env, german_close_env, german_stem },
-    { FUZZY_STEMMING_NL,        "Stemming_nl",      Stem_snowball, dutch_create_env, dutch_close_env, dutch_stem },
-    { FUZZY_STEMMING_EN1,       "Stemming_en1",     Stem_snowball, porter_create_env, porter_close_env, porter_stem },
-    { FUZZY_STEMMING_EN2,       "Stemming_en2",     Stem_snowball, english_create_env, english_close_env, english_stem },
-    { FUZZY_STEMMING_NO,        "Stemming_no",      Stem_snowball, norwegian_create_env, norwegian_close_env, norwegian_stem },
-    { FUZZY_STEMMING_SE,        "Stemming_se",      Stem_snowball, swedish_create_env, swedish_close_env, swedish_stem },
-    { FUZZY_STEMMING_DK,        "Stemming_dk",      Stem_snowball, danish_create_env, danish_close_env, danish_stem },
-    { FUZZY_STEMMING_RU,        "Stemming_ru",      Stem_snowball, russian_create_env, russian_close_env, russian_stem },
-    { FUZZY_STEMMING_FI,        "Stemming_fi",      Stem_snowball, finnish_create_env, finnish_close_env, finnish_stem },
-
+    { FUZZY_STEMMING_ES,        "Stemming_es",      Stem_snowball, spanish_ISO_8859_1_create_env, spanish_ISO_8859_1_close_env, spanish_ISO_8859_1_stem },
+    { FUZZY_STEMMING_FR,        "Stemming_fr",      Stem_snowball, french_ISO_8859_1_create_env, french_ISO_8859_1_close_env, french_ISO_8859_1_stem },
+    { FUZZY_STEMMING_IT,        "Stemming_it",      Stem_snowball, italian_ISO_8859_1_create_env, italian_ISO_8859_1_close_env, italian_ISO_8859_1_stem },
+    { FUZZY_STEMMING_PT,        "Stemming_pt",      Stem_snowball, portuguese_ISO_8859_1_create_env, portuguese_ISO_8859_1_close_env, portuguese_ISO_8859_1_stem },
+    { FUZZY_STEMMING_DE,        "Stemming_de",      Stem_snowball, german_ISO_8859_1_create_env, german_ISO_8859_1_close_env, german_ISO_8859_1_stem },
+    { FUZZY_STEMMING_NL,        "Stemming_nl",      Stem_snowball, dutch_ISO_8859_1_create_env, dutch_ISO_8859_1_close_env, dutch_ISO_8859_1_stem },
+    { FUZZY_STEMMING_EN1,       "Stemming_en1",     Stem_snowball, porter_ISO_8859_1_create_env, porter_ISO_8859_1_close_env, porter_ISO_8859_1_stem },
+    { FUZZY_STEMMING_EN2,       "Stemming_en2",     Stem_snowball, english_ISO_8859_1_create_env, english_ISO_8859_1_close_env, english_ISO_8859_1_stem },
+    { FUZZY_STEMMING_NO,        "Stemming_no",      Stem_snowball, norwegian_ISO_8859_1_create_env, norwegian_ISO_8859_1_close_env, norwegian_ISO_8859_1_stem },
+    { FUZZY_STEMMING_SE,        "Stemming_se",      Stem_snowball, swedish_ISO_8859_1_create_env, swedish_ISO_8859_1_close_env, swedish_ISO_8859_1_stem },
+    { FUZZY_STEMMING_DK,        "Stemming_dk",      Stem_snowball, danish_ISO_8859_1_create_env, danish_ISO_8859_1_close_env, danish_ISO_8859_1_stem },
+    { FUZZY_STEMMING_RU,        "Stemming_ru",		Stem_snowball, russian_KOI8_R_create_env, russian_KOI8_R_close_env, russian_KOI8_R_stem },
+    { FUZZY_STEMMING_FI,        "Stemming_fi",      Stem_snowball, finnish_ISO_8859_1_create_env, finnish_ISO_8859_1_close_env, finnish_ISO_8859_1_stem },
+    { FUZZY_STEMMING_RO,        "Stemming_ro",		Stem_snowball, romanian_ISO_8859_2_create_env, romanian_ISO_8859_2_close_env, romanian_ISO_8859_2_stem },
+    { FUZZY_STEMMING_HU,        "Stemming_hu",		Stem_snowball, hungarian_ISO_8859_1_create_env, hungarian_ISO_8859_1_close_env, hungarian_ISO_8859_1_stem },
     /* these next two are deprecated and are identical to Stemming_en1 */
-    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_create_env, porter_close_env, porter_stem },
-    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_create_env, porter_close_env, porter_stem }
+    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_ISO_8859_1_create_env, porter_ISO_8859_1_close_env, porter_ISO_8859_1_stem },
+    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_ISO_8859_1_create_env, porter_ISO_8859_1_close_env, porter_ISO_8859_1_stem }
 
 
 };
-
 
 
 /*

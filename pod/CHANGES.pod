@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item New Snowball stemmers
+
+Trygve Falch contributed patches to update
+the Snowball stemmers, including new Hungarian and Romanian stemmers.
+
 =item Patched leaks
 
 Anthony Dovgal patched two leaks.  One when there's a failure to
