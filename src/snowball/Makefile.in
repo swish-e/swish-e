@@ -139,7 +139,11 @@ libsnowball_la_SOURCES = \
 	stem_ru.c \
 	stem_ru.h \
 	stem_fi.c \
-	stem_fi.h
+	stem_fi.h \
+	stem_ro.c \
+	stem_ro.h \
+	stem_hu.c \
+	stem_hu.h
 
 subdir = src/snowball
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -152,7 +156,7 @@ libsnowball_la_LIBADD =
 am_libsnowball_la_OBJECTS = api.lo utilities.lo stem_en1.lo stem_en2.lo \
 	stem_es.lo stem_fr.lo stem_it.lo stem_pt.lo stem_de.lo \
 	stem_nl.lo stem_no.lo stem_se.lo stem_dk.lo stem_ru.lo \
-	stem_fi.lo
+	stem_fi.lo stem_ro.lo stem_hu.lo
 libsnowball_la_OBJECTS = $(am_libsnowball_la_OBJECTS)
 
 DEFS = @DEFS@
@@ -166,8 +170,9 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/stem_dk.Plo ./$(DEPDIR)/stem_en1.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/stem_en2.Plo ./$(DEPDIR)/stem_es.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/stem_fi.Plo ./$(DEPDIR)/stem_fr.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_it.Plo ./$(DEPDIR)/stem_nl.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/stem_no.Plo ./$(DEPDIR)/stem_pt.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_hu.Plo ./$(DEPDIR)/stem_it.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_nl.Plo ./$(DEPDIR)/stem_no.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/stem_pt.Plo ./$(DEPDIR)/stem_ro.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/stem_ru.Plo ./$(DEPDIR)/stem_se.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/utilities.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -217,10 +222,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_es.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_fi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_fr.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_hu.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_it.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_nl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_no.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_pt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_ro.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_ru.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stem_se.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utilities.Plo@am__quote@

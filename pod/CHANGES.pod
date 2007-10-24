@@ -6,9 +6,25 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.6.x - ?
+
+=over 4
+
+=item New Berkeley DB backend
+
+Jose Ruiz contributed a new BDB index format. The old native
+and experimental incremental index formats have been removed.
+
+=back
+
 =head2 Version 2.4.x - ?
 
 =over 4
+
+=item New Snowball stemmers
+
+Trygve Falch contributed patches to update
+the Snowball stemmers, including new Hungarian and Romanian stemmers.
 
 =item Patched leaks
 
