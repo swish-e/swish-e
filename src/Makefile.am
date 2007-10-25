@@ -1,4 +1,4 @@
-SUBDIRS = expat replace snowball
+SUBDIRS = replace snowball
 
 # Using AM_CPPFLAGS instead of per-target flags means object names
 # don't get renamed.  If using per-target _CPPFLAGS then would need
@@ -43,7 +43,7 @@ libswish_e_la_SOURCES =  \
 	swish2.c  \
 	swish_words.c swish_words.h \
 	proplimit.c proplimit.h \
-        rank.c rank.h \
+    rank.c rank.h \
 	db_read.c sw_db.h \
 	result_sort.c result_sort.h \
 	hash.c hash.h \
@@ -67,7 +67,7 @@ libswish_e_la_SOURCES =  \
 ## Convenience lib for indexing code
 
 noinst_LTLIBRARIES = libswishindex.la
-libswishindex_la_LIBADD =  expat/libswexpat.la $(LIBXML2_OBJS) snowball/libsnowball.la
+libswishindex_la_LIBADD =  $(LIBXML2_OBJS) snowball/libsnowball.la
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS)
 
 ## in case these change
@@ -77,32 +77,23 @@ EXTRA_libswishindex_la_SOURCES = parser.c parser.h
 
 libswishindex_la_SOURCES = \
 	fs.c fs.h \
-	http.c http.h \
-	httpserver.c httpserver.h \
 	extprog.c extprog.h \
-        bash.c bash.h \
+    bash.c bash.h \
 	methods.c \
-	html.c html.h \
-	txt.c txt.h \
-	xml.c xml.h \
 	entities.c entities.h \
 	index.c index.h \
 	merge.c merge.h \
 	pre_sort.c \
 	file.c file.h \
-        filter.c filter.h \
+    filter.c filter.h \
 	parse_conffile.c parse_conffile.h \
 	swregex.c swregex.h \
 	db_write.c  \
 	docprop_write.c \
-        getruntime.c getruntime.h
+    getruntime.c getruntime.h
 
 
 
 
 include_HEADERS = swish-e.h
 
-
-libexec_SCRIPTS = swishspider
-
-EXTRA_DIST = swishspider

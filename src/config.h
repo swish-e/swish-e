@@ -133,7 +133,6 @@ $Id$
 */
 
 
-#define ALLOW_HTTP_INDEXING_DATA_SOURCE		1
 #define ALLOW_FILESYSTEM_INDEXING_DATA_SOURCE	1
 #define ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE	1
 
@@ -143,10 +142,6 @@ $Id$
 ** Comment out any options you do not want to support, but
 ** be sure to leave at least one option.
 */
-
-#define DEFAULT_HTTP_DELAY 5
-
-/* DEFAULT_HTTP_DELAY is the default delay when using swishspider -S http */
 
 
 #define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"

@@ -45,7 +45,6 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 #include "search.h"
 #include "index.h"
 #include "file.h"
-#include "http.h"
 #include "merge.h"
 #include "docprop.h"
 #include "hash.h"
@@ -294,10 +293,6 @@ static void    usage()
     printf("              for \"-S fs\" - specify a list of files or directories\n");
 #endif
 
-#ifdef ALLOW_HTTP_INDEXING_DATA_SOURCE
-    printf("              for \"-S http\" - specify a list of URLs\n");
-#endif
-
 #ifdef ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE
     printf("              for \"-S prog\" - specify a list of programs or the string \"stdin\"\n");
 #endif
@@ -321,17 +316,9 @@ static void    usage()
         defaultIndexingSystem = "fs";
 #endif
 
-#ifdef ALLOW_HTTP_INDEXING_DATA_SOURCE
-    printf("              \"http\" - index web site files using a web crawler\n");
-    if (!*defaultIndexingSystem)
-        defaultIndexingSystem = "http";
-#endif
-
 #ifdef ALLOW_EXTERNAL_PROGRAM_DATA_SOURCE
     printf("              \"prog\" - index files supplied by an external program\n");
 
-    if (!*defaultIndexingSystem)
-        defaultIndexingSystem = "http";
 #endif
     printf("              The default value is: \"%s\"\n", defaultIndexingSystem);
 
@@ -368,7 +355,6 @@ static void    printversion()
 * swish_new -- create a general purpose swish structure
 *
 *  Note that initModule_* code is called even when it's not going to be used
-*  (e.g. initModule_HTTP is called when searching).
 *
 *
 **************************************************************************/
@@ -382,10 +368,8 @@ static SWISH  *swish_new()
     /* Additional modules needed for indexin (which we are not sure about yet... */
     initModule_ResultSort(sw);
     initModule_Filter(sw);
-    initModule_Entities(sw);  /* used only by the old HTML parser -- not long to live */
     initModule_Index(sw);
     initModule_FS(sw);
-    initModule_HTTP(sw);
     initModule_Prog(sw);
 
     return (sw);
@@ -414,11 +398,9 @@ static void    swish_close(SWISH * sw)
     /* Free specific data related to indexing */
 
     freeModule_Filter(sw);
-    freeModule_Entities(sw);
     freeModule_Index(sw);
     freeModule_ResultSort(sw);
     freeModule_FS(sw);
-    freeModule_HTTP(sw);
     freeModule_Prog(sw);
 
 

@@ -106,7 +106,7 @@ Z_LIBS = @Z_LIBS@
 am__include = @am__include@
 am__quote = @am__quote@
 install_sh = @install_sh@
-SUBDIRS = expat replace snowball
+SUBDIRS = replace snowball
 
 
 # Using AM_CPPFLAGS instead of per-target flags means object names
@@ -142,7 +142,7 @@ libswish_e_la_SOURCES = \
 	swish2.c  \
 	swish_words.c swish_words.h \
 	proplimit.c proplimit.h \
-        rank.c rank.h \
+    rank.c rank.h \
 	db_read.c sw_db.h \
 	result_sort.c result_sort.h \
 	hash.c hash.h \
@@ -164,7 +164,7 @@ libswish_e_la_SOURCES = \
 
 
 noinst_LTLIBRARIES = libswishindex.la
-libswishindex_la_LIBADD = expat/libswexpat.la $(LIBXML2_OBJS) snowball/libsnowball.la
+libswishindex_la_LIBADD = $(LIBXML2_OBJS) snowball/libsnowball.la
 libswishindex_la_LDFLAGS = $(LIBXML2_LIB) $(Z_LIBS) $(PCRE_LIBS)
 
 libswishindex_la_DEPENDENCIES = $(libswishindex_la_LIBADD)
@@ -173,32 +173,23 @@ EXTRA_libswishindex_la_SOURCES = parser.c parser.h
 
 libswishindex_la_SOURCES = \
 	fs.c fs.h \
-	http.c http.h \
-	httpserver.c httpserver.h \
 	extprog.c extprog.h \
-        bash.c bash.h \
+    bash.c bash.h \
 	methods.c \
-	html.c html.h \
-	txt.c txt.h \
-	xml.c xml.h \
 	entities.c entities.h \
 	index.c index.h \
 	merge.c merge.h \
 	pre_sort.c \
 	file.c file.h \
-        filter.c filter.h \
+    filter.c filter.h \
 	parse_conffile.c parse_conffile.h \
 	swregex.c swregex.h \
 	db_write.c  \
 	docprop_write.c \
-        getruntime.c getruntime.h
+    getruntime.c getruntime.h
 
 
 include_HEADERS = swish-e.h
-
-libexec_SCRIPTS = swishspider
-
-EXTRA_DIST = swishspider
 subdir = src
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = acconfig.h
@@ -211,10 +202,10 @@ am_libswish_e_la_OBJECTS = search.lo swish2.lo swish_words.lo \
 	swstring.lo docprop.lo metanames.lo headers.lo swish_qsort.lo \
 	date_time.lo double_metaphone.lo stemmer.lo soundex.lo
 libswish_e_la_OBJECTS = $(am_libswish_e_la_OBJECTS)
-am_libswishindex_la_OBJECTS = fs.lo http.lo httpserver.lo extprog.lo \
-	bash.lo methods.lo html.lo txt.lo xml.lo entities.lo index.lo \
-	merge.lo pre_sort.lo file.lo filter.lo parse_conffile.lo \
-	swregex.lo db_write.lo docprop_write.lo getruntime.lo
+am_libswishindex_la_OBJECTS = fs.lo extprog.lo bash.lo methods.lo \
+	entities.lo index.lo merge.lo pre_sort.lo file.lo filter.lo \
+	parse_conffile.lo swregex.lo db_write.lo docprop_write.lo \
+	getruntime.lo
 libswishindex_la_OBJECTS = $(am_libswishindex_la_OBJECTS)
 EXTRA_PROGRAMS = libtest$(EXEEXT)
 bin_PROGRAMS = swish-e$(EXEEXT)
@@ -228,8 +219,6 @@ am_swish_e_OBJECTS = swish.$(OBJEXT) keychar_out.$(OBJEXT) \
 swish_e_OBJECTS = $(am_swish_e_OBJECTS)
 swish_e_DEPENDENCIES = libswishindex.la libswish-e.la
 swish_e_LDFLAGS =
-SCRIPTS = $(libexec_SCRIPTS)
-
 
 DEFS = @DEFS@
 DEFAULT_INCLUDES =  -I. -I$(srcdir) -I.
@@ -249,12 +238,10 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/file.Plo ./$(DEPDIR)/filter.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/fs.Plo ./$(DEPDIR)/getruntime.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/hash.Plo ./$(DEPDIR)/headers.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/html.Plo ./$(DEPDIR)/http.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/httpserver.Plo ./$(DEPDIR)/index.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/keychar_out.Po ./$(DEPDIR)/libtest.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/list.Plo ./$(DEPDIR)/mem.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/merge.Plo ./$(DEPDIR)/metanames.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/methods.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/index.Plo ./$(DEPDIR)/keychar_out.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libtest.Po ./$(DEPDIR)/list.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/mem.Plo ./$(DEPDIR)/merge.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/metanames.Plo ./$(DEPDIR)/methods.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parse_conffile.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/parser.Plo ./$(DEPDIR)/pre_sort.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/proplimit.Plo ./$(DEPDIR)/rank.Plo \
@@ -264,8 +251,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/swish.Po ./$(DEPDIR)/swish2.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/swish_qsort.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/swish_words.Plo ./$(DEPDIR)/swregex.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/swstring.Plo ./$(DEPDIR)/txt.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/xml.Plo
+@AMDEP_TRUE@	./$(DEPDIR)/swstring.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
@@ -391,26 +377,6 @@ libtest$(EXEEXT): $(libtest_OBJECTS) $(libtest_DEPENDENCIES)
 swish-e$(EXEEXT): $(swish_e_OBJECTS) $(swish_e_DEPENDENCIES) 
 	@rm -f swish-e$(EXEEXT)
 	$(LINK) $(swish_e_LDFLAGS) $(swish_e_OBJECTS) $(swish_e_LDADD) $(LIBS)
-libexecSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-install-libexecSCRIPTS: $(libexec_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(libexecdir)
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f"; \
-	    $(libexecSCRIPT_INSTALL) $$d$$p $(DESTDIR)$(libexecdir)/$$f; \
-	  else :; fi; \
-	done
-
-uninstall-libexecSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(libexec_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f $(DESTDIR)$(libexecdir)/$$f"; \
-	  rm -f $(DESTDIR)$(libexecdir)/$$f; \
-	done
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT) core *.core
@@ -438,9 +404,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getruntime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/headers.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/html.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/httpserver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/index.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/keychar_out.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libtest.Po@am__quote@
@@ -465,8 +428,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swish_words.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swregex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/swstring.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/txt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xml.Plo@am__quote@
 
 distclean-depend:
 	-rm -rf ./$(DEPDIR)
@@ -654,13 +615,12 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-recursive
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(HEADERS) \
-		acconfig.h
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS) acconfig.h
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs: installdirs-recursive
 installdirs-am:
-	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libexecdir) $(DESTDIR)$(includedir)
+	$(mkinstalldirs) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(includedir)
 
 install: install-recursive
 install-exec: install-exec-recursive
@@ -707,8 +667,7 @@ info-am:
 
 install-data-am: install-includeHEADERS
 
-install-exec-am: install-binPROGRAMS install-libLTLIBRARIES \
-	install-libexecSCRIPTS
+install-exec-am: install-binPROGRAMS install-libLTLIBRARIES
 
 install-info: install-info-recursive
 
@@ -726,8 +685,7 @@ mostlyclean-am: mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool
 
 uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
-	uninstall-info-am uninstall-libLTLIBRARIES \
-	uninstall-libexecSCRIPTS
+	uninstall-info-am uninstall-libLTLIBRARIES
 
 uninstall-info: uninstall-info-recursive
 
@@ -741,17 +699,16 @@ uninstall-info: uninstall-info-recursive
 	install-data install-data-am install-data-recursive \
 	install-exec install-exec-am install-exec-recursive \
 	install-includeHEADERS install-info install-info-am \
-	install-info-recursive install-libLTLIBRARIES \
-	install-libexecSCRIPTS install-man install-recursive \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am installdirs-recursive maintainer-clean \
-	maintainer-clean-generic maintainer-clean-recursive mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	mostlyclean-recursive tags tags-recursive uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-includeHEADERS \
+	install-info-recursive install-libLTLIBRARIES install-man \
+	install-recursive install-strip installcheck installcheck-am \
+	installdirs installdirs-am installdirs-recursive \
+	maintainer-clean maintainer-clean-generic \
+	maintainer-clean-recursive mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool mostlyclean-recursive \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-includeHEADERS \
 	uninstall-info-am uninstall-info-recursive \
-	uninstall-libLTLIBRARIES uninstall-libexecSCRIPTS \
-	uninstall-recursive
+	uninstall-libLTLIBRARIES uninstall-recursive
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

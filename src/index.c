@@ -135,10 +135,7 @@ $Id$
 /* Removed due to problems with patents
 #include "deflate.h"
 */
-#include "html.h"
-#include "xml.h"
 #include "parser.h"
-#include "txt.h"
 #include "metanames.h"
 #include "result_sort.h"
 #include "result_output.h"
@@ -237,9 +234,6 @@ void initModule_Index (SWISH  *sw)
     idx->metaIDtable.array = (int *)emalloc( idx->metaIDtable.max * sizeof(int) );
     idx->metaIDtable.defaultID = -1;
 
-
-    /* $$$ this is only a fix while http.c and httpserver.c still exist */
-    idx->tmpdir = estrdup(".");
 
     /* By default, we are not in update mode */
     idx->update_mode = MODE_INDEX;
@@ -504,20 +498,9 @@ static int index_no_content(SWISH * sw, FileProp * fprop, FileRec *fi, char *buf
 
 
     /* Look for title if HTML document */
-    
-    if (fprop->doctype == HTML)
-    {
-        title = parseHTMLtitle( sw , buffer );
 
-        if (!isoktitle(sw, title))
-            return -2;  /* skipped because of title */
-    }
-
-
-#ifdef HAVE_LIBXML2
-    if (fprop->doctype == HTML2 || !fprop->doctype)
+    if (fprop->doctype == HTML || fprop->doctype == HTML2 || !fprop->doctype)
         return parse_HTML( sw, fprop, fi, buffer );
-#endif
 
 
     addCommonProperties( sw, fprop, fi, title, NULL, 0 );
@@ -1015,50 +998,32 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
     }
 
 
-
-
-
-    /** Read the buffer, if not a stream parser **/
-
-#ifdef HAVE_LIBXML2
-    if ( !fprop->doctype || fprop->doctype == HTML2 || fprop->doctype == XML2 || fprop->doctype == TXT2 )
-        rd_buffer = NULL;
-    else
-#endif
-    /* -- Read  all data, last 1 is flag that we are expecting text only */
-    rd_buffer = read_stream(sw, fprop, 1);
-
+    rd_buffer = NULL;
 
     /* just for fun so we can show total bytes shown */
     sw->indexlist->total_bytes += fprop->fsize;
 
 
-    /* Set which parser to use */
+    /* Set which parser to use -- the duplicates are for backwards compat for pre2.6 config files */
     
     switch (fprop->doctype)
     {
 
-    case TXT:
-        strcpy(strType,"TXT");
-        countwords = countwords_TXT;
+    case XML:
+        strcpy(strType,"XML2");
+        countwords = parse_XML;
         break;
 
     case HTML:
-        strcpy(strType,"HTML");
-        countwords = countwords_HTML;
+        strcpy(strType,"HTML2");
+        countwords = parse_HTML;
         break;
 
-    case XML:
-        strcpy(strType,"XML");
-        countwords = countwords_XML;
+    case TXT:
+        strcpy(strType,"TXT2");
+        countwords = parse_TXT;
         break;
 
-    case WML:
-        strcpy(strType,"WML");
-        countwords = countwords_HTML;
-        break;
-
-#ifdef HAVE_LIBXML2
     case XML2:
         strcpy(strType,"XML2");
         countwords = parse_XML;
@@ -1079,15 +1044,6 @@ void    do_index_file(SWISH * sw, FileProp * fprop)
         countwords = parse_HTML;
         break;
 
-#else
-
-    /* Default if libxml not installed */
-    default:
-        strcpy(strType,"DEFAULT (HTML)");
-        countwords = countwords_HTML;
-        break;
-#endif
-        
     }
 
 

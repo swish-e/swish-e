@@ -46,8 +46,6 @@ $Id$
 #include "fs.h"
 #include "check.h"
 #include "error.h"
-#include "xml.h"
-#include "txt.h"
 #include "parse_conffile.h"
 #include "swish_qsort.h"
 

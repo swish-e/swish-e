@@ -22,7 +22,7 @@ man1dir = $(mandir)/man1
 # Flags for C compiler
 #CWARN=
 CDEF = /def=(HAVE_LIBXML2,VMS,HAVE_CONFIG_H,STDC_HEADERS)
-CINCL= /include=([.expat.xmlparse],[.expat.xmltok],libz:)
+CINCL= /include=(libz:)
 CWARN=
 #CDEBUG= /debug/noopt
 CDEBUG=
@@ -38,20 +38,17 @@ LIBS=
 #
 
 FILESYSTEM_OBJS=fs.obj
-HTTP_OBJS=http.obj httpserver.obj
 FS_OBJS=$(FILESYSTEM_OBJS)
-WEB_OBJS=$(HTTP_OBJS)
 VMS_OBJS = regex.obj
 
-XML_PARSE = xmlparse.obj xmltok.obj xmlrole.obj 
 LIBXML2_LIB = libxml:libxml.olb/lib
 LIBXML2_OBJS = parser.obj
 VSNPRINTF_OBJ = vsnprintf.obj
 
 OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	hash.obj list.obj mem.obj merge.obj swish2.obj stemmer.obj \
-	soundex.obj docprop.obj compress.obj xml.obj txt.obj \
-	metanames.obj result_sort.obj html.obj \
+	soundex.obj docprop.obj compress.obj \
+	metanames.obj result_sort.obj \
 	filter.obj parse_conffile.obj result_output.obj date_time.obj \
 	keychar_out.obj extprog.obj bash.obj db_native.obj dump.obj \
 	entities.obj swish_words.obj \
@@ -60,7 +57,7 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 	pre_sort.obj parser.obj headers.obj docprop_write.obj stemmer.obj\
         $(XML_PARSE)\
 	$(LIBXML2_OBJS)\
-	$(FILESYSTEM_OBJS) $(HTTP_OBJS) $(VMS_OBJS) $(VSNPRINTF_OBJ) \
+	$(FILESYSTEM_OBJS) $(VMS_OBJS) $(VSNPRINTF_OBJ) \
         api.obj stem_de.obj stem_dk.obj stem_en1.obj stem_en2.obj stem_es.obj\
 	stem_fi.obj stem_fr.obj stem_it.obj stem_nl.obj stem_no.obj \
 	stem_pt.obj stem_ru.obj stem_se.obj utilities.obj
@@ -68,12 +65,6 @@ OBJS=	check.obj file.obj index.obj search.obj error.obj methods.obj\
 
 all :	acconfig.h $(NAME) swish-search.exe libtest.exe
 	!
-
-xmlparse.obj : [.expat.xmlparse]xmlparse.c
-
-xmltok.obj : [.expat.xmltok]xmltok.c
-
-xmlrole.obj : [.expat.xmltok]xmlrole.c
 
 $(NAME) : $(OBJS) libswish-e.olb swish.obj
         link/exe=$(MMS$TARGET) $(LINKFLAGS) -
@@ -139,10 +130,6 @@ file.obj : file.c swish.h config.h file.h mem.h error.h list.h \
 fs.obj : fs.c swish.h config.h index.h hash.h mem.h file.h \
  list.h
 hash.obj : hash.c swish.h config.h hash.h mem.h
-http.obj : http.c swish.h config.h index.h hash.h mem.h file.h \
- http.h httpserver.h
-httpserver.obj : httpserver.c swish.h config.h mem.h http.h \
- httpserver.h
 index.obj : index.c swish.h config.h index.h hash.h mem.h \
  check.h search.h docprop.h stemmer.h compress.h
 list.obj : list.c swish.h config.h list.h mem.h
@@ -160,8 +147,6 @@ swish.obj : swish.c swish.h config.h error.h list.h search.h index.h \
  file.h merge.h docprop.h
 libtest.obj : libtest.c swish.h config.h error.h list.h search.h index.h \
  file.h merge.h docprop.h
-txt.obj : txt.c txt.h swish.h mem.h index.h
-xml.obj : xml.c txt.h swish.h mem.h index.h
 proplimi.obj : swish.h mem.h merge.h docprop.h index.h metanames.h \
  compress.h error.h db.h result_sort.h swish_qsort.h proplimit.h
 metanames.obj : metanames.c

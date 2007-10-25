@@ -387,7 +387,6 @@ AC_CONFIG_FILES(
     pod/Makefile
     man/Makefile
     src/Makefile
-    src/expat/Makefile
     src/replace/Makefile
     src/snowball/Makefile
     rpm/swish-e.spec
