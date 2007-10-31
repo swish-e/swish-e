@@ -230,9 +230,6 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 #undef TM_IN_SYS_TIME
 
-/* BDB support */
-#undef USE_BTREE
-
 /* Version number of package */
 #undef VERSION
 

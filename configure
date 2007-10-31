@@ -27541,11 +27541,6 @@ echo "$as_me: no usable Berkeley DB not found" >&6;}
 
 
 
-cat >>confdefs.h <<\_ACEOF
-#define USE_BTREE
-_ACEOF
-
-
 
 _cppflags="${CPPFLAGS}"
 _ldflags="${LDFLAGS}"

@@ -216,11 +216,8 @@
 /* Define to 1 if your <sys/time.h> declares `struct tm'. */
 /* #undef TM_IN_SYS_TIME */
 
-/* Experimental BTREE support */
-/* #undef USE_BTREE */
-
 /* Version number of package */
-#define VERSION "2.4.0"
+#define VERSION "2.6.0"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */

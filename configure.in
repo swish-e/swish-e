@@ -260,7 +260,6 @@ AX_PATH_BDB([3],[
      LDFLAGS="$BDB_LDFLAGS $LDFLAGS"
      CPPFLAGS="$CPPFLAGS $BDB_CPPFLAGS"
  ])
-AC_DEFINE(USE_BTREE,[],[BDB support])
 
 
 dnl Checks for zlib library. -- from libxml2 configure.in
