@@ -371,6 +371,15 @@ else
     AC_MSG_RESULT([Not building with perl compatible regex - use --with-pcre to enable])
 fi
 
+dnl enable largefile support by default. disable with --disable-largefile
+AC_SYS_LARGEFILE
+AC_MSG_NOTICE([fileoffset bits = ${ac_cv_sys_file_offset_bits}])
+if test "x${ac_cv_sys_file_offset_bits}" == "x64" ; 
+then
+	LARGEFILES_MACROS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+fi
+AC_SUBST(LARGEFILES_MACROS)
+
 CPPFLAGS=${_cppflags}
 LDFLAGS=${_ldflags}
 
