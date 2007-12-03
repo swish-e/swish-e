@@ -468,7 +468,7 @@ int  sortresults(RESULTS_OBJECT *results)
 
     if (results->bigrank)
     {
-        fprintf(stderr, "bigrank found: %d\n", results->bigrank );
+        //fprintf(stderr, "bigrank found: %d\n", results->bigrank );
         results->rank_scale_factor = 10000000 / results->bigrank;
     }
     else
