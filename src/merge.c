@@ -90,7 +90,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  frequency,
                  loc_count = 0,
                  word_count = 0;
-    DB_WORDID   *wordID;
+    DB_WORDID   *wordID, *tmp;
     int          metadata_length = 0;
     unsigned char   *worddata;
     unsigned char   *s, *start;
@@ -216,74 +216,78 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                     if(wordID)
                     {
 
-                        DB_ReadWordData(sw_input, wordID->wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
-                        uncompress_worddata(&worddata,&sz_worddata,saved_bytes);
-
-                        /* Now, parse word's data */
-                        s = worddata;
-                        tmpval = uncompress2(&s);     /* tfrequency */
-                        metaID = uncompress2(&s);     /* metaID */
-
-                        if (metaID)
+                        for(tmp = wordID; tmp ; tmp = tmp->next)
                         {
-                            metadata_length = uncompress2(&s);
-                        }
 
-                        filenum = 0;
-                        start = s;
+                            DB_ReadWordData(sw_input, tmp->wordID, &worddata, &sz_worddata, &saved_bytes, cur_index->DB);
+                            uncompress_worddata(&worddata,&sz_worddata,saved_bytes);
 
-                        while(1)
-                        {                   /* Read on all items */
-                            uncompress_location_values(&s,&flag,&tmpval,&frequency);
-                            filenum += tmpval;
-                            /* Use stack array when possible to avoid malloc/free overhead */
-                            if(frequency > MAX_STACK_POSITIONS)
-                                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
-                            else
-                                posdata = local_posdata;
+                            /* Now, parse word's data */
+                            s = worddata;
+                            tmpval = uncompress2(&s);     /* tfrequency */
+                            metaID = uncompress2(&s);     /* metaID */
 
-                            /* Read the positions */
-                            uncompress_location_positions(&s,flag,frequency,posdata);
+                            if (metaID)
+                            {
+                                metadata_length = uncompress2(&s);
+                            }
+
+                            filenum = 0;
+                            start = s;
+
+                            while(1)
+                            {                   /* Read on all items */
+                                uncompress_location_values(&s,&flag,&tmpval,&frequency);
+                                filenum += tmpval;
+                                /* Use stack array when possible to avoid malloc/free overhead */
+                                if(frequency > MAX_STACK_POSITIONS)
+                                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                                else
+                                    posdata = local_posdata;
+
+                                /* Read the positions */
+                                uncompress_location_positions(&s,flag,frequency,posdata);
 
 
-                            /* now we have the word data */
-                            for (i = 0; i < frequency; i++, loc_count++)
-                                write_word_pos( cur_index, sw_output, cur_index->merge_file_num_map, filenum, e, metaID, posdata[i]);
+                                /* now we have the word data */
+                                for (i = 0; i < frequency; i++, loc_count++)
+                                    write_word_pos( cur_index, sw_output, cur_index->merge_file_num_map, filenum, e, metaID, posdata[i]);
+
+                                if(e->tfrequency)
+                                {
+                                    /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
+                                    ** to time to help addentry.
+                                    ** If we do not do this, addentry routine will have to run linked lists
+                                    ** of positions with thousands of elements and makes the merge proccess
+                                    ** very slow
+                                    */
+                                    if(!(loc_count % 100))
+                                        CompressCurrentLocEntry(sw_output, e);
+                                }
+
+
+                                if(posdata != local_posdata)
+                                    efree(posdata);
+
+                                /* Check for enf of worddata */
+                                if ((s - worddata) == sz_worddata)
+                                    break;   /* End of worddata */
+
+                                /* Check for end of current metaID data */
+                                if ( metadata_length == (s - start))
+                                {
+                                    filenum = 0;
+                                    metaID = uncompress2(&s);
+                                    metadata_length = uncompress2(&s);
+                                    start = s;
+                                }
+                            }
 
                             if(e->tfrequency)
-                            {
-                                /* 08/2002 jmruiz - We will call CompressCurrentLocEntry from time
-                                ** to time to help addentry.
-                                ** If we do not do this, addentry routine will have to run linked lists
-                                ** of positions with thousands of elements and makes the merge proccess
-                                ** very slow
-                                */
-                                if(!(loc_count % 100))
-                                    CompressCurrentLocEntry(sw_output, e);
-                            }
+                                CompressCurrentLocEntry(sw_output, e);
 
-
-                            if(posdata != local_posdata)
-                                efree(posdata);
-
-                            /* Check for enf of worddata */
-                            if ((s - worddata) == sz_worddata)
-                                break;   /* End of worddata */
-
-                            /* Check for end of current metaID data */
-                            if ( metadata_length == (s - start))
-                            {
-                                filenum = 0;
-                                metaID = uncompress2(&s);
-                                metadata_length = uncompress2(&s);
-                                start = s;
-                            }
+                            efree(worddata);
                         }
-
-                        if(e->tfrequency)
-                            CompressCurrentLocEntry(sw_output, e);
-
-                        efree(worddata);
                     }
                     cur_index = cur_index->next;
                 }
@@ -329,7 +333,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
 
     /* 2002/09 MERGE fix jmruiz */
-    /* Finally, remove words from the hash array with tfrequncy == 0 */
+    /* Finally, remove words from the hash array with tfrequency == 0 */
     /* walk the hash list to merge worddata */
     for (word_count = 0, hash = 0; hash < VERYBIGHASHSIZE; hash++)
     {
@@ -985,10 +989,9 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 {
-    int         j;
     int         word_count = 0;
-    char        word[2];
-    char       *resultword;
+    char        word[1];
+    char       *resultword,*previousword;
     DB_WORDID  *wordID;
 
     DB_InitReadWords(sw, indexf->DB);
@@ -997,24 +1000,30 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
     printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
     fflush(stdout);
 
-    for(j=0;j<256;j++)
+    word[0] = '\0';
+    previousword = estrdup(word);
+    DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+
+    while(wordID)
     {
-
-        word[0] = (unsigned char) j; word[1] = '\0';
-        DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-
-        while(wordID)
+        /* Add resultword to output if a new word is found */
+        /* The word index can contain duplicates */
+        if(strcmp(previousword,resultword) != 0)
         {
-            /* Add resultword to output */
             getentry(sw_output, resultword);
-            efree(resultword);
-            DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-            word_count++;
-            if(!word_count % 10000)
-                printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
+            efree(previousword);
+            previousword = resultword;
         }
+        else
+            efree(resultword);
+        DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
+        word_count++;
+        if(!word_count % 10000)
+            printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
     }
     printf("Getting words in index '%s': %6d words\n", indexf->line, word_count);
+
+    efree(previousword);
 
     DB_EndReadWords(sw, indexf->DB);
 
