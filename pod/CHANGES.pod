@@ -10,6 +10,21 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item SWISH_DEBUG_RANK env var now enables rank debugging
+
+Set SWISH_DEBUG_RANK to a true value to enable lots of rank debugging
+on stderr.
+
+=item Perl Makefile.PL patched to fix MakeMaker issue
+
+Recent versions of ExtUtils::MakeMaker revealed a bug in Makefile.PL.
+Patch from mschwern via RT report by mpeters.
+
+=item LARGEFILE support detected automatically in configure
+
+jrobinson852@yahoo.com suggest LARGEFILE support be auto-detected since
+it is needed so often on Linux systems.
+
 =item New Snowball stemmers
 
 Trygve Falch contributed patches to update

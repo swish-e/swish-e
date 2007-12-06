@@ -50,7 +50,7 @@ $Id$
 
 // #define DEBUGSORT 1
 
-
+extern int DEBUG_RANK;
 
 
 /*****************************************************************************
@@ -468,7 +468,9 @@ int  sortresults(RESULTS_OBJECT *results)
 
     if (results->bigrank)
     {
-        //fprintf(stderr, "bigrank found: %d\n", results->bigrank );
+        if ( DEBUG_RANK ) {
+            fprintf(stderr, "bigrank found: %d\n", results->bigrank );
+        }
         results->rank_scale_factor = 10000000 / results->bigrank;
     }
     else

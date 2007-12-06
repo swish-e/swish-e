@@ -2334,8 +2334,9 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
            *tmp;
     RESULT_LIST *new_results_list = NULL;
     RESULTS_OBJECT *results = db_results->results;
-    //unsigned int max_rank_size = 256 ^ sizeof(int);
-
+    /* TODO use to detect rank size overflow 
+    unsigned int max_rank_size = 256 ^ sizeof(int);
+    */
 
     /* If either list is empty, just return the other */
     if (l_r1 == NULL)
