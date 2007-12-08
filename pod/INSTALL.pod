@@ -194,7 +194,7 @@ Xpdf may be added after Swish-e is installed.
 
 Indexing MS Word documents requires the F<Catdoc> program.
 
-    http://www.45.free.net/~vitus/ice/catdoc
+    http://www.wagner.pp.ru/~vitus/software/catdoc/
 
 F<Catdoc> may be added after Swish-e is installed.
 
