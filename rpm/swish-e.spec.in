@@ -23,7 +23,6 @@ Provides:       %{name}
 Obsoletes:      %{name}-doc
 Obsoletes:	swish
 Requires:       libxml2, pcre, zlib
-BuildRequires:	libxml2-devel, pcre-devel, zlib-devel
 Prefix:         /usr
 
 %description
