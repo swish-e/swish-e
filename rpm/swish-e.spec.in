@@ -1,30 +1,25 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 4
+%define release 5
 
 # SWISH::API definitions
 %define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
 %define NVR %{name}-%{version}-%{release}
-%define maketest 0
 
 Summary:        SWISH-E - Simple Web Indexing System for Humans - Enhanced
 Name:           %{name}
 Version:        %{version}
 Release:        %{release}
-License:        GPL
-Group:          Networking/Other
+License:        GNU General Public License v2.0 or later, with linking exception
+Group:          Applications/Internet
 Source:         http://swish-e.org/Download/%{name}-%{version}.tar.gz
 URL:            http://swish-e.org/
 BuildRoot:      %{_tmppath}/%name-root
-Packager:       David L Norris <dave@webaugur.com>
-Icon:           swish-e.xpm
-Vendor:         SWISH-E Team <http://swish-e.org/>
 Provides:       %{name}
 Obsoletes:      %{name}-doc
-Obsoletes:	swish
+Obsoletes:      swish
 Requires:       libxml2, pcre, zlib
-BuildRequires:	libxml2-devel, pcre-devel, zlib-devel
-Prefix:         /usr
+BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, perl(ExtUtils::MakeMaker)
 
 %description
 Swish-e is Simple Web Indexing System for Humans - Enhanced
@@ -40,7 +35,7 @@ in a relational database.
 
 %package        perl
 Summary:        SWISH-E - PERL Scripts and Modules
-Group:          Networking/Other
+Group:          Applications/Internet
 Provides:       %{name}-perl
 Requires:       %{name} = %{version}
 Requires:       %{name}-perl-api = %{version}
@@ -51,8 +46,8 @@ PERL SWISH-E language bindings and scripts.
 
 %package	perl-api
 summary:	SWISH::API - Perl interface to the Swish-e C Library
-License:	Artistic
-Group:		Applications/CPAN
+License:	Perl License
+Group:		Development/Libraries
 Provides:	%{name}-perl-api
 Provides:	perl-SWISH-API = 0.01
 Requires:	%{name} = %{version}
@@ -66,7 +61,7 @@ open when running multiple queries.  This results in increased search performanc
 
 %package	devel
 Summary:	SWISH-E - Static libraries and header files.
-Group:		Networking/Other
+Group:		Development/Libraries
 Obsoletes:	swish-devel
 Provides:       %{name}-devel
 Requires:	%{name} = %{version}
@@ -94,9 +89,6 @@ CFLAGS="$RPM_OPT_FLAGS" SWISHBIN="%{_builddir}/%{name}-%{version}/src/swish-e" S
 
 %{__make} PREFIX=%{buildroot}%{_prefix} LIB='%{_libdir}' LIBS='-L%{_libdir} -L%{buildroot}/src/.libs -lswish-e -lz' 'LDFLAGS=-L%{_libdir} -L%{_builddir}/%{name}-%{version}/src/.libs' 'CCFLAGS=-I%{_builddir}/%{name}-%{version}/src' 'LDDLFLAGS=-shared -L%{_builddir}/%{name}-%{version}/src/.libs/ -lswish-e'
 
-%if %maketest
-%{__make} test
-%endif
 popd
 
 %install
@@ -108,15 +100,6 @@ pushd perl
 %{makeinstall} `%{__perl} -MExtUtils::MakeMaker -e ' print \$ExtUtils::MakeMaker::VERSION <= 6.05 ? qq|PREFIX=%{buildroot}%{_prefix}| : qq|DESTDIR=%{buildroot}| '`
 
 [ -x /usr/lib/rpm/brp-compress ] && /usr/lib/rpm/brp-compress
-
-# SuSE Linux
-if [ -e /etc/SuSE-release -o -e /etc/UnitedLinux-release ]
-then
-    %{__mkdir_p} %{buildroot}/var/adm/perl-modules
-    %{__cat} `find %{buildroot} -name "perllocal.pod"`  \
-        | %{__sed} -e s+%{buildroot}++g                 \
-        > %{buildroot}/var/adm/perl-modules/%{name}
-fi
 
 # remove special files
 find %{buildroot} -name "perllocal.pod" \
@@ -197,6 +180,11 @@ popd
 %{_bindir}/swish-config
 
 %changelog
+* Thu Dec 13 2007 David L Norris <dave@webaugur.com> 2.5.6
+- Lots of changes to make Fedora happy.
+- Remove SUSE specific stuff.
+- Change SWISH::API License to same as perl.
+- Changed main license to match http://fedoraproject.org/wiki/Licensing
 * Fri Apr 08 2005 Bernhard Weisshuhn <bkw@weisshuhn.de> 2.4.3-5
 - Differentiate between libdir and libexecdir (for x86_64)
 - Use swish-config from builddir for perl-build (pretty crude)
