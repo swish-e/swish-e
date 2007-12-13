@@ -79,9 +79,7 @@ win32_dir = \
     src/win32/fixperl.pl \
     src/win32/build-perl.bat \
     src/win32/build.sh \
-    src/win32/dist.sh \
-    src/worddata.c \
-    src/worddata.h
+    src/win32/dist.sh 
 
 rpm_dir = \
     rpm/swish-e.spec.in \
