@@ -18,8 +18,8 @@ BuildRoot:      %{_tmppath}/%name-root
 Provides:       %{name}
 Obsoletes:      %{name}-doc
 Obsoletes:      swish
-Requires:       libxml2, pcre, zlib
-BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, perl(ExtUtils::MakeMaker)
+Requires:       libxml2, pcre, zlib, db4
+BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, db4-devel, perl(ExtUtils::MakeMaker)
 
 %description
 Swish-e is Simple Web Indexing System for Humans - Enhanced
