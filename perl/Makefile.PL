@@ -283,7 +283,7 @@ sub backtick {
         ( $? & 127 ),
         ( $? & 128 ) ? 'with' : 'without'
         )
-        : sprintf( "chiled exited with value %d", $? >> 8 );
+        : sprintf( "Child exited with value %d", $? >> 8 );
 
     die "Failed to run program [$command]: $status\n" if $status;
 
