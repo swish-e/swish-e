@@ -49,7 +49,7 @@ summary:	SWISH::API - Perl interface to the Swish-e C Library
 License:	Perl License
 Group:		Development/Libraries
 Provides:	%{name}-perl-api
-Provides:	perl-SWISH-API = 0.01
+Provides:	perl-SWISH-API = 0.04
 Requires:	%{name} = %{version}
 
 %description	perl-api
