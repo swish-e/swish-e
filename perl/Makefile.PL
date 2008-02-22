@@ -37,7 +37,7 @@ my %make_maker_opts = (
 
 my $SWISH_BINARY = 'swish-e';
 my $SWISH_CONFIG = 'swish-config';
-my $MIN_VERSION  = '2.4.3';
+my $MIN_VERSION  = '2.6.0';
 
 my @valid_params = qw/
     SWISHBINDIR SWISHHELP SWISHIGNOREVER SWISHSKIPTEST
@@ -308,5 +308,5 @@ sub create_index {
 
     system(@command);
 
-    die "Failed to create index file '$index'" unless -r $index;
+    die "Failed to create index file '$index'" unless -r $index . '.head';
 }
