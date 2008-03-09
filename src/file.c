@@ -279,7 +279,7 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
         
 
         /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
-        if ( is_text && strlen( (char *)buffer ) < bytes_read )
+        if ( !fprop->index_no_content && is_text && strlen( (char *)buffer ) < bytes_read )
         {
             int i;
             int j = 0;

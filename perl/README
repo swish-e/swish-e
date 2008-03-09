@@ -33,9 +33,14 @@ directory.
 
 2) Build the module in the normal way
 
-    perl Makefile.PL
-    make
-    make test
+    $ perl Makefile.PL
+    $ make
+    $ make test
+
+Then install, this may need to be done as the root user
+
+    $ sudo make install
+
 
 Makefile.PL requires the "swish-config" program which is created when installing
 swish-e.  It must reside in the same directory as the swish-e binary.  See below
