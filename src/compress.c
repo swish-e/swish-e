@@ -994,7 +994,10 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
             progerr("Internal error in remove_worddata_longs");
 
         /* dst may be smaller than src. So move the data */
-        memcpy(dst,src,data_len);
+        /* valgrind complains that dst and src overlap, */
+        /* which results in undefined behavior with memcpy, so use memmove. */
+        /* Q: Is it correct for dst and src to overlap here? */
+        memmove(dst,src,data_len);
 
         /* Increase pointers */
         src += data_len;
