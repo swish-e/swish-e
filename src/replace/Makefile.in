@@ -38,7 +38,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = src/replace
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in mkstemp.c \
-	vsnprintf.c
+	setenv.c vsnprintf.c
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/acinclude.m4 \
 	$(top_srcdir)/configure.in
@@ -139,7 +139,6 @@ PCRE_REQUIRED_VERSION = @PCRE_REQUIRED_VERSION@
 PERL = @PERL@
 POD2MAN = @POD2MAN@
 RANLIB = @RANLIB@
-SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -250,6 +249,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/mkstemp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/setenv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/vsnprintf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dummy.Plo@am__quote@
 
