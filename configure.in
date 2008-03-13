@@ -182,7 +182,7 @@ AC_FUNC_GETGROUPS
 
 AC_TYPE_GETGROUPS
 
-AC_REPLACE_FUNCS(vsnprintf mkstemp)
+AC_REPLACE_FUNCS(vsnprintf mkstemp setenv)
 
 dnl Optional building with libxml2
 
