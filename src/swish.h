@@ -139,6 +139,10 @@
 # include <mkstemp.h>
 #endif
 
+#ifndef HAVE_SETENV
+# include <setenv.h>
+#endif
+
 #endif
 
 
