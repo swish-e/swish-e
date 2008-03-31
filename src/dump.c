@@ -189,6 +189,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             filenum;
     unsigned int       *posdata;
     int     metadata_length;
+    long    r_nextposmeta;
     char    word[2];
     char   *resultword;
     unsigned char   *worddata, *s, *start, flag;
@@ -247,7 +248,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
             tmpval = uncompress2(&s);     /* tfrequency */
             metaID = uncompress2(&s);     /* metaID */
-            metadata_length = uncompress2(&s);
+
+            r_nextposmeta = UNPACKLONG2(s);
+            s += sizeof(long);
+            metadata_length = (int)r_nextposmeta - (s - worddata);
 
             filenum = 0;
             start = s;
@@ -273,7 +277,11 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 {
                     filenum = 0;
                     metaID = uncompress2(&s);
-                    metadata_length = uncompress2(&s);
+
+                    r_nextposmeta = UNPACKLONG2(s);
+                    s += sizeof(long);
+                    metadata_length = (int)r_nextposmeta - (s - worddata);
+
                     start = s;
                 }
 
@@ -330,7 +338,11 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
             tmpval = uncompress2(&s);     /* tfrequency */
             metaID = uncompress2(&s);     /* metaID */
-            metadata_length = uncompress2(&s);
+
+            r_nextposmeta = UNPACKLONG2(s);
+            s += sizeof(long);
+            metadata_length = (int)r_nextposmeta - (s - worddata);
+
 
             filenum = 0;
             start = s;
@@ -427,7 +439,11 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 {
                     filenum = 0;
                     metaID = uncompress2(&s);
-                    metadata_length = uncompress2(&s);
+
+                    r_nextposmeta = UNPACKLONG2(s);
+                    s += sizeof(long);
+                    metadata_length = (int)r_nextposmeta - (s - worddata);
+
                     start = s;
                 }
             }

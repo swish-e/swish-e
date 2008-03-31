@@ -1508,6 +1508,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     RESULT_LIST *l_rp, *l_rp2;
     DB_WORDID    *wordID, *tmp;
     int     metadata_length;
+    long    r_nextposmeta;
     char   *p;
     int     tfrequency = 0;
     unsigned char   *s, *buffer; 
@@ -1727,7 +1728,10 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
            while (curmetaID)
            {
-               metadata_length = uncompress2(&s);
+               r_nextposmeta = UNPACKLONG2(s);
+               s += sizeof(long);
+
+               metadata_length = (int)r_nextposmeta - (s - buffer);
             
                if (curmetaID >= metaID)
                    break;

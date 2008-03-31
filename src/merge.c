@@ -92,6 +92,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  word_count = 0;
     DB_WORDID   *wordID, *tmp;
     int          metadata_length = 0;
+    long         r_nextposmeta;
     unsigned char   *worddata;
     unsigned char   *s, *start;
     unsigned char   flag;
@@ -229,7 +230,9 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
 
                             if (metaID)
                             {
-                                metadata_length = uncompress2(&s);
+                                r_nextposmeta = UNPACKLONG2(s);
+                                s += sizeof(long);
+                                metadata_length = (int)r_nextposmeta - (s - worddata);
                             }
 
                             filenum = 0;
@@ -278,7 +281,11 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                                 {
                                     filenum = 0;
                                     metaID = uncompress2(&s);
-                                    metadata_length = uncompress2(&s);
+
+                                    r_nextposmeta = UNPACKLONG2(s);
+                                    s += sizeof(long);
+                                    metadata_length = (int)r_nextposmeta - (s - worddata);
+
                                     start = s;
                                 }
                             }

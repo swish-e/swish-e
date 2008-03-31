@@ -305,16 +305,10 @@ void build_worddata(SWISH * sw, ENTRY * ep)
 
 /* 04/2002 jmruiz
 ** New simpler routine to write worddata
-**
-** 10/2002 jmruiz
-** Add extra compression for worddata. Call to remove_worddata_longs
 */
 void write_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf )
 {
     int zlib_size;
-
-    /* Get some extra compression */
-    remove_worddata_longs(sw->Index->worddata_buffer,&sw->Index->sz_worddata_buffer);
 
     if(sw->compressPositions)
         zlib_size = compress_worddata(sw->Index->worddata_buffer, sw->Index->sz_worddata_buffer,sw->Index->swap_locdata);

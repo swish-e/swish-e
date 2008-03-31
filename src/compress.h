@@ -62,7 +62,6 @@ void CompressCurrentLocEntry(SWISH *, ENTRY *);
 
 int compress_worddata(unsigned char *, int, int );
 void uncompress_worddata(unsigned char **,int *, int);
-void    remove_worddata_longs(unsigned char *,int *);
 
 /* Here is the worst case size for a compressed number 
 ** MAXINTCOMPSIZE stands for MAXimum INTeger COMPressed SIZE
