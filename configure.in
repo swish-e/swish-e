@@ -223,7 +223,7 @@ else
     AC_SUBST(LIBXML_REQUIRED_VERSION)
     AC_MSG_CHECKING(for libxml libraries >= $LIBXML_REQUIRED_VERSION)
 
-    AC_DEFUN(VERSION_TO_NUMBER,
+    AC_DEFUN([VERSION_TO_NUMBER],
     [`$1 | sed -e 's/libxml //' | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
 
     dnl
@@ -335,7 +335,7 @@ if test "$withval" != "no"; then
     AC_SUBST(PCRE_REQUIRED_VERSION)
     AC_MSG_CHECKING(for libpcre libraries >= $PCRE_REQUIRED_VERSION)
 
-    AC_DEFUN(VERSION_TO_NUMBER,
+    AC_DEFUN([VERSION_TO_NUMBER],
     [`$1 | awk 'BEGIN { FS = "."; } { printf "%d", ([$]1 * 1000 + [$]2) * 1000 + [$]3;}'`])
 
     dnl
