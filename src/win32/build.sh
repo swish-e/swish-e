@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # This script documents how to build SWISH-E for Win32 under Linux
 
 # To jumpstart your development here are pcre, libxml2, and zlib:
@@ -25,10 +25,14 @@ rm -f config.cross.cache
         --host=${HA} \
         --target=${HA} \
         --build=${BA} \
-        --with-libxml2=$PWD/../libxml2 \
-        --with-zlib=$PWD/../zlib \
-        --with-pcre=$PWD/../pcre \
-        --enable-shared
+        --with-libxml2=$PWD/../prefix \
+        --with-zlib=$PWD/../prefix \
+        --with-pcre=$PWD/../prefix \
+        --with-db=$PWD/../prefix \
+        --enable-shared \
+        CFLAGS=$PWD/../prefix/include \
+        LDFLAGS=$PWD/../prefix/lib \
+        LIBS=-ldb-4.5
 
 # Build Binaries
 make

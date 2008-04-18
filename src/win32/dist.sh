@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # You need a native Linux version of makensis.  This is not easy to come by.
 # Here you'll find a binary tarball and Debian package:
