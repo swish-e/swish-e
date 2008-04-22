@@ -549,19 +549,6 @@ These also return a list of Property or Metaname description objects, but are
 accessed via a result record.  Since the result comes from a specific index file
 there's no need to specify the index file name.
 
-
-
-=item $stemmed_word = $swish-E<gt>stem_word( $word );
-
-*Deprecated*
-
-Returns the stemmed version of the passed in word.
-
-Deprecated because only stems using the original Porter Stemmer
-and uses a shared memory location in the SW_HANDLE object to store the stemmed
-word.  See below for other stemming options.
-
-
 =item $fuzzy_word = $swish-E<gt>Fuzzify( $indexname, $word );
 
 Like stem_word() used to work, only it uses whatever stemmer is named in $indexname.

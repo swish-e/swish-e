@@ -424,16 +424,6 @@ SwishWordsByLetter(handle, filename, c)
             }
          }
 
-
-
-char *
-SwishStemWord(handle, word)
-     SW_HANDLE handle
-     char *word
-
-
-
-
 # **************************************************************
 # 
 #             SWISH::API::Search

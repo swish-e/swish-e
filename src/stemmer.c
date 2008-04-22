@@ -134,10 +134,7 @@ static FUZZY_OPTS fuzzy_opts[] = {
     { FUZZY_STEMMING_RU,        "Stemming_ru",		Stem_snowball, russian_KOI8_R_create_env, russian_KOI8_R_close_env, russian_KOI8_R_stem },
     { FUZZY_STEMMING_FI,        "Stemming_fi",      Stem_snowball, finnish_ISO_8859_1_create_env, finnish_ISO_8859_1_close_env, finnish_ISO_8859_1_stem },
     { FUZZY_STEMMING_RO,        "Stemming_ro",		Stem_snowball, romanian_ISO_8859_2_create_env, romanian_ISO_8859_2_close_env, romanian_ISO_8859_2_stem },
-    { FUZZY_STEMMING_HU,        "Stemming_hu",		Stem_snowball, hungarian_ISO_8859_1_create_env, hungarian_ISO_8859_1_close_env, hungarian_ISO_8859_1_stem },
-    /* these next two are deprecated and are identical to Stemming_en1 */
-    { FUZZY_STEMMING_EN1,       "Stemming_en",      Stem_snowball, porter_ISO_8859_1_create_env, porter_ISO_8859_1_close_env, porter_ISO_8859_1_stem },
-    { FUZZY_STEMMING_EN1,       "Stem",             Stem_snowball, porter_ISO_8859_1_create_env, porter_ISO_8859_1_close_env, porter_ISO_8859_1_stem }
+    { FUZZY_STEMMING_HU,        "Stemming_hu",		Stem_snowball, hungarian_ISO_8859_1_create_env, hungarian_ISO_8859_1_close_env, hungarian_ISO_8859_1_stem }
 
 
 };
@@ -277,13 +274,6 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
     for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
-            if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" )
-            {
-                fprintf(stderr, "*************\n");
-                fprintf(stderr, "  Old stemmer '%s' is no longer supported -- using Stemming_en1 instead.\n", fuzzy_opts[i].name);
-                fprintf(stderr, "  Please update your config file.\n*************\n");
-            }
-            
             return create_fuzzy_struct( fi, &fuzzy_opts[i] );
         }
 
@@ -410,39 +400,6 @@ static FUZZY_WORD *double_metaphone( FUZZY_OBJECT *fi, const char *inword)
  *
  *************************************************************************/
 
-
-
-/*************************************************************************
-* SwishStemWord -- utility function to stem a word
-*
-* This stores the stemmed word locally so it can be freed
-# *Depreciated* because this only calls the original stemmer.
-*
-**************************************************************************/
-
-char *SwishStemWord( SWISH *sw, char *word )
-{
-    FUZZY_OBJECT *fo = NULL;
-    FUZZY_WORD *fw = NULL;
-
-    if ( sw->stemmed_word )
-    {
-        efree( sw->stemmed_word );
-        sw->stemmed_word = NULL;
-    }
-
-    fo = set_fuzzy_mode( fo, "Stem" );
-    if ( !fo )
-        return sw->stemmed_word;
-
-    fw = fuzzy_convert( fo, word );
-    sw->stemmed_word = estrdup( fw->string_list[0] );
-    fuzzy_free_word( fw );
-
-    free_fuzzy_mode( fo );
-    return sw->stemmed_word;
-
-}
 
 /************************************************************************
 * SwishFuzzyWord -- utility function to stem a word based on the current result
