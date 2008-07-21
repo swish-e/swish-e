@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item MinWordLength respected in query parser
+
+Clark Vent reported that the query parser was not respecting MinWordLength
+settings.  See http://dev.swish-e.org/changeset/2145
+
 =item Patch to file.c.  
 
 The file.c patch was in response to
