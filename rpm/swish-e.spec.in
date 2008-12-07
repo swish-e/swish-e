@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 5
+%define release 6
 
 # SWISH::API definitions
 %define filelist %{_tmppath}/%{name}-%{version}/%{name}-%{version}-filelist
@@ -12,7 +12,7 @@ Version:        %{version}
 Release:        %{release}
 License:        GNU General Public License v2.0 or later, with linking exception
 Group:          Applications/Internet
-Source:         http://swish-e.org/Download/%{name}-%{version}.tar.gz
+Source:         http://swish-e.org/distribution/%{name}-%{version}.tar.gz
 URL:            http://swish-e.org/
 BuildRoot:      %{_tmppath}/%name-root
 Provides:       %{name}
@@ -180,6 +180,8 @@ popd
 %{_bindir}/swish-config
 
 %changelog
+* Sun Dec 07 2008 Josh Rabinowitz <joshr> 2.5.6-6
+- fix Source link to tarball, bump release to 6
 * Thu Dec 13 2007 David L Norris <dave@webaugur.com> 2.5.6
 - Lots of changes to make Fedora happy.
 - Remove SUSE specific stuff.
