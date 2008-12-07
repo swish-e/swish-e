@@ -11,7 +11,7 @@ Version:        %{version}
 Release:        %{release}
 License:        GNU General Public License v2.0 or later, with linking exception
 Group:          Applications/Internet
-Source:         http://swish-e.org/Download/%{name}-%{version}.tar.gz
+Source:         http://swish-e.org/distribution/%{name}-%{version}.tar.gz
 URL:            http://swish-e.org/
 BuildRoot:      %{_tmppath}/%name-root
 Provides:       %{name}
