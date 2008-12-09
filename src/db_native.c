@@ -725,7 +725,10 @@ int     tmp;
         tmp = uncompress1(fp, sw_fgetc);
         *s = (unsigned char *) emalloc(tmp + 1);
         *len = tmp;
-        sw_fread(*s, *len, sizeof(char), fp);
+        int ret = sw_fread(*s, *len, sizeof(char), fp);
+        if (ret != sizeof(char)) { 
+            progerrno("Failed to read DB header data");
+        }
     }
     else
     {
@@ -1346,7 +1349,10 @@ unsigned long first_record = sizeof(unsigned long); /* jump swish magic number *
            *sz_data = tmp;
 
            *data = emalloc(*sz_data);
-           sw_fread(*data,*sz_data,1,fp);
+           int ret = sw_fread(*data,*sz_data,1,fp);
+           if (ret != 1) {
+                progerrno("Failed to read sorted index");
+           }
            return 0;
        }
        if(next)
