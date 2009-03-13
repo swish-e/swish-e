@@ -295,6 +295,14 @@ else
             fi]))
 fi
 
+dnl mingw build requires this for win32
+if test "x${target}" == "xi586-mingw32msvc"; then
+     Z_LIBS="-L${Z_DIR}/lib -R${Z_DIR}/lib -lzdll"
+fi
+
+echo "Z_LIBS = $Z_LIBS"
+
+
 AC_SUBST(Z_CFLAGS)
 AC_SUBST(Z_LIBS)
 
