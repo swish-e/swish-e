@@ -6,6 +6,16 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.7 - xxx
+
+=over 4
+
+=item Yanked setenv feature introduced in 2.4.6
+
+The ranking debugging feature using setenv introduced in 2.4.6 was yanked.
+Some platforms (notably HP-UX and Windows) lack the setenv feature, and the
+convenience of setting the env var was not worth the limitations.
+
 =head2 Version 2.4.6 - 10 March 2008
 
 =over 4
