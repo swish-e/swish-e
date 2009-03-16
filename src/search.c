@@ -1581,7 +1581,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
     rLen = 0;
     tLen = strlen(word);
     // Check for first "?" in current word (not reverse)
-    if ((q = strchr(word, '?')))
+    if ((q = (unsigned char*)strchr(word, '?')))
     {
         if (q != (unsigned char*)word && *(q - 1) == '\\') /* Check for an escaped * */
         {
@@ -1592,13 +1592,13 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             /* Check if it is at the end of the word */
             if (q == ((unsigned char*)word + strlen(word) - 1))
             {
-                strcpy(remains, q);   // including the last "?"
+                strcpy(remains, (char*)q);   // including the last "?"
                 rLen = strlen(remains);
                 word[strlen(word) - 1] = '\0';
             }
             else
             {
-                strcpy(remains, q);   // including the first "?"
+                strcpy(remains, (char*)q);   // including the first "?"
                 rLen = strlen(remains);
                 *q = '\0';
             }
@@ -1639,7 +1639,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             return NULL;
         }
         else
-            strcpy(myWord, resultword);   // Remember the word
+            strcpy(myWord, (char*)resultword);   // Remember the word
             
         efree(resultword);   /* Do not need it */
     }
@@ -1710,7 +1710,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             if (! wordID)
                 break;          /* no more data */
             else
-              strcpy(myWord, resultword);
+              strcpy(myWord, (char*)resultword);
 
             efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
 
@@ -1826,7 +1826,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 break;          /* no more data */
 
             else
-                strcpy(myWord, resultword); // remember the word
+                strcpy(myWord, (char*)resultword); // remember the word
 
             efree(resultword);  /* Do not need it (although might be useful for highlighting some day) */
         }
