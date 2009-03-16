@@ -50,8 +50,6 @@ $Id$
 
 // #define DEBUGSORT 1
 
-extern int DEBUG_RANK;
-
 
 /*****************************************************************************
 * compare_results_single_index - qsort compare function

@@ -37,7 +37,8 @@
 */
 
 
-/* #define DEBUG_RANK 1 */
+/* set to 1 and recompile to see debugging */
+#define DEBUG_RANK 0
 
 #ifndef __HasSeenModule_Search
 #define __HasSeenModule_Search 1

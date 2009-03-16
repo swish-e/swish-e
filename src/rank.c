@@ -292,20 +292,6 @@ static void build_struct_map( SWISH *sw )
     sw->structure_map_set = 1;  /* flag */
 }
 
-/*********************************************************
-*  set global DEBUG_RANK var based on env var 
-*
-**********************************************************/
-int DEBUG_RANK = 0;
-static void set_rank_debug()
-{    
-    setenv("SWISH_DEBUG_RANK", "0", 0);
-    if (!DEBUG_RANK)
-        DEBUG_RANK = (int)strtol(getenv("SWISH_DEBUG_RANK"), (char**)NULL, 10);    
-
-}
-
-
 int
 getrank ( RESULT *r )
 {
@@ -412,7 +398,6 @@ getrankDEF( RESULT *r )
     /* this maps a word's structure to a rank value */
     if ( !sw->structure_map_set )
     {
-        set_rank_debug();
         build_struct_map( sw );
     }
 
@@ -590,7 +575,6 @@ getrankIDF( RESULT *r )
 
     if ( !sw->structure_map_set )
     {
-        set_rank_debug();
         build_struct_map( sw );
     }
     

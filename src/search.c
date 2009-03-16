@@ -142,9 +142,6 @@ $Id$
 
 #include "rank.h"
 
-/* set in rank.c */
-extern int DEBUG_RANK;
-
 /* ------ static fucntions ----------- */
 static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
 static void query_index( DB_RESULTS *db_results );
