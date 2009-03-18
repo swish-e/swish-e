@@ -54,9 +54,9 @@ SectionEnd ; end of default section
 
 ; User and Developer Documentation
 Section "Documentation" SecDoc
-    SetOutPath "$INSTDIR\share\doc\swish-e\html"
-    File "../../html/*.html"
-    File "../../html/*.css"
+;    SetOutPath "$INSTDIR\share\doc\swish-e\html"
+;    File "../../html/*.html"
+;    File "../../html/*.css"
     SetOutPath "$INSTDIR\share\doc\swish-e\pod"
     File "../../pod/*.pod"
 SectionEnd
@@ -116,7 +116,7 @@ SubSection "PERL Support" SubSecPerlSupport
         ; SWISH::API Binaries go into $PERL/lib/auto/SWISH/API
         Call ActivePerlLocation
         Pop $R1
-        SetOutPath "$R1\lib\auto\SWISH\API\"
+        SetOutPath "$R1\site\lib\auto\SWISH\API\"
         File "../../perl/blib/arch/auto/SWISH/API/*"
     SectionEnd
 
