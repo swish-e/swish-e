@@ -10,6 +10,11 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item Added RankScheme 2 for raw rank score
+
+RankScheme == 2 will return the rank score unscaled. It uses the IDF/TF
+ranking algorithm internally (same as RankScheme 1).
+
 =item Yanked setenv feature introduced in 2.4.6
 
 The ranking debugging feature using setenv introduced in 2.4.6 was yanked.
