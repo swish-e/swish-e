@@ -10,6 +10,10 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item fix configure.in to require Berkeley DB
+
+Reported on mailing list by Gorka Lertxundi Osa.
+
 =item fix configure.in to require libxml2 and xml2-config
 
 Reported on mailing list by Gorka Lertxundi Osa.

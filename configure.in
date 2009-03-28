@@ -253,12 +253,17 @@ fi
 
 
 dnl Berkeley DB check
-dnl this macro defined in m4/ax_path_bdb.m4
+dnl this macro defined in config/ax_path_bdb.m4
 AX_PATH_BDB([3],[
      LIBS="$BDB_LIBS $LIBS"
      LDFLAGS="$BDB_LDFLAGS $LDFLAGS"
      CPPFLAGS="$CPPFLAGS $BDB_CPPFLAGS"
- ])
+])
+
+if test "x$BDB_VERSION" = "x"; then
+    AC_MSG_ERROR([Berkeley DB required])
+    exit 4
+fi
 
 
 dnl Checks for zlib library. -- from libxml2 configure.in
@@ -299,7 +304,7 @@ if test "x${target}" == "xi586-mingw32msvc"; then
      Z_LIBS="-L${Z_DIR}/lib -R${Z_DIR}/lib -lzdll"
 fi
 
-echo "Z_LIBS = $Z_LIBS"
+dnl echo "Z_LIBS = $Z_LIBS"
 
 
 AC_SUBST(Z_CFLAGS)
