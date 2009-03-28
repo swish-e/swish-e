@@ -184,40 +184,38 @@ AC_TYPE_GETGROUPS
 
 AC_REPLACE_FUNCS(vsnprintf mkstemp setenv)
 
-dnl Optional building with libxml2
+dnl required building with libxml2
 
 dnl Probably should be 2.4.5 + patches
 LIBXML_REQUIRED_VERSION=2.4.3
 
 AC_ARG_WITH(libxml2,AC_HELP_STRING([--with-libxml2=DIR],[use libxml2 in DIR (YES if found)]),,withval=maybe)
 
-dnl if the user explicity asked for no libxml2
-if test "$withval" != "no"; then
-    dnl find xml2-config program
-    XML2_CONFIG="no"
-    if test "$withval" != "yes" && test "$withval" != "maybe" ; then
-        XML2_CONFIG_PATH="$withval/bin"
-        AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
-    else
-        XML2_CONFIG_PATH=$PATH
-        AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
-    fi
+dnl find xml2-config program
+XML2_CONFIG="no"
+if test "$withval" != "yes" && test "$withval" != "maybe" ; then
+    XML2_CONFIG_PATH="$withval/bin"
+    AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
+else
+    XML2_CONFIG_PATH=$PATH
+    AC_PATH_PROG(XML2_CONFIG, xml2-config,"no", $XML2_CONFIG_PATH)
+fi
 
-    dnl we can't do anything without xml2-config
-    if test "$XML2_CONFIG" = "no"; then
-        withval="no"
-    else
-        withval=`$XML2_CONFIG --prefix`
-    fi
+dnl we can't do anything without xml2-config
+if test "$XML2_CONFIG" = "no"; then
+    withval="no"
+else
+    withval=`$XML2_CONFIG --prefix`
+fi
 
-    dnl if withval still maybe then we have failed
-    if test "$withval" = "maybe"; then
-        withval = "no"
-    fi
+dnl if withval still maybe then we have failed
+if test "$withval" = "maybe"; then
+    withval = "no"
 fi
 
 if test "$withval" = "no"; then
-    AC_MSG_RESULT([Not building with libxml2 - use --with-libxml2 to enable])
+    AC_MSG_ERROR([Failed to locate xml2-config])
+    exit 2;
 else
 
     AC_SUBST(LIBXML_REQUIRED_VERSION)
@@ -239,6 +237,7 @@ else
         AC_MSG_RESULT(found version $XML2_VERSION)
     else
         AC_MSG_ERROR(You need at least libxml2 $LIBXML_REQUIRED_VERSION for this version of swish)
+        exit 3;
     fi
 
 
