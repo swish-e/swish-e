@@ -174,11 +174,20 @@ static void make_db_res_and_free(RESULT_LIST *l_res);
 
 void SwishRankScheme(SWISH *sw, int scheme)
 {
-	
     sw->RankScheme = scheme;
-    
 }
 
+
+/*********************************************************************
+* SwishReturnRawRank -- return unscaled swishrank values
+* karman - Mon Mar 30 20:51:02 CDT 2009
+*
+*********************************************************************/
+
+void SwishReturnRawRank(SWISH *sw, int flag)
+{
+    sw->ReturnRawRank = flag;
+}
 
 
 

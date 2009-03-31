@@ -327,16 +327,6 @@ getrank ( RESULT *r )
                 return ( getrankIDF( r ) );
            }
 
-           case 2:
-           {
-                if ( indexf->header.ignoreTotalWordCountWhenRanking ) {
-                   fprintf(stderr, "IgnoreTotalWordCountWhenRanking must be 0 to use IDF ranking\n");
-                   exit(1);
-                }
- 
-                return ( getrankIDF( r ) );
-           }
-
            default:
            {
                 return ( getrankDEF( r ) );

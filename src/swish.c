@@ -273,7 +273,7 @@ static void    usage()
     printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
     printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
     printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format] \\\n");
-    printf("          [-R rank_scheme] [-L prop low high]\n");
+    printf("          [-R rank_scheme] [-L prop low high] [-a]\n");
     printf("    swish -k (char|*) [-f file1 file2 ...]\n");
     printf("    swish -M index1 index2 ... outputfile\n");
     printf("    swish -N /path/to/compare/file\n");
@@ -281,6 +281,7 @@ static void    usage()
     putchar('\n');
     printf("options: defaults are in brackets\n");
 
+    printf("         -a : return raw (unscaled) rank scores in swishrank PropertyName\n");
     printf("         -b : begin results at this number\n");
     printf("         -c : configuration file(s) to use for indexing\n");
     printf("         -d : next param is delimiter.\n");
@@ -672,6 +673,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'd':  /* old-style custom delimiter */
             case 'o':  /* don't use pre-sorted indexes */
             case 'R':  /* Ranking Scheme -- default is 1 */
+            case 'a':  /* return raw rank */
                 argv = fetch_search_params( sw, argv, params, c );
                 break;
 
@@ -1250,7 +1252,10 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         case 'R':
             sw->RankScheme = get_param_number( &argv, switch_char );
             break;
-            
+           
+        case 'a':
+            sw->ReturnRawRank = 1;
+            break; 
 
         /* Ignore sorted indexes */
 

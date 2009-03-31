@@ -96,6 +96,15 @@ SwishRankScheme(self, scheme)
     int scheme
 
 #############################################
+# set ReturnRawRank
+# karman - 30 Mar 2009
+void 
+SwishReturnRawRank(self, flag)
+    SW_HANDLE self
+    int flag
+
+
+#############################################
 
 
 # added SwishFuzzy to give access directly from SW object

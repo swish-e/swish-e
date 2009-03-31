@@ -358,8 +358,8 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
     {
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_RESULT_RANK ) )
         {
-           /* return raw rank if RankScheme asks for it */
-            if (result->db_results->results->sw->RankScheme == 2) {
+           /* return raw rank if flag set */
+            if (result->db_results->results->sw->ReturnRawRank) {
                 num = PACKLONG( result->rank );
                 return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
             }

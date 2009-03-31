@@ -89,6 +89,9 @@ int     main(int argc, char **argv)
     
     SwishRankScheme( swish_handle, 1 );
 
+    /* return raw values */
+    SwishReturnRawRank( swish_handle, 1 );
+
 
     /* Check for errors after every call */
 

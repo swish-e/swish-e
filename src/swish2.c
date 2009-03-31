@@ -92,6 +92,7 @@ SWISH  *SwishNew()
     sw->parser_warn_level = 2; /* report if libxml2 aborts processing a document. */
     sw->headerOutVerbose = 1;
     sw->DefaultDocType = NODOCTYPE;
+    sw->ReturnRawRank = 0;
 
 #ifdef HAVE_ZLIB
     sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
