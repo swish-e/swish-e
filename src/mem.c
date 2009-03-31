@@ -91,7 +91,7 @@ void *emalloc(size_t size)
     void *p;
 
     if ((p = malloc(size)) == NULL)
-        progerr("Ran out of memory (could not allocate %lu more bytes)!", size);
+        progerr("Ran out of memory (could not malloc %lu more bytes)!", size);
 
     return p;
 }
@@ -318,7 +318,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     if (MemPtr == NULL)
     {
         printf("At file %s line %d:\n", file, line);
-        progerr("Ran out of memory (could not allocate %lu more bytes)!", MemSize);
+        progerr("Ran out of memory (could not Mem_Alloc %lu more bytes)!", MemSize);
     }
 
 
