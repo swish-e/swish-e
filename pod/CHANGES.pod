@@ -6,7 +6,7 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
-=head2 Version 2.4.7 - xxx
+=head2 Version 2.4.7 - 4 April 2009
 
 =over 4
 
@@ -21,6 +21,8 @@ option (mnemonic: "a"bsolute rank score).
 The ranking debugging feature using setenv introduced in 2.4.6 was yanked.
 Some platforms (notably HP-UX and Windows) lack the setenv feature, and the
 convenience of setting the env var was not worth the limitations.
+
+=back
 
 =head2 Version 2.4.6 - 10 March 2008
 
