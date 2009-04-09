@@ -2,7 +2,13 @@ Revision history for Perl extension SWISH::API
 
 ## $Id$ ##
 
+0.04_01  Thu Apr 09 11:59:04 CDT 2009
+
+        return_raw_rank( 0 | 1 ) added and documented.
+
+
 0.04  Thu Jul 14 11:59:04 CDT 2005
+
         Added perlize() function to make all method names Perl-ish.
         Fixed namespace issue with SwishFuzzy (now SwishFuzzify)
 
