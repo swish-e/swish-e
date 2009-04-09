@@ -221,8 +221,8 @@ decode_header_value( swish_handle, header_value, header_type )
                 break;
 
             default:
-                croak(" Unknown header type '%d'\n", header_type ); # TODO: fix warning we get on f10 at this line:
-                    # API.xs:224: warning: format '%d' expects type 'int', but argument 2 has type 'struct SV *'
+                croak(" Unknown header type '%d'\n", header_type ); // TODO: fix warning we get on f10 at this line:
+                    // API.xs:224: warning: format '%d' expects type 'int', but argument 2 has type 'struct SV *'
 
         }
 
