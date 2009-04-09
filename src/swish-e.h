@@ -120,7 +120,7 @@ SW_RESULTS SwishQuery(SW_HANDLE, char *words );
 SW_SEARCH New_Search_Object( SW_HANDLE, char *query );
 
 void SwishRankScheme( SW_HANDLE sw, int scheme );
-void SwishReturnRawRank(SWISH *sw, int flag);
+void SwishReturnRawRank( SW_HANDLE sw, int flag );
 void SwishSetRefPtr( SW_HANDLE sw, void *address );
 void *SwishGetRefPtr( SW_HANDLE sw );
 
