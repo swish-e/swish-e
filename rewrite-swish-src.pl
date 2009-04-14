@@ -94,6 +94,8 @@ sub main {
          #{ f=>'',              s=>'waitpid\s*\(' },         # leave waitpid lines alone
          { f=>"",              s=>'^\s+extern.*printf' },	# leave return codes of exern printfs alone.
          { f=>'src/compress\.[ch]$', s=>'(void|int)\s+(un)?compress.*\*f_(putc|getc)' },   # don't change f_getc/f_putc def
+         { f=>"",              s=>'int.*putc' },
+         { f=>"",              s=>'int.*getc' },
      );
      my @replacements = (
          #  in File,               search for,                replace with
