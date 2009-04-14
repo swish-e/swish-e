@@ -59,19 +59,21 @@ sub main {
      }
      @files = glob( "src/*.c src/*.h");
 
+
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
      # lines with no_rw don't have replacements done by @regexes below
-     insert_at_line_unless_has_regex( 
-         "src/swish.h", 325, 'typedef.*SWINT_T', 
-             #qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n},
-             qq{#define SWINT_T long long /* no rw64 */ \n#define SWUINT_T unsigned long long /* no rw64 */ \n},
-     );
+     print "$prog: Inserting lines into files...\n";
+     my @inserts = (
+        # in file,       line,  unless file contains,   insert at mentioned line
+        [ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
+        [ "src/swish.h",  324, '#warning',         qq{#warning "parsed our swish.h"\n}, ],
+        [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
+        [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
 
-     # include swish.h for SWINT_T and SWUINT_T as needed.
-     insert_at_line_unless_has_regex( 
-         "src/stemmer.h", 35, 'swish\.h', qq{#include "swish.h"\n},
      );
-	 print "$prog: DONE PATCHING\n";
+     for my $insert (@inserts) {
+         insert_at_line_unless_has_regex( @$insert );
+     }
 
      my @regexes = (
 	 #   # replace everthing that looks anything like a 'long' or an 'int'
@@ -89,22 +91,27 @@ sub main {
      );
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
-         { f=>'\.c$',          r=>'int\s+main' },	# never replace main's return val
-         { f=>'src/http\.c$',  r=>'int\s+status' },	# status must be int for wait()
-         { f=>"",              r=>'^\s+extern.*printf' },	# leave return codes of exern printfs alone.
+         { f=>'\.c$',          s=>'int\s+main' },	        # never replace main's return val
+         { f=>'src/http\.c$',  s=>'int\s+status' },	        # status must be int for wait()
+         #{ f=>'',              s=>'waitpid\s*\(' },         # leave waitpid lines alone
+         { f=>"",              s=>'^\s+extern.*printf' },	# leave return codes of exern printfs alone.
+     );
+     my @replacements = (
+         #  in File,               search for,                replace with
+         { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
      for my $file (@files) {
 		 #print "$file\n";
-         _apply_regexes( $file, \@regexes, \@exceptions );
+         rewrite_file( $file, \@regexes, \@exceptions, \@replacements );
      }
 }
 
 #================================================================
-# _apply_regexes( $file, @search_and_replace_regexes )
+# rewrite_file( $file, @search_and_replace_regexes )
 # backs up $file to $file.bak, and
 # applies supplied regexes to the lines of a file,
-sub _apply_regexes {
-     my ($file, $regexes, $exceptions) = @_;
+sub rewrite_file {
+     my ($file, $regexes, $exceptions, $replacements) = @_;
      # changes a file by applying the supplied regexes to each line
      my $tmpfile = "$file.tmp";
      open(my $rfh, "<", $file)    || die "$0: Can't open $file: $!";
@@ -115,18 +122,23 @@ sub _apply_regexes {
      }
      LINE: while(<$rfh>) {
          chomp();
-         if (m{//.*no rw64} || m{/\*.*no rw64}) {   # if it has a comment with 'no rw64'
+         if (m{//.*no rw64} || m{/\*.*no rw64}) {   # if it has a comment with 'no rw64'...
              print "$prog: Preserving line '$_' from $file\n";
              print $wfh "$_\n";
              next LINE;
          }
 		 for my $e (@$exceptions) {
-			 if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{r}/) { # if the file and the regex match
+			 if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{s}/) { # if the file and the regex match...
 				 print "$prog: Preserving line '$_' from $file\n";
 				 print $wfh "$_\n";
 				 next LINE;
 			 }
 		 }
+		 for my $e (@$replacements) {
+			 if ($file =~ m/$e->{f}/) {                     # if the file and the regex match
+                 s/$e->{s}/$e->{r}/g;                       # do the search&replace, AND Continue.
+             }
+         }
          for my $r (@$regexes) {
              # $r should operate on $_ !
              eval $r;   # operates on $_, which is the current line
