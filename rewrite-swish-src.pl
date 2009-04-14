@@ -56,7 +56,7 @@ sub main {
         [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
         [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
             # force crash if num goes large in compress3()
-        [ "src/compress.c",147, '0/0',       '   if (num > 10000000) { printf(" in compress3: num is %lld\n", num ); int a= 0/0; } ', ], 
+        [ "src/compress.c",147, 'abort',       '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ', ], 
      );
      for my $insert (@inserts) {
          insert_at_line_unless_has_regex( @$insert );
@@ -98,6 +98,7 @@ sub main {
          { f=>"",              s=>'int.*_(put|get)c' },    # preserve anything that looks like 'getc/putc'
          { f=>"",              s=>'_(put|get)c.*int' },    # preserve anything that looks like 'getc/putc'
      );
+
      my @replacements = (
          #  in File,               search for,                replace with
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
@@ -139,8 +140,8 @@ sub rewrite_file {
 			 }
 		 }
 		 for my $e (@$replacements) {
-			 if ($file =~ m/$e->{f}/) {                     # if the file and the regex match
-                 s/$e->{s}/$e->{r}/g;                       # do the search&replace, AND Continue.
+			 if ($file =~ m/$e->{f}/) {                     # if the file matches...
+                 s/$e->{s}/$e->{r}/g;                       # do the search&replace, and continue.
              }
          }
          for my $r (@$regexes) {
