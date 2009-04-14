@@ -55,7 +55,8 @@ sub main {
         #[ "src/swish.h",  78, '#pragma message',  qq{#pragma message "parsed our swish.h"\n}, ],  
         [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
         [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
-
+            # force crash if num goes large in compress3()
+        [ "src/compress.c",147, '0/0',       '   if (num > 10000000) { printf(" in compress3: num is %lld\n", num ); int a= 0/0; } ', ], 
      );
      for my $insert (@inserts) {
          insert_at_line_unless_has_regex( @$insert );
