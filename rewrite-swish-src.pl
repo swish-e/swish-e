@@ -94,7 +94,7 @@ sub main {
          #{ f=>'',              s=>'waitpid\s*\(' },         # leave waitpid lines alone
          { f=>"",              s=>'^\s+extern.*printf' },	# leave return codes of exern printfs alone.
          { f=>'src/compress\.[ch]$', s=>'(void|int)\s+(un)?compress.*\*f_(putc|getc)' },   # don't change f_getc/f_putc def
-         { f=>"",              s=>'int.*putc' },
+         { f=>"",              s=>'int.*putc' },    # preserve anything that looks like 'getc/putc'
          { f=>"",              s=>'int.*getc' },
      );
      my @replacements = (
@@ -103,7 +103,8 @@ sub main {
      );
      for my $file (@files) {
 		 #print "$file\n";
-         rewrite_file( $file, \@regexes, \@exceptions, \@replacements );
+         my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
+         rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
      }
 }
 
@@ -128,8 +129,9 @@ sub rewrite_file {
              print $wfh "$_\n";
              next LINE;
          }
-		 for my $e (@$exceptions) {
-			 if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{s}/) { # if the file and the regex match...
+		 for my $e (@$exceptions) { # we only get ones relevant to our file
+             #if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{s}/) { # if the file and the regex match...
+			 if ($_ =~ m/$e->{s}/) { # if the file and the regex match...
 				 print "$prog: Preserving line '$_' from $file\n";
 				 print $wfh "$_\n";
 				 next LINE;
