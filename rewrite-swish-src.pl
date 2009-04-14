@@ -34,22 +34,6 @@ sub main {
         "debug!" => \$debug,
         "refresh!" => \$refresh,
     ) or die Usage();
-     # #include <stdint.h> has the uint... typedefs used below
-     # note that 
-     # 1) stdint.h needs to be included in mem.h and swish.h
-     # 2) wait &status () still needs status to be a true 'int' in http
-     # 3) printf() formats need to be changed to match (many!), and 
-     # 4) probably several other field-size dependent codes.
-     #
-     # see build warnings for more.
-     #
-     # this (with above caveats) words on 64bit CentosOS5, 
-     # but not 32bit CentosOS5, on which swish-e -h says:
-     #  err: Missing switch character at 'HOSTNAME=p4.hostname.com'.
-     # Use -h for options.
-     #
-	 
-     # insert #include "swish.h" as needed.
      
      $|++;
 
@@ -189,7 +173,24 @@ rewrite-swish-src.pl -- tries to rewrite swish-e source to be portable
 
 =head1 SYNOPSIS
 
-The synopsis, showing one or more typical command-line usages.
+This script converts a swish-e source code tree to be 64bit friendly.
+It can be used like so:
+
+   % svn co http://svn.swish-e.org/swish-e/trunk swish-e-portable
+       (this fetches trunk into swish-e-portable/ )
+   % cd swish-e-portable
+   % ./configure
+   % ./rewrite-swish-src.pl
+   % make
+
+It's intended that we'll make the 64bit changes to rewrite-swish-src.pl, not to the source
+tree directly. So after you've made some changes to rewrite-swish-src.pl, you can retest your
+changes with:
+
+   % ./rewrite-swish-src.pl -refresh
+       (removes src/*.c and src/*.h, refetches them from svn, and rewrites them)
+   % make 
+     
 
 =head1 DESCRIPTION
 
@@ -205,23 +206,20 @@ Overall view of the options.
 
 Turns on/off verbose mode. (off by default)
 
-=item --verbose/--noverbose
+=item --debug/--nodebug
+
+Turns on/off debug mode. (off by default)
+
+=item --refresh/--norefresh
 
 Turns on/off verbose mode. (off by default)
-
-=item DOCS TO COME
-
-TO COME - SEE ./rewrite-swish-src.pl --help
 
 =back
 
 =head1 TO DO
 
-If you want such a section.
+Make it work on 32bit systems too, of course. Currently developed on 64bit.
 
-=head1 BUGS
-
-None
 
 =head1 COPYRIGHT
 
