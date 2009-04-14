@@ -91,10 +91,17 @@ sub main {
 	    q(s/ \blong\b                  /SWINT_T/gx),
 	    q(s/ \bint\b                   /SWINT_T/gx),
 
-        # format strings
+        # format strings. All get converted to 'long long' versions.
         q{s/ %d                        /%lld/gx },
-        #q{s/ %([^"%]+)d                /%$1lld/gx },
+        q{s/ %ld                       /%lld/gx },
+        q{s/ %lu                       /%llud/gx },
+        q{s/ %(\d+)d                   /%$1lld/gx },
         q{s/ %x                        /%llx/gx   },
+        q{s/ %lx                       /%llux/gx },
+        q{s/ %lX                       /%llux/gx },
+        q{s/ %(\d+)X                   /%$1llX/gx },
+
+        #q{s/ %([^"%]+)d                /%$1lld/gx },
      );
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
