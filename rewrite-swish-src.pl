@@ -38,7 +38,7 @@ sub main {
      $|++;
 
      my @files = glob( "src/*.c src/*.h");
-	 #my @files = glob( "src/*.c src/*.h src/*/*.c src/*/*.h src/*/*/*.h src/*/*/*.c");
+     #my @files = glob( "src/*.c src/*.h src/*/*.c src/*/*.h src/*/*/*.h src/*/*/*.c");
      if ($refresh) {
          system( "rm -f @files" );
          system( "svn up" ); 
@@ -63,18 +63,18 @@ sub main {
      }
 
      my @regexes = (
-	 #   # replace everthing that looks anything like a 'long' or an 'int'
-	 #    # specifically leave alone anything about chars or floats/doubles
-	    q(s/ \bunsigned\s+long\s+long\s+int\b     /SWUINT_T/gx),
-	    q(s/ \blong\s+long\s+unsigned\s+int\b     /SWUINT_T/gx),
-	    q{s/ \bunsigned\s+long\s+int\b /SWUINT_T/gx},
-	    q{s/ \bunsigned\s+long\b       /SWUINT_T/gx},
-	    q(s/ \bunsigned\s+int\b        /SWUINT_T/gx),
-	    q(s/ \blong\s+long\s+int\b     /SWINT_T/gx),
-	    q(s/ \blong\s+long\b           /SWINT_T/gx),
-	    q(s/ \blong\s+int\b            /SWINT_T/gx),
-	    q(s/ \blong\b                  /SWINT_T/gx),
-	    q(s/ \bint\b                   /SWINT_T/gx),
+     #   # replace everthing that looks anything like a 'long' or an 'int'
+     #    # specifically leave alone anything about chars or floats/doubles
+        q(s/ \bunsigned\s+long\s+long\s+int\b     /SWUINT_T/gx),
+        q(s/ \blong\s+long\s+unsigned\s+int\b     /SWUINT_T/gx),
+        q{s/ \bunsigned\s+long\s+int\b /SWUINT_T/gx},
+        q{s/ \bunsigned\s+long\b       /SWUINT_T/gx},
+        q(s/ \bunsigned\s+int\b        /SWUINT_T/gx),
+        q(s/ \blong\s+long\s+int\b     /SWINT_T/gx),
+        q(s/ \blong\s+long\b           /SWINT_T/gx),
+        q(s/ \blong\s+int\b            /SWINT_T/gx),
+        q(s/ \blong\b                  /SWINT_T/gx),
+        q(s/ \bint\b                   /SWINT_T/gx),
 
         # format strings. All get converted to 'long long' versions.
         q{s/ %d                        /%lld/gx },
@@ -90,10 +90,10 @@ sub main {
      );
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
-         { f=>'\.c$',          s=>'int\s+main' },	        # never replace main's return val
-         { f=>'src/http\.c$',  s=>'int\s+status' },	        # status must be int for wait()
+         { f=>'\.c$',          s=>'int\s+main' },           # never replace main's return val
+         { f=>'src/http\.c$',  s=>'int\s+status' },         # status must be int for wait()
          #{ f=>'',              s=>'waitpid\s*\(' },         # leave waitpid lines alone
-         { f=>"",              s=>'^\s+extern.*printf' },	# leave return codes of exern printfs alone.
+         { f=>"",              s=>'^\s+extern.*printf' },   # leave return codes of exern printfs alone.
          { f=>'src/compress\.[ch]$', s=>'(void|int)\s+(un)?compress.*\*f_(putc|getc)' },   # don't change f_getc/f_putc def
          { f=>"",              s=>'int.*_(put|get)c' },    # preserve anything that looks like 'getc/putc'
          { f=>"",              s=>'_(put|get)c.*int' },    # preserve anything that looks like 'getc/putc'
@@ -104,7 +104,7 @@ sub main {
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
      for my $file (@files) {
-		 #print "$file\n";
+         #print "$file\n";
          my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
          rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
      }
@@ -131,7 +131,7 @@ sub rewrite_file {
              print $wfh "$_\n";
              next LINE;
          }
-		 for my $e (@$exceptions) { # we only get ones relevant to our file
+         for my $e (@$exceptions) { # we only get ones relevant to our file
              #if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{s}/) { # if the file and the regex match...
 			 if ($_ =~ m/$e->{s}/) { # if the file and the regex match...
 				 print "$prog: Preserving line '$_' from $file\n";
