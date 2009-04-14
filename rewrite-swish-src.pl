@@ -51,6 +51,8 @@ sub main {
 	 
      # insert #include "swish.h" as needed.
      
+     $|++;
+
      my @files = glob( "src/*.c src/*.h");
 	 #my @files = glob( "src/*.c src/*.h src/*/*.c src/*/*.h src/*/*/*.h src/*/*/*.c");
      if ($refresh) {
@@ -66,7 +68,7 @@ sub main {
      my @inserts = (
         # in file,       line,  unless file contains,   insert at mentioned line
         [ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
-        [ "src/swish.h",  324, '#warning',         qq{#warning "parsed our swish.h"\n}, ],
+        [ "src/swish.h",  324, '#pragma message',  qq{#pragma message "parsed our swish.h"\n}, ],
         [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
         [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
 
@@ -88,6 +90,10 @@ sub main {
 	    q(s/ \blong\s+int\b            /SWINT_T/gx),
 	    q(s/ \blong\b                  /SWINT_T/gx),
 	    q(s/ \bint\b                   /SWINT_T/gx),
+
+        q{s/ %d                        /%lld/gx },
+        #q{s/ %([^"%]+)d                /%$1lld/gx },
+        q{s/ %x                        /%llx/gx   },
      );
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
