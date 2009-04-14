@@ -1725,7 +1725,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
             if (sw->verbose)
             {
-                printf("\r  Getting IgnoreLimit stopwords: %25s",ep->word);
+                printf("\r  Getting IgnoreLimit stopwords: %25s", ep->word);
                 fflush(stdout);
             }
 
