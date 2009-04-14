@@ -76,10 +76,10 @@ sub main {
 	    q(s/ \bint\b                   /SWINT_T/gx),
 
         # format strings. All get converted to 'long long' versions.
-        q{s/ %d                        /%ll/gx },
-        q{s/ %ld                       /%ll/gx },
+        q{s/ %d                        /%lld/gx },
+        q{s/ %ld                       /%lld/gx },
         q{s/ %lu                       /%llu/gx },
-        q{s/ %(\d+)d                   /%$1ll/gx },
+        q{s/ %(\d+)d                   /%$1lld/gx },
         q{s/ %x                        /%llx/gx   },
         q{s/ %lx                       /%llux/gx },
         q{s/ %lX                       /%llux/gx },
