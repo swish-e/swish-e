@@ -73,7 +73,7 @@ void OutputKeyChar (SWISH *sw, int keychar)
 		/* print out "original" search words */
 	for(tmpindexlist=sw->indexlist;tmpindexlist;tmpindexlist=tmpindexlist->next)
 	{
-		resultHeaderOut(sw,1, "%s:",tmpindexlist->line);
+		resultHeaderOut(sw,1, "%s:", tmpindexlist->line);
 		if(keychar=='*')
 		{
 			for(keychar2=1;keychar2<256;keychar2++)
