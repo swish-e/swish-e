@@ -64,8 +64,8 @@ sub main {
      }
 
      my @regexes = (
-     #   # replace everthing that looks anything like a 'long' or an 'int'
-     #    # specifically leave alone anything about chars or floats/doubles
+        #  replace everything that looks anything like a 'long' or an 'int'.
+        #  specifically leave alone anything about chars or floats/doubles.
         q(s/ \bunsigned\s+long\s+long\s+int\b     /SWUINT_T/gx),
         q(s/ \blong\s+long\s+unsigned\s+int\b     /SWUINT_T/gx),
         q{s/ \bunsigned\s+long\s+int\b /SWUINT_T/gx},
@@ -87,9 +87,10 @@ sub main {
         q{s/ %lX                       /%llux/gx },
         q{s/ %(\d+)X                   /%$1llX/gx },
 
-        #q{s/ %([^"%]+)d                /%$1lld/gx },
-        
         # remove SET_POSDATA and GET_POSITION macros from swish.h
+        # if you do this, make sure to alter files to include swishtypes.h as needed.
+        # I think this was a wild goose chase.  What would be useful for our purposes
+        # is a unit test for compress.c.
         #q{s/ #define\s+SET_POSDATA.*   //gx },
         #q{s/ #define\s+GET_POSITION.*   //gx },
      );
