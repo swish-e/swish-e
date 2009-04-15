@@ -64,7 +64,7 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
 static void demo_stemming( SW_RESULTS results );
 static void stem_it( SW_RESULT r, char *word );
 
-static void int test_compress();
+static void test_compress();
 
 
 int     main(int argc, char **argv)
@@ -546,7 +546,7 @@ static void stem_it( SW_RESULT r, char *word )
 }
 
 
-int test_compress() 
+static void test_compress() 
 {
     char buffer[1000000] = {0}; # 1MB
     int i;
