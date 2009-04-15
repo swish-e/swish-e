@@ -32,6 +32,9 @@ $Id: swish.c 2291 2009-03-31 01:56:00Z karpet $
     
 */  
 
+// don't compile this file in unless you're replacing GET_POSITION() and SET_POSDATA()
+// macros.
+
 SWUINT_T GET_POSITION( SWUINT_T pos) {
     return pos / 256;    // >> 8
 }

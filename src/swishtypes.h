@@ -40,6 +40,8 @@ extern "C" {
 
 // presence of 'no rw64' at start of comment tells rewriter not to touch this line
 //
+//
+// this is the only code in this file now.
 typedef long long          SWINT_T;  // no rw64 
 typedef unsigned long long SWUINT_T; // no rw64 
 
@@ -48,9 +50,9 @@ typedef unsigned long long SWUINT_T; // no rw64
 // swishtypes.c
 
 //#define SET_POSDATA(pos,str)  ((SWUINT_T)((SWUINT_T)(pos) << (SWUINT_T)8 | (SWUINT_T)(str)))
-SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) ;
+//SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) ;
 //#define GET_POSITION(pos)      ((SWINT_T)((SWUINT_T)(pos) >> (SWUINT_T)8))
-SWUINT_T GET_POSITION( SWUINT_T pos);
+//SWUINT_T GET_POSITION( SWUINT_T pos);
 
 
 
