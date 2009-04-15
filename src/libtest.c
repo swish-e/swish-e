@@ -75,8 +75,9 @@ int     main(int argc, char **argv)
     char   *index_file_list;
 
 
-
     SwishErrorsToStderr();      /* Send any errors or warnings to stderr (default is stdout) */
+
+    test_compress();
 
     /* Connect to the indexes specified */
 
@@ -540,5 +541,17 @@ static void stem_it( SW_RESULT r, char *word )
     printf("\n");
 
     SwishFuzzyWordFree( fw );
+}
+
+
+int test_compress() 
+{
+    char buffer[1000000] = {0}; # 1MB
+    int i;
+    int place = 0;
+    for( i=0; i<1000000]; i++) {
+        SWINT_T bytes = compress3( i, buffer+place );
+        place += bytes;
+    }
 }
 
