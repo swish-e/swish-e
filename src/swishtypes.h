@@ -43,6 +43,9 @@ extern "C" {
 typedef long long          SWINT_T;  // no rw64 
 typedef unsigned long long SWUINT_T; // no rw64 
 
+// SET_POSDATA() and GET_POSITION() are still defined in swish.h
+// don't include this file unless you're using the function version in 
+// swishtypes.c
 
 //#define SET_POSDATA(pos,str)  ((SWUINT_T)((SWUINT_T)(pos) << (SWUINT_T)8 | (SWUINT_T)(str)))
 SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) ;
@@ -56,7 +59,7 @@ SWUINT_T GET_POSITION( SWUINT_T pos);
 #endif /* __cplusplus */
 
 
-#endif /* !SEARCHSWISH_H */
+#endif /* !SWISHTYPES_H */
 
 
 
