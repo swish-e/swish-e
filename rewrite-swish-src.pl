@@ -185,7 +185,10 @@ rewrite-swish-src.pl -- tries to rewrite swish-e source to be portable
 
 =head1 SYNOPSIS
 
-This script converts a swish-e source code tree to be 64bit friendly.
+This script converts a swish-e source code tree to be 64bit friendly,
+mostly by replacing various int types with known 64bit (or possibly larger) 
+versions.
+
 It can be used like so:
 
    % svn co http://svn.swish-e.org/swish-e/trunk swish-e-portable
@@ -208,6 +211,10 @@ use configure this way:
    
    % ./configure CFLAGS="-IO0 -g'
      (that's an O letter and a zero).  
+
+Note that any line with a comment matching the regex m{# no rw64} or m{/\* no rw64 .*}
+is passed through unaltered. So you can add that comment to lines to have their ints
+preserved.
 
 =head1 DESCRIPTION
 
@@ -236,8 +243,11 @@ refetches them from SVN before performing 64bit alterations. (off by default)
 
 =head1 TO DO
 
-Make it work on 32bit systems too, of course. Currently developed on 64bit.
-
+Note that while this will make indexes portable between current (linux) 32bit and 64bit 
+architectures, it's possible that some systems will implement a 
+'long long' type larger than 64bits  and thus not produce binary 
+compatible indexes with 64bit int systems. It's intended that this
+be handled in a later revision.
 
 =head1 COPYRIGHT
 
