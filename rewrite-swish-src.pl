@@ -43,20 +43,21 @@ sub main {
          system( "rm -f @files" );
          system( "svn up" ); 
      }
-     @files = glob( "src/*.c src/*.h");
+     # reglob since we might have deleted and refetched files.
+     @files = glob( "src/*.c src/*.h");     # don't try to handle perl/API.xs yet
 
 
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
-     # lines with no_rw don't have replacements done by @regexes below
+     # lines with no_rw don't have replacements done by @regexes below.
      print "$prog: Inserting lines into files...\n";
      my @inserts = (
         # in file,       line,  unless file contains,   insert at mentioned line
         [ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
-        #[ "src/swish.h",  78, '#pragma message',  qq{#pragma message "parsed our swish.h"\n}, ],  
         [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
         [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
             # force crash if num goes large in compress3()
-        [ "src/compress.c",147, 'abort',       '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ', ], 
+        [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ', ], 
+        #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
      for my $insert (@inserts) {
          insert_at_line_unless_has_regex( @$insert );
@@ -87,6 +88,10 @@ sub main {
         q{s/ %(\d+)X                   /%$1llX/gx },
 
         #q{s/ %([^"%]+)d                /%$1lld/gx },
+        
+        # remove SET_POSDATA and GET_POSITION macros from swish.h
+        #q{s/ #define\s+SET_POSDATA.*   //gx },
+        #q{s/ #define\s+GET_POSITION.*   //gx },
      );
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
