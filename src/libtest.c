@@ -64,6 +64,8 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
 static void demo_stemming( SW_RESULTS results );
 static void stem_it( SW_RESULT r, char *word );
 
+static void int test_compress();
+
 
 int     main(int argc, char **argv)
 {
@@ -550,7 +552,7 @@ int test_compress()
     int i;
     int place = 0;
     for( i=0; i<1000000]; i++) {
-        SWINT_T bytes = compress3( i, buffer+place );
+        int bytes = compress3( i, buffer+place );
         place += bytes;
     }
 }
