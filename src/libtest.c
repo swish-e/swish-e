@@ -548,10 +548,10 @@ static void stem_it( SW_RESULT r, char *word )
 
 static void test_compress() 
 {
-    char buffer[1000000] = {0}; # 1MB
+    char buffer[1000000] = {0}; // 1MB
     int i;
     int place = 0;
-    for( i=0; i<1000000]; i++) {
+    for( i=0; i<1000000; i++) {
         int bytes = compress3( i, buffer+place );
         place += bytes;
     }
