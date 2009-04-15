@@ -197,11 +197,16 @@ changes with:
    % ./rewrite-swish-src.pl -refresh
        (removes src/*.c and src/*.h, refetches them from svn, and rewrites them)
    % make 
-     
+
+Also, note that to turn compiler optimization off, and debug symbols on, 
+use configure this way:
+   
+   % ./configure CFLAGS="-IO0 -g'
+     (that's an O letter and a zero).  
 
 =head1 DESCRIPTION
 
-tries to rewrite swish-e source to be portable between 32bit and 64bit architectures.
+rewrites swish-e source to be portable between 32bit and 64bit architectures.
 
 =head1 OPTIONS
 
@@ -219,7 +224,8 @@ Turns on/off debug mode. (off by default)
 
 =item --refresh/--norefresh
 
-Turns on/off verbose mode. (off by default)
+Turns on/off refresh mode, which deletes all files matching src/*.c and src/*.h, and
+refetches them from SVN before performing 64bit alterations. (off by default)
 
 =back
 
