@@ -52,11 +52,13 @@ sub main {
      print "$prog: Inserting lines into files...\n";
      my @inserts = (
         # in file,       line,  unless file contains,   insert at mentioned line
-        [ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
-        [ "src/stemmer.h", 35, 'swish\.h',         qq{#include "swish.h"\n}, ],
-        [ "src/mem.h",     52, 'swish\.h',         qq{#include "swish.h"\n}, ],
+        #[ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
+        [ "src/swish-e.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/swish.h",   78, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/stemmer.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/mem.h",     53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
             # force crash if num goes large in compress3()
-        [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ', ], 
+        [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
         #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
      for my $insert (@inserts) {
