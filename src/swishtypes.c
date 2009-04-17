@@ -29,15 +29,24 @@ $Id: swish.c 2291 2009-03-31 01:56:00Z karpet $
     of the GNU GPL and the special exception available for linking against
     the Swish-e library. 
     
+    $Log$
     
 */  
 
-// don't compile this file in unless you're replacing GET_POSITION() and SET_POSDATA()
-// macros.
 
+#if 0
+
+// DON'T COMPILE THIS CODE IN UNLESS YOU'RE REPLACING GET_POSITION() and SET_POSDATA()
+// MACROS WITH FUNCTION VERSIONS
+
+/* NOT USED */
+/* FUNCTION VERSION OF GET_POSITION */
 SWUINT_T GET_POSITION( SWUINT_T pos) {
     return pos / 256;    // >> 8
 }
+
+/* NOT USED */
+/* FUNCTION VERSION OF SET_POSDATA */
 SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) {
     SWUINT_T r = (pos * 256);           //  the << 8
     SWUINT_T pbytes1234 = r / (2^32); // break into two 4byte parts
@@ -46,6 +55,6 @@ SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) {
     SWUINT_T sbytes5678 = str % (2^32);
 
     return ((2^32) * ( pbytes1234 | sbytes1234 )) + ( pbytes5678 | sbytes5678 );
-    
 }
+#endif
 
