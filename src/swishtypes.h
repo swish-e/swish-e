@@ -29,7 +29,7 @@ $Id: swish-e.h 2307 2009-04-09 16:14:41Z karpet $
 
 /* this file added for experimental 64bit portable version by joshr */
 
-#ifndef SWISHTYPES_H 1
+#ifndef SWISHTYPES_H 
 #define SWISHTYPES_H 1 1
 
 #ifdef __cplusplus
