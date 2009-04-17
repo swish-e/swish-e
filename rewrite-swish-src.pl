@@ -21,7 +21,8 @@ sub Usage {
     "$prog [--verbose] [--debug] [--refresh]\n" . 
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
-    "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n";
+    "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n" . 
+    "  see 'perldoc $prog' for more.\n";
 }
 
 # call main()
@@ -84,6 +85,8 @@ sub main {
                long\b            |
                int\b            
                )\b                     /SWINT_T/gx),
+
+        q{s/ \b off_t \b  / SWUINT_T /gx },
 
         # format strings. All get converted to 'long long' versions.
         # grouped regexes below speed up this script another 20%
