@@ -546,6 +546,8 @@ static void stem_it( SW_RESULT r, char *word )
 }
 
 
+/* this was written to test compress3() by joshr */
+/* I believe it is written incorrectly */
 static void test_compress() 
 {
     char buffer[1000000] = {0}; // 1MB
