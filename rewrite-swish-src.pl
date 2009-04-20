@@ -18,11 +18,12 @@ my $refresh;
 
 # Usage() : returns usage information
 sub Usage {
-    "$prog [--verbose] [--debug] [--refresh]\n" . 
+    "$prog [--verbose] [--debug] [--refresh] [files]\n" . 
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
     "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n" . 
-    "  see 'perldoc $prog' for more.\n";
+    "  see 'perldoc $prog' for more.\n" . 
+    " If you don't pass [files] it uses src/*.[ch]\n";
 }
 
 # call main()
@@ -38,14 +39,14 @@ sub main {
      
      $|++;
 
-     my @files = glob( "src/*.c src/*.h");
-     #my @files = glob( "src/*.c src/*.h src/*/*.c src/*/*.h src/*/*/*.h src/*/*/*.c");
+     my @files = get_files(@ARGV);
+
      if ($refresh) {
          system( "rm -f @files" );
          system( "svn up" ); 
      }
      # reglob since we might have deleted and refetched files.
-     @files = glob( "src/*.c src/*.h");     # don't try to handle perl/API.xs yet
+     @files = get_files(@ARGV);
 
 
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
@@ -119,10 +120,24 @@ sub main {
          #  in File,               search for,                replace with
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
+     FILE:
      for my $file (@files) {
          #print "$file\n";
          my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
+         unless ($file =~ m/\.[ch]$/) {
+            print "$prog: not altering $file\n" if $verbose;
+            next FILE;
+         }
          rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
+     }
+
+     if ($debug) {
+        # run under the debugger
+        system( "make clean" );
+        system( "make" );
+        write_file( ".gdbinit", "run -c tests/test.config -i tests" );
+        #exec( " echo 'run -c tests/test.config -i src/tests' |  gdb src/.libs/swish-e" );
+        exec( "gdb src/.libs/swish-e" );
      }
 }
 
@@ -137,9 +152,9 @@ sub rewrite_file {
      open(my $rfh, "<", $file)    || die "$0: Can't open $file: $!";
      open(my $wfh, ">", $tmpfile) || die "$0: Can't open $tmpfile: $!";  # clobber old $file.tmp
      print "$prog: Applying regexes to file $file\n";
-     if ($debug) {
-         print join("\n", map { "regex: $_" } @$regexes) . "\n";
-     }
+     #if ($debug) {
+     #    print join("\n", map { "regex: $_" } @$regexes) . "\n";
+     #}
      LINE: while(<$rfh>) {
          chomp();
          if (m{//.*no rw64} || m{/\*.*no rw64}) {   # if it has a comment with 'no rw64'...
@@ -188,6 +203,14 @@ sub insert_at_line_unless_has_regex {
     write_file( $filename, @lines );                # and rewrite file
 }
 
+# get the list of files to operate on. We expect the caller to pass @ARGV
+sub get_files {
+    my @argv = @_;  
+    if (@argv) {
+        return @argv;
+    }
+    return glob( "src/*.c src/*.h");     # don't try to handle perl/API.xs yet 
+}
 =pod
 
 =head1 NAME
