@@ -229,6 +229,7 @@ It can be used like so:
        (this fetches trunk into swish-e-portable/ )
    % cd swish-e-portable
    % ./configure
+      (use ./configure CFLAGS="-O0 -g" for non optimized, debug build)
    % ./rewrite-swish-src.pl
    % make
 
@@ -241,7 +242,8 @@ changes with:
    % make 
 
 Also, note that to turn compiler optimization off, and debug symbols on, 
-use configure this way:
+as mentioned above, use configure this way:
+
    
    % ./configure CFLAGS="-IO0 -g'
      (that's an O letter and a zero).  
