@@ -22,6 +22,7 @@ sub Usage {
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
     "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n" . 
+    "  --debug builds resulting source and tries to run it under debugger\n" .
     "  see 'perldoc $prog' for more.\n" . 
     " If you don't pass [files] it uses src/*.[ch]\n";
 }
@@ -141,7 +142,7 @@ sub main {
      }
 
      # 6) if --debug is enabled, run the results under the debugger
-     #  not that this creates a .gdbinit file in the working directory.
+     #  note that this creates a .gdbinit file in the working directory.
      if ($debug) {
         # run under the debugger
         system( "make clean" );
