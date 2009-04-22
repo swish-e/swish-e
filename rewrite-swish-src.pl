@@ -66,10 +66,6 @@ sub main {
         [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
         #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
-     # WE FIRST INSERT ANY LINES WE NEED.
-     for my $insert (@inserts) {
-         insert_at_line_unless_has_regex( @$insert );
-     }
 
      # 2) REGEXES: do these searches and replaces
      my @regexes = (
@@ -123,13 +119,18 @@ sub main {
      );
 
 
-     # 4) replacements: simple search and replaces in individual files.
+     # 4) REPLACEMENTS: simple search and replaces in individual files.
      my @replacements = (
          #  in File,               search for,                replace with
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
 
      # 5) DO THE REPLACEMENTS
+     # 5A) WE FIRST INSERT ANY LINES WE NEED.
+     for my $insert (@inserts) {
+         insert_at_line_unless_has_regex( @$insert );   # NOTE: does not use @exceptions !
+     }
+     # 5B) DO ALL THE OTHER MODIFICATIONS
      FILE:
      for my $file (@files) {
          #print "$file\n";
@@ -141,14 +142,13 @@ sub main {
          rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
      }
 
-     # 6) if --debug is enabled, run the results under the debugger
-     #  note that this creates a .gdbinit file in the working directory.
+     # 6) if --debug is enabled, run the results under the debugger.
+     #  note that this clobbers any .gdbinit file in the working directory.
      if ($debug) {
-        # run under the debugger
+        # run under the debugger. 
         system( "make clean" );
-        system( "make" );
+        system( "make" ) && die "$prog: 'make' failed: $!\n";
         write_file( ".gdbinit", "run -c tests/test.config -i tests" );
-        #exec( " echo 'run -c tests/test.config -i src/tests' |  gdb src/.libs/swish-e" );
         exec( "gdb src/.libs/swish-e" );
      }
 }
@@ -196,8 +196,8 @@ sub rewrite_file {
      }
      close($rfh) || die "$0: Can't open $file: $!";
      close($wfh) || die "$0: Can't close $tmpfile: $!";
-     rename( $file, "$file.bak" );
-     rename( $tmpfile, $file ) || die "$0: Can't rename $tmpfile to $file: $!";
+     rename( $file, "$file.bak" ) || die "$prog: Can't move $file to $file.bak: $!\n";;
+     rename( $tmpfile, $file ) || die "$0: Can't rename $tmpfile to $file: $!\n";
 }
 
 
@@ -233,11 +233,17 @@ rewrite-swish-src.pl -- tries to rewrite swish-e source to be portable
 
 This script converts a swish-e source code tree to be 64bit friendly,
 mostly by replacing various int types with known 64bit (or possibly larger) 
-versions, and by replacing printf-style format strings to match.
+versions, and by replacing printf-style format strings to match. See the source
+code for details about its operation; essentially we script a series
+of inserts, general and file-specific replacements, and exceptions.
 
-NOTE: The gotcha seems to be functions and variables that must retain machine-native 
-'int' types because they are used as callbacks (for example with libxml2), 
-or for deep system calls (like waitpid).
+Additionally, any line containing a comment like 
+    // no rw64 
+or 
+    /* no rw64 */
+will remain unchanged.
+
+=head1 DESCRIPTION
 
 It can be used like so:
 
@@ -249,7 +255,8 @@ It can be used like so:
    % ./rewrite-swish-src.pl
    % make
 
-It's intended that we'll make the 64bit changes to rewrite-swish-src.pl, not to the source
+It's intended that (while using this script for development)
+we'll make the 64bit changes to rewrite-swish-src.pl, not to the SVN
 tree directly. So after you've made some changes to rewrite-swish-src.pl, you can retest your
 changes with:
 
@@ -268,8 +275,6 @@ NOTE: any line with a comment matching the regex m{# no rw64} or m{/\* no rw64 .
 is passed through unaltered. So you can add that comment to lines to have their ints
 preserved.
 
-=head1 DESCRIPTION
-
 rewrites swish-e source to be portable between 32bit and 64bit architectures.
 
 =head1 OPTIONS
@@ -284,14 +289,26 @@ Turns on/off verbose mode. (off by default)
 
 =item --debug/--nodebug
 
-Turns on/off debug mode. (off by default)
+Turns on/off debug mode, which builds and exe and runs in under gdb. 
+(off by default)
 
 =item --refresh/--norefresh
 
-Turns on/off refresh mode, which deletes all files matching src/*.c and src/*.h, and
-refetches them from SVN before performing 64bit alterations. (off by default)
+CAREFUL: Turns on/off 'refresh' mode, which deletes all files 
+matching src/*.c and src/*.h, and refetches them from SVN before 
+performing 64bit alterations. (off by default)
 
 =back
+
+=head1 DISCUSSION
+
+The tricky part of this port seems to be functions and variables 
+that must retain machine-native 'int' types because they are used 
+as callbacks (for example with libxml2), or for deep system calls 
+(like waitpid). 
+
+Just maybe, paying close attention to 'type mismatch' warnings
+is the key. 
 
 =head1 TO DO
 
@@ -299,7 +316,7 @@ Note that while this will make indexes portable between current (linux) 32bit an
 architectures, it's possible that some systems will implement a 
 'long long' type larger than 64bits  and thus not produce binary 
 compatible indexes with 64bit int systems. It's intended that this
-be handled in a later revision.
+be handled in a later port. 
 
 =head1 COPYRIGHT
 
