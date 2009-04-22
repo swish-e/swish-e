@@ -49,6 +49,7 @@ sub main {
      @files = get_files(@ARGV);
 
 
+    # 1) INSERTS: LINES TO BE INSERTED
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
      # lines with no_rw don't have replacements done by @regexes below.
      print "$prog: Inserting lines into files...\n";
@@ -64,10 +65,12 @@ sub main {
         [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
         #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
+     # WE FIRST INSERT ANY LINES WE NEED.
      for my $insert (@inserts) {
          insert_at_line_unless_has_regex( @$insert );
      }
 
+     # 2) REGEXES: do these searches and replaces
      my @regexes = (
         #  replace everything that looks anything like a 'long' or an 'int'.
         #  specifically leave alone anything about chars or floats/doubles.
@@ -105,6 +108,8 @@ sub main {
         #q{s/ #define\s+SET_POSDATA.*   //gx },
         #q{s/ #define\s+GET_POSITION.*   //gx },
      );
+     
+     ## 3) EXCEPTIONS: leave any file/lines alone matching the regexes below
      my @exceptions  = (
          # don't replace on lines matching this fileregex and lineregex
          { f=>'\.c$',          s=>'int\s+main' },           # never replace main's return val
@@ -116,10 +121,14 @@ sub main {
          { f=>"",              s=>'_(put|get)c.*int' },    # preserve anything that looks like 'getc/putc'
      );
 
+
+     # 4) replacements: simple search and replaces in individual files.
      my @replacements = (
          #  in File,               search for,                replace with
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
+
+     # 5) DO THE REPLACEMENTS
      FILE:
      for my $file (@files) {
          #print "$file\n";
@@ -131,6 +140,8 @@ sub main {
          rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
      }
 
+     # 6) if --debug is enabled, run the results under the debugger
+     #  not that this creates a .gdbinit file in the working directory.
      if ($debug) {
         # run under the debugger
         system( "make clean" );
@@ -142,7 +153,7 @@ sub main {
 }
 
 #================================================================
-# rewrite_file( $file, @search_and_replace_regexes )
+# rewrite_file( $file, $search_and_replace_regexes, $exceptions, $replacements )
 # backs up $file to $file.bak, and
 # applies supplied regexes to the lines of a file,
 sub rewrite_file {
@@ -252,7 +263,7 @@ as mentioned above, use configure this way:
    % ./configure CFLAGS="-IO0 -g'
      (that's an O letter and a zero).  
 
-Note that any line with a comment matching the regex m{# no rw64} or m{/\* no rw64 .*}
+NOTE: any line with a comment matching the regex m{# no rw64} or m{/\* no rw64 .*}
 is passed through unaltered. So you can add that comment to lines to have their ints
 preserved.
 
