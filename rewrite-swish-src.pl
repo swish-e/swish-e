@@ -15,10 +15,11 @@ my $prog = basename($0);
 my $verbose;
 my $debug;
 my $refresh;
+my $alter = 1;
 
 # Usage() : returns usage information
 sub Usage {
-    "$prog [--verbose] [--debug] [--refresh] [files]\n" . 
+    "$prog [--verbose] [--debug] [--refresh] [--no-alter] [files]\n" . 
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
     "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n" . 
@@ -36,6 +37,7 @@ sub main {
         "verbose!" => \$verbose,
         "debug!" => \$debug,
         "refresh!" => \$refresh,
+        "alter!" => \$alter,
     ) or die Usage();
      
      $|++;
@@ -49,6 +51,10 @@ sub main {
      # reglob since we might have deleted and refetched files.
      @files = get_files(@ARGV);
 
+     unless ($alter) {
+         print "$prog: Alter mode disabled, stopping\n";
+         exit(0);
+     }
 
     # 1) INSERTS: LINES TO BE INSERTED
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
@@ -62,8 +68,10 @@ sub main {
         [ "src/stemmer.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/mem.h",     53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/libtest.c", 43, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-            # force crash if num goes large in compress3()
-        [ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
+
+        # force crash if num goes large in compress3()
+        #[ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
+        
         #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
 
