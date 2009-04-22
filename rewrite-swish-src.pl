@@ -260,7 +260,7 @@ Also, note that to turn compiler optimization off, and debug symbols on,
 as mentioned above, use configure this way:
 
    
-   % ./configure CFLAGS="-IO0 -g'
+   % ./configure CFLAGS="-O0 -g'
      (that's an O letter and a zero).  
 
 NOTE: any line with a comment matching the regex m{# no rw64} or m{/\* no rw64 .*}
