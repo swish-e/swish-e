@@ -221,7 +221,11 @@ rewrite-swish-src.pl -- tries to rewrite swish-e source to be portable
 
 This script converts a swish-e source code tree to be 64bit friendly,
 mostly by replacing various int types with known 64bit (or possibly larger) 
-versions.
+versions, and by replacing printf-style format strings to match.
+
+NOTE: The gotcha seems to be functions that must remain 'int' types because
+they are used as callbacks (for example with libxml2), or for deep system calls
+(like waitpid).
 
 It can be used like so:
 
