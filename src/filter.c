@@ -485,7 +485,7 @@ int     FilterClose(FileProp *fprop)
     FilterList  *fl = fprop->hasfilter;
     char    *prog    = fl->prog;
 #ifdef HAVE_SYS_WAIT_H
-    int     status;
+    int     status; // no rw64
     pid_t   pid;
 
 #ifdef HAVE_KILL
