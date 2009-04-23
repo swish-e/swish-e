@@ -851,11 +851,11 @@ static void Whitespace(void *data, const xmlChar *txt, int txtlen)
 static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 {
     CHAR_BUFFER     *buf = &parse_data->ISO_Latin1;
-    int             inlen = txtlen;
+    int             inlen = txtlen; // no rw64, passed to UTF8Toisolat1 by pointer
     int             ret;
     char  *start_buf;
     char  *end_buf = txt + txtlen - 1;
-    int             used;
+    int             used;           // no rw64, passed to UTF8Toisolat1 by pointer
 
 
     /* (re)allocate buf if needed */
