@@ -27,9 +27,9 @@ $Id$
 
 */
 
-struct ramdisk *ramdisk_create(char *, int);
+struct ramdisk *ramdisk_create(char *, int);     // no rw64
 
-int ramdisk_close(FILE *);
+int ramdisk_close(FILE *);                       // no rw64
 
 void add_buffer_ramdisk(struct ramdisk *);
 
@@ -37,10 +37,10 @@ sw_off_t ramdisk_tell(FILE *);
 
 size_t ramdisk_write(const void *,size_t, size_t, FILE *);
 
-int ramdisk_seek(FILE *,sw_off_t, int );
+int ramdisk_seek(FILE *,sw_off_t, int );         // no rw64
 
 size_t ramdisk_read(void *, size_t, size_t, FILE *);
 
-int ramdisk_getc(FILE *);
+int ramdisk_getc(FILE *);                        // no rw64
 
-int ramdisk_putc(int , FILE *);
+int ramdisk_putc(int , FILE *);                  // no rw64

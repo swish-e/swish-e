@@ -70,7 +70,7 @@ struct ramdisk
 
 
 /* Create a new ramdisk - The size of the internal buffers is buf_size */
-struct ramdisk *ramdisk_create(char *name, int buf_size)
+struct ramdisk *ramdisk_create(char *name, int buf_size)        // no rw64
 {
 struct ramdisk *rd;
 
@@ -86,7 +86,7 @@ struct ramdisk *rd;
 }
 
 /* Closes / frees the memory used by the ramdisk */
-int ramdisk_close(FILE *fp)
+int ramdisk_close(FILE *fp)                      // no rw64
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
 
@@ -149,7 +149,7 @@ unsigned int avail;
 }
 
 /* Equivalent to fseek */
-int ramdisk_seek(FILE *fp,sw_off_t pos, int set)
+int ramdisk_seek(FILE *fp,sw_off_t pos, int set)     // no rw64
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
 
@@ -215,7 +215,7 @@ unsigned int avail, num_buffer, start_pos, buffer_offset;
     return buffer_offset;
 }
 
-int ramdisk_getc(FILE *fp)
+int ramdisk_getc(FILE *fp)   // no rw64
 {
 unsigned char c;
 
@@ -223,7 +223,7 @@ unsigned char c;
     return (int) ((unsigned char)c);
 }
 
-int ramdisk_putc(int c, FILE *fp)
+int ramdisk_putc(int c, FILE *fp)    // no rw64
 {
 unsigned char tmp = (unsigned char)c;
 
