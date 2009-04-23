@@ -437,7 +437,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
         return 0;
 
 
-    return (int)is_word_in_hash_table( header->hashbuzzwordlist, word );
+    return is_word_in_hash_table( header->hashbuzzwordlist, word ) ? 1 : 0;
 }
 
 /* I hope this doesn't live too long */
