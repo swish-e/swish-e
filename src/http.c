@@ -765,9 +765,9 @@ void    http_indexpath(SWISH * sw, char *url)
 
 
         /* Clean up the files left by swishspider */
-        cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
-        cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());
-        cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());
+        cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());    // no rw64, pid is pid_t
+        cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());    // no rw64, pid is pid_t
+        cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());       // no rw64, pid is pid_t
     }
     efree(file_prefix);
 }
