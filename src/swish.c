@@ -347,7 +347,7 @@ static void    usage()
     printf("         -u : update: adds files to existing index\n");
 #endif
     printf("         -V : prints the current version\n");
-    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
+    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);   // no rw64
     printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -W : next param is ParserWarnLevel [-W 2]\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
