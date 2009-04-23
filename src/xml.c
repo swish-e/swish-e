@@ -95,7 +95,7 @@ typedef struct {
 /* Prototypes */
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
-static void char_hndl(void *data, const char *txt, int txtlen);
+static void char_hndl(void *data, const char *txt, int txtlen);         // no rw64
 static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data );
 static void comment_hndl(void *data, const char *txt);
@@ -346,7 +346,7 @@ static void end_hndl(void *data, const char *el)
 *
 *********************************************************************/
 
-static void char_hndl(void *data, const char *txt, int txtlen)
+static void char_hndl(void *data, const char *txt, int txtlen)  // no rw64
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
