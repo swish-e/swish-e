@@ -160,7 +160,7 @@ sub main {
         # run under the debugger. 
         system( "make clean" );
         system( "make" ) && die "$prog: 'make' failed: $!\n";
-        write_file( ".gdbinit", "run -c tests/test.config -i tests" );
+        write_file( ".gdbinit", "run -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
         exec( "gdb src/.libs/swish-e" );
      }
 }
