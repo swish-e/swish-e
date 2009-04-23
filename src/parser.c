@@ -942,7 +942,9 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
             }
 
             /* Calculate the remaining length of the input string */
-            inlen = (unsigned long)end_buf - (unsigned long)txt + 1;
+            /* inlen = (unsigned long)end_buf - (unsigned long)txt + 1; */
+            inlen = ((unsigned long)(end_buf - txt)) + 1;
+
             if ( inlen <= 0 )
                 return;
 
