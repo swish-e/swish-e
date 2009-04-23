@@ -534,7 +534,7 @@ int     FilterClose(FileProp *fprop)
 static void fork_program( FileProp * fprop, char **arg )
 {
     pid_t   pid;
-    int     pipe_fd[2];
+    int     pipe_fd[2]; // no rw64, file descriptors
     FILE    *fi;
 
 
