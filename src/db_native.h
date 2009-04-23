@@ -124,7 +124,7 @@ struct Handle_DBNative
    size_t  (*w_write)(const void *, size_t, size_t, FILE *);
    int     (*w_seek)(FILE *, sw_off_t, int);        // no rw64
    size_t  (*w_read)(void *, size_t, size_t, FILE *);
-   int     (*w_close)(FILE *);
+   int     (*w_close)(FILE *);                      // no rw64
    int     (*w_putc)(int , FILE *);                 // no rw64
    int     (*w_getc)(FILE *);                       // no rw64
 
