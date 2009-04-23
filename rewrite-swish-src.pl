@@ -68,6 +68,8 @@ sub main {
         [ "src/stemmer.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/mem.h",     53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/libtest.c", 43, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/snowball/api.h", 3, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
+        [ "src/snowball/header.h", 5, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
 
         # force crash if num goes large in compress3()
         #[ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
@@ -95,7 +97,8 @@ sub main {
                int\b            
                )\b                     /SWINT_T/gx),
 
-        q{s/ \b off_t \b  / SWUINT_T /gx },
+       # NO, you can't do this!
+       #q{s/ \b off_t \b  / SWUINT_T /gx },
 
         # format strings. All get converted to 'long long' versions.
         # grouped regexes below speed up this script another 20%
@@ -135,6 +138,7 @@ sub main {
 
      # 5) DO THE REPLACEMENTS
      # 5A) WE FIRST INSERT ANY LINES WE NEED.
+     #  # we should check that the file mentioned in get_files()...
      for my $insert (@inserts) {
          insert_at_line_unless_has_regex( @$insert );   # NOTE: does not use @exceptions !
      }
@@ -229,8 +233,9 @@ sub get_files {
     if (@argv) {
         return @argv;
     }
-    return glob( "src/*.c src/*.h");     # don't try to handle perl/API.xs yet 
+    return glob( "src/*.c src/*.h src/snowball/*.[ch]");     # don't try to handle perl/API.xs yet 
 }
+
 =pod
 
 =head1 NAME
