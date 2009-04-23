@@ -550,12 +550,11 @@ static void stem_it( SW_RESULT r, char *word )
 /* I believe it is written incorrectly */
 static void test_compress() 
 {
-    char buffer[1000000] = {0}; // 1MB
+    char buffer[10000] = {0}; // 1MB
     int i;
-    int place = 0;
-    for( i=0; i<10000; i++) {   // assume 10 bytes per number is enough
-        int bytes = compress3( i, buffer+place );
-        place += bytes;
+    char * place = buffer;
+    for( i=0; i<100; i++) {   // assume 10 bytes per number is enough
+        place = compress3( i, place );
     }
 }
 
