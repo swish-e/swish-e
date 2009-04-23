@@ -108,7 +108,7 @@ time_t now;
 	
 	now = time(NULL);
 	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
-	strftime(date, MAXSTRLEN, "%Y-%m-%lld %H:%M:%S %Z", (struct tm *) localtime(&now)); 
+	strftime(date, MAXSTRLEN, "%Y-%m-%ld %H:%M:%S %Z", (struct tm *) localtime(&now));   // no rw64
 	
 	return date;
 }
